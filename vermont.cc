@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
+#include <stdlib.h>
 
 /* 
  foreign subsystems: sampler
@@ -61,6 +62,7 @@ int main(int ac, char **dc)
 	dictionary *config;
 	int c, debug_level=MSG_DEFAULT;
         char *config_file=NULL;
+        Template *templ;
 
 	/* parse command line */
 	while((c=getopt(ac, dc, "hf:d")) != -1) {
@@ -94,9 +96,13 @@ int main(int ac, char **dc)
 		exit(-1);
 	}
 
-        configure_template(iniparser_getvalue(config, "sampler", "filters"));
+        /* now configure the template */
+	if(!(templ=configure_template(iniparser_getvalue(config, "sampler", "template")))) {
+		msg(MSG_FATAL, "could not configure a template");
+                exit(1);
+        }
 
-	subsys_dump(v_subsystems);
+        subsys_dump(v_subsystems);
 	iniparser_dump(config, stdout);
 
         return 0;
@@ -112,8 +118,7 @@ int vermont_readconf(char *file, dictionary **conf)
         dictionary *d;
 
 	/* read configuration */
-	d=iniparser_new(file);
-	if(!d) {
+	if(!(d=iniparser_new(file))) {
 		msg(MSG_FATAL, "could not open config_file %s", file);
                 return(-1);
 	}
@@ -139,10 +144,10 @@ int vermont_readconf(char *file, dictionary **conf)
 /* configure the sampler template from a "," separated list */
 static Template * configure_template(char *list)
 {
-
 	Template *t;
-	int tmpid;
 	char *l, *token;
+        int tmpid;
+        ipfix_identifier id;
 	
 	/* violating the original string is not nice, so copy */
 	if(!(l=strdup(list))) {
@@ -150,27 +155,29 @@ static Template * configure_template(char *list)
 	}
 	
         /* assemble the Template */
-	//t=new Template(id);
-
+	t=new Template(id);
 	while((token=strsep(&l, ","))) {
-	
-		/* lookup field */
-		tmpid=ipfix_name_lookup(token);
-		msg(MSG_INFO, "Template: adding %s -> %d", token, tmpid);
 
-		if(tmpid == -1) {
+		/*
+		 lookup field
+		 name_lookup returns -1 on error, id_lookup NULL
+                 make use of short circuit in C for ||
+		 */
+		if( ((tmpid=ipfix_name_lookup(token)) == -1) || ((id=ipfix_id_lookup(tmpid)) == NULL) )
 			msg(MSG_ERROR, "Ignoring unknown template field %s", token);
                         continue;
 		}
-		//t->addField((uint16_t)tmpid, <??>, <??>);
+		msg(MSG_INFO, "Template: adding %s -> ID %d", token, id->id);
+		t->addField((uint16_t)id->id, (uint_16t)id->length);
 	}
 
 	free(l);
+	msg(MSG_INFO, "Got %d fields", t->getFieldCount());
+
 	return t;
 
 bad_err:
         return NULL;
-
 }
 
 
@@ -201,5 +208,6 @@ static int setup_signal(int signal, void (*handler)(int))
 /* just shallow right now */
 static void sig_handler(int x)
 {
-        msg(MSG_DIALOG, "got signal %d", x);
+	msg(MSG_DIALOG, "got signal %d - exiting", x);
+	exit(2);
 }
