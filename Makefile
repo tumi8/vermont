@@ -1,6 +1,7 @@
 INCLUDES=-Iipfixlolib/ -Isampler/ -Icollector/
 CC=gcc
 CFLAGS=-O $(INCLUDES)
+CXXFLAGS=$(CFLAGS)
 TARGET=vermont
 
 $(TARGET): vermont.o subsystems.o msg.o iniparser.o
