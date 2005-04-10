@@ -9,16 +9,20 @@
 #include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <vector>
 
 /* 
  foreign subsystems: sampler
  */
 #include "ipfixlolib.h"
+
 #include "Packet.h"
+#include "Filter.h"
 #include "Observer.h"
 #include "PacketSink.h"
 #include "ExporterSink.h"
-#include "Filter.h"
+#include "PacketProcessor.h"
 #include "Template.h"
 #include "IPHeaderFilter.h"
 
@@ -30,6 +34,7 @@
 #include "msg.h"
 #include "subsystems.h"
 
+using namespace std;
 
 static void usage();
 static void sig_handler(int x);
@@ -45,13 +50,13 @@ struct {
 
 	/* for sampler */
 	Observer *observer;
-	vector<Filters *> filters;
 	vector<PacketProcessor *> processors;
-	Template *template;
+        Filter *main_filter;
+	Template *templ;
 	ExporterSink *exporter;
 		
 	/* for collector */
-	int collector_handle;
+	//int collector_handle;
 	/* callbacks ... ? */
 
 } v_objects;
@@ -147,15 +152,15 @@ static Template * configure_template(char *list)
 	Template *t;
 	char *l, *token;
         int tmpid;
-        ipfix_identifier id;
+        const ipfix_identifier *id;
 	
 	/* violating the original string is not nice, so copy */
 	if(!(l=strdup(list))) {
-		goto bad_err;
+		return NULL;
 	}
 	
         /* assemble the Template */
-	t=new Template(id);
+	t=new Template(2);
 	while((token=strsep(&l, ","))) {
 
 		/*
@@ -163,21 +168,18 @@ static Template * configure_template(char *list)
 		 name_lookup returns -1 on error, id_lookup NULL
                  make use of short circuit in C for ||
 		 */
-		if( ((tmpid=ipfix_name_lookup(token)) == -1) || ((id=ipfix_id_lookup(tmpid)) == NULL) )
+		if( ((tmpid=ipfix_name_lookup(token)) == -1) || ((id=ipfix_id_lookup(tmpid)) == NULL) ) {
 			msg(MSG_ERROR, "Ignoring unknown template field %s", token);
                         continue;
 		}
 		msg(MSG_INFO, "Template: adding %s -> ID %d", token, id->id);
-		t->addField((uint16_t)id->id, (uint_16t)id->length);
+		t->addField((uint16_t)id->id, (uint16_t)id->length);
 	}
 
 	free(l);
 	msg(MSG_INFO, "Got %d fields", t->getFieldCount());
 
 	return t;
-
-bad_err:
-        return NULL;
 }
 
 
