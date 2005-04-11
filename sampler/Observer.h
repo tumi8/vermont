@@ -31,7 +31,7 @@ class Observer
 {
 public:
   // ObserverThread constructor
-  Observer() : thread(Observer::observerThread), exitFlag(false), capturelen(CAPTURE_LENGTH)
+  Observer(char *interface) : thread(Observer::observerThread), exitFlag(false), capturelen(CAPTURE_LENGTH)
   {    
     // query all available capture devices
     LOG("Observer: Finding devices\n");
@@ -45,7 +45,8 @@ public:
       LOG("  Name=%s, DESC=%s\n", dev->name, dev->description);
     }
 
-    LOG("Observer: Setting pcap snaplen to %d\n", capturelen);
+    LOG("Observer: Setting default pcap snaplen to %d\n", capturelen);
+    captureInterface=interface;
 
   };
 
@@ -59,9 +60,8 @@ public:
     pcap_freealldevs(allDevices);
   };
 
-  void startCapture(char *ifdesc)
+  void startCapture()
   {
-    captureInterface = ifdesc;
     thread.run(this);
   };
 
