@@ -14,7 +14,7 @@
 #include "Globals.h"
 
 extern "C" {
-#include "ipfixlolib.h"
+#include "ipfixlolib/ipfixlolib.h"
 }
 
 using namespace std;
