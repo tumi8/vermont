@@ -16,16 +16,18 @@
 /* 
  foreign subsystems: sampler
  */
-#include "ipfixlolib.h"
+#include "ipfixlolib/ipfixlolib.h"
 
-#include "Packet.h"
-#include "Filter.h"
-#include "Observer.h"
-#include "PacketSink.h"
-#include "ExporterSink.h"
-#include "PacketProcessor.h"
-#include "Template.h"
-#include "IPHeaderFilter.h"
+/*
+#include "sampler/Packet.h"
+#include "sampler/Filter.h"
+#include "sampler/Observer.h"
+#include "sampler/PacketSink.h"
+#include "sampler/ExporterSink.h"
+#include "sampler/PacketProcessor.h"
+#include "sampler/Template.h"
+#include "sampler/IPHeaderFilter.h"
+ */
 
 /* collector */
 
@@ -34,36 +36,16 @@
 #include "iniparser.h"
 #include "msg.h"
 #include "subsystems.h"
+#include "vermont.h"
+#include "config_sampler.h"
 
 using namespace std;
-
-/* holding all objects/handles/... for the subsystems like sampler and collector */
-struct v_objects {
-
-	/* main vermont: */
-        /* the configuration struct, from iniparser */
-	dictionary *v_config;
-	/* initialized subsystems */
-	unsigned int v_subsystems;
-
-	/* for sampler: */
-	Template *templ;
-	Observer *observer;
-        Filter *filter;
-	vector<PacketProcessor *> processors;
-	ExporterSink *exporter;
-		
-	/* for collector: */
-	int collector_handle;
-};
 
 static void usage();
 static void sig_handler(int x);
 static int setup_signal(int signal, void (*handler)(int));
 static int vermont_readconf(dictionary **conf, char *file);
-static int vermont_configure(struct v_objects *v, dictionary *conf);
-static Template * configure_template(uint16_t template_id, char *list);
-static Observer * configure_observer(char *interface, int snaplen);
+static int vermont_configure(struct v_objects *v);
 
 int main(int ac, char **dc)
 {
@@ -101,10 +83,15 @@ int main(int ac, char **dc)
 
 	setup_signal(SIGINT, sig_handler);
 
-	if(vermont_readconf(&config, config_file) || vermont_configure(&v_objects, config)) {
+        if(vermont_readconf(&config, config_file)) {
 		exit(-1);
 	}
 
+	v_objects.v_config=config;
+
+	if(vermont_configure(&v_objects)) {
+                exit(-1);
+        }
 
         subsys_dump(v_objects.v_subsystems);
 
@@ -153,19 +140,50 @@ static int vermont_readconf(dictionary **conf, char *file)
  this is the main configuration entry point
  configure all subsystems peu a peu
  */
-static int vermont_configure(struct v_objects *v, dictionary *conf)
+static int vermont_configure(struct v_objects *v)
 {
-        /* if the sampler is not needed, interface will say "off" */
-	char *run_sampler=iniparser_getvalue(conf, "sampler", "interface");
+        dictionary *conf=v->v_config;
 
+	/* if the sampler is not needed, interface will say "off" */
+	char *run_sampler=iniparser_getvalue(conf, "sampler", "interface");
+	char *run_concentrator=iniparser_getvalue(conf, "concentrator", "listen_ip");
+        char *hooking=iniparser_getvalue(conf, "main", "packets");
+
+	/*
+	 check if we run the sampler
+	 if sampler is off, then we can use the sampler->concentrator hook
+         */
 	if(strcasecmp(run_sampler, "off") == 0) {
+		if(strcasecmp(hooking, "off") != 0) {
+			msg(MSG_FATAL, "sampler input is disabled, but hooking is used");
+                        return -1;
+		}
+
 		msg(MSG_DIALOG, "not running sampler subsystem");
 	} else {
-                configure_sampler(v, conf);
+                if(!configure_sampler(v)) {
+                        msg(MSG_FATAL, "Main: Could not configure the sampler");
+                        return -1;
+                }
+
 	}
 
+        if(strcasecmp(run_concentrator, "off") == 0) {
+                msg(MSG_DIALOG, "not running concentrator subsystem");
+        } else {
+                /*
+                if(!configure_concentrator(v)) {
+                	msg(MSG_FATAL, "Main: Could not configure the concentrator");
+                        return -1;
+                }
+                */
+        }
 
+
+        return 0;
 }
+
+
 /* bla bla bla */
 static void usage()
 {
