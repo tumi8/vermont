@@ -16,9 +16,7 @@
 #include "PacketReceiver.h"
 #include "Thread.h"
 #include "Template.h"
-extern "C" {
-#include "ipfixlolib.h"
-}
+#include "ipfixlolib/ipfixlolib.h"
 
 // the maximum number of packets to be queued
 #define MAX_PACKETS 1024
