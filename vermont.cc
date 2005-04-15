@@ -125,7 +125,6 @@ static int vermont_readconf(dictionary **conf, char *file)
 	   (iniparser_find_entry(d, "main") == 1)
 	  ) {
 		*conf=d;
-
 		return 0;
 
 	} else {
@@ -161,24 +160,22 @@ static int vermont_configure(struct v_objects *v)
 
 		msg(MSG_DIALOG, "not running sampler subsystem");
 	} else {
-                if(!configure_sampler(v)) {
+                if(configure_sampler(v)) {
                         msg(MSG_FATAL, "Main: Could not configure the sampler");
                         return -1;
                 }
-
 	}
 
         if(strcasecmp(run_concentrator, "off") == 0) {
                 msg(MSG_DIALOG, "not running concentrator subsystem");
         } else {
                 /*
-                if(!configure_concentrator(v)) {
+                if(configure_concentrator(v)) {
                 	msg(MSG_FATAL, "Main: Could not configure the concentrator");
                         return -1;
                 }
                 */
         }
-
 
         return 0;
 }

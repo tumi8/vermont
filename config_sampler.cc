@@ -26,16 +26,18 @@
 #include "subsystems.h"
 #include "config_sampler.h"
 
-static bool configure_observer(struct v_objects *v, char *interface, int snaplen);
-static bool configure_template(struct v_objects *v, uint16_t template_id, char *list);
-static bool configure_filter(struct v_objects *v, char *list);
+static int configure_observer(struct v_objects *v, char *interface, int snaplen);
+static int configure_template(struct v_objects *v, uint16_t template_id, char *list);
+static int configure_filter(struct v_objects *v, char *list);
+static int make_filter_processor(PacketProcessor **p, char *setting);
 
 /* FIXME: careful freeing of previously allocated resources in case of error */
 int configure_sampler(struct v_objects *v)
 {
 	dictionary *conf=v->v_config;
 
-	/* now configure the template */
+        msg(MSG_INFO, "Config: now configuring the sampler subsystem");
+
 	if(!configure_template(
 			       v,
 			       atoi(iniparser_getvalue(conf, "sampler", "template_id")),
@@ -44,7 +46,6 @@ int configure_sampler(struct v_objects *v)
 		msg(MSG_FATAL, "Config: could not configure a template");
 		return 1;
 	}
-
 
 	if(!configure_observer(
 			       v,
@@ -55,19 +56,16 @@ int configure_sampler(struct v_objects *v)
 		return 1;
 	}
 
-
 	if(!configure_filter(
 			     v,
 			     iniparser_getvalue(conf, "sampler", "filters")
-			    ) ) {
+			    )) {
 
 		msg(MSG_FATAL, "Config: could not configure the filter");
                 return 1;
 	}
 
-
-
-	/* attach the successfully used config into the main config struct */
+        /* attach the successfully used config into the main config struct */
 	v->v_config=conf;
 
 	return 0;
@@ -75,16 +73,16 @@ int configure_sampler(struct v_objects *v)
 
 
 /* configure the sampler template from a "," separated list */
-static bool configure_template(struct v_objects *v, uint16_t template_id, char *list)
+static int configure_template(struct v_objects *v, uint16_t template_id, char *list)
 {
-	Template *t;
+        Template *t;
 	char *l, *token;
         int tmpid;
         const ipfix_identifier *id;
 	
 	/* violating the original string is not nice, so copy */
 	if(!(l=strdup(list))) {
-		return false;
+		return 1;
 	}
 	
         /* assemble the Template */
@@ -118,7 +116,7 @@ static bool configure_template(struct v_objects *v, uint16_t template_id, char *
 
         v->templ=t;
 
-	return true;
+	return 0;
 }
 
 
@@ -126,19 +124,19 @@ static bool configure_template(struct v_objects *v, uint16_t template_id, char *
  configure an observer, listening at interface with capturelen
  capturelen 0 means use Observer's default
  */
-static bool configure_observer(struct v_objects *v, char *interface, int snaplen)
+static int configure_observer(struct v_objects *v, char *interface, int snaplen)
 {
 	Observer *o=new Observer(interface);
 
 	if(snaplen) {
-		if(! o->setCaptureLen(snaplen)) {
+                if(! o->setCaptureLen(snaplen)) {
 			msg(MSG_FATAL, "Observer: wrong snaplen specified, using %d", o->getCaptureLen());
 		}
-	}
-
+        }
+	msg(MSG_INFO, "Observer: using snaplen %d", o->getCaptureLen());
 	v->observer=o;
 
-        return true;
+        return 0;
 }
 
 
@@ -146,27 +144,85 @@ static bool configure_observer(struct v_objects *v, char *interface, int snaplen
  configure a complete filtering process with all sub-packetprocessors
  list is a simple char * retrieved from the config
  */
-static bool configure_filter(struct v_objects *v, char *list)
+static int configure_filter(struct v_objects *v, char *list)
 {
-	char *l, *token;
+        return true;
+
+        char *l, *token;
+	char *routing;
+	
         PacketProcessor *p;
-	Filter *f=new Filter();
+	char *p_settings;
+	int p_id;
+
+	dictionary *conf=v->v_config;
+	
+        Filter *f=new Filter();
 
 	/* violating the original string is not nice, so copy */
-	if(!(l=strdup(list))) {
-		return false;
-	}
+        if(!(l=strdup(list))) {
+		return 1;
+        }
+	
+	routing=iniparser_getvalue(conf, "main", "routing");
 	
 	while((token=strsep(&l, ","))) {
 
                 /* lookup setting for this particular filter in config */
-
+		if(!(p_settings=iniparser_getvalue(conf, "sampler", token))) {
+			msg(MSG_ERROR, "Filter: ignoring filter %s, has no config", token);
+			continue;
+		}
+		
+		
                 /* make new sub-filter object */
-
+		make_filter_processor(&p, p_settings);
+		
 		/* and add to filtering process */
-                f->addProcessor(p);
+               	f->addProcessor(p);
+		msg(MSG_INFO, "Filter: adding filter %s with settings %s", token, p_settings);
 	}
 
+        v->filter=f;
         free(l);
-	return true;
+
+        return 0;
+}
+
+static int make_filter_processor(PacketProcessor **p, char *setting)
+{
+	PacketProcessor *n;
+	char *l, *token;
+	int id;
+	
+	if(!(l=strdup(setting))) {
+		return 1;
+	}
+	
+	/* processor type is the first number */
+	token=strsep(&l, ",");
+		
+	switch(id) {
+	
+	case 0:
+		//n=new HookingFilter();
+		return 1;
+	case 1:
+		n=new SystematicSampler();
+		break;
+	case 2:
+		n=new RandomSampler();
+		break;
+	case 3:
+		n=new IPHeaderFilter();
+		break;
+	default:
+		msg(MSG_FATAL, "Filter: cannot make PacketProcessor with ID %d, settings %s", id, setting);
+		return 1;
+	}
+
+	free(l);
+	*p=n;
+
+        return 0;
 }
