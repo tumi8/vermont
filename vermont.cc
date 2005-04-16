@@ -53,7 +53,7 @@ int main(int ac, char **dc)
 	int c, debug_level=MSG_DEFAULT;
         char *config_file=NULL;
 
-        struct v_objects v_objects;
+        struct v_objects v_objects={0};
 
 	/* parse command line */
 	while((c=getopt(ac, dc, "hf:d")) != -1) {
