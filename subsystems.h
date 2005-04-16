@@ -19,13 +19,13 @@ void subsys_off(unsigned int *flag, unsigned int sys);
 
 #define SUBSYS_CONFIG 0x1
 
-#define SUBSYS_COL_RECEIVE 0x2
-#define SUBSYS_COL_ACCOUNT 0x4
-#define SUBSYS_COL_EXPORT 0x8
+#define SUBSYS_CONC_RECEIVE 0x2
+#define SUBSYS_CONC_ACCOUNT 0x4
+#define SUBSYS_CONC_EXPORT 0x8
 
 #define SUBSYS_SAMP_CAPTURE 0x10
 #define SUBSYS_SAMP_FILTER 0x20
-#define SUBSYS_SAMP_EXPORT 0x40
+#define SUBSYS_SAMP_SINK 0x40
 
 #ifdef __cplusplus
 }
