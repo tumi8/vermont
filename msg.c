@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 static int msg_level=MSG_DEFAULT;
-static char *MSG_TAB[]={"FATAL", "VERMONT", "ERROR", "DEBUG", "INFO", 0};
+static char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "DEBUG  ", "INFO   ", 0};
 
 void msg(int level, char *fmt, ...)
 {
