@@ -49,7 +49,7 @@ public:
         {
                 LOG("Observer: freeing devices\n");
 
-                if (captureDevice) {
+                if(captureDevice) {
                         pcap_close(captureDevice);
                 }
 
