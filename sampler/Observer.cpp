@@ -1,13 +1,12 @@
 /*
-  PSAMP Reference Implementation
- 
-  Observer.cpp
- 
-  Implementation of the packet capturing thread
- 
-  Author: Michael Drueing <michael@drueing.de>
- 
- **/
+ PSAMP Reference Implementation
+ Observer.cpp
+ Implementation of the packet capturing thread
+ Author: Michael Drueing <michael@drueing.de>
+
+ changed by: Ronny T. Lampert
+
+ */
 
 #include <pcap.h>
 #include <iostream>
