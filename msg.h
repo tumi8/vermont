@@ -12,6 +12,13 @@
 extern "C" {
 #endif
 
+/* well-know DPRINTF() - will be left out if DEBUG not set */
+#ifdef DEBUG
+#define DPRINTF(fmt, args...) printf("-DBG- " fmt, ##args)
+#else
+#define DPRINTF(fmt, args...)
+#endif
+
 /* defines for the message system */
 #define MSG_BLANK 256
 #define MSG_INFO 4
