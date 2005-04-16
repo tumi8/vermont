@@ -57,6 +57,12 @@ public:
     processors.push_back(p);
   };
 
+  /* in case we have to do some things with 'em */
+  std::vector<PacketProcessor *> getProcessors()
+  {
+          return processors;
+  }
+
 protected:
   Thread thread;
   static void *filterProcess(void *);
