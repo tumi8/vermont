@@ -30,6 +30,7 @@ struct ipfix_identifier {
         uint8_t length;
 };
 
+int ipfix_id_rangecheck(int id);
 const struct ipfix_identifier * ipfix_id_lookup(int n);
 int ipfix_name_lookup(char *name);
 
