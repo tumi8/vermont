@@ -441,16 +441,35 @@ const struct ipfix_midentifier * in_word_set (register const char *str, register
 }
 
 
+static inline int ipfix_rangecheck_ipfix(int n)
+{
+        return (n >= 0 && n < sizeof(IPFIXTAB)/sizeof(*IPFIXTAB));
+}
+
+static inline int ipfix_rangecheck_psamp(n)
+{
+        return (n >= 1024 && n < 1024 + (sizeof(PSAMPTAB)/sizeof(*PSAMPTAB)));
+}
+
+/* rangecheck the id for ipfix and psamp */
+int ipfix_id_rangecheck(int id)
+{
+        return (ipfix_rangecheck_ipfix(id) || ipfix_rangecheck_psamp(id));
+}
+
+
 /* lookup a certain ipfix ID into its name */
 const struct ipfix_identifier * ipfix_id_lookup(int n)
 {
 	/* ID is IPFIX one */
-	if(n >= 0 && n < sizeof(IPFIXTAB)/sizeof(*IPFIXTAB)) {
+        //if(n >= 0 && n < sizeof(IPFIXTAB)/sizeof(*IPFIXTAB)) {
+        if(ipfix_rangecheck_ipfix(n)) {
 		return &IPFIXTAB[n];
 	}
 
 	/* ID is PSAMP one */
-	if(n >= 1024 && n < 1024 + (sizeof(PSAMPTAB)/sizeof(*PSAMPTAB))) {
+        //if(n >= 1024 && n < 1024 + (sizeof(PSAMPTAB)/sizeof(*PSAMPTAB))) {
+        if(ipfix_rangecheck_psamp(n)) {
 		/* have to normalize */
 		n -= 1024;
 		return &PSAMPTAB[n];
