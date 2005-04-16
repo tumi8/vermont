@@ -83,13 +83,27 @@ int main(int ac, char **dc)
 
 	setup_signal(SIGINT, sig_handler);
 
+        /*
+         read the main configuration file
+
+         DO NOT-NOT-NEVER-NOT destroy this subsystem while vermont is running
+         as all pointers used for configuration are pointing into internal structs
+
+         DO NOT-NOT-NEVER-NOT free any pointers retrieved from the config via
+         iniparser_get*() functions
+         */
         if(vermont_readconf(&config, config_file)) {
 		exit(-1);
 	}
+        /* attach the configuration struct into the main vermont objects */
+        v_objects.v_config=config;
+        subsys_on(&(v_objects.v_subsystems), SUBSYS_CONFIG);
 
-	v_objects.v_config=config;
-
-	if(vermont_configure(&v_objects)) {
+        /*
+         main configuration entry: all subsystems are here CONFIGURED
+         STARTING them is done later
+         */
+        if(vermont_configure(&v_objects)) {
                 exit(-1);
         }
 
@@ -119,8 +133,8 @@ static int vermont_readconf(dictionary **conf, char *file)
                 return(-1);
 	}
 
-        /* check if all section we need are present */
-	if((iniparser_find_entry(d, "collector") == 1) &&
+        /* light check if all section we need are present */
+	if((iniparser_find_entry(d, "concentrator") == 1) &&
 	   (iniparser_find_entry(d, "sampler") == 1) &&
 	   (iniparser_find_entry(d, "main") == 1)
 	  ) {
@@ -129,7 +143,6 @@ static int vermont_readconf(dictionary **conf, char *file)
 
 	} else {
 		msg(MSG_FATAL, "Config: not all needed sections in config %s", file);
-
 		return -1;
 	}
 }
@@ -196,9 +209,9 @@ static void usage()
 
 static int setup_signal(int signal, void (*handler)(int))
 {
-	struct sigaction sig;
+        struct sigaction sig;
 
-	sig.sa_handler=sig_handler;
+        sig.sa_handler=sig_handler;
         sig.sa_flags=SA_RESTART;
         sigemptyset(&sig.sa_mask);
         return(sigaction(signal, &sig, NULL));
@@ -213,4 +226,4 @@ static void sig_handler(int x)
 }
 
 
-static void __cplusplus_really_sucks_andPeopleUsingVeryStrangeNamingConventionsWithLongLongExplicitBlaBla(){};
+static void __cplusplus_really_sucks_andPeopleUsingVeryStrangeNamingConventionsWithLongLongExplicitBlaBlaAndfUnNycasE(){};
