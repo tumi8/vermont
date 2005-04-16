@@ -24,13 +24,16 @@ bool SystematicSampler::processPacket(const Packet *p)
     
   packetCount++;
   
-  if (samplingType == SystematicSampler::TimeBasedSampler)
-  {
-    // normalize to interval borders and check if it's <= onTime
-    return ((msecs % interval) < samplingOnTime);
+  switch(samplingType) {
+  case SYSTEMATIC_SAMPLER_TIME_BASED:
+	// normalize to interval borders and check if it's <= onTime
+	return ((msecs % interval) < samplingOnTime);
+	break;
+  case SYSTEMATIC_SAMPLER_COUNT_BASED:
+ 	return ((packetCount % interval) < samplingOnTime);
+	break;
   }
-  else
-  {
-    return ((packetCount % interval) < samplingOnTime);
-  }
+
+
+
 }
