@@ -10,7 +10,6 @@
 #include <sampler/PacketProcessor.h>
 #include <sampler/ExporterSink.h>
 
-
 /* holding all objects/handles/... for the subsystems like sampler and collector */
 struct v_objects {
 
@@ -24,12 +23,11 @@ struct v_objects {
 	Template *templ;
 	Observer *observer;
         Filter *filter;
-        /* don't use - they are listed in the Filter */
-        //std::vector<PacketProcessor *> processors;
-	ExporterSink *exporter;
+        /* exporter is either a normal sink or a real exporter process */
+        PacketReceiver *sink;
 		
-	/* for collector: */
-	int collector_handle;
+	/* for concentrator: */
+	//IpfixReceiver *concentrator;
 };
 
 #endif
