@@ -10,55 +10,88 @@
 #ifndef OBSERVER_H
 #define OBSERVER_H
 
-// default pcap packet capture length
+/* default pcap packet capture length */
 #define CAPTURE_LENGTH 128
+/*
+ the to_ms arg to pcap_open_live() - wait this long until returning from pcap_next()
+ some platforms don't support it
+ FIXME: HOW LONG? 2000ms is REALLY REALLY LONG!
+ */
+#define PCAP_TIMEOUT 2000
 /*
  maximum physical packet length
  you may want to adjust this on a special jumbo-framed GBit network
  */
 #define CAPTURE_PHYSICAL_MAX 1526
 #include <vector>
+#include <pcap.h>
+
 #include "Globals.h"
 #include "Thread.h"
 #include "ConcurrentQueue.h"
 #include "Packet.h"
 #include "PacketReceiver.h"
-#include <pcap.h>
+
+#include "msg.h"
 
 class Observer {
 public:
         // ObserverThread constructor
-        Observer(char *interface) : thread(Observer::observerThread), exitFlag(false), capturelen(CAPTURE_LENGTH)
+	Observer(char *interface) : thread(Observer::observerThread), ready(false), exitFlag(false),
+		capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT)
         {
-                // query all available capture devices
-                LOG("Observer: Finding devices\n");
-                pcap_findalldevs(&allDevices, errorBuffer);
-                if(!allDevices) {
-                        LOG("Observer: error getting list of interfaces. Reason: %s\n", errorBuffer);
-                }
-                for(pcap_if_t *dev = allDevices; dev != NULL; dev=dev->next) {
-                        LOG("  Name=%s, DESC=%s\n", dev->name, dev->description);
-                }
+		captureInterface=interface;
+	};
 
-                LOG("Observer: Setting default pcap snaplen to %d\n", capturelen);
-                captureInterface=interface;
-
-        };
-
-        ~Observer()
+	~Observer()
         {
-                LOG("Observer: freeing devices\n");
+		terminateCapture();
+                /* be sure the thread is ending */
+		msg(MSG_DEBUG, "Observer: joining the ObserverThread, may take a while");
+		thread.join();
 
+		msg(MSG_DEBUG, "Observer: freeing pcap/devices");
                 if(captureDevice) {
                         pcap_close(captureDevice);
                 }
 
-                pcap_freealldevs(allDevices);
+		pcap_freealldevs(allDevices);
         };
 
-        void startCapture()
+	/*
+	 call after an Observer has been created
+	 some error checking on pcap here, because it can't be done in the constructor
+         pcap_open() can only be called in the thread, because then we'll start getting packets
+	 */
+	bool open()
+	{
+		// query all available capture devices
+		msg(MSG_INFO, "Observer: Finding devices");
+                pcap_findalldevs(&allDevices, errorBuffer);
+                if(!allDevices) {
+			msg(MSG_FATAL, "Observer: error getting list of interfaces: %s", errorBuffer);
+			return false;
+		}
+
+		for(pcap_if_t *dev = allDevices; dev != NULL; dev=dev->next) {
+			msg(MSG_INFO, "PCAP: name=%s, desc=%s", dev->name, dev->description);
+                }
+		ready=true;
+		return true;
+	}
+
+	/*
+	 call to get the main capture thread running
+         open() has to be called before
+	 */
+	bool startCapture()
         {
-                thread.run(this);
+		if(ready) {
+			msg(MSG_DEBUG, "Observer: now starting capturing thread");
+			return(thread.run(this));
+		}
+		msg(MSG_ERROR, "Observer: trying to start an un-ready observer");
+		return false;
         };
 
         void terminateCapture()
@@ -93,7 +126,9 @@ protected:
         pcap_if_t *allDevices;
         pcap_t *captureDevice;
         char errorBuffer[PCAP_ERRBUF_SIZE];
-        int capturelen;
+	int capturelen;
+        int pcap_timeout;
+        bool ready;
 
         static void *observerThread(void *);
 
