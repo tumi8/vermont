@@ -5,6 +5,7 @@
  (C) by Ronny T. Lampert
 
  */
+#include <assert.h>
 #include "ipfixlolib/ipfixlolib.h"
 
 #include "sampler/Packet.h"
@@ -108,12 +109,18 @@ int configure_sampler(struct v_objects *v)
         subsys_on(&(v->v_subsystems), SUBSYS_SAMP_SINK);
 
         /*
-         now do virtual wiring:
-         observer --> filter --> sink
-         */
-        v->observer->addReceiver(v->filter);
-        v->filter->setReceiver(v->sink);
+	 now do virtual wiring:
+	 observer --> filter --> sink
 
+	 FIXME: HARDCODED WITH ALL 3 SYSTEMS
+	 */
+	msg(MSG_INFO, "Config: now doing wiring: observer->filter->sink");
+	assert(v->observer != 0);
+	assert(v->filter != 0);
+	assert(v->sink != 0);
+
+	v->observer->addReceiver(v->filter);
+        v->filter->setReceiver(v->sink);
 
         msg(MSG_DEBUG, "Config: sampler subsystem successfully configured");
         return 0;
@@ -187,6 +194,10 @@ static int configure_template(struct v_objects *v, uint16_t template_id, char *l
 static int configure_observer(struct v_objects *v, char *interface, int snaplen)
 {
         Observer *o=new Observer(interface);
+	if(!o->open()) {
+
+		return 1;
+	}
 
         if(snaplen) {
                 if(! o->setCaptureLen(snaplen)) {
@@ -336,32 +347,54 @@ out:
 }
 
 
-/* configure a sink; char *list are the parameters */
+/*
+ configure a sink; char *list are the parameters
+
+ FIXME: HARDCODED PROTO UDP
+
+ POTENTIAL FIXME: we could have more of them, e.g. 2 exporterSinks
+ will be a bit more work to figure out the Packet-free()ing then!
+ */
 static int configure_sink(struct v_objects *v, char *list)
 {
         dictionary *conf;
         PacketReceiver *p;
-        char *dst_port, *dst_ip;
-        int source_id;
+        char *dst_port, *dst_ip, *source_id;
 
         conf=v->v_config;
 
-        source_id=atoi(iniparser_getvalue(conf, "sampler", "source_id"));
+        source_id=iniparser_getvalue(conf, "sampler", "source_id");
         dst_port=iniparser_getvalue(conf, "sampler", "export_port");
         dst_ip=iniparser_getvalue(conf, "sampler", "export_ip");
 
-        /* we dont want to export so the sink is a simple PacketSink */
+	/* we dont want to export so the sink is a simple PacketSink */
         if(strcasecmp(list, "off") == 0) {
                 p=new PacketSink();
                 msg(MSG_DEBUG, "Sink: using plain PacketSink()");
         } else {
-                /* do a real exporter sink */
-                p=new ExporterSink(v->templ, source_id);
+
+		ExporterSink *e;
+                int sID;
+		/* check parameters */
+		if(!source_id || !dst_port || !dst_ip) {
+			msg(MSG_FATAL,
+			    "Sink: not all parameters in config: source_id: %s, dst_port: %s, dst_ip: %s",
+			    source_id, dst_port, dst_ip
+			   );
+			return 1;
+		}
+
+                sID=atoi(source_id);
+		/* do a real exporter sink */
                 msg(MSG_DEBUG, "Sink: using ExporterSink(), own source_ID %d, dst %s:%s",
-                    source_id,
+		    sID,
                     dst_ip,
                     dst_port
                    );
+		p=new ExporterSink(v->templ, sID);
+		/* FIXME: alias PacketProcessor to ExportSink, so we can use subfunction */
+		e=(ExporterSink *)p;
+		e->AddCollector(dst_ip, (uint16_t)atoi(dst_port), "UDP");
         }
 
         v->sink=p;
