@@ -1269,8 +1269,9 @@ int ipfix_start_options_template_set(ipfix_exporter *exporter, uint16_t template
 /*
  * Append field to the exporter's current template set
  * Parameters:
- *  length: length of the field or scope (in host byte order)
+ *  template_id: the id specified at ipfix_start_template_set()
  *  type: field or scope type (in host byte order)
+ *  length: length of the field or scope (in host byte order)
  *  enterprise: enterprise type (if zero, the enterprise field is omitted) (in host byte order)
  * Note: This function is called after ipfix_start_data_template_set or ipfix_start_option_template_set.
  * Note: This function MAY be replaced by a macro in future versions.
