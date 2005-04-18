@@ -47,7 +47,7 @@ public:
     for (i = 0; i < templ->getFieldCount(); i++)
     {
       templ->getFieldInfo(i, &ttype, &tlength, &toffset);
-      ipfix_put_template_field(exporter, tmplid, tlength, ttype, 0);
+      ipfix_put_template_field(exporter, tmplid, ttype, tlength, 0);
     }
     ipfix_end_template_set(exporter, tmplid);
   };
