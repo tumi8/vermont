@@ -1308,7 +1308,7 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
 	DPRINTF("ipfix_put_template_field: B p_pos %u, p_end %u\n", p_pos, p_end);
 
 	if(bit_set(type, IPFIX_ENTERPRISE_FLAG)) {
-		DPRINTF("Notice: using enterprise ID %h with data %u\n", fieldID, enterprise_id);
+		DPRINTF("Notice: using enterprise ID %h with data %u\n", template_id, enterprise_id);
 	}
 
 	// now write the fields to the buffer:
