@@ -13,25 +13,6 @@
 #include <string.h>
 #include <vector>
 
-/* 
- foreign subsystems: sampler
- */
-#include "ipfixlolib/ipfixlolib.h"
-
-/*
-#include "sampler/Packet.h"
-#include "sampler/Filter.h"
-#include "sampler/Observer.h"
-#include "sampler/PacketSink.h"
-#include "sampler/ExporterSink.h"
-#include "sampler/PacketProcessor.h"
-#include "sampler/Template.h"
-#include "sampler/IPHeaderFilter.h"
- */
-
-/* collector */
-
-
 /* own systems */
 #include "iniparser.h"
 #include "msg.h"
@@ -107,6 +88,14 @@ int main(int ac, char **dc)
                 exit(-1);
         }
 
+        ExporterSink *eee=(ExporterSink *)v_objects.sink;
+
+        eee->runSink();
+        v_objects.filter->startFilter();
+        v_objects.observer->startCapture();
+
+        sleep(20);
+
         subsys_dump(v_objects.v_subsystems);
 
         return 0;
@@ -116,6 +105,10 @@ int main(int ac, char **dc)
 /*
  read the config from *file and attach the iniparser stuff to **conf
  perform basic checks
+
+ this does not return the pointer and NULL in case of error, because it
+ does also some kind of checking on the config and maybe one wants to report
+ specific errors depending on what went wrong, so we stick to int.
 
  NOTE: the funny thing is, all returned strings are direct pointer into
  the dictionary-struct and as such valid until the dictionary is
