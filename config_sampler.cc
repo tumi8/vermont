@@ -174,7 +174,7 @@ static int configure_template(struct v_objects *v, uint16_t template_id, char *l
                         continue;
 		}
 
-		msg(MSG_INFO, "Template: adding %s -> ID %d", token, id->id);
+		msg(MSG_INFO, "Template: adding %s -> ID %d with size %d", token, id->id, id->length);
 		t->addField((uint16_t)id->id, (uint16_t)id->length);
 	}
 
