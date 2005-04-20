@@ -12,6 +12,8 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "msg.h"
+
 #include "Observer.h"
 #include "Globals.h"
 #include "Thread.h"
@@ -33,12 +35,12 @@ void *Observer::observerThread(void *arg)
         struct pcap_pkthdr packetHeader;
 
         // start capturing packets
-        LOG("Observer: Capturing started for device %s\n", obs->captureInterface);
+        msg(MSG_INFO, "Observer: Capturing started for device %s", obs->captureInterface);
         obs->captureDevice=pcap_open_live(obs->captureInterface, obs->capturelen, 1, obs->pcap_timeout, obs->errorBuffer);
         // check for errors
         if(!obs->captureDevice) {
-                LOG("Observer: Error initializing pcap interface: %s\n", obs->errorBuffer);
-                return NULL;
+                msg(MSG_FATAL, "Observer: Error initializing pcap interface: %s", obs->errorBuffer);
+                pthread_exit((void *)NULL);
         }
 
         while(!obs->exitFlag) {
@@ -61,14 +63,20 @@ void *Observer::observerThread(void *arg)
                          1) Start throwing away packets !
                          2) Notify user !
                          3) Try to resolve (?)
+                         3.1) forcibly flush exporter stream (to free up packets)?
+                         3.2) flush filter?
+                         3.3) sleep?
                          */
+                        msg(MSG_FATAL, "Observer: no more mem for malloc() - may start throwing away packets");
+                        continue;
                 }
+
                 memcpy(myPacketData, rawPacketData, packetHeader.caplen);
 
                 p = new Packet(myPacketData, packetHeader.caplen, numReceivers);
                 p->timestamp = packetHeader.ts;
                 /*
-                LOG("Observer: received packet at %d.%04d, len=%d\n",
+                DPRINTF("Observer: received packet at %d.%04d, len=%d\n",
                     p->timestamp.tv_sec,
                     p->timestamp.tv_usec / 1000,
                     packetHeader.caplen
@@ -82,6 +90,6 @@ void *Observer::observerThread(void *arg)
                 }
         }
 
-        return (void *)1;
+        pthread_exit((void *)1);
 }
 

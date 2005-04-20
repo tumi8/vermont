@@ -55,7 +55,8 @@ public:
                         pcap_close(captureDevice);
                 }
 
-		pcap_freealldevs(allDevices);
+                pcap_freealldevs(allDevices);
+                msg(MSG_DIALOG, "Observer successful shutdown");
         };
 
 	/*
@@ -104,10 +105,11 @@ public:
                 receivers.push_back(recv->getQueue());
         };
 
+        /* you cannot change the caplen of an already running observer */
         bool Observer::setCaptureLen(int x)
         {
                 if(x > CAPTURE_PHYSICAL_MAX) {
-                        LOG("Capture length %d exceeds physical MTU %d (with header)\n", x, CAPTURE_PHYSICAL_MAX);
+                        DPRINTF("Capture length %d exceeds physical MTU %d (with header)\n", x, CAPTURE_PHYSICAL_MAX);
                         return false;
                 }
                 capturelen=x;
