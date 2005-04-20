@@ -1,10 +1,13 @@
 CC=gcc
-CFLAGS=-O -Wall
+INCLUDES=-I..
+CFLAGS=-O -Wall $(INCLUDES)
 TARGET=libipfixlo.a
 
 all: $(TARGET)
 clean:
 	rm -f $(TARGET) *.o
+distclean: clean
+	rm -f *~
 
 $(TARGET): ipfixlolib.o encoding.o ipfix_names.o
 	ar cru $(TARGET) ipfixlolib.o encoding.o ipfix_names.o
