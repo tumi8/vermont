@@ -23,7 +23,6 @@ extern "C" {
 
 #define bit_set(data, bits) ((data & bits) == bits)
 
-static int init_rcv_udp_socket(int lport);
 static int init_send_udp_socket(char *serv_ip4_addr, int serv_port);
 static int ipfix_find_template(ipfix_exporter *exporter, uint16_t template_id, enum ipfix_validity cleanness);
 static int ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipfix_sendbuffer *sendbuf);
@@ -44,6 +43,9 @@ static int ipfix_send_templates(ipfix_exporter* exporter);
 static int ipfix_send_data(ipfix_exporter* exporter);
 
 #if 0
+static int init_rcv_udp_socket(int lport);
+/* NOT USED */
+
 /*
  * Initializes a UDP-socket to listen to.
  * Parameters: lport the UDP-portnumber to listen to.
@@ -916,11 +918,14 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 }
 
 /*
- * Send data to collectors
- * Sends all data commited via ipfix_put_data_field to this exporter.
- * Parameters:
- *  exporter sending exporting process
- * Return value: 0 on success, -1 on failure.
+ Send data to collectors
+ Sends all data commited via ipfix_put_data_field to this exporter.
+ Parameters:
+ exporter sending exporting process
+
+ Return value:
+ on success: 0
+ on failure: -1
  */
 static int ipfix_send_data(ipfix_exporter* exporter)
 {
@@ -938,13 +943,13 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 		if (ret != 0) {
 			msg(MSG_ERROR, "ipfix_send_data failed");
 			return -1;
-		}
+                }
 
 		// send the sendbuffer to all collectors
 		for (i = 0; i < exporter->collector_max_num; i++) {
 
 			// is the collector a valid target?
-			if ((*exporter).collector_arr[i].valid) {
+			if((*exporter).collector_arr[i].valid) {
                                 DPRINTF("IPFIX: Sending to exporter %s\n", (*exporter).collector_arr[i].ipv4address);
 
 				// debugging output of data buffer:
@@ -959,7 +964,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 						DPRINTF ("Data Buffer [%i] has %u bytes\n", j,  (*(*exporter).data_sendbuffer).entries[j].iov_len);
 
 						for (k =0 ; k<  (*(*exporter).data_sendbuffer).entries[j].iov_len; k++) {
-							DPRINTF ("Data at  buf_vector[%i] pos %i is %hi \n", j,k,   *(  (char*) ( (*(*exporter).data_sendbuffer).entries[j].iov_base+k) ) );
+							DPRINTF ("Data at  buf_vector[%i] pos %i is 0x%hx \n", j,k,   *(  (char*) ( (*(*exporter).data_sendbuffer).entries[j].iov_base+k) ) );
 						}
 					}
 				}
@@ -1312,7 +1317,7 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
  *   exporter: exporting process to send the template to
  * Note: the generated template will be stored within the exporter
  */
-int ipfix_end_template_set(ipfix_exporter *exporter, uint16_t template_id )
+int ipfix_end_template_set(ipfix_exporter *exporter, uint16_t template_id)
 {
 	int found_index;
 	char *p_pos;
@@ -1320,15 +1325,15 @@ int ipfix_end_template_set(ipfix_exporter *exporter, uint16_t template_id )
 
 	found_index=ipfix_find_template(exporter, template_id, UNCLEAN);
 
-	// test for a valid slot:
-	if ( (found_index < 0 ) || ( found_index >= exporter->ipfix_lo_template_maxsize ) ) {
-		fprintf (stderr, "Template not found. \n");
-		return -1;
-	}
+        // test for a valid slot:
+        if ( (found_index < 0 ) || ( found_index >= exporter->ipfix_lo_template_maxsize ) ) {
+                msg(MSG_ERROR, "IPFIX: template %d not found", template_id);
+                return -1;
+        }
 
-	// reallocate the memory , i.e. free superfluous memory, as we allocated enough memory to hold
-	// all possible vendor specific IDs.
-	ipfix_lo_template *templ=(&(*exporter).template_arr[found_index]);
+        // reallocate the memory , i.e. free superfluous memory, as we allocated enough memory to hold
+        // all possible vendor specific IDs.
+        ipfix_lo_template *templ=(&(*exporter).template_arr[found_index]);
 	/* sometime I'll fuck C++ with a serious chainsaw - casting malloc() et al is DUMB */
 	templ->template_fields=(char *)realloc(templ->template_fields, templ->fields_length);
 
@@ -1363,7 +1368,8 @@ int ipfix_end_template_set(ipfix_exporter *exporter, uint16_t template_id )
  * Returns: 0  on success, -1 on failure
  * This is an internal function.
  */
-int ipfix_deinit_template_set(ipfix_exporter *exporter, ipfix_lo_template *templ) {
+int ipfix_deinit_template_set(ipfix_exporter *exporter, ipfix_lo_template *templ)
+{
 	// note: ipfix_deinit_template_array tries to free all possible templates, many of them
 	// won't be initialized. So you'll get a lot of warning messages, which are just fine...
 
