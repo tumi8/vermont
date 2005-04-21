@@ -19,30 +19,31 @@
 class PacketSink : public PacketReceiver
 {
 public:
-  PacketSink() : thread(PacketSink::packetSinkProcess), exitFlag(false)
-  {
-  };
+        PacketSink() : thread(PacketSink::packetSinkProcess), exitFlag(false)
+        {
+        };
 
-  ~PacketSink()
-  {
-  };
+        ~PacketSink()
+        {
+        };
 
-  inline void runSink()
-  {
-    thread.run(this);
-  };
+        bool runSink()
+        {
+                msg(MSG_DEBUG, "Sink: now starting PacketSink thread");
+                return(thread.run(this));
+        };
 
-  inline void terminateSink()
-  {
-    exitFlag = true;
-  };
+        void terminateSink()
+        {
+                exitFlag = true;
+        };
 
 protected:
-  Thread thread;
-  static void *packetSinkProcess(void *);
+        Thread thread;
+        static void *packetSinkProcess(void *);
 
 public:
-  bool exitFlag;
+        bool exitFlag;
 };
 
 #endif
