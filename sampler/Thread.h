@@ -12,6 +12,8 @@
 #ifndef THREAD_H
 #define THREAD_H
 
+#include "msg.h"
+
 #include <pthread.h>
 #include "Globals.h"
 
@@ -22,7 +24,7 @@ class Thread
 public:
 	Thread(ThreadFunc threadFunction) : exitFlag(false), f(threadFunction)
 	{
-	};
+        };
 
 bool run(void *threadData)
 {
@@ -32,11 +34,11 @@ bool run(void *threadData)
 
 void *join()
 {
-	void *result = NULL;
-	if (pthread_join(thread, &result))
-		LOG("Thread: ERROR: Join failed\n");
-
-	return result;
+	void *result=NULL;
+        if(pthread_join(thread, &result)) {
+                msg(MSG_ERROR, "Thread: joining failed");
+        }
+        return result;
 };
 
 bool detach()
