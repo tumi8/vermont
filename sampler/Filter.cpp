@@ -21,11 +21,14 @@ void *Filter::filterProcess(void *arg)
         Packet *p;
         bool keepPacket;
         vector<PacketProcessor *>::iterator it;
+        /* for dumb compilers, do CSE here to spare some cycles below */
+        ConcurrentQueue<Packet> *in_q=filter->getQueue();
+        ConcurrentQueue<Packet> *out_q=filter->receiver;
 
         msg(MSG_INFO, "Filter: now running the filter thread");
         while(!filter->exitFlag) {
                 // get a packet...
-                p = filter->getQueue()->pop();
+                p = in_q->pop();
                 filter->pktIn++;
 
                 // run packet through all packetProcessors
@@ -38,10 +41,11 @@ void *Filter::filterProcess(void *arg)
                 //check if we passed all filters
                 if(keepPacket) {
                         // get the packet to the receiver
-                        filter->receiver->push(p);
+                        out_q->push(p);
                         filter->pktOut++;
                 } else {
                         // immediately drop the packet
+                        //DPRINTF("Filter: Drop-Freeing packet here");
                         p->release();
                 }
         }
