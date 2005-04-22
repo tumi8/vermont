@@ -15,7 +15,6 @@
 #include "msg.h"
 
 #include <pthread.h>
-#include "Globals.h"
 
 typedef void* (*ThreadFunc)(void *);
 

@@ -15,7 +15,6 @@
 #include <vector>
 #include "msg.h"
 
-#include "Globals.h"
 #include "ConcurrentQueue.h"
 #include "Packet.h"
 #include "Thread.h"

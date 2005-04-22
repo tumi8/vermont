@@ -11,7 +11,6 @@
 #ifndef HOOKING_FILTER_H
 #define HOOKING_FILTER_H
 
-#include "Globals.h"
 #include "PacketProcessor.h"
 
 class HookingFilter : public PacketProcessor {

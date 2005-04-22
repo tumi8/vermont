@@ -12,7 +12,6 @@
 #ifndef PACKET_PROCESSOR_H
 #define PACKET_PROCESSOR_H
  
-#include "Globals.h"
 #include "Packet.h"
 
 class PacketProcessor

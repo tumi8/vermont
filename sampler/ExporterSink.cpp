@@ -20,7 +20,6 @@
 #include "ipfixlolib/ipfixlolib.h"
 
 #include "ExporterSink.h"
-#include "Globals.h"
 
 using namespace std;
 

@@ -14,9 +14,10 @@
 #ifndef RANDOM_SAMPLER_H
 #define RANDOM_SAMPLER_H
 
-#include "Globals.h"
-#include "PacketProcessor.h"
 #include <vector>
+
+#include "msg.h"
+#include "PacketProcessor.h"
 
 class RandomSampler : public PacketProcessor
 {

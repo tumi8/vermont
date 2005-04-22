@@ -15,7 +15,6 @@
 #include "msg.h"
 
 #include "Observer.h"
-#include "Globals.h"
 #include "Thread.h"
 
 using namespace std;
