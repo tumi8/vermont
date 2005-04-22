@@ -18,6 +18,7 @@
 
 #include "Thread.h"
 #include "Template.h"
+#include "Packet.h"
 #include "Sink.h"
 
 // the maximum number of packets to be queued

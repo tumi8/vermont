@@ -13,75 +13,75 @@
 #define CONCURRENT_QUEUE_H
 
 #include <queue>
-#include "Globals.h"
 #include "Lock.h"
 #include "TimeoutLock.h"
 #include "Semaphore.h"
 
 template<class T>
-class ConcurrentQueue
+        class ConcurrentQueue
 {
 public:
-  ConcurrentQueue() : queue(), count(0), lock(), semaphore()
-  {
-  };
+        ConcurrentQueue() : queue(), count(0), lock(), semaphore()
+        {
+        };
 
-  ~ConcurrentQueue()
-  {
-    if (count != 0)
-      LOG("Queue: WARNING: freeing non-empty queue!\n");
-  };
+        ~ConcurrentQueue()
+        {
+                if(count != 0) {
+                        msg(MSG_ERROR, "ConcurrentQueue: WARNING: freeing non-empty queue - got count: %d", count);
+                }
+        };
 
-  inline void push(T *t)
-  {
-    lock.lock();
-    queue.push(t);
-    lock.unlock();
+        inline void push(T *t)
+        {
+                lock.lock();
+                queue.push(t);
+                lock.unlock();
 
-    semaphore.post();
-  };
+                semaphore.post();
+        };
 
-  inline T *pop()
-  {
-    T *result;
+        inline T *pop()
+        {
+                T *result;
 
-    semaphore.wait();
+                semaphore.wait();
 
-    lock.lock();
-    result = queue.front();
-    queue.pop();
-    lock.unlock();
+                lock.lock();
+                result = queue.front();
+                queue.pop();
+                lock.unlock();
 
-    return result;
-  };
+                return result;
+        };
 
-  inline bool try_pop(T **t)
-  {
-    T *result;
+        inline bool try_pop(T **t)
+        {
+                T *result;
 
-    if (!semaphore.try_wait())
-      return false;
-    
-    lock.lock();
-    result = queue.front();
-    queue.pop();
-    lock.unlock();
+                if (!semaphore.try_wait())
+                        return false;
 
-    *t = result;
+                lock.lock();
+                result = queue.front();
+                queue.pop();
+                lock.unlock();
 
-    return true;
-  };
+                *t = result;
 
-  inline int getCount() const
-  {
-    return count;
-  };
+                return true;
+        };
+
+        inline int getCount() const
+        {
+                return count;
+        };
 
 protected:
-  std::queue<T *> queue;
-  int count;
-  TimeoutLock lock;
-  Semaphore semaphore;
+        std::queue<T *> queue;
+        int count;
+        TimeoutLock lock;
+        Semaphore semaphore;
 };
 
 #endif

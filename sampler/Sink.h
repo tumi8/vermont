@@ -10,7 +10,6 @@
 #ifndef SINK_H
 #define SINK_H
 
-#include "Globals.h"
 #include "PacketReceiver.h"
 
 class Sink : public PacketReceiver {

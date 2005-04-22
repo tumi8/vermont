@@ -16,7 +16,6 @@
 #define SYSTEMATIC_SAMPLER_TIME_BASED 2
 
 #include <sys/time.h>
-#include "Globals.h"
 #include "PacketProcessor.h"
 
 class SystematicSampler : public PacketProcessor

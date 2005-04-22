@@ -12,7 +12,8 @@
 #ifndef PACKET_SINK_H
 #define PACKET_SINK_H
 
-#include "Globals.h"
+#include "msg.h"
+
 #include "Thread.h"
 #include "Sink.h"
 

@@ -26,7 +26,6 @@
 #include <vector>
 #include <pcap.h>
 
-#include "Globals.h"
 #include "Thread.h"
 #include "ConcurrentQueue.h"
 #include "Packet.h"

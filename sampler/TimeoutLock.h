@@ -13,12 +13,12 @@
 #ifndef TIMEOUT_LOCK_H
 #define TIMEOUT_LOCK_H
 
-#include "Globals.h"
-
 #include <pthread.h>
 #include <time.h>
 #include <sys/time.h>
 #include <errno.h>
+
+#include "msg.h"
 
 class TimeoutLock
 {
