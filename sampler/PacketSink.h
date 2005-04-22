@@ -14,9 +14,9 @@
 
 #include "Globals.h"
 #include "Thread.h"
-#include "PacketReceiver.h"
+#include "Sink.h"
 
-class PacketSink : public PacketReceiver
+class PacketSink : public Sink
 {
 public:
         PacketSink() : thread(PacketSink::packetSinkProcess), exitFlag(false)
@@ -33,9 +33,11 @@ public:
                 return(thread.run(this));
         };
 
-        void terminateSink()
+        /* this really could be more elaborate */
+        bool terminateSink()
         {
                 exitFlag = true;
+                return true;
         };
 
 protected:

@@ -358,7 +358,7 @@ out:
 static int configure_sink(struct v_objects *v, char *list)
 {
         dictionary *conf;
-        PacketReceiver *p;
+        Sink *s;
         char *dst_port, *dst_ip, *source_id;
 
         conf=v->v_config;
@@ -367,14 +367,16 @@ static int configure_sink(struct v_objects *v, char *list)
         dst_port=iniparser_getvalue(conf, "sampler", "export_port");
         dst_ip=iniparser_getvalue(conf, "sampler", "export_ip");
 
-	/* we dont want to export so the sink is a simple PacketSink */
+        /*
+         dont want to export ? so the sink is a simple PacketSink
+         we need a sink, or else no packets will be free()d
+         */
         if(strcasecmp(list, "off") == 0) {
-                p=new PacketSink();
+                s=new PacketSink();
                 msg(MSG_DEBUG, "Sink: using plain PacketSink()");
         } else {
-
-		ExporterSink *e;
                 int sID;
+                ExporterSink *e;
 		/* check parameters */
 		if(!source_id || !dst_port || !dst_ip) {
 			msg(MSG_FATAL,
@@ -391,13 +393,13 @@ static int configure_sink(struct v_objects *v, char *list)
                     dst_ip,
                     dst_port
                    );
-		p=new ExporterSink(v->templ, sID);
+		e=new ExporterSink(v->templ, sID);
 		/* FIXME: alias PacketProcessor to ExportSink, so we can use subfunction */
-		e=(ExporterSink *)p;
-		e->AddCollector(dst_ip, (uint16_t)atoi(dst_port), "UDP");
+                e->AddCollector(dst_ip, (uint16_t)atoi(dst_port), "UDP");
+                s=e;
         }
 
-        v->sink=p;
+        v->sink=s;
 
         return 0;
 }
