@@ -23,9 +23,8 @@ struct v_objects {
 	Template *templ;
 	Observer *observer;
         Filter *filter;
-        /* exporter is either a normal sink or a real exporter process */
-        PacketReceiver *sink;
-		
+        Sink *sink;
+
 	/* for concentrator: */
 	//IpfixReceiver *concentrator;
 };

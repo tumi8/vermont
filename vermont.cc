@@ -88,15 +88,14 @@ int main(int ac, char **dc)
                 exit(-1);
         }
 
-        ExporterSink *eee=(ExporterSink *)v_objects.sink;
+        subsys_dump(v_objects.v_subsystems);
 
-        eee->runSink();
+        v_objects.sink->runSink();
         v_objects.filter->startFilter();
         v_objects.observer->startCapture();
 
         sleep(20);
 
-        subsys_dump(v_objects.v_subsystems);
 
         return 0;
 }

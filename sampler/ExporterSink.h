@@ -16,16 +16,16 @@
 #include "ipfixlolib/ipfixlolib.h"
 #include "msg.h"
 
-#include "PacketReceiver.h"
 #include "Thread.h"
 #include "Template.h"
+#include "Sink.h"
 
 // the maximum number of packets to be queued
 #define MAX_PACKETS 1024
 // the default maximum of IPFIX packet per big IPFIX packet sent
 #define IPFIX_PACKETS_MAX 10
 
-class ExporterSink : public PacketReceiver
+class ExporterSink : public Sink
 {
 public:
         ExporterSink(Template *tmpl, int sID) : sourceID(sID),
@@ -84,7 +84,7 @@ public:
                 return (thread.run(this));
         };
 
-        void terminateSink()
+        bool terminateSink()
         {
                 exitFlag = true;
         };
