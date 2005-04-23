@@ -32,7 +32,7 @@ void *ExporterSink::exporterSinkProcess(void *arg)
         int pckCount = 0;
         int deadline = 400; // timeout in msec after first packet has been added
 
-        msg(MSG_INFO, "Sink: running ExporterSink");
+        msg(MSG_INFO, "Sink: now running ExporterSink thread");
 
         while(!sink->exitFlag) {
                 pckCount = 1;

@@ -34,7 +34,7 @@ void *Observer::observerThread(void *arg)
         struct pcap_pkthdr packetHeader;
 
         // start capturing packets
-        msg(MSG_INFO, "Observer: Capturing started for device %s", obs->captureInterface);
+        msg(MSG_INFO, "Observer: now running capturing thread for device %s", obs->captureInterface);
 
         while(!obs->exitFlag) {
                 /*
