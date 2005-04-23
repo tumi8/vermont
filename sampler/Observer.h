@@ -17,7 +17,7 @@
  some platforms don't support it
  FIXME: HOW LONG? 2000ms is REALLY REALLY LONG!
  */
-#define PCAP_TIMEOUT 2000
+#define PCAP_TIMEOUT 1000
 /*
  maximum physical packet length
  you may want to adjust this on a special jumbo-framed GBit network
