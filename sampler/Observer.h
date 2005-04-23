@@ -56,9 +56,8 @@ public:
                 if(captureDevice) {
                         pcap_close(captureDevice);
                 }
-                if(pcap_filter) {
-                        pcap_freecode(&pcap_filter);
-                }
+                pcap_freecode(&pcap_filter);
+
                 if(allDevices) {
                         pcap_freealldevs(allDevices);
                 }
