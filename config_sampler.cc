@@ -220,7 +220,8 @@ static int configure_observer(struct v_objects *v, char *interface, int snaplen)
         return 0;
 
 out:
-        delete o;
+	delete o;
+        return 1;
 }
 
 
