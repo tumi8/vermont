@@ -39,8 +39,10 @@
 class Observer {
 public:
         // ObserverThread constructor
-	Observer(char *interface) : thread(Observer::observerThread), ready(false), exitFlag(false),
-		capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), pcap_promisc(1)
+	Observer(char *interface) : thread(Observer::observerThread),
+		ready(false), exitFlag(false),
+		capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), pcap_promisc(1),
+		allDevices(NULL), captureDevice(NULL)
         {
 		captureInterface=interface;
 	};
@@ -58,11 +60,11 @@ public:
                 }
                 pcap_freecode(&pcap_filter);
 
-                if(allDevices) {
+		if(allDevices) {
                         pcap_freealldevs(allDevices);
                 }
 
-                msg(MSG_DIALOG, "Observer successful shutdown");
+		msg(MSG_DEBUG, "Observer: successful shutdown");
         };
 
 	/*
@@ -76,8 +78,7 @@ public:
 
                 // query all available capture devices
 		msg(MSG_INFO, "Observer: Finding devices");
-                pcap_findalldevs(&allDevices, errorBuffer);
-                if(!allDevices) {
+		if(pcap_findalldevs(&allDevices, errorBuffer) == -1) {
 			msg(MSG_FATAL, "Observer: error getting list of interfaces: %s", errorBuffer);
 			goto out;
 		}
@@ -122,9 +123,11 @@ public:
         out3:
                 pcap_freecode(&pcap_filter);
         out2:
-                pcap_close(captureDevice);
+		pcap_close(captureDevice);
+                captureDevice=NULL;
         out1:
-                pcap_freealldevs(allDevices);
+		pcap_freealldevs(allDevices);
+                allDevices=NULL;
         out:
                 return false;
         }
