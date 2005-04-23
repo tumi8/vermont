@@ -79,7 +79,7 @@ public:
                 pcap_findalldevs(&allDevices, errorBuffer);
                 if(!allDevices) {
 			msg(MSG_FATAL, "Observer: error getting list of interfaces: %s", errorBuffer);
-			return false;
+			goto out;
 		}
 
 		for(pcap_if_t *dev = allDevices; dev != NULL; dev=dev->next) {
@@ -90,13 +90,13 @@ public:
                 // check for errors
                 if(!captureDevice) {
                         msg(MSG_FATAL, "Observer: Error initializing pcap interface: %s", errorBuffer);
-                        goto out;
+                        goto out1;
                 }
 
                 /* we need the netmask for the pcap_compile */
                 if(pcap_lookupnet(captureInterface, &network, &netmask, errorBuffer) == -1) {
                         msg(MSG_FATAL, "Observer: unable to determine netmask/network: %s", errorBuffer);
-                        goto out1;
+                        goto out2;
                 }
                 i_network.s_addr=network;
                 i_netmask.s_addr=netmask;
@@ -106,12 +106,12 @@ public:
                 msg(MSG_DEBUG, "Observer: compiling pcap filter code from: %s", filter_exp);
                 if(pcap_compile(captureDevice, &pcap_filter, filter_exp, 1, netmask) == -1) {
                         msg(MSG_FATAL, "Observer: unable to validate+compile pcap filter");
-                        goto out1;
+                        goto out2;
                 }
 
                 if(pcap_setfilter(captureDevice, &pcap_filter) == -1) {
                         msg(MSG_FATAL, "Observer: unable to attach filter to pcap: %s", pcap_geterr(captureDevice));
-                        goto out2;
+                        goto out3;
                 }
                 /* you may free an attached code, see man-page */
                 pcap_freecode(&pcap_filter);
@@ -119,12 +119,13 @@ public:
                 ready=true;
 		return true;
 
-        out2:
+        out3:
                 pcap_freecode(&pcap_filter);
-        out1:
+        out2:
                 pcap_close(captureDevice);
-        out:
+        out1:
                 pcap_freealldevs(allDevices);
+        out:
                 return false;
         }
 
