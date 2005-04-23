@@ -17,7 +17,9 @@ struct v_objects {
         /* the configuration struct, from iniparser */
 	dictionary *v_config;
 	/* initialized subsystems */
-	unsigned int v_subsystems;
+        unsigned int v_subsystems;
+        /* starting time */
+        time_t v_starttime;
 
 	/* for sampler: */
 	Template *templ;

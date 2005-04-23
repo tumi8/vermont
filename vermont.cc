@@ -30,39 +30,39 @@ static int vermont_configure(struct v_objects *v);
 
 int main(int ac, char **dc)
 {
-        dictionary *config;
+	dictionary *config;
 	int c, debug_level=MSG_DEFAULT;
-        char *config_file=NULL;
+	char *config_file=NULL;
 
-        struct v_objects v_objects={0};
+	struct v_objects v_objects={0};
 
-	/* parse command line */
+        /* parse command line */
 	while((c=getopt(ac, dc, "hf:d")) != -1) {
 
-		switch(c) {
+                switch(c) {
 
-		case 'f':
-			config_file=optarg;
-			break;
-
-		case 'd':
-			debug_level++;
+                case 'f':
+                        config_file=optarg;
                         break;
 
-		case 'h':
-			usage();
+                case 'd':
+                        debug_level++;
+                        break;
+
+                case 'h':
+                        usage();
                         return 0;
 
-		default:
-			usage();
+                default:
+                        usage();
                         break;
-		}
-	}
+                }
+        }
 
-	/* setup verboseness */
-	msg_setlevel(debug_level);
+        /* setup verboseness */
+        msg_setlevel(debug_level);
 
-	setup_signal(SIGINT, sig_handler);
+        setup_signal(SIGINT, sig_handler);
 
         /*
          read the main configuration file
@@ -74,8 +74,8 @@ int main(int ac, char **dc)
          iniparser_get*() functions
          */
         if(vermont_readconf(&config, config_file)) {
-		exit(-1);
-	}
+                exit(-1);
+        }
         /* attach the configuration struct into the main vermont objects */
         v_objects.v_config=config;
         subsys_on(&(v_objects.v_subsystems), SUBSYS_CONFIG);
@@ -94,8 +94,11 @@ int main(int ac, char **dc)
         v_objects.filter->startFilter();
         v_objects.observer->startCapture();
 
-        sleep(20);
+        /* record startup time */
+        v_objects.v_starttime=time(NULL);
+        msg(MSG_DIALOG, "up and running at %s", ctime(&(v_objects.v_starttime)));
 
+        sleep(3600);
 
         return 0;
 }
@@ -119,24 +122,24 @@ static int vermont_readconf(dictionary **conf, char *file)
 {
         dictionary *d;
 
-	/* read configuration */
-	if(!(d=iniparser_new(file))) {
-		msg(MSG_FATAL, "could not open config_file %s", file);
+        /* read configuration */
+        if(!(d=iniparser_new(file))) {
+                msg(MSG_FATAL, "could not open config_file %s", file);
                 return(-1);
-	}
+        }
 
         /* light check if all section we need are present */
-	if((iniparser_find_entry(d, "concentrator") == 1) &&
-	   (iniparser_find_entry(d, "sampler") == 1) &&
-	   (iniparser_find_entry(d, "main") == 1)
-	  ) {
-		*conf=d;
-		return 0;
+        if((iniparser_find_entry(d, "concentrator") == 1) &&
+           (iniparser_find_entry(d, "sampler") == 1) &&
+           (iniparser_find_entry(d, "main") == 1)
+          ) {
+                *conf=d;
+                return 0;
 
-	} else {
-		msg(MSG_FATAL, "Config: not all needed sections in config %s", file);
-		return -1;
-	}
+        } else {
+                msg(MSG_FATAL, "Config: not all needed sections in config %s", file);
+                return -1;
+        }
 }
 
 
@@ -148,38 +151,38 @@ static int vermont_configure(struct v_objects *v)
 {
         dictionary *conf=v->v_config;
 
-	/* if the sampler is not needed, interface will say "off" */
-	char *run_sampler=iniparser_getvalue(conf, "sampler", "interface");
-	char *run_concentrator=iniparser_getvalue(conf, "concentrator", "listen_ip");
+        /* if the sampler is not needed, interface will say "off" */
+        char *run_sampler=iniparser_getvalue(conf, "sampler", "interface");
+        char *run_concentrator=iniparser_getvalue(conf, "concentrator", "listen_ip");
         char *hooking=iniparser_getvalue(conf, "main", "packets");
 
-	/*
-	 check if we run the sampler
-	 if sampler is off, then we can use the sampler->concentrator hook
+        /*
+         check if we run the sampler
+         if sampler is off, then we can use the sampler->concentrator hook
          */
-	if(strcasecmp(run_sampler, "off") == 0) {
-		if(strcasecmp(hooking, "off") != 0) {
-			msg(MSG_FATAL, "sampler input is disabled, but hooking is used");
+        if(strcasecmp(run_sampler, "off") == 0) {
+                if(strcasecmp(hooking, "off") != 0) {
+                        msg(MSG_FATAL, "sampler input is disabled, but hooking is used");
                         return -1;
-		}
+                }
 
-		msg(MSG_DIALOG, "not running sampler subsystem");
-	} else {
+                msg(MSG_DIALOG, "not running sampler subsystem");
+        } else {
                 if(configure_sampler(v)) {
                         msg(MSG_FATAL, "Main: Could not configure the sampler");
                         return -1;
                 }
-	}
+        }
 
         if(strcasecmp(run_concentrator, "off") == 0) {
                 msg(MSG_DIALOG, "not running concentrator subsystem");
         } else {
                 /*
-                if(configure_concentrator(v)) {
-                	msg(MSG_FATAL, "Main: Could not configure the concentrator");
-                        return -1;
-                }
-                */
+                 if(configure_concentrator(v)) {
+                 msg(MSG_FATAL, "Main: Could not configure the concentrator");
+                 return -1;
+                 }
+                 */
         }
 
         return 0;
@@ -189,13 +192,13 @@ static int vermont_configure(struct v_objects *v)
 /* bla bla bla */
 static void usage()
 {
-	printf(
-	       "VERsatile MONitoring Tool - VERMONT\n" \
-	       " mandatory:\n" \
-	       "    -f <inifile>     load config\n" \
-	       " optional:\n" \
-	       "    -d               increase debug level\n" \
-	      );
+        printf(
+               "VERsatile MONitoring Tool - VERMONT\n" \
+               " mandatory:\n" \
+               "    -f <inifile>     load config\n" \
+               " optional:\n" \
+               "    -d               increase debug level\n" \
+              );
 }
 
 
@@ -213,8 +216,8 @@ static int setup_signal(int signal, void (*handler)(int))
 /* just shallow right now */
 static void sig_handler(int x)
 {
-	msg(MSG_DIALOG, "got signal %d - exiting", x);
-	exit(2);
+        msg(MSG_DIALOG, "got signal %d - exiting", x);
+        exit(2);
 }
 
 
