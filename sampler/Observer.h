@@ -125,8 +125,7 @@ public:
                 pcap_close(captureDevice);
         out:
                 pcap_freealldevs(allDevices);
-
-
+                return false;
         }
 
         /*
