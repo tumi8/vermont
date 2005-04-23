@@ -35,12 +35,6 @@ void *Observer::observerThread(void *arg)
 
         // start capturing packets
         msg(MSG_INFO, "Observer: Capturing started for device %s", obs->captureInterface);
-        obs->captureDevice=pcap_open_live(obs->captureInterface, obs->capturelen, 1, obs->pcap_timeout, obs->errorBuffer);
-        // check for errors
-        if(!obs->captureDevice) {
-                msg(MSG_FATAL, "Observer: Error initializing pcap interface: %s", obs->errorBuffer);
-                pthread_exit((void *)NULL);
-        }
 
         while(!obs->exitFlag) {
                 /*
