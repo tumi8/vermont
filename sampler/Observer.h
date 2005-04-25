@@ -58,9 +58,10 @@ public:
                 if(captureDevice) {
                         pcap_close(captureDevice);
                 }
-                pcap_freecode(&pcap_filter);
 
-		if(allDevices) {
+                /* no pcap_freecode here, is already done after attaching the filter */
+
+                if(allDevices) {
                         pcap_freealldevs(allDevices);
                 }
 

@@ -34,7 +34,7 @@ bool run(void *threadData)
 void *join()
 {
 	void *result=NULL;
-        if(pthread_join(thread, &result)) {
+        if(!thread || pthread_join(thread, &result)) {
                 msg(MSG_ERROR, "Thread: joining failed");
         }
         return result;
