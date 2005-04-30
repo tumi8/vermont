@@ -101,26 +101,26 @@ extern "C" {
 /* }   */
 
 #define ipfix_put_field2sendbuffer(SENDBUF, POINTER, LENGTH) { \
-  if (SENDBUF->current >= SENDBUF->length-2 ) { \
-    fprintf (stderr, "Error: Sendbuffer too small to handle %i entries!\n", SENDBUF->current ); \
+  if ((*SENDBUF).current >= (*SENDBUF).length-2 ) { \
+    fprintf (stderr, "Error: Sendbuffer too small to handle %i entries!\n", (*SENDBUF).current ); \
     errno = -1; \
   } \
-  SENDBUF->entries[ SENDBUF->current ]->iov_base = POINTER; \
-  SENDBUF->entries[ SENDBUF->current ]->iov_len =  LENGTH; \
-  SENDBUF->current++; \
-  SENDBUF->set_manager->data_length += LENGTH; \
+  ((*SENDBUF).entries[ (*SENDBUF).current ]).iov_base = POINTER; \
+  ((*SENDBUF).entries[ (*SENDBUF).current ]).iov_len =  LENGTH; \
+  (*SENDBUF).current++; \
+  (*(*SENDBUF).set_manager).data_length+= LENGTH; \
 }
 
 /* BUGFIX: After the makro found an error condition, it skips accessing data. */
 #define ipfix_put_data_field(EXPORTER, POINTER, LENGTH) {		\
-		if (EXPORTER->data_sendbuffer->current >= EXPORTER->data_sendbuffer->length ) { \
-			fprintf (stderr, "Error: Sendbuffer too small to handle %i entries!\n", EXPORTER->data_sendbuffer->current ); \
+		if ((*(*EXPORTER).data_sendbuffer).current >= (*(*EXPORTER).data_sendbuffer).length ) { \
+			fprintf (stderr, "Error: Sendbuffer too small to handle %i entries!\n", (*(*EXPORTER).data_sendbuffer).current ); \
 			errno = -1;					\
 		} else {						\
-			(EXPORTER->data_sendbuffer->entries[ EXPORTER->data_sendbuffer->current ]->iov_base = POINTER; \
-			(EXPORTER->data_sendbuffer->entries[ EXPORTER->data_sendbuffer->current ]->iov_len =  LENGTH; \
-			EXPORTER->data_sendbuffer->current++;	\
-			EXPORTER->data_sendbuffer->set_manager->data_length += LENGTH; \
+			((*(*EXPORTER).data_sendbuffer).entries[ (*(*EXPORTER).data_sendbuffer).current ]).iov_base = POINTER; \
+			((*(*EXPORTER).data_sendbuffer).entries[ (*(*EXPORTER).data_sendbuffer).current ]).iov_len =  LENGTH; \
+			(*(*EXPORTER).data_sendbuffer).current++;	\
+			(*(*(*EXPORTER).data_sendbuffer).set_manager).data_length+= LENGTH; \
 		} \
 }
 
