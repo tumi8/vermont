@@ -105,21 +105,26 @@ public:
                 msg(MSG_DEBUG, "Observer: pcap seems to run on network %s", inet_ntoa(i_network));
                 msg(MSG_INFO, "Observer: pcap seems to run on netmask %s", inet_ntoa(i_netmask));
 
-                msg(MSG_DEBUG, "Observer: compiling pcap filter code from: %s", filter_exp);
-                if(pcap_compile(captureDevice, &pcap_filter, filter_exp, 1, netmask) == -1) {
-                        msg(MSG_FATAL, "Observer: unable to validate+compile pcap filter");
-                        goto out2;
-                }
+                if(filter_exp) {
+                        msg(MSG_DEBUG, "Observer: compiling pcap filter code from: %s", filter_exp);
+                        if(pcap_compile(captureDevice, &pcap_filter, filter_exp, 1, netmask) == -1) {
+                                msg(MSG_FATAL, "Observer: unable to validate+compile pcap filter");
+                                goto out2;
+                        }
 
-                if(pcap_setfilter(captureDevice, &pcap_filter) == -1) {
-                        msg(MSG_FATAL, "Observer: unable to attach filter to pcap: %s", pcap_geterr(captureDevice));
-                        goto out3;
+                        if(pcap_setfilter(captureDevice, &pcap_filter) == -1) {
+                                msg(MSG_FATAL, "Observer: unable to attach filter to pcap: %s", pcap_geterr(captureDevice));
+                                goto out3;
+                        }
+                        /* you may free an attached code, see man-page */
+                        pcap_freecode(&pcap_filter);
+                } else {
+                        msg(MSG_DEBUG, "Observer: using no pcap filter");
                 }
-                /* you may free an attached code, see man-page */
-                pcap_freecode(&pcap_filter);
 
                 ready=true;
-		return true;
+
+                return true;
 
         out3:
                 pcap_freecode(&pcap_filter);

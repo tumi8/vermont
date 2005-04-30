@@ -194,13 +194,8 @@ static int configure_template(struct v_objects *v, uint16_t template_id, char *l
 static int configure_observer(struct v_objects *v, char *interface, int snaplen)
 {
         dictionary *conf=v->v_config;
-        char *pcap_filter;
+        char *pcap_filter=iniparser_getvalue(conf, "sampler", "pcap_filter");
         Observer *o;
-
-        if(!(pcap_filter=iniparser_getvalue(conf, "sampler", "pcap_filter"))) {
-                msg(MSG_FATAL, "Observer: no pcap filter expression found");
-                return 1;;
-        }
 
         o=new Observer(interface);
 
