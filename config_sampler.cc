@@ -50,14 +50,18 @@ int configure_sampler(struct v_objects *v)
 
         msg(MSG_DEBUG, "Config: now configuring the sampler subsystem");
 
-	if(configure_template(
-			       v,
-			       atoi(iniparser_getvalue(conf, "sampler", "template_id")),
-			       iniparser_getvalue(conf, "sampler", "template")
-			      )) {
-		msg(MSG_FATAL, "Config: could not configure a template");
-		return 1;
-	}
+        /* dont configure a template if simply using PacketSink -- export_ip=off */
+        if(strcasecmp("off", iniparser_getvalue(conf, "sampler", "export_ip")) == 0) {
+                msg(MSG_INFO, "Config: Template will not be build, because export_ip=off");
+
+        } else if(configure_template(
+                                     v,
+                                     atoi(iniparser_getvalue(conf, "sampler", "template_id")),
+                                     iniparser_getvalue(conf, "sampler", "template")
+                                    )) {
+                msg(MSG_FATAL, "Config: could not configure a template");
+                return 1;
+        }
 
         /*
          configure an observer
