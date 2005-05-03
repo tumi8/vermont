@@ -17,8 +17,8 @@ class HookingFilter : public PacketProcessor {
 
 public:
 
-	HookingFilter(void (*f)(void *)) {
-                hook=f;
+	HookingFilter(void (*hook)(void *)) {
+                f=hook;
 	}
 
 	~HookingFilter() {
@@ -29,7 +29,11 @@ public:
 
 protected:
 
-	void (*hook)(void *);
+	/*
+	 this is called "f" because our mentor created that name accidently
+	 so it was meant to stay, because everyone knew what it represents
+         */
+	void (*f)(void *);
 
 };
 
