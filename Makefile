@@ -21,6 +21,10 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -f *.o $(TARGET)
+	for dir in $(MODULES); do \
+		(cd $$dir; $(MAKE) clean); \
+	done
+
 distclean: clean
 	rm -f *~
 
