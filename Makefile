@@ -1,12 +1,21 @@
 INCLUDES=-I.
 CC=gcc
-CFLAGS=-O -DDEBUG -pg $(INCLUDES)
+CFLAGS=-O -DDEBUG -g $(INCLUDES)
 CXXFLAGS=$(CFLAGS)
 LIBS=-lstdc++ -lrt -lpcap
 LDFLAGS=$(LIBS) $(CFLAGS)
 TARGET=vermont
 OBJS=vermont.o subsystems.o msg.o iniparser.o config_sampler.o
+MODULES=ipfixlolib sampler
 
+all: modules $(TARGET)
+
+modules:
+	for dir in $(MODULES); do \
+		(cd $$dir; $(MAKE) all); \
+	done
+
+	
 $(TARGET): $(OBJS)
 	g++ $(CFLAGS) -o $(TARGET) $(OBJS) sampler/*.o ipfixlolib/libipfixlo.a $(LIBS)
 
