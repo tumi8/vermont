@@ -926,7 +926,10 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 		// hope, the template sendbuffer is valid.
 
 		// update the sendbuffer header, as we must set the export time & sequence number!
-		ret = ipfix_prepend_header(exporter,  (*(*exporter).template_sendbuffer).commited_data_length,(*exporter).template_sendbuffer);
+                ret = ipfix_prepend_header(exporter,
+                                           exporter->template_sendbuffer->commited_data_length,
+                                           exporter->template_sendbuffer
+                                          );
 
 		if(ret != 0 ) {
                         msg(MSG_ERROR, "IPFIX: sending templates failed");
@@ -940,13 +943,13 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 			// is the collector a valid target?
 			if ((*exporter).collector_arr[i].valid) {
 				DPRINTF("Sending template to exporter %s:%d\n",
-					(*exporter).collector_arr[i].ipv4address,
-					(*exporter).collector_arr[i].port_number
+					exporter->collector_arr[i].ipv4address,
+					exporter->collector_arr[i].port_number
 				      );
-				ret=writev( (*exporter).collector_arr[i].data_socket,
-					    (*(*exporter).template_sendbuffer).entries,
-					    (*(*exporter).template_sendbuffer).current
-					  );
+                                ret=writev(exporter->collector_arr[i].data_socket,
+                                           exporter->template_sendbuffer->entries,
+                                           exporter->template_sendbuffer->current
+                                          );
 				// TODO: we should also check, what writev returned. NO ERROR HANDLING IMPLEMENTED YET!
 
 			}
@@ -1234,7 +1237,7 @@ int ipfix_start_template_set (ipfix_exporter *exporter, uint16_t template_id,  u
 		// also, reserve 8 bytes space for the header!
 
 		exporter->template_arr[found_index].max_fields_length = 8 * field_count + 8;
-		DPRINTF("(*exporter).template_arr[found_index].max_fields_length %u \n", (*exporter).template_arr[found_index].max_fields_length);
+		DPRINTF("exporter->template_arr[found_index].max_fields_length %u \n", exporter->template_arr[found_index].max_fields_length);
 		exporter->template_arr[found_index].fields_length = 8;
 
 		exporter->template_arr[found_index].template_fields = (char*)malloc(exporter->template_arr[found_index].max_fields_length );
