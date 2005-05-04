@@ -541,10 +541,14 @@ static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf, int maxelements)
 	ipfix_sendbuffer *tmp;
 
 	// mallocate memory for the sendbuffer
-	tmp=(ipfix_sendbuffer *)malloc(sizeof(ipfix_sendbuffer));
+        if(!(tmp=(ipfix_sendbuffer *)malloc(sizeof(ipfix_sendbuffer)))) {
+                goto out;
+        }
 
 	// mallocate memory for the entries:
-	tmp->entries = (struct iovec *)malloc(maxelements * sizeof(struct iovec));
+        if(!(tmp->entries = (struct iovec *)malloc(maxelements * sizeof(struct iovec)))) {
+                goto out1;
+        }
 	/* Bugfix: entries is an array of (struct iovec), not (struct iovec*), */
 	/* so we reserved the wrong amount of memory to it. Mea Culpa, JanP */
 	/*	(**sendbuf).entries = malloc(maxelements * sizeof(struct iovec*)); */
@@ -553,14 +557,27 @@ static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf, int maxelements)
 	tmp->commited = HEADER_USED_IOVEC_COUNT;
 
 	// allocate memory for the header itself
-	tmp->header_store = (char *)malloc(IPFIX_HEADER_LENGTH) ;
+        if(!(tmp->header_store = (char *)malloc(IPFIX_HEADER_LENGTH))) {
+                goto out2;
+        }
 
 	tmp->commited_data_length = 0;
 	// initialize an ipfix_set_manager
-	ipfix_init_set_manager(&(tmp->set_manager), IPFIX_MAX_SET_HEADER_LENGTH);
+        if(ipfix_init_set_manager(&(tmp->set_manager), IPFIX_MAX_SET_HEADER_LENGTH)) {
+                goto out3;
+        }
 
 	*sendbuf=tmp;
-	return 0;
+        return 0;
+
+out3:
+        free(tmp->header_store);
+out2:
+        free(tmp->entries);
+out1:
+        free(tmp);
+out:
+        return -1;
 }
 
 /*
@@ -620,14 +637,19 @@ static int ipfix_deinit_sendbuffer(ipfix_sendbuffer **sendbuf)
  */
 static int ipfix_init_collector_array(ipfix_receiving_collector **col, int col_capacity)
 {
-	int i;
+        int i;
+        ipfix_receiving_collector *tmp;
 
-	*col=(ipfix_receiving_collector *)malloc((sizeof(ipfix_receiving_collector) * col_capacity));
+	tmp=(ipfix_receiving_collector *)malloc((sizeof(ipfix_receiving_collector) * col_capacity));
+        if(!tmp) {
+                return -1;
+        }
 
 	for (i = 0; i< col_capacity; i++) {
-		((*col)[i]).valid = FALSE;
+		(tmp[i]).valid = FALSE;
 	}
 
+        *col=tmp;
 	return 0;
 }
 
@@ -690,17 +712,26 @@ static int ipfix_init_set_manager(ipfix_set_manager **set_manager, int max_capac
         ipfix_set_manager *tmp;
 
 	// allocate memory for the set manager
-	tmp=(ipfix_set_manager *)malloc(sizeof(ipfix_set_manager));
+        if(!(tmp=(ipfix_set_manager *)malloc(sizeof(ipfix_set_manager)))) {
+                goto out;
+        }
 
 	// allocate memory for the set header buffer & set values.
 	tmp->set_header_capacity = max_capacity;
 	tmp->set_header_length = 0;
-	tmp->set_header_store = (char *)malloc(max_capacity);
+        if(!(tmp->set_header_store = (char *)malloc(max_capacity))) {
+                goto out1;
+        }
 	tmp->header_iovec = NULL;
 	tmp->data_length = 0;
 
         *set_manager=tmp;
-	return 0;
+        return 0;
+
+out1:
+        free(tmp);
+out:
+        return -1;
 }
 
 
