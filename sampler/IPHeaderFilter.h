@@ -27,12 +27,20 @@
 
 #include "PacketProcessor.h"
 
-#define CMP_LT  0x00  // lower than
-#define CMP_LE  0x01  // lower or equal
-#define CMP_EQ  0x02  // equal
-#define CMP_GE  0x03  // greater or equal
-#define CMP_GT  0x04  // greater than
-#define CMP_NE  0x05  // not equal
+// less than
+#define CMP_LT  0x00
+// less or equal
+#define CMP_LE  0x01  
+// equal
+#define CMP_EQ  0x02
+// greater or equal
+#define CMP_GE  0x03
+// greater than
+#define CMP_GT  0x04
+// not equal
+#define CMP_NE  0x05
+// Bits are equal -> bitwise AND
+#define CMP_BIT 0x06
 
 class IPHeaderFilter : public PacketProcessor
 {
