@@ -11,7 +11,7 @@
 
 #include "IPHeaderFilter.h"
 
-bool IPHeaderFilter::compareValues(int srcvalue, int dstvalue)
+inline bool IPHeaderFilter::compareValues(int srcvalue, int dstvalue)
 {
         switch(m_comparison)
         {
@@ -27,12 +27,14 @@ bool IPHeaderFilter::compareValues(int srcvalue, int dstvalue)
                 return srcvalue > dstvalue;
         case CMP_NE:
                 return srcvalue != dstvalue;
+        case CMP_BIT:
+                return ((srcvalue & dstvalue) == dstvalue);
         default:
                 return 0;
         }
 }
 
-int IPHeaderFilter::getData(void *data, int size)
+inline int IPHeaderFilter::getData(void *data, int size)
 {
         switch(size)
         {
