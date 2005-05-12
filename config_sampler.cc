@@ -293,6 +293,8 @@ static int configure_filter(struct v_objects *v, char *list)
  */
 static PacketProcessor * make_filter_processor(char *name, char *setting)
 {
+        static char *PP_TAB[]={"Internal", "Systematic", "Random", "IPHeader", NULL };
+
         PacketProcessor *n;
 	char *l, *token;
         int id;
@@ -315,7 +317,7 @@ static PacketProcessor * make_filter_processor(char *name, char *setting)
 	token=strsep(&l, ",");
         id=atoi(token);
 
-        msg(MSG_DEBUG, "Filter: new PacketProcessor %s - type %d, full params %s", name, id, setting);
+        msg(MSG_DEBUG, "Filter: new PacketProcessor %s - type %d (%s), full params %s", name, id, PP_TAB[id], setting);
         while((token=strsep(&l, ",")) && p_conf_nr < PROCESSOR_MAX_PARAM) {
                 p_conf[p_conf_nr]=atoi(token);
                 /* include hardcode debuggin in case of */
