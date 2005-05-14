@@ -17,7 +17,7 @@ modules:
 
 	
 $(TARGET): $(OBJS)
-	g++ $(CFLAGS) -o $(TARGET) $(OBJS) sampler/*.o ipfixlolib/libipfixlo.a $(LIBS)
+	g++ $(CFLAGS) -o $(TARGET) $(OBJS) sampler/libsampler.a ipfixlolib/libipfixlo.a $(LIBS)
 
 clean:
 	rm -f *.o $(TARGET)
