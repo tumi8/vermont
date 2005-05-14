@@ -13,8 +13,7 @@
 
 inline bool IPHeaderFilter::compareValues(int srcvalue, int dstvalue)
 {
-        switch(m_comparison)
-        {
+        switch(m_comparison){
         case CMP_LT:
                 return srcvalue < dstvalue;
         case CMP_LE:
@@ -36,8 +35,7 @@ inline bool IPHeaderFilter::compareValues(int srcvalue, int dstvalue)
 
 inline int IPHeaderFilter::getData(void *data, int size)
 {
-        switch(size)
-        {
+        switch(size){
         case 1:
                 return *((unsigned char *)data);
         case 2:
