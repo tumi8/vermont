@@ -15,7 +15,7 @@
  */
 typedef struct {
 	Rules* rules; /**< Set of rules that define the aggregator */
-	} IpfixAggregator;
+} IpfixAggregator;
 
 /***** Prototypes ***********************************************************/
 
