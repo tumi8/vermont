@@ -16,9 +16,10 @@
 #include "sampler/PacketProcessor.h"
 #include "sampler/Template.h"
 #include "sampler/IPHeaderFilter.h"
+#include "sampler/HookingFilter.h"
 
 /* collector */
-
+#include "concentrator/sampler_hook_entry.h"
 
 /* own systems */
 #include "vermont.h"
@@ -26,7 +27,6 @@
 #include "msg.h"
 #include "subsystems.h"
 #include "config_sampler.h"
-
 
 static int configure_observer(struct v_objects *v, char *interface, int snaplen);
 static int configure_template(struct v_objects *v, uint16_t template_id, char *list);
@@ -233,7 +233,7 @@ static int configure_filter(struct v_objects *v, char *list)
         char *l, *token;
 	char *routing;
 	
-        PacketProcessor *p;
+        PacketProcessor *p, *hook_f;
 	char *p_settings;
 	int p_id;
 
@@ -246,8 +246,17 @@ static int configure_filter(struct v_objects *v, char *list)
 		return 1;
         }
 
-        /* FIXME: add sampler->concentrator hook! */
-        routing=iniparser_getvalue(conf, "main", "routing");
+	/*
+	 sampler->concentrator hook
+         the HookingFilter calls the function sampler_hook_entry() from concentrator
+	 */
+	routing=iniparser_getvalue(conf, "main", "routing");
+        /* the concentrator should get all packet traffic */
+	if(strcasecmp(routing, "all") == 0) {
+		msg(MSG_DEBUG, "Filter: adding HookingFilter sampler->concentrator as first PP");
+		hook_f=new HookingFilter(sampler_hook_entry);
+		f->addProcessor(hook_f);
+	}
 
         /*
          loop over all processors specified in list
@@ -274,7 +283,15 @@ static int configure_filter(struct v_objects *v, char *list)
                	f->addProcessor(p);
 	}
 
-        v->filter=f;
+	/* the concentrator should get filtered traffic */
+	if(strcasecmp(routing, "filtered") == 0) {
+		msg(MSG_DEBUG, "Filter: adding HookingFilter sampler->concentrator as last PP");
+		hook_f=new HookingFilter(sampler_hook_entry);
+		f->addProcessor(hook_f);
+	}
+
+	v->filter=f;
+        v->hooking=(HookingFilter *)hook_f;
         free(l);
 
         return 0;

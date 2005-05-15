@@ -14,7 +14,7 @@ bool HookingFilter::processPacket(const Packet *p)
 	ph.length=p->length;
 
         /* call hooking function */
-	f((void *)&ph);
+	f(ctx, (void *)&ph);
 
 	return true;
 }
