@@ -12,7 +12,7 @@ all: $(TARGET)
 
 
 clean:
-	rm -f *.o
+	rm -f *.o $(TARGET)
 distclean: clean
 	rm -f *~
 
