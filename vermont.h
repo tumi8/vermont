@@ -9,6 +9,7 @@
 #include <sampler/Filter.h>
 #include <sampler/PacketProcessor.h>
 #include <sampler/ExporterSink.h>
+#include <sampler/HookingFilter.h>
 
 /* holding all objects/handles/... for the subsystems like sampler and collector */
 struct v_objects {
@@ -26,6 +27,9 @@ struct v_objects {
 	Observer *observer;
         Filter *filter;
         Sink *sink;
+
+	/* and this is pragmatic */
+        HookingFilter *hooking;
 
 	/* for concentrator: */
 	//IpfixReceiver *concentrator;

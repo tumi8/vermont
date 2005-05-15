@@ -17,12 +17,20 @@ class HookingFilter : public PacketProcessor {
 
 public:
 
-	HookingFilter(void (*hook)(void *)) {
+	HookingFilter(void (*hook)(void*, void *)) {
                 f=hook;
 	}
 
 	~HookingFilter() {
 
+	}
+
+	void setContext(void *c) {
+		ctx=c;
+	}
+
+	void setHook(void (*hook)(void *, void *)) {
+                f=hook;
 	}
 
 	virtual bool processPacket(const Packet *p);
@@ -33,7 +41,10 @@ protected:
 	 this is called "f" because our mentor created that name accidently
 	 so it was meant to stay, because everyone knew what it represents
          */
-	void (*f)(void *);
+	void (*f)(void *,void *);
+
+	/* we may need a context */
+        void *ctx;
 
 };
 
