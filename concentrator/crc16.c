@@ -52,14 +52,17 @@ static const uint16_t table[] = {
  * @param data stream for which the CRC16 will be generated
  * @return the CRC16 value
  */
-uint16_t crc16(uint16_t seed, uint16_t length, char* data) {
+
+uint16_t crc16(uint16_t seed, uint16_t length, char* data)
+{
 	uint16_t i = seed;
+
 	while (length--) {
 		uint8_t byte = *data++;
 		uint8_t index = byte ^ (i >> 8);
 		uint16_t entry = table[index];
 		i = (i << 8) ^ entry;
-		};
-	
-	return i;
 	}
+
+	return i;
+}
