@@ -45,10 +45,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include <string.h>
 #include <netinet/in.h>
 #include <time.h>
+
 #include "hashing.h"
 #include "crc16.h"
+#include "ipfix.h"
 
 #include "msg.h"
+
 /**
  * Initializes memory for a new bucket in @c ht containing @c data
  */
@@ -356,7 +359,7 @@ static int aggregateField(FieldType* type, FieldData* baseData, FieldData* delta
 		switch (type->length) {
 		case 1:
 			*(uint8_t*)baseData = addUint8Nbo(*(uint8_t*)baseData, *(uint8_t*)deltaData);
-			return 0
+			return 0;
 		case 2:
 			*(uint16_t*)baseData = addUint16Nbo(*(uint16_t*)baseData, *(uint16_t*)deltaData);
                         return 0;
@@ -783,7 +786,7 @@ void aggregateDataTemplateData(Hashtable* ht, DataTemplateInfo* ti, FieldData* d
  * @param ht Hashtable to set the callback function for
  * @param handles set of callback functions
  */
-static void hashingAddCallbacks(Hashtable* ht, CallbackInfo handles)
+void hashingAddCallbacks(Hashtable* ht, CallbackInfo handles)
 {
 	int n;
 	int i = ++ht->callbackCount;
