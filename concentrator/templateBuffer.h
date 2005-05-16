@@ -23,17 +23,17 @@ typedef struct {
 		TemplateInfo* templateInfo;
 		OptionsTemplateInfo* optionsTemplateInfo;
 		DataTemplateInfo* dataTemplateInfo;
-		};
+	};
 	void*	next;             /**< Pointer to next buffered Template */
-	} BufferedTemplate;
+} BufferedTemplate;
 
 /**
  * Represents a Template Buffer
- */	
+ */
 typedef struct {
 	BufferedTemplate* head; /**< Start of BufferedTemplate chain */
 	IpfixReceiver* ipfixReceiver; /**< Pointer to the ipfixReceiver which instantiated this TemplateBuffer */
-	} TemplateBuffer;
+} TemplateBuffer;
 
 
 /***** Prototypes ************************************************************/
