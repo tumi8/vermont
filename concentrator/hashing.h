@@ -23,7 +23,7 @@ typedef struct {
 	uint32_t forceExpireTime; /**< timestamp when this bucket is forced to expire */
 	FieldData* data;        /**< contains variable fields of aggregated flow; format defined in Hashtable::dataInfo::fieldInfo */
 	void* next;             /**< next bucket in spill chain */
-	} HashBucket;
+} HashBucket;
 
 /**
  * Hash-powered buffer for outgoing flows.
@@ -42,11 +42,12 @@ typedef struct {
 
 	int callbackCount;                   /**< Length of callbackInfo array */
 	CallbackInfo* callbackInfo;          /**< Array of callback functions to invoke when Templates or Records should be sent */
-	} Hashtable;
+} Hashtable;
 	
 /***** Prototypes ***********************************************************/
 
 Hashtable* createHashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime);
+void destroyHashtable(Hashtable* ht);
 
 void hashingAddCallbacks(Hashtable* ht, CallbackInfo handles);
 
