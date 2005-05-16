@@ -50,6 +50,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "crc16.h"
 #include "ipfix.h"
 
+#include "ipfixlolib/ipfixlolib.h"
+
 #include "msg.h"
 
 /**
@@ -651,7 +653,7 @@ void aggregateTemplateData(Hashtable* ht, TemplateInfo* ti, FieldData* data)
 
 			if(tfi) {
 				if(hfi->type.length != 5) {
-					("Tried to set mask of length %d IP address\n", hfi->type.length);
+					DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 				} else {
 					if(tfi->type.length == 1) {
 						*(uint8_t*)(htdata + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
