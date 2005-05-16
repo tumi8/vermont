@@ -47,6 +47,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include <netdb.h>
 #include <unistd.h>
 
+/* for ntohll et al */
+#include "ipfixlolib/ipfixlolib.h"
+
 #include "rcvIpfix.h"
 #include "templateBuffer.h"
 #include "ipfix.h"
