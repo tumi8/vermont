@@ -11,7 +11,7 @@
  */
 typedef struct {
 	int dummy;
-	} IpfixPrinter;
+} IpfixPrinter;
 
 /***** Prototypes ***********************************************************/
 

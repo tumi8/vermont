@@ -1,14 +1,13 @@
 /** @file
  * IPFIX Exporter interface.
  *
- * Interface for feeding generated Templates and Data Records to "ipfixlolib" 
+ * Interface for feeding generated Templates and Data Records to "ipfixlolib"
  *
  */
- 
+
 #include <stdlib.h>
 #include <string.h>
 #include "printIpfix.h"
-#include "common.h"
 
 /***** Global Variables ******************************************************/
 
@@ -23,7 +22,7 @@
  */
 int initializeIpfixPrinters() {
 	return 0;
-	}
+}
 
 /**
  * Deinitializes internal structures.
@@ -32,7 +31,7 @@ int initializeIpfixPrinters() {
  */
 int deinitializeIpfixPrinters() {
 	return 0;
-	}
+}
 
 /**
  * Creates a new IpfixPrinter. Do not forget to call @c startIpfixPrinter() to begin printing
@@ -40,9 +39,9 @@ int deinitializeIpfixPrinters() {
  */
 IpfixPrinter* createIpfixPrinter() {
 	IpfixPrinter* ipfixPrinter = (IpfixPrinter*)malloc(sizeof(IpfixPrinter));
-	
+
 	return ipfixPrinter;
-	}
+}
 
 /**
  * Frees memory used by an IpfixPrinter
@@ -50,7 +49,7 @@ IpfixPrinter* createIpfixPrinter() {
  */
 void destroyIpfixPrinter(IpfixPrinter* ipfixPrinter) {
 	free(ipfixPrinter);
-	}
+}
 
 /**
  * Starts or resumes printing messages
@@ -58,7 +57,7 @@ void destroyIpfixPrinter(IpfixPrinter* ipfixPrinter) {
  */
 void startIpfixPrinter(IpfixPrinter* ipfixPrinter) {
 	/* unimplemented, we can't be paused - TODO: or should we? */
-	}
+}
 
 /**
  * Temporarily pauses printing messages
@@ -66,7 +65,7 @@ void startIpfixPrinter(IpfixPrinter* ipfixPrinter) {
  */
 void stopIpfixPrinter(IpfixPrinter* ipfixPrinter) {
 	/* unimplemented, we can't be paused - TODO: or should we? */
-	}
+}
 
 /**
  * Prints a Template
@@ -79,7 +78,7 @@ int printTemplate(void* ipfixPrinter, SourceID sourceID, TemplateInfo* templateI
 	printf(" `---\n\n");
 
 	return 0;
-	}
+}
 
 /**
  * Prints a Template that was announced to be destroyed
@@ -91,8 +90,8 @@ int printTemplateDestruction(void* ipfixPrinter, SourceID sourceID, TemplateInfo
 	printf("Destroyed a Template\n");
 
 	return 0;
-	}
-	
+}
+
 /**
  * Prints a DataRecord
  * @param ipfixPrinter handle obtained by calling @c createIpfixPrinter()
@@ -103,18 +102,18 @@ int printTemplateDestruction(void* ipfixPrinter, SourceID sourceID, TemplateInfo
  */
 int printDataRecord(void* ipfixPrinter, SourceID sourceID, TemplateInfo* templateInfo, uint16_t length, FieldData* data) {
 	int i;
-	
+
 	printf("\n-+--- DataRecord\n");
-	printf(" `- variable data\n"); 
+	printf(" `- variable data\n");
 	for (i = 0; i < templateInfo->fieldCount; i++) {
 		printf(" '   `- ");
 		printFieldData(templateInfo->fieldInfo[i].type, (data + templateInfo->fieldInfo[i].offset));
 		printf("\n");
-		}
+	}
 	printf(" `---\n\n");
 
 	return 0;
-	}
+}
 
 /**
  * Prints a OptionsTemplate
@@ -123,12 +122,12 @@ int printDataRecord(void* ipfixPrinter, SourceID sourceID, TemplateInfo* templat
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
 int printOptionsTemplate(void* ipfixPrinter, SourceID sourceID, OptionsTemplateInfo* optionsTemplateInfo) {
-	
+
 	printf("\n-+--- OptionsTemplate\n");
 	printf(" `---\n\n");
 
 	return 0;
-	}
+}
 
 /**
  * Prints a DataTemplate that was announced to be destroyed
@@ -140,8 +139,8 @@ int printOptionsTemplateDestruction(void* ipfixPrinter_, SourceID sourceID, Opti
 	printf("Destroyed an OptionsTemplate\n");
 
 	return 0;
-	}
-	
+}
+
 /**
  * Prints an OptionsRecord
  * @param ipfixPrinter handle obtained by calling @c createIpfixPrinter()
@@ -156,7 +155,7 @@ int printOptionsRecord(void* ipfixPrinter, SourceID sourceID, OptionsTemplateInf
 	printf(" `---\n\n");
 
 	return 0;
-	}
+}
 
 /**
  * Prints a DataTemplate
@@ -166,18 +165,18 @@ int printOptionsRecord(void* ipfixPrinter, SourceID sourceID, OptionsTemplateInf
  */
 int printDataTemplate(void* ipfixPrinter, SourceID sourceID, DataTemplateInfo* dataTemplateInfo) {
 	int i;
-	
+
 	printf("\n-+--- DataTemplate\n");
-	printf(" `- fixed data\n"); 
+	printf(" `- fixed data\n");
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
 		printf(" '   `- ");
 		printFieldData(dataTemplateInfo->dataInfo[i].type, (dataTemplateInfo->data + dataTemplateInfo->dataInfo[i].offset));
 		printf("\n");
-		}
+	}
 	printf(" `---\n\n");
 
 	return 0;
-	}
+}
 
 /**
  * Prints a DataTemplate that was announced to be destroyed
@@ -189,8 +188,8 @@ int printDataTemplateDestruction(void* ipfixPrinter_, SourceID sourceID, DataTem
 	printf("Destroyed a DataTemplate\n");
 
 	return 0;
-	}
-	
+}
+
 /**
  * Prints a DataDataRecord
  * @param ipfixPrinter handle obtained by calling @c createIpfixPrinter()
@@ -201,24 +200,24 @@ int printDataTemplateDestruction(void* ipfixPrinter_, SourceID sourceID, DataTem
  */
 int printDataDataRecord(void* ipfixPrinter, SourceID sourceID, DataTemplateInfo* dataTemplateInfo, uint16_t length, FieldData* data) {
 	int i;
-	
+
 	printf("\n-+--- DataDataRecord\n");
-	printf(" `- fixed data\n"); 
+	printf(" `- fixed data\n");
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
 		printf(" '   `- ");
 		printFieldData(dataTemplateInfo->dataInfo[i].type, (dataTemplateInfo->data + dataTemplateInfo->dataInfo[i].offset));
 		printf("\n");
-		}
-	printf(" `- variable data\n"); 
+	}
+	printf(" `- variable data\n");
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
 		printf(" '   `- ");
 		printFieldData(dataTemplateInfo->fieldInfo[i].type, (data + dataTemplateInfo->fieldInfo[i].offset));
 		printf("\n");
-		}
+	}
 	printf(" `---\n\n");
 
 	return 0;
-	}
+}
 
 CallbackInfo getIpfixPrinterCallbackInfo(IpfixPrinter* ipfixPrinter) {
 	CallbackInfo ci;
@@ -234,4 +233,4 @@ CallbackInfo getIpfixPrinterCallbackInfo(IpfixPrinter* ipfixPrinter) {
 	ci.dataDataRecordCallbackFunction = printDataDataRecord;
 	ci.dataTemplateDestructionCallbackFunction = printDataTemplateDestruction;
 	return ci;
-	}
+}
