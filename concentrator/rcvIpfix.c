@@ -680,12 +680,12 @@ static void printPort(FieldType type, FieldData* data) {
 		return;
 		}
 	
-	errorf("Port with length %d unparseable", type.length);
+	printf("Port with length %d unparseable", type.length);
 	}
 
 void printProtocol(FieldType type, FieldData* data) {
 	if (type.length != 1) {
-		errorf("Protocol with length %d unparseable", type.length);
+		printf("Protocol with length %d unparseable", type.length);
 		return;
 		}
 	switch (data[0]) {
@@ -722,7 +722,7 @@ static void printUint(FieldType type, FieldData* data) {
 			printf("%Lu",ntohll(*(uint64_t*)data));
 			return;
 		default:
-			errorf("Uint with length %d unparseable", type.length);
+			printf("Uint with length %d unparseable", type.length);
 			return;
 		}
 	}
