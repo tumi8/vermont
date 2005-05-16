@@ -93,6 +93,8 @@ static int is_in(char letter, char* alphabet) {
 	return 0;
 }
 
+#if 0
+/* defined but not used */
 /**
  * Removes whitespace at the end of a string by overwriting it with 0-bytes
  */
@@ -107,6 +109,7 @@ static char* ltrim(char* text) {
 	while ((*text != 0) && is_in(*text, " \n\t")) ++text;
 	return text;
 }
+#endif
 
 /**
  * Successively tokenizes a string by inserting 0-bytes, returning pointers to the tokens one at a time.
