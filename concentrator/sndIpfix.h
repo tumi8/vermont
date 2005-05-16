@@ -16,7 +16,7 @@ typedef struct {
 	uint16_t lastTemplateId; /**< Template ID of last created Template */
 	char ip[128]; /**< IP of Collector we export to */
 	uint16_t port; /**< Port of Collector we export to */
-	} IpfixSender;
+} IpfixSender;
 
 /***** Prototypes ***********************************************************/
 
