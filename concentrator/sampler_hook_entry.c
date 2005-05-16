@@ -17,6 +17,10 @@
 
 #include "msg.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 static FieldInfo ip_traffic_fi[] = {
 	/*
 	 { { ID, len, enterprise}, offset} for:
@@ -44,6 +48,7 @@ static TemplateInfo ip_traffic_template = {
  the entrypoint into the concentrator
  this is a mess and not thread safe
  */
+
 void sampler_hook_entry(void *ctx, void *data)
 {
 	int transport_offset;
@@ -70,3 +75,7 @@ void sampler_hook_entry(void *ctx, void *data)
 	ip_traffic_template.fieldInfo[4].offset = 2;
 
 }
+
+#ifdef __cplusplus
+}
+#endif
