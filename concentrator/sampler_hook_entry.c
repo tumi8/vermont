@@ -66,7 +66,7 @@ void sampler_hook_entry(void *ctx, void *data)
 	aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &ip_traffic_template, ph->length, fdata);
 
 	/* reset ip_traffic_fi, offsets for srcport/dstport to starting values */
-	ip_traffic_template.fieldInfo[3].offset = 0
+	ip_traffic_template.fieldInfo[3].offset = 0;
 	ip_traffic_template.fieldInfo[4].offset = 2;
 
 }
