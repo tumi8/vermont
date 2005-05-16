@@ -46,9 +46,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
+
 #include "rcvIpfix.h"
 #include "templateBuffer.h"
+#include "ipfix.h"
 
+#include "msg.h"
 /***** Defines ************************************************************/
 
 #define SUPPORT_NETFLOWV9
@@ -399,7 +402,7 @@ static void processDataSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, Ipfi
 			byte* recordX = record+length;
 
 			if (record >= recordX - 3) {
-				DPRINTF("Got a Data Set that contained not a single full record\");
+				DPRINTF("Got a Data Set that contained not a single full record");
 			}
 
 			/* We assume that all variable-length records are >= 4 byte, so we stop processing when only 3 bytes are left */
