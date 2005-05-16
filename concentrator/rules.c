@@ -41,6 +41,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include <stdlib.h>
 #include "rules.h"
 #include "rcvIpfix.h"
+#include "ipfix.h"
+
+#include "msg.h"
 
 #define MAX_LINE_LEN 256
 
@@ -49,7 +52,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 /* --- functions ------------*/
 
-uint8_t getIPv4IMask(FieldType* type, FieldData* data);
+static uint8_t getIPv4IMask(FieldType* type, FieldData* data);
 
 
 RuleField* mallocRuleField() {
@@ -629,7 +632,7 @@ static int checkAssociatedMask3(DataTemplateInfo* info, FieldData* data, RuleFie
  * Checks if a given flow matches a rule
  * @return 1 if rule is matched, 0 otherwise
  */
-static int templateDataMatchesRule(TemplateInfo* info, FieldData* data, Rule* rule) {
+int templateDataMatchesRule(TemplateInfo* info, FieldData* data, Rule* rule) {
 	int i;
 	FieldInfo* fieldInfo;
 
@@ -667,7 +670,7 @@ static int templateDataMatchesRule(TemplateInfo* info, FieldData* data, Rule* ru
  * Checks if a given flow matches a rule
  * @return 1 if rule is matched, 0 otherwise
  */
-static int dataTemplateDataMatchesRule(DataTemplateInfo* info, FieldData* data, Rule* rule) {
+int dataTemplateDataMatchesRule(DataTemplateInfo* info, FieldData* data, Rule* rule) {
 	int i;
 	FieldInfo* fieldInfo;
 
