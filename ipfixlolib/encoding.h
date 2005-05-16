@@ -62,8 +62,18 @@ extern "C" {
 
 
 /* both assumes little-endianness */
-uint64_t htonll(uint64_t number);
-inline uint64_t ntohll(uint64_t number);
+extern inline uint64_t htonll(uint64_t number)
+{
+	return ( htonl( (number >> 32) & 0xFFFFFFFF) |
+		 ((uint64_t) (htonl(number & 0xFFFFFFFF))  << 32));
+}
+
+extern inline uint64_t ntohll(uint64_t number)
+{
+	return ( htonl( (number >> 32) & 0xFFFFFFFF) |
+		 ((uint64_t) (htonl(number & 0xFFFFFFFF))  << 32));
+}
+
 
 /*
  * Write an octet
