@@ -6,7 +6,8 @@ LIBS=-lstdc++ -lrt -lpcap
 LDFLAGS=$(LIBS) $(CFLAGS)
 TARGET=vermont
 OBJS=vermont.o subsystems.o msg.o iniparser.o config_sampler.o
-MODULES=ipfixlolib sampler
+MODULES=ipfixlolib sampler concentrator
+MODULES_LIBS=sampler/libsampler.a ipfixlolib/libipfixlo.a concentrator/libconcentrator.a
 
 all: modules $(TARGET)
 
@@ -17,7 +18,7 @@ modules:
 
 	
 $(TARGET): $(OBJS)
-	g++ $(CFLAGS) -o $(TARGET) $(OBJS) sampler/libsampler.a ipfixlolib/libipfixlo.a $(LIBS)
+	g++ $(CFLAGS) -o $(TARGET) $(OBJS) $(MODULES_LIBS) $(LIBS)
 
 clean:
 	rm -f *.o $(TARGET)
