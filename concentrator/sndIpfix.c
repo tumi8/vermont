@@ -8,6 +8,7 @@
 #include <string.h>
 #include "sndIpfix.h"
 #include "ipfixlolib/ipfixlolib.h"
+#include "ipfix.h"
 
 #include "msg.h"
 
