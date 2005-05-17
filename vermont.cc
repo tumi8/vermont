@@ -98,7 +98,13 @@ int main(int ac, char **dc)
         v_objects.v_starttime=time(NULL);
         msg(MSG_DIALOG, "up and running at %s", ctime(&(v_objects.v_starttime)));
 
-        sleep(3600);
+        while(1) {
+                const struct timespec sl={60, 0};
+
+                nanosleep(&sl, NULL);
+                msg(MSG_DIALOG, "Filter in: %d", v_objects.filter->pktIn);
+                msg(MSG_DIALOG, "Filter out: %d", v_objects.filter->pktOut);
+        }
 
         return 0;
 }
