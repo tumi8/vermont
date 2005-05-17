@@ -250,7 +250,7 @@ static int configure_filter(struct v_objects *v, char *list)
 	 sampler->concentrator hook
          the HookingFilter calls the function sampler_hook_entry() from concentrator
 	 */
-	routing=iniparser_getvalue(conf, "main", "routing");
+	routing=iniparser_getvalue(conf, "main", "packets");
         /* the concentrator should get all packet traffic */
 	if(strcasecmp(routing, "all") == 0) {
 		msg(MSG_DEBUG, "Filter: adding HookingFilter sampler->concentrator as first PP");
