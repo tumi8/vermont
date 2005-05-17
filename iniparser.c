@@ -34,6 +34,7 @@
 #include <unistd.h>
 
 #include "iniparser.h"
+#include "msg.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -706,11 +707,17 @@ void iniparser_dump_ini(dictionary * d, FILE * f)
 
 char * iniparser_getvalue(dictionary *d, char *section, char *key)
 {
-	char tmp[ASCIILINESZ];
+        char tmp[ASCIILINESZ];
+        char *ret;
 
 	snprintf(tmp, ASCIILINESZ, "%s:%s", section, key);
 
-	return iniparser_getstring(d, tmp, NULL);
+        if(!(ret=iniparser_getstring(d, tmp, NULL))) {
+                msg(MSG_ERROR, "iniparser: value is NULL, maybe looking for wrong key? Section: %s, key: %s", section, key);
+        }
+
+        return ret;
+
 }
 
 
