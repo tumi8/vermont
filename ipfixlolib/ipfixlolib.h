@@ -5,6 +5,11 @@
  Release under LGPL.
 
  Header for encoding functions suitable for IPFIX
+
+ Changes by Christoph Sommer, 2005-04-14
+   Modified ipfixlolib-nothread Rev. 80
+   Added support for DataTemplates (SetID 4)
+
  Changes by Ronny T. Lampert, 2005-01
 
  Based upon the original
@@ -289,7 +294,10 @@ int ipfix_start_data_set(ipfix_exporter *exporter, uint16_t *template_id);
 int ipfix_end_data_set(ipfix_exporter *exporter);
 int ipfix_start_template_set(ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count);
 int ipfix_start_options_template_set(ipfix_exporter *exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length);
+int ipfix_start_datatemplate_set(ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count, uint16_t fixedfield_count);
 int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id);
+int ipfix_put_template_fixedfield(ipfix_exporter *exporter, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id);
+int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void* data, uint16_t data_length);
 int ipfix_end_template_set(ipfix_exporter *exporter, uint16_t template_id );
 int ipfix_deinit_template_set(ipfix_exporter *exporter, ipfix_lo_template* templ);
 int ipfix_remove_template_set(ipfix_exporter *exporter, uint16_t template_id);
