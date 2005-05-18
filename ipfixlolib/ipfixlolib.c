@@ -1243,7 +1243,7 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
 
                 exporter->template_arr[found_index].max_fields_length = 8 * field_count + 8;
                 exporter->template_arr[found_index].max_fields_length = 8 * (field_count + fixedfield_count) + ((fixedfield_count==0) ? 8 : 12);
-+		exporter->template_arr[found_index].fields_length = (fixedfield_count==0) ? 8 : 12;
+		exporter->template_arr[found_index].fields_length = (fixedfield_count==0) ? 8 : 12;
 
                 exporter->template_arr[found_index].template_fields = (char*)malloc(exporter->template_arr[found_index].max_fields_length );
 
