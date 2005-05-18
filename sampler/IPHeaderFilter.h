@@ -45,7 +45,7 @@
 class IPHeaderFilter : public PacketProcessor
 {
 public:
-        IPHeaderFilter(int offset, int size, int comparison, int value)
+        IPHeaderFilter(int header, int offset, int size, int comparison, int value)
                 : m_offset(offset), m_size(size), m_comparison(comparison), m_value(value)
         {
         }
@@ -56,9 +56,19 @@ protected:
         bool compareValues(int srcvalue, int dstvalue);
         int getData(void *data, int size);
 
+        /* which header: IP or transport */
+        int m_header;
+
+        /* offset from the header above */
         int m_offset;
+
+        /* the size one wants to compare - 1, 2 or 4 bytes */
         int m_size;
+
+        /* the comparison operation, see the CMP_ defines above */
         int m_comparison;
+
+        /* the value to compare against */
         int m_value;
 };
 

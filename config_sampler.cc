@@ -366,7 +366,7 @@ static PacketProcessor * make_filter_processor(char *name, char *setting)
 		n=new RandomSampler(p_conf[0], p_conf[1]);
 		break;
 	case PROCESSOR_IPHEADER:
-		n=new IPHeaderFilter(p_conf[0], p_conf[1], p_conf[2], p_conf[3]);
+		n=new IPHeaderFilter(p_conf[0], p_conf[1], p_conf[2], p_conf[3], p_conf[4]);
 		break;
 	default:
                 msg(MSG_FATAL, "Filter: cannot make PacketProcessor with ID %d, settings %s", id, setting);

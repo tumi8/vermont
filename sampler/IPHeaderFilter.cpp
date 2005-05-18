@@ -50,7 +50,21 @@ inline int IPHeaderFilter::getData(void *data, int size)
 
 bool IPHeaderFilter::processPacket(const Packet *p)
 {
-        int srcvalue = getData(p->getPacketData(m_offset), m_size);
+        int srcvalue;
+        void *start;
+
+        switch(m_header) {
+        case 1:
+                start=p->ipHeader;
+                break;
+        case 2:
+                start=p->transportHeader;
+                break;
+        default:
+                start=p->ipHeader;
+        }
+
+        getData(((char*)start + m_offset), m_size);
         return compareValues(srcvalue, m_value);
 }
 
