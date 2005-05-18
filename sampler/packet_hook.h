@@ -3,12 +3,19 @@
 
 struct packet_hook {
 
-	void *data;
-	void *ip_header;
-	void *transport_header;
+        /* full packet data w/ physical */
+        void *data;
 
-	const struct timeval *timestamp;
+        /* pointer to IP header; data+phy.offset */
+        void *ip_header;
 
+        /* pointer to transport header; IPHeader+IPHeaderLength */
+        void *transport_header;
+
+        /* time when this packet was captured */
+        const struct timeval *timestamp;
+
+        /* length of packet in bytes, starting at phys. header */
 	int length;
 };
 
