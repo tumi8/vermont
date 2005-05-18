@@ -63,7 +63,7 @@ void sampler_hook_entry(void *ctx, void *data)
 	 - use this offset and add to src/dst_port offset
 	 */
 	transport_offset=abs(ph->transport_header - ph->ip_header);
-	DPRINTF("hook_enty: transport_offset is %d\n", transport_offset);
+	DPRINTF("hook_entry: length is %d\n", ph->length);
 
 	ip_traffic_template.fieldInfo[3].offset += transport_offset;
 	ip_traffic_template.fieldInfo[4].offset += transport_offset;
