@@ -88,7 +88,7 @@ public:
         };
 
         // read data from the IP header
-        void getPacketData(int offset, void *dest, int size) const
+        void copyPacketData(int offset, void *dest, int size) const
         {
                 memcpy(dest, (char *)ipHeader + offset, size);
         }
