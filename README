@@ -1,2 +1,50 @@
--faster Linux MMAP()ed PCAP
-http://public.lanl.gov/cpw/
+This is VERMONT - VERsatile MONitoring Tool.
+IPFIX/PSAMP probe
+
+
+REQUIREMENTS
+
+Decent and recent gcc compiler w/ C++ support (there are some gcc-isms)
+libpcap
+*nix (Linux and recent FreeBSD preferred, other untested)
+
+
+INSTALLATION
+
+#> make
+edit test.ini
+#> ./vermont -f test.ini -dddd
+
+Right now, there are only dirty Makefiles in place, so you may want to do a
+full make clean before a rebuild.
+
+
+CONFIGURATION
+
+Packaged comes a commented test.ini file.
+As there are 2 subsystems, each one can be configured indepentently.
+
+
+SAMPLER
+
+Does packet sampling, reads raw packet data from an interface, put them thru
+a filtering mechanism and finally export matching packets to an PSAMP/IPFIX 
+collector.
+
+
+CONCENTRATOR
+
+Reads IPFIX/Netflow data from socket, aggregates data for certain flows, 
+exports this data again via IPFIX.
+
+
+THE HOOK
+
+You can configure VERMONT to inject SAMPLER's captured packets into the
+CONCENTRATOR for aggregation and export.
+
+
+APPENDIX
+
+faster Linux MMAP()ed PCAP: http://public.lanl.gov/cpw/
+
