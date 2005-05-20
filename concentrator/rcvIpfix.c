@@ -938,7 +938,8 @@ IpfixReceiver* createIpfixReceiver(uint16_t port) {
 	}
 	//listenerUdpIpv4(ipfixReceiver); //debug - single-threaded
 	
-	return ipfixReceiver;
+        msg(MSG_DEBUG, "IPFIXReceiver: running");
+        return ipfixReceiver;
 
 out3:
 	close(ipfixReceiver->socket);
