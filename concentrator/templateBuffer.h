@@ -4,6 +4,11 @@
 #include "rcvIpfix.h"
 #include "time.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /***** Constants ************************************************************/
 
 #define TEMPLATE_EXPIRE_SECS  15
@@ -43,5 +48,11 @@ void destroyTemplateBuffer(TemplateBuffer* templateBuffer);
 BufferedTemplate* getBufferedTemplate(TemplateBuffer* templateBuffer, SourceID sourceId, TemplateID templateId);
 void destroyBufferedTemplate(TemplateBuffer* templateBuffer, SourceID sourceId, TemplateID id);
 void bufferTemplate(TemplateBuffer* templateBuffer, BufferedTemplate* bt);
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 #endif

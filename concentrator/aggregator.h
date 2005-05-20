@@ -5,6 +5,10 @@
 #include "rules.h"
 #include "hashing.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***** Constants ************************************************************/
 
 /***** Typedefs *************************************************************/
@@ -14,7 +18,7 @@
  * Create with @c createAggregator()
  */
 typedef struct {
-	Rules* rules; /**< Set of rules that define the aggregator */
+        Rules* rules; /**< Set of rules that define the aggregator */
 } IpfixAggregator;
 
 /***** Prototypes ***********************************************************/
@@ -36,5 +40,10 @@ void pollAggregator(IpfixAggregator* ipfixAggregator);
 void addAggregatorCallbacks(IpfixAggregator* ipfixAggregator, CallbackInfo handles);
 
 CallbackInfo getAggregatorCallbackInfo(IpfixAggregator* ipfixAggregator);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,3 +1,10 @@
+#ifndef IPFIX_H
+#define IPFIX_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define IPFIX_LENGTH_octet 1
 #define IPFIX_LENGTH_unsigned16 2
 #define IPFIX_LENGTH_unsigned32 4
@@ -171,3 +178,9 @@ int string2typelength(char*s);
 #define IPFIX_LENGTH_exportedOctetTotalCount        IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_exportedPacketTotalCount       IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_exportedFlowTotalCount         IPFIX_LENGTH_unsigned64
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

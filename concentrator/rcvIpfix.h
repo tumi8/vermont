@@ -4,6 +4,10 @@
 #include <pthread.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***** Constants ************************************************************/
 
 
@@ -213,5 +217,10 @@ int startIpfixReceiver(IpfixReceiver* ipfixReceiver);
 int stopIpfixReceiver(IpfixReceiver* ipfixReceiver);
 
 void addIpfixReceiverCallbacks(IpfixReceiver* ipfixReceiver, CallbackInfo handles);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

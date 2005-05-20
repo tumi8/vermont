@@ -7,6 +7,11 @@
 
 #define SND_TEMPLATE_EXPIRE_SECS  15
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /**
  * Represents an Exporter.
  * Create with @c createIpfixSender()
@@ -35,4 +40,10 @@ int sndDataDataRecord(void* ipfixSender, SourceID sourceID, DataTemplateInfo* da
 
 CallbackInfo getIpfixSenderCallbackInfo(IpfixSender* ipfixSender);
 
+
+#ifdef __cplusplus
+}
 #endif
+
+#endif
+

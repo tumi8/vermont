@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include "rcvIpfix.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define FIELD_MODIFIER_DISCARD     0
 #define FIELD_MODIFIER_KEEP        1
 #define FIELD_MODIFIER_AGGREGATE   2
@@ -50,5 +54,10 @@ void destroyRules(Rules* rules);
 void printRule(Rule* rule);
 int templateDataMatchesRule(TemplateInfo* info, FieldData* data, Rule* rule);
 int dataTemplateDataMatchesRule(DataTemplateInfo* info, FieldData* data, Rule* rule);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
