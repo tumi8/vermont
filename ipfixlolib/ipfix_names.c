@@ -17,7 +17,7 @@ static const struct ipfix_identifier IPFIXTAB[] = {
 	{ "sourceipv4address", 8, 4 },
 	{ "sourceipv4mask", 9, 1 },
 	{ "ingressinterface", 10, 4 },
-	{ "destinationtransportport", 11, 0 },
+	{ "destinationtransportport", 11, 2 },
 	{ "destinationipv4address", 12, 4 },
 	{ "destinationipv4mask", 13, 1 },
 	{ "egressinterface", 14, 4 },
