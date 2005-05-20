@@ -63,6 +63,8 @@ IpfixSender* createIpfixSender(SourceID sourceID, char* ip, uint16_t port) {
 		return NULL;
 	}
 
+        msg(MSG_DEBUG, "IPFIXSender: running");
+
 	return ipfixSender;
 }
 
