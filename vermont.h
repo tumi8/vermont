@@ -4,12 +4,17 @@
 #include <vector>
 
 #include "iniparser.h"
-#include <sampler/Template.h>
-#include <sampler/Observer.h>
-#include <sampler/Filter.h>
-#include <sampler/PacketProcessor.h>
-#include <sampler/ExporterSink.h>
-#include <sampler/HookingFilter.h>
+#include "sampler/Template.h"
+#include "sampler/Observer.h"
+#include "sampler/Filter.h"
+#include "sampler/PacketProcessor.h"
+#include "sampler/ExporterSink.h"
+#include "sampler/HookingFilter.h"
+
+#include "concentrator/rcvIpfix.h"
+#include "concentrator/aggregator.h"
+#include "concentrator/sndIpfix.h"
+
 
 /* holding all objects/handles/... for the subsystems like sampler and collector */
 struct v_objects {
@@ -32,7 +37,15 @@ struct v_objects {
         HookingFilter *hooking;
 
 	/* for concentrator: */
-	//IpfixReceiver *concentrator;
+        IpfixReceiver *conc_receiver;
+        IpfixAggregator *conc_aggregator;
+        IpfixSender *conc_exporter;
+
+        /* poll aggregator this often */
+        unsigned short conc_poll_ms;
+
+        int conc_exitflag;
+
 };
 
 #endif
