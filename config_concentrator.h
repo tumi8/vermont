@@ -9,5 +9,6 @@
 #define CONFIG_CONCENTRATOR_H
 
 int configure_concentrator(struct v_objects *v);
+void * concentrator_polling(void *arg);
 
 #endif
