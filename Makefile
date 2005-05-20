@@ -5,7 +5,7 @@ CXXFLAGS=$(CFLAGS)
 LIBS=-lstdc++ -lrt -lpcap
 LDFLAGS=$(LIBS) $(CFLAGS)
 TARGET=vermont
-OBJS=vermont.o subsystems.o msg.o iniparser.o config_sampler.o
+OBJS=vermont.o subsystems.o msg.o iniparser.o config_sampler.o config_concentrator.o
 MODULES=ipfixlolib sampler concentrator
 MODULES_LIBS=sampler/libsampler.a ipfixlolib/libipfixlo.a concentrator/libconcentrator.a
 
@@ -17,7 +17,7 @@ modules:
 	done
 
 	
-$(TARGET): $(OBJS)
+$(TARGET): $(OBJS) $(MODULES_LIBS)
 	g++ $(CFLAGS) -o $(TARGET) $(OBJS) $(MODULES_LIBS) $(LIBS)
 
 clean:
@@ -49,3 +49,13 @@ vermont.o: vermont.cc iniparser.h msg.h subsystems.h vermont.h \
 iniparser.o: iniparser.c iniparser.h
 msg.o: msg.c msg.h
 subsystems.o: subsystems.c subsystems.h msg.h
+config_concentrator.o: config_concentrator.cc vermont.h iniparser.h \
+  sampler/Template.h sampler/Observer.h sampler/Thread.h msg.h \
+  sampler/ConcurrentQueue.h sampler/Lock.h sampler/TimeoutLock.h \
+  sampler/Semaphore.h sampler/Packet.h sampler/PacketReceiver.h \
+  sampler/Filter.h sampler/PacketProcessor.h sampler/SystematicSampler.h \
+  sampler/RandomSampler.h sampler/ExporterSink.h ipfixlolib/ipfixlolib.h \
+  ipfixlolib/encoding.h ipfixlolib/ipfix_names.h sampler/Sink.h \
+  sampler/HookingFilter.h concentrator/rcvIpfix.h \
+  concentrator/aggregator.h concentrator/rules.h concentrator/hashing.h \
+  concentrator/sndIpfix.h subsystems.h config_concentrator.h
