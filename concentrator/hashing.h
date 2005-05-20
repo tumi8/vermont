@@ -8,6 +8,10 @@
 #include "rcvIpfix.h"
 #include "rules.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /***** Constants ************************************************************/
 
 #define HASHTABLE_SIZE	65536
@@ -57,5 +61,11 @@ void aggregateDataTemplateData(Hashtable* ht, DataTemplateInfo* ti, FieldData* d
 void destroyHashtable(Hashtable* ht);
 
 void expireFlows(Hashtable* ht);
+
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

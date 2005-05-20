@@ -63,12 +63,12 @@ void sampler_hook_entry(void *ctx, void *data)
 	 - use this offset and add to src/dst_port offset
 	 */
 	transport_offset=abs(ph->transport_header - ph->ip_header);
-	DPRINTF("hook_entry: length is %d\n", ph->length);
+	//DPRINTF("hook_entry: length is %d\n", ph->length);
 
 	ip_traffic_template.fieldInfo[3].offset += transport_offset;
 	ip_traffic_template.fieldInfo[4].offset += transport_offset;
 
-	aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &ip_traffic_template, ph->length, fdata);
+	//aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &ip_traffic_template, ph->length, fdata);
 
 	/* reset ip_traffic_fi, offsets for srcport/dstport to starting values */
 	ip_traffic_template.fieldInfo[3].offset = 0;

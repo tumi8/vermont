@@ -3,6 +3,11 @@
 
 #include "rcvIpfix.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /***** Constants ************************************************************/
 
 /**
@@ -37,5 +42,9 @@ int printDataRecord(void* ipfixPrinter, SourceID sourceID, TemplateInfo* templat
 int printTemplateDestruction(void* ipfixPrinter, SourceID sourceID, TemplateInfo* templateInfo);
 
 CallbackInfo getIpfixPrinterCallbackInfo(IpfixPrinter* ipfixPrinter);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
