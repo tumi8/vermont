@@ -26,6 +26,8 @@ int configure_concentrator(struct v_objects *v)
 
         msg(MSG_DEBUG, "Config: now configuring the concentrator subsystem");
 
+        v->conc_poll_ms=atoi(iniparser_getvalue(conf, CONF_SEC, "poll_interval"));
+
 	initializeIpfixReceivers();
         initializeAggregators();
         initializeIpfixSenders();
@@ -91,6 +93,7 @@ void * concentrator_polling(void *arg)
         IpfixReceiver *ipr=v->conc_receiver;
         IpfixAggregator *ipa=v->conc_aggregator;
 
+        msg(MSG_DEBUG, "Aggregator: polling each %d ms", v->conc_poll_ms);
         /* break millisecond polltime into seconds and nanoseconds */
         req.tv_sec=(v->conc_poll_ms * 1000000) / 1000000000;
         req.tv_nsec=(v->conc_poll_ms * 1000000) % 1000000000;
@@ -101,12 +104,15 @@ void * concentrator_polling(void *arg)
            );
          */
         while(!v->conc_exitflag) {
+                /* TODO: check for EINTR */
+                nanosleep(&req, &rem);
+
+                DPRINTF("Polling aggregator %p\n", ipa);
                 stopIpfixReceiver(ipr);
 		pollAggregator(ipa);
                 startIpfixReceiver(ipr);
 
-                /* TODO: check for EINTR */
-                nanosleep(&req, &rem);
+
         }
 
         return (void *)1;
