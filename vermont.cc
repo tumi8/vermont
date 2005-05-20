@@ -19,6 +19,7 @@
 #include "subsystems.h"
 #include "vermont.h"
 #include "config_sampler.h"
+#include "config_concentrator.h"
 
 using namespace std;
 
@@ -90,21 +91,29 @@ int main(int ac, char **dc)
 
         subsys_dump(v_objects.v_subsystems);
 
+        /* now start all systems */
+        startIpfixSender(v_objects.conc_exporter);
+        startAggregator(v_objects.conc_aggregator);
+        startIpfixReceiver(v_objects.conc_receiver);
+
         v_objects.sink->runSink();
         v_objects.filter->startFilter();
         v_objects.observer->startCapture();
+
+        /* FIXME, DIRTY: to stabilize and wait for threads */
+        sleep(3);
 
         /* record startup time */
         v_objects.v_starttime=time(NULL);
         msg(MSG_DIALOG, "up and running at %s", ctime(&(v_objects.v_starttime)));
 
-        while(1) {
-                const struct timespec sl={60, 0};
+        /*
+         C H E E R I O W !
+         WE ARE UP ! HOOORAY
+        */
 
-                nanosleep(&sl, NULL);
-                msg(MSG_DIALOG, "Filter in: %d", v_objects.filter->pktIn);
-                msg(MSG_DIALOG, "Filter out: %d", v_objects.filter->pktOut);
-        }
+        /* main vermont now runs the periodic polling method for aggregator */
+        concentrator_polling(&v_objects);
 
         return 0;
 }
@@ -183,12 +192,17 @@ static int vermont_configure(struct v_objects *v)
         if(strcasecmp(run_concentrator, "off") == 0) {
                 msg(MSG_DIALOG, "not running concentrator subsystem");
         } else {
-                /*
-                 if(configure_concentrator(v)) {
-                 msg(MSG_FATAL, "Main: Could not configure the concentrator");
-                 return -1;
-                 }
-                 */
+
+                if(configure_concentrator(v)) {
+                        msg(MSG_FATAL, "Main: Could not configure the concentrator");
+                        return -1;
+                }
+        }
+
+        /* after we have a concentrator, we may fill the ctx for the HookingFilter */
+        if(v->hooking) {
+                msg(MSG_DEBUG, "Main: adding context pointer %p (aggregator) to HookingFilter", v->conc_aggregator);
+                v->hooking->setContext(v->conc_aggregator);
         }
 
         return 0;
