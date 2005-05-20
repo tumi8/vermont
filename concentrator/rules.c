@@ -45,6 +45,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include "msg.h"
 
+/* for msg() */
+static char *ss="Aggregator Rules";
+
 #define MAX_LINE_LEN 256
 
 /* --- constants ------------*/
@@ -313,10 +316,11 @@ void destroyRules(Rules* rules) {
  * Reads in a ruleset from the specified file
  */
 Rules* parseRulesFromFile(char* fname) {
+	
 	FILE* f;
 	char buf[MAX_LINE_LEN];
 	char* p;
-
+	
 	Rules* rules = (Rules*)malloc(sizeof(Rules));
 	rules->count = 0;
 
@@ -352,49 +356,50 @@ Rules* parseRulesFromFile(char* fname) {
 		}
 
 		if (!field) {
-			msg(MSG_DEBUG, "Incomplete line");
+			msg(MSG_ERROR, "%s: Incomplete line", ss);
 			continue;
 		}
 
 		if (parseModifier(modifier, &ruleField->modifier) != 0) {
-			msg(MSG_DEBUG, "Bad modifier");
+			msg(MSG_ERROR, "%s: Bad modifier %s", ss, modifier);
 			continue;
 		}
 
 		if ((ruleField->type.id = string2typeid(field)) == 0) {
-			msg(MSG_DEBUG, "Bad type");
+			msg(MSG_ERROR, "%s: Bad typeID %s", ss, field);
 			continue;
 		}
 
 		if ((ruleField->type.length = string2typelength(field)) == 0) {
-			msg(MSG_DEBUG, "Bad type");
+			msg(MSG_ERROR, "%s: Bad typelength %s", ss, field);
 			continue;
 		}
 
 		ruleField->pattern = NULL;
-		if (pattern) switch (ruleField->type.id) {
+		if (pattern)
+		switch (ruleField->type.id) {
 		case IPFIX_TYPEID_protocolIdentifier:
 			if (parseProtoPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
-				msg(MSG_DEBUG, "Unparseable Protocol");
+				msg(MSG_ERROR, "%s: Unparseable Protocol: %s", ss, pattern);
 				continue;
 			}
 			break;
 		case IPFIX_TYPEID_sourceIPv4Address:
 		case IPFIX_TYPEID_destinationIPv4Address:
 			if (parseIPv4Pattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
-				msg(MSG_DEBUG, "Unparseable IP");
+				msg(MSG_ERROR, "%s: Unparseable IP: %s", ss, pattern);
 				continue;
 			}
 			break;
 		case IPFIX_TYPEID_sourceTransportPort:
 		case IPFIX_TYPEID_destinationtransportPort:
 			if (parsePortPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
-				msg(MSG_DEBUG, "Unparseable Port(s)");
+				msg(MSG_ERROR, "%s: Unparseable Port(s): %s", ss, pattern);
 				continue;
 			}
 			break;
 		default:
-			msg(MSG_DEBUG, "This field type cannot be matched against a pattern");
+			msg(MSG_ERROR, "%s: This field %s cannot be matched against a pattern", ss, pattern);
 			continue;
 			break;
 
