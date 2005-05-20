@@ -28,6 +28,9 @@
 #include "subsystems.h"
 #include "config_sampler.h"
 
+/* section in config we get our values from */
+static char *CONF_SEC="sampler";
+
 static int configure_observer(struct v_objects *v, char *interface, int snaplen);
 static int configure_template(struct v_objects *v, uint16_t template_id, char *list);
 static int configure_filter(struct v_objects *v, char *list);
@@ -51,13 +54,13 @@ int configure_sampler(struct v_objects *v)
         msg(MSG_DEBUG, "Config: now configuring the sampler subsystem");
 
         /* dont configure a template if simply using PacketSink -- export_ip=off */
-        if(strcasecmp("off", iniparser_getvalue(conf, "sampler", "export_ip")) == 0) {
+        if(strcasecmp("off", iniparser_getvalue(conf, CONF_SEC, "export_ip")) == 0) {
                 msg(MSG_INFO, "Config: Template will not be build, because export_ip=off");
 
         } else if(configure_template(
                                      v,
-                                     atoi(iniparser_getvalue(conf, "sampler", "template_id")),
-                                     iniparser_getvalue(conf, "sampler", "template")
+                                     atoi(iniparser_getvalue(conf, CONF_SEC, "template_id")),
+                                     iniparser_getvalue(conf, CONF_SEC, "template")
                                     )) {
                 msg(MSG_FATAL, "Config: could not configure a template");
                 return 1;
@@ -69,8 +72,8 @@ int configure_sampler(struct v_objects *v)
          */
         if(configure_observer(
 			       v,
-			       iniparser_getvalue(conf, "sampler", "interface"),
-			       atoi(iniparser_getvalue(conf, "sampler", "capturelen"))
+			       iniparser_getvalue(conf, CONF_SEC, "interface"),
+			       atoi(iniparser_getvalue(conf, CONF_SEC, "capturelen"))
 			      )) {
 		msg(MSG_FATAL, "Config: could not configure an observer(pcap)");
 		return 1;
@@ -85,7 +88,7 @@ int configure_sampler(struct v_objects *v)
 
         if(configure_filter(
 			     v,
-			     iniparser_getvalue(conf, "sampler", "filters")
+			     iniparser_getvalue(conf, CONF_SEC, "filters")
 			    )) {
 
 		msg(MSG_FATAL, "Config: could not configure the filter");
@@ -105,7 +108,7 @@ int configure_sampler(struct v_objects *v)
          */
         if(configure_sink(
                           v,
-                          iniparser_getvalue(conf, "sampler", "export_ip")
+                          iniparser_getvalue(conf, CONF_SEC, "export_ip")
                          )) {
 		msg(MSG_FATAL, "Config: could not configure a packet sink (important)");
                 return 1;
@@ -198,7 +201,7 @@ static int configure_template(struct v_objects *v, uint16_t template_id, char *l
 static int configure_observer(struct v_objects *v, char *interface, int snaplen)
 {
         dictionary *conf=v->v_config;
-        char *pcap_filter=iniparser_getvalue(conf, "sampler", "pcap_filter");
+        char *pcap_filter=iniparser_getvalue(conf, CONF_SEC, "pcap_filter");
         Observer *o;
 
         o=new Observer(interface);
@@ -267,7 +270,7 @@ static int configure_filter(struct v_objects *v, char *list)
         while((token=strsep(&l, ","))) {
 
                 /* lookup setting for this particular filter in config */
-		if(!(p_settings=iniparser_getvalue(conf, "sampler", token))) {
+		if(!(p_settings=iniparser_getvalue(conf, CONF_SEC, token))) {
 			msg(MSG_ERROR, "Filter: ignoring processor %s - has no config", token);
 			continue;
 		}
@@ -395,9 +398,9 @@ static int configure_sink(struct v_objects *v, char *list)
 
         conf=v->v_config;
 
-        source_id=iniparser_getvalue(conf, "sampler", "source_id");
-        dst_port=iniparser_getvalue(conf, "sampler", "export_port");
-        dst_ip=iniparser_getvalue(conf, "sampler", "export_ip");
+        source_id=iniparser_getvalue(conf, CONF_SEC, "source_id");
+        dst_port=iniparser_getvalue(conf, CONF_SEC, "export_port");
+        dst_ip=iniparser_getvalue(conf, CONF_SEC, "export_ip");
 
         /*
          dont want to export ? so the sink is a simple PacketSink
