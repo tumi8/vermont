@@ -55,7 +55,7 @@ public:
                 ipfix_end_template_set(exporter, tmplid);
         };
 
-        bool AddCollector(char *address, unsigned short port, const char *protocol)
+        bool addCollector(char *address, unsigned short port, const char *protocol)
         {
                 ipfix_transport_protocol proto;
 
@@ -100,7 +100,7 @@ public:
         // FlushPacketStream();
 
         // start a new IPFIX packet stream
-        void StartNewPacketStream()
+        void startNewPacketStream()
         {
                 unsigned short net_tmplid = htons(templ->getTemplateID());
                 DPRINTF("Starting new packet stream\n");
@@ -109,7 +109,7 @@ public:
         }
 
         // Add this packet to the packet stream
-        void AddPacket(Packet *pck)
+        void addPacket(Packet *pck)
         {
                 unsigned short ttype, tlength, toffset;
                 // first, store the packet to be released later, after we have sent the data
@@ -123,7 +123,7 @@ public:
         }
 
         // send out the IPFIX packet stream and reset
-        void FlushPacketStream()
+        void flushPacketStream()
         {
                 // end the packet stream and send the IPFIX packet out through the wire
                 ipfix_end_data_set(exporter);

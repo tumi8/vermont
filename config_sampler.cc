@@ -430,7 +430,7 @@ static int configure_sink(struct v_objects *v, char *list)
                    );
 		e=new ExporterSink(v->templ, sID);
 		/* FIXME: alias PacketProcessor to ExportSink, so we can use subfunction */
-                e->AddCollector(dst_ip, (uint16_t)atoi(dst_port), "UDP");
+                e->addCollector(dst_ip, (uint16_t)atoi(dst_port), "UDP");
                 s=e;
         }
 
