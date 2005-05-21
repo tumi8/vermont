@@ -25,7 +25,11 @@ public:
 
 	}
 
-	void setContext(void *c) {
+        /*
+         the hook function may need additional context.
+         in our case we need the instance of the aggregator that gets data
+         */
+        void setContext(void *c) {
 		ctx=c;
 	}
 
