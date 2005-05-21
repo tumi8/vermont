@@ -22,15 +22,16 @@
 class RandomSampler : public PacketProcessor
 {
 public:
-  RandomSampler(int n, int N);
-  
-  virtual bool processPacket(const Packet *p);
-  
+        RandomSampler(int n, int N);
+        virtual bool processPacket(const Packet *p);
+
 protected:
-  int samplingSize; // N
-  int acceptSize;   // n
-  int currentPos;
-  std::vector<bool> sampleMask;
+        /* N */
+        int samplingSize;
+        /* n */
+        int acceptSize;
+        int currentPos;
+        std::vector<bool> sampleMask;
 };
 
 #endif
