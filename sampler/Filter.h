@@ -67,16 +67,21 @@ public:
         }
 
 protected:
+        // pthread object
         Thread thread;
         static void *filterProcess(void *);
+
+        // vector of all sub-filters, called PacketProcessor
         std::vector<PacketProcessor *> processors;
+
         //std::vector<ConcurrentQueue<Packet> *> receivers;
+        // the next in line that gets our output
         ConcurrentQueue<Packet> *receiver;
 
 public:
         bool exitFlag;
 
-        //debug variables
+        // statistics of packets in and the packets passing the filter routines
         unsigned long pktIn;
         unsigned long pktOut;
 
