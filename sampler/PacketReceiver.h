@@ -18,24 +18,24 @@
 class PacketReceiver
 {
 protected:
-  ConcurrentQueue<Packet> *queue;
-  
+	ConcurrentQueue<Packet> *queue;
+
 public:
-  PacketReceiver()
-  {
-    queue = new ConcurrentQueue<Packet>();
-  }
+	PacketReceiver()
+	{
+		queue = new ConcurrentQueue<Packet>();
+	}
 
-  virtual ~PacketReceiver()
-  {
-    delete queue;
-  }
+	virtual ~PacketReceiver()
+	{
+		delete queue;
+	}
 
-  inline virtual ConcurrentQueue<Packet> *getQueue() const
-  {
-    return queue;
-  }
-  
+	inline virtual ConcurrentQueue<Packet> *getQueue() const
+	{
+		return queue;
+	}
+
 };
 
 #endif
