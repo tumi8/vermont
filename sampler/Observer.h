@@ -14,8 +14,10 @@
 #define CAPTURE_LENGTH 128
 /*
  the to_ms arg to pcap_open_live() - wait this long until returning from pcap_next()
- some platforms don't support it
+ some platforms don't support it, though.
  FIXME: HOW LONG? 2000ms is REALLY REALLY LONG!
+ On a busy network we may want to have it shorter.
+ Maybe this should be runtime-configurable.
  */
 #define PCAP_TIMEOUT 1000
 /*
@@ -138,7 +140,7 @@ public:
                 return false;
         }
 
-        /*
+	/*
 	 call to get the main capture thread running
          open() has to be called before
 	 */
@@ -183,22 +185,40 @@ protected:
 
         // pointer to list of pcap-devices
         pcap_if_t *allDevices;
-        pcap_t *captureDevice;
-        uint32_t netmask, network;
-        struct bpf_program pcap_filter;
 
-        char errorBuffer[PCAP_ERRBUF_SIZE];
+        // pcap descriptor of device
+	pcap_t *captureDevice;
+
+        // IPv4 netmask + network bitmasks the interface is on
+	uint32_t netmask, network;
+
+        // holding the pcap filter program
+	struct bpf_program pcap_filter;
+
+        // pcap reports error nicely, this is the used buffer
+	char errorBuffer[PCAP_ERRBUF_SIZE];
+
+        // also called snaplen; only sniff this much bytes from each packet
 	int capturelen;
-        int pcap_timeout;
-        int pcap_promisc;
-        bool ready;
+
+        // wait this much ms until pcap_read() returns and get ALL packets received
+	int pcap_timeout;
+
+        // capture packets in promiscous mode or not
+	int pcap_promisc;
+
+        // set to true if prepare() was successful
+	bool ready;
 
         static void *observerThread(void *);
 
 public:
         bool exitFlag;
-        char *captureInterface;
-        std::vector<ConcurrentQueue<Packet> *> receivers;
+        // interface we capture traffic on - string
+	char *captureInterface;
+
+        // vector of Queues that will get the packets we pass out
+	std::vector<ConcurrentQueue<Packet> *> receivers;
 };
 
 #endif
