@@ -19,7 +19,11 @@ void *Filter::filterProcess(void *arg)
 {
         Filter *filter = Filter::instance;
         Packet *p;
-        bool keepPacket;
+	/*
+	 set to true so packet is always pushed to receiver
+	 even if the pp-iterator below is NULL
+         */
+	bool keepPacket=true;
 
         vector<PacketProcessor *>::iterator it;
 
