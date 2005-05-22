@@ -541,7 +541,7 @@ static void processDataSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, Ipfi
 					if (ci->dataDataRecordCallbackFunction) ci->dataDataRecordCallbackFunction(ci->handle, sourceId, ti, recordLength, record);
 					}
 				record = record + recordLength;
-				}
+			}
 			}
 		} else {
 		msg(MSG_FATAL, "Data Set based on known but unhandled template type %d", bt->setID);
@@ -727,36 +727,36 @@ static void printUint(FieldType type, FieldData* data) {
 		}
 	}
 
-/*
- FIXME: implement clean exiting
- Use pthread_sigmask() ?
+/**
+ * this is the main thread loop for the ipfix receiver
+ * data is read from the network and dispatched via processMessage()
  */
-static void* listenerUdpIpv4(void* ipfixReceiver_) {
-	IpfixReceiver* ipfixReceiver = (IpfixReceiver*)ipfixReceiver_;
-	
+static void * listenerUdpIpv4(void *ipfixReceiver)
+{
+	int n;
 	struct sockaddr_in clientAddress;
 	socklen_t clientAddressLen;
-	byte* data = (byte*)malloc(sizeof(byte)*MAX_MSG_LEN);
-	int n;
+
+	clientAddressLen = sizeof(struct sockaddr_in);
+
+	IpfixReceiver *ipr = (IpfixReceiver *)ipfixReceiver;
+	byte *data = (byte *)malloc(sizeof(byte)*MAX_MSG_LEN);
 	
-	while(1) {
+	while(!ipr->exit) {
 	
-		//static uint16_t packets = 0;
-		//if (packets++ >= 10000) break;
-		
-		clientAddressLen = sizeof(struct sockaddr_in);
-		n = recvfrom(ipfixReceiver->socket, data, MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
+		n = recvfrom(ipr->socket, data, MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
 
 		if(n < 0) {
 			msg(MSG_DEBUG, "recvfrom returned with error, terminating UDP/IPv4 listener thread");
 			break;
 		}
       
-		pthread_mutex_lock(&ipfixReceiver->mutex);
-		processMessage(ipfixReceiver, data, n);
-		pthread_mutex_unlock(&ipfixReceiver->mutex);
+		pthread_mutex_lock(&ipr->mutex);
+		processMessage(ipr, data, n);
+		pthread_mutex_unlock(&ipr->mutex);
 	}
 
+        msg(MSG_DEBUG, "IPFIXReceiver thread (listener) is terminating");
 	free(data);
 
 	return 0;
@@ -957,8 +957,9 @@ out0:
  * receiving messages until stopIpfixReceiver() is called.
  * @return 0 on success, non-zero on error
  */
-int startIpfixReceiver(IpfixReceiver* ipfixReceiver) {
-	if (pthread_mutex_unlock(&ipfixReceiver->mutex) != 0) {
+int startIpfixReceiver(IpfixReceiver* ipfixReceiver)
+{
+	if(pthread_mutex_unlock(&ipfixReceiver->mutex) != 0) {
 		return -1;
 	}
 	
@@ -970,12 +971,30 @@ int startIpfixReceiver(IpfixReceiver* ipfixReceiver) {
  * No more messages will be processed until the next startIpfixReceiver() call.
  * @return 0 on success, non-zero on error
  */
-int stopIpfixReceiver(IpfixReceiver* ipfixReceiver) {
-	if (pthread_mutex_lock(&ipfixReceiver->mutex) != 0) {
+int stopIpfixReceiver(IpfixReceiver* ipfixReceiver)
+{
+	if(pthread_mutex_lock(&ipfixReceiver->mutex) != 0) {
 		return -1;
 	}
 
 	return 0;
+}
+
+/**
+ * Tells the receiver thread to shut down
+ * @return 0 on success from pthread_join, non-zero on error
+ */
+int shutdownIpfixReceiver(IpfixReceiver *ipr)
+{
+	void *ret;
+
+	ipr->exit=1;
+
+	/*
+	 Don't know if it is wise to really WAIT for the thread and not only
+	 detach it - may deadlock
+	 */
+	return(pthread_join(ipr->thread, &ret));
 }
 
 /**
