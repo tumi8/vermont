@@ -197,7 +197,9 @@ typedef struct {
 	CallbackInfo* callbackInfo; /**< Array of callback functions to invoke when new messages arrive */
 	
 	void* templateBuffer;       /**< TemplateBuffer* structure */
-	} IpfixReceiver;
+
+        int exit; /**< exit flag to terminate thread */
+} IpfixReceiver;
 
 /***** Prototypes ***********************************************************/
 
@@ -213,8 +215,9 @@ FieldInfo* getDataTemplateDataInfo(DataTemplateInfo* ti, FieldType* type);
 IpfixReceiver* createIpfixReceiver(uint16_t port);
 void destroyIpfixReceiver(IpfixReceiver* ipfixReceiver);
 
-int startIpfixReceiver(IpfixReceiver* ipfixReceiver);
-int stopIpfixReceiver(IpfixReceiver* ipfixReceiver);
+int startIpfixReceiver(IpfixReceiver *ipr);
+int stopIpfixReceiver(IpfixReceiver *ipr);
+int shutdownIpfixReceiver(IpfixReceiver *ipr);
 
 void addIpfixReceiverCallbacks(IpfixReceiver* ipfixReceiver, CallbackInfo handles);
 
