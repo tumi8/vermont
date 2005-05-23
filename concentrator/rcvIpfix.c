@@ -743,7 +743,7 @@ static void * listenerUdpIpv4(void *ipfixReceiver)
 	IpfixReceiver *ipr = (IpfixReceiver *)ipfixReceiver;
 	byte *data = (byte *)malloc(sizeof(byte)*MAX_MSG_LEN);
 	
-        msg(MSG_DEBUG, "now running IPFIX listener thread");
+        msg(MSG_INFO, "IPFIX receiver: now running IPFIX listener thread");
 	
 	while(!ipr->exit) {
 		/* if we block here, exiting of this thread is delayed until the next packet :( */
