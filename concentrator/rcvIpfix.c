@@ -730,6 +730,7 @@ static void printUint(FieldType type, FieldData* data) {
 /**
  * this is the main thread loop for the ipfix receiver
  * data is read from the network and dispatched via processMessage()
+ * TODO: if we block in recvfrom(), we won't exit the thread!
  */
 static void * listenerUdpIpv4(void *ipfixReceiver)
 {
@@ -742,8 +743,10 @@ static void * listenerUdpIpv4(void *ipfixReceiver)
 	IpfixReceiver *ipr = (IpfixReceiver *)ipfixReceiver;
 	byte *data = (byte *)malloc(sizeof(byte)*MAX_MSG_LEN);
 	
-	while(!ipr->exit) {
+        msg(MSG_DEBUG, "now running IPFIX listener thread");
 	
+	while(!ipr->exit) {
+		/* if we block here, exiting of this thread is delayed until the next packet :( */
 		n = recvfrom(ipr->socket, data, MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
 
 		if(n < 0) {
