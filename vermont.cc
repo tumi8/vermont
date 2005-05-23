@@ -28,6 +28,7 @@ static void sig_handler(int x);
 static int setup_signal(int signal, void (*handler)(int));
 static int vermont_readconf(dictionary **conf, char *file);
 static int vermont_configure(struct v_objects *v);
+static int vermont_start_all(struct v_objects *v);
 
 int main(int ac, char **dc)
 {
@@ -88,20 +89,9 @@ int main(int ac, char **dc)
         if(vermont_configure(&v_objects)) {
                 exit(-1);
         }
-
         subsys_dump(v_objects.v_subsystems);
 
-        /* now start all systems */
-        startIpfixSender(v_objects.conc_exporter);
-        startAggregator(v_objects.conc_aggregator);
-        startIpfixReceiver(v_objects.conc_receiver);
-
-        v_objects.sink->runSink();
-        v_objects.filter->startFilter();
-        v_objects.observer->startCapture();
-
-        /* FIXME, DIRTY: to stabilize and wait for threads */
-        sleep(3);
+        vermont_start_all(&v_objects);
 
         /* record startup time */
         v_objects.v_starttime=time(NULL);
@@ -112,8 +102,15 @@ int main(int ac, char **dc)
          WE ARE UP ! HOOORAY
         */
 
-        /* main vermont now runs the periodic polling method for aggregator */
-        concentrator_polling(&v_objects);
+        /*
+         main vermont now runs the periodic polling method for aggregator, if we have one
+         if not, simply block on pause() until signalled
+         */
+        if(v_objects.conc_aggregator) {
+                concentrator_polling(&v_objects);
+        } else {
+                pause();
+        }
 
         return 0;
 }
@@ -172,15 +169,27 @@ static int vermont_configure(struct v_objects *v)
         char *hooking=iniparser_getvalue(conf, "main", "packets");
 
         /*
-         check if we run the sampler
-         if sampler is off, then we can use the sampler->concentrator hook
+         safety check for the hook
+         for the hook, BOTH subsystems have to be on
          */
-        if(strcasecmp(run_sampler, "off") == 0) {
-                if(strcasecmp(hooking, "off") != 0) {
-                        msg(MSG_FATAL, "sampler input is disabled, but hooking is used");
+        if(strcasecmp(hooking, "off") != 0) {
+
+                if((strcasecmp(run_sampler, "off") == 0) ||
+                   (strcasecmp(run_concentrator, "off") == 0)
+                  ) {
+                        msg(MSG_FATAL,
+                            "Main: Hooking is used (%s), but either concentrator(%s) or sampler(%s) is off",
+                            hooking,
+                            run_concentrator,
+                            run_sampler
+                           );
+                        msg(MSG_FATAL, "Both must be enabled");
                         return -1;
                 }
+        }
 
+        /* check if we run the sampler */
+        if(strcasecmp(run_sampler, "off") == 0) {
                 msg(MSG_DIALOG, "not running sampler subsystem");
         } else {
                 if(configure_sampler(v)) {
@@ -189,6 +198,7 @@ static int vermont_configure(struct v_objects *v)
                 }
         }
 
+        /* check if we run the concentrator */
         if(strcasecmp(run_concentrator, "off") == 0) {
                 msg(MSG_DIALOG, "not running concentrator subsystem");
         } else {
@@ -209,6 +219,29 @@ static int vermont_configure(struct v_objects *v)
 }
 
 
+/* starts all configured subsystems */
+static int vermont_start_all(struct v_objects *v)
+{
+        if(v->conc_receiver) {
+                startIpfixReceiver(v->conc_receiver);
+                startIpfixSender(v->conc_exporter);
+                startAggregator(v->conc_aggregator);
+        }
+
+        if(v->observer) {
+                v->sink->runSink();
+                v->filter->startFilter();
+                v->observer->startCapture();
+        }
+
+        /* FIXME, DIRTY: to stabilize and wait for threads */
+        sleep(1);
+
+        return 0;
+}
+
+
+
 /* bla bla bla */
 static void usage()
 {
@@ -217,7 +250,7 @@ static void usage()
                " mandatory:\n" \
                "    -f <inifile>     load config\n" \
                " optional:\n" \
-               "    -d               increase debug level\n" \
+               "    -d               increase debug level (specify multiple for even more)\n" \
               );
 }
 

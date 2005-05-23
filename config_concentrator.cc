@@ -20,19 +20,20 @@ static char *CONF_SEC="concentrator";
 int configure_concentrator(struct v_objects *v)
 {
         dictionary *conf=v->v_config;
-        IpfixSender *ips;
-        IpfixAggregator *ipa;
-        IpfixReceiver *ipr;
+        IpfixSender *ips=NULL;
+        IpfixAggregator *ipa=NULL;
+        IpfixReceiver *ipr=NULL;
 
         msg(MSG_DEBUG, "Config: now configuring the concentrator subsystem");
 
         v->conc_poll_ms=atoi(iniparser_getvalue(conf, CONF_SEC, "poll_interval"));
 
-	initializeIpfixReceivers();
-        initializeAggregators();
-        initializeIpfixSenders();
 
+        /* Initialize concentrator subsystems reversely */
+
+        /* make IPFIX exporter/sender */
         msg(MSG_DEBUG, "Config: now making IPFIX sender");
+        initializeIpfixSenders();
         if(!(ips=createIpfixSender(
                               atoi(iniparser_getvalue(conf, CONF_SEC, "source_id")),
                               iniparser_getvalue(conf, CONF_SEC, "export_ip"),
@@ -43,7 +44,9 @@ int configure_concentrator(struct v_objects *v)
         }
         subsys_on(&(v->v_subsystems), SUBSYS_CONC_EXPORT);
 
+        /* make IPFIX aggregator */
         msg(MSG_DEBUG, "Config: now making IPFIX aggregator");
+        initializeAggregators();
         if(!(ipa=createAggregator(
                              iniparser_getvalue(conf, CONF_SEC, "rules"),
                              atoi(iniparser_getvalue(conf, CONF_SEC, "buffertime_min")),
@@ -55,14 +58,13 @@ int configure_concentrator(struct v_objects *v)
         addAggregatorCallbacks(ipa, getIpfixSenderCallbackInfo(ips));
         subsys_on(&(v->v_subsystems), SUBSYS_CONC_ACCOUNT);
 
-
-        msg(MSG_DEBUG, "Config: now making IPFIX receiver");
+        /* make IPFIX receiver/collector */
+        initializeIpfixReceivers();
         if(!(ipr=createIpfixReceiver(atoi(iniparser_getvalue(conf, CONF_SEC, "listen_port"))))) {
                 goto out2;
         }
         addIpfixReceiverCallbacks(ipr, getAggregatorCallbackInfo(ipa));
         subsys_on(&(v->v_subsystems), SUBSYS_CONC_RECEIVE);
-
 
         v->conc_receiver=ipr;
         v->conc_exporter=ips;
