@@ -28,7 +28,6 @@ int configure_concentrator(struct v_objects *v)
 
         v->conc_poll_ms=atoi(iniparser_getvalue(conf, CONF_SEC, "poll_interval"));
 
-
         /* Initialize concentrator subsystems reversely */
 
         /* make IPFIX exporter/sender */
@@ -95,7 +94,7 @@ void * concentrator_polling(void *arg)
         IpfixReceiver *ipr=v->conc_receiver;
         IpfixAggregator *ipa=v->conc_aggregator;
 
-        msg(MSG_DEBUG, "Aggregator: polling each %d ms", v->conc_poll_ms);
+        msg(MSG_DEBUG, "Aggregator: polling aggregator %p each %d ms", ipa, v->conc_poll_ms);
         /* break millisecond polltime into seconds and nanoseconds */
         req.tv_sec=(v->conc_poll_ms * 1000000) / 1000000000;
         req.tv_nsec=(v->conc_poll_ms * 1000000) % 1000000000;
