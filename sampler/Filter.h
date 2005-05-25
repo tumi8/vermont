@@ -9,6 +9,9 @@
  *
  */
 
+/*
+ changed by: Ronny T. Lampert, 2005, for VERMONT
+ */
 #ifndef FILTER_H
 #define FILTER_H
 
@@ -27,7 +30,7 @@
 class Filter : public PacketReceiver
 {
 public:
-        Filter() : thread(Filter::filterProcess), exitFlag(false),pktIn(0), pktOut(0)
+        Filter() : thread(Filter::filterProcess), exitFlag(false), pktIn(0), pktOut(0)
         {
         }
 
@@ -37,10 +40,8 @@ public:
 
         bool startFilter()
         {
-                Filter::instance = this;
-
                 msg(MSG_DEBUG, "Filter: now starting Filter thread");
-                return(thread.run(0));
+                return(thread.run(this));
         }
 
         void terminate()
@@ -74,7 +75,6 @@ protected:
         // vector of all sub-filters, called PacketProcessor
         std::vector<PacketProcessor *> processors;
 
-        //std::vector<ConcurrentQueue<Packet> *> receivers;
         // the next in line that gets our output
         ConcurrentQueue<Packet> *receiver;
 
@@ -85,11 +85,6 @@ public:
         unsigned long pktIn;
         unsigned long pktOut;
 
-        /*
-         FIXME: THIS DESIGN SUCKS!
-         Only one Filtering process per object
-         */
-        static Filter *Filter::instance;
 };
 
 #endif
