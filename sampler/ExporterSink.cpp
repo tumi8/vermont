@@ -30,7 +30,8 @@ void *ExporterSink::exporterSinkProcess(void *arg)
         Packet *p;
 
         int pckCount = 0;
-        int deadline = 400; // timeout in msec after first packet has been added
+        // timeout in msec after first packet has been added
+        int deadline = 400;
 
         msg(MSG_INFO, "Sink: now running ExporterSink thread");
 
