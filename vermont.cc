@@ -134,7 +134,12 @@ static int vermont_readconf(dictionary **conf, char *file)
 
         /* read configuration */
         if(!(d=iniparser_new(file))) {
-                msg(MSG_FATAL, "could not open config_file %s", file);
+                if(file) {
+                        msg(MSG_FATAL, "could not open config_file %s", file);
+                } else {
+                        msg(MSG_FATAL, "no config file given, but mandatory");
+                        usage();
+                }
                 return(-1);
         }
 
