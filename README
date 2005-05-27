@@ -45,6 +45,13 @@ You can configure VERMONT to inject SAMPLER's captured packets into the
 CONCENTRATOR for aggregation and export.
 
 
+NOTES ON MONITORING PORTS
+
+Some switches add an additional field VLAN with size 4Bytes.
+So you have to adjust the pcap_expression to "vlan and ip".
+Futhermore, the Packet::IPHeaderOffset has to adjusted to 18.
+
+
 APPENDIX
 
 faster Linux MMAP()ed PCAP: http://public.lanl.gov/cpw/
