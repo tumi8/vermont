@@ -236,7 +236,7 @@ static int configure_filter(struct v_objects *v, char *list)
         char *l, *token;
 	char *routing;
 	
-        PacketProcessor *p, *hook_f;
+        PacketProcessor *p, *hook_f=NULL;
 	char *p_settings;
 	int p_id;
 
@@ -293,8 +293,13 @@ static int configure_filter(struct v_objects *v, char *list)
 		f->addProcessor(hook_f);
 	}
 
+        /* attach the hooking filter to main struct, we need direct access */
+        if(hook_f) {
+                v->hooking=(HookingFilter *)hook_f;
+        }
+
 	v->filter=f;
-        v->hooking=(HookingFilter *)hook_f;
+
         free(l);
 
         return 0;
