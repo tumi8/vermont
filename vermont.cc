@@ -52,12 +52,10 @@ int main(int ac, char **dc)
                         break;
 
                 case 'h':
-                        usage();
-                        return 0;
-
                 default:
+                        /* print usage and quit vermont, if unknow switch */
                         usage();
-                        break;
+                        exit(1);
                 }
         }
 
