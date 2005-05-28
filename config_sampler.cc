@@ -294,11 +294,9 @@ static int configure_filter(struct v_objects *v, char *list)
 	}
 
         /* attach the hooking filter to main struct, we need direct access */
-        if(hook_f) {
-                v->hooking=(HookingFilter *)hook_f;
-        }
+        v->hooking=(HookingFilter *)hook_f;
 
-	v->filter=f;
+        v->filter=f;
 
         free(l);
 
