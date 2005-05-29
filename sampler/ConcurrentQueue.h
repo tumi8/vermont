@@ -35,6 +35,7 @@ public:
         {
                 lock.lock();
                 queue.push(t);
+		count++;
                 lock.unlock();
 
                 semaphore.post();
@@ -49,10 +50,58 @@ public:
                 lock.lock();
                 result = queue.front();
                 queue.pop();
+		count--;
                 lock.unlock();
 
                 return result;
         };
+
+	// try to pop an entry from the queue before timeout occurs
+	// if successful, res will hold the popped entry and true will be returned
+	// of the timeout has been reached, res will be set to NULL and false will be returned
+	// *******************
+	// *** DEPRECATED, use pop_abs instead
+	// *******************
+	inline bool pop(long timeout_ms, T **res)
+	{
+		// try to get an item from the queue
+		if (!semaphore.wait(timeout_ms))
+		{
+			// timeout occured
+			*res = 0;
+			return false;
+		}
+		
+		// semaphore.wait() succeeded, now pop the frontmost element
+		lock.lock();
+		*res = queue.front();
+		queue.pop();
+		count--;
+		lock.unlock();
+
+		return true;
+	}
+
+	// like pop above, but with absolute time instead of delta.
+	// use this instead of the above, makes things easier!
+	inline bool popAbs(const struct timeval &timeout, T **res)
+	{
+		if (!semaphore.waitAbs(timeout))
+		{
+			// timeout occured
+			*res = 0;
+			return false;
+		}
+
+		// semaphore.wait() succeeded, now pop the frontmost element
+		lock.lock();
+		*res = queue.front();
+		queue.pop();
+		count--;
+		lock.unlock();
+
+		return true;
+	}
 
         inline int getCount() const
         {
