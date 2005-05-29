@@ -10,11 +10,8 @@
  *
  */
 
-/*
- TODO
- FIXME: NO TIME CONSTRAINTS HERE
- TODO
- */
+#include <sys/time.h>
+#include <time.h>
 
 #include "msg.h"
 #include "ipfixlolib/ipfixlolib.h"
@@ -23,15 +20,17 @@
 
 using namespace std;
 
+// maximum time a packet may be in the exporter. in milliseconds.
+#define MAX_PACKET_LIFETIME 400
+
 void *ExporterSink::exporterSinkProcess(void *arg)
 {
         ExporterSink *sink = (ExporterSink *)arg;
         ConcurrentQueue<Packet> *queue = sink->getQueue();
         Packet *p;
-
-        int pckCount = 0;
-        // timeout in msec after first packet has been added
-        int deadline = 400;
+	bool result;
+	struct timeval deadline; // our deadline
+        int pckCount;
 
         msg(MSG_INFO, "Sink: now running ExporterSink thread");
 
@@ -43,14 +42,37 @@ void *ExporterSink::exporterSinkProcess(void *arg)
                 sink->startNewPacketStream();
                 sink->addPacket(p);
 
+		// now calculate the deadline by which the packet has to leave the exporter
+		gettimeofday(&deadline, 0);
+		deadline.tv_usec += MAX_PACKET_LIFETIME * 1000L;
+		if (deadline.tv_usec > 1000000L)
+		{
+			deadline.tv_sec += (deadline.tv_usec / 1000000L);
+			deadline.tv_usec %= 1000000L;
+		}
+
                 while(pckCount < sink->ipfix_maxpackets) {
-                        // TODO: add time constraint here (max. wait time)
-                        p = queue->pop();
-                        // if (timeout) break;
+			/* Before:
+			p = queue->pop();
+			
+			sink->addPacket(p);
+			pckCount++;
+			*/
+		
+			// Try to get next packet from queue before our deadline
+			result = queue->popAbs(deadline, &p);
+
+			// check for timeout and break loop if neccessary
+			if (!result)
+				break;
+
+			// no timeout received, continue waiting, but 
+			
                         sink->addPacket(p);
                         pckCount++;
                 }
                 // TODO: add packets here with time constraints
+		fprintf(stderr, "Flushing packets, reason: %s\n", result ? "MAXPACKETS" : "TIMEOUT");
                 sink->flushPacketStream();
         }
 }
