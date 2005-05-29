@@ -119,8 +119,11 @@ public:
                 return templateID;
         }
 
+/* This is not used in vermont */
+#if 0
         static Template *readFromFile(const char *fileName);
-        bool Template::addField(uint16_t id, uint16_t len);
+#endif	
+        bool addField(uint16_t id, uint16_t len);
 
 };
 
