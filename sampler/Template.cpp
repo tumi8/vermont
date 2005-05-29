@@ -55,6 +55,8 @@ bool Template::addField(uint16_t id, uint16_t len)
 }
 
 
+/* this is not needed within vermont */
+#if 0
 void AddFieldFromString(Template *temp, const char *field)
 {
         if (strncasecmp(field, "SRCIP4", 6) == 0) {
@@ -78,8 +80,6 @@ void AddFieldFromString(Template *temp, const char *field)
         }
 }
 
-/* this is not needed within vermont */
-#if 0
 Template *Template::readFromFile(const char *fileName)
 {
         char buffer[256];
