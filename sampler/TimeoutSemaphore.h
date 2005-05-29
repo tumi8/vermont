@@ -45,6 +45,9 @@ public:
 	// if the timeout is reaced, return false
 	// if the semaphore was successfully acquired, return true
 	// a timeout of -1 means infinite wait
+	// ***********************
+	// ** DEPRECATED, use waitabs() instead
+	// ***********************
 	inline bool wait(long timeout_ms = -1)
 	{
 		bool result = true; // this is true unless a timeout happens
@@ -67,8 +70,8 @@ public:
 				tv.tv_usec += timeout_ms * 1000L;
 				if (tv.tv_usec > 1000000L)
 				{
-				  tv.tv_sec += (tv.tv_usec/1000000L);
-				  tv.tv_usec %= 1000000L;
+					tv.tv_sec += (tv.tv_usec/1000000L);
+					tv.tv_usec %= 1000000L;
 				}
 				ts.tv_sec = tv.tv_sec;
 				ts.tv_nsec = tv.tv_usec * 1000L;
@@ -88,6 +91,37 @@ public:
 			count--;
 		}
 
+		pthread_mutex_unlock(&mutex);
+		return result;
+	}
+
+	// like wait() but with absolute time instead of delta. makes things easier!
+	// Use this instead of the above function
+	inline bool waitAbs(const struct timeval &timeout)
+	{
+		bool result = true;
+		struct timespec ts;
+
+		pthread_mutex_lock(&mutex);
+
+		// check if the semaphore is unavailable
+		if (count == 0) {
+			// we need the timeout as struct timespec, so convert it here
+			TIMEVAL_TO_TIMESPEC(&timeout, &ts);
+			
+			// block and wait for signal or timeout
+			if (pthread_cond_timedwait(&cond, &mutex, &ts) == ETIMEDOUT) {
+				// timeout occured
+				result = false;
+			} else {
+				// we got a signal in time; the semaphore is free to acquire!
+				count--;
+			}
+		} else {
+			// semaphore is free, so just take it
+			count--;
+		}
+		
 		pthread_mutex_unlock(&mutex);
 		return result;
 	}
