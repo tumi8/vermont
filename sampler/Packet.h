@@ -28,6 +28,10 @@
 class Packet
 {
 public:
+	// The number of total packets received, will be incremented by each constructor call
+	// implemented as public-variable for speed reasons (or lazyness reasons? ;-)
+	static unsigned long totalPacketsReceived;
+	
 	/*
 	 data: the raw packet data from the wire, including physical header
 	 ipHeader: start of the IP header: data + (physical dependent) IP header offset
@@ -50,6 +54,8 @@ public:
 		ipHeader = (unsigned char *)data + IPHeaderOffset;
 		transportHeader = (unsigned char *)ipHeader + ipTransportHeaderOffset(ipHeader);
 		length = len;
+
+		totalPacketsReceived++;
 
 		/*
 		 DO NOT SET TIMESTAMP HERE
