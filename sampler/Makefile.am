@@ -11,4 +11,4 @@ sampler_LDADD = -lpcap -lpthread -lipfixlo -L../../ipfixlolib/src
 
 AM_CFLAGS = -DDEBUG -I../../ipfixlolib/src
 AM_CXXFLAGS = -DDEBUG -I../../ipfixlolib/src
-noinst_HEADERS = PacketProcessor.h Thread.h Globals.h Lock.h Observer.h Packet.h PacketSink.h Semaphore.h ConcurrentQueue.h SystematicSampler.h Filter.h ConfigManager.h TimeoutLock.h RandomSampler.h ConfigFile.h Template.h IPHeaderFilter.h IPHeaderFilter.h ExporterSink.h
+noinst_HEADERS = PacketProcessor.h Thread.h Globals.h Lock.h Observer.h Packet.h PacketSink.h Semaphore.h ConcurrentQueue.h SystematicSampler.h Filter.h TimeoutLock.h TimeoutSemaphore.h RandomSampler.h Template.h IPHeaderFilter.h IPHeaderFilter.h ExporterSink.h
