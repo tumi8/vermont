@@ -18,8 +18,6 @@
 #include <sys/time.h>
 #include <errno.h>
 
-#include "msg.h"
-
 class TimeoutLock
 {
 private:
