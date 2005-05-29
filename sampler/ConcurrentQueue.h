@@ -55,23 +55,6 @@ public:
                 return result;
         };
 
-        inline bool try_pop(T **t)
-        {
-                T *result;
-
-                if (!semaphore.try_wait())
-                        return false;
-
-                lock.lock();
-                result = queue.front();
-                queue.pop();
-                lock.unlock();
-
-                *t = result;
-
-                return true;
-        };
-
         inline int getCount() const
         {
                 return count;
