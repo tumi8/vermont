@@ -24,33 +24,33 @@ bool Template::addField(uint16_t id, uint16_t len)
 {
         uint16_t offset;
 
-        switch(id) {
-
-        case FT_SRCIP4:
-                offset=12;
-                break;
-
-        case FT_DSTIP4:
-                offset=16;
-                break;
-
-        case FT_PROTO:
-                offset=9;
-                break;
-
-        case FT_SRCPORT:
-                offset=20;
-                break;
-
-        case FT_DSTPORT:
-                offset=22;
-                break;
-        default:
-                msg(MSG_ERROR, "ID %d currently not supported", id);
-                return false;
-        }
-
-        addFieldWithOffset(id, len, offset);
+	if (id < 0x8000)  // it is a field with data from the packet itself
+	{
+	        switch(id) {
+	        case FT_SRCIP4:
+	                offset=12;
+	                break;
+	        case FT_DSTIP4:
+	                offset=16;
+	                break;
+	        case FT_PROTO:
+	                offset=9;
+	                break;
+	        case FT_SRCPORT:
+	                offset=20;
+	                break;
+	        case FT_DSTPORT:
+	                offset=22;
+	                break;
+	        default:
+	                msg(MSG_ERROR, "ID %d currently not supported", id);
+	                return false;
+		}
+		addFieldWithOffset(id, len, offset);
+        } else {
+		addFieldWithoutOffset(id, len);
+	}
+	
         return true;
 }
 
@@ -72,6 +72,9 @@ void AddFieldFromString(Template *temp, const char *field)
         } else if (strncasecmp(field, "DSTPORT", 7) == 0) {
                 // dest port is at offset 22 (TCP offset 2)
                 temp->addFieldWithOffset(FT_DSTPORT, 2, 22);
+        } else if (strncasecmp(field, "NUMPACKETS", 10) == 0)
+		// number of pacets received. This is metadata!
+		temp->addFieldWithoutOffset(FT_NUMPACKETS, 4);
         }
 }
 
