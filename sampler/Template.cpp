@@ -72,7 +72,7 @@ void AddFieldFromString(Template *temp, const char *field)
         } else if (strncasecmp(field, "DSTPORT", 7) == 0) {
                 // dest port is at offset 22 (TCP offset 2)
                 temp->addFieldWithOffset(FT_DSTPORT, 2, 22);
-        } else if (strncasecmp(field, "NUMPACKETS", 10) == 0)
+        } else if (strncasecmp(field, "NUMPACKETS", 10) == 0) {
 		// number of pacets received. This is metadata!
 		temp->addFieldWithoutOffset(FT_NUMPACKETS, 4);
         }
