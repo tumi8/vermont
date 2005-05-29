@@ -14,8 +14,7 @@
 
 #include <queue>
 #include "Lock.h"
-#include "TimeoutLock.h"
-#include "Semaphore.h"
+#include "TimeoutSemaphore.h"
 
 template<class T>
         class ConcurrentQueue
@@ -63,8 +62,8 @@ public:
 protected:
         std::queue<T *> queue;
         int count;
-        TimeoutLock lock;
-        Semaphore semaphore;
+        Lock lock;
+        TimeoutSemaphore semaphore;
 };
 
 #endif
