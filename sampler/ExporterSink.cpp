@@ -20,59 +20,57 @@
 
 using namespace std;
 
-// maximum time a packet may be in the exporter. in milliseconds.
-#define MAX_PACKET_LIFETIME 400
-
 void *ExporterSink::exporterSinkProcess(void *arg)
 {
-        ExporterSink *sink = (ExporterSink *)arg;
-        ConcurrentQueue<Packet> *queue = sink->getQueue();
-        Packet *p;
+	ExporterSink *sink = (ExporterSink *)arg;
+	ConcurrentQueue<Packet> *queue = sink->getQueue();
+	Packet *p;
 	bool result;
-	struct timeval deadline; // our deadline
-        int pckCount;
+	// our deadline
+	struct timeval deadline;
+	int pckCount;
 
-        msg(MSG_INFO, "Sink: now running ExporterSink thread");
+	msg(MSG_INFO, "Sink: now running ExporterSink thread");
 
-        while(!sink->exitFlag) {
-                pckCount = 1;
+	while(!sink->exitFlag) {
+		pckCount = 1;
 
-                // first we need to get a packet
-                p = queue->pop();
-                sink->startNewPacketStream();
-                sink->addPacket(p);
+		// first we need to get a packet
+		p = queue->pop();
+		sink->startNewPacketStream();
+		sink->addPacket(p);
 
 		// now calculate the deadline by which the packet has to leave the exporter
 		gettimeofday(&deadline, 0);
-		deadline.tv_usec += MAX_PACKET_LIFETIME * 1000L;
-		if (deadline.tv_usec > 1000000L)
-		{
+		deadline.tv_usec += sink->exportTimeout * 1000L;
+		if(deadline.tv_usec > 1000000L) {
 			deadline.tv_sec += (deadline.tv_usec / 1000000L);
 			deadline.tv_usec %= 1000000L;
 		}
 
-                while(pckCount < sink->ipfix_maxpackets) {
+		while(pckCount < sink->ipfix_maxpackets) {
 			/* Before:
-			p = queue->pop();
-			
-			sink->addPacket(p);
-			pckCount++;
-			*/
-		
+			 p = queue->pop();
+
+			 sink->addPacket(p);
+			 pckCount++;
+			 */
+
 			// Try to get next packet from queue before our deadline
 			result = queue->popAbs(deadline, &p);
 
 			// check for timeout and break loop if neccessary
-			if (!result)
+			if(!result)
 				break;
 
-			// no timeout received, continue waiting, but 
-			
-                        sink->addPacket(p);
-                        pckCount++;
-                }
-                // TODO: add packets here with time constraints
+			// no timeout received, continue waiting, but
+
+			sink->addPacket(p);
+			pckCount++;
+		}
+
+		// TODO: add packets here with time constraints
 		DPRINTF("ExporterSink flushing packets, reason: %s\n", result ? "MAXPACKETS" : "TIMEOUT");
-                sink->flushPacketStream();
-        }
+		sink->flushPacketStream();
+	}
 }
