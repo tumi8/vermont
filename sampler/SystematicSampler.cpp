@@ -35,7 +35,5 @@ bool SystematicSampler::processPacket(const Packet *p)
 		return ((packetCount % interval) < samplingOnTime);
 		break;
 	}
-
-
-
+	return 0;
 }

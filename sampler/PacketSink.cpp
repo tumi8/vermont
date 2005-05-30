@@ -27,5 +27,6 @@ void *PacketSink::packetSinkProcess(void *arg)
                 p->release();
                 //DPRINTF("SINK: free packet");
         }
+	return 0;
 }
 

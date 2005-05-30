@@ -142,6 +142,7 @@ public:
 	inline bool try_wait()
 	{
 		// not yet implemented
+		return false;
 	};
 };
 

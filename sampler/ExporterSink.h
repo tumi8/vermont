@@ -32,9 +32,9 @@ class ExporterSink : public Sink
 {
 public:
         ExporterSink(Template *tmpl, int sID) : sourceID(sID),
-                templ(tmpl), thread(ExporterSink::exporterSinkProcess), exitFlag(false),
+                templ(tmpl), thread(ExporterSink::exporterSinkProcess),
 		numPacketsToRelease(0), ipfix_maxpackets(IPFIX_PACKETS_MAX),
-		exportTimeout(MAX_PACKET_LIFETIME)
+		exportTimeout(MAX_PACKET_LIFETIME), exitFlag(false)
         {
                 int ret, i, tmplid;
                 unsigned short ttype, tlength, toffset;
@@ -68,8 +68,7 @@ public:
                         proto = UDP;
                 } else {
                         msg(MSG_ERROR, "ExporterSink: invalid protocol %s for %s",
-                            protocol, address
-                           );
+                            protocol, address);
                         return false;
                 }
 
@@ -91,6 +90,7 @@ public:
         bool terminateSink()
         {
                 exitFlag = true;
+		return true;
         };
 
         // the usage of the following functions is:
