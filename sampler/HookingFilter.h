@@ -21,8 +21,7 @@ public:
                 f=hook;
 	}
 
-	~HookingFilter() {
-
+	virtual ~HookingFilter() {
 	}
 
         /*
