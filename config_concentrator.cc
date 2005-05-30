@@ -108,7 +108,7 @@ void * concentrator_polling(void *arg)
                 /* TODO: check for EINTR */
                 nanosleep(&req, &rem);
 
-                DPRINTF("Polling aggregator %p\n", ipa);
+                //DPRINTF("Polling aggregator %p\n", ipa);
                 stopIpfixReceiver(ipr);
 		pollAggregator(ipa);
                 startIpfixReceiver(ipr);

@@ -1,6 +1,6 @@
 CC=gcc
 INCLUDES=-I..
-CFLAGS=-O -pg -Wall $(INCLUDES)
+CFLAGS=-O2 -pg -Wall $(INCLUDES)
 TARGET=libipfixlo.a
 
 all: $(TARGET)
