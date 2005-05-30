@@ -1,8 +1,8 @@
 INCLUDES=-I.
 CC=gcc
-CFLAGS=-O -DDEBUG -g $(INCLUDES)
+CFLAGS=-O -pg $(INCLUDES)
 CXXFLAGS=$(CFLAGS)
-LIBS=-lstdc++ -lrt -lpcap
+LIBS=-lstdc++ -lpcap -lpthread
 LDFLAGS=$(LIBS) $(CFLAGS)
 TARGET=vermont
 OBJS=vermont.o subsystems.o msg.o iniparser.o config_sampler.o config_concentrator.o
