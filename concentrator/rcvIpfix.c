@@ -259,7 +259,9 @@ static void processOptionsTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sou
 			for (fieldNo = 0; fieldNo < ti->scopeCount; fieldNo++) ti->scopeInfo[fieldNo].offset = 65535;
 			for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) ti->fieldInfo[fieldNo].offset = 65535;
   			}
-		bufferTemplate(ipfixReceiver->templateBuffer, bt); bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
+		bufferTemplate(ipfixReceiver->templateBuffer, bt); 
+		// FIXME: Template expiration disabled for debugging
+		// bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
 
 
 		int n;		
@@ -351,7 +353,10 @@ static void processDataTemplateSet(IpfixReceiver* ipfixReceiver, SourceID source
 		/* Advance record to end of fixed data block, i.e. start of next template*/
 		record += dataLength;
 		
-		bufferTemplate(ipfixReceiver->templateBuffer, bt); bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
+		bufferTemplate(ipfixReceiver->templateBuffer, bt); 
+		// FIXME: Template expiration disabled for debugging
+		// bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
+
 		int n;		
 		for (n = 0; n < ipfixReceiver->callbackCount; n++) {
 			CallbackInfo* ci = &ipfixReceiver->callbackInfo[n];
