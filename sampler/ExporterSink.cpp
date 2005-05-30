@@ -68,9 +68,6 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 			sink->addPacket(p);
 			pckCount++;
 		}
-
-		// TODO: add packets here with time constraints
-		DPRINTF("ExporterSink flushing packets, reason: %s\n", result ? "MAXPACKETS" : "TIMEOUT");
 		sink->flushPacketStream();
 	}
 }
