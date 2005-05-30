@@ -23,6 +23,10 @@ class RandomSampler : public PacketProcessor
 {
 public:
         RandomSampler(int n, int N);
+	virtual ~RandomSampler()
+	{
+	};
+	
         virtual bool processPacket(const Packet *p);
 
 protected:

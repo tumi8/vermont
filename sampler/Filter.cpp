@@ -67,5 +67,6 @@ void *Filter::filterProcess(void *arg)
 			p->release();
 		}
 	}
+	return 0;
 };
 

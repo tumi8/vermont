@@ -41,10 +41,9 @@
 class Observer {
 public:
         // ObserverThread constructor
-	Observer(char *interface) : thread(Observer::observerThread),
-		ready(false), exitFlag(false),
-		capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), pcap_promisc(1),
-		allDevices(NULL), captureDevice(NULL)
+	Observer(char *interface) : thread(Observer::observerThread), allDevices(NULL),
+		captureDevice(NULL), capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
+		pcap_promisc(1), ready(false), exitFlag(false)
         {
 		captureInterface=interface;
 	};

@@ -37,7 +37,9 @@ public:
                 interval = samplingOnTime + samplingOffTime;
         };
 
-        ~SystematicSampler();
+        virtual ~SystematicSampler()
+	{
+	};
 
         virtual bool processPacket(const Packet *p);
 

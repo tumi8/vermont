@@ -70,4 +70,5 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 		}
 		sink->flushPacketStream();
 	}
+	return 0;
 }
