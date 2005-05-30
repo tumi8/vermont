@@ -1,6 +1,6 @@
 # Prelim dirty makefile
 INCLUDES=-I..
-CFLAGS=-O -pg $(INCLUDES)
+CFLAGS=-O2 -pg $(INCLUDES)
 CXXFLAGS=$(CFLAGS)
 CC=gcc
 CXX=g++

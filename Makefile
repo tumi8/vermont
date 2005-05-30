@@ -1,6 +1,6 @@
 INCLUDES=-I.
 CC=gcc
-CFLAGS=-O -pg $(INCLUDES)
+CFLAGS=-O2 -DDEBUG -g $(INCLUDES) -pg
 CXXFLAGS=$(CFLAGS)
 LIBS=-lstdc++ -lpcap -lpthread
 LDFLAGS=$(LIBS) $(CFLAGS)
