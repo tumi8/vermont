@@ -173,7 +173,7 @@ protected:
         int numPacketsToRelease;
         Packet *packetsToRelease[MAX_PACKETS];
 
-        // put this much packets into one big IPFIX packet
+        // put this many packets into one big IPFIX packet
 	int ipfix_maxpackets;
 
         // time-constraint for exporting data, in ms
