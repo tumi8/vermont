@@ -108,7 +108,7 @@ public:
 			
 			temp = malloc(fieldLength[num]);
 			*((unsigned long *)temp) = Packet::totalPacketsReceived;
-			break;
+			return temp;
 		default:
 			return 0;
 		}

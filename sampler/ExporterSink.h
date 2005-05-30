@@ -121,7 +121,12 @@ public:
 
                 for(int i = 0; i < templ->getFieldCount(); i++) {
                         templ->getFieldInfo(i, &ttype, &tlength, &toffset);
-                        ipfix_put_data_field(exporter, pck->getPacketData(toffset), tlength);
+			if (ttype > 0x8000) {
+				// it is a meta-field --> get the metadata
+				ipfix_put_data_field(exporter, templ->getMetaFieldData(i), tlength);
+			} else {
+                        	ipfix_put_data_field(exporter, pck->getPacketData(toffset), tlength);
+			}
                 }
         }
 
