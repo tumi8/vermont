@@ -33,8 +33,9 @@ class ExporterSink : public Sink
 public:
         ExporterSink(Template *tmpl, int sID) : sourceID(sID),
                 templ(tmpl), thread(ExporterSink::exporterSinkProcess),
-		numPacketsToRelease(0), ipfix_maxpackets(IPFIX_PACKETS_MAX),
-		exportTimeout(MAX_PACKET_LIFETIME), exitFlag(false)
+		numPacketsToRelease(0), numMetaFieldsToRelease(0), 
+		ipfix_maxpackets(IPFIX_PACKETS_MAX), exportTimeout(MAX_PACKET_LIFETIME), 
+		exitFlag(false)
         {
                 int ret, i, tmplid;
                 unsigned short ttype, tlength, toffset;
@@ -115,6 +116,7 @@ public:
         void addPacket(Packet *pck)
         {
                 unsigned short ttype, tlength, toffset;
+		void *metadata;
                 // first, store the packet to be released later, after we have sent the data
                 DPRINTF("Adding packet to stream\n");
                 packetsToRelease[numPacketsToRelease++] = pck;
@@ -123,7 +125,9 @@ public:
                         templ->getFieldInfo(i, &ttype, &tlength, &toffset);
 			if (ttype > 0x8000) {
 				// it is a meta-field --> get the metadata
-				ipfix_put_data_field(exporter, templ->getMetaFieldData(i), tlength);
+				metadata = templ->getMetaFieldData(i);
+				ipfix_put_data_field(exporter, metadata, tlength);
+				metaFieldsToRelease[numMetaFieldsToRelease++] = metadata;
 			} else {
                         	ipfix_put_data_field(exporter, pck->getPacketData(toffset), tlength);
 			}
@@ -142,7 +146,14 @@ public:
                 {
                         (packetsToRelease[i])->release();
                 }
+		// now release the additional metadata fields
+		DPRINTF("Flushing %d Metadata fields from stream\n", numMetaFieldsToRelease);
+		for (int i = 0; i < numMetaFieldsToRelease; i++)
+		{
+			free(metaFieldsToRelease[i]);
+		}
                 numPacketsToRelease = 0;
+		numMetaFieldsToRelease = 0;
         }
 
 
@@ -177,6 +188,9 @@ protected:
         // these packets need to be release()'d after we send the current IPFIX packet
         int numPacketsToRelease;
         Packet *packetsToRelease[MAX_PACKETS];
+	
+	int numMetaFieldsToRelease;
+	void *metaFieldsToRelease[MAX_PACKETS*10];
 
         // put this many packets into one big IPFIX packet
 	int ipfix_maxpackets;
