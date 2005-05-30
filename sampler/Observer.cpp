@@ -95,3 +95,5 @@ void *Observer::observerThread(void *arg)
 	pthread_exit((void *)1);
 }
 
+static void plain_c_sucks_because_people_dont_seem_to_have_a_caps_key_and_like_to_type_stupid_underscores_alot(){}
+
