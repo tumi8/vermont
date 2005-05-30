@@ -397,43 +397,47 @@ static int configure_sink(struct v_objects *v, char *list)
 {
         dictionary *conf;
         Sink *s;
-        char *dst_port, *dst_ip, *source_id;
+        char *dst_port, *dst_ip, *source_id, *export_timeout;
 
         conf=v->v_config;
-
-        source_id=iniparser_getvalue(conf, CONF_SEC, "source_id");
-        dst_port=iniparser_getvalue(conf, CONF_SEC, "export_port");
-        dst_ip=iniparser_getvalue(conf, CONF_SEC, "export_ip");
 
         /*
          dont want to export ? so the sink is a simple PacketSink
          we need a sink, or else no packets will be free()d
          */
         if(strcasecmp(list, "off") == 0) {
-                s=new PacketSink();
-                msg(MSG_DEBUG, "Sink: using plain PacketSink()");
+		msg(MSG_DEBUG, "Sink: making plain PacketSink()");
+		s=new PacketSink();
         } else {
-                int sID;
+		int sID, timeout;
                 ExporterSink *e;
+
+		source_id=iniparser_getvalue(conf, CONF_SEC, "source_id");
+		dst_port=iniparser_getvalue(conf, CONF_SEC, "export_port");
+		dst_ip=iniparser_getvalue(conf, CONF_SEC, "export_ip");
+		export_timeout=iniparser_getvalue(conf, CONF_SEC, "export_timeout");
+
 		/* check parameters */
-		if(!source_id || !dst_port || !dst_ip) {
+		if(!source_id || !dst_port || !dst_ip || !export_timeout) {
 			msg(MSG_FATAL,
-			    "Sink: not all parameters in config: source_id: %s, dst_port: %s, dst_ip: %s",
-			    source_id, dst_port, dst_ip
+			    "Sink: not all parameters in config: source_id: %s, dst_port: %s, dst_ip: %s, export_timeout: %s",
+			    source_id, dst_port, dst_ip, export_timeout
 			   );
 			return 1;
 		}
 
-                sID=atoi(source_id);
+		sID=atoi(source_id);
+                timeout=atoi(export_timeout);
 		/* do a real exporter sink */
-                msg(MSG_DEBUG, "Sink: using ExporterSink(), own source_ID %d, dst %s:%s",
+		msg(MSG_DEBUG, "Sink: making ExporterSink(), own source_ID %d, dst %s:%s, timeout %d ms",
 		    sID,
                     dst_ip,
-                    dst_port
-                   );
+		    dst_port,
+		    timeout
+		   );
 		e=new ExporterSink(v->templ, sID);
-		/* FIXME: alias PacketProcessor to ExportSink, so we can use subfunction */
-                e->addCollector(dst_ip, (uint16_t)atoi(dst_port), "UDP");
+		e->addCollector(dst_ip, (uint16_t)atoi(dst_port), "UDP");
+                e->setExportTimeout(timeout);
                 s=e;
         }
 

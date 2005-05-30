@@ -25,13 +25,16 @@
 #define MAX_PACKETS 1024
 // the default maximum of IPFIX packet per big IPFIX packet sent
 #define IPFIX_PACKETS_MAX 10
+// maximum time a packet may be in the exporter. in milliseconds.
+#define MAX_PACKET_LIFETIME 400
 
 class ExporterSink : public Sink
 {
 public:
         ExporterSink(Template *tmpl, int sID) : sourceID(sID),
                 templ(tmpl), thread(ExporterSink::exporterSinkProcess), exitFlag(false),
-                numPacketsToRelease(0), ipfix_maxpackets(IPFIX_PACKETS_MAX)
+		numPacketsToRelease(0), ipfix_maxpackets(IPFIX_PACKETS_MAX),
+		exportTimeout(MAX_PACKET_LIFETIME)
         {
                 int ret, i, tmplid;
                 unsigned short ttype, tlength, toffset;
@@ -149,7 +152,14 @@ public:
         int getMaxIpfixPP()
         {
                 return ipfix_maxpackets;
-        }
+	}
+
+	bool setExportTimeout(int ms)
+	{
+		exportTimeout=ms;
+
+                return true;
+	}
 
 protected:
         int sourceID;
@@ -163,7 +173,11 @@ protected:
         int numPacketsToRelease;
         Packet *packetsToRelease[MAX_PACKETS];
 
-        int ipfix_maxpackets;
+        // put this much packets into one big IPFIX packet
+	int ipfix_maxpackets;
+
+        // time-constraint for exporting data, in ms
+	int exportTimeout;
 
 public:
         bool exitFlag;
