@@ -72,7 +72,7 @@ void *ExporterSink::exporterSinkProcess(void *arg)
                         pckCount++;
                 }
                 // TODO: add packets here with time constraints
-		fprintf(stderr, "Flushing packets, reason: %s\n", result ? "MAXPACKETS" : "TIMEOUT");
+		DPRINTF("ExporterSink flushing packets, reason: %s\n", result ? "MAXPACKETS" : "TIMEOUT");
                 sink->flushPacketStream();
         }
 }
