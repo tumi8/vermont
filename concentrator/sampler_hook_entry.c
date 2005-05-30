@@ -8,6 +8,8 @@
 #define HOOK_SOURCE_ID 4913
 /* just for abs */
 #include <stdlib.h>
+/* be sure we get the htonl et al inlined */
+#include <netinet/in.h>
 
 #include "aggregator.h"
 #include "rcvIpfix.h"
