@@ -19,6 +19,12 @@ edit test.ini
 Right now, there are only dirty Makefiles in place, so you may want to do a
 full make clean before a rebuild.
 
+If you want more debugging output, define DEBUG that Makefile of which
+subsystem you want more output from - that is, add -DDEBUG to CFLAGS.
+If you want to use it production-wise don't define it - nasty output.
+
+Technically it allows the DPRINTF()s in the source to be in effect.
+
 
 CONFIGURATION
 
