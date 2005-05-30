@@ -139,11 +139,6 @@ public:
 		pthread_mutex_unlock(&mutex);
 	};
 
-	inline bool try_wait()
-	{
-		// not yet implemented
-		return false;
-	};
 };
 
 #endif

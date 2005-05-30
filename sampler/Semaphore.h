@@ -43,10 +43,6 @@ public:
 		sem_post(&semaphore);
 	};
 
-	inline bool try_wait()
-	{
-		return(sem_trywait(&semaphore) == 0 ? true : false);
-	};
 };
 
 #endif
