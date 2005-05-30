@@ -11,7 +11,7 @@ extern "C" {
 
 /***** Constants ************************************************************/
 
-#define TEMPLATE_EXPIRE_SECS  15
+#define TEMPLATE_EXPIRE_SECS  60
 
 /***** Data Types ************************************************************/
 

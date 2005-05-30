@@ -5,8 +5,6 @@
 
 /***** Constants ************************************************************/
 
-#define SND_TEMPLATE_EXPIRE_SECS  15
-
 #ifdef __cplusplus
 extern "C" {
 #endif
