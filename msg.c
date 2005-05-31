@@ -67,6 +67,7 @@ int msg_stat(char *fmt, ...)
 
                 pthread_mutex_lock(&stat_lock);
                 vfprintf(stat_file, fmt, args);
+                fputs("\n", stat_file);
                 pthread_mutex_unlock(&stat_lock);
 
                 va_end(args);
