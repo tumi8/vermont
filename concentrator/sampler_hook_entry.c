@@ -27,86 +27,57 @@ extern "C" {
 #endif
 
 static FieldInfo ip_traffic_fi[] = {
-	/*
-	 { { ID, len, enterprise}, offset} for:
-	 packet count
-	 flowcreationtime
-         flowendtime
-	 length
-	 proto
-	 srcip
-	 dstip
-	 */
-	{ {2, 1, 0}, 10},
-	{ {22, 4, 0}, 4},
-	{ {21, 4, 0}, 4},
-	{ {1, 2, 0}, 2},
-	{ {4, 1, 0}, 9},
-	{ {8, 4, 0}, 12},
-	{ {12, 4, 0}, 16}
+	/* { { ID, len, enterprise}, offset} */
+	{ {IPFIX_TYPEID_inPacketDeltaCount,       1, 0}, 10},
+	{ {IPFIX_TYPEID_flowCreationTime,         4, 0}, 4},
+	{ {IPFIX_TYPEID_flowEndTime,              4, 0}, 4},
+	{ {IPFIX_TYPEID_inOctetDeltaCount,        2, 0}, 2},
+	{ {IPFIX_TYPEID_protocolIdentifier,       1, 0}, 9},
+	{ {IPFIX_TYPEID_sourceIPv4Address,        4, 0}, 12},
+	{ {IPFIX_TYPEID_destinationIPv4Address,   4, 0}, 16}
 };
 
 static FieldInfo icmp_traffic_fi[] = {
-	/*
-	 { { ID, len, enterprise}, offset} for:
-	 packet count
-	 flowcreationtime
-         flowendtime
-	 length
-	 proto
-	 srcip
-	 dstip
-	 */
-	{ {32, 2, 0}, 0},
-	{ {2, 1, 0}, 10},
-	{ {22, 4, 0}, 4},
-	{ {21, 4, 0}, 4},
-	{ {1, 2, 0}, 2},
-	{ {4, 1, 0}, 9},
-	{ {8, 4, 0}, 12},
-	{ {12, 4, 0}, 16}
+	/* { { ID, len, enterprise}, offset} */
+	{ {IPFIX_TYPEID_icmpTypeCode,             2, 0}, 0},
+	{ {IPFIX_TYPEID_inPacketDeltaCount,       1, 0}, 10},
+	{ {IPFIX_TYPEID_flowCreationTime,         4, 0}, 4},
+	{ {IPFIX_TYPEID_flowEndTime,              4, 0}, 4},
+	{ {IPFIX_TYPEID_inOctetDeltaCount,        2, 0}, 2},
+	{ {IPFIX_TYPEID_protocolIdentifier,       1, 0}, 9},
+	{ {IPFIX_TYPEID_sourceIPv4Address,        4, 0}, 12},
+	{ {IPFIX_TYPEID_destinationIPv4Address,   4, 0}, 16}
 };
 
 static FieldInfo tcpudp_traffic_fi[] = {
-	/*
-	 { { ID, len, enterprise}, offset} for:
-	 srcport
-	 dstport
-	 packet count
-	 flowcreationtime
-         flowendtime
-	 length
-	 proto
-	 srcip
-	 dstip
-	 */
-	{ {7, 2, 0}, 0},
-	{ {11, 2, 0}, 2},
-	{ {2, 1, 0}, 10},
-	{ {22, 4, 0}, 4},
-	{ {21, 4, 0}, 4},
-	{ {1, 2, 0}, 2},
-	{ {4, 1, 0}, 9},
-	{ {8, 4, 0}, 12},
-	{ {12, 4, 0}, 16}
+	/* { { ID, len, enterprise}, offset} */
+	{ {IPFIX_TYPEID_sourceTransportPort,      2, 0}, 0},
+	{ {IPFIX_TYPEID_destinationtransportPort, 2, 0}, 2},
+	{ {IPFIX_TYPEID_inPacketDeltaCount,       1, 0}, 10},
+	{ {IPFIX_TYPEID_flowCreationTime,         4, 0}, 4},
+	{ {IPFIX_TYPEID_flowEndTime,              4, 0}, 4},
+	{ {IPFIX_TYPEID_inOctetDeltaCount,        2, 0}, 2},
+	{ {IPFIX_TYPEID_protocolIdentifier,       1, 0}, 9},
+	{ {IPFIX_TYPEID_sourceIPv4Address,        4, 0}, 12},
+	{ {IPFIX_TYPEID_destinationIPv4Address,   4, 0}, 16}
 };
 
 static TemplateInfo ip_traffic_template = {
-	7,
-	ip_traffic_fi,
-	NULL
+	.fieldCount = 7,
+	.fieldInfo  = ip_traffic_fi,
+	.userData   = NULL
 };
 
 static TemplateInfo icmp_traffic_template = {
-	8,
-	icmp_traffic_fi,
-	NULL
+	.fieldCount = 8,
+	.fieldInfo  = icmp_traffic_fi,
+	.userData   = NULL
 };
 
 static TemplateInfo tcpudp_traffic_template = {
-	9,
-	tcpudp_traffic_fi,
-	NULL
+	.fieldCount = 9,
+	.fieldInfo  = tcpudp_traffic_fi,
+	.userData   = NULL
 };
 
 /*
@@ -143,8 +114,8 @@ void sampler_hook_entry(void *ctx, void *data)
 		transport_offset=abs(ph->transport_header - ph->ip_header);
 		icmp_traffic_template.fieldInfo[0].offset += transport_offset;
 		aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &icmp_traffic_template, ph->length, fdata);
-		/* reset ip_traffic_fi, offsets for srcport/dstport to starting values */
-		tcpudp_traffic_template.fieldInfo[0].offset = 0;
+		/* reset offset for typecode to starting value */
+		icmp_traffic_template.fieldInfo[0].offset = 0;
 		break;
 	case IPFIX_protocolIdentifier_TCP:
 	case IPFIX_protocolIdentifier_UDP:
@@ -158,7 +129,7 @@ void sampler_hook_entry(void *ctx, void *data)
 		tcpudp_traffic_template.fieldInfo[0].offset += transport_offset;
 		tcpudp_traffic_template.fieldInfo[1].offset += transport_offset;
 		aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &tcpudp_traffic_template, ph->length, fdata);
-		/* reset ip_traffic_fi, offsets for srcport/dstport to starting values */
+		/* reset offsets for srcport/dstport to starting values */
 		tcpudp_traffic_template.fieldInfo[0].offset = 0;
 		tcpudp_traffic_template.fieldInfo[1].offset = 2;
 		break;
