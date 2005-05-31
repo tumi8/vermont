@@ -165,89 +165,99 @@ static int vermont_readconf(dictionary **conf, char *file)
  */
 static int vermont_configure(struct v_objects *v)
 {
-        dictionary *conf=v->v_config;
+	dictionary *conf=v->v_config;
+	int ret;
 
-        /* if the sampler is not needed, interface will say "off" */
-        char *run_sampler=iniparser_getvalue(conf, "sampler", "interface");
-        char *run_concentrator=iniparser_getvalue(conf, "concentrator", "listen_ip");
-        char *hooking=iniparser_getvalue(conf, "main", "packets");
+	/* if the sampler is not needed, interface will say "off" */
+	char *run_sampler=iniparser_getvalue(conf, "sampler", "interface");
+	char *run_concentrator=iniparser_getvalue(conf, "concentrator", "listen_ip");
+	char *hooking=iniparser_getvalue(conf, "main", "packets");
 
-        /* configure the msg subsystem */
-        if(configure_logging(v)) {
-                msg(MSG_FATAL, "Main: Configuring the logging subsystem failed");
-                return -1;
-        }
-        subsys_on(&(v->v_subsystems), SUBSYS_LOGGING);
+	/* configure the msg subsystem */
+        ret=configure_logging(v);
+        if(ret == 2) {
+		/* OK, but not running */
+	} else if(ret==0) {
+                /* OK and running */
+		subsys_on(&(v->v_subsystems), SUBSYS_LOGGING);
+	} else {
+		msg(MSG_FATAL, "Main: Configuring the logging subsystem failed");
+		return -1;
+	}
 
         /*
-         safety check for the hook
-         for the hook, BOTH subsystems have to be on
-         */
-        if(strcasecmp(hooking, "off") != 0) {
+	 safety check for the hook
+	 for the hook, BOTH subsystems have to be on
+	 */
+	if(strcasecmp(hooking, "off") != 0) {
 
-                if((strcasecmp(run_sampler, "off") == 0) ||
-                   (strcasecmp(run_concentrator, "off") == 0)
-                  ) {
-                        msg(MSG_FATAL,
-                            "Main: Hooking is used (%s), but either concentrator(%s) or sampler(%s) is off",
-                            hooking,
-                            run_concentrator,
-                            run_sampler
-                           );
-                        msg(MSG_FATAL, "Both must be enabled");
-                        return -1;
-                }
-        }
+		if((strcasecmp(run_sampler, "off") == 0) ||
+		   (strcasecmp(run_concentrator, "off") == 0)
+		  ) {
+			msg(MSG_FATAL,
+			    "Main: Hooking is used (%s), but either concentrator(%s) or sampler(%s) is off",
+			    hooking,
+			    run_concentrator,
+			    run_sampler
+			   );
+			msg(MSG_FATAL, "Both must be enabled");
+			return -1;
+		}
+	}
 
-        /* check if we run the sampler */
-        if(strcasecmp(run_sampler, "off") == 0) {
-                msg(MSG_DIALOG, "not running sampler subsystem");
-        } else {
-                if(configure_sampler(v)) {
-                        msg(MSG_FATAL, "Main: Could not configure the sampler");
-                        return -1;
-                }
-        }
+	/* check if we run the sampler */
+	if(strcasecmp(run_sampler, "off") == 0) {
+		msg(MSG_DIALOG, "not running sampler subsystem");
+	} else {
+		if(configure_sampler(v)) {
+			msg(MSG_FATAL, "Main: Could not configure the sampler");
+			return -1;
+		}
+	}
 
-        /* check if we run the concentrator */
-        if(strcasecmp(run_concentrator, "off") == 0) {
-                msg(MSG_DIALOG, "not running concentrator subsystem");
-        } else {
+	/* check if we run the concentrator */
+	if(strcasecmp(run_concentrator, "off") == 0) {
+		msg(MSG_DIALOG, "not running concentrator subsystem");
+	} else {
 
-                if(configure_concentrator(v)) {
-                        msg(MSG_FATAL, "Main: Could not configure the concentrator");
-                        return -1;
-                }
-        }
+		if(configure_concentrator(v)) {
+			msg(MSG_FATAL, "Main: Could not configure the concentrator");
+			return -1;
+		}
+	}
 
-        /* after we have a concentrator, we may fill the ctx for the HookingFilter */
-        if(v->hooking) {
-                msg(MSG_DEBUG, "Main: adding context pointer %p (aggregator) to HookingFilter", v->conc_aggregator);
-                v->hooking->setContext(v->conc_aggregator);
-        }
+	/* after we have a concentrator, we may fill the ctx for the HookingFilter */
+	if(v->hooking) {
+		msg(MSG_DEBUG, "Main: adding context pointer %p (aggregator) to HookingFilter", v->conc_aggregator);
+		v->hooking->setContext(v->conc_aggregator);
+	}
 
-        return 0;
+	return 0;
 }
 
 
-/* open log file and configure the msg_stat subsystem */
+/*
+ open log file and configure the msg_stat subsystem
+ 0 = all ok and running
+ 2 = OK, but not running
+ 1 or -1 = not OK, not running
+ */
 static int configure_logging(struct v_objects *v)
 {
         FILE *fd;
         dictionary *conf=v->v_config;
         char *file;
 
-
         file=iniparser_getvalue(conf, "main", "log");
         if(strcasecmp(file, "off") == 0) {
                 msg(MSG_DEBUG, "Main: logging subsystem is off");
-                return 0;
+                return 2;
         }
 
         msg(MSG_DEBUG, "Main: now configuring the logging subsystem");
         if(!(fd=fopen(file, "a"))) {
                 msg(MSG_FATAL, "Main: could not init message subsystem, opening log %s failed", file);
-                return 1;
+                return -1;
         }
 
         msg(MSG_INFO, "Logging: using %s as statistics log", file);
