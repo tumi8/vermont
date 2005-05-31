@@ -60,10 +60,9 @@ void msg_setlevel(int level)
  */
 int msg_stat(char *fmt, ...)
 {
-	va_list args;
-
         /* have to check if subsys is on. Else just ignore */
         if(stat_file) {
+                va_list args;
                 va_start(args, fmt);
 
                 pthread_mutex_lock(&stat_lock);
