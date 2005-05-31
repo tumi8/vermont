@@ -269,9 +269,7 @@ static uint8_t addUint8Nbo(uint8_t i, uint8_t j)
  */
 static uint32_t lesserUint32Nbo(uint32_t i, uint32_t j)
 {
-	uint32_t i2 = ntohl(i);
-	uint32_t j2 = ntohl(j);
-	return (i2 < j2)?(i2):(j2);
+	return (ntohl(i) < ntohl(j))?(i):(j);
 }
 
 /**
@@ -279,9 +277,7 @@ static uint32_t lesserUint32Nbo(uint32_t i, uint32_t j)
  */
 static uint32_t greaterUint32Nbo(uint32_t i, uint32_t j)
 {
-	uint32_t i2 = ntohl(i);
-	uint32_t j2 = ntohl(j);
-	return (i2 > j2)?(i2):(j2);
+	return (ntohl(i) > ntohl(j))?(i):(j);
 }
 
 /**
