@@ -8,6 +8,8 @@
 #ifndef MSG_H
 #define MSG_H
 
+#include <stdio.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -18,6 +20,9 @@ extern "C" {
 #else
 #define DPRINTF(fmt, args...)
 #endif
+
+/* define for setting up the msg system */
+#define MSG_SETUP_NEW 1
 
 /* defines for the message system */
 #define MSG_BLANK 256
@@ -30,7 +35,8 @@ extern "C" {
 
 void msg(int, char *, ...);
 void msg_setlevel(int);
-
+int msg_stat(char *fmt, ...);
+int msg_stat_setup(int mode, FILE *f);
 
 #ifdef __cplusplus
 }

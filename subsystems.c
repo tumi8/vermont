@@ -20,7 +20,8 @@ extern "C" {
 static char *TAB[]={
 	"config",
 	"conc-receiv", "conc-account", "conc-export",
-	"samp-capture", "samp-filter", "samp-sink",
+        "samp-capture", "samp-filter", "samp-sink",
+        "logging",
 	0 };
 /*
  should print all running subsystems
