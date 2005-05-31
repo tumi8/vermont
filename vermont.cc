@@ -244,7 +244,7 @@ static int vermont_configure(struct v_objects *v)
  */
 static int configure_logging(struct v_objects *v)
 {
-        FILE *fd;
+        FILE *FD;
         dictionary *conf=v->v_config;
         char *file;
 
@@ -255,13 +255,20 @@ static int configure_logging(struct v_objects *v)
         }
 
         msg(MSG_DEBUG, "Main: now configuring the logging subsystem");
-        if(!(fd=fopen(file, "a"))) {
+        if(!(FD=fopen(file, "a"))) {
                 msg(MSG_FATAL, "Main: could not init message subsystem, opening log %s failed", file);
                 return -1;
         }
 
+        /*
+         setting line buffering
+         per default a file-stream is full-buffered, so the output won't show up
+         too soon
+         */
+        setvbuf(FD, (char *)NULL, _IOLBF, 0);
+
         msg(MSG_INFO, "Logging: using %s as statistics log", file);
-        return(msg_stat_setup(MSG_SETUP_NEW, fd));
+        return(msg_stat_setup(MSG_SETUP_NEW, FD));
 }
 
 
