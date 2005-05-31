@@ -29,6 +29,7 @@ static int setup_signal(int signal, void (*handler)(int));
 static int vermont_readconf(dictionary **conf, char *file);
 static int vermont_configure(struct v_objects *v);
 static int vermont_start_all(struct v_objects *v);
+static int configure_logging(struct v_objects *v);
 
 int main(int ac, char **dc)
 {
@@ -171,6 +172,13 @@ static int vermont_configure(struct v_objects *v)
         char *run_concentrator=iniparser_getvalue(conf, "concentrator", "listen_ip");
         char *hooking=iniparser_getvalue(conf, "main", "packets");
 
+        /* configure the msg subsystem */
+        if(configure_logging(v)) {
+                msg(MSG_FATAL, "Main: Configuring the logging subsystem failed");
+                return -1;
+        }
+        subsys_on(&(v->v_subsystems), SUBSYS_LOGGING);
+
         /*
          safety check for the hook
          for the hook, BOTH subsystems have to be on
@@ -219,6 +227,31 @@ static int vermont_configure(struct v_objects *v)
         }
 
         return 0;
+}
+
+
+/* open log file and configure the msg_stat subsystem */
+static int configure_logging(struct v_objects *v)
+{
+        FILE *fd;
+        dictionary *conf=v->v_config;
+        char *file;
+
+
+        file=iniparser_getvalue(conf, "main", "log");
+        if(strcasecmp(file, "off") == 0) {
+                msg(MSG_DEBUG, "Main: logging subsystem is off");
+                return 0;
+        }
+
+        msg(MSG_DEBUG, "Main: now configuring the logging subsystem");
+        if(!(fd=fopen(file, "a"))) {
+                msg(MSG_FATAL, "Main: could not init message subsystem, opening log %s failed", file);
+                return 1;
+        }
+
+        msg(MSG_INFO, "Logging: using %s as statistics log", file);
+        return(msg_stat_setup(MSG_SETUP_NEW, fd));
 }
 
 

@@ -7,6 +7,7 @@
  */
 #include <stdio.h>
 #include <stdarg.h>
+#include <pthread.h>
 #include "msg.h"
 
 #ifdef __cplusplus
@@ -15,6 +16,10 @@ extern "C" {
 
 static int msg_level=MSG_DEFAULT;
 static char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "DEBUG  ", "INFO   ", 0};
+
+/* we need to serialize for msg_stat() */
+static pthread_mutex_t stat_lock=PTHREAD_MUTEX_INITIALIZER;
+static FILE *stat_file;
 
 /*
  the main logging routine
@@ -42,7 +47,46 @@ void msg(int level, char *fmt, ...)
 
 void msg_setlevel(int level)
 {
-        msg_level=level;
+	msg_level=level;
+}
+
+
+/*
+ output statistics; usually to file
+
+ call msg_stat_setup() before
+ we need a lock (can be called concurrently) to not clutter it all up
+ keep critical section as small as possible
+ */
+int msg_stat(char *fmt, ...)
+{
+	va_list args;
+
+	va_start(args, fmt);
+
+	pthread_mutex_lock(&stat_lock);
+	vfprintf(stat_file, fmt, args);
+	pthread_mutex_unlock(&stat_lock);
+
+	va_end(args);
+
+	return 0;
+}
+
+
+/* this is future compatible to interact with the system in an ioctl() style */
+int msg_stat_setup(int mode, FILE *f)
+{
+	if(f) {
+		pthread_mutex_lock(&stat_lock);
+		stat_file=f;
+		pthread_mutex_unlock(&stat_lock);
+
+		return 0;
+	}
+
+	return 1;
+
 }
 
 #ifdef __cplusplus

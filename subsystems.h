@@ -26,6 +26,7 @@ void subsys_off(unsigned int *flag, unsigned int sys);
 #define SUBSYS_SAMP_CAPTURE 0x10
 #define SUBSYS_SAMP_FILTER 0x20
 #define SUBSYS_SAMP_SINK 0x40
+#define SUBSYS_LOGGING 0x80
 
 #ifdef __cplusplus
 }
