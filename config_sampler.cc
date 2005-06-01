@@ -54,9 +54,9 @@ int configure_sampler(struct v_objects *v)
 
 	msg(MSG_DEBUG, "Config: now configuring the sampler subsystem");
 
-	/* dont configure a template if simply using PacketSink -- export_ip=off */
+	/* dont configure a template if simply using PacketSink -- export_to=off */
 	if(strcasecmp("off", iniparser_getvalue(conf, CONF_SEC, "export_to")) == 0) {
-		msg(MSG_INFO, "Config: Template will not be build, because export_ip=off");
+		msg(MSG_INFO, "Config: Template will not be build, because export_to=off");
 
 	} else if(configure_template(
 				     v,
