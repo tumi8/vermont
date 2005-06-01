@@ -53,19 +53,23 @@ IpfixSender* createIpfixSender(SourceID sourceID, char* ip, uint16_t port) {
 	ipfixSender->port = port;
 
 	ipfixSender->lastTemplateId = 10000;
-	if (ipfix_init_exporter(sourceID, exporterP) != 0) {
+	if(ipfix_init_exporter(sourceID, exporterP) != 0) {
 		msg(MSG_FATAL, "ipfix_init_exporter failed");
-		return NULL;
+		goto out;
 	}
 
-	if (ipfix_add_collector(*exporterP, ipfixSender->ip, ipfixSender->port, UDP) != 0) {
-		msg(MSG_FATAL, "ipfix_add_collector failed");
-		return NULL;
+	if(ipfixSenderAddCollector(ipfixSender, ipfixSender->ip, ipfixSender->port) != 0) {
+		goto out1;
 	}
-
+	
         msg(MSG_DEBUG, "IPFIXSender: running");
 
 	return ipfixSender;
+	
+out1:
+	ipfix_deinit_exporter(*exporterP);
+out:
+	return NULL;	
 }
 
 /**
@@ -96,6 +100,29 @@ void startIpfixSender(IpfixSender* ipfixSender) {
  */
 void stopIpfixSender(IpfixSender* ipfixSender) {
 	/* unimplemented, we can't be paused - TODO: or should we? */
+}
+
+
+/**
+ * Add another IPFIX collector to export the stream to
+ * the lowlevel stuff in handled by underlying ipfixlolib
+ * @param ips handle to the Exporter
+ * @param ip string of the IP
+ * @param port port number
+ * FIXME: support for other than UDP
+ */
+int ipfixSenderAddCollector(IpfixSender *ips, char *ip, uint16_t port)
+{
+	ipfix_exporter *ex = (ipfix_exporter *)ips->ipfixExporter;
+
+	if(ipfix_add_collector(ex, ip, port, UDP) != 0) {
+		msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%d failed", ip, port);
+		return -1;
+	}
+	
+	msg(MSG_INFO, "IpfixSender: adding %s:%d to exporter", ip, port);
+
+	return 0;
 }
 
 /**
