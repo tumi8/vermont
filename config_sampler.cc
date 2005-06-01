@@ -383,12 +383,8 @@ out:
 
 
 /*
- configure a sink; char *list are the parameters
-
- FIXME: HARDCODED PROTO UDP
-
- POTENTIAL FIXME: we could have more of them, e.g. 2 exporterSinks
- will be a bit more work to figure out the Packet-free()ing then!
+ configure a sink
+ all parameters come from struct v_objects
  */
 static int configure_sink(struct v_objects *v)
 {
