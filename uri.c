@@ -28,18 +28,35 @@ static int scheme(uri *u, char *str)
 	 scheme        = alpha *( alpha | digit | "+" | "-" | "." )
 	 */
 
-	if (!isalpha(*c++)) { return (-1); }
-	while (isalnum(*c) || *c == '+' || *c == '-' || *c == '.') { c++; }
+        if(!isalpha(*c)) {
+                return (-1);
+        }
+
+        while (isalnum(*c) || *c == '+' || *c == '-' || *c == '.') {
+                c++;
+        }
 
 	len = c - str;
 
 	/* bad scheme */
-	if (*c != ':') { return (-1); }
+        if(*c != ':') {
+                return (-1);
+        }
 
-	u->scheme = (char *)malloc(len+1);
-	strncpy(u->scheme, str, len);
+        u->scheme = (char *)malloc(len+1);
+        strncpy(u->scheme, str, len);
 
-	return (len + 1);
+        /*
+         freeking terminate the FUCKING thing because strncpy DOES NOT ALWAYS!
+         man-page:
+
+         "Thus, if there is no null byte among the first n bytes
+         of src, the result will not be null-terminated."
+
+         */
+        u->scheme[len]=0;
+
+	return(len+1);
 }
 
 /* //foo.bar:123 */
@@ -154,17 +171,15 @@ static int frag(uri *u, char *str)
 
 /*
  parse something like: http://foo.bar:123/baz?quux#frag
+ return newly allocated uri
 
- struct uri *u is not allocated, you have to do that
- but all pointers within _ARE_
- call uri_free(u) afterwards
+ call uri_free(u) afterwards to free
  */
 uri * uri_parse(char *r)
 {
         uri *u;
         char *c;
         int  i;
-
 
         if(!(u=malloc(sizeof(uri)))) {
                 goto out;
