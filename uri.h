@@ -11,6 +11,9 @@
 #include <string.h>
 #include <stdint.h>
 
+#ifndef URI_H
+#define URI_H
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -37,4 +40,6 @@ char *uri_abs(uri *u);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
