@@ -6,41 +6,85 @@
 
  */
 
-
 /* own systems */
 #include "vermont.h"
 #include "iniparser.h"
 #include "msg.h"
+#include "uri.h"
 #include "subsystems.h"
 #include "config_concentrator.h"
 
 /* section in config we get our values from */
 static char *CONF_SEC="concentrator";
 
+/*
+ this is a mess.
+ this really needs to be split up, but I really dont care anymore
+ */
 int configure_concentrator(struct v_objects *v)
 {
-        dictionary *conf=v->v_config;
+	int sID, exports=0;
+
+	dictionary *conf=v->v_config;
         IpfixSender *ips=NULL;
         IpfixAggregator *ipa=NULL;
         IpfixReceiver *ipr=NULL;
 
+	char *l, *token=NULL;
+	uri **export_uri=v->conc_uris;
+
         msg(MSG_DEBUG, "Config: now configuring the concentrator subsystem");
 
         v->conc_poll_ms=atoi(iniparser_getvalue(conf, CONF_SEC, "poll_interval"));
+	sID=atoi(iniparser_getvalue(conf, CONF_SEC, "source_id"));
+
+	/* violating the original string is not nice, so copy */
+	if(!(l=strdup(iniparser_getvalue(conf, CONF_SEC, "export_to")))) {
+		return 1;
+	}
+
+	/*
+	 loop over all given URIs
+	 parse URI
+	 */
+	DPRINTF("IpfixSender URIs: %s\n", l);
+	while((token=strsep(&l, ",")) && exports < MAX_URIS) {
+		uri *u;
+
+		DPRINTF("Trying to parse %s into URI\n", token);
+		u=uri_parse(token);
+		DPRINTF("Parsed %s into proto: %s, IP: %s, port: %d\n", token, u->scheme, u->host, u->port);
+
+		export_uri[exports]=u;
+		exports++;
+	}
+        exports--;
+
+	free(l);
 
         /* Initialize concentrator subsystems reversely */
 
         /* make IPFIX exporter/sender */
         msg(MSG_DEBUG, "Config: now making IPFIX sender");
         initializeIpfixSenders();
-        if(!(ips=createIpfixSender(
-                              atoi(iniparser_getvalue(conf, CONF_SEC, "source_id")),
-                              iniparser_getvalue(conf, CONF_SEC, "export_ip"),
-                              atoi(iniparser_getvalue(conf, CONF_SEC, "export_port"))
-                                  ))
+
+	if(!(ips=createIpfixSender(sID, export_uri[0]->host, export_uri[0]->port))
           ) {
                 goto out;
         }
+
+	/*
+	 loop over all exports and add to sender
+         uri[0] is already added above at creation time!
+	 */
+	while(exports > 0) {
+		msg(MSG_DEBUG, "Config: adding collector %s:%d to IpfixSender",
+		    export_uri[exports]->host, export_uri[exports]->port
+		   );
+		ipfixSenderAddCollector(ips, export_uri[exports]->host, export_uri[exports]->port);
+		exports--;
+	}
+
         subsys_on(&(v->v_subsystems), SUBSYS_CONC_EXPORT);
 
         /* make IPFIX aggregator */
@@ -54,7 +98,8 @@ int configure_concentrator(struct v_objects *v)
           ) {
                 goto out1;
         }
-        addAggregatorCallbacks(ipa, getIpfixSenderCallbackInfo(ips));
+
+	addAggregatorCallbacks(ipa, getIpfixSenderCallbackInfo(ips));
         subsys_on(&(v->v_subsystems), SUBSYS_CONC_ACCOUNT);
 
         /* make IPFIX receiver/collector */
