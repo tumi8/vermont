@@ -87,14 +87,17 @@ static int netloc(uri *u, char *str)
 		return (-1);
 	}
 
-	d = (char *)malloc(len);
-	strncpy(d, str+pre, len);
+	d = (char *)malloc(len+1);
+        strncpy(d, str+pre, len);
+        d[len]=0;
 
 	if ((c = strchr(d, ':')) != NULL) {
 		port = atoi(c+1);
-		u->host = (char *)malloc(c - d);
+		u->host = (char *)malloc(c - d + 1);
 		strncpy(u->host, d, c - d);
-		free(d);
+                u->host[c-d]=0;
+
+                free(d);
 	}
 	else {
 		u->host = d;
@@ -252,13 +255,15 @@ char *uri_abs(uri *u)
 	str = (char *)malloc(3 + strlen(u->scheme)
 			     + strlen(u->host)
 			     + strlen(port)
-			     + strlen(u->rel));
+                             + strlen(u->rel)
+                             + 1
+                            );
 	/* + u->frag == NULL ? 0 : 1 + strlen(u->frag)); */
 	strcat(str, u->scheme);
 	strcat(str, "://");
 	strcat(str, u->host);
 	strcat(str, port);
-	strcat(str, u->rel);
+        strcat(str, u->rel);
 
 	/*
 	 RFC 2396, 4.1: Fragment Identifier
