@@ -45,9 +45,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include "msg.h"
 
-/* for msg() */
-static char *ss="Aggregator Rules";
-
 #define MAX_LINE_LEN 256
 
 /* --- constants ------------*/
@@ -320,6 +317,7 @@ Rules* parseRulesFromFile(char* fname) {
 	FILE* f;
 	char buf[MAX_LINE_LEN];
 	char* p;
+	int lineNo = 0;
 	
 	Rules* rules = (Rules*)malloc(sizeof(Rules));
 	rules->count = 0;
@@ -332,6 +330,7 @@ Rules* parseRulesFromFile(char* fname) {
 	assert(f);
 
 	while (fgets(buf, sizeof(buf), f)) {
+		lineNo++;
 		if (strlen(buf) < 3) continue;
 		if (*buf == '#') continue;
 		p = buf;
@@ -342,7 +341,7 @@ Rules* parseRulesFromFile(char* fname) {
 		char* pattern = get_next_token(&p, " \t\n");
 
 		if (!col1) {
-			msg(MSG_DEBUG, "Unparseable line");
+			msg(MSG_ERROR, "Unparseable line in %s, l.%d", fname, lineNo);			
 			continue;
 		}
 
@@ -356,22 +355,22 @@ Rules* parseRulesFromFile(char* fname) {
 		}
 
 		if (!field) {
-			msg(MSG_ERROR, "%s: Incomplete line", ss);
+			msg(MSG_ERROR, "Incomplete line in %s, l.%d", fname, lineNo);
 			continue;
 		}
 
 		if (parseModifier(modifier, &ruleField->modifier) != 0) {
-			msg(MSG_ERROR, "%s: Bad modifier %s", ss, modifier);
+			msg(MSG_ERROR, "Bad modifier \"%s\" in %s, l.%d", modifier, fname, lineNo);
 			continue;
 		}
 
 		if ((ruleField->type.id = string2typeid(field)) == 0) {
-			msg(MSG_ERROR, "%s: Bad typeID %s", ss, field);
+			msg(MSG_ERROR, "Bad field type \"%s\" in %s, l.%d", field, fname, lineNo);
 			continue;
 		}
 
 		if ((ruleField->type.length = string2typelength(field)) == 0) {
-			msg(MSG_ERROR, "%s: Bad typelength %s", ss, field);
+			msg(MSG_ERROR, "Bad field type \"%s\" in %s, l.%d", field, fname, lineNo);
 			continue;
 		}
 
@@ -380,26 +379,26 @@ Rules* parseRulesFromFile(char* fname) {
 		switch (ruleField->type.id) {
 		case IPFIX_TYPEID_protocolIdentifier:
 			if (parseProtoPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
-				msg(MSG_ERROR, "%s: Unparseable Protocol: %s", ss, pattern);
+				msg(MSG_ERROR, "Bad protocol pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
 				continue;
 			}
 			break;
 		case IPFIX_TYPEID_sourceIPv4Address:
 		case IPFIX_TYPEID_destinationIPv4Address:
 			if (parseIPv4Pattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
-				msg(MSG_ERROR, "%s: Unparseable IP: %s", ss, pattern);
+				msg(MSG_ERROR, "Bad IPv4 pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
 				continue;
 			}
 			break;
 		case IPFIX_TYPEID_sourceTransportPort:
 		case IPFIX_TYPEID_destinationtransportPort:
 			if (parsePortPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
-				msg(MSG_ERROR, "%s: Unparseable Port(s): %s", ss, pattern);
+				msg(MSG_ERROR, "Bad PortRanges pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
 				continue;
 			}
 			break;
 		default:
-			msg(MSG_ERROR, "%s: This field %s cannot be matched against a pattern", ss, pattern);
+			msg(MSG_ERROR, "Fields of type \"%s\" cannot be matched against a pattern %s, l.%d", field, fname, lineNo);
 			continue;
 			break;
 
@@ -658,14 +657,14 @@ int templateDataMatchesRule(TemplateInfo* info, FieldData* data, Rule* rule) {
 			}
 
 			/* no corresponding data field found, this flow cannot match */
-			msg(MSG_DEBUG, "no corresponding data field");
+			msg(MSG_DEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;
 		}
 		/* if a non-discarding rule field specifies no pattern, check at least if the data field exists */
 		else if (rule->field[i]->modifier != FIELD_MODIFIER_DISCARD) {
 			fieldInfo = getTemplateFieldInfo(info, &ruleField->type);
 			if (fieldInfo) continue;
-			msg(MSG_DEBUG, "no corresponding data field");
+			msg(MSG_DEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;
 		}
 	}
@@ -704,8 +703,10 @@ int dataTemplateDataMatchesRule(DataTemplateInfo* info, FieldData* data, Rule* r
 			continue;
 		}
 
+		/* FIXME: if a non-discarding rule field specifies no pattern, check at least if the data field exists? */
+
 		/* no corresponding data field or fixed data field found, this flow cannot match */
-		msg(MSG_DEBUG, "no corresponding data field or fixed data field");
+		msg(MSG_DEBUG, "No corresponding DataDataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 		return 0;
 	}
 
