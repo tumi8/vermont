@@ -910,7 +910,8 @@ IpfixReceiver* createIpfixReceiver(uint16_t port) {
 	}
 
 	ipfixReceiver->callbackInfo = 0;
-	
+	ipfixReceiver->exit=0;
+
 	if(!(ipfixReceiver->templateBuffer = createTemplateBuffer(ipfixReceiver))) {
 		msg(MSG_FATAL, "Could not create template Buffer");
 		goto out1;
