@@ -833,7 +833,8 @@ static int ipfix_deinit_template_array(ipfix_exporter *exporter)
          */
         int i=0;
         int ret = 0;
-        for(i=0; i< exporter->ipfix_lo_template_maxsize; i++) {
+        
+	for(i=0; i< exporter->ipfix_lo_template_maxsize; i++) {
                 // try to free all templates:
                 ret = ipfix_deinit_template_set(exporter, &(exporter->template_arr[i]) );
                 // for debugging:
@@ -1234,6 +1235,10 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
          test for a valid slot
          */
         if( (found_index >= 0 ) && ( found_index < exporter->ipfix_lo_template_maxsize ) ) {
+                //  int ret;
+                char *p_pos;
+                char *p_end;
+
                 DPRINTF("ipfix_start_template_set: initializing new slot\n");
                 // allocate memory for the template's fields:
                 // maximum length of the data: 8 bytes / field, as each field contains:
@@ -1255,10 +1260,6 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
                 exporter->template_arr[found_index].field_count = field_count;
 
                 // also, write the template header fields into the buffer (except the lenght field);
-
-                //  int ret;
-                char *p_pos;
-                char *p_end;
 
                 // beginning of the buffer
                 p_pos = exporter->template_arr[found_index].template_fields;
@@ -1326,7 +1327,7 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
         found_index=ipfix_find_template(exporter, template_id,  UNCLEAN);
 
         /* test for a valid slot */
-        if ( found_index < 0 || found_index >= exporter->ipfix_lo_template_maxsize ) {
+        if( found_index < 0 || found_index >= exporter->ipfix_lo_template_maxsize ) {
                 msg(MSG_DEBUG, "IPFIX: put_template_field,  template ID %d not found", template_id);
                 return -1;
         }
@@ -1381,6 +1382,8 @@ int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void
         int ret;
         char *p_pos;
         char *p_end;
+	
+        int i;
 
         found_index=ipfix_find_template(exporter, template_id,  UNCLEAN);
 
@@ -1409,10 +1412,9 @@ int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void
 
         DPRINTF("ipfix_put_template_data: B p_pos %u, p_end %u\n", p_pos, p_end);
 
-        int i;
-        for (i = 0; i < data_length; i++) {
-                ret = write_octet(&p_pos, p_end, *(((uint8_t*)data)+i) );
-        }
+	for(i = 0; i < data_length; i++) {
+		ret = write_octet(&p_pos, p_end, *(((uint8_t*)data)+i) );
+	}
 
         // add to the written length:
         (*exporter).template_arr[found_index].fields_length += data_length;
