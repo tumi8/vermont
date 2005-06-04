@@ -682,32 +682,41 @@ int dataTemplateDataMatchesRule(DataTemplateInfo* info, FieldData* data, Rule* r
 	FieldInfo* fieldInfo;
 
 	/* for all patterns of this rule, check if they are matched */
-	for (i = 0; i < rule->fieldCount; i++) if (rule->field[i]->pattern) {
-		RuleField* ruleField = rule->field[i];
+        for(i = 0; i < rule->fieldCount; i++) {
 
-		fieldInfo = getDataTemplateFieldInfo(info, &ruleField->type);
-		if (fieldInfo) {
-			/* corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched */
-			if (!matchesPattern(&fieldInfo->type, (data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
-			if (!checkAssociatedMask2(info, data, ruleField)) return 0;
-			continue;
+		if(rule->field[i]->pattern) {
+			RuleField* ruleField = rule->field[i];
+
+			fieldInfo = getDataTemplateFieldInfo(info, &ruleField->type);
+			if (fieldInfo) {
+				/* corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched */
+				if (!matchesPattern(&fieldInfo->type, (data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
+				if (!checkAssociatedMask2(info, data, ruleField)) return 0;
+				continue;
+			}
+
+			/*
+			 no corresponding data field found
+			 see if we find a corresponding fixed data field
+			 */
+
+			fieldInfo = getDataTemplateDataInfo(info, &ruleField->type);
+			if (fieldInfo) {
+				/* corresponding fixed data field found, check if it matches. If it doesn't the whole rule cannot be matched */
+				if (!matchesPattern(&fieldInfo->type, (info->data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
+				if (!checkAssociatedMask3(info, info->data, ruleField)) return 0;
+				continue;
+			}
+
+			/*
+			 FIXME: if a non-discarding rule field specifies no pattern
+			 check at least if the data field exists?
+			 */
+
+			/* no corresponding data field or fixed data field found, this flow cannot match */
+			msg(MSG_DEBUG, "No corresponding DataDataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
+			return 0;
 		}
-
-		/* no corresponding data field found, see if we find a corresponding fixed data field */
-
-		fieldInfo = getDataTemplateDataInfo(info, &ruleField->type);
-		if (fieldInfo) {
-			/* corresponding fixed data field found, check if it matches. If it doesn't the whole rule cannot be matched */
-			if (!matchesPattern(&fieldInfo->type, (info->data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
-			if (!checkAssociatedMask3(info, info->data, ruleField)) return 0;
-			continue;
-		}
-
-		/* FIXME: if a non-discarding rule field specifies no pattern, check at least if the data field exists? */
-
-		/* no corresponding data field or fixed data field found, this flow cannot match */
-		msg(MSG_DEBUG, "No corresponding DataDataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
-		return 0;
 	}
 
 	/* all rule fields were matched */
