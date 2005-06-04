@@ -12,6 +12,14 @@
 
 #include "msg.h"
 
+/*
+ we start OUR template IDs at <this>
+ we need our own template IDs and they should be unique
+ */
+#define SENDER_TEMPLATE_ID_LOW 10000
+/* go back to SENDER_TEMPLATE_ID_LOW if _HI is reached */
+#define SENDER_TEMPLATE_ID_HI 60000
+
 /***** Global Variables ******************************************************/
 
 static uint8_t ringbufferPos = 0; /**< Pointer to next free slot in @c conversionRingbuffer. */
@@ -52,7 +60,7 @@ IpfixSender* createIpfixSender(SourceID sourceID, char* ip, uint16_t port) {
 	strcpy(ipfixSender->ip, ip);
 	ipfixSender->port = port;
 
-	ipfixSender->lastTemplateId = 10000;
+	ipfixSender->lastTemplateId = SENDER_TEMPLATE_ID_LOW;
 	if(ipfix_init_exporter(sourceID, exporterP) != 0) {
 		msg(MSG_FATAL, "ipfix_init_exporter failed");
 		goto out;
@@ -140,9 +148,9 @@ int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* 
 	}
 
 	uint16_t my_template_id = ++ipfixSender->lastTemplateId;
-	if (ipfixSender->lastTemplateId > 60000) {
+	if (ipfixSender->lastTemplateId > SENDER_TEMPLATE_ID_HI) {
 		/* FIXME: Does not always work, e.g. if more than 50000 new Templates per minute are created */
-		ipfixSender->lastTemplateId = 10000;
+		ipfixSender->lastTemplateId = SENDER_TEMPLATE_ID_LOW;
 	}
 
 	/* put Template ID in Template's userData */
