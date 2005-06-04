@@ -29,7 +29,7 @@ Technically it allows the DPRINTF()s in the source to be in effect.
 CONFIGURATION
 
 Packaged comes a commented test.ini file.
-As there are 2 subsystems, each one can be configured indepentently.
+As there are 2 subsystems, each one can be configured independently.
 
 
 SAMPLER
@@ -48,7 +48,8 @@ exports this data again via IPFIX.
 THE HOOK
 
 You can configure VERMONT to inject SAMPLER's captured packets into the
-CONCENTRATOR for aggregation and export.
+CONCENTRATOR for aggregation and export. Config option is in section main,
+value packets.
 
 
 NOTES ON MONITORING PORTS
@@ -56,6 +57,16 @@ NOTES ON MONITORING PORTS
 Some switches add an additional field VLAN with size 4Bytes.
 So you have to adjust the pcap_expression to "vlan and ip".
 Futhermore, the Packet::IPHeaderOffset has to adjusted to 18.
+
+
+NOTES ON THREADS
+
+When threads are to be exited, their real exit is waited for using 
+pthread_join().
+This may lock for a while because I/O from sockets etc. is done in blocking
+mode, so when no packet arrives, the thread will block in read().
+You may want to rewrite the Thread class to do a pthread_detach() instread and
+grep for further occurences of pthread_join().
 
 
 APPENDIX
