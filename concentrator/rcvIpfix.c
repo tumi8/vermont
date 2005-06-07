@@ -758,7 +758,8 @@ static void * listenerUdpIpv4(void *ipfixReceiver)
 			msg(MSG_DEBUG, "recvfrom returned with error, terminating UDP/IPv4 listener thread");
 			break;
 		}
-      
+                DPRINTF("IPFIXReceiver: got data with len %d\n", n);
+
 		pthread_mutex_lock(&ipr->mutex);
 		processMessage(ipr, data, n);
 		pthread_mutex_unlock(&ipr->mutex);
