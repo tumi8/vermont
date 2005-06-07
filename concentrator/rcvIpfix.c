@@ -748,7 +748,7 @@ static void * listenerUdpIpv4(void *ipfixReceiver)
 	IpfixReceiver *ipr = (IpfixReceiver *)ipfixReceiver;
 	byte *data = (byte *)malloc(sizeof(byte)*MAX_MSG_LEN);
 	
-        msg(MSG_INFO, "IPFIX receiver: now running IPFIX listener thread");
+        msg(MSG_INFO, "IPFIX receiver: now running IPFIXReceiver thread");
 	
 	while(!ipr->exit) {
 		/* if we block here, exiting of this thread is delayed until the next packet :( */
@@ -904,7 +904,10 @@ IpfixReceiver* createIpfixReceiver(uint16_t port) {
 	IpfixReceiver* ipfixReceiver;
 	struct sockaddr_in serverAddress;
 	
-	if(!(ipfixReceiver=(IpfixReceiver*)malloc(sizeof(IpfixReceiver)))) {
+
+        msg(MSG_DEBUG, "IPFIXReceiver: making for port %d", port);
+
+        if(!(ipfixReceiver=(IpfixReceiver*)malloc(sizeof(IpfixReceiver)))) {
 		msg(MSG_FATAL, "Ran out of memory");
 		goto out0;
 	}
@@ -947,7 +950,6 @@ IpfixReceiver* createIpfixReceiver(uint16_t port) {
 	}
 	//listenerUdpIpv4(ipfixReceiver); //debug - single-threaded
 	
-        msg(MSG_DEBUG, "IPFIXReceiver: running");
         return ipfixReceiver;
 
 out3:
