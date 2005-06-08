@@ -166,6 +166,12 @@ public:
         /* you cannot change the caplen of an already running observer */
         bool Observer::setCaptureLen(int x)
         {
+                /* we cant change pcap caplen if alredy pcap_open() called */
+                if(ready) {
+                        msg(MSG_ERROR, "Observer: changing capture len on-the-fly is not supported by pcap");
+                        return false;
+                }
+
                 if(x > CAPTURE_PHYSICAL_MAX) {
                         DPRINTF("Capture length %d exceeds physical MTU %d (with header)\n", x, CAPTURE_PHYSICAL_MAX);
                         return false;
