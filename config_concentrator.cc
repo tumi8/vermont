@@ -14,6 +14,7 @@
 #include "subsystems.h"
 #include "config_concentrator.h"
 
+#define CONC_POLL_MS 500
 /* section in config we get our values from */
 static char *CONF_SEC="concentrator";
 
@@ -24,6 +25,7 @@ static char *CONF_SEC="concentrator";
 int configure_concentrator(struct v_objects *v)
 {
 	int sID, exports=0;
+        uint16_t listen_port;
 
 	dictionary *conf=v->v_config;
         IpfixSender *ips=NULL;
@@ -35,7 +37,13 @@ int configure_concentrator(struct v_objects *v)
 
         msg(MSG_DEBUG, "Config: now configuring the concentrator subsystem");
 
-        v->conc_poll_ms=atoi(iniparser_getvalue(conf, CONF_SEC, "poll_interval"));
+	if((v->conc_poll_ms=atoi(iniparser_getvalue(conf, CONF_SEC, "poll_interval")))==0) {
+		msg(MSG_ERROR,
+		    "Config: parse error for poll_intervall (got %d) - adjusting to %d ms",
+		    v->conc_poll_ms,
+		    CONC_POLL_MS
+		   );
+	}
 	sID=atoi(iniparser_getvalue(conf, CONF_SEC, "source_id"));
 
 	/* violating the original string is not nice, so copy */
@@ -81,7 +89,15 @@ int configure_concentrator(struct v_objects *v)
 		msg(MSG_DEBUG, "Config: adding collector %s:%d to IpfixSender",
 		    export_uri[exports]->host, export_uri[exports]->port
 		   );
-		ipfixSenderAddCollector(ips, export_uri[exports]->host, export_uri[exports]->port);
+		if(ipfixSenderAddCollector(ips,
+					   export_uri[exports]->host,
+					   export_uri[exports]->port
+					  )
+		  ) {
+			msg(MSG_ERROR, "Config: error adding collector %s:%d to IpfixSender",
+			    export_uri[exports]->host, export_uri[exports]->port
+			   );
+		}
 		exports--;
 	}
 
@@ -96,7 +112,8 @@ int configure_concentrator(struct v_objects *v)
                              atoi(iniparser_getvalue(conf, CONF_SEC, "buffertime_max"))
                                  ))
           ) {
-                goto out1;
+		msg(MSG_FATAL, "Config: aggregator creation failure");
+		goto out1;
         }
 
 	addAggregatorCallbacks(ipa, getIpfixSenderCallbackInfo(ips));
@@ -104,8 +121,10 @@ int configure_concentrator(struct v_objects *v)
 
         /* make IPFIX receiver/collector */
         initializeIpfixReceivers();
-        if(!(ipr=createIpfixReceiver(atoi(iniparser_getvalue(conf, CONF_SEC, "listen_port"))))) {
-                goto out2;
+        listen_port=(uint16_t)atoi(iniparser_getvalue(conf, CONF_SEC, "listen_port"));
+	if(!(ipr=createIpfixReceiver(listen_port))) {
+		msg(MSG_FATAL, "Config: IpfixReceiver creation failure for port %d", listen_port);
+		goto out2;
         }
         addIpfixReceiverCallbacks(ipr, getAggregatorCallbackInfo(ipa));
         subsys_on(&(v->v_subsystems), SUBSYS_CONC_RECEIVE);
