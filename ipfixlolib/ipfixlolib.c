@@ -1041,26 +1041,28 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 }
 
 /*
- * Send data to collectors
- * Sends all data commited via ipfix_put_data_field to this exporter.
- * If necessary, sends all associated templates
- * Parameters:
- *  exporter sending exporting process
- * Return value: 0 on success, -1 on failure.
+ Send data to collectors
+ Sends all data commited via ipfix_put_data_field to this exporter.
+ If necessary, sends all associated templates.
+ Increment sequence number(sequence_number) only here.
+
+ Parameters:
+ exporter sending exporting process
+ Return value: 0 on success, -1 on failure.
  */
 int ipfix_send(ipfix_exporter *exporter)
 {
         int ret_templates, ret_data;
         int ret = 0;
 
-        ret_templates = ipfix_send_templates(exporter);
-        ret_data = ipfix_send_data(exporter);
-
-        if((ret_templates > 0) || (ret_data > 0) ) {
-                // we did send some data:
+        if((ret_templates=ipfix_send_templates(exporter)) > 0) {
                 exporter->sequence_number++;
-                return 0;
         }
+
+        if((ret_data=ipfix_send_data(exporter)) > 0) {
+                exporter->sequence_number++;
+        }
+
         if(ret_templates < 0) {
                 msg(MSG_ERROR, "IPFIX: sending templates failed");
                 ret = -1;
