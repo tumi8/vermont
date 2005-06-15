@@ -468,9 +468,12 @@ static int ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipf
         header.version = IPFIX_VERSION_NUMBER;
         header.source_id = p_exporter->source_id;
 
-        //  increment and write the sequence number:
+        /*
+	 BUGFIX by RLA: Gerhard reported jumps in sequence nr by 2
+	 just write the sequence number
+	 incrementing is ONLY done in ipfix_send()
+	 */
         header.sequence_number = p_exporter->sequence_number;
-        p_exporter->sequence_number++;
 
         // get the export time:
         export_time = time(NULL);
