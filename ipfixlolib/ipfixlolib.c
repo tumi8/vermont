@@ -170,8 +170,8 @@ int ipfix_init_exporter(uint32_t source_id, ipfix_exporter **exporter)
         /*   (**exporter).ipfix_lo_template_current_count = 0 ; */
         /*   (**exporter).template_arr =  (ipfix_lo_template*) malloc (IPFIX_MAX_TEMPLATES * sizeof(ipfix_lo_template) ); */
         // we have not transmitted any templates yet!
-        tmp->last_template_transmition_time=0;
-        tmp->template_transmition_timer=IPFIX_DEFAULT_TEMPLATE_TIMER;
+        tmp->last_template_transmission_time=0;
+        tmp->template_transmission_timer=IPFIX_DEFAULT_TEMPLATE_TIMER;
 
         /* finally attach new exporter to the pointer we were given */
         *exporter=tmp;
@@ -401,7 +401,7 @@ static int ipfix_find_template(ipfix_exporter *exporter, uint16_t template_id, e
  * Returns: 0 on success, -1 on failure
  * This will free the templates data store!
  */
-int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id)
+int ipfix_remove_template_set(ipfix_exporter *exporter, uint16_t template_id)
 {
         int ret = 0;
 
@@ -928,7 +928,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
         time_t time_now = time(NULL);
 
         // has the timer expired?
-        if ( (time_now - exporter->last_template_transmition_time) >  exporter->template_transmition_timer) {
+        if ( (time_now - exporter->last_template_transmission_time) >  exporter->template_transmission_timer) {
 
                 // send the template date
 
@@ -945,7 +945,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
                         return -1;
                 }
 
-                exporter->last_template_transmition_time = time_now;
+                exporter->last_template_transmission_time = time_now;
 
                 // send the sendbuffer to all collectors
                 for (i = 0; i < exporter->collector_max_num; i++) {
@@ -1246,7 +1246,7 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
 
                 DPRINTF("ipfix_start_template_set: initializing new slot\n");
                 // allocate memory for the template's fields:
-                // maximum length of the data: 8 bytes / field, as each field contains:
+                // maximum length of the data: 8 bytes for each field, as one field contains:
                 // field type, field length (2*2bytes)
                 // and may contain an Enterprise Number (4 bytes)
                 // also, reserve 8 bytes space for the header!
@@ -1278,7 +1278,7 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
                 // write 0 to the lenght field; this will be overwritten with end_template
                 write_unsigned16 (&p_pos, p_end, 0);
                 // write the template ID:
-                write_unsigned16 (&p_pos, p_end, template_id);
+                write_unsigned16 (&p_pos, p_end, template_id); 
                 // write the field count:
                 write_unsigned16 (&p_pos, p_end, field_count);
 
@@ -1305,9 +1305,9 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
  *  scope_length: the option scope length (in host byte oder)
  *  option_length: the option scope length (in host byte oder)
  */
-int ipfix_start_options_template_set(ipfix_exporter *exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length)
+int ipfix_start_optionstemplate_set(ipfix_exporter *exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length)
 {
-        msg(MSG_FATAL, "IPFIX: start_options_template_set() not implemented");
+        msg(MSG_FATAL, "IPFIX: start_optionstemplate_set() not implemented");
         return -1;
 }
 
@@ -1373,14 +1373,29 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
         return 0;
 }
 
+
+/*
+   ipfix_start_template_set
+   Starts a new template, see ipfix_start_datatemplate_set
+*/
 int ipfix_start_template_set (ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count) {
         return ipfix_start_datatemplate_set(exporter, template_id, field_count, 0);
 }
 
+
+/*
+   ipfix_put_template_fixedfield
+   Append fixed-value data type field to the exporter's current data template set, see ipfix_put_template_field
+*/
 int ipfix_put_template_fixedfield(ipfix_exporter *exporter, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id) {
         return ipfix_put_template_field(exporter, template_id, type, length, enterprise_id);
 }
 
+
+/*
+   ipfix_put_template_data
+   Append fixed-value data to the exporter's current data template set
+*/
 int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void* data, uint16_t data_length) {
         int found_index;
         /* set pointers to the buffer */

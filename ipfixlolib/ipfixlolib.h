@@ -271,9 +271,9 @@ typedef struct {
 
 	// we also need some timer / counter to indicate,
 	// if we should send the templates too.
-	uint32_t last_template_transmition_time;
+	uint32_t last_template_transmission_time;
 	// time, after templates are transmitted again
-	uint32_t template_transmition_timer;
+	uint32_t template_transmission_timer;
 
 	int ipfix_lo_template_maxsize;
 	int ipfix_lo_template_current_count;
@@ -288,17 +288,19 @@ int ipfix_deinit_exporter(ipfix_exporter *exporter);
 
 int ipfix_add_collector(ipfix_exporter *exporter, char *coll_ip4_addr, int coll_port, enum ipfix_transport_protocol proto);
 int ipfix_remove_collector(ipfix_exporter *exporter, char *coll_ip4_addr, int coll_port);
-int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id);
 
-int ipfix_start_data_set(ipfix_exporter *exporter, uint16_t *template_id);
-int ipfix_end_data_set(ipfix_exporter *exporter);
 int ipfix_start_template_set(ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count);
-int ipfix_start_options_template_set(ipfix_exporter *exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length);
+int ipfix_start_optionstemplate_set(ipfix_exporter *exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length);
 int ipfix_start_datatemplate_set(ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count, uint16_t fixedfield_count);
 int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id);
 int ipfix_put_template_fixedfield(ipfix_exporter *exporter, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id);
-int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void* data, uint16_t data_length);
 int ipfix_end_template_set(ipfix_exporter *exporter, uint16_t template_id );
+/* gerhard: use ipfix_remove_template_set
+int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id);
+*/
+int ipfix_start_data_set(ipfix_exporter *exporter, uint16_t *template_id);
+int ipfix_end_data_set(ipfix_exporter *exporter);
+int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void* data, uint16_t data_length);
 int ipfix_deinit_template_set(ipfix_exporter *exporter, ipfix_lo_template* templ);
 int ipfix_remove_template_set(ipfix_exporter *exporter, uint16_t template_id);
 
