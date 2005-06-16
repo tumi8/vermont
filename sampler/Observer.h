@@ -164,7 +164,7 @@ public:
         };
 
         /* you cannot change the caplen of an already running observer */
-        bool Observer::setCaptureLen(int x)
+        bool setCaptureLen(int x)
         {
                 /* we cant change pcap caplen if alredy pcap_open() called */
                 if(ready) {
@@ -180,10 +180,24 @@ public:
                 return true;
         }
 
-        int Observer::getCaptureLen()
+        int getCaptureLen()
         {
                 return capturelen;
         }
+
+
+        /*
+         get some capturing statistics
+         struct pcap_stat is defined in pcap.h and has at least 3 u_int variables:
+         ps_recv, ps_drop, ps_ifdrop
+
+         should return: -1 on failure, 0 on OK
+         */
+        int pcapStats(struct pcap_stat *out)
+        {
+                return(pcap_stats(captureDevice, out));
+        }
+
 
 protected:
         Thread thread;
