@@ -5,21 +5,21 @@
 <body>
 
 <h3>Overview</h3>
-<b>IPFIXLOLIB</b> is a library to aid the sending of IPFIX/PSAMP encoded network probe data to a collector.<br>
-The usage is straight forward:
+The IPFIX protocol is used to send monitoring data from an IPFIX exporter to an IPFIX collector. <b>IPFIXLOLIB</b> is a library that implements the IPFIX protocol functionality of an IPFIX exporter.<br>
+The usage of IPFIXLOLIB is straight forward:
 
 <ul>
 <li>Initialize an exporter</li>
-<li>Add a collector (the station receiving all the data)</li>
-<li>Define template</li>
+<li>Add one or more collectors that receive the monitoring data</li>
+<li>Define one or more templates</li>
 
 <li>Loop</li>
 <ul>
-<li>Put data according to template (convert to network byte order first, if necessary)</li>
-<li>Call ipfix_send</li>
+<li>Assemble data records according to the defined templates (convert to network byte order first, if necessary)</li>
+<li>Call ipfix_send to trigger the export of the monitoring data to the collector</li>
 </ul>
 
-<li>If no longer needed: deinit exporter
+<li>Deinit the exporter to terminate
 </ul>
 
 <p>For a detailed and commented example, see <a href="example_code.c">example_code.c</a> in the doc/ directory.</p>
@@ -29,22 +29,29 @@ The usage is straight forward:
 <pre>
 #include "ipfixlolib.h"
 
-typedef <a href=#struct_ipfix_exporter>struct ipfix_exporter;</a>
+</pre>
+
+External library functions and types:
+
+<pre>
+typedef <a href=#struct_ipfix_exporter>struct ipfix_exporter</a>
 
 int <a href=#ipfix_init_exporter>ipfix_init_exporter</a>(uint32_t source_id, ipfix_exporter **exporter)
 int <a href=#ipfix_deinit_exporter>ipfix_deinit_exporter</a>(ipfix_exporter *exporter)
-
 int <a href=#ipfix_add_collector>ipfix_add_collector</a>(ipfix_exporter* exporter, char* coll_ip4_addr, int coll_port, ipfix_transport_protocol proto)
 int <a href=#ipfix_remove_collector>ipfix_remove_collector</a>(ipfix_exporter* exporter, char *coll_ip4_addr, int coll_port)
 
-int <a href=#ipfix_start_data_template>ipfix_start_data_template_set</a>(ipfix_exporter* exporter, uint16_t template_id, uint16_t field_count)
-int <a href=#ipfix_start_option_template_set>ipfix_start_options_template_set</a>(ipfix_exporter* exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length)
-void <a href=#ipfix_put_template_field>ipfix_put_template_field</a>(ipfix_exporter* exporter, uint16_t length, uint16_t type, uint32_t enterprise)
+int <a href=#ipfix_start_template_set>ipfix_start_template_set</a>(ipfix_exporter* exporter, uint16_t template_id, uint16_t field_count)
+int <a href=#ipfix_start_optionstemplate_set>ipfix_start_optionstemplate_set</a>(ipfix_exporter* exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length)
+int <a href=#ipfix_start_datatemplate_set>ipfix_start_datatemplate_set</a>(ipfix_exporter* exporter, uint16_t template_id, uint16_t field_count, uint16_t fixedfield_count)
+int <a href=#ipfix_put_template_field>ipfix_put_template_field</a>(ipfix_exporter* exporter, uint16_t template_id, uint16_t length, uint16_t type, uint32_t enterprise)
+int <a href=#ipfix_put_template_fixedfield>ipfix_put_template_fixedfield</a>(ipfix_exporter *exporter, uint16_t template_id, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id)
+int <a href=#ipfix_put_template_data>ipfix_put_template_data</a>(ipfix_exporter *exporter, uint16_t template_id, void* data, uint16_t data_length)
+int <a href=#ipfix_end_template_set>ipfix_end_template_set</a>(ipfix_exporter *exporter, uint16_t template_id)
 int <a href=#ipfix_remove_template_set>ipfix_remove_template_set</a>(ipfix_exporter* exporter, uint16_t template_id)
-int <a href=#ipfix_end_template_set>ipfix_end_template_set</a>(ipfix_exporter *exporter)
 
-int <a href=#ipfix_start_data_set>ipfix_start_data_set</a>(ipfix_exporter* exporter, uint16_t* data_length, uint16_t* template_id)
-void <a href=#ipfix_put_data_field>ipfix_put_data_field</a>(ipfix_exporter *exporter, uint16_t length, char *data)
+int <a href=#ipfix_start_data_set>ipfix_start_data_set</a>(ipfix_exporter* exporter, uint16_t* template_id)
+void <a href=#ipfix_put_data_field>ipfix_put_data_field</a>(ipfix_exporter *exporter, char *data, uint16_t length)
 int <a href=#ipfix_end_data_set>ipfix_end_data_set</a>(ipfix_exporter *exporter)
 
 int <a href=#ipfix_send>ipfix_send</a>(ipfix_exporter *exporter)
@@ -63,13 +70,26 @@ struct ipfix_identifier {
 
 <a href=#template_fields>List of valid field identifiers</a>
 </pre>
+
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+<h3>Remark:</h3>
+
+<p>For performance reasons, IPFIXLOLIB does not provide any conversion of monitoring data into network byte order.
+This has to be done by the user. On the contrary, template IDs, field IDs etc. have to be provided in host byte order.
+</p>
+<p>
+In the following, parameters that have to be provided in network byte order are marked with NBO in the description.
+For some parameters in host byte order, HBO is also explicitly indicated.
+</p>
+
 <hr width="94%" noshade="noshade" align="left" size="1">
 
 
 <h3>Detailed description</h3>
 
 <pre><a name=struct_ipfix_exporter>typedef struct ipfix_exporter;</a></pre>
-Opaque struct to represent an exporter.<br>
+Opaque struct that represents an exporter.<br>
 Its members are not accessed by the user, but via ipfix_* functions.<br>
 <br>
 For the curious, currently (v0.2) contains the following fields:<br>
@@ -83,8 +103,8 @@ typedef struct {
 	int collector_max_num;
 	ipfix_receiving_collector *collector_arr;
 
-	uint32_t last_template_transmition_time;
-	uint32_t template_transmition_timer;
+	uint32_t last_template_transmission_time;
+	uint32_t template_transmission_timer;
 
 	int ipfix_lo_template_maxsize;
 	int ipfix_lo_template_current_count;
@@ -93,134 +113,183 @@ typedef struct {
 } ipfix_exporter;
 </pre>
 <br>
-For more information and the other structs, please see ipfixlolib.h.<br>
+For more information and the other structs, please see <a href="../ipfixlolib.h">ipfixlolib.h</a>.<br>
+
 <hr width="94%" noshade="noshade" align="left" size="1">
+
 
 <a name=ipfix_init_exporter><code>int ipfix_init_exporter (uint32_t source_id, ipfix_exporter **exporter)</code></a><p>
 Initialize a new exporter.<br>
 <br>
-source_id: denotes the exporter's ID<br>
-exporter: a pointer to a pointer the internal data-structures are attached to.<br>
+source_id: denotes the exporter's source ID (HBO)<br>
+exporter: a pointer to a pointer to the exporter struct<br>
 <hr width="94%" noshade="noshade" align="left" size="1">
+
 
 <a name=ipfix_deinit_exporter><code>int ipfix_deinit_exporter (ipfix_exporter *exporter)</code></a><p>
 Cleanup previously initialized exporter and free memory.<br>
+<br>
 exporter: pointer to exporter struct
 <hr width="94%" noshade="noshade" align="left" size="1">
+
 
 <a name=ipfix_add_collector><code>int ipfix_add_collector(ipfix_exporter* exporter, char* coll_ip4_addr, int coll_port, ipfix_transport_protocol proto)</code></a><p>
 Add a collector to the given exporter and open connection.<br>
 <br>
-exporter: the priviously initialized exporter struct<br>
-coll_ip4_addr: IP of collector, in dotted notation (eg 1.2.3.4)<br>
-coll_port: port the collector is listening on<br>
-proto: protocoll to use<br>
+exporter: pointer to the previously initialized exporter struct<br>
+coll_ip4_addr: IP address of receiving collector in dotted notation (eg 1.2.3.4)<br>
+coll_port: port number of receiving collector<br>
+proto: transport protocol to use (check for current implementation state)<br>
 enum ipfix_transport_protocol { UDP, TCP, SCTP }<br>
 <hr width="94%" noshade="noshade" align="left" size="1">
+
 
 <a name=ipfix_remove_collector><code>int ipfix_remove_collector(ipfix_exporter* exporter, char *coll_ip4_addr, int coll_port)</code></a><p>
 Remove collector from the exporter and close connection<br>
 <br>
 exporter: pointer to exporter struct<br>
-coll_ip4_addr: IP of collector, in dotted notation<br>
-coll_port: port of the collector is listening on
+coll_ip4_addr: IP address of receiving collector in dotted notation<br>
+coll_port: port number of receiving collector
 <hr width="94%" noshade="noshade" align="left" size="1">
 
-<a name=ipfix_start_data_set><code>int ipfix_start_data_set(ipfix_exporter* exporter, uint16_t* data_length, uint16_t* template_id)</code></a><p>
+
+<a name=ipfix_start_template_set><code>int ipfix_start_template_set(ipfix_exporter* exporter, uint16_t template_id, uint16_t field_count)</code></a><p>
+Start defining a new template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID for this template (HBO)<br>
+field_count: number of fields to add (HBO)<br>
+<br>
+NOTE: It is not possible to start and define multiple templates in parallel.<br>
+ipfix_end_template_set() has to be called first before a new template can be defined.
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_start_optionstemplate_set><code>int ipfix_start_optionstemplate_set(ipfix_exporter* exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length)</code></a><p>
+Start defining a new option template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID for this template (HBO)<br>
+scope_length: length of the scope, in bytes (HBO)<br>
+option_length: length of options (HBO)<br>
+<br>
+NOTE: It is not possible to start and define multiple templates in parallel.<br>
+ipfix_end_template_set() has to be called first before a new template can be defined.
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_start_datatemplate_set><code>int ipfix_start_datatemplate_set(ipfix_exporter* exporter, uint16_t template_id, uint16_t field_count)</code></a><p>
+Start defining a new data template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: an ID for this template (HBO)<br>
+field_count: number of fields to add (HBO)<br>
+fixedfield_count: number of fixed-value fields to add (HBO)<br>
+<br>
+NOTE: It is not possible to start and define multiple templates in parallel.<br>
+ipfix_end_template_set() has to be called first before a new template can be defined.
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_put_template_field><code>int ipfix_put_template_field(ipfix_exporter* exporter, uint16_t template_id, uint16_t length, uint16_t type, uint32_t enterprise)</code></a><p>
+Add a field to the previously started template, options template, or data template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID of the template (HBO)<br>
+length: length of field, in bytes (HBO)<br>
+type: type of field (HBO); see <a href=#template_fields>template fields</a><br>
+enterprise: enterprise number (set to 0 if not used)
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_put_template_fixedfield><code>int ipfix_put_template_fixedfield(ipfix_exporter* exporter, uint16_t template_id, uint16_t length, uint16_t type, uint32_t enterprise)</code></a><p>
+Add a fixed-value data type field to the previously started data template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID of the template (HBO)<br>
+length: length of field, in bytes (HBO)<br>
+type: type of field (HBO); see <a href=#template_fields>template fields</a><br>
+enterprise: enterprise number (set to 0 if not used)
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_put_template_data><code>int ipfix_put_template_data(ipfix_exporter* exporter, uint16_t template_id, void* data, uint16_t data_length)</code></a><p>
+Add fixed-value data to the previously started data template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID of the template (HBO)<br>
+data: pointer to the data (NBO)<br>
+data_length: length of data to be added, in bytes (HBO)<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_end_template_set><code>int ipfix_end_template_set(ipfix_exporter *exporter, uint16_t template_id)</code></a><p>
+End a previously started and defined template, options template, or data template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID of the template (HBO)<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_remove_template_set><code>int ipfix_remove_template_set(ipfix_exporter* exporter, uint16_t template_id)</code></a><p>
+Remove a template, options template, or data template from the exporter and free resources.<br>
+<br>
+exporter: the exporter<br>
+template_id: ID of the template to be removed (HBO)
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_start_data_set><code>int ipfix_start_data_set(ipfix_exporter* exporter, uint16_t* template_id)</code></a><p>
 Start a new data set.<br>
 <br>
-exporter: a previously init()ed exporter<br>
-FIXME: NBO / HBO ??? automatically converted or not?<br>
-data_length: length of data, in bytes<br>
-template_id: ID of a previously defined and to the exporter added template<br>
+exporter: pointer to exporter struct<br>
+template_id: ID of a previously defined template (HBO)<br>
 <br>
 NOTE: It is not possible to start multiple data sets in parallel.<br>
 ipfix_end_data_set() has to be called first.<br>
 <hr width="94%" noshade="noshade" align="left" size="1">
 
-<a name=ipfix_put_data_field><code>void ipfix_put_data_field(ipfix_exporter *exporter, uint16_t length, char *data)</code></a><p>
-Add data to a previously _start()ed data set.<br>
+
+<a name=ipfix_put_data_field><code>void ipfix_put_data_field(ipfix_exporter *exporter, char *data, uint16_t length)</code></a><p>
+Add data to a previously started data set. This function is realized as a macro.<br>
 <br>
-exporter: the exporter<br>
-length: length of data, in bytes<br>
-data: pointer to the data to copy<br>
+exporter: pointer to exporter struct<br>
+data: pointer to the data (NBO)<br>
+length: length of data, in bytes (HBO)<br>
 <br>
-NOTE: The data pointed to by *data has to be valid until <a href=#ipfix_send><code>ipfix_send()</code></a><p> has been called.<br>
-No data is copied by putting a data field.<br>
+NOTE: The data pointed to by *data has to be valid until <a href=#ipfix_send><code>ipfix_send()</code></a> has been called, since the data is not copied.<br>
 The data must be in network byte order for compatibility; no conversion is done.
 <hr width="94%" noshade="noshade" align="left" size="1">
+
 
 <a name=ipfix_end_data_set>
 <code>int ipfix_end_data_set(ipfix_exporter *exporter)</code></a><p>
 End a previously started data set.<br>
 <br>
-exporter: the exporter
+exporter: pointer to exporter struct<br>
 <hr width="94%" noshade="noshade" align="left" size="1">
 
-<a name=ipfix_start_data_template><code>int ipfix_start_data_template_set(ipfix_exporter* exporter, uint16_t template_id, uint16_t field_count)</code></a><p>
-Start defining a new data template for the exporter<br>
-<br>
-exporter: the exporter<br>
-template_id: an ID for this template<br>
-field_count: number of fields to add<br>
-<br>
-NOTE: It is not possible to start and define multiple templates in parallel.<br>
-ipfix_end_data_template_set() has to be called first before a new template can be defined.
-<hr width="94%" noshade="noshade" align="left" size="1">
-
-<a name=ipfix_start_option_template_set><code>int ipfix_start_options_template_set(ipfix_exporter* exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length)</code></a><p>
-Start defining a new option template.<br>
-<br>
-exporter: the exporter<br>
-template_id: ID for this template<br>
-scope_length: length of the scope, in bytes<br>
-option_length: length of options<br>
-<br>
-NOTE: It is not possible to start and define multiple option templates in parallel.<br>
-ipfix_end_data_options_template_set() has to be called first before a new template can be defined.
-<hr width="94%" noshade="noshade" align="left" size="1">
-
-<a name=ipfix_put_template_field><code>void ipfix_put_template_field(ipfix_exporter* exporter, uint16_t length, uint16_t type, uint32_t enterprise)</code></a><p>
-Add a field to the previously started template.<br>
-<br>
-exporter: the exporter<br>
-length: length of field, in bytes<br>
-type: type of field; see <a href=#template_fields>template fields</a><br>
-enterprise: FIXME - if not used simply 0
-<hr width="94%" noshade="noshade" align="left" size="1">
-
-<a name=ipfix_remove_template_set><code>int ipfix_remove_template_set(ipfix_exporter* exporter, uint16_t template_id)</code></a><p>
-Remove a previously added and used template and free resources.<br>
-<br>
-exporter: the exporter<br>
-template_id: previously added template with this ID to remove
-<hr width="94%" noshade="noshade" align="left" size="1">
-
-<a name=ipfix_end_template_set><code>int ipfix_end_template_set(ipfix_exporter *exporter)</code></a><p>
-End a previously started and defined template.<br>
-<br>
-exporter: the exporter<br>
-<hr width="94%" noshade="noshade" align="left" size="1">
 
 <a name=ipfix_send><code>int ipfix_send(ipfix_exporter *exporter)</code></a><p>
-Send an IPFIX paket with all added templates / data.<br>
-Template-sending is handled fully transparent by this function:<br>
-If the template has changed or the time-out for periodic send has elapsed, the templates are re-sent.<br>
+Send an IPFIX packet with the added data sets. If necessary, an IPFIX packet including the templates is (re)sent before.<br>
+(The sending of templates is handled transparently by this function: If a template has changed or a timeout for periodic sending has occured, the all templates are resent.)<br>
 <br>
-exporter: the exporter<br>
+exporter: pointer to exporter struct<br>
 <br>
-NOTE: All via ipfix_put_data_field() added data must be valid until this function returns.
+NOTE: The *data off all data fields in the data sets have to remain valid until this function returns.
 <hr width="94%" noshade="noshade" align="left" size="1">
+
 
 <a name=ipfix_name_lookup><code>int ipfix_name_lookup(char *name)</code></a><p>
 Retrieve the IPFIX / PSAMP ID of a given string. -1 indicates "not found".
 <hr width="94%" noshade="noshade" align="left" size="1">
 
+
 <a name=ipfix_id_lookup><code>struct ipfix_identifier * ipfix_id_lookup(int n)</code></a><p>
 Retrieve full info about an IPFIX / PSAMP ID, including name, ID and length (in bytes).<br>
 FIXME: HOW TO DISTINGUISH MULTI-OCTET (OCTET-STRING) FIELDS?
-
 <hr width="94%" noshade="noshade" align="left" size="1">
+
 
 <a name=ipfix_id_rangecheck><code>int ipfix_id_rangecheck(int id)</code></a><p>
 Check if a given ID is within valid IPFIX/PSAMP ranges.<br>
