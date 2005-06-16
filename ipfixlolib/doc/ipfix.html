@@ -75,12 +75,11 @@ struct ipfix_identifier {
 
 <h3>Remark:</h3>
 
-<p>For performance reasons, IPFIXLOLIB does not provide any conversion of monitoring data into network byte order.
-This has to be done by the user. On the contrary, template IDs, field IDs etc. have to be provided in host byte order.
+<p>IPFIXLOLIB does not provide any conversion of monitoring data into network byte order.
+This has to be done by the user. On the contrary, template IDs, field IDs etc. have to be provided in host byte order (there is one exception in ipfix_start_data_set).
 </p>
 <p>
 In the following, parameters that have to be provided in network byte order are marked with NBO in the description.
-For some parameters in host byte order, HBO is also explicitly indicated.
 </p>
 
 <hr width="94%" noshade="noshade" align="left" size="1">
@@ -121,7 +120,7 @@ For more information and the other structs, please see <a href="../ipfixlolib.h"
 <a name=ipfix_init_exporter><code>int ipfix_init_exporter (uint32_t source_id, ipfix_exporter **exporter)</code></a><p>
 Initialize a new exporter.<br>
 <br>
-source_id: denotes the exporter's source ID (HBO)<br>
+source_id: denotes the exporter's source ID <br>
 exporter: a pointer to a pointer to the exporter struct<br>
 <hr width="94%" noshade="noshade" align="left" size="1">
 
@@ -157,8 +156,8 @@ coll_port: port number of receiving collector
 Start defining a new template.<br>
 <br>
 exporter: pointer to exporter struct<br>
-template_id: ID for this template (HBO)<br>
-field_count: number of fields to add (HBO)<br>
+template_id: ID for this template <br>
+field_count: number of fields to add <br>
 <br>
 NOTE: It is not possible to start and define multiple templates in parallel.<br>
 ipfix_end_template_set() has to be called first before a new template can be defined.
@@ -169,9 +168,9 @@ ipfix_end_template_set() has to be called first before a new template can be def
 Start defining a new option template.<br>
 <br>
 exporter: pointer to exporter struct<br>
-template_id: ID for this template (HBO)<br>
-scope_length: length of the scope, in bytes (HBO)<br>
-option_length: length of options (HBO)<br>
+template_id: ID for this template <br>
+scope_length: length of the scope, in bytes <br>
+option_length: length of options <br>
 <br>
 NOTE: It is not possible to start and define multiple templates in parallel.<br>
 ipfix_end_template_set() has to be called first before a new template can be defined.
@@ -182,9 +181,9 @@ ipfix_end_template_set() has to be called first before a new template can be def
 Start defining a new data template.<br>
 <br>
 exporter: pointer to exporter struct<br>
-template_id: an ID for this template (HBO)<br>
-field_count: number of fields to add (HBO)<br>
-fixedfield_count: number of fixed-value fields to add (HBO)<br>
+template_id: an ID for this template <br>
+field_count: number of fields to add <br>
+fixedfield_count: number of fixed-value fields to add <br>
 <br>
 NOTE: It is not possible to start and define multiple templates in parallel.<br>
 ipfix_end_template_set() has to be called first before a new template can be defined.
@@ -195,9 +194,9 @@ ipfix_end_template_set() has to be called first before a new template can be def
 Add a field to the previously started template, options template, or data template.<br>
 <br>
 exporter: pointer to exporter struct<br>
-template_id: ID of the template (HBO)<br>
-length: length of field, in bytes (HBO)<br>
-type: type of field (HBO); see <a href=#template_fields>template fields</a><br>
+template_id: ID of the template <br>
+length: length of field, in bytes <br>
+type: type of field; see <a href=#template_fields>template fields</a><br>
 enterprise: enterprise number (set to 0 if not used)
 <hr width="94%" noshade="noshade" align="left" size="1">
 
@@ -206,9 +205,9 @@ enterprise: enterprise number (set to 0 if not used)
 Add a fixed-value data type field to the previously started data template.<br>
 <br>
 exporter: pointer to exporter struct<br>
-template_id: ID of the template (HBO)<br>
-length: length of field, in bytes (HBO)<br>
-type: type of field (HBO); see <a href=#template_fields>template fields</a><br>
+template_id: ID of the template<br>
+length: length of field, in bytes <br>
+type: type of field; see <a href=#template_fields>template fields</a><br>
 enterprise: enterprise number (set to 0 if not used)
 <hr width="94%" noshade="noshade" align="left" size="1">
 
@@ -217,9 +216,9 @@ enterprise: enterprise number (set to 0 if not used)
 Add fixed-value data to the previously started data template.<br>
 <br>
 exporter: pointer to exporter struct<br>
-template_id: ID of the template (HBO)<br>
+template_id: ID of the template<br>
 data: pointer to the data (NBO)<br>
-data_length: length of data to be added, in bytes (HBO)<br>
+data_length: length of data to be added, in bytes <br>
 <hr width="94%" noshade="noshade" align="left" size="1">
 
 
@@ -227,7 +226,7 @@ data_length: length of data to be added, in bytes (HBO)<br>
 End a previously started and defined template, options template, or data template.<br>
 <br>
 exporter: pointer to exporter struct<br>
-template_id: ID of the template (HBO)<br>
+template_id: ID of the template <br>
 <hr width="94%" noshade="noshade" align="left" size="1">
 
 
@@ -235,7 +234,7 @@ template_id: ID of the template (HBO)<br>
 Remove a template, options template, or data template from the exporter and free resources.<br>
 <br>
 exporter: the exporter<br>
-template_id: ID of the template to be removed (HBO)
+template_id: ID of the template to be removed 
 <hr width="94%" noshade="noshade" align="left" size="1">
 
 
@@ -243,7 +242,7 @@ template_id: ID of the template to be removed (HBO)
 Start a new data set.<br>
 <br>
 exporter: pointer to exporter struct<br>
-template_id: ID of a previously defined template (HBO)<br>
+template_id: ID of a previously defined template (NBO here, because we want to avoid frequent conversions)<br>
 <br>
 NOTE: It is not possible to start multiple data sets in parallel.<br>
 ipfix_end_data_set() has to be called first.<br>
@@ -255,7 +254,7 @@ Add data to a previously started data set. This function is realized as a macro.
 <br>
 exporter: pointer to exporter struct<br>
 data: pointer to the data (NBO)<br>
-length: length of data, in bytes (HBO)<br>
+length: length of data, in bytes <br>
 <br>
 NOTE: The data pointed to by *data has to be valid until <a href=#ipfix_send><code>ipfix_send()</code></a> has been called, since the data is not copied.<br>
 The data must be in network byte order for compatibility; no conversion is done.
