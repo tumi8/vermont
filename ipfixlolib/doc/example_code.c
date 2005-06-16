@@ -36,8 +36,21 @@ int meter_process_gimme_data(meter_data *mdat)
 	mdat->ip_dst_addr = htonl(0x02040608);	// 2.4.6.8
 	mdat->src_port = htons(12);
 	mdat->dst_port = htons(13);
-	//mdat->byte_count = htonll(1567490);
-	//mdat->packet_count = htonll(42);
+	mdat->byte_count = htonll(1567490);
+	mdat->packet_count = htonll(42);
+
+	return 0;
+}
+
+/* generate some other data */
+int meter_process_gimme_data2(meter_data *mdat)
+{
+	mdat->ip_src_addr = htonl(0x01020304);	// 1.2.3.4
+	mdat->ip_dst_addr = htonl(0x02040608);	// 2.4.6.8
+	mdat->src_port = htons(22);
+	mdat->dst_port = htons(4713);
+	mdat->byte_count = htonll(3);
+	mdat->packet_count = htonll(2);
 
 	return 0;
 }
@@ -119,16 +132,16 @@ int main(int argc, char **argv)
 
 	 exporter: the exporter
 	 template_id: the template ID chosen beforehand
-	 length: sizeof() datatype
 	 type: the IPFIX field ID for this entry
+	 length: sizeof() datatype
 	 enterprise: FIXME ???
 	 */
 	ret=ipfix_put_template_field(my_exporter, my_template_id, 8, 4, 0);
 	ret=ipfix_put_template_field(my_exporter, my_template_id, 12, 4, 0);
 	ret=ipfix_put_template_field(my_exporter, my_template_id, 7, 2, 0);
 	ret=ipfix_put_template_field(my_exporter, my_template_id, 11, 2, 0);
-	//ret=ipfix_put_template_field(my_exporter, my_template_id, 1, 8, 0);
-	//ret=ipfix_put_template_field(my_exporter, my_template_id, 2, 8, 0);
+	ret=ipfix_put_template_field(my_exporter, my_template_id, 1, 8, 0);
+	ret=ipfix_put_template_field(my_exporter, my_template_id, 2, 8, 0);
 
         /* Finalize the template */
 	ret=ipfix_end_template_set(my_exporter, my_template_id);
@@ -144,18 +157,18 @@ int main(int argc, char **argv)
 	 3) add the fields
          4) send data set
 	 */
-	int exporting = 1;
+	
+	/* let's specify the number of data packets */
+	int exporting = 2;
 
 	while(exporting) {
 
 		int i;
 		meter_data my_meter_data;
+		meter_data my_meter_data2;
 
                 /* you may loop and add one or more data-sets */
 		for (i = 0; i < 2; i++) {
-
-                        /* get data - must be in Network Byte Order for interoperability */
-			meter_process_gimme_data(&my_meter_data);
 
 			/* start a data-set */
 			ret=ipfix_start_data_set(my_exporter, &my_n_template_id);
@@ -169,14 +182,21 @@ int main(int argc, char **argv)
 				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n",
 				       (*(*my_exporter).data_sendbuffer).current);
 
+				/* get data - must be in Network Byte Order for interoperability */
+				meter_process_gimme_data(&my_meter_data);
+
 				/*
 				  now fill the pre-defined data fields
 
 				  NOTE: supplied data is NOT copied and has to
 				  stay valid until the ipfix_send() below!
+
+				  NOTE: It's the user's responsability to ensure that
+				  the added data is conform to the indicated template.
 				*/
 				ipfix_put_data_field(my_exporter, &(my_meter_data.ip_src_addr), 4);
 				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
+
 				ipfix_put_data_field(my_exporter, &(my_meter_data.ip_dst_addr), 4);
 				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
 
@@ -185,21 +205,35 @@ int main(int argc, char **argv)
 
 				ipfix_put_data_field(my_exporter, &(my_meter_data.dst_port), 2);
 				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
-#if 0
+
 				ipfix_put_data_field(my_exporter, &(my_meter_data.byte_count), 8);
 				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
 
 				ipfix_put_data_field(my_exporter, &(my_meter_data.packet_count), 8);
 				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
-#endif
-				/* FIXME ??? */
-				/* Note: the user may specify a large buffer, as in the template example */
-				/* The user MAY (probably should) add more records, before he calls send */
-				/* FIXME ??? */
 
-				/* finish the data-set */
-				ret=ipfix_end_data_set(my_exporter);
+				/* more than one record can be added to a data set, so let's add another one */
+				/* NOTE: we need another my_meter_data2 here, because the data of my_meter_data 
+				   has to remain valid till ipfix_send() is called */
+				meter_process_gimme_data2(&my_meter_data2);
+
+				ipfix_put_data_field(my_exporter, &(my_meter_data2.ip_src_addr), 4);
 				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
+				ipfix_put_data_field(my_exporter, &(my_meter_data2.ip_dst_addr), 4);
+				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
+				ipfix_put_data_field(my_exporter, &(my_meter_data2.src_port), 2);
+				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
+				ipfix_put_data_field(my_exporter, &(my_meter_data2.dst_port), 2);
+				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
+				ipfix_put_data_field(my_exporter, &(my_meter_data2.byte_count), 8);
+				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
+				ipfix_put_data_field(my_exporter, &(my_meter_data2.packet_count), 8);
+				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
+
+				/* finish the data-set 
+				   remark: the main task of ipfix_end_data_set is to calculate the length of the data set */
+				ret=ipfix_end_data_set(my_exporter);
+//				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
 
 				if (ret != 0)
 					fprintf(stderr, "ipfix_end_data_set failed!\n");
@@ -217,7 +251,7 @@ int main(int argc, char **argv)
 		if (ret != 0)
 			fprintf(stderr, "ipfix_send failed!\n");
 
-		exporting = 0;
+		exporting--;
 	}
 
 	/* if you no longer need the exporter: free resources */
