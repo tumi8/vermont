@@ -19,7 +19,8 @@
  On a busy network we may want to have it shorter.
  Maybe this should be runtime-configurable.
  */
-#define PCAP_TIMEOUT 1000
+#define PCAP_TIMEOUT 100
+
 /*
  maximum physical packet length
  you may want to adjust this on a special jumbo-framed GBit network
@@ -89,6 +90,10 @@ public:
 			msg(MSG_DEBUG, "PCAP: name=%s, desc=%s", dev->name, dev->description);
                 }
 
+                msg(MSG_INFO,
+                    "Observer: pcap opening interface=%s, promisc=%d, snaplen=%d, timeout=%d",
+                    captureInterface, pcap_promisc, capturelen, pcap_timeout
+                   );
                 captureDevice=pcap_open_live(captureInterface, capturelen, pcap_promisc, pcap_timeout, errorBuffer);
                 // check for errors
                 if(!captureDevice) {
@@ -183,6 +188,23 @@ public:
         int getCaptureLen()
         {
                 return capturelen;
+        }
+
+
+        bool setPacketTimeout(int ms)
+        {
+                if(ready) {
+                        msg(MSG_ERROR, "Observer: changing read timeout on-the-fly is not supported by pcap");
+                        return false;
+                }
+                pcap_timeout=ms;
+                return true;
+        }
+
+
+        int getPacketTimeout()
+        {
+                return pcap_timeout;
         }
 
 
