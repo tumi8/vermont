@@ -214,8 +214,6 @@ static int configure_observer(struct v_objects *v, char *interface, int snaplen)
 		msg(MSG_FATAL, "Observer: preparing failed");
 		goto out;
 	}
-
-	msg(MSG_DEBUG, "Observer: using interface %s, snaplen %d", o->captureInterface, o->getCaptureLen());
 	v->observer=o;
 
 	return 0;
