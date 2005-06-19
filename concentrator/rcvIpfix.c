@@ -913,7 +913,8 @@ IpfixReceiver* createIpfixReceiver(uint16_t port) {
 		goto out0;
 	}
 
-	ipfixReceiver->callbackInfo = 0;
+	ipfixReceiver->callbackInfo=0;
+        ipfixReceiver->callbackCount=0;
 	ipfixReceiver->exit=0;
 
 	if(!(ipfixReceiver->templateBuffer = createTemplateBuffer(ipfixReceiver))) {
