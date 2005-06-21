@@ -207,6 +207,8 @@ public:
                 return pcap_timeout;
         }
 
+	/* this function is called by the logger timer thread and should dump some nice info using msg_stat */
+	static void doLogging(void *arg);
 
         /*
          get some capturing statistics
@@ -215,7 +217,7 @@ public:
 
          should return: -1 on failure, 0 on OK
          */
-        int pcapStats(struct pcap_stat *out)
+        int getPcapStats(struct pcap_stat *out)
         {
                 return(pcap_stats(captureDevice, out));
         }
