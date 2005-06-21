@@ -95,5 +95,14 @@ void *Observer::observerThread(void *arg)
 	pthread_exit((void *)1);
 }
 
+void Observer::doLogging(void *arg)
+{
+  Observer *obs = (Observer *)arg;
+  struct pcap_stat stats;
+  obs->getPcapStats(&stats);
+  msg_stat("Observer: %6d recv, %6d drop, %6d ifdrop", stats.ps_recv, stats.ps_drop, stats.ps_ifdrop);
+}
+
+
 //static void plain_c_sucks_because_people_dont_seem_to_have_a_caps_key_and_like_to_type_stupid_underscores_alot(){}
 

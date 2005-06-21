@@ -30,6 +30,7 @@ static int vermont_readconf(dictionary **conf, char *file);
 static int vermont_configure(struct v_objects *v);
 static int vermont_start_all(struct v_objects *v);
 static int configure_logging(struct v_objects *v);
+static int using_log_thread = 0;
 
 int main(int ac, char **dc)
 {
@@ -247,6 +248,7 @@ static int configure_logging(struct v_objects *v)
         FILE *FD;
         dictionary *conf=v->v_config;
         char *file;
+	char *log_interval;
 
         file=iniparser_getvalue(conf, "main", "log");
         if(strcasecmp(file, "off") == 0) {
@@ -268,6 +270,20 @@ static int configure_logging(struct v_objects *v)
         setvbuf(FD, (char *)NULL, _IOLBF, 0);
 
         msg(MSG_INFO, "Logging: using %s as statistics log", file);
+
+	/*
+	 set up the logger thread
+	 */
+	log_interval = iniparser_getvalue(conf, "main", "log_interval");
+	if ((!log_interval) || (atoi(log_interval) == 0)) {
+		msg(MSG_DEBUG, "Main: logging thread disabled");
+	} else {
+		/* set up logging thread */
+		msg(MSG_DEBUG, "Main: logging all %d milliseconds", atoi(log_interval));
+		msg_thread_set_timeout(atoi(log_interval));
+
+		using_log_thread = 1;
+	}
         return(msg_stat_setup(MSG_SETUP_NEW, FD));
 }
 
@@ -286,6 +302,9 @@ static int vermont_start_all(struct v_objects *v)
                 v->filter->startFilter();
                 v->observer->startCapture();
         }
+
+	if (using_log_thread)
+	  msg_thread_start();
 
         /* FIXME, DIRTY: to stabilize and wait for threads */
         sleep(1);

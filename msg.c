@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <pthread.h>
+#include <unistd.h>
+#include <time.h>
 #include "msg.h"
 
 #ifdef __cplusplus
@@ -18,8 +20,17 @@ static int msg_level=MSG_DEFAULT;
 static char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "DEBUG  ", "INFO   ", 0};
 
 /* we need to serialize for msg_stat() */
-static pthread_mutex_t stat_lock=PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t stat_lock = PTHREAD_MUTEX_INITIALIZER;
 static FILE *stat_file;
+
+/* the log functions which the message logger thread calls and stuff needed for them */
+static pthread_mutex_t log_array_lock = PTHREAD_MUTEX_INITIALIZER;
+static LOGFUNCTION log_functions[MAX_LOG_FUNCTIONS] = { 0 };
+static void *log_function_params[MAX_LOG_FUNCTIONS] = { 0 };
+static int num_log_functions = 0;
+/* each log_timeout, the logger thread will call all registered logging functions */
+static struct timespec log_timeout = { tv_sec: 1, tv_nsec: 0 };
+static pthread_t log_thread;
 
 /*
  the main logging routine
@@ -90,6 +101,57 @@ int msg_stat_setup(int mode, FILE *f)
 
 	return 1;
 
+}
+
+void msg_thread_add_log_function(LOGFUNCTION f, void *param)
+{
+  pthread_mutex_lock(&log_array_lock);
+  log_functions[num_log_functions] = f;
+  log_function_params[num_log_functions] = param;
+  num_log_functions++;
+  pthread_mutex_unlock(&log_array_lock);
+}
+
+void msg_thread_set_timeout(int ms)
+{
+  log_timeout.tv_sec = ms / 1000;
+  log_timeout.tv_nsec = ((long)ms % 1000L) * 1000000L;
+}
+
+/* start the logger thread with the configured log functions */
+void msg_thread_start(void)
+{
+  pthread_create(&log_thread, 0, msg_thread, 0);
+}
+
+/* this stops the logger thread. hard. */
+void msg_thread_stop(void)
+{
+  pthread_cancel(log_thread);
+}
+
+/* this is the main message logging thread */
+void *msg_thread(void *arg)
+{
+  int i;
+  
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
+  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0);
+  
+  while (1)
+  {
+    /* we use nanosleep here because nanosleep, unlike sleep and usleep, is a thread cancellation point */
+    nanosleep(&log_timeout, 0);
+    
+    /* now walk through all log functions and call them */
+    pthread_mutex_lock(&log_array_lock);
+    for (i = 0; i < num_log_functions; i++)
+    {
+      if (log_functions[i])
+	(log_functions[i])(log_function_params[i]);
+    }
+    pthread_mutex_unlock(&log_array_lock);
+  }
 }
 
 #ifdef __cplusplus
