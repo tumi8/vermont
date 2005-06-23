@@ -19,13 +19,18 @@
 static char *CONF_SEC="concentrator";
 
 /*
- this is a mess.
+ this is a f*cking mess.
  this really needs to be split up, but I really dont care anymore
  */
 int configure_concentrator(struct v_objects *v)
 {
+	char *poll_ms, *source_id;
+	char *rules, *buffertime_min, *buffertime_max;
+
+	char *listen_port;
+        uint16_t listen_portn;
+
 	int sID, exports=0;
-        uint16_t listen_port;
 
 	dictionary *conf=v->v_config;
         IpfixSender *ips=NULL;
@@ -37,18 +42,28 @@ int configure_concentrator(struct v_objects *v)
 
         msg(MSG_DEBUG, "Config: now configuring the concentrator subsystem");
 
-	if((v->conc_poll_ms=atoi(iniparser_getvalue(conf, CONF_SEC, "poll_interval")))==0) {
+        
+	if(!(poll_ms=iniparser_getvalue(conf, CONF_SEC, "poll_interval"))) {
+		v->conc_poll_ms=CONC_POLL_MS;
 		msg(MSG_ERROR,
-		    "Config: parse error for poll_intervall (got %d) - adjusting to %d ms",
-		    v->conc_poll_ms,
-		    CONC_POLL_MS
+		    "Config: parse error for poll_intervall - adjusting to %d ms",
+		    v->conc_poll_ms
 		   );
+	} else {
+		v->conc_poll_ms=atoi(poll_ms);
 	}
-	sID=atoi(iniparser_getvalue(conf, CONF_SEC, "source_id"));
+
+	if(!(source_id=iniparser_getvalue(conf, CONF_SEC, "source_id"))) {
+		msg(MSG_FATAL, "Config: %s source_id is missing", CONF_SEC);
+                goto out;
+
+	}
+        sID=atoi(source_id);
 
 	/* violating the original string is not nice, so copy */
 	if(!(l=strdup(iniparser_getvalue(conf, CONF_SEC, "export_to")))) {
-		return 1;
+		msg(MSG_FATAL, "Config: %s export_to problem", CONF_SEC);
+                goto out;
 	}
 
 	/*
@@ -106,12 +121,21 @@ int configure_concentrator(struct v_objects *v)
         /* make IPFIX aggregator */
         msg(MSG_DEBUG, "Config: now making IPFIX aggregator");
         initializeAggregators();
-        if(!(ipa=createAggregator(
-                             iniparser_getvalue(conf, CONF_SEC, "rules"),
-                             atoi(iniparser_getvalue(conf, CONF_SEC, "buffertime_min")),
-                             atoi(iniparser_getvalue(conf, CONF_SEC, "buffertime_max"))
-                                 ))
-          ) {
+	rules=iniparser_getvalue(conf, CONF_SEC, "rules");
+	buffertime_min=iniparser_getvalue(conf, CONF_SEC, "buffertime_min");
+        buffertime_max=iniparser_getvalue(conf, CONF_SEC, "buffertime_max");
+
+	if(!rules || !buffertime_min || !buffertime_max) {
+		msg(MSG_FATAL, "Config: %s rules, buffertime_min/max are mandatory", CONF_SEC);
+                goto out1;
+	}
+
+	if(!(ipa=createAggregator(
+				  rules,
+				  atoi(buffertime_min),
+				  atoi(buffertime_max)
+				 ))
+	  ) {
 		msg(MSG_FATAL, "Config: aggregator creation failure");
 		goto out1;
         }
@@ -121,9 +145,14 @@ int configure_concentrator(struct v_objects *v)
 
         /* make IPFIX receiver/collector */
         initializeIpfixReceivers();
-        listen_port=(uint16_t)atoi(iniparser_getvalue(conf, CONF_SEC, "listen_port"));
-	if(!(ipr=createIpfixReceiver(listen_port))) {
-		msg(MSG_FATAL, "Config: IpfixReceiver creation failure for port %d", listen_port);
+	if(!(listen_port=iniparser_getvalue(conf, CONF_SEC, "listen_port"))) {
+		msg(MSG_FATAL, "Config: %s listen_port missing", CONF_SEC);
+                goto out2;
+	}
+        listen_portn=atoi(listen_port);
+
+	if(!(ipr=createIpfixReceiver(listen_portn))) {
+		msg(MSG_FATAL, "Config: IpfixReceiver creation failure for port %d", listen_portn);
 		goto out2;
         }
         addIpfixReceiverCallbacks(ipr, getAggregatorCallbackInfo(ipa));
