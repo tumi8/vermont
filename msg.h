@@ -45,11 +45,11 @@ int msg_stat(char *fmt, ...);
 int msg_stat_setup(int mode, FILE *f);
 
 /* msg_thread functions for the timed logger thread */
-void msg_thread_add_log_function(LOGFUNCTION f, void *param);
+int msg_thread_add_log_function(LOGFUNCTION f, void *param);
 void msg_thread_set_timeout(int ms);
-void msg_thread_start();
-void msg_thread_stop();
-void *msg_thread(void *);
+int msg_thread_start();
+int msg_thread_stop();
+void * msg_thread(void *);
 
 #ifdef __cplusplus
 }
