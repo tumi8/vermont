@@ -33,7 +33,10 @@ static void *log_function_params[MAX_LOG_FUNCTIONS];
 static int num_log_functions;
 
 /* each log_timeout, the logger thread will call all registered logging functions */
-static struct timespec log_timeout = {tv_sec: 300, tv_nsec: 0};
+static struct timespec log_timeout = {
+	.tv_sec=300,
+	.tv_nsec=0
+};
 static pthread_t log_thread;
 
 /*
