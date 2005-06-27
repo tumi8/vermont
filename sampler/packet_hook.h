@@ -15,7 +15,7 @@ struct packet_hook {
         /* time when this packet was captured */
         const struct timeval *timestamp;
 
-        /* length of packet in bytes, starting at phys. header */
+        /* length of packet in bytes, including link layer header */
 	int length;
 };
 
