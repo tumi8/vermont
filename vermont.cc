@@ -30,7 +30,8 @@ static int vermont_readconf(dictionary **conf, char *file);
 static int vermont_configure(struct v_objects *v);
 static int vermont_start_all(struct v_objects *v);
 static int configure_logging(struct v_objects *v);
-static int using_log_thread = 0;
+static int using_log_thread;
+
 
 int main(int ac, char **dc)
 {
@@ -176,7 +177,7 @@ static int vermont_configure(struct v_objects *v)
 
 	/* configure the msg subsystem */
         ret=configure_logging(v);
-        if(ret == 2) {
+        if(ret==2) {
 		/* OK, but not running */
 	} else if(ret==0) {
                 /* OK and running */
@@ -275,16 +276,17 @@ static int configure_logging(struct v_objects *v)
 	 set up the logger thread
 	 */
 	log_interval = iniparser_getvalue(conf, "main", "log_interval");
-	if ((!log_interval) || (atoi(log_interval) == 0)) {
+	if((!log_interval) || (atoi(log_interval) == 0)) {
 		msg(MSG_DEBUG, "Main: logging thread disabled");
 	} else {
 		/* set up logging thread */
 		msg(MSG_DEBUG, "Main: logging all %d milliseconds", atoi(log_interval));
 		msg_thread_set_timeout(atoi(log_interval));
 
-		using_log_thread = 1;
+		using_log_thread=1;
 	}
-        return(msg_stat_setup(MSG_SETUP_NEW, FD));
+
+	return(msg_stat_setup(MSG_SETUP_NEW, FD));
 }
 
 
@@ -303,8 +305,9 @@ static int vermont_start_all(struct v_objects *v)
                 v->observer->startCapture();
         }
 
-	if (using_log_thread)
-	  msg_thread_start();
+	if(using_log_thread) {
+		msg_thread_start();
+	}
 
         /* FIXME, DIRTY: to stabilize and wait for threads */
         sleep(1);
