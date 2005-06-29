@@ -3,7 +3,7 @@
 
 struct packet_hook {
 
-        /* full packet data w/ physical */
+        /* full packet data w/ link layer */
         void *data;
 
         /* pointer to IP header; data+phy.offset */
