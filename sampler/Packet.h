@@ -84,13 +84,12 @@ public:
 		newUsers = users;
 		refCountLock.unlock();
 
-		if(newUsers < 0) {
+		if(newUsers == 0) {
+			delete this;
+		} else if(newUsers < 0) {
 			DPRINTF("Packet: WARNING: trying to free already freed packet!\n");
 		}
 
-		if(newUsers == 0) {
-			delete this;
-		}
 	};
 
 	// read data from the IP header
