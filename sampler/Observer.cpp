@@ -26,14 +26,14 @@ using namespace std;
 void *Observer::observerThread(void *arg)
 {
 	/* first we need to get the instance back from the void *arg */
-	Observer *obs = (Observer *)arg;
+	Observer *obs=(Observer *)arg;
 	Packet *p;
 
-	int numReceivers = obs->receivers.size();
-
-	const unsigned char *rawPacketData;
-	void *myPacketData;
+        const unsigned char *pcapData;
+	void *packetData;
 	struct pcap_pkthdr packetHeader;
+
+	int numReceivers=obs->receivers.size();
 
 	// start capturing packets
 	msg(MSG_INFO, "Observer: now running capturing thread for device %s", obs->captureInterface);
@@ -46,12 +46,12 @@ void *Observer::observerThread(void *arg)
 		 that can act as a via LD_PRELOAD used overlay function.
 		 unfortunately I don't have an URL ready -Freek
 		 */
-		rawPacketData = pcap_next(obs->captureDevice, &packetHeader);
-		if(!rawPacketData)
+		pcapData=pcap_next(obs->captureDevice, &packetHeader);
+		if(!pcapData)
 			/* no packet data was available */
 			continue;
 
-		if(!(myPacketData=malloc(packetHeader.caplen))) {
+		if(!(packetData=malloc(packetHeader.caplen))) {
 			/*
 			 FIXME!
 			 ALARM - no more memory available
@@ -66,7 +66,7 @@ void *Observer::observerThread(void *arg)
 			continue;
 		}
 
-		memcpy(myPacketData, rawPacketData, packetHeader.caplen);
+		memcpy(packetData, pcapData, packetHeader.caplen);
 
 		/*
 		 the reason we supply numReceivers to the packet is, that all receivers have to call
@@ -74,7 +74,7 @@ void *Observer::observerThread(void *arg)
 		 We need reference-counting because we only push pointers around and do not copy, so the
 		 data has to stay valid.
 		 */
-		p = new Packet(myPacketData, packetHeader.caplen, numReceivers);
+		p=new Packet(packetData, packetHeader.caplen, numReceivers);
 		p->timestamp = packetHeader.ts;
 
 		/*
@@ -95,14 +95,19 @@ void *Observer::observerThread(void *arg)
 	pthread_exit((void *)1);
 }
 
+
 void Observer::doLogging(void *arg)
 {
-  Observer *obs = (Observer *)arg;
-  struct pcap_stat stats;
-  obs->getPcapStats(&stats);
-  msg_stat("Observer: %6d recv, %6d drop, %6d ifdrop", stats.ps_recv, stats.ps_drop, stats.ps_ifdrop);
+	Observer *obs=(Observer *)arg;
+	struct pcap_stat stats;
+
+	/*
+	 pcap_stats() will set the stats to -1 if something goes wrong
+	 so it is okay if we dont check the return code
+	 */
+	obs->getPcapStats(&stats);
+	msg_stat("Observer: %6d recv, %6d drop, %6d ifdrop", stats.ps_recv, stats.ps_drop, stats.ps_ifdrop);
 }
 
 
 //static void plain_c_sucks_because_people_dont_seem_to_have_a_caps_key_and_like_to_type_stupid_underscores_alot(){}
-
