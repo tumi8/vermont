@@ -141,7 +141,7 @@ void msg_thread_set_timeout(int ms)
 /* start the logger thread with the configured log functions */
 int msg_thread_start(void)
 {
-	return(pthread_create(&log_thread, 0, msg_thread, 0));
+	return(pthread_create(&log_thread, NULL, msg_thread, NULL));
 }
 
 
@@ -157,15 +157,15 @@ void * msg_thread(void *arg)
 {
 	int i;
 
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, 0);
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, 0);
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	while (1) {
 		/*
 		 we use nanosleep here because nanosleep
 		 unlike sleep and usleep, is a thread cancellation point
 		 */
-		nanosleep(&log_timeout, 0);
+		nanosleep(&log_timeout, NULL);
 
 		/* now walk through all log functions and call them */
 		pthread_mutex_lock(&stat_lock);

@@ -946,7 +946,7 @@ IpfixReceiver* createIpfixReceiver(uint16_t port) {
 		goto out3;
 	}
 
-	if(pthread_create(&(ipfixReceiver->thread), 0, listenerUdpIpv4, ipfixReceiver) != 0) {
+	if(pthread_create(&(ipfixReceiver->thread), NULL, listenerUdpIpv4, ipfixReceiver) != 0) {
 		msg(MSG_FATAL, "Could not pthread_create listener thread");
 		goto out3;
 	}
