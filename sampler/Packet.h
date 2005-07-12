@@ -10,6 +10,10 @@
  *
  */
 
+/*
+ changed by: Ronny T. Lampert, 2005, for VERMONT
+ */
+
 #ifndef PACKET_H
 #define PACKET_H
 
@@ -109,7 +113,7 @@ private:
 	 the raw offset at which the IP header starts in the packet
 	 for Ethernet, this is 14 bytes (MAC header size)
 	 */
-	static int IPHeaderOffset;
+	static const int IPHeaderOffset=14;
 
 	/*
 	 Number of concurrent users of this packet. Decremented each time
