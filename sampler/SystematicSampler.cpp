@@ -19,7 +19,6 @@ bool SystematicSampler::processPacket(const Packet *p)
 	packetCount++;
 
 	switch(samplingType) {
-
 	case SYSTEMATIC_SAMPLER_TIME_BASED:
 		// calculate time elapsed since start of sampling
 		timersub(&p->timestamp, &this->startTime, &elapsed);
@@ -35,5 +34,6 @@ bool SystematicSampler::processPacket(const Packet *p)
 		return ((packetCount % interval) < samplingOnTime);
 		break;
 	}
+
 	return 0;
 }

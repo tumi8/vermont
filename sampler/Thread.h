@@ -28,7 +28,7 @@ public:
 bool run(void *threadData)
 {
 	//data = threadData;
-	return pthread_create(&thread, NULL, f, threadData) == 0;
+	return(pthread_create(&thread, NULL, f, threadData) == 0);
 };
 
 void *join()

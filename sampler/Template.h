@@ -94,18 +94,16 @@ public:
 	{
 		void *temp;
 		
-	        switch(fieldType[num])
-		{
+		switch(fieldType[num]) {
 		case FT_NUMPACKETS:
 			// this is for debugging only, caller should ensure it never happens
 			// TODO: move this check into addFieldWithoutOffset()
-			if (fieldLength[num] < 4)
-			{
+			if(fieldLength[num] < 4) {
 				DPRINTF("WARNING: Template field %d is too small (4 bytes needed, %d bytes available)",
 					num, fieldLength[num]);
 				fieldLength[num] = 4;
 			}
-			
+
 			temp = malloc(fieldLength[num]);
 			*((unsigned long *)temp) = Packet::totalPacketsReceived;
 			return temp;
