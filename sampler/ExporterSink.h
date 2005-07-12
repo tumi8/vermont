@@ -59,25 +59,8 @@ public:
                 ipfix_end_template_set(exporter, tmplid);
         };
 
-        bool addCollector(char *address, unsigned short port, const char *protocol)
-        {
-                ipfix_transport_protocol proto;
 
-                if (strcasecmp(protocol, "TCP") == 0) {
-                        proto = TCP;
-                } else if(strcasecmp(protocol, "UDP") == 0) {
-                        proto = UDP;
-                } else {
-                        msg(MSG_ERROR, "ExporterSink: invalid protocol %s for %s",
-                            protocol, address);
-                        return false;
-                }
-
-                DPRINTF("Adding %s://%s:%d\n", protocol, address, port);
-                return(ipfix_add_collector(exporter, address, port, proto) == 0);
-        }
-
-        ~ExporterSink()
+	~ExporterSink()
         {
                 ipfix_deinit_exporter(exporter);
         };
@@ -176,6 +159,8 @@ public:
 
                 return true;
 	}
+
+        bool addCollector(char *address, unsigned short port, const char *protocol);
 
 protected:
         int sourceID;
