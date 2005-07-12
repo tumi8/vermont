@@ -65,8 +65,7 @@ public:
 	inline bool pop(long timeout_ms, T **res)
 	{
 		// try to get an item from the queue
-		if (!semaphore.wait(timeout_ms))
-		{
+		if(!semaphore.wait(timeout_ms)) {
 			// timeout occured
 			*res = 0;
 			return false;
@@ -86,8 +85,7 @@ public:
 	// use this instead of the above, makes things easier!
 	inline bool popAbs(const struct timeval &timeout, T **res)
 	{
-		if (!semaphore.waitAbs(timeout))
-		{
+		if(!semaphore.waitAbs(timeout)) {
 			// timeout occured
 			*res = 0;
 			return false;

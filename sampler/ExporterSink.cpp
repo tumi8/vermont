@@ -78,7 +78,7 @@ bool ExporterSink::addCollector(char *address, unsigned short port, const char *
 {
 	ipfix_transport_protocol proto;
 
-	if (strcasecmp(protocol, "TCP") == 0) {
+	if(strcasecmp(protocol, "TCP") == 0) {
 		proto = TCP;
 	} else if(strcasecmp(protocol, "UDP") == 0) {
 		proto = UDP;

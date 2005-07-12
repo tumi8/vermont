@@ -24,9 +24,9 @@ bool Template::addField(uint16_t id, uint16_t len)
 {
         uint16_t offset;
 
-	if (id < 0x8000)  // it is a field with data from the packet itself
-	{
-	        switch(id) {
+	/* it is a field with data from the packet itself */
+	if(id < 0x8000) {
+		switch(id) {
 	        case FT_SRCIP4:
 	                offset=12;
 	                break;
@@ -46,6 +46,7 @@ bool Template::addField(uint16_t id, uint16_t len)
 	                msg(MSG_ERROR, "ID %d currently not supported", id);
 	                return false;
 		}
+
 		addFieldWithOffset(id, len, offset);
         } else {
 		addFieldWithoutOffset(id, len);
@@ -59,22 +60,22 @@ bool Template::addField(uint16_t id, uint16_t len)
 #if 0
 void AddFieldFromString(Template *temp, const char *field)
 {
-        if (strncasecmp(field, "SRCIP4", 6) == 0) {
+        if(strncasecmp(field, "SRCIP4", 6) == 0) {
                 // source address is as offset 12
                 temp->addFieldWithOffset(FT_SRCIP4, 4, 12);
-        } else if (strncasecmp(field, "DSTIP4", 6) == 0) {
+        } else if(strncasecmp(field, "DSTIP4", 6) == 0) {
                 // dest address is at offset 16
                 temp->addFieldWithOffset(FT_DSTIP4, 4, 16);
-        } else if (strncasecmp(field, "PROTO", 5) == 0) {
+        } else if(strncasecmp(field, "PROTO", 5) == 0) {
                 // protocol is at offset 9
                 temp->addFieldWithOffset(FT_PROTO, 2, 9);
-        } else if (strncasecmp(field, "SRCPORT", 7) == 0) {
+        } else if(strncasecmp(field, "SRCPORT", 7) == 0) {
                 // source port is as offset 20 (TCP offset 0)
                 temp->addFieldWithOffset(FT_SRCPORT, 2, 20);
-        } else if (strncasecmp(field, "DSTPORT", 7) == 0) {
+        } else if(strncasecmp(field, "DSTPORT", 7) == 0) {
                 // dest port is at offset 22 (TCP offset 2)
                 temp->addFieldWithOffset(FT_DSTPORT, 2, 22);
-        } else if (strncasecmp(field, "NUMPACKETS", 10) == 0) {
+        } else if(strncasecmp(field, "NUMPACKETS", 10) == 0) {
 		// number of pacets received. This is metadata!
 		temp->addFieldWithoutOffset(FT_NUMPACKETS, 4);
         }

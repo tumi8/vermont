@@ -125,14 +125,12 @@ public:
                 ipfix_send(exporter);
 
                 DPRINTF("Flushing %d packets from stream\n", numPacketsToRelease);
-                for (int i = 0; i < numPacketsToRelease; i++)
-                {
+                for(int i = 0; i < numPacketsToRelease; i++) {
                         (packetsToRelease[i])->release();
                 }
 		// now release the additional metadata fields
 		DPRINTF("Flushing %d Metadata fields from stream\n", numMetaFieldsToRelease);
-		for (int i = 0; i < numMetaFieldsToRelease; i++)
-		{
+		for(int i = 0; i < numMetaFieldsToRelease; i++) {
 			free(metaFieldsToRelease[i]);
 		}
                 numPacketsToRelease = 0;

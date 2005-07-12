@@ -58,8 +58,8 @@ public:
 		pthread_mutex_lock(&mutex);
 
 		// check if the semaphore is unavailable
-		if (count == 0) {
-			if (timeout_ms == -1) {
+		if(count == 0) {
+			if(timeout_ms == -1) {
 				// wait infinite and then acquire the semaphore
 				pthread_cond_wait(&cond, &mutex);
 				count--;
@@ -78,7 +78,7 @@ public:
 
 				// block and wait for signal or timeout
 				retval = pthread_cond_timedwait(&cond, &mutex, &ts);
-				if (retval == ETIMEDOUT) {
+				if(retval == ETIMEDOUT) {
 					// timeout occured
 					result = false;
 				} else {
@@ -105,12 +105,12 @@ public:
 		pthread_mutex_lock(&mutex);
 
 		// check if the semaphore is unavailable
-		if (count == 0) {
+		if(count == 0) {
 			// we need the timeout as struct timespec, so convert it here
 			TIMEVAL_TO_TIMESPEC(&timeout, &ts);
 			
 			// block and wait for signal or timeout
-			if (pthread_cond_timedwait(&cond, &mutex, &ts) == ETIMEDOUT) {
+			if(pthread_cond_timedwait(&cond, &mutex, &ts) == ETIMEDOUT) {
 				// timeout occured
 				result = false;
 			} else {
