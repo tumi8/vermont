@@ -72,3 +72,22 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 	}
 	return 0;
 }
+
+
+bool ExporterSink::addCollector(char *address, unsigned short port, const char *protocol)
+{
+	ipfix_transport_protocol proto;
+
+	if (strcasecmp(protocol, "TCP") == 0) {
+		proto = TCP;
+	} else if(strcasecmp(protocol, "UDP") == 0) {
+		proto = UDP;
+	} else {
+		msg(MSG_ERROR, "ExporterSink: invalid protocol %s for %s",
+		    protocol, address);
+		return false;
+	}
+
+	DPRINTF("Adding %s://%s:%d\n", protocol, address, port);
+	return(ipfix_add_collector(exporter, address, port, proto) == 0);
+}
