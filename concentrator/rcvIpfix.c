@@ -585,9 +585,11 @@ static int processNetflowV9Packet(IpfixReceiver* ipfixReceiver, byte* message, u
  * @return 0 on success
  */	
 static int processIpfixPacket(IpfixReceiver* ipfixReceiver, byte* message, uint16_t length) {
+	uint16_t tmpid;
+	SourceID tmpsid;
 	IpfixHeader* header = (IpfixHeader*)message;
 
-	if (ntohs(header->length) != length) {
+	if(ntohs(header->length) != length) {
  		DPRINTF("Bad message length - expected %#06x, got %#06x\n", length, ntohs(header->length));
 		return -1;
 	}
@@ -598,18 +600,28 @@ static int processIpfixPacket(IpfixReceiver* ipfixReceiver, byte* message, uint1
 	/* pointer beyond message */
 	IpfixSetHeader* setX = (IpfixSetHeader*)((char*)message + length); 
 
-	while (set < setX) {
-		if (ntohs(set->id) == IPFIX_SetId_Template) {
-  			processTemplateSet(ipfixReceiver, ntohs(header->sourceId), set);
-		} else if (ntohs(set->id) == IPFIX_SetId_OptionsTemplate) {
-  			processOptionsTemplateSet(ipfixReceiver, ntohs(header->sourceId), set);
-		} else if (ntohs(set->id) == IPFIX_SetId_DataTemplate) {
-  			processDataTemplateSet(ipfixReceiver, ntohs(header->sourceId), set);
-		} else if (ntohs(set->id) >= IPFIX_SetId_Data_Start) {
-  			processDataSet(ipfixReceiver, ntohs(header->sourceId), set);
-		} else {
+	while(set < setX) {
+		tmpid=ntohs(set->id);
+                tmpsid=ntohs(header->sourceId);
+		
+		switch(tmpid) {
+
+		case IPFIX_SetId_Data_Start:
+			processDataSet(ipfixReceiver, tmpsid, set);
+                        break;
+		case IPFIX_SetId_DataTemplate:
+			processDataTemplateSet(ipfixReceiver, tmpsid, set);
+                        break;
+		case IPFIX_SetId_Template:
+			processTemplateSet(ipfixReceiver, tmpsid, set);
+                        break;
+		case IPFIX_SetId_OptionsTemplate:
+			processOptionsTemplateSet(ipfixReceiver, tmpsid, set);
+			break;
+		default:
 			msg(MSG_ERROR, "processIpfixPacket: Unsupported Set ID - expected 2/3/4/256+, got %d", ntohs(set->id));
 		}
+
 		set = (IpfixSetHeader*)((byte*)set + ntohs(set->length));
 	}
 
