@@ -55,7 +55,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 static uint8_t getIPv4IMask(FieldType* type, FieldData* data);
 
 
-RuleField* mallocRuleField() {
+static RuleField* mallocRuleField() {
 	RuleField* ruleField = (RuleField*)malloc(sizeof(RuleField));
 	ruleField->type.id = 0;
 	ruleField->type.length = 0;
@@ -66,18 +66,18 @@ RuleField* mallocRuleField() {
 	return ruleField;
 }
 
-void freeRuleField(RuleField* ruleField) {
+static void freeRuleField(RuleField* ruleField) {
 	free(ruleField);
 }
 
-Rule* mallocRule() {
+static Rule* mallocRule() {
 	Rule* rule = (Rule*)malloc(sizeof(Rule));
 	rule->fieldCount = 0;
 
 	return rule;
 }
 
-void freeRule(Rule* rule) {
+static void freeRule(Rule* rule) {
 	free(rule);
 }
 
