@@ -558,24 +558,31 @@ static void processDataSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, Ipfi
  * Process a NetflowV9 Packet
  * @return 0 on success
  */	
-static int processNetflowV9Packet(IpfixReceiver* ipfixReceiver, byte* message, uint16_t length) {
-	NetflowV9Header* header = (NetflowV9Header*)message;
+static int processNetflowV9Packet(IpfixReceiver *ipfixReceiver, byte *message, uint16_t length) {
+	uint16_t tmpid;
+	SourceID tmpsid;
+	int i, n;
+
+	NetflowV9Header *header = (NetflowV9Header *)message;
 	
 	/* pointer to first set */
-	IpfixSetHeader* set = (IpfixSetHeader*)&header->data;
+	IpfixSetHeader *set = (IpfixSetHeader *)&header->data;
+        n=ntohs(header->setCount);
 
-	int i;
-	for (i = 0; i < ntohs(header->setCount); i++) {
-		if (ntohs(set->id) == NetflowV9_SetId_Template) {
-  			processTemplateSet(ipfixReceiver, ntohs(header->sourceId), set);
-  			} else
-		if (ntohs(set->id) >= IPFIX_SetId_Data_Start) {
-  			processDataSet(ipfixReceiver, ntohs(header->sourceId), set);
-  			} else {
-			msg(MSG_ERROR, "processNetflowV9: Unsupported Set ID - expected 0/256+, got %d", ntohs(set->id));
-  			}
-		set = (IpfixSetHeader*)((byte*)set + ntohs(set->length));
+	for(i = 0; i < n; i++) {
+		tmpid=ntohs(set->id);
+                tmpsid=ntohs(header->sourceId);
+
+		if(tmpid >= IPFIX_SetId_Data_Start) {
+			processDataSet(ipfixReceiver, tmpsid, set);
+		} else if(tmpid == NetflowV9_SetId_Template) {
+			processTemplateSet(ipfixReceiver, tmpsid, set);
+		} else {
+			msg(MSG_ERROR, "processNetflowV9: Unsupported Set ID - expected 0/256+, got %d", tmpid);
 		}
+
+		set = (IpfixSetHeader *)((byte *)set + ntohs(set->length));
+	}
 
 	return 0;
 }
