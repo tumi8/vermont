@@ -619,7 +619,7 @@ static int processIpfixPacket(IpfixReceiver* ipfixReceiver, byte* message, uint1
 			processOptionsTemplateSet(ipfixReceiver, tmpsid, set);
 			break;
 		default:
-			msg(MSG_ERROR, "processIpfixPacket: Unsupported Set ID - expected 2/3/4/256+, got %d", ntohs(set->id));
+			msg(MSG_ERROR, "processIpfixPacket: Unsupported Set ID - expected 2/3/4/256+, got %d", tmpid);
 		}
 
 		set = (IpfixSetHeader*)((byte*)set + ntohs(set->length));
