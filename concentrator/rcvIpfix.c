@@ -178,7 +178,7 @@ static void processTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, 
 			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((byte*)record+2));
 			ti->fieldInfo[fieldNo].offset = bt->recordLength; bt->recordLength+=ti->fieldInfo[fieldNo].type.length;
 			if (ti->fieldInfo[fieldNo].type.length == 65535) isLengthVarying=1;
-			if (ti->fieldInfo[fieldNo].type.id & 0x80) {
+			if (ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) {
 				ti->fieldInfo[fieldNo].type.eid = ntohl(*(uint32_t*)((byte*)record+4));
 				record = (byte*)((byte*)record+8);
 				} else {
@@ -232,7 +232,7 @@ static void processOptionsTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sou
 			ti->scopeInfo[scopeNo].type.length = ntohs(*(uint16_t*)((byte*)record+2));
 			ti->scopeInfo[scopeNo].offset = bt->recordLength; bt->recordLength+=ti->scopeInfo[scopeNo].type.length;
 			if (ti->scopeInfo[scopeNo].type.length == 65535) isLengthVarying=1;
-			if (ti->scopeInfo[scopeNo].type.id & 0x80) {
+			if (ti->scopeInfo[scopeNo].type.id & IPFIX_ENTERPRISE_TYPE) {
 				ti->scopeInfo[scopeNo].type.eid = ntohl(*(uint32_t*)((byte*)record+4));
 				record = (byte*)((byte*)record+8);
 				} else {
@@ -246,7 +246,7 @@ static void processOptionsTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sou
 			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((byte*)record+2));
 			ti->fieldInfo[fieldNo].offset = bt->recordLength; bt->recordLength+=ti->fieldInfo[fieldNo].type.length;
 			if (ti->fieldInfo[fieldNo].type.length == 65535) isLengthVarying=1;
-			if (ti->fieldInfo[fieldNo].type.id & 0x80) {
+			if (ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) {
 				ti->fieldInfo[fieldNo].type.eid = ntohl(*(uint32_t*)((byte*)record+4));
 				record = (byte*)((byte*)record+8);
 				} else {
@@ -301,7 +301,7 @@ static void processDataTemplateSet(IpfixReceiver* ipfixReceiver, SourceID source
 			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((byte*)record+2));
 			ti->fieldInfo[fieldNo].offset = bt->recordLength; bt->recordLength+=ti->fieldInfo[fieldNo].type.length;
 			if (ti->fieldInfo[fieldNo].type.length == 65535) isLengthVarying=1;
-			if (ti->fieldInfo[fieldNo].type.id & 0x80) {
+			if (ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) {
 				ti->fieldInfo[fieldNo].type.eid = ntohl(*(uint32_t*)((byte*)record+4));
 				record = (byte*)((byte*)record+8);
 				} else {
@@ -318,7 +318,7 @@ static void processDataTemplateSet(IpfixReceiver* ipfixReceiver, SourceID source
 		for (fieldNo = 0; fieldNo < ti->dataCount; fieldNo++) {
 			ti->dataInfo[fieldNo].type.id = ntohs(*(uint16_t*)((byte*)record+0));
 			ti->dataInfo[fieldNo].type.length = ntohs(*(uint16_t*)((byte*)record+2));
-			if (ti->dataInfo[fieldNo].type.id & 0x80) {
+			if (ti->dataInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) {
 				ti->dataInfo[fieldNo].type.eid = ntohl(*(uint32_t*)((byte*)record+4));
 				record = (byte*)((byte*)record+8);
 				} else {
