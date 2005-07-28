@@ -22,6 +22,7 @@ extern "C" {
 #define IPFIX_SetId_OptionsTemplate                             3
 #define IPFIX_SetId_DataTemplate                                4
 #define IPFIX_SetId_Data_Start                                  256
+#define IPFIX_ENTERPRISE_TYPE   0x8000
 
 int string2typeid(char*s);
 char* typeid2string(int i);
