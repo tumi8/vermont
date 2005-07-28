@@ -613,9 +613,6 @@ static int processIpfixPacket(IpfixReceiver* ipfixReceiver, byte* message, uint1
 		
 		switch(tmpid) {
 
-		case IPFIX_SetId_Data_Start:
-			processDataSet(ipfixReceiver, tmpsid, set);
-                        break;
 		case IPFIX_SetId_DataTemplate:
 			processDataTemplateSet(ipfixReceiver, tmpsid, set);
                         break;
@@ -626,8 +623,12 @@ static int processIpfixPacket(IpfixReceiver* ipfixReceiver, byte* message, uint1
 			processOptionsTemplateSet(ipfixReceiver, tmpsid, set);
 			break;
 		default:
-			msg(MSG_ERROR, "processIpfixPacket: Unsupported Set ID - expected 2/3/4/256+, got %d", tmpid);
-		}
+                        if(tmpid >= IPFIX_SetId_Data_Start) {
+                                processDataSet(ipfixReceiver, tmpsid, set);
+                        } else {
+                                msg(MSG_ERROR, "processIpfixPacket: Unsupported Set ID - expected 2/3/4/256+, got %d", tmpid);
+                        }
+                }
 
 		set = (IpfixSetHeader*)((byte*)set + ntohs(set->length));
 	}
