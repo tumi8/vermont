@@ -129,8 +129,9 @@ bool Observer::prepare(char *filter_exp)
 
 	/* we need the netmask for the pcap_compile */
 	if(pcap_lookupnet(captureInterface, &network, &netmask, errorBuffer) == -1) {
-		msg(MSG_FATAL, "Observer: unable to determine netmask/network: %s", errorBuffer);
-		goto out2;
+		msg(MSG_ERROR, "Observer: unable to determine netmask/network: %s", errorBuffer);
+		network=0;
+		netmask=0;
 	}
 	i_network.s_addr=network;
 	i_netmask.s_addr=netmask;
