@@ -571,7 +571,7 @@ static int processNetflowV9Packet(IpfixReceiver *ipfixReceiver, byte *message, u
 
 	for(i = 0; i < n; i++) {
 		tmpid=ntohs(set->id);
-                tmpsid=ntohs(header->sourceId);
+                tmpsid=ntohl(header->sourceId);
 
 		if(tmpid >= IPFIX_SetId_Data_Start) {
 			processDataSet(ipfixReceiver, tmpsid, set);
@@ -609,7 +609,7 @@ static int processIpfixPacket(IpfixReceiver* ipfixReceiver, byte* message, uint1
 
 	while(set < setX) {
 		tmpid=ntohs(set->id);
-                tmpsid=ntohs(header->sourceId);
+                tmpsid=ntohl(header->sourceId);
 		
 		switch(tmpid) {
 
