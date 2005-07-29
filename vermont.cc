@@ -293,10 +293,17 @@ static int configure_logging(struct v_objects *v)
 /* starts all configured subsystems */
 static int vermont_start_all(struct v_objects *v)
 {
+        if(v->conc_aggregator) {
+                /*
+                 not nice; sender has to be started right before creating
+                 the aggregator
+                 */
+                //startIpfixSender(v->conc_exporter);
+                startAggregator(v->conc_aggregator);
+        }
+
         if(v->conc_receiver) {
                 startIpfixReceiver(v->conc_receiver);
-                startIpfixSender(v->conc_exporter);
-                startAggregator(v->conc_aggregator);
         }
 
         if(v->observer) {
