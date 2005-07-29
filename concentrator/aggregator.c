@@ -62,7 +62,7 @@ IpfixAggregator* createAggregator(char* ruleFile, uint16_t minBufferTime, uint16
 		}
 
 	msg(MSG_INFO, "Aggregator: Done. Parsed %d rules; minBufferTime %d, maxBufferTime %d",
-	    i, minBufferTime, maxBufferTime
+	    rules->count, minBufferTime, maxBufferTime
 	   );
 
         return ipfixAggregator;
