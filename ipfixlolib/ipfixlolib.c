@@ -1176,7 +1176,7 @@ int ipfix_end_data_set(ipfix_exporter *exporter)
  * Will allocate memory and stuff for a new template
  * End_data_template set will add this template to the exporter
  */
-int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count, uint16_t fixedfield_count)
+int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id, uint16_t preceding, uint16_t field_count, uint16_t fixedfield_count)
 {
         // are we updating an existing template?
         int i;
@@ -1285,8 +1285,8 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
                 if (fixedfield_count > 0) {
                         // write the fixedfield count:
                         write_unsigned16 (&p_pos, p_end, fixedfield_count);
-                        // write the reserved field:
-                        write_unsigned16 (&p_pos, p_end, 0);
+                        // write the preceding:
+                        write_unsigned16 (&p_pos, p_end, preceding);
                 }
 
                 // does this work?
@@ -1379,7 +1379,7 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
    Starts a new template, see ipfix_start_datatemplate_set
 */
 int ipfix_start_template_set (ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count) {
-        return ipfix_start_datatemplate_set(exporter, template_id, field_count, 0);
+        return ipfix_start_datatemplate_set(exporter, template_id, 0, field_count, 0);
 }
 
 

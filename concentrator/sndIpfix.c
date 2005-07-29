@@ -141,6 +141,7 @@ int ipfixSenderAddCollector(IpfixSender *ips, char *ip, uint16_t port)
  */
 int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* dataTemplateInfo) {
 	uint16_t my_template_id;
+	uint16_t my_preceding;
 	IpfixSender* ipfixSender = ipfixSender_;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixSender->ipfixExporter;
 	if (!exporter) {
@@ -149,6 +150,7 @@ int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* 
 	}
 
 	my_template_id = dataTemplateInfo->id?dataTemplateInfo->id:++ipfixSender->lastTemplateId;
+	my_preceding = dataTemplateInfo->preceding;
 	if (ipfixSender->lastTemplateId >= SENDER_TEMPLATE_ID_HI) {
 		/* FIXME: Does not always work, e.g. if more than 50000 new Templates per minute are created */
 		ipfixSender->lastTemplateId = SENDER_TEMPLATE_ID_LOW;
@@ -185,7 +187,7 @@ int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* 
 		}
 	}
 
-	if (0 != ipfix_start_datatemplate_set(exporter, my_template_id, dataTemplateInfo->fieldCount + splitFields, dataTemplateInfo->dataCount + splitFixedfields)) {
+	if (0 != ipfix_start_datatemplate_set(exporter, my_template_id, my_preceding, dataTemplateInfo->fieldCount + splitFields, dataTemplateInfo->dataCount + splitFixedfields)) {
 		msg(MSG_FATAL, "ipfix_start_datatemplate_set failed");
 		return -1;
 	}
