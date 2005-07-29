@@ -116,6 +116,7 @@ int configure_concentrator(struct v_objects *v)
 		exports--;
 	}
 
+        startIpfixSender(ips);
         subsys_on(&(v->v_subsystems), SUBSYS_CONC_EXPORT);
 
         /* make IPFIX aggregator */
@@ -210,7 +211,7 @@ void * concentrator_polling(void *arg)
                 nanosleep(&req, &rem);
 
                 //DPRINTF("Polling aggregator %p\n", ipa);
-		pollAggregator(ipa);
+                pollAggregator(ipa);
         }
 
         return (void *)1;
