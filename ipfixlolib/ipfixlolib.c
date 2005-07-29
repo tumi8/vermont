@@ -1275,7 +1275,7 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
                 //  p_pos +=  (*exporter).template_arr[found_index].fields_length;
 
 		// set ID is 2 for a template, 4 for a template with fixed fields:
-		write_unsigned16 (&p_pos, p_end, (fixedfield_count==0) ? 2 : 4);
+		write_unsigned16 (&p_pos, p_end, datatemplate ? 4 : 2);
                 // write 0 to the lenght field; this will be overwritten with end_template
                 write_unsigned16 (&p_pos, p_end, 0);
                 // write the template ID:
