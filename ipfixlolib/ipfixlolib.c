@@ -1182,6 +1182,7 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
         int i;
         int searching;
         int found_index = -1;
+	int datatemplate=(fixedfield_count || preceding) ? 1 : 0;
 
         DPRINTF("ipfix_start_template_set: start\n");
         found_index = ipfix_find_template(exporter, template_id, COMMITED);
@@ -1252,8 +1253,8 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
                 // also, reserve 8 bytes space for the header!
 
                 exporter->template_arr[found_index].max_fields_length = 8 * field_count + 8;
-                exporter->template_arr[found_index].max_fields_length = 8 * (field_count + fixedfield_count) + ((fixedfield_count==0) ? 8 : 12);
-		exporter->template_arr[found_index].fields_length = (fixedfield_count==0) ? 8 : 12;
+                exporter->template_arr[found_index].max_fields_length = 8 * (field_count + fixedfield_count) + (datatemplate ? 12 : 8);
+		exporter->template_arr[found_index].fields_length = (datatemplate ? 12 : 8);
 
                 exporter->template_arr[found_index].template_fields = (char*)malloc(exporter->template_arr[found_index].max_fields_length );
 
@@ -1282,7 +1283,7 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
                 // write the field count:
                 write_unsigned16 (&p_pos, p_end, field_count);
 
-                if (fixedfield_count > 0) {
+                if (datatemplate) {
                         // write the fixedfield count:
                         write_unsigned16 (&p_pos, p_end, fixedfield_count);
                         // write the preceding:
