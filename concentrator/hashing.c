@@ -113,6 +113,8 @@ Hashtable* createHashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBuffe
 	}
 
 	ht->dataTemplate = (DataTemplateInfo*)malloc(sizeof(DataTemplateInfo));
+	ht->dataTemplate->id=rule->id;
+	ht->dataTemplate->preceding=rule->preceding;
 	ht->dataTemplate->fieldCount = 0;
 	ht->dataTemplate->fieldInfo = NULL;
 	ht->fieldLength = 0;

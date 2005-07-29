@@ -63,6 +63,8 @@ typedef struct {
  * DataTemplate description passed to the callback function when a new DataTemplate arrives.
  */
 typedef struct {
+	uint16_t   id;
+	uint16_t   preceding;
 	uint16_t   fieldCount;  /**< number of regular fields */
 	FieldInfo* fieldInfo;   /**< array of FieldInfos describing each of these fields */
 	uint16_t   dataCount;   /**< number of fixed-value fields */

@@ -35,6 +35,8 @@ typedef struct {
  * Single aggregation rule
  */
 typedef struct {
+	uint16_t id;
+	uint16_t preceding;
 	int fieldCount;
 	RuleField* field[MAX_RULE_FIELDS];
 	
