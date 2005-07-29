@@ -27,7 +27,7 @@ int configure_concentrator(struct v_objects *v)
 	char *poll_ms, *source_id;
 	char *rules, *buffertime_min, *buffertime_max;
 
-	char *listen_port;
+	char *listen;
         uint16_t listen_portn;
 
 	int sID, exports=0;
@@ -42,7 +42,7 @@ int configure_concentrator(struct v_objects *v)
 
         msg(MSG_DEBUG, "Config: now configuring the concentrator subsystem");
 
-        
+
 	if(!(poll_ms=iniparser_getvalue(conf, CONF_SEC, "poll_interval"))) {
 		v->conc_poll_ms=CONC_POLL_MS;
 		msg(MSG_ERROR,
@@ -145,18 +145,26 @@ int configure_concentrator(struct v_objects *v)
 
         /* make IPFIX receiver/collector */
         initializeIpfixReceivers();
-	if(!(listen_port=iniparser_getvalue(conf, CONF_SEC, "listen_port"))) {
-		msg(MSG_FATAL, "Config: %s listen_port missing", CONF_SEC);
+	if(!(listen=iniparser_getvalue(conf, CONF_SEC, "listen"))) {
+		msg(MSG_FATAL, "Config: %s listen missing", CONF_SEC);
                 goto out2;
 	}
-        listen_portn=atoi(listen_port);
+        /*
+         check if we do want the receiving side; this makes sense if onlye
+         the sampler part is used as input stream
+         */
+        if(strcasecmp("off", listen) != 0) {
+                listen_portn=atoi(listen);
 
-	if(!(ipr=createIpfixReceiver(listen_portn))) {
-		msg(MSG_FATAL, "Config: IpfixReceiver creation failure for port %d", listen_portn);
-		goto out2;
+                if(!(ipr=createIpfixReceiver(listen_portn))) {
+                        msg(MSG_FATAL, "Config: IpfixReceiver creation failure for port %d", listen_portn);
+                        goto out2;
+                }
+                addIpfixReceiverCallbacks(ipr, getAggregatorCallbackInfo(ipa));
+                subsys_on(&(v->v_subsystems), SUBSYS_CONC_RECEIVE);
+        } else {
+                msg(MSG_DEBUG, "Config: not running IpfixReceiver part of concentrator");
         }
-        addIpfixReceiverCallbacks(ipr, getAggregatorCallbackInfo(ipa));
-        subsys_on(&(v->v_subsystems), SUBSYS_CONC_RECEIVE);
 
         v->conc_receiver=ipr;
         v->conc_exporter=ips;
@@ -202,11 +210,7 @@ void * concentrator_polling(void *arg)
                 nanosleep(&req, &rem);
 
                 //DPRINTF("Polling aggregator %p\n", ipa);
-                stopIpfixReceiver(ipr);
 		pollAggregator(ipa);
-                startIpfixReceiver(ipr);
-
-
         }
 
         return (void *)1;

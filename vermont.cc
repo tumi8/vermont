@@ -172,7 +172,7 @@ static int vermont_configure(struct v_objects *v)
 
 	/* if the sampler is not needed, interface will say "off" */
 	char *run_sampler=iniparser_getvalue(conf, "sampler", "interface");
-	char *run_concentrator=iniparser_getvalue(conf, "concentrator", "listen_ip");
+	char *run_concentrator=iniparser_getvalue(conf, "concentrator", "run");
 	char *hooking=iniparser_getvalue(conf, "main", "packets");
 
 	/* configure the msg subsystem */
