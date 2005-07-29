@@ -1252,7 +1252,6 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
                 // and may contain an Enterprise Number (4 bytes)
                 // also, reserve 8 bytes space for the header!
 
-                exporter->template_arr[found_index].max_fields_length = 8 * field_count + 8;
                 exporter->template_arr[found_index].max_fields_length = 8 * (field_count + fixedfield_count) + (datatemplate ? 12 : 8);
 		exporter->template_arr[found_index].fields_length = (datatemplate ? 12 : 8);
 
