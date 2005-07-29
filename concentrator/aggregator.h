@@ -4,6 +4,7 @@
 #include "rcvIpfix.h"
 #include "rules.h"
 #include "hashing.h"
+#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -18,7 +19,8 @@ extern "C" {
  * Create with @c createAggregator()
  */
 typedef struct {
-        Rules* rules; /**< Set of rules that define the aggregator */
+	Rules* rules;          /**< Set of rules that define the aggregator */
+	pthread_mutex_t mutex; /**< Mutex to synchronize and/or pause aggregator */
 } IpfixAggregator;
 
 /***** Prototypes ***********************************************************/
