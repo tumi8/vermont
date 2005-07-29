@@ -251,7 +251,7 @@ static char* modifier2string(FieldModifier i) {
 void printRule(Rule* rule) {
 	int i;
 
-	printf("Aggregate\n");
+	printf("Aggregate %d %d\n",rule->id,rule->preceding);
 	for (i=0; i < rule->fieldCount; i++) {
 		printf("\t");
 		char* modifier = modifier2string(rule->field[i]->modifier);
@@ -318,6 +318,7 @@ Rules* parseRulesFromFile(char* fname) {
 	char buf[MAX_LINE_LEN];
 	char* p;
 	int lineNo = 0;
+	int block = 0;
 	
 	Rules* rules = (Rules*)malloc(sizeof(Rules));
 	rules->count = 0;
@@ -340,17 +341,25 @@ Rules* parseRulesFromFile(char* fname) {
 		get_next_token(&p, " \t\n");
 		char* pattern = get_next_token(&p, " \t\n");
 
-		if (!col1) {
-			msg(MSG_ERROR, "Unparseable line in %s, l.%d", fname, lineNo);			
-			continue;
-		}
-
-		if (*col1 != 0) {
+		if (col1 && *col1 != 0) {
+			if(strcmp(col1,"Aggregate")) {
+				msg(MSG_ERROR, "Unparsable block %s, o.%d", fname, lineNo);
+				block = 0;
+				continue;
+			}
 			/* Start of new Rule */
+			block=1;
 			if (currentRule->fieldCount > 0) {
 				rules->rule[rules->count++] = currentRule;
 				currentRule = mallocRule();
 			}
+			currentRule->id=modifier?atoi(modifier):0;
+			currentRule->preceding=field?atoi(field):0;
+			continue;
+		}
+
+		if (!col1 || !block) {
+			msg(MSG_ERROR, "Unparseable line in %s, l.%d", fname, lineNo);			
 			continue;
 		}
 

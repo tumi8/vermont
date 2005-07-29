@@ -140,6 +140,7 @@ int ipfixSenderAddCollector(IpfixSender *ips, char *ip, uint16_t port)
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
 int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* dataTemplateInfo) {
+	uint16_t my_template_id;
 	IpfixSender* ipfixSender = ipfixSender_;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixSender->ipfixExporter;
 	if (!exporter) {
@@ -147,8 +148,8 @@ int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* 
 		return -1;
 	}
 
-	uint16_t my_template_id = ++ipfixSender->lastTemplateId;
-	if (ipfixSender->lastTemplateId > SENDER_TEMPLATE_ID_HI) {
+	my_template_id = dataTemplateInfo->id?dataTemplateInfo->id:++ipfixSender->lastTemplateId;
+	if (ipfixSender->lastTemplateId >= SENDER_TEMPLATE_ID_HI) {
 		/* FIXME: Does not always work, e.g. if more than 50000 new Templates per minute are created */
 		ipfixSender->lastTemplateId = SENDER_TEMPLATE_ID_LOW;
 	}
