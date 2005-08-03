@@ -295,9 +295,10 @@ static int vermont_start_all(struct v_objects *v)
 {
         if(v->conc_aggregator) {
                 /*
-                 not nice; sender has to be started right before creating
-                 the aggregator
-                 */
+                 not nice; sender has to be started right before _creating_
+		 the aggregator
+                 so you won't start it here, but in configure_concentrator()
+		 */
                 //startIpfixSender(v->conc_exporter);
                 startAggregator(v->conc_aggregator);
         }
@@ -316,7 +317,7 @@ static int vermont_start_all(struct v_objects *v)
 		msg_thread_start();
 	}
 
-        /* FIXME, DIRTY: to stabilize and wait for threads */
+        /* DIRTY: to stabilize and wait for threads */
         sleep(1);
 
         return 0;
@@ -356,4 +357,21 @@ static void sig_handler(int x)
 }
 
 
-static void __cplusplus_really_sucks_andPeopleUsingVeryStrangeNamingConventionsWithLongLongExplicitBlaBlaAndfUnNycasE(){};
+static void __cplusplus_really_sucks_andPeopleUsingVeryStrangeNamingConventionsWithLongLongExplicitBlaBlaAndfUnNycasE()
+{
+	/*
+	 The Paris crew at MOME Interop 2005
+
+	 Christoph "C'est bon" "Das koennte beruehmt sein" Sommer
+	 Lothar "Pragmatic" "Ai verdammt, das funktioniert nicht" Braun
+	 Ronny T. "Agent Provocateur" "Le (SVN-)depot, c'est moi" Lampert
+
+
+	 Thanks to
+
+	 Falko "Ich hab da mal so ne Idee" Dressler
+	 Gerhard "Man muesste mal" Muenz
+
+	 who made it possible to fly to Paris.
+	 */
+};
