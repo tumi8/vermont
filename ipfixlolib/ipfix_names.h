@@ -11,7 +11,7 @@ extern "C" {
  dirty defines for the moment; full naming defines should follow
  */
 #define IPFIX_ID_MIN 1
-#define IPFIX_ID_MAX 140
+#define IPFIX_ID_MAX 210
 #define PSAMP_ID_MIN 1024
 #define PSAMP_ID_MAX 1037
 
