@@ -1316,8 +1316,9 @@ int ipfix_start_optionstemplate_set(ipfix_exporter *exporter, uint16_t template_
  * Parameters:
  *  template_id: the id specified at ipfix_start_template_set()
  *  type: field or scope type (in host byte order)
+ *        Note: The enterprise id will only be used, if type has the enterprise bit set.
  *  length: length of the field or scope (in host byte order)
- *  enterprise: enterprise type (if zero, the enterprise field is omitted) (in host byte order)
+ *  enterprise: enterprise type (in host byte order)
  * Note: This function is called after ipfix_start_data_template_set or ipfix_start_option_template_set.
  * Note: This function MAY be replaced by a macro in future versions.
  */
@@ -1328,6 +1329,7 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
         int ret;
         char *p_pos;
         char *p_end;
+	int enterprise_bit_set = ipfix_enterprise_flag_set(type);
 
         found_index=ipfix_find_template(exporter, template_id,  UNCLEAN);
 
@@ -1352,7 +1354,7 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
 
         DPRINTF("ipfix_put_template_field: B p_pos %p, p_end %p\n", p_pos, p_end);
 
-        if(bit_set(type, IPFIX_ENTERPRISE_FLAG)) {
+        if(enterprise_bit_set) {
                 DPRINTF("Notice: using enterprise ID %d with data %d\n", template_id, enterprise_id);
         }
 
@@ -1365,7 +1367,7 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
         exporter->template_arr[found_index].fields_length += 4;
 
         // write the vendor specific id
-        if (enterprise_id != 0) {
+        if (enterprise_bit_set) {
                 ret = write_unsigned32(&p_pos, p_end, enterprise_id);
                 exporter->template_arr[found_index].fields_length += 4;
         }
