@@ -201,6 +201,8 @@ typedef struct {
 	void* templateBuffer;       /**< TemplateBuffer* structure */
 
         int exit; /**< exit flag to terminate thread */
+
+	uint32_t receivedRecords; /**< Statistics: Total number of data (or dataData) records received since last statistics were polled */
 } IpfixReceiver;
 
 /***** Prototypes ***********************************************************/
@@ -223,6 +225,7 @@ int shutdownIpfixReceiver(IpfixReceiver *ipr);
 
 void addIpfixReceiverCallbacks(IpfixReceiver* ipfixReceiver, CallbackInfo handles);
 
+void statsIpfixReceiver(void* ipfixReceiver);
 
 #ifdef __cplusplus
 }

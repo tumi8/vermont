@@ -402,6 +402,7 @@ static void processDataSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, Ipfi
 				int n;		
 				for (n = 0; n < ipfixReceiver->callbackCount; n++) {
 					CallbackInfo* ci = &ipfixReceiver->callbackInfo[n];
+					ipfixReceiver->receivedRecords++;
 					if (ci->dataRecordCallbackFunction) ci->dataRecordCallbackFunction(ci->handle, sourceId, ti, bt->recordLength, record);
 					}
 				record = record + bt->recordLength;
@@ -435,6 +436,7 @@ static void processDataSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, Ipfi
 				int n;		
 				for (n = 0; n < ipfixReceiver->callbackCount; n++) {
 					CallbackInfo* ci = &ipfixReceiver->callbackInfo[n];
+					ipfixReceiver->receivedRecords++;
 					if (ci->dataRecordCallbackFunction) ci->dataRecordCallbackFunction(ci->handle, sourceId, ti, recordLength, record);
 					}
 				record = record + recordLength;
@@ -516,6 +518,7 @@ static void processDataSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, Ipfi
 				int n;		
 				for (n = 0; n < ipfixReceiver->callbackCount; n++) {
 					CallbackInfo* ci = &ipfixReceiver->callbackInfo[n];
+					ipfixReceiver->receivedRecords++;
 					if (ci->dataDataRecordCallbackFunction) ci->dataDataRecordCallbackFunction(ci->handle, sourceId, ti, bt->recordLength, record);
 					}
 				record = record + bt->recordLength;
@@ -543,6 +546,7 @@ static void processDataSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, Ipfi
 				int n;		
 				for (n = 0; n < ipfixReceiver->callbackCount; n++) {
 					CallbackInfo* ci = &ipfixReceiver->callbackInfo[n];
+					ipfixReceiver->receivedRecords++;
 					if (ci->dataDataRecordCallbackFunction) ci->dataDataRecordCallbackFunction(ci->handle, sourceId, ti, recordLength, record);
 					}
 				record = record + recordLength;
@@ -936,6 +940,7 @@ IpfixReceiver* createIpfixReceiver(uint16_t port) {
 	ipfixReceiver->callbackInfo=0;
         ipfixReceiver->callbackCount=0;
 	ipfixReceiver->exit=0;
+	ipfixReceiver->receivedRecords=0;
 
 	if(!(ipfixReceiver->templateBuffer = createTemplateBuffer(ipfixReceiver))) {
 		msg(MSG_FATAL, "Could not create template Buffer");
@@ -1044,4 +1049,15 @@ void destroyIpfixReceiver(IpfixReceiver* ipfixReceiver) {
 	destroyTemplateBuffer(ipfixReceiver->templateBuffer);
 	free(ipfixReceiver->callbackInfo);
 	free(ipfixReceiver);
+}
+
+/**
+ * Called by the logger timer thread. Dumps info using msg_stat
+ */
+void statsIpfixReceiver(void* ipfixReceiver_)
+{
+	IpfixReceiver* ipfixReceiver = (IpfixReceiver*)ipfixReceiver_;
+
+	msg_stat("Concentrator: IpfixReceiver: %6d records received", ipfixReceiver->receivedRecords);
+	ipfixReceiver->receivedRecords = 0;
 }

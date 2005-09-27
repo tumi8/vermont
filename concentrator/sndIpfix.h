@@ -19,6 +19,7 @@ typedef struct {
 	uint16_t lastTemplateId; /**< Template ID of last created Template */
 	char ip[128]; /**< IP of Collector we export to */
 	uint16_t port; /**< Port of Collector we export to */
+	uint32_t sentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
 } IpfixSender;
 
 /***** Prototypes ***********************************************************/
@@ -40,6 +41,7 @@ int sndDataDataRecord(void* ipfixSender, SourceID sourceID, DataTemplateInfo* da
 
 CallbackInfo getIpfixSenderCallbackInfo(IpfixSender* ipfixSender);
 
+void statsIpfixSender(void* ipfixSender);
 
 #ifdef __cplusplus
 }
