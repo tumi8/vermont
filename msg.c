@@ -83,10 +83,10 @@ int msg_stat(char *fmt, ...)
                 va_list args;
                 va_start(args, fmt);
 
-                pthread_mutex_lock(&stat_lock);
+                //pthread_mutex_lock(&stat_lock);
                 vfprintf(stat_file, fmt, args);
                 fputs("\n", stat_file);
-                pthread_mutex_unlock(&stat_lock);
+                //pthread_mutex_unlock(&stat_lock);
 
                 va_end(args);
         }
