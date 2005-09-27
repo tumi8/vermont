@@ -59,6 +59,7 @@ IpfixSender* createIpfixSender(SourceID sourceID, char* ip, uint16_t port) {
 	ipfix_exporter** exporterP = (ipfix_exporter**)&ipfixSender->ipfixExporter;
 	strcpy(ipfixSender->ip, ip);
 	ipfixSender->port = port;
+	ipfixSender->sentRecords = 0;
 
 	ipfixSender->lastTemplateId = SENDER_TEMPLATE_ID_LOW;
 	if(ipfix_init_exporter(sourceID, exporterP) != 0) {
@@ -330,6 +331,8 @@ int sndDataDataRecord(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* d
 		return -1;
 	}
 
+	ipfixSender->sentRecords++;
+
 	return 0;
 }
 
@@ -341,4 +344,15 @@ CallbackInfo getIpfixSenderCallbackInfo(IpfixSender* ipfixSender) {
 	ci.dataDataRecordCallbackFunction = sndDataDataRecord;
 	ci.dataTemplateDestructionCallbackFunction = sndDestroyDataTemplate;
 	return ci;
+}
+
+/**
+ * Called by the logger timer thread. Dumps info using msg_stat
+ */
+void statsIpfixSender(void* ipfixSender_)
+{
+	IpfixSender* ipfixSender = (IpfixSender*)ipfixSender_;
+
+	msg_stat("Concentrator: IpfixSender: %6d records sent", ipfixSender->sentRecords);
+	ipfixSender->sentRecords = 0;
 }

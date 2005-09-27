@@ -43,6 +43,8 @@ void addAggregatorCallbacks(IpfixAggregator* ipfixAggregator, CallbackInfo handl
 
 CallbackInfo getAggregatorCallbackInfo(IpfixAggregator* ipfixAggregator);
 
+void statsAggregator(void* ipfixAggregator);
+
 
 #ifdef __cplusplus
 }

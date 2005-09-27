@@ -186,8 +186,8 @@ void pollAggregator(IpfixAggregator* ipfixAggregator)
 	pthread_mutex_lock(&ipfixAggregator->mutex);
 	for (i = 0; i < rules->count; i++) {
 		expireFlows(rules->rule[i]->hashtable);
-	pthread_mutex_unlock(&ipfixAggregator->mutex);
 	}
+	pthread_mutex_unlock(&ipfixAggregator->mutex);
 }
 
 /**
@@ -215,4 +215,41 @@ CallbackInfo getAggregatorCallbackInfo(IpfixAggregator* ipfixAggregator)
 	ci.dataDataRecordCallbackFunction = aggregateDataDataRecord;
 
 	return ci;
+}
+
+/**
+ * Called by the logger timer thread. Dumps info using msg_stat
+ */
+void statsAggregator(void* ipfixAggregator_)
+{
+	int i;
+	IpfixAggregator* ipfixAggregator = (IpfixAggregator*)ipfixAggregator_;
+	Rules* rules = ipfixAggregator->rules;
+
+	pthread_mutex_lock(&ipfixAggregator->mutex);
+	for (i = 0; i < rules->count; i++) {
+		int j;
+		uint32_t usedBuckets = 0;
+		uint32_t usedHeads = 0;
+		uint32_t longestSpillchain = 0;
+		uint32_t avgAge = 0;
+
+		Hashtable* ht = rules->rule[i]->hashtable;
+		for (j = 0; j < HASHTABLE_SIZE; j++) {
+			HashBucket* hb = ht->bucket[j];
+			if (hb) usedHeads++;
+
+			uint32_t bucketsInSpillchain = 0;
+			while (hb) {
+				avgAge += time(0) - (hb->forceExpireTime - ht->maxBufferTime);
+				usedBuckets++;
+				bucketsInSpillchain++;
+				hb = hb->next;
+			}
+			if (bucketsInSpillchain > longestSpillchain) longestSpillchain = bucketsInSpillchain;
+		}
+
+		msg_stat("Concentrator: Rule %2d: Hashbuckets: %6d used, %6d at head, %6d max chain, %6d avg age", i, usedBuckets, usedHeads, longestSpillchain, usedBuckets?(avgAge / usedBuckets):0);
+	}
+	pthread_mutex_unlock(&ipfixAggregator->mutex);
 }
