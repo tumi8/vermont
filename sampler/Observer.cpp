@@ -88,6 +88,11 @@ void *Observer::observerThread(void *arg)
 		/* broadcast packet to all receivers */
 		for(vector<ConcurrentQueue<Packet> *>::iterator it = obs->receivers.begin();
 		    it != obs->receivers.end(); ++it) {
+			if ((*it)->getCount() > 100000) {
+				msg(MSG_FATAL, "FIXME: Observer drain clogged, waiting for plumber");
+				while ((*it)->getCount() > 10000) sleep(1);
+				msg(MSG_FATAL, "Resuming Observer thread");
+			}
 			(*it)->push(p);
 		}
 	}
