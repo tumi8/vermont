@@ -82,6 +82,8 @@ static void exportBucket(Hashtable* ht, HashBucket* bucket)
 			ci->dataDataRecordCallbackFunction(ci->handle, 0, ht->dataTemplate, ht->fieldLength, bucket->data);
 		}
 	}
+
+	ht->recordsSent++;
 }
 
 /**
@@ -107,6 +109,9 @@ Hashtable* createHashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBuffe
 	ht->minBufferTime = minBufferTime;
 	ht->maxBufferTime = maxBufferTime;
 	ht->bucketCount = HASHTABLE_SIZE;
+
+	ht->recordsReceived = 0;
+	ht->recordsSent = 0;
 
 	for(i = 0; i < ht->bucketCount; i++) {
 		ht->bucket[i] = NULL;
@@ -487,6 +492,8 @@ static int equalFlow(Hashtable* ht, FieldData* flow1, FieldData* flow2)
  */
 static void bufferDataBlock(Hashtable* ht, FieldData* data)
 {
+	ht->recordsReceived++;
+
 	uint16_t hash = getHash(ht, data);
 	HashBucket* bucket = ht->bucket[hash];
 
