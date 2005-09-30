@@ -46,6 +46,9 @@ typedef struct {
 
 	int callbackCount;                   /**< Length of callbackInfo array */
 	CallbackInfo* callbackInfo;          /**< Array of callback functions to invoke when Templates or Records should be sent */
+
+	int recordsReceived;                 /**< Statistics: Number of records received from higher-level modules */
+	int recordsSent;                     /**< Statistics: Number of records sent to lower-level modules */
 } Hashtable;
 	
 /***** Prototypes ***********************************************************/

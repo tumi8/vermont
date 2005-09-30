@@ -235,6 +235,10 @@ void statsAggregator(void* ipfixAggregator_)
 		uint32_t avgAge = 0;
 
 		Hashtable* ht = rules->rule[i]->hashtable;
+		msg_stat("Concentrator: Rule %2d: Records: %6d received, %6d sent", i, ht->recordsReceived, ht->recordsSent);
+		ht->recordsReceived = 0;
+		ht->recordsSent = 0;
+
 		for (j = 0; j < HASHTABLE_SIZE; j++) {
 			HashBucket* hb = ht->bucket[j];
 			if (hb) usedHeads++;
