@@ -135,6 +135,7 @@ int configure_sampler(struct v_objects *v)
 
 	msg(MSG_INFO, "Config: now setting up periodic sampler logging");
 	msg_thread_add_log_function(Observer::doLogging, v->observer);
+	msg_thread_add_log_function(Sink::doLogging, v->sink);
 
 	msg(MSG_DEBUG, "Config: sampler subsystem successfully configured");
 	return 0;

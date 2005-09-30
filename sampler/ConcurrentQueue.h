@@ -20,7 +20,7 @@ template<class T>
         class ConcurrentQueue
 {
 public:
-        ConcurrentQueue() : queue(), count(0), lock(), semaphore()
+        ConcurrentQueue() : pushedCount(0), poppedCount(0), queue(), count(0), lock(), semaphore()
         {
         };
 
@@ -35,6 +35,7 @@ public:
         {
                 lock.lock();
                 queue.push(t);
+		pushedCount++;
 		count++;
                 lock.unlock();
 
@@ -50,6 +51,7 @@ public:
                 lock.lock();
                 result = queue.front();
                 queue.pop();
+		poppedCount++;
 		count--;
                 lock.unlock();
 
@@ -75,6 +77,7 @@ public:
 		lock.lock();
 		*res = queue.front();
 		queue.pop();
+		poppedCount++;
 		count--;
 		lock.unlock();
 
@@ -95,6 +98,7 @@ public:
 		lock.lock();
 		*res = queue.front();
 		queue.pop();
+		poppedCount++;
 		count--;
 		lock.unlock();
 
@@ -105,6 +109,9 @@ public:
         {
                 return count;
         };
+
+	int pushedCount;
+	int poppedCount;
 
 protected:
         std::queue<T *> queue;
