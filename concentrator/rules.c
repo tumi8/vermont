@@ -382,6 +382,9 @@ Rules* parseRulesFromFile(char* fname) {
 			msg(MSG_ERROR, "Bad field type \"%s\" in %s, l.%d", field, fname, lineNo);
 			continue;
 		}
+		if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
+			ruleField->type.length++; // for additional mask field
+		}
 
 		ruleField->pattern = NULL;
 		if (pattern)
