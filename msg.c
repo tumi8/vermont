@@ -176,8 +176,8 @@ void * msg_thread(void *arg)
 				(log_functions[i])(log_function_params[i]);
 			}
 		}
-		msg_stat("Vermont: Statistics dump finished at %u", time(NULL));
-		msg_stat("");
+                /* append \n to get one empty line between following dumps */
+		msg_stat("Vermont: Statistics dump finished at %u\n", time(NULL));
 
 		pthread_mutex_unlock(&stat_lock);
 	}
