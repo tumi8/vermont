@@ -169,11 +169,15 @@ void * msg_thread(void *arg)
 
 		/* now walk through all log functions and call them */
 		pthread_mutex_lock(&stat_lock);
+
+		msg_stat("Vermont: Beginning statistics dump at %u", time(NULL));
 		for(i=0; i < num_log_functions; i++) {
 			if(log_functions[i]) {
 				(log_functions[i])(log_function_params[i]);
 			}
 		}
+		msg_stat("Vermont: Statistics dump finished at %u", time(NULL));
+		msg_stat("");
 
 		pthread_mutex_unlock(&stat_lock);
 	}
