@@ -234,10 +234,11 @@ int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* 
 
 	DPRINTF("%d data length\n", dataLength);
 
-	char* data = (char*)malloc(dataLength);
+	char* data = (char*)dataLength?malloc(dataLength):0; // electric fence does not like 0-byte mallocs
 	memcpy(data, dataTemplateInfo->data, dataLength);
-	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
-		FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
+
+	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
+		FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
 
 		/* Invert imask of IPv4 fields with length 5, i.e. fields with network mask attached */
 		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
