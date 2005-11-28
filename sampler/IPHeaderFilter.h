@@ -23,6 +23,9 @@
 #ifndef IP_HEADER_FILTER_H
 #define IP_HEADER_FILTER_H
 
+// required for htons() and htonl()
+#include <netinet/in.h>
+
 #include "msg.h"
 
 #include "PacketProcessor.h"
@@ -50,6 +53,15 @@ public:
 	{
 		if(!(size==1 || size==2 || size==4)) {
 			msg(MSG_ERROR, "IPHeaderFilter: invalid size of %d, only 1/2/4 supported", size);
+		}
+		// check for 2-byte or 4-byte words and convert them from network byte order
+		if (size == 2)
+		{
+		  m_value = htons((unsigned short)(m_value & 0xffff));
+		}
+		else if (size == 4)
+		{
+		  m_value = htonl((unsigned long)m_value);
 		}
 	}
 
