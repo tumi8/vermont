@@ -49,7 +49,7 @@ class IPHeaderFilter : public PacketProcessor
 {
 public:
 	IPHeaderFilter(int header, int offset, int size, int comparison, int value)
-		: m_offset(offset), m_size(size), m_comparison(comparison), m_value(value)
+		: m_header(header), m_offset(offset), m_size(size), m_comparison(comparison), m_value(value)
 	{
 		if(!(size==1 || size==2 || size==4)) {
 			msg(MSG_ERROR, "IPHeaderFilter: invalid size of %d, only 1/2/4 supported", size);

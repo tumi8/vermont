@@ -27,7 +27,9 @@ inline bool IPHeaderFilter::compareValues(int srcvalue, int dstvalue)
         case CMP_NE:
                 return srcvalue != dstvalue;
         case CMP_BIT:
-                return ((srcvalue & dstvalue) == dstvalue);
+//                return ((srcvalue & dstvalue) == dstvalue);
+	/* muenz: match if at least one bit of the mask is set? */
+                return ((srcvalue & dstvalue) != 0);
         default:
                 return 0;
         }
