@@ -47,6 +47,11 @@ private:
         // the offset in the TCP/IP packet for each field
         unsigned short fieldPacketOffset[MAX_TEMPLATE_FIELDS];
 
+	// the header from which the corresponding field is taken
+	// 0 = RAW packet, 1 = IP header, 2 = TCP header
+	// -1 for metadata field
+	unsigned short fieldPacketHeader[MAX_TEMPLATE_FIELDS];
+
 public:
         Template(unsigned short id) : templateID(id), fieldCount(0)
         {
@@ -62,12 +67,13 @@ public:
         };
 
         // Add a template field that takes data from within the packet
-        void addFieldWithOffset(unsigned short type, unsigned short length, unsigned short offset)
+        void addFieldWithOffset(unsigned short type, unsigned short length, unsigned short offset, unsigned short header)
         {
                 //DPRINTF("Adding field type %d, length %d, offset %d\n", type, length, offset);
                 fieldType[fieldCount] = type;
                 fieldLength[fieldCount] = length;
                 fieldPacketOffset[fieldCount] = offset;
+		fieldPacketHeader[fieldCount] = header;
                 fieldCount++;
         };
 
@@ -77,15 +83,17 @@ public:
 	{
 		fieldType[fieldCount] = type;
 		fieldLength[fieldCount] = length;
-		fieldPacketOffset[fieldCount] = (unsigned short)-1;
+		fieldPacketOffset[fieldCount] = (unsigned short)(-1);
+		fieldPacketHeader[fieldCount] = (unsigned short)(-1);
 		fieldCount++;
 	};
 
-        void getFieldInfo(int num, unsigned short *type, unsigned short *length, unsigned short *offset) const
+        void getFieldInfo(int num, unsigned short *type, unsigned short *length, unsigned short *offset, unsigned short *header) const
         {
                 *type = fieldType[num];
                 *length = fieldLength[num];
                 *offset = fieldPacketOffset[num];
+		*header = fieldPacketHeader[num];
         }
 
 	// This function returns a temporary buffer with the value of the

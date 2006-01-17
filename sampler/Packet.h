@@ -29,6 +29,11 @@
 
 #include "Lock.h"
 
+// the various header types
+#define HEAD_RAW        0
+#define HEAD_NETWORK    1
+#define HEAD_TRANSPORT  2
+
 class Packet
 {
 public:
@@ -103,9 +108,19 @@ public:
 	}
 
 	// return a pointer into the packet to IP header offset given
-	void * getPacketData(int offset) const
+	void * getPacketData(int offset, int header) const
 	{
-		return (char *)ipHeader + offset;
+		switch(header)
+		{
+		case HEAD_RAW:
+			return (char *)data + offset;
+		case HEAD_NETWORK:
+			return (char *)ipHeader + offset;
+		case HEAD_TRANSPORT:
+			return (char *)transportHeader + offset;
+		default:
+			return (char *)data + offset;
+		}
 	}
 
 private:

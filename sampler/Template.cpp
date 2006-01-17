@@ -23,31 +23,37 @@ using namespace std;
 bool Template::addField(uint16_t id, uint16_t len)
 {
         uint16_t offset;
+	unsigned short header = HEAD_RAW;
 
 	/* it is a field with data from the packet itself */
 	if(id < 0x8000) {
 		switch(id) {
 	        case FT_SRCIP4:
 	                offset=12;
+			header=HEAD_NETWORK;
 	                break;
 	        case FT_DSTIP4:
 	                offset=16;
+			header=HEAD_NETWORK;
 	                break;
 	        case FT_PROTO:
 	                offset=9;
+			header=HEAD_NETWORK;
 	                break;
 	        case FT_SRCPORT:
-	                offset=20;
+	                offset=0;
+			header=HEAD_TRANSPORT;
 	                break;
 	        case FT_DSTPORT:
-	                offset=22;
+	                offset=2;
+			header=HEAD_TRANSPORT;
 	                break;
 	        default:
 	                msg(MSG_ERROR, "ID %d currently not supported", id);
 	                return false;
 		}
 
-		addFieldWithOffset(id, len, offset);
+		addFieldWithOffset(id, len, offset, header);
         } else {
 		addFieldWithoutOffset(id, len);
 	}
