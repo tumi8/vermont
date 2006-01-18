@@ -57,13 +57,13 @@ bool IPHeaderFilter::processPacket(const Packet *p)
 
         switch(m_header) {
         case 1:
-                start=p->ipHeader;
+                start=p->netHeader;
                 break;
         case 2:
                 start=p->transportHeader;
                 break;
         default:
-                start=p->ipHeader;
+                start=p->netHeader;
         }
 
         srcvalue=getData(((char*)start + m_offset), m_size);

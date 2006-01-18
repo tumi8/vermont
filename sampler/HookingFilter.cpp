@@ -7,7 +7,7 @@ bool HookingFilter::processPacket(const Packet *p)
 
         /* marshall data into C struct - just pointers */
 	ph.data=p->data;
-	ph.ip_header=p->ipHeader;
+	ph.ip_header=p->netHeader;
 	ph.transport_header=p->transportHeader;
 
 	ph.timestamp=&(p->timestamp);
