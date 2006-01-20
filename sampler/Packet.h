@@ -140,6 +140,15 @@ public:
 		}
 	};
 
+	// the supplied classification is _either_ PCLASS_NET_xxx or PCLASS_TRN_xxx (or PCLASS_PAYLOAD)
+	// we check whether at least one of the Packet's classification-bits is also set in the supplied
+	// parameter. If yes, then out packet matches the supplied class and can be safely processed.
+	// otherwise, the Exporter should send a NULL value
+	inline bool matches(unsigned long checkClassification) const
+	{
+		return (classification & checkClassification) != 0;
+	}
+
 	// classify the packet headers
 	void classify()
 	{
@@ -231,7 +240,11 @@ public:
 	// we won't call getPacketData() with some offset within a TCP header if the packet
 	// is not of PCLASS_TRN_TCP. Or we won't call getPacketData(...HEAD_PAYLOAD...) if
 	// the packet doesn't classify as PCLASS_PAYLOAD. This must be ensured in the ExporterProcess!
-	void * getPacketData(int offset, int header) const
+	//
+	// And, of course, we don't check if the fieldLength exceeds any Network- or Transport-header
+	// bounds, but this shouldn't happen (i.e. taking the offset of the last byte in the TCP header
+	// and trying to read 4 bytes from there, for example)
+	void * getPacketData(int offset, int header, int fieldLength) const
 	{
 		switch(header)
 		{
@@ -242,7 +255,7 @@ public:
 		case HEAD_TRANSPORT:
 			return transportHeader + offset;
 		case HEAD_PAYLOAD:
-			return (payload + offset < data + length) ? payload + offset : nullBuffer;
+			return (payload + offset + fieldLength < data + length) ? payload + offset : nullBuffer;
 		default:
 			return data + offset;
 		}
