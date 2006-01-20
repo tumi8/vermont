@@ -24,36 +24,44 @@ bool Template::addField(uint16_t id, uint16_t len)
 {
         uint16_t offset;
 	unsigned short header = HEAD_RAW;
+	unsigned long validPacketClass = 0;
 
 	/* it is a field with data from the packet itself */
+	// TODO: This should really be checked against some kind of static array instead of a
+	//       'switch' statement
 	if(id < 0x8000) {
 		switch(id) {
 	        case FT_SRCIP4:
 	                offset=12;
 			header=HEAD_NETWORK;
+			validPacketClass = PCLASS_NET_IP4;
 	                break;
 	        case FT_DSTIP4:
 	                offset=16;
 			header=HEAD_NETWORK;
+			validPacketClass = PCLASS_NET_IP4;
 	                break;
 	        case FT_PROTO:
 	                offset=9;
 			header=HEAD_NETWORK;
+			validPacketClass = PCLASS_NET_IP4;
 	                break;
 	        case FT_SRCPORT:
 	                offset=0;
 			header=HEAD_TRANSPORT;
+			validPacketClass = PCLASS_TRN_TCP | PCLASS_TRN_UDP;
 	                break;
 	        case FT_DSTPORT:
 	                offset=2;
 			header=HEAD_TRANSPORT;
+			validPacketClass = PCLASS_TRN_TCP | PCLASS_TRN_UDP;
 	                break;
 	        default:
 	                msg(MSG_ERROR, "ID %d currently not supported", id);
 	                return false;
 		}
 
-		addFieldWithOffset(id, len, offset, header);
+		addFieldWithOffset(id, len, offset, header, validPacketClass);
         } else {
 		addFieldWithoutOffset(id, len);
 	}
