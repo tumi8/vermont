@@ -150,8 +150,8 @@ public:
 		transportHeader = 0;
 		payload = 0;
 		
-		// first check for IPv4 header
-		if ( (*netHeader >> 4) == 4)
+		// first check for IPv4 header which needs to be at least 20 bytes long
+		if ( (netHeader + 20 <= data + length) && ((*netHeader >> 4) == 4) )
 		{
 			transportHeader = netHeader + ( ( *netHeader & 0x0f ) << 2);
 			protocol = *(netHeader + 9);
@@ -168,32 +168,44 @@ public:
 				// ICMP header is 4 bytes fixed-length
 				payload = transportHeader + 4;
 				
-				classification |= PCLASS_TRN_ICMP;
+				// check if the packet is big enough to actually be ICMP
+				if (transportHeader + 4 <= data + length)
+					classification |= PCLASS_TRN_ICMP;
 				
 				break;
 			case 2:		// IGMP
 				// header is 8-bytes fixed size
 				payload = transportHeader + 8;
 				
-				classification |= PCLASS_TRN_IGMP;
+				if (transportHeader + 8 <= data + length)
+					classification |= PCLASS_TRN_IGMP;
 
 				break;
 			case 6:         // TCP
-				// extract "Data Offset" field at TCP header offset 12 (upper 4 bits)
-				tcpDataOffset = *(transportHeader + 12) >> 4;
+				// we need at least 12 more bytes in the packet to extract the "Data Offset"
+				if (transportHeader + 12 <= data + length)
+				{
+					// extract "Data Offset" field at TCP header offset 12 (upper 4 bits)
+					tcpDataOffset = *(transportHeader + 12) >> 4;
 				
-				// calculate payload offset
-				payload = transportHeader + (tcpDataOffset << 2);
+					// calculate payload offset
+					payload = transportHeader + (tcpDataOffset << 2);
 				
-				classification |= PCLASS_TRN_TCP;
+					// check if the complete TCP header is inside the received packet data
+					if (transportHeader + (tcpDataOffset << 2) <= data + length)
+						classification |= PCLASS_TRN_TCP;
+				}
 				
 				break;
 			case 17:        // UDP
 				// UDP has a fixed header size of 8 bytes
 
-				payload = transportHeader + 8;
+				if (transportHeader + 8 <= data + length)
+				{
+					classification |= PCLASS_TRN_UDP;
 
-				classification |= PCLASS_TRN_UDP;
+					payload = transportHeader + 8;
+				}
 				
 				break;
 			default:
@@ -204,7 +216,7 @@ public:
 			if (payload && (payload < data + length))
 				classification |= PCLASS_PAYLOAD;
 
-			//fprintf(stderr, "proto %d, data %p, net %p, trn %p, payload %p\n", protocol, data, netHeader, transportHeader, data);
+			//fprintf(stderr, "class %08lx, proto %d, data %p, net %p, trn %p, payload %p\n", classification, protocol, data, netHeader, transportHeader, payload);
 		}
 	}
 
@@ -215,25 +227,25 @@ public:
 	}
 
 	// return a pointer into the packet to IP header offset given
+	// ASSUMPTION: we checked that the packet matches the needed classification, i.e.
+	// we won't call getPacketData() with some offset within a TCP header if the packet
+	// is not of PCLASS_TRN_TCP. Or we won't call getPacketData(...HEAD_PAYLOAD...) if
+	// the packet doesn't classify as PCLASS_PAYLOAD. This must be ensured in the ExporterProcess!
 	void * getPacketData(int offset, int header) const
 	{
-		unsigned char *dataOffset = 0;
-		
 		switch(header)
 		{
 		case HEAD_RAW:
-			dataOffset = data + offset;
+			return data + offset;
 		case HEAD_NETWORK:
-			dataOffset = netHeader + offset;
+			return netHeader + offset;
 		case HEAD_TRANSPORT:
-			dataOffset = transportHeader + offset;
+			return transportHeader + offset;
 		case HEAD_PAYLOAD:
-			dataOffset = payload + offset;
+			return (payload + offset < data + length) ? payload + offset : nullBuffer;
 		default:
-			dataOffset = data + offset;
+			return data + offset;
 		}
-
-		return (dataOffset < data + length) ? dataOffset : nullBuffer;
 	}
 
 private:
