@@ -153,10 +153,11 @@ public:
 		// first check for IPv4 header
 		if ( (*netHeader >> 4) == 4)
 		{
-			classification |= PCLASS_NET_IP4;
 			transportHeader = netHeader + ( ( *netHeader & 0x0f ) << 2);
 			protocol = *(netHeader + 9);
+			classification |= PCLASS_NET_IP4;
 		}
+		// TODO: Add checks for IPv6 or similar here
 
 		// if we found a transport header, continue classifying
 		if (transportHeader && protocol)
@@ -164,38 +165,37 @@ public:
 			switch (protocol)
 			{
 			case 1:		// ICMP
-				classification |= PCLASS_TRN_ICMP;
-
 				// ICMP header is 4 bytes fixed-length
 				payload = transportHeader + 4;
 				
+				classification |= PCLASS_TRN_ICMP;
+				
 				break;
 			case 2:		// IGMP
-				classification |= PCLASS_TRN_IGMP;
-
 				// header is 8-bytes fixed size
 				payload = transportHeader + 8;
 				
+				classification |= PCLASS_TRN_IGMP;
+
 				break;
 			case 6:         // TCP
-				classification |= PCLASS_TRN_TCP;
-				
 				// extract "Data Offset" field at TCP header offset 12 (upper 4 bits)
 				tcpDataOffset = *(transportHeader + 12) >> 4;
 				
 				// calculate payload offset
 				payload = transportHeader + (tcpDataOffset << 2);
 				
-				break;
+				classification |= PCLASS_TRN_TCP;
 				
+				break;
 			case 17:        // UDP
-				classification |= PCLASS_TRN_UDP;
 				// UDP has a fixed header size of 8 bytes
 
 				payload = transportHeader + 8;
 
-				break;
+				classification |= PCLASS_TRN_UDP;
 				
+				break;
 			default:
 				break;
 			}
@@ -227,9 +227,8 @@ public:
 			dataOffset = netHeader + offset;
 		case HEAD_TRANSPORT:
 			dataOffset = transportHeader + offset;
-// TODO: need to check with packet length, too			
-//		case HEAD_PAYLOAD:
-//			dataOffset = payload + offset;
+		case HEAD_PAYLOAD:
+			dataOffset = payload + offset;
 		default:
 			dataOffset = data + offset;
 		}
