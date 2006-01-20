@@ -25,3 +25,5 @@
 // keeps track on how many packets we received until now
 unsigned long Packet::totalPacketsReceived = 0;
 
+unsigned char Packet::nullBuffer[64] = { 0 };
+
