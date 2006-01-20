@@ -77,10 +77,10 @@ public:
 	 ipHeader: start of the IP header: data + (physical dependent) IP header offset
 	 transportHeader: start of the transport layer header (TCP/UDP): ip_header + variable IP header length
 	 */
-	void *data;
-	void *netHeader;
-	void *transportHeader;
-	void *payload;
+	unsigned char *data;
+	unsigned char *netHeader;
+	unsigned char *transportHeader;
+	unsigned char *payload;
 
 	// the packet classification, i.e. what headers are present?
 	unsigned long classification;
@@ -94,8 +94,8 @@ public:
 	// construct a new Packet for a specified number of 'users'
 	Packet(void *packetData, unsigned int len, int numUsers = 1) : users(numUsers), refCountLock()
 	{
-		data = packetData;
-		netHeader = (unsigned char *)data + IPHeaderOffset;
+		data = (unsigned char *)packetData;
+		netHeader = data + IPHeaderOffset;
 		//transportHeader = (unsigned char *)netHeader + netTransportHeaderOffset(netHeader);
 		length = len;
 
@@ -147,11 +147,11 @@ public:
 		payload = 0;
 		
 		// first check for IPv4 header
-		if ( (*((unsigned char *)netHeader) >> 4) == 4)
+		if ( (*netHeader >> 4) == 4)
 		{
 			classification |= PCLASS_NET_IP4;
-			transportHeader = (unsigned char *)netHeader + ( ( *((unsigned char *)netHeader) & 0x0f ) << 2);
-			protocol = *((unsigned char *)netHeader + 9);
+			transportHeader = netHeader + ( ( *netHeader & 0x0f ) << 2);
+			protocol = *(netHeader + 9);
 		}
 
 		// if we found a transport header, continue classifying
@@ -163,24 +163,24 @@ public:
 				classification |= PCLASS_TRN_ICMP;
 
 				// ICMP header is 4 bytes fixed-length
-				payload = (unsigned char *)transportHeader + 4;
+				payload = transportHeader + 4;
 				
 				break;
 			case 2:		// IGMP
 				classification |= PCLASS_TRN_IGMP;
 
 				// header is 8-bytes fixed size
-				payload = (unsigned char *)transportHeader + 8;
+				payload = transportHeader + 8;
 				
 				break;
 			case 6:         // TCP
 				classification |= PCLASS_TRN_TCP;
 				
 				// extract "Data Offset" field at TCP header offset 12 (upper 4 bits)
-				tcpDataOffset = *((unsigned char *)transportHeader + 12) >> 4;
+				tcpDataOffset = *(transportHeader + 12) >> 4;
 				
 				// calculate payload offset
-				payload = (unsigned char *)transportHeader + (tcpDataOffset << 2);
+				payload = transportHeader + (tcpDataOffset << 2);
 				
 				break;
 				
@@ -188,7 +188,7 @@ public:
 				classification |= PCLASS_TRN_UDP;
 				// UDP has a fixed header size of 8 bytes
 
-				payload = (unsigned char *)transportHeader + 8;
+				payload = transportHeader + 8;
 
 				break;
 				
@@ -197,7 +197,7 @@ public:
 			}
 
 			// check if we actually _have_ payload
-			if (payload && ((char *)payload < (char *)data + length))
+			if (payload && (payload < data + length))
 				classification |= PCLASS_PAYLOAD;
 
 			//fprintf(stderr, "proto %d, data %p, net %p, trn %p, payload %p\n", protocol, data, netHeader, transportHeader, data);
