@@ -71,6 +71,10 @@ public:
 	// The number of total packets received, will be incremented by each constructor call
 	// implemented as public-variable for speed reasons (or lazyness reasons? ;-)
 	static unsigned long totalPacketsReceived;
+
+	// this buffer is returned for all requested data that is out-of-bounds for the packet,
+	// like data after the physical end, header fields of invalid (short) TCP packets, etc.
+	static unsigned char nullBuffer[64];
 	
 	/*
 	 data: the raw packet data from the wire, including physical header
@@ -213,20 +217,24 @@ public:
 	// return a pointer into the packet to IP header offset given
 	void * getPacketData(int offset, int header) const
 	{
+		unsigned char *dataOffset = 0;
+		
 		switch(header)
 		{
 		case HEAD_RAW:
-			return (char *)data + offset;
+			dataOffset = data + offset;
 		case HEAD_NETWORK:
-			return (char *)netHeader + offset;
+			dataOffset = netHeader + offset;
 		case HEAD_TRANSPORT:
-			return (char *)transportHeader + offset;
+			dataOffset = transportHeader + offset;
 // TODO: need to check with packet length, too			
 //		case HEAD_PAYLOAD:
-//			return (char *)payload + offset;
+//			dataOffset = payload + offset;
 		default:
-			return (char *)data + offset;
+			dataOffset = data + offset;
 		}
+
+		return (dataOffset < data + length) ? dataOffset : nullBuffer;
 	}
 
 private:
