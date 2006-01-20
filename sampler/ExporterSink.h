@@ -115,7 +115,7 @@ public:
 				ipfix_put_data_field(exporter, metadata, tlength);
 				metaFieldsToRelease[numMetaFieldsToRelease++] = metadata;
 			} else {
-                        	ipfix_put_data_field(exporter, pck->getPacketData(toffset, theader), tlength);
+                        	ipfix_put_data_field(exporter, pck->getPacketData(toffset, theader, tlength), tlength);
 			}
                 }
         }
