@@ -20,6 +20,8 @@
 
 using namespace std;
 
+unsigned char ExporterSink::nullBuffer[64] = { 0 };
+
 void *ExporterSink::exporterSinkProcess(void *arg)
 {
 	ExporterSink *sink = (ExporterSink *)arg;

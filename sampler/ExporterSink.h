@@ -30,6 +30,11 @@
 
 class ExporterSink : public Sink
 {
+private:
+	// this is for template fields which we need to drop because the received packets don't match
+	// instead of the actual paket data (which would be bogus), we send a few null bytes taken from here
+	static unsigned char nullBuffer[64];
+	
 public:
         ExporterSink(Template *tmpl, int sID) : sourceID(sID),
                 templ(tmpl), thread(ExporterSink::exporterSinkProcess),
@@ -115,7 +120,16 @@ public:
 				ipfix_put_data_field(exporter, metadata, tlength);
 				metaFieldsToRelease[numMetaFieldsToRelease++] = metadata;
 			} else {
-                        	ipfix_put_data_field(exporter, pck->getPacketData(toffset, theader, tlength), tlength);
+				// if the packet matches then we'll export the requested data
+				if (pck->matches(tpacketclass))
+				{
+                        		ipfix_put_data_field(exporter, pck->getPacketData(toffset, theader, tlength), tlength);
+				}
+				else
+				{
+					DPRINTF("Unsupported packet for this template field!\n");
+					ipfix_put_data_field(exporter, nullBuffer, tlength);
+				}
 			}
                 }
         }
