@@ -15,7 +15,8 @@
 #include <stdint.h>
 #include "Packet.h"
 
-#define MAX_TEMPLATE_FIELDS 512
+// TODO: Make this dynamic
+#define MAX_TEMPLATE_FIELDS 128
 
 // the different field types used
 #define FT_SRCIP4   8
@@ -52,6 +53,10 @@ private:
 	// -1 for metadata field
 	unsigned short fieldPacketHeader[MAX_TEMPLATE_FIELDS];
 
+	// the packet classes for which each field is valid. This will
+	// be checked against the packet classification before exporting
+	unsigned long fieldValidPacketClasses[MAX_TEMPLATE_FIELDS];
+
 public:
         Template(unsigned short id) : templateID(id), fieldCount(0)
         {
@@ -67,13 +72,14 @@ public:
         };
 
         // Add a template field that takes data from within the packet
-        void addFieldWithOffset(unsigned short type, unsigned short length, unsigned short offset, unsigned short header)
+        void addFieldWithOffset(unsigned short type, unsigned short length, unsigned short offset, unsigned short header, unsigned long validPacketClasses)
         {
                 //DPRINTF("Adding field type %d, length %d, offset %d\n", type, length, offset);
                 fieldType[fieldCount] = type;
                 fieldLength[fieldCount] = length;
                 fieldPacketOffset[fieldCount] = offset;
 		fieldPacketHeader[fieldCount] = header;
+		fieldValidPacketClasses[fieldCount] = validPacketClasses;
                 fieldCount++;
         };
 
@@ -85,15 +91,17 @@ public:
 		fieldLength[fieldCount] = length;
 		fieldPacketOffset[fieldCount] = (unsigned short)(-1);
 		fieldPacketHeader[fieldCount] = (unsigned short)(-1);
+		fieldValidPacketClasses[fieldCount] = (unsigned long)(-1);
 		fieldCount++;
 	};
 
-        void getFieldInfo(int num, unsigned short *type, unsigned short *length, unsigned short *offset, unsigned short *header) const
+        void getFieldInfo(int num, unsigned short *type, unsigned short *length, unsigned short *offset, unsigned short *header, unsigned long *validPacketClass) const
         {
                 *type = fieldType[num];
                 *length = fieldLength[num];
                 *offset = fieldPacketOffset[num];
 		*header = fieldPacketHeader[num];
+		*validPacketClass = fieldValidPacketClasses[num];
         }
 
 	// This function returns a temporary buffer with the value of the

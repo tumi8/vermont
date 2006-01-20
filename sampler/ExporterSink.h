@@ -39,6 +39,7 @@ public:
         {
                 int ret, i, tmplid;
                 unsigned short ttype, tlength, toffset, theader;
+		unsigned long tpacketclass;
 
                 // generate the exporter
                 ret = ipfix_init_exporter(sourceID, &exporter);
@@ -52,7 +53,7 @@ public:
                 ret =  ipfix_start_template_set(exporter, tmplid, templ->getFieldCount());
 
                 for(i = 0; i < templ->getFieldCount(); i++) {
-                        templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
+                        templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader, &tpacketclass);
                         ipfix_put_template_field(exporter, tmplid, ttype, tlength, 0);
                 }
 
@@ -99,13 +100,15 @@ public:
         void addPacket(Packet *pck)
         {
                 unsigned short ttype, tlength, toffset, theader;
+		unsigned long tpacketclass;
 		void *metadata;
                 // first, store the packet to be released later, after we have sent the data
                 DPRINTF("Adding packet to stream\n");
                 packetsToRelease[numPacketsToRelease++] = pck;
 
                 for(int i = 0; i < templ->getFieldCount(); i++) {
-                        templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
+                        templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader, &tpacketclass);
+			// TODO: check for matching packet class, otherwise drop the packet
 			if (ttype > 0x8000) {
 				// it is a meta-field --> get the metadata
 				metadata = templ->getMetaFieldData(i);
