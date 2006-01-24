@@ -19,11 +19,12 @@
 #define MAX_TEMPLATE_FIELDS 128
 
 // the different field types used
-#define FT_SRCIP4   8
-#define FT_DSTIP4  12
-#define FT_PROTO    4
-#define FT_SRCPORT  7
-#define FT_DSTPORT 11
+//#define FT_SRCIP4   8
+//#define FT_DSTIP4  12
+//#define FT_PROTO    4
+//#define FT_SRCPORT  7
+//#define FT_DSTPORT 11
+// use definitions from concentreator instead
 
 // below are "meta"-fields, i.e. field types which
 // do not get their data from the packet itself
@@ -57,6 +58,11 @@ private:
 	// be checked against the packet classification before exporting
 	unsigned long fieldValidPacketClasses[MAX_TEMPLATE_FIELDS];
 
+	// determin offset, header and packet class for a given field ID
+	// if needed, make this method public
+	bool getFieldOffsetAndHeader(uint16_t id, uint16_t *offset, unsigned short *header, unsigned long *validPacketClass);
+	
+	
 public:
         Template(unsigned short id) : templateID(id), fieldCount(0)
         {
