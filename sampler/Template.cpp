@@ -6,6 +6,7 @@
  * A Template definition
  *
  * Author: Michael Drueing <michael@drueing.de>
+ *         Gerhard Muenz <gerhard.muenz@gmx.de>
  *
  */
 
@@ -15,7 +16,11 @@
 
 #include "msg.h"
 
+#include "ipfix.h"
+//#include "psamp.h"
+
 #include "Template.h"
+
 
 using namespace std;
 
@@ -30,43 +35,97 @@ bool Template::addField(uint16_t id, uint16_t len)
 	// TODO: This should really be checked against some kind of static array instead of a
 	//       'switch' statement
 	if(id < 0x8000) {
-		switch(id) {
-	        case FT_SRCIP4:
-	                offset=12;
-			header=HEAD_NETWORK;
-			validPacketClass = PCLASS_NET_IP4;
-	                break;
-	        case FT_DSTIP4:
-	                offset=16;
-			header=HEAD_NETWORK;
-			validPacketClass = PCLASS_NET_IP4;
-	                break;
-	        case FT_PROTO:
-	                offset=9;
-			header=HEAD_NETWORK;
-			validPacketClass = PCLASS_NET_IP4;
-	                break;
-	        case FT_SRCPORT:
-	                offset=0;
-			header=HEAD_TRANSPORT;
-			validPacketClass = PCLASS_TRN_TCP | PCLASS_TRN_UDP;
-	                break;
-	        case FT_DSTPORT:
-	                offset=2;
-			header=HEAD_TRANSPORT;
-			validPacketClass = PCLASS_TRN_TCP | PCLASS_TRN_UDP;
-	                break;
-	        default:
-	                msg(MSG_ERROR, "ID %d currently not supported", id);
-	                return false;
-		}
+	    if(getFieldOffsetAndHeader(id, &offset, &header, &validPacketClass) == false)
+	    {
+		msg(MSG_ERROR, "ID %d currently not supported", id);
+		return false;
+	    }
 
-		addFieldWithOffset(id, len, offset, header, validPacketClass);
+	    addFieldWithOffset(id, len, offset, header, validPacketClass);
         } else {
 		addFieldWithoutOffset(id, len);
 	}
 	
         return true;
+}
+
+
+
+bool Template::getFieldOffsetAndHeader(uint16_t id, uint16_t *offset, unsigned short *header, unsigned long *validPacketClass)
+{
+    switch(id)
+    {
+	// IPv4 *header fields:
+	case IPFIX_TYPEID_sourceIPv4Address:
+	    *offset=12;
+	    *header=HEAD_NETWORK;
+	    *validPacketClass = PCLASS_NET_IP4;
+	    break;
+	case IPFIX_TYPEID_destinationIPv4Address:
+	    *offset=16;
+	    *header=HEAD_NETWORK;
+	    *validPacketClass = PCLASS_NET_IP4;
+	    break;
+	case IPFIX_TYPEID_protocolIdentifier:
+	    *offset=9;
+	    *header=HEAD_NETWORK;
+	    *validPacketClass = PCLASS_NET_IP4;
+	    break;
+	case IPFIX_TYPEID_classOfServiceIPv4:
+	    *offset=1;
+	    *header=HEAD_NETWORK;
+	    *validPacketClass = PCLASS_NET_IP4;
+	    break;
+	case IPFIX_TYPEID_identificationV4:
+	    *offset=4;
+	    *header=HEAD_NETWORK;
+	    *validPacketClass = PCLASS_NET_IP4;
+	    break;
+	    //todo: add more fields
+
+	    // ICMP/IGMP *header fields:
+	case IPFIX_TYPEID_icmpTypeCode:
+	    *offset=0;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_ICMP;
+	    break;
+	case IPFIX_TYPEID_igmpType:
+	    *offset=0;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_IGMP;
+	    break;
+
+	    // TCP/UDP *header fields:
+	case IPFIX_TYPEID_sourceTransportPort:
+	    *offset=0;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_TCP | PCLASS_TRN_UDP;
+	    break;
+	case IPFIX_TYPEID_destinationtransportPort:
+	    *offset=2;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_TCP | PCLASS_TRN_UDP;
+	    break;
+	case IPFIX_TYPEID_tcpControlBits:
+	    *offset=13;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_TCP;
+	    break;
+	    //todo: add more fields
+
+	case IPFIX_TYPEID_ipVersion:
+	    // TODO: check how to export 4 bits
+
+	// currently, only IPv4 is supported, fill in the following lines if needed
+	case IPFIX_TYPEID_sourceIPv6Address:
+	case IPFIX_TYPEID_destinationIPv6Address:
+	case IPFIX_TYPEID_classOfServiceV6:
+	case IPFIX_TYPEID_flowLabelV6:
+	default:
+	    return false;
+    }
+    return true;
+
 }
 
 

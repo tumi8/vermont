@@ -1,5 +1,5 @@
 # Prelim dirty makefile
-INCLUDES=-I..
+INCLUDES=-I.. -I../concentrator
 CFLAGS=-O2 $(INCLUDES) -Wall
 CXXFLAGS=$(CFLAGS)
 CC=gcc
@@ -40,4 +40,4 @@ RandomSampler.o: RandomSampler.cpp RandomSampler.h ../msg.h \
   PacketProcessor.h Packet.h Lock.h
 SystematicSampler.o: SystematicSampler.cpp SystematicSampler.h \
   PacketProcessor.h Packet.h ../msg.h Lock.h
-Template.o: Template.cpp ../msg.h Template.h Packet.h Lock.h
+Template.o: Template.cpp ../msg.h Template.h Packet.h Lock.h ../concentrator/ipfix.h
