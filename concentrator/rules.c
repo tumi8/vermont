@@ -403,7 +403,7 @@ Rules* parseRulesFromFile(char* fname) {
 			}
 			break;
 		case IPFIX_TYPEID_sourceTransportPort:
-		case IPFIX_TYPEID_destinationtransportPort:
+		case IPFIX_TYPEID_destinationTransportPort:
 			if (parsePortPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
 				msg(MSG_ERROR, "Bad PortRanges pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
 				continue;
@@ -560,7 +560,7 @@ static int matchesPattern(FieldType* dataType, FieldData* data, FieldType* patte
 		break;
 	}
 	case IPFIX_TYPEID_sourceTransportPort:
-	case IPFIX_TYPEID_destinationtransportPort:
+	case IPFIX_TYPEID_destinationTransportPort:
 		return matchesPortPattern(dataType, data, patternType, pattern);
 		break;
 	default:

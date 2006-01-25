@@ -49,7 +49,7 @@
 
 // Network header classifications
 #define PCLASS_NET_IP4             (1UL <<  0)
-#define PCLASS_NET_IV6             (1UL <<  1)
+#define PCLASS_NET_IP6             (1UL <<  1)
 
 #define PCLASS_NETMASK             0x00000fff
 

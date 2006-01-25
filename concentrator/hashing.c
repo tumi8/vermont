@@ -300,12 +300,10 @@ static int isToBeAggregated(FieldType type)
 	case IPFIX_TYPEID_flowEndTime:
 		return 1;
 
-	case IPFIX_TYPEID_inOctetDeltaCount:
-	case IPFIX_TYPEID_outOctetDeltaCount:
 	case IPFIX_TYPEID_octetDeltaCount:
-	case IPFIX_TYPEID_inPacketDeltaCount:
-	case IPFIX_TYPEID_outPacketDeltaCount:
+	case IPFIX_TYPEID_postOctetDeltaCount:
 	case IPFIX_TYPEID_packetDeltaCount:
+	case IPFIX_TYPEID_postPacketDeltaCount:
 	case IPFIX_TYPEID_droppedOctetDeltaCount:
 	case IPFIX_TYPEID_droppedPacketDeltaCount:
 		return 1;
@@ -314,11 +312,11 @@ static int isToBeAggregated(FieldType type)
 	case IPFIX_TYPEID_packetTotalCount:
 	case IPFIX_TYPEID_droppedOctetTotalCount:
 	case IPFIX_TYPEID_droppedPacketTotalCount:
-	case IPFIX_TYPEID_outMulticastPacketCount:
-	case IPFIX_TYPEID_outMulticastOctetCount:
+	case IPFIX_TYPEID_postMCastPacketDeltaCount:
+	case IPFIX_TYPEID_postMCastOctetDeltaCount:
 	case IPFIX_TYPEID_observedFlowTotalCount:
 	case IPFIX_TYPEID_exportedOctetTotalCount:
-	case IPFIX_TYPEID_exportedPacketTotalCount:
+	case IPFIX_TYPEID_exportedMessageTotalCount:
 	case IPFIX_TYPEID_exportedFlowTotalCount:
 		DPRINTF("isToBeAggregated: Will not aggregate %s field", typeid2string(type.id));
 		return 0;
@@ -353,12 +351,10 @@ static int aggregateField(FieldType* type, FieldData* baseData, FieldData* delta
 		*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 		break;
 
-	case IPFIX_TYPEID_inOctetDeltaCount:
-	case IPFIX_TYPEID_outOctetDeltaCount:
 	case IPFIX_TYPEID_octetDeltaCount:
-	case IPFIX_TYPEID_inPacketDeltaCount:
-	case IPFIX_TYPEID_outPacketDeltaCount:
+	case IPFIX_TYPEID_postOctetDeltaCount:
 	case IPFIX_TYPEID_packetDeltaCount:
+	case IPFIX_TYPEID_postPacketDeltaCount:
 	case IPFIX_TYPEID_droppedOctetDeltaCount:
 	case IPFIX_TYPEID_droppedPacketDeltaCount:
 		switch (type->length) {

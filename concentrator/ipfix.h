@@ -45,7 +45,7 @@ int string2typelength(char*s);
 #define IPFIX_TYPEID_identificationV4                54
 #define IPFIX_TYPEID_protocolIdentifier               4
 #define IPFIX_TYPEID_sourceTransportPort              7
-#define IPFIX_TYPEID_destinationtransportPort        11
+#define IPFIX_TYPEID_destinationTransportPort        11
 #define IPFIX_TYPEID_icmpTypeCode                    32
 #define IPFIX_TYPEID_igmpType                        33
 #define IPFIX_TYPEID_sourceMacAddress                56
@@ -78,31 +78,42 @@ int string2typelength(char*s);
 #define IPFIX_TYPEID_maxPacketLength                 26
 #define IPFIX_TYPEID_minimumTTL                      52
 #define IPFIX_TYPEID_maximumTTL                      53
-#define IPFIX_TYPEID_ipv6OptionHeaders               64
+#define IPFIX_TYPEID_ipv6ExtensionHeaders            64
 #define IPFIX_TYPEID_tcpControlBits                   6
-#define IPFIX_TYPEID_flowCreationTime                22
-#define IPFIX_TYPEID_flowEndTime                     21
+#define IPFIX_TYPEID_flowCreationTime                22 // name changed to: flowStartSysUpTime
+#define IPFIX_TYPEID_flowEndTime                     21 // name changed to: flowEndSysUpTime
 #define IPFIX_TYPEID_flowActiveTimeOut               36
 #define IPFIX_TYPEID_flowInactiveTimeout             37
 #define IPFIX_TYPEID_flowEndReason                  136
-#define IPFIX_TYPEID_inOctetDeltaCount                1
-#define IPFIX_TYPEID_outOctetDeltaCount              23
-#define IPFIX_TYPEID_octetDeltaCount                138
+#define IPFIX_TYPEID_octetDeltaCount                  1
+#define IPFIX_TYPEID_postOctetDeltaCount             23
 #define IPFIX_TYPEID_octetTotalCount                 85
-#define IPFIX_TYPEID_inPacketDeltaCount               2
-#define IPFIX_TYPEID_outPacketDeltaCount             24
-#define IPFIX_TYPEID_packetDeltaCount               139
+#define IPFIX_TYPEID_packetDeltaCount                 2
+#define IPFIX_TYPEID_postPacketDeltaCount            24
 #define IPFIX_TYPEID_packetTotalCount                86
 #define IPFIX_TYPEID_droppedOctetDeltaCount         132
-#define IPFIX_TYPEID_droppedOctetTotalCount         133
-#define IPFIX_TYPEID_droppedPacketDeltaCount        134
+#define IPFIX_TYPEID_droppedOctetTotalCount         134
+#define IPFIX_TYPEID_droppedPacketDeltaCount        133
 #define IPFIX_TYPEID_droppedPacketTotalCount        135
-#define IPFIX_TYPEID_outMulticastPacketCount         19
-#define IPFIX_TYPEID_outMulticastOctetCount          20
-#define IPFIX_TYPEID_observedFlowTotalCount           3
+#define IPFIX_TYPEID_postMCastPacketDeltaCount       19
+#define IPFIX_TYPEID_postMCastOctetDeltaCount        20
+#define IPFIX_TYPEID_observedFlowTotalCount         163
 #define IPFIX_TYPEID_exportedOctetTotalCount         40
-#define IPFIX_TYPEID_exportedPacketTotalCount        41
+#define IPFIX_TYPEID_exportedMessageTotalCount       41
 #define IPFIX_TYPEID_exportedFlowTotalCount          42
+
+#define IPFIX_TYPEID_fragmentOffsetIPv4              88
+#define IPFIX_TYPEID_ipTimeToLive                   192
+#define IPFIX_TYPEID_udpSourcePort                  180
+#define IPFIX_TYPEID_udpDestinationPort             181
+#define IPFIX_TYPEID_tcpSourcePort                  182
+#define IPFIX_TYPEID_tcpDestinationPort             183
+#define IPFIX_TYPEID_tcpSequenceNumber              184
+#define IPFIX_TYPEID_tcpAcknowledgementNumber       185
+#define IPFIX_TYPEID_tcpWindowSize                  186
+#define IPFIX_TYPEID_tcpUrgentPointer               187
+#define IPFIX_TYPEID_totalLengthIPv4                190
+
 
 #define IPFIX_LENGTH_ipVersion                      IPFIX_LENGTH_octet
 #define IPFIX_LENGTH_sourceIPv4Address              IPFIX_LENGTH_ipv4Address
@@ -121,7 +132,7 @@ int string2typelength(char*s);
 #define IPFIX_LENGTH_identificationV4               IPFIX_LENGTH_octet
 #define IPFIX_LENGTH_protocolIdentifier             IPFIX_LENGTH_octet
 #define IPFIX_LENGTH_sourceTransportPort            IPFIX_LENGTH_unsigned16
-#define IPFIX_LENGTH_destinationtransportPort       IPFIX_LENGTH_unsigned16
+#define IPFIX_LENGTH_destinationTransportPort       IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_icmpTypeCode                   IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_igmpType                       IPFIX_LENGTH_octet
 #define IPFIX_LENGTH_sourceMacAddress               IPFIX_LENGTH_octet
@@ -154,31 +165,42 @@ int string2typelength(char*s);
 #define IPFIX_LENGTH_maxPacketLength                IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_minimumTTL                     IPFIX_LENGTH_octet
 #define IPFIX_LENGTH_maximumTTL                     IPFIX_LENGTH_octet
-#define IPFIX_LENGTH_ipv6OptionHeaders              IPFIX_LENGTH_unsigned32
+#define IPFIX_LENGTH_ipv6ExtensionHeaders           IPFIX_LENGTH_unsigned32
 #define IPFIX_LENGTH_tcpControlBits                 IPFIX_LENGTH_octet
 #define IPFIX_LENGTH_flowCreationTime               IPFIX_LENGTH_dateTimeSeconds
 #define IPFIX_LENGTH_flowEndTime                    IPFIX_LENGTH_dateTimeSeconds
 #define IPFIX_LENGTH_flowActiveTimeOut              IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_flowInactiveTimeout            IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_flowEndReason                  IPFIX_LENGTH_octet
-#define IPFIX_LENGTH_inOctetDeltaCount              IPFIX_LENGTH_unsigned64
-#define IPFIX_LENGTH_outOctetDeltaCount             IPFIX_LENGTH_unsigned64
+#define IPFIX_LENGTH_octetDeltaCount                IPFIX_LENGTH_unsigned64
+#define IPFIX_LENGTH_postOctetDeltaCount            IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_octetDeltaCount                IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_octetTotalCount                IPFIX_LENGTH_unsigned64
-#define IPFIX_LENGTH_inPacketDeltaCount             IPFIX_LENGTH_unsigned64
-#define IPFIX_LENGTH_outPacketDeltaCount            IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_packetDeltaCount               IPFIX_LENGTH_unsigned64
+#define IPFIX_LENGTH_postPacketDeltaCount           IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_packetTotalCount               IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_droppedOctetDeltaCount         IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_droppedOctetTotalCount         IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_droppedPacketDeltaCount        IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_droppedPacketTotalCount        IPFIX_LENGTH_unsigned64
-#define IPFIX_LENGTH_outMulticastPacketCount        IPFIX_LENGTH_unsigned64
-#define IPFIX_LENGTH_outMulticastOctetCount         IPFIX_LENGTH_unsigned64
+#define IPFIX_LENGTH_postMCastPacketDeltaCount      IPFIX_LENGTH_unsigned64
+#define IPFIX_LENGTH_postMCastOctetDeltaCount       IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_observedFlowTotalCount         IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_exportedOctetTotalCount        IPFIX_LENGTH_unsigned64
-#define IPFIX_LENGTH_exportedPacketTotalCount       IPFIX_LENGTH_unsigned64
+#define IPFIX_LENGTH_exportedMessageTotalCount      IPFIX_LENGTH_unsigned64
 #define IPFIX_LENGTH_exportedFlowTotalCount         IPFIX_LENGTH_unsigned64
+
+#define IPFIX_LENGTH_fragmentOffsetIPv4             IPFIX_LENGTH_unsigned32
+#define IPFIX_LENGTH_ipTimeToLive                   IPFIX_LENGTH_octet
+#define IPFIX_LENGTH_udpSourcePort                  IPFIX_LENGTH_unsigned16
+#define IPFIX_LENGTH_udpDestinationPort             IPFIX_LENGTH_unsigned16
+#define IPFIX_LENGTH_tcpSourcePort                  IPFIX_LENGTH_unsigned16
+#define IPFIX_LENGTH_tcpDestinationPort             IPFIX_LENGTH_unsigned16
+#define IPFIX_LENGTH_tcpSequenceNumber              IPFIX_LENGTH_unsigned32
+#define IPFIX_LENGTH_tcpAcknowledgementNumber       IPFIX_LENGTH_unsigned32
+#define IPFIX_LENGTH_tcpWindowSize                  IPFIX_LENGTH_unsigned16
+#define IPFIX_LENGTH_tcpUrgentPointer               IPFIX_LENGTH_unsigned16
+#define IPFIX_LENGTH_totalLengthIPv4                IPFIX_LENGTH_unsigned16
 
 #ifdef __cplusplus
 }

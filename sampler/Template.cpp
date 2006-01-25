@@ -17,7 +17,6 @@
 #include "msg.h"
 
 #include "ipfix.h"
-//#include "psamp.h"
 
 #include "Template.h"
 
@@ -81,9 +80,24 @@ bool Template::getFieldOffsetAndHeader(uint16_t id, uint16_t *offset, unsigned s
 	    *header=HEAD_NETWORK;
 	    *validPacketClass = PCLASS_NET_IP4;
 	    break;
-	    //todo: add more fields
+	case IPFIX_TYPEID_fragmentOffsetIPv4:
+	    // note: no masking, you also get DF and MF flags
+	    *offset=6;
+	    *header=HEAD_NETWORK;
+	    *validPacketClass = PCLASS_NET_IP4;
+	    break;
+	case IPFIX_TYPEID_ipTimeToLive:
+	    *offset=8;
+	    *header=HEAD_NETWORK;
+	    *validPacketClass = PCLASS_NET_IP4;
+	    break;
+	case IPFIX_TYPEID_totalLengthIPv4:
+	    *offset=2;
+	    *header=HEAD_NETWORK;
+	    *validPacketClass = PCLASS_NET_IP4;
+	    break;
 
-	    // ICMP/IGMP *header fields:
+	// ICMP/IGMP header fields:
 	case IPFIX_TYPEID_icmpTypeCode:
 	    *offset=0;
 	    *header=HEAD_TRANSPORT;
@@ -95,23 +109,75 @@ bool Template::getFieldOffsetAndHeader(uint16_t id, uint16_t *offset, unsigned s
 	    *validPacketClass = PCLASS_TRN_IGMP;
 	    break;
 
-	    // TCP/UDP *header fields:
+	// TCP/UDP header fields:
 	case IPFIX_TYPEID_sourceTransportPort:
 	    *offset=0;
 	    *header=HEAD_TRANSPORT;
 	    *validPacketClass = PCLASS_TRN_TCP | PCLASS_TRN_UDP;
 	    break;
-	case IPFIX_TYPEID_destinationtransportPort:
+	case IPFIX_TYPEID_destinationTransportPort:
 	    *offset=2;
 	    *header=HEAD_TRANSPORT;
 	    *validPacketClass = PCLASS_TRN_TCP | PCLASS_TRN_UDP;
+	    break;
+	case IPFIX_TYPEID_udpSourcePort:
+	    *offset=0;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_UDP;
+	    break;
+	case IPFIX_TYPEID_udpDestinationPort:
+	    *offset=2;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_UDP;
+	    break;
+	case IPFIX_TYPEID_tcpSourcePort:
+	    *offset=0;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_TCP;
+	    break;
+	case IPFIX_TYPEID_tcpDestinationPort:
+	    *offset=2;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_TCP;
 	    break;
 	case IPFIX_TYPEID_tcpControlBits:
 	    *offset=13;
 	    *header=HEAD_TRANSPORT;
 	    *validPacketClass = PCLASS_TRN_TCP;
 	    break;
-	    //todo: add more fields
+	case IPFIX_TYPEID_tcpSequenceNumber:
+	    *offset=4;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_TCP;
+	    break;
+	case IPFIX_TYPEID_tcpAcknowledgementNumber:
+	    *offset=8;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_TCP;
+	    break;
+	case IPFIX_TYPEID_tcpWindowSize:
+	    *offset=14;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_TCP;
+	    break;
+	case IPFIX_TYPEID_tcpUrgentPointer:
+	    *offset=18;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_TRN_TCP;
+	    break;
+
+	// Header/payload dump fields:
+	case PSAMP_TYPEID_ipHeaderSection:
+	    *offset=0;
+	    *header=HEAD_TRANSPORT;
+	    *validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
+	    break;
+	case PSAMP_TYPEID_ipPayloadPacketSection:
+	    *offset=0;
+	    *header=HEAD_PAYLOAD;
+	    *validPacketClass = PCLASS_PAYLOAD;
+	    break;
+
 
 	case IPFIX_TYPEID_ipVersion:
 	    // TODO: check how to export 4 bits
