@@ -18,13 +18,10 @@
 // TODO: Make this dynamic
 #define MAX_TEMPLATE_FIELDS 128
 
-// the different field types used
-//#define FT_SRCIP4   8
-//#define FT_DSTIP4  12
-//#define FT_PROTO    4
-//#define FT_SRCPORT  7
-//#define FT_DSTPORT 11
-// use definitions from concentreator instead
+// the PSAMP field types used
+// (for IPFIX fields the defines from the concentrator are used)
+#define PSAMP_TYPEID_ipHeaderSection   313
+#define PSAMP_TYPEID_ipPayloadPacketSection   314
 
 // below are "meta"-fields, i.e. field types which
 // do not get their data from the packet itself

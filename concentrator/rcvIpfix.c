@@ -838,8 +838,8 @@ void printFieldData(FieldType type, FieldData* pattern) {
 			printf("sourceTransportPort:");
 			printPort(type, pattern);
 			break;
-		case IPFIX_TYPEID_destinationtransportPort:
-			printf("destinationtransportPort:");
+		case IPFIX_TYPEID_destinationTransportPort:
+			printf("destinationTransportPort:");
 			printPort(type, pattern);
 			break;
 		default:
