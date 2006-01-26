@@ -3,6 +3,12 @@
 #include <assert.h>
 #include "ipfix_names.h"
 
+#define IPFIX_ID_MIN 0
+#define IPFIX_ID_MAX 214
+#define PSAMP_ID_MIN 300
+#define PSAMP_ID_MAX 329
+
+
 static int test(int start, int end)
 {
 	struct ipfix_identifier *x;
