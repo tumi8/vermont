@@ -333,564 +333,1079 @@ Return 0 on error (because we think boolean).
 </tr>
 
 <tr>
+	<td>0</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
 	<td>1</td>
-	<td>inOctetDeltaCount</td>
+	<td>octetDeltaCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>2</td>
-	<td>inPacketDeltaCount</td>
+	<td>packetDeltaCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>3</td>
-	<td>totalFlowCount </td>
+	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>4</td>
 	<td>protocolIdentifier</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>5</td>
 	<td>classOfServiceIPv4</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>6</td>
 	<td>tcpControlBits</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>7</td>
 	<td>sourceTransportPort</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>8</td>
 	<td>sourceIPv4Address</td>
+	<td>ipv4Address</td>
 </tr>
 <tr>
 	<td>9</td>
 	<td>sourceIPv4Mask</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>10</td>
 	<td>ingressInterface</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>11</td>
 	<td>destinationTransportPort</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>12</td>
 	<td>destinationIPv4Address</td>
+	<td>ipv4Address</td>
 </tr>
 <tr>
 	<td>13</td>
 	<td>destinationIPv4Mask</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>14</td>
 	<td>egressInterface</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>15</td>
 	<td>ipNextHopIPv4Address</td>
+	<td>ipv4Address</td>
 </tr>
 <tr>
 	<td>16</td>
 	<td>bgpSourceAsNumber</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>17</td>
 	<td>bgpDestinationAsNumber</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>18</td>
 	<td>bgpNextHopIPv4Address</td>
+	<td>ipv4Address</td>
 </tr>
 <tr>
 	<td>19</td>
-	<td>OutMulticastPacketCount</td>
+	<td>postMCastPacketDeltaCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>20</td>
-	<td>OutMulticastOctetCount </td>
+	<td>postMCastOctetDeltaCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>21</td>
-	<td>flowEndTime</td>
+	<td>flowEndSysUpTime</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>22</td>
-	<td>flowCreationTime</td>
+	<td>flowStartSysUpTime</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>23</td>
-	<td>outOctetDeltaCount</td>
+	<td>postOctetDeltaCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>24</td>
-	<td>outPacketDeltaCount</td>
+	<td>postPacketDeltaCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>25</td>
 	<td>minimumPacketLength</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>26</td>
-	<td>maximumPacketLength </td>
+	<td>maximumPacketLength</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>27</td>
 	<td>sourceIPv6Address</td>
+	<td>ipv6Address</td>
 </tr>
 <tr>
 	<td>28</td>
 	<td>destinationIPv6Address</td>
+	<td>ipv6Address</td>
 </tr>
 <tr>
 	<td>29</td>
-	<td>sourceIPv6Mask </td>
+	<td>sourceIPv6Mask</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>30</td>
 	<td>destinationIPv6Mask</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>31</td>
-	<td>flowLabelIPv6 </td>
+	<td>flowLabelIPv6</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>32</td>
-	<td>icmpTypeCode</td>
+	<td>icmpTypeCodeIPv4</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>33</td>
 	<td>igmpType</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>34</td>
-	<td>RESERVED </td>
+	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>35</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>36</td>
 	<td>flowActiveTimeOut</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>37</td>
 	<td>flowInactiveTimeout</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>38</td>
-	<td>RESERVED </td>
+	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>39</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>40</td>
-	<td>exportedOctetCount</td>
+	<td>exportedOctetTotalCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>41</td>
-	<td>exportedPacketCount</td>
+	<td>exportedMessageTotalCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>42</td>
-	<td>exportedFlowCount </td>
+	<td>exportedFlowTotalCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>43</td>
-	<td>RESERVED </td>
+	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>44</td>
 	<td>sourceIPv4Prefix</td>
+	<td>ipv4Address</td>
 </tr>
 <tr>
 	<td>45</td>
 	<td>destinationIPv4Prefix</td>
+	<td>ipv4Address</td>
 </tr>
 <tr>
 	<td>46</td>
 	<td>mplsTopLabelType</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>47</td>
 	<td>mplsTopLabelIPv4Address</td>
+	<td>ipv4Address</td>
 </tr>
 <tr>
 	<td>48</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>49</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>50</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>51</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>52</td>
-	<td>minimumTTL </td>
+	<td>minimumTTL</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>53</td>
 	<td>maximumTTL</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>54</td>
 	<td>identificationIPv4</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>55</td>
-	<td>RESERVED</td>
+	<td>postClassOfServiceIPv4</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>56</td>
 	<td>sourceMacAddress</td>
+	<td>macAddress</td>
 </tr>
 <tr>
 	<td>57</td>
-	<td>RESERVED</td>
+	<td>postDestinationMacAddress</td>
+	<td>macAddress</td>
 </tr>
 <tr>
 	<td>58</td>
-	<td>RESERVED</td>
+	<td>vlanId</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>59</td>
-	<td>RESERVED</td>
+	<td>postVlanId</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>60</td>
-	<td>ipVersion </td>
+	<td>ipVersion</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>61</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>62</td>
 	<td>ipNextHopIPv6Address</td>
+	<td>ipv6Address</td>
 </tr>
 <tr>
 	<td>63</td>
 	<td>bgpNextHopIPv6Address</td>
+	<td>ipv6Address</td>
 </tr>
 <tr>
 	<td>64</td>
-	<td>ipv6OptionHeaders</td>
+	<td>ipv6ExtensionHeaders</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>65</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>66</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>67</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>68</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>69</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>70</td>
-	<td>mplsLabelStackEntry1</td>
+	<td>mplsTopLabelStackEntry</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>71</td>
 	<td>mplsLabelStackEntry2</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>72</td>
 	<td>mplsLabelStackEntry3</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>73</td>
 	<td>mplsLabelStackEntry4</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>74</td>
 	<td>mplsLabelStackEntry5</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>75</td>
 	<td>mplsLabelStackEntry6</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>76</td>
 	<td>mplsLabelStackEntry7</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>77</td>
 	<td>mplsLabelStackEntry8</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>78</td>
 	<td>mplsLabelStackEntry9</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>79</td>
 	<td>mplsLabelStackEntry10</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
 	<td>80</td>
-	<td>RESERVED</td>
+	<td>destinationMacAddress</td>
+	<td>macAddress</td>
 </tr>
 <tr>
 	<td>81</td>
-	<td>RESERVED</td>
+	<td>postSourceMacAddress</td>
+	<td>macAddress</td>
 </tr>
 <tr>
 	<td>82</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>83</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>84</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>85</td>
-	<td>octetTotalCount </td>
+	<td>octetTotalCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>86</td>
 	<td>packetTotalCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>87</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>88</td>
-	<td>RESERVED</td>
+	<td>fragmentOffsetIPv4</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>89</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>90</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>91</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>92</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>93</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>94</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>95</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>96</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>97</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>98</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>99</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>100</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>101</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>102</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>103</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>104</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>105</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>106</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>107</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>108</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>109</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>110</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>111</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>112</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>113</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>114</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>115</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>116</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>117</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>118</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>119</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>120</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>121</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>122</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>123</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>124</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>125</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>126</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>127</td>
 	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
 	<td>128</td>
-	<td>bgpNextHopAsNumber</td>
+	<td>bgpNextAdjacentAsNumber</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>129</td>
-	<td>ipNextHopAsNumber</td>
+	<td>bgpPrevAdjacentAsNumber</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>130</td>
 	<td>exporterIPv4Address</td>
+	<td>ipv4Address</td>
 </tr>
 <tr>
 	<td>131</td>
 	<td>exporterIPv6Address</td>
+	<td>ipv6Address</td>
 </tr>
 <tr>
 	<td>132</td>
 	<td>droppedOctetDeltaCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>133</td>
 	<td>droppedPacketDeltaCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>134</td>
 	<td>droppedOctetTotalCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>135</td>
 	<td>droppedPacketTotalCount</td>
+	<td>unsigned64</td>
 </tr>
 <tr>
 	<td>136</td>
 	<td>flowEndReason</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>137</td>
-	<td>classOfServiceIPv6 </td>
+	<td>classOfServiceIPv6</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>138</td>
-	<td>octetDeltaCount</td>
+	<td>postClassOfServiceIPv6</td>
+	<td>octet</td>
 </tr>
 <tr>
 	<td>139</td>
-	<td>packetDeltaCount</td>
+	<td>icmpTypeCodeIPv6</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
 	<td>140</td>
 	<td>mplsTopLabelIPv6Address</td>
+	<td>ipv6Address</td>
+</tr>
+<tr>
+	<td>141</td>
+	<td>lineCardId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>142</td>
+	<td>portId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>143</td>
+	<td>meteringProcessId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>144</td>
+	<td>exportingProcessId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>145</td>
+	<td>templateId</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>146</td>
+	<td>wlanChannelId</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>147</td>
+	<td>wlanSsid</td>
+	<td>string</td>
+</tr>
+<tr>
+	<td>148</td>
+	<td>flowId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>149</td>
+	<td>sourceId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>150</td>
+	<td>flowStartSeconds</td>
+	<td>dateTimeSeconds</td>
+</tr>
+<tr>
+	<td>151</td>
+	<td>flowEndSeconds</td>
+	<td>dateTimeSeconds</td>
+</tr>
+<tr>
+	<td>152</td>
+	<td>flowStartMilliSeconds</td>
+	<td>dateTimeMilliSeconds</td>
+</tr>
+<tr>
+	<td>153</td>
+	<td>flowEndMilliSeconds</td>
+	<td>dateTimeMilliSeconds</td>
+</tr>
+<tr>
+	<td>154</td>
+	<td>flowStartMicroSeconds</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>155</td>
+	<td>flowEndMicroSeconds</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>156</td>
+	<td>flowStartNanoSeconds</td>
+	<td>dateTimeNanoSeconds</td>
+</tr>
+<tr>
+	<td>157</td>
+	<td>flowEndNanoSeconds</td>
+	<td>dateTimeNanoSeconds</td>
+</tr>
+<tr>
+	<td>158</td>
+	<td>flowStartDeltaMicroSeconds</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>159</td>
+	<td>flowEndDeltaMicroSeconds</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>160</td>
+	<td>systemInitTimeMilliSeconds</td>
+	<td>dateTimeMilliSeconds</td>
+</tr>
+<tr>
+	<td>161</td>
+	<td>flowDurationMilliSeconds</td>
+	<td>dateTimeMilliSeconds</td>
+</tr>
+<tr>
+	<td>162</td>
+	<td>flowDurationMicroSeconds</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>163</td>
+	<td>observedFlowTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>164</td>
+	<td>ignoredPacketTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>165</td>
+	<td>ignoredOctetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>166</td>
+	<td>notSentFlowTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>167</td>
+	<td>notSentPacketTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>168</td>
+	<td>notSentOctetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>169</td>
+	<td>destinationIPv6Prefix</td>
+	<td>ipv6Address</td>
+</tr>
+<tr>
+	<td>170</td>
+	<td>sourceIPv6Prefix</td>
+	<td>ipv6Address</td>
+</tr>
+<tr>
+	<td>171</td>
+	<td>postOctetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>172</td>
+	<td>postPacketTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>173</td>
+	<td>flowKeyIndicator</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>174</td>
+	<td>postMCastPacketTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>175</td>
+	<td>postMCastOctetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>176</td>
+	<td>icmpTypeIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>177</td>
+	<td>icmpCodeIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>178</td>
+	<td>icmpTypeIPv6</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>179</td>
+	<td>icmpCodeIPv6</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>180</td>
+	<td>udpSourcePort</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>181</td>
+	<td>udpDestinationPort</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>182</td>
+	<td>tcpSourcePort</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>183</td>
+	<td>tcpDestinationPort</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>184</td>
+	<td>tcpSequenceNumber</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>185</td>
+	<td>tcpAcknowledgementNumber</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>186</td>
+	<td>tcpWindowSize</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>187</td>
+	<td>tcpUrgentPointer</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>188</td>
+	<td>tcpHeaderLength</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>189</td>
+	<td>ipHeaderLength</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>190</td>
+	<td>totalLengthIPv4</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>191</td>
+	<td>payloadLengthIPv6</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>192</td>
+	<td>ipTimeToLive</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>193</td>
+	<td>nextHeaderIPv6</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>194</td>
+	<td>ipClassOfService</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>195</td>
+	<td>ipDiffServCodePoint</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>196</td>
+	<td>ipPrecedence</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>197</td>
+	<td>fragmentFlagsIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>198</td>
+	<td>octetDeltaSumOfSquares</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>199</td>
+	<td>octetTotalSumOfSquares</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>200</td>
+	<td>mplsTopLabelTtl</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>201</td>
+	<td>mplsLabelStackLength</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>202</td>
+	<td>mplsLabelStackDepth</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>203</td>
+	<td>mplsTopLabelExp</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>204</td>
+	<td>ipPayloadLength</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>205</td>
+	<td>udpMessageLength</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>206</td>
+	<td>isMulticast</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>207</td>
+	<td>internetHeaderLengthIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>208</td>
+	<td>ipv4Options</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>209</td>
+	<td>tcpOptions</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>210</td>
+	<td>paddingOctets</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>211</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>212</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>213</td>
+	<td>headerLengthIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>214</td>
+	<td>mplsPayloadLength</td>
+	<td>unsigned32</td>
 </tr>
 
 </table>
@@ -903,62 +1418,154 @@ Return 0 on error (because we think boolean).
 	<td>Name</td>
 </tr>
 <tr>
-	<td>1024</td>
-	<td>optionTemplateID</td>
+	<td>300</td>
+	<td>selectorId</td>
+	<td>unsigned16</td>
 </tr>
 <tr>
-	<td>1025</td>
-	<td>sequenceNumber</td>
+	<td>301</td>
+	<td>selectorInputSequenceNumber</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
-	<td>1026</td>
-	<td>packetSample</td>
+	<td>302</td>
+	<td>selectorAlgorithm</td>
+	<td>octet</td>
 </tr>
 <tr>
-	<td>1027</td>
-	<td>samplingAlgorithm</td>
+	<td>303</td>
+	<td>RESERVED</td>
+	<td></td>
 </tr>
 <tr>
-	<td>1028</td>
-	<td>filteringAlgorithm</td>
-</tr>
-<tr>
-	<td>1029</td>
+	<td>304</td>
 	<td>samplingPacketInterval</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
-	<td>1030</td>
+	<td>305</td>
 	<td>samplingPacketSpace</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
-	<td>1031</td>
+	<td>306</td>
 	<td>samplingTimeInterval</td>
+	<td>dateTimeMicroSeconds</td>
 </tr>
 <tr>
-	<td>1032</td>
+	<td>307</td>
 	<td>samplingTimeSpace</td>
+	<td>dateTimeMicroSeconds</td>
 </tr>
 <tr>
-	<td>1033</td>
+	<td>308</td>
 	<td>samplingPopulation</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
-	<td>1034</td>
+	<td>309</td>
 	<td>samplingSize</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
-	<td>1035</td>
-	<td>samplingProbability</td>
+	<td>310</td>
+	<td>samplingProbabilityN</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
-	<td>1036</td>
-	<td>headerType</td>
+	<td>311</td>
+	<td>samplingProbabilityM</td>
+	<td>unsigned32</td>
 </tr>
 <tr>
-	<td>1037</td>
-	<td>hashFunction</td>
+	<td>312</td>
+	<td>RESERVED</td>
+	<td></td>
 </tr>
-
-
+<tr>
+	<td>313</td>
+	<td>ipHeaderPacketSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>314</td>
+	<td>ipPayloadPacketSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>315</td>
+	<td>l2HeaderPacketSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>316</td>
+	<td>l2PayloadPacketSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>317</td>
+	<td>mplsLabelStackSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>318</td>
+	<td>mplsPayloadPacketSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>319</td>
+	<td>meteringProcesssId</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>320</td>
+	<td>ObservationPointID</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>321</td>
+	<td>associationsId</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>322</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>323</td>
+	<td>selectorType</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>324</td>
+	<td>packetsObserved</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>325</td>
+	<td>packetsSelected</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>326</td>
+	<td>accuracy</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>327</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>328</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>329</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
 
 </table>
