@@ -80,8 +80,16 @@ int string2typelength(char*s);
 #define IPFIX_TYPEID_maximumTTL                      53
 #define IPFIX_TYPEID_ipv6ExtensionHeaders            64
 #define IPFIX_TYPEID_tcpControlBits                   6
-#define IPFIX_TYPEID_flowCreationTime                22 // name changed to: flowStartSysUpTime
-#define IPFIX_TYPEID_flowEndTime                     21 // name changed to: flowEndSysUpTime
+#define IPFIX_TYPEID_flowStartSysUpTime              22
+#define IPFIX_TYPEID_flowEndSysUpTime                21
+#define IPFIX_TYPEID_flowStartSeconds               150
+#define IPFIX_TYPEID_flowEndSeconds                 151
+#define IPFIX_TYPEID_flowStartMilliSeconds          152
+#define IPFIX_TYPEID_flowEndMilliSeconds            153
+#define IPFIX_TYPEID_flowStartMicroSeconds          154
+#define IPFIX_TYPEID_flowEndMicroSeconds            155
+#define IPFIX_TYPEID_flowStartNanoSeconds           156
+#define IPFIX_TYPEID_flowEndNanoSeconds             157
 #define IPFIX_TYPEID_flowActiveTimeOut               36
 #define IPFIX_TYPEID_flowInactiveTimeout             37
 #define IPFIX_TYPEID_flowEndReason                  136

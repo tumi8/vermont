@@ -294,10 +294,18 @@ static uint32_t greaterUint32Nbo(uint32_t i, uint32_t j)
 static int isToBeAggregated(FieldType type)
 {
 	switch (type.id) {
-	case IPFIX_TYPEID_flowCreationTime:
+	case IPFIX_TYPEID_flowStartSysUpTime:
+	case IPFIX_TYPEID_flowStartSeconds:
+	case IPFIX_TYPEID_flowStartMilliSeconds:
+	case IPFIX_TYPEID_flowStartMicroSeconds:
+	case IPFIX_TYPEID_flowStartNanoSeconds:
 		return 1;
 
-	case IPFIX_TYPEID_flowEndTime:
+	case IPFIX_TYPEID_flowEndSysUpTime:
+	case IPFIX_TYPEID_flowEndSeconds:
+	case IPFIX_TYPEID_flowEndMilliSeconds:
+	case IPFIX_TYPEID_flowEndMicroSeconds:
+	case IPFIX_TYPEID_flowEndNanoSeconds:
 		return 1;
 
 	case IPFIX_TYPEID_octetDeltaCount:
@@ -333,7 +341,11 @@ static int aggregateField(FieldType* type, FieldData* baseData, FieldData* delta
 {
 	switch (type->id) {
 
-	case IPFIX_TYPEID_flowCreationTime:
+	case IPFIX_TYPEID_flowStartSysUpTime:
+	case IPFIX_TYPEID_flowStartSeconds:
+	case IPFIX_TYPEID_flowStartMilliSeconds:
+	case IPFIX_TYPEID_flowStartMicroSeconds:
+	case IPFIX_TYPEID_flowStartNanoSeconds:
 		if (type->length != 4) {
 			DPRINTF("aggregateField: unsupported length: %d", type->length);
                         goto out;
@@ -342,7 +354,11 @@ static int aggregateField(FieldType* type, FieldData* baseData, FieldData* delta
 		*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 		break;
 
-	case IPFIX_TYPEID_flowEndTime:
+	case IPFIX_TYPEID_flowEndSysUpTime:
+	case IPFIX_TYPEID_flowEndSeconds:
+	case IPFIX_TYPEID_flowEndMilliSeconds:
+	case IPFIX_TYPEID_flowEndMicroSeconds:
+	case IPFIX_TYPEID_flowEndNanoSeconds:
 		if (type->length != 4) {
 			DPRINTF("aggregateField: unsupported length: %d", type->length);
 			goto out;

@@ -29,8 +29,8 @@ extern "C" {
 static FieldInfo ip_traffic_fi[] = {
 	/* { { ID, len, enterprise}, offset} */
 	{ {IPFIX_TYPEID_packetDeltaCount,         1, 0}, 10},
-	{ {IPFIX_TYPEID_flowCreationTime,         4, 0}, 4},
-	{ {IPFIX_TYPEID_flowEndTime,              4, 0}, 4},
+	{ {IPFIX_TYPEID_flowStartSeconds,         4, 0}, 4},
+	{ {IPFIX_TYPEID_flowEndSeconds,           4, 0}, 4},
 	{ {IPFIX_TYPEID_octetDeltaCount,          2, 0}, 2},
 	{ {IPFIX_TYPEID_protocolIdentifier,       1, 0}, 9},
 	{ {IPFIX_TYPEID_sourceIPv4Address,        4, 0}, 12},
@@ -41,8 +41,8 @@ static FieldInfo icmp_traffic_fi[] = {
 	/* { { ID, len, enterprise}, offset} */
 	{ {IPFIX_TYPEID_icmpTypeCode,             2, 0}, 0},
 	{ {IPFIX_TYPEID_packetDeltaCount,         1, 0}, 10},
-	{ {IPFIX_TYPEID_flowCreationTime,         4, 0}, 4},
-	{ {IPFIX_TYPEID_flowEndTime,              4, 0}, 4},
+	{ {IPFIX_TYPEID_flowStartSeconds,         4, 0}, 4},
+	{ {IPFIX_TYPEID_flowEndSeconds,           4, 0}, 4},
 	{ {IPFIX_TYPEID_octetDeltaCount,          2, 0}, 2},
 	{ {IPFIX_TYPEID_protocolIdentifier,       1, 0}, 9},
 	{ {IPFIX_TYPEID_sourceIPv4Address,        4, 0}, 12},
@@ -54,8 +54,8 @@ static FieldInfo tcpudp_traffic_fi[] = {
 	{ {IPFIX_TYPEID_sourceTransportPort,      2, 0}, 0},
 	{ {IPFIX_TYPEID_destinationTransportPort, 2, 0}, 2},
 	{ {IPFIX_TYPEID_packetDeltaCount,         1, 0}, 10},
-	{ {IPFIX_TYPEID_flowCreationTime,         4, 0}, 4},
-	{ {IPFIX_TYPEID_flowEndTime,              4, 0}, 4},
+	{ {IPFIX_TYPEID_flowStartSeconds,         4, 0}, 4},
+	{ {IPFIX_TYPEID_flowEndSeconds,           4, 0}, 4},
 	{ {IPFIX_TYPEID_octetDeltaCount,          2, 0}, 2},
 	{ {IPFIX_TYPEID_protocolIdentifier,       1, 0}, 9},
 	{ {IPFIX_TYPEID_sourceIPv4Address,        4, 0}, 12},
