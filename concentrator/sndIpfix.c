@@ -294,7 +294,7 @@ int sndDataDataRecord(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* d
 	/* get Template ID from Template's userData */
 	uint16_t my_n_template_id = *(uint16_t*)dataTemplateInfo->userData;
 
-	if (ipfix_start_data_set(exporter, &my_n_template_id) != 0 ) {
+	if (ipfix_start_data_set(exporter, my_n_template_id) != 0 ) {
 		msg(MSG_FATAL, "ipfix_start_data_set failed!");
 		return -1;
 	}

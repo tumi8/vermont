@@ -4,6 +4,10 @@
 
  Header for encoding functions suitable for IPFIX
 
+ Changes by Gerhard Münz, 2006-02-01
+   Changed and debugged sendbuffer structure and Co
+   Added new function for canceling data sets and deleting fields
+
  Changes by Christoph Sommer, 2005-04-14
  Modified ipfixlolib-nothread Rev. 80
  Added support for DataTemplates (SetID 4)
@@ -18,6 +22,7 @@
  jan@petranek.de
  */
 #include "ipfixlolib.h"
+#include <netinet/in.h>
 
 /* foreign systems */
 #include "msg.h"
@@ -31,16 +36,12 @@ extern "C" {
 static int init_send_udp_socket(char *serv_ip4_addr, int serv_port);
 static int ipfix_find_template(ipfix_exporter *exporter, uint16_t template_id, enum ipfix_validity cleanness);
 static int ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipfix_sendbuffer *sendbuf);
-static int write_ipfix_message_header(ipfix_header *header, char **p_pos, char *p_end );
-static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf, int maxelements);
+static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbufn);
 static int ipfix_reset_sendbuffer(ipfix_sendbuffer *sendbuf);
 static int ipfix_deinit_sendbuffer(ipfix_sendbuffer **sendbuf);
 static int ipfix_init_collector_array(ipfix_receiving_collector **col, int col_capacity);
 static int ipfix_deinit_collector_array(ipfix_receiving_collector **col);
 static int ipfix_init_send_socket(char *serv_ip4_addr, int serv_port, enum ipfix_transport_protocol protocol);
-static int ipfix_init_set_manager(ipfix_set_manager **set_manager, int max_capacity);
-static int ipfix_reset_set_manager(ipfix_set_manager *set_manager);
-static int ipfix_deinit_set_manager(ipfix_set_manager **set_manager);
 static int ipfix_init_template_array(ipfix_exporter *exporter, int template_capacity);
 static int ipfix_deinit_template_array(ipfix_exporter *exporter);
 static int ipfix_update_template_sendbuffer(ipfix_exporter *exporter);
@@ -138,15 +139,14 @@ int ipfix_init_exporter(uint32_t source_id, ipfix_exporter **exporter)
         tmp->collector_max_num = 0;
 
 
-        // TODO
         // initialize the sendbuffers
-        ret=ipfix_init_sendbuffer(&(tmp->data_sendbuffer), IPFIX_MAX_SENDBUFSIZE);
+        ret=ipfix_init_sendbuffer(&(tmp->data_sendbuffer));
         if (ret != 0) {
                 msg(MSG_FATAL, "IPFIX: initializing data sendbuffer failed");
                 goto out1;
         }
 
-        ret=ipfix_init_sendbuffer(&(tmp->template_sendbuffer), IPFIX_MAX_SENDBUFSIZE);
+        ret=ipfix_init_sendbuffer(&(tmp->template_sendbuffer));
         if (ret != 0) {
                 msg(MSG_FATAL, "IPFIX: initializing template sendbuffer failed");
                 goto out2;
@@ -438,15 +438,13 @@ int ipfix_remove_template_set(ipfix_exporter *exporter, uint16_t template_id)
 static int ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipfix_sendbuffer *sendbuf)
 {
 
-        ipfix_header header;
         time_t export_time;
-        int ret;
+        int ret = 0;
         uint16_t total_length = 0;
-        int header_length = 4 * sizeof(uint32_t);
 
         // did the user set the data_length field?
         if (data_length != 0) {
-                total_length = header_length+data_length;
+                total_length = data_length + sizeof(ipfix_header);
         } else {
                 // compute it on our own:
                 // sum up all lengths in the iovecs:
@@ -458,22 +456,16 @@ static int ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipf
                 }
 
                 // add the header lenght to the total length:
-                total_length += header_length;
+                total_length += sizeof(ipfix_header);
         }
 
         // write the length into the header
-        header.length = total_length;
+        (sendbuf->packet_header).length = htons(total_length);
 
-        // write version number and source ID
-        header.version = IPFIX_VERSION_NUMBER;
-        header.source_id = p_exporter->source_id;
-
-        /*
-	 BUGFIX by RLA: Gerhard reported jumps in sequence nr by 2
-	 just write the sequence number
-	 incrementing is ONLY done in ipfix_send()
-	 */
-        header.sequence_number = p_exporter->sequence_number;
+        // write version number and source ID and sequence number
+        (sendbuf->packet_header).version = htons(IPFIX_VERSION_NUMBER);
+        (sendbuf->packet_header).source_id = htonl(p_exporter->source_id);
+        (sendbuf->packet_header).sequence_number = htonl(p_exporter->sequence_number);
 
         // get the export time:
         export_time = time(NULL);
@@ -483,68 +475,18 @@ static int ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipf
                 msg(MSG_DEBUG,"IPFIX: prepend_header, time() failed, using %d", export_time);
         }
         //  global_last_export_time = (uint32_t) export_time;
-        header.export_time = (uint32_t)export_time;
-
-        // write the header:
-        // first, get the buffer for the header
-        char* p_base = sendbuf->header_store;
-        char* p_pos = p_base;
-        char* p_end = p_pos + IPFIX_HEADER_LENGTH;
-
-        // write into that header
-        ret = write_ipfix_message_header(&header, &p_pos, p_end);
-        sendbuf->entries[0].iov_len = IPFIX_HEADER_LENGTH;
-        sendbuf->entries[0].iov_base = p_base;
+        (sendbuf->packet_header).export_time = htonl((uint32_t)export_time);
 
         return ret;
 }
 
 
-/*
- * Write an IPFIX-Message-header
- *
- * This writes an ipfix message header to the memory between p_pos and p_end
- * Parameters: ipfix_header* header contains the data to be written
- * p_pos is the start, p_end the end of the memory, where the header will be written to
- *
- * Note: The user is supposed to call ipfix_send_array instead.
- */
-static int write_ipfix_message_header(ipfix_header *header, char **p_pos, char *p_end )
-{
-        // check for available space
-        if(*p_pos + IPFIX_HEADER_LENGTH < p_end ) {
-                msg(MSG_ERROR, "IPFIX: write_ipfix_message_header, not enough memory allocated for header");
-                return -1;
-        }
-
-        // initialize to zero.
-        memset(*p_pos, 0, IPFIX_HEADER_LENGTH);
-
-        // write the version information
-        write_unsigned16(p_pos, p_end, header->version);
-
-        // write the length information
-        write_unsigned16(p_pos, p_end, header->length);
-
-        // write the export time
-        write_unsigned32(p_pos, p_end, header->export_time);
-
-        // write the sequence_number
-        write_unsigned32(p_pos, p_end, header->sequence_number);
-
-        // write the source_id
-        write_unsigned32(p_pos, p_end, header->source_id);
-
-        return 0;
-}
-
 
 /*
- * Initialize an ipfix_sendbuffer for at most maxelements
+ * Create and initialize an ipfix_sendbuffer for at most maxelements
  * Parameters: ipfix_sendbuffer** sendbuf pointerpointer to an ipfix-sendbuffer
- * maxelements: Maximum capacity of elements, this sendbuffer will accomodate.
  */
-static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf, int maxelements)
+static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf)
 {
         ipfix_sendbuffer *tmp;
 
@@ -553,35 +495,25 @@ static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf, int maxelements)
                 goto out;
         }
 
-        // mallocate memory for the entries:
-        if(!(tmp->entries = (struct iovec *)malloc(maxelements * sizeof(struct iovec)))) {
-                goto out1;
-        }
-        /* Bugfix: entries is an array of (struct iovec), not (struct iovec*), */
-        /* so we reserved the wrong amount of memory to it. Mea Culpa, JanP */
-        /*	(**sendbuf).entries = malloc(maxelements * sizeof(struct iovec*)); */
         tmp->current = HEADER_USED_IOVEC_COUNT; // leave the 0th field blank for the header
-        tmp->length = maxelements;
-        tmp->commited = HEADER_USED_IOVEC_COUNT;
+        tmp->committed = HEADER_USED_IOVEC_COUNT;
+        tmp->marker = HEADER_USED_IOVEC_COUNT;
+        tmp->committed_data_length = 0;
 
-        // allocate memory for the header itself
-        if(!(tmp->header_store = (char *)malloc(IPFIX_HEADER_LENGTH))) {
-                goto out2;
-        }
+        // init and link packet header
+        memset(&(tmp->packet_header), 0, sizeof(ipfix_header));
+        tmp->entries[0].iov_len = sizeof(ipfix_header);
+        tmp->entries[0].iov_base = &(tmp->packet_header);
 
-        tmp->commited_data_length = 0;
         // initialize an ipfix_set_manager
-        if(ipfix_init_set_manager(&(tmp->set_manager), IPFIX_MAX_SET_HEADER_LENGTH)) {
-                goto out3;
-        }
+	(tmp->set_manager).set_counter = 0;
+        (tmp->set_manager).header_iovec = NULL;
+        memset(&(tmp->set_manager).set_header_store, 0, sizeof((tmp->set_manager).set_header_store));
+        (tmp->set_manager).data_length = 0;
 
         *sendbuf=tmp;
         return 0;
 
-out3:
-        free(tmp->header_store);
-out2:
-        free(tmp->entries);
 out1:
         free(tmp);
 out:
@@ -602,11 +534,17 @@ static int ipfix_reset_sendbuffer(ipfix_sendbuffer *sendbuf)
         }
 
         sendbuf->current = HEADER_USED_IOVEC_COUNT;
-        sendbuf->commited = HEADER_USED_IOVEC_COUNT;
-        sendbuf->commited_data_length = 0;
+        sendbuf->committed = HEADER_USED_IOVEC_COUNT;
+        sendbuf->marker = HEADER_USED_IOVEC_COUNT;
+        sendbuf->committed_data_length = 0;
+
+        memset(&(sendbuf->packet_header), 0, sizeof(ipfix_header));
 
         // also reset the set_manager!
-        ipfix_reset_set_manager(sendbuf->set_manager);
+	(sendbuf->set_manager).set_counter = 0;
+        (sendbuf->set_manager).header_iovec = NULL;
+        memset(&(sendbuf->set_manager).set_header_store, 0, sizeof((sendbuf->set_manager).set_header_store));
+        (sendbuf->set_manager).data_length = 0;
 
         return 0;
 }
@@ -617,18 +555,7 @@ static int ipfix_reset_sendbuffer(ipfix_sendbuffer *sendbuf)
  */
 static int ipfix_deinit_sendbuffer(ipfix_sendbuffer **sendbuf)
 {
-        ipfix_sendbuffer *tmp = (*sendbuf);
-
-        // cleanup the set manager
-        ipfix_deinit_set_manager(&tmp->set_manager);
-
-        // deallocate memory for the header
-        free(tmp->header_store);
-
-        // free the array of iovec structs:
-        free(tmp->entries );
-
-        // finally, free the sendbuffer itself:
+        // free the sendbuffer itself:
         free(*sendbuf);
         *sendbuf = NULL;
 
@@ -709,94 +636,6 @@ static int ipfix_init_send_socket(char *serv_ip4_addr, int serv_port, enum ipfix
 }
 
 
-/*
- * Initializes a set manager
- * Parameters:
- * set_manager: set manager to initialize
- * max_capacity: maximum lenght, a header is allowed to have
- */
-static int ipfix_init_set_manager(ipfix_set_manager **set_manager, int max_capacity)
-{
-        ipfix_set_manager *tmp;
-
-        // allocate memory for the set manager
-        if(!(tmp=(ipfix_set_manager *)malloc(sizeof(ipfix_set_manager)))) {
-                goto out;
-        }
-
-        // allocate memory for the set header buffer & set values.
-        tmp->set_header_capacity = max_capacity;
-        tmp->set_header_length = 0;
-        if(!(tmp->set_header_store = (char *)malloc(max_capacity))) {
-                goto out1;
-        }
-        tmp->header_iovec = NULL;
-        tmp->data_length = 0;
-
-        *set_manager=tmp;
-        return 0;
-
-out1:
-        free(tmp);
-out:
-        return -1;
-}
-
-
-/*
- * reset ipfix_set_manager
- * Resets the contents of an ipfix_set_manager
- */
-static int ipfix_reset_set_manager(ipfix_set_manager *set_manager)
-{
-        if(set_manager == NULL ) {
-                msg(MSG_DEBUG, "IPFIX: trying to reset NULL set_manager");
-                return -1;
-        }
-        // reset the buffered data
-        set_manager->set_header_length = 0;
-        set_manager->header_iovec = NULL;
-        set_manager->data_length = 0;
-
-        return 0;
-}
-
-
-/*
- * Deinitializes a set manager
- * Parameters:
- * set_manager: set manager to deinitialize
- * WARNING: As long as the sendbuffer still may have data in the sendbuffer,
- * this function will refuse, unless the pointer to the header's iovec
- * (set_manager.header_iovec) is null!
- */
-static int ipfix_deinit_set_manager(ipfix_set_manager **set_manager)
-{
-        /*
-         WARNING: this will blow, if the header's content is still in
-         the sendbuffer. Call this ONLY, if the sendbuffer is
-         a) reseted
-         b) won't be send any more!
-
-         it will refuse to free the set manager, as long as the header_iovec
-         is still set (i.e. is not null!)
-         */
-
-        if( (**set_manager).header_iovec != NULL ) {
-                msg(MSG_DEBUG, "IPFIX: set manager still may have data to be sent. Refusing to free it");
-                return -1;
-        }
-
-        // free the header buffer:
-        free( (**set_manager).set_header_store);
-
-        // free memory from the set manager
-        free(*set_manager);
-        *set_manager=NULL;
-
-        return 0;
-}
-
 
 /*
  * initialize array of templates
@@ -874,22 +713,20 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 
         }
 
+        ipfix_sendbuffer* t_sendbuf = exporter->template_sendbuffer;
+	
         // clean the template sendbuffer
-        ret=ipfix_reset_sendbuffer(exporter->template_sendbuffer);
+        ret=ipfix_reset_sendbuffer(t_sendbuf);
 
         // place all valid templates to the template sendbuffer
         // could be done just like put_data_field:
 
-        ipfix_sendbuffer* t_sendbuf = exporter->template_sendbuffer;
         for (i = 0; i < exporter->ipfix_lo_template_maxsize; i++ )  {
                 // is the current template valid?
                 if(exporter->template_arr[i].valid==COMMITED) {
                         // link the data to the sendbuffer:
-                        /*      ipfix_put_field2sendbuffer( (*exporter).template_sendbuffer ,  (*exporter).template_arr[i].template_fields, */
-                        /* 				 (*exporter).template_arr[i].fields_length ); */
-
-                        if (t_sendbuf->current >= t_sendbuf->length-2 ) {
-                                msg(MSG_ERROR, "IPFIX: template sendbuffer too small to handle %i entries", t_sendbuf->current);
+                        if (t_sendbuf->current >= IPFIX_MAX_SENDBUFSIZE-2 ) {
+                                msg(MSG_ERROR, "IPFIX: template sendbuffer too small to handle more than %i entries", t_sendbuf->current);
                                 return -1;
                         }
 
@@ -897,14 +734,9 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
                         t_sendbuf->entries[ t_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
                         t_sendbuf->current++;
                         // total_length += (*exporter).template_arr[i].fields_length;
-                        t_sendbuf->commited_data_length +=  exporter->template_arr[i].fields_length;
+                        t_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
                 }
         } // end loop over all templates
-
-        // generate a header
-        // prepend a header to the sendbuffer
-        // ret = ipfix_prepend_header (exporter,  (*t_sendbuf).commited_data_length, t_sendbuf);
-        // done by send!
 
         // that's it!
         return 0;
@@ -936,7 +768,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 
                 // update the sendbuffer header, as we must set the export time & sequence number!
                 ret = ipfix_prepend_header(exporter,
-                                           exporter->template_sendbuffer->commited_data_length,
+                                           exporter->template_sendbuffer->committed_data_length,
                                            exporter->template_sendbuffer
                                           );
 
@@ -971,7 +803,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 
 /*
  Send data to collectors
- Sends all data commited via ipfix_put_data_field to this exporter.
+ Sends all data committed via ipfix_put_data_field to this exporter.
  Parameters:
  exporter sending exporting process
 
@@ -987,13 +819,13 @@ static int ipfix_send_data(ipfix_exporter* exporter)
         int data_length=0;
 
         // is there data to send?
-        if (exporter->data_sendbuffer->commited_data_length > 0 ) {
-                data_length = exporter->data_sendbuffer->commited_data_length;
+        if (exporter->data_sendbuffer->committed_data_length > 0 ) {
+                data_length = exporter->data_sendbuffer->committed_data_length;
 
                 // prepend a header to the sendbuffer
                 ret = ipfix_prepend_header (exporter, data_length, exporter->data_sendbuffer);
                 if (ret != 0) {
-                        msg(MSG_ERROR, "ipfix_send_data failed");
+                        msg(MSG_ERROR, "IPFIX: ipfix_send_data failed");
                         return -1;
                 }
 
@@ -1002,15 +834,16 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 
                         // is the collector a valid target?
                         if(exporter->collector_arr[i].valid) {
+#ifdef DEBUG
                                 DPRINTF("IPFIX: Sending to exporter %s\n", exporter->collector_arr[i].ipv4address);
 
                                 // debugging output of data buffer:
-                                DPRINTF("Sendbuffer contains %u bytes\n",  exporter->data_sendbuffer->commited_data_length );
-                                DPRINTF("Sendbuffer contains %u fields\n",  exporter->data_sendbuffer->current );
+                                DPRINTF("Sendbuffer contains %u bytes\n",  exporter->data_sendbuffer->committed_data_length );
+                                DPRINTF("Sendbuffer contains %u fields\n",  exporter->data_sendbuffer->committed );
                                 int tested_length = 0;
                                 int j;
                                 int k;
-                                for (j =0; j <  exporter->data_sendbuffer->current; j++) {
+                                for (j =0; j <  exporter->data_sendbuffer->committed; j++) {
                                         if(exporter->data_sendbuffer->entries[j].iov_len > 0 ) {
                                                 tested_length += exporter->data_sendbuffer->entries[j].iov_len;
                                                 DPRINTF ("Data Buffer [%i] has %u bytes\n", j, exporter->data_sendbuffer->entries[j].iov_len);
@@ -1020,11 +853,12 @@ static int ipfix_send_data(ipfix_exporter* exporter)
                                                 }
                                         }
                                 }
-                                DPRINTF("IPFIX: Sendbuffer really contains %u bytes!\n", tested_length );
-
+                                DPRINTF("IPFIX: Sendbuffer really contains %u bytes!\n", tested_length )#;
+#endif
+				
                                 ret=writev( exporter->collector_arr[i].data_socket,
                                            exporter->data_sendbuffer->entries,
-                                           exporter->data_sendbuffer->current
+                                           exporter->data_sendbuffer->committed
                                           );
                                 // TODO: we should also check, what writev returned. NO ERROR HANDLING IMPLEMENTED YET!
                         }
@@ -1042,7 +876,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 
 /*
  Send data to collectors
- Sends all data commited via ipfix_put_data_field to this exporter.
+ Sends all data committed via ipfix_put_data_field to this exporter.
  If necessary, sends all associated templates.
  Increment sequence number(sequence_number) only here.
 
@@ -1090,31 +924,50 @@ int ipfix_send(ipfix_exporter *exporter)
  */
 // parameter data_length will be deprecated soon!!!
 // calculate via put datafield.
-int ipfix_start_data_set(ipfix_exporter *exporter, uint16_t *template_id)
+int ipfix_start_data_set(ipfix_exporter *exporter, uint16_t template_id)
 {
+	ipfix_set_manager *manager = &(exporter->data_sendbuffer->set_manager);
+	unsigned current = manager->set_counter;
+    
+	// security check
+	if(exporter->data_sendbuffer->current != exporter->data_sendbuffer->committed) {
+                msg(MSG_ERROR, "IPFIX: start_data_set called twice.");
+                goto out;
+        }
+    
         // check, if there is enough space in the data set buffer
         // the -1 is because, we expect, we want to add at least one data field.
-        if(exporter->data_sendbuffer->current >= exporter->data_sendbuffer->length -1 ) {
-                msg(MSG_ERROR, "IPFIX: start_data_set sendbuffer too small to handle %i entries",
+        if(exporter->data_sendbuffer->current >= IPFIX_MAX_SENDBUFSIZE-1 ) {
+                msg(MSG_ERROR, "IPFIX: start_data_set sendbuffer too small to handle more than %i entries",
                     exporter->data_sendbuffer->current
                    );
                 goto out;
         }
 
-        // write the template id to the data set buffer:
-        // TODO: i know, copy is not that good, but I need a working verions first.
-        memcpy(exporter->data_sendbuffer->set_manager->set_header_store, template_id, sizeof(uint16_t) );
-        exporter->data_sendbuffer->set_manager->set_header_length = 2;
+	// check if we do have space for another set header
+        if((current + 1) >= IPFIX_MAX_SETS_PER_PACKET ) {
+                msg(MSG_ERROR, "IPFIX: start_data_set set_header_store too small to handle more than %i entries",
+                    current + 1
+                   );
+                goto out;
+        }
 
-        // save the iovec slot for the header
-        exporter->data_sendbuffer->set_manager->header_iovec
-                = &(exporter->data_sendbuffer->entries[exporter->data_sendbuffer->current]);
+        // write the set id (=template id) to the data set buffer (length will be added by ipfix_end_data_set):
+	manager->set_header_store[current].set_id = template_id;
+
+        // link current set header in entries
+        exporter->data_sendbuffer->entries[exporter->data_sendbuffer->current].iov_base = &(manager->set_header_store[current]);
+        exporter->data_sendbuffer->entries[exporter->data_sendbuffer->current].iov_len = sizeof(ipfix_set_header);
 
         exporter->data_sendbuffer->current++;
         DPRINTF("start_data_set: exporter->data_sendbuffer->current %i\n", exporter->data_sendbuffer->current);
 
+	// set marker to current in order to avoid deletion of set header with ipfix_cancel_data_fields_upto_marker()
+	exporter->data_sendbuffer->marker = exporter->data_sendbuffer->current;
+
         // initialize the counting of the record's data:
-        exporter->data_sendbuffer->set_manager->data_length = 0;
+        manager->data_length = 0;
+
         return 0;
 
 out:
@@ -1129,28 +982,107 @@ out:
  */
 int ipfix_end_data_set(ipfix_exporter *exporter)
 {
-        // write the correct header data:
-        char *p_base = exporter->data_sendbuffer->set_manager->set_header_store;
-        char *p_pos = p_base;
-        char *p_end = p_base + exporter->data_sendbuffer->set_manager->set_header_capacity;
+	ipfix_set_manager *manager = &(exporter->data_sendbuffer->set_manager);
+	unsigned current = manager->set_counter;
+	uint16_t record_length;
 
-        // calculate the total lenght of the record:
-        uint16_t record_length = exporter->data_sendbuffer->set_manager->data_length;
-        record_length += IPFIX_MAX_SET_HEADER_LENGTH;
-
-        // we already wrote the set id:
-        p_pos += 2;
-
-        // write the length field:
-        write_unsigned16( &p_pos, p_end, record_length);
+        // calculate and store the total length of the record:
+        record_length = manager->data_length + sizeof(ipfix_set_header);
+	manager->set_header_store[current].length = htons(record_length);
 
         // update the sendbuffer
-        exporter->data_sendbuffer->commited_data_length += record_length;
+        exporter->data_sendbuffer->committed_data_length += record_length;
 
-        // commit the header to the iovec
-        exporter->data_sendbuffer->set_manager->header_iovec->iov_base = p_base;
-        exporter->data_sendbuffer->set_manager->header_iovec->iov_len = IPFIX_MAX_SET_HEADER_LENGTH;
+	// now as we are finished with this set, increase set_counter
+	manager->set_counter++;
+	
+	// update committed 
+	exporter->data_sendbuffer->committed = exporter->data_sendbuffer->current;
+	exporter->data_sendbuffer->marker = exporter->data_sendbuffer->current;
+	    
         return 0;
+}
+
+
+/*
+ * Cancel a previously started data set
+ * Parameters:
+ *   exporter: exporting process to send data to
+ */
+int ipfix_cancel_data_set(ipfix_exporter *exporter)
+{
+	ipfix_set_manager *manager = &(exporter->data_sendbuffer->set_manager);
+	unsigned current = manager->set_counter;
+	int i;
+
+	// security check
+	if(exporter->data_sendbuffer->current == exporter->data_sendbuffer->committed) {
+                msg(MSG_ERROR, "IPFIX: cancel_data_set called but there is no set to cancel.");
+                goto out;
+        }
+    
+        // clean set id and length:
+	manager->set_header_store[current].set_id = 0;
+        manager->data_length = 0;
+
+        // clean up entries
+	for(i=exporter->data_sendbuffer->committed; i<exporter->data_sendbuffer->current; i++) {
+	    exporter->data_sendbuffer->entries[i].iov_base = NULL;
+	    exporter->data_sendbuffer->entries[i].iov_len = 0;
+	}
+
+        exporter->data_sendbuffer->current = exporter->data_sendbuffer->committed;
+        exporter->data_sendbuffer->marker = exporter->data_sendbuffer->committed;
+
+        return 0;
+
+out:
+        return -1;
+}
+
+/*
+ * Sets the data field marker to the current position in order to allow deletion of newly added fields
+ * Parameters:
+ *   exporter: exporting process to send data to
+ */
+int ipfix_set_data_field_marker(ipfix_exporter *exporter)
+{
+    exporter->data_sendbuffer->marker = exporter->data_sendbuffer->current;
+    return 0;
+}
+
+/*
+ * Delete recently added fields up to the marker
+ * Parameters:
+ *   exporter: exporting process to send data to
+ */
+int ipfix_delete_data_fields_upto_marker(ipfix_exporter *exporter)
+{
+	ipfix_set_manager *manager = &(exporter->data_sendbuffer->set_manager);
+	unsigned current = manager->set_counter;
+	int i;
+
+	// security check
+	if(exporter->data_sendbuffer->current == exporter->data_sendbuffer->committed) {
+                msg(MSG_ERROR, "IPFIX: delete_data_fields_upto_marker called but there is no set.");
+                goto out;
+        }
+
+	// if marker is before current, clean the entries and set current back 
+	if(exporter->data_sendbuffer->marker < exporter->data_sendbuffer->current) {
+	    for(i=exporter->data_sendbuffer->marker; i<exporter->data_sendbuffer->current; i++) {
+		// alse decrease data_length
+		manager->data_length -= exporter->data_sendbuffer->entries[i].iov_len;
+		exporter->data_sendbuffer->entries[i].iov_base = NULL;
+		exporter->data_sendbuffer->entries[i].iov_len = 0;
+	    }
+	    exporter->data_sendbuffer->current = exporter->data_sendbuffer->marker;
+	}
+
+        return 0;
+
+out:
+        return -1;
 }
 
 /*******************************************************************/
