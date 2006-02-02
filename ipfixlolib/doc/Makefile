@@ -1,10 +1,10 @@
 CC=gcc
-INCLUDES=-I../
+INCLUDES=-I../ -I../../
 # default flags:
 #CFLAGS=-O -Wall $(INCLUDES)
 
 # flags for debugging:
-CFLAGS=-g -O0 -Wall
+CFLAGS=-g -O0 -Wall -lpthread
 
 TARGET=example_code
 

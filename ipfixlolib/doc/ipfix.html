@@ -13,9 +13,14 @@ The usage of IPFIXLOLIB is straight forward:
 <li>Add one or more collectors that receive the monitoring data</li>
 <li>Define one or more templates</li>
 
-<li>Loop</li>
+<li>Loop 1</li>
 <ul>
-<li>Assemble data records according to the defined templates (convert to network byte order first, if necessary)</li>
+<li>Loop 2</li>
+<ul>
+<li>Start a data set for a given template</li>
+<li>Assemble one or more data records according to the template (convert to network byte order first, if necessary)</li>
+<li>End data set</li>
+</ul>
 <li>Call ipfix_send to trigger the export of the monitoring data to the collector</li>
 </ul>
 
@@ -50,9 +55,13 @@ int <a href=#ipfix_put_template_data>ipfix_put_template_data</a>(ipfix_exporter 
 int <a href=#ipfix_end_template_set>ipfix_end_template_set</a>(ipfix_exporter *exporter, uint16_t template_id)
 int <a href=#ipfix_remove_template_set>ipfix_remove_template_set</a>(ipfix_exporter* exporter, uint16_t template_id)
 
-int <a href=#ipfix_start_data_set>ipfix_start_data_set</a>(ipfix_exporter* exporter, uint16_t* template_id)
+int <a href=#ipfix_start_data_set>ipfix_start_data_set</a>(ipfix_exporter* exporter, uint16_t template_id)
 void <a href=#ipfix_put_data_field>ipfix_put_data_field</a>(ipfix_exporter *exporter, char *data, uint16_t length)
+int <a href=#ipfix_set_data_field_marker>ipfix_set_data_field_marker</a>(ipfix_exporter *exporter);
+int <a href=#ipfix_delete_data_fields_upto_marker>ipfix_delete_data_fields_upto_marker</a>(ipfix_exporter *exporter);
 int <a href=#ipfix_end_data_set>ipfix_end_data_set</a>(ipfix_exporter *exporter)
+int <a href=#ipfix_cancel_data_set>ipfix_cancel_data_set</a>(ipfix_exporter *exporter);
+
 
 int <a href=#ipfix_send>ipfix_send</a>(ipfix_exporter *exporter)
 
@@ -238,7 +247,7 @@ template_id: ID of the template to be removed
 <hr width="94%" noshade="noshade" align="left" size="1">
 
 
-<a name=ipfix_start_data_set><code>int ipfix_start_data_set(ipfix_exporter* exporter, uint16_t* template_id)</code></a><p>
+<a name=ipfix_start_data_set><code>int ipfix_start_data_set(ipfix_exporter* exporter, uint16_t template_id)</code></a><p>
 Start a new data set.<br>
 <br>
 exporter: pointer to exporter struct<br>
@@ -249,7 +258,8 @@ ipfix_end_data_set() has to be called first.<br>
 <hr width="94%" noshade="noshade" align="left" size="1">
 
 
-<a name=ipfix_put_data_field><code>void ipfix_put_data_field(ipfix_exporter *exporter, char *data, uint16_t length)</code></a><p>
+<a name=ipfix_put_data_field>
+<code>void ipfix_put_data_field(ipfix_exporter *exporter, char *data, uint16_t length)</code></a><p>
 Add data to a previously started data set. This function is realized as a macro.<br>
 <br>
 exporter: pointer to exporter struct<br>
@@ -261,9 +271,35 @@ The data must be in network byte order for compatibility; no conversion is done.
 <hr width="94%" noshade="noshade" align="left" size="1">
 
 
+<a name=ipfix_set_data_field_marker>
+<code>int ipfix_set_data_field_marker(ipfix_exporter *exporter)</code></a><p>
+Sets a marker to the current position in order to be able to undo the following fields with <a href=#ipfix_delete_data_fields_upto_marker><code>ipfix_delete_data_fields_upto_marker</code></a>.<br>
+<br>
+exporter: pointer to exporter struct<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_delete_data_fields_upto_marker>
+<code>int ipfix_delete_data_fields_upto_marker(ipfix_exporter *exporter)</code></a><p>
+Undos (deletes) previously added fields up to the marker set with <a href=#ipfix_set_data_field_marker><code>ipfix_set_data_field_marker</code></a>.<br>
+<br>
+exporter: pointer to exporter struct<br>
+<br>
+NOTE: Only fields within an "unended" set can be deleted, i.e. before calling <a href=#ipfix_end_data_set><code>ipfix_end_data_set</code></a>.<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
 <a name=ipfix_end_data_set>
 <code>int ipfix_end_data_set(ipfix_exporter *exporter)</code></a><p>
 End a previously started data set.<br>
+<br>
+exporter: pointer to exporter struct<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_cancel_data_set>
+<code>int ipfix_cancel_data_set(ipfix_exporter *exporter)</code></a><p>
+Cancel a previously started data set. Can be used instead of <a href=#ipfix_end_data_set><code>ipfix_end_data_set</code></a>.<br>
 <br>
 exporter: pointer to exporter struct<br>
 <hr width="94%" noshade="noshade" align="left" size="1">

@@ -6,6 +6,10 @@
 
  Header for encoding functions suitable for IPFIX
 
+ Changes by Gerhard Münz, 2006-02-01
+   Changed and debugged sendbuffer structure and Co
+   Added new function for canceling data sets and deleting fields
+
  Changes by Christoph Sommer, 2005-04-14
    Modified ipfixlolib-nothread Rev. 80
    Added support for DataTemplates (SetID 4)
@@ -35,6 +39,7 @@
 
 #include "encoding.h"
 #include "ipfix_names.h"
+#include "msg.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,11 +55,6 @@ extern "C" {
  * change only, if you change the internal code!
  */
 #define HEADER_USED_IOVEC_COUNT 1
-
-/*
- * length of a header in bytes
- */
-#define IPFIX_HEADER_LENGTH 16
 
 /*
  * maximum number of collectors at a time.
@@ -79,10 +79,10 @@ extern "C" {
 #define FALSE 0
 
 /*
- * length of a set header, i.e. the set ID and the length field
- * i.e. 4 bytes
+ * maximum number of sets per IPFIX packet
+ * TODO: This value is delibaretely chosen, adapt it if you need it or make it dynamic.
  */
-#define IPFIX_MAX_SET_HEADER_LENGTH 4
+#define IPFIX_MAX_SETS_PER_PACKET 4
 
 /*
  * maximum size of a sendbuffer
@@ -104,28 +104,29 @@ extern "C" {
 /*   ((*SENDBUF).entries[ (*SENDBUF).current ]).iov_len =  LENGTH; \ */
 /*   (*SENDBUF).current++; \ */
 /* }   */
-
+/*
 #define ipfix_put_field2sendbuffer(SENDBUF, POINTER, LENGTH) { \
-  if ((*SENDBUF).current >= (*SENDBUF).length-2 ) { \
-    fprintf (stderr, "Error: Sendbuffer too small to handle %i entries!\n", (*SENDBUF).current ); \
+  if ((SENDBUF->current + 1) >= IPFIX_MAX_SENDBUFSIZE ) { \
+    msg(MSG_ERROR, "IPFIX: Sendbuffer too small to handle  %i entries!\n", SENDBUF->current ); \
     errno = -1; \
   } \
-  ((*SENDBUF).entries[ (*SENDBUF).current ]).iov_base = POINTER; \
-  ((*SENDBUF).entries[ (*SENDBUF).current ]).iov_len =  LENGTH; \
-  (*SENDBUF).current++; \
-  (*(*SENDBUF).set_manager).data_length+= LENGTH; \
+  (SENDBUF->entries[ SENDBUF->current ]).iov_base = POINTER; \
+  (SENDBUF->entries[ SENDBUF->current ]).iov_len =  LENGTH; \
+  SENDBUF->current++; \
+  (SENDBUF->set_manager).data_length+= LENGTH; \
 }
+*/
 
 /* BUGFIX: After the makro found an error condition, it skips accessing data. */
-#define ipfix_put_data_field(EXPORTER, POINTER, LENGTH) {		\
-		if ((*(*EXPORTER).data_sendbuffer).current >= (*(*EXPORTER).data_sendbuffer).length ) { \
-			fprintf (stderr, "Error: Sendbuffer too small to handle %i entries!\n", (*(*EXPORTER).data_sendbuffer).current ); \
+#define ipfix_put_data_field(EXPORTER, POINTER, LENGTH) { \
+		if (EXPORTER->data_sendbuffer->current >= IPFIX_MAX_SENDBUFSIZE) { \
+		    msg(MSG_ERROR, "IPFIX: Sendbuffer too small to handle  %i entries!\n", EXPORTER->data_sendbuffer->current ); \
 			errno = -1;					\
 		} else {						\
-			((*(*EXPORTER).data_sendbuffer).entries[ (*(*EXPORTER).data_sendbuffer).current ]).iov_base = POINTER; \
-			((*(*EXPORTER).data_sendbuffer).entries[ (*(*EXPORTER).data_sendbuffer).current ]).iov_len =  LENGTH; \
-			(*(*EXPORTER).data_sendbuffer).current++;	\
-			(*(*(*EXPORTER).data_sendbuffer).set_manager).data_length+= LENGTH; \
+			(EXPORTER->data_sendbuffer->entries[ EXPORTER->data_sendbuffer->current ]).iov_base = POINTER; \
+			(EXPORTER->data_sendbuffer->entries[ EXPORTER->data_sendbuffer->current ]).iov_len =  LENGTH; \
+			EXPORTER->data_sendbuffer->current++;	\
+			(EXPORTER->data_sendbuffer->set_manager).data_length+= LENGTH; \
 		} \
 }
 
@@ -179,6 +180,21 @@ typedef struct {
 	uint32_t source_id;
 } ipfix_header;
 
+/*  Set Header:
+    
+      0                   1                   2                   3 
+      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+     |          Set ID               |          Length               | 
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
+ 
+*/
+
+typedef struct {
+    uint16_t set_id;
+    uint16_t length;
+} ipfix_set_header;
+
 
 enum ipfix_transport_protocol {UDP, TCP, SCTP};
 
@@ -195,39 +211,39 @@ enum ipfix_validity {UNUSED, UNCLEAN, COMMITED};
  *
  */
 typedef struct{
+	/* number of the current set */
+	unsigned set_counter;
+
+	/* variable that stores the position of the current set header
+	   in ipfix_sendbuffer->entries */ 
 	struct iovec *header_iovec;
 
-	/* buffer to store the header */
-	char *set_header_store;
+	/* buffer to store set headers */
+	ipfix_set_header set_header_store[IPFIX_MAX_SETS_PER_PACKET];
 
-	/* total capacity of the header */
-	int set_header_capacity;
-
-	/* used length of the header store */
-	int set_header_length;
-
-	int data_length;
-        /* do we need this?? */
-	/* uint16_t* set_id;
-         */
+	/* set length = sum of field length */
+	unsigned data_length;
 } ipfix_set_manager;
 
 
 /*
- * A struct containing an array lot of io_vec
- * plus the index of the current (= last occupied) and maximum position.
- * Also has a buffer to store a header.
- * Note: The buffer is placed here, so it can be allocated once with the sendbuffer
+ * A struct buffering data of an ipfix packet
  */
 typedef struct {
-	struct iovec *entries; /* an array of iovec structs, containing data and length */
-	int current; /* last accessed field */
-	int commited; /* last commited field (i.e. end data set has been called) */
-	int length; /* the length of the sendbuffer */
-	char *header_store; /* memory to store the header */
-	int commited_data_length; /* length of the contained data (in bytes) */
+	struct iovec entries[IPFIX_MAX_SENDBUFSIZE]; /* an array of iovec structs, containing data and length */
+	/* usage of entries:
+	   - the first HEADER_USED_IOVEC_COUNT=1 entries are reserved for the ipfix header
+	   - the remaining entries are used for
+	     * set headers
+	     * individual fields of the sets/records
+	 */
+	unsigned current; /* last accessed entry in entries */
+	unsigned committed; /* last commited entry in entries, i.e. when end_data_set was called for the last time */
+	unsigned marker; /* marker that allows to delete recently added entries */
+	unsigned committed_data_length; /* length of the contained data (in bytes) */
+	ipfix_header packet_header;
 	//  int uncommited_data_length; /* length of data not yet commited */
-	ipfix_set_manager *set_manager;
+	ipfix_set_manager set_manager;
 } ipfix_sendbuffer;
 
 
@@ -298,8 +314,11 @@ int ipfix_end_template_set(ipfix_exporter *exporter, uint16_t template_id );
 /* gerhard: use ipfix_remove_template_set
 int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id);
 */
-int ipfix_start_data_set(ipfix_exporter *exporter, uint16_t *template_id);
+int ipfix_start_data_set(ipfix_exporter *exporter, uint16_t template_id);
 int ipfix_end_data_set(ipfix_exporter *exporter);
+int ipfix_cancel_data_set(ipfix_exporter *exporter);
+int ipfix_set_data_field_marker(ipfix_exporter *exporter);
+int ipfix_delete_data_fields_upto_marker(ipfix_exporter *exporter);
 int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void* data, uint16_t data_length);
 int ipfix_deinit_template_set(ipfix_exporter *exporter, ipfix_lo_template* templ);
 int ipfix_remove_template_set(ipfix_exporter *exporter, uint16_t template_id);
