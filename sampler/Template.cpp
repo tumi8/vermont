@@ -167,15 +167,15 @@ bool Template::getFieldOffsetAndHeader(uint16_t id, uint16_t *offset, unsigned s
 	    break;
 
 	// Header/payload dump fields:
-	case PSAMP_TYPEID_ipHeaderSection:
+	case PSAMP_TYPEID_ipHeaderPacketSection:
 	    *offset=0;
-	    *header=HEAD_TRANSPORT;
+	    *header=HEAD_NETWORK_AND_BEYOND;
 	    *validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
 	    break;
 	case PSAMP_TYPEID_ipPayloadPacketSection:
 	    *offset=0;
-	    *header=HEAD_PAYLOAD;
-	    *validPacketClass = PCLASS_PAYLOAD;
+	    *header=HEAD_TRANSPORT_AND_BEYOND;
+	    *validPacketClass = PCLASS_TRNMASK; // any transport header
 	    break;
 
 
