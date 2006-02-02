@@ -20,7 +20,7 @@
 
 // the PSAMP field types used
 // (for IPFIX fields the defines from the concentrator are used)
-#define PSAMP_TYPEID_ipHeaderSection   313
+#define PSAMP_TYPEID_ipHeaderPacketSection   313
 #define PSAMP_TYPEID_ipPayloadPacketSection   314
 
 // below are "meta"-fields, i.e. field types which
@@ -98,13 +98,12 @@ public:
 		fieldCount++;
 	};
 
-        void getFieldInfo(int num, unsigned short *type, unsigned short *length, unsigned short *offset, unsigned short *header, unsigned long *validPacketClass) const
+        void getFieldInfo(int num, unsigned short *type, unsigned short *length, unsigned short *offset, unsigned short *header) const
         {
                 *type = fieldType[num];
                 *length = fieldLength[num];
                 *offset = fieldPacketOffset[num];
 		*header = fieldPacketHeader[num];
-		*validPacketClass = fieldValidPacketClasses[num];
         }
 
 	// This function returns a temporary buffer with the value of the
@@ -141,6 +140,25 @@ public:
         static Template *readFromFile(const char *fileName);
 #endif	
         bool addField(uint16_t id, uint16_t len);
+
+	
+	// the supplied packet_classification is check against the requirements of all fields
+	// we check whether at least one of the Packet's classification-bits is also set in fieldValidPacketClasses
+	bool checkPacketConformity(unsigned long packet_classification)
+	{
+	    unsigned i;
+	    //DPRINTF("Packet class: %lx\n", packet_classification);
+	    for(i=0; i<fieldCount; i++) {
+		//DPRINTF("Field id: %u class: %lx\n", fieldType[i], fieldValidPacketClasses[i]);
+		// skip meta-fields
+		if(!(fieldType[i] > 0x8000))
+		    // check if packet class supports this field
+		    if((packet_classification & fieldValidPacketClasses[i]) == 0)
+			return false;
+	    }
+	    return true;
+	}
+	    
 
 };
 

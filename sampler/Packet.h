@@ -7,6 +7,7 @@
  * reference-(usage-) counting.
  *
  * Author: Michael Drueing <michael@drueing.de>
+ *         Gerhard Muenz <gerhard.muenz@gmx.de>
  *
  */
 
@@ -31,10 +32,13 @@
 
 // the various header types (actually, HEAD_PAYLOAD is not neccessarily a header but it works like one for
 // our purposes)
-#define HEAD_RAW        0
-#define HEAD_NETWORK    1
-#define HEAD_TRANSPORT  2
-#define HEAD_PAYLOAD    3
+#define HEAD_RAW                  0
+#define HEAD_NETWORK              1  // for fields that lie inside the network header
+#define HEAD_NETWORK_AND_BEYOND   2  // for fields that might go beyond the network header border
+#define HEAD_TRANSPORT            3  // for fields that lie inside the transport header
+#define HEAD_TRANSPORT_AND_BEYOND 4  // for fields that might go beyond the transport header border
+#define HEAD_PAYLOAD              5
+
 
 // Packet classifications
 //
@@ -62,7 +66,7 @@
 #define PCLASS_TRNMASK             0x00fff000
 // .... etc. etc. etc. 
 
-// Payload classification
+// Payload classification (here, payload refers to data beyond transport header)
 #define PCLASS_PAYLOAD             (1UL << 31)
 
 class Packet
@@ -72,10 +76,6 @@ public:
 	// implemented as public-variable for speed reasons (or lazyness reasons? ;-)
 	static unsigned long totalPacketsReceived;
 
-	// this buffer is returned for all requested data that is out-of-bounds for the packet,
-	// like data after the physical end, header fields of invalid (short) TCP packets, etc.
-	static unsigned char nullBuffer[64];
-	
 	/*
 	 data: the raw packet data from the wire, including physical header
 	 ipHeader: start of the IP header: data + (physical dependent) IP header offset
@@ -89,19 +89,23 @@ public:
 	// the packet classification, i.e. what headers are present?
 	unsigned long classification;
 
-	// The length of the packet in bytes
+	// The number of captured bytes
 	unsigned int length;
+
+	// The length of the data buffer (can be larger than length)
+	unsigned int data_length;
 
 	// when was the packet received?
 	struct timeval timestamp;
 
 	// construct a new Packet for a specified number of 'users'
-	Packet(void *packetData, unsigned int len, int numUsers = 1) : users(numUsers), refCountLock()
+	Packet(void *packetData, unsigned int len, unsigned int data_len, int numUsers = 1) : users(numUsers), refCountLock()
 	{
 		data = (unsigned char *)packetData;
 		netHeader = data + IPHeaderOffset;
 		//transportHeader = (unsigned char *)netHeader + netTransportHeaderOffset(netHeader);
 		length = len;
+		data_length = data_len;
 
 		totalPacketsReceived++;
 
@@ -156,15 +160,19 @@ public:
 		unsigned char tcpDataOffset;
 		
 		classification = 0;
-		transportHeader = 0;
-		payload = 0;
+		transportHeader = NULL;
+		payload = NULL;
 		
 		// first check for IPv4 header which needs to be at least 20 bytes long
 		if ( (netHeader + 20 <= data + length) && ((*netHeader >> 4) == 4) )
 		{
-			transportHeader = netHeader + ( ( *netHeader & 0x0f ) << 2);
 			protocol = *(netHeader + 9);
 			classification |= PCLASS_NET_IP4;
+			transportHeader = netHeader + ( ( *netHeader & 0x0f ) << 2);
+		    
+			// check if there is data for the transport header
+			if (transportHeader >= data + length)
+			    transportHeader = NULL;
 		}
 		// TODO: Add checks for IPv6 or similar here
 
@@ -235,30 +243,41 @@ public:
 		memcpy(dest, (char *)netHeader + offset, size);
 	}
 
+
 	// return a pointer into the packet to IP header offset given
-	// ASSUMPTION: we checked that the packet matches the needed classification, i.e.
-	// we won't call getPacketData() with some offset within a TCP header if the packet
-	// is not of PCLASS_TRN_TCP. Or we won't call getPacketData(...HEAD_PAYLOAD...) if
-	// the packet doesn't classify as PCLASS_PAYLOAD. This must be ensured in the ExporterProcess!
 	//
-	// And, of course, we don't check if the fieldLength exceeds any Network- or Transport-header
-	// bounds, but this shouldn't happen (i.e. taking the offset of the last byte in the TCP header
-	// and trying to read 4 bytes from there, for example)
+	// ATTENTION: If the returned pointer actually points to data of size fieldLength is only
+	// checked for HEAD_RAW, HEAD_NETWORK_AND_BEYOND, HEAD_TRANSPORT_AND_BEYOND, and HEAD_PAYLOAD.
+	// For fields within the network or transport header (HEAD_NETWORK, HEAD_TRANSPORT), we assume 
+	// that it was verified before that the packet is of the correct packet class and that its buffer 
+	// holds enough data.
+	// You can check the packet class for a single field using match(). If you want to check
+	// against all fields in a template, you should use checkPacketConformity() of the Template class.
+	// If enough data for the network/transport header has been captured, is checked by classify().
 	void * getPacketData(int offset, int header, int fieldLength) const
 	{
-		switch(header)
-		{
-		case HEAD_RAW:
-			return data + offset;
+	    // DPRINTF("offset: %d header: %d fieldlen: %d available: %d", offset, header, fieldLength, data_length);
+	    switch(header)
+	    {
+		
+		// for the following types, we omit the length check
 		case HEAD_NETWORK:
-			return netHeader + offset;
+		    return netHeader + offset;
 		case HEAD_TRANSPORT:
-			return transportHeader + offset;
+		    return transportHeader + offset;
+
+		// for the following types, we check the length
+		case HEAD_RAW:
+		    return (data + offset + fieldLength < data + data_length) ? data + offset : NULL;
+		case HEAD_NETWORK_AND_BEYOND:
+		    return (netHeader + offset + fieldLength < data + data_length) ? netHeader + offset : NULL;
+		case HEAD_TRANSPORT_AND_BEYOND:
+		    return (transportHeader + offset + fieldLength < data + data_length) ? transportHeader + offset : NULL;
 		case HEAD_PAYLOAD:
-			return (payload + offset + fieldLength < data + length) ? payload + offset : nullBuffer;
+		    return (payload + offset + fieldLength < data + data_length) ? payload + offset : NULL;
 		default:
-			return data + offset;
-		}
+		    return (data + offset + fieldLength < data + data_length) ? data + offset : NULL;
+	    }
 	}
 
 private:

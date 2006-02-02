@@ -103,44 +103,51 @@ void sampler_hook_entry(void *ctx, void *data)
 	((uint32_t *)ph->ip_header)[1]=htonl((uint32_t)ph->timestamp->tv_sec);
 	((uint8_t *)ph->ip_header)[10]=(uint8_t)1;
 
-	switch(((char *)ph->ip_header)[9]) {
-	case IPFIX_protocolIdentifier_ICMP:
-		/*
-	 	because of IP options we need to re-calculate the offsets to srcport and dstport every time
-	 	now we do need some serious pointer arithmetic:
-	 	- calculate the offset of transport header to ip header
-	 	- use this offset and add to src/dst_port offset
-	 	*/
-		transport_offset=abs(ph->transport_header - ph->ip_header);
-		icmp_traffic_template.fieldInfo[0].offset += transport_offset;
-		aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &icmp_traffic_template, ph->length, fdata);
-		/* reset offset for typecode to starting value */
-		icmp_traffic_template.fieldInfo[0].offset = 0;
-		break;
-	case IPFIX_protocolIdentifier_TCP:
-	case IPFIX_protocolIdentifier_UDP:
-		/*
-	 	because of IP options we need to re-calculate the offsets to srcport and dstport every time
-	 	now we do need some serious pointer arithmetic:
-	 	- calculate the offset of transport header to ip header
-	 	- use this offset and add to src/dst_port offset
-	 	*/
-		transport_offset=abs(ph->transport_header - ph->ip_header);
-		tcpudp_traffic_template.fieldInfo[0].offset += transport_offset;
-		tcpudp_traffic_template.fieldInfo[1].offset += transport_offset;
-		aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &tcpudp_traffic_template, ph->length, fdata);
-		/* reset offsets for srcport/dstport to starting values */
-		tcpudp_traffic_template.fieldInfo[0].offset = 0;
-		tcpudp_traffic_template.fieldInfo[1].offset = 2;
-		break;
-	default:
-		aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &ip_traffic_template, ph->length, fdata);
+	// Check if transport header is available
+	if(ph->transport_header == NULL) {
+	    aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &ip_traffic_template, ph->length, fdata);
+	}
+	else
+	{
+	    // Choose template according to transport header type
+	    switch(((char *)ph->ip_header)[9]) {
+		case IPFIX_protocolIdentifier_ICMP:
+		    /*
+		       because of IP options we need to re-calculate the offsets to srcport and dstport every time
+		       now we do need some serious pointer arithmetic:
+		       - calculate the offset of transport header to ip header
+		       - use this offset and add to src/dst_port offset
+		     */
+		    transport_offset=abs(ph->transport_header - ph->ip_header);
+		    icmp_traffic_template.fieldInfo[0].offset += transport_offset;
+		    aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &icmp_traffic_template, ph->length, fdata);
+		    /* reset offset for typecode to starting value */
+		    icmp_traffic_template.fieldInfo[0].offset = 0;
+		    break;
+		case IPFIX_protocolIdentifier_TCP:
+		case IPFIX_protocolIdentifier_UDP:
+		    /*
+		       because of IP options we need to re-calculate the offsets to srcport and dstport every time
+		       now we do need some serious pointer arithmetic:
+		       - calculate the offset of transport header to ip header
+		       - use this offset and add to src/dst_port offset
+		     */
+		    transport_offset=abs(ph->transport_header - ph->ip_header);
+		    tcpudp_traffic_template.fieldInfo[0].offset += transport_offset;
+		    tcpudp_traffic_template.fieldInfo[1].offset += transport_offset;
+		    aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &tcpudp_traffic_template, ph->length, fdata);
+		    /* reset offsets for srcport/dstport to starting values */
+		    tcpudp_traffic_template.fieldInfo[0].offset = 0;
+		    tcpudp_traffic_template.fieldInfo[1].offset = 2;
+		    break;
+		default:
+		    aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &ip_traffic_template, ph->length, fdata);
+	    }
 	}
 
 	/* restore IP header */
 	((uint32_t *)ph->ip_header)[1]=pad1;
 	((uint8_t *)ph->ip_header)[10]=pad2;
-
 
 }
 

@@ -1,5 +1,6 @@
 # Prelim dirty makefile
 INCLUDES=-I.. -I../concentrator
+#CFLAGS=-O2 $(INCLUDES) -Wall -D DEBUG
 CFLAGS=-O2 $(INCLUDES) -Wall
 CXXFLAGS=$(CFLAGS)
 CC=gcc

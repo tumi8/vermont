@@ -66,6 +66,9 @@ bool IPHeaderFilter::processPacket(const Packet *p)
                 start=p->netHeader;
         }
 
+	if(start == NULL)
+	    return false;
+
         srcvalue=getData(((char*)start + m_offset), m_size);
         return compareValues(srcvalue, m_value);
 }

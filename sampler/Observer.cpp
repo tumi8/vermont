@@ -5,7 +5,7 @@
  Author: Michael Drueing <michael@drueing.de>
 
  changed by: Ronny T. Lampert
-
+             Gerhard Münz
  */
 
 #include <pcap.h>
@@ -34,6 +34,7 @@ void *Observer::observerThread(void *arg)
 	struct pcap_pkthdr packetHeader;
 
 	int numReceivers=obs->receivers.size();
+	int capturelen = obs->getCaptureLen();
 
 	// start capturing packets
 	msg(MSG_INFO, "Observer: now running capturing thread for device %s", obs->captureInterface);
@@ -51,7 +52,8 @@ void *Observer::observerThread(void *arg)
 			/* no packet data was available */
 			continue;
 
-		if(!(packetData=malloc(packetHeader.caplen))) {
+//		if(!(packetData=malloc(packetHeader.caplen))) {
+		if(!(packetData=malloc(capturelen))) {
 			/*
 			 FIXME!
 			 ALARM - no more memory available
@@ -66,6 +68,9 @@ void *Observer::observerThread(void *arg)
 			continue;
 		}
 
+		/* first initialize buffer to zero, then copy available data */
+		memset(packetData, 0, capturelen);
+		DPRINTF("Observer: capturelen=%d caplen=%d\n",capturelen, packetHeader.caplen);
 		memcpy(packetData, pcapData, packetHeader.caplen);
 
 		/*
@@ -74,7 +79,7 @@ void *Observer::observerThread(void *arg)
 		 We need reference-counting because we only push pointers around and do not copy, so the
 		 data has to stay valid.
 		 */
-		p=new Packet(packetData, packetHeader.caplen, numReceivers);
+		p=new Packet(packetData, packetHeader.caplen, capturelen, numReceivers);
 		p->timestamp = packetHeader.ts;
 
 		/*

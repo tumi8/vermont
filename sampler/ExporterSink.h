@@ -7,6 +7,7 @@
  * using Jan Petranek's ipfixlolib
  *
  * Author: Michael Drueing <michael@drueing.de>
+ *         Gerhard Muenz <gerhard.muenz@gmx.de>
  *
  */
 
@@ -30,11 +31,6 @@
 
 class ExporterSink : public Sink
 {
-private:
-	// this is for template fields which we need to drop because the received packets don't match
-	// instead of the actual paket data (which would be bogus), we send a few null bytes taken from here
-	static unsigned char nullBuffer[64];
-	
 public:
         ExporterSink(Template *tmpl, int sID) : sourceID(sID),
                 templ(tmpl), thread(ExporterSink::exporterSinkProcess),
@@ -44,7 +40,6 @@ public:
         {
                 int ret, i, tmplid;
                 unsigned short ttype, tlength, toffset, theader;
-		unsigned long tpacketclass;
 
                 // generate the exporter
                 ret = ipfix_init_exporter(sourceID, &exporter);
@@ -58,7 +53,7 @@ public:
                 ret =  ipfix_start_template_set(exporter, tmplid, templ->getFieldCount());
 
                 for(i = 0; i < templ->getFieldCount(); i++) {
-                        templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader, &tpacketclass);
+                        templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
                         ipfix_put_template_field(exporter, tmplid, ttype, tlength, 0);
                 }
 
@@ -98,40 +93,51 @@ public:
                 unsigned short net_tmplid = htons(templ->getTemplateID());
                 DPRINTF("Starting new packet stream\n");
                 numPacketsToRelease = 0;
-                ipfix_start_data_set(exporter, &net_tmplid);
+                ipfix_start_data_set(exporter, net_tmplid);
         }
 
         // Add this packet to the packet stream
         void addPacket(Packet *pck)
         {
                 unsigned short ttype, tlength, toffset, theader;
-		unsigned long tpacketclass;
-		void *metadata;
+		void *data, *metadata;
                 // first, store the packet to be released later, after we have sent the data
                 DPRINTF("Adding packet to stream\n");
                 packetsToRelease[numPacketsToRelease++] = pck;
 
-                for(int i = 0; i < templ->getFieldCount(); i++) {
-                        templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader, &tpacketclass);
-			// TODO: check for matching packet class, otherwise drop the packet
+		// first check if packet matches template requirements, i.e. if all fields are available
+		if(templ->checkPacketConformity(pck->classification)) 
+		{
+		    // store current position in order to go back in case of problems
+		    ipfix_set_data_field_marker(exporter);
+
+		    for(int i = 0; i < templ->getFieldCount(); i++) 
+		    {
+			templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
 			if (ttype > 0x8000) {
-				// it is a meta-field --> get the metadata
-				metadata = templ->getMetaFieldData(i);
-				ipfix_put_data_field(exporter, metadata, tlength);
-				metaFieldsToRelease[numMetaFieldsToRelease++] = metadata;
+			    // it is a meta-field --> get the metadata
+			    metadata = templ->getMetaFieldData(i);
+			    ipfix_put_data_field(exporter, metadata, tlength);
+			    metaFieldsToRelease[numMetaFieldsToRelease++] = metadata;
 			} else {
-				// if the packet matches then we'll export the requested data
-				if (pck->matches(tpacketclass))
-				{
-                        		ipfix_put_data_field(exporter, pck->getPacketData(toffset, theader, tlength), tlength);
-				}
-				else
-				{
-					DPRINTF("Unsupported packet for this template field!\n");
-					ipfix_put_data_field(exporter, nullBuffer, tlength);
-				}
+			    // check if getPacketData actually returns data
+			    // Note: getPacketData checks if data of size tlength is available.
+			    //       if not, it returns NULL
+			    if( (data = pck->getPacketData(toffset, theader, tlength)) != NULL) {
+				ipfix_put_data_field(exporter, data, tlength);
+			    } else {
+				msg(MSG_ERROR, "ExporterSink: getPacketData returned NULL! capturelen is too small.");
+				// delete the fields that we have already added
+				ipfix_delete_data_fields_upto_marker(exporter);
+			    }
 			}
-                }
+		    }
+		}
+		else
+		{
+		    DPRINTF("Packet does not contain all fields required by the template! Skip this packet.\n");
+		    ipfix_delete_data_fields_upto_marker(exporter);
+		}
         }
 
         // send out the IPFIX packet stream and reset
