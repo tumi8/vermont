@@ -129,6 +129,7 @@ public:
 				msg(MSG_ERROR, "ExporterSink: getPacketData returned NULL! capturelen is too small.");
 				// delete the fields that we have already added
 				ipfix_delete_data_fields_upto_marker(exporter);
+				break;
 			    }
 			}
 		    }
