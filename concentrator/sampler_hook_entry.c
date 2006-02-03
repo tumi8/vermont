@@ -49,8 +49,22 @@ static FieldInfo icmp_traffic_fi[] = {
 	{ {IPFIX_TYPEID_destinationIPv4Address,   4, 0}, 16}
 };
 
-static FieldInfo tcpudp_traffic_fi[] = {
+static FieldInfo udp_traffic_fi[] = {
 	/* { { ID, len, enterprise}, offset} */
+	{ {IPFIX_TYPEID_sourceTransportPort,      2, 0}, 0},
+	{ {IPFIX_TYPEID_destinationTransportPort, 2, 0}, 2},
+	{ {IPFIX_TYPEID_packetDeltaCount,         1, 0}, 10},
+	{ {IPFIX_TYPEID_flowStartSeconds,         4, 0}, 4},
+	{ {IPFIX_TYPEID_flowEndSeconds,           4, 0}, 4},
+	{ {IPFIX_TYPEID_octetDeltaCount,          2, 0}, 2},
+	{ {IPFIX_TYPEID_protocolIdentifier,       1, 0}, 9},
+	{ {IPFIX_TYPEID_sourceIPv4Address,        4, 0}, 12},
+	{ {IPFIX_TYPEID_destinationIPv4Address,   4, 0}, 16}
+};
+
+static FieldInfo tcp_traffic_fi[] = {
+	/* { { ID, len, enterprise}, offset} */
+	{ {IPFIX_TYPEID_tcpControlBits,           1, 0}, 13},
 	{ {IPFIX_TYPEID_sourceTransportPort,      2, 0}, 0},
 	{ {IPFIX_TYPEID_destinationTransportPort, 2, 0}, 2},
 	{ {IPFIX_TYPEID_packetDeltaCount,         1, 0}, 10},
@@ -74,9 +88,15 @@ static TemplateInfo icmp_traffic_template = {
 	.userData   = NULL
 };
 
-static TemplateInfo tcpudp_traffic_template = {
+static TemplateInfo udp_traffic_template = {
 	.fieldCount = 9,
-	.fieldInfo  = tcpudp_traffic_fi,
+	.fieldInfo  = udp_traffic_fi,
+	.userData   = NULL
+};
+
+static TemplateInfo tcp_traffic_template = {
+	.fieldCount = 10,
+	.fieldInfo  = tcp_traffic_fi,
 	.userData   = NULL
 };
 
@@ -124,7 +144,6 @@ void sampler_hook_entry(void *ctx, void *data)
 		    /* reset offset for typecode to starting value */
 		    icmp_traffic_template.fieldInfo[0].offset = 0;
 		    break;
-		case IPFIX_protocolIdentifier_TCP:
 		case IPFIX_protocolIdentifier_UDP:
 		    /*
 		       because of IP options we need to re-calculate the offsets to srcport and dstport every time
@@ -133,12 +152,27 @@ void sampler_hook_entry(void *ctx, void *data)
 		       - use this offset and add to src/dst_port offset
 		     */
 		    transport_offset=abs(ph->transport_header - ph->ip_header);
-		    tcpudp_traffic_template.fieldInfo[0].offset += transport_offset;
-		    tcpudp_traffic_template.fieldInfo[1].offset += transport_offset;
-		    aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &tcpudp_traffic_template, ph->length, fdata);
+		    udp_traffic_template.fieldInfo[0].offset += transport_offset;
+		    udp_traffic_template.fieldInfo[1].offset += transport_offset;
+		    aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &udp_traffic_template, ph->length, fdata);
 		    /* reset offsets for srcport/dstport to starting values */
-		    tcpudp_traffic_template.fieldInfo[0].offset = 0;
-		    tcpudp_traffic_template.fieldInfo[1].offset = 2;
+		    udp_traffic_template.fieldInfo[0].offset = 0;
+		    udp_traffic_template.fieldInfo[1].offset = 2;
+		    break;
+		case IPFIX_protocolIdentifier_TCP:
+		    /*
+		       because of IP options we need to re-calculate the offsets to srcport and dstport every time
+		       now we do need some serious pointer arithmetic:
+		       - calculate the offset of transport header to ip header
+		       - use this offset and add to src/dst_port offset
+		     */
+		    transport_offset=abs(ph->transport_header - ph->ip_header);
+		    tcp_traffic_template.fieldInfo[0].offset += transport_offset;
+		    tcp_traffic_template.fieldInfo[1].offset += transport_offset;
+		    aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &tcp_traffic_template, ph->length, fdata);
+		    /* reset offsets for srcport/dstport to starting values */
+		    tcp_traffic_template.fieldInfo[0].offset = 0;
+		    tcp_traffic_template.fieldInfo[1].offset = 2;
 		    break;
 		default:
 		    aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &ip_traffic_template, ph->length, fdata);
