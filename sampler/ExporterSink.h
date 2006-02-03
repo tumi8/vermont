@@ -97,10 +97,13 @@ public:
         }
 
         // Add this packet to the packet stream
-        void addPacket(Packet *pck)
+	// returns true, if the Packet was successfully added
+        bool addPacket(Packet *pck)
         {
                 unsigned short ttype, tlength, toffset, theader;
 		void *data, *metadata;
+		bool ret = true;
+		
                 // first, store the packet to be released later, after we have sent the data
                 DPRINTF("Adding packet to stream\n");
                 packetsToRelease[numPacketsToRelease++] = pck;
@@ -129,6 +132,7 @@ public:
 				msg(MSG_ERROR, "ExporterSink: getPacketData returned NULL! capturelen is too small.");
 				// delete the fields that we have already added
 				ipfix_delete_data_fields_upto_marker(exporter);
+				ret = false;
 				break;
 			    }
 			}
@@ -137,8 +141,10 @@ public:
 		else
 		{
 		    DPRINTF("Packet does not contain all fields required by the template! Skip this packet.\n");
-		    ipfix_delete_data_fields_upto_marker(exporter);
+		    ret = false;
 		}
+
+		return ret;
         }
 
         // send out the IPFIX packet stream and reset

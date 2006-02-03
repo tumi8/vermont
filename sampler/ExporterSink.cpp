@@ -6,6 +6,9 @@
  * Implementation of an IPFIX exporter packet sink
  * using Jan Petranek's ipfixlolib
  *
+ * Changed by Gerhard Muenz
+ *   return value of addPacket evaluated
+ *
  * Author: Michael Drueing <michael@drueing.de>
  *
  */
@@ -33,12 +36,16 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 	msg(MSG_INFO, "Sink: now running ExporterSink thread");
 
 	while(!sink->exitFlag) {
-		pckCount = 1;
-
-		// first we need to get a packet
-		p = queue->pop();
 		sink->startNewPacketStream();
-		sink->addPacket(p);
+
+		// let's get the first packet
+		do
+		{
+		    p = queue->pop();
+		}
+		while(sink->addPacket(p) == false);
+
+		pckCount = 1;
 
 		// now calculate the deadline by which the packet has to leave the exporter
 		gettimeofday(&deadline, 0);
@@ -49,13 +56,6 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 		}
 
 		while(pckCount < sink->ipfix_maxpackets) {
-			/* Before:
-			 p = queue->pop();
-
-			 sink->addPacket(p);
-			 pckCount++;
-			 */
-
 			// Try to get next packet from queue before our deadline
 			result = queue->popAbs(deadline, &p);
 
@@ -65,8 +65,9 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 
 			// no timeout received, continue waiting, but
 
-			sink->addPacket(p);
-			pckCount++;
+			// count only if packet was added
+			if(sink->addPacket(p) == true)
+			    pckCount++;
 		}
 		sink->flushPacketStream();
 	}
