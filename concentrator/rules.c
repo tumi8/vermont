@@ -233,6 +233,34 @@ static int parsePortPattern(char* s, FieldData** fdata, FieldLength* length) {
 	return 0;
 }
 
+/**
+ * parses the given string
+ * @return 0 if successful
+ */
+static int parseTcpFlags(char* s, FieldData** fdata, FieldLength* length) {
+	uint8_t flags = 0;
+    
+	char* p = s;
+	char* pair;
+
+	while ((pair = get_next_token(&p, ","))) {
+		if (strcmp(pair, "FIN") == 0) flags = flags | 0x01;
+		else if (strcmp(pair, "SYN") == 0) flags = flags | 0x02;
+		else if (strcmp(pair, "RST") == 0) flags = flags | 0x04;
+		else if (strcmp(pair, "PSH") == 0) flags = flags | 0x08;
+		else if (strcmp(pair, "ACK") == 0) flags = flags | 0x10;
+		else if (strcmp(pair, "URG") == 0) flags = flags | 0x20;
+		else return -1;
+	}
+	
+	*length = 1;
+	FieldData* fd = (FieldData*)malloc(*length);
+	fd[0] = flags;
+	*fdata = fd;
+
+	return 0;
+}
+
 static char* modifier2string(FieldModifier i) {
 	static char s[16];
 	if (i == FIELD_MODIFIER_DISCARD) return "discard";
@@ -409,6 +437,13 @@ Rules* parseRulesFromFile(char* fname) {
 				continue;
 			}
 			break;
+		case IPFIX_TYPEID_tcpControlBits:
+			if (parseTcpFlags(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
+				msg(MSG_ERROR, "Bad TCP flags pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
+				continue;
+			}
+			break;
+
 		default:
 			msg(MSG_ERROR, "Fields of type \"%s\" cannot be matched against a pattern %s, l.%d", field, fname, lineNo);
 			continue;
