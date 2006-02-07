@@ -169,10 +169,12 @@ void sampler_hook_entry(void *ctx, void *data)
 		    transport_offset=abs(ph->transport_header - ph->ip_header);
 		    tcp_traffic_template.fieldInfo[0].offset += transport_offset;
 		    tcp_traffic_template.fieldInfo[1].offset += transport_offset;
+		    tcp_traffic_template.fieldInfo[2].offset += transport_offset;
 		    aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &tcp_traffic_template, ph->length, fdata);
 		    /* reset offsets for srcport/dstport to starting values */
-		    tcp_traffic_template.fieldInfo[0].offset = 0;
-		    tcp_traffic_template.fieldInfo[1].offset = 2;
+		    tcp_traffic_template.fieldInfo[0].offset = 13;
+		    tcp_traffic_template.fieldInfo[1].offset = 0;
+		    tcp_traffic_template.fieldInfo[2].offset = 2;
 		    break;
 		default:
 		    aggregateDataRecord(aggregator, HOOK_SOURCE_ID, &ip_traffic_template, ph->length, fdata);
