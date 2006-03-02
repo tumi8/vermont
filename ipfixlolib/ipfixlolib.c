@@ -1059,7 +1059,6 @@ int ipfix_set_data_field_marker(ipfix_exporter *exporter)
 int ipfix_delete_data_fields_upto_marker(ipfix_exporter *exporter)
 {
 	ipfix_set_manager *manager = &(exporter->data_sendbuffer->set_manager);
-	unsigned current = manager->set_counter;
 	int i;
 
 	// security check
