@@ -25,9 +25,10 @@ typedef uint8_t FieldData;
  * if "id" is < 0x8000, i.e. no user-defined type, "eid" is 0
  */ 
 typedef struct {
-	TypeId id;          /**< type tag of this field, according to [INFO] */
-	FieldLength length; /**< length in bytes of this field */	
-	EnterpriseNo eid;   /**< enterpriseNo for user-defined data types (i.e. type >= 0x8000) */	
+	TypeId id;            /**< type tag of this field, according to [INFO] */
+	FieldLength length;   /**< length in bytes of this field */
+	int isVariableLength; /**< true if this field's length might change from record to record, false otherwise */
+	EnterpriseNo eid;     /**< enterpriseNo for user-defined data types (i.e. type >= 0x8000) */	
 	} FieldType;
 
 /**
