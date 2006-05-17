@@ -42,6 +42,7 @@ typedef struct {
  * Template description passed to the callback function when a new Template arrives.
  */
 typedef struct {
+	uint16_t   templateId;    /**< the template id assigned to this template or 0 if we don't know or don't care */
 	uint16_t   fieldCount;    /**< number of regular fields */
 	FieldInfo* fieldInfo;     /**< array of FieldInfos describing each of these fields */
 	void*      userData;      /**< pointer to a field that can be used by higher-level modules */
@@ -52,25 +53,26 @@ typedef struct {
  * Note that - other than in [PROTO] - fieldCount specifies only the number of regular fields
  */
 typedef struct {
-	uint16_t   scopeCount;  /**< number of scope fields */
-	FieldInfo* scopeInfo;   /**< array of FieldInfos describing each of these fields */
-	uint16_t   fieldCount;  /**< number of regular fields. This is NOT the number of all fields */
-	FieldInfo* fieldInfo;   /**< array of FieldInfos describing each of these fields */
-	void*      userData;    /**< pointer to a field that can be used by higher-level modules */
+	uint16_t   templateId;    /**< the template id assigned to this template or 0 if we don't know or don't care */
+	uint16_t   scopeCount;    /**< number of scope fields */
+	FieldInfo* scopeInfo;     /**< array of FieldInfos describing each of these fields */
+	uint16_t   fieldCount;    /**< number of regular fields. This is NOT the number of all fields */
+	FieldInfo* fieldInfo;     /**< array of FieldInfos describing each of these fields */
+	void*      userData;      /**< pointer to a field that can be used by higher-level modules */
 	} OptionsTemplateInfo;
 
 /**
  * DataTemplate description passed to the callback function when a new DataTemplate arrives.
  */
 typedef struct {
-	uint16_t   id;
-	uint16_t   preceding;
-	uint16_t   fieldCount;  /**< number of regular fields */
-	FieldInfo* fieldInfo;   /**< array of FieldInfos describing each of these fields */
-	uint16_t   dataCount;   /**< number of fixed-value fields */
-	FieldInfo* dataInfo;    /**< array of FieldInfos describing each of these fields */
-	FieldData* data;        /**< data start pointer for fixed-value fields */
-	void*      userData;    /**< pointer to a field that can be used by higher-level modules */
+	uint16_t   id;            /**< the template id assigned to this template or 0 if we don't know or don't care */
+	uint16_t   preceding;     /**< the preceding rule field as defined in the draft */
+	uint16_t   fieldCount;    /**< number of regular fields */
+	FieldInfo* fieldInfo;     /**< array of FieldInfos describing each of these fields */
+	uint16_t   dataCount;     /**< number of fixed-value fields */
+	FieldInfo* dataInfo;      /**< array of FieldInfos describing each of these fields */
+	FieldData* data;          /**< data start pointer for fixed-value fields */
+	void*      userData;      /**< pointer to a field that can be used by higher-level modules */
 	} DataTemplateInfo;
 
 /*** Template Callbacks ***/

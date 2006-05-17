@@ -126,7 +126,7 @@ typedef struct {
 	uint16_t templateId;
 	uint16_t fieldCount;
 	uint16_t dataCount;
-	uint16_t reserved;
+	uint16_t precedingRule;
 	byte data;
 	} IpfixDataTemplateHeader;
 
@@ -156,11 +156,18 @@ static void processOptionsTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sou
  * Called by processMessage
  */
 static void processTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, IpfixSetHeader* set) {
-	IpfixTemplateHeader* th = (IpfixTemplateHeader*)&set->data;
 	byte* endOfSet = (byte*)set + ntohs(set->length);
-	byte* record = (byte*)&th->data;
+	byte* record = (byte*)&set->data;
+
 	/* TemplateSets are >= 4 byte, so we stop processing when only 3 bytes are left */
 	while (record < endOfSet - 3) {
+		IpfixTemplateHeader* th = (IpfixTemplateHeader*)record;
+		record = (byte*)&th->data;
+		if (th->fieldCount == 0) {
+			/* This is a Template withdrawal message */
+			destroyBufferedTemplate(ipfixReceiver->templateBuffer, sourceId, ntohs(th->templateId));
+			continue;
+			}
 		BufferedTemplate* bt = (BufferedTemplate*)malloc(sizeof(BufferedTemplate));
 		TemplateInfo* ti = (TemplateInfo*)malloc(sizeof(TemplateInfo));
 		bt->sourceID = sourceId;
@@ -169,6 +176,7 @@ static void processTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, 
 		bt->setID = ntohs(set->id);
 		bt->templateInfo = ti;
 		ti->userData = 0;
+		ti->templateId = ntohs(th->templateId);
 		ti->fieldCount = ntohs(th->fieldCount);
 		ti->fieldInfo = (FieldInfo*)malloc(ti->fieldCount * sizeof(FieldInfo));
 		int isLengthVarying = 0;
@@ -208,11 +216,18 @@ static void processTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, 
  * Called by processMessage
  */
 static void processOptionsTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, IpfixSetHeader* set) {
-	IpfixOptionsTemplateHeader* th = (IpfixOptionsTemplateHeader*)&set->data;
 	byte* endOfSet = (byte*)set + ntohs(set->length);
-	byte* record = (byte*)&th->data;
+	byte* record = (byte*)&set->data;
+
 	/* OptionsTemplateSets are >= 4 byte, so we stop processing when only 3 bytes are left */
 	while (record < endOfSet - 3) {
+		IpfixOptionsTemplateHeader* th = (IpfixOptionsTemplateHeader*)record;
+		record = (byte*)&th->data;
+		if (th->fieldCount == 0) {
+			/* This is a Template withdrawal message */
+			destroyBufferedTemplate(ipfixReceiver->templateBuffer, sourceId, ntohs(th->templateId));
+			continue;
+			}
 		BufferedTemplate* bt = (BufferedTemplate*)malloc(sizeof(BufferedTemplate));
 		OptionsTemplateInfo* ti = (OptionsTemplateInfo*)malloc(sizeof(OptionsTemplateInfo));
 		bt->sourceID = sourceId;
@@ -221,6 +236,7 @@ static void processOptionsTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sou
 		bt->setID = ntohs(set->id);
 		bt->optionsTemplateInfo = ti;
 		ti->userData = 0;
+		ti->templateId = ntohs(th->templateId);
 		ti->scopeCount = ntohs(th->scopeCount);
 		ti->scopeInfo = (FieldInfo*)malloc(ti->scopeCount * sizeof(FieldInfo));
 		ti->fieldCount = ntohs(th->fieldCount)-ntohs(th->scopeCount);
@@ -277,12 +293,18 @@ static void processOptionsTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sou
  * Called by processMessage
  */
 static void processDataTemplateSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, IpfixSetHeader* set) {
-	IpfixDataTemplateHeader* th = (IpfixDataTemplateHeader*)&set->data;
 	byte* endOfSet = (byte*)set + ntohs(set->length);
-	byte* record = (byte*)&th->data;
+	byte* record = (byte*)&set->data;
 
 	/* DataTemplateSets are >= 4 byte, so we stop processing when only 3 bytes are left */
 	while (record < endOfSet - 3) {
+		IpfixDataTemplateHeader* th = (IpfixDataTemplateHeader*)record;
+		record = (byte*)&th->data;
+		if (th->fieldCount == 0) {
+			/* This is a Template withdrawal message */
+			destroyBufferedTemplate(ipfixReceiver->templateBuffer, sourceId, ntohs(th->templateId));
+			continue;
+			}
 		BufferedTemplate* bt = (BufferedTemplate*)malloc(sizeof(BufferedTemplate));
 		DataTemplateInfo* ti = (DataTemplateInfo*)malloc(sizeof(DataTemplateInfo));
 		bt->sourceID = sourceId;
@@ -291,6 +313,8 @@ static void processDataTemplateSet(IpfixReceiver* ipfixReceiver, SourceID source
 		bt->setID = ntohs(set->id);
 		bt->dataTemplateInfo = ti;
 		ti->userData = 0;
+		ti->id = ntohs(th->templateId);
+		ti->preceding = ntohs(th->precedingRule);
 		ti->fieldCount = ntohs(th->fieldCount);
 		ti->dataCount = ntohs(th->dataCount);
 		ti->fieldInfo = (FieldInfo*)malloc(ti->fieldCount * sizeof(FieldInfo));
