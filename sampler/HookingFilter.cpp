@@ -16,7 +16,7 @@ bool HookingFilter::processPacket(const Packet *p)
 	ph.transport_header=p->transportHeader;
 
 	ph.timestamp=&(p->timestamp);
-	ph.length=p->length;
+	ph.length=p->data_length;
 
         /* call hooking function */
 	f(ctx, (void *)&ph);

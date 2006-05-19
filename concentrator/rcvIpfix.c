@@ -454,7 +454,7 @@ static void processDataSet(IpfixReceiver* ipfixReceiver, SourceID sourceId, Ipfi
 						fieldLength = *(uint8_t*)(record + recordLength);
 						recordLength += 1;
 						if (fieldLength == 255) {
-							fieldLength = *(uint16_t*)(record + recordLength);
+							fieldLength = ntohs(*(uint16_t*)(record + recordLength));
 							recordLength += 2;
 							}
 						}

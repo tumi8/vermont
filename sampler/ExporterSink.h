@@ -101,7 +101,9 @@ public:
         bool addPacket(Packet *pck)
         {
                 unsigned short ttype, tlength, toffset, theader;
+		unsigned short enc_length;
 		void *data, *metadata;
+		uint8_t *enc_value;
 		bool ret = true;
 		
                 // first, store the packet to be released later, after we have sent the data
@@ -117,19 +119,40 @@ public:
 		    for(int i = 0; i < templ->getFieldCount(); i++) 
 		    {
 			templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
-			if (ttype > 0x8000) {
+			if (ttype > 0x8000) 
+			{
 			    // it is a meta-field --> get the metadata
 			    metadata = templ->getMetaFieldData(i);
 			    ipfix_put_data_field(exporter, metadata, tlength);
 			    metaFieldsToRelease[numMetaFieldsToRelease++] = metadata;
-			} else {
+			}
+		       	else if(tlength == 65535)
+			{
+			    // variable length field
+			    if((data = pck->getVariableLengthPacketData(&tlength, &enc_value, &enc_length, toffset, theader)) != NULL) 
+			    {
+				// put the length information first
+				ipfix_put_data_field(exporter, enc_value, enc_length);
+				ipfix_put_data_field(exporter, data, tlength);
+			    }
+			    else
+			    {
+				msg(MSG_ERROR, "ExporterSink: getVariableLengthPacketData returned NULL! This should never happen!");
+				// delete the fields that we have already added
+				ipfix_delete_data_fields_upto_marker(exporter);
+				ret = false;
+				break;
+			    }
+			}
+			else
+			{
 			    // check if getPacketData actually returns data
 			    // Note: getPacketData checks if data of size tlength is available.
 			    //       if not, it returns NULL
 			    if( (data = pck->getPacketData(toffset, theader, tlength)) != NULL) {
 				ipfix_put_data_field(exporter, data, tlength);
 			    } else {
-				msg(MSG_ERROR, "ExporterSink: getPacketData returned NULL! capturelen is too small.");
+				msg(MSG_ERROR, "ExporterSink: getPacketData returned NULL! packet length or pcap capture length is too small.");
 				// delete the fields that we have already added
 				ipfix_delete_data_fields_upto_marker(exporter);
 				ret = false;

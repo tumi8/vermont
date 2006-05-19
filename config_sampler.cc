@@ -151,7 +151,7 @@ static int configure_template(struct v_objects *v, uint16_t template_id, char *l
 	Template *t;
 	char *l, *token, *length_option;
 	int tmpid;
-	uint8_t fieldlength;
+	uint16_t fieldlength;
 	const ipfix_identifier *id;
 
 	/* violating the original string is not nice, so copy */
@@ -207,13 +207,13 @@ static int configure_template(struct v_objects *v, uint16_t template_id, char *l
 		    /* Note: we could also make the length option mandatory for all fields with id->length==0
 		       since zero length fields do not make much sense */
 		    if(fieldlength == 0)
-			fieldlength = (uint8_t)atoi(length_option+1);
+			fieldlength = (uint16_t)atoi(length_option+1);
 		    else
 			msg(MSG_ERROR, "Template: this is not a variable length field, ignoring optional length");
 		}
 
 		msg(MSG_INFO, "Template: adding %s -> ID %d with size %d", token, id->id, fieldlength);
-		t->addField((uint16_t)id->id, (uint16_t)fieldlength);
+		t->addField((uint16_t)id->id, fieldlength);
 	}
 
 	free(l);

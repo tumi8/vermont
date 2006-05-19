@@ -27,7 +27,7 @@ using namespace std;
 bool Template::addField(uint16_t id, uint16_t len)
 {
         uint16_t offset;
-	unsigned short header = HEAD_RAW;
+	unsigned short header = 0;
 	unsigned long validPacketClass = 0;
 
 	/* it is a field with data from the packet itself */
@@ -175,7 +175,7 @@ bool Template::getFieldOffsetAndHeader(uint16_t id, uint16_t *offset, unsigned s
 	case PSAMP_TYPEID_ipPayloadPacketSection:
 	    *offset=0;
 	    *header=HEAD_TRANSPORT_AND_BEYOND;
-	    *validPacketClass = PCLASS_TRNMASK; // any transport header
+	    *validPacketClass = PCLASS_TRNMASK | PCLASS_PAYLOAD; // any transport header or payload
 	    break;
 
 

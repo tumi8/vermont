@@ -12,6 +12,7 @@ extern "C" {
 struct ipfix_identifier {
 	char *name;
 	uint16_t id;
+	//FIXME: length has to be 16 bit long
         uint8_t length;
 };
 
