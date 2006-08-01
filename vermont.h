@@ -44,7 +44,7 @@ struct v_objects {
 
 
         /* for concentrator: */
-        IpfixReceiver *conc_receiver;
+        IpfixCollector *conc_collector;
         IpfixAggregator *conc_aggregator;
         IpfixSender *conc_exporter;
 

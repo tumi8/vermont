@@ -35,7 +35,11 @@ int configure_concentrator(struct v_objects *v)
 	dictionary *conf=v->v_config;
         IpfixSender *ips=NULL;
         IpfixAggregator *ipa=NULL;
-        IpfixReceiver *ipr=NULL;
+
+        IpfixCollector *ipc=NULL;
+	IpfixReceiver  *ipr=NULL;
+	IpfixPacketProcessor *ipp=NULL;
+	IpfixParser *ipParser=NULL;
 
 	char *l, *token=NULL;
 	uri **export_uri=v->conc_uris;
@@ -145,7 +149,7 @@ int configure_concentrator(struct v_objects *v)
         subsys_on(&(v->v_subsystems), SUBSYS_CONC_ACCOUNT);
 
         /* make IPFIX receiver/collector */
-        initializeIpfixReceivers();
+        initializeIpfixCollectors();
 	if(!(listen=iniparser_getvalue(conf, CONF_SEC, "listen"))) {
 		msg(MSG_FATAL, "Config: %s listen missing", CONF_SEC);
                 goto out2;
@@ -157,29 +161,53 @@ int configure_concentrator(struct v_objects *v)
         if(strcasecmp("off", listen) != 0) {
                 listen_portn=atoi(listen);
 
-                if(!(ipr=createIpfixReceiver(listen_portn))) {
-                        msg(MSG_FATAL, "Config: IpfixReceiver creation failure for port %d", listen_portn);
+                if(!(ipc=createIpfixCollector())) {
+                        msg(MSG_FATAL, "Config: IpfixCollector creation failure");
                         goto out2;
                 }
-                addIpfixReceiverCallbacks(ipr, getAggregatorCallbackInfo(ipa));
+		if (!(ipr=createIpfixReceiver(UDP_IPV4, listen_portn))) {
+			msg(MSG_FATAL, "Config: IpfixReceiver creation failure for port %d", listen_portn);
+			goto out3;
+		}
+		if (!(ipp=createIpfixPacketProcessor())) {
+			msg(MSG_FATAL, "Config: IpfixPacketProcessor creation failure");
+			goto out4;
+		}
+		if (!(ipParser=createIpfixParser())) {
+			msg(MSG_FATAL, "Config: IpfixParser creation failure");
+			goto out5;
+		}
+		
+		addIpfixParserCallbacks(ipParser, getAggregatorCallbackInfo(ipa));
+		setIpfixParser(ipp, ipParser);
+		addIpfixReceiver(ipc, ipr);
+		addIpfixPacketProcessor(ipc, ipp);
                 subsys_on(&(v->v_subsystems), SUBSYS_CONC_RECEIVE);
         } else {
                 msg(MSG_DEBUG, "Config: not running IpfixReceiver part of concentrator");
         }
 
-        v->conc_receiver=ipr;
+        v->conc_collector=ipc;
         v->conc_exporter=ips;
         v->conc_aggregator=ipa;
 
 	msg(MSG_INFO, "Config: now setting up periodic concentrator logging");
-	if (v->conc_receiver) msg_thread_add_log_function(statsIpfixReceiver, v->conc_receiver);
+	if (v->conc_collector) {
+		for (int i = 0; i != v->conc_collector->receiverCount; ++i) {
+			msg_thread_add_log_function(statsIpfixReceiver, v->conc_collector->ipfixReceivers[i]);
+		}
+	}
 	if (v->conc_aggregator) msg_thread_add_log_function(statsAggregator, v->conc_aggregator);
 	if (v->conc_exporter) msg_thread_add_log_function(statsIpfixSender, v->conc_exporter);
 
         return 0;
 
+out5:
+	destroyIpfixPacketProcessor(ipp);
+out4:
+	destroyIpfixReceiver(ipr);
 out3:
-        destroyIpfixReceiver(ipr);
+        destroyIpfixCollector(ipc);
 out2:
         destroyAggregator(ipa);
 out1:
@@ -198,7 +226,7 @@ void * concentrator_polling(void *arg)
         struct timespec req, rem;
         struct v_objects *v=(struct v_objects *)arg;
 
-        IpfixReceiver *ipr=v->conc_receiver;
+        IpfixCollector *ipc=v->conc_collector;
         IpfixAggregator *ipa=v->conc_aggregator;
 
         msg(MSG_DEBUG, "Aggregator: polling aggregator %p each %d ms", ipa, v->conc_poll_ms);

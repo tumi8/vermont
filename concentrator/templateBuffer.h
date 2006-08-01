@@ -37,13 +37,13 @@ typedef struct {
  */
 typedef struct {
 	BufferedTemplate* head; /**< Start of BufferedTemplate chain */
-	IpfixReceiver* ipfixReceiver; /**< Pointer to the ipfixReceiver which instantiated this TemplateBuffer */
+	IpfixParser* ipfixParser; /**< Pointer to the ipfixReceiver which instantiated this TemplateBuffer */
 } TemplateBuffer;
 
 
 /***** Prototypes ************************************************************/
 
-TemplateBuffer* createTemplateBuffer(IpfixReceiver* parentIpfixReceiver);
+TemplateBuffer* createTemplateBuffer(IpfixParser* parentIpfixParser);
 void destroyTemplateBuffer(TemplateBuffer* templateBuffer);
 BufferedTemplate* getBufferedTemplate(TemplateBuffer* templateBuffer, SourceID sourceId, TemplateID templateId);
 void destroyBufferedTemplate(TemplateBuffer* templateBuffer, SourceID sourceId, TemplateID id);
@@ -51,7 +51,7 @@ void bufferTemplate(TemplateBuffer* templateBuffer, BufferedTemplate* bt);
 
 
 #ifdef __cplusplus
-extern "C" {
+}
 #endif
 
 

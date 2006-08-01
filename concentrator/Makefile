@@ -6,7 +6,8 @@ CC=gcc
 CXX=g++
 
 TARGET=libconcentrator.a
-OBJS= aggregator.o crc16.o hashing.o ipfix.o printIpfix.o rcvIpfix.o rules.o sampler_hook_entry.o sndIpfix.o templateBuffer.o
+OBJS= aggregator.o crc16.o hashing.o ipfix.o printIpfix.o rcvIpfix.o rules.o sampler_hook_entry.o sndIpfix.o templateBuffer.o \
+ipfixReceiver.o
 
 all: $(TARGET)
 
@@ -41,3 +42,5 @@ sndIpfix.o: sndIpfix.c sndIpfix.h rcvIpfix.h ../ipfixlolib/ipfixlolib.h \
   ../ipfixlolib/encoding.h ../ipfixlolib/ipfix_names.h ipfix.h ../msg.h
 templateBuffer.o: templateBuffer.c templateBuffer.h rcvIpfix.h ipfix.h \
   ../msg.h
+ipfixReceiver.o: rcvIpfix.h rcvIpfix.c ipfixReceiver.h ipfixReceiver.c \
+  ipfix.h ipfix.c

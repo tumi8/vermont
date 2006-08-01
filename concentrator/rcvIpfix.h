@@ -1,6 +1,8 @@
 #ifndef RCVIPFIX_H
 #define RCVIPFIX_H
 
+#include "ipfixReceiver.h"
+
 #include <pthread.h>
 #include <stdint.h>
 
@@ -19,6 +21,7 @@ typedef uint16_t TypeId;
 typedef uint16_t FieldLength;
 typedef uint32_t EnterpriseNo;
 typedef uint8_t FieldData;
+typedef uint8_t byte;
 
 /**
  * IPFIX field type and length.
@@ -29,7 +32,7 @@ typedef struct {
 	FieldLength length;   /**< length in bytes of this field */
 	int isVariableLength; /**< true if this field's length might change from record to record, false otherwise */
 	EnterpriseNo eid;     /**< enterpriseNo for user-defined data types (i.e. type >= 0x8000) */	
-	} FieldType;
+} FieldType;
 
 /**
  * Information describing a single field in the fields passed via various callback functions.
@@ -37,7 +40,7 @@ typedef struct {
 typedef struct {
 	FieldType type;
 	uint16_t offset;          /**< offset in bytes from a data start pointer. For internal purposes 65535 is defined as yet unknown */
-	} FieldInfo;
+} FieldInfo;
 
 /**
  * Template description passed to the callback function when a new Template arrives.
@@ -47,7 +50,7 @@ typedef struct {
 	uint16_t   fieldCount;    /**< number of regular fields */
 	FieldInfo* fieldInfo;     /**< array of FieldInfos describing each of these fields */
 	void*      userData;      /**< pointer to a field that can be used by higher-level modules */
-	} TemplateInfo;
+} TemplateInfo;
 
 /**
  * OptionsTemplate description passed to the callback function when a new OptionsTemplate arrives.
@@ -60,7 +63,7 @@ typedef struct {
 	uint16_t   fieldCount;    /**< number of regular fields. This is NOT the number of all fields */
 	FieldInfo* fieldInfo;     /**< array of FieldInfos describing each of these fields */
 	void*      userData;      /**< pointer to a field that can be used by higher-level modules */
-	} OptionsTemplateInfo;
+} OptionsTemplateInfo;
 
 /**
  * DataTemplate description passed to the callback function when a new DataTemplate arrives.
@@ -74,7 +77,7 @@ typedef struct {
 	FieldInfo* dataInfo;      /**< array of FieldInfos describing each of these fields */
 	FieldData* data;          /**< data start pointer for fixed-value fields */
 	void*      userData;      /**< pointer to a field that can be used by higher-level modules */
-	} DataTemplateInfo;
+} DataTemplateInfo;
 
 /*** Template Callbacks ***/
 
@@ -105,7 +108,7 @@ typedef int(OptionsTemplateCallbackFunction)(void* handle, SourceID sourceID, Op
 typedef int(DataTemplateCallbackFunction)(void* handle, SourceID sourceID, DataTemplateInfo* dataTemplateInfo);
 
 /*** Template Destruction Callbacks ***/
-  	 
+         
 /**
  * Callback function invoked when a Template is being destroyed.
  * Particularly useful for cleaning up userData associated with this Template
@@ -175,11 +178,11 @@ typedef int(DataDataRecordCallbackFunction)(void* handle, SourceID sourceID, Dat
  */
 typedef struct {
 	void* handle; /**< handle passed to the callback functions to differentiate different instances and/or operation modes */
-	
+
 	TemplateCallbackFunction* templateCallbackFunction;
 	OptionsTemplateCallbackFunction* optionsTemplateCallbackFunction;
 	DataTemplateCallbackFunction* dataTemplateCallbackFunction;
-	
+
 	DataRecordCallbackFunction* dataRecordCallbackFunction;
 	OptionsRecordCallbackFunction* optionsRecordCallbackFunction;
 	DataDataRecordCallbackFunction* dataDataRecordCallbackFunction;
@@ -187,31 +190,74 @@ typedef struct {
 	TemplateDestructionCallbackFunction* templateDestructionCallbackFunction;
 	OptionsTemplateDestructionCallbackFunction* optionsTemplateDestructionCallbackFunction;
 	DataTemplateDestructionCallbackFunction* dataTemplateDestructionCallbackFunction;
-	} CallbackInfo;
+} CallbackInfo;
+
 
 /**
- * Represents a Collector.
- * Create with @c createIpfixReceiver()
+ * Contains information about parsing process
+ * created by @c createIpfixParser()
  */
 typedef struct {
-	int socket;
-	pthread_mutex_t mutex;      /**< Mutex to pause receiving thread */
-	pthread_t thread;	    /**< Thread ID for this particular instance, to sync against etc */
-	
 	int callbackCount;          /**< Length of callbackInfo array */
 	CallbackInfo* callbackInfo; /**< Array of callback functions to invoke when new messages arrive */
-	
+
 	void* templateBuffer;       /**< TemplateBuffer* structure */
+} IpfixParser;
 
-        int exit; /**< exit flag to terminate thread */
+        
+/**
+ * Callback function invoked when a new packet arrives.
+ * @param ipfixParser parser containing callbackfunction invoked while parsing message.
+ * @param message Raw message data
+ * @param len Length of message
+ */
+typedef int(ProcessPacketCallbackFunction)(IpfixParser* ipfixParser, byte* message, uint16_t len);
 
-	uint32_t receivedRecords; /**< Statistics: Total number of data (or dataData) records received since last statistics were polled */
-} IpfixReceiver;
+/**
+ * Controls parsing of incoming packets.
+ * Create witch @c createPacketProcessor()
+ */
+typedef struct {
+	ProcessPacketCallbackFunction* processPacketCallbackFunction; /**< Callback function invoked when new packet arrives. */
+	IpfixParser* ipfixParser; /**< Contains information about parsing process */
+
+	pthread_mutex_t mutex; /**< Used to give only one IpfixReceiver access to the IpfixPacketProcessor */
+} IpfixPacketProcessor;
+
+
+/**
+ * Represents a collector
+ */
+typedef struct {
+	int receiverCount;
+	IpfixReceiver** ipfixReceivers;
+
+	int processorCount;
+	IpfixPacketProcessor* packetProcessors;
+} IpfixCollector;
 
 /***** Prototypes ***********************************************************/
 
-int initializeIpfixReceivers();
-int deinitializeIpfixReceivers();
+
+/* ------------------------------- Collector && Collector-Stuff --------------------------------- */
+
+int initializeIpfixCollectors();
+int deinitializeIpfixCollectors();
+IpfixCollector* createIpfixCollector();
+void destroyIpfixCollector(IpfixCollector* ipfixCollector);
+int startIpfixCollector(IpfixCollector*);
+int stopIpfixCollector(IpfixCollector*);
+
+/* ---------------------------------------------- Processor --------------------------------------- */
+
+IpfixPacketProcessor* createIpfixPacketProcessor();
+void destroyIpfixPacketProcessor(IpfixPacketProcessor* packetProcessor);
+
+/* --------------------------------------- Parser && Parsing Stuff  ------------------------------- */
+
+IpfixParser* createIpfixParser();
+void destroyIpfixParser(IpfixParser* ipfixParser);
+
 
 void printFieldData(FieldType type, FieldData* pattern);
 
@@ -219,19 +265,17 @@ FieldInfo* getTemplateFieldInfo(TemplateInfo* ti, FieldType* type);
 FieldInfo* getDataTemplateFieldInfo(DataTemplateInfo* ti, FieldType* type);
 FieldInfo* getDataTemplateDataInfo(DataTemplateInfo* ti, FieldType* type);
 
-IpfixReceiver* createIpfixReceiver(uint16_t port);
-void destroyIpfixReceiver(IpfixReceiver* ipfixReceiver);
+/* --------------------------------------- Connectors --------------------------------------------- */
 
-int startIpfixReceiver(IpfixReceiver *ipr);
-int stopIpfixReceiver(IpfixReceiver *ipr);
-int shutdownIpfixReceiver(IpfixReceiver *ipr);
+void addIpfixParserCallbacks(IpfixParser* ipfixParser, CallbackInfo handles);
+void setIpfixParser(IpfixPacketProcessor* packetProcessor, IpfixParser* ipfixParser);
 
-void addIpfixReceiverCallbacks(IpfixReceiver* ipfixReceiver, CallbackInfo handles);
-
-void statsIpfixReceiver(void* ipfixReceiver);
+void addIpfixPacketProcessor(IpfixCollector* ipfixCollector, IpfixPacketProcessor* packetProcessor);
+void addIpfixReceiver(IpfixCollector* ipfixCollector, IpfixReceiver* ipfixReceiver);
 
 #ifdef __cplusplus
 }
 #endif
+
 
 #endif
