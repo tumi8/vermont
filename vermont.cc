@@ -303,8 +303,8 @@ static int vermont_start_all(struct v_objects *v)
                 startAggregator(v->conc_aggregator);
         }
 
-        if(v->conc_receiver) {
-                startIpfixReceiver(v->conc_receiver);
+        if(v->conc_collector) {
+                startIpfixCollector(v->conc_collector);
         }
 
         if(v->observer) {

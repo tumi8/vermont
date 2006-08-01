@@ -31,12 +31,17 @@ int main(int argc, char *argv[]) {
 
 	initializeIpfixPrinters();
 
-	initializeIpfixReceivers();
+	initializeIpfixCollectors();
 
 	IpfixPrinter* ipfixPrinter = createIpfixPrinter();
 	startIpfixPrinter(ipfixPrinter);
 
-	IpfixReceiver* ipfixReceiver = createIpfixReceiver(lport);
+	IpfixCollector* ipfixCollector = createIpfixCollector();
+	IpfixReceiver* ipfixReceiver = createIpfixReceiver(UDP_IPV4, lport);
+	addIpfixReceiver(ipfixCollector, ipfixReceiver);
+
+	IpfixPacketProcessor* ipfixPacketProcessor = createIpfixPacketProcessor();
+	IpfixParser* ipfixParser = createIpfixParser();
 
 	/* (not in this branch of rcvIpfix)
 	if (argc > 2) {
@@ -45,15 +50,18 @@ int main(int argc, char *argv[]) {
 		}
 	*/
 
-	addIpfixReceiverCallbacks(ipfixReceiver, getIpfixPrinterCallbackInfo(ipfixPrinter));
-	startIpfixReceiver(ipfixReceiver);
+	addIpfixParserCallbacks(ipfixParser, getIpfixPrinterCallbackInfo(ipfixPrinter));
+	setIpfixParser(ipfixPacketProcessor, ipfixParser);
+	addIpfixPacketProcessor(ipfixCollector, ipfixPacketProcessor);
+
+	startIpfixCollector(ipfixCollector);
 
 	msg(MSG_DIALOG, "Listening on %d. Hit Ctrl+C to quit", lport);
 	pause();
 	msg(MSG_DIALOG, "Stopping threads and tidying up.");
 	
-	stopIpfixReceiver(ipfixReceiver);
-	destroyIpfixReceiver(ipfixReceiver);
+	stopIpfixCollector(ipfixCollector);
+	destroyIpfixCollector(ipfixCollector);
  	deinitializeIpfixReceivers();	
 
 	stopIpfixPrinter(ipfixPrinter);
