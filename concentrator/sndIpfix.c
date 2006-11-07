@@ -54,7 +54,7 @@ int deinitializeIpfixSenders() {
  * @param port destination collector's port
  * @return handle to use when calling @c destroyIpfixSender()
  */
-IpfixSender* createIpfixSender(SourceID sourceID, char* ip, uint16_t port) {
+IpfixSender* createIpfixSender(SourceID sourceID, const char* ip, uint16_t port) {
 	IpfixSender* ipfixSender = (IpfixSender*)malloc(sizeof(IpfixSender));
 	ipfix_exporter** exporterP = (ipfix_exporter**)&ipfixSender->ipfixExporter;
 	strcpy(ipfixSender->ip, ip);
@@ -78,6 +78,7 @@ IpfixSender* createIpfixSender(SourceID sourceID, char* ip, uint16_t port) {
 out1:
 	ipfix_deinit_exporter(*exporterP);
 out:
+	free(ipfixSender);
 	return NULL;	
 }
 
@@ -120,7 +121,7 @@ void stopIpfixSender(IpfixSender* ipfixSender) {
  * @param port port number
  * FIXME: support for other than UDP
  */
-int ipfixSenderAddCollector(IpfixSender *ips, char *ip, uint16_t port)
+int ipfixSenderAddCollector(IpfixSender *ips, const char *ip, uint16_t port)
 {
 	ipfix_exporter *ex = (ipfix_exporter *)ips->ipfixExporter;
 
@@ -256,6 +257,7 @@ int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* 
 
 	if (0 != ipfix_put_template_data(exporter, my_template_id, data, dataLength)) {
 		msg(MSG_FATAL, "ipfix_put_template_data failed");
+		free(data);
 		return -1;
 	}
 	free(data);

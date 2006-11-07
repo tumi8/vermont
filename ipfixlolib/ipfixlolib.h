@@ -302,7 +302,7 @@ typedef struct {
 int ipfix_init_exporter(uint32_t source_id, ipfix_exporter **exporter);
 int ipfix_deinit_exporter(ipfix_exporter *exporter);
 
-int ipfix_add_collector(ipfix_exporter *exporter, char *coll_ip4_addr, int coll_port, enum ipfix_transport_protocol proto);
+int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, int coll_port, enum ipfix_transport_protocol proto);
 int ipfix_remove_collector(ipfix_exporter *exporter, char *coll_ip4_addr, int coll_port);
 
 int ipfix_start_template_set(ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count);

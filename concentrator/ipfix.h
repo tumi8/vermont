@@ -24,9 +24,9 @@ extern "C" {
 #define IPFIX_SetId_Data_Start                                  256
 #define IPFIX_ENTERPRISE_TYPE   0x8000
 
-int string2typeid(char*s);
+int string2typeid(const char*s);
 char* typeid2string(int i);
-int string2typelength(char*s);
+int string2typelength(const char*s);
 
 #define IPFIX_TYPEID_ipVersion                       60
 #define IPFIX_TYPEID_sourceIPv4Address                8

@@ -12,7 +12,7 @@
 #include "ipfix.h"
 
 
-int string2typeid(char *s)
+int string2typeid(const char *s)
 {
 	return ipfix_name_lookup(s);
 }
@@ -29,7 +29,7 @@ char* typeid2string(int i)
 	return ix->name;
 }
 
-int string2typelength(char *s)
+int string2typelength(const char *s)
 {
 	const struct ipfix_identifier *ix;
 

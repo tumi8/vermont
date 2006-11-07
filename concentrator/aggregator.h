@@ -29,6 +29,7 @@ int initializeAggregators();
 int deinitializeAggregators();
 
 IpfixAggregator* createAggregator(char* ruleFile, uint16_t minBufferTime, uint16_t maxBufferTime);
+IpfixAggregator* createAggregatorFromRules(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime);
 void destroyAggregator(IpfixAggregator* ipfixAggregator);
 
 void startAggregator(IpfixAggregator* ipfixAggregator);

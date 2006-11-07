@@ -101,9 +101,9 @@ public:
         bool addPacket(Packet *pck)
         {
                 unsigned short ttype, tlength, toffset, theader;
-		unsigned short enc_length;
+		unsigned short enc_length = 0;
 		void *data, *metadata;
-		uint8_t *enc_value;
+		uint8_t *enc_value = 0;
 		bool ret = true;
 		
                 // first, store the packet to be released later, after we have sent the data
@@ -211,7 +211,7 @@ public:
                 return true;
 	}
 
-        bool addCollector(char *address, unsigned short port, const char *protocol);
+        bool addCollector(const char *address, unsigned short port, const char *protocol);
 
 protected:
         int sourceID;

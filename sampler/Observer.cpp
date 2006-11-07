@@ -106,8 +106,14 @@ void *Observer::observerThread(void *arg)
  error checking on pcap here, because it can't be done in the constructor
  and it may be too late, if done in the thread
  */
-bool Observer::prepare(char *filter_exp)
+bool Observer::prepare(const std::string& filter)
 {
+	// we need to store the filter expression, because pcap needs
+	// a char* and doesn't accept a const char* ... nasty pcap-devs!!!
+	if (!filter.empty()) {
+		filter_exp = new char[filter.size() + 1];
+		strcpy(filter_exp, filter.c_str());
+	}
 	struct in_addr i_netmask, i_network;
 
 	// query all available capture devices
@@ -131,6 +137,12 @@ bool Observer::prepare(char *filter_exp)
 		msg(MSG_FATAL, "Observer: Error initializing pcap interface: %s", errorBuffer);
 		goto out1;
 	}
+
+        if (pcap_datalink(captureDevice) != DLT_EN10MB) {
+                msg(MSG_FATAL, "Data link isn't an ethernet device. This will screw the observer. Aborting ...");
+                goto out2;
+        }
+
 
 	/* we need the netmask for the pcap_compile */
 	if(pcap_lookupnet(captureInterface, &network, &netmask, errorBuffer) == -1) {

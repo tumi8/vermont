@@ -55,7 +55,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 static uint8_t getIPv4IMask(FieldType* type, FieldData* data);
 
 
-static RuleField* mallocRuleField() {
+RuleField* mallocRuleField() {
 	RuleField* ruleField = (RuleField*)malloc(sizeof(RuleField));
 	ruleField->type.id = 0;
 	ruleField->type.length = 0;
@@ -66,18 +66,18 @@ static RuleField* mallocRuleField() {
 	return ruleField;
 }
 
-static void freeRuleField(RuleField* ruleField) {
+void freeRuleField(RuleField* ruleField) {
 	free(ruleField);
 }
 
-static Rule* mallocRule() {
+Rule* mallocRule() {
 	Rule* rule = (Rule*)malloc(sizeof(Rule));
 	rule->fieldCount = 0;
 
 	return rule;
 }
 
-static void freeRule(Rule* rule) {
+void freeRule(Rule* rule) {
 	free(rule);
 }
 
@@ -140,7 +140,7 @@ static char* get_next_token(char** text, char* delim) {
  * parses the given string
  * @return 0 if successful
  */
-static int parseModifier(char* s, FieldModifier* modifier) {
+static int parseModifier(const char* s, FieldModifier* modifier) {
 	if (strcmp(s, "discard") == 0) { *modifier = FIELD_MODIFIER_DISCARD; return 0; }
 	if (strcmp(s, "keep") == 0) { *modifier = FIELD_MODIFIER_KEEP; return 0; }
 	if (strcmp(s, "aggregate") == 0) { *modifier = FIELD_MODIFIER_AGGREGATE; return 0; }
@@ -152,7 +152,7 @@ static int parseModifier(char* s, FieldModifier* modifier) {
  * parses the given string
  * @return 0 if successful
  */
-static int parseProtoPattern(char* s, FieldData** fdata, FieldLength* length) {
+int parseProtoPattern(char* s, FieldData** fdata, FieldLength* length) {
 	int proto = -1;
 	if (strcmp(s, "ICMP") == 0) proto = IPFIX_protocolIdentifier_ICMP;
 	if (strcmp(s, "TCP") == 0) proto = IPFIX_protocolIdentifier_TCP;
@@ -173,8 +173,8 @@ static int parseProtoPattern(char* s, FieldData** fdata, FieldLength* length) {
  * parses the given string
  * @return 0 if successful
  */
-static int parseIPv4Pattern(char* s, FieldData** fdata, FieldLength* length) {
-	char* p = s;
+int parseIPv4Pattern(char* s, FieldData** fdata, FieldLength* length) {
+        char* p = s;
 	char* octet1 = get_next_token(&p, ".");
 	char* octet2 = get_next_token(&p, ".");
 	char* octet3 = get_next_token(&p, ".");
@@ -182,12 +182,12 @@ static int parseIPv4Pattern(char* s, FieldData** fdata, FieldLength* length) {
 	char* imask = get_next_token(&p, " ");
 	if (!octet4) return -1;
 	/*
-	 if (imask) {
-	 *length = 5;
-	 } else {
-	 *length = 4;
-	 }
-	 */
+	  if (imask) {
+	  *length = 5;
+	  } else {
+	  *length = 4;
+	  }
+	*/
 	*length = 5;
 
 	FieldData* fd = (FieldData*)malloc(*length);
@@ -205,7 +205,7 @@ static int parseIPv4Pattern(char* s, FieldData** fdata, FieldLength* length) {
  * parses the given string
  * @return 0 if successful
  */
-static int parsePortPattern(char* s, FieldData** fdata, FieldLength* length) {
+int parsePortPattern(char* s, FieldData** fdata, FieldLength* length) {
 	char buf[256];
 
 	char* p = s;
@@ -237,7 +237,7 @@ static int parsePortPattern(char* s, FieldData** fdata, FieldLength* length) {
  * parses the given string
  * @return 0 if successful
  */
-static int parseTcpFlags(char* s, FieldData** fdata, FieldLength* length) {
+int parseTcpFlags(char* s, FieldData** fdata, FieldLength* length) {
 	uint8_t flags = 0;
     
 	char* p = s;
@@ -253,6 +253,7 @@ static int parseTcpFlags(char* s, FieldData** fdata, FieldLength* length) {
 		else return -1;
 	}
 	
+
 	*length = 1;
 	FieldData* fd = (FieldData*)malloc(*length);
 	fd[0] = flags;
@@ -416,40 +417,40 @@ Rules* parseRulesFromFile(char* fname) {
 
 		ruleField->pattern = NULL;
 		if (pattern)
-		switch (ruleField->type.id) {
-		case IPFIX_TYPEID_protocolIdentifier:
-			if (parseProtoPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
-				msg(MSG_ERROR, "Bad protocol pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
-				continue;
-			}
-			break;
-		case IPFIX_TYPEID_sourceIPv4Address:
-		case IPFIX_TYPEID_destinationIPv4Address:
-			if (parseIPv4Pattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
-				msg(MSG_ERROR, "Bad IPv4 pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
-				continue;
-			}
-			break;
-		case IPFIX_TYPEID_sourceTransportPort:
-		case IPFIX_TYPEID_destinationTransportPort:
-			if (parsePortPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
-				msg(MSG_ERROR, "Bad PortRanges pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
-				continue;
-			}
-			break;
-		case IPFIX_TYPEID_tcpControlBits:
-			if (parseTcpFlags(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
-				msg(MSG_ERROR, "Bad TCP flags pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
-				continue;
-			}
-			break;
+			switch (ruleField->type.id) {
+			case IPFIX_TYPEID_protocolIdentifier:
+				if (parseProtoPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
+					msg(MSG_ERROR, "Bad protocol pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
+					continue;
+				}
+				break;
+			case IPFIX_TYPEID_sourceIPv4Address:
+			case IPFIX_TYPEID_destinationIPv4Address:
+				if (parseIPv4Pattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
+					msg(MSG_ERROR, "Bad IPv4 pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
+					continue;
+				}
+				break;
+			case IPFIX_TYPEID_sourceTransportPort:
+			case IPFIX_TYPEID_destinationTransportPort:
+				if (parsePortPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
+					msg(MSG_ERROR, "Bad PortRanges pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
+					continue;
+				}
+				break;
+			case IPFIX_TYPEID_tcpControlBits:
+				if (parseTcpFlags(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
+					msg(MSG_ERROR, "Bad TCP flags pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
+					continue;
+				}
+				break;
 
-		default:
-			msg(MSG_ERROR, "Fields of type \"%s\" cannot be matched against a pattern %s, l.%d", field, fname, lineNo);
-			continue;
-			break;
+			default:
+				msg(MSG_ERROR, "Fields of type \"%s\" cannot be matched against a pattern %s, l.%d", field, fname, lineNo);
+				continue;
+				break;
 
-		}
+			}
 
 		currentRule->field[currentRule->fieldCount++] = ruleField;
 		ruleField = mallocRuleField();
@@ -743,9 +744,9 @@ int dataTemplateDataMatchesRule(DataTemplateInfo* info, FieldData* data, Rule* r
 			}
 
 			/*
-			 no corresponding data field found
-			 see if we find a corresponding fixed data field
-			 */
+			  no corresponding data field found
+			  see if we find a corresponding fixed data field
+			*/
 
 			fieldInfo = getDataTemplateDataInfo(info, &ruleField->type);
 			if (fieldInfo) {
@@ -756,9 +757,9 @@ int dataTemplateDataMatchesRule(DataTemplateInfo* info, FieldData* data, Rule* r
 			}
 
 			/*
-			 FIXME: if a non-discarding rule field specifies no pattern
-			 check at least if the data field exists?
-			 */
+			  FIXME: if a non-discarding rule field specifies no pattern
+			  check at least if the data field exists?
+			*/
 
 			/* no corresponding data field or fixed data field found, this flow cannot match */
 			msg(MSG_DEBUG, "No corresponding DataDataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));

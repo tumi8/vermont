@@ -1,14 +1,9 @@
-bin_PROGRAMS = sampler
+noinst_LIBRARIES=libsampler.a
 
+libsampler_a_SOURCES=ConcurrentQueue.h ExporterSink.cpp ExporterSink.h Filter.cpp Filter.h HookingFilter.cpp \
+HookingFilter.h IPHeaderFilter.cpp IPHeaderFilter.h Lock.h Observer.cpp Observer.h Packet.cpp Packet.h \
+packet_hook.h PacketProcessor.h PacketReceiver.h PacketSink.cpp PacketSink.h RandomSampler.cpp \
+RandomSampler.h Semaphore.h Sink.h SystematicSampler.cpp SystematicSampler.h Template.cpp \
+Template.h Thread.h TimeoutSemaphore.h
 
-# set the include path found by configure
-INCLUDES = $(all_includes)
-
-# the library search path.
-sampler_LDFLAGS = $(all_libraries) 
-sampler_SOURCES = Observer.cpp PacketSink.cpp Test.cpp SystematicSampler.cpp Filter.cpp ConfigManager.cpp RandomSampler.cpp Template.cpp Packet.cpp IPHeaderFilter.cpp ExporterSink.cpp
-sampler_LDADD = -lpcap -lpthread -lipfixlo -L../../ipfixlolib/src
-
-AM_CFLAGS = -DDEBUG -I../../ipfixlolib/src
-AM_CXXFLAGS = -DDEBUG -I../../ipfixlolib/src
-noinst_HEADERS = PacketProcessor.h Thread.h Globals.h Lock.h Observer.h Packet.h PacketSink.h Semaphore.h ConcurrentQueue.h SystematicSampler.h Filter.h TimeoutLock.h TimeoutSemaphore.h RandomSampler.h Template.h IPHeaderFilter.h IPHeaderFilter.h ExporterSink.h
+AM_CXXFLAGS=-I$(top_srcdir) -Wall -Werror

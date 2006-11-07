@@ -75,7 +75,7 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 }
 
 
-bool ExporterSink::addCollector(char *address, unsigned short port, const char *protocol)
+bool ExporterSink::addCollector(const char *address, unsigned short port, const char *protocol)
 {
 	ipfix_transport_protocol proto;
 

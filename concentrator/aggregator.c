@@ -16,6 +16,10 @@
 
 #include "msg.h"
 
+
+static IpfixAggregator* buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime);
+
+
 int initializeAggregators()
 {
 	return 0;
@@ -33,19 +37,39 @@ int deinitializeAggregators()
  * @param maxBufferTime TODO
  * @return handle to the Aggregator on success or NULL on error
  */
+
 IpfixAggregator* createAggregator(char* ruleFile, uint16_t minBufferTime, uint16_t maxBufferTime)
+{
+	Rules* rules = parseRulesFromFile(ruleFile);
+	if (!rules) {
+		msg(MSG_FATAL, "Aggregator: could not parse rules file %s", ruleFile);
+		return NULL;
+	}
+	return buildAggregator(rules, minBufferTime, maxBufferTime);
+}
+
+/**
+ * Creates a new Aggregator. Do not forget to set the callback functions, then call @c startAggreagtor().
+ * @param rules Rules for aggregator to work with
+ * @param minBufferTime TODO
+ * @param maxBufferTime TODO
+ * @return handle to the Aggreagtor on success or NULL on error
+ */
+IpfixAggregator* createAggregatorFromRules(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime)
+{
+	return buildAggregator(rules, minBufferTime, maxBufferTime);
+}
+
+/**
+ * Builds a new aggregator from the given rules (helper function for @c createAggregator and @c createAggregatorFromRules)
+ */
+static IpfixAggregator* buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime)
 {
 	int i;
 
 	IpfixAggregator* ipfixAggregator = (IpfixAggregator*)malloc(sizeof(IpfixAggregator));
-	ipfixAggregator->rules = parseRulesFromFile(ruleFile);
+	ipfixAggregator->rules = rules;
 
-	if (!ipfixAggregator->rules) {
-		msg(MSG_FATAL, "Aggregator: could not parse rules file %s", ruleFile);
-		return NULL;
-	}
-
-	Rules* rules = ipfixAggregator->rules;
 	for (i = 0; i < rules->count; i++) {
 		rules->rule[i]->hashtable = createHashtable(rules->rule[i],
 							    minBufferTime,

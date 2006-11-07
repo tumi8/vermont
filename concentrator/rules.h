@@ -29,7 +29,7 @@ typedef struct {
 	FieldType type;         /**< field type this RuleField refers to */
 	FieldData* pattern;     /**< pattern to match fields against to determine applicability of a rule. A pattern of NULL means no pattern needs to be matched for this field */
 	FieldModifier modifier; /**< modifier to apply to the corresponding field if this rule is matched */
-	} RuleField;
+} RuleField;
 
 /**
  * Single aggregation rule
@@ -41,7 +41,7 @@ typedef struct {
 	RuleField* field[MAX_RULE_FIELDS];
 	
 	void* hashtable;
-	} Rule;
+} Rule;
 
 /**
  * Set of aggregation rules
@@ -49,9 +49,21 @@ typedef struct {
 typedef struct {
 	int count;
 	Rule* rule[MAX_RULES];
-	} Rules;
+} Rules;
 
 Rules* parseRulesFromFile(char* fname);
+
+RuleField* mallocRuleField();
+void freeRuleField(RuleField* ruleField);
+
+Rule* mallocRule();
+void freeRule(Rule* rule);
+
+int parseTcpFlags(char* s, FieldData** fdata, FieldLength* length);
+int parsePortPattern(char* s, FieldData** fdata, FieldLength* length);
+int parseIPv4Pattern(char* s, FieldData** fdata, FieldLength* length);
+int parseProtoPattern(char* s, FieldData** fdata, FieldLength* length);
+
 void destroyRules(Rules* rules);
 void printRule(Rule* rule);
 int templateDataMatchesRule(TemplateInfo* info, FieldData* data, Rule* rule);
@@ -61,5 +73,6 @@ int dataTemplateDataMatchesRule(DataTemplateInfo* info, FieldData* data, Rule* r
 #ifdef __cplusplus
 }
 #endif
+
 
 #endif

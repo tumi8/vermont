@@ -12,24 +12,22 @@ libpcap
 
 INSTALLATION
 
-#> make
-edit test.ini
-#> ./vermont -f test.ini -dddd
+You have to create a configure script first. This can be done with the
+script build-configure.sh. You need to install the autotools in order to
+create the configure script.
+I used aclocal-1.7.9, autoconf-2.60 and automake-1.7.9 to create the script.
+Other versions might work as well, but aren't tested yet.
 
-Right now, there are only dirty Makefiles in place, so you may want to do a
-full make clean before a rebuild.
+After you created the configure script run
 
-If you want more debugging output, define DEBUG that Makefile of which
-subsystem you want more output from - that is, add -DDEBUG to CFLAGS.
-If you want to use it production-wise don't define it - nasty output.
-
-Technically it allows the DPRINTF()s in the source to be in effect.
+$ ./configure
+$ make
 
 
 CONFIGURATION
 
-Packaged comes a commented test.ini file.
-As there are 2 subsystems, each one can be configured independently.
+Packaged comes a commented test.xml file. See file CONFIGURATION for more
+information.
 
 
 SAMPLER

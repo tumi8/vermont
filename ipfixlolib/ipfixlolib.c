@@ -33,7 +33,7 @@ extern "C" {
 
 #define bit_set(data, bits) ((data & bits) == bits)
 
-static int init_send_udp_socket(char *serv_ip4_addr, int serv_port);
+static int init_send_udp_socket(const char *serv_ip4_addr, int serv_port);
 static int ipfix_find_template(ipfix_exporter *exporter, uint16_t template_id, enum ipfix_validity cleanness);
 static int ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipfix_sendbuffer *sendbuf);
 static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbufn);
@@ -41,7 +41,7 @@ static int ipfix_reset_sendbuffer(ipfix_sendbuffer *sendbuf);
 static int ipfix_deinit_sendbuffer(ipfix_sendbuffer **sendbuf);
 static int ipfix_init_collector_array(ipfix_receiving_collector **col, int col_capacity);
 static int ipfix_deinit_collector_array(ipfix_receiving_collector **col);
-static int ipfix_init_send_socket(char *serv_ip4_addr, int serv_port, enum ipfix_transport_protocol protocol);
+static int ipfix_init_send_socket(const char *serv_ip4_addr, int serv_port, enum ipfix_transport_protocol protocol);
 static int ipfix_init_template_array(ipfix_exporter *exporter, int template_capacity);
 static int ipfix_deinit_template_array(ipfix_exporter *exporter);
 static int ipfix_update_template_sendbuffer(ipfix_exporter *exporter);
@@ -89,7 +89,7 @@ static int init_rcv_udp_socket(int lport)
  * serv_port the UDP-portnumber of the server.
  * Returns: a socket to write to. -1 on failure
  */
-static int init_send_udp_socket(char *serv_ip4_addr, int serv_port){
+static int init_send_udp_socket(const char *serv_ip4_addr, int serv_port){
 
         int s;
         struct sockaddr_in serv_addr;
@@ -235,7 +235,7 @@ int ipfix_deinit_exporter(ipfix_exporter *exporter)
  * NOTE: this is subject to change, as a collector might use SCTP, which would require 2 connections!
  * Returns: 0 on success or -1 on failure
  */
-int ipfix_add_collector(ipfix_exporter *exporter, char *coll_ip4_addr, int coll_port, enum ipfix_transport_protocol proto)
+int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, int coll_port, enum ipfix_transport_protocol proto)
 {
         int i=0;
         int searching = TRUE;
@@ -514,7 +514,7 @@ static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf)
         *sendbuf=tmp;
         return 0;
 
-out1:
+//out1:
         free(tmp);
 out:
         return -1;
@@ -610,7 +610,7 @@ static int ipfix_deinit_collector_array(ipfix_receiving_collector **col)
  * serv_port: port
  * protocol: transport protocol
  */
-static int ipfix_init_send_socket(char *serv_ip4_addr, int serv_port, enum ipfix_transport_protocol protocol)
+static int ipfix_init_send_socket(const char *serv_ip4_addr, int serv_port, enum ipfix_transport_protocol protocol)
 {
         int sock = -1;
 
@@ -853,7 +853,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
                                                 }
                                         }
                                 }
-                                DPRINTF("IPFIX: Sendbuffer really contains %u bytes!\n", tested_length )#;
+                                DPRINTF("IPFIX: Sendbuffer really contains %u bytes!\n", tested_length );
 #endif
 				
                                 ret=writev( exporter->collector_arr[i].data_socket,
@@ -1356,14 +1356,14 @@ int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void
         p_end = p_pos +  (*exporter).template_arr[found_index].max_fields_length;
 
         DPRINTF("ipfix_put_template_data: template found at %i\n", found_index);
-        DPRINTF("ipfix_put_template_data: A p_pos %u, p_end %u\n", p_pos, p_end);
+        DPRINTF("ipfix_put_template_data: A p_pos %p, p_end %p\n", p_pos, p_end);
         DPRINTF("ipfix_put_template_data: max_fields_len %u \n", (*exporter).template_arr[found_index].max_fields_length);
         DPRINTF("ipfix_put_template_data: fieldss_len %u \n", (*exporter).template_arr[found_index].fields_length);
 
         // add offset to the buffer's beginning: this is, where we will write to.
         p_pos += (*exporter).template_arr[found_index].fields_length;
 
-        DPRINTF("ipfix_put_template_data: B p_pos %u, p_end %u\n", p_pos, p_end);
+        DPRINTF("ipfix_put_template_data: B p_pos %p, p_end %p\n", p_pos, p_end);
 
 	for(i = 0; i < data_length; i++) {
 		ret = write_octet(&p_pos, p_end, *(((uint8_t*)data)+i) );

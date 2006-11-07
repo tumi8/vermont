@@ -1045,7 +1045,7 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
  lookup an ipfix name into its ID
  int because we need -1 for "not found"
  */
-int ipfix_name_lookup(char *name)
+int ipfix_name_lookup(const char *name)
 {
 	const struct ipfix_midentifier *tmp;
 

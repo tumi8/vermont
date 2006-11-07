@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="urn:ietf:params:xml:ns:ipfix-config"
+    xmlns="urn:ietf:params:xml:ns:ipfix-config"
+    elementFormDefault="qualified"
+    version="1.0">
+
+  <xsd:annotation>
+    <xsd:documentation xml:lang="en">
+      IPFIX Configuration Data Model Version 1.1
+	New in version 1.1: 
+		- Raw Filter method for Packet Selection
+		- optional precedingRuleTemplateId for flowMeteringRule_type
+		- optional observationDomainId element for Collecting Process
+		- parameters complex element for Observation Point
+    </xsd:documentation>
+  </xsd:annotation>
+
+  <!-- Generic Types -->
+  <xsd:complexType name="informationElement_type">
+    <xsd:sequence>
+      <xsd:element name="enterpriseNumber" type="xsd:unsignedInt"
+        minOccurs="0" />
+      <xsd:element name="ieName" type="xsd:string" minOccurs="0" />
+      <xsd:element name="ieId" type="xsd:unsignedInt"
+        minOccurs="0" />
+      <xsd:element name="ieLength" type="xsd:unsignedInt"
+        minOccurs="0" />
+      <xsd:element name="match" type="xsd:string" minOccurs="0" />
+      <xsd:element name="modifier" type="xsd:string" minOccurs="0">
+        <xsd:annotation>
+          <xsd:documentation xml:lang="en">
+            Field modifier can be 'mask/X' or 'discard'.
+            See draft-dressler-ipfix-aggregation-02 for details.
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="collector_type">
+    <xsd:sequence>
+	<xsd:element name="observationDomainId"	type="xsd:unsignedInt" minOccurs="0" />
+      <xsd:element name="ipAddressType" type="xsd:unsignedInt">
+        <xsd:annotation>
+          <xsd:documentation xml:lang="en">
+            IANA protocol number (IPv4:4, IPv6: 41)
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+      <xsd:element name="ipAddress" type="xsd:string" />
+      <xsd:element name="transportProtocol" type="xsd:unsignedInt">
+        <xsd:annotation>
+          <xsd:documentation xml:lang="en">
+            IANA protocol number (UDP:17, TCP:6, SCTP: 132)
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+      <xsd:element name="port" type="xsd:unsignedInt" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="next_type">
+    <xsd:sequence>
+      <xsd:element name="meteringProcessId" type="xsd:unsignedInt"
+        minOccurs="0" maxOccurs="unbounded" />
+      <xsd:element name="exportingProcessId" type="xsd:unsignedInt"
+        minOccurs="0" maxOccurs="unbounded" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="time_type">
+    <xsd:simpleContent>
+      <xsd:extension base="xsd:unsignedInt">
+        <xsd:attribute name="unit" use="optional" default="sec">
+          <xsd:simpleType>
+            <xsd:restriction base="xsd:string">
+              <xsd:enumeration value="sec" />
+              <xsd:enumeration value="msec" />
+              <xsd:enumeration value="usec" />
+            </xsd:restriction>
+          </xsd:simpleType>
+        </xsd:attribute>
+      </xsd:extension>
+    </xsd:simpleContent>
+  </xsd:complexType>
+
+
+
+  <!-- Observation Point -->
+  <xsd:complexType name="observationPoint_type">
+    <xsd:sequence>
+      <xsd:element name="observationDomainId" type="xsd:unsignedInt" />
+      <xsd:element name="type" type="xsd:string" />
+      <xsd:element name="parameters" type="parameters_type" minOccurs="0" />
+      <xsd:element name="next" type="next_type" minOccurs="0" />
+    </xsd:sequence>
+    <xsd:attribute name="id" type="xsd:unsignedInt" use="required" />
+  </xsd:complexType>
+
+  <xsd:complexType name="parameters_type">
+    <xsd:sequence>
+    	<xsd:element name="interface" type="xsd:string" minOccurs="0" />
+      	<xsd:element name="pcap_filter" type="xsd:string" minOccurs="0" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- Collecting Process -->
+  <xsd:complexType name="collectingProcess_type">
+    <xsd:sequence>
+	<xsd:element name="observationDomainId" type="xsd:unsignedInt" minOccurs="0"/>
+      	<xsd:element name="listener" type="collector_type" minOccurs="0" maxOccurs="unbounded" />
+      	<xsd:element name="udpTemplateLifetime" type="time_type" minOccurs="0" />
+      	<xsd:element name="next" type="next_type" minOccurs="0" />
+    </xsd:sequence>
+    <xsd:attribute name="id" type="xsd:unsignedInt" use="required" />
+  </xsd:complexType>
+
+
+  <!-- Metering Process -->
+  <xsd:complexType name="meteringProcess_type">
+    <xsd:sequence>
+      <xsd:element name="packetSelection"
+        type="packetSelection_type" minOccurs="0"
+        maxOccurs="unbounded" />
+      <xsd:element name="packetReporting"
+        type="packetReporting_type" minOccurs="0"
+        maxOccurs="unbounded" />
+      <xsd:element name="flowMetering" type="flowMetering_type"
+        minOccurs="0" maxOccurs="unbounded" />
+      <xsd:element name="next" type="next_type" minOccurs="0" />
+    </xsd:sequence>
+    <xsd:attribute name="id" type="xsd:unsignedInt"
+      use="required" />
+  </xsd:complexType>
+
+
+  <!-- Metering Process: Packet Selection -->
+  <xsd:complexType name="packetSelection_type">
+    <xsd:annotation>
+      <xsd:documentation xml:lang="en">
+        See draft-ietf-psamp-mib-05.txt for details about the packet
+        selection parameters.
+      </xsd:documentation>
+    </xsd:annotation>
+    <xsd:choice minOccurs="0" maxOccurs="unbounded">
+      <xsd:element name="countBased" type="countBased_type" />
+      <xsd:element name="timeBased" type="timeBased_type" />
+      <xsd:element name="randOutOfN" type="randOutOfN_type" />
+      <xsd:element name="uniProb" type="uniProb_type" />
+      <xsd:element name="nonUniProb" type="nonUniProb_type" />
+      <xsd:element name="flowState" type="flowState_type" />
+      <xsd:element name="filterMatch" type="filterMatch_type" />
+      <xsd:element name="filterHash" type="filterHash_type" />
+      <xsd:element name="filterRState" type="filterRState_type" />
+      <xsd:element name="rawFilter" type="rawFilter_type" />
+    </xsd:choice>
+  </xsd:complexType>
+
+  <xsd:complexType name="rawFilter_type">
+    <xsd:sequence>
+      <xsd:element name="settings" type="xsd:string">
+        <xsd:annotation>
+          <xsd:documentation xml:lang="en">
+            This is a VERMONT specific filter.
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="countBased_type">
+    <xsd:sequence>
+      <xsd:element name="interval" type="xsd:unsignedInt" />
+      <xsd:element name="spacing" type="xsd:unsignedInt" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="timeBased_type">
+    <xsd:sequence>
+      <xsd:element name="interval" type="xsd:unsignedInt" />
+      <xsd:element name="spacing" type="xsd:unsignedInt" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="randOutOfN_type">
+    <xsd:sequence>
+      <xsd:element name="population" type="xsd:unsignedInt" />
+      <xsd:element name="sample" type="xsd:unsignedInt" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="uniProb_type">
+    <xsd:sequence>
+      <xsd:element name="probability" type="xsd:unsignedInt">
+        <xsd:annotation>
+          <xsd:documentation xml:lang="en">
+            The given value must be divided by 4294967295
+          </xsd:documentation>
+        </xsd:annotation>
+      </xsd:element>
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="nonUniProb_type" mixed="true">
+    <xsd:sequence>
+      <xsd:element name="function" type="xsd:string" />
+      <xsd:element name="funcParam" type="xsd:string" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="flowState_type" mixed="true">
+    <xsd:sequence>
+      <xsd:element name="function" type="xsd:string" />
+      <xsd:element name="funcParam" type="xsd:string" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="filterMatch_type">
+    <xsd:sequence>
+      <xsd:element name="infoElementId"
+        type="informationElement_type" minOccurs="0"
+        maxOccurs="unbounded" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="filterHash_type">
+    <xsd:sequence>
+      <xsd:element name="addrType" type="xsd:unsignedInt" />
+      <xsd:element name="headerBits" type="xsd:string" />
+      <xsd:element name="payloadBytes" type="xsd:unsignedInt" />
+      <xsd:element name="payloadBits" type="xsd:string" />
+      <xsd:element name="function" type="xsd:string" />
+      <xsd:element name="funcParam" type="xsd:string" />
+      <xsd:element name="inputBits" type="xsd:unsignedInt" />
+      <xsd:element name="outputBits" type="xsd:unsignedInt" />
+      <xsd:element name="outputMask" type="xsd:string" />
+      <xsd:element name="selection" type="xsd:string" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="filterRState_type">
+    <xsd:sequence>
+      <xsd:element name="function" type="xsd:string" />
+      <xsd:element name="negate" type="xsd:boolean" />
+      <xsd:element name="ifIndex" type="xsd:unsignedInt" />
+      <xsd:element name="startAS" type="xsd:unsignedInt" />
+      <xsd:element name="endAS" type="xsd:unsignedInt" />
+      <xsd:element name="vendorFunc" type="xsd:string" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- Metering Process: Packet Reporting -->
+  <xsd:complexType name="packetReporting_type">
+    <xsd:sequence minOccurs="0" maxOccurs="unbounded">
+      <xsd:element name="templateId" type="xsd:unsignedInt"
+        minOccurs="0" />
+      <xsd:element name="reportedIE" type="informationElement_type"
+        minOccurs="0" maxOccurs="unbounded" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+
+  <!-- Metering Process: Flow Metering -->
+  <xsd:complexType name="flowMetering_type">
+    <xsd:sequence>
+      <xsd:element name="rule" type="flowMeteringRule_type"
+        minOccurs="0" maxOccurs="unbounded" />
+      <xsd:element name="expiration" type="flowExpiration_type"
+        minOccurs="0" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="flowMeteringRule_type">
+    <xsd:sequence>
+      <xsd:element name="templateId" type="xsd:unsignedInt"
+        minOccurs="0" />
+      <xsd:element name="precedingRuleTemplateId" type="xsd:unsignedInt" 
+	minOccurs="0" />
+      <xsd:element name="flowKey" type="informationElement_type"
+        minOccurs="0" maxOccurs="unbounded" />
+      <xsd:element name="nonFlowKey" type="informationElement_type"
+        minOccurs="0" maxOccurs="unbounded" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="flowExpiration_type">
+    <xsd:sequence>
+      <xsd:element name="activeTimeout" type="time_type" />
+      <xsd:element name="inactiveTimeout" type="time_type" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+
+  <!-- Exporting Process -->
+  <xsd:complexType name="exportingProcess_type">
+    <xsd:sequence>
+      <xsd:element name="ipfixPacketRestrictions"
+        type="ipfixPacketRestrictions_type" minOccurs="0" />
+      <xsd:element name="udpTemplateManagement"
+        type="udpTemplateManagement_type" minOccurs="0" />
+      <xsd:element name="collector" type="collector_type"
+        minOccurs="0" maxOccurs="unbounded" />
+    </xsd:sequence>
+    <xsd:attribute name="id" type="xsd:unsignedInt" use="required" />
+  </xsd:complexType>
+
+  <xsd:complexType name="ipfixPacketRestrictions_type">
+    <xsd:sequence>
+      <xsd:element name="maxPacketSize" type="xsd:unsignedInt"
+        minOccurs="0" />
+      <xsd:element name="maxExportDelay" type="time_type"
+        minOccurs="0" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <xsd:complexType name="udpTemplateManagement_type">
+    <xsd:sequence>
+      <xsd:element name="templateRefreshTimeout" type="time_type"
+        minOccurs="0" />
+      <xsd:element name="templateRefreshRate" type="xsd:unsignedInt"
+        minOccurs="0" />
+    </xsd:sequence>
+  </xsd:complexType>
+
+  <!-- IPFIX Device Configuration -->
+  <xsd:element name="ipfixConfig">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="collectingProcess"
+          type="collectingProcess_type" minOccurs="0"
+          maxOccurs="unbounded" />
+        <xsd:element name="observationPoint"
+          type="observationPoint_type" minOccurs="0"
+          maxOccurs="unbounded" />
+        <xsd:element name="meteringProcess"
+          type="meteringProcess_type" minOccurs="0"
+          maxOccurs="unbounded" />
+        <xsd:element name="exportingProcess"
+          type="exportingProcess_type" minOccurs="0"
+          maxOccurs="unbounded" />
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+
+</xsd:schema>
