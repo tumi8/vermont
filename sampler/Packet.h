@@ -304,7 +304,7 @@ public:
 		// the following types may be variable length
 		// if not, we have to check that the length is not too long
 		case HEAD_RAW:
-		    return (offset + fieldLength <= data_length) ? data + offset : NULL;
+		    return ((unsigned int)offset + fieldLength <= data_length) ? data + offset : NULL;
 		case HEAD_NETWORK_AND_BEYOND:
 		    return (netHeaderOffset + offset + fieldLength <= data_length) ? netHeader + offset : NULL;
 		case HEAD_TRANSPORT_AND_BEYOND:
@@ -395,7 +395,7 @@ public:
 		varlength_index++;
 	    }
 	    // check if we have 3 octets available
-	    else if (varlength_index + 3 <= sizeof(varlength))
+	    else if ((uint8_t)(varlength_index + 3) <= sizeof(varlength))
 	    {
 		// encode in 2 octets with preceeding 255
 		varlength[varlength_index] = 255;

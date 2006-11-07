@@ -18,7 +18,7 @@ struct ipfix_identifier {
 
 int ipfix_id_rangecheck(int id);
 const struct ipfix_identifier * ipfix_id_lookup(int n);
-int ipfix_name_lookup(char *name);
+int ipfix_name_lookup(const char *name);
 
 
 #ifdef __cplusplus

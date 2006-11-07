@@ -1,0 +1,21 @@
+The XML configuration schema allows configurations which are not supported by
+VERMONT. This is a list of working configurations. See directory configs/ for
+some working configuration files.
+
+WARNING: Unsupported configurations may result in a "Segmentation Fault" 
+
+observationProcess -> meteringProcess(packetselection + packetreporting) -> exportingProcess
+
+observationProcess --|
+                     |--> meteringProcess(packetSelection + packetReporting)  -> exportingProcess
+observationProcess---|
+
+observationProcess -> meteringProcess(packetSelection) -> meteringProcess(packetReporting) -> exportingProcess
+
+observationProcess -> meteringProcess(flowMetering) -> exportingProcess
+
+collectingProcess -> meteringProcess(flowMetering) -> exportingProces
+
+observationProcess --|
+                     |--> meteringProcess(flowMetering) -> exportingProcess
+collectingProcess  --|

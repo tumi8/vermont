@@ -30,7 +30,7 @@
 class Filter : public PacketReceiver
 {
 public:
-        Filter() : thread(Filter::filterProcess), exitFlag(false), pktIn(0), pktOut(0)
+        Filter() : thread(Filter::filterProcess), hasReceiver_(false), exitFlag(false),  pktIn(0), pktOut(0)
         {
         }
 
@@ -52,8 +52,11 @@ public:
         // adds a new output queue to the receivers
         void setReceiver(PacketReceiver *recv)
         {
+		hasReceiver_ = true;
                 receiver = recv->getQueue();
         };
+
+	bool hasReceiver() { return hasReceiver_; }
 
         // add a new filter or sampler
         void addProcessor(PacketProcessor *p)
@@ -77,6 +80,7 @@ protected:
 
         // the next in line that gets our output
         ConcurrentQueue<Packet> *receiver;
+	bool hasReceiver_;
 
 public:
         bool exitFlag;

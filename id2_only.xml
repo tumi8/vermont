@@ -1,0 +1,107 @@
+<ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
+
+    <observationPoint id="1">
+	<observationDomainId>4711</observationDomainId>
+	<type>pcap</type>
+	<parameters>
+		<interface>eth0</interface>
+		<pcap_filter>ip</pcap_filter>
+	</parameters>
+	<next>
+	    <meteringProcessId>1</meteringProcessId>
+	</next>
+    </observationPoint>
+
+    <meteringProcess id="1">
+<packetSelection>
+</packetSelection>
+	<flowMetering>
+	    <rule>
+		<templateId>998</templateId>
+		<flowKey>
+		    <ieName>sourceIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+		    <ieName>destinationIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+		    <ieName>protocolIdentifier</ieName>
+		</flowKey>
+		<flowKey>
+		    <ieName>sourceTransportPort</ieName>
+		</flowKey>
+		<flowKey>
+		    <ieName>destinationTransportPort</ieName>
+		</flowKey>
+		<nonFlowKey>
+		    <ieName>flowStartSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+		    <ieName>flowEndSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+		    <ieName>octetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+		    <ieName>packetDeltaCount</ieName>
+		</nonFlowKey>
+	    </rule>
+	    <rule>
+		<templateId>999</templateId>
+		<flowKey>
+		    <ieName>sourceIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+		    <ieName>destinationIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+		    <ieName>protocolIdentifier</ieName>
+		</flowKey>
+		<flowKey>
+		    <ieName>icmptypecodeipv4</ieName>
+		</flowKey>
+		<nonFlowKey>
+		    <ieName>flowStartSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+		    <ieName>flowEndSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+		    <ieName>octetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+		    <ieName>packetDeltaCount</ieName>
+		</nonFlowKey>
+	    </rule>
+	    <expiration>
+		<activeTimeout unit="sec">5</activeTimeout>
+		<inactiveTimeout unit="sec">10</inactiveTimeout>
+	    </expiration>
+	</flowMetering>
+	<next>
+	    <exportingProcessId>1</exportingProcessId>
+	</next>
+    </meteringProcess>
+
+    <exportingProcess id="1">
+	<ipfixPacketRestrictions>
+	    <maxPacketSize>1500</maxPacketSize>
+	    <maxExportDelay unit="msec">500</maxExportDelay>
+	</ipfixPacketRestrictions>
+	<udpTemplateManagement>
+	    <templateRefreshTimeout>10</templateRefreshTimeout>
+	    <templateRefreshRate>100</templateRefreshRate>
+	</udpTemplateManagement>
+	<collector>
+	    <ipAddressType>4</ipAddressType>
+	    <ipAddress>127.0.0.1</ipAddress>
+	    <transportProtocol>17</transportProtocol>
+	    <port>1500</port>
+	</collector>
+    </exportingProcess>
+
+</ipfixConfig>
+		    
+			
+		
+		

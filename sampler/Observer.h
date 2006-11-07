@@ -5,6 +5,7 @@
  Author: Michael Drueing <michael@drueing.de>
 
  changed by: Ronny T. Lampert
+ changed by: Lothar Braun
  */
 
 #ifndef OBSERVER_H
@@ -27,6 +28,7 @@
  */
 #define CAPTURE_PHYSICAL_MAX 1526
 #include <vector>
+#include <string>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -42,11 +44,12 @@
 class Observer {
 public:
         // ObserverThread constructor
-	Observer(char *interface) : thread(Observer::observerThread), allDevices(NULL),
+	Observer(const std::string& interface) : thread(Observer::observerThread), allDevices(NULL),
 		captureDevice(NULL), capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
-		pcap_promisc(1), ready(false), exitFlag(false)
+		pcap_promisc(1), ready(false), filter_exp(0), exitFlag(false)
         {
-		captureInterface=interface;
+		captureInterface = (char*)malloc(interface.size() + 1);
+		strcpy(captureInterface, interface.c_str());
 	};
 
 	~Observer()
@@ -67,6 +70,8 @@ public:
                         pcap_freealldevs(allDevices);
                 }
 
+		delete captureInterface;
+		delete filter_exp;
 		msg(MSG_DEBUG, "Observer: successful shutdown");
         };
 
@@ -146,7 +151,7 @@ public:
         }
 
 
-        bool prepare(char *filter_exp);
+        bool prepare(const std::string& filter);
 	static void doLogging(void *arg);
 
 
@@ -180,8 +185,10 @@ protected:
         // set to true if prepare() was successful
 	bool ready;
 
-        static void *observerThread(void *);
+	// save the given filter expression
+	char* filter_exp;
 
+        static void *observerThread(void *);
 public:
         bool exitFlag;
         // interface we capture traffic on - string
