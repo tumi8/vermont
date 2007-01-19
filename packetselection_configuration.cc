@@ -120,7 +120,7 @@ void PacketSelectionConfiguration::configure()
 // TODO: remove this method
 PacketProcessor* PacketSelectionConfiguration::makeFilterProcessor(const char *name, const char *setting)
 {
-#define PROCESSOR_MAX_PARAM 1
+#define PROCESSOR_MAX_PARAM 6
 #define PROCESSOR_INTERNAL 0
 #define PROCESSOR_SYSTEMATIC 1
 #define PROCESSOR_RANDOM 2
