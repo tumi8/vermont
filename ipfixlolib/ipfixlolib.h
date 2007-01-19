@@ -73,7 +73,7 @@ extern "C" {
  * 30 seconds:
  * can be specified by user
  */
-#define IPFIX_DEFAULT_TEMPLATE_TIMER 30
+#define IPFIX_DEFAULT_TEMPLATE_TIMER 20
 
 #define TRUE 1
 #define FALSE 0
@@ -88,7 +88,7 @@ extern "C" {
  * maximum size of a sendbuffer
  * TODO: This value is delibaretely chosen, adapt it if you need it or make it dynamic.
  */
-#define IPFIX_MAX_SENDBUFSIZE 256
+#define IPFIX_MAX_SENDBUFSIZE 512
 
 /*
  * This macro appends data to the sendbuffer. If the sendbuffer is too small,

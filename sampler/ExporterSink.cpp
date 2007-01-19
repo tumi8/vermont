@@ -55,7 +55,7 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 			deadline.tv_usec %= 1000000L;
 		}
 
-		while(pckCount < sink->ipfix_maxpackets) {
+		while(pckCount < sink->ipfix_maxrecords) {
 			// Try to get next packet from queue before our deadline
 			result = queue->popAbs(deadline, &p);
 

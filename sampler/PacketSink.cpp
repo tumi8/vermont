@@ -25,7 +25,7 @@ void *PacketSink::packetSinkProcess(void *arg)
         while(!sink->exitFlag) {
                 p = queue->pop();
                 p->release();
-                //DPRINTF("SINK: free packet");
+                DPRINTF("SINK: free packet");
         }
 	return 0;
 }

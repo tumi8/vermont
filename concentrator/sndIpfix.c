@@ -7,7 +7,6 @@
 
 #include <string.h>
 #include "sndIpfix.h"
-#include "ipfixlolib/ipfixlolib.h"
 #include "ipfix.h"
 
 #include "msg.h"
@@ -54,16 +53,16 @@ int deinitializeIpfixSenders() {
  * @param port destination collector's port
  * @return handle to use when calling @c destroyIpfixSender()
  */
-IpfixSender* createIpfixSender(SourceID sourceID, const char* ip, uint16_t port) {
+IpfixSender* createIpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) {
 	IpfixSender* ipfixSender = (IpfixSender*)malloc(sizeof(IpfixSender));
-	ipfix_exporter** exporterP = (ipfix_exporter**)&ipfixSender->ipfixExporter;
+	ipfix_exporter** exporterP = &ipfixSender->ipfixExporter;
 	strcpy(ipfixSender->ip, ip);
 	ipfixSender->port = port;
 	ipfixSender->sentRecords = 0;
 
 	ipfixSender->lastTemplateId = SENDER_TEMPLATE_ID_LOW;
-	if(ipfix_init_exporter(sourceID, exporterP) != 0) {
-		msg(MSG_FATAL, "ipfix_init_exporter failed");
+	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
+		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
 		goto out;
 	}
 
@@ -90,7 +89,7 @@ void destroyIpfixSender(IpfixSender* ipfixSender) {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixSender->ipfixExporter;
 
 	if (ipfix_remove_collector(exporter, ipfixSender->ip, ipfixSender->port) != 0) {
-		msg(MSG_FATAL, "ipfix_remove_collector failed");
+		msg(MSG_FATAL, "sndIpfix: ipfix_remove_collector failed");
 	}
 	ipfix_deinit_exporter(exporter);
 	free(ipfixSender);
@@ -141,13 +140,13 @@ int ipfixSenderAddCollector(IpfixSender *ips, const char *ip, uint16_t port)
  * @param sourceID ignored
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* dataTemplateInfo) {
+int sndNewDataTemplate(void* ipfixSender_, SourceID* sourceID, DataTemplateInfo* dataTemplateInfo) {
 	uint16_t my_template_id;
 	uint16_t my_preceding;
 	IpfixSender* ipfixSender = ipfixSender_;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixSender->ipfixExporter;
 	if (!exporter) {
-		msg(MSG_FATAL, "Exporter not set");
+		msg(MSG_ERROR, "sndIpfix: Exporter not set");
 		return -1;
 	}
 
@@ -190,7 +189,7 @@ int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* 
 	}
 
 	if (0 != ipfix_start_datatemplate_set(exporter, my_template_id, my_preceding, dataTemplateInfo->fieldCount + splitFields, dataTemplateInfo->dataCount + splitFixedfields)) {
-		msg(MSG_FATAL, "ipfix_start_datatemplate_set failed");
+		msg(MSG_FATAL, "sndIpfix: ipfix_start_datatemplate_set failed");
 		return -1;
 	}
 
@@ -256,16 +255,18 @@ int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* 
 	}
 
 	if (0 != ipfix_put_template_data(exporter, my_template_id, data, dataLength)) {
-		msg(MSG_FATAL, "ipfix_put_template_data failed");
+		msg(MSG_FATAL, "sndIpfix: ipfix_put_template_data failed");
 		free(data);
 		return -1;
 	}
 	free(data);
 
 	if (0 != ipfix_end_template_set(exporter, my_template_id)) {
-		msg(MSG_FATAL, "ipfix_end_template_set failed");
+		msg(MSG_FATAL, "sndIpfix: ipfix_end_template_set failed");
 		return -1;
 	}
+
+	msg(MSG_INFO, "sndIpfix created template with ID %u", my_template_id);
 
 	return 0;
 }
@@ -276,7 +277,29 @@ int sndNewDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* 
  * @param sourceID ignored
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-int sndDestroyDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* dataTemplateInfo) {
+int sndDestroyDataTemplate(void* ipfixSender_, SourceID* sourceID, DataTemplateInfo* dataTemplateInfo) 
+{
+	IpfixSender* ipfixSender = ipfixSender_;
+	ipfix_exporter* exporter = (ipfix_exporter*)ipfixSender->ipfixExporter;
+
+	if (!exporter) {
+		msg(MSG_ERROR, "sndIpfix: Exporter not set");
+		return -1;
+	}
+
+	uint16_t my_n_template_id = *(uint16_t*)dataTemplateInfo->userData;
+	uint16_t my_template_id = ntohs(my_n_template_id);
+
+
+	/* Remove template from ipfixlolib */
+	if (0 != ipfix_remove_template_set(exporter, my_template_id)) {
+		msg(MSG_FATAL, "sndIpfix: ipfix_removedatatemplatestart_datatemplate_set failed");
+	}
+	else
+	{
+		msg(MSG_INFO, "sndIpfix removed template with ID %u", my_template_id);
+	}
+
 	free(dataTemplateInfo->userData);
 	return 0;
 }
@@ -289,15 +312,20 @@ int sndDestroyDataTemplate(void* ipfixSender_, SourceID sourceID, DataTemplateIn
  * @param length Length of the data block supplied
  * @param data Pointer to a data block containing all variable fields
  */
-int sndDataDataRecord(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* dataTemplateInfo, uint16_t length, FieldData* data) {
+int sndDataDataRecord(void* ipfixSender_, SourceID* sourceID, DataTemplateInfo* dataTemplateInfo, uint16_t length, FieldData* data) {
 	IpfixSender* ipfixSender = ipfixSender_;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixSender->ipfixExporter;
+
+	if (!exporter) {
+		msg(MSG_ERROR, "sndIpfix: Exporter not set");
+		return -1;
+	}
 
 	/* get Template ID from Template's userData */
 	uint16_t my_n_template_id = *(uint16_t*)dataTemplateInfo->userData;
 
 	if (ipfix_start_data_set(exporter, my_n_template_id) != 0 ) {
-		msg(MSG_FATAL, "ipfix_start_data_set failed!");
+		msg(MSG_FATAL, "sndIpfix: ipfix_start_data_set failed!");
 		return -1;
 	}
 
@@ -325,12 +353,12 @@ int sndDataDataRecord(void* ipfixSender_, SourceID sourceID, DataTemplateInfo* d
 	}
 
 	if (ipfix_end_data_set(exporter) != 0) {
-		msg(MSG_FATAL, "ipfix_end_data_set failed");
+		msg(MSG_FATAL, "sndIpfix: ipfix_end_data_set failed");
 		return -1;
 	}
 
 	if (ipfix_send(exporter) != 0) {
-		msg(MSG_FATAL, "ipfix_send failed");
+		msg(MSG_FATAL, "sndIpfix: ipfix_send failed");
 		return -1;
 	}
 

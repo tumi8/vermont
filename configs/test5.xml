@@ -46,8 +46,8 @@
 		</flowKey>
 	    </rule>
 	    <expiration>
-		<activeTimeout unit="sec">5</activeTimeout>
-		<inactiveTimeout unit="sec">10</inactiveTimeout>
+		<inactiveTimeout unit="sec">5</inactiveTimeout>
+		<activeTimeout unit="sec">10</activeTimeout>
 	    </expiration>
 	</flowMetering>
 	<next>

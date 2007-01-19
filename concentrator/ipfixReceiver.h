@@ -34,8 +34,6 @@ Free Software Foundation, Inc.,
 extern "C" {
 #endif
 
-//#define MAX_MSG_LEN   65536
-
 /**
  * Defines type of Receiver
  */

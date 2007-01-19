@@ -35,8 +35,8 @@ void destroyAggregator(IpfixAggregator* ipfixAggregator);
 void startAggregator(IpfixAggregator* ipfixAggregator);
 void stopAggregator(IpfixAggregator* ipfixAggregator);
 
-int aggregateDataRecord(void* ipfixAggregator, SourceID sourceID, TemplateInfo* ti, uint16_t length, FieldData* data);
-int aggregateDataDataRecord(void* ipfixAggregator, SourceID sourceID, DataTemplateInfo* ti, uint16_t length, FieldData* data);
+int aggregateDataRecord(void* ipfixAggregator, SourceID* sourceID, TemplateInfo* ti, uint16_t length, FieldData* data);
+int aggregateDataDataRecord(void* ipfixAggregator, SourceID* sourceID, DataTemplateInfo* ti, uint16_t length, FieldData* data);
 
 void pollAggregator(IpfixAggregator* ipfixAggregator);
 

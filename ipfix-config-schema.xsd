@@ -3,16 +3,18 @@
     targetNamespace="urn:ietf:params:xml:ns:ipfix-config"
     xmlns="urn:ietf:params:xml:ns:ipfix-config"
     elementFormDefault="qualified"
-    version="1.0">
+    version="1.2">
 
   <xsd:annotation>
     <xsd:documentation xml:lang="en">
-      IPFIX Configuration Data Model Version 1.1
+      IPFIX Configuration Data Model Version 1.2
 	New in version 1.1: 
 		- Raw Filter method for Packet Selection
 		- optional precedingRuleTemplateId for flowMeteringRule_type
 		- optional observationDomainId element for Collecting Process
 		- parameters complex element for Observation Point
+	New in version 1.2:
+		- configuration of database reader and writer
     </xsd:documentation>
   </xsd:annotation>
 
@@ -66,6 +68,8 @@
         minOccurs="0" maxOccurs="unbounded" />
       <xsd:element name="exportingProcessId" type="xsd:unsignedInt"
         minOccurs="0" maxOccurs="unbounded" />
+      <xsd:element name="dbWriterId" type="xsd:unsignedInt"
+        minOccurs="0" maxOccurs="unbounded" />
     </xsd:sequence>
   </xsd:complexType>
 
@@ -102,6 +106,7 @@
     <xsd:sequence>
     	<xsd:element name="interface" type="xsd:string" minOccurs="0" />
       	<xsd:element name="pcap_filter" type="xsd:string" minOccurs="0" />
+      	<xsd:element name="capture_len" type="xsd:unsignedInt" minOccurs="0" />
     </xsd:sequence>
   </xsd:complexType>
 
@@ -322,6 +327,36 @@
         minOccurs="0" />
     </xsd:sequence>
   </xsd:complexType>
+
+
+  <!-- Database Reader -->
+  <xsd:complexType name="dbReader_type">
+    <xsd:sequence>
+      <xsd:element name="observationDomainId" type="xsd:unsignedInt" minOccurs="0" />
+      <xsd:element name="hostName" type="xsd:string" minOccurs="0" />
+      <xsd:element name="port" type="xsd:unsignedInt" minOccurs="0" />
+      <xsd:element name="userName" type="xsd:string" minOccurs="0" />
+      <xsd:element name="password" type="xsd:string" minOccurs="0" />
+      <xsd:element name="dbName" type="xsd:string" minOccurs="0" />
+      <xsd:element name="next" type="next_type" minOccurs="0" />
+    </xsd:sequence>
+    <xsd:attribute name="id" type="xsd:unsignedInt" use="required" />
+  </xsd:complexType>
+
+
+  <!-- Database Writer -->
+  <xsd:complexType name="dbWriter_type">
+    <xsd:sequence>
+      <xsd:element name="hostName" type="xsd:string" minOccurs="0" />
+      <xsd:element name="port" type="xsd:unsignedInt" minOccurs="0" />
+      <xsd:element name="userName" type="xsd:string" minOccurs="0" />
+      <xsd:element name="password" type="xsd:string" minOccurs="0" />
+      <xsd:element name="dbName" type="xsd:string" minOccurs="0" />
+      <xsd:element name="bufferRecords" type="xsd:unsignedInt" minOccurs="0" />
+    </xsd:sequence>
+    <xsd:attribute name="id" type="xsd:unsignedInt" use="required" />
+  </xsd:complexType>
+
 
   <!-- IPFIX Device Configuration -->
   <xsd:element name="ipfixConfig">

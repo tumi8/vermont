@@ -27,6 +27,8 @@ protected:
 	int templateId;
 	Template* t;
 	uint16_t observationDomainId;
+	uint16_t recordLength;
+	uint16_t recordVLFields;
 
 	friend class MeteringConfiguration;
 };

@@ -51,9 +51,9 @@ void FlowMeteringConfiguration::configure()
 
 			while (NULL != j) {
 				if (tagMatches(j, "activeTimeout")) {
-					minBufferTime = getTimeInSecs(j);
-				} else if (tagMatches(j, "inactiveTimeout")) {
 					maxBufferTime = getTimeInSecs(j);
+				} else if (tagMatches(j, "inactiveTimeout")) {
+					minBufferTime = getTimeInSecs(j);
 				}
 				j = j->next;
 			}
@@ -89,8 +89,10 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 			try {
 				InfoElementId ie(i, *this);
 				RuleField* ruleField = mallocRuleField();
-				if (ie.getModifier().empty()) {
+				if (ie.getModifier().empty() || (ie.getModifier() == "keep")) {
 					ruleField->modifier = FIELD_MODIFIER_KEEP;
+				} else if (ie.getModifier() == "discard") {
+					ruleField->modifier = FIELD_MODIFIER_DISCARD;
 				} else {
 					ruleField->modifier = FIELD_MODIFIER_MASK_START;
 					ruleField->modifier += atoi(ie.getModifier().c_str() + 5);
@@ -143,7 +145,11 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 						}
 						break;
 					case IPFIX_TYPEID_sourceTransportPort:
+					case IPFIX_TYPEID_udpSourcePort:
+					case IPFIX_TYPEID_tcpSourcePort:
 					case IPFIX_TYPEID_destinationTransportPort:
+					case IPFIX_TYPEID_udpDestinationPort:
+					case IPFIX_TYPEID_tcpDestinationPort:
 						if (parsePortPattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
 							msg(MSG_ERROR, "Bad PortRanges pattern \"%s\"", tmp);
 							throw std::exception();

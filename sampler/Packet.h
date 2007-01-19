@@ -291,7 +291,7 @@ public:
 	// If enough data for the network/transport header has been captured, is checked by classify().
 	void * getPacketData(unsigned short offset, unsigned short header, unsigned short fieldLength) const
 	{
-	    // DPRINTF("offset: %d header: %d fieldlen: %d available: %d", offset, header, fieldLength, data_length);
+	    DPRINTF("offset: %d header: %d fieldlen: %d available: %d\n", offset, header, fieldLength, data_length);
 	    switch(header)
 	    {
 		
@@ -422,9 +422,10 @@ public:
 private:
 	/*
 	 the raw offset at which the IP header starts in the packet
-	 for Ethernet, this is 14 bytes (MAC header size)
+	 for Ethernet, this is 14 bytes (MAC header size).
+	 This constant is set via the configure script. It defaults to 14
 	 */
-	static const int IPHeaderOffset=14;
+	static const int IPHeaderOffset=IP_HEADER_OFFSET;
 
 	/*
 	 Number of concurrent users of this packet. Decremented each time

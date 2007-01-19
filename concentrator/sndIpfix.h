@@ -2,6 +2,7 @@
 #define SNDIPFIX_H
 
 #include "rcvIpfix.h"
+#include "ipfixlolib/ipfixlolib.h"
 
 /***** Constants ************************************************************/
 
@@ -15,7 +16,7 @@ extern "C" {
  * Create with @c createIpfixSender()
  */
 typedef struct {
-	void* ipfixExporter; /**< underlying ipfix_exporter structure. Cast from void* to minimize header dependencies */
+	ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. Cast from void* to minimize header dependencies */
 	uint16_t lastTemplateId; /**< Template ID of last created Template */
 	char ip[128]; /**< IP of Collector we export to */
 	uint16_t port; /**< Port of Collector we export to */
@@ -27,7 +28,7 @@ typedef struct {
 int initializeIpfixSenders();
 int deinitializeIpfixSenders();
 
-IpfixSender* createIpfixSender(SourceID sourceID, const char* ip, uint16_t port);
+IpfixSender* createIpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port);
 void destroyIpfixSender(IpfixSender* ipfixSender);
 
 void startIpfixSender(IpfixSender* ipfixSender);
@@ -35,9 +36,9 @@ void stopIpfixSender(IpfixSender* ipfixSender);
 
 int ipfixSenderAddCollector(IpfixSender *ips, const char *ip, uint16_t port);
 
-int sndNewDataTemplate(void* ipfixSender, SourceID sourceID, DataTemplateInfo* dataTemplateInfo);
-int sndDestroyDataTemplate(void* ipfixSender, SourceID sourceID, DataTemplateInfo* dataTemplateInfo);
-int sndDataDataRecord(void* ipfixSender, SourceID sourceID, DataTemplateInfo* dataTemplateInfo, uint16_t length, FieldData* data);
+int sndNewDataTemplate(void* ipfixSender, SourceID* sourceID, DataTemplateInfo* dataTemplateInfo);
+int sndDestroyDataTemplate(void* ipfixSender, SourceID* sourceID, DataTemplateInfo* dataTemplateInfo);
+int sndDataDataRecord(void* ipfixSender, SourceID* sourceID, DataTemplateInfo* dataTemplateInfo, uint16_t length, FieldData* data);
 
 CallbackInfo getIpfixSenderCallbackInfo(IpfixSender* ipfixSender);
 

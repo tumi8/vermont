@@ -1,0 +1,3 @@
+- We need a configure switch for turning of the MYSQL dependend code
+- Template management is performed via ObservationDomainId. It should be done
+  with the SourceID struct

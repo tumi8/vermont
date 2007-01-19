@@ -23,10 +23,10 @@ public:
 	virtual void connect(Configuration*);
 	virtual void startSystem();
 
-	void createExporterSink(Template* t, uint16_t sourceId);
+	void createExporterSink(Template* t, uint16_t observationDomainId, uint16_t recordLength);
 	ExporterSink* getExporterSink() const { return exporterSink; }
 	
-	void createIpfixSender(uint16_t sourceId);
+	void createIpfixSender(uint16_t observationDomainId);
 	IpfixSender* getIpfixSender() { return ipfixSender; }
 protected:
 	void setUp();

@@ -4,7 +4,7 @@ some working configuration files.
 
 WARNING: Unsupported configurations may result in a "Segmentation Fault" 
 
-observationProcess -> meteringProcess(packetselection + packetreporting) -> exportingProcess
+observationProcess -> meteringProcess(packetSelection + packetReporting) -> exportingProcess
 
 observationProcess --|
                      |--> meteringProcess(packetSelection + packetReporting)  -> exportingProcess
@@ -19,3 +19,13 @@ collectingProcess -> meteringProcess(flowMetering) -> exportingProces
 observationProcess --|
                      |--> meteringProcess(flowMetering) -> exportingProcess
 collectingProcess  --|
+
+observationProcess -> meteringProcess(packetselection + flowMetering) -> dbWriter
+
+collectingProcess -> meteringProcess(flowMetering) -> dbWriter
+
+collectingProcess -> dbWriter
+
+dbReader -> exportingProcess
+
+dbReader -> meteringProcess(flowMetering) -> exportingProcess

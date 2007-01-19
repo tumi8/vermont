@@ -77,7 +77,7 @@ public:
         // Add a template field that takes data from within the packet
         void addFieldWithOffset(unsigned short type, unsigned short length, unsigned short offset, unsigned short header, unsigned long validPacketClasses)
         {
-                //DPRINTF("Adding field type %d, length %d, offset %d\n", type, length, offset);
+                DPRINTF("Adding field type %d, length %d, offset %d\n", type, length, offset);
                 fieldType[fieldCount] = type;
                 fieldLength[fieldCount] = length;
                 fieldPacketOffset[fieldCount] = offset;
@@ -147,9 +147,9 @@ public:
 	bool checkPacketConformity(unsigned long packet_classification)
 	{
 	    unsigned i;
-	    //DPRINTF("Packet class: %lx\n", packet_classification);
+	    DPRINTF("Packet class: %lx\n", packet_classification);
 	    for(i=0; i<fieldCount; i++) {
-		//DPRINTF("Field id: %u class: %lx\n", fieldType[i], fieldValidPacketClasses[i]);
+		DPRINTF("Field id: %u class: %lx\n", fieldType[i], fieldValidPacketClasses[i]);
 		// skip meta-fields
 		if(!(fieldType[i] > 0x8000))
 		    // check if packet class supports this field

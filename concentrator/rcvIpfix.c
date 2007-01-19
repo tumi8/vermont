@@ -57,7 +57,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #include "msg.h"
 /***** Defines ************************************************************/
 
-#define SUPPORT_NETFLOWV9
 
 /***** Constants ************************************************************/
 
@@ -77,7 +76,7 @@ typedef struct {
 	uint16_t length; 
 	uint32_t exportTime;
 	uint32_t sequenceNo;
-	uint32_t sourceId;
+	uint32_t observationDomainId;
 	byte   data;
 } IpfixHeader;
 
@@ -91,7 +90,7 @@ typedef struct {
 	uint32_t uptime;
 	uint32_t exportTime;
 	uint32_t sequenceNo;
-	uint32_t sourceId;
+	uint32_t observationDomainId;
 	byte   data;
 } NetflowV9Header;
 
@@ -143,16 +142,16 @@ typedef struct {
 
 /***** Internal Functions ****************************************************/
 
-static void processDataSet(IpfixParser* ipfixParser, SourceID sourceID, IpfixSetHeader* set);
-static void processTemplateSet(IpfixParser* ipfixParser, SourceID sourceID, IpfixSetHeader* set);
-static void processDataTemplateSet(IpfixParser* ipfixParser, SourceID sourceID, IpfixSetHeader* set);
-static void processOptionsTemplateSet(IpfixParser* ipfixParser, SourceID sourceId, IpfixSetHeader* set);
+static void processDataSet(IpfixParser* ipfixParser, SourceID* sourceID, IpfixSetHeader* set);
+static void processTemplateSet(IpfixParser* ipfixParser, SourceID* sourceID, IpfixSetHeader* set);
+static void processDataTemplateSet(IpfixParser* ipfixParser, SourceID* sourceID, IpfixSetHeader* set);
+static void processOptionsTemplateSet(IpfixParser* ipfixParser, SourceID* sourceId, IpfixSetHeader* set);
 
 /**
  * Processes an IPFIX template set.
  * Called by processMessage
  */
-static void processTemplateSet(IpfixParser* ipfixParser, SourceID sourceId, IpfixSetHeader* set) {
+static void processTemplateSet(IpfixParser* ipfixParser, SourceID* sourceId, IpfixSetHeader* set) {
 	byte* endOfSet = (byte*)set + ntohs(set->length);
 	byte* record = (byte*)&set->data;
 
@@ -167,7 +166,7 @@ static void processTemplateSet(IpfixParser* ipfixParser, SourceID sourceId, Ipfi
 		}
 		BufferedTemplate* bt = (BufferedTemplate*)malloc(sizeof(BufferedTemplate));
 		TemplateInfo* ti = (TemplateInfo*)malloc(sizeof(TemplateInfo));
-		bt->sourceID = sourceId;
+		memcpy(&bt->sourceID, sourceId, sizeof(SourceID));
 		bt->templateID = ntohs(th->templateId);
 		bt->recordLength = 0;
 		bt->setID = ntohs(set->id);
@@ -202,8 +201,7 @@ static void processTemplateSet(IpfixParser* ipfixParser, SourceID sourceId, Ipfi
 		}
         
 		bufferTemplate(ipfixParser->templateBuffer, bt); 
-		// FIXME: Template expiration disabled for debugging
-		// bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
+		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
 
 		int n;          
 		for (n = 0; n < ipfixParser->callbackCount; n++) {
@@ -219,7 +217,7 @@ static void processTemplateSet(IpfixParser* ipfixParser, SourceID sourceId, Ipfi
  * Processes an IPFIX Options Template Set.
  * Called by processMessage
  */
-static void processOptionsTemplateSet(IpfixParser* ipfixParser, SourceID sourceId, IpfixSetHeader* set) {
+static void processOptionsTemplateSet(IpfixParser* ipfixParser, SourceID* sourceId, IpfixSetHeader* set) {
 	byte* endOfSet = (byte*)set + ntohs(set->length);
 	byte* record = (byte*)&set->data;
 
@@ -234,7 +232,7 @@ static void processOptionsTemplateSet(IpfixParser* ipfixParser, SourceID sourceI
 		}
 		BufferedTemplate* bt = (BufferedTemplate*)malloc(sizeof(BufferedTemplate));
 		OptionsTemplateInfo* ti = (OptionsTemplateInfo*)malloc(sizeof(OptionsTemplateInfo));
-		bt->sourceID = sourceId;
+		memcpy(&bt->sourceID, sourceId, sizeof(SourceID));
 		bt->templateID = ntohs(th->templateId);
 		bt->recordLength = 0;
 		bt->setID = ntohs(set->id);
@@ -290,8 +288,7 @@ static void processOptionsTemplateSet(IpfixParser* ipfixParser, SourceID sourceI
 			}
 		}
 		bufferTemplate(ipfixParser->templateBuffer, bt); 
-		// FIXME: Template expiration disabled for debugging
-		// bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
+		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
 
 
 		int n;
@@ -308,7 +305,7 @@ static void processOptionsTemplateSet(IpfixParser* ipfixParser, SourceID sourceI
  * Processes an IPFIX DataTemplate set.
  * Called by processMessage
  */
-static void processDataTemplateSet(IpfixParser* ipfixParser, SourceID sourceId, IpfixSetHeader* set) {
+static void processDataTemplateSet(IpfixParser* ipfixParser, SourceID* sourceId, IpfixSetHeader* set) {
 	byte* endOfSet = (byte*)set + ntohs(set->length);
 	byte* record = (byte*)&set->data;
 
@@ -323,7 +320,7 @@ static void processDataTemplateSet(IpfixParser* ipfixParser, SourceID sourceId, 
 		}
 		BufferedTemplate* bt = (BufferedTemplate*)malloc(sizeof(BufferedTemplate));
 		DataTemplateInfo* ti = (DataTemplateInfo*)malloc(sizeof(DataTemplateInfo));
-		bt->sourceID = sourceId;
+		memcpy(&bt->sourceID, sourceId, sizeof(SourceID));
 		bt->templateID = ntohs(th->templateId);
 		bt->recordLength = 0;
 		bt->setID = ntohs(set->id);
@@ -399,8 +396,7 @@ static void processDataTemplateSet(IpfixParser* ipfixParser, SourceID sourceId, 
 		record += dataLength;
 
 		bufferTemplate(ipfixParser->templateBuffer, bt); 
-		// FIXME: Template expiration disabled for debugging
-		// bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
+		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
 
 		int n;
 		for (n = 0; n < ipfixParser->callbackCount; n++) {
@@ -416,7 +412,7 @@ static void processDataTemplateSet(IpfixParser* ipfixParser, SourceID sourceId, 
  * Processes an IPFIX data set.
  * Called by processMessage
  */
-static void processDataSet(IpfixParser* ipfixParser, SourceID sourceId, IpfixSetHeader* set) {
+static void processDataSet(IpfixParser* ipfixParser, SourceID* sourceId, IpfixSetHeader* set) {
 	BufferedTemplate* bt = getBufferedTemplate(ipfixParser->templateBuffer, sourceId, ntohs(set->id));
 
 	if (bt == 0) {
@@ -621,19 +617,24 @@ static void processDataSet(IpfixParser* ipfixParser, SourceID sourceId, IpfixSet
  * Process a NetflowV9 Packet
  * @return 0 on success
  */     
-static int processNetflowV9Packet(IpfixParser* ipfixParser, byte* message, uint16_t length) {
+static int processNetflowV9Packet(IpfixParser* ipfixParser, byte* message, uint16_t length,
+                                  SourceID* sourceId)
+{
 	NetflowV9Header* header = (NetflowV9Header*)message;
 
 	/* pointer to first set */
 	IpfixSetHeader* set = (IpfixSetHeader*)&header->data;
 
 	int i;
+
+        sourceId->observationDomainId = ntohl(header->observationDomainId);
+
 	for (i = 0; i < ntohs(header->setCount); i++) {
 		if (ntohs(set->id) == NetflowV9_SetId_Template) {
-			processTemplateSet(ipfixParser, ntohl(header->sourceId), set);
+			processTemplateSet(ipfixParser, sourceId, set);
 		} else
 			if (ntohs(set->id) >= IPFIX_SetId_Data_Start) {
-				processDataSet(ipfixParser, ntohl(header->sourceId), set);
+				processDataSet(ipfixParser, sourceId, set);
 			} else {
 				msg(MSG_ERROR, "Unsupported Set ID - expected 0/256+, got %d", ntohs(set->id));
 			}
@@ -647,8 +648,11 @@ static int processNetflowV9Packet(IpfixParser* ipfixParser, byte* message, uint1
  * Process an IPFIX Packet
  * @return 0 on success
  */     
-static int processIpfixPacket(IpfixParser* ipfixParser, byte* message, uint16_t length) {
+static int processIpfixPacket(IpfixParser* ipfixParser, byte* message, uint16_t length,
+                              SourceID* sourceId)
+{
 	IpfixHeader* header = (IpfixHeader*)message;
+        sourceId->observationDomainId = ntohl(header->observationDomainId);
 
 	if (ntohs(header->length) != length) {
 		DPRINTF("Bad message length - expected %#06x, got %#06x\n", length, ntohs(header->length));
@@ -662,24 +666,22 @@ static int processIpfixPacket(IpfixParser* ipfixParser, byte* message, uint16_t 
 	IpfixSetHeader* setX = (IpfixSetHeader*)((char*)message + length); 
 
 	uint16_t tmpid;
-	SourceID tmpsid;
 	while(set < setX) {
 		tmpid=ntohs(set->id);
-		tmpsid=ntohl(header->sourceId);
 
 		switch(tmpid) {
 		case IPFIX_SetId_DataTemplate:
-			processDataTemplateSet(ipfixParser, tmpsid, set);
+			processDataTemplateSet(ipfixParser, sourceId, set);
 			break;
 		case IPFIX_SetId_Template:
-			processTemplateSet(ipfixParser, tmpsid, set);
+			processTemplateSet(ipfixParser, sourceId, set);
 			break;
 		case IPFIX_SetId_OptionsTemplate:
-			processOptionsTemplateSet(ipfixParser, tmpsid, set);
+			processOptionsTemplateSet(ipfixParser, sourceId, set);
 			break;
 		default:
 			if(tmpid >= IPFIX_SetId_Data_Start) {
-				processDataSet(ipfixParser, tmpsid, set);
+				processDataSet(ipfixParser, sourceId, set);
 			} else {
 				msg(MSG_ERROR, "processIpfixPacket: Unsupported Set ID - expected 2/3/4/256+, got %d", tmpid);
 			}
@@ -694,14 +696,15 @@ static int processIpfixPacket(IpfixParser* ipfixParser, byte* message, uint16_t 
  * Process new Message
  * @return 0 on success
  */     
-static int processMessage(IpfixParser* ipfixParser, byte* message, uint16_t length) {
+static int processMessage(IpfixParser* ipfixParser, byte* message, uint16_t length, SourceID* sourceID)
+{
 	IpfixHeader* header = (IpfixHeader*)message;
 	if (ntohs(header->version) == 0x000a) {
-		return processIpfixPacket(ipfixParser, message, length);
+		return processIpfixPacket(ipfixParser, message, length, sourceID);
 	}
 #ifdef SUPPORT_NETFLOWV9
 	if (ntohs(header->version) == 0x0009) {
-		return processNetflowV9Packet(ipfixParser, message, length);
+		return processNetflowV9Packet(ipfixParser, message, length, sourceID);
 	}
 	DPRINTF("Bad message version - expected 0x009 or 0x000a, got %#06x\n", ntohs(header->version));
 	return -1;
