@@ -40,7 +40,7 @@ void PacketSelectionConfiguration::configure()
 			xmlNodePtr j = i->xmlChildrenNode;
 			int interval = 0;
 			int spacing = 0;
-			msg(MSG_INFO, "packetSelection: Creating count based filter");
+			msg(MSG_INFO, "packetSelection: Creating count based sampler");
 			while (NULL != j) { 
 				if (tagMatches(j, "interval")) {
 					interval = atoi(getContent(j).c_str());
@@ -55,7 +55,7 @@ void PacketSelectionConfiguration::configure()
 			xmlNodePtr j = i->xmlChildrenNode;
 			int interval = 0;
 			int spacing = 0;
-			msg(MSG_INFO, "packetSelection: Creating time based filter");
+			msg(MSG_INFO, "packetSelection: Creating time based sampler");
 			while (NULL != j) {
 				if (tagMatches(j, "interval")) {
 					interval = atoi(getContent(j).c_str());
@@ -77,7 +77,7 @@ void PacketSelectionConfiguration::configure()
 			xmlNodePtr j = i->xmlChildrenNode;
 			int N, n;
 			n = N = 0;
-			msg(MSG_INFO, "packetSelection: Creating radom filter");
+			msg(MSG_INFO, "packetSelection: Creating random sampler");
 			while (NULL != j) {
 				if (tagMatches(j, "population")) {
 					N = atoi(getContent(j).c_str());
@@ -98,104 +98,29 @@ void PacketSelectionConfiguration::configure()
 		} else if (tagMatches(i, "filterRState")) {
 			msg(MSG_ERROR, "packetSelection: filterRState not yet implemented");
 		} else if (tagMatches(i, "rawFilter")) {
-			// TODO: remove the rawfilter ...
-			std::string settings;
 			xmlNodePtr j = i->xmlChildrenNode;
+			int header, offset, size, comp, value;
+			header = offset = size = comp = value = 0;
 			msg(MSG_INFO, "packetSelection: Creating raw filter");
 			while (NULL != j) {
-				if (tagMatches(j, "settings")) {
-					settings = getContent(j);
+				if (tagMatches(j, "header")) {
+					header =  atoi(getContent(j).c_str());
+				} else if (tagMatches(j, "offset")) {
+					offset = atoi(getContent(j).c_str());
+				} else if (tagMatches(j, "size")) {
+					size = atoi(getContent(j).c_str());
+				} else if (tagMatches(j, "comp")) {
+					comp = atoi(getContent(j).c_str());
+				} else if (tagMatches(j, "value")) {
+					value = atoi(getContent(j).c_str());
 				}
 				j = j->next;
 			}
-			if (!settings.empty()) {
-				filter->addProcessor(makeFilterProcessor("raw-filter", settings.c_str()));
-			}
+			filter->addProcessor(new IPHeaderFilter(header, offset, size, comp, value));
 		}
 		i = i->next;
 	}
 	msg(MSG_INFO, "PacketSelectionConfiguration: Successfully parsed packetSelection section");
-}
-
-// TODO: remove this method
-PacketProcessor* PacketSelectionConfiguration::makeFilterProcessor(const char *name, const char *setting)
-{
-#define PROCESSOR_MAX_PARAM 6
-#define PROCESSOR_INTERNAL 0
-#define PROCESSOR_SYSTEMATIC 1
-#define PROCESSOR_RANDOM 2
-#define PROCESSOR_IPHEADER 3
-	static char *PP_TAB[]={"Internal", "Systematic", "Random", "IPHeader", NULL };
-
-	PacketProcessor *n;
-	char *l, *token;
-	int id;
-
-	/*
-	  the following is helluva dirty
-	  keywords for grep: FUCK, DIRTY, MORON, SUCKS, SUCKZ
-
-	  we don't accept filters with more than PROCESSOR_MAX_PARAM parameters
-	*/
-	int p_conf[PROCESSOR_MAX_PARAM];
-	int p_conf_nr=0, i=0;
-
-	/* really do not violate original string */
-	if(!(l=strdup(setting))) {
-		return NULL;
-	}
-
-	/* processor type is the first number */
-	token=strsep(&l, ",");
-	id=atoi(token);
-
-	msg(MSG_DEBUG, "Filter: new PacketProcessor %s - type %d (%s), full params %s", name, id, PP_TAB[id], setting);
-	while((token=strsep(&l, ",")) && p_conf_nr < PROCESSOR_MAX_PARAM) {
-		p_conf[p_conf_nr]=atoi(token);
-		/* include hardcode debuggin in case of */
-		DPRINTF("PacketProcessor: token %s parsed as %d\n", token, p_conf[p_conf_nr]);
-		p_conf_nr++;
-	}
-
-	/* just dump the settings if one is interested */
-	while(i < p_conf_nr) {
-		msg(MSG_INFO, "Processor %s param #%d: %d", name, i, p_conf[i]);
-		i++;
-	}
-
-	/*
-	  the following is helluva dirty, too
-	  keywords for grep: FUCK, DIRTY, MORON, SUCKS, SUCKZ
-
-	  PROCESSOR_* are defined in config_sampler.h
-	  hardcoded parameters!
-	*/
-	switch(id) {
-	case PROCESSOR_INTERNAL:
-		n=NULL;
-		break;
-	case PROCESSOR_SYSTEMATIC:
-		n=new SystematicSampler(p_conf[0], p_conf[1], p_conf[2]);
-		break;
-	case PROCESSOR_RANDOM:
-		n=new RandomSampler(p_conf[0], p_conf[1]);
-		break;
-	case PROCESSOR_IPHEADER:
-		n=new IPHeaderFilter(p_conf[0], p_conf[1], p_conf[2], p_conf[3], p_conf[4]);
-		break;
-	default:
-		msg(MSG_FATAL, "Filter: cannot make PacketProcessor with ID %d, settings %s", id, setting);
-		n=NULL;
-	}
- //out:
-	free(l);
-
-	return n;
-#undef PROCESSOR_MAX_PARAM
-#undef PROCESSOR_INTERNAL
-#undef PROCESSOR_SYSTEMATIC
-#undef PROCESSOR_RANDOM
-#undef PROCESSOR_IPHEADER
 }
 
 

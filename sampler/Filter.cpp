@@ -63,7 +63,7 @@ void *Filter::filterProcess(void *arg)
 			filter->pktOut++;
 		} else {
 			// immediately drop the packet
-			//DPRINTF("Filter: Drop-Freeing packet here");
+			DPRINTF("Filter: Drop-Freeing packet here");
 			p->release();
 		}
 	}

@@ -30,8 +30,6 @@ public:
 protected:
 	std::vector<PacketProcessor*> filters;
 
-	PacketProcessor* makeFilterProcessor(const char *name, const char *setting);
-
 	Filter* filter;
 
 	friend class MeteringConfiguration;

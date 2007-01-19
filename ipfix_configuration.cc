@@ -5,6 +5,9 @@
 #include "exporter_configuration.h"
 #include "flowmetering_configuration.h"
 #include "vermontmain_configuration.h"
+#include "dbwriter_configuration.h"
+#include "dbreader_configuration.h"
+
 
 #include <ctime>
 
@@ -44,7 +47,10 @@ void Configuration::fillNextVector(xmlNodePtr p)
 		} else if (tagMatches(j, "exportingProcessId")) {
 			nextVector.push_back(configTypes::exporter +
 					     getContent(j));
-		}
+		} else if (tagMatches(j, "dbWriterId")) {
+			nextVector.push_back(configTypes::dbwriter +
+					     getContent(j));
+		} 
 		j = j->next;
 	}
 
@@ -111,6 +117,10 @@ IpfixConfiguration::IpfixConfiguration(const std::string& configFile)
 			conf = new ExporterConfiguration(document, current);
 		} else if (xmlCompare(current, "collectingProcess")) {
 			conf = new CollectorConfiguration(document, current);
+		} else if (xmlCompare(current, "dbWriter")) {
+			conf = new DbWriterConfiguration(document, current);
+		} else if (xmlCompare(current, "dbReader")) {
+			conf = new DbReaderConfiguration(document, current);
 		}
 		if (conf) {
 			subsystems[conf->getId()] = conf;
@@ -140,22 +150,19 @@ void IpfixConfiguration::readSubsystemConfiguration()
 
 void IpfixConfiguration::connectSubsystems()
 {
+	msg(MSG_INFO, "IpfixConfiguration: Connecting subsystems...");
 
-	// sequence is important!!!
-	// 1.) connect observers
-	// 2.) connect exporters
-	// 3.) connect collectors
-	// 4.) connect metering processes
-	// TODO: this is ugly!
 	std::string TYPES[] = {
 		configTypes::observer,
 		configTypes::exporter,
+		configTypes::dbwriter,
+		configTypes::dbreader,
 		configTypes::collector,
 		configTypes::metering,
 	};
-	for (unsigned t = 0; t != 4; ++t) {
+	for (unsigned t = 0; t != 6; ++t) {
 		for (SubsystemConfiguration::iterator i = subsystems.begin();
-	    	 i != subsystems.end(); ++i) {	
+		     i != subsystems.end(); ++i) {	
 			std::string id = i->first;
 			if (id.find(TYPES[t])) {
 				continue;
@@ -176,21 +183,24 @@ void IpfixConfiguration::connectSubsystems()
 				if (subsystems.find(nextVector[j]) == subsystems.end()) {
 					throw std::runtime_error("Could not find " + nextVector[j] + " in subsystem list");
 				}
-				if (!subsystems[nextVector[j]])
 				msg(MSG_DEBUG, "IpfixConfiguration: connecting %s to %s", c->getId().c_str(), subsystems[nextVector[j]]->getId().c_str()); 
 				c->connect(subsystems[nextVector[j]]);
 				msg(MSG_DEBUG, "IpfixConfiguration: successfully connected %s to %s", c->getId().c_str(), subsystems[nextVector[j]]->getId().c_str());
 			}
 		}
 	}
+
+	msg(MSG_INFO, "IpfixConfiguration: Successfully set up connections between subsystems");
 }
 
 void IpfixConfiguration::startSubsystems()
 {
+	msg(MSG_INFO, "IpfixConfiguration: Starting subsystems...");
 	for (SubsystemConfiguration::iterator i = subsystems.begin();
 	     i != subsystems.end(); ++i) {
 		i->second->startSystem();
 	}
+	msg(MSG_INFO, "IpfixConfiguration: Successfully started subsystems");
 }
 
 void IpfixConfiguration::pollAggregatorLoop()

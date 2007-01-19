@@ -141,7 +141,7 @@ void stopAggregator(IpfixAggregator* ipfixAggregator)
  * @param data raw data block containing the Record
  * @return 0 on success, non-zero on error
  */
-int aggregateDataRecord(void* ipfixAggregator, SourceID sourceID, TemplateInfo* ti, uint16_t length, FieldData* data)
+int aggregateDataRecord(void* ipfixAggregator, SourceID* sourceID, TemplateInfo* ti, uint16_t length, FieldData* data)
 {
 	Rules* rules = ((IpfixAggregator*)ipfixAggregator)->rules;
 
@@ -174,7 +174,7 @@ int aggregateDataRecord(void* ipfixAggregator, SourceID sourceID, TemplateInfo* 
  * @param data raw data block containing the Record
  * @return 0 on success, non-zero on error
  */
-int aggregateDataDataRecord(void* ipfixAggregator, SourceID sourceID, DataTemplateInfo* ti, uint16_t length, FieldData* data)
+int aggregateDataDataRecord(void* ipfixAggregator, SourceID* sourceID, DataTemplateInfo* ti, uint16_t length, FieldData* data)
 {
 	Rules* rules = ((IpfixAggregator*)ipfixAggregator)->rules;
 

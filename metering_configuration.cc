@@ -9,6 +9,7 @@
 #include "packetselection_configuration.h"
 #include "packetreporting_configuration.h"
 #include "flowmetering_configuration.h"
+#include "dbwriter_configuration.h"
 
 #include <sampler/Filter.h>
 #include <sampler/ExporterSink.h>
@@ -43,6 +44,11 @@ MeteringConfiguration::~MeteringConfiguration()
 void MeteringConfiguration::setObservationDomainId(uint16_t id)
 {
 	observationDomainId = id;
+}
+
+void MeteringConfiguration::setCaptureLength(int len)
+{
+	captureLength = len;
 }
 
 void MeteringConfiguration::configure()
@@ -85,12 +91,16 @@ void MeteringConfiguration::connect(Configuration* c)
 	// - an exporting process (if it does FlowMetering or PacketReporting)
 	// - an metering process (if the source does PacketSelection
 	//   and the destination does FlowMetering or PacketReporting
+	// - an dbWriter (if it does FlowMetering)
 
 	ExporterConfiguration* exporter = dynamic_cast<ExporterConfiguration*>(c);
 	if (exporter) {
 		if (packetReporting) {
 			msg(MSG_DEBUG, "Connecting packetReporting to exporter");
-			exporter->createExporterSink(packetReporting->t, observationDomainId);
+			// rough estimation of the maximum record length including variable length fields
+			uint16_t recordsPerPacket = packetReporting->recordLength + packetReporting->recordVLFields*captureLength;
+			msg(MSG_INFO, "Estimated record length is %u", recordsPerPacket);	
+			exporter->createExporterSink(packetReporting->t, observationDomainId, recordsPerPacket);
 			packetSelection->filter->setReceiver(exporter->getExporterSink());
 		}
 		if (flowMetering) {
@@ -127,6 +137,27 @@ void MeteringConfiguration::connect(Configuration* c)
 			packetSelection = NULL;
 		}
 		
+		return;
+	}
+
+	DbWriterConfiguration* dbWriterConfiguration = dynamic_cast<DbWriterConfiguration*>(c);
+	if (dbWriterConfiguration) {
+		if (!flowMetering) {
+			throw std::runtime_error("MeteringProcess: Can only be connected to an "
+						 "dbWriter if it does flowMetetering!");
+		}
+
+                dbWriterConfiguration->setObservationDomainId(observationDomainId);
+		if (packetSelection) {
+			msg(MSG_DEBUG, "Setting up HookingFilter");
+			HookingFilter* h = new HookingFilter(sampler_hook_entry);
+			h->setContext(flowMetering->ipfixAggregator);
+			packetSelection->filter->addProcessor(h);
+		}
+
+		msg(MSG_DEBUG, "Adding aggregator call backs");
+		addAggregatorCallbacks(flowMetering->ipfixAggregator, 
+				       getIpfixDbWriterCallbackInfo(dbWriterConfiguration->getDbWriter()));
 		return;
 	}
 

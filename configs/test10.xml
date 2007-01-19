@@ -1,0 +1,39 @@
+<ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
+
+	<dbReader id="1">
+		<dbName>test</dbName>
+		<next>
+			<exportingProcessId>1</exportingProcessId>
+		</next>
+	</dbReader>
+
+    <exportingProcess id="1">
+        <ipfixPacketRestrictions>
+            <maxPacketSize>1500</maxPacketSize>
+            <maxExportDelay unit="msec">500</maxExportDelay>
+        </ipfixPacketRestrictions>
+        <udpTemplateManagement>
+            <templateRefreshTimeout unit="sec">5</templateRefreshTimeout>
+            <templateRefreshRate>100</templateRefreshRate>
+        </udpTemplateManagement>
+        <collector>
+            <ipAddressType>4</ipAddressType>
+            <ipAddress>127.0.0.1</ipAddress>
+            <transportProtocol>17</transportProtocol>
+            <!--<port>1500</port>-->
+            <port>4711</port>
+        </collector>
+    </exportingProcess>
+
+    
+    <vermont_main>
+	<poll_interval unit="msec">500</poll_interval>
+	<log_file>log.stat</log_file>
+	<log_interval unit="msec">300000</log_interval>
+    </vermont_main>
+    
+</ipfixConfig>
+		    
+			
+		
+		

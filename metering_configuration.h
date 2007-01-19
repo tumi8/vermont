@@ -30,6 +30,7 @@ public:
 	virtual void startSystem();
 
 	void setObservationDomainId(uint16_t id);
+	void setCaptureLength(int len);
 
 	FlowMeteringConfiguration* getFlowMeteringConfiguration() { return flowMetering; }
 	PacketReportingConfiguration* getPacketReportingConfiguration() { return packetReporting; }
@@ -40,6 +41,7 @@ private:
 	FlowMeteringConfiguration* flowMetering;
 
 	uint16_t observationDomainId;
+	int captureLength;
 };
 
 #endif

@@ -108,6 +108,8 @@ void *Observer::observerThread(void *arg)
  */
 bool Observer::prepare(const std::string& filter)
 {
+	int dataLink = 0;
+
 	// we need to store the filter expression, because pcap needs
 	// a char* and doesn't accept a const char* ... nasty pcap-devs!!!
 	if (!filter.empty()) {
@@ -138,10 +140,25 @@ bool Observer::prepare(const std::string& filter)
 		goto out1;
 	}
 
-        if (pcap_datalink(captureDevice) != DLT_EN10MB) {
-                msg(MSG_FATAL, "Data link isn't an ethernet device. This will screw the observer. Aborting ...");
-                goto out2;
-        }
+	dataLink = pcap_datalink(captureDevice);
+	// IP_HEADER_OFFSET is set by the configure script
+	switch (dataLink) {
+	case DLT_EN10MB:
+		if (IP_HEADER_OFFSET != 14 && IP_HEADER_OFFSET != 18) {
+			msg(MSG_FATAL, "Observer: IP_HEADER_OFFSET on an ethernet device has to be 14 or 18 Bytes. Please adjust that value via configure --with-ipheader-offset");
+			goto out2;
+		}
+		break;
+	case DLT_LOOP:
+	case DLT_NULL:
+		if (IP_HEADER_OFFSET != 4) {
+			msg(MSG_FATAL, "Observer: IP_HEADER_OFFSET on BSD loop back device has to be 4 Bytes. Please adjust that value via configure --with-ipheader-offset");
+			goto out2;
+		}
+		break;
+	default:
+		msg(MSG_ERROR, "Observer: You are using an unkown IP_HEADER_OFFSET and data link combination. This can make problems. Please check if you use the correct IP_HEADER_OFFSET for your data link, if you see strange IPFIX/PSAMP packets.");
+	}
 
 
 	/* we need the netmask for the pcap_compile */

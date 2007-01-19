@@ -12,10 +12,20 @@ extern "C" {
 
 /***** Constants ************************************************************/
 
+#define MAX_ADDRESS_LEN 16
 
 /***** Data Types ***********************************************************/
 
-typedef uint32_t SourceID;
+typedef struct {
+	char ip[MAX_ADDRESS_LEN];
+	uint8_t len;
+} ExporterAddress;
+
+typedef struct {
+	uint32_t observationDomainId;
+	ExporterAddress exporterAddress;
+} SourceID;
+
 typedef uint16_t TemplateID;
 typedef uint16_t TypeId;
 typedef uint16_t FieldLength;
@@ -88,7 +98,7 @@ typedef struct {
  * @param templateInfo Pointer to a structure defining this Template
  * @return 0 if packet handled successfully
  */
-typedef int(TemplateCallbackFunction)(void* handle, SourceID sourceID, TemplateInfo* templateInfo);
+typedef int(TemplateCallbackFunction)(void* handle, SourceID* sourceID, TemplateInfo* templateInfo);
 
 /**
  * Callback function invoked when a new OptionsTemplate arrives.
@@ -97,7 +107,7 @@ typedef int(TemplateCallbackFunction)(void* handle, SourceID sourceID, TemplateI
  * @param optionsTemplateInfo Pointer to a structure defining this OptionsTemplate
  * @return 0 if packet handled successfully
  */
-typedef int(OptionsTemplateCallbackFunction)(void* handle, SourceID sourceID, OptionsTemplateInfo* optionsTemplateInfo);
+typedef int(OptionsTemplateCallbackFunction)(void* handle, SourceID* sourceID, OptionsTemplateInfo* optionsTemplateInfo);
 
 /**
  * Callback function invoked when a new DataTemplate arrives.
@@ -105,7 +115,7 @@ typedef int(OptionsTemplateCallbackFunction)(void* handle, SourceID sourceID, Op
  * @param sourceId SourceID of the exporter that sent this DataTemplate
  * @return 0 if packet handled successfully
  */
-typedef int(DataTemplateCallbackFunction)(void* handle, SourceID sourceID, DataTemplateInfo* dataTemplateInfo);
+typedef int(DataTemplateCallbackFunction)(void* handle, SourceID* sourceID, DataTemplateInfo* dataTemplateInfo);
 
 /*** Template Destruction Callbacks ***/
          
@@ -117,7 +127,7 @@ typedef int(DataTemplateCallbackFunction)(void* handle, SourceID sourceID, DataT
  * @param templateInfo Pointer to a structure defining this Template
  * @return 0 if packet handled successfully
  */
-typedef int(TemplateDestructionCallbackFunction)(void* handle, SourceID sourceID, TemplateInfo* templateInfo);
+typedef int(TemplateDestructionCallbackFunction)(void* handle, SourceID* sourceID, TemplateInfo* templateInfo);
 
 /**
  * Callback function invoked when a OptionsTemplate is being destroyed.
@@ -127,7 +137,7 @@ typedef int(TemplateDestructionCallbackFunction)(void* handle, SourceID sourceID
  * @param optionsTemplateInfo Pointer to a structure defining this OptionsTemplate
  * @return 0 if packet handled successfully
  */
-typedef int(OptionsTemplateDestructionCallbackFunction)(void* handle, SourceID sourceID, OptionsTemplateInfo* optionsTemplateInfo);
+typedef int(OptionsTemplateDestructionCallbackFunction)(void* handle, SourceID* sourceID, OptionsTemplateInfo* optionsTemplateInfo);
 
 /**
  * Callback function invoked when a DataTemplate is being destroyed.
@@ -136,7 +146,7 @@ typedef int(OptionsTemplateDestructionCallbackFunction)(void* handle, SourceID s
  * @param sourceId SourceID of the exporter that sent this DataTemplate
  * @return 0 if packet handled successfully
  */
-typedef int(DataTemplateDestructionCallbackFunction)(void* handle, SourceID sourceID, DataTemplateInfo* dataTemplateInfo);
+typedef int(DataTemplateDestructionCallbackFunction)(void* handle, SourceID* sourceID, DataTemplateInfo* dataTemplateInfo);
 
 /*** Data Callbacks ***/
 
@@ -149,7 +159,7 @@ typedef int(DataTemplateDestructionCallbackFunction)(void* handle, SourceID sour
  * @param data Pointer to a data block containing all fields
  * @return 0 if packet handled successfully
  */
-typedef int(DataRecordCallbackFunction)(void* handle, SourceID sourceID, TemplateInfo* templateInfo, uint16_t length, FieldData* data);
+typedef int(DataRecordCallbackFunction)(void* handle, SourceID* sourceID, TemplateInfo* templateInfo, uint16_t length, FieldData* data);
 
 /**
  * Callback function invoked when a new Options Record arrives.
@@ -160,7 +170,7 @@ typedef int(DataRecordCallbackFunction)(void* handle, SourceID sourceID, Templat
  * @param data Pointer to a data block containing all fields
  * @return 0 if packet handled successfully
  */
-typedef int(OptionsRecordCallbackFunction)(void* handle, SourceID sourceID, OptionsTemplateInfo* optionsTemplateInfo, uint16_t length, FieldData* data);
+typedef int(OptionsRecordCallbackFunction)(void* handle, SourceID* sourceID, OptionsTemplateInfo* optionsTemplateInfo, uint16_t length, FieldData* data);
 
 /**
  * Callback function invoked when a new Data Record with associated Fixed Values arrives.
@@ -171,7 +181,7 @@ typedef int(OptionsRecordCallbackFunction)(void* handle, SourceID sourceID, Opti
  * @param data Pointer to a data block containing all variable fields
  * @return 0 if packet handled successfully
  */
-typedef int(DataDataRecordCallbackFunction)(void* handle, SourceID sourceID, DataTemplateInfo* dataTemplateInfo, uint16_t length, FieldData* data);
+typedef int(DataDataRecordCallbackFunction)(void* handle, SourceID* sourceID, DataTemplateInfo* dataTemplateInfo, uint16_t length, FieldData* data);
 
 /**
  * Collection of callback functions used for passing Templates and Data Records between modules.
@@ -211,7 +221,8 @@ typedef struct {
  * @param message Raw message data
  * @param len Length of message
  */
-typedef int(ProcessPacketCallbackFunction)(IpfixParser* ipfixParser, byte* message, uint16_t len);
+typedef int(ProcessPacketCallbackFunction)(IpfixParser* ipfixParser, byte* message, uint16_t len,
+                                           SourceID* exporter);
 
 /**
  * Controls parsing of incoming packets.

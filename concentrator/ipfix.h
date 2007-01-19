@@ -210,6 +210,8 @@ int string2typelength(const char*s);
 #define IPFIX_LENGTH_tcpUrgentPointer               IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_totalLengthIPv4                IPFIX_LENGTH_unsigned16
 
+#define MAX_MSG_LEN   65536
+
 #ifdef __cplusplus
 }
 #endif

@@ -8,6 +8,7 @@
 #include "metering_configuration.h"
 #include "flowmetering_configuration.h"
 #include "exporter_configuration.h"
+#include "dbwriter_configuration.h"
 
 
 #include <msg.h>
@@ -46,7 +47,7 @@ void CollectorConfiguration::configure()
 		if (tagMatches(i, "listener")) {
 			readListener(i);
 		} else if (tagMatches(i, "udpTemplateLifetime")) {
-			msg(MSG_INFO, "Oooops ... Don't know how to handle udpTemplateLifetime!");
+			msg(MSG_DEBUG, "Don't know how to handle udpTemplateLifetime! Ignored.");
 		} else if (tagMatches(i, "observationDomainId")) {
 			observationDomainId = atoi(getContent(i).c_str());
 		} else if (tagMatches(i, "next")) {
@@ -63,21 +64,22 @@ void CollectorConfiguration::readListener(xmlNodePtr p)
 	xmlNodePtr i = p->xmlChildrenNode;
 
 	Listener* listener = new Listener();
+	listener->port = 4739; // standard port for IPFIX
 
 	while (NULL != i) {
 		if (tagMatches(i, "ipAddressType")) {
 			// we only have ipv4 at the moment
 			// so nothing is implemented yet for ipv6
 			if (getContent(i) != "4") {
-				msg(MSG_INFO, "Only ipv4 is supported at the moment. \"ipAddressType\" will be ignored at the moment");
+				msg(MSG_ERROR, "Only ipv4 is supported at the moment. \"ipAddressType\" will be ignored at the moment");
 			}
 		} else  if (tagMatches(i, "ipAddress")) {
 			listener->ipAddress = getContent(i);
-			msg(MSG_INFO, "Listening on a specific interface isn't supported right now. Vermont will listen on all interfaces. \"ipAddress\" will be ignored at the moment");
+			msg(MSG_DEBUG, "Listening on a specific interface isn't supported right now. Vermont will listen on all interfaces. \"ipAddress\" will be ignored at the moment");
 		} else if (tagMatches(i, "transportProtocol")) {
 			listener->protocolType = atoi(getContent(i).c_str());
 			if (listener->protocolType != 17) {
-				msg(MSG_INFO, "Vermont doesn't support any protocol other than UDP (17). transportProtocol will be ignored at the moment");
+				msg(MSG_ERROR, "Vermont doesn't support any protocol other than UDP (17). transportProtocol will be ignored at the moment");
 			}
 		} else if (tagMatches(i, "port")) {
 			listener->port = (uint16_t)atoi(getContent(i).c_str());
@@ -157,6 +159,17 @@ void CollectorConfiguration::connect(Configuration* c)
 		msg(MSG_DEBUG, "Adding IpfixPacketProcessor to IpfixCollector");
 		addIpfixPacketProcessor(ipfixCollector, ipfixPacketProcessor);
 		msg(MSG_DEBUG, "Successfully set up connection between collector and exporter");
+		return;
+	}
+
+	DbWriterConfiguration* dbWriterConfiguration = dynamic_cast<DbWriterConfiguration*>(c);
+	if (dbWriterConfiguration) {
+		msg(MSG_DEBUG, "Adding DBwriter to IpfixCollector");
+                dbWriterConfiguration->setObservationDomainId(observationDomainId);
+		addIpfixParserCallbacks(ipfixParser, getIpfixDbWriterCallbackInfo(dbWriterConfiguration->getDbWriter()));
+		setIpfixParser(ipfixPacketProcessor, ipfixParser);
+		addIpfixPacketProcessor(ipfixCollector, ipfixPacketProcessor);
+		msg(MSG_DEBUG, "Successfully set up connction between collector and dbwriter");
 		return;
 	}
 

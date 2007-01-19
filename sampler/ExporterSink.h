@@ -24,8 +24,8 @@
 
 // the maximum number of packets to be queued
 #define MAX_PACKETS 1024
-// the default maximum of IPFIX packet per big IPFIX packet sent
-#define IPFIX_PACKETS_MAX 10
+// the default maximum of records per IPFIX packet sent
+#define MAX_RECORDS_PER_PACKET 10
 // maximum time a packet may be in the exporter. in milliseconds.
 #define MAX_PACKET_LIFETIME 400
 
@@ -35,7 +35,7 @@ public:
         ExporterSink(Template *tmpl, int sID) : sourceID(sID),
                 templ(tmpl), thread(ExporterSink::exporterSinkProcess),
 		numPacketsToRelease(0), numMetaFieldsToRelease(0), 
-		ipfix_maxpackets(IPFIX_PACKETS_MAX), exportTimeout(MAX_PACKET_LIFETIME), 
+		ipfix_maxrecords(MAX_RECORDS_PER_PACKET), exportTimeout(MAX_PACKET_LIFETIME), 
 		exitFlag(false)
         {
                 int ret, i, tmplid;
@@ -107,8 +107,17 @@ public:
 		bool ret = true;
 		
                 // first, store the packet to be released later, after we have sent the data
-                DPRINTF("Adding packet to stream\n");
-                packetsToRelease[numPacketsToRelease++] = pck;
+		if(numPacketsToRelease < (MAX_PACKETS-1))
+		{
+		    DPRINTF("Adding packet to stream\n");
+		    packetsToRelease[numPacketsToRelease++] = pck;
+		}
+		else
+		{
+		    msg(MSG_ERROR, "ExporterSink: packet buffer too small, packet dropped.");
+		    pck->release();
+		    return false;
+		}
 
 		// first check if packet matches template requirements, i.e. if all fields are available
 		if(templ->checkPacketConformity(pck->classification)) 
@@ -191,17 +200,17 @@ public:
         }
 
 
-        /* max packets per big IPFIX packet */
-        bool setMaxIpfixPP(int x)
+        /* max records per IPFIX packet */
+        bool setMaxRecords(int x)
         {
-                ipfix_maxpackets=x;
+                ipfix_maxrecords=x;
 
                 return true;
         }
 
-        int getMaxIpfixPP()
+        int getMaxRecords()
         {
-                return ipfix_maxpackets;
+                return ipfix_maxrecords;
 	}
 
 	bool setExportTimeout(int ms)
@@ -229,7 +238,7 @@ protected:
 	void *metaFieldsToRelease[MAX_PACKETS*10];
 
         // put this many packets into one big IPFIX packet
-	int ipfix_maxpackets;
+	int ipfix_maxrecords;
 
         // time-constraint for exporting data, in ms
 	int exportTimeout;

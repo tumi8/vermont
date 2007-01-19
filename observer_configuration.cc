@@ -21,7 +21,7 @@
 
 
 ObserverConfiguration::ObserverConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
-	: Configuration(document, startPoint), captureLength(0), observer(NULL)
+	: Configuration(document, startPoint), observationDomain(0), captureLength(0), observer(NULL)
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
@@ -86,6 +86,12 @@ void ObserverConfiguration::setUp()
 			msg(MSG_FATAL, "Observer: wrong snaplen specified - using %d", observer->getCaptureLen());
 		}
 	}
+	else
+	{
+	    // we need capture length in connect()
+	    captureLength = observer->getCaptureLen();
+	}
+	
 	
 	//pcapChar = new char[pcapFilter.size() + 1];
 	//strncpy(pcapChar, pcapFilter.c_str(), pcapFilter.size() + 1);	
@@ -108,6 +114,7 @@ void ObserverConfiguration::connect(Configuration* c)
 	if (metering) {
 		msg(MSG_DEBUG, "Connecting observer to metering process");
 		metering->setObservationDomainId(observationDomain);
+		metering->setCaptureLength(captureLength);
 		PacketSelectionConfiguration* ps = metering->getPacketSelectionConfiguration();
 		observer->addReceiver(ps->getFilters());
 		return;

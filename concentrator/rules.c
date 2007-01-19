@@ -159,7 +159,11 @@ int parseProtoPattern(char* s, FieldData** fdata, FieldLength* length) {
 	if (strcmp(s, "UDP") == 0) proto = IPFIX_protocolIdentifier_UDP;
 	if (strcmp(s, "RAW") == 0) proto = IPFIX_protocolIdentifier_RAW;
 
-	if (proto == -1) return -1;
+	if (proto == -1) 
+	{
+		proto = atoi(s);
+		if((proto < 0) && (proto > 255)) return -1;
+	}
 
 	*length = 1;
 	FieldData* fd = (FieldData*)malloc(*length);
@@ -432,7 +436,11 @@ Rules* parseRulesFromFile(char* fname) {
 				}
 				break;
 			case IPFIX_TYPEID_sourceTransportPort:
+			case IPFIX_TYPEID_udpSourcePort:
+			case IPFIX_TYPEID_tcpSourcePort:
 			case IPFIX_TYPEID_destinationTransportPort:
+			case IPFIX_TYPEID_udpDestinationPort:
+			case IPFIX_TYPEID_tcpDestinationPort:
 				if (parsePortPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
 					msg(MSG_ERROR, "Bad PortRanges pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
 					continue;

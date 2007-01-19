@@ -39,6 +39,10 @@
 	    </reportedIE>
 	    <reportedIE>
 		<ieName>destinationIPv4Address</ieName>
+	    </reportedIE>
+	    <reportedIE>
+		<ieName>ipPayloadPacketSection</ieName>
+		<ieLength>65535</ieLength>
 		</reportedIE>
 	    <reportedIE>
 		<ieName>protocolIdentifier</ieName>
@@ -62,7 +66,7 @@
 	    <ipAddressType>4</ipAddressType>
 	    <ipAddress>127.0.0.1</ipAddress>
 	    <transportProtocol>17</transportProtocol>
-	    <port>4711</port>
+	    <port>1500</port>
 	</collector>
     </exportingProcess>
 

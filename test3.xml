@@ -20,7 +20,7 @@
         <observationDomainId>4711</observationDomainId>
         <type>pcap</type>
         <parameters>
-                <interface>eth2</interface>
+                <interface>lo0</interface>
                 <pcap_filter>ip</pcap_filter>
         </parameters>
         <next>

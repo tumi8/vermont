@@ -10,7 +10,7 @@
 #include <sampler/Template.h>
 
 PacketReportingConfiguration::PacketReportingConfiguration(xmlDocPtr doc, xmlNodePtr start)
-	: Configuration(doc, start), templateId(0), t(0), observationDomainId(0)
+	: Configuration(doc, start), templateId(0), t(0), observationDomainId(0), recordLength(0), recordVLFields(0)
 {
 
 }
@@ -66,19 +66,22 @@ void PacketReportingConfiguration::setUp()
 			continue;
 		}
 		
-		int fieldLength = id->length;
+		uint16_t fieldLength = id->length;
 		if (exportedFields[i]->hasOptionalLength()) {
-			if (fieldLength == 0) {
+			// field length 65535 indicates variable length encoding
+			// we allow configuring a fixed length for IEs with variabel length (and length=0)
+			if ((fieldLength == 0) || (fieldLength == 65535)) {
 				fieldLength = exportedFields[i]->getLength();
 			} else {
 				msg(MSG_ERROR, "Template: this is not a variable length field, ignoring optional length");
 			}
 		}
+		if (fieldLength == 65535) recordVLFields++;
+		else recordLength += fieldLength;
 		msg(MSG_INFO, "Template: adding %s -> ID %d with size %d", exportedFields[i]->getName().c_str(), id->id, fieldLength);
 		t->addField((uint16_t)id->id, fieldLength);
 	}
-	msg(MSG_DEBUG, "Template: got %d fields", t->getFieldCount());
-
+	msg(MSG_DEBUG, "Template: got %d fields, record length is %u+%u*capture_len", t->getFieldCount(), recordLength,recordVLFields);
 }
 
 void PacketReportingConfiguration::connect(Configuration* c)
@@ -87,5 +90,4 @@ void PacketReportingConfiguration::connect(Configuration* c)
 
 void PacketReportingConfiguration::startSystem()
 {
-
 }

@@ -79,7 +79,7 @@ static void exportBucket(Hashtable* ht, HashBucket* bucket)
 	for (n = 0; n < ht->callbackCount; n++) {
 		CallbackInfo* ci = &ht->callbackInfo[n];
 		if (ci->dataDataRecordCallbackFunction) {
-			ci->dataDataRecordCallbackFunction(ci->handle, 0, ht->dataTemplate, ht->fieldLength, bucket->data);
+			ci->dataDataRecordCallbackFunction(ci->handle, NULL, ht->dataTemplate, ht->fieldLength, bucket->data);
 		}
 	}
 
@@ -186,7 +186,7 @@ void destroyHashtable(Hashtable* ht)
 		CallbackInfo* ci = &ht->callbackInfo[i];
 
 		if (ci->dataTemplateDestructionCallbackFunction) {
-			ci->dataTemplateDestructionCallbackFunction(ci->handle, 0, ht->dataTemplate);
+			ci->dataTemplateDestructionCallbackFunction(ci->handle, NULL, ht->dataTemplate);
 		}
 	}
 
@@ -818,7 +818,7 @@ void hashingAddCallbacks(Hashtable* ht, CallbackInfo handles)
 		CallbackInfo* ci = &ht->callbackInfo[n];
 
 		if (ci->dataTemplateCallbackFunction) {
-			ci->dataTemplateCallbackFunction(ci->handle, 0, ht->dataTemplate);
+			ci->dataTemplateCallbackFunction(ci->handle, NULL, ht->dataTemplate);
 		}
 	}
 }
