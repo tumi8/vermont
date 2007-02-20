@@ -19,6 +19,40 @@
 
 using namespace std;
 
+
+Observer::~Observer()
+{
+    msg(MSG_DEBUG, "Observer: destructor called");
+    terminateCapture();
+
+    /* collect and output statistics */
+    pcap_stat pstats;
+    if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
+        msg(MSG_INFO, "PCAP statistics:");
+        msg(MSG_INFO, "Number of packets received: %u", pstats.ps_recv);
+        msg(MSG_INFO, "Number of packets dropped: %u", pstats.ps_drop);
+    }
+
+    /* be sure the thread is ending */
+    msg(MSG_DEBUG, "Observer: joining the ObserverThread, may take a while (until next pcap data is received)");
+    thread.join();
+    msg(MSG_DEBUG, "Observer: ObserverThread joined");
+
+    msg(MSG_DEBUG, "Observer: freeing pcap/devices");
+    if(captureDevice) {
+        pcap_close(captureDevice);
+    }
+
+    /* no pcap_freecode here, is already done after attaching the filter */
+
+    if(allDevices) {
+        pcap_freealldevs(allDevices);
+    }
+
+    delete captureInterface;
+    delete filter_exp;
+    msg(MSG_DEBUG, "Observer: successful shutdown");
+}
 /*
  This is the main observer loop. It graps packets from libpcap and
  dispatches them to the registered receivers.
@@ -86,17 +120,20 @@ void *Observer::observerThread(void *arg)
 		*/
 
 		/* broadcast packet to all receivers */
-		for(vector<ConcurrentQueue<Packet> *>::iterator it = obs->receivers.begin();
-		    it != obs->receivers.end(); ++it) {
-			if ((*it)->getCount() > 100000) {
-				msg(MSG_FATAL, "FIXME: Observer drain clogged, waiting for plumber");
-				while ((*it)->getCount() > 10000) sleep(1);
-				msg(MSG_FATAL, "Resuming Observer thread");
-			}
-			(*it)->push(p);
-		}
+        if (!obs->exitFlag) {
+            for(vector<ConcurrentQueue<Packet> *>::iterator it = obs->receivers.begin();
+                    it != obs->receivers.end(); ++it) {
+                if ((*it)->getCount() > 100000) {
+                    msg(MSG_FATAL, "Observer: Observer drain clogged, waiting for plumber");
+                    while ((*it)->getCount() > 10000) sleep(1);
+                    msg(MSG_FATAL, "Observer: drain not clogged any more, resuming operation");
+                }
+                (*it)->push(p);
+            }
+        }
 	}
 
+    msg(MSG_DEBUG, "Observer: exiting observer thread");
 	pthread_exit((void *)1);
 }
 

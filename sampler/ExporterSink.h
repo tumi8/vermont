@@ -63,6 +63,11 @@ public:
 
 	~ExporterSink()
         {
+                msg(MSG_DEBUG, "Sink: destructor called");
+                terminateSink();
+                msg(MSG_DEBUG, "Sink: waiting for exporter thread");
+                thread.join();
+                msg(MSG_DEBUG, "Sink: exporter thread joined");
                 ipfix_deinit_exporter(exporter);
         };
 
@@ -243,7 +248,6 @@ protected:
         // time-constraint for exporting data, in ms
 	int exportTimeout;
 
-public:
         bool exitFlag;
 };
 

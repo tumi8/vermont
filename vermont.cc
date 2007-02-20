@@ -23,6 +23,7 @@ static void usage();
 static void sig_handler(int x);
 static int setup_signal(int signal, void (*handler)(int));
 
+IpfixConfiguration* ipfixConfig = NULL;
 
 int main(int ac, char **dc)
 {
@@ -62,7 +63,6 @@ int main(int ac, char **dc)
 	setup_signal(SIGINT, sig_handler);
 	
 	
-	IpfixConfiguration* ipfixConfig = NULL;
 	
 	try {
 		ipfixConfig = new IpfixConfiguration(config_file);
@@ -115,9 +115,21 @@ static int setup_signal(int signal, void (*handler)(int))
 /* just shallow right now */
 static void sig_handler(int x)
 {
+    static bool shutdownInitiated = false;
+
+    if (shutdownInitiated) {
+        msg(MSG_DIALOG, "second signal received, shutting down the hard way!");
+        exit(2);
+    }
+
+    shutdownInitiated = true;
 	msg(MSG_DIALOG, "got signal %d - exiting", x);
-	// TODO: this needs fixing. none of our cool destructors will
-	// be called when exiting with exit()!
+
+    if (ipfixConfig) {
+        delete ipfixConfig;
+    }
+
+	// TODO: maybe there are more constructors to be called?
 	exit(2);
 }
 

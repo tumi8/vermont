@@ -52,28 +52,7 @@ public:
 		strcpy(captureInterface, interface.c_str());
 	};
 
-	~Observer()
-        {
-		terminateCapture();
-                /* be sure the thread is ending */
-		msg(MSG_DEBUG, "Observer: joining the ObserverThread, may take a while");
-		thread.join();
-
-		msg(MSG_DEBUG, "Observer: freeing pcap/devices");
-                if(captureDevice) {
-                        pcap_close(captureDevice);
-                }
-
-                /* no pcap_freecode here, is already done after attaching the filter */
-
-                if(allDevices) {
-                        pcap_freealldevs(allDevices);
-                }
-
-		delete captureInterface;
-		delete filter_exp;
-		msg(MSG_DEBUG, "Observer: successful shutdown");
-        };
+	~Observer();
 
 	/*
 	 call to get the main capture thread running
