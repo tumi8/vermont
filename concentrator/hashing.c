@@ -175,20 +175,23 @@ void destroyHashtable(Hashtable* ht)
 
 		while (bucket != 0) {
 			HashBucket* nextBucket = (HashBucket*)bucket->next;
-			exportBucket(ht, bucket);
+            // we don't want to export the buckets, as the exporter thread may already be shut down!
+			//exportBucket(ht, bucket);
 			destroyBucket(ht, bucket);
 			bucket = nextBucket;
 		}
 	}
 
 	/* Inform Exporter of Data Template destruction */
-	for (i = 0; i < ht->callbackCount; i++) {
+    // exporter has already shut down
+	/*for (i = 0; i < ht->callbackCount; i++) {
 		CallbackInfo* ci = &ht->callbackInfo[i];
 
 		if (ci->dataTemplateDestructionCallbackFunction) {
 			ci->dataTemplateDestructionCallbackFunction(ci->handle, NULL, ht->dataTemplate);
 		}
-	}
+	}*/
+
 
 	free(ht->dataTemplate->fieldInfo);
 	free(ht->fieldModifier);
