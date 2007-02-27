@@ -1,3 +1,5 @@
+#ifdef DB_SUPPORT_ENABLED
+
 #include <string.h>
 #include <stdlib.h>
 #include "IpfixDbWriter.h"
@@ -883,3 +885,5 @@ CallbackInfo getIpfixDbWriterCallbackInfo(IpfixDbWriter *ipfixDbWriter) {
 	
 	return ci;
 }
+
+#endif

@@ -1,3 +1,5 @@
+#ifdef DB_SUPPORT_ENABLED
+
 #include <string.h>
 #include <stdlib.h>
 #include "IpfixDbReader.h"
@@ -560,3 +562,5 @@ void addIpfixDbReaderCallbacks(IpfixDbReader* ipfixDbReader, CallbackInfo handle
 							n * sizeof(CallbackInfo));
 	memcpy(&dbReader->callbackInfo[n-1], &handles, sizeof(CallbackInfo));
 }
+
+#endif

@@ -3,6 +3,7 @@
  (C) by Lothar Braun <mail@lobraun.de>
 */
 
+#ifdef DB_SUPPORT_ENABLED
 
 #ifndef _DBREADER_CONFIGURATION_H_
 #define _DBREADER_CONFIGURATION_H_
@@ -35,5 +36,7 @@ private:
 	unsigned int portNumber;
 	uint16_t observationDomainId;
 };
+
+#endif
 
 #endif

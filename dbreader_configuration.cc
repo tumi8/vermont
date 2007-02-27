@@ -3,6 +3,7 @@
  (C) by Lothar Braun <mail@lobraun.de>
 */
 
+#ifdef DB_SUPPORT_ENABLED
 
 #include "dbreader_configuration.h"
 #include "exporter_configuration.h"
@@ -103,3 +104,5 @@ void DbReaderConfiguration::startSystem()
 	startIpfixDbReader(ipfixDbReader);
 	msg(MSG_INFO, "DbReaderConfiguration: Successfully started dbReader");
 }
+
+#endif

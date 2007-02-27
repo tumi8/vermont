@@ -1,3 +1,5 @@
+#ifdef DB_SUPPORT_ENABLED
+
 #ifndef IPFIXDBWRITER_H
 #define IPFIXDBWRITER_H
 
@@ -105,3 +107,4 @@ CallbackInfo getIpfixDbWriterCallbackInfo(IpfixDbWriter* ipfixDbWriter);
 #endif
 
 
+#endif

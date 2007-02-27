@@ -162,6 +162,7 @@ void CollectorConfiguration::connect(Configuration* c)
 		return;
 	}
 
+#ifdef DB_SUPPORT_ENABLED
 	DbWriterConfiguration* dbWriterConfiguration = dynamic_cast<DbWriterConfiguration*>(c);
 	if (dbWriterConfiguration) {
 		msg(MSG_DEBUG, "Adding DBwriter to IpfixCollector");
@@ -172,6 +173,7 @@ void CollectorConfiguration::connect(Configuration* c)
 		msg(MSG_DEBUG, "Successfully set up connction between collector and dbwriter");
 		return;
 	}
+#endif
 
 	throw std::runtime_error("Cannot connect " + c->getId() + " to a collector!");
 }
