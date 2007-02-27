@@ -173,6 +173,7 @@ public:
 	{
 		unsigned char protocol = 0;
 		unsigned char tcpDataOffset;
+		unsigned int endOfIpOffset;
 		
 		// first check for IPv4 header which needs to be at least 20 bytes long
 		if ( (netHeader + 20 <= data + data_length) && ((*netHeader >> 4) == 4) )
@@ -181,6 +182,14 @@ public:
 			classification |= PCLASS_NET_IP4;
 			transportHeaderOffset = netHeaderOffset + (( *netHeader & 0x0f ) << 2);
 
+			// crop layer 2 padding
+			endOfIpOffset = netHeaderOffset + ntohs(*((uint16_t*) (netHeader + 2)));
+			if(data_length > endOfIpOffset)
+			{
+			    DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
+			    data_length = endOfIpOffset;
+		        }
+			
 			// check if there is data for the transport header
 			if(transportHeaderOffset < data_length)
 			    transportHeader = data + transportHeaderOffset;
@@ -342,7 +351,7 @@ public:
 		    break;
 		    
 		case HEAD_NETWORK:
-		    // return only data inside netwrk header
+		    // return only data inside network header
 		    if(transportHeader == NULL)
 			len = data_length - netHeaderOffset - offset;
 		    else 

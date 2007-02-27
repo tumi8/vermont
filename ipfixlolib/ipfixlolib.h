@@ -88,7 +88,7 @@ extern "C" {
  * maximum size of a sendbuffer
  * TODO: This value is delibaretely chosen, adapt it if you need it or make it dynamic.
  */
-#define IPFIX_MAX_SENDBUFSIZE 512
+#define IPFIX_MAX_SENDBUFSIZE 1024
 
 /*
  * This macro appends data to the sendbuffer. If the sendbuffer is too small,
