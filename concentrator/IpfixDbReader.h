@@ -1,3 +1,5 @@
+#ifdef DB_SUPPORT_ENABLED
+
 #ifndef IPFIXDBREADER_H
 #define IPFIXDBREADER_H
 
@@ -80,3 +82,5 @@ void addIpfixDbReaderCallbacks(IpfixDbReader* ipfixDbReader, CallbackInfo handle
 
 #endif
 
+
+#endif

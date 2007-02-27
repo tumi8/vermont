@@ -23,6 +23,26 @@ After you created the configure script run
 $ ./configure
 $ make
 
+There are some configure switches that you should now about:
+
+--with-ipheader-offset=ARG
+
+You need to adjust the value according to the network that you want to
+monitor. The default value is 14 for ethernet devices. Other common values
+are 4 (BSD loop back device) and 18 (Ethernet von VLAN)
+
+--enable-netflow-v9
+
+Enables NetFlow v9 support (turned on by default)
+
+--enable-dprint
+
+Enables the DPRINT message system in VERMONT. Turned off by default
+
+--enable-db
+
+Enables support for DBWriter and DBReader (turned off by default)
+
 
 CONFIGURATION
 

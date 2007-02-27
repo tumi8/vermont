@@ -140,6 +140,7 @@ void MeteringConfiguration::connect(Configuration* c)
 		return;
 	}
 
+#ifdef DB_SUPPORT_ENABLED
 	DbWriterConfiguration* dbWriterConfiguration = dynamic_cast<DbWriterConfiguration*>(c);
 	if (dbWriterConfiguration) {
 		if (!flowMetering) {
@@ -160,6 +161,7 @@ void MeteringConfiguration::connect(Configuration* c)
 				       getIpfixDbWriterCallbackInfo(dbWriterConfiguration->getDbWriter()));
 		return;
 	}
+#endif
 
 	throw std::runtime_error("Cannot connect " + c->getId() + " to metering process!");
 }

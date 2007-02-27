@@ -42,11 +42,21 @@ AM_PATH_XML2(2.4.0,,AC_MSG_ERROR([*** LibXML version $XML_VERSION not found!]))
 # check for pthread
 ACX_PTHREAD
 
-# any mysql-version should be adequate
-MYSQL_FOUND=AX_LIB_MYSQL([0.1])
-if test "$MYSQL_VERSION" = ""; then
-	AC_MSG_ERROR([*** mysql client library not found. Please install it.])
-fi
+# enable dbwriter/dbreader support
+# check for mysql client liebrary if enabled
+AC_ARG_ENABLE([db],
+              [AS_HELP_STRING([--enable-db])],
+              [enable_db_support=check])
+AS_IF([test "x$enable_db_support" = "xcheck"],
+      [AC_MSG_NOTICE([Enable dbwriter/dbreader support])
+       AC_DEFINE(DB_SUPPORT_ENABLED)
+       #any mysql-version should be adequate
+       MYSQL_FOUND=AX_LIB_MYSQL([0.1])
+       if test "$MYSQL_VERSION" = ""; then 
+       		AC_MSG_ERROR([*** mysql client library not found. Please install it.])
+       fi
+      ],
+      [AC_MSG_NOTICE([DbReader/DbWriter support disabled])])
 
 # check for libpcap
 AC_CHECK_HEADER([pcap.h],

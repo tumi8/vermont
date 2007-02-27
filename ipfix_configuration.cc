@@ -118,9 +118,19 @@ IpfixConfiguration::IpfixConfiguration(const std::string& configFile)
 		} else if (xmlCompare(current, "collectingProcess")) {
 			conf = new CollectorConfiguration(document, current);
 		} else if (xmlCompare(current, "dbWriter")) {
+#ifdef DB_SUPPORT_ENABLED
 			conf = new DbWriterConfiguration(document, current);
+#else
+			msg(MSG_ERROR, "IpfixConfiguration: Vermont was compiled without "
+				       "support for dbWriter. Ignoring entry in config file!");
+#endif
 		} else if (xmlCompare(current, "dbReader")) {
+#ifdef DB_SUPPORT_ENABLED
 			conf = new DbReaderConfiguration(document, current);
+#else
+			msg(MSG_ERROR, "IpfixConfiguration: Vermont was compiled without "
+				       "support for dbReader. Ignoring entry in conifg file!");
+#endif
 		}
 		if (conf) {
 			subsystems[conf->getId()] = conf;

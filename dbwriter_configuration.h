@@ -3,6 +3,8 @@
   (C) Lothar Braun <mail@lobraun.de>
 */
 
+#ifdef DB_SUPPORT_ENABLED
+
 #ifndef _DBWRITER_CONFIGURATION_H_
 #define _DBWRITER_CONFIGURATION_H_
 
@@ -43,5 +45,7 @@ private:
 	uint16_t observationDomainId;
 	int bufferRecords;
 };
+
+#endif
 
 #endif

@@ -3,6 +3,7 @@
   (C) Lothar Braun <mail@lobraun.de>
 */
 
+#ifdef DB_SUPPORT_ENABLED
 
 #include "dbwriter_configuration.h"
 #include "msg.h"
@@ -87,3 +88,5 @@ void DbWriterConfiguration::startSystem()
 	startIpfixDbWriter(dbWriter);
 	msg(MSG_INFO, "DbWriterConfiguration: Successfully started dbWriter");
 }
+
+#endif
