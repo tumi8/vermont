@@ -28,9 +28,9 @@ Observer::~Observer()
     /* collect and output statistics */
     pcap_stat pstats;
     if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
-        msg(MSG_INFO, "PCAP statistics:");
-        msg(MSG_INFO, "Number of packets received: %u", pstats.ps_recv);
-        msg(MSG_INFO, "Number of packets dropped: %u", pstats.ps_drop);
+        msg(MSG_DIALOG, "PCAP statistics:");
+        msg(MSG_DIALOG, "Number of packets received: %u", pstats.ps_recv);
+        msg(MSG_DIALOG, "Number of packets dropped: %u", pstats.ps_drop);
     }
 
     /* be sure the thread is ending */
