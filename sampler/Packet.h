@@ -99,36 +99,28 @@ public:
 
 	// when was the packet received?
 	struct timeval timestamp;
+	unsigned long time_sec_nbo, time_usec_nbo; // network byte order, used if exported
 
 	// buffer for length of variable length fields
 	uint8_t varlength[12];
 	uint8_t varlength_index;
 	
 	// construct a new Packet for a specified number of 'users'
-	Packet(void *packetData, unsigned int len, int numUsers = 1) : users(numUsers), refCountLock()
+	Packet(void *packetData, unsigned int len, struct timeval time, int numUsers = 1) : 
+	    transportHeader(NULL), payload(NULL), transportHeaderOffset(0), payloadOffset(0), 
+	    classification(0), data_length(len), 
+	    timestamp(time), time_sec_nbo(0), time_usec_nbo(0), // nbo set by Exporter if needed
+	    varlength_index(0),
+	    users(numUsers), refCountLock()
 	{
 		data = (unsigned char *)packetData;
 		netHeader = data + IPHeaderOffset;
 		netHeaderOffset = IPHeaderOffset;
 		//transportHeader = (unsigned char *)netHeader + netTransportHeaderOffset(netHeader);
-		transportHeader = NULL;
-		transportHeaderOffset = 0;
-		payload = NULL;
-		payloadOffset = 0;
-		
-		classification = 0;
-
-		varlength_index = 0;
-		
-		data_length = len;
 
 		totalPacketsReceived++;
 
 		classify();
-		/*
-		 DO NOT SET TIMESTAMP HERE
-		 IS SET IN OBSERVER!
-		 */
 	};
 
 	// Delete the packet and free all data associated with it. Should only be called
