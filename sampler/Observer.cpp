@@ -108,8 +108,7 @@ void *Observer::observerThread(void *arg)
 		 We need reference-counting because we only push pointers around and do not copy, so the
 		 data has to stay valid.
 		 */
-		p=new Packet(packetData, packetHeader.caplen, numReceivers);
-		p->timestamp = packetHeader.ts;
+		p=new Packet(packetData, packetHeader.caplen, packetHeader.ts, numReceivers);
 
 		/*
 		DPRINTF("Observer: received packet at %d.%04d, len=%d\n",

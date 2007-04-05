@@ -38,6 +38,8 @@ bool Template::addField(uint16_t id, uint16_t len)
 		|| ((id == IPFIX_TYPEID_flowStartMicroSeconds) && (len ==  sizeof(long int))))
 	{
 		addFieldWithoutOffset(id, len);
+		if (id == IPFIX_TYPEID_flowStartMicroSeconds)
+		    msg(MSG_DIALOG, "Warning! flowStartMicroSeconds used as complement for flowStartSeconds (deviating from IPFIX info model).");
         } 
 	else 
 	{
