@@ -33,7 +33,14 @@ bool Template::addField(uint16_t id, uint16_t len)
 	/* it is a field with data from the packet itself */
 	// TODO: This should really be checked against some kind of static array instead of a
 	//       'switch' statement
-	if(id < 0x8000) {
+	if((id >= 0x8000) 
+		|| ((id == IPFIX_TYPEID_flowStartSeconds) && (len == sizeof(long int))) // length of timeval.tv_sec
+		|| ((id == IPFIX_TYPEID_flowStartMicroSeconds) && (len ==  sizeof(long int))))
+	{
+		addFieldWithoutOffset(id, len);
+        } 
+	else 
+	{
 	    if(getFieldOffsetAndHeader(id, &offset, &header, &validPacketClass) == false)
 	    {
 		msg(MSG_ERROR, "ID %d currently not supported", id);
@@ -41,8 +48,6 @@ bool Template::addField(uint16_t id, uint16_t len)
 	    }
 
 	    addFieldWithOffset(id, len, offset, header, validPacketClass);
-        } else {
-		addFieldWithoutOffset(id, len);
 	}
 	
         return true;

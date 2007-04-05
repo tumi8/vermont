@@ -15,6 +15,7 @@
 #define EXPORTER_SINK_H
 
 #include "ipfixlolib/ipfixlolib.h"
+#include "concentrator/ipfix.h"
 #include "msg.h"
 
 #include "Thread.h"
@@ -133,12 +134,20 @@ public:
 		    for(int i = 0; i < templ->getFieldCount(); i++) 
 		    {
 			templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
-			if (ttype > 0x8000) 
+			if(ttype >= 0x8000) 
 			{
 			    // it is a meta-field --> get the metadata
 			    metadata = templ->getMetaFieldData(i);
 			    ipfix_put_data_field(exporter, metadata, tlength);
 			    metaFieldsToRelease[numMetaFieldsToRelease++] = metadata;
+			}
+			else if(ttype == IPFIX_TYPEID_flowStartSeconds)
+			{
+			    ipfix_put_data_field(exporter, &(pck->timestamp.tv_sec), tlength);
+			}
+			else if(ttype == IPFIX_TYPEID_flowStartMicroSeconds)
+			{
+			    ipfix_put_data_field(exporter, &(pck->timestamp.tv_usec), tlength);
 			}
 		       	else if(tlength == 65535)
 			{

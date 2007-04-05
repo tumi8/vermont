@@ -1,0 +1,55 @@
+<ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
+
+    <observationPoint id="1">
+	<observationDomainId>4711</observationDomainId>
+	<type>pcap</type>
+	<parameters>
+		<interface>eth0</interface>
+		<pcap_filter>ip</pcap_filter>
+		<capture_len>512</capture_len>
+	</parameters>
+	<next>
+	    <meteringProcessId>1</meteringProcessId>
+	</next>
+    </observationPoint>
+    <meteringProcess id="1">
+	<packetReporting>
+            <templateId>1111</templateId>
+	    <reportedIE>
+		<ieName>ipHeaderPacketSection</ieName>
+		<ieLength>65535</ieLength>
+	    </reportedIE>
+	    <reportedIE>
+		<ieName>flowStartSeconds</ieName>
+	    </reportedIE>
+	    <reportedIE>
+		<ieName>flowStartMicroSeconds</ieName>
+	    </reportedIE>
+	</packetReporting>
+	<next>
+	    <exportingProcessId>1</exportingProcessId>
+	</next>
+    </meteringProcess>
+
+    <exportingProcess id="1">
+	<ipfixPacketRestrictions>
+	    <maxPacketSize>1500</maxPacketSize>
+	    <maxExportDelay unit="msec">500</maxExportDelay>
+	</ipfixPacketRestrictions>
+	<udpTemplateManagement>
+	    <templateRefreshTimeout unit="sec">5</templateRefreshTimeout>
+	    <templateRefreshRate>100</templateRefreshRate>
+	</udpTemplateManagement>
+	<collector>
+	    <ipAddressType>4</ipAddressType>
+	    <ipAddress>127.0.0.1</ipAddress>
+	    <transportProtocol>17</transportProtocol>
+	    <port>1500</port>
+	</collector>
+    </exportingProcess>
+    
+</ipfixConfig>
+		    
+			
+		
+		
