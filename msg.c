@@ -181,6 +181,8 @@ void * msg_thread(void *arg)
 
 		pthread_mutex_unlock(&stat_lock);
 	}
+
+	return 0;
 }
 
 #ifdef __cplusplus
