@@ -1,9 +1,17 @@
 noinst_LIBRARIES=libconcentrator.a
 
-libconcentrator_a_SOURCES=aggregator.c aggregator.h crc16.c crc16.h hashing.c \
-hashing.h ipfix.c ipfix.h ipfixReceiver.c ipfixReceiver.h printIpfix.c \
-printIpfix.h rcvIpfix.c rcvIpfix.h rules.c rules.h sampler_hook_entry.c \
-sampler_hook_entry.h sndIpfix.c sndIpfix.h templateBuffer.c templateBuffer.h \
-IpfixDbReader.h IpfixDbReader.c IpfixDbWriter.h IpfixDbWriter.c
+libconcentrator_a_SOURCES=IpfixAggregator.cpp IpfixAggregator.hpp crc16.cpp crc16.hpp Hashtable.cpp \
+Hashtable.hpp ipfix.cpp ipfix.hpp \
+IpfixReceiver.cpp IpfixReceiver.hpp \
+IpfixReceiverUdpIpV4.cpp IpfixReceiverUdpIpV4.hpp \
+FlowSink.hpp FlowSink.cpp \
+IpfixRecord.hpp IpfixRecord.cpp \
+IpfixPrinter.cpp IpfixPrinter.hpp \
+IpfixParser.cpp IpfixParser.hpp \
+IpfixPacketProcessor.cpp IpfixPacketProcessor.hpp \
+IpfixCollector.cpp IpfixCollector.hpp \
+Rules.cpp Rules.hpp Rule.cpp Rule.hpp \
+IpfixSender.cpp IpfixSender.hpp TemplateBuffer.cpp TemplateBuffer.hpp \
+IpfixDbReader.hpp IpfixDbReader.cpp IpfixDbWriter.hpp IpfixDbWriter.cpp
 
-AM_CFLAGS=-I$(top_srcdir) $(MYSQL_CFLAGS) -Wall -Werror
+AM_CXXFLAGS=-I$(top_srcdir) $(MYSQL_CFLAGS) -Wall -Werror

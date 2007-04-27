@@ -10,7 +10,7 @@
 
 #include "ipfix_configuration.h"
 
-#include <concentrator/aggregator.h>
+#include <concentrator/IpfixAggregator.hpp>
 
 #include <vector>
 #include <ctime>

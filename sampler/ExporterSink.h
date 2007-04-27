@@ -15,7 +15,7 @@
 #define EXPORTER_SINK_H
 
 #include "ipfixlolib/ipfixlolib.h"
-#include "concentrator/ipfix.h"
+#include "concentrator/ipfix.hpp"
 #include "msg.h"
 
 #include "Thread.h"

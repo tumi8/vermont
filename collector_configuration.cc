@@ -12,7 +12,8 @@
 
 
 #include <msg.h>
-#include <concentrator/aggregator.h>
+#include <concentrator/IpfixAggregator.hpp>
+#include "concentrator/IpfixReceiverUdpIpV4.hpp"
 
 
 CollectorConfiguration::CollectorConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
@@ -33,9 +34,8 @@ CollectorConfiguration::~CollectorConfiguration()
 		delete listeners[i];
 	}
 	if (ipfixCollector) {
-		stopIpfixCollector(ipfixCollector);
-		destroyIpfixCollector(ipfixCollector);
-		deinitializeIpfixReceivers();
+		ipfixCollector->stop();
+		delete ipfixCollector;
 	}
 }
 
@@ -91,25 +91,25 @@ void CollectorConfiguration::readListener(xmlNodePtr p)
 
 void CollectorConfiguration::setUp()
 {
-	ipfixCollector = createIpfixCollector();
+	ipfixCollector = new IpfixCollector;
 	if (!ipfixCollector) {
 		throw std::runtime_error("Could not create collector");
 	}
 
 	for (unsigned i = 0; i != listeners.size(); ++i) {
-		IpfixReceiver* ipfixReceiver = createIpfixReceiver(UDP_IPV4, listeners[i]->port);
+		IpfixReceiver* ipfixReceiver = new IpfixReceiverUdpIpV4(listeners[i]->port);
 		if (!ipfixReceiver) {
 			throw std::runtime_error("Could not create receiver");
 		}
-		addIpfixReceiver(ipfixCollector, ipfixReceiver);
+		ipfixCollector->addIpfixReceiver(ipfixReceiver);
 	}
 
-	ipfixPacketProcessor = createIpfixPacketProcessor();
+	ipfixPacketProcessor = new IpfixPacketProcessor;
 	if (!ipfixPacketProcessor) {
 		throw std::runtime_error("Could not create IPFIX packet processor");
 	}
 
-	ipfixParser = createIpfixParser();
+	ipfixParser = new IpfixParser;
 	if (!ipfixParser) {
 		throw std::runtime_error("Could not create IPFIX parser");
 	}
@@ -139,11 +139,11 @@ void CollectorConfiguration::connect(Configuration* c)
 			throw std::runtime_error("CollectorConfiguration: ipfixAggregator is null -> This is a bug! Please report it");
 			}
 		msg(MSG_DEBUG, "Adding aggregator to ipfixParser");
-		addIpfixParserCallbacks(ipfixParser, getAggregatorCallbackInfo(aggregator));
+		ipfixParser->addFlowSink(aggregator);
 		msg(MSG_DEBUG, "Adding ipfixParser to ipfixPacketProcessor");
-		setIpfixParser(ipfixPacketProcessor, ipfixParser);
+		ipfixPacketProcessor->ipfixParser = ipfixParser;
 		msg(MSG_DEBUG, "Adding ipfixPacketProcessor to ipfixCollector");
-		addIpfixPacketProcessor(ipfixCollector, ipfixPacketProcessor);
+		ipfixCollector->addIpfixPacketProcessor(ipfixPacketProcessor);
 		msg(MSG_DEBUG, "Sucessfully set up connection between collector and aggregator");
 		return;
 	}
@@ -153,11 +153,11 @@ void CollectorConfiguration::connect(Configuration* c)
 		exporter->createIpfixSender(observationDomainId);
 		IpfixSender* ipfixSender = exporter->getIpfixSender();
 		msg(MSG_DEBUG, "Adding IpfixSender callbacks to IpfixParser");
-		addIpfixParserCallbacks(ipfixParser, getIpfixSenderCallbackInfo(ipfixSender));
+		ipfixParser->addFlowSink(ipfixSender);
 		msg(MSG_DEBUG, "Adding IpfixParser to IpfixPacketProcessor");
-		setIpfixParser(ipfixPacketProcessor, ipfixParser);
+		ipfixPacketProcessor->ipfixParser = ipfixParser;
 		msg(MSG_DEBUG, "Adding IpfixPacketProcessor to IpfixCollector");
-		addIpfixPacketProcessor(ipfixCollector, ipfixPacketProcessor);
+		ipfixCollector->addIpfixPacketProcessor(ipfixPacketProcessor);
 		msg(MSG_DEBUG, "Successfully set up connection between collector and exporter");
 		return;
 	}
@@ -167,9 +167,9 @@ void CollectorConfiguration::connect(Configuration* c)
 	if (dbWriterConfiguration) {
 		msg(MSG_DEBUG, "Adding DBwriter to IpfixCollector");
                 dbWriterConfiguration->setObservationDomainId(observationDomainId);
-		addIpfixParserCallbacks(ipfixParser, getIpfixDbWriterCallbackInfo(dbWriterConfiguration->getDbWriter()));
-		setIpfixParser(ipfixPacketProcessor, ipfixParser);
-		addIpfixPacketProcessor(ipfixCollector, ipfixPacketProcessor);
+		ipfixParser->addFlowSink(dbWriterConfiguration->getDbWriter());
+		ipfixPacketProcessor->ipfixParser = ipfixParser;
+		ipfixCollector->addIpfixPacketProcessor(ipfixPacketProcessor);
 		msg(MSG_DEBUG, "Successfully set up connction between collector and dbwriter");
 		return;
 	}
@@ -181,5 +181,5 @@ void CollectorConfiguration::connect(Configuration* c)
 void CollectorConfiguration::startSystem()
 {
 	msg(MSG_DEBUG, "CollectorConfiguration: Starting collecting process");
-	startIpfixCollector(ipfixCollector);
+	ipfixCollector->start();
 }

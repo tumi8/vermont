@@ -12,7 +12,7 @@
 #include "ipfix_configuration.h"
 
 
-#include <concentrator/IpfixDbReader.h>
+#include <concentrator/IpfixDbReader.hpp>
 
 
 class DbReaderConfiguration : public Configuration {

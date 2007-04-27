@@ -14,8 +14,7 @@
 #include <sampler/Filter.h>
 #include <sampler/ExporterSink.h>
 #include <sampler/HookingFilter.h>
-#include <concentrator/sampler_hook_entry.h>
-#include <concentrator/ipfix.h>
+#include <concentrator/ipfix.hpp>
 
 #include <cctype>
 
@@ -106,14 +105,12 @@ void MeteringConfiguration::connect(Configuration* c)
 		if (flowMetering) {
 			if (packetSelection) {
 				msg(MSG_DEBUG, "Setting up HookingFilter");
-				HookingFilter* h = new HookingFilter(sampler_hook_entry);
-				h->setContext(flowMetering->ipfixAggregator);
+				HookingFilter* h = new HookingFilter(flowMetering->ipfixAggregator);
 				packetSelection->filter->addProcessor(h);
 			}
  			msg(MSG_DEBUG, "Setting up IpfixSender");
  			exporter->createIpfixSender(observationDomainId);
- 			addAggregatorCallbacks(flowMetering->ipfixAggregator, 
- 					       getIpfixSenderCallbackInfo(exporter->getIpfixSender()));
+ 			flowMetering->ipfixAggregator->addFlowSink(exporter->getIpfixSender());
 		}
 		return;
 	}
@@ -123,9 +120,8 @@ void MeteringConfiguration::connect(Configuration* c)
 		metering->setObservationDomainId(observationDomainId);
 		
 		if (metering->flowMetering) {
-			HookingFilter* h = new HookingFilter(sampler_hook_entry);
+			HookingFilter* h = new HookingFilter(metering->flowMetering->ipfixAggregator);
 			msg(MSG_INFO, "Added HookingFilter");
-			h->setContext(metering->flowMetering->ipfixAggregator);
 			packetSelection->filter->addProcessor(h);
 		}
 		if (metering->packetReporting) {
@@ -151,14 +147,12 @@ void MeteringConfiguration::connect(Configuration* c)
                 dbWriterConfiguration->setObservationDomainId(observationDomainId);
 		if (packetSelection) {
 			msg(MSG_DEBUG, "Setting up HookingFilter");
-			HookingFilter* h = new HookingFilter(sampler_hook_entry);
-			h->setContext(flowMetering->ipfixAggregator);
+			HookingFilter* h = new HookingFilter(flowMetering->ipfixAggregator);
 			packetSelection->filter->addProcessor(h);
 		}
 
 		msg(MSG_DEBUG, "Adding aggregator call backs");
-		addAggregatorCallbacks(flowMetering->ipfixAggregator, 
-				       getIpfixDbWriterCallbackInfo(dbWriterConfiguration->getDbWriter()));
+		flowMetering->ipfixAggregator->addFlowSink(dbWriterConfiguration->getDbWriter());
 		return;
 	}
 #endif

@@ -17,9 +17,8 @@ FlowMeteringConfiguration::FlowMeteringConfiguration(xmlDocPtr doc, xmlNodePtr s
 FlowMeteringConfiguration::~FlowMeteringConfiguration()
 {
 	if (ipfixAggregator) {
-		stopAggregator(ipfixAggregator);
-		destroyAggregator(ipfixAggregator);
-		deinitializeAggregators();
+		ipfixAggregator->stop();
+		delete ipfixAggregator;
 	}
 }
 
@@ -28,7 +27,6 @@ void FlowMeteringConfiguration::configure()
 	msg(MSG_INFO, "FlowMeteringConfiguration: Start reading flowMetering section");
 	xmlNodePtr i = start->xmlChildrenNode;
 
-	initializeAggregators();
 // 	if (!observationIdSet) {
 // 		throw std::runtime_error("MeteringConfiguration: Observation id for aggregator isn't set yet. But we need one right now!");
 // 	}
@@ -61,9 +59,7 @@ void FlowMeteringConfiguration::configure()
 		i = i->next;
 	}
 
-	ipfixAggregator = createAggregatorFromRules(rules,
-						    minBufferTime,
-						    maxBufferTime);
+	ipfixAggregator = new IpfixAggregator(rules, minBufferTime, maxBufferTime);
 	if (!ipfixAggregator) {
 		throw std::runtime_error("MeteringConfiguration: Could not create aggreagtor");
 	}
@@ -81,21 +77,20 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 
 	xmlNodePtr i = p->xmlChildrenNode;
 
-	Rule* rule = mallocRule();
+	Rule* rule = new Rule();
 	while (NULL != i) {
 		if (tagMatches(i, "templateId")) {
 			rule->id = atoi(getContent(i).c_str());
 		} else if (tagMatches(i, "flowKey")) {
 			try {
 				InfoElementId ie(i, *this);
-				RuleField* ruleField = mallocRuleField();
+				Rule::Field* ruleField = new Rule::Field();
 				if (ie.getModifier().empty() || (ie.getModifier() == "keep")) {
-					ruleField->modifier = FIELD_MODIFIER_KEEP;
+					ruleField->modifier = Rule::Field::KEEP;
 				} else if (ie.getModifier() == "discard") {
-					ruleField->modifier = FIELD_MODIFIER_DISCARD;
+					ruleField->modifier = Rule::Field::DISCARD;
 				} else {
-					ruleField->modifier = FIELD_MODIFIER_MASK_START;
-					ruleField->modifier += atoi(ie.getModifier().c_str() + 5);
+					ruleField->modifier = (Rule::Field::Modifier)((int)Rule::Field::MASK_START + atoi(ie.getModifier().c_str() + 5));
 				}
 				if (ie.getIeName() != "") {
 					if (0 == (ruleField->type.id = string2typeid(ie.getIeName().c_str()))) {
@@ -172,8 +167,8 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 			} catch (std::exception e) {}
 		} else if (tagMatches(i, "nonFlowKey")) {
 				InfoElementId ie(i, *this);
-				RuleField* ruleField = mallocRuleField();
-				ruleField->modifier = FIELD_MODIFIER_AGGREGATE;
+				Rule::Field* ruleField = new Rule::Field();
+				ruleField->modifier = Rule::Field::AGGREGATE;
 				if (ie.getIeName() != "") {
 					if (0 == (ruleField->type.id = string2typeid(ie.getIeName().c_str()))) {
 						msg(MSG_ERROR, "Bad field type \"%s\"", ie.getIeName().c_str());
@@ -199,7 +194,7 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 	}
 	rule->preceding = 0;
 	msg(MSG_INFO, "Got aggregation rule: ");
-	printRule(rule);
+	rule->print();
 	return rule;
 }
 
@@ -211,5 +206,5 @@ void FlowMeteringConfiguration::connect(Configuration*)
 void FlowMeteringConfiguration::startSystem()
 {
 	msg(MSG_DEBUG, "Starting aggregator");
-	startAggregator(ipfixAggregator);
+	ipfixAggregator->start();
 }

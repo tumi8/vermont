@@ -15,6 +15,7 @@
 #include <queue>
 #include "Lock.h"
 #include "TimeoutSemaphore.h"
+#include "msg.h"
 
 template<class T>
         class ConcurrentQueue

@@ -22,9 +22,8 @@ ExporterConfiguration::~ExporterConfiguration()
 	}
 	delete exporterSink;
 	if (ipfixSender) {
-		stopIpfixSender(ipfixSender);
-		destroyIpfixSender(ipfixSender);
-		deinitializeIpfixSenders();
+		ipfixSender->stop();
+		delete ipfixSender;
 	}
 }
 
@@ -141,9 +140,8 @@ void ExporterConfiguration::createIpfixSender(uint16_t observationDomainId)
 		return;
 	}
 
-	initializeIpfixSenders();
 	msg(MSG_DEBUG, "Exporter: Creating IpfixSender");
-	ipfixSender = ::createIpfixSender(observationDomainId,
+	ipfixSender = new IpfixSender(observationDomainId,
 					  collectors[0]->ipAddress.c_str(),
 					  collectors[0]->port);
 	if (!ipfixSender) {
@@ -159,9 +157,7 @@ void ExporterConfiguration::createIpfixSender(uint16_t observationDomainId)
 	    msg(MSG_ERROR, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
 	}
 	for (unsigned i = 1; i != collectors.size(); ++i) {
-		if (ipfixSenderAddCollector(ipfixSender,
-					    collectors[i]->ipAddress.c_str(),
-					    collectors[i]->port)) {
+		if (ipfixSender->addCollector(collectors[i]->ipAddress.c_str(), collectors[i]->port)) {
 			msg(MSG_ERROR, "Config: error adding collector %s:%d to IpfixSender",
 			    collectors[i]->ipAddress.c_str(), collectors[i]->port);
 		}
@@ -169,7 +165,7 @@ void ExporterConfiguration::createIpfixSender(uint16_t observationDomainId)
 	// we need to start IpfixSender right here, because ipfixAggregator
 	// needs a running IpfixSender before it can be created
 	// TODO: FIX THIS!
-	startIpfixSender(ipfixSender);
+	ipfixSender->start();
 }
 
 void ExporterConfiguration::connect(Configuration*)

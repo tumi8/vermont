@@ -2,9 +2,9 @@
  Hooking Filter
  (c) by Ronny T. Lampert
 
- This filter calls a given function pointer for every packet it receives.
- Because we assume standard C code that doesn't know about class Packet
- we have to marshall the relevant pointers into a struct first.
+ This filter serves as the interface between the
+ Sampler part, which deals with Packets, and the
+ Concentrator part, which deals with Flows.
 
  */
 
@@ -12,43 +12,39 @@
 #define HOOKING_FILTER_H
 
 #include "PacketProcessor.h"
+#include "concentrator/FlowSink.hpp"
 
 class HookingFilter : public PacketProcessor {
 
-public:
+	public:
+		static IpfixRecord::TemplateInfo ip_traffic_template;
+		static IpfixRecord::TemplateInfo icmp_traffic_template;
+		static IpfixRecord::TemplateInfo udp_traffic_template;
+		static IpfixRecord::TemplateInfo tcp_traffic_template;
 
-	HookingFilter(void (*hook)(void*, void *)) {
-                f=hook;
-	}
+		HookingFilter(FlowSink *flowSink = 0) : flowSink(flowSink) {
+		}
 
-	virtual ~HookingFilter() {
-	}
+		virtual ~HookingFilter() {
+		}
 
-        /*
-         the hook function may need additional context.
-         in our case we need the instance of the aggregator that gets data
-         */
-        void setContext(void *c) {
-		ctx=c;
-	}
+		/*
+		   the hook function may need additional context.
+		   in our case we need the instance of the aggregator that gets data
+		   */
+		void setFlowSink(FlowSink *flowSink) {
+			this->flowSink=flowSink;
+		}
 
-	void setHook(void (*hook)(void *, void *)) {
-                f=hook;
-	}
+		virtual bool processPacket(const Packet *p);
 
-	virtual bool processPacket(const Packet *p);
+	protected:
+		FlowSink *flowSink;
 
-protected:
-
-	/*
-	 this is called "f" because our mentor created that name accidently
-	 so it was meant to stay, because everyone knew what it represents
-         */
-	void (*f)(void *,void *);
-
-	/* we may need a context */
-        void *ctx;
-
+		static IpfixRecord::FieldInfo ip_traffic_fi[];
+		static IpfixRecord::FieldInfo icmp_traffic_fi[];
+		static IpfixRecord::FieldInfo udp_traffic_fi[];
+		static IpfixRecord::FieldInfo tcp_traffic_fi[];
 };
 
 

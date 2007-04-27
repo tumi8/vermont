@@ -12,7 +12,7 @@
 #include "ipfix_configuration.h"
 
 
-#include <concentrator/IpfixDbWriter.h>
+#include <concentrator/IpfixDbWriter.hpp>
 
 
 #include <string>
