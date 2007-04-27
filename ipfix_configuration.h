@@ -16,8 +16,8 @@
 #include <vector>
 #include <map>
 
-#include <concentrator/ipfix.h>
-#include <concentrator/aggregator.h>
+#include <concentrator/ipfix.hpp>
+#include <concentrator/IpfixAggregator.hpp>
 #include <ipfixlolib/ipfix_names.h>
 
 

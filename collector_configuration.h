@@ -11,7 +11,7 @@
 #include "ipfix_configuration.h"
 
 
-#include <concentrator/rcvIpfix.h>
+#include <concentrator/IpfixCollector.hpp>
 
 
 #include <vector>

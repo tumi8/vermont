@@ -1,6 +1,6 @@
 bin_PROGRAMS=testCollector
 
-testCollector_SOURCES=testCollector.c ../msg.h ../msg.c
+testCollector_SOURCES=testCollector.cpp ../msg.h ../msg.c
 
 AM_CFLAGS=-I$(top_srcdir) -I$(top_srcdir)/concentrator
 AM_CXXFLAGS=$(AM_CFLAGS)

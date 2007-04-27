@@ -10,8 +10,8 @@
 #include "ipfix_configuration.h"
 
 
-#include <concentrator/aggregator.h>
-#include <concentrator/rules.h>
+#include <concentrator/IpfixAggregator.hpp>
+#include <concentrator/Rules.hpp>
 
 
 class MeteringConfiguration;

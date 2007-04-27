@@ -5,7 +5,7 @@
 #include "ipfix_configuration.h"
 
 
-#include <concentrator/sndIpfix.h>
+#include <concentrator/IpfixSender.hpp>
 
 #include <vector>
 

@@ -16,7 +16,7 @@
 
 #include "msg.h"
 
-#include "concentrator/ipfix.h"
+#include "concentrator/ipfix.hpp"
 
 #include "Template.h"
 

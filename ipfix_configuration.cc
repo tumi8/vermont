@@ -233,7 +233,7 @@ void IpfixConfiguration::pollAggregatorLoop()
 		while (!stop) {
 			nanosleep(&req, &rem);
 			for (unsigned i = 0; i != aggregators.size(); ++i) {
-				::pollAggregator(aggregators[i]);
+				aggregators[i]->poll();
 			}
 		}
 	}

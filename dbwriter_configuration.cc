@@ -23,9 +23,8 @@ DbWriterConfiguration::DbWriterConfiguration(xmlDocPtr document, xmlNodePtr star
 DbWriterConfiguration::~DbWriterConfiguration()
 {
 	if (dbWriter) {
-		stopIpfixDbWriter(dbWriter);
-		destroyIpfixDbWriter(dbWriter);
-		deinitializeIpfixDbWriters();
+		dbWriter->stop();
+		delete dbWriter;
 	}
 }
 
@@ -63,13 +62,11 @@ void DbWriterConfiguration::configure()
 
 void DbWriterConfiguration::setUp()
 {
-	initializeIpfixDbWriters();
-
         if (dbName == "") {
                 throw std::runtime_error("DBWriterConfigurations: No database name given!");
         }
 
-	dbWriter = createIpfixDbWriter(hostName.c_str(), dbName.c_str(),
+	dbWriter = new IpfixDbWriter(hostName.c_str(), dbName.c_str(),
 				       userName.c_str(), password.c_str(),
 				       portNumber, observationDomainId, bufferRecords);
 	if (!dbWriter) {
@@ -85,7 +82,7 @@ void DbWriterConfiguration::connect(Configuration*)
 void DbWriterConfiguration::startSystem()
 {
 	msg(MSG_INFO, "DbWriterConfiguration: Starting dbWriter");
-	startIpfixDbWriter(dbWriter);
+	dbWriter->start();
 	msg(MSG_INFO, "DbWriterConfiguration: Successfully started dbWriter");
 }
 

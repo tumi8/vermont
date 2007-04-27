@@ -26,9 +26,8 @@ DbReaderConfiguration::DbReaderConfiguration(xmlDocPtr document, xmlNodePtr star
 DbReaderConfiguration::~DbReaderConfiguration()
 {
 	if (ipfixDbReader) {
-		stopIpfixDbReader(ipfixDbReader);
-		destroyIpfixDbReader(ipfixDbReader);
-		deinitializeIpfixDbReaders();
+		ipfixDbReader->stop();
+		delete ipfixDbReader;
 	}
 }
 
@@ -60,8 +59,7 @@ void DbReaderConfiguration::configure()
 
 void DbReaderConfiguration::setUp()
 {
-	initializeIpfixDbReaders();
-	ipfixDbReader = createIpfixDbReader(hostName.c_str(), dbName.c_str(),
+	ipfixDbReader = new IpfixDbReader(hostName.c_str(), dbName.c_str(),
 					    userName.c_str(), password.c_str(),
 					    portNumber, observationDomainId);
 	if (!ipfixDbReader) {
@@ -76,7 +74,7 @@ void DbReaderConfiguration::connect(Configuration* c)
 		exporter->createIpfixSender(ipfixDbReader->srcId.observationDomainId);
 		IpfixSender* ipfixSender = exporter->getIpfixSender();
 		msg(MSG_INFO, "DbReaderConfiguration: Adding ipfixSender-callbacks to dbReader");
-		addIpfixDbReaderCallbacks(ipfixDbReader, getIpfixSenderCallbackInfo(ipfixSender));
+		ipfixDbReader->addFlowSink(ipfixSender);
 		msg(MSG_INFO, "DbReaderConfiguration: Successfully set up connection between dbReader and Exporter");
 		return;
 	}
@@ -88,7 +86,7 @@ void DbReaderConfiguration::connect(Configuration* c)
 		}
 		msg(MSG_INFO, "DBReaderConfiguration: Adding dbreader-callbacks to aggregator");
 		IpfixAggregator* aggregator = fm->getIpfixAggregator();
-		addIpfixDbReaderCallbacks(ipfixDbReader, getAggregatorCallbackInfo(aggregator));
+		ipfixDbReader->addFlowSink(aggregator);
 		msg(MSG_INFO, "DbReaderConfiguration: Successfully set up connection between dbReader and metering process");
 		
 
@@ -101,7 +99,7 @@ void DbReaderConfiguration::connect(Configuration* c)
 void DbReaderConfiguration::startSystem()
 {
 	msg(MSG_INFO, "DbReaderConfiguration: Starting dbReader...");
-	startIpfixDbReader(ipfixDbReader);
+	ipfixDbReader->start();
 	msg(MSG_INFO, "DbReaderConfiguration: Successfully started dbReader");
 }
 
