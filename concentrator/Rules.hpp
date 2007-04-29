@@ -35,6 +35,7 @@
  */
 class Rules {
 	public:
+		Rules();
 		Rules(char* fname);
 		~Rules();
 

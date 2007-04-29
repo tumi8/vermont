@@ -29,11 +29,11 @@
 /**
  * Returns a IpfixRecord::TemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo or NULL
  */
-TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(IpfixRecord::SourceID* sourceId, TemplateID templateId) {
+TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId) {
 	time_t now = time(0);
 	TemplateBuffer::BufferedTemplate* bt = head;
 	while (bt != 0) {
-		if ((bt->sourceID.observationDomainId == sourceId->observationDomainId) && (bt->templateID == templateId)) {
+		if ((bt->sourceID->observationDomainId == sourceId->observationDomainId) && (bt->templateID == templateId)) {
 			if ((bt->expires) && (bt->expires < now)) {
 				destroyBufferedTemplate(sourceId, templateId);
 				return 0;
@@ -49,7 +49,7 @@ TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(IpfixRecor
  * Saves a IpfixRecord::TemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo overwriting existing Templates
  */
 void TemplateBuffer::bufferTemplate(TemplateBuffer::BufferedTemplate* bt) {
-	destroyBufferedTemplate(&bt->sourceID, bt->templateID);
+	destroyBufferedTemplate(bt->sourceID, bt->templateID);
 	bt->next = head;
 	bt->expires = 0;
 	head = bt;
@@ -58,12 +58,12 @@ void TemplateBuffer::bufferTemplate(TemplateBuffer::BufferedTemplate* bt) {
 /**
  * Frees memory, marks Template unused.
  */
-void TemplateBuffer::destroyBufferedTemplate(IpfixRecord::SourceID* sourceId, TemplateID templateId) 
+void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId) 
 {
 	TemplateBuffer::BufferedTemplate* predecessor = 0;
 	TemplateBuffer::BufferedTemplate* bt = head;
 	while (bt != 0) {
-		if ((bt->sourceID.observationDomainId == sourceId->observationDomainId) && (bt->templateID == templateId)) break;
+		if ((bt->sourceID->observationDomainId == sourceId->observationDomainId) && (bt->templateID == templateId)) break;
 		predecessor = bt;
 		bt = (TemplateBuffer::BufferedTemplate*)bt->next;
 	}
@@ -74,54 +74,48 @@ void TemplateBuffer::destroyBufferedTemplate(IpfixRecord::SourceID* sourceId, Te
 		head = (TemplateBuffer::BufferedTemplate*)bt->next;
 	}
 	if (bt->setID == IPFIX_SetId_Template) {
-		free(bt->templateInfo->fieldInfo);
-
 		/* Invoke all registered callback functions */
+		boost::shared_ptr<IpfixTemplateDestructionRecord> ipfixRecord(new IpfixTemplateDestructionRecord);
+		ipfixRecord->sourceID = sourceId;
+		ipfixRecord->templateInfo = bt->templateInfo;
 		for (IpfixParser::FlowSinks::iterator i = ipfixParser->flowSinks.begin(); i != ipfixParser->flowSinks.end(); i++) {
-			(*i)->onTemplateDestruction(sourceId, bt->templateInfo);
+			(*i)->push(ipfixRecord);
 		}
-
-		free(bt->templateInfo);
 	} else
 #ifdef SUPPORT_NETFLOWV9
 		if (bt->setID == NetflowV9_SetId_Template) {
-			free(bt->templateInfo->fieldInfo);
-
 			/* Invoke all registered callback functions */
+			boost::shared_ptr<IpfixTemplateDestructionRecord> ipfixRecord(new IpfixTemplateDestructionRecord);
+			ipfixRecord->sourceID = sourceId;
+			ipfixRecord->templateInfo = bt->templateInfo;
 			for (IpfixParser::FlowSinks::iterator i = ipfixParser->flowSinks.begin(); i != ipfixParser->flowSinks.end(); i++) {
-				(*i)->onTemplateDestruction(sourceId, bt->templateInfo);
+				(*i)->push(ipfixRecord);
 			}
-
-			free(bt->templateInfo);
 		} else
 #endif
 			if (bt->setID == IPFIX_SetId_OptionsTemplate) {
-				free(bt->optionsTemplateInfo->scopeInfo);
-				free(bt->optionsTemplateInfo->fieldInfo);
-
 				/* Invoke all registered callback functions */
+				boost::shared_ptr<IpfixOptionsTemplateDestructionRecord> ipfixRecord(new IpfixOptionsTemplateDestructionRecord);
+				ipfixRecord->sourceID = sourceId;
+				ipfixRecord->optionsTemplateInfo = bt->optionsTemplateInfo;
 				for (IpfixParser::FlowSinks::iterator i = ipfixParser->flowSinks.begin(); i != ipfixParser->flowSinks.end(); i++) {
-					(*i)->onOptionsTemplateDestruction(sourceId, bt->optionsTemplateInfo);
+					(*i)->push(ipfixRecord);
 				}
-
-			free(bt->optionsTemplateInfo);
-		} else {
+			} else {
 				if (bt->setID == IPFIX_SetId_DataTemplate) {
-					free(bt->dataTemplateInfo->fieldInfo);
-					free(bt->dataTemplateInfo->dataInfo);
-					free(bt->dataTemplateInfo->data);
-
 					/* Invoke all registered callback functions */
+					boost::shared_ptr<IpfixDataTemplateDestructionRecord> ipfixRecord(new IpfixDataTemplateDestructionRecord);
+					ipfixRecord->sourceID = sourceId;
+					ipfixRecord->dataTemplateInfo = bt->dataTemplateInfo;
 					for (IpfixParser::FlowSinks::iterator i = ipfixParser->flowSinks.begin(); i != ipfixParser->flowSinks.end(); i++) {
-						(*i)->onDataTemplateDestruction(sourceId, bt->dataTemplateInfo);
+						(*i)->push(ipfixRecord);
 					}
 
-					free(bt->dataTemplateInfo);
-			} else {
-				msg(MSG_FATAL, "Unknown template type requested to be freed: %d", bt->setID);
-			}
+				} else {
+					msg(MSG_FATAL, "Unknown template type requested to be freed: %d", bt->setID);
 				}
-        free(bt);
+			}
+		delete bt;
 }
 
 /**
@@ -139,7 +133,7 @@ TemplateBuffer::~TemplateBuffer() {
 	while (head != 0) {
 		TemplateBuffer::BufferedTemplate* bt = head;
 		TemplateBuffer::BufferedTemplate* bt2 = (TemplateBuffer::BufferedTemplate*)bt->next;
-		destroyBufferedTemplate(&bt->sourceID, bt->templateID);
+		destroyBufferedTemplate(bt->sourceID, bt->templateID);
 		head = bt2;
 	}
 }

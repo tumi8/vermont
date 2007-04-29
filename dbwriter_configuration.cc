@@ -83,6 +83,7 @@ void DbWriterConfiguration::startSystem()
 {
 	msg(MSG_INFO, "DbWriterConfiguration: Starting dbWriter");
 	dbWriter->start();
+	dbWriter->runSink();
 	msg(MSG_INFO, "DbWriterConfiguration: Successfully started dbWriter");
 }
 

@@ -54,6 +54,7 @@ int main(int argc, char *argv[]) {
 
 	IpfixPrinter ipfixPrinter;
 	ipfixPrinter.start();
+	ipfixPrinter.runSink();
 
 	IpfixReceiverUdpIpV4 ipfixReceiver(lport);
 	/* (not in this branch of rcvIpfix)

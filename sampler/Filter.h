@@ -79,7 +79,7 @@ protected:
         std::vector<PacketProcessor *> processors;
 
         // the next in line that gets our output
-        ConcurrentQueue<Packet> *receiver;
+        ConcurrentQueue<Packet*> *receiver;
 	bool hasReceiver_;
 
 public:

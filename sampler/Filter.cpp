@@ -37,8 +37,8 @@ void *Filter::filterProcess(void *arg)
 	bool keepPacket=true;
 
 	/* for dumb compilers, do CSE here to spare some cycles below */
-	ConcurrentQueue<Packet> *in_q=filter->getQueue();
-	ConcurrentQueue<Packet> *out_q=filter->receiver;
+	ConcurrentQueue<Packet*> *in_q=filter->getQueue();
+	ConcurrentQueue<Packet*> *out_q=filter->receiver;
 
 	msg(MSG_INFO, "Filter: now running the filter thread");
 	while(!filter->exitFlag) {

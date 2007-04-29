@@ -49,8 +49,8 @@ Observer::~Observer()
         pcap_freealldevs(allDevices);
     }
 
-    delete captureInterface;
-    delete filter_exp;
+    free(captureInterface);
+    delete[] filter_exp;
     msg(MSG_DEBUG, "Observer: successful shutdown");
 }
 /*
@@ -120,7 +120,7 @@ void *Observer::observerThread(void *arg)
 
 		/* broadcast packet to all receivers */
         if (!obs->exitFlag) {
-            for(vector<ConcurrentQueue<Packet> *>::iterator it = obs->receivers.begin();
+            for(vector<ConcurrentQueue<Packet*> *>::iterator it = obs->receivers.begin();
                     it != obs->receivers.end(); ++it) {
                 if ((*it)->getCount() > 100000) {
                     msg(MSG_FATAL, "Observer: Observer drain clogged, waiting for plumber");

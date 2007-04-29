@@ -32,7 +32,7 @@ public:
                 }
         };
 
-        inline void push(T *t)
+        inline void push(T t)
         {
                 lock.lock();
                 queue.push(t);
@@ -43,9 +43,9 @@ public:
                 semaphore.post();
         };
 
-        inline T *pop()
+        inline T pop()
         {
-                T *result;
+                T result;
 
                 semaphore.wait();
 
@@ -65,12 +65,11 @@ public:
 	// *******************
 	// *** DEPRECATED, use pop_abs instead
 	// *******************
-	inline bool pop(long timeout_ms, T **res)
+	inline bool pop(long timeout_ms, T *res)
 	{
 		// try to get an item from the queue
 		if(!semaphore.wait(timeout_ms)) {
 			// timeout occured
-			*res = 0;
 			return false;
 		}
 		
@@ -87,7 +86,7 @@ public:
 
 	// like pop above, but with absolute time instead of delta.
 	// use this instead of the above, makes things easier!
-	inline bool popAbs(const struct timeval &timeout, T **res)
+	inline bool popAbs(const struct timeval &timeout, T *res)
 	{
 		if(!semaphore.waitAbs(timeout)) {
 			// timeout occured
@@ -115,7 +114,7 @@ public:
 	int poppedCount;
 
 protected:
-        std::queue<T *> queue;
+        std::queue<T> queue;
         int count;
         Lock lock;
         TimeoutSemaphore semaphore;

@@ -76,13 +76,13 @@ IpfixReceiverUdpIpV4::~IpfixReceiverUdpIpV4() {
 void IpfixReceiverUdpIpV4::run() {
 	struct sockaddr_in clientAddress;
 	socklen_t clientAddressLen;
-	uint8_t* data = (uint8_t*)malloc(sizeof(uint8_t)*MAX_MSG_LEN);
-	IpfixRecord::SourceID *sourceID = (IpfixRecord::SourceID*)malloc(sizeof(IpfixRecord::SourceID));
+	boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
+	boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
 	int n;
 	
 	while(!exit) {
 		clientAddressLen = sizeof(struct sockaddr_in);
-		n = recvfrom(listen_socket, data, MAX_MSG_LEN,
+		n = recvfrom(listen_socket, data.get(), MAX_MSG_LEN,
 			     0, (struct sockaddr*)&clientAddress, &clientAddressLen);
 		if (n < 0) {
 			msg(MSG_DEBUG, "recvfrom returned without data, terminating listener thread");
@@ -107,7 +107,5 @@ void IpfixReceiverUdpIpV4::run() {
 			msg(MSG_DEBUG, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
 		}
 	}
-	
-	free(data);
 }
 

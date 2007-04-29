@@ -32,7 +32,7 @@ FlowSink::~FlowSink() {
 	msg(MSG_DEBUG, "Sink: exporter thread joined");
 }
 
-void FlowSink::push(IpfixRecord* ipfixRecord) {
+void FlowSink::push(boost::shared_ptr<IpfixRecord> ipfixRecord) {
 	ipfixRecords.push(ipfixRecord);
 }
 
@@ -46,45 +46,44 @@ void FlowSink::flowSinkProcess()
 {
 	msg(MSG_INFO, "Sink: now running FlowSink thread");
 	while(!exitFlag) {
-		IpfixRecord* ipfixRecord;
+		boost::shared_ptr<IpfixRecord> ipfixRecord;
 		if (!ipfixRecords.pop(1000, &ipfixRecord)) continue;
 		{
-			IpfixDataRecord* rec = dynamic_cast<IpfixDataRecord*>(ipfixRecord);
-			if (rec) onDataRecord(rec->sourceID, rec->templateInfo, rec->dataLength, rec->data.get());
+			IpfixDataRecord* rec = dynamic_cast<IpfixDataRecord*>(ipfixRecord.get());
+			if (rec) onDataRecord(rec->sourceID.get(), rec->templateInfo.get(), rec->dataLength, rec->data);
 		}
 		{
-			IpfixDataDataRecord* rec = dynamic_cast<IpfixDataDataRecord*>(ipfixRecord);
-			if (rec) onDataDataRecord(rec->sourceID, rec->dataTemplateInfo, rec->dataLength, rec->data.get());
+			IpfixDataDataRecord* rec = dynamic_cast<IpfixDataDataRecord*>(ipfixRecord.get());
+			if (rec) onDataDataRecord(rec->sourceID.get(), rec->dataTemplateInfo.get(), rec->dataLength, rec->data);
 		}
 		{
-			IpfixOptionsRecord* rec = dynamic_cast<IpfixOptionsRecord*>(ipfixRecord);
-			if (rec) onOptionsRecord(rec->sourceID, rec->optionsTemplateInfo, rec->dataLength, rec->data.get());
+			IpfixOptionsRecord* rec = dynamic_cast<IpfixOptionsRecord*>(ipfixRecord.get());
+			if (rec) onOptionsRecord(rec->sourceID.get(), rec->optionsTemplateInfo.get(), rec->dataLength, rec->data);
 		}
 		{
-			IpfixTemplateRecord* rec = dynamic_cast<IpfixTemplateRecord*>(ipfixRecord);
-			if (rec) onTemplate(rec->sourceID, rec->templateInfo);
+			IpfixTemplateRecord* rec = dynamic_cast<IpfixTemplateRecord*>(ipfixRecord.get());
+			if (rec) onTemplate(rec->sourceID.get(), rec->templateInfo.get());
 		}
 		{
-			IpfixDataTemplateRecord* rec = dynamic_cast<IpfixDataTemplateRecord*>(ipfixRecord);
-			if (rec) onDataTemplate(rec->sourceID, rec->dataTemplateInfo);
+			IpfixDataTemplateRecord* rec = dynamic_cast<IpfixDataTemplateRecord*>(ipfixRecord.get());
+			if (rec) onDataTemplate(rec->sourceID.get(), rec->dataTemplateInfo.get());
 		}
 		{
-			IpfixOptionsTemplateRecord* rec = dynamic_cast<IpfixOptionsTemplateRecord*>(ipfixRecord);
-			if (rec) onOptionsTemplate(rec->sourceID, rec->optionsTemplateInfo);
+			IpfixOptionsTemplateRecord* rec = dynamic_cast<IpfixOptionsTemplateRecord*>(ipfixRecord.get());
+			if (rec) onOptionsTemplate(rec->sourceID.get(), rec->optionsTemplateInfo.get());
 		}
 		{
-			IpfixTemplateDestructionRecord* rec = dynamic_cast<IpfixTemplateDestructionRecord*>(ipfixRecord);
-			if (rec) onTemplateDestruction(rec->sourceID, rec->templateInfo);
+			IpfixTemplateDestructionRecord* rec = dynamic_cast<IpfixTemplateDestructionRecord*>(ipfixRecord.get());
+			if (rec) onTemplateDestruction(rec->sourceID.get(), rec->templateInfo.get());
 		}
 		{
-			IpfixDataTemplateDestructionRecord* rec = dynamic_cast<IpfixDataTemplateDestructionRecord*>(ipfixRecord);
-			if (rec) onDataTemplateDestruction(rec->sourceID, rec->dataTemplateInfo);
+			IpfixDataTemplateDestructionRecord* rec = dynamic_cast<IpfixDataTemplateDestructionRecord*>(ipfixRecord.get());
+			if (rec) onDataTemplateDestruction(rec->sourceID.get(), rec->dataTemplateInfo.get());
 		}
 		{
-			IpfixOptionsTemplateDestructionRecord* rec = dynamic_cast<IpfixOptionsTemplateDestructionRecord*>(ipfixRecord);
-			if (rec) onOptionsTemplateDestruction(rec->sourceID, rec->optionsTemplateInfo);
+			IpfixOptionsTemplateDestructionRecord* rec = dynamic_cast<IpfixOptionsTemplateDestructionRecord*>(ipfixRecord.get());
+			if (rec) onOptionsTemplateDestruction(rec->sourceID.get(), rec->optionsTemplateInfo.get());
 		}
-		ipfixRecord->release();
 		DPRINTF("SINK: free packet");
 	}
 }
