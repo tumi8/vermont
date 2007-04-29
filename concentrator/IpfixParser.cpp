@@ -47,7 +47,7 @@
  * Processes an IPFIX template set.
  * Called by processMessage
  */
-void IpfixParser::processTemplateSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader* set) {
+void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set) {
 	uint8_t* endOfSet = (uint8_t*)set + ntohs(set->length);
 	uint8_t* record = (uint8_t*)&set->data;
 
@@ -60,9 +60,9 @@ void IpfixParser::processTemplateSet(IpfixRecord::SourceID* sourceId, IpfixSetHe
 			templateBuffer->destroyBufferedTemplate(sourceId, ntohs(th->templateId));
 			continue;
 		}
-		TemplateBuffer::BufferedTemplate* bt = (TemplateBuffer::BufferedTemplate*)malloc(sizeof(TemplateBuffer::BufferedTemplate));
-		IpfixRecord::TemplateInfo* ti = (IpfixRecord::TemplateInfo*)malloc(sizeof(IpfixRecord::TemplateInfo));
-		memcpy(&bt->sourceID, sourceId, sizeof(IpfixRecord::SourceID));
+		TemplateBuffer::BufferedTemplate* bt = new TemplateBuffer::BufferedTemplate;
+		boost::shared_ptr<IpfixRecord::TemplateInfo> ti(new IpfixRecord::TemplateInfo);
+		bt->sourceID = sourceId;
 		bt->templateID = ntohs(th->templateId);
 		bt->recordLength = 0;
 		bt->setID = ntohs(set->id);
@@ -99,8 +99,11 @@ void IpfixParser::processTemplateSet(IpfixRecord::SourceID* sourceId, IpfixSetHe
 		templateBuffer->bufferTemplate(bt); 
 		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
 
+		boost::shared_ptr<IpfixTemplateRecord> ipfixRecord(new IpfixTemplateRecord);
+		ipfixRecord->sourceID = sourceId;
+		ipfixRecord->templateInfo = ti;
 		for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-			(*i)->onTemplate(sourceId, ti);
+			(*i)->push(ipfixRecord);
 		}
 	}
 }
@@ -109,7 +112,7 @@ void IpfixParser::processTemplateSet(IpfixRecord::SourceID* sourceId, IpfixSetHe
  * Processes an IPFIX Options Template Set.
  * Called by processMessage
  */
-void IpfixParser::processOptionsTemplateSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader* set) {
+void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set) {
 	uint8_t* endOfSet = (uint8_t*)set + ntohs(set->length);
 	uint8_t* record = (uint8_t*)&set->data;
 
@@ -122,9 +125,9 @@ void IpfixParser::processOptionsTemplateSet(IpfixRecord::SourceID* sourceId, Ipf
 			templateBuffer->destroyBufferedTemplate(sourceId, ntohs(th->templateId));
 			continue;
 		}
-		TemplateBuffer::BufferedTemplate* bt = (TemplateBuffer::BufferedTemplate*)malloc(sizeof(TemplateBuffer::BufferedTemplate));
-		IpfixRecord::OptionsTemplateInfo* ti = (IpfixRecord::OptionsTemplateInfo*)malloc(sizeof(IpfixRecord::OptionsTemplateInfo));
-		memcpy(&bt->sourceID, sourceId, sizeof(IpfixRecord::SourceID));
+		TemplateBuffer::BufferedTemplate* bt = new TemplateBuffer::BufferedTemplate;
+		boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> ti(new IpfixRecord::OptionsTemplateInfo);
+		bt->sourceID = sourceId;
 		bt->templateID = ntohs(th->templateId);
 		bt->recordLength = 0;
 		bt->setID = ntohs(set->id);
@@ -182,8 +185,11 @@ void IpfixParser::processOptionsTemplateSet(IpfixRecord::SourceID* sourceId, Ipf
 		templateBuffer->bufferTemplate(bt); 
 		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
 
+		boost::shared_ptr<IpfixOptionsTemplateRecord> ipfixRecord(new IpfixOptionsTemplateRecord);
+		ipfixRecord->sourceID = sourceId;
+		ipfixRecord->optionsTemplateInfo = ti;
 		for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-			(*i)->onOptionsTemplate(sourceId, ti);
+			(*i)->push(ipfixRecord);
 		}
 	}
 }
@@ -192,7 +198,7 @@ void IpfixParser::processOptionsTemplateSet(IpfixRecord::SourceID* sourceId, Ipf
  * Processes an IPFIX DataTemplate set.
  * Called by processMessage
  */
-void IpfixParser::processDataTemplateSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader* set) {
+void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set) {
 	uint8_t* endOfSet = (uint8_t*)set + ntohs(set->length);
 	uint8_t* record = (uint8_t*)&set->data;
 
@@ -205,9 +211,9 @@ void IpfixParser::processDataTemplateSet(IpfixRecord::SourceID* sourceId, IpfixS
 			templateBuffer->destroyBufferedTemplate(sourceId, ntohs(th->templateId));
 			continue;
 		}
-		TemplateBuffer::BufferedTemplate* bt = (TemplateBuffer::BufferedTemplate*)malloc(sizeof(TemplateBuffer::BufferedTemplate));
-		IpfixRecord::DataTemplateInfo* ti = (IpfixRecord::DataTemplateInfo*)malloc(sizeof(IpfixRecord::DataTemplateInfo));
-		memcpy(&bt->sourceID, sourceId, sizeof(IpfixRecord::SourceID));
+		TemplateBuffer::BufferedTemplate* bt = new TemplateBuffer::BufferedTemplate;
+		boost::shared_ptr<IpfixRecord::DataTemplateInfo> ti(new IpfixRecord::DataTemplateInfo);
+		bt->sourceID = sourceId;
 		bt->templateID = ntohs(th->templateId);
 		bt->recordLength = 0;
 		bt->setID = ntohs(set->id);
@@ -285,8 +291,11 @@ void IpfixParser::processDataTemplateSet(IpfixRecord::SourceID* sourceId, IpfixS
 		templateBuffer->bufferTemplate(bt); 
 		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
 
+		boost::shared_ptr<IpfixDataTemplateRecord> ipfixRecord(new IpfixDataTemplateRecord);
+		ipfixRecord->sourceID = sourceId;
+		ipfixRecord->dataTemplateInfo = ti;
 		for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-			(*i)->onDataTemplate(sourceId, ti);
+			(*i)->push(ipfixRecord);
 		}
 	}
 }
@@ -295,7 +304,7 @@ void IpfixParser::processDataTemplateSet(IpfixRecord::SourceID* sourceId, IpfixS
  * Processes an IPFIX data set.
  * Called by processMessage
  */
-void IpfixParser::processDataSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader* set) {
+void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set) {
 	TemplateBuffer::BufferedTemplate* bt = templateBuffer->getBufferedTemplate(sourceId, ntohs(set->id));
 
 	if (bt == 0) {
@@ -310,7 +319,7 @@ void IpfixParser::processDataSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader
 	if (bt->setID == IPFIX_SetId_Template) {
 #endif
 
-		IpfixRecord::TemplateInfo* ti = bt->templateInfo;
+		boost::shared_ptr<IpfixRecord::TemplateInfo> ti = bt->templateInfo;
         
 		uint16_t length = ntohs(set->length)-((uint8_t*)(&set->data)-(uint8_t*)set);
 
@@ -325,8 +334,14 @@ void IpfixParser::processDataSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader
 
 			/* We stop processing when no full record is left */
 			while (record < recordX - (bt->recordLength - 1)) {
+				boost::shared_ptr<IpfixDataRecord> ipfixRecord(new IpfixDataRecord);
+				ipfixRecord->sourceID = sourceId;
+				ipfixRecord->templateInfo = ti;
+				ipfixRecord->dataLength = bt->recordLength;
+				ipfixRecord->message = message;
+				ipfixRecord->data = record;
 				for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-					(*i)->onDataRecord(sourceId, ti, bt->recordLength, record);
+					(*i)->push(ipfixRecord);
 				}
 				record = record + bt->recordLength;
 			}
@@ -357,8 +372,15 @@ void IpfixParser::processDataSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader
 					ti->fieldInfo[i].type.length = fieldLength;
 					recordLength += fieldLength;
 				}
+
+				boost::shared_ptr<IpfixDataRecord> ipfixRecord(new IpfixDataRecord);
+				ipfixRecord->sourceID = sourceId;
+				ipfixRecord->templateInfo = ti;
+				ipfixRecord->dataLength = recordLength;
+				ipfixRecord->message = message;
+				ipfixRecord->data = record;
 				for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-					(*i)->onDataRecord(sourceId, ti, recordLength, record);
+					(*i)->push(ipfixRecord);
 				}
 				record = record + recordLength;
 			}
@@ -366,7 +388,7 @@ void IpfixParser::processDataSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader
 	} else {
 		if (bt->setID == IPFIX_SetId_OptionsTemplate) {
 
-			IpfixRecord::OptionsTemplateInfo* ti = bt->optionsTemplateInfo;
+			boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> ti = bt->optionsTemplateInfo;
 
 			uint16_t length = ntohs(set->length)-((uint8_t*)(&set->data)-(uint8_t*)set);
 			uint8_t* record = &set->data;
@@ -374,8 +396,14 @@ void IpfixParser::processDataSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader
 			if (bt->recordLength < 65535) {
 				uint8_t* recordX = record+length;
 				while (record < recordX) {
+					boost::shared_ptr<IpfixOptionsRecord> ipfixRecord(new IpfixOptionsRecord);
+					ipfixRecord->sourceID = sourceId;
+					ipfixRecord->optionsTemplateInfo = ti;
+					ipfixRecord->dataLength = bt->recordLength;
+					ipfixRecord->message = message;
+					ipfixRecord->data = record;
 					for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-						(*i)->onOptionsRecord(sourceId, ti, bt->recordLength, record);
+						(*i)->push(ipfixRecord);
 					}
 					record = record + bt->recordLength;
 				}
@@ -416,15 +444,22 @@ void IpfixParser::processDataSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader
 						ti->fieldInfo[i].type.length = fieldLength;
 						recordLength += fieldLength;
 					}
+
+					boost::shared_ptr<IpfixOptionsRecord> ipfixRecord(new IpfixOptionsRecord);
+					ipfixRecord->sourceID = sourceId;
+					ipfixRecord->optionsTemplateInfo = ti;
+					ipfixRecord->dataLength = recordLength;
+					ipfixRecord->message = message;
+					ipfixRecord->data = record;
 					for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-						(*i)->onOptionsRecord(sourceId, ti, recordLength, record);
+						(*i)->push(ipfixRecord);
 					}
 					record = record + recordLength;
 				}
 			}
 		} else {
 			if (bt->setID == IPFIX_SetId_DataTemplate) {
-				IpfixRecord::DataTemplateInfo* ti = bt->dataTemplateInfo;
+				boost::shared_ptr<IpfixRecord::DataTemplateInfo> ti = bt->dataTemplateInfo;
 
 				uint16_t length = ntohs(set->length)-((uint8_t*)(&set->data)-(uint8_t*)set);
 				uint8_t* record = &set->data;
@@ -432,8 +467,15 @@ void IpfixParser::processDataSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader
 				if (bt->recordLength < 65535) {
 					uint8_t* recordX = record+length;
 					while (record < recordX) {
+
+						boost::shared_ptr<IpfixDataDataRecord> ipfixRecord(new IpfixDataDataRecord);
+						ipfixRecord->sourceID = sourceId;
+						ipfixRecord->dataTemplateInfo = ti;
+						ipfixRecord->dataLength = bt->recordLength;
+						ipfixRecord->message = message;
+						ipfixRecord->data = record;
 						for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-							(*i)->onDataDataRecord(sourceId, ti, bt->recordLength, record);
+							(*i)->push(ipfixRecord);
 						}
 						record = record + bt->recordLength;
 					}
@@ -458,8 +500,15 @@ void IpfixParser::processDataSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader
 							ti->fieldInfo[i].type.length = fieldLength;
 							recordLength += fieldLength;
 						}
+
+						boost::shared_ptr<IpfixDataDataRecord> ipfixRecord(new IpfixDataDataRecord);
+						ipfixRecord->sourceID = sourceId;
+						ipfixRecord->dataTemplateInfo = ti;
+						ipfixRecord->dataLength = recordLength;
+						ipfixRecord->message = message;
+						ipfixRecord->data = record;
 						for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-							(*i)->onDataDataRecord(sourceId, ti, recordLength, record);
+							(*i)->push(ipfixRecord);
 						}
 						record = record + recordLength;
 					}
@@ -476,8 +525,8 @@ void IpfixParser::processDataSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader
  * Process a NetflowV9 Packet
  * @return 0 on success
  */
-int IpfixParser::processNetflowV9Packet(uint8_t* message, uint16_t length, IpfixRecord::SourceID* sourceId) {
-	NetflowV9Header* header = (NetflowV9Header*)message;
+int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId) {
+	NetflowV9Header* header = (NetflowV9Header*)message.get();
 
 	/* pointer to first set */
 	IpfixSetHeader* set = (IpfixSetHeader*)&header->data;
@@ -488,10 +537,10 @@ int IpfixParser::processNetflowV9Packet(uint8_t* message, uint16_t length, Ipfix
 
 	for (i = 0; i < ntohs(header->setCount); i++) {
 		if (ntohs(set->id) == NetflowV9_SetId_Template) {
-			processTemplateSet(sourceId, set);
+			processTemplateSet(sourceId, message, set);
 		} else
 			if (ntohs(set->id) >= IPFIX_SetId_Data_Start) {
-				processDataSet(sourceId, set);
+				processDataSet(sourceId, message, set);
 			} else {
 				msg(MSG_ERROR, "Unsupported Set ID - expected 0/256+, got %d", ntohs(set->id));
 			}
@@ -505,8 +554,8 @@ int IpfixParser::processNetflowV9Packet(uint8_t* message, uint16_t length, Ipfix
  * Process an IPFIX Packet
  * @return 0 on success
  */
-int IpfixParser::processIpfixPacket(uint8_t* message, uint16_t length, IpfixRecord::SourceID* sourceId) {
-	IpfixHeader* header = (IpfixHeader*)message;
+int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId) {
+	IpfixHeader* header = (IpfixHeader*)message.get();
     sourceId->observationDomainId = ntohl(header->observationDomainId);
 
 	if (ntohs(header->length) != length) {
@@ -518,7 +567,7 @@ int IpfixParser::processIpfixPacket(uint8_t* message, uint16_t length, IpfixReco
 	IpfixSetHeader* set = (IpfixSetHeader*)&header->data;
 
 	/* pointer beyond message */
-	IpfixSetHeader* setX = (IpfixSetHeader*)((char*)message + length); 
+	IpfixSetHeader* setX = (IpfixSetHeader*)((char*)message.get() + length); 
 
 	uint16_t tmpid;
 	while(set < setX) {
@@ -526,17 +575,17 @@ int IpfixParser::processIpfixPacket(uint8_t* message, uint16_t length, IpfixReco
 
 		switch(tmpid) {
 		case IPFIX_SetId_DataTemplate:
-			processDataTemplateSet(sourceId, set);
+			processDataTemplateSet(sourceId, message, set);
 			break;
 		case IPFIX_SetId_Template:
-			processTemplateSet(sourceId, set);
+			processTemplateSet(sourceId, message, set);
 			break;
 		case IPFIX_SetId_OptionsTemplate:
-			processOptionsTemplateSet(sourceId, set);
+			processOptionsTemplateSet(sourceId, message, set);
 			break;
 		default:
 			if(tmpid >= IPFIX_SetId_Data_Start) {
-				processDataSet(sourceId, set);
+				processDataSet(sourceId, message, set);
 			} else {
 				msg(MSG_ERROR, "processIpfixPacket: Unsupported Set ID - expected 2/3/4/256+, got %d", tmpid);
 			}
@@ -551,9 +600,9 @@ int IpfixParser::processIpfixPacket(uint8_t* message, uint16_t length, IpfixReco
  * Process new Message
  * @return 0 on success
  */
-int IpfixParser::processMessage(uint8_t* message, uint16_t length, IpfixRecord::SourceID* sourceID)
+int IpfixParser::processMessage(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceID)
 {
-	IpfixHeader* header = (IpfixHeader*)message;
+	IpfixHeader* header = (IpfixHeader*)message.get();
 	if (ntohs(header->version) == 0x000a) {
 		return processIpfixPacket(message, length, sourceID);
 	}

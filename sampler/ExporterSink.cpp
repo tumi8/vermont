@@ -26,7 +26,7 @@ using namespace std;
 void *ExporterSink::exporterSinkProcess(void *arg)
 {
 	ExporterSink *sink = (ExporterSink *)arg;
-	ConcurrentQueue<Packet> *queue = sink->getQueue();
+	ConcurrentQueue<Packet*> *queue = sink->getQueue();
 	Packet *p;
 	bool result;
 	// our deadline

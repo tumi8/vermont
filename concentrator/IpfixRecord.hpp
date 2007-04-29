@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 #include <memory>
+#include <boost/smart_ptr.hpp>
 #include <stdexcept>
 #include "../sampler/Lock.h"
 
@@ -30,48 +31,10 @@
 
 typedef uint16_t TemplateID;
 
-class RefCountedObject {
-	public:
-		RefCountedObject(int users = 1) : users(users) {
-		}
-
-		~RefCountedObject() {
-			if(users > 0) throw std::runtime_error("Destroyed shared object with some users still active");
-		}
-
-		void subscribe() {
-			int newUsers;
-
-			usersLock.lock();
-			users++;
-			newUsers = users;
-			usersLock.unlock();
-
-			if(newUsers < 2) throw std::runtime_error("Subscribed to shared object which now had no active users");
-		}
-
-		void release() {
-			int newUsers;
-
-			usersLock.lock();
-			users--;
-			newUsers = users;
-			usersLock.unlock();
-
-			if(newUsers < 0) throw std::runtime_error("Tried releasing shared object had not active users");
-			if(newUsers == 0) delete this;
-		}
-
-	protected:
-		int users;
-		Lock usersLock;
-
-};
-
 /**
  * represents one one of several IPFIX Records, e.g. a Data Record, an Options Template Record, ...
  */
-class IpfixRecord : public RefCountedObject {
+class IpfixRecord {
 	public:
 		typedef uint8_t Data;
 
@@ -104,6 +67,7 @@ class IpfixRecord : public RefCountedObject {
 		 * Template description passed to the callback function when a new Template arrives.
 		 */
 		struct TemplateInfo {
+			// FIXME: Add destructor for fieldInfo
 			uint16_t templateId; /**< the template id assigned to this template or 0 if we don't know or don't care */
 			uint16_t fieldCount; /**< number of regular fields */
 			IpfixRecord::FieldInfo* fieldInfo; /**< array of FieldInfos describing each of these fields */
@@ -115,6 +79,8 @@ class IpfixRecord : public RefCountedObject {
 		 * Note that - other than in [PROTO] - fieldCount specifies only the number of regular fields
 		 */
 		struct OptionsTemplateInfo {
+			// FIXME: Add destructor for fieldInfo
+			// FIXME: Add destructor for scopeInfo
 			uint16_t templateId; /**< the template id assigned to this template or 0 if we don't know or don't care */
 			uint16_t scopeCount; /**< number of scope fields */
 			IpfixRecord::FieldInfo* scopeInfo; /**< array of FieldInfos describing each of these fields */
@@ -127,6 +93,9 @@ class IpfixRecord : public RefCountedObject {
 		 * DataTemplate description passed to the callback function when a new DataTemplate arrives.
 		 */
 		struct DataTemplateInfo {
+			// FIXME: Add destructor for fieldInfo
+			// FIXME: Add destructor for dataInfo
+			// FIXME: Add destructor for data
 			uint16_t id; /**< the template id assigned to this template or 0 if we don't know or don't care */
 			uint16_t preceding; /**< the preceding rule field as defined in the draft */
 			uint16_t fieldCount; /**< number of regular fields */
@@ -148,60 +117,63 @@ class IpfixRecord : public RefCountedObject {
 			SourceID::ExporterAddress exporterAddress;
 		};
 
-		IpfixRecord::SourceID* sourceID;
+		boost::shared_ptr<IpfixRecord::SourceID> sourceID;
 
 		virtual ~IpfixRecord();
 };
 
 class IpfixTemplateRecord : public IpfixRecord {
 	public:
-		IpfixRecord::TemplateInfo* templateInfo;
+		boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
 };
 
 class IpfixOptionsTemplateRecord : public IpfixRecord {
 	public:
-		IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo;
+		boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
 };
 
 class IpfixDataTemplateRecord : public IpfixRecord {
 	public:
-		IpfixRecord::DataTemplateInfo* dataTemplateInfo;
+		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
 };
 
 class IpfixDataRecord : public IpfixRecord {
 	public:
-		IpfixRecord::TemplateInfo* templateInfo;
+		boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
 		int dataLength;
-		std::auto_ptr<IpfixRecord::Data> data;
+		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
+		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
 };
 
 class IpfixOptionsRecord : public IpfixRecord {
 	public:
-		IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo;
+		boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
 		int dataLength;
-		std::auto_ptr<IpfixRecord::Data> data;
+		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
+		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
 };
 
 class IpfixDataDataRecord : public IpfixRecord {
 	public:
-		IpfixRecord::DataTemplateInfo* dataTemplateInfo;
+		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
 		int dataLength;
-		std::auto_ptr<IpfixRecord::Data> data;
+		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
+		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
 };
 
 class IpfixTemplateDestructionRecord : public IpfixRecord {
 	public:
-		IpfixRecord::TemplateInfo* templateInfo;
+		boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
 };
 
 class IpfixOptionsTemplateDestructionRecord : public IpfixRecord {
 	public:
-		IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo;
+		boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
 };
 
 class IpfixDataTemplateDestructionRecord : public IpfixRecord {
 	public:
-		IpfixRecord::DataTemplateInfo* dataTemplateInfo;
+		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
 };
 
 #endif

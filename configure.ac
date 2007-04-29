@@ -1,6 +1,6 @@
 AC_INIT
 AC_PREREQ(2.59)
-AM_INIT_AUTOMAKE(vermont, 0.9)
+AM_INIT_AUTOMAKE(vermont, 0.9.1)
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
@@ -66,6 +66,13 @@ AC_CHECK_LIB([pcap], [pcap_open_live],
              [LDFLAGS="$LDFLAGS -lpcap"
               AC_SUBST(LDFLAGS)],
              [AC_MSG_ERROR([*** could not find libpcap. Please install it.])])
+
+# check for Boost headers
+AC_LANG_PUSH(C++)
+AC_CHECK_HEADER([boost/smart_ptr.hpp],
+                [],
+                [AC_MSG_ERROR([*** could not use boost/smart_ptr.hpp. Please install the Boost header files.])])
+AC_LANG_POP(C++)
 
 AC_CONFIG_FILES([Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile])
 

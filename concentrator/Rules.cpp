@@ -237,6 +237,12 @@ Rules::~Rules() {
 }
 
 /**
+ * Creates an empty set of rules
+ */
+Rules::Rules() : count(0) {
+}
+
+/**
  * Reads in a ruleset from the specified file
  */
 Rules::Rules(char* fname) {

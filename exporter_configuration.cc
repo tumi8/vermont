@@ -181,6 +181,7 @@ void ExporterConfiguration::startSystem()
 	} else if (ipfixSender) {
 		msg(MSG_DEBUG, "ExporterConfiguration: Running IpfixSenders.");
 		// ipfixSender already runs (see createIpfixSender())
+		ipfixSender->runSink();
 	} else {
 		throw std::runtime_error("Can neither start an ExporterSink, nor an IpfixSender -> something is broken!");
 	}

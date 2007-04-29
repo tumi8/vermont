@@ -28,6 +28,7 @@
 #include <list>
 #include <pthread.h>
 #include <stdint.h>
+#include <boost/smart_ptr.hpp>
 #include "FlowSink.hpp"
 
 class TemplateBuffer;
@@ -52,7 +53,7 @@ class IpfixParser {
 		 * Add a FlowSink that receives flows we collect
 		 */
 		void addFlowSink(FlowSink* flowSink);
-		int processMessage(uint8_t* message, uint16_t length, IpfixRecord::SourceID* sourceId);
+		int processMessage(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 
 	protected:
 		/**
@@ -131,12 +132,12 @@ class IpfixParser {
 		friend class TemplateBuffer;
 		TemplateBuffer* templateBuffer; /**< TemplateBuffer* structure */
 
-		void processDataSet(IpfixRecord::SourceID* sourceID, IpfixSetHeader* set);
-		void processTemplateSet(IpfixRecord::SourceID* sourceID, IpfixSetHeader* set);
-		void processDataTemplateSet(IpfixRecord::SourceID* sourceID, IpfixSetHeader* set);
-		void processOptionsTemplateSet(IpfixRecord::SourceID* sourceId, IpfixSetHeader* set);
-		int processNetflowV9Packet(uint8_t* message, uint16_t length, IpfixRecord::SourceID* sourceId);
-		int processIpfixPacket(uint8_t* message, uint16_t length, IpfixRecord::SourceID* sourceId);
+		void processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set);
+		void processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set);
+		void processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set);
+		void processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set);
+		int processNetflowV9Packet(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
+		int processIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 
 };
 

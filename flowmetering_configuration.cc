@@ -34,9 +34,7 @@ void FlowMeteringConfiguration::configure()
 	unsigned minBufferTime = 0;
 	unsigned maxBufferTime = 0;
 
-	Rules* rules = (Rules*)malloc(sizeof(Rules));
-	rules->count = 0;
-
+	Rules* rules = new Rules;
 
 	while (NULL != i) {
 		if (tagMatches(i, "rule")) {
@@ -207,4 +205,5 @@ void FlowMeteringConfiguration::startSystem()
 {
 	msg(MSG_DEBUG, "Starting aggregator");
 	ipfixAggregator->start();
+	ipfixAggregator->runSink();
 }

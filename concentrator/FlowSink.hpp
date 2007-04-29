@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <memory>
 #include <stdexcept>
+#include <boost/smart_ptr.hpp>
 #include "IpfixRecord.hpp"
 #include "../sampler/Thread.h"
 #include "../sampler/ConcurrentQueue.h"
@@ -124,7 +125,7 @@ class FlowSink {
 		/**
 		 * Push an IpfixRecord into the queue for later pickup by the FlowSink's thread
 		 */
-		void push(IpfixRecord* ipfixRecord);
+		void push(boost::shared_ptr<IpfixRecord> ipfixRecord);
 
 		/**
 		 * Start the FlowSink's flowSinkProcess thread
@@ -140,7 +141,7 @@ class FlowSink {
 	        static void* flowSinkProcess(void* flowSink);
 	        virtual void flowSinkProcess();
 
-		ConcurrentQueue<IpfixRecord> ipfixRecords;
+		ConcurrentQueue< boost::shared_ptr<IpfixRecord> > ipfixRecords;
 	        Thread thread;
         	bool exitFlag;
 };

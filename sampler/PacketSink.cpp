@@ -18,7 +18,7 @@ using namespace std;
 void *PacketSink::packetSinkProcess(void *arg)
 {
         PacketSink *sink = (PacketSink *)arg;
-        ConcurrentQueue<Packet> *queue = sink->getQueue();
+        ConcurrentQueue<Packet*> *queue = sink->getQueue();
         Packet *p;
 
         msg(MSG_INFO, "Sink: now running PacketSink thread");

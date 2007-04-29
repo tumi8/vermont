@@ -174,7 +174,7 @@ public:
 	char *captureInterface;
 
         // vector of Queues that will get the packets we pass out
-	std::vector<ConcurrentQueue<Packet> *> receivers;
+	std::vector<ConcurrentQueue<Packet*> *> receivers;
 };
 
 #endif

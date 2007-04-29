@@ -23,6 +23,7 @@
 
 #include "IpfixParser.hpp"
 #include <time.h>
+#include <boost/smart_ptr.hpp>
 
 #define TEMPLATE_EXPIRE_SECS  70
 
@@ -38,24 +39,22 @@ class TemplateBuffer {
 		 * Represents a single Buffered Template
 		 */
 		struct BufferedTemplate {
-			IpfixRecord::SourceID	sourceID; /**< source identifier of exporter that sent this template */
+			boost::shared_ptr<IpfixRecord::SourceID>	sourceID; /**< source identifier of exporter that sent this template */
 			TemplateID	templateID; /**< template# this template defines */
 			uint16_t	recordLength; /**< length of one Data Record that will be transferred in Data Sets. Variable-length carry -1 */
 			TemplateID	setID; /**< should be 2,3,4 and determines the type of pointer used in the unions */
 			time_t		expires; /**< Timestamp when this Template will expire or 0 if it will never expire */
-			union {
-				IpfixRecord::TemplateInfo* templateInfo;
-				IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo;
-				IpfixRecord::DataTemplateInfo* dataTemplateInfo;
-			};
+			boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
+			boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
+			boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
 			TemplateBuffer::BufferedTemplate*	next; /**< Pointer to next buffered Template */
 		};
 
 		TemplateBuffer(IpfixParser* parentIpfixParser);
 		~TemplateBuffer();
 
-		TemplateBuffer::BufferedTemplate* getBufferedTemplate(IpfixRecord::SourceID* sourceId, TemplateID templateId);
-		void destroyBufferedTemplate(IpfixRecord::SourceID* sourceId, TemplateID id);
+		TemplateBuffer::BufferedTemplate* getBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId);
+		void destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID id);
 		void bufferTemplate(TemplateBuffer::BufferedTemplate* bt);
 
 	protected:
