@@ -4,6 +4,7 @@ libconcentrator_a_SOURCES=IpfixAggregator.cpp IpfixAggregator.hpp crc16.cpp crc1
 Hashtable.hpp ipfix.cpp ipfix.hpp \
 IpfixReceiver.cpp IpfixReceiver.hpp \
 IpfixReceiverUdpIpV4.cpp IpfixReceiverUdpIpV4.hpp \
+FlowSource.hpp FlowSource.cpp \
 FlowSink.hpp FlowSink.cpp \
 IpfixRecord.hpp IpfixRecord.cpp \
 IpfixPrinter.cpp IpfixPrinter.hpp \

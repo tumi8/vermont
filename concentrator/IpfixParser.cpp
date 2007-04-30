@@ -102,9 +102,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		boost::shared_ptr<IpfixTemplateRecord> ipfixRecord(new IpfixTemplateRecord);
 		ipfixRecord->sourceID = sourceId;
 		ipfixRecord->templateInfo = ti;
-		for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-			(*i)->push(ipfixRecord);
-		}
+		push(ipfixRecord);
 	}
 }
 
@@ -188,9 +186,7 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 		boost::shared_ptr<IpfixOptionsTemplateRecord> ipfixRecord(new IpfixOptionsTemplateRecord);
 		ipfixRecord->sourceID = sourceId;
 		ipfixRecord->optionsTemplateInfo = ti;
-		for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-			(*i)->push(ipfixRecord);
-		}
+		push(ipfixRecord);
 	}
 }
 
@@ -294,9 +290,7 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		boost::shared_ptr<IpfixDataTemplateRecord> ipfixRecord(new IpfixDataTemplateRecord);
 		ipfixRecord->sourceID = sourceId;
 		ipfixRecord->dataTemplateInfo = ti;
-		for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-			(*i)->push(ipfixRecord);
-		}
+		push(ipfixRecord);
 	}
 }
 
@@ -340,9 +334,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 				ipfixRecord->dataLength = bt->recordLength;
 				ipfixRecord->message = message;
 				ipfixRecord->data = record;
-				for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-					(*i)->push(ipfixRecord);
-				}
+				push(ipfixRecord);
 				record = record + bt->recordLength;
 			}
 		} else {
@@ -379,9 +371,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 				ipfixRecord->dataLength = recordLength;
 				ipfixRecord->message = message;
 				ipfixRecord->data = record;
-				for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-					(*i)->push(ipfixRecord);
-				}
+				push(ipfixRecord);
 				record = record + recordLength;
 			}
 		}
@@ -402,9 +392,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 					ipfixRecord->dataLength = bt->recordLength;
 					ipfixRecord->message = message;
 					ipfixRecord->data = record;
-					for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-						(*i)->push(ipfixRecord);
-					}
+					push(ipfixRecord);
 					record = record + bt->recordLength;
 				}
 			} else {
@@ -451,9 +439,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 					ipfixRecord->dataLength = recordLength;
 					ipfixRecord->message = message;
 					ipfixRecord->data = record;
-					for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-						(*i)->push(ipfixRecord);
-					}
+					push(ipfixRecord);
 					record = record + recordLength;
 				}
 			}
@@ -474,9 +460,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 						ipfixRecord->dataLength = bt->recordLength;
 						ipfixRecord->message = message;
 						ipfixRecord->data = record;
-						for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-							(*i)->push(ipfixRecord);
-						}
+						push(ipfixRecord);
 						record = record + bt->recordLength;
 					}
 				} else {
@@ -507,9 +491,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 						ipfixRecord->dataLength = recordLength;
 						ipfixRecord->message = message;
 						ipfixRecord->data = record;
-						for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-							(*i)->push(ipfixRecord);
-						}
+						push(ipfixRecord);
 						record = record + recordLength;
 					}
 				}	
@@ -754,82 +736,6 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
 }
 
 /**
- * Gets a Template's FieldInfo by field id. Length is ignored.
- * @param ti DataTemplate to search in
- * @param type Field id and eid to look for. Length is ignored.
- * @return NULL if not found
- */
-IpfixRecord::FieldInfo* getTemplateFieldInfo(IpfixRecord::TemplateInfo* ti, IpfixRecord::FieldInfo::Type* type) {
-	return getTemplateFieldInfo(ti, type->id, type->eid);
-}
-
-/**
- * Gets a Template's IpfixRecord::FieldInfo by field id. Length is ignored.
- * @param ti Template to search in
- * @param fieldTypeId FieldInfo::Type id to look for
- * @param fieldTypeEid FieldInfo::Type eid to look for
- * @return NULL if not found
- */
-IpfixRecord::FieldInfo* getTemplateFieldInfo(IpfixRecord::TemplateInfo* ti, IpfixRecord::FieldInfo::Type::Id fieldTypeId, IpfixRecord::FieldInfo::Type::EnterpriseNo fieldTypeEid) {
-	int i;
-
-	for (i = 0; i < ti->fieldCount; i++) {
-		if ((ti->fieldInfo[i].type.id == fieldTypeId) && (ti->fieldInfo[i].type.eid == fieldTypeEid)) {
-			return &ti->fieldInfo[i];
-		}
-	}
-
-	return NULL;
-}
-
-/**
- * Gets a DataTemplate's FieldInfo by field id. Length is ignored.
- * @param ti DataTemplate to search in
- * @param fieldTypeId Field id to look for
- * @param fieldTypeEid Field eid to look for
- * @return NULL if not found
- */
-IpfixRecord::FieldInfo* getDataTemplateFieldInfo(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::FieldInfo::Type::Id fieldTypeId, IpfixRecord::FieldInfo::Type::EnterpriseNo fieldTypeEid) {
-	int i;
-
-	for (i = 0; i < ti->fieldCount; i++) {
-		if ((ti->fieldInfo[i].type.id == fieldTypeId) && (ti->fieldInfo[i].type.eid == fieldTypeEid)) {
-			return &ti->fieldInfo[i];
-		}
-	}
-
-	return NULL;
-}
-
-IpfixRecord::FieldInfo* getDataTemplateFieldInfo(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::FieldInfo::Type* type) {
-	return getDataTemplateFieldInfo(ti, type->id, type->eid);
-}
-
-/**
- * Gets a DataTemplate's Data-FieldInfo by field id.
- * @param ti DataTemplate to search in
- * @param fieldTypeId Field id to look for
- * @param fieldTypeEid Field eid to look for
- * @return NULL if not found
- */
-IpfixRecord::FieldInfo* getDataTemplateDataInfo(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::FieldInfo::Type::Id fieldTypeId, IpfixRecord::FieldInfo::Type::EnterpriseNo fieldTypeEid) {
-	int i;
-
-	for (i = 0; i < ti->dataCount; i++) {
-		if ((ti->dataInfo[i].type.id == fieldTypeId) && (ti->dataInfo[i].type.eid == fieldTypeEid)) {
-			return &ti->dataInfo[i];
-		}
-	}
-
-	return NULL;		
-}
-
-IpfixRecord::FieldInfo* getDataTemplateDataInfo(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::FieldInfo::Type* type) {
-	return getDataTemplateDataInfo(ti, type->id, type->eid);
-}
-
-
-/**
  * Creates a new  @c IpfixParser.
  * @return handle to created instance
  */
@@ -842,14 +748,6 @@ IpfixParser::IpfixParser() {
  */
 IpfixParser::~IpfixParser() {
 	delete(templateBuffer);
-}
-
-/**
- * Adds a set of callback functions to the list of functions to call when a new Message arrives
- * @param flowSink the destination module
- */
-void IpfixParser::addFlowSink(FlowSink* flowSink) {
-	flowSinks.push_back(flowSink);
 }
 
 

@@ -42,6 +42,25 @@ class FlowSink {
 		virtual ~FlowSink();
 
 		/**
+		 * Push an IpfixRecord into the queue for later pickup by the FlowSink's thread
+		 */
+		void push(boost::shared_ptr<IpfixRecord> ipfixRecord);
+
+		/**
+		 * Start the FlowSink's flowSinkProcess thread
+		 */
+		bool runSink();
+
+		/**
+		 * Stop the FlowSink's flowSinkProcess thread
+		 */
+		bool terminateSink();
+
+	protected:
+		// Allow HookingFilter to directly call FlowSink::onDataRecord
+		friend class HookingFilter;
+
+		/**
 		 * Callback function invoked when a new Template arrives.
 		 * @param sourceID SourceID of the exporter that sent this Template
 		 * @param templateInfo Pointer to a structure defining this Template
@@ -122,22 +141,6 @@ class FlowSink {
 		 */
 		virtual int onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo) { return -1; };
 
-		/**
-		 * Push an IpfixRecord into the queue for later pickup by the FlowSink's thread
-		 */
-		void push(boost::shared_ptr<IpfixRecord> ipfixRecord);
-
-		/**
-		 * Start the FlowSink's flowSinkProcess thread
-		 */
-		bool runSink();
-
-		/**
-		 * Stop the FlowSink's flowSinkProcess thread
-		 */
-		bool terminateSink();
-
-	protected:
 	        static void* flowSinkProcess(void* flowSink);
 	        virtual void flowSinkProcess();
 

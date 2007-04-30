@@ -41,7 +41,7 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
 	IpfixDbReader* ipfixDbReader = (IpfixDbReader*)ipfixDbReader_;
 	int i;
 
-	IpfixRecord::DataTemplateInfo* dataTemplateInfo = (IpfixRecord::DataTemplateInfo*)malloc(sizeof(IpfixRecord::DataTemplateInfo));
+	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo(new IpfixRecord::DataTemplateInfo);
 	DbData* dbData = ipfixDbReader->dbReader->dbData;
 
 	// TODO: make IpfixDbReader exit if exit was requested!
@@ -60,7 +60,6 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
 		pthread_mutex_lock(&ipfixDbReader->mutex);
 	}
 
-	free(dataTemplateInfo);
 	msg(MSG_DIALOG,"Sending from database is done");
 	return 0;
 }
@@ -68,7 +67,7 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
  * Constructs a template from the table data and sends it to all connected
  * modules.
  */
-int IpfixDbReader::dbReaderSendNewTemplate(IpfixRecord::DataTemplateInfo* dataTemplateInfo, int table_index)
+int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo, int table_index)
 {
 	int i;
 	int fieldLength  = 0;
@@ -103,10 +102,11 @@ int IpfixDbReader::dbReaderSendNewTemplate(IpfixRecord::DataTemplateInfo* dataTe
 	}
 
 	/* Pass Data Template to flowSinks */
-	for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-		(*i)->onDataTemplate(&srcId, dataTemplateInfo);
-		msg(MSG_DEBUG,"IpfixDbReader sent template for table %s", dbData->tableNames[table_index]);
-	}
+	boost::shared_ptr<IpfixDataTemplateRecord> ipfixRecord(new IpfixDataTemplateRecord);
+	ipfixRecord->sourceID = srcId;
+	ipfixRecord->dataTemplateInfo = dataTemplateInfo;
+	push(ipfixRecord);
+	msg(MSG_DEBUG,"IpfixDbReader sent template for table %s", dbData->tableNames[table_index]);
 	return 0;
 }
 
@@ -138,13 +138,13 @@ void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, IpfixRecord::Field
  * strings, therefore they must change into IPFIX format 
 */
 
-int IpfixDbReader::dbReaderSendTable(IpfixRecord::DataTemplateInfo* dataTemplateInfo, int table_index)
+int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo, int table_index)
 {
        	MYSQL_RES* dbResult = NULL;
 	MYSQL_ROW dbRow = NULL;
 	DbData* dbData = dbReader->dbData;
 	int i;
-	IpfixRecord::Data* data = (IpfixRecord::Data*)malloc(MAX_MSG_LEN);
+	boost::shared_array<IpfixRecord::Data> data(new IpfixRecord::Data[MAX_MSG_LEN]);
 	int dataLength = 0;
 	unsigned delta = 0;
 	unsigned flowTime = 0;
@@ -159,7 +159,6 @@ int IpfixDbReader::dbReaderSendTable(IpfixRecord::DataTemplateInfo* dataTemplate
 	if(mysql_query(conn, select) != 0) {
 		msg(MSG_ERROR,"IpfixDbReader: Select on table failed. Error: %s",
 		    mysql_error(conn));
-		free(data);
 		return 1;
 	}
 
@@ -176,7 +175,6 @@ int IpfixDbReader::dbReaderSendTable(IpfixRecord::DataTemplateInfo* dataTemplate
 			if (delta == 0) {
 				msg(MSG_FATAL, "IpfixDbReader: flowEndTime in first data base record missing!");
 				mysql_free_result(dbResult);
-				free(data);
 				return 1;
 			}
 		}
@@ -186,7 +184,7 @@ int IpfixDbReader::dbReaderSendTable(IpfixRecord::DataTemplateInfo* dataTemplate
 			        flowTime = atoll(dbRow[i]) + delta;
 			case IPFIX_TYPEID_flowStartSeconds:
 				tmp = atoll(dbRow[i]) + delta;
-				copyUintNetByteOrder(data + dataTemplateInfo->fieldInfo[i].offset,
+				copyUintNetByteOrder(data.get() + dataTemplateInfo->fieldInfo[i].offset,
 						     (char*)&tmp,
 						     dataTemplateInfo->fieldInfo[i].type);
 				dataLength += dataTemplateInfo->fieldInfo[i].type.length;
@@ -200,7 +198,7 @@ int IpfixDbReader::dbReaderSendTable(IpfixRecord::DataTemplateInfo* dataTemplate
 			case IPFIX_TYPEID_protocolIdentifier:
 			case IPFIX_TYPEID_classOfServiceIPv4:
 				tmp = atoll(dbRow[i]);
-				copyUintNetByteOrder(data + dataTemplateInfo->fieldInfo[i].offset,
+				copyUintNetByteOrder(data.get() + dataTemplateInfo->fieldInfo[i].offset,
 						     (char*)&tmp,
 						     dataTemplateInfo->fieldInfo[i].type);
 				dataLength += dataTemplateInfo->fieldInfo[i].type.length;
@@ -218,13 +216,19 @@ int IpfixDbReader::dbReaderSendTable(IpfixRecord::DataTemplateInfo* dataTemplate
 			}
 			lastFlowTime = flowTime;
 		}
-		for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-			(*i)->onDataDataRecord(&srcId, dataTemplateInfo, dataLength, data);
-			msg(MSG_INFO,"IpfixDbReader sent record");
-		}
+
+
+
+		boost::shared_ptr<IpfixDataDataRecord> ipfixRecord(new IpfixDataDataRecord);
+		ipfixRecord->sourceID = srcId;
+		ipfixRecord->dataTemplateInfo = dataTemplateInfo;
+		ipfixRecord->dataLength = dataLength;
+		ipfixRecord->message = data;
+		ipfixRecord->data = data.get();
+		push(ipfixRecord);
+		msg(MSG_INFO,"IpfixDbReader sent record");
 	}
 	mysql_free_result(dbResult);
-	free(data);
 	
 	msg(MSG_DEBUG,"Sending from table %s done", dbData->tableNames[table_index]);
 
@@ -235,14 +239,14 @@ int IpfixDbReader::dbReaderSendTable(IpfixRecord::DataTemplateInfo* dataTemplate
 /**
  * get all tableNames in database that matches with the wildcard "h%"
  **/
-int IpfixDbReader::dbReaderDestroyTemplate(IpfixRecord::DataTemplateInfo* dataTemplateInfo)
+int IpfixDbReader::dbReaderDestroyTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo)
 {
-	for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-		(*i)->onDataTemplateDestruction(&srcId, dataTemplateInfo);
-		msg(MSG_DEBUG,"IpfixDbReader destroyed template");
-	}
+	boost::shared_ptr<IpfixDataTemplateDestructionRecord> ipfixRecord(new IpfixDataTemplateDestructionRecord);
+	ipfixRecord->sourceID = srcId;
+	ipfixRecord->dataTemplateInfo = dataTemplateInfo;
+	push(ipfixRecord);
+	msg(MSG_DEBUG,"IpfixDbReader destroyed template");
 
-	free(dataTemplateInfo->fieldInfo);
 	return 0;
 }
 
@@ -378,7 +382,8 @@ int IpfixDbReader::connectToDb(
 	this->portNum = port;
 	this->socketName = 0;	  		
 	this->flags = 0;
-	srcId.observationDomainId = observationDomainId;
+	srcId.reset(new IpfixRecord::SourceID);
+	srcId->observationDomainId = observationDomainId;
 	/**Initialize structure members DbData*/
 	dbReader->dbData->colCount = 0;
 	dbReader->dbData->tableCount = 0;
@@ -500,14 +505,6 @@ out2:
 out1:
 	throw std::runtime_error("IpfixDbReader creation failed");
 	return;
-}
-
-/**
- * Adds a set of callback functions to the list of functions to call when Templates or Records have to be sent
- * @param flowSink the destination module
- */
-void IpfixDbReader::addFlowSink(FlowSink* flowSink) {
-	flowSinks.push_back(flowSink);
 }
 
 #endif

@@ -67,7 +67,37 @@ class IpfixRecord {
 		 * Template description passed to the callback function when a new Template arrives.
 		 */
 		struct TemplateInfo {
-			// FIXME: Add destructor for fieldInfo
+			~TemplateInfo() {
+				free(fieldInfo);
+			}
+
+			/**
+			 * Gets a Template's FieldInfo by field id. Length is ignored.
+			 * @param type Field id and eid to look for. Length is ignored.
+			 * @return NULL if not found
+			 */
+			IpfixRecord::FieldInfo* getFieldInfo(IpfixRecord::FieldInfo::Type* type) {
+				return getFieldInfo(type->id, type->eid);
+			}
+
+			/**
+			 * Gets a Template's FieldInfo by field id. Length is ignored.
+			 * @param fieldTypeId FieldInfo::Type id to look for
+			 * @param fieldTypeEid FieldInfo::Type eid to look for
+			 * @return NULL if not found
+			 */
+			IpfixRecord::FieldInfo* getFieldInfo(IpfixRecord::FieldInfo::Type::Id fieldTypeId, IpfixRecord::FieldInfo::Type::EnterpriseNo fieldTypeEid) {
+				int i;
+
+				for (i = 0; i < fieldCount; i++) {
+					if ((fieldInfo[i].type.id == fieldTypeId) && (fieldInfo[i].type.eid == fieldTypeEid)) {
+						return &fieldInfo[i];
+					}
+				}
+
+				return NULL;
+			}
+
 			uint16_t templateId; /**< the template id assigned to this template or 0 if we don't know or don't care */
 			uint16_t fieldCount; /**< number of regular fields */
 			IpfixRecord::FieldInfo* fieldInfo; /**< array of FieldInfos describing each of these fields */
@@ -79,8 +109,11 @@ class IpfixRecord {
 		 * Note that - other than in [PROTO] - fieldCount specifies only the number of regular fields
 		 */
 		struct OptionsTemplateInfo {
-			// FIXME: Add destructor for fieldInfo
-			// FIXME: Add destructor for scopeInfo
+			~OptionsTemplateInfo() {
+				free(fieldInfo);
+				free(scopeInfo);
+			}
+
 			uint16_t templateId; /**< the template id assigned to this template or 0 if we don't know or don't care */
 			uint16_t scopeCount; /**< number of scope fields */
 			IpfixRecord::FieldInfo* scopeInfo; /**< array of FieldInfos describing each of these fields */
@@ -93,9 +126,56 @@ class IpfixRecord {
 		 * DataTemplate description passed to the callback function when a new DataTemplate arrives.
 		 */
 		struct DataTemplateInfo {
-			// FIXME: Add destructor for fieldInfo
-			// FIXME: Add destructor for dataInfo
-			// FIXME: Add destructor for data
+			~DataTemplateInfo() {
+				free(fieldInfo);
+				free(dataInfo);
+				free(data);
+			}
+
+			IpfixRecord::FieldInfo* getFieldInfo(IpfixRecord::FieldInfo::Type* type) {
+				return getFieldInfo(type->id, type->eid);
+			}
+
+			/**
+			 * Gets a DataTemplate's FieldInfo by field id. Length is ignored.
+			 * @param fieldTypeId Field id to look for
+			 * @param fieldTypeEid Field eid to look for
+			 * @return NULL if not found
+			 */
+			IpfixRecord::FieldInfo* getFieldInfo(IpfixRecord::FieldInfo::Type::Id fieldTypeId, IpfixRecord::FieldInfo::Type::EnterpriseNo fieldTypeEid) {
+				int i;
+
+				for (i = 0; i < fieldCount; i++) {
+					if ((fieldInfo[i].type.id == fieldTypeId) && (fieldInfo[i].type.eid == fieldTypeEid)) {
+						return &fieldInfo[i];
+					}
+				}
+
+				return NULL;
+			}
+
+			IpfixRecord::FieldInfo* getDataInfo(IpfixRecord::FieldInfo::Type* type) {
+				return getDataInfo(type->id, type->eid);
+			}
+
+			/**
+			 * Gets a DataTemplate's Data-FieldInfo by field id.
+			 * @param fieldTypeId Field id to look for
+			 * @param fieldTypeEid Field eid to look for
+			 * @return NULL if not found
+			 */
+			IpfixRecord::FieldInfo* getDataInfo(IpfixRecord::FieldInfo::Type::Id fieldTypeId, IpfixRecord::FieldInfo::Type::EnterpriseNo fieldTypeEid) {
+				int i;
+
+				for (i = 0; i < dataCount; i++) {
+					if ((dataInfo[i].type.id == fieldTypeId) && (dataInfo[i].type.eid == fieldTypeEid)) {
+						return &dataInfo[i];
+					}
+				}
+
+				return NULL;		
+			}
+
 			uint16_t id; /**< the template id assigned to this template or 0 if we don't know or don't care */
 			uint16_t preceding; /**< the preceding rule field as defined in the draft */
 			uint16_t fieldCount; /**< number of regular fields */
@@ -119,6 +199,7 @@ class IpfixRecord {
 
 		boost::shared_ptr<IpfixRecord::SourceID> sourceID;
 
+		IpfixRecord();
 		virtual ~IpfixRecord();
 };
 

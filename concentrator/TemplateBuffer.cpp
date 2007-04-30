@@ -78,9 +78,7 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 		boost::shared_ptr<IpfixTemplateDestructionRecord> ipfixRecord(new IpfixTemplateDestructionRecord);
 		ipfixRecord->sourceID = sourceId;
 		ipfixRecord->templateInfo = bt->templateInfo;
-		for (IpfixParser::FlowSinks::iterator i = ipfixParser->flowSinks.begin(); i != ipfixParser->flowSinks.end(); i++) {
-			(*i)->push(ipfixRecord);
-		}
+		ipfixParser->push(ipfixRecord);
 	} else
 #ifdef SUPPORT_NETFLOWV9
 		if (bt->setID == NetflowV9_SetId_Template) {
@@ -88,9 +86,7 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 			boost::shared_ptr<IpfixTemplateDestructionRecord> ipfixRecord(new IpfixTemplateDestructionRecord);
 			ipfixRecord->sourceID = sourceId;
 			ipfixRecord->templateInfo = bt->templateInfo;
-			for (IpfixParser::FlowSinks::iterator i = ipfixParser->flowSinks.begin(); i != ipfixParser->flowSinks.end(); i++) {
-				(*i)->push(ipfixRecord);
-			}
+			ipfixParser->push(ipfixRecord);
 		} else
 #endif
 			if (bt->setID == IPFIX_SetId_OptionsTemplate) {
@@ -98,18 +94,14 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 				boost::shared_ptr<IpfixOptionsTemplateDestructionRecord> ipfixRecord(new IpfixOptionsTemplateDestructionRecord);
 				ipfixRecord->sourceID = sourceId;
 				ipfixRecord->optionsTemplateInfo = bt->optionsTemplateInfo;
-				for (IpfixParser::FlowSinks::iterator i = ipfixParser->flowSinks.begin(); i != ipfixParser->flowSinks.end(); i++) {
-					(*i)->push(ipfixRecord);
-				}
+				ipfixParser->push(ipfixRecord);
 			} else {
 				if (bt->setID == IPFIX_SetId_DataTemplate) {
 					/* Invoke all registered callback functions */
 					boost::shared_ptr<IpfixDataTemplateDestructionRecord> ipfixRecord(new IpfixDataTemplateDestructionRecord);
 					ipfixRecord->sourceID = sourceId;
 					ipfixRecord->dataTemplateInfo = bt->dataTemplateInfo;
-					for (IpfixParser::FlowSinks::iterator i = ipfixParser->flowSinks.begin(); i != ipfixParser->flowSinks.end(); i++) {
-						(*i)->push(ipfixRecord);
-					}
+					ipfixParser->push(ipfixRecord);
 
 				} else {
 					msg(MSG_FATAL, "Unknown template type requested to be freed: %d", bt->setID);

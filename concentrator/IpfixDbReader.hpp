@@ -27,12 +27,14 @@
 
 #include "IpfixDbCommon.hpp"
 #include "IpfixParser.hpp"
+#include "FlowSource.hpp"
 #include "ipfix.hpp"
 #include "ipfixlolib/ipfixlolib.h"
 
 #include <netinet/in.h>
 #include <time.h>
 #include <pthread.h>
+#include <boost/smart_ptr.hpp>
 
 #include <mysql.h>
 
@@ -40,7 +42,7 @@
  *      IpfixDbReader powered the communication to the database server
  *      also between the other structs
  */
-class IpfixDbReader {
+class IpfixDbReader : public FlowSource {
 	public:
 		IpfixDbReader(const char* hostname, const char* dbName,
 				const char* username, const char* password,
@@ -50,12 +52,7 @@ class IpfixDbReader {
 		int start();
 		int stop();
 
-		/**
-		 * Add a FlowSink that receives flows we export
-		 */
-		void addFlowSink(FlowSink* flowSink);
-
-		IpfixRecord::SourceID srcId;
+		boost::shared_ptr<IpfixRecord::SourceID> srcId;
 
 	protected:
 		static const int MAX_TABLES = 10; /**< count of tables that will be send */
@@ -90,15 +87,12 @@ class IpfixDbReader {
 		pthread_mutex_t mutex;   /** start/stop mutex for db replaying process */
 		pthread_t thread;
 
-		typedef std::list<FlowSink*> FlowSinks;
-		FlowSinks flowSinks; /**< List of FlowSink objects that receive flows we export */
-
 		int getTables();
 		int getColumns(int n);
 		static void* readFromDB(void* ipfixDbReader_);
-		int dbReaderSendNewTemplate(IpfixRecord::DataTemplateInfo* dataTemplateInfo, int table_index);
-		int dbReaderSendTable(IpfixRecord::DataTemplateInfo* dataTemplateInfo, int n);
-		int dbReaderDestroyTemplate(IpfixRecord::DataTemplateInfo* dataTemplateInfo);
+		int dbReaderSendNewTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo, int table_index);
+		int dbReaderSendTable(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo, int n);
+		int dbReaderDestroyTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo);
 		int connectToDb(const char* hostName, const char* dbName, const char* username, const char* password, unsigned int port, uint16_t observationDomainId);
 		IpfixDbReader::columnDB* getColumnByName(const char* name);
 };

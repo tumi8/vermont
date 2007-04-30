@@ -30,6 +30,7 @@
 #include <stdint.h>
 #include <boost/smart_ptr.hpp>
 #include "FlowSink.hpp"
+#include "FlowSource.hpp"
 
 class TemplateBuffer;
 
@@ -44,15 +45,11 @@ class TemplateBuffer;
  * The Collector module supports higher-level modules by providing field types and offsets along 
  * with the raw data block of individual messages passed via the callback functions (see @c IpfixRecord::TemplateInfo)
  */
-class IpfixParser {
+class IpfixParser : public FlowSource {
 	public:
 		IpfixParser();
 		~IpfixParser();
 
-		/**
-		 * Add a FlowSink that receives flows we collect
-		 */
-		void addFlowSink(FlowSink* flowSink);
 		int processMessage(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 
 	protected:
@@ -126,9 +123,6 @@ class IpfixParser {
 			uint8_t data;
 		} IpfixOptionsTemplateHeader;
 
-		typedef std::list<FlowSink*> FlowSinks;
-		FlowSinks flowSinks; /**< List of FlowSink objects that receive flows we collect */
-
 		friend class TemplateBuffer;
 		TemplateBuffer* templateBuffer; /**< TemplateBuffer* structure */
 
@@ -142,12 +136,5 @@ class IpfixParser {
 };
 
 void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* pattern);
-
-IpfixRecord::FieldInfo* getTemplateFieldInfo(IpfixRecord::TemplateInfo* ti, IpfixRecord::FieldInfo::Type* type);
-IpfixRecord::FieldInfo* getTemplateFieldInfo(IpfixRecord::TemplateInfo* ti, IpfixRecord::FieldInfo::Type::Id fieldTypeId, IpfixRecord::FieldInfo::Type::EnterpriseNo fieldTypeEid);
-IpfixRecord::FieldInfo* getDataTemplateFieldInfo(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::FieldInfo::Type* type);
-IpfixRecord::FieldInfo* getDataTemplateFieldInfo(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::FieldInfo::Type::Id fieldTypeId, IpfixRecord::FieldInfo::Type::EnterpriseNo fieldTypeEid);
-IpfixRecord::FieldInfo* getDataTemplateDataInfo(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::FieldInfo::Type* type);
-IpfixRecord::FieldInfo* getDataTemplateDataInfo(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::FieldInfo::Type::Id fieldTypeId, IpfixRecord::FieldInfo::Type::EnterpriseNo fieldTypeEid);
 
 #endif

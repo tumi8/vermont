@@ -242,7 +242,7 @@ int matchesPattern(IpfixRecord::FieldInfo::Type* dataType, IpfixRecord::Data* da
  */
 int checkAssociatedMask(IpfixRecord::TemplateInfo* info, IpfixRecord::Data* data, Rule::Field* ruleField) {
 	if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) && (ruleField->pattern) && (ruleField->type.length == 5)) {
-		IpfixRecord::FieldInfo* maskInfo = getTemplateFieldInfo(info, IPFIX_TYPEID_sourceIPv4Mask, 0);
+		IpfixRecord::FieldInfo* maskInfo = info->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
 		if (!maskInfo) return 1;
 
 		uint8_t pmask = 32 - getIPv4IMask(&ruleField->type, ruleField->pattern);
@@ -250,7 +250,7 @@ int checkAssociatedMask(IpfixRecord::TemplateInfo* info, IpfixRecord::Data* data
 		return (dmask >= pmask);
 	}
 	if ((ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) && (ruleField->pattern) && (ruleField->type.length == 5)) {
-		IpfixRecord::FieldInfo* maskInfo = getTemplateFieldInfo(info, IPFIX_TYPEID_destinationIPv4Mask, 0);
+		IpfixRecord::FieldInfo* maskInfo = info->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
 		if (!maskInfo) return 1;
 
 		uint8_t pmask = 32 - getIPv4IMask(&ruleField->type, ruleField->pattern);
@@ -268,7 +268,7 @@ int checkAssociatedMask(IpfixRecord::TemplateInfo* info, IpfixRecord::Data* data
  */
 int checkAssociatedMask2(IpfixRecord::DataTemplateInfo* info, IpfixRecord::Data* data, Rule::Field* ruleField) {
 	if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) && (ruleField->pattern) && (ruleField->type.length == 5)) {
-		IpfixRecord::FieldInfo* maskInfo = getDataTemplateFieldInfo(info, IPFIX_TYPEID_sourceIPv4Mask, 0);
+		IpfixRecord::FieldInfo* maskInfo = info->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
 		if (!maskInfo) return 1;
 
 		uint8_t pmask = 32 - getIPv4IMask(&ruleField->type, ruleField->pattern);
@@ -276,7 +276,7 @@ int checkAssociatedMask2(IpfixRecord::DataTemplateInfo* info, IpfixRecord::Data*
 		return (dmask >= pmask);
 	}
 	if ((ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) && (ruleField->pattern) && (ruleField->type.length == 5)) {
-		IpfixRecord::FieldInfo* maskInfo = getDataTemplateFieldInfo(info, IPFIX_TYPEID_destinationIPv4Mask, 0);
+		IpfixRecord::FieldInfo* maskInfo = info->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
 		if (!maskInfo) return 1;
 
 		uint8_t pmask = 32 - getIPv4IMask(&ruleField->type, ruleField->pattern);
@@ -294,7 +294,7 @@ int checkAssociatedMask2(IpfixRecord::DataTemplateInfo* info, IpfixRecord::Data*
  */
 int checkAssociatedMask3(IpfixRecord::DataTemplateInfo* info, IpfixRecord::Data* data, Rule::Field* ruleField) {
 	if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) && (ruleField->pattern) && (ruleField->type.length == 5)) {
-		IpfixRecord::FieldInfo* maskInfo = getDataTemplateDataInfo(info, IPFIX_TYPEID_sourceIPv4Mask, 0);
+		IpfixRecord::FieldInfo* maskInfo = info->getDataInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
 		if (!maskInfo) return 1;
 
 		uint8_t pmask = 32 - getIPv4IMask(&ruleField->type, ruleField->pattern);
@@ -302,7 +302,7 @@ int checkAssociatedMask3(IpfixRecord::DataTemplateInfo* info, IpfixRecord::Data*
 		return (dmask >= pmask);
 	}
 	if ((ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) && (ruleField->pattern) && (ruleField->type.length == 5)) {
-		IpfixRecord::FieldInfo* maskInfo = getDataTemplateDataInfo(info, IPFIX_TYPEID_destinationIPv4Mask, 0);
+		IpfixRecord::FieldInfo* maskInfo = info->getDataInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
 		if (!maskInfo) return 1;
 
 		uint8_t pmask = 32 - getIPv4IMask(&ruleField->type, ruleField->pattern);
@@ -325,7 +325,7 @@ int Rule::templateDataMatches(IpfixRecord::TemplateInfo* info, IpfixRecord::Data
 
 		/* for all patterns of this rule, check if they are matched */
 		if (field[i]->pattern) {
-			fieldInfo = getTemplateFieldInfo(info, &ruleField->type);
+			fieldInfo = info->getFieldInfo(&ruleField->type);
 			if (fieldInfo) {
 				/* corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched */
 				if (!matchesPattern(&fieldInfo->type, (data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
@@ -339,7 +339,7 @@ int Rule::templateDataMatches(IpfixRecord::TemplateInfo* info, IpfixRecord::Data
 		}
 		/* if a non-discarding rule field specifies no pattern, check at least if the data field exists */
 		else if (field[i]->modifier != Rule::Field::DISCARD) {
-			fieldInfo = getTemplateFieldInfo(info, &ruleField->type);
+			fieldInfo = info->getFieldInfo(&ruleField->type);
 			if (fieldInfo) continue;
 			msg(MSG_DEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;
@@ -364,7 +364,7 @@ int Rule::dataTemplateDataMatches(IpfixRecord::DataTemplateInfo* info, IpfixReco
 		if(field[i]->pattern) {
 			Rule::Field* ruleField = field[i];
 
-			fieldInfo = getDataTemplateFieldInfo(info, &ruleField->type);
+			fieldInfo = info->getFieldInfo(&ruleField->type);
 			if (fieldInfo) {
 				/* corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched */
 				if (!matchesPattern(&fieldInfo->type, (data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
@@ -377,7 +377,7 @@ int Rule::dataTemplateDataMatches(IpfixRecord::DataTemplateInfo* info, IpfixReco
 			  see if we find a corresponding fixed data field
 			*/
 
-			fieldInfo = getDataTemplateDataInfo(info, &ruleField->type);
+			fieldInfo = info->getDataInfo(&ruleField->type);
 			if (fieldInfo) {
 				/* corresponding fixed data field found, check if it matches. If it doesn't the whole rule cannot be matched */
 				if (!matchesPattern(&fieldInfo->type, (info->data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
