@@ -134,7 +134,9 @@ void PacketSelectionConfiguration::startSystem()
 		// we need at least one data sink. if we don't have
 		// any, there will be a memory leak (no packets will
 		// be freed within the sampler)
-		filter->setReceiver(new PacketSink());
+		PacketSink* dummySink = new PacketSink();
+		dummySink->runSink();
+		filter->setReceiver(dummySink);
 		msg(MSG_INFO, "Added packet sink");
 	}
 	filter->startFilter();
