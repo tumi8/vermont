@@ -25,6 +25,8 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <boost/smart_ptr.hpp>
+#include "FlowSource.hpp"
 #include "IpfixParser.hpp"
 #include "Rules.hpp"
 #include <list>
@@ -52,7 +54,7 @@
  * fields are stored in @c Hashtable.buckets[].data structures described by the
  * @c Hashtable.fieldInfo array.
  */
-class Hashtable {
+class Hashtable : public FlowSource {
 	public:
 		class Bucket;
 		/**
@@ -63,7 +65,7 @@ class Hashtable {
 			public:
 				uint32_t expireTime; /**< timestamp when this bucket will expire if no new flows are added */
 				uint32_t forceExpireTime; /**< timestamp when this bucket is forced to expire */
-				IpfixRecord::Data* data; /**< contains variable fields of aggregated flow; format defined in Hashtable::dataInfo::fieldInfo */
+				boost::shared_array<IpfixRecord::Data> data; /**< contains variable fields of aggregated flow; format defined in Hashtable::dataInfo::fieldInfo */
 				Hashtable::Bucket* next; /**< next bucket in spill chain */
 		};
 
@@ -72,10 +74,7 @@ class Hashtable {
 
 		int isToBeAggregated(IpfixRecord::FieldInfo::Type type);
 
-		/**
-		 * Add a FlowSink that receives flows we export
-		 */
-		void addFlowSink(FlowSink* flowSink);
+		virtual void addFlowSink(FlowSink* flowSink);
 
 		void aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord::Data* data);
 		void aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::Data* data);
@@ -94,21 +93,18 @@ class Hashtable {
 
 	protected:
 
-		IpfixRecord::DataTemplateInfo* dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
+		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
 		uint16_t fieldLength; /**< length in bytes of all variable-length fields */
 		Rule::Field::Modifier* fieldModifier; /**< specifies what modifier to apply to a given field */
 
-		typedef std::list<FlowSink*> FlowSinks;
-		FlowSinks flowSinks; /**< List of FlowSink objects that receive flows we export */
-
-		Hashtable::Bucket* createBucket(IpfixRecord::Data* data);
+		Hashtable::Bucket* createBucket(boost::shared_array<IpfixRecord::Data> data);
 		void exportBucket(Hashtable::Bucket* bucket);
 		void destroyBucket(Hashtable::Bucket* bucket);
 		int aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* baseData, IpfixRecord::Data* deltaData);
 		int aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data* flow);
 		uint16_t getHash(IpfixRecord::Data* data);
 		int equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2);
-		void bufferDataBlock(IpfixRecord::Data* data);
+		void bufferDataBlock(boost::shared_array<IpfixRecord::Data> data);
 };
 	
 #endif

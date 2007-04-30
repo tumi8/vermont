@@ -33,7 +33,7 @@
 /**
  * Initializes memory for a new bucket in @c ht containing @c data
  */
-Hashtable::Bucket* Hashtable::createBucket(IpfixRecord::Data* data) {
+Hashtable::Bucket* Hashtable::createBucket(boost::shared_array<IpfixRecord::Data> data) {
 	Hashtable::Bucket* bucket = new Hashtable::Bucket;
 	bucket->expireTime = time(0) + minBufferTime;
 	bucket->forceExpireTime = time(0) + maxBufferTime;
@@ -48,9 +48,13 @@ Hashtable::Bucket* Hashtable::createBucket(IpfixRecord::Data* data) {
  */
 void Hashtable::exportBucket(Hashtable::Bucket* bucket) {
 	/* Pass Data Record to exporter interface */
-	for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-		(*i)->onDataDataRecord(0, dataTemplate, fieldLength, bucket->data);
-	}
+	boost::shared_ptr<IpfixDataDataRecord> ipfixRecord(new IpfixDataDataRecord);
+	ipfixRecord->sourceID.reset();
+	ipfixRecord->dataTemplateInfo = dataTemplate;
+	ipfixRecord->dataLength = fieldLength;
+	ipfixRecord->message = bucket->data;
+	ipfixRecord->data = bucket->data.get();
+	push(ipfixRecord);
 
 	recordsSent++;
 }
@@ -59,7 +63,6 @@ void Hashtable::exportBucket(Hashtable::Bucket* bucket) {
  * De-allocates memory used by the given @c bucket
  */
 void Hashtable::destroyBucket(Hashtable::Bucket* bucket) {
-	free(bucket->data); //TODO: is this correct?
 	delete bucket;
 }
 
@@ -79,7 +82,7 @@ Hashtable::Hashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
 	recordsReceived = 0;
 	recordsSent = 0;
 
-	dataTemplate = (IpfixRecord::DataTemplateInfo*)malloc(sizeof(IpfixRecord::DataTemplateInfo));
+	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
 	dataTemplate->id=rule->id;
 	dataTemplate->preceding=rule->preceding;
 	dataTemplate->fieldCount = 0;
@@ -144,16 +147,14 @@ Hashtable::~Hashtable() {
 	/* Inform Exporter of Data Template destruction */
     // exporter has already shut down
 	/*
-	for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
-		(*i)->onDataTemplateDestruction(0, dataTemplate);
-	}
+	boost::shared_ptr<IpfixDataTemplateDestructionRecord> ipfixRecord(new IpfixDataTemplateDestructionRecord);
+	ipfixRecord->sourceID.reset();
+	ipfixRecord->dataTemplateInfo = dataTemplate;
+	flowSink->push(ipfixRecord);
+	push(ipfixRecord);
 	*/
 
-	free(dataTemplate->fieldInfo);
 	free(fieldModifier);
-	free(dataTemplate->dataInfo);
-	free(dataTemplate->data);
-	free(dataTemplate);
 }
 
 /**
@@ -446,11 +447,11 @@ int Hashtable::equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2)
 /**
  * Inserts a data block into the hashtable
  */
-void Hashtable::bufferDataBlock(IpfixRecord::Data* data)
+void Hashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 {
 	recordsReceived++;
 
-	uint16_t hash = getHash(data);
+	uint16_t hash = getHash(data.get());
 	Hashtable::Bucket* bucket = buckets[hash];
 
 	if (bucket == 0) {
@@ -462,14 +463,12 @@ void Hashtable::bufferDataBlock(IpfixRecord::Data* data)
 
 	/* This slot is already used, search spill chain for equal flow */
 	while(1) {
-		if (equalFlow(bucket->data, data)) {
+		if (equalFlow(bucket->data.get(), data.get())) {
 			DPRINTF("appending to bucket\n");
 
-			aggregateFlow(bucket->data, data);
+			aggregateFlow(bucket->data.get(), data.get());
 			bucket->expireTime = time(0) + minBufferTime;
 
-			/* The flow's data block is no longer needed */
-			free(data);
 			break;
 		}
 
@@ -577,30 +576,30 @@ void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord
 	int i;
 
 	/* Create data block to be inserted into buffer... */
-	IpfixRecord::Data* htdata = (IpfixRecord::Data*)malloc(fieldLength);
+	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength]);
 
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
-		IpfixRecord::FieldInfo* tfi = getTemplateFieldInfo(ti, &hfi->type);
+		IpfixRecord::FieldInfo* tfi = ti->getFieldInfo(&hfi->type);
 
 		if(!tfi) {
 			DPRINTF("Flow to be buffered did not contain %s field\n", typeid2string(hfi->type.id));
 			continue;
 		}
 
-		copyData(&hfi->type, htdata + hfi->offset, &tfi->type, data + tfi->offset, fieldModifier[i]);
+		copyData(&hfi->type, htdata.get() + hfi->offset, &tfi->type, data + tfi->offset, fieldModifier[i]);
 
 		/* copy associated mask, should there be one */
 		switch (hfi->type.id) {
 		case IPFIX_TYPEID_sourceIPv4Address:
-			tfi = getTemplateFieldInfo(ti, IPFIX_TYPEID_sourceIPv4Mask, 0);
+			tfi = ti->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
 
 			if(tfi) {
 				if(hfi->type.length != 5) {
 					DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 				} else {
 					if(tfi->type.length == 1) {
-						*(uint8_t*)(htdata + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+						*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
 					} else {
 						DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
 					}
@@ -609,14 +608,14 @@ void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord
 			break;
 
 		case IPFIX_TYPEID_destinationIPv4Address:
-			tfi = getTemplateFieldInfo(ti, IPFIX_TYPEID_destinationIPv4Mask, 0);
+			tfi = ti->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
 
 			if(tfi) {
 				if(hfi->type.length != 5) {
 					DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 				} else {
 					if(tfi->type.length == 1) {
-						*(uint8_t*)(htdata + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+						*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
 					} else {
 						DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
 					}
@@ -641,27 +640,27 @@ void Hashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, Ipf
 	int i;
 
 	/* Create data block to be inserted into buffer... */
-	IpfixRecord::Data* htdata = (IpfixRecord::Data*)malloc(fieldLength);
+	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength]);
 
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 
 		/* Copy from matching variable field, should it exist */
-		IpfixRecord::FieldInfo* tfi = getDataTemplateFieldInfo(ti, &hfi->type);
+		IpfixRecord::FieldInfo* tfi = ti->getFieldInfo(&hfi->type);
 		if(tfi) {
-			copyData(&hfi->type, htdata + hfi->offset, &tfi->type, data + tfi->offset, fieldModifier[i]);
+			copyData(&hfi->type, htdata.get() + hfi->offset, &tfi->type, data + tfi->offset, fieldModifier[i]);
 
 			/* copy associated mask, should there be one */
 			switch (hfi->type.id) {
 
 			case IPFIX_TYPEID_sourceIPv4Address:
-			tfi = getDataTemplateFieldInfo(ti, IPFIX_TYPEID_sourceIPv4Mask, 0);
+				tfi = ti->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
 				if(tfi) {
 					if(hfi->type.length != 5) {
 						DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 					} else {
 						if(tfi->type.length == 1) {
-							*(uint8_t*)(htdata + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
 						} else {
 							DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
 						}
@@ -670,13 +669,13 @@ void Hashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, Ipf
 				break;
 
 			case IPFIX_TYPEID_destinationIPv4Address:
-				tfi = getDataTemplateFieldInfo(ti, IPFIX_TYPEID_destinationIPv4Mask, 0);
+				tfi = ti->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
 				if(tfi) {
 					if(hfi->type.length != 5) {
 						DPRINTF("Tried to set mask of length %d IP address", hfi->type.length);
 					} else {
 						if(tfi->type.length == 1) {
-							*(uint8_t*)(htdata + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
 						} else {
 							DPRINTF("Cannot process associated mask with invalid length %d", tfi->type.length);
 						}
@@ -692,21 +691,21 @@ void Hashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, Ipf
 		}
 
 		/* No matching variable field. Copy from matching fixed field, should it exist */
-		tfi = getDataTemplateDataInfo(ti, &hfi->type);
+		tfi = ti->getDataInfo(&hfi->type);
 		if(tfi) {
-			copyData(&hfi->type, htdata + hfi->offset, &tfi->type, ti->data + tfi->offset, fieldModifier[i]);
+			copyData(&hfi->type, htdata.get() + hfi->offset, &tfi->type, ti->data + tfi->offset, fieldModifier[i]);
 
 			/* copy associated mask, should there be one */
 			switch (hfi->type.id) {
 
 			case IPFIX_TYPEID_sourceIPv4Address:
-				tfi = getDataTemplateDataInfo(ti, IPFIX_TYPEID_sourceIPv4Mask, 0);
+				tfi = ti->getDataInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
 				if(tfi) {
 					if(hfi->type.length != 5) {
 						DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 					} else {
 						if(tfi->type.length == 1) {
-							*(uint8_t*)(htdata + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
+							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
 						} else {
 							DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
 						}
@@ -715,13 +714,13 @@ void Hashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, Ipf
 				break;
 
 			case IPFIX_TYPEID_destinationIPv4Address:
-				tfi = getDataTemplateDataInfo(ti, IPFIX_TYPEID_destinationIPv4Mask, 0);
+				tfi = ti->getDataInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
 				if(tfi) {
 					if(hfi->type.length != 5) {
 						DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 					} else {
 						if (tfi->type.length == 1) {
-							*(uint8_t*)(htdata + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
+							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
 						} else {
 							DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
 						}
@@ -748,9 +747,12 @@ void Hashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, Ipf
  * @param flowSink the destination module
  */
 void Hashtable::addFlowSink(FlowSink* flowSink) {
-	flowSinks.push_back(flowSink);
+	FlowSource::addFlowSink(flowSink);
 
 	/* Immediately pass the Hashtable's DataTemplate to the new Callback receiver */
-	flowSink->onDataTemplate(0, dataTemplate);
+	boost::shared_ptr<IpfixDataTemplateRecord> ipfixRecord(new IpfixDataTemplateRecord);
+	ipfixRecord->sourceID.reset();
+	ipfixRecord->dataTemplateInfo = dataTemplate;
+	flowSink->push(ipfixRecord);
 }
 

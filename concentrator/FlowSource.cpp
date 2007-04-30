@@ -18,12 +18,21 @@
  *
  */
 
-#include "msg.h"
-#include "IpfixRecord.hpp"
+#include "FlowSource.hpp"
 
-IpfixRecord::IpfixRecord() {
+FlowSource::FlowSource() {
 }
 
-IpfixRecord::~IpfixRecord() {
+FlowSource::~FlowSource() {
+}
+
+void FlowSource::addFlowSink(FlowSink* flowSink) {
+	flowSinks.push_back(flowSink);
+}
+
+void FlowSource::push(boost::shared_ptr<IpfixRecord> ipfixRecord) {
+	for (FlowSinks::iterator i = flowSinks.begin(); i != flowSinks.end(); i++) {
+		(*i)->push(ipfixRecord);
+	}
 }
 

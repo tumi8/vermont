@@ -18,12 +18,39 @@
  *
  */
 
-#include "msg.h"
+#ifndef INCLUDED_FlowSource_hpp
+#define INCLUDED_FlowSource_hpp
+
+#include <list>
+#include <boost/smart_ptr.hpp>
+#include "FlowSink.hpp"
 #include "IpfixRecord.hpp"
 
-IpfixRecord::IpfixRecord() {
-}
+/*
+ * IPFIX Flow Source class
+ *
+ * The IPFIX Flow Source class servers as a base class for all modules 
+ * which produce an IpfixRecord and pass it to a FlowSink
+ */
+class FlowSource {
+	public:
+		FlowSource();
+		virtual ~FlowSource();
 
-IpfixRecord::~IpfixRecord() {
-}
+		/**
+		 * Add a FlowSink that receives flows we collect
+		 */
+		virtual void addFlowSink(FlowSink* flowSink);
 
+		/**
+		 * Push an IpfixRecord to all registered FlowSink objects
+		 */
+		void push(boost::shared_ptr<IpfixRecord> ipfixRecord);
+
+	protected:
+		typedef std::list<FlowSink*> FlowSinks;
+		FlowSinks flowSinks; /**< List of FlowSink objects that receive flows we collect */
+
+};
+
+#endif

@@ -84,7 +84,6 @@ void FlowSink::flowSinkProcess()
 			IpfixOptionsTemplateDestructionRecord* rec = dynamic_cast<IpfixOptionsTemplateDestructionRecord*>(ipfixRecord.get());
 			if (rec) onOptionsTemplateDestruction(rec->sourceID.get(), rec->optionsTemplateInfo.get());
 		}
-		DPRINTF("SINK: free packet");
 	}
 }
 
