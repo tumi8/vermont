@@ -30,14 +30,29 @@ AS_IF([test "x$enable_netflow_v9" = "xyes" -o "x$enable_netflow_v9" = "x"],
        AC_DEFINE(SUPPORT_NETFLOWV9)],
       [AC_MSG_NOTICE([NetFlow version 9 support disabled])])
 
-# turn on debug mode
+# abort if anybody tries to use --enable-dprint
 AC_ARG_ENABLE([dprint],
               [AS_HELP_STRING([--enable-dprint],
-                              [enable DPRINT debug messages. This will make VERMONT very noisy])],
-              [AC_DEFINE(DEBUG)])
+                              [no longer used])],
+              [AC_MSG_ERROR([*** --enable-dprint was replaced by --enable-debug])])
 
+# turn on debug mode
+debug="no"
+AC_ARG_ENABLE([debug],
+              [AS_HELP_STRING([--enable-debug],
+                              [enable DPRINT debug messages, debug info and no optimizations. This will make VERMONT very noisy])],
+              [debug="$enableval"])
+if test "x$debug" = "xyes"; then
+  AC_DEFINE(DEBUG)
+  CFLAGS="-O0 -g"
+  CXXFLAGS="$CFLAGS"
+else
+  CFLAGS="-O3"
+  CXXFLAGS="$CFLAGS"
+fi
+
+# Check for LibXML
 AM_PATH_XML2(2.4.0,,AC_MSG_ERROR([*** LibXML version $XML_VERSION not found!]))
-
 
 # check for pthread
 ACX_PTHREAD
@@ -77,3 +92,12 @@ AC_LANG_POP(C++)
 AC_CONFIG_FILES([Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile])
 
 AC_OUTPUT
+
+if test "x$debug" = "xyes"; then
+	AC_MSG_RESULT([])
+	AC_MSG_RESULT([*******************************************************************************])
+	AC_MSG_RESULT([* Warning: You are building a non-optimized version of VERMONT for debugging! *])
+	AC_MSG_RESULT([*******************************************************************************])
+	AC_MSG_RESULT([])
+fi
+
