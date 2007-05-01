@@ -71,6 +71,7 @@ public:
         void terminateCapture()
         {
                 exitFlag = true;
+		pcap_breakloop(captureDevice); // gerhard: maybe this helps pcap_next() to return
         };
 
         void addReceiver(PacketReceiver *recv)

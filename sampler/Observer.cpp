@@ -110,29 +110,27 @@ void *Observer::observerThread(void *arg)
 		 */
 		p=new Packet(packetData, packetHeader.caplen, packetHeader.ts, numReceivers);
 
-		/*
-		DPRINTF("Observer: received packet at %d.%04d, len=%d\n",
-		p->timestamp.tv_sec,
-		p->timestamp.tv_usec / 1000,
+		DPRINTF("Observer: received packet at %u.%04u, len=%d\n",
+		(unsigned)p->timestamp.tv_sec,
+		(unsigned)p->timestamp.tv_usec / 1000,
 		packetHeader.caplen
 		);
-		*/
 
 		/* broadcast packet to all receivers */
-        if (!obs->exitFlag) {
-            for(vector<ConcurrentQueue<Packet*> *>::iterator it = obs->receivers.begin();
-                    it != obs->receivers.end(); ++it) {
-                if ((*it)->getCount() > 100000) {
-                    msg(MSG_FATAL, "Observer: Observer drain clogged, waiting for plumber");
-                    while ((*it)->getCount() > 10000) sleep(1);
-                    msg(MSG_FATAL, "Observer: drain not clogged any more, resuming operation");
-                }
-                (*it)->push(p);
-            }
-        }
+		if (!obs->exitFlag) {
+		    for(vector<ConcurrentQueue<Packet*> *>::iterator it = obs->receivers.begin();
+			    it != obs->receivers.end(); ++it) {
+			if ((*it)->getCount() > 100000) {
+			    msg(MSG_FATAL, "Observer: Observer drain clogged, waiting for plumber");
+			    while ((*it)->getCount() > 10000) sleep(1);
+			    msg(MSG_FATAL, "Observer: drain not clogged any more, resuming operation");
+			}
+			(*it)->push(p);
+		    }
+		}
 	}
 
-    msg(MSG_DEBUG, "Observer: exiting observer thread");
+	msg(MSG_DEBUG, "Observer: exiting observer thread");
 	pthread_exit((void *)1);
 }
 

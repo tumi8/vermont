@@ -94,126 +94,14 @@ public:
         // FlushPacketStream();
 
         // start a new IPFIX packet stream
-        void startNewPacketStream()
-        {
-                unsigned short net_tmplid = htons(templ->getTemplateID());
-                DPRINTF("Starting new packet stream\n");
-                numPacketsToRelease = 0;
-                ipfix_start_data_set(exporter, net_tmplid);
-        }
+        void startNewPacketStream();
 
         // Add this packet to the packet stream
 	// returns true, if the Packet was successfully added
-        bool addPacket(Packet *pck)
-        {
-                unsigned short ttype, tlength, toffset, theader;
-		unsigned short enc_length = 0;
-		void *data, *metadata;
-		uint8_t *enc_value = 0;
-		bool ret = true;
-		
-                // first, store the packet to be released later, after we have sent the data
-		if(numPacketsToRelease < (MAX_PACKETS-1))
-		{
-		    DPRINTF("Adding packet to stream\n");
-		    packetsToRelease[numPacketsToRelease++] = pck;
-		}
-		else
-		{
-		    msg(MSG_ERROR, "ExporterSink: packet buffer too small, packet dropped.");
-		    pck->release();
-		    return false;
-		}
-
-		// first check if packet matches template requirements, i.e. if all fields are available
-		if(templ->checkPacketConformity(pck->classification)) 
-		{
-		    // store current position in order to go back in case of problems
-		    ipfix_set_data_field_marker(exporter);
-
-		    for(int i = 0; i < templ->getFieldCount(); i++) 
-		    {
-			templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
-			if(ttype >= 0x8000) 
-			{
-			    // it is a meta-field --> get the metadata
-			    metadata = templ->getMetaFieldData(i);
-			    ipfix_put_data_field(exporter, metadata, tlength);
-			    metaFieldsToRelease[numMetaFieldsToRelease++] = metadata;
-			}
-			else if(ttype == IPFIX_TYPEID_flowStartSeconds)
-			{
-			    pck->time_sec_nbo = htonl(pck->timestamp.tv_sec);
-			    ipfix_put_data_field(exporter, &(pck->time_sec_nbo), tlength);
-			}
-			else if(ttype == IPFIX_TYPEID_flowStartMicroSeconds)
-			{
-			    pck->time_usec_nbo = htonl(pck->timestamp.tv_usec);
-			    ipfix_put_data_field(exporter, &(pck->time_usec_nbo), tlength);
-			}
-		       	else if(tlength == 65535)
-			{
-			    // variable length field
-			    if((data = pck->getVariableLengthPacketData(&tlength, &enc_value, &enc_length, toffset, theader)) != NULL) 
-			    {
-				// put the length information first
-				ipfix_put_data_field(exporter, enc_value, enc_length);
-				ipfix_put_data_field(exporter, data, tlength);
-			    }
-			    else
-			    {
-				msg(MSG_ERROR, "ExporterSink: getVariableLengthPacketData returned NULL! This should never happen!");
-				// delete the fields that we have already added
-				ipfix_delete_data_fields_upto_marker(exporter);
-				ret = false;
-				break;
-			    }
-			}
-			else
-			{
-			    // check if getPacketData actually returns data
-			    // Note: getPacketData checks if data of size tlength is available.
-			    //       if not, it returns NULL
-			    if( (data = pck->getPacketData(toffset, theader, tlength)) != NULL) {
-				ipfix_put_data_field(exporter, data, tlength);
-			    } else {
-				msg(MSG_ERROR, "ExporterSink: getPacketData returned NULL! packet length or pcap capture length is too small.");
-				// delete the fields that we have already added
-				ipfix_delete_data_fields_upto_marker(exporter);
-				ret = false;
-				break;
-			    }
-			}
-		    }
-		}
-		else
-		{
-		    DPRINTF("Packet does not contain all fields required by the template! Skip this packet.\n");
-		    ret = false;
-		}
-
-		return ret;
-        }
+        bool addPacket(Packet *pck);
 
         // send out the IPFIX packet stream and reset
-        void flushPacketStream()
-        {
-                // end the packet stream and send the IPFIX packet out through the wire
-                ipfix_end_data_set(exporter);
-                ipfix_send(exporter);
-
-                DPRINTF("Flushing %d packets from stream\n", numPacketsToRelease);
-                for(int i = 0; i < numPacketsToRelease; i++) {
-                        (packetsToRelease[i])->release();
-                }
-		// now release the additional metadata fields
-		DPRINTF("Flushing %d Metadata fields from stream\n", numMetaFieldsToRelease);
-		for(int i = 0; i < numMetaFieldsToRelease; i++) {
-			free(metaFieldsToRelease[i]);
-		}
-                numPacketsToRelease = 0;
-		numMetaFieldsToRelease = 0;
-        }
+        void flushPacketStream();
 
 
         /* max records per IPFIX packet */
