@@ -116,7 +116,6 @@ public:
 		data = (unsigned char *)packetData;
 		netHeader = data + IPHeaderOffset;
 		netHeaderOffset = IPHeaderOffset;
-		//transportHeader = (unsigned char *)netHeader + netTransportHeaderOffset(netHeader);
 
 		totalPacketsReceived++;
 
@@ -164,8 +163,6 @@ public:
 	void classify()
 	{
 		unsigned char protocol = 0;
-		unsigned char tcpDataOffset;
-		unsigned int endOfIpOffset;
 		
 		// first check for IPv4 header which needs to be at least 20 bytes long
 		if ( (netHeader + 20 <= data + data_length) && ((*netHeader >> 4) == 4) )
@@ -175,7 +172,7 @@ public:
 			transportHeaderOffset = netHeaderOffset + (( *netHeader & 0x0f ) << 2);
 
 			// crop layer 2 padding
-			endOfIpOffset = netHeaderOffset + ntohs(*((uint16_t*) (netHeader + 2)));
+			unsigned int endOfIpOffset = netHeaderOffset + ntohs(*((uint16_t*) (netHeader + 2)));
 			if(data_length > endOfIpOffset)
 			{
 			    DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
@@ -224,7 +221,7 @@ public:
 				if (transportHeaderOffset + 12 <= data_length)
 				{
 					// extract "Data Offset" field at TCP header offset 12 (upper 4 bits)
-					tcpDataOffset = *(transportHeader + 12) >> 4;
+					unsigned char tcpDataOffset = *(transportHeader + 12) >> 4;
 				
 					// calculate payload offset
 					payloadOffset = transportHeaderOffset + (tcpDataOffset << 2);
@@ -435,21 +432,6 @@ private:
 	int users;
 
 	Lock refCountLock;
-
-	/*
-	 return the offset the transport header lies
-	 IP knows about variable length options field
-         */
-	static inline unsigned int netTransportHeaderOffset(void *ipPacket)
-	{
-		/*
-		 the header length (incl. options field) is:
-		 last 4 bits in the first byte * 4bytes
-		 */
-		unsigned char len = *((unsigned char *)ipPacket) & 0x0f;
-
-		return len << 2;
-	}
 
 };
 
