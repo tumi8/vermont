@@ -81,6 +81,10 @@ AC_CHECK_LIB([pcap], [pcap_open_live],
              [LDFLAGS="$LDFLAGS -lpcap"
               AC_SUBST(LDFLAGS)],
              [AC_MSG_ERROR([*** could not find libpcap. Please install it.])])
+AC_CHECK_LIB([pcap], [pcap_breakloop],
+             [LDFLAGS="$LDFLAGS -lpcap"
+              AC_SUBST(LDFLAGS)],
+             [AC_MSG_ERROR([*** could not find libpcap's pcap_breakloop function. Make sure you have at least libpcap 0.8 installed.])])
 
 # check for Boost headers
 AC_LANG_PUSH(C++)
