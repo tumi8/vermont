@@ -17,16 +17,13 @@
 class HookingFilter : public PacketProcessor {
 
 	public:
-		static IpfixRecord::TemplateInfo ip_traffic_template;
-		static IpfixRecord::TemplateInfo icmp_traffic_template;
-		static IpfixRecord::TemplateInfo udp_traffic_template;
-		static IpfixRecord::TemplateInfo tcp_traffic_template;
+		IpfixRecord::TemplateInfo* ip_traffic_template;
+		IpfixRecord::TemplateInfo* icmp_traffic_template;
+		IpfixRecord::TemplateInfo* udp_traffic_template;
+		IpfixRecord::TemplateInfo* tcp_traffic_template;
 
-		HookingFilter(FlowSink *flowSink = 0) : flowSink(flowSink) {
-		}
-
-		virtual ~HookingFilter() {
-		}
+		HookingFilter(FlowSink *flowSink = 0);
+		virtual ~HookingFilter();
 
 		/*
 		   the hook function may need additional context.
@@ -41,10 +38,10 @@ class HookingFilter : public PacketProcessor {
 	protected:
 		FlowSink *flowSink;
 
-		static IpfixRecord::FieldInfo ip_traffic_fi[];
-		static IpfixRecord::FieldInfo icmp_traffic_fi[];
-		static IpfixRecord::FieldInfo udp_traffic_fi[];
-		static IpfixRecord::FieldInfo tcp_traffic_fi[];
+		IpfixRecord::FieldInfo* ip_traffic_fi;
+		IpfixRecord::FieldInfo* icmp_traffic_fi;
+		IpfixRecord::FieldInfo* udp_traffic_fi;
+		IpfixRecord::FieldInfo* tcp_traffic_fi;
 };
 
 
