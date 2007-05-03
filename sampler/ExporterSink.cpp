@@ -182,12 +182,19 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 		sink->startNewPacketStream();
 
 		// let's get the first packet
+		gettimeofday(&deadline, 0);
+		deadline.tv_sec++; // let's wait one second before checking exitFlag again
 		do
 		{
-		    p = queue->pop();
+		    result = queue->popAbs(deadline, &p);
+		    if(sink->exitFlag)
+			break;
+		    if(result == true)
+			// we got a packet, so let's add the record
+			result = sink->addPacket(p);
 		}
-		while(sink->addPacket(p) == false);
-
+		while(result == false);
+			
 		pckCount = 1;
 
 		// now calculate the deadline by which the packet has to leave the exporter
@@ -198,7 +205,7 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 			deadline.tv_usec %= 1000000L;
 		}
 
-		while(pckCount < sink->ipfix_maxrecords) {
+		while(!sink->exitFlag && (pckCount < sink->ipfix_maxrecords)) {
 			// Try to get next packet from queue before our deadline
 			result = queue->popAbs(deadline, &p);
 
