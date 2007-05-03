@@ -20,6 +20,7 @@ public:
 		
 	virtual void configure();
 	virtual void startSystem();
+	virtual void stopSystem();
 	virtual void connect(Configuration*);
 
 	unsigned getPollInterval() { return poll_interval; }

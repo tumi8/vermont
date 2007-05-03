@@ -25,11 +25,8 @@ FlowSink::FlowSink() : thread(flowSinkProcess), exitFlag(false) {
 }
 
 FlowSink::~FlowSink() {
-	msg(MSG_DEBUG, "Sink: destructor called");
+	msg(MSG_DEBUG, "FlowSink: destructor called");
 	terminateSink();
-	msg(MSG_DEBUG, "Sink: waiting for exporter thread");
-	thread.join();
-	msg(MSG_DEBUG, "Sink: exporter thread joined");
 }
 
 void FlowSink::push(boost::shared_ptr<IpfixRecord> ipfixRecord) {
@@ -93,6 +90,9 @@ bool FlowSink::runSink() {
 
 bool FlowSink::terminateSink() {
 	exitFlag = true;
+	msg(MSG_DEBUG, "FlowSink: waiting for exporter thread");
+	thread.join();
+	msg(MSG_DEBUG, "FlowSink: exporter thread joined");
 	return true;
 }
 

@@ -17,7 +17,7 @@
 
 
 CollectorConfiguration::CollectorConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
-	: Configuration(document, startPoint), observationDomainId(0),
+	: Configuration(document, startPoint), running(false), observationDomainId(0),
 		ipfixCollector(0), ipfixPacketProcessor(0), ipfixParser(0)
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
@@ -34,7 +34,7 @@ CollectorConfiguration::~CollectorConfiguration()
 		delete listeners[i];
 	}
 	if (ipfixCollector) {
-		ipfixCollector->stop();
+		stopSystem();
 		delete ipfixCollector;
 	}
 }
@@ -180,6 +180,17 @@ void CollectorConfiguration::connect(Configuration* c)
 
 void CollectorConfiguration::startSystem()
 {
+	if (running) return;
 	msg(MSG_DEBUG, "CollectorConfiguration: Starting collecting process");
 	ipfixCollector->start();
+	running = true;
 }
+
+void CollectorConfiguration::stopSystem()
+{
+	if (!running) return;
+	msg(MSG_DEBUG, "CollectorConfiguration: Stopping collecting process");
+	ipfixCollector->stop();
+	running = false;
+}
+

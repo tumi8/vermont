@@ -127,3 +127,9 @@ void ObserverConfiguration::startSystem()
 {
 	observer->startCapture();
 }
+
+void ObserverConfiguration::stopSystem()
+{
+	observer->terminateCapture();
+}
+

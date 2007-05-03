@@ -186,3 +186,17 @@ void ExporterConfiguration::startSystem()
 		throw std::runtime_error("Can neither start an ExporterSink, nor an IpfixSender -> something is broken!");
 	}
 }
+
+void ExporterConfiguration::stopSystem()
+{
+	if (exporterSink) {
+		msg(MSG_DEBUG, "ExporterConfiguration: Stopping ExporterSink for Sampler");
+		exporterSink->terminateSink();
+	} else if (ipfixSender) {
+		msg(MSG_DEBUG, "ExporterConfiguration: Terminating IpfixSenders.");
+		ipfixSender->terminateSink();
+	} else {
+		throw std::runtime_error("Can neither stop an ExporterSink, nor an IpfixSender -> something is broken!");
+	}
+}
+

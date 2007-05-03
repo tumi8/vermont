@@ -10,7 +10,7 @@
 
 
 DbWriterConfiguration::DbWriterConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
-	: Configuration(document, startPoint), dbWriter(NULL), portNumber(0), observationDomainId(0), bufferRecords(10)
+	: Configuration(document, startPoint), running(false), dbWriter(NULL), portNumber(0), observationDomainId(0), bufferRecords(10)
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
@@ -23,7 +23,7 @@ DbWriterConfiguration::DbWriterConfiguration(xmlDocPtr document, xmlNodePtr star
 DbWriterConfiguration::~DbWriterConfiguration()
 {
 	if (dbWriter) {
-		dbWriter->stop();
+		stopSystem();
 		delete dbWriter;
 	}
 }
@@ -81,10 +81,22 @@ void DbWriterConfiguration::connect(Configuration*)
 
 void DbWriterConfiguration::startSystem()
 {
+	if (running) return;
 	msg(MSG_INFO, "DbWriterConfiguration: Starting dbWriter");
 	dbWriter->start();
 	dbWriter->runSink();
 	msg(MSG_INFO, "DbWriterConfiguration: Successfully started dbWriter");
+	running = true;
+}
+
+void DbWriterConfiguration::stopSystem()
+{
+	if (!running) return;
+	msg(MSG_INFO, "DbWriterConfiguration: Stopping dbWriter");
+	dbWriter->terminateSink();
+	dbWriter->stop();
+	msg(MSG_INFO, "DbWriterConfiguration: Successfully stopped dbWriter");
+	running = false;
 }
 
 #endif

@@ -13,7 +13,7 @@
 
 
 DbReaderConfiguration::DbReaderConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
-	: Configuration(document, startPoint), ipfixDbReader(0), portNumber(0), observationDomainId(0)
+	: Configuration(document, startPoint), running(false), ipfixDbReader(0), portNumber(0), observationDomainId(0)
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
@@ -26,7 +26,7 @@ DbReaderConfiguration::DbReaderConfiguration(xmlDocPtr document, xmlNodePtr star
 DbReaderConfiguration::~DbReaderConfiguration()
 {
 	if (ipfixDbReader) {
-		ipfixDbReader->stop();
+		stopSystem();
 		delete ipfixDbReader;
 	}
 }
@@ -98,9 +98,20 @@ void DbReaderConfiguration::connect(Configuration* c)
 
 void DbReaderConfiguration::startSystem()
 {
+	if (running) return;
 	msg(MSG_INFO, "DbReaderConfiguration: Starting dbReader...");
 	ipfixDbReader->start();
 	msg(MSG_INFO, "DbReaderConfiguration: Successfully started dbReader");
+	running = true;
+}
+
+void DbReaderConfiguration::stopSystem()
+{
+	if (!running) return;
+	msg(MSG_INFO, "DbReaderConfiguration: Stopping dbReader...");
+	ipfixDbReader->stop();
+	msg(MSG_INFO, "DbReaderConfiguration: Successfully stopped dbReader");
+	running = false;
 }
 
 #endif

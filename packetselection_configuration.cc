@@ -15,13 +15,13 @@
 
 
 PacketSelectionConfiguration::PacketSelectionConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
-	: Configuration(document, startPoint)
+	: Configuration(document, startPoint), dummySink(0)
 {
 	filter = new Filter();
 }
 
 PacketSelectionConfiguration::PacketSelectionConfiguration()
-	: Configuration(0, 0)
+	: Configuration(0, 0), dummySink(0)
 {
 	filter = new Filter();
 }
@@ -29,6 +29,7 @@ PacketSelectionConfiguration::PacketSelectionConfiguration()
 PacketSelectionConfiguration::~PacketSelectionConfiguration()
 {
 	delete filter;
+	delete dummySink;
 }
 
 void PacketSelectionConfiguration::configure()
@@ -134,10 +135,19 @@ void PacketSelectionConfiguration::startSystem()
 		// we need at least one data sink. if we don't have
 		// any, there will be a memory leak (no packets will
 		// be freed within the sampler)
-		PacketSink* dummySink = new PacketSink();
+		dummySink = new PacketSink();
 		dummySink->runSink();
 		filter->setReceiver(dummySink);
 		msg(MSG_INFO, "Added packet sink");
 	}
 	filter->startFilter();
 }
+
+void PacketSelectionConfiguration::stopSystem()
+{
+	filter->terminate();
+	if (dummySink) {
+		dummySink->terminateSink();
+	}
+}
+

@@ -25,10 +25,13 @@ public:
 	virtual void configure();
 	virtual void connect(Configuration*);
 	virtual void startSystem();
+	virtual void stopSystem();
 	
 protected:
 	void setUp();
 	void readListener(xmlNodePtr i);
+
+	bool running; /**< true between calls to startSystem() and stopSystem() */
 	
 private:
 	struct Listener {

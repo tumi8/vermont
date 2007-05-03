@@ -66,9 +66,6 @@ public:
         {
                 msg(MSG_DEBUG, "Sink: destructor called");
                 terminateSink();
-                msg(MSG_DEBUG, "Sink: waiting for exporter thread");
-                thread.join();
-                msg(MSG_DEBUG, "Sink: exporter thread joined");
                 ipfix_deinit_exporter(exporter);
         };
 
@@ -81,6 +78,11 @@ public:
         bool terminateSink()
         {
                 exitFlag = true;
+
+                msg(MSG_DEBUG, "Sink: waiting for exporter thread");
+                thread.join();
+                msg(MSG_DEBUG, "Sink: exporter thread joined");
+
 		return true;
         };
 

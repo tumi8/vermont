@@ -9,7 +9,7 @@
 
 
 FlowMeteringConfiguration::FlowMeteringConfiguration(xmlDocPtr doc, xmlNodePtr start)
-	: Configuration(doc, start), ipfixAggregator(0)
+	: Configuration(doc, start), ipfixAggregator(0), running(false)
 {
 
 }
@@ -17,7 +17,7 @@ FlowMeteringConfiguration::FlowMeteringConfiguration(xmlDocPtr doc, xmlNodePtr s
 FlowMeteringConfiguration::~FlowMeteringConfiguration()
 {
 	if (ipfixAggregator) {
-		ipfixAggregator->stop();
+		stopSystem();
 		delete ipfixAggregator;
 	}
 }
@@ -203,7 +203,18 @@ void FlowMeteringConfiguration::connect(Configuration*)
 
 void FlowMeteringConfiguration::startSystem()
 {
+	if (running) return;
 	msg(MSG_DEBUG, "Starting aggregator");
 	ipfixAggregator->start();
 	ipfixAggregator->runSink();
+	running = true;
+}
+
+void FlowMeteringConfiguration::stopSystem()
+{
+	if (!running) return;
+	msg(MSG_DEBUG, "Stopping aggregator");
+	ipfixAggregator->terminateSink();
+	ipfixAggregator->stop();
+	running = false;
 }
