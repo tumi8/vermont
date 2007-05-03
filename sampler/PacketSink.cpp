@@ -23,7 +23,7 @@ void *PacketSink::packetSinkProcess(void *arg)
 
         msg(MSG_INFO, "Sink: now running PacketSink thread");
         while(!sink->exitFlag) {
-                p = queue->pop();
+                if (!queue->pop(1000, &p)) continue;
                 p->release();
                 DPRINTF("SINK: free packet");
         }

@@ -73,6 +73,15 @@ void VermontMainConfiguration::startSystem()
 	msg_thread_start();
 }
 
+void VermontMainConfiguration::stopSystem()
+{
+	if (logfile.empty()) {
+		return;
+	}
+
+	msg_thread_stop();
+}
+
 void VermontMainConfiguration::connect(Configuration*)
 {
 	throw std::runtime_error("Cannot connect anything to VermontMainConfiguration");

@@ -28,6 +28,7 @@ public:
 	virtual void configure();
 	virtual void connect(Configuration*);
 	virtual void startSystem();
+	virtual void stopSystem();
 
 	void setObservationDomainId(uint16_t id);
 	void setCaptureLength(int len);

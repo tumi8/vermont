@@ -91,3 +91,8 @@ void PacketReportingConfiguration::connect(Configuration* c)
 void PacketReportingConfiguration::startSystem()
 {
 }
+
+void PacketReportingConfiguration::stopSystem()
+{
+}
+

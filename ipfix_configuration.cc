@@ -141,6 +141,12 @@ IpfixConfiguration::IpfixConfiguration(const std::string& configFile)
 
 IpfixConfiguration::~IpfixConfiguration()
 {
+	msg(MSG_INFO, "IpfixConfiguration: Stopping Subsystems");
+	for (SubsystemConfiguration::iterator i = subsystems.begin();
+	     i != subsystems.end(); ++i) {
+		std::string id = i->second->getId();
+		i->second->stopSystem();
+	}
 	msg(MSG_INFO, "IpfixConfiguration: Cleaning up");
 	for (SubsystemConfiguration::iterator i = subsystems.begin();
 	     i != subsystems.end(); ++i) {

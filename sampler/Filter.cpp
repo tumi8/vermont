@@ -44,7 +44,7 @@ void *Filter::filterProcess(void *arg)
 	while(!filter->exitFlag) {
 
 		// get a packet
-		p = in_q->pop();
+		if (!in_q->pop(1000, &p)) continue;
 		filter->pktIn++;
 
 		// run packet through all packetProcessors

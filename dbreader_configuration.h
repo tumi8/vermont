@@ -23,9 +23,12 @@ public:
 	virtual void configure();
 	virtual void connect(Configuration*);
 	virtual void startSystem();
+	virtual void stopSystem();
 
 protected:
 	void setUp();
+
+	bool running; /**< true between calls to startSystem() and stopSystem() */
 
 private:
 	IpfixDbReader* ipfixDbReader;

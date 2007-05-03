@@ -21,6 +21,7 @@ public:
 	virtual void setUp();
 	virtual void connect(Configuration*);
 	virtual void startSystem();
+	virtual void stopSystem();
 
 protected:
 	std::vector<ReportedIE*> exportedFields;

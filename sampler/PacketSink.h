@@ -26,6 +26,8 @@ public:
 
         ~PacketSink()
         {
+                msg(MSG_DEBUG, "Sink: destructor called");
+                terminateSink();
         };
 
         bool runSink()
@@ -38,6 +40,11 @@ public:
         bool terminateSink()
         {
                 exitFlag = true;
+
+                msg(MSG_DEBUG, "Sink: waiting for exporter thread");
+                thread.join();
+                msg(MSG_DEBUG, "Sink: exporter thread joined");
+
                 return true;
         };
 

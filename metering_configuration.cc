@@ -35,6 +35,7 @@ MeteringConfiguration::MeteringConfiguration(xmlDocPtr document, xmlNodePtr star
 
 MeteringConfiguration::~MeteringConfiguration()
 {
+	// FIXME: delete packet processors
 	delete packetReporting;
 	delete packetSelection;
 	delete flowMetering;
@@ -170,3 +171,15 @@ void MeteringConfiguration::startSystem()
 		flowMetering->startSystem();
 	}
 }
+
+void MeteringConfiguration::stopSystem()
+{
+	msg(MSG_INFO, "MeteringConfiguration: Stopping metering process.");
+	if (packetSelection) {
+		packetSelection->stopSystem();
+	}
+	if (flowMetering) {
+		flowMetering->stopSystem();
+	}
+}
+

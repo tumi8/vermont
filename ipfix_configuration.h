@@ -53,6 +53,7 @@ public:
 
 	virtual void configure() = 0;
 	virtual void startSystem() = 0;
+	virtual void stopSystem() = 0;
 
 	/**
 	 * connects c to this

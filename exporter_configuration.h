@@ -22,6 +22,7 @@ public:
 	virtual void configure();
 	virtual void connect(Configuration*);
 	virtual void startSystem();
+	virtual void stopSystem();
 
 	void createExporterSink(Template* t, uint16_t observationDomainId, uint16_t recordLength);
 	ExporterSink* getExporterSink() const { return exporterSink; }

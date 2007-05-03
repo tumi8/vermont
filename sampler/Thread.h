@@ -43,6 +43,8 @@ void *join()
         if(!thread || pthread_join(thread, &result)) {
                 msg(MSG_ERROR, "Thread: joining failed");
         }
+	thread_created = false;
+
         return result;
 };
 
@@ -51,7 +53,10 @@ bool detach()
 	// do not attempt to detach if run() had not yet been called
 	if (!thread_created) return 0;
 
-	return (pthread_detach(thread) == 0);
+	bool result = (pthread_detach(thread) == 0);
+	thread_created = false;
+
+	return result;
 }
 
 ~Thread()
