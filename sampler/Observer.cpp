@@ -73,6 +73,23 @@ void *Observer::observerThread(void *arg)
 	msg(MSG_INFO, "Observer: now running capturing thread for device %s", obs->captureInterface);
 
 	while(!obs->exitFlag) {
+
+		// wait until data can be read from pcap file descriptor
+		fd_set fd_wait;
+		FD_ZERO(&fd_wait);
+		FD_SET(pcap_fileno(obs->captureDevice), &fd_wait);
+		struct timeval st;
+		st.tv_sec = 1;
+		st.tv_usec = 0;
+		int result = select(FD_SETSIZE, &fd_wait, NULL, NULL, &st);
+		if (result == -1) {
+			msg(MSG_FATAL, "Observer: select() on pcap file descriptor returned -1");
+			break;
+		}
+		if (result == 0) {
+			continue;
+		}
+
 		/*
 		 get next packet (no zero-copy possible *sigh*)
 		 NOTICE: potential bottleneck, if pcap_next() is calling gettimeofday() at a high rate;
@@ -172,6 +189,12 @@ bool Observer::prepare(const std::string& filter)
 	if(!captureDevice) {
 		msg(MSG_FATAL, "Observer: Error initializing pcap interface: %s", errorBuffer);
 		goto out1;
+	}
+
+	// make reads non-blocking
+	if(pcap_setnonblock(captureDevice, 1, errorBuffer) == -1) {
+		msg(MSG_FATAL, "Observer: Error setting pcap interface to non-blocking: %s", errorBuffer);
+		goto out2;
 	}
 
 	dataLink = pcap_datalink(captureDevice);
