@@ -1,6 +1,22 @@
 AC_INIT
 AC_PREREQ(2.59)
 AM_INIT_AUTOMAKE(vermont, 0.9.1)
+
+# turn on debug mode
+debug="no"
+AC_ARG_ENABLE([debug],
+              [AS_HELP_STRING([--enable-debug],
+                              [enable DPRINT debug messages, debug info and no optimizations. This will make VERMONT very noisy])],
+              [debug="$enableval"], [])
+if test "x$debug" = "xyes"; then
+  AC_DEFINE(DEBUG)
+  CFLAGS="$CFLAGS -O0 -g"
+  CXXFLAGS="$CXXFLAGS -O0 -g"
+else
+  CFLAGS="$CFLAGS -O3"
+  CXXFLAGS="$CXXFLAGS -O3"
+fi
+
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
@@ -36,21 +52,6 @@ AC_ARG_ENABLE([dprint],
                               [no longer used])],
               [AC_MSG_ERROR([*** --enable-dprint was replaced by --enable-debug])])
 
-# turn on debug mode
-debug="no"
-AC_ARG_ENABLE([debug],
-              [AS_HELP_STRING([--enable-debug],
-                              [enable DPRINT debug messages, debug info and no optimizations. This will make VERMONT very noisy])],
-              [debug="$enableval"])
-if test "x$debug" = "xyes"; then
-  AC_DEFINE(DEBUG)
-  CFLAGS="-O0 -g"
-  CXXFLAGS="$CFLAGS"
-else
-  CFLAGS="-O3"
-  CXXFLAGS="$CFLAGS"
-fi
-
 # Check for LibXML
 AM_PATH_XML2(2.4.0,,AC_MSG_ERROR([*** LibXML version $XML_VERSION not found!]))
 
@@ -81,10 +82,6 @@ AC_CHECK_LIB([pcap], [pcap_open_live],
              [LDFLAGS="$LDFLAGS -lpcap"
               AC_SUBST(LDFLAGS)],
              [AC_MSG_ERROR([*** could not find libpcap. Please install it.])])
-AC_CHECK_LIB([pcap], [pcap_breakloop],
-             [LDFLAGS="$LDFLAGS -lpcap"
-              AC_SUBST(LDFLAGS)],
-             [AC_MSG_ERROR([*** could not find libpcap's pcap_breakloop function. Make sure you have at least libpcap 0.8 installed.])])
 
 # check for Boost headers
 AC_LANG_PUSH(C++)
