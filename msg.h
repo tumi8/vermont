@@ -20,12 +20,6 @@ typedef void (*LOGFUNCTION)(void *);
 /* the maximum number of functions that will be called by the message logger thread */
 #define MAX_LOG_FUNCTIONS 256
   
-/* well-know DPRINTF() - will be left out if DEBUG not set */
-#ifdef DEBUG
-#define DPRINTF(fmt, args...) printf("-DBG- " fmt, ##args)
-#else
-#define DPRINTF(fmt, args...)
-#endif
 
 /* define for setting up the msg system */
 #define MSG_SETUP_NEW 1
@@ -50,6 +44,13 @@ void msg_thread_set_timeout(int ms);
 int msg_thread_start();
 int msg_thread_stop();
 void * msg_thread(void *);
+
+/* well-know DPRINTF() - will be left out if DEBUG not set */
+#ifdef DEBUG
+#define DPRINTF(fmt, args...) msg(MSG_DEBUG, fmt, ##args)
+#else
+#define DPRINTF(fmt, args...)
+#endif
 
 #ifdef __cplusplus
 }

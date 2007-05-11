@@ -28,7 +28,7 @@ public:
         ~ConcurrentQueue()
         {
                 if(count != 0) {
-                        msg(MSG_ERROR, "ConcurrentQueue: WARNING: freeing non-empty queue - got count: %d", count);
+                        msg(MSG_DEBUG, "ConcurrentQueue: WARNING: freeing non-empty queue - got count: %d", count);
                 }
         };
 

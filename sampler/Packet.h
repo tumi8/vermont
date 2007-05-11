@@ -29,6 +29,7 @@
 #include "msg.h"
 
 #include "Lock.h"
+#include "ipfixlolib/encoding.h"
 
 // the various header types (actually, HEAD_PAYLOAD is not neccessarily a header but it works like one for
 // our purposes)
@@ -100,6 +101,7 @@ public:
 	// when was the packet received?
 	struct timeval timestamp;
 	unsigned long time_sec_nbo, time_usec_nbo; // network byte order, used if exported
+	unsigned long long time_msec_ipfix;   // milliseconds since 1970, according to ipfix standard; ATTENTION: this value is stored in network-byte order
 
 	// buffer for length of variable length fields
 	uint8_t varlength[12];
@@ -116,6 +118,11 @@ public:
 		data = (unsigned char *)packetData;
 		netHeader = data + IPHeaderOffset;
 		netHeaderOffset = IPHeaderOffset;
+
+		// calculate time since 1970 in milliseconds according to IPFIX standard
+		time_msec_ipfix = htonll(((unsigned long long)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
+                DPRINTF("Packet::Packet: timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
+                DPRINTF("Packet::Packet: time_msec_ipfix is %lld", time_msec_ipfix);
 
 		totalPacketsReceived++;
 

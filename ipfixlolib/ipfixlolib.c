@@ -835,25 +835,25 @@ static int ipfix_send_data(ipfix_exporter* exporter)
                         // is the collector a valid target?
                         if(exporter->collector_arr[i].valid) {
 #ifdef DEBUG
-                                DPRINTF("IPFIX: Sending to exporter %s\n", exporter->collector_arr[i].ipv4address);
+                                DPRINTF("IPFIX: Sending to exporter %s", exporter->collector_arr[i].ipv4address);
 
                                 // debugging output of data buffer:
-                                DPRINTF("Sendbuffer contains %u bytes\n",  exporter->data_sendbuffer->committed_data_length );
-                                DPRINTF("Sendbuffer contains %u fields\n",  exporter->data_sendbuffer->committed );
+                                DPRINTF("Sendbuffer contains %u bytes",  exporter->data_sendbuffer->committed_data_length );
+                                DPRINTF("Sendbuffer contains %u fields",  exporter->data_sendbuffer->committed );
                                 int tested_length = 0;
                                 int j;
                                 int k;
                                 for (j =0; j <  exporter->data_sendbuffer->committed; j++) {
                                         if(exporter->data_sendbuffer->entries[j].iov_len > 0 ) {
                                                 tested_length += exporter->data_sendbuffer->entries[j].iov_len;
-                                                DPRINTF ("Data Buffer [%i] has %u bytes\n", j, exporter->data_sendbuffer->entries[j].iov_len);
+                                                DPRINTF ("Data Buffer [%i] has %u bytes", j, exporter->data_sendbuffer->entries[j].iov_len);
 
                                                 for (k=0; k < exporter->data_sendbuffer->entries[j].iov_len; k++) {
-                                                        DPRINTF ("Data at  buf_vector[%i] pos %i is 0x%hx \n", j,k,   *(  (char*) ( (*(*exporter).data_sendbuffer).entries[j].iov_base+k) ) );
+                                                        DPRINTF ("Data at  buf_vector[%i] pos %i is 0x%hx", j,k,   *(  (char*) ( (*(*exporter).data_sendbuffer).entries[j].iov_base+k) ) );
                                                 }
                                         }
                                 }
-                                DPRINTF("IPFIX: Sendbuffer really contains %u bytes!\n", tested_length );
+                                DPRINTF("IPFIX: Sendbuffer really contains %u bytes!", tested_length );
 #endif
 				
                                 ret=writev( exporter->collector_arr[i].data_socket,

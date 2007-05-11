@@ -54,14 +54,17 @@ struct Column{
 struct tm* timeNow;
 
 /**
-*	column names as a array of char pointer
-*/
-char *columnsNames[] = {"srcIP", "dstIP", "srcPort", "dstPort", "proto", "dstTos","bytes","pkts","firstSwitched","lastSwitched","exporterID",0};					  
- 
+ * maximum length of one item in a SQL statement
+ */
+const uint16_t   MAX_COL_LENGTH = 22;
+
  /**
  *	struct to identify column names with IPFIX_TYPEID an the dataType to store in database
  *	ExporterID is no IPFIX_TYPEID, its user specified
+ *      Attention: order of entries is important!
  */
+const uint16_t  ID_FIRSTSWITCHED_IDX = 8;
+const uint16_t  ID_LASTSWITCHED_IDX = 9;
 struct Column identify [] = {
 	{"dstIP", IPFIX_TYPEID_destinationIPv4Address, "INTEGER(10) UNSIGNED",0},
 	{"srcIP", IPFIX_TYPEID_sourceIPv4Address, "INTEGER(10) UNSIGNED", 0},	
@@ -71,13 +74,14 @@ struct Column identify [] = {
 	{"dstTos", IPFIX_TYPEID_classOfServiceIPv4, "TINYINT(3) UNSIGNED", 0},
 	{"bytes", IPFIX_TYPEID_octetDeltaCount,  "BIGINT(20) UNSIGNED", 0},
 	{"pkts", IPFIX_TYPEID_packetDeltaCount, "BIGINT(20) UNSIGNED", 0},
-	{"firstSwitched", IPFIX_TYPEID_flowStartSeconds,  "INTEGER(10) UNSIGNED", 0},
-	{"lastSwitched", IPFIX_TYPEID_flowEndSeconds,  "INTEGER(10) UNSIGNED", 0},
-	//{"firstSwitched", 22,  "INTEGER(10) UNSIGNED", 0},
-	//{"lastSwitched", 21,  "INTEGER(10) UNSIGNED", 0},
+	{"firstSwitched", IPFIX_TYPEID_flowStartSeconds,  "INTEGER(10) UNSIGNED", 0},   // default value is invalid/not used for this entry
+	{"lastSwitched", IPFIX_TYPEID_flowEndSeconds,  "INTEGER(10) UNSIGNED", 0},      // default value is invalid/not used for this entry
+	{"firstSwitchedMillis", IPFIX_TYPEID_flowStartMilliSeconds,  "SMALLINT(5) UNSIGNED", 0},
+	{"lastSwitchedMillis", IPFIX_TYPEID_flowEndMilliSeconds,  "SMALLINT(5) UNSIGNED", 0},
 	{"exporterID",EXPORTERID, "SMALLINT(5) UNSIGNED", 0},
-	{"END"}
+	{ 0 }
 } ;
+
 	
 /***** Internal Functions ****************************************************/
 
@@ -165,24 +169,19 @@ int IpfixDbWriter::createExporterTable()
 */
 int IpfixDbWriter::createDBTable(Table* table, char* tablename)
 {
-	int i, j ;
+	int i;
 	char createTableStr[STARTLEN+(table->countCol* COL_WIDTH)];
 	strcpy(createTableStr , "CREATE TABLE IF NOT EXISTS ");
 	strncat(createTableStr,tablename,strlen(tablename)+1);
 	strncat(createTableStr," (",(2*sizeof(char))+1);
 	/**collect the names for columns and the dataTypes for the table in a string*/
 	for(i=0; i < table->countCol; i++) {
-		for(j=0; strcmp(identify[j].cname,"END") != 0 ;j++) {
-			/**if columnsNames equal identify.cname then ...*/
-			if( strcmp(columnsNames[i], identify[j].cname) == 0) {
-				strncat(createTableStr,identify[j].cname,strlen(identify[j].cname)+1);
-				strncat(createTableStr," ",sizeof(char)+1);
-				strncat(createTableStr,identify[j].dataType,strlen(identify[j].dataType)+1);
-				if( i  != table->countCol-1) {
-					strncat(createTableStr,",",sizeof(char)+1);
-				}
-			}
-		}
+            strncat(createTableStr,identify[i].cname,strlen(identify[i].cname)+1);
+            strncat(createTableStr," ",sizeof(char)+1);
+            strncat(createTableStr,identify[i].dataType,strlen(identify[i].dataType)+1);
+            if( i  != table->countCol-1) {
+                strncat(createTableStr,",",sizeof(char)+1);
+            }
 	}
 	strncat(createTableStr,")",sizeof(char)+1);
 	
@@ -259,6 +258,7 @@ int IpfixDbWriter::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::Te
 	
 	dataTemplateInfo.id = 0;
 	dataTemplateInfo.preceding = 0;
+        dataTemplateInfo.freePointers = false;   // don't free the given pointers, as they are taken from a different structure
 	dataTemplateInfo.fieldCount = templateInfo->fieldCount;  /**< number of regular fields */
 	dataTemplateInfo.fieldInfo = templateInfo->fieldInfo;   /**< array of FieldInfos describing each of these fields */
 	dataTemplateInfo.dataCount = 0;   /**< number of fixed-value fields */
@@ -272,14 +272,40 @@ int IpfixDbWriter::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::Te
 }
 
 /**
+ * adds an entry for an sql statement
+ */
+void IpfixDbWriter::addColumnEntry(char* sql, char* insert, bool quoted, bool lastcolumn)
+{
+        if (quoted) strcat(sql, "'");
+        strncat(sql, insert, MAX_COL_LENGTH);
+        if (quoted) strcat(sql, "'");
+        if (!lastcolumn) strcat(sql, ", ");
+        else strcat(sql, ") ");
+}
+
+/**
+ * adds an entry for an sql statement
+ */
+void IpfixDbWriter::addColumnEntry(char* sql, uint64_t insert, bool quoted, bool lastcolumn)
+{
+        char strdata[30];
+        sprintf(strdata, "%Lu", insert);
+        addColumnEntry(sql, strdata, quoted, lastcolumn);
+}
+
+/**
 *	loop over the IpfixRecord::DataTemplateInfo (fieldinfo,datainfo) to get the IPFIX values to store in database
 */
 char* IpfixDbWriter::getRecData(Table* table, IpfixRecord::SourceID* sourceID,
 		 IpfixRecord::DataTemplateInfo* dataTemplateInfo,uint16_t length, IpfixRecord::Data* data)
 {
-	int i ,j, k, n;
+	int j, k, n;
 	uint64_t intdata = 0;
 	uint32_t flowstartsec = 0;
+
+	bool flowstartseconds_seen = false;
+	bool flowendseconds_seen = false;
+
 	/**begin query string for insert statement*/
 	char insert[STARTLEN+(table->countCol * INS_WIDTH)];
 	strcpy(insert,"INSERT INTO ");
@@ -292,89 +318,119 @@ char* IpfixDbWriter::getRecData(Table* table, IpfixRecord::SourceID* sourceID,
 	char ColValues[table->countCol * INS_WIDTH]; 
 	strcpy(ColValues," VALUES (");	
 	
-	char stringtmp[INS_WIDTH];// needed to cast from char to string
-			
 	/**loop over the columname and loop over the IPFIX_TYPEID of the record
 	   to get the corresponding */
 	/**data to store and make insert statement*/
-	for( i=0; i < table->countCol; i++) {
-		for( j=0; strcmp(identify[j].cname,"END") != 0; j++) { 
-			if(columnsNames[i] == identify[j].cname) {	
-				int notfound = 1;
-				strncat(ColValues,"'",sizeof(char)+1);
-				strncat(ColNames,columnsNames[i],strlen(columnsNames[i])+1);
-				if( i != table->countCol-1)
-					strncat(ColNames,",",sizeof(char)+1);
-				if( i == table->countCol-1)
-					strncat(ColNames,") ",(2*sizeof(char))+1);
-				if(dataTemplateInfo->fieldCount > 0) {
-					for(k=0; k < dataTemplateInfo->fieldCount; k++) {	
-						if(dataTemplateInfo->fieldInfo[k].type.id == identify[j].ipfixId) {
-							notfound = 0;						
-							intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-							sprintf(stringtmp,"%Lu",(uint64_t)intdata);
-							strncat(ColValues,stringtmp,strlen(stringtmp)+1);
-							strncat(ColValues,"'",sizeof(char)+1);
-							if(identify[j].ipfixId == IPFIX_TYPEID_flowStartSeconds) {
-								flowstartsec = intdata;
-							}
-							if( i !=  table->countCol-1)
-								strncat(ColValues,",",sizeof(char)+1);
-							if( i == table->countCol-1)
-								strncat(ColValues,")",sizeof(char)+1);	
-							break;
-						}
-					}	
-				}
-				if( dataTemplateInfo->dataCount > 0 && notfound) {
-					for(n=0; n < dataTemplateInfo->dataCount; n++) {
-						if(dataTemplateInfo->dataInfo[n].type.id == identify[j].ipfixId) {
-							notfound = 0;
-							intdata = getdata(dataTemplateInfo->dataInfo[n].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[n].offset));
-							sprintf(stringtmp,"%Lu",(uint64_t)intdata);
-							strncat(ColValues,stringtmp,strlen(stringtmp)+1);
-							strncat(ColValues,"'",sizeof(char)+1);
-							if( i != table->countCol-1)
-								strncat(ColValues,",",sizeof(char)+1);
-							if( i == table->countCol-1)
-								strncat(ColValues,")",sizeof(char)+1);					
-							break;
-						}
-					}
-				}
-				if(notfound) {	
-					if(identify[j].ipfixId == EXPORTERID) {
-						/**lookup exporter buffer to get exporterID from sourcID and expIp**/
-						uint32_t expID = getExporterID(table, sourceID);
-						sprintf(stringtmp,"%u",(uint32_t)expID);
-						strncat(ColValues,stringtmp,strlen(stringtmp)+1);
-						strncat(ColValues,"'",sizeof(char)+1);
-					} else {
-						intdata = getdefaultIPFIXdata(identify[j].ipfixId);
-						sprintf(stringtmp,"%Lu",(uint64_t)intdata);
-						strncat(ColValues,stringtmp,strlen(stringtmp)+1);
-						strncat(ColValues,"'",sizeof(char)+1);
-					}
-					if( i != table->countCol-1)
-						strncat(ColValues,",",sizeof(char)+1);
-					if( i == table->countCol-1)
-						strncat(ColValues,")",sizeof(char)+1);					
-				}
-			}
-		}
-	}
+        for( j=0; identify[j].cname != 0; j++) { 
+                bool notfound = true;
+                // try to gather data required for the field
+                if(dataTemplateInfo->fieldCount > 0) {
+                        // look inside the ipfix data packet
+                        for(k=0; k < dataTemplateInfo->fieldCount; k++) {	
+                                if(dataTemplateInfo->fieldInfo[k].type.id == identify[j].ipfixId) {
+                                        notfound = false;						
+                                        intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+                                        DPRINTF("IpfixDbWriter::getRecData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X", identify[j].ipfixId, intdata, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
+                                }
+                        }	
+                }
+                if( dataTemplateInfo->dataCount > 0 && notfound) {
+                        // look in static data fields of template for data
+                        for(n=0; n < dataTemplateInfo->dataCount; n++) {
+                                if(dataTemplateInfo->dataInfo[n].type.id == identify[j].ipfixId) {
+                                        notfound = false;
+                                        intdata = getdata(dataTemplateInfo->dataInfo[n].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[n].offset));
+                                }
+                        }
+                }
+                if(notfound) {	
+                        if(identify[j].ipfixId == EXPORTERID) {
+                                /**lookup exporter buffer to get exporterID from sourcID and expIp**/
+                                uint32_t expID = getExporterID(table, sourceID);
+                                intdata = expID;
+                        } else {
+                                intdata = getdefaultIPFIXdata(identify[j].ipfixId);
+                        }
+                }
+
+
+                // we need extra treatment for timing related fields
+                DPRINTF("saw ipfix id %d in packet with intdata %llX", identify[j].ipfixId, intdata);
+
+                switch (identify[j].ipfixId) {
+                    case IPFIX_TYPEID_flowStartSeconds:
+                        // save time for table access
+                        if (intdata != 0) {
+                            flowstartsec = intdata;
+                            flowstartseconds_seen = true;
+                        }
+                        break;
+
+                    case IPFIX_TYPEID_flowEndSeconds:
+                        if (intdata != 0) {
+                            flowendseconds_seen = true;
+                        }
+                        break;
+
+                    case IPFIX_TYPEID_flowStartMilliSeconds:
+
+                        // if there is no filled flowStartSeconds field, we need to write this one too
+                        if (!flowstartseconds_seen) {
+                            flowstartseconds_seen = true;
+                            flowstartsec = intdata/1000;
+
+                            addColumnEntry(ColNames, identify[ID_FIRSTSWITCHED_IDX].cname, false, false);
+                            addColumnEntry(ColValues, flowstartsec, true, false);
+                        }
+                        // in the database the millisecond entry is counted from last second
+                        intdata %= 1000;
+
+                        break;
+
+                    case IPFIX_TYPEID_flowEndMilliSeconds:
+
+                        // if there is no filled flowEndSeconds field, we need to write this one too
+                        if (!flowendseconds_seen) {
+                            flowendseconds_seen = true;
+                            addColumnEntry(ColNames, identify[ID_LASTSWITCHED_IDX].cname, false, false);
+                            addColumnEntry(ColValues, intdata/1000, true, false);
+                        }
+                        // in the database the millisecond entry is counted from last second
+                        intdata %= 1000;
+
+                        break;
+                }
+
+                // an empty entry for flowStart/EndSeconds must not be inserted into the database
+                if (intdata != 0 || 
+                   (identify[j].ipfixId != IPFIX_TYPEID_flowStartSeconds && 
+                    identify[j].ipfixId != IPFIX_TYPEID_flowEndSeconds))
+                {
+                    addColumnEntry(ColNames, identify[j].cname, false, j==table->countCol-1);
+                    addColumnEntry(ColValues, intdata, true, j==table->countCol-1);
+                }
+        }
+
+        if (!flowstartseconds_seen || !flowendseconds_seen) {
+            throw std::runtime_error("failed to extract timing data from template, aborting (are fields flowStart/EndSeconds or flowStart/EndMilliseconds included in the IPFIX packet?)");
+        }
+
+        if (flowstartsec == 0) {
+            throw std::runtime_error("failed to get timing data from ipfix packet. this is a critical error at the moment, as no valid table can be determined. Aborting");
+        }
 	
-	/**make hole query string for the insert statement*/
+	/**make whole query string for the insert statement*/
 	char tablename[TABLE_WIDTH] ;
+        DPRINTF("flowstartsec: %d", flowstartsec);
 	char* tablen = getTableName(table, flowstartsec);
 	strcpy(tablename, tablen);
 	/** Insert statement = INSERT INTO + tablename +  Columnsname + Values of record*/
-	strncat(insert, tablename,strlen(tablename)+1);  
-	strncat(insert,ColNames,strlen(ColNames)+1);
-	strncat(insert,ColValues, strlen(ColValues)+1);
+	strcat(insert, tablename);
+	strcat(insert, ColNames);
+	strcat(insert, ColValues);
 	
 	
-	char* insertTableStr = (char*) malloc((strlen(insert)+1)*sizeof(char));
+	char* insertTableStr = (char*) malloc((strlen(insert)+1)*sizeof(char)); 
 	strcpy(insertTableStr,insert);
 		
 	return insertTableStr;
@@ -738,7 +794,7 @@ uint64_t getIPFIXValue(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* dat
 uint32_t getdefaultIPFIXdata(int ipfixtype_id)
 {
 	int i;
-	for( i=0; strcmp(identify[i].cname, "END") != 0; i++) {
+	for( i=0; identify[i].cname != 0; i++) {
 		if(ipfixtype_id == identify[i].ipfixId)	{
 			return identify[i].defaultValue;
 		}
@@ -793,7 +849,7 @@ IpfixDbWriter::IpfixDbWriter(const char* hostName, const char* dbName,
 	}
 	/**count columns*/
 	tabl->countCol = 0;
-	for(i=0; columnsNames[i] !=0; i++)
+	for(i=0; identify[i].cname!=0; i++)
 		tabl->countCol++;
 	
 	/**Initialize structure members Statement*/	   	 	

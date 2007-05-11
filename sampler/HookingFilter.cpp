@@ -25,16 +25,19 @@ namespace {
 }
 
 HookingFilter::HookingFilter(FlowSink *flowSink) : flowSink(flowSink) {
-	ip_traffic_fi = (IpfixRecord::FieldInfo*)malloc(7 * sizeof(IpfixRecord::FieldInfo));
+	ip_traffic_fi = new IpfixRecord::FieldInfo[9]();
+	//ip_traffic_fi = (IpfixRecord::FieldInfo*)malloc(7 * sizeof(IpfixRecord::FieldInfo));
 	setFieldInfo(&ip_traffic_fi[0], IPFIX_TYPEID_packetDeltaCount, 1, 10);
-	setFieldInfo(&ip_traffic_fi[1], IPFIX_TYPEID_flowStartSeconds, 4, 4);
+	setFieldInfo(&ip_traffic_fi[1], IPFIX_TYPEID_flowStartSeconds, 4, 4); // see processPacket() for explanation of how times are treated
 	setFieldInfo(&ip_traffic_fi[2], IPFIX_TYPEID_flowEndSeconds, 4, 4);
 	setFieldInfo(&ip_traffic_fi[3], IPFIX_TYPEID_octetDeltaCount, 2, 2);
 	setFieldInfo(&ip_traffic_fi[4], IPFIX_TYPEID_protocolIdentifier, 1, 9);
 	setFieldInfo(&ip_traffic_fi[5], IPFIX_TYPEID_sourceIPv4Address, 4, 12);
 	setFieldInfo(&ip_traffic_fi[6], IPFIX_TYPEID_destinationIPv4Address, 4, 16);
+	setFieldInfo(&ip_traffic_fi[7], IPFIX_TYPEID_flowStartMilliSeconds, 8, 0);
+	setFieldInfo(&ip_traffic_fi[8], IPFIX_TYPEID_flowEndMilliSeconds, 8, 0);
 
-	icmp_traffic_fi = (IpfixRecord::FieldInfo*)malloc(8 * sizeof(IpfixRecord::FieldInfo));
+	icmp_traffic_fi = (IpfixRecord::FieldInfo*)malloc(10 * sizeof(IpfixRecord::FieldInfo));
 	setFieldInfo(&icmp_traffic_fi[0], IPFIX_TYPEID_icmpTypeCode, 2, 0);
 	setFieldInfo(&icmp_traffic_fi[1], IPFIX_TYPEID_packetDeltaCount, 1, 10);
 	setFieldInfo(&icmp_traffic_fi[2], IPFIX_TYPEID_flowStartSeconds, 4, 4);
@@ -43,8 +46,10 @@ HookingFilter::HookingFilter(FlowSink *flowSink) : flowSink(flowSink) {
 	setFieldInfo(&icmp_traffic_fi[5], IPFIX_TYPEID_protocolIdentifier, 1, 9);
 	setFieldInfo(&icmp_traffic_fi[6], IPFIX_TYPEID_sourceIPv4Address, 4, 12);
 	setFieldInfo(&icmp_traffic_fi[7], IPFIX_TYPEID_destinationIPv4Address, 4, 16);
+	setFieldInfo(&icmp_traffic_fi[8], IPFIX_TYPEID_flowStartMilliSeconds, 8, 0);
+	setFieldInfo(&icmp_traffic_fi[9], IPFIX_TYPEID_flowEndMilliSeconds, 8, 0);
 
-	udp_traffic_fi = (IpfixRecord::FieldInfo*)malloc(9 * sizeof(IpfixRecord::FieldInfo));
+	udp_traffic_fi = (IpfixRecord::FieldInfo*)malloc(11 * sizeof(IpfixRecord::FieldInfo));
 	setFieldInfo(&udp_traffic_fi[0], IPFIX_TYPEID_sourceTransportPort, 2, 0);
 	setFieldInfo(&udp_traffic_fi[1], IPFIX_TYPEID_destinationTransportPort, 2, 2);
 	setFieldInfo(&udp_traffic_fi[2], IPFIX_TYPEID_packetDeltaCount, 1, 10);
@@ -54,9 +59,11 @@ HookingFilter::HookingFilter(FlowSink *flowSink) : flowSink(flowSink) {
 	setFieldInfo(&udp_traffic_fi[6], IPFIX_TYPEID_protocolIdentifier, 1, 9);
 	setFieldInfo(&udp_traffic_fi[7], IPFIX_TYPEID_sourceIPv4Address, 4, 12);
 	setFieldInfo(&udp_traffic_fi[8], IPFIX_TYPEID_destinationIPv4Address, 4, 16);
+	setFieldInfo(&udp_traffic_fi[9], IPFIX_TYPEID_flowStartMilliSeconds, 8, 0);
+	setFieldInfo(&udp_traffic_fi[10], IPFIX_TYPEID_flowEndMilliSeconds, 8, 0);
 
-	tcp_traffic_fi = (IpfixRecord::FieldInfo*)malloc(10 * sizeof(IpfixRecord::FieldInfo));
-	setFieldInfo(&tcp_traffic_fi[0], IPFIX_TYPEID_tcpControlBits, 1, 13);
+	tcp_traffic_fi = (IpfixRecord::FieldInfo*)malloc(12 * sizeof(IpfixRecord::FieldInfo));
+	setFieldInfo(&tcp_traffic_fi[0], IPFIX_TYPEID_tcpControlBits, 1, 13);  		// is relative to start of TCP header
 	setFieldInfo(&tcp_traffic_fi[1], IPFIX_TYPEID_sourceTransportPort, 2, 0);
 	setFieldInfo(&tcp_traffic_fi[2], IPFIX_TYPEID_destinationTransportPort, 2, 2);
 	setFieldInfo(&tcp_traffic_fi[3], IPFIX_TYPEID_packetDeltaCount, 1, 10);
@@ -66,28 +73,30 @@ HookingFilter::HookingFilter(FlowSink *flowSink) : flowSink(flowSink) {
 	setFieldInfo(&tcp_traffic_fi[7], IPFIX_TYPEID_protocolIdentifier, 1, 9);
 	setFieldInfo(&tcp_traffic_fi[8], IPFIX_TYPEID_sourceIPv4Address, 4, 12);
 	setFieldInfo(&tcp_traffic_fi[9], IPFIX_TYPEID_destinationIPv4Address, 4, 16);
+	setFieldInfo(&tcp_traffic_fi[10], IPFIX_TYPEID_flowStartMilliSeconds, 8, 0);
+	setFieldInfo(&tcp_traffic_fi[11], IPFIX_TYPEID_flowEndMilliSeconds, 8, 0);
 
 	ip_traffic_template = new IpfixRecord::TemplateInfo();
 	ip_traffic_template->templateId = 0;
-	ip_traffic_template->fieldCount = 7;
+	ip_traffic_template->fieldCount = 9;
 	ip_traffic_template->fieldInfo  = ip_traffic_fi;
 	ip_traffic_template->userData   = 0;
 
 	icmp_traffic_template = new IpfixRecord::TemplateInfo();
 	icmp_traffic_template->templateId = 0;
-	icmp_traffic_template->fieldCount = 8;
+	icmp_traffic_template->fieldCount = 10;
 	icmp_traffic_template->fieldInfo  = icmp_traffic_fi;
 	icmp_traffic_template->userData   = 0;
 
 	udp_traffic_template = new IpfixRecord::TemplateInfo();
 	udp_traffic_template->templateId = 0;
-	udp_traffic_template->fieldCount = 9;
+	udp_traffic_template->fieldCount = 11;
 	udp_traffic_template->fieldInfo  = udp_traffic_fi;
 	udp_traffic_template->userData   = 0;
 
 	tcp_traffic_template = new IpfixRecord::TemplateInfo();
 	tcp_traffic_template->templateId = 0;
-	tcp_traffic_template->fieldCount = 10;
+	tcp_traffic_template->fieldCount = 12;
 	tcp_traffic_template->fieldInfo  = tcp_traffic_fi;
 	tcp_traffic_template->userData   = 0; 
 }
@@ -120,8 +129,46 @@ bool HookingFilter::processPacket(const Packet *p)
 	/* save IP header */
 	pad1=((uint32_t *)p->netHeader)[1];
 	pad2=((uint16_t *)p->netHeader)[5];
+
+	// save the current time inside the IP header and overwrite
+	// identification, flags and fragment offset fields
 	((uint32_t *)p->netHeader)[1]=htonl((uint32_t)p->timestamp.tv_sec);
 	((uint8_t *)p->netHeader)[10]=(uint8_t)1;
+
+	// now perform some really BAD hack for the millisecond time:
+	// our problem is that at the moment only the raw packet data is transferred to the concentrator
+	// and there is no place for our 16 bytes of time data; additionally, in the template only indizes
+	// relative to the start of the network packet data is given
+	// now we calculate the index for the millisecond data inside the Packet instance
+	// -> REALLY BAD HACK, interface to concentrator MUST be changed
+	char* mstime = (char*)(&p->time_msec_ipfix);
+        DPRINTF("HookingFilter::processPacket: time_msec_ipfix is %llX", p->time_msec_ipfix);
+	int32_t offset = (uint32_t)(mstime - (char*)(p->netHeader)); 
+        DPRINTF("HookingFilter::processPacket: offset=%x", offset);
+	ip_traffic_template->fieldInfo[7].offset = offset;
+	ip_traffic_template->fieldInfo[8].offset = offset;
+	switch (((char*)p->netHeader)[9]) {
+		case IPFIX_protocolIdentifier_ICMP:
+			icmp_traffic_template->fieldInfo[8].offset = offset;
+			icmp_traffic_template->fieldInfo[9].offset = offset;
+			break;
+		case IPFIX_protocolIdentifier_UDP:
+			udp_traffic_template->fieldInfo[9].offset = offset;
+			udp_traffic_template->fieldInfo[10].offset = offset;
+			break;
+		case IPFIX_protocolIdentifier_TCP:
+			tcp_traffic_template->fieldInfo[10].offset = offset;
+			tcp_traffic_template->fieldInfo[11].offset = offset;
+			break;
+		/*default:
+			char text[100];
+			sprintf(text, "%d", ((char*)p->netHeader)[9]);
+			throw std::runtime_error("unknown protocol identifier encountered (" + text + ")! Aborting");	*/
+	}
+        DPRINTF("millisec0: %llX", *((uint64_t*)mstime));
+        DPRINTF("millisec1: %lld", *((uint64_t*)(((char*)(p->netHeader))+offset)));
+        DPRINTF("millisec_pointer: %X", ((char*)(p->netHeader))+offset);
+	
 
 	// Check if transport header is available
 	if(p->transportHeader == NULL) {
