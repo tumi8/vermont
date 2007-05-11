@@ -38,6 +38,8 @@ class IpfixReceiver {
 		IpfixReceiver();
 		virtual ~IpfixReceiver();
 
+                void startThread();
+
 		int start();
 		int stop();
 

@@ -192,6 +192,9 @@ void Hashtable::expireFlows() {
 	}
 }
 
+// TODO: tobi_optimize: all add/greater/lesser/* functions need to be cleaned up, as calling
+// hton* for a comparison is definitively not optimal
+
 /**
  * Returns the sum of two uint32_t values in network byte order
  */
@@ -233,6 +236,20 @@ uint32_t lesserUint32Nbo(uint32_t i, uint32_t j) {
  */
 uint32_t greaterUint32Nbo(uint32_t i, uint32_t j) {
 	return (ntohl(i) > ntohl(j))?(i):(j);
+}
+
+/**
+ * Returns the lesser of two uint64_t values in network byte order
+ */
+uint64_t lesserUint64Nbo(uint64_t i, uint64_t j) {
+	return (ntohll(i) < ntohll(j))?(i):(j);
+}
+
+/**
+ * Returns the greater of two uint64_t values in network byte order
+ */
+uint64_t greaterUint64Nbo(uint64_t i, uint64_t j) {
+	return (ntohll(i) > ntohll(j))?(i):(j);
 }
 
 /**
@@ -290,29 +307,45 @@ int Hashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::D
 
 	case IPFIX_TYPEID_flowStartSysUpTime:
 	case IPFIX_TYPEID_flowStartSeconds:
-	case IPFIX_TYPEID_flowStartMilliSeconds:
 	case IPFIX_TYPEID_flowStartMicroSeconds:
 	case IPFIX_TYPEID_flowStartNanoSeconds:
 		if (type->length != 4) {
-			DPRINTF("aggregateField: unsupported length: %d", type->length);
+			DPRINTF("Hashtable::aggregateField: unsupported length %d for type %d", type->length, type->id);
                         goto out;
 		}
 
 		*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 		break;
 
+	case IPFIX_TYPEID_flowStartMilliSeconds:
+		if (type->length != 8) {
+			DPRINTF("Hashtable::aggregateField: unsupported length %d for type %d", type->length, type->id);
+                        goto out;
+		}
+
+		*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+                break;
+
 	case IPFIX_TYPEID_flowEndSysUpTime:
 	case IPFIX_TYPEID_flowEndSeconds:
-	case IPFIX_TYPEID_flowEndMilliSeconds:
 	case IPFIX_TYPEID_flowEndMicroSeconds:
 	case IPFIX_TYPEID_flowEndNanoSeconds:
 		if (type->length != 4) {
-			DPRINTF("aggregateField: unsupported length: %d", type->length);
+			DPRINTF("Hashtable::aggregateField: unsupported length %d for type %d", type->length, type->id);
 			goto out;
 		}
 
 		*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 		break;
+
+	case IPFIX_TYPEID_flowEndMilliSeconds:
+		if (type->length != 8) {
+			DPRINTF("Hashtable::aggregateField: unsupported length %d for type %d", type->length, type->id);
+                        goto out;
+		}
+
+		*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+                break;
 
 	case IPFIX_TYPEID_octetDeltaCount:
 	case IPFIX_TYPEID_postOctetDeltaCount:
@@ -320,6 +353,7 @@ int Hashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::D
 	case IPFIX_TYPEID_postPacketDeltaCount:
 	case IPFIX_TYPEID_droppedOctetDeltaCount:
 	case IPFIX_TYPEID_droppedPacketDeltaCount:
+                // TODO: tobi_optimize
 		switch (type->length) {
 		case 1:
 			*(uint8_t*)baseData = addUint8Nbo(*(uint8_t*)baseData, *(uint8_t*)deltaData);
@@ -334,13 +368,13 @@ int Hashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::D
 			*(uint64_t*)baseData = addUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
                         return 0;
 		default:
-			DPRINTF("aggregateField: unsupported length: %d", type->length);
+			DPRINTF("Hashtable::aggregateField: unsupported length %d for type %d", type->length, type->id);
 			goto out;
 		}
 		break;
 
 	default:
-		DPRINTF("aggregateField: non-aggregatable type: %d", type->id);
+		DPRINTF("Hashtable::aggregateField: non-aggregatable type: %d", type->id);
                 goto out;
 		break;
 	}
@@ -492,6 +526,9 @@ void copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData,
 		DPRINTF("copyData: Tried to copy field to destination of different type\n");
 		return;
 	}
+        if (srcType->id == IPFIX_TYPEID_flowStartMilliSeconds) {
+            DPRINTF("copyData: flowStartMilliSeconds is %llX with length %d\n", *((uint64_t*)srcData), srcType->length);
+        }
 
 	/* Copy data, care for length differences */
 	if(dstType->length == srcType->length) {
@@ -511,7 +548,7 @@ void copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData,
 		}
 
 	} else {
-		DPRINTF("Target buffer too small. Buffer expected %s of length %d, got one with length %d\n", typeid2string(dstType->id), dstType->length, srcType->length);
+		DPRINTF("Target buffer too small. Buffer expected %s of length %d, got one with length %dn", typeid2string(dstType->id), srcType->length, dstType->length);
 		return;
 	}
 
@@ -573,6 +610,7 @@ void copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData,
  */
 void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord::Data* data)
 {
+        DPRINTF("Hashtable::aggregateTemplateData called");
 	int i;
 
 	/* Create data block to be inserted into buffer... */
@@ -587,6 +625,8 @@ void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord
 			continue;
 		}
 
+                DPRINTF("Hashtable::aggregateTemplateData: copyData for type %d, offset %x, starting from pointer %X", tfi->type.id, tfi->offset, data+tfi->offset);
+                DPRINTF("Hashtable::aggregateTemplateData: copyData to offset %X", hfi->offset);
 		copyData(&hfi->type, htdata.get() + hfi->offset, &tfi->type, data + tfi->offset, fieldModifier[i]);
 
 		/* copy associated mask, should there be one */
@@ -637,6 +677,7 @@ void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord
  */
 void Hashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::Data* data)
 {
+        DPRINTF("Hashtable::aggregateDataTemplateData called");
 	int i;
 
 	/* Create data block to be inserted into buffer... */

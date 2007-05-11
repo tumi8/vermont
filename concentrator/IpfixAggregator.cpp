@@ -119,7 +119,7 @@ void IpfixAggregator::stop() {
 int IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* ti, uint16_t length, IpfixRecord::Data* data)
 {
 	int i;
-	DPRINTF("aggregateDataRecord: Got a Data Record\n");
+	DPRINTF("IpfixAggregator::onDataRecord: Got a Data Record\n");
 
 	if(!rules) {
 		msg(MSG_FATAL, "Aggregator not started");
@@ -129,7 +129,7 @@ int IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::
 	pthread_mutex_lock(&mutex);
 	for (i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->templateDataMatches(ti, data)) {
-			DPRINTF("rule %d matches", i);
+			DPRINTF("IpfixAggregator::onDataRecord: rule %d matches", i);
 
 			((Hashtable*)rules->rule[i]->hashtable)->aggregateTemplateData(ti, data);
 		}
@@ -150,7 +150,7 @@ int IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::
 int IpfixAggregator::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* ti, uint16_t length, IpfixRecord::Data* data)
 {
 	int i;
-	DPRINTF("aggregateDataDataRecord: Got a DataData Record\n");
+	DPRINTF("onDataDataRecord: Got a DataData Record\n");
 
 	if(!rules) {
 		msg(MSG_FATAL, "Aggregator not started");

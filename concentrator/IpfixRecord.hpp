@@ -59,7 +59,7 @@ class IpfixRecord {
 			};
 
 			IpfixRecord::FieldInfo::Type type;
-			uint16_t offset; /**< offset in bytes from a data start pointer. For internal purposes 65535 is defined as yet unknown */
+			int32_t offset; /**< offset in bytes from a data start pointer. For internal purposes 0xFFFFFFFF is defined as yet unknown */
 		};
 
 
@@ -126,10 +126,15 @@ class IpfixRecord {
 		 * DataTemplate description passed to the callback function when a new DataTemplate arrives.
 		 */
 		struct DataTemplateInfo {
+			DataTemplateInfo() : freePointers(true) {
+			}
+
 			~DataTemplateInfo() {
-				free(fieldInfo);
-				free(dataInfo);
-				free(data);
+				if (freePointers) {
+				    free(fieldInfo);
+				    free(dataInfo);
+				    free(data);
+				}
 			}
 
 			IpfixRecord::FieldInfo* getFieldInfo(IpfixRecord::FieldInfo::Type* type) {
@@ -184,6 +189,7 @@ class IpfixRecord {
 			IpfixRecord::FieldInfo* dataInfo; /**< array of FieldInfos describing each of these fields */
 			IpfixRecord::Data* data; /**< data start pointer for fixed-value fields */
 			void* userData; /**< pointer to a field that can be used by higher-level modules */
+			bool freePointers;  /** small helper variable to indicate if pointers should be freed on destruction */
 		};
 
 		struct SourceID {

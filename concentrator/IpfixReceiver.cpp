@@ -22,6 +22,7 @@
 
 #include "IpfixPacketProcessor.hpp"
 #include "IpfixParser.hpp"
+#include "IpfixReceiverUdpIpV4.hpp"
 #include "ipfix.hpp"
 #include "msg.h"
 
@@ -37,27 +38,6 @@
 
 
 IpfixReceiver::IpfixReceiver() {
-	exit = 0;
-	
-	if (pthread_mutex_init(&mutex, NULL) != 0) {
-		msg(MSG_FATAL, "Could not init mutex");
-		goto out1;
-	}
-	
-	if (pthread_mutex_lock(&mutex) != 0) {
-		msg(MSG_FATAL, "Could not lock mutex");
-		goto out1;
-	}
-	
-	if(pthread_create(&(thread), 0, listenerThread, this) != 0) {
-		msg(MSG_FATAL, "Could not create listener thread");
-		goto out1;
-	}
-	
-	return;
-out1:
-	throw std::runtime_error("IpfixReceiver creation failed");
-	return;
 }
 
 /**
@@ -78,6 +58,7 @@ IpfixReceiver::~IpfixReceiver() {
 	pthread_mutex_destroy(&mutex);
 }
 
+
 /**
  * Starts processing messages.
  * All sockets prepared by calls to @c createIpfixReceiver() will start
@@ -85,11 +66,32 @@ IpfixReceiver::~IpfixReceiver() {
  * @return 0 on success, non-zero on error
  */
 int IpfixReceiver::start() {
+	exit = 0;
+	
+	if (pthread_mutex_init(&mutex, NULL) != 0) {
+		msg(MSG_FATAL, "IpfixReceiver::start: Could not init mutex");
+		goto out1;
+	}
+	
+	if (pthread_mutex_lock(&mutex) != 0) {
+		msg(MSG_FATAL, "IpfixReceiver::start: Could not lock mutex");
+		goto out1;
+	}
+	
+	if(pthread_create(&(thread), 0, listenerThread, this) != 0) {
+		msg(MSG_FATAL, "IpfixReceiver::start: Could not create listener thread");
+		goto out1;
+	}
+
 	if (pthread_mutex_unlock(&mutex) != 0) {
-		msg(MSG_FATAL, "Could not unlock mutex");
+		msg(MSG_FATAL, "IpfixReceiver::start: Could not unlock mutex");
 		return -1;
 	}
+	
 	return 0;
+out1:
+	throw std::runtime_error("IpfixReceiver::startThread: thread creation failed");
+	return 1;
 }
 
 /**
@@ -99,10 +101,16 @@ int IpfixReceiver::start() {
  */
 int IpfixReceiver::stop() {
 	if (pthread_mutex_lock(&mutex) != 0) {
-		msg(MSG_FATAL, "Could not lock mutex");
+		msg(MSG_FATAL, "IpfixReceiver::stop(): Could not lock mutex");
 		return -1;
 	}
-	exit = 1;
+
+	void* result = NULL;
+        if (pthread_join(thread, &result)) {
+		msg(MSG_FATAL, "IpfixReceiver::stop(): Could not join thread");
+                return -1;
+        }
+            
 	return 0;
 }
 
@@ -170,11 +178,11 @@ int IpfixReceiver::isHostAuthorized(struct in_addr* inaddr, int addrlen) {
  * @return NULL
  */
 void* IpfixReceiver::listenerThread(void* ipfixReceiver_) {
-	IpfixReceiver* ipfixReceiver = (IpfixReceiver*)ipfixReceiver_;
+   IpfixReceiver* ipfixReceiver = (IpfixReceiver*)ipfixReceiver_;
 
-	ipfixReceiver->run();
+   ipfixReceiver->run();
 
-	return NULL;
+   return NULL;
 }
 
 /**

@@ -119,6 +119,9 @@ class IpfixDbWriter : public FlowSink {
 		int writeToDb(Table* table, Statement* statement);
 		int getExporterID(Table* table, IpfixRecord::SourceID* sourceID);
 		char* getTableName(Table* table, uint64_t flowstartsec);
+	private:
+		void addColumnEntry(char* sql, char* insert, bool quoted, bool lastcolumn);
+		void addColumnEntry(char* sql, uint64_t insert, bool quoted, bool lastcolumn);
 };
 
 

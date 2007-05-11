@@ -92,7 +92,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		if (isLengthVarying) {
 			bt->recordLength = 65535;
 			for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
-				ti->fieldInfo[fieldNo].offset = 65535;
+				ti->fieldInfo[fieldNo].offset = 0xFFFFFFFF;
 			}
 		}
         
@@ -174,10 +174,10 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 		if (isLengthVarying) {
 			bt->recordLength = 65535;
 			for (fieldNo = 0; fieldNo < ti->scopeCount; fieldNo++) {
-				ti->scopeInfo[fieldNo].offset = 65535;
+				ti->scopeInfo[fieldNo].offset = 0xFFFFFFFF;
 			}
 			for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
-				ti->fieldInfo[fieldNo].offset = 65535;
+				ti->fieldInfo[fieldNo].offset = 0xFFFFFFFF;
 			}
 		}
 		templateBuffer->bufferTemplate(bt); 
@@ -241,7 +241,7 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		if (isLengthVarying) {
 			bt->recordLength = 65535;
 			for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
-				ti->fieldInfo[fieldNo].offset = 65535;
+				ti->fieldInfo[fieldNo].offset = 0xFFFFFFFF;
 			}
 		}
 
