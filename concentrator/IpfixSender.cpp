@@ -352,10 +352,7 @@ inline int IpfixSender::endAndSendDataSet()
 
 /**
  * Put new Data Record in outbound exporter queue
- * @param sourceID ignored
- * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
- * @param length Length of the data block supplied
- * @param data Pointer to a data block containing all variable fields
+ * @param rec Data Data Record
  */
 int IpfixSender::onDataDataRecord(boost::shared_ptr<IpfixDataDataRecord> rec)
 {
