@@ -42,11 +42,15 @@
  */
 IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) {
 	ipfix_exporter** exporterP = &this->ipfixExporter;
-	strcpy(this->ip, ip);
-	this->port = port;
 	sentRecords = 0;
-
+	recordsInDataSet = 0;
+	currentTemplateId = 0;
 	lastTemplateId = SENDER_TEMPLATE_ID_LOW;
+	
+	Collector newCollector;
+	strcpy(newCollector.ip, ip);
+	newCollector.port = port;
+
 	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
 		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
 		goto out;
@@ -55,6 +59,8 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t 
 	if(addCollector(ip, port) != 0) {
 		goto out1;
 	}
+
+	collectors.push_back(newCollector);
 	
         msg(MSG_DEBUG, "IpfixSender: running");
 
@@ -73,9 +79,6 @@ out:
 IpfixSender::~IpfixSender() {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 
-	if (ipfix_remove_collector(exporter, ip, port) != 0) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_remove_collector failed");
-	}
 	ipfix_deinit_exporter(exporter);
 }
 
@@ -112,6 +115,11 @@ int IpfixSender::addCollector(const char *ip, uint16_t port)
 	
 	msg(MSG_INFO, "IpfixSender: adding %s:%d to exporter", ip, port);
 
+	Collector newCollector;
+	strcpy(newCollector.ip, ip);
+	newCollector.port = port;
+	collectors.push_back(newCollector);
+
 	return 0;
 }
 
@@ -120,7 +128,8 @@ int IpfixSender::addCollector(const char *ip, uint16_t port)
  * @param sourceID ignored
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-int IpfixSender::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo) {
+int IpfixSender::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo)
+{
 	uint16_t my_template_id;
 	uint16_t my_preceding;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
@@ -129,18 +138,18 @@ int IpfixSender::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::Da
 		return -1;
 	}
 
-	my_template_id = dataTemplateInfo->id?dataTemplateInfo->id:++lastTemplateId;
+	/* get or assign template ID */
+	if(dataTemplateInfo->id)
+	    my_template_id = dataTemplateInfo->id;
+	else
+	    my_template_id = dataTemplateInfo->id = ++lastTemplateId;
+
 	my_preceding = dataTemplateInfo->preceding;
 	if (lastTemplateId >= SENDER_TEMPLATE_ID_HI) {
 		/* FIXME: Does not always work, e.g. if more than 50000 new Templates per minute are created */
 		lastTemplateId = SENDER_TEMPLATE_ID_LOW;
 	}
-
-	/* put Template ID in Template's userData */
-	int* p = (int*)malloc(sizeof(int));
-	*p = htons(my_template_id);
-	dataTemplateInfo->userData = p;
-
+	
 	int i;
 
 	/* Count number of IPv4 fields with length 5 */
@@ -255,7 +264,7 @@ int IpfixSender::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::Da
  * @param sourceID ignored
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-int IpfixSender::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo) 
+int IpfixSender::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo)
 {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 
@@ -264,8 +273,7 @@ int IpfixSender::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, Ipfi
 		return -1;
 	}
 
-	uint16_t my_n_template_id = *(uint16_t*)dataTemplateInfo->userData;
-	uint16_t my_template_id = ntohs(my_n_template_id);
+	uint16_t my_template_id = dataTemplateInfo->id;
 
 
 	/* Remove template from ipfixlolib */
@@ -278,8 +286,69 @@ int IpfixSender::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, Ipfi
 	}
 
 	free(dataTemplateInfo->userData);
+
 	return 0;
 }
+
+
+/**
+ * Start generating a new Data Set unless the template ID is the same as the current Data Set.
+ * Unfinished Data Set are terminated and sent if necessary.
+ * @param templateId of the new Data Set
+ * @return returns -1 on error, 0 otherwise
+ */
+inline int IpfixSender::startDataSet(uint16_t templateId) 
+{
+	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
+	uint16_t my_n_template_id = htons(templateId);
+	
+	/* check if we can use the current Data Set */
+	//TODO: make maximum number of records per Data Set variable
+	if((recordsInDataSet < 10) && (templateId == currentTemplateId))
+		return 0;
+
+	if(recordsInDataSet > 0)
+		if(endAndSendDataSet() != 0)
+			return -1;
+	
+	if (ipfix_start_data_set(exporter, my_n_template_id) != 0 ) {
+		msg(MSG_FATAL, "sndIpfix: ipfix_start_data_set failed!");
+		return -1;
+	}
+
+	currentTemplateId = templateId;
+	return 0;
+}
+	
+
+/**
+ * Terminates and sends current Data Set if available.
+ * @return returns -1 on error, 0 otherwise
+ */
+inline int IpfixSender::endAndSendDataSet() 
+{
+	if(recordsInDataSet > 0) {
+		ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
+	
+		if (ipfix_end_data_set(exporter) != 0) {
+			msg(MSG_FATAL, "sndIpfix: ipfix_end_data_set failed");
+			return -1;
+		}
+
+		if (ipfix_send(exporter) != 0) {
+			msg(MSG_FATAL, "sndIpfix: ipfix_send failed");
+			return -1;
+		}
+
+		recordsToRelease.clear();
+
+		recordsInDataSet = 0;
+		currentTemplateId = 0;
+	}
+	
+	return 0;
+}
+	
 
 /**
  * Put new Data Record in outbound exporter queue
@@ -288,7 +357,11 @@ int IpfixSender::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, Ipfi
  * @param length Length of the data block supplied
  * @param data Pointer to a data block containing all variable fields
  */
-int IpfixSender::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data) {
+int IpfixSender::onDataDataRecord(boost::shared_ptr<IpfixDataDataRecord> rec)
+{
+	IpfixRecord::DataTemplateInfo* dataTemplateInfo = rec->dataTemplateInfo.get();
+	IpfixRecord::Data* data = rec->data;
+
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 
 	if (!exporter) {
@@ -296,13 +369,8 @@ int IpfixSender::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::
 		return -1;
 	}
 
-	/* get Template ID from Template's userData */
-	uint16_t my_n_template_id = *(uint16_t*)dataTemplateInfo->userData;
-
-	if (ipfix_start_data_set(exporter, my_n_template_id) != 0 ) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_start_data_set failed!");
+	if(startDataSet(dataTemplateInfo->id) != 0)
 		return -1;
-	}
 
 	int i;
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
@@ -327,20 +395,23 @@ int IpfixSender::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::
 
 	}
 
-	if (ipfix_end_data_set(exporter) != 0) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_end_data_set failed");
-		return -1;
-	}
-
-	if (ipfix_send(exporter) != 0) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_send failed");
-		return -1;
-	}
+	recordsInDataSet++;
 
 	sentRecords++;
-
+	
+	recordsToRelease.push_back(rec);
+	
 	return 0;
 }
+
+/**
+ * Send pending Data Set
+ */
+int IpfixSender::onIdle() 
+{
+	return endAndSendDataSet();
+}
+
 
 /**
  * Called by the logger timer thread. Dumps info using msg_stat
@@ -349,4 +420,53 @@ void IpfixSender::stats()
 {
 	msg_stat("Concentrator: IpfixSender: %6d records sent", sentRecords);
 	sentRecords = 0;
+}
+
+void IpfixSender::flowSinkProcess()
+{
+	msg(MSG_INFO, "Sink: now running FlowSink thread");
+	while(!exitFlag) {
+		boost::shared_ptr<IpfixRecord> ipfixRecord;
+		if (!ipfixRecords.pop(1000, &ipfixRecord))
+		{
+			onIdle();
+			continue;
+		}
+		{
+			IpfixDataRecord* rec = dynamic_cast<IpfixDataRecord*>(ipfixRecord.get());
+			if (rec) onDataRecord(rec->sourceID.get(), rec->templateInfo.get(), rec->dataLength, rec->data);
+		}
+		{
+			boost::shared_ptr<IpfixDataDataRecord> rec = boost::dynamic_pointer_cast<IpfixDataDataRecord, IpfixRecord>(ipfixRecord);
+			if (rec) onDataDataRecord(rec);
+		}
+		{
+			IpfixOptionsRecord* rec = dynamic_cast<IpfixOptionsRecord*>(ipfixRecord.get());
+			if (rec) onOptionsRecord(rec->sourceID.get(), rec->optionsTemplateInfo.get(), rec->dataLength, rec->data);
+		}
+		{
+			IpfixTemplateRecord* rec = dynamic_cast<IpfixTemplateRecord*>(ipfixRecord.get());
+			if (rec) onTemplate(rec->sourceID.get(), rec->templateInfo.get());
+		}
+		{
+			IpfixDataTemplateRecord* rec = dynamic_cast<IpfixDataTemplateRecord*>(ipfixRecord.get());
+			if (rec) onDataTemplate(rec->sourceID.get(), rec->dataTemplateInfo.get());
+		}
+		{
+			IpfixOptionsTemplateRecord* rec = dynamic_cast<IpfixOptionsTemplateRecord*>(ipfixRecord.get());
+			if (rec) onOptionsTemplate(rec->sourceID.get(), rec->optionsTemplateInfo.get());
+		}
+		{
+			IpfixTemplateDestructionRecord* rec = dynamic_cast<IpfixTemplateDestructionRecord*>(ipfixRecord.get());
+			if (rec) onTemplateDestruction(rec->sourceID.get(), rec->templateInfo.get());
+		}
+		{
+			IpfixDataTemplateDestructionRecord* rec = dynamic_cast<IpfixDataTemplateDestructionRecord*>(ipfixRecord.get());
+			if (rec) onDataTemplateDestruction(rec->sourceID.get(), rec->dataTemplateInfo.get());
+		}
+		{
+			IpfixOptionsTemplateDestructionRecord* rec = dynamic_cast<IpfixOptionsTemplateDestructionRecord*>(ipfixRecord.get());
+			if (rec) onOptionsTemplateDestruction(rec->sourceID.get(), rec->optionsTemplateInfo.get());
+		}
+	}
 }

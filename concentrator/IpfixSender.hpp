@@ -23,6 +23,7 @@
 
 #include "IpfixParser.hpp"
 #include "ipfixlolib/ipfixlolib.h"
+#include <vector>
 
 /**
  * IPFIX Exporter interface.
@@ -40,21 +41,42 @@ class IpfixSender : public FlowSink {
 		int addCollector(const char *ip, uint16_t port);
 
 		int onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
-		int onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
-		int onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
+                int onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
+                int onDataDataRecord(boost::shared_ptr<IpfixDataDataRecord> rec);
+		int onIdle();
+
+	        virtual void flowSinkProcess();
 
 		void stats();
 
+		class Collector {
+		    public:
+			Collector() : port(0)
+			{
+			    memset(&ip, 0, sizeof(ip)); 
+			}
+			~Collector() {}
+			
+			char ip[128]; /**< IP address of Collector */
+			uint16_t port; /**< Port of Collector */
+		};
+		
 	protected:
 		ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */
 		uint16_t lastTemplateId; /**< Template ID of last created Template */
-		char ip[128]; /**< IP of Collector we export to */
-		uint16_t port; /**< Port of Collector we export to */
+		std::vector<Collector> collectors; /**< Collectors we export to */
 		uint32_t sentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
 
 	private:
+		inline int startDataSet(uint16_t templateId);
+		inline int endAndSendDataSet();
+
+		std::vector<boost::shared_ptr<IpfixRecord> > recordsToRelease;
+		
 		uint16_t ringbufferPos; /**< Pointer to next free slot in @c conversionRingbuffer. */
 		uint8_t conversionRingbuffer[65536]; /**< Ringbuffer used to store converted imasks between @c ipfix_put_data_field() and @c ipfix_send() */
+		uint16_t recordsInDataSet; /**< The number of records in the current data set */
+		uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
 };
 
 #endif
