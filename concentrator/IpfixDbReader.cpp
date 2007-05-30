@@ -443,7 +443,6 @@ IpfixDbReader::IpfixDbReader(const char* hostName, const char* dbName,
 				   const char* userName, const char* password,
 				   unsigned int port, uint16_t observationDomainId)
 {
-	DbReader* dbReader;
 	DbData* dbData;
 
 	if (pthread_mutex_init(&mutex, NULL)) {
@@ -468,7 +467,6 @@ IpfixDbReader::IpfixDbReader(const char* hostName, const char* dbName,
 		goto out2;
 	}
 	
-	dbReader = dbReader;
 	dbReader->dbData = dbData;
 	if (connectToDb(hostName, dbName, userName,
 			password, port, observationDomainId)) {
