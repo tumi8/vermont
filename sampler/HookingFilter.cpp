@@ -119,7 +119,6 @@ bool HookingFilter::processPacket(const Packet *p)
 	if((p->classification & PCLASS_NET_IP4) == 0)
 	    return true;
 	    
-	int transport_offset;
 	IpfixRecord::Data *fdata=(IpfixRecord::Data *)p->netHeader;
 	uint32_t pad1;
 	uint8_t pad2;
@@ -132,7 +131,7 @@ bool HookingFilter::processPacket(const Packet *p)
 
 	// save the current time inside the IP header and overwrite
 	// identification, flags and fragment offset fields
-	((uint32_t *)p->netHeader)[1]=htonl((uint32_t)p->timestamp.tv_sec);
+	((uint32_t *)p->netHeader)[1]=p->time_sec_nbo;
 	((uint8_t *)p->netHeader)[10]=(uint8_t)1;
 
 	// now perform some really BAD hack for the millisecond time:
@@ -145,89 +144,59 @@ bool HookingFilter::processPacket(const Packet *p)
         DPRINTF("HookingFilter::processPacket: time_msec_ipfix is %llX", p->time_msec_ipfix);
 	int32_t offset = (uint32_t)(mstime - (char*)(p->netHeader)); 
         DPRINTF("HookingFilter::processPacket: offset=%x", offset);
-	ip_traffic_template->fieldInfo[7].offset = offset;
-	ip_traffic_template->fieldInfo[8].offset = offset;
-	switch (((char*)p->netHeader)[9]) {
-		case IPFIX_protocolIdentifier_ICMP:
-			icmp_traffic_template->fieldInfo[8].offset = offset;
-			icmp_traffic_template->fieldInfo[9].offset = offset;
-			break;
-		case IPFIX_protocolIdentifier_UDP:
-			udp_traffic_template->fieldInfo[9].offset = offset;
-			udp_traffic_template->fieldInfo[10].offset = offset;
-			break;
-		case IPFIX_protocolIdentifier_TCP:
-			tcp_traffic_template->fieldInfo[10].offset = offset;
-			tcp_traffic_template->fieldInfo[11].offset = offset;
-			break;
-		/*default:
-			char text[100];
-			sprintf(text, "%d", ((char*)p->netHeader)[9]);
-			throw std::runtime_error("unknown protocol identifier encountered (" + text + ")! Aborting");	*/
-	}
         DPRINTF("millisec0: %llX", *((uint64_t*)mstime));
         DPRINTF("millisec1: %lld", *((uint64_t*)(((char*)(p->netHeader))+offset)));
         DPRINTF("millisec_pointer: %X", ((char*)(p->netHeader))+offset);
-	
 
-	// Check if transport header is available
-	if(p->transportHeader == NULL) {
-	    flowSink->onDataRecord(NULL, ip_traffic_template, p->data_length, fdata);
+	// Choose template according to transport header type
+	if((p->classification & PCLASS_TRN_ICMP) != 0)
+	{
+	    /* adapt offset for millisecond timestamps */
+	    icmp_traffic_template->fieldInfo[8].offset = offset;
+	    icmp_traffic_template->fieldInfo[9].offset = offset;
+	    /* adapt offset for typecode */
+	    icmp_traffic_template->fieldInfo[0].offset += p->transportHeaderOffset;
+	    flowSink->onDataRecord(NULL, icmp_traffic_template, p->data_length, fdata);
+	    /* reset offset for typecode to starting value */
+	    icmp_traffic_template->fieldInfo[0].offset = 0;
+	}
+	else if((p->classification & PCLASS_TRN_UDP) != 0)
+	{
+	    /* adapt offset for millisecond timestamps */
+	    udp_traffic_template->fieldInfo[9].offset = offset;
+	    udp_traffic_template->fieldInfo[10].offset = offset;
+	    /* adapt offsets for srcport/dstport */
+	    udp_traffic_template->fieldInfo[0].offset += p->transportHeaderOffset;
+	    udp_traffic_template->fieldInfo[1].offset += p->transportHeaderOffset;
+	    flowSink->onDataRecord(NULL, udp_traffic_template, p->data_length, fdata);
+	    /* reset offsets for srcport/dstport to starting values */
+	    udp_traffic_template->fieldInfo[0].offset = 0;
+	    udp_traffic_template->fieldInfo[1].offset = 2;
+	}
+	else if((p->classification & PCLASS_TRN_TCP) != 0)
+	{
+	    /* adapt offset for millisecond timestamps */
+	    tcp_traffic_template->fieldInfo[10].offset = offset;
+	    tcp_traffic_template->fieldInfo[11].offset = offset;
+	    /* adapt offsets for srcport/dstport, tcpcontrolbits */
+	    tcp_traffic_template->fieldInfo[0].offset += p->transportHeaderOffset;
+	    tcp_traffic_template->fieldInfo[1].offset += p->transportHeaderOffset;
+	    tcp_traffic_template->fieldInfo[2].offset += p->transportHeaderOffset;
+	    flowSink->onDataRecord(NULL, tcp_traffic_template, p->data_length, fdata);
+	    /* reset offsets for srcport/dstport, tcpcontrolbits to starting values */
+	    tcp_traffic_template->fieldInfo[0].offset = 13;
+	    tcp_traffic_template->fieldInfo[1].offset = 0;
+	    tcp_traffic_template->fieldInfo[2].offset = 2;
 	}
 	else
 	{
-	    // Choose template according to transport header type
-	    switch(((char *)p->netHeader)[9]) {
-		case IPFIX_protocolIdentifier_ICMP:
-		    /*
-		       because of IP options we need to re-calculate the offsets to srcport and dstport every time
-		       now we do need some serious pointer arithmetic:
-		       - calculate the offset of transport header to ip header
-		       - use this offset and add to src/dst_port offset
-		     */
-		    transport_offset=abs((char*)p->transportHeader - (char*)p->netHeader);
-		    icmp_traffic_template->fieldInfo[0].offset += transport_offset;
-		    flowSink->onDataRecord(NULL, icmp_traffic_template, p->data_length, fdata);
-		    /* reset offset for typecode to starting value */
-		    icmp_traffic_template->fieldInfo[0].offset = 0;
-		    break;
-		case IPFIX_protocolIdentifier_UDP:
-		    /*
-		       because of IP options we need to re-calculate the offsets to srcport and dstport every time
-		       now we do need some serious pointer arithmetic:
-		       - calculate the offset of transport header to ip header
-		       - use this offset and add to src/dst_port offset
-		     */
-		    transport_offset=abs((char*)p->transportHeader - (char*)p->netHeader);
-		    udp_traffic_template->fieldInfo[0].offset += transport_offset;
-		    udp_traffic_template->fieldInfo[1].offset += transport_offset;
-		    flowSink->onDataRecord(NULL, udp_traffic_template, p->data_length, fdata);
-		    /* reset offsets for srcport/dstport to starting values */
-		    udp_traffic_template->fieldInfo[0].offset = 0;
-		    udp_traffic_template->fieldInfo[1].offset = 2;
-		    break;
-		case IPFIX_protocolIdentifier_TCP:
-		    /*
-		       because of IP options we need to re-calculate the offsets to srcport and dstport every time
-		       now we do need some serious pointer arithmetic:
-		       - calculate the offset of transport header to ip header
-		       - use this offset and add to src/dst_port offset
-		     */
-		    transport_offset=abs((char*)p->transportHeader - (char*)p->netHeader);
-		    tcp_traffic_template->fieldInfo[0].offset += transport_offset;
-		    tcp_traffic_template->fieldInfo[1].offset += transport_offset;
-		    tcp_traffic_template->fieldInfo[2].offset += transport_offset;
-		    flowSink->onDataRecord(NULL, tcp_traffic_template, p->data_length, fdata);
-		    /* reset offsets for srcport/dstport to starting values */
-		    tcp_traffic_template->fieldInfo[0].offset = 13;
-		    tcp_traffic_template->fieldInfo[1].offset = 0;
-		    tcp_traffic_template->fieldInfo[2].offset = 2;
-		    break;
-		default:
-		    flowSink->onDataRecord(NULL, ip_traffic_template, p->data_length, fdata);
-	    }
+	    /* adapt offset for millisecond timestamps */
+	    ip_traffic_template->fieldInfo[7].offset = offset;
+	    ip_traffic_template->fieldInfo[8].offset = offset;
+	    /* IP only */
+	    flowSink->onDataRecord(NULL, ip_traffic_template, p->data_length, fdata);
 	}
-
+	
 	/* restore IP header */
 	((uint32_t *)p->netHeader)[1]=pad1;
 	((uint8_t *)p->netHeader)[10]=pad2;
