@@ -38,6 +38,14 @@
 #define DEFAULT_LISTEN_PORT 1500
 
 void sigint(int) {
+    static bool shutdownInitiated = false;
+
+    if (shutdownInitiated) {
+        msg(MSG_DIALOG, "second signal received, shutting down the hard way!");
+        exit(2);
+    }
+
+    shutdownInitiated = true;
 }
 
 int main(int argc, char *argv[]) {
@@ -75,14 +83,14 @@ int main(int argc, char *argv[]) {
 	ipfixCollector.addIpfixPacketProcessor(&ipfixPacketProcessor);
 	ipfixCollector.start();
 
-	DPRINTF("Listening on %d. Hit Ctrl+C to quit\n", lport);
+	msg(MSG_DIALOG, "Listening on %d. Hit Ctrl+C to quit\n", lport);
 	pause();
-	DPRINTF("Stopping threads and tidying up.\n");
+	msg(MSG_DIALOG, "Stopping threads and tidying up.\n");
 
-	DPRINTF("stopping collector\n");
+	msg(MSG_DIALOG, "stopping collector\n");
 	ipfixReceiver.stop();
 
-	DPRINTF("stopping printer\n");
+	msg(MSG_DIALOG, "stopping printer\n");
 	ipfixPrinter.stop();
 
 	return 0;
