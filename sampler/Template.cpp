@@ -34,8 +34,9 @@ bool Template::addField(uint16_t id, uint16_t len)
 	// TODO: This should really be checked against some kind of static array instead of a
 	//       'switch' statement
 	if((id >= 0x8000) 
-		|| ((id == IPFIX_TYPEID_flowStartSeconds) && (len == sizeof(long int))) // length of timeval.tv_sec
-		|| ((id == IPFIX_TYPEID_flowStartMicroSeconds) && (len ==  sizeof(long int))))
+		|| ((id == IPFIX_TYPEID_flowStartSeconds) && (len == sizeof(unsigned long))) // length of timeval.tv_sec
+		|| ((id == IPFIX_TYPEID_flowStartMicroSeconds) && (len ==  sizeof(unsigned long)))
+		|| ((id == IPFIX_TYPEID_flowStartMilliSeconds) && (len ==  sizeof(unsigned long long))))
 	{
 		addFieldWithoutOffset(id, len);
 		if (id == IPFIX_TYPEID_flowStartMicroSeconds)

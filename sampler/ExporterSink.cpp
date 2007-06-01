@@ -80,12 +80,14 @@ bool ExporterSink::addPacket(Packet *pck)
 	    }
 	    else if(ttype == IPFIX_TYPEID_flowStartSeconds)
 	    {
-		pck->time_sec_nbo = htonl(pck->timestamp.tv_sec);
 		ipfix_put_data_field(exporter, &(pck->time_sec_nbo), tlength);
+	    }
+	    else if(ttype == IPFIX_TYPEID_flowStartMilliSeconds)
+	    {
+		ipfix_put_data_field(exporter, &(pck->time_msec_ipfix), tlength);
 	    }
 	    else if(ttype == IPFIX_TYPEID_flowStartMicroSeconds)
 	    {
-		pck->time_usec_nbo = htonl(pck->timestamp.tv_usec);
 		ipfix_put_data_field(exporter, &(pck->time_usec_nbo), tlength);
 	    }
 	    else if(tlength == 65535)

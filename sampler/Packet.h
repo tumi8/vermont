@@ -111,14 +111,17 @@ public:
 	Packet(void *packetData, unsigned int len, struct timeval time, int numUsers = 1) : 
 	    transportHeader(NULL), payload(NULL), transportHeaderOffset(0), payloadOffset(0), 
 	    classification(0), data_length(len), 
-	    timestamp(time), time_sec_nbo(0), time_usec_nbo(0), // nbo set by Exporter if needed
-	    varlength_index(0),
+	    timestamp(time), varlength_index(0),
 	    users(numUsers), refCountLock()
 	{
 		data = (unsigned char *)packetData;
 		netHeader = data + IPHeaderOffset;
 		netHeaderOffset = IPHeaderOffset;
 
+		// timestamps in network byte order (needed for export or concentrator)
+		time_sec_nbo = htonl(timestamp.tv_sec);
+		time_usec_nbo = htonl(timestamp.tv_usec);
+		    
 		// calculate time since 1970 in milliseconds according to IPFIX standard
 		time_msec_ipfix = htonll(((unsigned long long)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
                 DPRINTF("Packet::Packet: timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
