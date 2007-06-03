@@ -256,7 +256,7 @@ int IpfixDbWriter::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::Te
 {
 	IpfixRecord::DataTemplateInfo dataTemplateInfo;
 	
-	dataTemplateInfo.id = 0;
+	dataTemplateInfo.templateId = 0;
 	dataTemplateInfo.preceding = 0;
         dataTemplateInfo.freePointers = false;   // don't free the given pointers, as they are taken from a different structure
 	dataTemplateInfo.fieldCount = templateInfo->fieldCount;  /**< number of regular fields */

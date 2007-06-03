@@ -83,7 +83,7 @@ Hashtable::Hashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
 	recordsSent = 0;
 
 	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
-	dataTemplate->id=rule->id;
+	dataTemplate->templateId=rule->id;
 	dataTemplate->preceding=rule->preceding;
 	dataTemplate->fieldCount = 0;
 	dataTemplate->fieldInfo = NULL;

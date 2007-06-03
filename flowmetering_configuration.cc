@@ -190,7 +190,6 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 		}
 		i = i->next;
 	}
-	rule->preceding = 0;
 	msg(MSG_INFO, "Got aggregation rule: ");
 	rule->print();
 	return rule;

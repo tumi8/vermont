@@ -68,8 +68,8 @@ class IpfixSender : public FlowSink {
 		uint32_t sentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
 
 	private:
-		inline int startDataSet(uint16_t templateId);
-		inline int endAndSendDataSet();
+		int startDataSet(uint16_t templateId);
+		int endAndSendDataSet();
 
 		std::vector<boost::shared_ptr<IpfixRecord> > recordsToRelease;
 		
