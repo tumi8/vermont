@@ -139,10 +139,10 @@ int IpfixSender::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::Da
 	}
 
 	/* get or assign template ID */
-	if(dataTemplateInfo->id)
-	    my_template_id = dataTemplateInfo->id;
+	if(dataTemplateInfo->templateId)
+	    my_template_id = dataTemplateInfo->templateId;
 	else
-	    my_template_id = dataTemplateInfo->id = ++lastTemplateId;
+	    my_template_id = dataTemplateInfo->templateId = ++lastTemplateId;
 
 	my_preceding = dataTemplateInfo->preceding;
 	if (lastTemplateId >= SENDER_TEMPLATE_ID_HI) {
@@ -273,12 +273,12 @@ int IpfixSender::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, Ipfi
 		return -1;
 	}
 
-	uint16_t my_template_id = dataTemplateInfo->id;
+	uint16_t my_template_id = dataTemplateInfo->templateId;
 
 
 	/* Remove template from ipfixlolib */
 	if (0 != ipfix_remove_template_set(exporter, my_template_id)) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_removedatatemplatestart_datatemplate_set failed");
+		msg(MSG_FATAL, "sndIpfix: ipfix_remove_template_set failed");
 	}
 	else
 	{
@@ -297,7 +297,7 @@ int IpfixSender::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, Ipfi
  * @param templateId of the new Data Set
  * @return returns -1 on error, 0 otherwise
  */
-inline int IpfixSender::startDataSet(uint16_t templateId) 
+int IpfixSender::startDataSet(uint16_t templateId) 
 {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	uint16_t my_n_template_id = htons(templateId);
@@ -325,7 +325,7 @@ inline int IpfixSender::startDataSet(uint16_t templateId)
  * Terminates and sends current Data Set if available.
  * @return returns -1 on error, 0 otherwise
  */
-inline int IpfixSender::endAndSendDataSet() 
+int IpfixSender::endAndSendDataSet() 
 {
 	if(recordsInDataSet > 0) {
 		ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
@@ -366,7 +366,7 @@ int IpfixSender::onDataDataRecord(boost::shared_ptr<IpfixDataDataRecord> rec)
 		return -1;
 	}
 
-	if(startDataSet(dataTemplateInfo->id) != 0)
+	if(startDataSet(dataTemplateInfo->templateId) != 0)
 		return -1;
 
 	int i;

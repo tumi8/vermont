@@ -39,9 +39,7 @@
 
 /* --- functions ------------*/
 
-Rule::Rule() {
-	fieldCount = 0;
-}
+Rule::Rule() : id(0), preceding(0), fieldCount(0) {}
 
 /**
  * De-allocates memory used by the given rule.

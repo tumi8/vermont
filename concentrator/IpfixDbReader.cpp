@@ -74,7 +74,7 @@ int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<IpfixRecord::DataTe
 
 	DbData* dbData = dbReader->dbData;
 	
-	dataTemplateInfo->id =0;
+	dataTemplateInfo->templateId =0;
 	dataTemplateInfo->preceding= 0;	
 	dataTemplateInfo->fieldCount = 0;
 	dataTemplateInfo->fieldInfo = NULL;

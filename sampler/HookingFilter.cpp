@@ -13,6 +13,8 @@
 
 #include "msg.h"
 
+#include <iostream>
+
 
 namespace {
 	void setFieldInfo(IpfixRecord::FieldInfo* fi, IpfixRecord::FieldInfo::Type::Id id, IpfixRecord::FieldInfo::Type::Length length, uint16_t offset) {
@@ -127,7 +129,7 @@ bool HookingFilter::processPacket(const Packet *p)
 
 	/* save IP header */
 	pad1=((uint32_t *)p->netHeader)[1];
-	pad2=((uint16_t *)p->netHeader)[5];
+	pad2=((uint8_t *)p->netHeader)[10];
 
 	// save the current time inside the IP header and overwrite
 	// identification, flags and fragment offset fields
@@ -142,7 +144,7 @@ bool HookingFilter::processPacket(const Packet *p)
 	// -> REALLY BAD HACK, interface to concentrator MUST be changed
 	char* mstime = (char*)(&p->time_msec_ipfix);
         DPRINTF("HookingFilter::processPacket: time_msec_ipfix is %llX", p->time_msec_ipfix);
-	int32_t offset = (uint32_t)(mstime - (char*)(p->netHeader)); 
+	int32_t offset = (int32_t)(mstime - (char*)(p->netHeader)); 
         DPRINTF("HookingFilter::processPacket: offset=%x", offset);
         DPRINTF("millisec0: %llX", *((uint64_t*)mstime));
         DPRINTF("millisec1: %lld", *((uint64_t*)(((char*)(p->netHeader))+offset)));
@@ -155,7 +157,7 @@ bool HookingFilter::processPacket(const Packet *p)
 	    icmp_traffic_template->fieldInfo[8].offset = offset;
 	    icmp_traffic_template->fieldInfo[9].offset = offset;
 	    /* adapt offset for typecode */
-	    icmp_traffic_template->fieldInfo[0].offset += p->transportHeaderOffset;
+	    icmp_traffic_template->fieldInfo[0].offset += (p->transportHeaderOffset - p->netHeaderOffset);
 	    flowSink->onDataRecord(NULL, icmp_traffic_template, p->data_length, fdata);
 	    /* reset offset for typecode to starting value */
 	    icmp_traffic_template->fieldInfo[0].offset = 0;
@@ -166,8 +168,8 @@ bool HookingFilter::processPacket(const Packet *p)
 	    udp_traffic_template->fieldInfo[9].offset = offset;
 	    udp_traffic_template->fieldInfo[10].offset = offset;
 	    /* adapt offsets for srcport/dstport */
-	    udp_traffic_template->fieldInfo[0].offset += p->transportHeaderOffset;
-	    udp_traffic_template->fieldInfo[1].offset += p->transportHeaderOffset;
+	    udp_traffic_template->fieldInfo[0].offset += (p->transportHeaderOffset - p->netHeaderOffset);
+	    udp_traffic_template->fieldInfo[1].offset += (p->transportHeaderOffset - p->netHeaderOffset);
 	    flowSink->onDataRecord(NULL, udp_traffic_template, p->data_length, fdata);
 	    /* reset offsets for srcport/dstport to starting values */
 	    udp_traffic_template->fieldInfo[0].offset = 0;
@@ -179,9 +181,10 @@ bool HookingFilter::processPacket(const Packet *p)
 	    tcp_traffic_template->fieldInfo[10].offset = offset;
 	    tcp_traffic_template->fieldInfo[11].offset = offset;
 	    /* adapt offsets for srcport/dstport, tcpcontrolbits */
-	    tcp_traffic_template->fieldInfo[0].offset += p->transportHeaderOffset;
-	    tcp_traffic_template->fieldInfo[1].offset += p->transportHeaderOffset;
-	    tcp_traffic_template->fieldInfo[2].offset += p->transportHeaderOffset;
+	    tcp_traffic_template->fieldInfo[0].offset += (p->transportHeaderOffset - p->netHeaderOffset);
+	    tcp_traffic_template->fieldInfo[1].offset += (p->transportHeaderOffset - p->netHeaderOffset);
+	    tcp_traffic_template->fieldInfo[2].offset += (p->transportHeaderOffset - p->netHeaderOffset);
+	    flowSink->onDataRecord(NULL, udp_traffic_template, p->data_length, fdata);
 	    flowSink->onDataRecord(NULL, tcp_traffic_template, p->data_length, fdata);
 	    /* reset offsets for srcport/dstport, tcpcontrolbits to starting values */
 	    tcp_traffic_template->fieldInfo[0].offset = 13;

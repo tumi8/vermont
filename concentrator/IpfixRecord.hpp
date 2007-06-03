@@ -181,7 +181,7 @@ class IpfixRecord {
 				return NULL;		
 			}
 
-			uint16_t id; /**< the template id assigned to this template or 0 if we don't know or don't care */
+			uint16_t templateId; /**< the template id assigned to this template or 0 if we don't know or don't care */
 			uint16_t preceding; /**< the preceding rule field as defined in the draft */
 			uint16_t fieldCount; /**< number of regular fields */
 			IpfixRecord::FieldInfo* fieldInfo; /**< array of FieldInfos describing each of these fields */

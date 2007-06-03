@@ -215,7 +215,7 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		bt->setID = ntohs(set->id);
 		bt->dataTemplateInfo = ti;
 		ti->userData = 0;
-		ti->id = ntohs(th->templateId);
+		ti->templateId = ntohs(th->templateId);
 		ti->preceding = ntohs(th->precedingRule);
 		ti->fieldCount = ntohs(th->fieldCount);
 		ti->dataCount = ntohs(th->dataCount);
