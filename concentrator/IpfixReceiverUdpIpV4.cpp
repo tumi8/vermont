@@ -97,9 +97,7 @@ void IpfixReceiverUdpIpV4::run() {
 
 			pthread_mutex_lock(&mutex);
 			for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
-			 	pthread_mutex_lock(&(*i)->mutex);
-				(*i)->ipfixParser->processMessage(data, n, sourceID);
-				pthread_mutex_unlock(&(*i)->mutex);
+				(*i)->processPacket(data, n, sourceID);
 			}
 			pthread_mutex_unlock(&mutex);
 		}

@@ -45,12 +45,12 @@ class TemplateBuffer;
  * The Collector module supports higher-level modules by providing field types and offsets along 
  * with the raw data block of individual messages passed via the callback functions (see @c IpfixRecord::TemplateInfo)
  */
-class IpfixParser : public FlowSource {
+class IpfixParser : public IpfixPacketProcessor, public FlowSource {
 	public:
 		IpfixParser();
-		~IpfixParser();
+		virtual ~IpfixParser();
 
-		int processMessage(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
+		virtual int processPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId); 
 
 	protected:
 		/**
@@ -125,6 +125,8 @@ class IpfixParser : public FlowSource {
 
 		friend class TemplateBuffer;
 		TemplateBuffer* templateBuffer; /**< TemplateBuffer* structure */
+
+		pthread_mutex_t mutex; /**< Used to give only one IpfixReceiver access to the IpfixPacketProcessor */
 
 		void processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set);
 		void processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set);

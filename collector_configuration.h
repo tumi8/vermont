@@ -44,7 +44,6 @@ private:
 	uint16_t observationDomainId;
 	
 	IpfixCollector* ipfixCollector;
-	IpfixPacketProcessor* ipfixPacketProcessor;
 	IpfixParser* ipfixParser;
 };
 

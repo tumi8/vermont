@@ -75,12 +75,9 @@ int main(int argc, char *argv[]) {
 	IpfixParser ipfixParser;
 	ipfixParser.addFlowSink(&ipfixPrinter);
 
-	IpfixPacketProcessor ipfixPacketProcessor;
-	ipfixPacketProcessor.ipfixParser = &ipfixParser;
-
 	IpfixCollector ipfixCollector;
 	ipfixCollector.addIpfixReceiver(&ipfixReceiver);
-	ipfixCollector.addIpfixPacketProcessor(&ipfixPacketProcessor);
+	ipfixCollector.addIpfixPacketProcessor(&ipfixParser);
 	ipfixCollector.start();
 
 	msg(MSG_DIALOG, "Listening on %d. Hit Ctrl+C to quit\n", lport);

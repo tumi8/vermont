@@ -18,7 +18,7 @@
 
 CollectorConfiguration::CollectorConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
 	: Configuration(document, startPoint), running(false), observationDomainId(0),
-		ipfixCollector(0), ipfixPacketProcessor(0), ipfixParser(0)
+		ipfixCollector(0), ipfixParser(0)
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
@@ -104,11 +104,6 @@ void CollectorConfiguration::setUp()
 		ipfixCollector->addIpfixReceiver(ipfixReceiver);
 	}
 
-	ipfixPacketProcessor = new IpfixPacketProcessor;
-	if (!ipfixPacketProcessor) {
-		throw std::runtime_error("Could not create IPFIX packet processor");
-	}
-
 	ipfixParser = new IpfixParser;
 	if (!ipfixParser) {
 		throw std::runtime_error("Could not create IPFIX parser");
@@ -140,10 +135,8 @@ void CollectorConfiguration::connect(Configuration* c)
 			}
 		msg(MSG_DEBUG, "Adding aggregator to ipfixParser");
 		ipfixParser->addFlowSink(aggregator);
-		msg(MSG_DEBUG, "Adding ipfixParser to ipfixPacketProcessor");
-		ipfixPacketProcessor->ipfixParser = ipfixParser;
 		msg(MSG_DEBUG, "Adding ipfixPacketProcessor to ipfixCollector");
-		ipfixCollector->addIpfixPacketProcessor(ipfixPacketProcessor);
+		ipfixCollector->addIpfixPacketProcessor(ipfixParser);
 		msg(MSG_DEBUG, "Sucessfully set up connection between collector and aggregator");
 		return;
 	}
@@ -154,10 +147,8 @@ void CollectorConfiguration::connect(Configuration* c)
 		IpfixSender* ipfixSender = exporter->getIpfixSender();
 		msg(MSG_DEBUG, "Adding IpfixSender callbacks to IpfixParser");
 		ipfixParser->addFlowSink(ipfixSender);
-		msg(MSG_DEBUG, "Adding IpfixParser to IpfixPacketProcessor");
-		ipfixPacketProcessor->ipfixParser = ipfixParser;
 		msg(MSG_DEBUG, "Adding IpfixPacketProcessor to IpfixCollector");
-		ipfixCollector->addIpfixPacketProcessor(ipfixPacketProcessor);
+		ipfixCollector->addIpfixPacketProcessor(ipfixParser);
 		msg(MSG_DEBUG, "Successfully set up connection between collector and exporter");
 		return;
 	}
@@ -168,8 +159,8 @@ void CollectorConfiguration::connect(Configuration* c)
 		msg(MSG_DEBUG, "Adding DBwriter to IpfixCollector");
                 dbWriterConfiguration->setObservationDomainId(observationDomainId);
 		ipfixParser->addFlowSink(dbWriterConfiguration->getDbWriter());
-		ipfixPacketProcessor->ipfixParser = ipfixParser;
-		ipfixCollector->addIpfixPacketProcessor(ipfixPacketProcessor);
+		msg(MSG_DEBUG, "Adding IpfixPacketProcessor to IpfixCollector");
+		ipfixCollector->addIpfixPacketProcessor(ipfixParser);
 		msg(MSG_DEBUG, "Successfully set up connction between collector and dbwriter");
 		return;
 	}
