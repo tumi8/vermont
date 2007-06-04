@@ -26,6 +26,8 @@
 #include <list>
 #include <pthread.h>
 #include <stdint.h>
+#include <boost/smart_ptr.hpp>
+#include "IpfixRecord.hpp"
 #include "FlowSink.hpp"
 
 class IpfixParser;
@@ -36,11 +38,8 @@ class IpfixParser;
  */
 class IpfixPacketProcessor {
 	public:
-		IpfixPacketProcessor();
-		~IpfixPacketProcessor();
-
-		IpfixParser* ipfixParser; /**< Contains information about parsing process */
-		pthread_mutex_t mutex; /**< Used to give only one IpfixReceiver access to the IpfixPacketProcessor */
+		virtual ~IpfixPacketProcessor() {};
+		virtual int processPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId) = 0; /**< process (e.g. parse and enqueue) the given raw network packet */
 
 	protected:
 

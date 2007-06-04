@@ -582,20 +582,27 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
  * Process new Message
  * @return 0 on success
  */
-int IpfixParser::processMessage(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceID)
+int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId)
 {
+	pthread_mutex_lock(&mutex);
 	IpfixHeader* header = (IpfixHeader*)message.get();
 	if (ntohs(header->version) == 0x000a) {
-		return processIpfixPacket(message, length, sourceID);
+		int r = processIpfixPacket(message, length, sourceId);
+		pthread_mutex_unlock(&mutex);
+		return r;
 	}
 #ifdef SUPPORT_NETFLOWV9
 	if (ntohs(header->version) == 0x0009) {
-		return processNetflowV9Packet(message, length, sourceID);
+		int r = processNetflowV9Packet(message, length, sourceId);
+		pthread_mutex_unlock(&mutex);
+		return r;
 	}
 	DPRINTF("Bad message version - expected 0x009 or 0x000a, got %#06x\n", ntohs(header->version));
+	pthread_mutex_unlock(&mutex);
 	return -1;
 #else
 	DPRINTF("Bad message version - expected 0x000a, got %#06x\n", ntohs(header->version));
+	pthread_mutex_unlock(&mutex);
 	return -1;
 #endif
 }
@@ -740,14 +747,25 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
  * @return handle to created instance
  */
 IpfixParser::IpfixParser() {
+
+	if (pthread_mutex_init(&mutex, NULL) != 0) {
+		msg(MSG_FATAL, "Could not init mutex");
+		throw std::runtime_error("IpfixParser creation failed");
+	}
+
 	templateBuffer = new TemplateBuffer(this);
+
 }
 
 /**
  * Frees memory used by an IpfixParser.
  */
 IpfixParser::~IpfixParser() {
+
 	delete(templateBuffer);
+
+	pthread_mutex_destroy(&mutex);
+
 }
 
 

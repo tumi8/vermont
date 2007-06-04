@@ -42,31 +42,4 @@
 #include "msg.h"
 #include "IpfixPacketProcessor.hpp"
 
-/**
- * Creates a new @c PacketProcessor.
- * @return handle to the created object
- */
-IpfixPacketProcessor::IpfixPacketProcessor() {
-	if (pthread_mutex_init(&mutex, NULL) != 0) {
-		msg(MSG_FATAL, "Could not init mutex");
-		goto out1;
-	}
-
-	ipfixParser = NULL;
-
-	return;
-out1:
-	throw std::runtime_error("IpfixPacketProcessor creation failed");
-	return;
-}
-
-
-/**
- * Frees memory used by a @c PacketProcessor
- */
-IpfixPacketProcessor::~IpfixPacketProcessor() {
-	//FIXME: who should delete those?
-	//delete ipfixParser;
-	pthread_mutex_destroy(&mutex);
-}
 
