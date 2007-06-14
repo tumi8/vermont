@@ -124,7 +124,9 @@ bool HookingFilter::processPacket(const Packet *p)
 	IpfixRecord::Data *fdata=(IpfixRecord::Data *)p->netHeader;
 	uint32_t pad1;
 	uint8_t pad2;
-	
+
+
+
 	//DPRINTF("hook_entry: length is %d\n", p->data_length);
 
 	/* save IP header */
