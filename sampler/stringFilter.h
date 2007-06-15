@@ -5,56 +5,57 @@
 #ifndef STRINGFILTER_H
 #define STRINGFILTER_H
 
-#include <list>
+#include <vector>
 #include <string>
 #include "msg.h"
 #include "PacketProcessor.h"
 
 
 
-
 class stringFilter:public PacketProcessor
 {
 
-public:
+    public:
 
-  stringFilter ()
-  {
+	stringFilter ()
+	{
 
-  };
+	};
 
-  virtual ~ stringFilter ()
-  {
+	virtual ~ stringFilter ()
+	{
 
-  };
+	};
 
-  void addandFilter (char *string)
-  {
-    andFilters.push_back (string);
-  };
+	void addandFilter (std::string string)
+	{
+	    if(string.size()>0)
+		andFilters.push_back (string);
+	};
 
-  void addnotFilter (char *string)
-  {
-    notFilters.push_back (string);
-  };
+	void addnotFilter (std::string string)
+	{
+	    if(string.size()>0)
+		notFilters.push_back (string);
+	};
 
-  char* hexparser(const char* input);
+	std::string hexparser(const std::string input);
 
-  virtual bool processPacket (const Packet * p);
+	virtual bool processPacket (const Packet * p);
 
-//  int filtertype;
-
-
-protected:
-
-
-  std::list < char *> andFilters;
-  std::list < char *> notFilters;
-
-  bool compare (unsigned char *data, char *toMatch, unsigned int plength);
+	//  int filtertype;
 
 
-//  char *match;
+    protected:
+
+
+	std::vector<std::string> andFilters;
+	std::vector<std::string> notFilters;
+
+	bool compare (unsigned char *data, std::string toMatch, unsigned int plength);
+
+
+	//  char *match;
 
 
 
