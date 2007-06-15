@@ -77,6 +77,7 @@ class Hashtable : public FlowSource {
 		virtual void addFlowSink(FlowSink* flowSink);
 
 		void aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord::Data* data);
+		void ExpaggregateTemplateData(IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi);
 		void aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::Data* data);
 
 		void expireFlows();

@@ -17,6 +17,7 @@
 
 
 class FlowMeteringConfiguration;
+//class ExpressFlowMeteringConfiguration;
 class PacketSelectionConfiguration;
 class PacketReportingConfiguration;
 
@@ -34,12 +35,14 @@ public:
 	void setCaptureLength(int len);
 
 	FlowMeteringConfiguration* getFlowMeteringConfiguration() { return flowMetering; }
+	FlowMeteringConfiguration* getExpressFlowMeteringConfiguration() { return expressflowMetering; }
 	PacketReportingConfiguration* getPacketReportingConfiguration() { return packetReporting; }
 	PacketSelectionConfiguration* getPacketSelectionConfiguration();
 private:
 	PacketSelectionConfiguration* packetSelection;
 	PacketReportingConfiguration* packetReporting;
 	FlowMeteringConfiguration* flowMetering;
+	FlowMeteringConfiguration* expressflowMetering;
 
 	uint16_t observationDomainId;
 	int captureLength;

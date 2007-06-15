@@ -9,11 +9,13 @@
 #include "packetselection_configuration.h"
 #include "packetreporting_configuration.h"
 #include "flowmetering_configuration.h"
+#include "expressflowmetering_configuration.h"
 #include "dbwriter_configuration.h"
 
 #include <sampler/Filter.h>
 #include <sampler/ExporterSink.h>
 #include <sampler/HookingFilter.h>
+#include <sampler/ExpressHookingFilter.h>
 #include <concentrator/ipfix.hpp>
 
 #include <cctype>
@@ -23,7 +25,7 @@
 
 MeteringConfiguration::MeteringConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
 	: Configuration(document, startPoint), packetSelection(0), packetReporting(0),
-		 flowMetering(0), observationDomainId(0)
+		 flowMetering(0), expressflowMetering(0), observationDomainId(0)
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
@@ -65,6 +67,11 @@ void MeteringConfiguration::configure()
 		} else if (tagMatches(i, "flowMetering")) {
 			flowMetering = new FlowMeteringConfiguration(doc, i);
 			flowMetering->configure();
+		} else if (tagMatches(i, "expressflowMetering")) {
+			expressflowMetering = new FlowMeteringConfiguration(doc, i);
+			expressflowMetering->configure();
+	//		expressflowMetering = new ExpressFlowMeteringConfiguration(doc, i);
+	//		expressflowMetering->configure();
 		} else if (tagMatches(i, "next")) {
 			fillNextVector(i);
 		}
@@ -105,13 +112,23 @@ void MeteringConfiguration::connect(Configuration* c)
 		}
 		if (flowMetering) {
 			if (packetSelection) {
-				msg(MSG_DEBUG, "Setting up HookingFilter");
+				msg(MSG_DEBUG, "Setting up HookingFilter for Standard Aggregator");
 				HookingFilter* h = new HookingFilter(flowMetering->ipfixAggregator);
 				packetSelection->filter->addProcessor(h);
 			}
  			msg(MSG_DEBUG, "Setting up IpfixSender");
  			exporter->createIpfixSender(observationDomainId);
  			flowMetering->ipfixAggregator->addFlowSink(exporter->getIpfixSender());
+		}
+		if (expressflowMetering) {
+			if (packetSelection) {
+				msg(MSG_DEBUG, "Setting up HookingFilter for Express Aggregator.");
+				ExpressHookingFilter* h = new ExpressHookingFilter(expressflowMetering->ipfixAggregator);
+				packetSelection->filter->addProcessor(h);
+			}
+ 			msg(MSG_DEBUG, "Setting up IpfixSender for Express Aggregator");
+ 			exporter->createIpfixSender(observationDomainId);
+ 			expressflowMetering->ipfixAggregator->addFlowSink(exporter->getIpfixSender());
 		}
 		return;
 	}
@@ -123,6 +140,11 @@ void MeteringConfiguration::connect(Configuration* c)
 		if (metering->flowMetering) {
 			HookingFilter* h = new HookingFilter(metering->flowMetering->ipfixAggregator);
 			msg(MSG_INFO, "Added HookingFilter");
+			packetSelection->filter->addProcessor(h);
+		}
+		if (metering->expressflowMetering) {
+			ExpressHookingFilter* h = new ExpressHookingFilter(metering->expressflowMetering->ipfixAggregator);
+			msg(MSG_INFO, "Added HookingFilter for Express Aggregator");
 			packetSelection->filter->addProcessor(h);
 		}
 		if (metering->packetReporting) {
@@ -140,7 +162,7 @@ void MeteringConfiguration::connect(Configuration* c)
 #ifdef DB_SUPPORT_ENABLED
 	DbWriterConfiguration* dbWriterConfiguration = dynamic_cast<DbWriterConfiguration*>(c);
 	if (dbWriterConfiguration) {
-		if (!flowMetering) {
+		if (!flowMetering) || (!expressflowMetering) {
 			throw std::runtime_error("MeteringProcess: Can only be connected to an "
 						 "dbWriter if it does flowMetetering!");
 		}
@@ -169,6 +191,9 @@ void MeteringConfiguration::startSystem()
 	}
 	if (flowMetering) {
 		flowMetering->startSystem();
+	}
+	if (expressflowMetering) {
+		expressflowMetering->startSystem();
 	}
 }
 

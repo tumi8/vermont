@@ -126,6 +126,8 @@ int IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::
 		return -1;
 	}
 
+
+
 	pthread_mutex_lock(&mutex);
 	for (i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->templateDataMatches(ti, data)) {
@@ -136,6 +138,31 @@ int IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::
 	}
 	pthread_mutex_unlock(&mutex);
 
+	return 0;
+}
+
+int IpfixAggregator::onExpDataRecord(IpfixRecord::SourceID* sourceID, uint16_t length, IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi)
+{
+	int i;
+	DPRINTF("ExpressaggregateDataRecord: Got a Data Record\n");
+
+	if(!rules) {
+		msg(MSG_FATAL, "ExpressAggregator not started");
+		return -1;
+	}
+
+
+	pthread_mutex_lock(&mutex);
+	for (i = 0; i < rules->count; i++) {
+		//if (ExpresstemplateDataMatchesRule(data, rules->rule[i], pdata)) {
+			if (rules->rule[i]->ExptemplateDataMatches(ip_data, th_data, classi)) {
+			DPRINTF("onExpDataRecord: rule %d matches\n", i);
+			//ExpressaggregateTemplateData(rules->rule[i]->hashtable, data, pdata);
+			((Hashtable*)rules->rule[i]->hashtable)->ExpaggregateTemplateData(ip_data, th_data, classi);
+		}
+	}
+	pthread_mutex_unlock(&mutex);
+	
 	return 0;
 }
 

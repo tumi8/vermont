@@ -4,6 +4,7 @@
 #include "collector_configuration.h"
 #include "exporter_configuration.h"
 #include "flowmetering_configuration.h"
+//#include "expressflowmetering_configuration.h"
 #include "vermontmain_configuration.h"
 #include "dbwriter_configuration.h"
 #include "dbreader_configuration.h"
@@ -190,8 +191,12 @@ void IpfixConfiguration::connectSubsystems()
 			MeteringConfiguration* m = dynamic_cast<MeteringConfiguration*>(c);
 			if (m) {
 				FlowMeteringConfiguration* fm = m->getFlowMeteringConfiguration();
-				if (fm) 
+				FlowMeteringConfiguration* efm = m->getExpressFlowMeteringConfiguration();
+			if (fm) 
 					aggregators.push_back(fm->getIpfixAggregator());
+			if (efm)
+			                aggregators.push_back(efm->getIpfixAggregator());
+
 			}
 
 			const std::vector<std::string>& nextVector = c->getNextVector();

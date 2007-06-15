@@ -59,6 +59,7 @@ class FlowSink {
 	protected:
 		// Allow HookingFilter to directly call FlowSink::onDataRecord
 		friend class HookingFilter;
+		friend class ExpressHookingFilter;
 
 		/**
 		 * Callback function invoked when a new Template arrives.
@@ -93,6 +94,7 @@ class FlowSink {
 		 * @return 0 if packet handled successfully
 		 */
 		virtual int onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data) { return -1; };
+		virtual int onExpDataRecord(IpfixRecord::SourceID* sourceID, uint16_t length, IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi) { return -1; };
 
 		/**
 		 * Callback function invoked when a new Options Record arrives.

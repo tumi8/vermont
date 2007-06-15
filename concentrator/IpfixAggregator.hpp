@@ -42,6 +42,7 @@ class IpfixAggregator : public FlowSink {
 		void stop();
 
 		int onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* ti, uint16_t length, IpfixRecord::Data* data);
+		int onExpDataRecord(IpfixRecord::SourceID* sourceID, uint16_t length, IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi);
 		int onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* ti, uint16_t length, IpfixRecord::Data* data);
 
 		void poll();

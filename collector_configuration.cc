@@ -7,6 +7,7 @@
 #include "collector_configuration.h"
 #include "metering_configuration.h"
 #include "flowmetering_configuration.h"
+#include "expressflowmetering_configuration.h"
 #include "exporter_configuration.h"
 #include "dbwriter_configuration.h"
 

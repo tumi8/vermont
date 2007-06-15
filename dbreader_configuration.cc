@@ -9,6 +9,7 @@
 #include "exporter_configuration.h"
 #include "metering_configuration.h"
 #include "flowmetering_configuration.h"
+#include "expressflowmetering_configuration.h"
 #include "msg.h"
 
 
@@ -85,7 +86,7 @@ void DbReaderConfiguration::connect(Configuration* c)
 			throw std::runtime_error("DBReaderConfiguration: Cannot connect to an metering process that does not do flowmetering");
 		}
 		msg(MSG_INFO, "DBReaderConfiguration: Adding dbreader-callbacks to aggregator");
-		IpfixAggregator* aggregator = fm->getIpfixAggregator();
+		IpfixaGGREgator* aggregator = fm->getIpfixAggregator();
 		ipfixDbReader->addFlowSink(aggregator);
 		msg(MSG_INFO, "DbReaderConfiguration: Successfully set up connection between dbReader and metering process");
 		

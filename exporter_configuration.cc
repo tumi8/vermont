@@ -154,7 +154,7 @@ void ExporterConfiguration::createIpfixSender(uint16_t observationDomainId)
 	}
 	if(templateRefreshTime || templateRefreshRate)
 	{
-	    msg(MSG_ERROR, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
+	    msg(MSG_ERROR, "Exporter: Configuration of templateRefreshRate/Time not yet supported..");
 	}
 	for (unsigned i = 1; i != collectors.size(); ++i) {
 		if (ipfixSender->addCollector(collectors[i]->ipAddress.c_str(), collectors[i]->port)) {
