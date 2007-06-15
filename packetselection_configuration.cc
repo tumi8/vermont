@@ -91,52 +91,34 @@ void PacketSelectionConfiguration::configure()
 			}
 			filter->addProcessor(new RandomSampler(n, N));
 		} else if (tagMatches(i, "stringFilter")) {
-
-			stringFilter* sfilter = new stringFilter();
 			xmlNodePtr j = i->xmlChildrenNode;
+			stringFilter* sfilter = new stringFilter();
+			msg(MSG_INFO, "packetSelection: Creating string filter");
 			while (NULL != j) {
-				if (tagMatches(j, "matchString")) {
-					xmlNodePtr k = j->xmlChildrenNode;
-						while (NULL != k) {
-							if (tagMatches(k, "is")) {
-								xmlChar *stype;
-								char *tmp = new char[getContent(k).length() + 1];
-								stype = xmlGetProp(k, (const xmlChar *)"type");
-								if(strncmp((const char*)stype, "HEX", 3) == 0) {
-									tmp = sfilter->hexparser(getContent(k).c_str());
-								} else {
-									strcpy(tmp, getContent(k).c_str());
-								}
-								sfilter->addandFilter(tmp);
-							} else if (tagMatches(k, "isnot")) {
-								xmlChar *stype;
-								char *tmp = new char[getContent(k).length() + 1];
-								stype = xmlGetProp(k, (const xmlChar *)"type");
-								if(strncmp((const char*)stype, "HEX", 3) == 0) {
-									tmp = sfilter->hexparser(getContent(k).c_str());
-								} else {
-									strcpy(tmp, getContent(k).c_str());
-								}
-								sfilter->addnotFilter(tmp);
-							}
-							k = k->next;
-						}
+				if (tagMatches(j, "is")) {
+					xmlChar *stype = xmlGetProp(j, (const xmlChar*)"type");
+					std::string str = getContent(j);
+					if(!xmlStrcmp(stype, (const xmlChar*)"HEX"))
+						sfilter->addandFilter(sfilter->hexparser(str));
+					else
+						sfilter->addandFilter(str);
+				} else if (tagMatches(j, "isnot")) {
+					xmlChar *stype = xmlGetProp(j, (const xmlChar*)"type");
+					if(!xmlStrcmp(stype, (const xmlChar*)"HEX"))
+						sfilter->addnotFilter(sfilter->hexparser(getContent(j)));
+					else
+						sfilter->addnotFilter(getContent(j));
 				}
-
 				j = j->next;
 			}
-			msg(MSG_INFO, "stringFilter: Configuring");
 			filter->addProcessor(sfilter);
-		} else if (tagMatches(i, "uniProb")) {
-			msg(MSG_ERROR, "packetSelection: uniProb not yet implemented!");
-		} else if (tagMatches(i, "regexFilter")) {
-			regExFilter* rfilter = new regExFilter();
-			msg(MSG_INFO, "packetSelection: regexFilter configuring!");
+		} else if (tagMatches(i, "regExFilter")) {
 			xmlNodePtr j = i->xmlChildrenNode;
+			regExFilter* rfilter = new regExFilter();
+			msg(MSG_INFO, "packetSelection: Creating regular expression filter!");
 			while (NULL != j) {
 				if (tagMatches(j, "matchPattern")) {
 					rfilter->match = getContent(j);
-				//	strcpy(rfilter->match, getContent(j).c_str());
 				}
 				j = j->next;
 			}
@@ -144,7 +126,8 @@ void PacketSelectionConfiguration::configure()
 			rfilter->regcre();
 			filter->addProcessor(rfilter);
 
-
+		} else if (tagMatches(i, "uniProb")) {
+			msg(MSG_ERROR, "packetSelection: uniProb not yet implemented!");
 		} else if (tagMatches(i, "nonUniProb")) {
 			msg(MSG_ERROR, "packetSelection: nonUniProb not yet implemented");
 		} else if (tagMatches(i, "flowState")) {
