@@ -90,6 +90,11 @@ AC_CHECK_HEADER([boost/smart_ptr.hpp],
                 [AC_MSG_ERROR([*** could not use boost/smart_ptr.hpp. Please install the Boost header files.])])
 AC_LANG_POP(C++)
 
+# check for Boost Regex
+AC_CHECK_HEADER([boost/regex.hpp],
+                [],
+                [AC_MSG_ERROR([*** could not use boost/regex.hpp. Please install the Boost Regex libraries.])])
+
 AC_CONFIG_FILES([Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile])
 
 AC_OUTPUT
