@@ -25,7 +25,9 @@
 #include <memory>
 #include <boost/smart_ptr.hpp>
 #include <stdexcept>
+#include "ipfix.hpp"
 #include "../sampler/Lock.h"
+#include "../sampler/Packet.h"
 
 #define MAX_ADDRESS_LEN 16
 
@@ -80,6 +82,9 @@ class IpfixRecord {
 				return getFieldInfo(type->id, type->eid);
 			}
 
+//			IpfixRecord::Data* getFieldPointer(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* pdata) {
+//				return getFieldPointer(type->id, &pdata);
+//			}
 			/**
 			 * Gets a Template's FieldInfo by field id. Length is ignored.
 			 * @param fieldTypeId FieldInfo::Type id to look for
@@ -96,6 +101,176 @@ class IpfixRecord {
 				}
 
 				return NULL;
+			}
+
+			/**
+			 * gets a types length
+			 **/
+			int getFieldLength(IpfixRecord::FieldInfo::Type type) {
+
+			int type_length;
+
+			switch (type.id) {
+			case IPFIX_TYPEID_packetDeltaCount:
+			type_length = 1;
+			return type_length;
+			break;
+
+			case IPFIX_TYPEID_flowStartSeconds:
+			type_length = 4;
+			return type_length;
+			break;
+
+			case IPFIX_TYPEID_flowStartMilliSeconds:
+			type_length = 8;
+			return type_length;
+			break;
+
+			case IPFIX_TYPEID_flowEndSeconds:
+			type_length = 4;
+			return type_length;
+			break;
+
+			case IPFIX_TYPEID_flowEndMilliSeconds:
+			type_length = 8;
+			return type_length;
+			break;
+
+			case IPFIX_TYPEID_octetDeltaCount:
+			type_length = 2;
+			return type_length;
+			break;
+
+			case IPFIX_TYPEID_protocolIdentifier:
+			type_length = 1;
+			return type_length;
+			break;
+
+			case IPFIX_TYPEID_sourceIPv4Address:
+			type_length = 4;
+			return type_length;
+			break;
+
+			case IPFIX_TYPEID_destinationIPv4Address:
+			type_length = 4;
+			return type_length;
+			break;
+
+			case IPFIX_TYPEID_icmpTypeCode:
+			type_length = 4;
+			return type_length;
+			break;
+
+			case IPFIX_TYPEID_sourceTransportPort:
+			type_length = 2;
+			return type_length;
+			break;
+	
+			case IPFIX_TYPEID_destinationTransportPort:
+			type_length = 2;
+			return type_length;
+			break;
+
+			case IPFIX_TYPEID_tcpControlBits:
+			type_length = 1;
+			return type_length;
+			break;
+
+			default:
+			return 999;
+			break;
+			}
+	
+			return 999;
+			}
+
+
+
+			IpfixRecord::Data* getFieldPointer(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi) {
+				
+				//IpfixRecord::Data* idata=(IpfixRecord::Data *)pdata->shit;
+
+
+				switch (type.id) {
+				case IPFIX_TYPEID_packetDeltaCount:
+				return ip_data + 10;
+				break;
+
+				case IPFIX_TYPEID_flowStartSeconds:
+				return ip_data + 4;	
+				break;
+
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+				return ip_data + 0;	
+				break;
+
+				case IPFIX_TYPEID_flowEndSeconds:
+				return ip_data + 4;
+				break;
+
+				case IPFIX_TYPEID_flowEndMilliSeconds:
+				return ip_data + 0;
+				break;
+
+				case IPFIX_TYPEID_octetDeltaCount:
+				return ip_data + 2;
+				break;
+
+				case IPFIX_TYPEID_protocolIdentifier:
+				return ip_data + 9;
+				break;
+
+				case IPFIX_TYPEID_sourceIPv4Address:
+				return ip_data + 12;
+				break;
+
+				case IPFIX_TYPEID_destinationIPv4Address:
+				return ip_data + 16;
+				break;
+
+				case IPFIX_TYPEID_icmpTypeCode:
+				if(classi == 0) {
+//					IpfixRecord::Data* tdata=(IpfixRecord::Data *)pdata->transport_header;
+					return th_data + 0;
+				} else {
+					return NULL;
+				}
+				break;
+
+				case IPFIX_TYPEID_sourceTransportPort:
+				if((classi == 1) || (classi == 2)) {
+				//	IpfixRecord::Data* tdata=(IpfixRecord::Data *)pdata->transport_header;
+					return th_data + 0;
+				} else {
+					return NULL;
+				}
+				break;
+
+				case IPFIX_TYPEID_destinationTransportPort:
+				if((classi == 1) || (classi == 2)) {
+				//	IpfixRecord::Data* tdata=(IpfixRecord::Data *)pdata->transport_header;
+					return th_data + 2;
+				} else {
+					return NULL;
+				}
+				break;
+
+				case IPFIX_TYPEID_tcpControlBits:
+				if(classi == 1) {
+				//	IpfixRecord::Data* tdata=(IpfixRecord::Data *)pdata->transport_header;
+					return th_data + 13;
+				} else {
+					return NULL;
+				}
+				break;	
+
+				default:
+				return NULL;
+				break;
+				}
+
+				return NULL;
+
 			}
 
 			uint16_t templateId; /**< the template id assigned to this template or 0 if we don't know or don't care */
@@ -140,6 +315,8 @@ class IpfixRecord {
 			IpfixRecord::FieldInfo* getFieldInfo(IpfixRecord::FieldInfo::Type* type) {
 				return getFieldInfo(type->id, type->eid);
 			}
+
+
 
 			/**
 			 * Gets a DataTemplate's FieldInfo by field id. Length is ignored.

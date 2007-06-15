@@ -605,6 +605,90 @@ void copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData,
 	}
 }
 
+void ExpcopyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData, IpfixRecord::FieldInfo::Type* srcType, IpfixRecord::Data* srcData, Rule::Field::Modifier modifier)
+{
+	if((dstType->id != srcType->id)) {
+		DPRINTF("copyData: Tried to copy field to destination of different type\n");
+		return;
+	}
+
+	/* Copy data, care for length differences */
+	if(dstType->length == srcType->length) {
+		memcpy(dstData, srcData, srcType->length);
+
+	} else if(dstType->length > srcType->length) {
+
+		/* TODO: We simply pad with zeroes - will this always be correct? */
+		if((dstType->id == IPFIX_TYPEID_sourceIPv4Address) || (dstType->id == IPFIX_TYPEID_destinationIPv4Address)) {
+			/* Fields of type IPv4Address-type are padded on the right */
+			bzero(dstData, dstType->length);
+			memcpy(dstData, srcData, srcType->length);
+		} else {
+			/* TODO: all other types are padded on the left, i.e. the "big" end */
+			bzero(dstData, dstType->length);
+			memcpy(dstData + dstType->length - srcType->length, srcData, srcType->length);
+		}
+
+	} else {
+		DPRINTF("Target buffer too small. Buffer expected %s of length %d, got one with length %d\n", typeid2string(dstType->id), dstType->length, srcType->length);
+		return;
+	}
+
+	/* Apply modifier */
+	if(modifier == Rule::Field::DISCARD) {
+		DPRINTF("Tried to copy data w/ having field modifier set to discard\n");
+		return;
+	} else if((modifier == Rule::Field::KEEP) || (modifier == Rule::Field::AGGREGATE)) {
+
+	} else if((modifier >= Rule::Field::MASK_START) && (modifier <= Rule::Field::MASK_END)) {
+
+		if((dstType->id != IPFIX_TYPEID_sourceIPv4Address) && (dstType->id != IPFIX_TYPEID_destinationIPv4Address)) {
+			DPRINTF("Tried to apply mask to %s field\n", typeid2string(dstType->id));
+			return;
+		}
+
+		if (dstType->length != 5) {
+			DPRINTF("Destination data to short - no room to store mask\n");
+			return;
+		}
+
+		uint8_t imask = 32 - (modifier - (int)Rule::Field::MASK_START);
+		dstData[4] = imask; /* store the inverse network mask */
+
+		if (imask > 0) {
+			if (imask == 8) {
+				dstData[3] = 0x00;
+			} else if (imask == 16) {
+				dstData[2] = 0x00;
+				dstData[3] = 0x00;
+			} else if (imask == 24) {
+				dstData[1] = 0x00;
+				dstData[2] = 0x00;
+				dstData[3] = 0x00;
+			} else if (imask == 32) {
+				dstData[0] = 0x00;
+				dstData[1] = 0x00;
+				dstData[2] = 0x00;
+				dstData[3] = 0x00;
+			} else {
+				int pattern = 0;
+				int i;
+				for(i = 0; i < imask; i++) {
+					pattern |= (1 << i);
+				}
+
+				*(uint32_t*)dstData = htonl(ntohl(*(uint32_t*)(dstData)) & ~pattern);
+			}
+		}
+
+	} else {
+		DPRINTF("Unhandled field modifier: %d\n", modifier);
+		return;
+	}
+}
+
+
+
 /**
  * Buffer passed flow in Hashtable @c ht
  */
@@ -671,6 +755,46 @@ void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord
 	/* ...then buffer it */
 	bufferDataBlock(htdata);
 }
+
+/**
+ * Buffer passed flow for Express aggregator
+ */
+void Hashtable::ExpaggregateTemplateData(IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi)
+{
+	int i;
+        DPRINTF("Hashtable::ExpaggregateTemplateData called");
+	IpfixRecord::TemplateInfo* ti = NULL;
+
+	/* Create data block to be inserted into buffer... */
+	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength]);
+
+	for (i = 0; i < dataTemplate->fieldCount; i++) {
+		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+		IpfixRecord::Data* tfi = ti->getFieldPointer(hfi->type, ip_data, th_data, classi);
+		IpfixRecord::FieldInfo* fi = (IpfixRecord::FieldInfo*)malloc(1 * sizeof(IpfixRecord::FieldInfo));
+		fi->type.id = hfi->type.id;
+		fi->type.length = ti->getFieldLength(hfi->type);
+
+
+		if(!tfi) {
+			DPRINTF("Flow to be buffered did not contain %s field\n", typeid2string(hfi->type.id));
+			continue;
+		}
+
+                DPRINTF("Hashtable::ExpaggregateTemplateData: copyData for type %d, starting from pointer %X", fi->type.id, tfi);
+                DPRINTF("Hashtable::ExpaggregateTemplateData: copyData to offset %X", hfi->offset);
+		ExpcopyData(&hfi->type, htdata.get() + hfi->offset, &fi->type, tfi, fieldModifier[i]);
+
+		/* copy associated mask, should there be one */
+	}
+
+	/* ...then buffer it */
+	bufferDataBlock(htdata);
+}
+
+
+
+
 
 /**
  * Buffer passed flow (containing fixed-value fields) in Hashtable @c ht

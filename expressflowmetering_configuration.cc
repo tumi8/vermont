@@ -4,17 +4,17 @@
 */
 
 
-#include "flowmetering_configuration.h"
+#include "expressflowmetering_configuration.h"
 #include "msg.h"
 
 
-FlowMeteringConfiguration::FlowMeteringConfiguration(xmlDocPtr doc, xmlNodePtr start)
+ExpressFlowMeteringConfiguration::ExpressFlowMeteringConfiguration(xmlDocPtr doc, xmlNodePtr start)
 	: Configuration(doc, start), ipfixAggregator(0), running(false)
 {
 
 }
 
-FlowMeteringConfiguration::~FlowMeteringConfiguration()
+ExpressFlowMeteringConfiguration::~ExpressFlowMeteringConfiguration()
 {
 	if (ipfixAggregator) {
 		stopSystem();
@@ -22,9 +22,9 @@ FlowMeteringConfiguration::~FlowMeteringConfiguration()
 	}
 }
 
-void FlowMeteringConfiguration::configure()
+void ExpressFlowMeteringConfiguration::configure()
 {
-	msg(MSG_INFO, "FlowMeteringConfiguration: Start reading flowMetering section");
+	msg(MSG_INFO, "ExpressFlowMeteringConfiguration: Start reading expressflowMetering section");
 	xmlNodePtr i = start->xmlChildrenNode;
 
 // 	if (!observationIdSet) {
@@ -47,9 +47,9 @@ void FlowMeteringConfiguration::configure()
 
 			while (NULL != j) {
 				if (tagMatches(j, "activeTimeout")) {
-					maxBufferTime = getTimeInSecs(j);
-				} else if (tagMatches(j, "inactiveTimeout")) {
 					minBufferTime = getTimeInSecs(j);
+				} else if (tagMatches(j, "inactiveTimeout")) {
+					maxBufferTime = getTimeInSecs(j);
 				}
 				j = j->next;
 			}
@@ -59,17 +59,17 @@ void FlowMeteringConfiguration::configure()
 
 	ipfixAggregator = new IpfixAggregator(rules, minBufferTime, maxBufferTime);
 	if (!ipfixAggregator) {
-		throw std::runtime_error("MeteringConfiguration: Could not create aggreagtor");
+		throw std::runtime_error("MeteringConfiguration: Could not create aggregator");
 	}
-	msg(MSG_INFO, "FlowMeteringConfiguration: Successfully parsed flowMetering section");
+	msg(MSG_INFO, "FlowMeteringConfiguration: Successfully parsed flowMetering section for Express Aggregator");
 }
 
-void FlowMeteringConfiguration::setUp()
+void ExpressFlowMeteringConfiguration::setUp()
 {
 	// nothing to perform before connect()
 }
 
-Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
+Rule* ExpressFlowMeteringConfiguration::readRule(xmlNodePtr p) {
 	// nonflowkey -> aggregate
 	// flowkey -> keep
 
@@ -83,7 +83,7 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 			try {
 				InfoElementId ie(i, *this);
 				Rule::Field* ruleField = new Rule::Field();
-				if (ie.getModifier().empty() || (ie.getModifier() == "keep")) {
+				if (ie.getModifier().empty()) {
 					ruleField->modifier = Rule::Field::KEEP;
 				} else if (ie.getModifier() == "discard") {
 					ruleField->modifier = Rule::Field::DISCARD;
@@ -138,11 +138,7 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 						}
 						break;
 					case IPFIX_TYPEID_sourceTransportPort:
-					case IPFIX_TYPEID_udpSourcePort:
-					case IPFIX_TYPEID_tcpSourcePort:
 					case IPFIX_TYPEID_destinationTransportPort:
-					case IPFIX_TYPEID_udpDestinationPort:
-					case IPFIX_TYPEID_tcpDestinationPort:
 						if (parsePortPattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
 							msg(MSG_ERROR, "Bad PortRanges pattern \"%s\"", tmp);
 							throw std::exception();
@@ -196,20 +192,20 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 }
 
 
-void FlowMeteringConfiguration::connect(Configuration*)
+void ExpressFlowMeteringConfiguration::connect(Configuration*)
 {
 }
 
-void FlowMeteringConfiguration::startSystem()
+void ExpressFlowMeteringConfiguration::startSystem()
 {
 	if (running) return;
-	msg(MSG_DEBUG, "Starting aggregator.");
+	msg(MSG_DEBUG, "Starting Express aggregator");
 	ipfixAggregator->start();
 	ipfixAggregator->runSink();
 	running = true;
 }
 
-void FlowMeteringConfiguration::stopSystem()
+void ExpressFlowMeteringConfiguration::stopSystem()
 {
 	if (!running) return;
 	msg(MSG_DEBUG, "Stopping aggregator");

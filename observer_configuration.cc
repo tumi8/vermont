@@ -8,6 +8,7 @@
 #include "metering_configuration.h"
 #include "packetselection_configuration.h"
 #include "flowmetering_configuration.h"
+#include "expressflowmetering_configuration.h"
 #include "msg.h"
 
 #include <sampler/Template.h>
