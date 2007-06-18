@@ -15,7 +15,21 @@ dbreader_configuration.h dbreader_configuration.cc \
 expressflowmetering_configuration.h expressflowmetering_configuration.cc
 
 AM_CFLAGS=-I$(top_srcdir) `xml2-config --cflags` $(MYSQL_CFLAGS) -Wall -Werror -DDEBUG
-AM_CXXFLAGS=$(AM_CFLAGS) 
-AM_LDFLAGS=-L$(top_builddir)/concentrator -L$(top_builddir)/sampler -L$(top_builddir)/ipfixlolib `xml2-config --libs` $(MYSQL_LDFLAGS) -lboost_regex
-vermont_LDADD=$(top_builddir)/concentrator/libconcentrator.a $(top_builddir)/sampler/libsampler.a $(top_builddir)/ipfixlolib/libipfixlo.a -lpcap -lpthread
-vermont_DEPENDENCIES=$(top_builddir)/concentrator/libconcentrator.a $(top_builddir)/sampler/libsampler.a $(top_builddir)/ipfixlolib/libipfixlo.a
+AM_CXXFLAGS=$(AM_CFLAGS) $(BOOST_CPPFLAGS)
+AM_LDFLAGS=-L$(top_builddir)/concentrator \
+	-L$(top_builddir)/ipfixlolib \
+	-L$(top_builddir)/sampler \
+	`xml2-config --libs` \
+	$(MYSQL_LDFLAGS) \
+	$(BOOST_LDFLAGS)
+
+vermont_LDADD=$(top_builddir)/concentrator/libconcentrator.a \
+	$(top_builddir)/ipfixlolib/libipfixlo.a \
+	$(top_builddir)/sampler/libsampler.a \
+	-lpcap \
+	-lpthread \
+	$(BOOST_REGEX_LIB)
+
+vermont_DEPENDENCIES=$(top_builddir)/concentrator/libconcentrator.a \
+	$(top_builddir)/ipfixlolib/libipfixlo.a \
+	$(top_builddir)/sampler/libsampler.a

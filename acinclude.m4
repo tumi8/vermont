@@ -316,3 +316,6 @@ AC_DEFUN([AX_LIB_MYSQL],
     AC_SUBST([MYSQL_CFLAGS])
     AC_SUBST([MYSQL_LDFLAGS])
 ])
+
+m4_include([m4/ax_boost_base.m4])
+m4_include([m4/ax_boost_regex.m4])

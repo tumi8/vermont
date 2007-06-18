@@ -21,6 +21,15 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
 
+# check for Boost headers
+AX_BOOST_BASE([1.33.1])
+
+# check for Boost Regex
+AX_BOOST_REGEX
+if test "x$BOOST_REGEX_LIB" = "x"; then
+	AC_MSG_ERROR([*** Boost Regex libraries not installed. Please install them.])
+fi
+
 AC_CHECK_HEADERS(stdio.h unistd.h signal.h stdlib.h stdint.h string.h)
 AC_CHECK_HEADERS(time.h assert.h stdint.h errno.h netinet/in.h arpa/inet.h)
 AC_CHECK_HEADERS(sys/socket.h sys/types.h sys/uio.h sys/time.h netdb.h semaphore.h)
@@ -82,18 +91,6 @@ AC_CHECK_LIB([pcap], [pcap_open_live],
              [LDFLAGS="$LDFLAGS -lpcap"
               AC_SUBST(LDFLAGS)],
              [AC_MSG_ERROR([*** could not find libpcap. Please install it.])])
-
-# check for Boost headers
-AC_LANG_PUSH(C++)
-AC_CHECK_HEADER([boost/smart_ptr.hpp],
-                [],
-                [AC_MSG_ERROR([*** could not use boost/smart_ptr.hpp. Please install the Boost header files.])])
-AC_LANG_POP(C++)
-
-# check for Boost Regex
-AC_CHECK_HEADER([boost/regex.hpp],
-                [],
-                [AC_MSG_ERROR([*** could not use boost/regex.hpp. Please install the Boost Regex libraries.])])
 
 AC_CONFIG_FILES([Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile])
 
