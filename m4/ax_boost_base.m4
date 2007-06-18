@@ -1,4 +1,6 @@
-##### http://autoconf-archive.cryp.to/ax_boost_base.html
+#************************************************************************
+# This check was borrowed (slightly modified) from:
+# http://autoconf-archive.cryp.to/ax_boost_base.html
 #
 # SYNOPSIS
 #
@@ -58,7 +60,7 @@ if test "x$want_boost" = "xyes"; then
 	boost_lib_version_req_sub_minor=`expr $boost_lib_version_req : '[[0-9]]*\.[[0-9]]*\.\([[0-9]]*\)'`
 	if test "x$boost_lib_version_req_sub_minor" = "x" ; then
 		boost_lib_version_req_sub_minor="0"
-    	fi
+	fi
 	WANT_BOOST_VERSION=`expr $boost_lib_version_req_major \* 100000 \+  $boost_lib_version_req_minor \* 100 \+ $boost_lib_version_req_sub_minor`
 	AC_MSG_CHECKING(for boostlib >= $boost_lib_version_req)
 	succeeded=no
@@ -88,7 +90,7 @@ if test "x$want_boost" = "xyes"; then
 	export LDFLAGS
 
 	AC_LANG_PUSH(C++)
-     	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 	@%:@include <boost/version.hpp>
 	]], [[
 	#if BOOST_VERSION >= $WANT_BOOST_VERSION
@@ -100,8 +102,8 @@ if test "x$want_boost" = "xyes"; then
         AC_MSG_RESULT(yes)
 	succeeded=yes
 	found_system=yes
-       	],[
-       	])
+	],[
+	])
 	AC_LANG_POP([C++])
 
 
@@ -111,7 +113,7 @@ if test "x$want_boost" = "xyes"; then
 	if test "x$succeeded" != "xyes"; then
 		_version=0
 		if test "$ac_boost_path" != ""; then
-               		BOOST_LDFLAGS="-L$ac_boost_path/lib"
+			BOOST_LDFLAGS="-L$ac_boost_path/lib"
 			if test -d "$ac_boost_path" && test -r "$ac_boost_path"; then
 				for i in `ls -d $ac_boost_path/include/boost-* 2>/dev/null`; do
 					_version_tmp=`echo $i | sed "s#$ac_boost_path##" | sed 's/\/include\/boost-//' | sed 's/_/./'`
@@ -131,7 +133,7 @@ if test "x$want_boost" = "xyes"; then
 						V_CHECK=`expr $_version_tmp \> $_version`
 						if test "$V_CHECK" = "1" ; then
 							_version=$_version_tmp
-	               					best_path=$ac_boost_path
+							best_path=$ac_boost_path
 						fi
 					done
 				fi
@@ -141,11 +143,11 @@ if test "x$want_boost" = "xyes"; then
 			BOOST_CPPFLAGS="-I$best_path/include/boost-$VERSION_UNDERSCORE"
 			BOOST_LDFLAGS="-L$best_path/lib"
 
-	    		if test "x$BOOST_ROOT" != "x"; then
+			if test "x$BOOST_ROOT" != "x"; then
 				if test -d "$BOOST_ROOT" && test -r "$BOOST_ROOT" && test -d "$BOOST_ROOT/stage/lib" && test -r "$BOOST_ROOT/stage/lib"; then
 					version_dir=`expr //$BOOST_ROOT : '.*/\(.*\)'`
 					stage_version=`echo $version_dir | sed 's/boost_//' | sed 's/_/./g'`
-			        	stage_version_shorten=`expr $stage_version : '\([[0-9]]*\.[[0-9]]*\)'`
+					stage_version_shorten=`expr $stage_version : '\([[0-9]]*\.[[0-9]]*\)'`
 					V_CHECK=`expr $stage_version_shorten \>\= $_version`
 				        if test "$V_CHECK" = "1" ; then
 						AC_MSG_NOTICE(We will use a staged boost library from $BOOST_ROOT)
@@ -153,7 +155,7 @@ if test "x$want_boost" = "xyes"; then
 						BOOST_LDFLAGS="-L$BOOST_ROOT/stage/lib"
 					fi
 				fi
-	    		fi
+			fi
 		fi
 
 		CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
@@ -162,7 +164,7 @@ if test "x$want_boost" = "xyes"; then
 		export LDFLAGS
 
 		AC_LANG_PUSH(C++)
-	     	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 		@%:@include <boost/version.hpp>
 		]], [[
 		#if BOOST_VERSION >= $WANT_BOOST_VERSION
@@ -171,11 +173,11 @@ if test "x$want_boost" = "xyes"; then
 		#  error Boost version is too old
 		#endif
 		]])],[
-        	AC_MSG_RESULT(yes)
+		AC_MSG_RESULT(yes)
 		succeeded=yes
 		found_system=yes
-       		],[
-	       	])
+		],[
+		])
 		AC_LANG_POP([C++])
 	fi
 
@@ -188,11 +190,11 @@ if test "x$want_boost" = "xyes"; then
 	else
 		AC_SUBST(BOOST_CPPFLAGS)
 		AC_SUBST(BOOST_LDFLAGS)
-		AC_DEFINE(HAVE_BOOST,,[define if the Boost library is available])
+		AC_DEFINE(HAVE_BOOST,1,[define if the Boost library is available])
 	fi
 
         CPPFLAGS="$CPPFLAGS_SAVED"
-       	LDFLAGS="$LDFLAGS_SAVED"
+	LDFLAGS="$LDFLAGS_SAVED"
 fi
 
 ])
