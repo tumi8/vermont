@@ -83,17 +83,24 @@ AC_CHECK_LIB([pcap], [pcap_open_live],
               AC_SUBST(LDFLAGS)],
              [AC_MSG_ERROR([*** could not find libpcap. Please install it.])])
 
+
+# find Boost headers and libs
+AX_BOOST_BASE([1.33.1])
+AX_BOOST_REGEX
+
 # check for Boost headers
 AC_LANG_PUSH(C++)
 AC_CHECK_HEADER([boost/smart_ptr.hpp],
                 [],
                 [AC_MSG_ERROR([*** could not use boost/smart_ptr.hpp. Please install the Boost header files.])])
 AC_LANG_POP(C++)
-
+ 
 # check for Boost Regex
+AC_LANG_PUSH(C++)
 AC_CHECK_HEADER([boost/regex.hpp],
                 [],
                 [AC_MSG_ERROR([*** could not use boost/regex.hpp. Please install the Boost Regex libraries.])])
+AC_LANG_POP(C++)
 
 AC_CONFIG_FILES([Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile])
 
