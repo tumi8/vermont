@@ -232,17 +232,20 @@ void IpfixConfiguration::pollAggregatorLoop()
 		poll_interval = m->getPollInterval();
 	}
 
-	timespec req, rem;
+	timespec req;
         /* break millisecond polltime into seconds and nanoseconds */
         req.tv_sec=(poll_interval * 1000000) / 1000000000;
         req.tv_nsec=(poll_interval * 1000000) % 1000000000;
 
 	if (poll_interval == 0 || aggregators.empty()) {
-		pause();
+		while (pause() == -1 and errno == EINTR);
 	} else {
 	        msg(MSG_INFO, "Polling aggregator each %u msec", poll_interval);
 		while (!stop) {
-			nanosleep(&req, &rem);
+			// restart nanosleep with the remaining sleep time
+			// if we got interrupted by a signal
+			while (nanosleep(&req, &req) == -1 && errno == EINTR);
+
 			for (unsigned i = 0; i != aggregators.size(); ++i) {
 				aggregators[i]->poll();
 			}
