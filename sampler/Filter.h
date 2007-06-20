@@ -32,6 +32,9 @@ class Filter : public PacketReceiver
 public:
         Filter() : thread(Filter::filterProcess), hasReceiver_(false), exitFlag(false),  pktIn(0), pktOut(0)
         {
+#if defined(DEBUG)
+	    queue->debugSetOwner("Filter");
+#endif
         }
 
         ~Filter()
@@ -40,7 +43,7 @@ public:
 
         bool startFilter()
         {
-                msg(MSG_DEBUG, "Filter: now starting Filter thread");
+                msg(MSG_DEBUG, "now starting Filter thread");
                 return(thread.run(this));
         }
 

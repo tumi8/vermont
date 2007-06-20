@@ -13,111 +13,168 @@
 #define CONCURRENT_QUEUE_H
 
 #include <queue>
-#include "Lock.h"
+#include <string>
+#include "Mutex.h"
 #include "TimeoutSemaphore.h"
 #include "msg.h"
 
 template<class T>
-        class ConcurrentQueue
+class ConcurrentQueue
 {
-public:
-        ConcurrentQueue() : pushedCount(0), poppedCount(0), queue(), count(0), lock(), semaphore()
-        {
-        };
+	public:
+		/**
+		 * default queue size
+		 */
+		const static int DEFAULT_QUEUE_SIZE = 1000;
 
-        ~ConcurrentQueue()
-        {
-                if(count != 0) {
-                        msg(MSG_DEBUG, "ConcurrentQueue: WARNING: freeing non-empty queue - got count: %d", count);
-                }
-        };
+		ConcurrentQueue(int maxEntries = DEFAULT_QUEUE_SIZE) 
+			: pushedCount(0), poppedCount(0), queue(), count(0), lock(), popSemaphore(), pushSemaphore(maxEntries)
+		{
+			this->maxEntries = maxEntries;
+		};
 
-        inline void push(T t)
-        {
-                lock.lock();
-                queue.push(t);
-		pushedCount++;
-		count++;
-                lock.unlock();
-
-                semaphore.post();
-        };
-
-        inline T pop()
-        {
-                T result;
-
-                semaphore.wait();
-
-                lock.lock();
-                result = queue.front();
-                queue.pop();
-		poppedCount++;
-		count--;
-                lock.unlock();
-
-                return result;
-        };
-
-	// try to pop an entry from the queue before timeout occurs
-	// if successful, res will hold the popped entry and true will be returned
-	// of the timeout has been reached, res will be set to NULL and false will be returned
-	// *******************
-	// *** DEPRECATED, use pop_abs instead
-	// *******************
-	inline bool pop(long timeout_ms, T *res)
-	{
-		// try to get an item from the queue
-		if(!semaphore.wait(timeout_ms)) {
-			// timeout occured
-			return false;
+		~ConcurrentQueue()
+		{
+			if(count != 0) {
+				msg(MSG_DEBUG, "WARNING: freeing non-empty queue - got count: %d", count);
+			}
+		};
+#ifdef DEBUG
+		void debugSetOwner(std::string name)
+		{
+			debugOwner = name;
 		}
-		
-		// semaphore.wait() succeeded, now pop the frontmost element
-		lock.lock();
-		*res = queue.front();
-		queue.pop();
-		poppedCount++;
-		count--;
-		lock.unlock();
+#endif
 
-		return true;
-	}
+		inline void push(T t)
+		{
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to push element (%d elements in queue)", debugOwner.c_str(), count);
+#if defined(DEBUG)
+			bool waiting = false;
+			if (pushSemaphore.getCount() == 0) {
+				waiting = true;
+				DPRINTFL(MSG_DEBUG, "(%s) queue is full with %d elements, waiting ...", debugOwner.c_str(), count);
+			}
+#endif
+			if (!pushSemaphore.wait()) {
+				DPRINTF("(%s) failed to push element, program is being shut down?", debugOwner.c_str());
+				return;
+			}
+#if defined(DEBUG)
+			if (waiting) DPRINTF("(%s) pushing element now", debugOwner.c_str());
+#endif
 
-	// like pop above, but with absolute time instead of delta.
-	// use this instead of the above, makes things easier!
-	inline bool popAbs(const struct timeval &timeout, T *res)
-	{
-		if(!semaphore.waitAbs(timeout)) {
-			// timeout occured
-			*res = 0;
-			return false;
+			lock.lock();
+			queue.push(t);
+			pushedCount++;
+			count++;
+			lock.unlock();
+
+			popSemaphore.post();
+			DPRINTFL(MSG_VDEBUG, "(%s) element pushed (%d elements in queue)", debugOwner.c_str(), maxEntries-pushSemaphore.getCount(), pushSemaphore.getCount(), maxEntries);
+		};
+
+		inline bool pop(T* res)
+		{
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", debugOwner.c_str(), maxEntries-pushSemaphore.getCount());
+			if (!popSemaphore.wait()) {
+				DPRINTF("(%s) failed to pop element, program is being shut down?", debugOwner.c_str());
+				return false;
+			}
+
+			lock.lock();
+			*res = queue.front();
+			queue.pop();
+			poppedCount++;
+			count--;
+			lock.unlock();
+
+			pushSemaphore.post();
+
+			DPRINTFL(MSG_VDEBUG, "(%s) element popped", debugOwner.c_str());
+
+			return true;
+		};
+
+		// try to pop an entry from the queue before timeout occurs
+		// if successful, res will hold the popped entry and true will be returned
+		// of the timeout has been reached, res will be set to NULL and false will be returned
+		// *******************
+		// *** DEPRECATED, use pop_abs instead
+		// *******************
+		inline bool pop(long timeout_ms, T *res)
+		{
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", debugOwner.c_str(), count);
+			// try to get an item from the queue
+			if(!popSemaphore.wait(timeout_ms)) {
+				// timeout occured
+				DPRINTFL(MSG_VDEBUG, "(%s) timeout", debugOwner.c_str());
+				return false;
+			}
+
+			// popSemaphore.wait() succeeded, now pop the frontmost element
+			lock.lock();
+			*res = queue.front();
+			queue.pop();
+			poppedCount++;
+			count--;
+			lock.unlock();
+
+			pushSemaphore.post();
+
+			DPRINTFL(MSG_VDEBUG, "(%s) element popped", debugOwner.c_str());
+
+			return true;
 		}
 
-		// semaphore.wait() succeeded, now pop the frontmost element
-		lock.lock();
-		*res = queue.front();
-		queue.pop();
-		poppedCount++;
-		count--;
-		lock.unlock();
+		// like pop above, but with absolute time instead of delta.
+		// use this instead of the above, makes things easier!
+		inline bool popAbs(const struct timeval &timeout, T *res)
+		{
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", debugOwner.c_str(), count);
 
-		return true;
-	}
+			
+			if (popSemaphore.waitAbs(timeout)) {
+				// popSemaphore.wait() succeeded, now pop the frontmost element
+				lock.lock();
+				*res = queue.front();
+				queue.pop();
+				poppedCount++;
+				count--;
+				lock.unlock();
 
-        inline int getCount() const
-        {
-                return count;
-        };
+				pushSemaphore.post();
 
-	int pushedCount;
-	int poppedCount;
+				DPRINTFL(MSG_VDEBUG, "(%s) element popped", debugOwner.c_str());
 
-protected:
-        std::queue<T> queue;
-        int count;
-        Lock lock;
-        TimeoutSemaphore semaphore;
+				return true;
+			} else {
+				// timeout occured
+				DPRINTFL(MSG_VDEBUG, "(%s) timeout or program shutdown", debugOwner.c_str());
+				*res = 0;
+
+				return false;
+			}
+		}
+
+		inline int getCount() const
+		{
+			return count;
+		};
+
+		int pushedCount;
+		int poppedCount;
+		int maxEntries;
+
+	protected:
+		std::queue<T> queue;
+		int count;
+		Mutex lock;
+		TimeoutSemaphore popSemaphore;
+		TimeoutSemaphore pushSemaphore;
+#ifdef DEBUG
+		std::string debugOwner;
+#endif
 };
 
 #endif

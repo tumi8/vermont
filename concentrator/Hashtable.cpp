@@ -173,8 +173,8 @@ void Hashtable::expireFlows() {
 		while (bucket != 0) {
 			Hashtable::Bucket* nextBucket = (Hashtable::Bucket*)bucket->next;
 			if ((now > bucket->expireTime) || (now > bucket->forceExpireTime)) {
-				if(now > bucket->expireTime) DPRINTF("expireFlows: normal expiry\n");
-				if(now > bucket->forceExpireTime) DPRINTF("expireFlows: forced expiry\n");
+				if(now > bucket->forceExpireTime)  DPRINTF("expireFlows: forced expiry");
+				else if(now > bucket->expireTime)  DPRINTF("expireFlows: normal expiry");
 
 				exportBucket(bucket);
 				destroyBucket(bucket);
@@ -310,7 +310,7 @@ int Hashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::D
 	case IPFIX_TYPEID_flowStartMicroSeconds:
 	case IPFIX_TYPEID_flowStartNanoSeconds:
 		if (type->length != 4) {
-			DPRINTF("Hashtable::aggregateField: unsupported length %d for type %d", type->length, type->id);
+			DPRINTF("unsupported length %d for type %d", type->length, type->id);
                         goto out;
 		}
 
@@ -319,7 +319,7 @@ int Hashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::D
 
 	case IPFIX_TYPEID_flowStartMilliSeconds:
 		if (type->length != 8) {
-			DPRINTF("Hashtable::aggregateField: unsupported length %d for type %d", type->length, type->id);
+			DPRINTF("unsupported length %d for type %d", type->length, type->id);
                         goto out;
 		}
 
@@ -331,7 +331,7 @@ int Hashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::D
 	case IPFIX_TYPEID_flowEndMicroSeconds:
 	case IPFIX_TYPEID_flowEndNanoSeconds:
 		if (type->length != 4) {
-			DPRINTF("Hashtable::aggregateField: unsupported length %d for type %d", type->length, type->id);
+			DPRINTF("unsupported length %d for type %d", type->length, type->id);
 			goto out;
 		}
 
@@ -340,7 +340,7 @@ int Hashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::D
 
 	case IPFIX_TYPEID_flowEndMilliSeconds:
 		if (type->length != 8) {
-			DPRINTF("Hashtable::aggregateField: unsupported length %d for type %d", type->length, type->id);
+			DPRINTF("unsupported length %d for type %d", type->length, type->id);
                         goto out;
 		}
 
@@ -368,13 +368,13 @@ int Hashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::D
 			*(uint64_t*)baseData = addUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
                         return 0;
 		default:
-			DPRINTF("Hashtable::aggregateField: unsupported length %d for type %d", type->length, type->id);
+			DPRINTF("unsupported length %d for type %d", type->length, type->id);
 			goto out;
 		}
 		break;
 
 	default:
-		DPRINTF("Hashtable::aggregateField: non-aggregatable type: %d", type->id);
+		DPRINTF("non-aggregatable type: %d", type->id);
                 goto out;
 		break;
 	}
@@ -709,8 +709,8 @@ void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord
 			continue;
 		}
 
-                DPRINTF("Hashtable::aggregateTemplateData: copyData for type %d, offset %x, starting from pointer %X", tfi->type.id, tfi->offset, data+tfi->offset);
-                DPRINTF("Hashtable::aggregateTemplateData: copyData to offset %X", hfi->offset);
+                DPRINTFL(MSG_VDEBUG, "copyData for type %d, offset %x, starting from pointer %X", tfi->type.id, tfi->offset, data+tfi->offset);
+                DPRINTFL(MSG_VDEBUG, "copyData to offset %X", hfi->offset);
 		copyData(&hfi->type, htdata.get() + hfi->offset, &tfi->type, data + tfi->offset, fieldModifier[i]);
 
 		/* copy associated mask, should there be one */
@@ -801,7 +801,7 @@ void Hashtable::ExpaggregateTemplateData(IpfixRecord::Data* ip_data, IpfixRecord
  */
 void Hashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::Data* data)
 {
-        DPRINTF("Hashtable::aggregateDataTemplateData called");
+        DPRINTF("called");
 	int i;
 
 	/* Create data block to be inserted into buffer... */
@@ -899,7 +899,7 @@ void Hashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, Ipf
 			continue;
 		}
 
-		msg(MSG_FATAL, "AggregateDataTemplateData: Flow to be buffered did not contain %s field", typeid2string(hfi->type.id));
+		msg(MSG_FATAL, "Flow to be buffered did not contain %s field", typeid2string(hfi->type.id));
 		continue;
 	}
 

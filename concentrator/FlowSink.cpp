@@ -21,19 +21,30 @@
 #include "msg.h"
 #include "FlowSink.hpp"
 
-FlowSink::FlowSink() : thread(flowSinkProcess), exitFlag(false) {
+FlowSink::FlowSink() 
+    : ipfixRecords(), thread(flowSinkProcess), exitFlag(false) 
+{
+    DPRINTF("initialized with a queue size of %d", ipfixRecords.getCount());
+}
+
+FlowSink::FlowSink(int queueSize) 
+    : ipfixRecords(queueSize), thread(flowSinkProcess), exitFlag(false) 
+{
+    DPRINTF("initialized with a queue size of %d", queueSize);
 }
 
 FlowSink::~FlowSink() {
-	msg(MSG_DEBUG, "FlowSink: destructor called");
+	msg(MSG_DEBUG, "destructor called");
 	terminateSink();
 }
 
-void FlowSink::push(boost::shared_ptr<IpfixRecord> ipfixRecord) {
+void FlowSink::push(boost::shared_ptr<IpfixRecord> ipfixRecord) 
+{
 	ipfixRecords.push(ipfixRecord);
 }
 
-void* FlowSink::flowSinkProcess(void* flowSink_) {
+void* FlowSink::flowSinkProcess(void* flowSink_) 
+{
 	FlowSink* flowSink = (FlowSink*)flowSink_;
 	flowSink->flowSinkProcess();
 	return 0;
@@ -41,10 +52,10 @@ void* FlowSink::flowSinkProcess(void* flowSink_) {
 
 void FlowSink::flowSinkProcess()
 {
-	msg(MSG_INFO, "Sink: now running FlowSink thread");
+	msg(MSG_INFO, "now running FlowSink thread");
 	while(!exitFlag) {
 		boost::shared_ptr<IpfixRecord> ipfixRecord;
-		if (!ipfixRecords.pop(1000, &ipfixRecord)) continue;
+		if (!ipfixRecords.pop(&ipfixRecord)) break;
 		{
 			IpfixDataRecord* rec = dynamic_cast<IpfixDataRecord*>(ipfixRecord.get());
 			if (rec) onDataRecord(rec->sourceID.get(), rec->templateInfo.get(), rec->dataLength, rec->data);
@@ -90,9 +101,15 @@ bool FlowSink::runSink() {
 
 bool FlowSink::terminateSink() {
 	exitFlag = true;
-	msg(MSG_DEBUG, "FlowSink: waiting for exporter thread");
+	msg(MSG_DEBUG, "waiting for exporter thread");
 	thread.join();
-	msg(MSG_DEBUG, "FlowSink: exporter thread joined");
+	msg(MSG_DEBUG, "exporter thread joined");
 	return true;
 }
 
+#if defined(DEBUG)
+void FlowSink::debugSetSinkOwner(char* owner)
+{
+	ipfixRecords.debugSetOwner(owner);
+}
+#endif

@@ -147,9 +147,9 @@ public:
 	bool checkPacketConformity(unsigned long packet_classification)
 	{
 	    unsigned i;
-	    DPRINTF("Packet class: %lx\n", packet_classification);
+	    DPRINTFL(MSG_VDEBUG, "Packet class: %lx", packet_classification);
 	    for(i=0; i<fieldCount; i++) {
-		DPRINTF("Field id: %u class: %lx\n", fieldType[i], fieldValidPacketClasses[i]);
+		DPRINTFL(MSG_VDEBUG, "Field id: %u class: %lx", fieldType[i], fieldValidPacketClasses[i]);
 		// skip meta-fields
 		if(!(fieldType[i] > 0x8000))
 		    // check if packet class supports this field

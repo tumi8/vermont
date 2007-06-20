@@ -43,7 +43,7 @@ void VermontMainConfiguration::startSystem()
 
 	FILE* FD;
 	if(!(FD=fopen(logfile.c_str(), "a"))) {
-	        throw std::runtime_error( "Main: could not init message subsystem, opening log " + logfile+ "failed");
+	        THROWEXCEPTION( "Main: could not init message subsystem, opening log %s failed", logfile.c_str());
 	}
 
 	/*
@@ -58,19 +58,20 @@ void VermontMainConfiguration::startSystem()
 	/*
 	  set up the logger thread
 	*/
-	if(log_interval == 0) {
+	// is not setup right now, because we don't need any statistics
+	/*if(log_interval == 0) {
 		msg(MSG_DEBUG, "Main: logging thread disabled");
 	} else {
-		/* set up logging thread */
+		// set up logging thread 
 		msg(MSG_DEBUG, "Main: logging all %d milliseconds", log_interval);
 		msg_thread_set_timeout(log_interval);
 	}
 	
 	if (-1 == (msg_stat_setup(MSG_SETUP_NEW, FD))) {
-		throw std::runtime_error("Main: Could not set up msg logging thread");
+		THROWEXCEPTION("Main: Could not set up msg logging thread");
 	}
 
-	msg_thread_start();
+	msg_thread_start();*/
 }
 
 void VermontMainConfiguration::stopSystem()
@@ -79,10 +80,10 @@ void VermontMainConfiguration::stopSystem()
 		return;
 	}
 
-	msg_thread_stop();
+	//msg_thread_stop();
 }
 
 void VermontMainConfiguration::connect(Configuration*)
 {
-	throw std::runtime_error("Cannot connect anything to VermontMainConfiguration");
+	THROWEXCEPTION("Cannot connect anything to VermontMainConfiguration");
 }

@@ -501,7 +501,7 @@ out3:
 out2:
 	free(dbReader);
 out1:
-	throw std::runtime_error("IpfixDbReader creation failed");
+	THROWEXCEPTION("IpfixDbReader creation failed");
 	return;
 }
 

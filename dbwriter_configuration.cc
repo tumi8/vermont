@@ -14,7 +14,7 @@ DbWriterConfiguration::DbWriterConfiguration(xmlDocPtr document, xmlNodePtr star
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
-		throw std::runtime_error("Got dbwriter without unique id!");
+		THROWEXCEPTION("Got dbwriter without unique id!");
 	}
 	id = configTypes::dbwriter + (const char*)idString;
 	xmlFree(idString);
@@ -63,20 +63,20 @@ void DbWriterConfiguration::configure()
 void DbWriterConfiguration::setUp()
 {
         if (dbName == "") {
-                throw std::runtime_error("DBWriterConfigurations: No database name given!");
+                THROWEXCEPTION("DBWriterConfigurations: No database name given!");
         }
 
 	dbWriter = new IpfixDbWriter(hostName.c_str(), dbName.c_str(),
 				       userName.c_str(), password.c_str(),
 				       portNumber, observationDomainId, bufferRecords);
 	if (!dbWriter) {
-		throw std::runtime_error("DbWriterConfiguration: Could not create IpfixDbWriter");
+		THROWEXCEPTION("DbWriterConfiguration: Could not create IpfixDbWriter");
 	}
 }
 
 void DbWriterConfiguration::connect(Configuration*)
 {
-	throw std::runtime_error("DbWriter is an end target and cannot be connected to something!");
+	THROWEXCEPTION("DbWriter is an end target and cannot be connected to something!");
 }
 
 void DbWriterConfiguration::startSystem()

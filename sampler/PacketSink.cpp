@@ -15,17 +15,19 @@
 
 using namespace std;
 
+// tobi_optimize: this is a useless thread, it just exists to clean up old packets
+// this can be done by the filter too
 void *PacketSink::packetSinkProcess(void *arg)
 {
         PacketSink *sink = (PacketSink *)arg;
         ConcurrentQueue<Packet*> *queue = sink->getQueue();
         Packet *p;
 
-        msg(MSG_INFO, "Sink: now running PacketSink thread");
+        msg(MSG_INFO, "now running PacketSink thread");
         while(!sink->exitFlag) {
-                if (!queue->pop(1000, &p)) continue;
+                if (!queue->pop(&p)) break;
+		DPRINTF("dropping packet");
                 p->release();
-                DPRINTF("SINK: free packet");
         }
 	return 0;
 }

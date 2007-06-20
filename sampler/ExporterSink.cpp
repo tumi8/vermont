@@ -39,7 +39,7 @@ using namespace std;
 void ExporterSink::startNewPacketStream()
 {
     unsigned short net_tmplid = htons(templ->getTemplateID());
-    DPRINTF("Starting new packet stream\n");
+    DPRINTF("Starting new packet stream");
     ipfix_start_data_set(exporter, net_tmplid);
 }
 
@@ -56,7 +56,8 @@ bool ExporterSink::addPacket(Packet *pck)
     // first check, if we can buffer this packet
     if(!(numPacketsToRelease < MAX_PACKETS)) 
     {
-	msg(MSG_ERROR, "ExporterSink: packet buffer too small, packet dropped.");
+	msg(MSG_ERROR, "packet buffer too small, packet dropped.");
+	DPRINTF("dropping packet");
 	pck->release();
 	return false;
     }
@@ -127,20 +128,20 @@ bool ExporterSink::addPacket(Packet *pck)
     }
     else
     {
-	DPRINTF("Packet does not contain all fields required by the template! Skip this packet.\n");
+	DPRINTF("Packet does not contain all fields required by the template! Skip this packet.");
 	ret = false;
     }
 
     // if we will export the packet, we keep and and release it later, after we have sent the data
     if(ret == true)
     {
-	DPRINTF("Adding packet to buffer\n");
+	DPRINTF("Adding packet to buffer");
 	packetsToRelease[numPacketsToRelease++] = pck;
     }
     else
     {
 	// we do no export this packet, i.e. we can release it right now.
-	DPRINTF("Releasing packet\n");
+	DPRINTF("dropping packet");
 	pck->release();
     }
 
@@ -154,12 +155,12 @@ void ExporterSink::flushPacketStream()
     ipfix_end_data_set(exporter);
     ipfix_send(exporter);
 
-    DPRINTF("Flushing %d packets from buffer\n", numPacketsToRelease);
+    DPRINTF("dropping %d packets", numPacketsToRelease);
     for(int i = 0; i < numPacketsToRelease; i++) {
 	(packetsToRelease[i])->release();
     }
     // now release the additional metadata fields
-    DPRINTF("Flushing %d Metadata fields from buffer\n", numMetaFieldsToRelease);
+    DPRINTF("Flushing %d Metadata fields from buffer", numMetaFieldsToRelease);
     for(int i = 0; i < numMetaFieldsToRelease; i++) {
 	free(metaFieldsToRelease[i]);
     }
@@ -185,17 +186,13 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 
 		// let's get the first packet
 		gettimeofday(&deadline, 0);
-		deadline.tv_sec++; // let's wait one second before checking exitFlag again
-		do
-		{
-		    result = queue->popAbs(deadline, &p);
-		    if(sink->exitFlag)
-			break;
-		    if(result == true)
+		
+		result = queue->pop(&p);
+
+	    if(result == true) {
 			// we got a packet, so let's add the record
 			result = sink->addPacket(p);
 		}
-		while(result == false);
 			
 		pckCount = 1;
 
@@ -212,8 +209,7 @@ void *ExporterSink::exporterSinkProcess(void *arg)
 			result = queue->popAbs(deadline, &p);
 
 			// check for timeout and break loop if neccessary
-			if(!result)
-				break;
+			if (!result) break;
 
 			// no timeout received, continue waiting, but
 
@@ -241,6 +237,6 @@ bool ExporterSink::addCollector(const char *address, unsigned short port, const 
 		return false;
 	}
 
-	DPRINTF("Adding %s://%s:%d\n", protocol, address, port);
+	DPRINTF("Adding %s://%s:%d", protocol, address, port);
 	return(ipfix_add_collector(exporter, address, port, proto) == 0);
 }

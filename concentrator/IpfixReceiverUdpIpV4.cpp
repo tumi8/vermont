@@ -45,7 +45,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port) {
 	listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
 	if(listen_socket < 0) {
 		perror("Could not create socket");
-		throw std::runtime_error("Cannot create IpfixReceiverUdpIpV4");
+		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4");
 	}
 	
 	exit = 0;
@@ -56,7 +56,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port) {
 	if(bind(listen_socket, (struct sockaddr*)&serverAddress, 
 		sizeof(struct sockaddr_in)) < 0) {
 		perror("Could not bind socket");
-		throw std::runtime_error("Cannot create IpfixReceiverUdpIpV4");
+		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4");
 	}
 	return;
 }

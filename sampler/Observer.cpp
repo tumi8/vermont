@@ -29,16 +29,16 @@ Observer::~Observer()
     pcap_stat pstats;
     if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
         msg(MSG_DIALOG, "PCAP statistics:");
-        msg(MSG_DIALOG, "Number of packets received: %u", pstats.ps_recv);
-        msg(MSG_DIALOG, "Number of packets dropped: %u", pstats.ps_drop);
+        msg(MSG_DIALOG, "Number of packets received on interface: %u", pstats.ps_recv);
+        msg(MSG_DIALOG, "Number of packets dropped by PCAP: %u", pstats.ps_drop);
     }
 
     /* be sure the thread is ending */
-    msg(MSG_DEBUG, "Observer: joining the ObserverThread, may take a while (until next pcap data is received)");
+    msg(MSG_DEBUG, "joining the ObserverThread, may take a while (until next pcap data is received)");
     thread.join();
-    msg(MSG_DEBUG, "Observer: ObserverThread joined");
+    msg(MSG_DEBUG, "ObserverThread joined");
 
-    msg(MSG_DEBUG, "Observer: freeing pcap/devices");
+    msg(MSG_DEBUG, "freeing pcap/devices");
     if(captureDevice) {
         pcap_close(captureDevice);
     }
@@ -51,7 +51,7 @@ Observer::~Observer()
 
     free(captureInterface);
     delete[] filter_exp;
-    msg(MSG_DEBUG, "Observer: successful shutdown");
+    msg(MSG_DEBUG, "successful shutdown");
 }
 /*
  This is the main observer loop. It graps packets from libpcap and
@@ -70,7 +70,8 @@ void *Observer::observerThread(void *arg)
 	int numReceivers=obs->receivers.size();
 
 	// start capturing packets
-	msg(MSG_INFO, "Observer: now running capturing thread for device %s", obs->captureInterface);
+	msg(MSG_INFO, "now running capturing thread for device %s", obs->captureInterface);
+
 
 	while(!obs->exitFlag) {
 
@@ -83,7 +84,7 @@ void *Observer::observerThread(void *arg)
 		st.tv_usec = 0;
 		int result = select(FD_SETSIZE, &fd_wait, NULL, NULL, &st);
 		if (result == -1) {
-			msg(MSG_FATAL, "Observer: select() on pcap file descriptor returned -1");
+			msg(MSG_FATAL, "select() on pcap file descriptor returned -1");
 			break;
 		}
 		if (result == 0) {
@@ -97,12 +98,14 @@ void *Observer::observerThread(void *arg)
 		 that can act as a via LD_PRELOAD used overlay function.
 		 unfortunately I don't have an URL ready -Freek
 		 */
+		DPRINTFL(MSG_VDEBUG, "trying to get packet from pcap");
 		pcapData=pcap_next(obs->captureDevice, &packetHeader);
 		if(!pcapData)
 			/* no packet data was available */
 			continue;
+		DPRINTFL(MSG_VDEBUG, "got new packet!");
 
-		if(!(packetData=malloc(packetHeader.caplen))) {
+		if(!(packetData=new char[packetHeader.caplen])) {
 			/*
 			 FIXME!
 			 ALARM - no more memory available
@@ -113,7 +116,7 @@ void *Observer::observerThread(void *arg)
 			 3.2) flush filter?
 			 3.3) sleep?
 			 */
-			msg(MSG_FATAL, "Observer: no more mem for malloc() - may start throwing away packets");
+			msg(MSG_FATAL, "no more mem for malloc() - may start throwing away packets");
 			continue;
 		}
 
@@ -127,27 +130,29 @@ void *Observer::observerThread(void *arg)
 		 */
 		p=new Packet(packetData, packetHeader.caplen, packetHeader.ts, numReceivers);
 
-		DPRINTF("Observer: received packet at %u.%04u, len=%d\n",
-		(unsigned)p->timestamp.tv_sec,
-		(unsigned)p->timestamp.tv_usec / 1000,
-		packetHeader.caplen
-		);
+		DPRINTF("received packet at %u.%04u, len=%d",
+			(unsigned)p->timestamp.tv_sec,
+			(unsigned)p->timestamp.tv_usec / 1000,
+			packetHeader.caplen
+			);
 
 		/* broadcast packet to all receivers */
 		if (!obs->exitFlag) {
 		    for(vector<ConcurrentQueue<Packet*> *>::iterator it = obs->receivers.begin();
 			    it != obs->receivers.end(); ++it) {
 			if ((*it)->getCount() > 100000) {
-			    msg(MSG_FATAL, "Observer: Observer drain clogged, waiting for plumber");
+			    msg(MSG_FATAL, "Observer drain clogged, waiting for plumber");
 			    while ((*it)->getCount() > 10000) sleep(1);
-			    msg(MSG_FATAL, "Observer: drain not clogged any more, resuming operation");
+			    msg(MSG_FATAL, "drain not clogged any more, resuming operation");
 			}
+		    	DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
 			(*it)->push(p);
+		    	DPRINTFL(MSG_VDEBUG, "packet pushed");
 		    }
 		}
 	}
 
-	msg(MSG_DEBUG, "Observer: exiting observer thread");
+	msg(MSG_DEBUG, "exiting observer thread");
 	pthread_exit((void *)1);
 }
 
@@ -170,9 +175,9 @@ bool Observer::prepare(const std::string& filter)
 	struct in_addr i_netmask, i_network;
 
 	// query all available capture devices
-	msg(MSG_INFO, "Observer: Finding devices");
+	msg(MSG_INFO, "Finding devices");
 	if(pcap_findalldevs(&allDevices, errorBuffer) == -1) {
-		msg(MSG_FATAL, "Observer: error getting list of interfaces: %s", errorBuffer);
+		msg(MSG_FATAL, "error getting list of interfaces: %s", errorBuffer);
 		goto out;
 	}
 
@@ -181,19 +186,19 @@ bool Observer::prepare(const std::string& filter)
 	}
 
 	msg(MSG_INFO,
-	    "Observer: pcap opening interface=%s, promisc=%d, snaplen=%d, timeout=%d",
+	    "pcap opening interface=%s, promisc=%d, snaplen=%d, timeout=%d",
 	    captureInterface, pcap_promisc, capturelen, pcap_timeout
 	   );
 	captureDevice=pcap_open_live(captureInterface, capturelen, pcap_promisc, pcap_timeout, errorBuffer);
 	// check for errors
 	if(!captureDevice) {
-		msg(MSG_FATAL, "Observer: Error initializing pcap interface: %s", errorBuffer);
+		msg(MSG_FATAL, "Error initializing pcap interface: %s", errorBuffer);
 		goto out1;
 	}
 
 	// make reads non-blocking
 	if(pcap_setnonblock(captureDevice, 1, errorBuffer) == -1) {
-		msg(MSG_FATAL, "Observer: Error setting pcap interface to non-blocking: %s", errorBuffer);
+		msg(MSG_FATAL, "Error setting pcap interface to non-blocking: %s", errorBuffer);
 		goto out2;
 	}
 
@@ -202,48 +207,48 @@ bool Observer::prepare(const std::string& filter)
 	switch (dataLink) {
 	case DLT_EN10MB:
 		if (IP_HEADER_OFFSET != 14 && IP_HEADER_OFFSET != 18) {
-			msg(MSG_FATAL, "Observer: IP_HEADER_OFFSET on an ethernet device has to be 14 or 18 Bytes. Please adjust that value via configure --with-ipheader-offset");
+			msg(MSG_FATAL, "IP_HEADER_OFFSET on an ethernet device has to be 14 or 18 Bytes. Please adjust that value via configure --with-ipheader-offset");
 			goto out2;
 		}
 		break;
 	case DLT_LOOP:
 	case DLT_NULL:
 		if (IP_HEADER_OFFSET != 4) {
-			msg(MSG_FATAL, "Observer: IP_HEADER_OFFSET on BSD loop back device has to be 4 Bytes. Please adjust that value via configure --with-ipheader-offset");
+			msg(MSG_FATAL, "IP_HEADER_OFFSET on BSD loop back device has to be 4 Bytes. Please adjust that value via configure --with-ipheader-offset");
 			goto out2;
 		}
 		break;
 	default:
-		msg(MSG_ERROR, "Observer: You are using an unkown IP_HEADER_OFFSET and data link combination. This can make problems. Please check if you use the correct IP_HEADER_OFFSET for your data link, if you see strange IPFIX/PSAMP packets.");
+		msg(MSG_ERROR, "You are using an unkown IP_HEADER_OFFSET and data link combination. This can make problems. Please check if you use the correct IP_HEADER_OFFSET for your data link, if you see strange IPFIX/PSAMP packets.");
 	}
 
 
 	/* we need the netmask for the pcap_compile */
 	if(pcap_lookupnet(captureInterface, &network, &netmask, errorBuffer) == -1) {
-		msg(MSG_ERROR, "Observer: unable to determine netmask/network: %s", errorBuffer);
+		msg(MSG_ERROR, "unable to determine netmask/network: %s", errorBuffer);
 		network=0;
 		netmask=0;
 	}
 	i_network.s_addr=network;
 	i_netmask.s_addr=netmask;
-	msg(MSG_DEBUG, "Observer: pcap seems to run on network %s", inet_ntoa(i_network));
-	msg(MSG_INFO, "Observer: pcap seems to run on netmask %s", inet_ntoa(i_netmask));
+	msg(MSG_DEBUG, "pcap seems to run on network %s", inet_ntoa(i_network));
+	msg(MSG_INFO, "pcap seems to run on netmask %s", inet_ntoa(i_netmask));
 
 	if(filter_exp) {
-		msg(MSG_DEBUG, "Observer: compiling pcap filter code from: %s", filter_exp);
+		msg(MSG_DEBUG, "compiling pcap filter code from: %s", filter_exp);
 		if(pcap_compile(captureDevice, &pcap_filter, filter_exp, 1, netmask) == -1) {
-			msg(MSG_FATAL, "Observer: unable to validate+compile pcap filter");
+			msg(MSG_FATAL, "unable to validate+compile pcap filter");
 			goto out2;
 		}
 
 		if(pcap_setfilter(captureDevice, &pcap_filter) == -1) {
-			msg(MSG_FATAL, "Observer: unable to attach filter to pcap: %s", pcap_geterr(captureDevice));
+			msg(MSG_FATAL, "unable to attach filter to pcap: %s", pcap_geterr(captureDevice));
 			goto out3;
 		}
 		/* you may free an attached code, see man-page */
 		pcap_freecode(&pcap_filter);
 	} else {
-		msg(MSG_DEBUG, "Observer: using no pcap filter");
+		msg(MSG_DEBUG, "using no pcap filter");
 	}
 
 	ready=true;
@@ -272,12 +277,10 @@ void Observer::doLogging(void *arg)
 	Observer *obs=(Observer *)arg;
 	struct pcap_stat stats;
 
-	/*
-	 pcap_stats() will set the stats to -1 if something goes wrong
-	 so it is okay if we dont check the return code
-	 */
+	 //pcap_stats() will set the stats to -1 if something goes wrong
+	 //so it is okay if we dont check the return code
 	obs->getPcapStats(&stats);
-	msg_stat("Observer: %6d recv, %6d drop, %6d ifdrop", stats.ps_recv, stats.ps_drop, stats.ps_ifdrop);
+	msg_stat("%6d recv, %6d drop, %6d ifdrop", stats.ps_recv, stats.ps_drop, stats.ps_ifdrop);
 }
 
 
