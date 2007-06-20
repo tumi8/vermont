@@ -19,37 +19,83 @@ typedef void (*LOGFUNCTION)(void *);
 
 /* the maximum number of functions that will be called by the message logger thread */
 #define MAX_LOG_FUNCTIONS 256
-  
 
 /* define for setting up the msg system */
 #define MSG_SETUP_NEW 1
 
+/* function names and source file locations are only to be printed with log messages during debug mode */
+#ifdef DEBUG
+
+	/** should function names including parameter and return types be printed in logging messages? */
+	//#define PRINT_WHOLEFUNCTIONNAME
+
+	/** should source file name and line numbers be printed in logging messages? */
+	//#define PRINT_FILELOCATION
+
+	/** print 'short version' of class + function name by printing filename:function name */
+	#define PRINT_NICELOCATION
+
+#endif
+
+/** Maximum length of exception strings */
+const int EXCEPTION_MAXLEN = 1024;
+
 /* defines for the message system */
 #define MSG_BLANK 256
-#define MSG_INFO 4
-#define MSG_DEBUG 3
-#define MSG_ERROR 2
-#define MSG_DIALOG 1
-#define MSG_FATAL 0
+#define MSG_VDEBUG 5   // mostly for ipfix byte-level messages
+#define MSG_DEBUG 4    // debugging messages, for example used by DPRINTF
+#define MSG_INFO 3     // informational messages, shown without debug-mode but only with verbose logging enabled
+#define MSG_ERROR 2    // error or warning messages which are shown during default execution
+#define MSG_DIALOG 1   // messages which are shown during default execution
+#define MSG_FATAL 0    // fatal messages which are shown every time
 #define MSG_DEFAULT MSG_ERROR
 
-void msg(int, char *, ...);
+
+void msg_init();
+void msg_shutdown();
+void msg2(const int, const char*, const char*, const char*, const int, const char *, ...);
 void msg_setlevel(int);
 int msg_stat(char *fmt, ...);
 int msg_stat_setup(int mode, FILE *f);
+void vermont_exception(const int, const char*, const char*, const char*, const char*, ...);
 
 /* msg_thread functions for the timed logger thread */
-int msg_thread_add_log_function(LOGFUNCTION f, void *param);
-void msg_thread_set_timeout(int ms);
-int msg_thread_start();
-int msg_thread_stop();
-void * msg_thread(void *);
+//int msg_thread_add_log_function(LOGFUNCTION f, void *param);
+//void msg_thread_set_timeout(int ms);
+//int msg_thread_start();
+//int msg_thread_stop();
+//void * msg_thread(void *);
 
-/* well-know DPRINTF() - will be left out if DEBUG not set */
+//#if !defined(__PRETTY_FUNCTION__)
+	//#define __PRETTY_FUNCTION__ "<unknown>"
+//#endif
+
+// useful defines for logging
+#define msg(lvl, fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
+
 #ifdef DEBUG
-#define DPRINTF(fmt, args...) msg(MSG_DEBUG, fmt, ##args)
+
+#define DPRINTF(fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, MSG_DEBUG, fmt, ##args)
+#define DPRINTFL(lvl, fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
+
+#define ASSERT(exp, description)                                                                        \
+    {                                                                                                   \
+        if (exp) {                                                                                      \
+	    vermont_assert(#exp, (description), __LINE__, __FILE__, __PRETTY_FUNCTION__, __func__)      \
+          __asm { int 3 }                                                                               \
+        }                                                                                               \
+      }                                                                                                 \
+    }
+
+#define THROWEXCEPTION(fmt, args...) vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, fmt, ##args)
+
 #else
+
 #define DPRINTF(fmt, args...)
+#define DPRINTFL(lvl, fmt, args...)
+#define ASSERT(exp, description)
+#define THROWEXCEPTION(fmt, args...)
+
 #endif
 
 #ifdef __cplusplus

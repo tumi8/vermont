@@ -29,6 +29,15 @@
 #include "../sampler/Thread.h"
 #include "../sampler/ConcurrentQueue.h"
 
+
+/* For debugging purposes: set name of this FlowSink
+ */
+#if defined(DEBUG)
+#define DSETSINKOWNER(owner) debugSetSinkOwner(owner)
+#else
+#define DSETSINKOWNER(owner)
+#endif
+
 /*
  * IPFIX Flow Sink class
  *
@@ -38,6 +47,8 @@
 class FlowSink {
 
 	public:
+
+		FlowSink(int queueSize);
 		FlowSink();
 		virtual ~FlowSink();
 
@@ -55,6 +66,10 @@ class FlowSink {
 		 * Stop the FlowSink's flowSinkProcess thread
 		 */
 		bool terminateSink();
+
+#if defined(DEBUG)
+		void debugSetSinkOwner(char* owner);
+#endif
 
 	protected:
 		// Allow HookingFilter to directly call FlowSink::onDataRecord

@@ -41,7 +41,7 @@ void PacketReportingConfiguration::configure()
 	}
 
 	if (!gotTemplateId) {
-		throw std::runtime_error("PacketReportingConfiguration: Got PacketReporting without template ID");
+		THROWEXCEPTION("PacketReportingConfiguration: Got PacketReporting without template ID");
 	}
 
 	setUp();

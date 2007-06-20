@@ -750,7 +750,7 @@ IpfixParser::IpfixParser() {
 
 	if (pthread_mutex_init(&mutex, NULL) != 0) {
 		msg(MSG_FATAL, "Could not init mutex");
-		throw std::runtime_error("IpfixParser creation failed");
+		THROWEXCEPTION("IpfixParser creation failed");
 	}
 
 	templateBuffer = new TemplateBuffer(this);

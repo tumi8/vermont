@@ -26,7 +26,7 @@ ObserverConfiguration::ObserverConfiguration(xmlDocPtr document, xmlNodePtr star
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
-		throw std::runtime_error("Got observer without unique id!");
+		THROWEXCEPTION("Got observer without unique id!");
 	}
 	id = configTypes::observer + (const char*)idString;
 	xmlFree(idString);
@@ -49,7 +49,7 @@ void ObserverConfiguration::configure()
 			type = getContent(i);
 			if (type != "pcap") {
 				msg(MSG_FATAL, "Vermont does not provide any observer type but pcap");
-				throw std::runtime_error("Could not read observer configuration");
+				THROWEXCEPTION("Could not read observer configuration");
 			}
 		} else if (tagMatches(i, "parameters")) {
 			parseParameters(i);
@@ -98,7 +98,7 @@ void ObserverConfiguration::setUp()
 	//strncpy(pcapChar, pcapFilter.c_str(), pcapFilter.size() + 1);	
 	if (!observer->prepare(pcapFilter.c_str())) {
 		msg(MSG_FATAL, "Observer: preparing failed");
-		throw std::runtime_error("Observer setup failed!");
+		THROWEXCEPTION("Observer setup failed!");
 	}
 }
 
@@ -121,7 +121,7 @@ void ObserverConfiguration::connect(Configuration* c)
 		return;
 	}
 	
-	throw std::runtime_error("Cannot connect Observer to " + c->getId() + "!");
+	THROWEXCEPTION("Cannot connect Observer to %s!", c->getId().c_str());
 }
 
 void ObserverConfiguration::startSystem()

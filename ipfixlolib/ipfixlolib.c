@@ -240,7 +240,7 @@ int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, int
         int i=0;
         int searching = TRUE;
 
-        DPRINTF("ipfix_add_collector start\n");
+        DPRINTFL(MSG_VDEBUG, "ipfix_add_collector start");
 
         // check, if exporter is valid
         if(exporter == NULL) {
@@ -255,11 +255,11 @@ int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, int
                    );
                 return -1;
         }
-        DPRINTF("ipfix_add_collector searching\n");
+        DPRINTFL(MSG_VDEBUG, "ipfix_add_collector searching");
 
         while (searching && ( i< exporter->collector_max_num) ) {
 
-                DPRINTF("ipfix_add_collector searching %i, i %i \n", searching, i);
+                DPRINTFL(MSG_VDEBUG, "ipfix_add_collector searching %i, i %i ", searching, i);
                 if(exporter->collector_arr[i].valid == FALSE) {
                         // we have found a free slot:
                         /*
@@ -648,7 +648,7 @@ static int ipfix_init_template_array(ipfix_exporter *exporter, int template_capa
 {
         int i;
 
-        DPRINTF("IPFIX - ipfix_init_template_array with elem %d\n", template_capacity);
+        DPRINTFL(MSG_VDEBUG, "IPFIX - ipfix_init_template_array with elem %d", template_capacity);
         // allocate the memory for template_capacity elements:
         exporter->ipfix_lo_template_maxsize  = template_capacity;
         exporter->ipfix_lo_template_current_count = 0 ;
@@ -680,7 +680,7 @@ static int ipfix_deinit_template_array(ipfix_exporter *exporter)
                 // try to free all templates:
                 ret = ipfix_deinit_template_set(exporter, &(exporter->template_arr[i]) );
                 // for debugging:
-                DPRINTF("ipfix_deinit_template_array deinitialized template %i with success %i \n", i, ret);
+                DPRINTFL(MSG_VDEBUG, "ipfix_deinit_template_array deinitialized template %i with success %i ", i, ret);
                 // end debugging
         }
         free(exporter->template_arr);
@@ -783,7 +783,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
                 for (i = 0; i < exporter->collector_max_num; i++) {
                         // is the collector a valid target?
                         if ((*exporter).collector_arr[i].valid) {
-                                DPRINTF("Sending template to exporter %s:%d\n",
+                                DPRINTFL(MSG_VDEBUG, "Sending template to exporter %s:%d",
                                         exporter->collector_arr[i].ipv4address,
                                         exporter->collector_arr[i].port_number
                                        );
@@ -835,25 +835,25 @@ static int ipfix_send_data(ipfix_exporter* exporter)
                         // is the collector a valid target?
                         if(exporter->collector_arr[i].valid) {
 #ifdef DEBUG
-                                DPRINTF("IPFIX: Sending to exporter %s", exporter->collector_arr[i].ipv4address);
+                                DPRINTFL(MSG_VDEBUG, "IPFIX: Sending to exporter %s", exporter->collector_arr[i].ipv4address);
 
                                 // debugging output of data buffer:
-                                DPRINTF("Sendbuffer contains %u bytes",  exporter->data_sendbuffer->committed_data_length );
-                                DPRINTF("Sendbuffer contains %u fields",  exporter->data_sendbuffer->committed );
+                                DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u bytes",  exporter->data_sendbuffer->committed_data_length );
+                                DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u fields",  exporter->data_sendbuffer->committed );
                                 int tested_length = 0;
                                 int j;
-                                int k;
+                                /*int k;*/
                                 for (j =0; j <  exporter->data_sendbuffer->committed; j++) {
                                         if(exporter->data_sendbuffer->entries[j].iov_len > 0 ) {
                                                 tested_length += exporter->data_sendbuffer->entries[j].iov_len;
-                                                DPRINTF ("Data Buffer [%i] has %u bytes", j, exporter->data_sendbuffer->entries[j].iov_len);
+                                                DPRINTFL (MSG_VDEBUG, "Data Buffer [%i] has %u bytes", j, exporter->data_sendbuffer->entries[j].iov_len);
 
-                                                for (k=0; k < exporter->data_sendbuffer->entries[j].iov_len; k++) {
-                                                        DPRINTF ("Data at  buf_vector[%i] pos %i is 0x%hx", j,k,   *(  (char*) ( (*(*exporter).data_sendbuffer).entries[j].iov_base+k) ) );
-                                                }
+                                                /*for (k=0; k < exporter->data_sendbuffer->entries[j].iov_len; k++) {
+                                                        DPRINTFL (MSG_VDEBUG, "Data at  buf_vector[%i] pos %i is 0x%hx", j,k,   *(  (char*) ( (*(*exporter).data_sendbuffer).entries[j].iov_base+k) ) );
+                                                }*/
                                         }
                                 }
-                                DPRINTF("IPFIX: Sendbuffer really contains %u bytes!", tested_length );
+                                DPRINTFL(MSG_VDEBUG, "IPFIX: Sendbuffer really contains %u bytes!", tested_length );
 #endif
 				
                                 ret=writev( exporter->collector_arr[i].data_socket,
@@ -960,7 +960,7 @@ int ipfix_start_data_set(ipfix_exporter *exporter, uint16_t template_id)
         exporter->data_sendbuffer->entries[exporter->data_sendbuffer->current].iov_len = sizeof(ipfix_set_header);
 
         exporter->data_sendbuffer->current++;
-        DPRINTF("start_data_set: exporter->data_sendbuffer->current %i\n", exporter->data_sendbuffer->current);
+        DPRINTF("start_data_set: exporter->data_sendbuffer->current %i", exporter->data_sendbuffer->current);
 
 	// set marker to current in order to avoid deletion of set header with ipfix_cancel_data_fields_upto_marker()
 	exporter->data_sendbuffer->marker = exporter->data_sendbuffer->current;
@@ -1115,12 +1115,12 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
         int found_index = -1;
 	int datatemplate=(fixedfield_count || preceding) ? 1 : 0;
 
-        DPRINTF("ipfix_start_template_set: start\n");
+        DPRINTF("ipfix_start_template_set: start");
         found_index = ipfix_find_template(exporter, template_id, COMMITED);
 
         // have we found a template?
         if(found_index >= 0) {
-                DPRINTF("ipfix_start_template_set: template found at index %i\n", found_index);
+                DPRINTF("ipfix_start_template_set: template found at index %i", found_index);
                 // we must overwrite the old template.
                 // first, clean up the old template:
 
@@ -1130,7 +1130,7 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
                 exporter->template_arr[found_index].template_fields = NULL;
         } else {
                 /* allocate a new, free slot */
-                DPRINTF("ipfix_start_template_set: making new template\n");
+                DPRINTF("ipfix_start_template_set: making new template");
 
                 searching = TRUE;
 
@@ -1143,7 +1143,7 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
                         return -1;
                 }
 
-                DPRINTF("ipfix_start_template_set: found_index: %i,  searching: %i, maxsize: %i\n",
+                DPRINTF("ipfix_start_template_set: found_index: %i,  searching: %i, maxsize: %i",
                         found_index, searching, exporter->ipfix_lo_template_maxsize
                        );
                 i = 0;
@@ -1161,7 +1161,7 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
                                 exporter->template_arr[i].template_fields = NULL;
                                 // TODO: maybe check, if this field is not null. Might only happen, when
                                 // asynchronous threads change the template fields.
-                                DPRINTF("ipfix_start_template_set: free slot found at %i \n", found_index);
+                                DPRINTF("ipfix_start_template_set: free slot found at %i ", found_index);
                         }
                         i++;
                 }
@@ -1176,7 +1176,7 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
                 char *p_pos;
                 char *p_end;
 
-                DPRINTF("ipfix_start_template_set: initializing new slot\n");
+                DPRINTF("ipfix_start_template_set: initializing new slot");
                 // allocate memory for the template's fields:
                 // maximum length of the data: 8 bytes for each field, as one field contains:
                 // field type, field length (2*2bytes)
@@ -1222,8 +1222,8 @@ int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id
 
                 // does this work?
                 // (*exporter).template_arr[found_index].fields_length += 8;
-                DPRINTF("ipfix_start_template_set: max_fields_len %u \n", exporter->template_arr[found_index].max_fields_length);
-                DPRINTF("ipfix_start_template_set: fieldss_len %u \n", exporter->template_arr[found_index].fields_length);
+                DPRINTF("ipfix_start_template_set: max_fields_len %u ", exporter->template_arr[found_index].max_fields_length);
+                DPRINTF("ipfix_start_template_set: fieldss_len %u ", exporter->template_arr[found_index].fields_length);
         } else return -1;
 
         return 0;
@@ -1275,18 +1275,18 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
         // end of the buffer
         p_end = p_pos + exporter->template_arr[found_index].max_fields_length;
 
-        DPRINTF("ipfix_put_template_field: template found at %d\n", found_index);
-        DPRINTF("ipfix_put_template_field: A p_pos %p, p_end %p\n", p_pos, p_end);
-        DPRINTF("ipfix_put_template_field: max_fields_len %d\n", exporter->template_arr[found_index].max_fields_length);
-        DPRINTF("ipfix_put_template_field: fieldss_len %d\n", exporter->template_arr[found_index].fields_length);
+        DPRINTFL(MSG_VDEBUG, "ipfix_put_template_field: template found at %d", found_index);
+        DPRINTFL(MSG_VDEBUG, "ipfix_put_template_field: A p_pos %p, p_end %p", p_pos, p_end);
+        DPRINTFL(MSG_VDEBUG, "ipfix_put_template_field: max_fields_len %d", exporter->template_arr[found_index].max_fields_length);
+        DPRINTFL(MSG_VDEBUG, "ipfix_put_template_field: fieldss_len %d", exporter->template_arr[found_index].fields_length);
 
         // add offset to the buffer's beginning: this is, where we will write to.
         p_pos += exporter->template_arr[found_index].fields_length;
 
-        DPRINTF("ipfix_put_template_field: B p_pos %p, p_end %p\n", p_pos, p_end);
+        DPRINTFL(MSG_VDEBUG, "ipfix_put_template_field: B p_pos %p, p_end %p", p_pos, p_end);
 
         if(enterprise_bit_set) {
-                DPRINTF("Notice: using enterprise ID %d with data %d\n", template_id, enterprise_id);
+                DPRINTFL(MSG_VDEBUG, "Notice: using enterprise ID %d with data %d", template_id, enterprise_id);
         }
 
         // now write the fields to the buffer:
@@ -1342,7 +1342,7 @@ int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void
 
         /* test for a valid slot */
         if ( found_index < 0 || found_index >= exporter->ipfix_lo_template_maxsize ) {
-                fprintf (stderr, "Template not found. \n");
+                fprintf (stderr, "Template not found. ");
                 return -1;
         }
 
@@ -1355,15 +1355,15 @@ int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void
         // end of the buffer
         p_end = p_pos +  (*exporter).template_arr[found_index].max_fields_length;
 
-        DPRINTF("ipfix_put_template_data: template found at %i\n", found_index);
-        DPRINTF("ipfix_put_template_data: A p_pos %p, p_end %p\n", p_pos, p_end);
-        DPRINTF("ipfix_put_template_data: max_fields_len %u \n", (*exporter).template_arr[found_index].max_fields_length);
-        DPRINTF("ipfix_put_template_data: fieldss_len %u \n", (*exporter).template_arr[found_index].fields_length);
+        DPRINTFL(MSG_VDEBUG, "ipfix_put_template_data: template found at %i", found_index);
+        DPRINTFL(MSG_VDEBUG, "ipfix_put_template_data: A p_pos %p, p_end %p", p_pos, p_end);
+        DPRINTFL(MSG_VDEBUG, "ipfix_put_template_data: max_fields_len %u ", (*exporter).template_arr[found_index].max_fields_length);
+        DPRINTFL(MSG_VDEBUG, "ipfix_put_template_data: fieldss_len %u ", (*exporter).template_arr[found_index].fields_length);
 
         // add offset to the buffer's beginning: this is, where we will write to.
         p_pos += (*exporter).template_arr[found_index].fields_length;
 
-        DPRINTF("ipfix_put_template_data: B p_pos %p, p_end %p\n", p_pos, p_end);
+        DPRINTFL(MSG_VDEBUG, "ipfix_put_template_data: B p_pos %p, p_end %p", p_pos, p_end);
 
 	for(i = 0; i < data_length; i++) {
 		ret = write_octet(&p_pos, p_end, *(((uint8_t*)data)+i) );
@@ -1438,7 +1438,7 @@ int ipfix_deinit_template_set(ipfix_exporter *exporter, ipfix_lo_template *templ
         // won't be initialized. So you'll get a lot of warning messages, which are just fine...
 
         if(templ == NULL) {
-                DPRINTF("ipfix_deinit_template_set: Cannot free template. Template is already NULL\n!");
+                DPRINTF("ipfix_deinit_template_set: Cannot free template. Template is already NULL!");
                 return -1;
         }
 
@@ -1452,7 +1452,7 @@ int ipfix_deinit_template_set(ipfix_exporter *exporter, ipfix_lo_template *templ
                 exporter->ipfix_lo_template_current_count--;
 
         } else {
-                DPRINTF("ipfix_deinit_template_set: Cannot free template. Template is UNUSED\n");
+                DPRINTF("ipfix_deinit_template_set: Cannot free template. Template is UNUSED");
                 return -1;
         }
 

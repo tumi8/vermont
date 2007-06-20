@@ -61,10 +61,10 @@ public:
 	bool startCapture()
         {
 		if(ready) {
-			msg(MSG_DEBUG, "Observer: now starting capturing thread");
+			msg(MSG_DEBUG, "now starting capturing thread");
 			return(thread.run(this));
 		}
-		msg(MSG_ERROR, "Observer: trying to start an un-ready observer");
+		msg(MSG_ERROR, "trying to start an un-ready observer");
 		return false;
         };
 
@@ -83,7 +83,7 @@ public:
         {
                 /* we cant change pcap caplen if alredy pcap_open() called */
                 if(ready) {
-                        msg(MSG_ERROR, "Observer: changing capture len on-the-fly is not supported by pcap");
+                        msg(MSG_ERROR, "changing capture len on-the-fly is not supported by pcap");
                         return false;
                 }
 
@@ -104,7 +104,7 @@ public:
         bool setPacketTimeout(int ms)
         {
                 if(ready) {
-                        msg(MSG_ERROR, "Observer: changing read timeout on-the-fly is not supported by pcap");
+                        msg(MSG_ERROR, "changing read timeout on-the-fly is not supported by pcap");
                         return false;
                 }
                 pcap_timeout=ms;

@@ -22,17 +22,20 @@ class PacketSink : public Sink
 public:
         PacketSink() : thread(PacketSink::packetSinkProcess), exitFlag(false)
         {
+#if defined(DEBUG)
+	    queue->debugSetOwner("PacketSink");
+#endif
         };
 
         ~PacketSink()
         {
-                msg(MSG_DEBUG, "Sink: destructor called");
+                msg(MSG_DEBUG, "destructor called");
                 terminateSink();
         };
 
         bool runSink()
         {
-                msg(MSG_DEBUG, "Sink: now starting PacketSink thread");
+                msg(MSG_DEBUG, "now starting PacketSink thread");
                 return(thread.run(this));
         };
 
@@ -41,9 +44,9 @@ public:
         {
                 exitFlag = true;
 
-                msg(MSG_DEBUG, "Sink: waiting for exporter thread");
+                msg(MSG_DEBUG, "waiting for exporter thread");
                 thread.join();
-                msg(MSG_DEBUG, "Sink: exporter thread joined");
+                msg(MSG_DEBUG, "exporter thread joined");
 
                 return true;
         };

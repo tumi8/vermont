@@ -17,6 +17,7 @@ else
   CXXFLAGS="$CXXFLAGS -O3"
 fi
 
+
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
@@ -78,11 +79,25 @@ AS_IF([test "x$enable_db_support" = "xcheck"],
 AC_CHECK_HEADER([pcap.h],
                 [],
                 [AC_MSG_ERROR([*** could not find pcap.h. Please install libpcap.])])
-AC_CHECK_LIB([pcap], [pcap_open_live],
-             [LDFLAGS="$LDFLAGS -lpcap"
-              AC_SUBST(LDFLAGS)],
-             [AC_MSG_ERROR([*** could not find libpcap. Please install it.])])
 
+# configure option for libpcap-mmap
+pcapmmap="no"
+AC_ARG_ENABLE([pcapmmap],
+              [AS_HELP_STRING([--enable-pcapmmap],
+                              [enable libpcap-mmap, libpcap.a MUST be available in directory ../libpcap-mmap])],
+              [pcapmmap="$enableval"], [])
+AM_CONDITIONAL(PCAPMMAP, test x$pcapmmap = xyes)
+# only check for pcap if pcapmmap is not defined
+# (else the custom library is used and will not be checked here)
+if test "x$pcapmmap" = "xno"; then
+    AC_CHECK_LIB([pcap], [pcap_open_live],
+		[LDFLAGS="$LDFLAGS -lpcap"
+		AC_SUBST(LDFLAGS)],
+		[AC_MSG_ERROR([*** could not find libpcap. Please install it.])])
+    AC_MSG_NOTICE([Using standard system libpcap])
+else
+    AC_MSG_NOTICE([Using libpcap-mmap of vermont])
+fi
 
 # find Boost headers and libs
 AX_BOOST_BASE([1.33.1])

@@ -38,9 +38,11 @@ IpfixAggregator::IpfixAggregator(char* ruleFile, uint16_t minBufferTime, uint16_
 	Rules* rules = new Rules(ruleFile);
 
 	if (!rules) {
-		throw std::runtime_error(std::string("Aggregator: could not parse rules file ") + std::string(ruleFile));
+		THROWEXCEPTION("could not parse rules file %s", ruleFile);
 	}
 	buildAggregator(rules, minBufferTime, maxBufferTime);
+
+	DSETSINKOWNER("IpfixAggregator");
 }
 
 /**
@@ -75,7 +77,7 @@ void IpfixAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint
 		msg(MSG_FATAL, "Could not lock mutex");
 	}
 
-	msg(MSG_INFO, "Aggregator: Done. Parsed %d rules; minBufferTime %d, maxBufferTime %d", rules->count, minBufferTime, maxBufferTime);
+	msg(MSG_INFO, "Done. Parsed %d rules; minBufferTime %d, maxBufferTime %d", rules->count, minBufferTime, maxBufferTime);
 }
 
 /**
@@ -119,19 +121,19 @@ void IpfixAggregator::stop() {
 int IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* ti, uint16_t length, IpfixRecord::Data* data)
 {
 	int i;
-	DPRINTF("IpfixAggregator::onDataRecord: Got a Data Record\n");
+	DPRINTF("Got a Data Record\n");
 
 	if(!rules) {
 		msg(MSG_FATAL, "Aggregator not started");
 		return -1;
 	}
 
-
-
+	// tobi_optimize: why the hell is here a mutex?!
+	// is it allowed to specify the hookingfilter to several receivers?
 	pthread_mutex_lock(&mutex);
 	for (i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->templateDataMatches(ti, data)) {
-			DPRINTF("IpfixAggregator::onDataRecord: rule %d matches", i);
+			DPRINTF("rule %d matches", i);
 
 			((Hashtable*)rules->rule[i]->hashtable)->aggregateTemplateData(ti, data);
 		}

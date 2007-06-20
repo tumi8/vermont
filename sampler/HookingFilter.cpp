@@ -39,7 +39,7 @@ HookingFilter::HookingFilter(FlowSink *flowSink) : flowSink(flowSink) {
 	setFieldInfo(&ip_traffic_fi[7], IPFIX_TYPEID_flowStartMilliSeconds, 8, 0);
 	setFieldInfo(&ip_traffic_fi[8], IPFIX_TYPEID_flowEndMilliSeconds, 8, 0);
 
-	icmp_traffic_fi = (IpfixRecord::FieldInfo*)malloc(10 * sizeof(IpfixRecord::FieldInfo));
+	icmp_traffic_fi = new IpfixRecord::FieldInfo[10];
 	setFieldInfo(&icmp_traffic_fi[0], IPFIX_TYPEID_icmpTypeCode, 2, 0);
 	setFieldInfo(&icmp_traffic_fi[1], IPFIX_TYPEID_packetDeltaCount, 1, 10);
 	setFieldInfo(&icmp_traffic_fi[2], IPFIX_TYPEID_flowStartSeconds, 4, 4);
@@ -51,7 +51,7 @@ HookingFilter::HookingFilter(FlowSink *flowSink) : flowSink(flowSink) {
 	setFieldInfo(&icmp_traffic_fi[8], IPFIX_TYPEID_flowStartMilliSeconds, 8, 0);
 	setFieldInfo(&icmp_traffic_fi[9], IPFIX_TYPEID_flowEndMilliSeconds, 8, 0);
 
-	udp_traffic_fi = (IpfixRecord::FieldInfo*)malloc(11 * sizeof(IpfixRecord::FieldInfo));
+	udp_traffic_fi = new IpfixRecord::FieldInfo[11];
 	setFieldInfo(&udp_traffic_fi[0], IPFIX_TYPEID_sourceTransportPort, 2, 0);
 	setFieldInfo(&udp_traffic_fi[1], IPFIX_TYPEID_destinationTransportPort, 2, 2);
 	setFieldInfo(&udp_traffic_fi[2], IPFIX_TYPEID_packetDeltaCount, 1, 10);
@@ -64,7 +64,7 @@ HookingFilter::HookingFilter(FlowSink *flowSink) : flowSink(flowSink) {
 	setFieldInfo(&udp_traffic_fi[9], IPFIX_TYPEID_flowStartMilliSeconds, 8, 0);
 	setFieldInfo(&udp_traffic_fi[10], IPFIX_TYPEID_flowEndMilliSeconds, 8, 0);
 
-	tcp_traffic_fi = (IpfixRecord::FieldInfo*)malloc(12 * sizeof(IpfixRecord::FieldInfo));
+	tcp_traffic_fi = new IpfixRecord::FieldInfo[12];
 	setFieldInfo(&tcp_traffic_fi[0], IPFIX_TYPEID_tcpControlBits, 1, 13);  		// is relative to start of TCP header
 	setFieldInfo(&tcp_traffic_fi[1], IPFIX_TYPEID_sourceTransportPort, 2, 0);
 	setFieldInfo(&tcp_traffic_fi[2], IPFIX_TYPEID_destinationTransportPort, 2, 2);
@@ -117,6 +117,7 @@ HookingFilter::~HookingFilter() {
  */
 bool HookingFilter::processPacket(const Packet *p)
 {
+    	DPRINTFL(MSG_VDEBUG, "called");
 	/* we want only IPv4 packets  */
 	if((p->classification & PCLASS_NET_IP4) == 0)
 	    return true;
@@ -145,12 +146,9 @@ bool HookingFilter::processPacket(const Packet *p)
 	// now we calculate the index for the millisecond data inside the Packet instance
 	// -> REALLY BAD HACK, interface to concentrator MUST be changed
 	char* mstime = (char*)(&p->time_msec_ipfix);
-        DPRINTF("HookingFilter::processPacket: time_msec_ipfix is %llX", p->time_msec_ipfix);
+        DPRINTF("time_msec_ipfix is %llX", p->time_msec_ipfix);
 	int32_t offset = (int32_t)(mstime - (char*)(p->netHeader)); 
-        DPRINTF("HookingFilter::processPacket: offset=%x", offset);
-        DPRINTF("millisec0: %llX", *((uint64_t*)mstime));
-        DPRINTF("millisec1: %lld", *((uint64_t*)(((char*)(p->netHeader))+offset)));
-        DPRINTF("millisec_pointer: %X", ((char*)(p->netHeader))+offset);
+        DPRINTF("offset=%x", offset);
 
 	// Choose template according to transport header type
 	if((p->classification & PCLASS_TRN_ICMP) != 0)
@@ -186,7 +184,6 @@ bool HookingFilter::processPacket(const Packet *p)
 	    tcp_traffic_template->fieldInfo[0].offset += (p->transportHeaderOffset - p->netHeaderOffset);
 	    tcp_traffic_template->fieldInfo[1].offset += (p->transportHeaderOffset - p->netHeaderOffset);
 	    tcp_traffic_template->fieldInfo[2].offset += (p->transportHeaderOffset - p->netHeaderOffset);
-	    flowSink->onDataRecord(NULL, udp_traffic_template, p->data_length, fdata);
 	    flowSink->onDataRecord(NULL, tcp_traffic_template, p->data_length, fdata);
 	    /* reset offsets for srcport/dstport, tcpcontrolbits to starting values */
 	    tcp_traffic_template->fieldInfo[0].offset = 13;

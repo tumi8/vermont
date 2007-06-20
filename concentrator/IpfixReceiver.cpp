@@ -90,7 +90,7 @@ int IpfixReceiver::start() {
 	
 	return 0;
 out1:
-	throw std::runtime_error("IpfixReceiver::startThread: thread creation failed");
+	THROWEXCEPTION("IpfixReceiver::startThread: thread creation failed");
 	return 1;
 }
 
