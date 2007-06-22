@@ -24,10 +24,11 @@ dbreader_configuration.h dbreader_configuration.cc \
 expressflowmetering_configuration.h expressflowmetering_configuration.cc
 
 AM_CFLAGS=-I$(top_srcdir) `xml2-config --cflags` $(MYSQL_CFLAGS) -Wall -Werror
-AM_CXXFLAGS=$(AM_CFLAGS) 
+AM_CXXFLAGS=$(AM_CFLAGS)
 AM_LDFLAGS= \
 	-L$(top_builddir)/concentrator \
-	-L$(top_builddir)/sampler -L$(top_builddir)/ipfixlolib \
+	-L$(top_builddir)/sampler \
+	-L$(top_builddir)/ipfixlolib \
 	`xml2-config --libs` \
 	$(MYSQL_LDFLAGS) \
 	$(BOOST_LDFLAGS) \

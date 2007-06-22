@@ -109,7 +109,7 @@ static int setup_signal(int signal, void (*handler)(int))
 {
 	struct sigaction sig;
 
-	sig.sa_handler=sig_handler;
+	sig.sa_handler=handler;
 	sig.sa_flags=SA_RESTART;
 	sigemptyset(&sig.sa_mask);
 	return(sigaction(signal, &sig, NULL));
