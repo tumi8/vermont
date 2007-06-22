@@ -31,6 +31,7 @@ bool run(void *threadData)
 	thread_created = true;
 
 	//data = threadData;
+	DPRINTF("creating new thread");
 	return(pthread_create(&thread, NULL, f, threadData) == 0);
 };
 
@@ -41,7 +42,7 @@ void *join()
 
 	void *result=NULL;
         if(!thread || pthread_join(thread, &result)) {
-                msg(MSG_ERROR, "Thread: joining failed");
+                msg(MSG_ERROR, "joining failed");
         }
 	thread_created = false;
 

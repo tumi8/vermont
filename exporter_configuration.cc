@@ -9,7 +9,7 @@ ExporterConfiguration::ExporterConfiguration(xmlDocPtr document, xmlNodePtr star
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
-		throw std::runtime_error("Got exporter without unique id!");
+		THROWEXCEPTION("Got exporter without unique id!");
 	}
 	id = configTypes::exporter + (const char*)idString;
 	xmlFree(idString);
@@ -145,7 +145,7 @@ void ExporterConfiguration::createIpfixSender(uint16_t observationDomainId)
 					  collectors[0]->ipAddress.c_str(),
 					  collectors[0]->port);
 	if (!ipfixSender) {
-		throw std::runtime_error("Could not create IpfixSender!");
+		THROWEXCEPTION("Could not create IpfixSender!");
 	}
 
 	if(maxPacketSize || exportDelay)
@@ -170,7 +170,7 @@ void ExporterConfiguration::createIpfixSender(uint16_t observationDomainId)
 
 void ExporterConfiguration::connect(Configuration*)
 {
-	throw std::runtime_error("Exporter is an end target and cannot be connected to something!");
+	THROWEXCEPTION("Exporter is an end target and cannot be connected to something!");
 }
 
 void ExporterConfiguration::startSystem()
@@ -183,7 +183,7 @@ void ExporterConfiguration::startSystem()
 		// ipfixSender already runs (see createIpfixSender())
 		ipfixSender->runSink();
 	} else {
-		throw std::runtime_error("Can neither start an ExporterSink, nor an IpfixSender -> something is broken!");
+		THROWEXCEPTION("Can neither start an ExporterSink, nor an IpfixSender -> something is broken!");
 	}
 }
 
@@ -196,7 +196,7 @@ void ExporterConfiguration::stopSystem()
 		msg(MSG_DEBUG, "ExporterConfiguration: Terminating IpfixSenders.");
 		ipfixSender->terminateSink();
 	} else {
-		throw std::runtime_error("Can neither stop an ExporterSink, nor an IpfixSender -> something is broken!");
+		THROWEXCEPTION("Can neither stop an ExporterSink, nor an IpfixSender -> something is broken!");
 	}
 }
 

@@ -412,11 +412,11 @@ char* IpfixDbWriter::getRecData(Table* table, IpfixRecord::SourceID* sourceID,
         }
 
         if (!flowstartseconds_seen || !flowendseconds_seen) {
-            throw std::runtime_error("failed to extract timing data from template, aborting (are fields flowStart/EndSeconds or flowStart/EndMilliseconds included in the IPFIX packet?)");
+            THROWEXCEPTION("failed to extract timing data from template, aborting (are fields flowStart/EndSeconds or flowStart/EndMilliseconds included in the IPFIX packet?)");
         }
 
         if (flowstartsec == 0) {
-            throw std::runtime_error("failed to get timing data from ipfix packet. this is a critical error at the moment, as no valid table can be determined. Aborting");
+            THROWEXCEPTION("failed to get timing data from ipfix packet. this is a critical error at the moment, as no valid table can be determined. Aborting");
         }
 	
 	/**make whole query string for the insert statement*/
@@ -813,6 +813,7 @@ IpfixDbWriter::IpfixDbWriter(const char* hostName, const char* dbName,
                                    unsigned int port, uint16_t observationDomainId,
                                    int maxStatements)
 {	
+	DSETSINKOWNER("IpfixWriter");
 	Table* tabl = (Table*)malloc(sizeof(Table));
 	Statement* statemen = (Statement*)malloc(sizeof(Statement));
 	statemen->statemBuffer = (char**)malloc(sizeof(char**)*maxStatements);
@@ -887,7 +888,7 @@ IpfixDbWriter::IpfixDbWriter(const char* hostName, const char* dbName,
 	return;
 	
 out: 
-	throw std::runtime_error("IpfixDbWriter creation failed");
+	THROWEXCEPTION("IpfixDbWriter creation failed");
 	return;	
 }
 

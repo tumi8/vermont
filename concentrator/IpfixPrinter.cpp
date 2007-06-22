@@ -30,6 +30,7 @@
  */
 IpfixPrinter::IpfixPrinter() {
 	lastTemplate = 0;	
+	DSETSINKOWNER("IpfixPrinter");
 }
 
 /**

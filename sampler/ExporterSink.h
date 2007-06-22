@@ -45,7 +45,7 @@ public:
                 // generate the exporter
                 ret = ipfix_init_exporter(sourceID, &exporter);
                 if(ret) {
-                        msg(MSG_FATAL, "ExporterSink: error initializing IPFIX exporter");
+                        msg(MSG_FATAL, "error initializing IPFIX exporter");
                         exit(1);
                 }
 

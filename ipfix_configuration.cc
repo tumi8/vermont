@@ -91,16 +91,16 @@ IpfixConfiguration::IpfixConfiguration(const std::string& configFile)
 {
 	document = xmlParseFile(configFile.c_str());
 	if (!document) {
-		throw std::runtime_error("Could not parse " + configFile + "!");
+		THROWEXCEPTION("Could not parse %s", configFile.c_str());
 	}
 	current = xmlDocGetRootElement(document);
 	if (!current) {
-		throw std::runtime_error(configFile + " is an empty XML-Document!");
+		THROWEXCEPTION("%s is an empty XML-Document!", configFile.c_str());
 	}
 
 	if (!xmlCompare(current, "ipfixConfig")) {
 		xmlFreeDoc(document);
-		throw std::runtime_error("Root element does not match \"ipfixConfig\"."
+		THROWEXCEPTION("Root element does not match \"ipfixConfig\"."
 					 " This is not a valid configuration file!");
 	}
 
@@ -202,7 +202,7 @@ void IpfixConfiguration::connectSubsystems()
 			const std::vector<std::string>& nextVector = c->getNextVector();
 			for (unsigned j = 0; j != nextVector.size(); ++j) {
 				if (subsystems.find(nextVector[j]) == subsystems.end()) {
-					throw std::runtime_error("Could not find " + nextVector[j] + " in subsystem list");
+					THROWEXCEPTION("Could not find %s in subsystem list", nextVector[j].c_str());
 				}
 				msg(MSG_DEBUG, "IpfixConfiguration: connecting %s to %s", c->getId().c_str(), subsystems[nextVector[j]]->getId().c_str()); 
 				c->connect(subsystems[nextVector[j]]);

@@ -28,7 +28,7 @@ void FlowMeteringConfiguration::configure()
 	xmlNodePtr i = start->xmlChildrenNode;
 
 // 	if (!observationIdSet) {
-// 		throw std::runtime_error("MeteringConfiguration: Observation id for aggregator isn't set yet. But we need one right now!");
+// 		THROWEXCEPTION("MeteringConfiguration: Observation id for aggregator isn't set yet. But we need one right now!");
 // 	}
 
 	unsigned minBufferTime = 0;
@@ -59,7 +59,7 @@ void FlowMeteringConfiguration::configure()
 
 	ipfixAggregator = new IpfixAggregator(rules, minBufferTime, maxBufferTime);
 	if (!ipfixAggregator) {
-		throw std::runtime_error("MeteringConfiguration: Could not create aggreagtor");
+		THROWEXCEPTION("MeteringConfiguration: Could not create aggreagtor");
 	}
 	msg(MSG_INFO, "FlowMeteringConfiguration: Successfully parsed flowMetering section");
 }

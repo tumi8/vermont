@@ -16,6 +16,7 @@
 /* own systems */
 #include "msg.h"
 #include "ipfix_configuration.h"
+#include "sampler/TimeoutSemaphore.h"
 
 using namespace std;
 
@@ -29,6 +30,8 @@ int main(int ac, char **dc)
 {
  	int c, debug_level=MSG_DEFAULT;
  	char *config_file=NULL;
+
+	msg_init();
 
         /* parse command line */
 	while((c=getopt(ac, dc, "hf:d")) != -1) {
@@ -58,6 +61,7 @@ int main(int ac, char **dc)
 	}
 
 	/* setup verboseness */
+	msg(MSG_DEFAULT, "message debug level is %d", debug_level);
         msg_setlevel(debug_level);
 
 	setup_signal(SIGINT, sig_handler);
@@ -124,6 +128,9 @@ static void sig_handler(int x)
 
     shutdownInitiated = true;
 	msg(MSG_DIALOG, "got signal %d - exiting", x);
+
+	// shut down all semaphores, so that shutdown will not be stalled due to some blocking stuff
+	TimeoutSemaphore::shutdown();
 
     if (ipfixConfig) {
         delete ipfixConfig;

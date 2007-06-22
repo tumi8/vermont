@@ -28,7 +28,7 @@
 
 #include "msg.h"
 
-#include "Lock.h"
+#include "Mutex.h"
 #include "ipfixlolib/encoding.h"
 
 // the various header types (actually, HEAD_PAYLOAD is not neccessarily a header but it works like one for
@@ -106,14 +106,17 @@ public:
 	// buffer for length of variable length fields
 	uint8_t varlength[12];
 	uint8_t varlength_index;
+
 	
 	// construct a new Packet for a specified number of 'users'
 	Packet(void *packetData, unsigned int len, struct timeval time, int numUsers = 1) : 
 	    transportHeader(NULL), payload(NULL), transportHeaderOffset(0), payloadOffset(0), 
 	    classification(0), data_length(len), 
 	    timestamp(time), varlength_index(0),
-	    users(numUsers), refCountLock()
+	    users(numUsers), refCountLock(),
+	    packetFreed(false)
 	{
+	    	DPRINTF("new packet was created with %d users", numUsers);
 		data = (unsigned char *)packetData;
 		netHeader = data + IPHeaderOffset;
 		netHeaderOffset = IPHeaderOffset;
@@ -124,8 +127,8 @@ public:
 		    
 		// calculate time since 1970 in milliseconds according to IPFIX standard
 		time_msec_ipfix = htonll(((unsigned long long)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
-                DPRINTF("Packet::Packet: timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
-                DPRINTF("Packet::Packet: time_msec_ipfix is %lld", time_msec_ipfix);
+                DPRINTFL(MSG_VDEBUG, "timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
+                DPRINTFL(MSG_VDEBUG, "time_msec_ipfix is %lld", time_msec_ipfix);
 
 		totalPacketsReceived++;
 
@@ -140,7 +143,7 @@ public:
 			DPRINTF("Packet: WARNING: freeing in-use packet!\n");
 		}
 
-		free(data);
+		delete[] data;
 	}
 
 	// call this function after processing the packet, NOT delete()!
@@ -148,15 +151,18 @@ public:
 	{
 		int newUsers;
 
+
 		refCountLock.lock();
 		--users;
 		newUsers = users;
 		refCountLock.unlock();
 
 		if(newUsers == 0) {
+		    	packetFreed = true;
+			//msg(MSG_ERROR, "Packet::release: freeing packet 0x%X", this);
 			delete this;
 		} else if(newUsers < 0) {
-			DPRINTF("Packet: WARNING: trying to free already freed packet!\n");
+			DPRINTF("WARNING: trying to free already freed packet!\n");
 		}
 	};
 
@@ -228,7 +234,7 @@ public:
 				break;
 			case 6:         // TCP
 				// we need at least 12 more bytes in the packet to extract the "Data Offset"
-				if (transportHeaderOffset + 12 <= data_length)
+				if (transportHeaderOffset + 12 < data_length)
 				{
 					// extract "Data Offset" field at TCP header offset 12 (upper 4 bits)
 					unsigned char tcpDataOffset = *(transportHeader + 12) >> 4;
@@ -441,7 +447,9 @@ private:
          */
 	int users;
 
-	Lock refCountLock;
+	Mutex refCountLock;
+
+	bool packetFreed;
 
 };
 

@@ -17,18 +17,10 @@ else
   CXXFLAGS="$CXXFLAGS -O3"
 fi
 
+
 AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_RANLIB
-
-# check for Boost headers
-AX_BOOST_BASE([1.33.1])
-
-# check for Boost Regex
-AX_BOOST_REGEX
-if test "x$BOOST_REGEX_LIB" = "x"; then
-	AC_MSG_ERROR([*** Boost Regex libraries not installed. Please install them.])
-fi
 
 AC_CHECK_HEADERS(stdio.h unistd.h signal.h stdlib.h stdint.h string.h)
 AC_CHECK_HEADERS(time.h assert.h stdint.h errno.h netinet/in.h arpa/inet.h)
@@ -77,8 +69,8 @@ AS_IF([test "x$enable_db_support" = "xcheck"],
        AC_DEFINE(DB_SUPPORT_ENABLED)
        #any mysql-version should be adequate
        MYSQL_FOUND=AX_LIB_MYSQL([0.1])
-       if test "$MYSQL_VERSION" = ""; then 
-       		AC_MSG_ERROR([*** mysql client library not found. Please install it.])
+       if test "$MYSQL_VERSION" = ""; then
+		AC_MSG_ERROR([*** mysql client library not found. Please install it.])
        fi
       ],
       [AC_MSG_NOTICE([DbReader/DbWriter support disabled])])
@@ -87,10 +79,34 @@ AS_IF([test "x$enable_db_support" = "xcheck"],
 AC_CHECK_HEADER([pcap.h],
                 [],
                 [AC_MSG_ERROR([*** could not find pcap.h. Please install libpcap.])])
-AC_CHECK_LIB([pcap], [pcap_open_live],
-             [LDFLAGS="$LDFLAGS -lpcap"
-              AC_SUBST(LDFLAGS)],
-             [AC_MSG_ERROR([*** could not find libpcap. Please install it.])])
+
+# configure option for libpcap-mmap
+pcapmmap="no"
+AC_ARG_ENABLE([pcapmmap],
+              [AS_HELP_STRING([--enable-pcapmmap],
+                              [enable libpcap-mmap, libpcap.a MUST be available in directory ../libpcap-mmap])],
+              [pcapmmap="$enableval"], [])
+AM_CONDITIONAL(PCAPMMAP, test x$pcapmmap = xyes)
+# only check for pcap if pcapmmap is not defined
+# (else the custom library is used and will not be checked here)
+if test "x$pcapmmap" = "xno"; then
+    AC_CHECK_LIB([pcap], [pcap_open_live],
+		[LDFLAGS="$LDFLAGS -lpcap"
+		AC_SUBST(LDFLAGS)],
+		[AC_MSG_ERROR([*** could not find libpcap. Please install it.])])
+    AC_MSG_NOTICE([Using standard system libpcap])
+else
+    AC_MSG_NOTICE([Using libpcap-mmap of vermont])
+fi
+
+# check for Boost headers
+AX_BOOST_BASE([1.33.1])
+
+# check for Boost Regex
+AX_BOOST_REGEX
+if test "x$BOOST_REGEX_LIB" = "x"; then
+	AC_MSG_ERROR([*** Boost Regex libraries not installed. Please install them.])
+fi
 
 AC_CONFIG_FILES([Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile])
 

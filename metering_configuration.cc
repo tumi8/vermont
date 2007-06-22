@@ -29,7 +29,7 @@ MeteringConfiguration::MeteringConfiguration(xmlDocPtr document, xmlNodePtr star
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
-		throw std::runtime_error("Got metering process without unique id!");
+		THROWEXCEPTION("Got metering process without unique id!");
 	}
 	id = configTypes::metering + (const char*)idString;
 	xmlFree(idString);
@@ -162,9 +162,8 @@ void MeteringConfiguration::connect(Configuration* c)
 #ifdef DB_SUPPORT_ENABLED
 	DbWriterConfiguration* dbWriterConfiguration = dynamic_cast<DbWriterConfiguration*>(c);
 	if (dbWriterConfiguration) {
-		if (!flowMetering) || (!expressflowMetering) {
-			throw std::runtime_error("MeteringProcess: Can only be connected to an "
-						 "dbWriter if it does flowMetetering!");
+		if ((!flowMetering) || (!expressflowMetering)) {
+			THROWEXCEPTION("MeteringProcess: Can only be connected to an dbWriter if it does flowMetetering!");
 		}
 
                 dbWriterConfiguration->setObservationDomainId(observationDomainId);
@@ -180,7 +179,7 @@ void MeteringConfiguration::connect(Configuration* c)
 	}
 #endif
 
-	throw std::runtime_error("Cannot connect " + c->getId() + " to metering process!");
+	THROWEXCEPTION("Cannot connect %s to metering process!", c->getId().c_str());
 }
 
 void MeteringConfiguration::startSystem()

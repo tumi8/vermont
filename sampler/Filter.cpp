@@ -40,11 +40,16 @@ void *Filter::filterProcess(void *arg)
 	ConcurrentQueue<Packet*> *in_q=filter->getQueue();
 	ConcurrentQueue<Packet*> *out_q=filter->receiver;
 
-	msg(MSG_INFO, "Filter: now running the filter thread");
+	msg(MSG_INFO, "now running the filter thread");
 	while(!filter->exitFlag) {
 
+		//DPRINTF("Count is %d\n", in_q->getCount());
+
 		// get a packet
-		if (!in_q->pop(1000, &p)) continue;
+	    	DPRINTFL(MSG_VDEBUG, "trying to get packet");
+		if (!in_q->pop(&p)) break;
+
+	    	DPRINTFL(MSG_VDEBUG, "got packet");
 		filter->pktIn++;
 
 		// run packet through all packetProcessors
@@ -59,11 +64,12 @@ void *Filter::filterProcess(void *arg)
 		// check if we passed all filters
 		if(keepPacket) {
 			// push packet to the receiver
+			DPRINTF("pushing packet %d", p);
 			out_q->push(p);
 			filter->pktOut++;
 		} else {
 			// immediately drop the packet
-			DPRINTF("Filter: Drop-Freeing packet here");
+			DPRINTF("releasing packet");
 			p->release();
 		}
 	}

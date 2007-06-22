@@ -26,7 +26,6 @@
 #include <boost/smart_ptr.hpp>
 #include <stdexcept>
 #include "ipfix.hpp"
-#include "../sampler/Lock.h"
 #include "../sampler/Packet.h"
 
 #define MAX_ADDRESS_LEN 16

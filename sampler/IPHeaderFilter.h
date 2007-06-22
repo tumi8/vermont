@@ -52,7 +52,7 @@ public:
 		: m_header(header), m_offset(offset), m_size(size), m_comparison(comparison), m_value(value)
 	{
 		if(!(size==1 || size==2 || size==4)) {
-			msg(MSG_ERROR, "IPHeaderFilter: invalid size of %d, only 1/2/4 supported", size);
+			msg(MSG_ERROR, "invalid size of %d, only 1/2/4 supported", size);
 		}
 		// check for 2-byte or 4-byte words and convert them from network byte order
 		if (size == 2)

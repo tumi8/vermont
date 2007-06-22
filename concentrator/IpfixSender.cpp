@@ -41,6 +41,7 @@
  * @return handle to use when calling @c destroyIpfixSender()
  */
 IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) {
+    	DSETSINKOWNER("IpfixSender");
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 	sentRecords = 0;
 	recordsInDataSet = 0;
@@ -69,7 +70,7 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t 
 out1:
 	ipfix_deinit_exporter(*exporterP);
 out:
-	throw std::runtime_error("IpfixSender creation failed");
+	THROWEXCEPTION("IpfixSender creation failed");
 	return;	
 }
 
@@ -198,7 +199,7 @@ int IpfixSender::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::Da
 		}
 	}
 
-	DPRINTF("%d data fields\n", dataTemplateInfo->dataCount);
+	DPRINTF("%d data fields", dataTemplateInfo->dataCount);
 
 	int dataLength = 0;
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
@@ -220,7 +221,7 @@ int IpfixSender::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::Da
 		}
 	}
 
-	DPRINTF("%d data length\n", dataLength);
+	DPRINTF("%d data length", dataLength);
 
 	char* data = (char*)dataLength?(char*)malloc(dataLength):0; // electric fence does not like 0-byte mallocs
 	memcpy(data, dataTemplateInfo->data, dataLength);

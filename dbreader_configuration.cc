@@ -18,7 +18,7 @@ DbReaderConfiguration::DbReaderConfiguration(xmlDocPtr document, xmlNodePtr star
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
-		throw std::runtime_error("Got dbreader without unique id!");
+		THROWEXCEPTION("Got dbreader without unique id!");
 	}
 	id = configTypes::dbreader + (const char*)idString;
 	xmlFree(idString);
@@ -64,7 +64,7 @@ void DbReaderConfiguration::setUp()
 					    userName.c_str(), password.c_str(),
 					    portNumber, observationDomainId);
 	if (!ipfixDbReader) {
-		throw std::runtime_error("DbReaderConfiguration: Could not create IpfixDbReader!");
+		THROWEXCEPTION("DbReaderConfiguration: Could not create IpfixDbReader!");
 	}
 }
 
@@ -83,10 +83,10 @@ void DbReaderConfiguration::connect(Configuration* c)
 	if (metering) {
 		FlowMeteringConfiguration* fm = metering->getFlowMeteringConfiguration();
 		if (!fm) {
-			throw std::runtime_error("DBReaderConfiguration: Cannot connect to an metering process that does not do flowmetering");
+			THROWEXCEPTION("DBReaderConfiguration: Cannot connect to an metering process that does not do flowmetering");
 		}
 		msg(MSG_INFO, "DBReaderConfiguration: Adding dbreader-callbacks to aggregator");
-		IpfixaGGREgator* aggregator = fm->getIpfixAggregator();
+		IpfixAggregator* aggregator = fm->getIpfixAggregator();
 		ipfixDbReader->addFlowSink(aggregator);
 		msg(MSG_INFO, "DbReaderConfiguration: Successfully set up connection between dbReader and metering process");
 		
@@ -94,7 +94,7 @@ void DbReaderConfiguration::connect(Configuration* c)
 		return;
 	}
 
-	throw std::runtime_error("Cannot connect " + c->getId() + " to dbReader!");
+	THROWEXCEPTION("Cannot connect %s to dbReader!", c->getId().c_str());
 }
 
 void DbReaderConfiguration::startSystem()

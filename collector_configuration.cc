@@ -23,7 +23,7 @@ CollectorConfiguration::CollectorConfiguration(xmlDocPtr document, xmlNodePtr st
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
-		throw std::runtime_error("Got collector without unique id!");
+		THROWEXCEPTION("Got collector without unique id!");
 	}
 	id = configTypes::collector + (const char*)idString;
 	xmlFree(idString);
@@ -94,20 +94,20 @@ void CollectorConfiguration::setUp()
 {
 	ipfixCollector = new IpfixCollector;
 	if (!ipfixCollector) {
-		throw std::runtime_error("Could not create collector");
+		THROWEXCEPTION("Could not create collector");
 	}
 
 	for (unsigned i = 0; i != listeners.size(); ++i) {
 		IpfixReceiver* ipfixReceiver = new IpfixReceiverUdpIpV4(listeners[i]->port);
 		if (!ipfixReceiver) {
-			throw std::runtime_error("Could not create receiver");
+			THROWEXCEPTION("Could not create receiver");
 		}
 		ipfixCollector->addIpfixReceiver(ipfixReceiver);
 	}
 
 	ipfixParser = new IpfixParser;
 	if (!ipfixParser) {
-		throw std::runtime_error("Could not create IPFIX parser");
+		THROWEXCEPTION("Could not create IPFIX parser");
 	}
 }
 
@@ -124,7 +124,7 @@ void CollectorConfiguration::connect(Configuration* c)
 		FlowMeteringConfiguration* fm = metering->getFlowMeteringConfiguration();
 
 		if (!fm) {
-			throw std::runtime_error("Metering process isn't aggregating ->"
+			THROWEXCEPTION("Metering process isn't aggregating ->"
 						 " cannot connect it to an collector!");
 		}
 
@@ -132,7 +132,7 @@ void CollectorConfiguration::connect(Configuration* c)
 		msg(MSG_DEBUG, "CollectorConfiguration: Got metering process which is aggreagting");
 		IpfixAggregator* aggregator = fm->getIpfixAggregator();
 		if (!aggregator) {
-			throw std::runtime_error("CollectorConfiguration: ipfixAggregator is null -> This is a bug! Please report it");
+			THROWEXCEPTION("CollectorConfiguration: ipfixAggregator is null -> This is a bug! Please report it");
 			}
 		msg(MSG_DEBUG, "Adding aggregator to ipfixParser");
 		ipfixParser->addFlowSink(aggregator);
@@ -167,7 +167,7 @@ void CollectorConfiguration::connect(Configuration* c)
 	}
 #endif
 
-	throw std::runtime_error("Cannot connect " + c->getId() + " to a collector!");
+	THROWEXCEPTION("Cannot connect %s to a collector!", c->getId().c_str());
 }
 
 void CollectorConfiguration::startSystem()

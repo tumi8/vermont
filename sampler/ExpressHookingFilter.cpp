@@ -49,8 +49,6 @@ bool ExpressHookingFilter::processPacket(const Packet *p)
 
 
 
-	DPRINTF("hook_entry: length is %d\n", ph->length);
-
 	/* save IP header */
 	pad1=((uint32_t *)p->netHeader)[1];
 	pad2=((uint16_t *)p->netHeader)[5];

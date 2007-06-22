@@ -45,7 +45,7 @@ inline int IPHeaderFilter::getData(void *data, int size)
         case 4:
                 return *((int *)data);
         default:
-                msg(MSG_ERROR, "IPHeaderFilter: invalid Data Size %d", size);
+                msg(MSG_ERROR, "invalid Data Size %d", size);
                 return 0;
         }
 }
