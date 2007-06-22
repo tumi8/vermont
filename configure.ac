@@ -69,8 +69,8 @@ AS_IF([test "x$enable_db_support" = "xcheck"],
        AC_DEFINE(DB_SUPPORT_ENABLED)
        #any mysql-version should be adequate
        MYSQL_FOUND=AX_LIB_MYSQL([0.1])
-       if test "$MYSQL_VERSION" = ""; then 
-       		AC_MSG_ERROR([*** mysql client library not found. Please install it.])
+       if test "$MYSQL_VERSION" = ""; then
+		AC_MSG_ERROR([*** mysql client library not found. Please install it.])
        fi
       ],
       [AC_MSG_NOTICE([DbReader/DbWriter support disabled])])
@@ -99,23 +99,14 @@ else
     AC_MSG_NOTICE([Using libpcap-mmap of vermont])
 fi
 
-# find Boost headers and libs
-AX_BOOST_BASE([1.33.1])
-AX_BOOST_REGEX
-
 # check for Boost headers
-AC_LANG_PUSH(C++)
-AC_CHECK_HEADER([boost/smart_ptr.hpp],
-                [],
-                [AC_MSG_ERROR([*** could not use boost/smart_ptr.hpp. Please install the Boost header files.])])
-AC_LANG_POP(C++)
- 
+AX_BOOST_BASE([1.33.1])
+
 # check for Boost Regex
-AC_LANG_PUSH(C++)
-AC_CHECK_HEADER([boost/regex.hpp],
-                [],
-                [AC_MSG_ERROR([*** could not use boost/regex.hpp. Please install the Boost Regex libraries.])])
-AC_LANG_POP(C++)
+AX_BOOST_REGEX
+if test "x$BOOST_REGEX_LIB" = "x"; then
+	AC_MSG_ERROR([*** Boost Regex libraries not installed. Please install them.])
+fi
 
 AC_CONFIG_FILES([Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile])
 
