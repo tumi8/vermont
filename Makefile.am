@@ -7,7 +7,7 @@ else
 	LPCAP=-lpcap
 endif
 
-SUBDIRS=concentrator ipfixlolib sampler tools
+SUBDIRS=concentrator ipfixlolib sampler tools tests
 
 bin_PROGRAMS=vermont
 
