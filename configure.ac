@@ -111,7 +111,10 @@ fi
 # check for Boost Filesystem
 AX_BOOST_FILESYSTEM
 
-AC_CONFIG_FILES([Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile])
+# check for Boost Unit Test Framework
+AX_BOOST_UNIT_TEST_FRAMEWORK
+
+AC_CONFIG_FILES([Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile tests/Makefile])
 
 AC_OUTPUT
 
