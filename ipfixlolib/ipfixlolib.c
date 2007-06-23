@@ -24,6 +24,10 @@
 #include "ipfixlolib.h"
 #include <netinet/in.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 /* foreign systems */
 #include "msg.h"
 
@@ -47,6 +51,10 @@ static int ipfix_deinit_template_array(ipfix_exporter *exporter);
 static int ipfix_update_template_sendbuffer(ipfix_exporter *exporter);
 static int ipfix_send_templates(ipfix_exporter* exporter);
 static int ipfix_send_data(ipfix_exporter* exporter);
+
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+static int rawdir_packet_no = 0;
+#endif
 
 #if 0
 static int init_rcv_udp_socket(int lport);
@@ -315,13 +323,22 @@ int ipfix_remove_collector(ipfix_exporter *exporter, char *coll_ip4_addr, int co
                    && exporter->collector_arr[i].port_number == coll_port
                   )  {
 
-                        // are template and data socket the same?
-                        if( exporter->collector_arr[i].template_socket ==  exporter->collector_arr[i].data_socket ) {
-                                close ( exporter->collector_arr[i].data_socket );
-                        } else { //close both connections:
-                                close (exporter->collector_arr[i].data_socket );
-                                close (exporter->collector_arr[i].template_socket );
-                        }
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+			if (exporter->collector_arr[i].protocol != RAWDIR) {
+#endif
+				// are template and data socket the same?
+				if( exporter->collector_arr[i].template_socket ==  exporter->collector_arr[i].data_socket ) {
+					close ( exporter->collector_arr[i].data_socket );
+				} else { //close both connections:
+					close (exporter->collector_arr[i].data_socket );
+					close (exporter->collector_arr[i].template_socket );
+				}
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+			}
+			if (exporter->collector_arr[i].protocol == RAWDIR) {
+				// no socket to close here
+			}
+#endif
 
                         exporter->collector_arr[i].valid = FALSE;
                         searching = FALSE;
@@ -627,6 +644,16 @@ static int ipfix_init_send_socket(const char *serv_ip4_addr, int serv_port, enum
                 msg(MSG_FATAL, "IPFIX: Transport Protocol SCTP not implemented");
                 break;
 
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+	case RAWDIR:
+		{
+		// sock stores pointer to packet directory path
+		const char* packet_directory_path = serv_ip4_addr;
+		sock = (int)strdup(packet_directory_path);
+		}
+		break;
+#endif
+
         default:
                 msg(MSG_FATAL, "IPFIX: Transport Protocol not supported");
                 return -1;
@@ -787,10 +814,27 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
                                         exporter->collector_arr[i].ipv4address,
                                         exporter->collector_arr[i].port_number
                                        );
-                                ret=writev(exporter->collector_arr[i].data_socket,
-                                           exporter->template_sendbuffer->entries,
-                                           exporter->template_sendbuffer->current
-                                          );
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+				if (exporter->collector_arr[i].protocol != RAWDIR) {
+#endif
+					ret=writev(exporter->collector_arr[i].data_socket,
+							exporter->template_sendbuffer->entries,
+							exporter->template_sendbuffer->current
+						  );
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+				} 
+				else if (exporter->collector_arr[i].protocol == RAWDIR) {
+					char* packet_directory_path = (char*)exporter->collector_arr[i].data_socket;
+					char fnamebuf[1024];
+					sprintf(fnamebuf, "%s/%08d", packet_directory_path, rawdir_packet_no++);
+					int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
+					ret=writev(f,
+							exporter->template_sendbuffer->entries,
+							exporter->template_sendbuffer->current
+						  );
+					close(f);
+				}
+#endif
                                 // TODO: we should also check, what writev returned. NO ERROR HANDLING IMPLEMENTED YET!
 
                         }
@@ -856,10 +900,28 @@ static int ipfix_send_data(ipfix_exporter* exporter)
                                 DPRINTFL(MSG_VDEBUG, "IPFIX: Sendbuffer really contains %u bytes!", tested_length );
 #endif
 				
-                                ret=writev( exporter->collector_arr[i].data_socket,
-                                           exporter->data_sendbuffer->entries,
-                                           exporter->data_sendbuffer->committed
-                                          );
+
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+				if (exporter->collector_arr[i].protocol != RAWDIR) {
+#endif
+					ret=writev(exporter->collector_arr[i].data_socket,
+							exporter->data_sendbuffer->entries,
+							exporter->data_sendbuffer->current
+						  );
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+				}
+				else if (exporter->collector_arr[i].protocol == RAWDIR) {
+					char* packet_directory_path = (char*)exporter->collector_arr[i].data_socket;
+					char fnamebuf[1024];
+					sprintf(fnamebuf, "%s/%08d", packet_directory_path, rawdir_packet_no++);
+					int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
+					ret=writev(f,
+							exporter->data_sendbuffer->entries,
+							exporter->data_sendbuffer->current
+						  );
+					close(f);
+				}
+#endif
                                 // TODO: we should also check, what writev returned. NO ERROR HANDLING IMPLEMENTED YET!
                         }
                 } // end exporter loop

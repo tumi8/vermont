@@ -108,6 +108,9 @@ if test "x$BOOST_REGEX_LIB" = "x"; then
 	AC_MSG_ERROR([*** Boost Regex libraries not installed. Please install them.])
 fi
 
+# check for Boost Filesystem
+AX_BOOST_FILESYSTEM
+
 AC_CONFIG_FILES([Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile])
 
 AC_OUTPUT

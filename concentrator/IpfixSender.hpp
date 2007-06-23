@@ -32,8 +32,8 @@
  */
 class IpfixSender : public FlowSink {
 	public:
-		IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port);
-		~IpfixSender();
+		IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0);
+		virtual ~IpfixSender();
 
 		void start();
 		void stop();

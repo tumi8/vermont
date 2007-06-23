@@ -319,3 +319,4 @@ AC_DEFUN([AX_LIB_MYSQL],
 
 m4_include([m4/ax_boost_base.m4])
 m4_include([m4/ax_boost_regex.m4])
+m4_include([m4/ax_boost_filesystem.m4])
