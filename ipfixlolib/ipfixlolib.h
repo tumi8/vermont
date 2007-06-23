@@ -1,3 +1,4 @@
+
 #ifndef IPFIXLOLIB_H
 #define IPFIXLOLIB_H
 /*
@@ -21,6 +22,9 @@
  2004-11-12
  jan@petranek.de
  */
+
+// whether to support writing raw packets as a series of files in a directory
+#define IPFIXLOLIB_RAWDIR_SUPPORT
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -196,7 +200,12 @@ typedef struct {
 } ipfix_set_header;
 
 
-enum ipfix_transport_protocol {UDP, TCP, SCTP};
+enum ipfix_transport_protocol {
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT 
+	RAWDIR, 
+#endif
+	UDP, TCP, SCTP
+	};
 
 /*
  * These indicate, if a field is commited (i.e. can be used)
