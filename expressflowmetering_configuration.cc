@@ -5,7 +5,7 @@
 
 
 #include "expressflowmetering_configuration.h"
-#include "msg.h"
+#include "common/msg.h"
 
 
 ExpressFlowMeteringConfiguration::ExpressFlowMeteringConfiguration(xmlDocPtr doc, xmlNodePtr start)

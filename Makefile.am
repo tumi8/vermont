@@ -7,13 +7,13 @@ else
 	LPCAP=-lpcap
 endif
 
-SUBDIRS=concentrator ipfixlolib sampler tools tests
+SUBDIRS=common concentrator ipfixlolib sampler tools tests
 
 bin_PROGRAMS=vermont
 
 vermont_SOURCES=collector_configuration.cc collector_configuration.h \
 exporter_configuration.cc exporter_configuration.h metering_configuration.cc \
-metering_configuration.h msg.cc msg.h observer_configuration.cc \
+metering_configuration.h common/msg.h observer_configuration.cc \
 observer_configuration.h vermont.cc ipfix_configuration.cc \
 ipfix_configuration.h vermontmain_configuration.h vermontmain_configuration.cc\
 packetselection_configuration.h packetselection_configuration.cc \
@@ -38,6 +38,7 @@ AM_LDFLAGS= \
 vermont_LDADD= \
 	$(top_builddir)/concentrator/libconcentrator.a \
 	$(top_builddir)/sampler/libsampler.a \
+	$(top_builddir)/common/libcommon.a \
 	$(top_builddir)/ipfixlolib/libipfixlo.a \
 	-lpthread \
 	$(LPCAP)
@@ -45,4 +46,5 @@ vermont_LDADD= \
 vermont_DEPENDENCIES= \
 	$(top_builddir)/concentrator/libconcentrator.a \
 	$(top_builddir)/sampler/libsampler.a \
+	$(top_builddir)/common/libcommon.a \
 	$(top_builddir)/ipfixlolib/libipfixlo.a

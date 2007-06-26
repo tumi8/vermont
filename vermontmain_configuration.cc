@@ -5,7 +5,7 @@
 
 #include "vermontmain_configuration.h"
 
-#include "msg.h"
+#include "common/msg.h"
 
 
 VermontMainConfiguration::VermontMainConfiguration(xmlDocPtr document, xmlNodePtr startPoint)

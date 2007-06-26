@@ -28,7 +28,7 @@
 
 #include "ipfixlolib/ipfixlolib.h"
 
-#include "msg.h"
+#include "common/msg.h"
 
 /**
  * Initializes memory for a new bucket in @c ht containing @c data

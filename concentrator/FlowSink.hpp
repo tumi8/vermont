@@ -26,8 +26,8 @@
 #include <stdexcept>
 #include <boost/smart_ptr.hpp>
 #include "IpfixRecord.hpp"
-#include "../sampler/Thread.h"
-#include "../sampler/ConcurrentQueue.h"
+#include "common/Thread.h"
+#include "common/ConcurrentQueue.h"
 
 
 /* For debugging purposes: set name of this FlowSink

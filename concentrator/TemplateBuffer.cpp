@@ -24,7 +24,7 @@
 #include <string.h>
 #include "TemplateBuffer.hpp"
 #include "ipfix.hpp"
-#include "msg.h"
+#include "common/msg.h"
 
 /**
  * Returns a IpfixRecord::TemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo or NULL

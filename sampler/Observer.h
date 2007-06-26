@@ -27,19 +27,20 @@
  you may want to adjust this on a special jumbo-framed GBit network
  */
 #define CAPTURE_PHYSICAL_MAX 1526
+
+#include "Packet.h"
+#include "PacketReceiver.h"
+
+#include "common/msg.h"
+#include "common/Thread.h"
+#include "common/ConcurrentQueue.h"
+
 #include <vector>
 #include <string>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pcap.h>
-
-#include "Thread.h"
-#include "ConcurrentQueue.h"
-#include "Packet.h"
-#include "PacketReceiver.h"
-
-#include "msg.h"
 
 class Observer {
 public:

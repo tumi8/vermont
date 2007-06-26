@@ -26,7 +26,7 @@
 #include "IpfixRawdirWriter.hpp"
 #include "ipfix.hpp"
 
-#include "msg.h"
+#include "common/msg.h"
 
 /* go back to SENDER_TEMPLATE_ID_LOW if _HI is reached */
 #define SENDER_TEMPLATE_ID_HI 60000

@@ -29,7 +29,7 @@
 #include <fcntl.h>
 
 /* foreign systems */
-#include "msg.h"
+#include "common/msg.h"
 
 #ifdef __cplusplus
 extern "C" {

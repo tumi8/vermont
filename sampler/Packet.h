@@ -26,9 +26,9 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 
-#include "msg.h"
+#include "common/msg.h"
 
-#include "Mutex.h"
+#include "common/Mutex.h"
 #include "ipfixlolib/encoding.h"
 
 // the various header types (actually, HEAD_PAYLOAD is not neccessarily a header but it works like one for

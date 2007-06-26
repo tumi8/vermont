@@ -23,7 +23,7 @@
 #include "IpfixSender.hpp"
 #include "ipfix.hpp"
 
-#include "msg.h"
+#include "common/msg.h"
 
 /*
  we start OUR template IDs at <this>

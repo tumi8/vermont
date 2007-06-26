@@ -43,7 +43,7 @@
 
 #include "encoding.h"
 #include "ipfix_names.h"
-#include "msg.h"
+#include "common/msg.h"
 
 #ifdef __cplusplus
 extern "C" {

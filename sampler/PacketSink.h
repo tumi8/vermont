@@ -12,10 +12,10 @@
 #ifndef PACKET_SINK_H
 #define PACKET_SINK_H
 
-#include "msg.h"
-
-#include "Thread.h"
 #include "Sink.h"
+
+#include "common/msg.h"
+#include "common/Thread.h"
 
 class PacketSink : public Sink
 {

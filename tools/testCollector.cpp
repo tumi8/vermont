@@ -23,17 +23,19 @@
  * Dumps received flows to stdout
  */
 
-#include <netinet/in.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <string.h>
 #include "IpfixCollector.hpp"
 #include "IpfixParser.hpp"
 #include "IpfixPacketProcessor.hpp"
 #include "IpfixReceiverUdpIpV4.hpp"
 #include "IpfixPrinter.hpp"
-#include "../msg.h"
+
+#include "common/msg.h"
+
+#include <netinet/in.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <string.h>
 
 #define DEFAULT_LISTEN_PORT 1500
 
