@@ -1,6 +1,7 @@
-bin_PROGRAMS=test_concentrator
+bin_PROGRAMS=test_concentrator AggregationPerfTest
 
 test_concentrator_SOURCES=test_concentrator.cpp common/msg.h
+AggregationPerfTest_SOURCES=AggregationPerfTest.cpp AggregationPerfTest.h common/msg.h common/Time.h
 
 AM_CFLAGS=-I$(top_srcdir) `xml2-config --cflags` $(MYSQL_CFLAGS) -Wall -Werror
 AM_CXXFLAGS=$(AM_CFLAGS)
@@ -14,7 +15,6 @@ AM_LDFLAGS= \
 	$(BOOST_FILESYSTEM_LIB) \
 	$(BOOST_REGEX_LIB)
 
-<<<<<<< HEAD:tests/Makefile.am
 test_concentrator_LDADD= \
 	$(top_builddir)/concentrator/libconcentrator.a \
 	$(top_builddir)/sampler/libsampler.a \
@@ -23,8 +23,22 @@ test_concentrator_LDADD= \
 	-lpthread \
 	$(LPCAP)
 
+AggregationPerfTest_LDADD= \
+	$(top_builddir)/concentrator/libconcentrator.a \
+	$(top_builddir)/ipfixlolib/libipfixlo.a \
+	$(top_builddir)/sampler/libsampler.a \
+	$(top_builddir)/common/libcommon.a \
+	-lpthread \
+	$(LPCAP)
+
 test_concentrator_DEPENDENCIES= \
 	$(top_builddir)/concentrator/libconcentrator.a \
 	$(top_builddir)/sampler/libsampler.a \
 	$(top_builddir)/ipfixlolib/libipfixlo.a \
-	$(top_builddir)/common/libcommon.a \
+	$(top_builddir)/common/libcommon.a 
+
+AggregationPerfTest_DEPENDENCIES= \
+	$(top_builddir)/concentrator/libconcentrator.a \
+	$(top_builddir)/ipfixlolib/libipfixlo.a \
+	$(top_builddir)/sampler/libsampler.a \
+	$(top_builddir)/common/libcommon.a
