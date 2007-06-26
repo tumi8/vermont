@@ -54,13 +54,13 @@ bool ExporterSink::addPacket(Packet *pck)
     bool ret = true;
 
     // first check, if we can buffer this packet
-    if(!(numPacketsToRelease < MAX_PACKETS)) 
-    {
-	msg(MSG_ERROR, "packet buffer too small, packet dropped.");
-	DPRINTF("dropping packet");
-	pck->release();
-	return false;
-    }
+	if(!(numPacketsToRelease < MAX_PACKETS)) 
+	{
+		msg(MSG_ERROR, "packet buffer too small, packet dropped.");
+		DPRINTF("dropping packet");
+		pck->removeReference();
+		return false;
+	}
 
     
     // now, check if packet matches template requirements, i.e. if all fields are available
@@ -142,7 +142,7 @@ bool ExporterSink::addPacket(Packet *pck)
     {
 	// we do no export this packet, i.e. we can release it right now.
 	DPRINTF("dropping packet");
-	pck->release();
+	pck->removeReference();
     }
 
     return ret;
@@ -157,7 +157,7 @@ void ExporterSink::flushPacketStream()
 
     DPRINTF("dropping %d packets", numPacketsToRelease);
     for(int i = 0; i < numPacketsToRelease; i++) {
-	(packetsToRelease[i])->release();
+	(packetsToRelease[i])->removeReference();
     }
     // now release the additional metadata fields
     DPRINTF("Flushing %d Metadata fields from buffer", numMetaFieldsToRelease);
