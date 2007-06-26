@@ -138,7 +138,7 @@ void *Observer::observerThread(void *arg)
 		/* broadcast packet to all receivers */
 		if (!obs->exitFlag) {
 			// set reference counter to right amount
-			p->addReference(refsToAdd);
+			if (refsToAdd > 0) p->addReference(refsToAdd);
 
 		    for(vector<ConcurrentQueue<Packet*> *>::iterator it = obs->receivers.begin();
 			    it != obs->receivers.end(); ++it) {
