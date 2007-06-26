@@ -70,7 +70,7 @@ void *Filter::filterProcess(void *arg)
 		} else {
 			// immediately drop the packet
 			DPRINTF("releasing packet");
-			p->release();
+			p->removeReference();
 		}
 	}
 	return 0;

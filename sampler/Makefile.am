@@ -5,6 +5,6 @@ HookingFilter.h IPHeaderFilter.cpp IPHeaderFilter.h Lock.h Observer.cpp Observer
 PacketProcessor.h PacketReceiver.h PacketSink.cpp PacketSink.h RandomSampler.cpp \
 RandomSampler.h Semaphore.h Sink.h SystematicSampler.cpp SystematicSampler.h Template.cpp \
 Template.h Thread.h TimeoutSemaphore.h stringFilter.h stringFilter.cpp regExFilter.cpp regExFilter.h \
-ExpressHookingFilter.cpp ExpressHookingFilter.h 
+ExpressHookingFilter.cpp ExpressHookingFilter.h ../common/InstanceManager.h
 
 AM_CXXFLAGS=-I$(top_srcdir) -Wall -Werror

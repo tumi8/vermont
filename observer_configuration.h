@@ -10,9 +10,8 @@
 
 #include "ipfix_configuration.h"
 
-
 #include "sampler/Observer.h"
-
+#include "common/InstanceManager.h"
 
 #include <string>
 
@@ -43,6 +42,7 @@ private:
 	void parseParameters(xmlNodePtr p);
 
 	Observer* observer;
+	InstanceManager<Packet> packetManager;
 };
 
 #endif

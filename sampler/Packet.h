@@ -27,8 +27,8 @@
 #include <sys/time.h>
 
 #include "common/msg.h"
-
 #include "common/Mutex.h"
+#include "common/ManagedInstance.h"
 #include "ipfixlolib/encoding.h"
 
 // the various header types (actually, HEAD_PAYLOAD is not neccessarily a header but it works like one for
@@ -70,19 +70,21 @@
 // Payload classification (here, payload refers to data beyond transport header)
 #define PCLASS_PAYLOAD             (1UL << 31)
 
-class Packet
+class Packet : public ManagedInstance<Packet>
 {
 public:
 	// The number of total packets received, will be incremented by each constructor call
 	// implemented as public-variable for speed reasons (or lazyness reasons? ;-)
 	static unsigned long totalPacketsReceived;
 
+	const static int PACKET_MAXLEN = 1500; // maximum packet length
+
 	/*
 	 data: the raw packet data from the wire, including physical header
 	 ipHeader: start of the IP header: data + (physical dependent) IP header offset
 	 transportHeader: start of the transport layer header (TCP/UDP): ip_header + variable IP header length
 	 */
-	unsigned char *data;
+	unsigned char data[PACKET_MAXLEN];
 	unsigned char *netHeader;
 	unsigned char *transportHeader;
 	unsigned char *payload;
@@ -107,17 +109,27 @@ public:
 	uint8_t varlength[12];
 	uint8_t varlength_index;
 
-	
-	// construct a new Packet for a specified number of 'users'
-	Packet(void *packetData, unsigned int len, struct timeval time, int numUsers = 1) : 
-	    transportHeader(NULL), payload(NULL), transportHeaderOffset(0), payloadOffset(0), 
-	    classification(0), data_length(len), 
-	    timestamp(time), varlength_index(0),
-	    users(numUsers), refCountLock(),
-	    packetFreed(false)
+
+	Packet(InstanceManager<Packet>& im) : ManagedInstance<Packet>(im) 
 	{
-	    	DPRINTF("new packet was created with %d users", numUsers);
-		data = (unsigned char *)packetData;
+	}
+	
+	inline void init(char* packetData, int len, struct timeval time) 
+	{
+		transportHeader = NULL;
+		payload = NULL;
+		transportHeaderOffset = 0;
+		payloadOffset = 0;
+		classification = 0;
+		data_length = len;
+		timestamp = time;
+		varlength_index = 0;
+
+		if (len > PACKET_MAXLEN) {
+			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d)", len, PACKET_MAXLEN);
+		}
+
+		memcpy(data, packetData, len);
 		netHeader = data + IPHeaderOffset;
 		netHeaderOffset = IPHeaderOffset;
 
@@ -139,32 +151,7 @@ public:
 	// if users==0 !
 	~Packet()
 	{
-		if(users > 0) {
-			DPRINTF("Packet: WARNING: freeing in-use packet!\n");
-		}
-
-		delete[] data;
 	}
-
-	// call this function after processing the packet, NOT delete()!
-	void release()
-	{
-		int newUsers;
-
-
-		refCountLock.lock();
-		--users;
-		newUsers = users;
-		refCountLock.unlock();
-
-		if(newUsers == 0) {
-		    	packetFreed = true;
-			//msg(MSG_ERROR, "Packet::release: freeing packet 0x%X", this);
-			delete this;
-		} else if(newUsers < 0) {
-			DPRINTF("WARNING: trying to free already freed packet!\n");
-		}
-	};
 
 	// the supplied classification is _either_ PCLASS_NET_xxx or PCLASS_TRN_xxx (or PCLASS_PAYLOAD)
 	// we check whether at least one of the Packet's classification-bits is also set in the supplied
@@ -318,7 +305,7 @@ public:
 		// the following types may be variable length
 		// if not, we have to check that the length is not too long
 		case HEAD_RAW:
-		    return ((unsigned int)offset + fieldLength <= data_length) ? data + offset : NULL;
+		    return ((unsigned int)offset + fieldLength <= data_length) ? (char*)data + offset : NULL;
 		case HEAD_NETWORK_AND_BEYOND:
 		    return (netHeaderOffset + offset + fieldLength <= data_length) ? netHeader + offset : NULL;
 		case HEAD_TRANSPORT_AND_BEYOND:

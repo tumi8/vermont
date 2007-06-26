@@ -81,7 +81,7 @@ void ObserverConfiguration::parseParameters(xmlNodePtr p)
 
 void ObserverConfiguration::setUp()
 {
-	observer = new Observer(interface.c_str());
+	observer = new Observer(interface.c_str(), &packetManager);
 	if (captureLength) {
 		if (!observer->setCaptureLen(captureLength)) {
 			msg(MSG_FATAL, "Observer: wrong snaplen specified - using %d", observer->getCaptureLen());

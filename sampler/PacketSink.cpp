@@ -19,16 +19,16 @@ using namespace std;
 // this can be done by the filter too
 void *PacketSink::packetSinkProcess(void *arg)
 {
-        PacketSink *sink = (PacketSink *)arg;
-        ConcurrentQueue<Packet*> *queue = sink->getQueue();
-        Packet *p;
+	PacketSink *sink = (PacketSink *)arg;
+	ConcurrentQueue<Packet*> *queue = sink->getQueue();
+	Packet *p;
 
-        msg(MSG_INFO, "now running PacketSink thread");
-        while(!sink->exitFlag) {
-                if (!queue->pop(&p)) break;
+	msg(MSG_INFO, "now running PacketSink thread");
+	while(!sink->exitFlag) {
+		if (!queue->pop(&p)) break;
 		DPRINTF("dropping packet");
-                p->release();
-        }
+		p->removeReference();
+	}
 	return 0;
 }
 
