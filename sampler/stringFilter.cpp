@@ -74,7 +74,7 @@ bool stringFilter::processPacket(const Packet *p)
 
     payloadOffset = p->payloadOffset;
     if( payloadOffset == 0) return false;
-    pdata = p->data + payloadOffset;
+    pdata = (unsigned char*)p->data + payloadOffset;
     plength = p->data_length - payloadOffset;
 
     if(pdata == NULL) return false;

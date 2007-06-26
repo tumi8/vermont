@@ -33,10 +33,10 @@ public:
                 terminateSink();
         };
 
-        bool runSink()
+        void runSink()
         {
                 msg(MSG_DEBUG, "now starting PacketSink thread");
-                return(thread.run(this));
+                thread.run(this);
         };
 
         /* this really could be more elaborate */

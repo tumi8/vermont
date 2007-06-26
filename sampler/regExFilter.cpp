@@ -13,9 +13,9 @@ inline bool regExFilter::compare(char *pdata)
 
 };
 
-bool regExFilter::processPacket(const Packet *p)
+bool regExFilter::processPacket(const Packet* p)
 {
-        unsigned char* pdata;
+	const unsigned char* pdata;
 	unsigned int plength;
 	unsigned int payloadOffset;
 
