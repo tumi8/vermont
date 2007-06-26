@@ -96,8 +96,8 @@ void FlowSink::flowSinkProcess()
 	}
 }
 
-bool FlowSink::runSink() {
-	return(thread.run(this));
+void FlowSink::runSink() {
+	thread.run(this);
 }
 
 bool FlowSink::terminateSink() {

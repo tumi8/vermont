@@ -43,10 +43,10 @@ public:
         {
         }
 
-        bool startFilter()
+        void startFilter()
         {
                 msg(MSG_DEBUG, "now starting Filter thread");
-                return(thread.run(this));
+                thread.run(this);
         }
 
         void terminate()

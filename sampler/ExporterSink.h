@@ -69,10 +69,10 @@ public:
                 ipfix_deinit_exporter(exporter);
         };
 
-        bool runSink()
+        void runSink()
         {
                 msg(MSG_DEBUG, "Sink: now starting ExporterSink thread");
-                return (thread.run(this));
+                thread.run(this);
         };
 
         bool terminateSink()

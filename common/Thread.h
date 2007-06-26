@@ -25,14 +25,16 @@ public:
 	{
         };
 
-bool run(void *threadData)
+void run(void *threadData)
 {
 	// remember that run() has been called
 	thread_created = true;
 
 	//data = threadData;
 	DPRINTF("creating new thread");
-	return(pthread_create(&thread, NULL, f, threadData) == 0);
+	if (pthread_create(&thread, NULL, f, threadData) != 0) {
+	   THROWEXCEPTION("failed to create new thread");
+	}
 };
 
 void *join()

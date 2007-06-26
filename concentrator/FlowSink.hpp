@@ -60,7 +60,7 @@ class FlowSink {
 		/**
 		 * Start the FlowSink's flowSinkProcess thread
 		 */
-		bool runSink();
+		void runSink();
 
 		/**
 		 * Stop the FlowSink's flowSinkProcess thread

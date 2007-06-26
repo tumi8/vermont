@@ -15,7 +15,7 @@
 class Sink : public PacketReceiver {
 
 public:
-        virtual bool runSink()=0;
+        virtual void runSink()=0;
         virtual bool terminateSink()=0;
 
 	/*
