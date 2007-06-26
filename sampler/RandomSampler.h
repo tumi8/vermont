@@ -16,7 +16,7 @@
 
 #include <vector>
 
-#include "msg.h"
+#include "common/msg.h"
 #include "PacketProcessor.h"
 
 class RandomSampler : public PacketProcessor

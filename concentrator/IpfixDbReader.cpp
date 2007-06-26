@@ -26,7 +26,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "IpfixDbReader.hpp"
-#include "msg.h"
+#include "common/msg.h"
 
 /***** Internal Functions ****************************************************/
 

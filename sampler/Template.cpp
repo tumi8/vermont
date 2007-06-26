@@ -14,7 +14,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "msg.h"
+#include "common/msg.h"
 
 #include "concentrator/ipfix.hpp"
 

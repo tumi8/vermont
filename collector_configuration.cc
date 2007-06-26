@@ -11,10 +11,10 @@
 #include "exporter_configuration.h"
 #include "dbwriter_configuration.h"
 
-
-#include <msg.h>
-#include <concentrator/IpfixAggregator.hpp>
+#include "concentrator/IpfixAggregator.hpp"
 #include "concentrator/IpfixReceiverUdpIpV4.hpp"
+
+#include "common/msg.h"
 
 
 CollectorConfiguration::CollectorConfiguration(xmlDocPtr document, xmlNodePtr startPoint)

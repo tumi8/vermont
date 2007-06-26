@@ -12,7 +12,7 @@
 /*
  changed by: Ronny T. Lampert, 2005, for VERMONT
  */
-#include "msg.h"
+#include "common/msg.h"
 #include "Filter.h"
 
 using namespace std;

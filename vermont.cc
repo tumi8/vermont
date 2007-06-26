@@ -14,9 +14,10 @@
 #include <string.h>
 
 /* own systems */
-#include "msg.h"
 #include "ipfix_configuration.h"
-#include "sampler/TimeoutSemaphore.h"
+
+#include "common/TimeoutSemaphore.h"
+#include "common/msg.h"
 
 using namespace std;
 

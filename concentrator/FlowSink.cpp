@@ -18,7 +18,8 @@
  *
  */
 
-#include "msg.h"
+#include "common/msg.h"
+
 #include "FlowSink.hpp"
 
 FlowSink::FlowSink() 

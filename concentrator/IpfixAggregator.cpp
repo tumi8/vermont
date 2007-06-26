@@ -25,7 +25,7 @@
 #include "IpfixParser.hpp"
 #include "IpfixSender.hpp"
 
-#include "msg.h"
+#include "common/msg.h"
 
 /**
  * Creates a new Aggregator. Do not forget to set the callback functions, then call @c startAggregator().

@@ -39,7 +39,7 @@
 #include "TemplateBuffer.hpp"
 #include "ipfix.hpp"
 
-#include "msg.h"
+#include "common/msg.h"
 #include "IpfixPacketProcessor.hpp"
 
 

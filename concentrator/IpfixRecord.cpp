@@ -18,7 +18,7 @@
  *
  */
 
-#include "msg.h"
+#include "common/msg.h"
 #include "IpfixRecord.hpp"
 
 IpfixRecord::IpfixRecord() {

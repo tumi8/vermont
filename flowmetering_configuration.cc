@@ -5,7 +5,7 @@
 
 
 #include "flowmetering_configuration.h"
-#include "msg.h"
+#include "common/msg.h"
 
 
 FlowMeteringConfiguration::FlowMeteringConfiguration(xmlDocPtr doc, xmlNodePtr start)

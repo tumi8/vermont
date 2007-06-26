@@ -16,9 +16,9 @@
 
 #include "ipfixlolib/ipfixlolib.h"
 #include "concentrator/ipfix.hpp"
-#include "msg.h"
+#include "common/msg.h"
 
-#include "Thread.h"
+#include "common/Thread.h"
 #include "Template.h"
 #include "Packet.h"
 #include "Sink.h"

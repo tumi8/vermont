@@ -15,17 +15,19 @@
 #ifndef FILTER_H
 #define FILTER_H
 
-#include <vector>
-#include "msg.h"
 
-#include "ConcurrentQueue.h"
 #include "Packet.h"
-#include "Thread.h"
-
 #include "PacketReceiver.h"
 #include "PacketProcessor.h"
 #include "SystematicSampler.h"
 #include "RandomSampler.h"
+
+#include "common/msg.h"
+#include "common/Thread.h"
+#include "common/ConcurrentQueue.h"
+
+#include <vector>
+
 
 class Filter : public PacketReceiver
 {

@@ -12,7 +12,7 @@
 #ifndef PACKET_RECEIVER_H
 #define PACKET_RECEIVER_H
 
-#include "ConcurrentQueue.h"
+#include "common/ConcurrentQueue.h"
 #include "Packet.h"
 
 class PacketReceiver

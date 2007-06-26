@@ -8,7 +8,7 @@
 #include <list>
 #include <string>
 #include <string.h>
-#include "msg.h"
+#include "common/msg.h"
 #include "PacketProcessor.h"
 #include <sys/types.h>
 #include <boost/regex.hpp>

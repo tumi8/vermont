@@ -11,7 +11,7 @@
 #include "concentrator/IpfixParser.hpp"
 #include "concentrator/IpfixPrinter.hpp"
 
-#include "msg.h"
+#include "common/msg.h"
 
 #include <iostream>
 

@@ -16,7 +16,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "msg.h"
+#include "common/msg.h"
 #include "ipfixlolib/ipfixlolib.h"
 
 #include "ExporterSink.h"

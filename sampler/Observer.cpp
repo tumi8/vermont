@@ -8,14 +8,16 @@
              Gerhard Münz
  */
 
+
+#include "Observer.h"
+
+#include "common/msg.h"
+#include "common/Thread.h"
+
 #include <pcap.h>
 #include <iostream>
 #include <unistd.h>
 
-#include "msg.h"
-
-#include "Observer.h"
-#include "Thread.h"
 
 using namespace std;
 

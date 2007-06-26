@@ -10,7 +10,7 @@
  */
 #include <iostream>
 
-#include "msg.h"
+#include "common/msg.h"
 #include "PacketSink.h"
 
 using namespace std;
