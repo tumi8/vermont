@@ -18,6 +18,7 @@
  *
  */
 
+#include "ipfixlolib/ipfixlolib.h"
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 
 #include <stdexcept>
@@ -48,6 +49,9 @@ IpfixRawdirWriter::IpfixRawdirWriter(uint16_t observationDomainId, std::string p
 	}
 
 	msg(MSG_DEBUG, "IpfixRawdirWriter: running");
+}
+
+IpfixRawdirWriter::~IpfixRawdirWriter() {
 }
 
 /**

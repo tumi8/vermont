@@ -52,10 +52,6 @@ static int ipfix_update_template_sendbuffer(ipfix_exporter *exporter);
 static int ipfix_send_templates(ipfix_exporter* exporter);
 static int ipfix_send_data(ipfix_exporter* exporter);
 
-#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
-static int rawdir_packet_no = 0;
-#endif
-
 #if 0
 static int init_rcv_udp_socket(int lport);
 /* NOT USED */
@@ -279,19 +275,30 @@ int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, int
                         exporter->collector_arr[i].port_number = coll_port;
                         exporter->collector_arr[i].protocol = proto;
 
-                        // open the socket: call an own function.
-                        exporter->collector_arr[i].data_socket = ipfix_init_send_socket( coll_ip4_addr, coll_port, proto);
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+			if (proto != RAWDIR) {
+#endif
 
-                        // error handling, in case we were unable to open the port:
-                        if(exporter->collector_arr[i].data_socket < 0 ) {
-                                msg(MSG_ERROR, "IPFIX: add collector %s:%i, initializing socket failed",
-                                    coll_ip4_addr, coll_port
-                                   );
-                                return -1;
-                        }
-                        // currently, the data socket and the template socket are the same.
-                        // TODO, when SCTP is added!
-                        exporter->collector_arr[i].template_socket = exporter->collector_arr[i].data_socket;
+	                        // open the socket: call an own function.
+        	                exporter->collector_arr[i].data_socket = ipfix_init_send_socket( coll_ip4_addr, coll_port, proto);
+
+	                        // error handling, in case we were unable to open the port:
+	                        if(exporter->collector_arr[i].data_socket < 0 ) {
+	                                msg(MSG_ERROR, "IPFIX: add collector %s:%i, initializing socket failed",
+	                                    coll_ip4_addr, coll_port
+	                                   );
+	                                return -1;
+	                        }
+	                        // currently, the data socket and the template socket are the same.
+	                        // TODO, when SCTP is added!
+	                        exporter->collector_arr[i].template_socket = exporter->collector_arr[i].data_socket;
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+			}
+			if (proto == RAWDIR) {
+				exporter->collector_arr[i].packet_directory_path = strdup(coll_ip4_addr);
+				exporter->collector_arr[i].packets_written = 0;
+			}
+#endif
 
                         // now, we may set the collector to valid;
                         exporter->collector_arr[i].valid = UNCLEAN;
@@ -336,7 +343,7 @@ int ipfix_remove_collector(ipfix_exporter *exporter, char *coll_ip4_addr, int co
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 			}
 			if (exporter->collector_arr[i].protocol == RAWDIR) {
-				// no socket to close here
+				free(exporter->collector_arr[i].packet_directory_path);
 			}
 #endif
 
@@ -646,11 +653,7 @@ static int ipfix_init_send_socket(const char *serv_ip4_addr, int serv_port, enum
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 	case RAWDIR:
-		{
-		// sock stores pointer to packet directory path
-		const char* packet_directory_path = serv_ip4_addr;
-		sock = (int)strdup(packet_directory_path);
-		}
+                msg(MSG_FATAL, "IPFIX: Transport Protocol RAWDIR cannot be used to open a socket");
 		break;
 #endif
 
@@ -823,10 +826,10 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 						  );
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 				} 
-				else if (exporter->collector_arr[i].protocol == RAWDIR) {
-					char* packet_directory_path = (char*)exporter->collector_arr[i].data_socket;
+				if (exporter->collector_arr[i].protocol == RAWDIR) {
+					char* packet_directory_path = exporter->collector_arr[i].packet_directory_path;
 					char fnamebuf[1024];
-					sprintf(fnamebuf, "%s/%08d", packet_directory_path, rawdir_packet_no++);
+					sprintf(fnamebuf, "%s/%08d", packet_directory_path, exporter->collector_arr[i].packets_written++);
 					int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
 					ret=writev(f,
 							exporter->template_sendbuffer->entries,
@@ -910,10 +913,10 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 						  );
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 				}
-				else if (exporter->collector_arr[i].protocol == RAWDIR) {
-					char* packet_directory_path = (char*)exporter->collector_arr[i].data_socket;
+				if (exporter->collector_arr[i].protocol == RAWDIR) {
+					char* packet_directory_path = exporter->collector_arr[i].packet_directory_path;
 					char fnamebuf[1024];
-					sprintf(fnamebuf, "%s/%08d", packet_directory_path, rawdir_packet_no++);
+					sprintf(fnamebuf, "%s/%08d", packet_directory_path, exporter->collector_arr[i].packets_written++);
 					int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
 					ret=writev(f,
 							exporter->data_sendbuffer->entries,

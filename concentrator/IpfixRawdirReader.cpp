@@ -112,7 +112,7 @@ void IpfixRawdirReader::run() {
 		}
 		pthread_mutex_unlock(&mutex);
 
-		sleep(1);
+		//sleep(1);
 	}
 }
 
