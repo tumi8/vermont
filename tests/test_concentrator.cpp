@@ -10,7 +10,9 @@
 
 class TestSink : public FlowSink {
 	public:
-		int onTemplate(IpfixRecord::SourceID* sourceID, const IpfixRecord::TemplateInfo* templateInfo) {
+		int onTemplate(IpfixRecord::SourceID* sourceID, const IpfixRecord::TemplateInfo* templateInfo) 
+		{
+			return 0;
 		}
 
 		int onDataRecord(IpfixRecord::SourceID* sourceID, const IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data) {
@@ -23,9 +25,12 @@ class TestSink : public FlowSink {
 			if (inData != inTemplateId) BOOST_ERROR("IpfixRecord got corrupted: inData != inTemplateId");
 			if (inData != inTypeId) BOOST_ERROR("IpfixRecord got corrupted: inData != inTypeId");
 			for (int i = 0; i < rand(); i++);
+			return 0;
 		}
 
-		int onTemplateDestruction(IpfixRecord::SourceID* sourceID, const IpfixRecord::TemplateInfo* templateInfo) {
+		int onTemplateDestruction(IpfixRecord::SourceID* sourceID, const IpfixRecord::TemplateInfo* templateInfo) 
+		{
+			return 0;
 		}
 
 		int getQueueLength() {

@@ -106,7 +106,7 @@ void AggregationPerfTest::start(unsigned int numpackets)
 	BOOST_REQUIRE(gettimeofday(&curtime, 0) == 0);
 
 	ConcurrentQueue<Packet*>* filterq = filter->getQueue();
-	for (int i=0; i<numpackets; i++) {
+	for (unsigned int i=0; i<numpackets; i++) {
 		Packet* p = packetManager->getNewInstance();
 		p->init((char*)packetdata, packetdatalen, curtime);
 		filterq->push(p);
@@ -129,7 +129,7 @@ int test_main(int, char *[])
 	struct timeval difftime;
 	BOOST_REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
 
-	printf("needed time for processing %d packets: %d.%06d seconds\n", numpackets, difftime.tv_sec, difftime.tv_usec);
+	printf("needed time for processing %d packets: %d.%06d seconds\n", numpackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
 
 	perftest.shutdown();
 	
