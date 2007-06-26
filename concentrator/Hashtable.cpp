@@ -771,9 +771,10 @@ void Hashtable::ExpaggregateTemplateData(IpfixRecord::Data* ip_data, IpfixRecord
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 		IpfixRecord::Data* tfi = ti->getFieldPointer(hfi->type, ip_data, th_data, classi);
-		IpfixRecord::FieldInfo* fi = (IpfixRecord::FieldInfo*)malloc(1 * sizeof(IpfixRecord::FieldInfo));
-		fi->type.id = hfi->type.id;
-		fi->type.length = ti->getFieldLength(hfi->type);
+		IpfixRecord::FieldInfo fi;
+
+		fi.type.id = hfi->type.id;
+		fi.type.length = ti->getFieldLength(hfi->type);
 
 
 		if(!tfi) {
@@ -781,9 +782,9 @@ void Hashtable::ExpaggregateTemplateData(IpfixRecord::Data* ip_data, IpfixRecord
 			continue;
 		}
 
-                DPRINTF("Hashtable::ExpaggregateTemplateData: copyData for type %d, starting from pointer %X", fi->type.id, tfi);
+                DPRINTF("Hashtable::ExpaggregateTemplateData: copyData for type %d, starting from pointer %X", fi.type.id, tfi);
                 DPRINTF("Hashtable::ExpaggregateTemplateData: copyData to offset %X", hfi->offset);
-		ExpcopyData(&hfi->type, htdata.get() + hfi->offset, &fi->type, tfi, fieldModifier[i]);
+		ExpcopyData(&hfi->type, htdata.get() + hfi->offset, &fi.type, tfi, fieldModifier[i]);
 
 		/* copy associated mask, should there be one */
 	}
