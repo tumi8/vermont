@@ -267,7 +267,7 @@ extern "C" {
 		msg_expand(text, line, filename, funcname, simplefunc, MSG_FATAL, fmt, &args);
 		va_end(args);
 
-		THROWEXCEPTION(text);
+		throw std::runtime_error(text);
 	}
 
 
