@@ -82,7 +82,11 @@ class FlowSink {
 		 * @param templateInfo Pointer to a structure defining this Template
 		 * @return 0 if packet handled successfully
 		 */
-		virtual int onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo) { return -1; };
+		virtual int onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo) 
+		{
+			THROWEXCEPTION("method not implemented");
+			return 1;
+		}
 
 		/**
 		 * Callback function invoked when a new DataTemplate arrives.
@@ -90,7 +94,11 @@ class FlowSink {
 		 * @param optionsTemplateInfo Pointer to a structure defining this Template
 		 * @return 0 if packet handled successfully
 		 */
-		virtual int onOptionsTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo) { return -1; };
+		virtual int onOptionsTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo) 
+		{
+			THROWEXCEPTION("method not implemented");
+			return 1;
+		}
 
 		/**
 		 * Callback function invoked when a new DataTemplate arrives.
@@ -98,7 +106,11 @@ class FlowSink {
 		 * @param dataTemplateInfo Pointer to a structure defining this Template
 		 * @return 0 if packet handled successfully
 		 */
-		virtual int onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo) { return -1; };
+		virtual int onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo) 
+		{
+			THROWEXCEPTION("method not implemented");
+			return 1;
+		}
 
 		/**
 		 * Callback function invoked when a new Data Record arrives.
@@ -108,8 +120,16 @@ class FlowSink {
 		 * @param data Pointer to a data block containing all fields
 		 * @return 0 if packet handled successfully
 		 */
-		virtual int onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data) { return -1; };
-		virtual int onExpDataRecord(IpfixRecord::SourceID* sourceID, uint16_t length, IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi) { return -1; };
+		virtual int onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data) 
+		{
+			THROWEXCEPTION("method not implemented");
+			return 1;
+		}
+		virtual int onExpDataRecord(IpfixRecord::SourceID* sourceID, uint16_t length, IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi) 
+		{
+			THROWEXCEPTION("method not implemented");
+			return 1;
+		}
 
 		/**
 		 * Callback function invoked when a new Options Record arrives.
@@ -119,7 +139,11 @@ class FlowSink {
 		 * @param data Pointer to a data block containing all fields
 		 * @return 0 if packet handled successfully
 		 */
-		virtual int onOptionsRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length, IpfixRecord::Data* data) { return -1; };
+		virtual int onOptionsRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length, IpfixRecord::Data* data) 
+		{
+			THROWEXCEPTION("method not implemented");
+			return 1;
+		}
 
 		/**
 		 * Callback function invoked when a new Data Record with associated Fixed Values arrives.
@@ -129,7 +153,11 @@ class FlowSink {
 		 * @param data Pointer to a data block containing all variable fields
 		 * @return 0 if packet handled successfully
 		 */
-		virtual int onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data) { return -1; };
+		virtual int onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data) 
+		{
+			THROWEXCEPTION("method not implemented");
+			return 1;
+		}
 
 		/**
 		 * Callback function invoked when a Template is being destroyed.
@@ -138,7 +166,11 @@ class FlowSink {
 		 * @param templateInfo Pointer to a structure defining this Template
 		 * @return 0 if packet handled successfully
 		 */
-		virtual int onTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo) { return -1; };
+		virtual int onTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo) 
+		{
+			THROWEXCEPTION("method not implemented");
+			return 1;
+		}
 
 		/**
 		 * Callback function invoked when a OptionsTemplate is being destroyed.
@@ -147,7 +179,11 @@ class FlowSink {
 		 * @param optionsTemplateInfo Pointer to a structure defining this OptionsTemplate
 		 * @return 0 if packet handled successfully
 		 */
-		virtual int onOptionsTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo) { return -1; };
+		virtual int onOptionsTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo) 
+		{
+			THROWEXCEPTION("method not implemented");
+			return 1;
+		}
 
 		/**
 		 * Callback function invoked when a DataTemplate is being destroyed.
@@ -156,7 +192,11 @@ class FlowSink {
 		 * @param dataTemplateInfo Pointer to a structure defining this DataTemplate
 		 * @return 0 if packet handled successfully
 		 */
-		virtual int onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo) { return -1; };
+		virtual int onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo) 
+		{
+			THROWEXCEPTION("method not implemented");
+			return 1;
+		}
 
 	        static void* flowSinkProcess(void* flowSink);
 	        virtual void flowSinkProcess();
