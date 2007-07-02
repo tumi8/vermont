@@ -77,7 +77,7 @@ public:
 	// implemented as public-variable for speed reasons (or lazyness reasons? ;-)
 	static unsigned long totalPacketsReceived;
 
-	const static int PACKET_MAXLEN = 1500; // maximum packet length
+	static const int PACKET_MAXLEN = 1500; // maximum packet length
 
 	/*
 	 data: the raw packet data from the wire, including physical header

@@ -46,10 +46,10 @@ void *Filter::filterProcess(void *arg)
 		//DPRINTF("Count is %d\n", in_q->getCount());
 
 		// get a packet
-	    	DPRINTFL(MSG_VDEBUG, "trying to get packet");
+		DPRINTFL(MSG_VDEBUG, "trying to get packet");
 		if (!in_q->pop(&p)) break;
 
-	    	DPRINTFL(MSG_VDEBUG, "got packet");
+		DPRINTFL(MSG_VDEBUG, "got packet");
 		filter->pktIn++;
 
 		// run packet through all packetProcessors

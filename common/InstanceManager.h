@@ -41,7 +41,7 @@ class InstanceManager
 #endif
 		list<T*> freeInstances;	// unused instances
 		Mutex mutex;			// we wanna be thread-safe
-		const static int DEFAULT_NO_INSTANCES = 1000;
+		static const int DEFAULT_NO_INSTANCES = 1000;
 
 	public:
 		InstanceManager(int preAllocInstances = DEFAULT_NO_INSTANCES)

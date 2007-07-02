@@ -23,7 +23,7 @@
 class TimeoutSemaphore
 {
 private:
-	const static int STANDARD_TIMEOUT = 100; // when no timeout is given by calling function, this amount of ms will be waited until the exitFlag is checked
+	static const int STANDARD_TIMEOUT = 100; // when no timeout is given by calling function, this amount of ms will be waited until the exitFlag is checked
 	sem_t* sem;
 
 	// variables for global management of all semaphores
