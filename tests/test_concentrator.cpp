@@ -10,8 +10,10 @@
 #include "concentrator/IpfixCollector.hpp"
 #include "concentrator/IpfixPrinter.hpp"
 
+#include <boost/filesystem/operations.hpp>
 #include <iostream>
 #include <vector>
+#include <stdlib.h>
 
 class TestSink : public FlowSink {
 	public:
@@ -22,6 +24,11 @@ class TestSink : public FlowSink {
 		}
 
 		virtual int onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo) 
+		{
+			return 0;
+		}
+		
+		virtual int onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo) 
 		{
 			return 0;
 		}
@@ -213,17 +220,18 @@ void test_module_coupling() {
 		testSink.push(testRecords[magic_number]);
 	}
 
-
-	// finish test
-	sleep(1);
-
-	//TimeoutSemaphore::shutdown();
-	// make sure that pop semaphore doesn't hang. This shouldn't be needed, but let's play it safe
+	// be nice
 	for (uint8_t magic_number = 0; magic_number < 255; magic_number++) {
 		testSink.push(createTestTemplateDestructionRecord(magic_number, testRecords[magic_number]->templateInfo));
 	}
-	testSink.terminateSink();
+
+	// give modules a chance to process their queues
 	sleep(1);
+
+	// shut down modules
+	TimeoutSemaphore::shutdown();
+	testSink.terminateSink();
+	TimeoutSemaphore::restart();
 
 }
 
@@ -235,9 +243,19 @@ void test_ipfixlolib_rawdir() {
 
 	std::cout << "Testing: Ipfixlolib Rawdir writing..." << std::endl;
 
+	// create temporary directory
+	char* tmpdirname = strdup("/tmp/vermont-tests-concentrator-rawdir-XXXXXX");
+	if (mkdtemp(tmpdirname) == 0) {
+		BOOST_ERROR("Unable to create temporary directory. Cannot continue.");
+		free(tmpdirname);
+		return;
+	}
+	std::string tmppath(tmpdirname);
+	free(tmpdirname);
+
 	{
 		// create IpfixRawdirWriter
-		IpfixRawdirWriter ipfixRawdirWriter(0xbeef, "/tmp/pack2");
+		IpfixRawdirWriter ipfixRawdirWriter(0xbeef, tmppath);
 		ipfixRawdirWriter.runSink();
 
 		// create some test data
@@ -257,16 +275,18 @@ void test_ipfixlolib_rawdir() {
 			ipfixRawdirWriter.onIdle();
 		}
 
-		// finish test
-		sleep(1);
-
-		//TimeoutSemaphore::shutdown();
-		// make sure that pop semaphore doesn't hang. This shouldn't be needed, but let's play it safe
+		// be nice
 		for (uint8_t magic_number = 0; magic_number < 16; magic_number++) {
 			ipfixRawdirWriter.push(createTestDataTemplateDestructionRecord(magic_number, testDataRecords[magic_number]->dataTemplateInfo));
 		}
-		ipfixRawdirWriter.terminateSink();
+
+		// give modules a chance to process their queues
 		sleep(1);
+
+		// shut down modules
+		TimeoutSemaphore::shutdown();
+		ipfixRawdirWriter.terminateSink();
+		TimeoutSemaphore::restart();
 
 	}
 
@@ -276,7 +296,7 @@ void test_ipfixlolib_rawdir() {
 		TestSink testSink(false);
 		testSink.runSink();
 
-		IpfixRawdirReader ipfixRawdirReader("/tmp/pack2");
+		IpfixRawdirReader ipfixRawdirReader(tmppath);
 
 		IpfixParser ipfixParser;
 		ipfixParser.addFlowSink(&testSink);
@@ -286,15 +306,15 @@ void test_ipfixlolib_rawdir() {
 		ipfixCollector.addIpfixPacketProcessor(&ipfixParser);
 		ipfixCollector.start();
 
-		// finish test
+		// give modules a chance to process their queues
 		sleep(1);
 
-		//TimeoutSemaphore::shutdown();
-		// make sure that pop semaphore doesn't hang. This shouldn't be needed, but let's play it safe
-		testSink.push(createTestDataTemplateDestructionRecord(0, createTestDataTemplate(0)));
+		// shut down modules
+		TimeoutSemaphore::shutdown();
 		testSink.terminateSink();
-		sleep(1);
+		TimeoutSemaphore::restart();
 
+		// check results
 		if (testSink.receivedRecords != 16) {
 			char s[256];
 			snprintf(s, 255, "IpfixRawdirReader should have read 16 records, but read %d", testSink.receivedRecords);
@@ -334,13 +354,11 @@ void start_test()
 
 	std::cout << "Testing: Concentrator" << std::endl;
 
-	//test_module_coupling();
+	test_module_coupling();
 
 	test_ipfixlolib_rawdir();
 
 	//test_parser_stability();
-
-	test_module_coupling();
 }
 
 ConcentratorTestSuite::ConcentratorTestSuite()
