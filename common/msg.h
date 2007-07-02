@@ -71,6 +71,8 @@ void vermont_exception(const int, const char*, const char*, const char*, const c
 //#endif
 
 // useful defines for logging
+#define THROWEXCEPTION(fmt, args...) vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, fmt, ##args)
+
 #define msg(lvl, fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
 
 #ifdef DEBUG
@@ -87,14 +89,12 @@ void vermont_exception(const int, const char*, const char*, const char*, const c
       }                                                                                                 \
     }
 
-#define THROWEXCEPTION(fmt, args...) vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, fmt, ##args)
 
 #else
 
 #define DPRINTF(fmt, args...)
 #define DPRINTFL(lvl, fmt, args...)
 #define ASSERT(exp, description)
-#define THROWEXCEPTION(fmt, args...)
 
 #endif
 
