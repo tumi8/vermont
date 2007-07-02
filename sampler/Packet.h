@@ -110,7 +110,7 @@ public:
 	uint8_t varlength_index;
 
 
-	Packet(InstanceManager<Packet>& im) : ManagedInstance<Packet>(im) 
+	Packet(InstanceManager<Packet>* im) : ManagedInstance<Packet>(im) 
 	{
 	}
 	

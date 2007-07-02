@@ -1,6 +1,6 @@
 /*
  * Instance Manager
- * Copyright (C) 2006 Tobias Limmer <http://www7.informatik.uni-erlangen.de/~limmer>
+ * Copyright (C) 2007 Tobias Limmer <http://www7.informatik.uni-erlangen.de/~limmer>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,7 +21,6 @@
 #if !defined(INSTANCEMANAGER_H)
 #define INSTANCEMANAGER_H
 
-#include "RefCountInstance.h"
 #include "Mutex.h"
 
 #include <list>
@@ -30,24 +29,25 @@ using namespace std;
 
 /**
  * manages instances of the given type to avoid news/deletes in program
- * managed types must be inherited from ManagedInstance
+ * managed types *should* be inherited from ManagedInstance
+ * ATTENTION: this class internally handles *pointers* of the given type
  */
 template<class T>
 class InstanceManager
 {
 	private:
 #if defined(DEBUG)
-		list<RefCountInstance<T>*> usedInstances;	// instances with active references (only used for debugging purposes)
+		list<T*> usedInstances;	// instances with active references (only used for debugging purposes)
 #endif
-		list<RefCountInstance<T>*> freeInstances;	// unused instances
-		Mutex mutex;	// we wanna be thread-safe
+		list<T*> freeInstances;	// unused instances
+		Mutex mutex;			// we wanna be thread-safe
 		const static int DEFAULT_NO_INSTANCES = 1000;
 
 	public:
 		InstanceManager(int preAllocInstances = DEFAULT_NO_INSTANCES)
 		{
 			for (int i=0; i<preAllocInstances; i++) {
-				freeInstances.push_back(new T(*this));
+				freeInstances.push_back(new T(this));
 			}
 		}
 
@@ -58,7 +58,7 @@ class InstanceManager
 				DPRINTF("freeing instance manager, although there are still %d used instances", usedInstances.size());
 			}
 #endif
-			typename list<RefCountInstance<T>*>::iterator it;
+			typename list<T*>::iterator it;
 			for (it = freeInstances.begin(); it != freeInstances.end(); ++it) {
 #if defined(DEBUG)
 				(*it)->deletedByManager = true;
@@ -73,28 +73,29 @@ class InstanceManager
 		 */
 		inline T* getNewInstance()
 		{
-			RefCountInstance<T>* instance;
+			T* instance;
 			mutex.lock();
 
 			if (freeInstances.empty()) {
 				// create new instance
-				instance = new T(*this);
+				instance = new T(this);
 			} else {
 				instance = freeInstances.front();
 				freeInstances.pop_front();
 			}
 
 #if defined(DEBUG)
+			DPRINTF("adding used instance 0x%08X", (void*)instance);
 			usedInstances.push_back(instance);
 #endif
 
 			instance->referenceCount++;
 			mutex.unlock();
 
-			return static_cast<T*>(instance);
+			return instance;
 		}
 
-		inline void addReference(RefCountInstance<T>* instance, int count)
+		inline void addReference(T* instance, int count)
 		{
 #if defined(DEBUG)
 			mutex.lock();
@@ -107,13 +108,13 @@ class InstanceManager
 			}
 			// this instance should be in the used list, else there is something wrong
 			if (find(usedInstances.begin(), usedInstances.end(), instance) == usedInstances.end()) {
-				THROWEXCEPTION("instance is not managed by InstanceManager");
+				THROWEXCEPTION("instance (0x%08X) is not managed by InstanceManager", (void*)instance);
 			}
 			mutex.unlock();
 #endif
 		}
 
-		inline void removeReference(RefCountInstance<T>* instance)
+		inline void removeReference(T* instance)
 		{
 			instance->referenceCount--;
 
@@ -121,10 +122,11 @@ class InstanceManager
 				mutex.lock();
 				freeInstances.push_back(instance);
 #if defined(DEBUG)
-				typename list<RefCountInstance<T>*>::iterator iter = find(usedInstances.begin(), usedInstances.end(), instance);
+				typename list<T*>::iterator iter = find(usedInstances.begin(), usedInstances.end(), instance);
 				if (iter == usedInstances.end()) {
-					THROWEXCEPTION("instance is not managed by InstanceManager");
+					THROWEXCEPTION("instance (0x%08X) is not managed by InstanceManager", (void*)instance);
 				}
+				DPRINTF("removing used instance 0x%08X", (void*)instance);
 				usedInstances.remove(*iter);
 #endif
 				mutex.unlock();
