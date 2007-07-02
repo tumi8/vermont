@@ -100,7 +100,7 @@ void Rule::print() {
  * @returns amount of bits used for host identification part of ip address
  * (in contrast to subnet identification part)
  */
-uint8_t getIPv4IMask(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* data) 
+uint8_t getIPv4IMask(const IpfixRecord::FieldInfo::Type* type, const IpfixRecord::Data* data) 
 {
 	// sometimes there is a fifth byte after the ip address inside the ipfix flow which specifies
 	// the amout of bits used for host identification part of ip address
@@ -116,7 +116,7 @@ uint8_t getIPv4IMask(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* data
 	return 0;
 }
 
-uint32_t getIPv4Address(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* data) {
+uint32_t getIPv4Address(const IpfixRecord::FieldInfo::Type* type, const IpfixRecord::Data* data) {
 	uint32_t addr = 0;
 	if (type->length >= 1) addr |= data[0] << 24;
 	if (type->length >= 2) addr |= data[1] << 16;
@@ -129,7 +129,7 @@ uint32_t getIPv4Address(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* d
  * Checks if a given "PortRanges" Field matches a "PortRanges" Pattern
  * @c return 1 if field matches
  */
-int matchesPortPattern(IpfixRecord::FieldInfo::Type* dataType, IpfixRecord::Data* data, IpfixRecord::FieldInfo::Type* patternType, IpfixRecord::Data* pattern) {
+int matchesPortPattern(const IpfixRecord::FieldInfo::Type* dataType, const IpfixRecord::Data* data, const IpfixRecord::FieldInfo::Type* patternType, const IpfixRecord::Data* pattern) {
 	int i;
 	int j;
 
@@ -185,7 +185,7 @@ int matchesPortPattern(IpfixRecord::FieldInfo::Type* dataType, IpfixRecord::Data
  * Checks if a given IPv4 Field matches a IPv4 Pattern
  * @c return 1 if field matches
  */
-int matchesIPv4Pattern(IpfixRecord::FieldInfo::Type* dataType, IpfixRecord::Data* data, IpfixRecord::FieldInfo::Type* patternType, IpfixRecord::Data* pattern) {
+int matchesIPv4Pattern(const IpfixRecord::FieldInfo::Type* dataType, const IpfixRecord::Data* data, const IpfixRecord::FieldInfo::Type* patternType, const IpfixRecord::Data* pattern) {
 	/* Get (inverse!) Network Masks */
 	int dmaski = getIPv4IMask(dataType, data);
 	int pmaski = getIPv4IMask(patternType, pattern);
@@ -203,7 +203,7 @@ int matchesIPv4Pattern(IpfixRecord::FieldInfo::Type* dataType, IpfixRecord::Data
  * Checks if a given Field matches a Pattern when compared byte for byte
  * @c return 1 if field matches
  */
-int matchesRawPattern(IpfixRecord::FieldInfo::Type* dataType, IpfixRecord::Data* data, IpfixRecord::FieldInfo::Type* patternType, IpfixRecord::Data* pattern) {
+int matchesRawPattern(const IpfixRecord::FieldInfo::Type* dataType, const IpfixRecord::Data* data, const IpfixRecord::FieldInfo::Type* patternType, const IpfixRecord::Data* pattern) {
 	int i;
 
 	/* Byte-wise comparison, so lengths must be equal */
@@ -218,7 +218,7 @@ int matchesRawPattern(IpfixRecord::FieldInfo::Type* dataType, IpfixRecord::Data*
  * Checks if a data block matches a given pattern
  * @return 1 if pattern is matched
  */
-int matchesPattern(IpfixRecord::FieldInfo::Type* dataType, IpfixRecord::Data* data, IpfixRecord::FieldInfo::Type* patternType, IpfixRecord::Data* pattern) {
+int matchesPattern(const IpfixRecord::FieldInfo::Type* dataType, const IpfixRecord::Data* data, const IpfixRecord::FieldInfo::Type* patternType, const IpfixRecord::Data* pattern) {
 	/* an inexistent pattern is always matched */
 	if (pattern == NULL) return 1;
 
@@ -361,19 +361,17 @@ int Rule::templateDataMatches(IpfixRecord::TemplateInfo* info, IpfixRecord::Data
  * only for Express version of concentrator
  * @return 1 if rule is matched, 0 otherwise
  */
-int Rule::ExptemplateDataMatches(IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi) 
+int Rule::ExptemplateDataMatches(const Packet* p) 
 {
 	int i;
-	IpfixRecord::Data* field_data;
 	IpfixRecord::TemplateInfo* info = NULL;
 
 	for (i = 0; i < fieldCount; i++) {
 		Rule::Field* ruleField = field[i];
+		const IpfixRecord::Data* field_data = info->getFieldPointer(ruleField->type, p);
 
 		/* for all patterns of this rule, check if they are matched */
 		if (field[i]->pattern) {
-			// tobi_optimize: maybe adjust getFieldPointer to be inline
-			field_data = info->getFieldPointer(ruleField->type, ip_data, th_data, classi);
 			
 			if (field_data) {
 				if (ruleField->pattern == NULL) return 1;
@@ -386,9 +384,8 @@ int Rule::ExptemplateDataMatches(IpfixRecord::Data* ip_data, IpfixRecord::Data* 
 							fi.type.length = 4;
 							fi.offset = 12;
 
-							uint8_t dmaski = getIPv4IMask(&fi.type, field_data);
+							uint8_t dmaski = 0; // no host identification part in IP adress
 							int pmaski = getIPv4IMask(&ruleField->type, ruleField->pattern);
-
 
 							if (dmaski > pmaski) return 0;
 
@@ -451,7 +448,7 @@ int Rule::ExptemplateDataMatches(IpfixRecord::Data* ip_data, IpfixRecord::Data* 
 		}
 		/* if a non-discarding rule field specifies no pattern, check at least if the data field exists */
 		else if (field[i]->modifier != Rule::Field::DISCARD) {
-			field_data = info->getFieldPointer(ruleField->type, ip_data, th_data, classi);
+			field_data = info->getFieldPointer(ruleField->type, p);
 			if (field_data) continue;
 			msg(MSG_DEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;

@@ -151,8 +151,7 @@ bool HookingFilter::processPacket(const Packet *p)
         DPRINTF("offset=%x", offset);
 
 	// Choose template according to transport header type
-	if((p->classification & PCLASS_TRN_ICMP) != 0)
-	{
+	if(p->ipProtocolType == Packet::ICMP) {
 	    /* adapt offset for millisecond timestamps */
 	    icmp_traffic_template->fieldInfo[8].offset = offset;
 	    icmp_traffic_template->fieldInfo[9].offset = offset;
@@ -161,9 +160,8 @@ bool HookingFilter::processPacket(const Packet *p)
 	    flowSink->onDataRecord(NULL, icmp_traffic_template, p->data_length, fdata);
 	    /* reset offset for typecode to starting value */
 	    icmp_traffic_template->fieldInfo[0].offset = 0;
-	}
-	else if((p->classification & PCLASS_TRN_UDP) != 0)
-	{
+
+	} else if(p->ipProtocolType == Packet::UDP) {
 	    /* adapt offset for millisecond timestamps */
 	    udp_traffic_template->fieldInfo[9].offset = offset;
 	    udp_traffic_template->fieldInfo[10].offset = offset;
@@ -174,9 +172,8 @@ bool HookingFilter::processPacket(const Packet *p)
 	    /* reset offsets for srcport/dstport to starting values */
 	    udp_traffic_template->fieldInfo[0].offset = 0;
 	    udp_traffic_template->fieldInfo[1].offset = 2;
-	}
-	else if((p->classification & PCLASS_TRN_TCP) != 0)
-	{
+
+	} else if(p->ipProtocolType == Packet::TCP) {
 	    /* adapt offset for millisecond timestamps */
 	    tcp_traffic_template->fieldInfo[10].offset = offset;
 	    tcp_traffic_template->fieldInfo[11].offset = offset;
@@ -189,9 +186,8 @@ bool HookingFilter::processPacket(const Packet *p)
 	    tcp_traffic_template->fieldInfo[0].offset = 13;
 	    tcp_traffic_template->fieldInfo[1].offset = 0;
 	    tcp_traffic_template->fieldInfo[2].offset = 2;
-	}
-	else
-	{
+
+	} else {
 	    /* adapt offset for millisecond timestamps */
 	    ip_traffic_template->fieldInfo[7].offset = offset;
 	    ip_traffic_template->fieldInfo[8].offset = offset;

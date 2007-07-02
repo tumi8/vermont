@@ -148,14 +148,11 @@ int IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::
 
 /**
  * replacement of onDataRecord which is only able to handle raw IP packets and aggregate those
- * @param sourceID SourceID of the exporter that sent this Record
- * @param templateInfo Pointer to a structure defining the Template used
- * @param length Length of the data block supplied
- * @param data Pointer to a data block containing all fields
- * @param classi type of IP protocol
+ * efficiently
+ * @param packet raw network packet which was received
  * @return 0 if packet handled successfully
  */
-int IpfixAggregator::onExpDataRecord(IpfixRecord::SourceID* sourceID, uint16_t length, IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi)
+int IpfixAggregator::onPacket(const Packet* packet)
 {
 	int i;
 
@@ -165,13 +162,14 @@ int IpfixAggregator::onExpDataRecord(IpfixRecord::SourceID* sourceID, uint16_t l
 	}
 #endif
 
-
+	pthread_mutex_lock(&mutex);
 	for (i = 0; i < rules->count; i++) {
-		if (rules->rule[i]->ExptemplateDataMatches(ip_data, th_data, classi)) {
-			DPRINTF("onExpDataRecord: rule %d matches\n", i);
-			((Hashtable*)rules->rule[i]->hashtable)->ExpaggregateTemplateData(ip_data, th_data, classi);
+		if (rules->rule[i]->ExptemplateDataMatches(packet)) {
+			DPRINTF("rule %d matches\n", i);
+			((Hashtable*)rules->rule[i]->hashtable)->ExpAggregateTemplateData(packet);
 		}
 	}
+	pthread_mutex_unlock(&mutex);
 	
 	return 0;
 }

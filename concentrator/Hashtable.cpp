@@ -305,83 +305,83 @@ int Hashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 int Hashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* baseData, IpfixRecord::Data* deltaData) {
 	switch (type->id) {
 
-	case IPFIX_TYPEID_flowStartSysUpTime:
-	case IPFIX_TYPEID_flowStartSeconds:
-	case IPFIX_TYPEID_flowStartMicroSeconds:
-	case IPFIX_TYPEID_flowStartNanoSeconds:
-		if (type->length != 4) {
-			DPRINTF("unsupported length %d for type %d", type->length, type->id);
-                        goto out;
-		}
+		case IPFIX_TYPEID_flowStartSysUpTime:
+		case IPFIX_TYPEID_flowStartSeconds:
+		case IPFIX_TYPEID_flowStartMicroSeconds:
+		case IPFIX_TYPEID_flowStartNanoSeconds:
+			if (type->length != 4) {
+				DPRINTF("unsupported length %d for type %d", type->length, type->id);
+				goto out;
+			}
 
-		*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-		break;
+			*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+			break;
 
-	case IPFIX_TYPEID_flowStartMilliSeconds:
-		if (type->length != 8) {
-			DPRINTF("unsupported length %d for type %d", type->length, type->id);
-                        goto out;
-		}
+		case IPFIX_TYPEID_flowStartMilliSeconds:
+			if (type->length != 8) {
+				DPRINTF("unsupported length %d for type %d", type->length, type->id);
+				goto out;
+			}
 
-		*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-                break;
+			*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+			break;
 
-	case IPFIX_TYPEID_flowEndSysUpTime:
-	case IPFIX_TYPEID_flowEndSeconds:
-	case IPFIX_TYPEID_flowEndMicroSeconds:
-	case IPFIX_TYPEID_flowEndNanoSeconds:
-		if (type->length != 4) {
-			DPRINTF("unsupported length %d for type %d", type->length, type->id);
-			goto out;
-		}
+		case IPFIX_TYPEID_flowEndSysUpTime:
+		case IPFIX_TYPEID_flowEndSeconds:
+		case IPFIX_TYPEID_flowEndMicroSeconds:
+		case IPFIX_TYPEID_flowEndNanoSeconds:
+			if (type->length != 4) {
+				DPRINTF("unsupported length %d for type %d", type->length, type->id);
+				goto out;
+			}
 
-		*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-		break;
+			*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+			break;
 
-	case IPFIX_TYPEID_flowEndMilliSeconds:
-		if (type->length != 8) {
-			DPRINTF("unsupported length %d for type %d", type->length, type->id);
-                        goto out;
-		}
+		case IPFIX_TYPEID_flowEndMilliSeconds:
+			if (type->length != 8) {
+				DPRINTF("unsupported length %d for type %d", type->length, type->id);
+				goto out;
+			}
 
-		*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-                break;
+			*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+			break;
 
-	case IPFIX_TYPEID_octetDeltaCount:
-	case IPFIX_TYPEID_postOctetDeltaCount:
-	case IPFIX_TYPEID_packetDeltaCount:
-	case IPFIX_TYPEID_postPacketDeltaCount:
-	case IPFIX_TYPEID_droppedOctetDeltaCount:
-	case IPFIX_TYPEID_droppedPacketDeltaCount:
-                // TODO: tobi_optimize
-		switch (type->length) {
-		case 1:
-			*(uint8_t*)baseData = addUint8Nbo(*(uint8_t*)baseData, *(uint8_t*)deltaData);
-			return 0;
-		case 2:
-			*(uint16_t*)baseData = addUint16Nbo(*(uint16_t*)baseData, *(uint16_t*)deltaData);
-                        return 0;
-		case 4:
-			*(uint32_t*)baseData = addUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-                        return 0;
-		case 8:
-			*(uint64_t*)baseData = addUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-                        return 0;
+		case IPFIX_TYPEID_octetDeltaCount:
+		case IPFIX_TYPEID_postOctetDeltaCount:
+		case IPFIX_TYPEID_packetDeltaCount:
+		case IPFIX_TYPEID_postPacketDeltaCount:
+		case IPFIX_TYPEID_droppedOctetDeltaCount:
+		case IPFIX_TYPEID_droppedPacketDeltaCount:
+			// TODO: tobi_optimize
+			switch (type->length) {
+				case 1:
+					*(uint8_t*)baseData = addUint8Nbo(*(uint8_t*)baseData, *(uint8_t*)deltaData);
+					return 0;
+				case 2:
+					*(uint16_t*)baseData = addUint16Nbo(*(uint16_t*)baseData, *(uint16_t*)deltaData);
+					return 0;
+				case 4:
+					*(uint32_t*)baseData = addUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+					return 0;
+				case 8:
+					*(uint64_t*)baseData = addUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+					return 0;
+				default:
+					DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					goto out;
+			}
+			break;
+
 		default:
-			DPRINTF("unsupported length %d for type %d", type->length, type->id);
+			DPRINTF("non-aggregatable type: %d", type->id);
 			goto out;
-		}
-		break;
-
-	default:
-		DPRINTF("non-aggregatable type: %d", type->id);
-                goto out;
-		break;
+			break;
 	}
 
 	return 0;
 out:
-        return 1;
+	return 1;
 }
 
 /**
@@ -526,9 +526,6 @@ void copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData,
 		DPRINTF("copyData: Tried to copy field to destination of different type\n");
 		return;
 	}
-        if (srcType->id == IPFIX_TYPEID_flowStartMilliSeconds) {
-            DPRINTF("copyData: flowStartMilliSeconds is %llX with length %d\n", *((uint64_t*)srcData), srcType->length);
-        }
 
 	/* Copy data, care for length differences */
 	if(dstType->length == srcType->length) {
@@ -605,7 +602,7 @@ void copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData,
 	}
 }
 
-void ExpcopyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData, IpfixRecord::FieldInfo::Type* srcType, IpfixRecord::Data* srcData, Rule::Field::Modifier modifier)
+void ExpcopyData(const IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData, const IpfixRecord::FieldInfo::Type* srcType, const IpfixRecord::Data* srcData, const Rule::Field::Modifier modifier)
 {
 	if((dstType->id != srcType->id)) {
 		DPRINTF("copyData: Tried to copy field to destination of different type\n");
@@ -759,37 +756,35 @@ void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord
 /**
  * Buffer passed flow for Express aggregator
  */
-void Hashtable::ExpaggregateTemplateData(IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi)
+void Hashtable::ExpAggregateTemplateData(const Packet* p)
 {
-	int i;
-        DPRINTF("Hashtable::ExpaggregateTemplateData called");
+	DPRINTF("called");
 	IpfixRecord::TemplateInfo* ti = NULL;
 
 	/* Create data block to be inserted into buffer... */
 	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength]);
 
-	for (i = 0; i < dataTemplate->fieldCount; i++) {
+	// tobi_optimize:
+	// here we copy stuff from the raw packet into the aggregated data structure
+	// in many cases this would not be necessary, as the flow has already been added
+	// to the hashtable and inside bufferDataBlock, the already copied data is copied into
+	// the existing flow and htdata is freed again (-> unnecessary new, copy and delete)
+	for (int i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
-		IpfixRecord::Data* tfi = ti->getFieldPointer(hfi->type, ip_data, th_data, classi);
+		const IpfixRecord::Data* tfi = ti->getFieldPointer(hfi->type, p);
 		IpfixRecord::FieldInfo fi;
 
 		fi.type.id = hfi->type.id;
 		fi.type.length = ti->getFieldLength(hfi->type);
-
 
 		if(!tfi) {
 			DPRINTF("Flow to be buffered did not contain %s field\n", typeid2string(hfi->type.id));
 			continue;
 		}
 
-                DPRINTF("Hashtable::ExpaggregateTemplateData: copyData for type %d, starting from pointer %X", fi.type.id, tfi);
-                DPRINTF("Hashtable::ExpaggregateTemplateData: copyData to offset %X", hfi->offset);
 		ExpcopyData(&hfi->type, htdata.get() + hfi->offset, &fi.type, tfi, fieldModifier[i]);
-
-		/* copy associated mask, should there be one */
 	}
 
-	/* ...then buffer it */
 	bufferDataBlock(htdata);
 }
 

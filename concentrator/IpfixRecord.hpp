@@ -25,8 +25,9 @@
 #include <memory>
 #include <boost/smart_ptr.hpp>
 #include <stdexcept>
+
 #include "ipfix.hpp"
-#include "../sampler/Packet.h"
+#include "sampler/Packet.h"
 
 #define MAX_ADDRESS_LEN 16
 
@@ -107,165 +108,157 @@ class IpfixRecord {
 			 **/
 			int getFieldLength(IpfixRecord::FieldInfo::Type type) {
 
-			int type_length;
-
-			switch (type.id) {
-			case IPFIX_TYPEID_packetDeltaCount:
-			type_length = 1;
-			return type_length;
-			break;
-
-			case IPFIX_TYPEID_flowStartSeconds:
-			type_length = 4;
-			return type_length;
-			break;
-
-			case IPFIX_TYPEID_flowStartMilliSeconds:
-			type_length = 8;
-			return type_length;
-			break;
-
-			case IPFIX_TYPEID_flowEndSeconds:
-			type_length = 4;
-			return type_length;
-			break;
-
-			case IPFIX_TYPEID_flowEndMilliSeconds:
-			type_length = 8;
-			return type_length;
-			break;
-
-			case IPFIX_TYPEID_octetDeltaCount:
-			type_length = 2;
-			return type_length;
-			break;
-
-			case IPFIX_TYPEID_protocolIdentifier:
-			type_length = 1;
-			return type_length;
-			break;
-
-			case IPFIX_TYPEID_sourceIPv4Address:
-			type_length = 4;
-			return type_length;
-			break;
-
-			case IPFIX_TYPEID_destinationIPv4Address:
-			type_length = 4;
-			return type_length;
-			break;
-
-			case IPFIX_TYPEID_icmpTypeCode:
-			type_length = 4;
-			return type_length;
-			break;
-
-			case IPFIX_TYPEID_sourceTransportPort:
-			type_length = 2;
-			return type_length;
-			break;
-	
-			case IPFIX_TYPEID_destinationTransportPort:
-			type_length = 2;
-			return type_length;
-			break;
-
-			case IPFIX_TYPEID_tcpControlBits:
-			type_length = 1;
-			return type_length;
-			break;
-
-			default:
-			return 999;
-			break;
-			}
-	
-			return 999;
-			}
-
-
-
-			IpfixRecord::Data* getFieldPointer(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi) {
-				
-				//IpfixRecord::Data* idata=(IpfixRecord::Data *)pdata->shit;
-
+				int type_length;
 
 				switch (type.id) {
-				case IPFIX_TYPEID_packetDeltaCount:
-				return ip_data + 10;
-				break;
+					case IPFIX_TYPEID_packetDeltaCount:
+						type_length = 1;
+						return type_length;
+						break;
 
-				case IPFIX_TYPEID_flowStartSeconds:
-				return ip_data + 4;	
-				break;
+					case IPFIX_TYPEID_flowStartSeconds:
+						type_length = 4;
+						return type_length;
+						break;
 
-				case IPFIX_TYPEID_flowStartMilliSeconds:
-				return ip_data + 0;	
-				break;
+					case IPFIX_TYPEID_flowStartMilliSeconds:
+						type_length = 8;
+						return type_length;
+						break;
 
-				case IPFIX_TYPEID_flowEndSeconds:
-				return ip_data + 4;
-				break;
+					case IPFIX_TYPEID_flowEndSeconds:
+						type_length = 4;
+						return type_length;
+						break;
 
-				case IPFIX_TYPEID_flowEndMilliSeconds:
-				return ip_data + 0;
-				break;
+					case IPFIX_TYPEID_flowEndMilliSeconds:
+						type_length = 8;
+						return type_length;
+						break;
 
-				case IPFIX_TYPEID_octetDeltaCount:
-				return ip_data + 2;
-				break;
+					case IPFIX_TYPEID_octetDeltaCount:
+						type_length = 2;
+						return type_length;
+						break;
 
-				case IPFIX_TYPEID_protocolIdentifier:
-				return ip_data + 9;
-				break;
+					case IPFIX_TYPEID_protocolIdentifier:
+						type_length = 1;
+						return type_length;
+						break;
 
-				case IPFIX_TYPEID_sourceIPv4Address:
-				return ip_data + 12;
-				break;
+					case IPFIX_TYPEID_sourceIPv4Address:
+						type_length = 4;
+						return type_length;
+						break;
 
-				case IPFIX_TYPEID_destinationIPv4Address:
-				return ip_data + 16;
-				break;
+					case IPFIX_TYPEID_destinationIPv4Address:
+						type_length = 4;
+						return type_length;
+						break;
 
-				case IPFIX_TYPEID_icmpTypeCode:
-				if(classi == 0) {
-//					IpfixRecord::Data* tdata=(IpfixRecord::Data *)pdata->transport_header;
-					return th_data + 0;
-				} else {
-					return NULL;
+					case IPFIX_TYPEID_icmpTypeCode:
+						type_length = 4;
+						return type_length;
+						break;
+
+					case IPFIX_TYPEID_sourceTransportPort:
+						type_length = 2;
+						return type_length;
+						break;
+
+					case IPFIX_TYPEID_destinationTransportPort:
+						type_length = 2;
+						return type_length;
+						break;
+
+					case IPFIX_TYPEID_tcpControlBits:
+						type_length = 1;
+						return type_length;
+						break;
+
+					default:
+						THROWEXCEPTION("unknown typeid");
+						break;
 				}
-				break;
 
-				case IPFIX_TYPEID_sourceTransportPort:
-				if((classi == 1) || (classi == 2)) {
-				//	IpfixRecord::Data* tdata=(IpfixRecord::Data *)pdata->transport_header;
-					return th_data + 0;
-				} else {
-					return NULL;
-				}
-				break;
+				THROWEXCEPTION("unknown typeid");
+				return 0;
+			}
 
-				case IPFIX_TYPEID_destinationTransportPort:
-				if((classi == 1) || (classi == 2)) {
-				//	IpfixRecord::Data* tdata=(IpfixRecord::Data *)pdata->transport_header;
-					return th_data + 2;
-				} else {
-					return NULL;
-				}
-				break;
 
-				case IPFIX_TYPEID_tcpControlBits:
-				if(classi == 1) {
-				//	IpfixRecord::Data* tdata=(IpfixRecord::Data *)pdata->transport_header;
-					return th_data + 13;
-				} else {
-					return NULL;
-				}
-				break;	
 
-				default:
-				return NULL;
-				break;
+			/**
+			 * @returns pointer to position in raw packet data or Packet structure
+			 *          where given ipfix typeid relates to
+			 */
+			const IpfixRecord::Data* getFieldPointer(const IpfixRecord::FieldInfo::Type& type, const Packet* p) 
+			{
+				switch (type.id) {
+					case IPFIX_TYPEID_packetDeltaCount:
+						return p->netHeader + 10;
+						break;
+
+					case IPFIX_TYPEID_flowStartSeconds:
+					case IPFIX_TYPEID_flowEndSeconds:
+						return reinterpret_cast<const IpfixRecord::Data*>(&p->timestamp.tv_sec);
+						break;
+
+					case IPFIX_TYPEID_flowStartMilliSeconds:
+					case IPFIX_TYPEID_flowEndMilliSeconds:
+						return reinterpret_cast<const IpfixRecord::Data*>(&p->time_msec_ipfix);
+						break;
+
+					case IPFIX_TYPEID_octetDeltaCount:
+						return p->netHeader + 2;
+						break;
+
+					case IPFIX_TYPEID_protocolIdentifier:
+						return p->netHeader + 9;
+						break;
+
+					case IPFIX_TYPEID_sourceIPv4Address:
+						return p->netHeader + 12;
+						break;
+
+					case IPFIX_TYPEID_destinationIPv4Address:
+						return p->netHeader + 16;
+						break;
+
+					case IPFIX_TYPEID_icmpTypeCode:
+						if(p->ipProtocolType == Packet::ICMP) {
+							return p->transportHeader + 0;
+						} else {
+							return NULL;
+						}
+						break;
+
+					case IPFIX_TYPEID_sourceTransportPort:
+						if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
+							return p->transportHeader + 0;
+						} else {
+							return NULL;
+						}
+						break;
+
+					case IPFIX_TYPEID_destinationTransportPort:
+						if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
+							return p->transportHeader + 2;
+						} else {
+							return NULL;
+						}
+						break;
+
+					case IPFIX_TYPEID_tcpControlBits:
+						if(p->ipProtocolType == Packet::TCP) {
+							return p->transportHeader + 13;
+						} else {
+							return NULL;
+						}
+						break;	
+
+					default:
+						return NULL;
+						break;
 				}
 
 				return NULL;
