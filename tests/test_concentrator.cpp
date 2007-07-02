@@ -323,13 +323,9 @@ void test_parser_stability() {
 	}
 }
 
-<<<<<<< HEAD:vermont/tests/test_concentrator.cpp
-int test_main(int, char *[]) {
 
-=======
 void start_test()
 {
->>>>>>> added new vermont tests, call ./tests/vermonttest for test runs,:vermont/tests/test_concentrator.cpp
 	// set Vermont messaging subsystem's debug level
 	//msg_setlevel(MSG_DEFAULT+99);
 
@@ -337,7 +333,6 @@ void start_test()
 	srand(0);	
 
 	std::cout << "Testing: Concentrator" << std::endl;
-<<<<<<< HEAD:vermont/tests/test_concentrator.cpp
 
 	//test_module_coupling();
 
@@ -345,23 +340,7 @@ void start_test()
 
 	//test_parser_stability();
 
-	return 0;
-=======
 	test_module_coupling();
-
-	/*
-	// six ways to detect and report the same error:
-	BOOST_CHECK( add( 2,2 ) == 4 );        // #1 continues on error
-	BOOST_REQUIRE( add( 2,2 ) == 4 );      // #2 throws on error
-	if( add( 2,2 ) != 4 )
-	BOOST_ERROR( "Ouch..." );            // #3 continues on error
-	if( add( 2,2 ) != 4 )
-	BOOST_FAIL( "Ouch..." );             // #4 throws on error
-	if( add( 2,2 ) != 4 ) throw "Oops..."; // #5 throws on error
-
-	return add( 2, 2 ) == 4 ? 0 : 1;       // #6 returns error code
-	*/
->>>>>>> added new vermont tests, call ./tests/vermonttest for test runs,:vermont/tests/test_concentrator.cpp
 }
 
 ConcentratorTestSuite::ConcentratorTestSuite()
