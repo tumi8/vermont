@@ -33,7 +33,7 @@ AM_LDFLAGS= \
 	$(MYSQL_LDFLAGS) \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_FILESYSTEM_LIB) \
-	$(BOOST_REGEX_LIB)
+	$(BOOST_REGEX_LIB) 
 
 vermont_LDADD= \
 	$(top_builddir)/concentrator/libconcentrator.a \

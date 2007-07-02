@@ -1,7 +1,6 @@
-bin_PROGRAMS=test_concentrator AggregationPerfTest
+bin_PROGRAMS=vermonttest
 
-test_concentrator_SOURCES=test_concentrator.cpp common/msg.h
-AggregationPerfTest_SOURCES=AggregationPerfTest.cpp AggregationPerfTest.h common/msg.h common/Time.h
+vermonttest_SOURCES=test_concentrator.cpp common/msg.h AggregationPerfTest.cpp AggregationPerfTest.h common/Time.h VermontTest.cpp VermontTest.h
 
 AM_CFLAGS=-I$(top_srcdir) `xml2-config --cflags` $(MYSQL_CFLAGS) -Wall -Werror
 AM_CXXFLAGS=$(AM_CFLAGS)
@@ -13,9 +12,11 @@ AM_LDFLAGS= \
 	$(MYSQL_LDFLAGS) \
 	$(BOOST_LDFLAGS) \
 	$(BOOST_FILESYSTEM_LIB) \
-	$(BOOST_REGEX_LIB)
+	$(BOOST_REGEX_LIB) \
+	$(BOOST_UNIT_TEST_FRAMEWORK_LIB)
 
-test_concentrator_LDADD= \
+
+vermonttest_LDADD= \
 	$(top_builddir)/concentrator/libconcentrator.a \
 	$(top_builddir)/sampler/libsampler.a \
 	$(top_builddir)/ipfixlolib/libipfixlo.a \
@@ -23,22 +24,9 @@ test_concentrator_LDADD= \
 	-lpthread \
 	$(LPCAP)
 
-AggregationPerfTest_LDADD= \
-	$(top_builddir)/concentrator/libconcentrator.a \
-	$(top_builddir)/ipfixlolib/libipfixlo.a \
-	$(top_builddir)/sampler/libsampler.a \
-	$(top_builddir)/common/libcommon.a \
-	-lpthread \
-	$(LPCAP)
-
-test_concentrator_DEPENDENCIES= \
+vermonttest_DEPENDENCIES= \
 	$(top_builddir)/concentrator/libconcentrator.a \
 	$(top_builddir)/sampler/libsampler.a \
 	$(top_builddir)/ipfixlolib/libipfixlo.a \
 	$(top_builddir)/common/libcommon.a 
 
-AggregationPerfTest_DEPENDENCIES= \
-	$(top_builddir)/concentrator/libconcentrator.a \
-	$(top_builddir)/ipfixlolib/libipfixlo.a \
-	$(top_builddir)/sampler/libsampler.a \
-	$(top_builddir)/common/libcommon.a

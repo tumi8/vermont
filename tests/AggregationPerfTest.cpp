@@ -1,17 +1,25 @@
-#ifdef HAVE_BOOST_UNIT_TEST_FRAMEWORK
-
 #include "AggregationPerfTest.h"
 
+#include "sampler/ExpressHookingFilter.h"
 #include "sampler/Filter.h"
 #include "common/Time.h"
 
-#include <boost/test/minimal.hpp>
+#include <boost/test/auto_unit_test.hpp>
 #include <sys/time.h>
 #include <time.h>
 
 
-AggregationPerfTest::AggregationPerfTest()
+/**
+ * @param fast determines if this test should be performed really fast or slower for performance measurements
+ */
+AggregationPerfTest::AggregationPerfTest(bool fast)
 {
+	if (fast) {
+		numPackets = 3000;
+	} else {
+		numPackets = 50000;
+	}
+
 }
 
 AggregationPerfTest::~AggregationPerfTest()
@@ -20,6 +28,38 @@ AggregationPerfTest::~AggregationPerfTest()
 	delete packetSink;
 	delete ipfixAggregator;
 	delete packetManager;
+}
+
+void AggregationPerfTest::normalTest()
+{
+	setup(false);
+	struct timeval starttime;
+	BOOST_REQUIRE(gettimeofday(&starttime, 0) == 0);
+	start(numPackets);
+	struct timeval stoptime;
+	BOOST_REQUIRE(gettimeofday(&stoptime, 0) == 0);
+	struct timeval difftime;
+	BOOST_REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
+
+	printf("needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
+
+	shutdown();
+}
+
+void AggregationPerfTest::expressTest()
+{
+	setup(true);
+	struct timeval starttime;
+	BOOST_REQUIRE(gettimeofday(&starttime, 0) == 0);
+	start(numPackets);
+	struct timeval stoptime;
+	BOOST_REQUIRE(gettimeofday(&stoptime, 0) == 0);
+	struct timeval difftime;
+	BOOST_REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
+
+	printf("needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
+
+	shutdown();
 }
 
 Rule::Field* AggregationPerfTest::createRuleField(const string& typeId)
@@ -58,7 +98,7 @@ Rules* AggregationPerfTest::createRules()
 	return rules;
 }
 
-void AggregationPerfTest::setup()
+void AggregationPerfTest::setup(bool express)
 {
 	packetSink = new PacketSink();
 
@@ -71,7 +111,11 @@ void AggregationPerfTest::setup()
 	// as deconstruction of unused instances is done with shared pointers
 	ipfixAggregator = new IpfixAggregator(rules, inactiveBufferTime, activeBufferTime);
 
-	hookingFilter = new HookingFilter(ipfixAggregator);
+	if (express) {
+		hookingFilter = new ExpressHookingFilter(ipfixAggregator);
+	} else {
+		hookingFilter = new HookingFilter(ipfixAggregator);
+	}
 
 	filter = new Filter();
 	filter->addProcessor(hookingFilter);
@@ -90,6 +134,7 @@ void AggregationPerfTest::shutdown()
 	filter->terminate();
 	packetSink->terminateSink();
 	ipfixAggregator->terminateSink();
+	TimeoutSemaphore::restart();
 }
 
 
@@ -112,49 +157,4 @@ void AggregationPerfTest::start(unsigned int numpackets)
 		filterq->push(p);
 	}
 }
-
-
-int test_main(int, char *[]) 
-{
-	unsigned int numpackets = 50000;
-	msg_setlevel(MSG_DEFAULT+1);
-
-	AggregationPerfTest perftest;
-	perftest.setup();
-	struct timeval starttime;
-	BOOST_REQUIRE(gettimeofday(&starttime, 0) == 0);
-	perftest.start(numpackets);
-	struct timeval stoptime;
-	BOOST_REQUIRE(gettimeofday(&stoptime, 0) == 0);
-	struct timeval difftime;
-	BOOST_REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
-
-	printf("needed time for processing %d packets: %d.%06d seconds\n", numpackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
-
-	perftest.shutdown();
-	
-
-	/*
-	// six ways to detect and report the same error:
-	BOOST_CHECK( add( 2,2 ) == 4 );        // #1 continues on error
-	BOOST_REQUIRE( add( 2,2 ) == 4 );      // #2 throws on error
-	if( add( 2,2 ) != 4 )
-	BOOST_ERROR( "Ouch..." );            // #3 continues on error
-	if( add( 2,2 ) != 4 )
-	BOOST_FAIL( "Ouch..." );             // #4 throws on error
-	if( add( 2,2 ) != 4 ) throw "Oops..."; // #5 throws on error
-
-	return add( 2, 2 ) == 4 ? 0 : 1;       // #6 returns error code
-	*/
-
-	return 0;
-}
-
-#endif //HAVE_BOOST_UNIT_TEST_FRAMEWORK
-#ifndef HAVE_BOOST_UNIT_TEST_FRAMEWORK
-#include <iostream>
-int main(int argc, char* argv[]) {
-	std::cerr << "Not configured with HAVE_BOOST_UNIT_TEST_FRAMEWORK. No tests have been built." << std::endl;
-}
-#endif //HAVE_BOOST_UNIT_TEST_FRAMEWORK
 
