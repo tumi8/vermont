@@ -23,7 +23,6 @@
 
 #include "msg.h"
 #include "InstanceManager.h"
-#include "RefCountInstance.h"
 
 /**
  * represents an instance which can be managed by ResourceManager
@@ -31,18 +30,36 @@
  * should be handled in InstanceManager
  */
 template<class T>
-class ManagedInstance : public RefCountInstance<T>
+class ManagedInstance
 {
 	friend class InstanceManager<T>;
 
 	private:
-		InstanceManager<T>& myInstanceManager;
+		InstanceManager<T>* myInstanceManager;
+		unsigned int referenceCount;
+#if defined(DEBUG)
+        bool deletedByManager;
+#endif
 
 	public:
-		ManagedInstance(InstanceManager<T>& im)
-			: myInstanceManager(im)
+		ManagedInstance(InstanceManager<T>* im)
+			: myInstanceManager(im), referenceCount(0)
+#if defined(DEBUG)
+              , deletedByManager(false)
+#endif
+
 		{
 		}
+
+#if defined(DEBUG)
+        virtual ~ManagedInstance()
+        {
+            // check if this instance was properly deleted by the instance manager
+            if (!deletedByManager) {
+                THROWEXCEPTION("RefCountInstance was not deleted by InstanceManager!");
+            }
+        }
+#endif
 
 		/**
 		 * called by code which wants to use this instance
@@ -51,7 +68,7 @@ class ManagedInstance : public RefCountInstance<T>
 		 */
 		inline void addReference(int count = 1)
 		{
-			myInstanceManager.addReference(this, count);
+			myInstanceManager->addReference(static_cast<T*>(this), count);
 		}
 
 		/**
@@ -59,7 +76,7 @@ class ManagedInstance : public RefCountInstance<T>
 		 */
 		inline void removeReference()
 		{
-			myInstanceManager.removeReference(this);
+			myInstanceManager->removeReference(static_cast<T*>(this));
 		}
 };
 
