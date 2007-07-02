@@ -73,6 +73,9 @@
 class Packet : public ManagedInstance<Packet>
 {
 public:
+	// Transport header classifications (used in Packet::ipProtocolType)
+	enum IPProtocolType { NONE=0, TCP, UDP, ICMP, IGMP };
+
 	// The number of total packets received, will be incremented by each constructor call
 	// implemented as public-variable for speed reasons (or lazyness reasons? ;-)
 	static unsigned long totalPacketsReceived;
@@ -95,7 +98,11 @@ public:
 	unsigned int payloadOffset;
 
 	// the packet classification, i.e. what headers are present?
+	// note: protocol type is also specified in ipProtocolType
 	unsigned long classification;
+
+	// note: protocol type is also specified in classification
+	IPProtocolType ipProtocolType;
 
 	// The number of captured bytes
 	unsigned int data_length;
@@ -124,6 +131,7 @@ public:
 		data_length = len;
 		timestamp = time;
 		varlength_index = 0;
+		ipProtocolType = NONE;
 
 		if (len > PACKET_MAXLEN) {
 			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d)", len, PACKET_MAXLEN);
@@ -153,20 +161,11 @@ public:
 	{
 	}
 
-	// the supplied classification is _either_ PCLASS_NET_xxx or PCLASS_TRN_xxx (or PCLASS_PAYLOAD)
-	// we check whether at least one of the Packet's classification-bits is also set in the supplied
-	// parameter. If yes, then out packet matches the supplied class and can be safely processed.
-	// otherwise, the Exporter should send a NULL value
-	inline bool matches(unsigned long checkClassification) const
-	{
-		return (classification & checkClassification) != 0;
-	}
-
 	// classify the packet headers
 	void classify()
 	{
 		unsigned char protocol = 0;
-		
+
 		// first check for IPv4 header which needs to be at least 20 bytes long
 		if ( (netHeader + 20 <= data + data_length) && ((*netHeader >> 4) == 4) )
 		{
@@ -178,15 +177,15 @@ public:
 			unsigned int endOfIpOffset = netHeaderOffset + ntohs(*((uint16_t*) (netHeader + 2)));
 			if(data_length > endOfIpOffset)
 			{
-			    DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
-			    data_length = endOfIpOffset;
-		        }
-			
+				DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
+				data_length = endOfIpOffset;
+			}
+
 			// check if there is data for the transport header
 			if(transportHeaderOffset < data_length)
-			    transportHeader = data + transportHeaderOffset;
+				transportHeader = data + transportHeaderOffset;
 			else
-			    transportHeaderOffset = 0;
+				transportHeaderOffset = 0;
 		}
 		// TODO: Add checks for IPv6 or similar here
 
@@ -195,79 +194,84 @@ public:
 		{
 			switch (protocol)
 			{
-			case 1:		// ICMP
-				// ICMP header is 4 bytes fixed-length
-				payloadOffset = transportHeaderOffset + 4;
-				
-				// check if the packet is big enough to actually be ICMP
-				if (payloadOffset <= data_length)
-				    classification |= PCLASS_TRN_ICMP;
-				else
-				    // there is no complete transport heaader => treat data it as payload
-				    payloadOffset = transportHeaderOffset;
-				
-				break;
-			case 2:		// IGMP
-				// header is 8-bytes fixed size
-				payloadOffset = transportHeaderOffset + 8;
-				
-				// check if the packet is big enough to actually be IGMP
-				if (payloadOffset <= data_length)
-				    classification |= PCLASS_TRN_IGMP;
-				else
-				    // there is no complete transport heaader => treat data it as payload
-				    payloadOffset = transportHeaderOffset;
+				case 1:		// ICMP
+					// ICMP header is 4 bytes fixed-length
+					payloadOffset = transportHeaderOffset + 4;
 
-				break;
-			case 6:         // TCP
-				// we need at least 12 more bytes in the packet to extract the "Data Offset"
-				if (transportHeaderOffset + 12 < data_length)
-				{
-					// extract "Data Offset" field at TCP header offset 12 (upper 4 bits)
-					unsigned char tcpDataOffset = *(transportHeader + 12) >> 4;
-				
-					// calculate payload offset
-					payloadOffset = transportHeaderOffset + (tcpDataOffset << 2);
-				
-					// check if the complete TCP header is inside the received packet data
-					if (payloadOffset <= data_length)
-					    classification |= PCLASS_TRN_TCP;
+					// check if the packet is big enough to actually be ICMP
+					if (payloadOffset <= data_length) {
+						ipProtocolType = ICMP;
+						classification |= PCLASS_TRN_ICMP;
+					} else {
+						// there is no complete transport heaader => treat data it as payload
+						payloadOffset = transportHeaderOffset;
+					}
+					break;
+				case 2:		// IGMP
+					// header is 8-bytes fixed size
+					payloadOffset = transportHeaderOffset + 8;
+
+					// check if the packet is big enough to actually be IGMP
+					if (payloadOffset <= data_length) {
+						ipProtocolType = IGMP;
+						classification |= PCLASS_TRN_IGMP;
+					} else {
+						// there is no complete transport heaader => treat data it as payload
+						payloadOffset = transportHeaderOffset;
+					}
+					break;
+				case 6:         // TCP
+					// we need at least 12 more bytes in the packet to extract the "Data Offset"
+					if (transportHeaderOffset + 12 < data_length)
+					{
+						// extract "Data Offset" field at TCP header offset 12 (upper 4 bits)
+						unsigned char tcpDataOffset = *(transportHeader + 12) >> 4;
+
+						// calculate payload offset
+						payloadOffset = transportHeaderOffset + (tcpDataOffset << 2);
+
+						// check if the complete TCP header is inside the received packet data
+						if (payloadOffset <= data_length) {
+							ipProtocolType = TCP;
+							classification |= PCLASS_TRN_TCP;
+						} else {
+							// there is no complete transport heaader => treat data it as payload
+							payloadOffset = transportHeaderOffset;
+						}
+					}
 					else
-					    // there is no complete transport heaader => treat data it as payload
-					    payloadOffset = transportHeaderOffset;
-				}
-				else
-				    // there is no complete transport heaader => treat data it as payload
-				    payloadOffset = transportHeaderOffset;
-				
-				break;
-			case 17:        // UDP
-				// UDP has a fixed header size of 8 bytes
-				payloadOffset = transportHeaderOffset + 8;
-				
-				// check if the packet is big enough to actually be UDP
-				if (payloadOffset <= data_length)
-				    classification |= PCLASS_TRN_UDP;
-				else
-				    // there is no complete transport heaader => treat data it as payload
-				    payloadOffset = transportHeaderOffset;
-				
-				break;
-			default:	// unknown transport protocol or insufficient data length
-				// omit transport header and classify it as payload
-				payloadOffset = transportHeaderOffset;
-				break;
+						// there is no complete transport heaader => treat data it as payload
+						payloadOffset = transportHeaderOffset;
+
+					break;
+				case 17:        // UDP
+					// UDP has a fixed header size of 8 bytes
+					payloadOffset = transportHeaderOffset + 8;
+
+					// check if the packet is big enough to actually be UDP
+					if (payloadOffset <= data_length) {
+						ipProtocolType = UDP;
+						classification |= PCLASS_TRN_UDP;
+					} else {
+						// there is no complete transport heaader => treat data it as payload
+						payloadOffset = transportHeaderOffset;
+					}
+					break;
+				default:	// unknown transport protocol or insufficient data length
+					// omit transport header and classify it as payload
+					payloadOffset = transportHeaderOffset;
+					break;
 			}
 
 			// check if we actually _have_ payload
 			if ((payloadOffset > 0) && (payloadOffset < data_length))
 			{
-			    classification |= PCLASS_PAYLOAD;
-			    payload = data + payloadOffset;
+				classification |= PCLASS_PAYLOAD;
+				payload = data + payloadOffset;
 			}
 			else
-			    // there is no payload
-			    payloadOffset = 0;
+				// there is no payload
+				payloadOffset = 0;
 
 			//fprintf(stderr, "class %08lx, proto %d, data %p, net %p, trn %p, payload %p\n", classification, protocol, data, netHeader, transportHeader, payload);
 		}

@@ -17,7 +17,7 @@ AggregationPerfTest::AggregationPerfTest(bool fast)
 	if (fast) {
 		numPackets = 3000;
 	} else {
-		numPackets = 50000;
+		numPackets = 500000;
 	}
 
 }
@@ -41,7 +41,7 @@ void AggregationPerfTest::normalTest()
 	struct timeval difftime;
 	BOOST_REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
 
-	printf("needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
+	printf("Aggregator: needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
 
 	shutdown();
 }
@@ -57,7 +57,7 @@ void AggregationPerfTest::expressTest()
 	struct timeval difftime;
 	BOOST_REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
 
-	printf("needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
+	printf("ExpressAggregator: needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
 
 	shutdown();
 }

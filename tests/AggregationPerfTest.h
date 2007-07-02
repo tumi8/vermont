@@ -28,7 +28,7 @@ class AggregationPerfTest
 	private:
 		Filter* filter;
 		PacketSink* packetSink;
-		HookingFilter* hookingFilter;
+		PacketProcessor* hookingFilter;
 		IpfixAggregator* ipfixAggregator;
 		InstanceManager<Packet>* packetManager;
 

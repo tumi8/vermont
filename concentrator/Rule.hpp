@@ -69,7 +69,7 @@ class Rule {
 		~Rule();
 		void print();
 		int templateDataMatches(IpfixRecord::TemplateInfo* info, IpfixRecord::Data* data);
-		int ExptemplateDataMatches(IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi);
+		int ExptemplateDataMatches(const Packet* p);
 		int dataTemplateDataMatches(IpfixRecord::DataTemplateInfo* info, IpfixRecord::Data* data);
 
 		uint16_t id;

@@ -125,7 +125,12 @@ class FlowSink {
 			THROWEXCEPTION("method not implemented");
 			return 1;
 		}
-		virtual int onExpDataRecord(IpfixRecord::SourceID* sourceID, uint16_t length, IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi) 
+
+		/**
+		 * Callback function invoked when a new raw data packet arrives
+		 * @param packet Packet which arrived in the sampler
+		 */
+		virtual int onPacket(const Packet* packet)
 		{
 			THROWEXCEPTION("method not implemented");
 			return 1;
