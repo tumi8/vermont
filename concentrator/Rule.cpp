@@ -96,8 +96,16 @@ void Rule::print() {
 	printf("\n");
 }
 
-uint8_t getIPv4IMask(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* data) {
+/**
+ * @returns amount of bits used for host identification part of ip address
+ * (in contrast to subnet identification part)
+ */
+uint8_t getIPv4IMask(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* data) 
+{
+	// sometimes there is a fifth byte after the ip address inside the ipfix flow which specifies
+	// the amout of bits used for host identification part of ip address
 	if (type->length > 4) return data[4];
+	
 	if (type->length == 4) return 0;
 	if (type->length == 3) return 8;
 	if (type->length == 2) return 16;
@@ -353,7 +361,8 @@ int Rule::templateDataMatches(IpfixRecord::TemplateInfo* info, IpfixRecord::Data
  * only for Express version of concentrator
  * @return 1 if rule is matched, 0 otherwise
  */
-int Rule::ExptemplateDataMatches(IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi) {
+int Rule::ExptemplateDataMatches(IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi) 
+{
 	int i;
 	IpfixRecord::Data* field_data;
 	IpfixRecord::TemplateInfo* info = NULL;
@@ -363,71 +372,77 @@ int Rule::ExptemplateDataMatches(IpfixRecord::Data* ip_data, IpfixRecord::Data* 
 
 		/* for all patterns of this rule, check if they are matched */
 		if (field[i]->pattern) {
+			// tobi_optimize: maybe adjust getFieldPointer to be inline
 			field_data = info->getFieldPointer(ruleField->type, ip_data, th_data, classi);
+			
 			if (field_data) {
 				if (ruleField->pattern == NULL) return 1;
+
 				switch (ruleField->type.id) {
-				case IPFIX_TYPEID_sourceIPv4Address: {
-					IpfixRecord::FieldInfo* fi = (IpfixRecord::FieldInfo*)malloc(1 * sizeof(IpfixRecord::FieldInfo));
-					fi->type.id = IPFIX_TYPEID_sourceIPv4Address;
-					fi->type.length = 4;
-					fi->offset = 12;
+					case IPFIX_TYPEID_sourceIPv4Address: 
+						{
+							IpfixRecord::FieldInfo fi;
+							fi.type.id = IPFIX_TYPEID_sourceIPv4Address;
+							fi.type.length = 4;
+							fi.offset = 12;
 
-					uint8_t dmaski = getIPv4IMask(&fi->type, field_data);
-				        int pmaski = getIPv4IMask(&ruleField->type, ruleField->pattern);
-				
-				     
-				        if (dmaski > pmaski) return 0;
-				
-				        uint32_t daddr = getIPv4Address( &fi->type, field_data);
-				        uint32_t paddr = getIPv4Address(&ruleField->type, ruleField->pattern);
-				              
-				        return ((daddr >> pmaski) == (paddr >> pmaski));
-				        break;
-								     }
-				case IPFIX_TYPEID_destinationIPv4Address: {
-					IpfixRecord::FieldInfo* fi = (IpfixRecord::FieldInfo*)malloc(1 * sizeof(IpfixRecord::FieldInfo));
-					fi->type.id = IPFIX_TYPEID_destinationIPv4Address;
-					fi->type.length = 4;
-					fi->offset = 16;
+							uint8_t dmaski = getIPv4IMask(&fi.type, field_data);
+							int pmaski = getIPv4IMask(&ruleField->type, ruleField->pattern);
 
-					int dmaski = getIPv4IMask(&fi->type, field_data);
-				        int pmaski = getIPv4IMask(&ruleField->type, ruleField->pattern);
-				
-				     
-				        if (dmaski > pmaski) return 0;
-				
-				        uint32_t daddr = getIPv4Address( &fi->type, field_data);
-				        uint32_t paddr = getIPv4Address(&ruleField->type, ruleField->pattern);
-				              
-				        return ((daddr >> pmaski) == (paddr >> pmaski));
-				        break;
-								     }
-				case IPFIX_TYPEID_sourceTransportPort: {
-					IpfixRecord::FieldInfo* fi = (IpfixRecord::FieldInfo*)malloc(1 * sizeof(IpfixRecord::FieldInfo));
-					fi->type.id = IPFIX_TYPEID_sourceTransportPort;
-					fi->type.length = 2;
-					fi->offset = 0;
-					return matchesPortPattern(&fi->type, field_data, &ruleField->type, ruleField->pattern);
-					break;
-								       }
-				case IPFIX_TYPEID_destinationTransportPort: {
-					IpfixRecord::FieldInfo* fi = (IpfixRecord::FieldInfo*)malloc(1 * sizeof(IpfixRecord::FieldInfo));
-					fi->type.id = IPFIX_TYPEID_destinationTransportPort;
-					fi->type.length = 2;
-					fi->offset = 2;
-					return matchesPortPattern(&fi->type, field_data, &ruleField->type, ruleField->pattern);
-					break;
-									    }
-				default:
-					return matchesRawPattern(&ruleField->type, field_data, &ruleField->type, ruleField->pattern);
-					break;
+
+							if (dmaski > pmaski) return 0;
+
+							uint32_t daddr = getIPv4Address(&fi.type, field_data);
+							uint32_t paddr = getIPv4Address(&ruleField->type, ruleField->pattern);
+
+							return ((daddr >> pmaski) == (paddr >> pmaski));
+						}
+					case IPFIX_TYPEID_destinationIPv4Address: 
+						{
+							IpfixRecord::FieldInfo fi;
+							fi.type.id = IPFIX_TYPEID_destinationIPv4Address;
+							fi.type.length = 4;
+							fi.offset = 16;
+
+							int dmaski = getIPv4IMask(&fi.type, field_data);
+							int pmaski = getIPv4IMask(&ruleField->type, ruleField->pattern);
+
+
+							if (dmaski > pmaski) return 0;
+
+							uint32_t daddr = getIPv4Address( &fi.type, field_data);
+							uint32_t paddr = getIPv4Address(&ruleField->type, ruleField->pattern);
+
+							return ((daddr >> pmaski) == (paddr >> pmaski));
+							break;
+						}
+					case IPFIX_TYPEID_sourceTransportPort: 
+						{
+							IpfixRecord::FieldInfo fi;
+							fi.type.id = IPFIX_TYPEID_sourceTransportPort;
+							fi.type.length = 2;
+							fi.offset = 0;
+							return matchesPortPattern(&fi.type, field_data, &ruleField->type, ruleField->pattern);
+							break;
+						}
+					case IPFIX_TYPEID_destinationTransportPort: 
+						{
+							IpfixRecord::FieldInfo fi;
+							fi.type.id = IPFIX_TYPEID_destinationTransportPort;
+							fi.type.length = 2;
+							fi.offset = 2;
+							return matchesPortPattern(&fi.type, field_data, &ruleField->type, ruleField->pattern);
+							break;
+						}
+					default:
+						return matchesRawPattern(&ruleField->type, field_data, &ruleField->type, ruleField->pattern);
+						break;
 				}
 
-/*
-				if (!matchesPattern(&ruleField->type, field_data, &ruleField->type, ruleField->pattern)) return 0;
-				if (!checkAssociatedMask(info, data, ruleField)) return 0;
-				continue;*/
+				/*
+				   if (!matchesPattern(&ruleField->type, field_data, &ruleField->type, ruleField->pattern)) return 0;
+				   if (!checkAssociatedMask(info, data, ruleField)) return 0;
+				   continue;*/
 			}
 
 			/* no corresponding data field found, this flow cannot match */

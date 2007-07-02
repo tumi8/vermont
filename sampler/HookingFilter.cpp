@@ -117,7 +117,7 @@ HookingFilter::~HookingFilter() {
  */
 bool HookingFilter::processPacket(const Packet *p)
 {
-    	DPRINTFL(MSG_VDEBUG, "called");
+   	DPRINTFL(MSG_VDEBUG, "called");
 	/* we want only IPv4 packets  */
 	if((p->classification & PCLASS_NET_IP4) == 0)
 	    return true;

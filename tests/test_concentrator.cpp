@@ -1,8 +1,4 @@
-#ifdef HAVE_BOOST_UNIT_TEST_FRAMEWORK
-
-#include <iostream>
-#include <vector>
-#include <boost/test/minimal.hpp>
+#include "test_concentrator.h"
 
 #include "concentrator/IpfixRecord.hpp"
 #include "concentrator/FlowSource.hpp"
@@ -14,6 +10,9 @@
 #include "concentrator/IpfixCollector.hpp"
 #include "concentrator/IpfixPrinter.hpp"
 
+#include <iostream>
+#include <vector>
+
 class TestSink : public FlowSink {
 	public:
 		int receivedRecords;
@@ -22,13 +21,12 @@ class TestSink : public FlowSink {
 		TestSink(bool checkSourceId = true) : receivedRecords(0), checkSourceId(checkSourceId) {
 		}
 
-		int onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo) {
+		virtual int onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo) 
+		{
 			return 0;
 		}
 
-		int onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data) {
-			receivedRecords++;
-
+		virtual int onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data) {
 			uint8_t inSourceID = sourceID->exporterAddress.ip[0];
 			uint8_t inTemplateId = templateInfo->templateId - 256;
 			uint8_t inTypeId = templateInfo->fieldInfo[0].type.id;
@@ -325,8 +323,13 @@ void test_parser_stability() {
 	}
 }
 
+<<<<<<< HEAD:vermont/tests/test_concentrator.cpp
 int test_main(int, char *[]) {
 
+=======
+void start_test()
+{
+>>>>>>> added new vermont tests, call ./tests/vermonttest for test runs,:vermont/tests/test_concentrator.cpp
 	// set Vermont messaging subsystem's debug level
 	//msg_setlevel(MSG_DEFAULT+99);
 
@@ -334,6 +337,7 @@ int test_main(int, char *[]) {
 	srand(0);	
 
 	std::cout << "Testing: Concentrator" << std::endl;
+<<<<<<< HEAD:vermont/tests/test_concentrator.cpp
 
 	//test_module_coupling();
 
@@ -342,13 +346,27 @@ int test_main(int, char *[]) {
 	//test_parser_stability();
 
 	return 0;
+=======
+	test_module_coupling();
+
+	/*
+	// six ways to detect and report the same error:
+	BOOST_CHECK( add( 2,2 ) == 4 );        // #1 continues on error
+	BOOST_REQUIRE( add( 2,2 ) == 4 );      // #2 throws on error
+	if( add( 2,2 ) != 4 )
+	BOOST_ERROR( "Ouch..." );            // #3 continues on error
+	if( add( 2,2 ) != 4 )
+	BOOST_FAIL( "Ouch..." );             // #4 throws on error
+	if( add( 2,2 ) != 4 ) throw "Oops..."; // #5 throws on error
+
+	return add( 2, 2 ) == 4 ? 0 : 1;       // #6 returns error code
+	*/
+>>>>>>> added new vermont tests, call ./tests/vermonttest for test runs,:vermont/tests/test_concentrator.cpp
 }
 
-#endif //HAVE_BOOST_UNIT_TEST_FRAMEWORK
-#ifndef HAVE_BOOST_UNIT_TEST_FRAMEWORK
-#include <iostream>
-int main(int argc, char* argv[]) {
-	std::cerr << "Not configured with HAVE_BOOST_UNIT_TEST_FRAMEWORK. No tests have been built." << std::endl;
+ConcentratorTestSuite::ConcentratorTestSuite()
+	: test_suite("ConcentratorTest")
+{
+	add(BOOST_TEST_CASE(&start_test));
 }
-#endif //HAVE_BOOST_UNIT_TEST_FRAMEWORK
 

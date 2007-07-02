@@ -209,13 +209,22 @@ public:
 
 
 	/**
-	 * shuts the semaphore down: all waiting threads will be restarted
+	 * shuts down the semaphore: all waiting threads will be restarted
 	 * and _all_ semaphores will never lock again
 	 */
 	inline static void shutdown()
 	{
 	    DPRINTF("shutting down");
 	    exitFlag = true;
+	}
+
+	/**
+	 * when semaphore is shut down, it can be restarted again using this method
+	 */
+	static void restart()
+	{
+	    DPRINTF("restarting");
+	    exitFlag = false;
 	}
 };
 
