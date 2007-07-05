@@ -117,7 +117,7 @@ fi
 # check for Boost Unit Test Framework
 AX_BOOST_UNIT_TEST_FRAMEWORK
 if test "x$ax_cv_boost_unit_test_framework" != "xyes"; then
-	AC_MSG_RESULT([*** Boost Unit Test Framework suite missing or not usable. Unit tests will not be built.])
+	AC_MSG_ERROR([*** Boost Unit Test Framework suite missing or not usable. Cannot continue.])
 fi
 
 
