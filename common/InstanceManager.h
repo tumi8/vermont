@@ -23,6 +23,7 @@
 
 #include "Mutex.h"
 
+#include <queue>
 #include <list>
 
 using namespace std;
@@ -39,7 +40,7 @@ class InstanceManager
 #if defined(DEBUG)
 		list<T*> usedInstances;	// instances with active references (only used for debugging purposes)
 #endif
-		list<T*> freeInstances;	// unused instances
+		queue<T*> freeInstances;// unused instances
 		Mutex mutex;			// we wanna be thread-safe
 		static const int DEFAULT_NO_INSTANCES = 1000;
 
@@ -47,7 +48,7 @@ class InstanceManager
 		InstanceManager(int preAllocInstances = DEFAULT_NO_INSTANCES)
 		{
 			for (int i=0; i<preAllocInstances; i++) {
-				freeInstances.push_back(new T(this));
+				freeInstances.push(new T(this));
 			}
 		}
 
@@ -58,12 +59,13 @@ class InstanceManager
 				DPRINTF("freeing instance manager, although there are still %d used instances", usedInstances.size());
 			}
 #endif
-			typename list<T*>::iterator it;
-			for (it = freeInstances.begin(); it != freeInstances.end(); ++it) {
+			while (!freeInstances.empty()) {
+				T* obj = freeInstances.front();
+				freeInstances.pop();
 #if defined(DEBUG)
-				(*it)->deletedByManager = true;
+				obj->deletedByManager = true;
 #endif
-				delete *it;
+				delete obj;
 			}
 		}
 
@@ -81,7 +83,7 @@ class InstanceManager
 				instance = new T(this);
 			} else {
 				instance = freeInstances.front();
-				freeInstances.pop_front();
+				freeInstances.pop();
 			}
 
 #if defined(DEBUG)
@@ -120,7 +122,7 @@ class InstanceManager
 
 			if (instance->referenceCount == 0) {
 				mutex.lock();
-				freeInstances.push_back(instance);
+				freeInstances.push(instance);
 #if defined(DEBUG)
 				typename list<T*>::iterator iter = find(usedInstances.begin(), usedInstances.end(), instance);
 				if (iter == usedInstances.end()) {
