@@ -82,6 +82,10 @@ public:
 	{
 		struct timespec ts;
 		int retval;
+		// globalTimeout is for wait with timeout_ms==-1 and is used to determine
+		// next timeout, when exitFlag is to be checked next time
+		// this method saves lots of calls to gettimeofday()
+		static struct timespec globalTimeout = {0, 0};
 
 		// if program requested to shut down, just return a failure
 		if (exitFlag) return false;
@@ -105,9 +109,7 @@ public:
 		} else {
 		    // wait and check the exitFlag regularly
 		    do {
-			// calculate absolute time from timeout
-			addToCurTime(&ts, STANDARD_TIMEOUT);
-			retval = sem_timedwait(sem, &ts);
+			retval = sem_timedwait(sem, &globalTimeout);
 			if (retval != 0 && errno != ETIMEDOUT) {
 			    switch (errno) {
 				case EINVAL:
@@ -133,6 +135,14 @@ public:
 				    DPRINTFL(MSG_VDEBUG, "timedwait (>=0) returned with %d", errno);
 			    }
 			}
+			if (errno == ETIMEDOUT) {
+				// calculate absolute time from timeout
+				struct timespec tmp;
+				addToCurTime(&tmp, STANDARD_TIMEOUT);
+				// attention: next command may collide between threads, but collision does not matter
+				globalTimeout = tmp;
+			}
+
 			// if program was shutdown, exit without success
 			if (exitFlag) {
 				DPRINTFL(MSG_VDEBUG, "exitFlag is set", errno);
@@ -142,7 +152,7 @@ public:
 		    } while (retval != 0);
 
 		}
-		//last_sem = sem;
+		
 		return true;
 	}
 
