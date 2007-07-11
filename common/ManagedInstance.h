@@ -44,11 +44,11 @@ class ManagedInstance
 	public:
 		ManagedInstance(InstanceManager<T>* im)
 			: myInstanceManager(im), referenceCount(0)
-#if defined(DEBUG)
-              , deletedByManager(false)
-#endif
 
 		{
+#if defined(DEBUG)
+            deletedByManager = (im != 0 ? false : true);
+#endif
 		}
 
 #if defined(DEBUG)

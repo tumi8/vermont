@@ -145,10 +145,10 @@ bool HookingFilter::processPacket(const Packet *p)
 	// relative to the start of the network packet data is given
 	// now we calculate the index for the millisecond data inside the Packet instance
 	// -> REALLY BAD HACK, interface to concentrator MUST be changed
-	char* mstime = (char*)(&p->time_msec_ipfix);
-        DPRINTF("time_msec_ipfix is %llX", p->time_msec_ipfix);
+	char* mstime = (char*)(&p->time_msec_nbo);
+	DPRINTF("time_msec_ipfix is %llX", p->time_msec_nbo);
 	int32_t offset = (int32_t)(mstime - (char*)(p->netHeader)); 
-        DPRINTF("offset=%x", offset);
+	DPRINTF("offset=%x", offset);
 
 	// Choose template according to transport header type
 	if(p->ipProtocolType == Packet::ICMP) {

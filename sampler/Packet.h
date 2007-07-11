@@ -73,8 +73,16 @@
 class Packet : public ManagedInstance<Packet>
 {
 public:
+	/*
+	 the raw offset at which the IP header starts in the packet
+	 for Ethernet, this is 14 bytes (MAC header size).
+	 This constant is set via the configure script. It defaults to 14
+	 */
+	static const int IPHeaderOffset=IP_HEADER_OFFSET;
+
 	// Transport header classifications (used in Packet::ipProtocolType)
-	enum IPProtocolType { NONE=0, TCP, UDP, ICMP, IGMP };
+	// Note: ALL is reserved and enables bitoperations using the enums
+	enum IPProtocolType { NONE=0x00, TCP=0x01, UDP=0x02, ICMP=0x04, IGMP=0x08, ALL=0xFF };
 
 	// The number of total packets received, will be incremented by each constructor call
 	// implemented as public-variable for speed reasons (or lazyness reasons? ;-)
@@ -83,10 +91,12 @@ public:
 	static const int PACKET_MAXLEN = 1500; // maximum packet length
 
 	/*
-	 data: the raw packet data from the wire, including physical header
-	 ipHeader: start of the IP header: data + (physical dependent) IP header offset
-	 transportHeader: start of the transport layer header (TCP/UDP): ip_header + variable IP header length
-	 */
+	data: the raw packet data from the wire, including physical header
+	ipHeader: start of the IP header: data + (physical dependent) IP header offset
+	transportHeader: start of the transport layer header (TCP/UDP): ip_header + variable IP header length
+	ATTENTION: this array *MUST* be allocated inside the packet structure, so that it has a constant position
+	relative to other members of Packet. This is needed for optimization purposes inside the express aggregator
+	*/
 	unsigned char data[PACKET_MAXLEN];
 	unsigned char *netHeader;
 	unsigned char *transportHeader;
@@ -110,14 +120,24 @@ public:
 	// when was the packet received?
 	struct timeval timestamp;
 	unsigned long time_sec_nbo, time_usec_nbo; // network byte order, used if exported
-	unsigned long long time_msec_ipfix;   // milliseconds since 1970, according to ipfix standard; ATTENTION: this value is stored in network-byte order
+	unsigned long long time_msec_nbo;   // milliseconds since 1970, according to ipfix standard; ATTENTION: this value is stored in network-byte order
 
 	// buffer for length of variable length fields
 	uint8_t varlength[12];
 	uint8_t varlength_index;
 
 
-	Packet(InstanceManager<Packet>* im) : ManagedInstance<Packet>(im) 
+	Packet(InstanceManager<Packet>* im) 
+		: ManagedInstance<Packet>(im),
+		  netHeader(data + IPHeaderOffset), // netHeader must not be changed afterwards
+		  netHeaderOffset(IPHeaderOffset)
+	{
+	}
+
+	Packet() 
+		: ManagedInstance<Packet>(0),
+		  netHeader(data + IPHeaderOffset),
+		  netHeaderOffset(IPHeaderOffset)
 	{
 	}
 	
@@ -138,17 +158,15 @@ public:
 		}
 
 		memcpy(data, packetData, len);
-		netHeader = data + IPHeaderOffset;
-		netHeaderOffset = IPHeaderOffset;
 
 		// timestamps in network byte order (needed for export or concentrator)
 		time_sec_nbo = htonl(timestamp.tv_sec);
 		time_usec_nbo = htonl(timestamp.tv_usec);
 		    
 		// calculate time since 1970 in milliseconds according to IPFIX standard
-		time_msec_ipfix = htonll(((unsigned long long)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
-                DPRINTFL(MSG_VDEBUG, "timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
-                DPRINTFL(MSG_VDEBUG, "time_msec_ipfix is %lld", time_msec_ipfix);
+		time_msec_nbo = htonll(((unsigned long long)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
+		DPRINTFL(MSG_VDEBUG, "timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
+		DPRINTFL(MSG_VDEBUG, "time_msec_ipfix is %lld", time_msec_nbo);
 
 		totalPacketsReceived++;
 
@@ -425,12 +443,6 @@ public:
 
 
 private:
-	/*
-	 the raw offset at which the IP header starts in the packet
-	 for Ethernet, this is 14 bytes (MAC header size).
-	 This constant is set via the configure script. It defaults to 14
-	 */
-	static const int IPHeaderOffset=IP_HEADER_OFFSET;
 
 	/*
 	 Number of concurrent users of this packet. Decremented each time
