@@ -1,6 +1,6 @@
 noinst_LIBRARIES=libconcentrator.a
 
-libconcentrator_a_SOURCES=IpfixAggregator.cpp IpfixAggregator.hpp crc16.cpp crc16.hpp Hashtable.cpp \
+libconcentrator_a_SOURCES=IpfixAggregator.cpp IpfixAggregator.hpp crc16.hpp Hashtable.cpp \
 Hashtable.hpp ipfix.cpp ipfix.hpp \
 IpfixReceiver.cpp IpfixReceiver.hpp \
 IpfixReceiverUdpIpV4.cpp IpfixReceiverUdpIpV4.hpp \

@@ -68,6 +68,7 @@ void IpfixAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint
 	this->rules = rules;
 
 	for (i = 0; i < rules->count; i++) {
+		rules->rule[i]->initialize();
 		rules->rule[i]->hashtable = new Hashtable(rules->rule[i], minBufferTime, maxBufferTime);
 	}
 
@@ -80,6 +81,7 @@ void IpfixAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint
 	}
 
 	msg(MSG_INFO, "Done. Parsed %d rules; minBufferTime %d, maxBufferTime %d", rules->count, minBufferTime, maxBufferTime);
+
 }
 
 /**
@@ -166,7 +168,7 @@ int IpfixAggregator::onPacket(const Packet* packet)
 	for (i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->ExptemplateDataMatches(packet)) {
 			DPRINTF("rule %d matches\n", i);
-			((Hashtable*)rules->rule[i]->hashtable)->ExpAggregateTemplateData(packet);
+			((Hashtable*)rules->rule[i]->hashtable)->aggregatePacket(packet);
 		}
 	}
 	pthread_mutex_unlock(&mutex);
