@@ -122,4 +122,16 @@ public:
 	std::vector<ConcurrentQueue<Packet*> *> receivers;
 };
 
+class ObserverStatModule : public StatisticsModule
+{
+	private:
+		Observer* observer;
+		uint64_t lastDPackets;
+		uint64_t lastRPackets;
+
+	public:
+		ObserverStatModule(Observer* obs);
+		virtual std::string getStatistics();
+};
+
 #endif
