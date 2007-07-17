@@ -41,7 +41,7 @@
  * @return handle to use when calling @c destroyIpfixSender()
  */
 IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) {
-    	DSETSINKOWNER("IpfixSender");
+	setSinkOwner("IpfixSender");
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 	sentRecords = 0;
 	recordsInDataSet = 0;

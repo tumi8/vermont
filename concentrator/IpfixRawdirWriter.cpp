@@ -39,7 +39,7 @@
  * @return handle to use when calling @c destroyIpfixRawdirWriter()
  */
 IpfixRawdirWriter::IpfixRawdirWriter(uint16_t observationDomainId, std::string packetDirectoryName) : IpfixSender(observationDomainId) {
-	DSETSINKOWNER("IpfixRawdirWriter");
+	setSinkOwner("IpfixRawdirWriter");
 
 	if (packetDirectoryName != "") {
 		if(addCollector(packetDirectoryName) != 0) {

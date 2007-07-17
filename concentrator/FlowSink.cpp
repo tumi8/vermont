@@ -108,9 +108,7 @@ bool FlowSink::terminateSink() {
 	return true;
 }
 
-#if defined(DEBUG)
-void FlowSink::debugSetSinkOwner(char* owner)
+void FlowSink::setSinkOwner(char* owner)
 {
-	ipfixRecords.debugSetOwner(owner);
+	ipfixRecords.setOwner(owner);
 }
-#endif
