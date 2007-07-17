@@ -30,14 +30,6 @@
 #include "common/ConcurrentQueue.h"
 
 
-/* For debugging purposes: set name of this FlowSink
- */
-#if defined(DEBUG)
-#define DSETSINKOWNER(owner) debugSetSinkOwner(owner)
-#else
-#define DSETSINKOWNER(owner)
-#endif
-
 /*
  * IPFIX Flow Sink class
  *
@@ -67,9 +59,7 @@ class FlowSink {
 		 */
 		bool terminateSink();
 
-#if defined(DEBUG)
-		void debugSetSinkOwner(char* owner);
-#endif
+		void setSinkOwner(char* owner);
 
 	protected:
 		// Allow HookingFilter to directly call FlowSink::onDataRecord

@@ -42,7 +42,7 @@ IpfixAggregator::IpfixAggregator(char* ruleFile, uint16_t minBufferTime, uint16_
 	}
 	buildAggregator(rules, minBufferTime, maxBufferTime);
 
-	DSETSINKOWNER("IpfixAggregator");
+	setSinkOwner("IpfixAggregator");
 }
 
 /**
@@ -55,7 +55,7 @@ IpfixAggregator::IpfixAggregator(Rules* rules, uint16_t minBufferTime, uint16_t 
 {
 	buildAggregator(rules, minBufferTime, maxBufferTime);
 
-	DSETSINKOWNER("IpfixAggregator");
+	setSinkOwner("IpfixAggregator");
 }
 
 /**
