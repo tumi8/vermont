@@ -13,27 +13,38 @@
 
 #include "common/msg.h"
 #include "common/Thread.h"
+#include "common/StatisticsManager.h"
 
 #include <pcap.h>
-#include <iostream>
 #include <unistd.h>
+#include <iostream>
+#include <sstream>
 
 
 using namespace std;
 
+
+
+
+
 Observer::Observer(const std::string& interface, InstanceManager<Packet>* manager) : thread(Observer::observerThread), allDevices(NULL),
 	captureDevice(NULL), capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
 	pcap_promisc(1), ready(false), filter_exp(0), packetManager(manager),
-	exitFlag(false)
+	receivedBytes(0), lastReceivedBytes(0), processedPackets(0), 
+	lastProcessedPackets(0), exitFlag(false)
 
 {
 	captureInterface = (char*)malloc(interface.size() + 1);
 	strcpy(captureInterface, interface.c_str());
+	StatisticsManager::getInstance().addModule(this);
 };
 
 Observer::~Observer()
 {
     msg(MSG_DEBUG, "Observer: destructor called");
+
+	StatisticsManager::getInstance().removeModule(this);
+
     terminateCapture();
 
     /* collect and output statistics */
@@ -135,22 +146,21 @@ void *Observer::observerThread(void *arg)
 			packetHeader.caplen
 			);
 
+		// update statistics
+		obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
+		obs->processedPackets++;
+
 		/* broadcast packet to all receivers */
 		if (!obs->exitFlag) {
 			// set reference counter to right amount
 			if (refsToAdd > 0) p->addReference(refsToAdd);
 
-		    for(vector<ConcurrentQueue<Packet*> *>::iterator it = obs->receivers.begin();
-			    it != obs->receivers.end(); ++it) {
-			if ((*it)->getCount() > 100000) {
-			    msg(MSG_FATAL, "Observer drain clogged, waiting for plumber");
-			    while ((*it)->getCount() > 10000) sleep(1);
-			    msg(MSG_FATAL, "drain not clogged any more, resuming operation");
+			for(vector<ConcurrentQueue<Packet*> *>::iterator it = obs->receivers.begin();
+					it != obs->receivers.end(); ++it) {
+				DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
+				(*it)->push(p);
+				DPRINTFL(MSG_VDEBUG, "packet pushed");
 			}
-		    	DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
-			(*it)->push(p);
-		    	DPRINTFL(MSG_VDEBUG, "packet pushed");
-		    }
 		}
 	}
 
@@ -357,5 +367,26 @@ int Observer::getPcapStats(struct pcap_stat *out)
 {
 	return(pcap_stats(captureDevice, out));
 }
+
+/**
+ * statistics function called by StatisticsManager
+ */
+std::string Observer::getStatistics()
+{
+	ostringstream oss;
+    pcap_stat pstats;
+    if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
+		oss << "Observer: packets received on interface: " << pstats.ps_recv << endl;
+		oss << "Observer: packets dropped by PCAP      : " << pstats.ps_drop << endl;
+	}
+	uint64_t diff = receivedBytes-lastReceivedBytes;
+	lastReceivedBytes += diff;
+	oss << "Observer: processed bytes              : " << diff << endl;
+	diff = processedPackets-lastProcessedPackets;
+	lastProcessedPackets += diff;
+	oss << "Observer: processed packets            : " << diff << endl;
+	return oss.str();
+}
+
 
 //static void plain_c_sucks_because_people_dont_seem_to_have_a_caps_key_and_like_to_type_stupid_underscores_alot(){}

@@ -15,22 +15,12 @@
 class Sink : public PacketReceiver {
 
 public:
-        virtual void runSink()=0;
-        virtual bool terminateSink()=0;
-
-	/*
-	 this function is called by the logger timer thread and should dump
-	 some nice info using msg_stat
-	 */
-	static void doLogging(void *arg)
+	Sink(string ownerName) : PacketReceiver(ownerName)
 	{
-		Sink *snk=(Sink *)arg;
-
-		msg_stat("Sampler: Sink: %6d pushed, %6d popped", snk->queue->pushedCount, snk->queue->poppedCount);
-		snk->queue->pushedCount = 0;
-		snk->queue->poppedCount = 0;
 	}
 
+	virtual void runSink()=0;
+	virtual bool terminateSink()=0;
 };
 
 #endif

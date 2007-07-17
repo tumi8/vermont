@@ -18,7 +18,9 @@
 #include <semaphore.h>
 #include <stdio.h>
 #include <string.h>
+
 #include "msg.h"
+#include "Time.h"
 
 class TimeoutSemaphore
 {
@@ -49,28 +51,6 @@ public:
 		THROWEXCEPTION("given semaphore is not valid, failed to destroy it");
 	    }
 	    delete sem;
-	}
-
-	/**
-	 * helper function for wait()
-	 * adds to current time the value in timediff_ms and returns the result in
-	 * ts
-	 */
-	inline void addToCurTime(struct timespec* ts, long timediff_ms)
-	{
-		struct timeval tv;
-		// calculate absolute time from timeout
-		gettimeofday(&tv, 0);
-		// add timeout value to the current time
-		// if no timeout is given, use standard timeout, as we need to check the exitFlag regularly
-		tv.tv_usec += timediff_ms * 1000L;
-		if (tv.tv_usec >= 1000000L)
-		{
-		    tv.tv_sec += (tv.tv_usec/1000000L);
-		    tv.tv_usec %= 1000000L;
-		}
-		ts->tv_sec = tv.tv_sec;
-		ts->tv_nsec = tv.tv_usec * 1000L;
 	}
 
 	// Acquire the lock if possible, or wait max. timeout_ms milliseconds

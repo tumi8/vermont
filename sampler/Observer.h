@@ -35,6 +35,7 @@
 #include "common/Thread.h"
 #include "common/ConcurrentQueue.h"
 #include "common/InstanceManager.h"
+#include "common/StatisticsManager.h"
 
 #include <vector>
 #include <string>
@@ -43,7 +44,7 @@
 #include <arpa/inet.h>
 #include <pcap.h>
 
-class Observer {
+class Observer : public StatisticsModule {
 
 public:
 	Observer(const std::string& interface, InstanceManager<Packet>* manager);
@@ -59,6 +60,7 @@ public:
 	int getPcapStats(struct pcap_stat *out);
 	bool prepare(const std::string& filter);
 	static void doLogging(void *arg);
+	virtual std::string getStatistics();
 
 
 protected:
@@ -96,6 +98,16 @@ protected:
 
 	// manages instances of Packets
 	InstanceManager<Packet>* packetManager;
+
+	// number of received bytes (used for statistics)
+	// attention: value may sometimes be incorrect caused by multithreading issues
+	volatile uint64_t receivedBytes;
+	volatile uint64_t lastReceivedBytes;
+
+	// number of processed packets (used for statistics)
+	// attention: value may sometimes be incorrect caused by multithreading issues
+	volatile uint64_t processedPackets;
+	volatile uint64_t lastProcessedPackets;
 
 	static void *observerThread(void *);
 

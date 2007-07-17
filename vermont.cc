@@ -18,6 +18,7 @@
 
 #include "common/TimeoutSemaphore.h"
 #include "common/msg.h"
+#include "common/StatisticsManager.h"
 
 using namespace std;
 
@@ -31,11 +32,13 @@ int main(int ac, char **dc)
 {
  	int c, debug_level=MSG_DEFAULT;
  	char *config_file=NULL;
+	uint32_t statInterval = 0;
+	string statFile = "stats.log";
 
 	msg_init();
 
         /* parse command line */
-	while((c=getopt(ac, dc, "hf:d")) != -1) {
+	while((c=getopt(ac, dc, "hf:ds:u:")) != -1) {
 
                 switch(c) {
 
@@ -46,6 +49,13 @@ int main(int ac, char **dc)
                 case 'd':
                         debug_level++;
                         break;
+
+				case 's':
+						statInterval = atoi(optarg);
+						break;
+
+				case 'u':
+						statFile = optarg;
 
                 case 'h':
                 default:
@@ -60,6 +70,14 @@ int main(int ac, char **dc)
 		usage();
 		return -1;	
 	}
+
+	if (statInterval>0) {
+		msg(MSG_DIALOG, "enabling statistics output to file %s using interval %dms", statFile.c_str(), statInterval);
+		StatisticsManager::getInstance().setInterval(statInterval);
+		StatisticsManager::getInstance().setOutput(statFile);
+		StatisticsManager::getInstance().start();
+	}
+
 
 	/* setup verboseness */
 	msg(MSG_DEFAULT, "message debug level is %d", debug_level);
@@ -102,6 +120,8 @@ static void usage()
 			"    -f <xmlfile>     load config\n" \
 			" optional:\n" \
 			"    -d               increase debug level (specify multiple for even more)\n" \
+			"    -s <interval>    enable statistics in the specified interval in milliseconds\n" \
+			"    -u <file>        output statistics in specified file (default: stats.log)\n" 
 	      );
 }
 

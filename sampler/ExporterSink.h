@@ -33,11 +33,12 @@
 class ExporterSink : public Sink
 {
 public:
-        ExporterSink(Template *tmpl, int sID) : sourceID(sID),
-                templ(tmpl), thread(ExporterSink::exporterSinkProcess),
-		numPacketsToRelease(0), numMetaFieldsToRelease(0), 
-		ipfix_maxrecords(MAX_RECORDS_PER_PACKET), exportTimeout(MAX_PACKET_LIFETIME), 
-		exitFlag(false)
+        ExporterSink(Template *tmpl, int sID) 
+			: Sink("ExporterSink"), sourceID(sID),
+              templ(tmpl), thread(ExporterSink::exporterSinkProcess),
+			  numPacketsToRelease(0), numMetaFieldsToRelease(0), 
+			  ipfix_maxrecords(MAX_RECORDS_PER_PACKET), exportTimeout(MAX_PACKET_LIFETIME), 
+			  exitFlag(false)
         {
                 int ret, i, tmplid;
                 unsigned short ttype, tlength, toffset, theader;
