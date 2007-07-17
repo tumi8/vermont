@@ -26,7 +26,6 @@ using namespace std;
 
 
 
-
 Observer::Observer(const std::string& interface, InstanceManager<Packet>* manager) : thread(Observer::observerThread), allDevices(NULL),
 	captureDevice(NULL), capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
 	pcap_promisc(1), ready(false), filter_exp(0), packetManager(manager),
@@ -139,6 +138,8 @@ void *Observer::observerThread(void *arg)
 		// initialize packet structure (init copies packet data)
 		p = obs->packetManager->getNewInstance();
 		p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts);
+
+		obs->receivedBytes += packetHeader.caplen;
 
 		DPRINTF("received packet at %u.%04u, len=%d",
 			(unsigned)p->timestamp.tv_sec,
