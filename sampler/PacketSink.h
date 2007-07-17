@@ -21,11 +21,8 @@ class PacketSink : public Sink
 {
 	public:
 		PacketSink() 
-			: thread(PacketSink::packetSinkProcess), exitFlag(false)
+			: Sink("PacketSink"), thread(PacketSink::packetSinkProcess), exitFlag(false)
 		{
-#if defined(DEBUG)
-		queue->debugSetOwner("PacketSink");
-#endif
 		};
 
 		~PacketSink()

@@ -15,7 +15,57 @@
 #include "common/msg.h"
 #include "Filter.h"
 
+#include <sstream>
+
 using namespace std;
+
+Filter::Filter() 
+	: PacketReceiver("Filter"), thread(Filter::filterProcess), 
+	hasReceiver_(false), processedPackets(0), lastProcessedPackets(0), exitFlag(false)
+{
+}
+
+Filter::~Filter()
+{
+}
+
+void Filter::startFilter()
+{
+	msg(MSG_DEBUG, "now starting Filter thread");
+	thread.run(this);
+}
+
+void Filter::terminate()
+{
+	exitFlag = true;
+}
+
+/**
+ * adds a new output queue to the receivers
+ */
+void Filter::setReceiver(PacketReceiver *recv)
+{
+	hasReceiver_ = true;
+	receiver = recv->getQueue();
+}
+
+bool Filter::hasReceiver()
+{ 
+	return hasReceiver_; 
+}
+
+/**
+ * add a new filter or sampler
+ */
+void Filter::addProcessor(PacketProcessor *p)
+{
+	processors.push_back(p);
+}
+
+std::vector<PacketProcessor *> Filter::getProcessors()
+{
+	return processors;
+}
 
 /*
  this is the main filter process, running within a thread
@@ -36,6 +86,7 @@ void *Filter::filterProcess(void *arg)
 	 */
 	bool keepPacket=true;
 
+
 	/* for dumb compilers, do CSE here to spare some cycles below */
 	ConcurrentQueue<Packet*> *in_q=filter->getQueue();
 	ConcurrentQueue<Packet*> *out_q=filter->receiver;
@@ -50,7 +101,7 @@ void *Filter::filterProcess(void *arg)
 		if (!in_q->pop(&p)) break;
 
 		DPRINTFL(MSG_VDEBUG, "got packet");
-		filter->pktIn++;
+		filter->processedPackets++;
 
 		// run packet through all packetProcessors
 		for(it = filter->processors.begin(); it != filter->processors.end(); ++it) {
@@ -66,7 +117,6 @@ void *Filter::filterProcess(void *arg)
 			// push packet to the receiver
 			DPRINTF("pushing packet %d", p);
 			out_q->push(p);
-			filter->pktOut++;
 		} else {
 			// immediately drop the packet
 			DPRINTF("releasing packet");
@@ -76,3 +126,15 @@ void *Filter::filterProcess(void *arg)
 	return 0;
 };
 
+
+/**
+ * statistics function called by StatisticsManager
+ */
+std::string Filter::getStatistics()
+{
+	ostringstream oss;
+	uint64_t diff = processedPackets-lastProcessedPackets;
+	lastProcessedPackets += diff;
+	oss << "Filter: processed packets: " << diff << endl;
+	return PacketReceiver::getStatistics() + "\n" +  oss.str();
+}
