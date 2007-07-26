@@ -68,7 +68,7 @@ static const uint16_t table[] = {
  * @return the CRC16 value
  */
 
-uint16_t crc16(uint16_t seed, uint16_t length, const char* data)
+inline uint16_t crc16(uint16_t seed, uint16_t length, const char* data)
 {
 	uint16_t i = seed;
 
