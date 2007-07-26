@@ -4,7 +4,6 @@
 #include "collector_configuration.h"
 #include "exporter_configuration.h"
 #include "flowmetering_configuration.h"
-//#include "expressflowmetering_configuration.h"
 #include "vermontmain_configuration.h"
 #include "dbwriter_configuration.h"
 #include "dbreader_configuration.h"
