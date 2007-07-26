@@ -21,15 +21,17 @@
 #ifndef HASHING_H
 #define HASHING_H
 
+#include "FlowSource.hpp"
+#include "IpfixParser.hpp"
+#include "Rules.hpp"
+#include "common/StatisticsManager.h"
+
+#include <list>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <boost/smart_ptr.hpp>
-#include "FlowSource.hpp"
-#include "IpfixParser.hpp"
-#include "Rules.hpp"
-#include <list>
 
 #define HASHTABLE_SIZE 65536
 
@@ -54,7 +56,7 @@
  * fields are stored in @c Hashtable.buckets[].data structures described by the
  * @c Hashtable.fieldInfo array.
  */
-class Hashtable : public FlowSource {
+class Hashtable : public FlowSource, StatisticsModule {
 	public:
 		class Bucket;
 		/**
@@ -80,6 +82,7 @@ class Hashtable : public FlowSource {
 		void ExpAggregateTemplateData(const Packet* p);
 		void aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::Data* data);
 		void aggregatePacket(const Packet* p);
+		virtual std::string getStatistics();
 
 		void expireFlows();
 
@@ -129,6 +132,9 @@ class Hashtable : public FlowSource {
 		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
 		uint16_t fieldLength; /**< length in bytes of all variable-length fields */
 		Rule::Field::Modifier* fieldModifier; /**< specifies what modifier to apply to a given field */
+
+		uint32_t statTotalEntries; /**< number of entries in hashtable, used for statistics */
+		uint32_t statEmptyBuckets; /**< number of empty buckets in hashtable, used for statistics */
 
 		Hashtable::Bucket* createBucket(boost::shared_array<IpfixRecord::Data> data);
 		void exportBucket(Hashtable::Bucket* bucket);

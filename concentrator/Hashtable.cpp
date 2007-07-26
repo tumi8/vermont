@@ -27,6 +27,10 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <time.h>
+#include <sstream>
+
+
+using namespace std;
 
 /**
  * Initializes memory for a new bucket in @c ht containing @c data
@@ -79,6 +83,8 @@ Hashtable::Hashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
 
 	recordsReceived = 0;
 	recordsSent = 0;
+	statTotalEntries = 0;
+	statEmptyBuckets = 0;
 
 	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
 	dataTemplate->templateId=rule->id;
@@ -124,6 +130,7 @@ Hashtable::Hashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
 	/* Informing the Exporter of a new Data Template is done when adding the callback functions */
 
 	buildExpHelperTable();
+	StatisticsManager::getInstance().addModule(this);
 }
 
 /**
@@ -162,6 +169,8 @@ Hashtable::~Hashtable() {
 
 /** 
  * copy functions which were extracted from ExpcopyData
+ * those copy data from the original raw packet into the ipfix bucket in the hashtable
+ * (always called, when a new bucket has to be created for a new flow)
  */
 void Hashtable::copyDataEqualLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
 {
@@ -208,6 +217,7 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 	}
 	switch (efd->typeId) {
 		case IPFIX_TYPEID_protocolIdentifier:
+		case IPFIX_TYPEID_tcpControlBits:
 			if (efd->dstLength != 1) {
 				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
 			}
@@ -372,32 +382,42 @@ void Hashtable::expireFlows() {
 	uint32_t now = time(0);
 	int i;
 
+	uint32_t noEntries = 0;
+	uint32_t emptyBuckets = 0;
 	/* check each hash bucket's spill chain */
-	for (i = 0; i < bucketCount; i++) if (buckets[i] != 0) {
-		Hashtable::Bucket* bucket = buckets[i];
-		Hashtable::Bucket* pred = 0;
+	for (i = 0; i < bucketCount; i++) {
+		if (buckets[i] != 0) {
+			Hashtable::Bucket* bucket = buckets[i];
+			Hashtable::Bucket* pred = 0;
 
-		/* iterate over spill chain */
-		while (bucket != 0) {
-			Hashtable::Bucket* nextBucket = (Hashtable::Bucket*)bucket->next;
-			if ((now > bucket->expireTime) || (now > bucket->forceExpireTime)) {
-				if(now > bucket->forceExpireTime)  DPRINTF("expireFlows: forced expiry");
-				else if(now > bucket->expireTime)  DPRINTF("expireFlows: normal expiry");
+			/* iterate over spill chain */
+			while (bucket != 0) {
+				noEntries++;
+				Hashtable::Bucket* nextBucket = (Hashtable::Bucket*)bucket->next;
+				if ((now > bucket->expireTime) || (now > bucket->forceExpireTime)) {
+					if(now > bucket->forceExpireTime)  DPRINTF("expireFlows: forced expiry");
+					else if(now > bucket->expireTime)  DPRINTF("expireFlows: normal expiry");
 
-				exportBucket(bucket);
-				destroyBucket(bucket);
-				if (pred) {
-					pred->next = nextBucket;
+					exportBucket(bucket);
+					destroyBucket(bucket);
+					if (pred) {
+						pred->next = nextBucket;
+					} else {
+						buckets[i] = nextBucket;
+					}
 				} else {
-					buckets[i] = nextBucket;
+					pred = bucket;
 				}
-			} else {
-				pred = bucket;
-			}
 
-			bucket = nextBucket;
+				bucket = nextBucket;
+			}
+		} else {
+			emptyBuckets++;
 		}
-	}
+	} 	
+
+	statTotalEntries = noEntries;
+	statEmptyBuckets = emptyBuckets;
 }
 
 /**
@@ -1024,6 +1044,10 @@ void Hashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Data* ba
 			*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData)+1);
 			break;
 
+		case IPFIX_TYPEID_tcpControlBits:  // 1 byte src and dst, bitwise-or flows
+			*(uint8_t*)baseData |= *(uint8_t*)deltaData;
+			break;
+
 			// no other types needed, as this is only for raw field input
 
 		default:
@@ -1338,3 +1362,10 @@ void Hashtable::addFlowSink(FlowSink* flowSink) {
 	flowSink->push(ipfixRecord);
 }
 
+std::string Hashtable::getStatistics()
+{
+	ostringstream oss;
+	oss << "Hashtable: number of hashtable entries      : " << statTotalEntries << endl;
+	oss << "Hashtable: number of empty hashtable buckets: " << statEmptyBuckets << endl;
+	return oss.str();
+}
