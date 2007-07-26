@@ -135,6 +135,8 @@ class Hashtable : public FlowSource, StatisticsModule {
 
 		uint32_t statTotalEntries; /**< number of entries in hashtable, used for statistics */
 		uint32_t statEmptyBuckets; /**< number of empty buckets in hashtable, used for statistics */
+		uint32_t statExportedBuckets; /**< number of exported entries/flows, used for statistics */
+		uint32_t statLastExpBuckets; /**< last number of exported entries/flows, used for statistics */
 
 		Hashtable::Bucket* createBucket(boost::shared_array<IpfixRecord::Data> data);
 		void exportBucket(Hashtable::Bucket* bucket);
