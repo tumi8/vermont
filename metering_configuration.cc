@@ -9,7 +9,6 @@
 #include "packetselection_configuration.h"
 #include "packetreporting_configuration.h"
 #include "flowmetering_configuration.h"
-#include "expressflowmetering_configuration.h"
 #include "dbwriter_configuration.h"
 
 #include <sampler/Filter.h>
