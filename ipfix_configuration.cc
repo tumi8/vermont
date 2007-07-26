@@ -79,7 +79,7 @@ unsigned Configuration::getTimeInMsecs(xmlNodePtr i) const
 
 unsigned Configuration::getTimeInSecs(xmlNodePtr i) const
 {
-	return getTimeInUsecs(i) / 10000000;
+	return getTimeInUsecs(i) / 1000000;
 }
 
 
