@@ -60,6 +60,7 @@ class FlowSink {
 		bool terminateSink();
 
 		void setSinkOwner(char* owner);
+		ConcurrentQueue< boost::shared_ptr<IpfixRecord> >* getSinkQueue();
 
 	protected:
 		// Allow HookingFilter to directly call FlowSink::onDataRecord
@@ -197,8 +198,8 @@ class FlowSink {
 	        virtual void flowSinkProcess();
 
 		ConcurrentQueue< boost::shared_ptr<IpfixRecord> > ipfixRecords;
-	        Thread thread;
-        	bool exitFlag;
+		Thread thread;
+		bool exitFlag;
 };
 
 #endif

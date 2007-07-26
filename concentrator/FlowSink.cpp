@@ -112,3 +112,8 @@ void FlowSink::setSinkOwner(char* owner)
 {
 	ipfixRecords.setOwner(owner);
 }
+
+ConcurrentQueue< boost::shared_ptr<IpfixRecord> >* FlowSink::getSinkQueue()
+{
+	return &ipfixRecords;
+}
