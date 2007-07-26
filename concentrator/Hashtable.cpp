@@ -85,6 +85,8 @@ Hashtable::Hashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
 	recordsSent = 0;
 	statTotalEntries = 0;
 	statEmptyBuckets = 0;
+	statExportedBuckets = 0;
+	statLastExpBuckets = 0;
 
 	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
 	dataTemplate->templateId=rule->id;
@@ -379,11 +381,13 @@ void Hashtable::buildExpHelperTable()
  * Exports all expired flows and removes them from the buffer
  */
 void Hashtable::expireFlows() {
+
 	uint32_t now = time(0);
 	int i;
 
 	uint32_t noEntries = 0;
 	uint32_t emptyBuckets = 0;
+	uint32_t exportedBuckets = 0;
 	/* check each hash bucket's spill chain */
 	for (i = 0; i < bucketCount; i++) {
 		if (buckets[i] != 0) {
@@ -398,6 +402,7 @@ void Hashtable::expireFlows() {
 					if(now > bucket->forceExpireTime)  DPRINTF("expireFlows: forced expiry");
 					else if(now > bucket->expireTime)  DPRINTF("expireFlows: normal expiry");
 
+					exportedBuckets++;
 					exportBucket(bucket);
 					destroyBucket(bucket);
 					if (pred) {
@@ -418,6 +423,7 @@ void Hashtable::expireFlows() {
 
 	statTotalEntries = noEntries;
 	statEmptyBuckets = emptyBuckets;
+	statExportedBuckets += exportedBuckets;
 }
 
 /**
@@ -1367,5 +1373,8 @@ std::string Hashtable::getStatistics()
 	ostringstream oss;
 	oss << "Hashtable: number of hashtable entries      : " << statTotalEntries << endl;
 	oss << "Hashtable: number of empty hashtable buckets: " << statEmptyBuckets << endl;
+	uint32_t diff = statExportedBuckets - statLastExpBuckets;
+	statLastExpBuckets += diff;
+	oss << "Hashtable: number of exported entries       : " << diff << endl;
 	return oss.str();
 }
