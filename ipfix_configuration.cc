@@ -225,7 +225,7 @@ void IpfixConfiguration::startSubsystems()
 
 void IpfixConfiguration::pollAggregatorLoop()
 {
-	unsigned poll_interval = 500;
+	unsigned poll_interval = 1000;
 	if (subsystems.find(configTypes::main) != subsystems.end()) {
 		VermontMainConfiguration* m = dynamic_cast<VermontMainConfiguration*>(subsystems[configTypes::main]);
 		poll_interval = m->getPollInterval();
