@@ -121,7 +121,7 @@ if test "x$ax_cv_boost_unit_test_framework" != "xyes"; then
 fi
 
 
-AC_CONFIG_FILES([Makefile common/Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile tests/Makefile])
+AC_CONFIG_FILES([Makefile cfg/Makefile common/Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile tests/Makefile])
 
 AC_OUTPUT
 
