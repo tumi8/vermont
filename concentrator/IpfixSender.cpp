@@ -23,7 +23,7 @@
 #include "IpfixSender.hpp"
 #include "ipfix.hpp"
 
-#include "msg.h"
+#include "common/msg.h"
 
 /*
  we start OUR template IDs at <this>
@@ -41,27 +41,29 @@
  * @return handle to use when calling @c destroyIpfixSender()
  */
 IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) {
-    	DSETSINKOWNER("IpfixSender");
+	setSinkOwner("IpfixSender");
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 	sentRecords = 0;
 	recordsInDataSet = 0;
 	currentTemplateId = 0;
 	lastTemplateId = SENDER_TEMPLATE_ID_LOW;
-	
-	Collector newCollector;
-	strcpy(newCollector.ip, ip);
-	newCollector.port = port;
 
 	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
 		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
 		goto out;
 	}
 
-	if(addCollector(ip, port) != 0) {
-		goto out1;
-	}
+	if (ip && port) {
+		Collector newCollector;
+		strcpy(newCollector.ip, ip);
+		newCollector.port = port;
 
-	collectors.push_back(newCollector);
+		if(addCollector(ip, port) != 0) {
+			goto out1;
+		}
+
+		collectors.push_back(newCollector);
+	}
 	
         msg(MSG_DEBUG, "IpfixSender: running");
 

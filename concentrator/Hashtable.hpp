@@ -21,15 +21,17 @@
 #ifndef HASHING_H
 #define HASHING_H
 
+#include "FlowSource.hpp"
+#include "IpfixParser.hpp"
+#include "Rules.hpp"
+#include "common/StatisticsManager.h"
+
+#include <list>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
 #include <boost/smart_ptr.hpp>
-#include "FlowSource.hpp"
-#include "IpfixParser.hpp"
-#include "Rules.hpp"
-#include <list>
 
 #define HASHTABLE_SIZE 65536
 
@@ -54,7 +56,7 @@
  * fields are stored in @c Hashtable.buckets[].data structures described by the
  * @c Hashtable.fieldInfo array.
  */
-class Hashtable : public FlowSource {
+class Hashtable : public FlowSource, StatisticsModule {
 	public:
 		class Bucket;
 		/**
@@ -77,8 +79,10 @@ class Hashtable : public FlowSource {
 		virtual void addFlowSink(FlowSink* flowSink);
 
 		void aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord::Data* data);
-		void ExpaggregateTemplateData(IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi);
+		void ExpAggregateTemplateData(const Packet* p);
 		void aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::Data* data);
+		void aggregatePacket(const Packet* p);
+		virtual std::string getStatistics();
 
 		void expireFlows();
 
@@ -93,10 +97,46 @@ class Hashtable : public FlowSource {
 		uint16_t maxBufferTime; /**< If a buffered flow was kept buffered for this many seconds, export it */
 
 	protected:
+		/** 
+		 * fast accessible structure containing data for aggregation, the first noAggFields members of array
+		 * are aggregatable
+		 */
+		struct ExpFieldData {
+			uint32_t srcIndex; /**< index to raw packet data relative to Packet::netHeader, sometimes unique for each processed packet */
+			uint16_t dstIndex; /**< index in ipfix data */
+			uint16_t typeId; /**< type of corresponding ipfix field */
+			uint16_t srcLength; /**< length of source field data */
+			uint16_t dstLength; /**< length of destination field data */
+			uint8_t  data;      /**< additional data stored by aggregation function, such as mask field */
+			bool	 varSrcIdx; /**< specifies if the index in the raw packet data is variable between packets relative to Packet::netHeader*/
+			
+			Rule::Field::Modifier modifier; /**< modifier when copying field (such as a mask) */
+			void (*copyDataFunc) (IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*); /**< function which is able to copy data from raw packet to ipfix field */
 
+		};
+		struct ExpHelperTable 
+		{
+			/**< contains number of aggregatable fields in expFieldData */
+			uint16_t noAggFields;
+
+			bool dstIpEFieldIndex; /**< 0 if destination ip should not be masked, == index dstip, if to be masked */
+			bool srcIpEFieldIndex; /**< 0 if source ip should not be masked, == index srcip, if to be masked */
+
+			ExpFieldData* expFieldData;
+
+			uint16_t* varSrcPtrFields; /**< array with indizes to expFieldData elements, which have a srcIndex which varies from packet to packet */
+			uint16_t varSrcPtrFieldsLen; /**< length of varSrcPtrFields */
+		};
+
+		ExpHelperTable expHelperTable;
 		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
 		uint16_t fieldLength; /**< length in bytes of all variable-length fields */
 		Rule::Field::Modifier* fieldModifier; /**< specifies what modifier to apply to a given field */
+
+		uint32_t statTotalEntries; /**< number of entries in hashtable, used for statistics */
+		uint32_t statEmptyBuckets; /**< number of empty buckets in hashtable, used for statistics */
+		uint32_t statExportedBuckets; /**< number of exported entries/flows, used for statistics */
+		uint32_t statLastExpBuckets; /**< last number of exported entries/flows, used for statistics */
 
 		Hashtable::Bucket* createBucket(boost::shared_array<IpfixRecord::Data> data);
 		void exportBucket(Hashtable::Bucket* bucket);
@@ -106,6 +146,25 @@ class Hashtable : public FlowSource {
 		uint16_t getHash(IpfixRecord::Data* data);
 		int equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2);
 		void bufferDataBlock(boost::shared_array<IpfixRecord::Data> data);
+
+		// internal functions for express aggregator
+		void buildExpHelperTable();
+		static void copyDataEqualLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
+		static void copyDataGreaterLengthIPNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
+		static void copyDataGreaterLengthIPMask(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
+		static void copyDataGreaterLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
+		static void copyDataSetOne(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
+		void (*getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*);
+		void fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier);
+		uint16_t expCalculateHash(const IpfixRecord::Data* data);
+		boost::shared_array<IpfixRecord::Data> buildBucketData(const Packet* p);
+		void expAggregateField(const ExpFieldData* efd, IpfixRecord::Data* baseData, const IpfixRecord::Data* deltaData);
+		void expAggregateFlow(IpfixRecord::Data* bucket, const Packet* p);
+		bool expEqualFlow(IpfixRecord::Data* bucket, const Packet* p);
+		void createMaskedField(IpfixRecord::Data* address, uint8_t* ipMask, Rule::Field::Modifier modifier);
+		void createMaskedFields(const Packet* p);
+		void updatePointers(const Packet* p);
+
 };
 	
 #endif

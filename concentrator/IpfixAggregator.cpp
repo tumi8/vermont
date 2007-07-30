@@ -25,7 +25,7 @@
 #include "IpfixParser.hpp"
 #include "IpfixSender.hpp"
 
-#include "msg.h"
+#include "common/msg.h"
 
 /**
  * Creates a new Aggregator. Do not forget to set the callback functions, then call @c startAggregator().
@@ -42,7 +42,7 @@ IpfixAggregator::IpfixAggregator(char* ruleFile, uint16_t minBufferTime, uint16_
 	}
 	buildAggregator(rules, minBufferTime, maxBufferTime);
 
-	DSETSINKOWNER("IpfixAggregator");
+	setSinkOwner("IpfixAggregator");
 }
 
 /**
@@ -54,6 +54,8 @@ IpfixAggregator::IpfixAggregator(char* ruleFile, uint16_t minBufferTime, uint16_
 IpfixAggregator::IpfixAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime)
 {
 	buildAggregator(rules, minBufferTime, maxBufferTime);
+
+	setSinkOwner("IpfixAggregator");
 }
 
 /**
@@ -66,6 +68,7 @@ void IpfixAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint
 	this->rules = rules;
 
 	for (i = 0; i < rules->count; i++) {
+		rules->rule[i]->initialize();
 		rules->rule[i]->hashtable = new Hashtable(rules->rule[i], minBufferTime, maxBufferTime);
 	}
 
@@ -78,6 +81,7 @@ void IpfixAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint
 	}
 
 	msg(MSG_INFO, "Done. Parsed %d rules; minBufferTime %d, maxBufferTime %d", rules->count, minBufferTime, maxBufferTime);
+
 }
 
 /**
@@ -123,10 +127,11 @@ int IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::
 	int i;
 	DPRINTF("Got a Data Record\n");
 
+#if defined(DEBUG)
 	if(!rules) {
-		msg(MSG_FATAL, "Aggregator not started");
-		return -1;
+		THROWEXCEPTION("Aggregator not started");
 	}
+#endif
 
 	// tobi_optimize: why the hell is here a mutex?!
 	// is it allowed to specify the hookingfilter to several receivers?
@@ -143,30 +148,36 @@ int IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::
 	return 0;
 }
 
-int IpfixAggregator::onExpDataRecord(IpfixRecord::SourceID* sourceID, uint16_t length, IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi)
+/**
+ * replacement of onDataRecord which is only able to handle raw IP packets and aggregate those
+ * efficiently
+ * @param packet raw network packet which was received
+ * @return 0 if packet handled successfully
+ */
+int IpfixAggregator::onPacket(const Packet* packet)
 {
 	int i;
-	DPRINTF("ExpressaggregateDataRecord: Got a Data Record\n");
 
+#if defined(DEBUG)
 	if(!rules) {
-		msg(MSG_FATAL, "ExpressAggregator not started");
-		return -1;
+		THROWEXCEPTION("Aggregator not started");
 	}
+#endif
+
 
 
 	pthread_mutex_lock(&mutex);
 	for (i = 0; i < rules->count; i++) {
-		//if (ExpresstemplateDataMatchesRule(data, rules->rule[i], pdata)) {
-			if (rules->rule[i]->ExptemplateDataMatches(ip_data, th_data, classi)) {
-			DPRINTF("onExpDataRecord: rule %d matches\n", i);
-			//ExpressaggregateTemplateData(rules->rule[i]->hashtable, data, pdata);
-			((Hashtable*)rules->rule[i]->hashtable)->ExpaggregateTemplateData(ip_data, th_data, classi);
+		if (rules->rule[i]->ExptemplateDataMatches(packet)) {
+			DPRINTF("rule %d matches\n", i);
+			((Hashtable*)rules->rule[i]->hashtable)->aggregatePacket(packet);
 		}
 	}
 	pthread_mutex_unlock(&mutex);
 	
 	return 0;
 }
+
 
 /**
  * Injects new DataRecords into the Aggregator.

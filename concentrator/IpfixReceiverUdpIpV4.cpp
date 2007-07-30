@@ -23,7 +23,7 @@
 #include "IpfixPacketProcessor.hpp"
 #include "IpfixParser.hpp"
 #include "ipfix.hpp"
-#include "msg.h"
+#include "common/msg.h"
 
 #include <stdexcept>
 #include <stdlib.h>
@@ -76,11 +76,12 @@ IpfixReceiverUdpIpV4::~IpfixReceiverUdpIpV4() {
 void IpfixReceiverUdpIpV4::run() {
 	struct sockaddr_in clientAddress;
 	socklen_t clientAddressLen;
-	boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
-	boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
-	int n;
 	
 	while(!exit) {
+		boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
+		boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
+		int n;
+
 		clientAddressLen = sizeof(struct sockaddr_in);
 		n = recvfrom(listen_socket, data.get(), MAX_MSG_LEN,
 			     0, (struct sockaddr*)&clientAddress, &clientAddressLen);

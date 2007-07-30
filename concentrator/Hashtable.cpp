@@ -18,17 +18,19 @@
  *
  */
 
+#include "crc16.hpp"
+
+#include "Hashtable.hpp"
+
+#include "common/msg.h"
+
 #include <string.h>
 #include <netinet/in.h>
 #include <time.h>
+#include <sstream>
 
-#include "Hashtable.hpp"
-#include "crc16.hpp"
-#include "ipfix.hpp"
 
-#include "ipfixlolib/ipfixlolib.h"
-
-#include "msg.h"
+using namespace std;
 
 /**
  * Initializes memory for a new bucket in @c ht containing @c data
@@ -81,6 +83,10 @@ Hashtable::Hashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
 
 	recordsReceived = 0;
 	recordsSent = 0;
+	statTotalEntries = 0;
+	statEmptyBuckets = 0;
+	statExportedBuckets = 0;
+	statLastExpBuckets = 0;
 
 	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
 	dataTemplate->templateId=rule->id;
@@ -125,6 +131,8 @@ Hashtable::Hashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
 
 	/* Informing the Exporter of a new Data Template is done when adding the callback functions */
 
+	buildExpHelperTable();
+	StatisticsManager::getInstance().addModule(this);
 }
 
 /**
@@ -155,45 +163,268 @@ Hashtable::~Hashtable() {
 	*/
 
 	free(fieldModifier);
+
+	// free express aggregator helper structures
+	delete[] expHelperTable.expFieldData;
+	delete[] expHelperTable.varSrcPtrFields;
+}
+
+/** 
+ * copy functions which were extracted from ExpcopyData
+ * those copy data from the original raw packet into the ipfix bucket in the hashtable
+ * (always called, when a new bucket has to be created for a new flow)
+ */
+void Hashtable::copyDataEqualLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
+{
+	memcpy(dst, src, efd->srcLength);
+}
+void Hashtable::copyDataGreaterLengthIPNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
+{
+	bzero(dst+efd->srcLength, efd->dstLength-efd->srcLength);
+	memcpy(dst, src, efd->srcLength);
+}
+void Hashtable::copyDataGreaterLengthIPMask(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
+{
+	// attention: length MUST be 5 for destination!
+	*reinterpret_cast<uint32_t*>(dst) = *reinterpret_cast<const uint32_t*>(src);
+	// copy mask information into 5th byte
+	dst[4] = efd->data;
+}
+void Hashtable::copyDataGreaterLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
+{
+	bzero(dst, efd->dstLength-efd->srcLength);
+	memcpy(dst+efd->dstLength-efd->srcLength, src, efd->srcLength);
+}
+void Hashtable::copyDataSetOne(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
+{
+	bzero(dst, efd->dstLength);
+	// set last byte of array to one (network byte order!)
+	dst[efd->dstLength-1] = 1;
+}
+
+
+/**
+ * helper function for buildExpHelperTable
+ * does some error checking on given parameters and returns function which is appropriate
+ * to copy field in flow
+ */
+void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*)
+{
+	// some error handling
+	if (efd->modifier == Rule::Field::DISCARD) {
+		THROWEXCEPTION("tried to copy data with field modifier set to discard");
+	} else if ((efd->modifier != Rule::Field::KEEP) && (efd->modifier != Rule::Field::AGGREGATE) &&
+			   (efd->modifier < Rule::Field::MASK_START) && (efd->modifier > Rule::Field::MASK_END)) {
+		THROWEXCEPTION("unknown modifier %d", efd->modifier);
+	}
+	switch (efd->typeId) {
+		case IPFIX_TYPEID_protocolIdentifier:
+		case IPFIX_TYPEID_tcpControlBits:
+			if (efd->dstLength != 1) {
+				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+			}
+			break;
+
+		case IPFIX_TYPEID_sourceTransportPort:
+		case IPFIX_TYPEID_destinationTransportPort:
+			if (efd->dstLength != 2) {
+				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+			}
+			break;
+
+		case IPFIX_TYPEID_flowStartSysUpTime:
+		case IPFIX_TYPEID_flowStartSeconds:
+		case IPFIX_TYPEID_flowStartMicroSeconds:
+		case IPFIX_TYPEID_flowStartNanoSeconds:
+			if (efd->dstLength != 4) {
+				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+			}
+			break;
+
+		case IPFIX_TYPEID_flowStartMilliSeconds:
+			if (efd->dstLength != 8) {
+				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+			}
+			break;
+
+		case IPFIX_TYPEID_flowEndSysUpTime:
+		case IPFIX_TYPEID_flowEndSeconds:
+		case IPFIX_TYPEID_flowEndMicroSeconds:
+		case IPFIX_TYPEID_flowEndNanoSeconds:
+			if (efd->dstLength != 4) {
+				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+			}
+			break;
+
+		case IPFIX_TYPEID_flowEndMilliSeconds:
+			if (efd->dstLength != 8) {
+				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+			}
+			break;
+
+		case IPFIX_TYPEID_octetDeltaCount:
+			if (efd->dstLength != 8) {
+				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+			}
+
+		case IPFIX_TYPEID_packetDeltaCount:
+			switch (efd->dstLength) {
+				case 1:
+				case 2:
+				case 4:
+				case 8:
+					break;
+					
+				default:
+					THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+					break;
+			}
+			break;
+
+		case IPFIX_TYPEID_sourceIPv4Address:
+		case IPFIX_TYPEID_destinationIPv4Address:
+			if (efd->dstLength != 5) {
+					THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+			}
+			break;
+
+		default:
+			THROWEXCEPTION("non-aggregatable type: %d", efd->typeId);
+			break;
+	}
+
+	// now decide on the correct copy function
+	if (efd->dstLength == efd->srcLength) {
+		return copyDataEqualLengthNoMod;
+	} else if (efd->dstLength > efd->srcLength) {
+		if (efd->typeId == IPFIX_TYPEID_sourceIPv4Address || efd->typeId == IPFIX_TYPEID_destinationIPv4Address) {
+			if ((efd->modifier >= Rule::Field::MASK_START) && (efd->modifier <= Rule::Field::MASK_END)) {
+				if (efd->dstLength != 5) {
+					THROWEXCEPTION("destination data size must be 5, but is %d - need to store mask in there", efd->dstLength);
+				}
+				return copyDataGreaterLengthIPMask;
+			} else {
+				return copyDataGreaterLengthIPNoMod;
+			}
+		} else if (efd->typeId == IPFIX_TYPEID_packetDeltaCount) {
+			return copyDataSetOne;
+		} else {
+			return copyDataGreaterLengthNoMod;
+		}
+	} else {
+		THROWEXCEPTION("target buffer too small. Expected buffer %s of length %d, got one with length %d", typeid2string(efd->typeId), efd->srcLength, efd->dstLength);
+	}
+
+	THROWEXCEPTION("this line should never be reached");
+	return 0;
+}
+
+
+/**
+ * helper function for buildExpHelperTable
+ */
+void Hashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier)
+{
+	efd->typeId = hfi->type.id;
+	efd->dstIndex = hfi->offset;
+	efd->srcLength = IpfixRecord::TemplateInfo::getFieldLength(hfi->type);
+	efd->dstLength = hfi->type.length;
+	efd->modifier = fieldModifier;
+	efd->varSrcIdx = IpfixRecord::TemplateInfo::isRawPacketPtrVariable(hfi->type);
+	efd->copyDataFunc = getCopyDataFunction(efd);
+
+	// initialize static source index, if current field does not have a variable pointer
+	if (!efd->varSrcIdx) {
+		// create temporary packet just for initializing our optimization structure
+		Packet p;
+		efd->srcIndex = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(hfi->type.id, &p);
+	}
+}
+
+/**
+ * builds internal structure expHelperTable for fast aggregation of raw packets
+ * used in the express aggregator
+ */
+void Hashtable::buildExpHelperTable()
+{
+	expHelperTable.expFieldData = new ExpFieldData[dataTemplate->fieldCount];
+	expHelperTable.varSrcPtrFields = new uint16_t[dataTemplate->fieldCount];
+
+	// at first, fill data structure with aggregatable fields
+	uint16_t efdIdx = 0;
+	for (int i=0; i<dataTemplate->fieldCount; i++) {
+		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+		if (!isToBeAggregated(hfi->type)) continue;
+		ExpFieldData* efd = &expHelperTable.expFieldData[efdIdx++];
+		fillExpFieldData(efd, hfi, fieldModifier[i]);
+	}
+	expHelperTable.noAggFields = efdIdx;
+
+	// now the remaining fields
+	for (int i=0; i<dataTemplate->fieldCount; i++) {
+		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+		if (isToBeAggregated(hfi->type)) continue;
+		ExpFieldData* efd = &expHelperTable.expFieldData[efdIdx++];
+		fillExpFieldData(efd, hfi, fieldModifier[i]);
+	}
+
+	// fill structure which contains field with variable pointers
+	int noVarFields = 0;
+	for (int i=0; i<dataTemplate->fieldCount; i++) {
+		if (expHelperTable.expFieldData[i].varSrcIdx) expHelperTable.varSrcPtrFields[noVarFields++] = i;
+	}
+	expHelperTable.varSrcPtrFieldsLen = noVarFields;
+
 }
 
 /**
  * Exports all expired flows and removes them from the buffer
  */
 void Hashtable::expireFlows() {
+
 	uint32_t now = time(0);
 	int i;
 
+	uint32_t noEntries = 0;
+	uint32_t emptyBuckets = 0;
+	uint32_t exportedBuckets = 0;
 	/* check each hash bucket's spill chain */
-	for (i = 0; i < bucketCount; i++) if (buckets[i] != 0) {
-		Hashtable::Bucket* bucket = buckets[i];
-		Hashtable::Bucket* pred = 0;
+	for (i = 0; i < bucketCount; i++) {
+		if (buckets[i] != 0) {
+			Hashtable::Bucket* bucket = buckets[i];
+			Hashtable::Bucket* pred = 0;
 
-		/* iterate over spill chain */
-		while (bucket != 0) {
-			Hashtable::Bucket* nextBucket = (Hashtable::Bucket*)bucket->next;
-			if ((now > bucket->expireTime) || (now > bucket->forceExpireTime)) {
-				if(now > bucket->forceExpireTime)  DPRINTF("expireFlows: forced expiry");
-				else if(now > bucket->expireTime)  DPRINTF("expireFlows: normal expiry");
+			/* iterate over spill chain */
+			while (bucket != 0) {
+				noEntries++;
+				Hashtable::Bucket* nextBucket = (Hashtable::Bucket*)bucket->next;
+				if ((now > bucket->expireTime) || (now > bucket->forceExpireTime)) {
+					if(now > bucket->forceExpireTime)  DPRINTF("expireFlows: forced expiry");
+					else if(now > bucket->expireTime)  DPRINTF("expireFlows: normal expiry");
 
-				exportBucket(bucket);
-				destroyBucket(bucket);
-				if (pred) {
-					pred->next = nextBucket;
+					exportedBuckets++;
+					exportBucket(bucket);
+					destroyBucket(bucket);
+					if (pred) {
+						pred->next = nextBucket;
+					} else {
+						buckets[i] = nextBucket;
+					}
 				} else {
-					buckets[i] = nextBucket;
+					pred = bucket;
 				}
-			} else {
-				pred = bucket;
+
+				bucket = nextBucket;
 			}
-
-			bucket = nextBucket;
+		} else {
+			emptyBuckets++;
 		}
-	}
-}
+	} 	
 
-// TODO: tobi_optimize: all add/greater/lesser/* functions need to be cleaned up, as calling
-// hton* for a comparison is definitively not optimal
+	statTotalEntries = noEntries;
+	statEmptyBuckets = emptyBuckets;
+	statExportedBuckets += exportedBuckets;
+}
 
 /**
  * Returns the sum of two uint32_t values in network byte order
@@ -305,83 +536,84 @@ int Hashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 int Hashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* baseData, IpfixRecord::Data* deltaData) {
 	switch (type->id) {
 
-	case IPFIX_TYPEID_flowStartSysUpTime:
-	case IPFIX_TYPEID_flowStartSeconds:
-	case IPFIX_TYPEID_flowStartMicroSeconds:
-	case IPFIX_TYPEID_flowStartNanoSeconds:
-		if (type->length != 4) {
-			DPRINTF("unsupported length %d for type %d", type->length, type->id);
-                        goto out;
-		}
+		case IPFIX_TYPEID_flowStartSysUpTime:
+		case IPFIX_TYPEID_flowStartSeconds:
+		case IPFIX_TYPEID_flowStartMicroSeconds:
+		case IPFIX_TYPEID_flowStartNanoSeconds:
+			if (type->length != 4) {
+				DPRINTF("unsupported length %d for type %d", type->length, type->id);
+				goto out;
+			}
 
-		*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-		break;
+			*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+			break;
 
-	case IPFIX_TYPEID_flowStartMilliSeconds:
-		if (type->length != 8) {
-			DPRINTF("unsupported length %d for type %d", type->length, type->id);
-                        goto out;
-		}
+		case IPFIX_TYPEID_flowStartMilliSeconds:
+			if (type->length != 8) {
+				DPRINTF("unsupported length %d for type %d", type->length, type->id);
+				goto out;
+			}
 
-		*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-                break;
+			*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+			break;
 
-	case IPFIX_TYPEID_flowEndSysUpTime:
-	case IPFIX_TYPEID_flowEndSeconds:
-	case IPFIX_TYPEID_flowEndMicroSeconds:
-	case IPFIX_TYPEID_flowEndNanoSeconds:
-		if (type->length != 4) {
-			DPRINTF("unsupported length %d for type %d", type->length, type->id);
-			goto out;
-		}
+		case IPFIX_TYPEID_flowEndSysUpTime:
+		case IPFIX_TYPEID_flowEndSeconds:
+		case IPFIX_TYPEID_flowEndMicroSeconds:
+		case IPFIX_TYPEID_flowEndNanoSeconds:
+			if (type->length != 4) {
+				DPRINTF("unsupported length %d for type %d", type->length, type->id);
+				goto out;
+			}
 
-		*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-		break;
+			*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+			break;
 
-	case IPFIX_TYPEID_flowEndMilliSeconds:
-		if (type->length != 8) {
-			DPRINTF("unsupported length %d for type %d", type->length, type->id);
-                        goto out;
-		}
+		case IPFIX_TYPEID_flowEndMilliSeconds:
+			if (type->length != 8) {
+				DPRINTF("unsupported length %d for type %d", type->length, type->id);
+				goto out;
+			}
 
-		*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-                break;
+			*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+			break;
 
-	case IPFIX_TYPEID_octetDeltaCount:
-	case IPFIX_TYPEID_postOctetDeltaCount:
-	case IPFIX_TYPEID_packetDeltaCount:
-	case IPFIX_TYPEID_postPacketDeltaCount:
-	case IPFIX_TYPEID_droppedOctetDeltaCount:
-	case IPFIX_TYPEID_droppedPacketDeltaCount:
-                // TODO: tobi_optimize
-		switch (type->length) {
-		case 1:
-			*(uint8_t*)baseData = addUint8Nbo(*(uint8_t*)baseData, *(uint8_t*)deltaData);
-			return 0;
-		case 2:
-			*(uint16_t*)baseData = addUint16Nbo(*(uint16_t*)baseData, *(uint16_t*)deltaData);
-                        return 0;
-		case 4:
-			*(uint32_t*)baseData = addUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-                        return 0;
-		case 8:
-			*(uint64_t*)baseData = addUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-                        return 0;
+		case IPFIX_TYPEID_octetDeltaCount:
+		case IPFIX_TYPEID_postOctetDeltaCount:
+		case IPFIX_TYPEID_packetDeltaCount:
+		case IPFIX_TYPEID_postPacketDeltaCount:
+		case IPFIX_TYPEID_droppedOctetDeltaCount:
+		case IPFIX_TYPEID_droppedPacketDeltaCount:
+			// TODO: tobi_optimize
+			// converting all values to network byte order when sending ipfix packets would be much faster
+			switch (type->length) {
+				case 1:
+					*(uint8_t*)baseData = addUint8Nbo(*(uint8_t*)baseData, *(uint8_t*)deltaData);
+					return 0;
+				case 2:
+					*(uint16_t*)baseData = addUint16Nbo(*(uint16_t*)baseData, *(uint16_t*)deltaData);
+					return 0;
+				case 4:
+					*(uint32_t*)baseData = addUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+					return 0;
+				case 8:
+					*(uint64_t*)baseData = addUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+					return 0;
+				default:
+					DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					goto out;
+			}
+			break;
+
 		default:
-			DPRINTF("unsupported length %d for type %d", type->length, type->id);
+			DPRINTF("non-aggregatable type: %d", type->id);
 			goto out;
-		}
-		break;
-
-	default:
-		DPRINTF("non-aggregatable type: %d", type->id);
-                goto out;
-		break;
+			break;
 	}
 
 	return 0;
 out:
-        return 1;
+	return 1;
 }
 
 /**
@@ -501,6 +733,8 @@ void Hashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 			DPRINTF("appending to bucket\n");
 
 			aggregateFlow(bucket->data.get(), data.get());
+			// TODO: tobi_optimize
+			// replace call of time() with access to a static variable which is updated regularly (such as every 100ms)
 			bucket->expireTime = time(0) + minBufferTime;
 
 			break;
@@ -526,9 +760,6 @@ void copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData,
 		DPRINTF("copyData: Tried to copy field to destination of different type\n");
 		return;
 	}
-        if (srcType->id == IPFIX_TYPEID_flowStartMilliSeconds) {
-            DPRINTF("copyData: flowStartMilliSeconds is %llX with length %d\n", *((uint64_t*)srcData), srcType->length);
-        }
 
 	/* Copy data, care for length differences */
 	if(dstType->length == srcType->length) {
@@ -605,7 +836,7 @@ void copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData,
 	}
 }
 
-void ExpcopyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData, IpfixRecord::FieldInfo::Type* srcType, IpfixRecord::Data* srcData, Rule::Field::Modifier modifier)
+void ExpcopyData(const IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData, const IpfixRecord::FieldInfo::Type* srcType, const IpfixRecord::Data* srcData, const Rule::Field::Modifier modifier)
 {
 	if((dstType->id != srcType->id)) {
 		DPRINTF("copyData: Tried to copy field to destination of different type\n");
@@ -709,14 +940,14 @@ void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord
 			continue;
 		}
 
-                DPRINTFL(MSG_VDEBUG, "copyData for type %d, offset %x, starting from pointer %X", tfi->type.id, tfi->offset, data+tfi->offset);
-                DPRINTFL(MSG_VDEBUG, "copyData to offset %X", hfi->offset);
+		DPRINTFL(MSG_VDEBUG, "copyData for type %d, offset %x, starting from pointer %X", tfi->type.id, tfi->offset, data+tfi->offset);
+		DPRINTFL(MSG_VDEBUG, "copyData to offset %X", hfi->offset);
 		copyData(&hfi->type, htdata.get() + hfi->offset, &tfi->type, data + tfi->offset, fieldModifier[i]);
 
 		/* copy associated mask, should there be one */
 		switch (hfi->type.id) {
-		case IPFIX_TYPEID_sourceIPv4Address:
-			tfi = ti->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
+			case IPFIX_TYPEID_sourceIPv4Address:
+				tfi = ti->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
 
 			if(tfi) {
 				if(hfi->type.length != 5) {
@@ -757,43 +988,259 @@ void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord
 }
 
 /**
+ * calculates hash for given raw packet data in express aggregator
+ */
+uint16_t Hashtable::expCalculateHash(const IpfixRecord::Data* data)
+{
+	uint16_t hash = 0;
+	for (int i=expHelperTable.noAggFields; i<dataTemplate->fieldCount; i++) {
+		ExpFieldData* efd = &expHelperTable.expFieldData[i];
+		hash = crc16(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
+	}
+	return hash;
+}
+
+/**
+ * copies data from raw packet to a bucket which will be inserted into the hashtable
+ * for aggregation (part of express aggregator)
+ */
+boost::shared_array<IpfixRecord::Data> Hashtable::buildBucketData(const Packet* p)
+{
+	// new field for insertion into hashtable
+	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength]);
+	IpfixRecord::Data* data = htdata.get();
+	
+	// copy all data ...
+	for (int i=0; i<dataTemplate->fieldCount; i++) {
+		ExpFieldData* efd = &expHelperTable.expFieldData[i];
+		efd->copyDataFunc(&data[efd->dstIndex], reinterpret_cast<const uint8_t*>(p->netHeader)+efd->srcIndex, efd);
+	}
+
+	return htdata;
+}
+
+/**
+ * aggregates the given field of the raw packet data into a hashtable bucket
+ * (part of express aggregator)
+ */
+void Hashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Data* baseData, const IpfixRecord::Data* deltaData)
+{
+	switch (efd->typeId) {
+		case IPFIX_TYPEID_flowStartSeconds:
+			*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+			break;
+
+		case IPFIX_TYPEID_flowStartMilliSeconds:
+			*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+			break;
+
+		case IPFIX_TYPEID_flowEndSeconds:
+			*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+			break;
+
+		case IPFIX_TYPEID_flowEndMilliSeconds:
+			*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+			break;
+
+		case IPFIX_TYPEID_octetDeltaCount: // 8 byte dst, 2 byte src
+			*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData) + ntohs(*(uint16_t*)deltaData));
+			break;
+
+		case IPFIX_TYPEID_packetDeltaCount: // 8 byte dst, no src
+			*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData)+1);
+			break;
+
+		case IPFIX_TYPEID_tcpControlBits:  // 1 byte src and dst, bitwise-or flows
+			*(uint8_t*)baseData |= *(uint8_t*)deltaData;
+			break;
+
+			// no other types needed, as this is only for raw field input
+
+		default:
+			DPRINTF("non-aggregatable type: %d", efd->typeId);
+			break;
+	}
+}
+
+/**
+ * aggregates the given raw packet data into the hashtable bucket
+ * (part of express aggregator)
+ */
+void Hashtable::expAggregateFlow(IpfixRecord::Data* bucket, const Packet* p)
+{
+	// TODO: tobi_optimize
+	// here all fields marked as 'aggregatable' are processed.
+	// maybe we should only process fields which are really aggregatable, as e.g. dstIp or srcIp
+	// fields will noch be aggregated, as method aggregateField does not do anything with those
+	for (int i=0; i<expHelperTable.noAggFields; i++) {
+		ExpFieldData* efd = &expHelperTable.expFieldData[i];
+
+		expAggregateField(efd, bucket+efd->dstIndex, p->netHeader+efd->srcIndex);
+	}
+}
+
+/**
+ * compares if given hashtable bucket data is equal with raw packet data
+ * (part of express aggregator)
+ * @returns true if equal, false if not equal
+ */
+bool Hashtable::expEqualFlow(IpfixRecord::Data* bucket, const Packet* p)
+{
+	for (int i=expHelperTable.noAggFields; i<dataTemplate->fieldCount; i++) {
+		ExpFieldData* efd = &expHelperTable.expFieldData[i];
+
+		// just compare srcLength bytes, as we still have our original packet data
+		if (memcmp(bucket+efd->dstIndex, p->netHeader+efd->srcIndex, efd->srcLength)!=0)
+			return false;
+	}
+	return true;
+}
+
+/**
+ * masks ip addresses inside raw packet and creates a mask field
+ * (part of express aggregator)
+ */
+void Hashtable::createMaskedField(IpfixRecord::Data* address, uint8_t* ipMask, Rule::Field::Modifier modifier)
+{
+	uint8_t imask = 32 - (modifier - (int)Rule::Field::MASK_START);
+	*ipMask = imask; /* store the inverse network mask */
+
+	if (imask > 0) {
+		if (imask == 8) {
+			address[3] = 0x00;
+		} else if (imask == 16) {
+			address[2] = 0x00;
+			address[3] = 0x00;
+		} else if (imask == 24) {
+			address[1] = 0x00;
+			address[2] = 0x00;
+			address[3] = 0x00;
+		} else if (imask == 32) {
+			address[0] = 0x00;
+			address[1] = 0x00;
+			address[2] = 0x00;
+			address[3] = 0x00;
+		} else {
+			int pattern = 0;
+			int i;
+			for(i = 0; i < imask; i++) {
+				pattern |= (1 << i);
+			}
+			*(uint32_t*)address = htonl(ntohl(*(uint32_t*)(address)) & ~pattern);
+		}
+	}
+}
+
+/**
+ * masks ip addresses inside the raw packet if desired
+ * additional mask information (is 5th byte in aggregated data) is in ExpFieldData->data
+ */
+void Hashtable::createMaskedFields(const Packet* p)
+{
+	if (expHelperTable.dstIpEFieldIndex > 0) {
+		ExpFieldData* efd = &expHelperTable.expFieldData[expHelperTable.dstIpEFieldIndex];
+		// const_cast: yes, we know that it is not allowed. this is an exception. honestly.
+		createMaskedField(const_cast<unsigned char*>(p->netHeader)+efd->srcIndex, &efd->data, efd->modifier);
+	}
+	if (expHelperTable.srcIpEFieldIndex > 0) {
+		ExpFieldData* efd = &expHelperTable.expFieldData[expHelperTable.srcIpEFieldIndex];
+		createMaskedField(const_cast<unsigned char*>(p->netHeader)+efd->srcIndex, &efd->data, efd->modifier);
+	}
+}
+
+/**
+ * updates variable pointers to the raw packet data for each packet
+ * (part of express aggregator)
+ */
+void Hashtable::updatePointers(const Packet* p)
+{
+	for (int i=0; i<expHelperTable.varSrcPtrFieldsLen; i++) {
+		ExpFieldData* efd = &expHelperTable.expFieldData[expHelperTable.varSrcPtrFields[i]];
+		efd->srcIndex = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(efd->typeId, p);
+	}
+}
+
+/**
+ * Replacement for ExpAggregateTemplateData
+ * TODO: write doc!
+ * ATTENTION: 
+ *  - this function expects not to be called in parallel, as it uses internal buffers which are
+ *    *NOT* thread-safe
+ *  - raw packet data is modified according to specified masks
+ *  - hashes are calculated based on raw packet (masks are already applied then)
+ */
+void Hashtable::aggregatePacket(const Packet* p)
+{
+	updatePointers(p);
+	createMaskedFields(p);
+
+	uint16_t hash = expCalculateHash(p->netHeader);
+
+	// search bucket inside hashtable
+	Hashtable::Bucket* bucket = buckets[hash];
+	if (bucket == 0) {
+		// slot is free, place bucket there
+		DPRINTF("creating new bucket");
+		buckets[hash] = createBucket(buildBucketData(p));
+		return;
+	}
+
+	// This slot is already used, search spill chain for equal flow
+	while(1) {
+		if (expEqualFlow(bucket->data.get(), p)) {
+			DPRINTF("appending to bucket\n");
+
+			expAggregateFlow(bucket->data.get(), p);
+
+			// TODO: tobi_optimize
+			// replace call of time() with access to a static variable which is updated regularly (such as every 100ms)
+			bucket->expireTime = time(0) + minBufferTime;
+
+			break;
+		}
+
+		if (bucket->next == 0) {
+			DPRINTF("creating bucket\n");
+
+			bucket->next = createBucket(buildBucketData(p));
+			break;
+		}
+		bucket = (Hashtable::Bucket*)bucket->next;
+	}
+}
+
+/**
  * Buffer passed flow for Express aggregator
  */
-void Hashtable::ExpaggregateTemplateData(IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi)
+void Hashtable::ExpAggregateTemplateData(const Packet* p)
 {
-	int i;
-        DPRINTF("Hashtable::ExpaggregateTemplateData called");
-	IpfixRecord::TemplateInfo* ti = NULL;
-
+	
 	/* Create data block to be inserted into buffer... */
 	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength]);
 
-	for (i = 0; i < dataTemplate->fieldCount; i++) {
+	// tobi_optimize:
+	// here we copy stuff from the raw packet into the aggregated data structure
+	// in many cases this would not be necessary, as the flow has already been added
+	// to the hashtable and inside bufferDataBlock, the already copied data is copied into
+	// the existing flow and htdata is freed again (-> unnecessary new, copy and delete)
+	for (int i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
-		IpfixRecord::Data* tfi = ti->getFieldPointer(hfi->type, ip_data, th_data, classi);
-		IpfixRecord::FieldInfo* fi = (IpfixRecord::FieldInfo*)malloc(1 * sizeof(IpfixRecord::FieldInfo));
-		fi->type.id = hfi->type.id;
-		fi->type.length = ti->getFieldLength(hfi->type);
+		const IpfixRecord::Data* tfi = p->netHeader + IpfixRecord::TemplateInfo::getRawPacketFieldIndex(hfi->type.id, p);
+		IpfixRecord::FieldInfo fi;
 
+		fi.type.id = hfi->type.id;
+		fi.type.length = IpfixRecord::TemplateInfo::getFieldLength(hfi->type);
 
 		if(!tfi) {
 			DPRINTF("Flow to be buffered did not contain %s field\n", typeid2string(hfi->type.id));
 			continue;
 		}
 
-                DPRINTF("Hashtable::ExpaggregateTemplateData: copyData for type %d, starting from pointer %X", fi->type.id, tfi);
-                DPRINTF("Hashtable::ExpaggregateTemplateData: copyData to offset %X", hfi->offset);
-		ExpcopyData(&hfi->type, htdata.get() + hfi->offset, &fi->type, tfi, fieldModifier[i]);
-
-		/* copy associated mask, should there be one */
+		ExpcopyData(&hfi->type, htdata.get() + hfi->offset, &fi.type, tfi, fieldModifier[i]);
 	}
 
-	/* ...then buffer it */
 	bufferDataBlock(htdata);
 }
-
-
-
 
 
 /**
@@ -801,7 +1248,7 @@ void Hashtable::ExpaggregateTemplateData(IpfixRecord::Data* ip_data, IpfixRecord
  */
 void Hashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::Data* data)
 {
-        DPRINTF("called");
+	DPRINTF("called");
 	int i;
 
 	/* Create data block to be inserted into buffer... */
@@ -921,3 +1368,13 @@ void Hashtable::addFlowSink(FlowSink* flowSink) {
 	flowSink->push(ipfixRecord);
 }
 
+std::string Hashtable::getStatistics()
+{
+	ostringstream oss;
+	oss << "Hashtable: number of hashtable entries      : " << statTotalEntries << endl;
+	oss << "Hashtable: number of empty hashtable buckets: " << statEmptyBuckets << endl;
+	uint32_t diff = statExportedBuckets - statLastExpBuckets;
+	statLastExpBuckets += diff;
+	oss << "Hashtable: number of exported entries       : " << diff << endl;
+	return oss.str();
+}

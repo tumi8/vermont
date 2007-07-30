@@ -24,7 +24,7 @@
 #include "IpfixParser.hpp"
 #include "IpfixReceiverUdpIpV4.hpp"
 #include "ipfix.hpp"
-#include "msg.h"
+#include "common/msg.h"
 
 #include <stdexcept>
 #include <stdlib.h>

@@ -39,7 +39,7 @@
 #include "TemplateBuffer.hpp"
 #include "ipfix.hpp"
 
-#include "msg.h"
+#include "common/msg.h"
 
 #define MAX_MSG_LEN 65536
 

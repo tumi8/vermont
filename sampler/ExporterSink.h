@@ -16,9 +16,9 @@
 
 #include "ipfixlolib/ipfixlolib.h"
 #include "concentrator/ipfix.hpp"
-#include "msg.h"
+#include "common/msg.h"
 
-#include "Thread.h"
+#include "common/Thread.h"
 #include "Template.h"
 #include "Packet.h"
 #include "Sink.h"
@@ -33,11 +33,12 @@
 class ExporterSink : public Sink
 {
 public:
-        ExporterSink(Template *tmpl, int sID) : sourceID(sID),
-                templ(tmpl), thread(ExporterSink::exporterSinkProcess),
-		numPacketsToRelease(0), numMetaFieldsToRelease(0), 
-		ipfix_maxrecords(MAX_RECORDS_PER_PACKET), exportTimeout(MAX_PACKET_LIFETIME), 
-		exitFlag(false)
+        ExporterSink(Template *tmpl, int sID) 
+			: Sink("ExporterSink"), sourceID(sID),
+              templ(tmpl), thread(ExporterSink::exporterSinkProcess),
+			  numPacketsToRelease(0), numMetaFieldsToRelease(0), 
+			  ipfix_maxrecords(MAX_RECORDS_PER_PACKET), exportTimeout(MAX_PACKET_LIFETIME), 
+			  exitFlag(false)
         {
                 int ret, i, tmplid;
                 unsigned short ttype, tlength, toffset, theader;
@@ -69,10 +70,10 @@ public:
                 ipfix_deinit_exporter(exporter);
         };
 
-        bool runSink()
+        void runSink()
         {
                 msg(MSG_DEBUG, "Sink: now starting ExporterSink thread");
-                return (thread.run(this));
+                thread.run(this);
         };
 
         bool terminateSink()

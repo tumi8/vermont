@@ -25,7 +25,7 @@ class ConcurrentQueue
 		/**
 		 * default queue size
 		 */
-		const static int DEFAULT_QUEUE_SIZE = 1000;
+		static const int DEFAULT_QUEUE_SIZE = 100000;
 
 		ConcurrentQueue(int maxEntries = DEFAULT_QUEUE_SIZE) 
 			: pushedCount(0), poppedCount(0), queue(), count(0), lock(), popSemaphore(), pushSemaphore(maxEntries)
@@ -39,29 +39,28 @@ class ConcurrentQueue
 				msg(MSG_DEBUG, "WARNING: freeing non-empty queue - got count: %d", count);
 			}
 		};
-#ifdef DEBUG
-		void debugSetOwner(std::string name)
+
+		void setOwner(std::string name)
 		{
-			debugOwner = name;
+			ownerName = name;
 		}
-#endif
 
 		inline void push(T t)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to push element (%d elements in queue)", debugOwner.c_str(), count);
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to push element (%d elements in queue)", ownerName.c_str(), count);
 #if defined(DEBUG)
 			bool waiting = false;
 			if (pushSemaphore.getCount() == 0) {
 				waiting = true;
-				DPRINTFL(MSG_DEBUG, "(%s) queue is full with %d elements, waiting ...", debugOwner.c_str(), count);
+				DPRINTFL(MSG_DEBUG, "(%s) queue is full with %d elements, waiting ...", ownerName.c_str(), count);
 			}
 #endif
 			if (!pushSemaphore.wait()) {
-				DPRINTF("(%s) failed to push element, program is being shut down?", debugOwner.c_str());
+				DPRINTF("(%s) failed to push element, program is being shut down?", ownerName.c_str());
 				return;
 			}
 #if defined(DEBUG)
-			if (waiting) DPRINTF("(%s) pushing element now", debugOwner.c_str());
+			if (waiting) DPRINTF("(%s) pushing element now", ownerName.c_str());
 #endif
 
 			lock.lock();
@@ -71,14 +70,14 @@ class ConcurrentQueue
 			lock.unlock();
 
 			popSemaphore.post();
-			DPRINTFL(MSG_VDEBUG, "(%s) element pushed (%d elements in queue)", debugOwner.c_str(), maxEntries-pushSemaphore.getCount(), pushSemaphore.getCount(), maxEntries);
+			DPRINTFL(MSG_VDEBUG, "(%s) element pushed (%d elements in queue)", ownerName.c_str(), maxEntries-pushSemaphore.getCount(), pushSemaphore.getCount(), maxEntries);
 		};
 
 		inline bool pop(T* res)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", debugOwner.c_str(), maxEntries-pushSemaphore.getCount());
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), maxEntries-pushSemaphore.getCount());
 			if (!popSemaphore.wait()) {
-				DPRINTF("(%s) failed to pop element, program is being shut down?", debugOwner.c_str());
+				DPRINTF("(%s) failed to pop element, program is being shut down?", ownerName.c_str());
 				return false;
 			}
 
@@ -91,7 +90,7 @@ class ConcurrentQueue
 
 			pushSemaphore.post();
 
-			DPRINTFL(MSG_VDEBUG, "(%s) element popped", debugOwner.c_str());
+			DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
 
 			return true;
 		};
@@ -104,11 +103,11 @@ class ConcurrentQueue
 		// *******************
 		inline bool pop(long timeout_ms, T *res)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", debugOwner.c_str(), count);
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
 			// try to get an item from the queue
 			if(!popSemaphore.wait(timeout_ms)) {
 				// timeout occured
-				DPRINTFL(MSG_VDEBUG, "(%s) timeout", debugOwner.c_str());
+				DPRINTFL(MSG_VDEBUG, "(%s) timeout", ownerName.c_str());
 				return false;
 			}
 
@@ -122,7 +121,7 @@ class ConcurrentQueue
 
 			pushSemaphore.post();
 
-			DPRINTFL(MSG_VDEBUG, "(%s) element popped", debugOwner.c_str());
+			DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
 
 			return true;
 		}
@@ -131,7 +130,7 @@ class ConcurrentQueue
 		// use this instead of the above, makes things easier!
 		inline bool popAbs(const struct timeval &timeout, T *res)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", debugOwner.c_str(), count);
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
 
 			
 			if (popSemaphore.waitAbs(timeout)) {
@@ -145,12 +144,12 @@ class ConcurrentQueue
 
 				pushSemaphore.post();
 
-				DPRINTFL(MSG_VDEBUG, "(%s) element popped", debugOwner.c_str());
+				DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
 
 				return true;
 			} else {
 				// timeout occured
-				DPRINTFL(MSG_VDEBUG, "(%s) timeout or program shutdown", debugOwner.c_str());
+				DPRINTFL(MSG_VDEBUG, "(%s) timeout or program shutdown", ownerName.c_str());
 				*res = 0;
 
 				return false;
@@ -172,9 +171,7 @@ class ConcurrentQueue
 		Mutex lock;
 		TimeoutSemaphore popSemaphore;
 		TimeoutSemaphore pushSemaphore;
-#ifdef DEBUG
-		std::string debugOwner;
-#endif
+		std::string ownerName;
 };
 
 #endif

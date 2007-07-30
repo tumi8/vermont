@@ -11,7 +11,7 @@
 #include "concentrator/IpfixParser.hpp"
 #include "concentrator/IpfixPrinter.hpp"
 
-#include "msg.h"
+#include "common/msg.h"
 
 #include <iostream>
 
@@ -117,7 +117,7 @@ HookingFilter::~HookingFilter() {
  */
 bool HookingFilter::processPacket(const Packet *p)
 {
-    	DPRINTFL(MSG_VDEBUG, "called");
+   	DPRINTFL(MSG_VDEBUG, "called");
 	/* we want only IPv4 packets  */
 	if((p->classification & PCLASS_NET_IP4) == 0)
 	    return true;
@@ -145,14 +145,13 @@ bool HookingFilter::processPacket(const Packet *p)
 	// relative to the start of the network packet data is given
 	// now we calculate the index for the millisecond data inside the Packet instance
 	// -> REALLY BAD HACK, interface to concentrator MUST be changed
-	char* mstime = (char*)(&p->time_msec_ipfix);
-        DPRINTF("time_msec_ipfix is %llX", p->time_msec_ipfix);
+	char* mstime = (char*)(&p->time_msec_nbo);
+	DPRINTF("time_msec_ipfix is %llX", p->time_msec_nbo);
 	int32_t offset = (int32_t)(mstime - (char*)(p->netHeader)); 
-        DPRINTF("offset=%x", offset);
+	DPRINTF("offset=%x", offset);
 
 	// Choose template according to transport header type
-	if((p->classification & PCLASS_TRN_ICMP) != 0)
-	{
+	if(p->ipProtocolType == Packet::ICMP) {
 	    /* adapt offset for millisecond timestamps */
 	    icmp_traffic_template->fieldInfo[8].offset = offset;
 	    icmp_traffic_template->fieldInfo[9].offset = offset;
@@ -161,9 +160,8 @@ bool HookingFilter::processPacket(const Packet *p)
 	    flowSink->onDataRecord(NULL, icmp_traffic_template, p->data_length, fdata);
 	    /* reset offset for typecode to starting value */
 	    icmp_traffic_template->fieldInfo[0].offset = 0;
-	}
-	else if((p->classification & PCLASS_TRN_UDP) != 0)
-	{
+
+	} else if(p->ipProtocolType == Packet::UDP) {
 	    /* adapt offset for millisecond timestamps */
 	    udp_traffic_template->fieldInfo[9].offset = offset;
 	    udp_traffic_template->fieldInfo[10].offset = offset;
@@ -174,9 +172,8 @@ bool HookingFilter::processPacket(const Packet *p)
 	    /* reset offsets for srcport/dstport to starting values */
 	    udp_traffic_template->fieldInfo[0].offset = 0;
 	    udp_traffic_template->fieldInfo[1].offset = 2;
-	}
-	else if((p->classification & PCLASS_TRN_TCP) != 0)
-	{
+
+	} else if(p->ipProtocolType == Packet::TCP) {
 	    /* adapt offset for millisecond timestamps */
 	    tcp_traffic_template->fieldInfo[10].offset = offset;
 	    tcp_traffic_template->fieldInfo[11].offset = offset;
@@ -189,9 +186,8 @@ bool HookingFilter::processPacket(const Packet *p)
 	    tcp_traffic_template->fieldInfo[0].offset = 13;
 	    tcp_traffic_template->fieldInfo[1].offset = 0;
 	    tcp_traffic_template->fieldInfo[2].offset = 2;
-	}
-	else
-	{
+
+	} else {
 	    /* adapt offset for millisecond timestamps */
 	    ip_traffic_template->fieldInfo[7].offset = offset;
 	    ip_traffic_template->fieldInfo[8].offset = offset;

@@ -8,21 +8,42 @@
              Gerhard Münz
  */
 
-#include <pcap.h>
-#include <iostream>
-#include <unistd.h>
-
-#include "msg.h"
 
 #include "Observer.h"
-#include "Thread.h"
+
+#include "common/msg.h"
+#include "common/Thread.h"
+#include "common/StatisticsManager.h"
+
+#include <pcap.h>
+#include <unistd.h>
+#include <iostream>
+#include <sstream>
+
 
 using namespace std;
 
 
+
+
+Observer::Observer(const std::string& interface, InstanceManager<Packet>* manager) : thread(Observer::observerThread), allDevices(NULL),
+	captureDevice(NULL), capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
+	pcap_promisc(1), ready(false), filter_exp(0), packetManager(manager),
+	receivedBytes(0), lastReceivedBytes(0), processedPackets(0), 
+	lastProcessedPackets(0), exitFlag(false)
+
+{
+	captureInterface = (char*)malloc(interface.size() + 1);
+	strcpy(captureInterface, interface.c_str());
+	StatisticsManager::getInstance().addModule(this);
+};
+
 Observer::~Observer()
 {
     msg(MSG_DEBUG, "Observer: destructor called");
+
+	StatisticsManager::getInstance().removeModule(this);
+
     terminateCapture();
 
     /* collect and output statistics */
@@ -63,11 +84,14 @@ void *Observer::observerThread(void *arg)
 	Observer *obs=(Observer *)arg;
 	Packet *p;
 
-        const unsigned char *pcapData;
-	void *packetData;
+	const unsigned char *pcapData;
 	struct pcap_pkthdr packetHeader;
 
-	int numReceivers=obs->receivers.size();
+	// calculate right amount of references to add to instance of Packet
+	int refsToAdd = obs->receivers.size()-1;
+	if (refsToAdd < 0) {
+		THROWEXCEPTION("Observer does not have any receiving modules to send packets to");
+	}
 
 	// start capturing packets
 	msg(MSG_INFO, "now running capturing thread for device %s", obs->captureInterface);
@@ -105,30 +129,17 @@ void *Observer::observerThread(void *arg)
 			continue;
 		DPRINTFL(MSG_VDEBUG, "got new packet!");
 
-		if(!(packetData=new char[packetHeader.caplen])) {
-			/*
-			 FIXME!
-			 ALARM - no more memory available
-			 1) Start throwing away packets !
-			 2) Notify user !
-			 3) Try to resolve (?)
-			 3.1) forcibly flush exporter stream (to free up packets)?
-			 3.2) flush filter?
-			 3.3) sleep?
-			 */
-			msg(MSG_FATAL, "no more mem for malloc() - may start throwing away packets");
-			continue;
-		}
+		// show current packet as c-structure on stdout
+		//for (unsigned int i=0; i<packetHeader.caplen; i++) {
+			//printf("0x%02hhX, ", ((unsigned char*)pcapData)[i]);
+		//}
+		//printf("\n");
 
-		memcpy(packetData, pcapData, packetHeader.caplen);
+		// initialize packet structure (init copies packet data)
+		p = obs->packetManager->getNewInstance();
+		p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts);
 
-		/*
-		 the reason we supply numReceivers to the packet is, that all receivers have to call
-		 packet->release() and only if the count is 0, the packet will be really deleted
-		 We need reference-counting because we only push pointers around and do not copy, so the
-		 data has to stay valid.
-		 */
-		p=new Packet(packetData, packetHeader.caplen, packetHeader.ts, numReceivers);
+		obs->receivedBytes += packetHeader.caplen;
 
 		DPRINTF("received packet at %u.%04u, len=%d",
 			(unsigned)p->timestamp.tv_sec,
@@ -136,19 +147,21 @@ void *Observer::observerThread(void *arg)
 			packetHeader.caplen
 			);
 
+		// update statistics
+		obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
+		obs->processedPackets++;
+
 		/* broadcast packet to all receivers */
 		if (!obs->exitFlag) {
-		    for(vector<ConcurrentQueue<Packet*> *>::iterator it = obs->receivers.begin();
-			    it != obs->receivers.end(); ++it) {
-			if ((*it)->getCount() > 100000) {
-			    msg(MSG_FATAL, "Observer drain clogged, waiting for plumber");
-			    while ((*it)->getCount() > 10000) sleep(1);
-			    msg(MSG_FATAL, "drain not clogged any more, resuming operation");
+			// set reference counter to right amount
+			if (refsToAdd > 0) p->addReference(refsToAdd);
+
+			for(vector<ConcurrentQueue<Packet*> *>::iterator it = obs->receivers.begin();
+					it != obs->receivers.end(); ++it) {
+				DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
+				(*it)->push(p);
+				DPRINTFL(MSG_VDEBUG, "packet pushed");
 			}
-		    	DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
-			(*it)->push(p);
-		    	DPRINTFL(MSG_VDEBUG, "packet pushed");
-		    }
 		}
 	}
 
@@ -281,6 +294,99 @@ void Observer::doLogging(void *arg)
 	 //so it is okay if we dont check the return code
 	obs->getPcapStats(&stats);
 	msg_stat("%6d recv, %6d drop, %6d ifdrop", stats.ps_recv, stats.ps_drop, stats.ps_ifdrop);
+}
+
+/*
+   call to get the main capture thread running
+   open() has to be called before
+*/
+void Observer::startCapture()
+{
+	if(ready) {
+		msg(MSG_DEBUG, "now starting capturing thread");
+		thread.run(this);
+	}
+};
+
+void Observer::terminateCapture()
+{
+	exitFlag = true;
+};
+
+void Observer::addReceiver(PacketReceiver *recv)
+{
+	receivers.push_back(recv->getQueue());
+};
+
+/* you cannot change the caplen of an already running observer */
+bool Observer::setCaptureLen(int x)
+{
+	/* we cant change pcap caplen if alredy pcap_open() called */
+	if(ready) {
+		msg(MSG_ERROR, "changing capture len on-the-fly is not supported by pcap");
+		return false;
+	}
+
+	if(x > CAPTURE_PHYSICAL_MAX) {
+		DPRINTF("Capture length %d exceeds physical MTU %d (with header)\n", x, CAPTURE_PHYSICAL_MAX);
+		return false;
+	}
+	capturelen=x;
+	return true;
+}
+
+int Observer::getCaptureLen()
+{
+	return capturelen;
+}
+
+
+bool Observer::setPacketTimeout(int ms)
+{
+	if(ready) {
+		msg(MSG_ERROR, "changing read timeout on-the-fly is not supported by pcap");
+		return false;
+	}
+	pcap_timeout=ms;
+	return true;
+}
+
+
+int Observer::getPacketTimeout()
+{
+	return pcap_timeout;
+}
+
+/*
+   get some capturing statistics
+   struct pcap_stat is defined in pcap.h and has at least 3 u_int variables:
+   ps_recv, ps_drop, ps_ifdrop
+
+   should return: -1 on failure, 0 on OK
+   */
+int Observer::getPcapStats(struct pcap_stat *out)
+{
+	return(pcap_stats(captureDevice, out));
+}
+
+/**
+ * statistics function called by StatisticsManager
+ */
+std::string Observer::getStatistics()
+{
+	ostringstream oss;
+    pcap_stat pstats;
+    if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
+		oss << "Observer: packets received on interface: " << pstats.ps_recv << endl;
+		oss << "Observer: packets dropped by PCAP      : " << pstats.ps_drop << endl;
+	}
+	uint64_t diff = receivedBytes-lastReceivedBytes;
+	lastReceivedBytes += diff;
+	oss << "Observer: processed bytes              : " << diff << endl;
+	diff = processedPackets-lastProcessedPackets;
+	lastProcessedPackets += diff;
+	oss << "Observer: processed packets            : " << diff << endl;
+	return oss.str();
 }
 
 

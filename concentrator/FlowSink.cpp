@@ -18,7 +18,8 @@
  *
  */
 
-#include "msg.h"
+#include "common/msg.h"
+
 #include "FlowSink.hpp"
 
 FlowSink::FlowSink() 
@@ -95,8 +96,8 @@ void FlowSink::flowSinkProcess()
 	}
 }
 
-bool FlowSink::runSink() {
-	return(thread.run(this));
+void FlowSink::runSink() {
+	thread.run(this);
 }
 
 bool FlowSink::terminateSink() {
@@ -107,9 +108,12 @@ bool FlowSink::terminateSink() {
 	return true;
 }
 
-#if defined(DEBUG)
-void FlowSink::debugSetSinkOwner(char* owner)
+void FlowSink::setSinkOwner(char* owner)
 {
-	ipfixRecords.debugSetOwner(owner);
+	ipfixRecords.setOwner(owner);
 }
-#endif
+
+ConcurrentQueue< boost::shared_ptr<IpfixRecord> >* FlowSink::getSinkQueue()
+{
+	return &ipfixRecords;
+}

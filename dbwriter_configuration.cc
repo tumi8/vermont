@@ -6,7 +6,7 @@
 #ifdef DB_SUPPORT_ENABLED
 
 #include "dbwriter_configuration.h"
-#include "msg.h"
+#include "common/msg.h"
 
 
 DbWriterConfiguration::DbWriterConfiguration(xmlDocPtr document, xmlNodePtr startPoint)

@@ -27,6 +27,16 @@
  you may want to adjust this on a special jumbo-framed GBit network
  */
 #define CAPTURE_PHYSICAL_MAX 1526
+
+#include "Packet.h"
+#include "PacketReceiver.h"
+
+#include "common/msg.h"
+#include "common/Thread.h"
+#include "common/ConcurrentQueue.h"
+#include "common/InstanceManager.h"
+#include "common/StatisticsManager.h"
+
 #include <vector>
 #include <string>
 #include <sys/socket.h>
@@ -34,147 +44,94 @@
 #include <arpa/inet.h>
 #include <pcap.h>
 
-#include "Thread.h"
-#include "ConcurrentQueue.h"
-#include "Packet.h"
-#include "PacketReceiver.h"
+class Observer : public StatisticsModule {
 
-#include "msg.h"
-
-class Observer {
 public:
-        // ObserverThread constructor
-	Observer(const std::string& interface) : thread(Observer::observerThread), allDevices(NULL),
-		captureDevice(NULL), capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
-		pcap_promisc(1), ready(false), filter_exp(0), exitFlag(false)
-        {
-		captureInterface = (char*)malloc(interface.size() + 1);
-		strcpy(captureInterface, interface.c_str());
-	};
-
+	Observer(const std::string& interface, InstanceManager<Packet>* manager);
 	~Observer();
 
-	/*
-	 call to get the main capture thread running
-         open() has to be called before
-	 */
-	bool startCapture()
-        {
-		if(ready) {
-			msg(MSG_DEBUG, "now starting capturing thread");
-			return(thread.run(this));
-		}
-		msg(MSG_ERROR, "trying to start an un-ready observer");
-		return false;
-        };
-
-        void terminateCapture()
-        {
-                exitFlag = true;
-        };
-
-        void addReceiver(PacketReceiver *recv)
-        {
-                receivers.push_back(recv->getQueue());
-        };
-
-        /* you cannot change the caplen of an already running observer */
-        bool setCaptureLen(int x)
-        {
-                /* we cant change pcap caplen if alredy pcap_open() called */
-                if(ready) {
-                        msg(MSG_ERROR, "changing capture len on-the-fly is not supported by pcap");
-                        return false;
-                }
-
-                if(x > CAPTURE_PHYSICAL_MAX) {
-                        DPRINTF("Capture length %d exceeds physical MTU %d (with header)\n", x, CAPTURE_PHYSICAL_MAX);
-                        return false;
-                }
-                capturelen=x;
-                return true;
-        }
-
-        int getCaptureLen()
-        {
-                return capturelen;
-        }
-
-
-        bool setPacketTimeout(int ms)
-        {
-                if(ready) {
-                        msg(MSG_ERROR, "changing read timeout on-the-fly is not supported by pcap");
-                        return false;
-                }
-                pcap_timeout=ms;
-                return true;
-        }
-
-
-        int getPacketTimeout()
-        {
-                return pcap_timeout;
-        }
-
-        /*
-         get some capturing statistics
-         struct pcap_stat is defined in pcap.h and has at least 3 u_int variables:
-         ps_recv, ps_drop, ps_ifdrop
-
-         should return: -1 on failure, 0 on OK
-         */
-        int getPcapStats(struct pcap_stat *out)
-        {
-                return(pcap_stats(captureDevice, out));
-        }
-
-
-        bool prepare(const std::string& filter);
+	void startCapture();
+	void terminateCapture();
+	void addReceiver(PacketReceiver *recv);
+	bool setCaptureLen(int x);
+	int getCaptureLen();
+	bool setPacketTimeout(int ms);
+	int getPacketTimeout();
+	int getPcapStats(struct pcap_stat *out);
+	bool prepare(const std::string& filter);
 	static void doLogging(void *arg);
+	virtual std::string getStatistics();
 
 
 protected:
-        Thread thread;
+	Thread thread;
 
-        // pointer to list of pcap-devices
-        pcap_if_t *allDevices;
+	// pointer to list of pcap-devices
+	pcap_if_t *allDevices;
 
-        // pcap descriptor of device
+	// pcap descriptor of device
 	pcap_t *captureDevice;
 
-        // IPv4 netmask + network bitmasks the interface is on
+	// IPv4 netmask + network bitmasks the interface is on
 	uint32_t netmask, network;
 
-        // holding the pcap filter program
+	// holding the pcap filter program
 	struct bpf_program pcap_filter;
 
-        // pcap reports error nicely, this is the used buffer
+	// pcap reports error nicely, this is the used buffer
 	char errorBuffer[PCAP_ERRBUF_SIZE];
 
-        // also called snaplen; only sniff this much bytes from each packet
+	// also called snaplen; only sniff this much bytes from each packet
 	int capturelen;
 
-        // wait this much ms until pcap_read() returns and get ALL packets received
+	// wait this much ms until pcap_read() returns and get ALL packets received
 	int pcap_timeout;
 
-        // capture packets in promiscous mode or not
+	// capture packets in promiscous mode or not
 	int pcap_promisc;
 
-        // set to true if prepare() was successful
+	// set to true if prepare() was successful
 	bool ready;
 
 	// save the given filter expression
 	char* filter_exp;
 
-        static void *observerThread(void *);
+	// manages instances of Packets
+	InstanceManager<Packet>* packetManager;
+
+	// number of received bytes (used for statistics)
+	// attention: value may sometimes be incorrect caused by multithreading issues
+	volatile uint64_t receivedBytes;
+	volatile uint64_t lastReceivedBytes;
+
+	// number of processed packets (used for statistics)
+	// attention: value may sometimes be incorrect caused by multithreading issues
+	volatile uint64_t processedPackets;
+	volatile uint64_t lastProcessedPackets;
+
+	static void *observerThread(void *);
+
 public:
-        bool exitFlag;
-        // interface we capture traffic on - string
+	// is true, when application is to be shut down
+	bool exitFlag;
+
+	// interface we capture traffic on - string
 	char *captureInterface;
 
-        // vector of Queues that will get the packets we pass out
+	// vector of Queues that will get the packets we pass out
 	std::vector<ConcurrentQueue<Packet*> *> receivers;
+};
+
+class ObserverStatModule : public StatisticsModule
+{
+	private:
+		Observer* observer;
+		uint64_t lastDPackets;
+		uint64_t lastRPackets;
+
+	public:
+		ObserverStatModule(Observer* obs);
+		virtual std::string getStatistics();
 };
 
 #endif

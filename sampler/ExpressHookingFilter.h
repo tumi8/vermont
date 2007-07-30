@@ -12,7 +12,7 @@
 #define EXPRESSHOOKING_FILTER_H
 
 #include "PacketProcessor.h"
-#include "concentrator/FlowSink.hpp"
+#include "HookingFilter.h"
 
 class ExpressHookingFilter : public PacketProcessor {
 

@@ -31,7 +31,7 @@
 #include "IpfixParser.hpp"
 #include "ipfix.hpp"
 
-#include "msg.h"
+#include "common/msg.h"
 
 #define MAX_LINE_LEN 256
 

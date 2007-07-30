@@ -4,7 +4,6 @@
 #include "collector_configuration.h"
 #include "exporter_configuration.h"
 #include "flowmetering_configuration.h"
-//#include "expressflowmetering_configuration.h"
 #include "vermontmain_configuration.h"
 #include "dbwriter_configuration.h"
 #include "dbreader_configuration.h"
@@ -79,7 +78,7 @@ unsigned Configuration::getTimeInMsecs(xmlNodePtr i) const
 
 unsigned Configuration::getTimeInSecs(xmlNodePtr i) const
 {
-	return getTimeInUsecs(i) / 10000000;
+	return getTimeInUsecs(i) / 1000000;
 }
 
 
@@ -226,7 +225,7 @@ void IpfixConfiguration::startSubsystems()
 
 void IpfixConfiguration::pollAggregatorLoop()
 {
-	unsigned poll_interval = 500;
+	unsigned poll_interval = 1000;
 	if (subsystems.find(configTypes::main) != subsystems.end()) {
 		VermontMainConfiguration* m = dynamic_cast<VermontMainConfiguration*>(subsystems[configTypes::main]);
 		poll_interval = m->getPollInterval();

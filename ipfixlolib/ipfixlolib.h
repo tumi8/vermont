@@ -1,3 +1,4 @@
+
 #ifndef IPFIXLOLIB_H
 #define IPFIXLOLIB_H
 /*
@@ -22,6 +23,9 @@
  jan@petranek.de
  */
 
+// whether to support writing raw packets as a series of files in a directory
+#define IPFIXLOLIB_RAWDIR_SUPPORT
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -39,7 +43,7 @@
 
 #include "encoding.h"
 #include "ipfix_names.h"
-#include "msg.h"
+#include "common/msg.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -196,7 +200,12 @@ typedef struct {
 } ipfix_set_header;
 
 
-enum ipfix_transport_protocol {UDP, TCP, SCTP};
+enum ipfix_transport_protocol {
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT 
+	RAWDIR, 
+#endif
+	UDP, TCP, SCTP
+	};
 
 /*
  * These indicate, if a field is commited (i.e. can be used)
@@ -258,6 +267,10 @@ typedef struct {
 	// warning! To use SCTP, we will need several ports!
 	int data_socket; // socket data is sent to
 	int template_socket; // socket, templates are sent to
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+	char* packet_directory_path; /**< if protocol==RAWDIR: path to a directory to store packets in. Ignored otherwise. */
+	int packets_written; /**< if protcol==RAWDIR: number of packets written to packet_directory_path. Ignored otherwise. */
+#endif
 } ipfix_receiving_collector;
 
 /*

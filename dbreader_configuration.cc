@@ -9,8 +9,7 @@
 #include "exporter_configuration.h"
 #include "metering_configuration.h"
 #include "flowmetering_configuration.h"
-#include "expressflowmetering_configuration.h"
-#include "msg.h"
+#include "common/msg.h"
 
 
 DbReaderConfiguration::DbReaderConfiguration(xmlDocPtr document, xmlNodePtr startPoint)

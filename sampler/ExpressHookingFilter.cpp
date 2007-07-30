@@ -11,7 +11,7 @@
 #include "concentrator/IpfixParser.hpp"
 #include "concentrator/IpfixPrinter.hpp"
 
-#include "msg.h"
+#include "common/msg.h"
 
 
 namespace {
@@ -24,10 +24,12 @@ namespace {
 	}
 }
 
-ExpressHookingFilter::ExpressHookingFilter(FlowSink *flowSink) : flowSink(flowSink) {
+ExpressHookingFilter::ExpressHookingFilter(FlowSink *flowSink) : flowSink(flowSink) 
+{
 }
 
-ExpressHookingFilter::~ExpressHookingFilter() {
+ExpressHookingFilter::~ExpressHookingFilter() 
+{
 }
 
 /*
@@ -40,13 +42,10 @@ bool ExpressHookingFilter::processPacket(const Packet *p)
 
 	/* we want only IPv4 packets  */
 	if((p->classification & PCLASS_NET_IP4) == 0)
-	    return true;
+		return true;
 
-	IpfixRecord::Data *ip_data=(IpfixRecord::Data *)p->netHeader;
-	IpfixRecord::Data *th_data=(IpfixRecord::Data *)p->transportHeader;
 	uint32_t pad1;
 	uint8_t pad2;
-
 
 
 	/* save IP header */
@@ -55,16 +54,7 @@ bool ExpressHookingFilter::processPacket(const Packet *p)
 	((uint32_t *)p->netHeader)[1]=htonl((uint32_t)p->timestamp.tv_sec);
 	((uint8_t *)p->netHeader)[10]=(uint8_t)1;
 
-	/*We need to choose the type of the packet here, because it will only be called once for a packet*/
-	if((p->classification & PCLASS_TRN_ICMP) != 0) {
-	    flowSink->onExpDataRecord(NULL, p->data_length, ip_data, th_data, 0);
-	} else if((p->classification & PCLASS_TRN_TCP) != 0) {
-	    flowSink->onExpDataRecord(NULL, p->data_length, ip_data, th_data, 1);
-	} else if((p->classification & PCLASS_TRN_UDP) != 0) {
-	    flowSink->onExpDataRecord(NULL, p->data_length, ip_data, th_data, 2);
-	} else {
-	    flowSink->onExpDataRecord(NULL, p->data_length, ip_data, th_data, 3);
-	}
+	flowSink->onPacket(p);
 
 
 	/* restore IP header */

@@ -18,12 +18,14 @@
 #include <semaphore.h>
 #include <stdio.h>
 #include <string.h>
+
 #include "msg.h"
+#include "Time.h"
 
 class TimeoutSemaphore
 {
 private:
-	const static int STANDARD_TIMEOUT = 100; // when no timeout is given by calling function, this amount of ms will be waited until the exitFlag is checked
+	static const int STANDARD_TIMEOUT = 100; // when no timeout is given by calling function, this amount of ms will be waited until the exitFlag is checked
 	sem_t* sem;
 
 	// variables for global management of all semaphores
@@ -51,28 +53,6 @@ public:
 	    delete sem;
 	}
 
-	/**
-	 * helper function for wait()
-	 * adds to current time the value in timediff_ms and returns the result in
-	 * ts
-	 */
-	inline void addToCurTime(struct timespec* ts, long timediff_ms)
-	{
-		struct timeval tv;
-		// calculate absolute time from timeout
-		gettimeofday(&tv, 0);
-		// add timeout value to the current time
-		// if no timeout is given, use standard timeout, as we need to check the exitFlag regularly
-		tv.tv_usec += timediff_ms * 1000L;
-		if (tv.tv_usec >= 1000000L)
-		{
-		    tv.tv_sec += (tv.tv_usec/1000000L);
-		    tv.tv_usec %= 1000000L;
-		}
-		ts->tv_sec = tv.tv_sec;
-		ts->tv_nsec = tv.tv_usec * 1000L;
-	}
-
 	// Acquire the lock if possible, or wait max. timeout_ms milliseconds
 	// for the lock to become available.
 	// if the timeout is reaced, return false
@@ -82,6 +62,10 @@ public:
 	{
 		struct timespec ts;
 		int retval;
+		// globalTimeout is for wait with timeout_ms==-1 and is used to determine
+		// next timeout, when exitFlag is to be checked next time
+		// this method saves lots of calls to gettimeofday()
+		static struct timespec globalTimeout = {0, 0};
 
 		// if program requested to shut down, just return a failure
 		if (exitFlag) return false;
@@ -105,9 +89,7 @@ public:
 		} else {
 		    // wait and check the exitFlag regularly
 		    do {
-			// calculate absolute time from timeout
-			addToCurTime(&ts, STANDARD_TIMEOUT);
-			retval = sem_timedwait(sem, &ts);
+			retval = sem_timedwait(sem, &globalTimeout);
 			if (retval != 0 && errno != ETIMEDOUT) {
 			    switch (errno) {
 				case EINVAL:
@@ -133,6 +115,14 @@ public:
 				    DPRINTFL(MSG_VDEBUG, "timedwait (>=0) returned with %d", errno);
 			    }
 			}
+			if (errno == ETIMEDOUT) {
+				// calculate absolute time from timeout
+				struct timespec tmp;
+				addToCurTime(&tmp, STANDARD_TIMEOUT);
+				// attention: next command may collide between threads, but collision does not matter
+				globalTimeout = tmp;
+			}
+
 			// if program was shutdown, exit without success
 			if (exitFlag) {
 				DPRINTFL(MSG_VDEBUG, "exitFlag is set", errno);
@@ -142,7 +132,7 @@ public:
 		    } while (retval != 0);
 
 		}
-		//last_sem = sem;
+		
 		return true;
 	}
 
@@ -209,13 +199,22 @@ public:
 
 
 	/**
-	 * shuts the semaphore down: all waiting threads will be restarted
+	 * shuts down the semaphore: all waiting threads will be restarted
 	 * and _all_ semaphores will never lock again
 	 */
 	inline static void shutdown()
 	{
 	    DPRINTF("shutting down");
 	    exitFlag = true;
+	}
+
+	/**
+	 * when semaphore is shut down, it can be restarted again using this method
+	 */
+	static void restart()
+	{
+	    DPRINTF("restarting");
+	    exitFlag = false;
 	}
 };
 

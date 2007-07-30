@@ -26,9 +26,9 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 
-#include "msg.h"
-
-#include "Mutex.h"
+#include "common/msg.h"
+#include "common/Mutex.h"
+#include "common/ManagedInstance.h"
 #include "ipfixlolib/encoding.h"
 
 // the various header types (actually, HEAD_PAYLOAD is not neccessarily a header but it works like one for
@@ -70,19 +70,34 @@
 // Payload classification (here, payload refers to data beyond transport header)
 #define PCLASS_PAYLOAD             (1UL << 31)
 
-class Packet
+class Packet : public ManagedInstance<Packet>
 {
 public:
+	/*
+	 the raw offset at which the IP header starts in the packet
+	 for Ethernet, this is 14 bytes (MAC header size).
+	 This constant is set via the configure script. It defaults to 14
+	 */
+	static const int IPHeaderOffset=IP_HEADER_OFFSET;
+
+	// Transport header classifications (used in Packet::ipProtocolType)
+	// Note: ALL is reserved and enables bitoperations using the enums
+	enum IPProtocolType { NONE=0x00, TCP=0x01, UDP=0x02, ICMP=0x04, IGMP=0x08, ALL=0xFF };
+
 	// The number of total packets received, will be incremented by each constructor call
 	// implemented as public-variable for speed reasons (or lazyness reasons? ;-)
 	static unsigned long totalPacketsReceived;
 
+	static const int PACKET_MAXLEN = 1500; // maximum packet length
+
 	/*
-	 data: the raw packet data from the wire, including physical header
-	 ipHeader: start of the IP header: data + (physical dependent) IP header offset
-	 transportHeader: start of the transport layer header (TCP/UDP): ip_header + variable IP header length
-	 */
-	unsigned char *data;
+	data: the raw packet data from the wire, including physical header
+	ipHeader: start of the IP header: data + (physical dependent) IP header offset
+	transportHeader: start of the transport layer header (TCP/UDP): ip_header + variable IP header length
+	ATTENTION: this array *MUST* be allocated inside the packet structure, so that it has a constant position
+	relative to other members of Packet. This is needed for optimization purposes inside the express aggregator
+	*/
+	unsigned char data[PACKET_MAXLEN];
 	unsigned char *netHeader;
 	unsigned char *transportHeader;
 	unsigned char *payload;
@@ -93,7 +108,11 @@ public:
 	unsigned int payloadOffset;
 
 	// the packet classification, i.e. what headers are present?
+	// note: protocol type is also specified in ipProtocolType
 	unsigned long classification;
+
+	// note: protocol type is also specified in classification
+	IPProtocolType ipProtocolType;
 
 	// The number of captured bytes
 	unsigned int data_length;
@@ -101,34 +120,53 @@ public:
 	// when was the packet received?
 	struct timeval timestamp;
 	unsigned long time_sec_nbo, time_usec_nbo; // network byte order, used if exported
-	unsigned long long time_msec_ipfix;   // milliseconds since 1970, according to ipfix standard; ATTENTION: this value is stored in network-byte order
+	unsigned long long time_msec_nbo;   // milliseconds since 1970, according to ipfix standard; ATTENTION: this value is stored in network-byte order
 
 	// buffer for length of variable length fields
 	uint8_t varlength[12];
 	uint8_t varlength_index;
 
-	
-	// construct a new Packet for a specified number of 'users'
-	Packet(void *packetData, unsigned int len, struct timeval time, int numUsers = 1) : 
-	    transportHeader(NULL), payload(NULL), transportHeaderOffset(0), payloadOffset(0), 
-	    classification(0), data_length(len), 
-	    timestamp(time), varlength_index(0),
-	    users(numUsers), refCountLock(),
-	    packetFreed(false)
+
+	Packet(InstanceManager<Packet>* im) 
+		: ManagedInstance<Packet>(im),
+		  netHeader(data + IPHeaderOffset), // netHeader must not be changed afterwards
+		  netHeaderOffset(IPHeaderOffset)
 	{
-	    	DPRINTF("new packet was created with %d users", numUsers);
-		data = (unsigned char *)packetData;
-		netHeader = data + IPHeaderOffset;
-		netHeaderOffset = IPHeaderOffset;
+	}
+
+	Packet() 
+		: ManagedInstance<Packet>(0),
+		  netHeader(data + IPHeaderOffset),
+		  netHeaderOffset(IPHeaderOffset)
+	{
+	}
+	
+	inline void init(char* packetData, int len, struct timeval time) 
+	{
+		transportHeader = NULL;
+		payload = NULL;
+		transportHeaderOffset = 0;
+		payloadOffset = 0;
+		classification = 0;
+		data_length = len;
+		timestamp = time;
+		varlength_index = 0;
+		ipProtocolType = NONE;
+
+		if (len > PACKET_MAXLEN) {
+			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d)", len, PACKET_MAXLEN);
+		}
+
+		memcpy(data, packetData, len);
 
 		// timestamps in network byte order (needed for export or concentrator)
 		time_sec_nbo = htonl(timestamp.tv_sec);
 		time_usec_nbo = htonl(timestamp.tv_usec);
 		    
 		// calculate time since 1970 in milliseconds according to IPFIX standard
-		time_msec_ipfix = htonll(((unsigned long long)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
-                DPRINTFL(MSG_VDEBUG, "timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
-                DPRINTFL(MSG_VDEBUG, "time_msec_ipfix is %lld", time_msec_ipfix);
+		time_msec_nbo = htonll(((unsigned long long)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
+		DPRINTFL(MSG_VDEBUG, "timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
+		DPRINTFL(MSG_VDEBUG, "time_msec_ipfix is %lld", time_msec_nbo);
 
 		totalPacketsReceived++;
 
@@ -139,47 +177,13 @@ public:
 	// if users==0 !
 	~Packet()
 	{
-		if(users > 0) {
-			DPRINTF("Packet: WARNING: freeing in-use packet!\n");
-		}
-
-		delete[] data;
-	}
-
-	// call this function after processing the packet, NOT delete()!
-	void release()
-	{
-		int newUsers;
-
-
-		refCountLock.lock();
-		--users;
-		newUsers = users;
-		refCountLock.unlock();
-
-		if(newUsers == 0) {
-		    	packetFreed = true;
-			//msg(MSG_ERROR, "Packet::release: freeing packet 0x%X", this);
-			delete this;
-		} else if(newUsers < 0) {
-			DPRINTF("WARNING: trying to free already freed packet!\n");
-		}
-	};
-
-	// the supplied classification is _either_ PCLASS_NET_xxx or PCLASS_TRN_xxx (or PCLASS_PAYLOAD)
-	// we check whether at least one of the Packet's classification-bits is also set in the supplied
-	// parameter. If yes, then out packet matches the supplied class and can be safely processed.
-	// otherwise, the Exporter should send a NULL value
-	inline bool matches(unsigned long checkClassification) const
-	{
-		return (classification & checkClassification) != 0;
 	}
 
 	// classify the packet headers
 	void classify()
 	{
 		unsigned char protocol = 0;
-		
+
 		// first check for IPv4 header which needs to be at least 20 bytes long
 		if ( (netHeader + 20 <= data + data_length) && ((*netHeader >> 4) == 4) )
 		{
@@ -191,15 +195,15 @@ public:
 			unsigned int endOfIpOffset = netHeaderOffset + ntohs(*((uint16_t*) (netHeader + 2)));
 			if(data_length > endOfIpOffset)
 			{
-			    DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
-			    data_length = endOfIpOffset;
-		        }
-			
+				DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
+				data_length = endOfIpOffset;
+			}
+
 			// check if there is data for the transport header
 			if(transportHeaderOffset < data_length)
-			    transportHeader = data + transportHeaderOffset;
+				transportHeader = data + transportHeaderOffset;
 			else
-			    transportHeaderOffset = 0;
+				transportHeaderOffset = 0;
 		}
 		// TODO: Add checks for IPv6 or similar here
 
@@ -208,79 +212,84 @@ public:
 		{
 			switch (protocol)
 			{
-			case 1:		// ICMP
-				// ICMP header is 4 bytes fixed-length
-				payloadOffset = transportHeaderOffset + 4;
-				
-				// check if the packet is big enough to actually be ICMP
-				if (payloadOffset <= data_length)
-				    classification |= PCLASS_TRN_ICMP;
-				else
-				    // there is no complete transport heaader => treat data it as payload
-				    payloadOffset = transportHeaderOffset;
-				
-				break;
-			case 2:		// IGMP
-				// header is 8-bytes fixed size
-				payloadOffset = transportHeaderOffset + 8;
-				
-				// check if the packet is big enough to actually be IGMP
-				if (payloadOffset <= data_length)
-				    classification |= PCLASS_TRN_IGMP;
-				else
-				    // there is no complete transport heaader => treat data it as payload
-				    payloadOffset = transportHeaderOffset;
+				case 1:		// ICMP
+					// ICMP header is 4 bytes fixed-length
+					payloadOffset = transportHeaderOffset + 4;
 
-				break;
-			case 6:         // TCP
-				// we need at least 12 more bytes in the packet to extract the "Data Offset"
-				if (transportHeaderOffset + 12 < data_length)
-				{
-					// extract "Data Offset" field at TCP header offset 12 (upper 4 bits)
-					unsigned char tcpDataOffset = *(transportHeader + 12) >> 4;
-				
-					// calculate payload offset
-					payloadOffset = transportHeaderOffset + (tcpDataOffset << 2);
-				
-					// check if the complete TCP header is inside the received packet data
-					if (payloadOffset <= data_length)
-					    classification |= PCLASS_TRN_TCP;
+					// check if the packet is big enough to actually be ICMP
+					if (payloadOffset <= data_length) {
+						ipProtocolType = ICMP;
+						classification |= PCLASS_TRN_ICMP;
+					} else {
+						// there is no complete transport heaader => treat data it as payload
+						payloadOffset = transportHeaderOffset;
+					}
+					break;
+				case 2:		// IGMP
+					// header is 8-bytes fixed size
+					payloadOffset = transportHeaderOffset + 8;
+
+					// check if the packet is big enough to actually be IGMP
+					if (payloadOffset <= data_length) {
+						ipProtocolType = IGMP;
+						classification |= PCLASS_TRN_IGMP;
+					} else {
+						// there is no complete transport heaader => treat data it as payload
+						payloadOffset = transportHeaderOffset;
+					}
+					break;
+				case 6:         // TCP
+					// we need at least 12 more bytes in the packet to extract the "Data Offset"
+					if (transportHeaderOffset + 12 < data_length)
+					{
+						// extract "Data Offset" field at TCP header offset 12 (upper 4 bits)
+						unsigned char tcpDataOffset = *(transportHeader + 12) >> 4;
+
+						// calculate payload offset
+						payloadOffset = transportHeaderOffset + (tcpDataOffset << 2);
+
+						// check if the complete TCP header is inside the received packet data
+						if (payloadOffset <= data_length) {
+							ipProtocolType = TCP;
+							classification |= PCLASS_TRN_TCP;
+						} else {
+							// there is no complete transport heaader => treat data it as payload
+							payloadOffset = transportHeaderOffset;
+						}
+					}
 					else
-					    // there is no complete transport heaader => treat data it as payload
-					    payloadOffset = transportHeaderOffset;
-				}
-				else
-				    // there is no complete transport heaader => treat data it as payload
-				    payloadOffset = transportHeaderOffset;
-				
-				break;
-			case 17:        // UDP
-				// UDP has a fixed header size of 8 bytes
-				payloadOffset = transportHeaderOffset + 8;
-				
-				// check if the packet is big enough to actually be UDP
-				if (payloadOffset <= data_length)
-				    classification |= PCLASS_TRN_UDP;
-				else
-				    // there is no complete transport heaader => treat data it as payload
-				    payloadOffset = transportHeaderOffset;
-				
-				break;
-			default:	// unknown transport protocol or insufficient data length
-				// omit transport header and classify it as payload
-				payloadOffset = transportHeaderOffset;
-				break;
+						// there is no complete transport heaader => treat data it as payload
+						payloadOffset = transportHeaderOffset;
+
+					break;
+				case 17:        // UDP
+					// UDP has a fixed header size of 8 bytes
+					payloadOffset = transportHeaderOffset + 8;
+
+					// check if the packet is big enough to actually be UDP
+					if (payloadOffset <= data_length) {
+						ipProtocolType = UDP;
+						classification |= PCLASS_TRN_UDP;
+					} else {
+						// there is no complete transport heaader => treat data it as payload
+						payloadOffset = transportHeaderOffset;
+					}
+					break;
+				default:	// unknown transport protocol or insufficient data length
+					// omit transport header and classify it as payload
+					payloadOffset = transportHeaderOffset;
+					break;
 			}
 
 			// check if we actually _have_ payload
 			if ((payloadOffset > 0) && (payloadOffset < data_length))
 			{
-			    classification |= PCLASS_PAYLOAD;
-			    payload = data + payloadOffset;
+				classification |= PCLASS_PAYLOAD;
+				payload = data + payloadOffset;
 			}
 			else
-			    // there is no payload
-			    payloadOffset = 0;
+				// there is no payload
+				payloadOffset = 0;
 
 			//fprintf(stderr, "class %08lx, proto %d, data %p, net %p, trn %p, payload %p\n", classification, protocol, data, netHeader, transportHeader, payload);
 		}
@@ -318,7 +327,7 @@ public:
 		// the following types may be variable length
 		// if not, we have to check that the length is not too long
 		case HEAD_RAW:
-		    return ((unsigned int)offset + fieldLength <= data_length) ? data + offset : NULL;
+		    return ((unsigned int)offset + fieldLength <= data_length) ? (char*)data + offset : NULL;
 		case HEAD_NETWORK_AND_BEYOND:
 		    return (netHeaderOffset + offset + fieldLength <= data_length) ? netHeader + offset : NULL;
 		case HEAD_TRANSPORT_AND_BEYOND:
@@ -434,12 +443,6 @@ public:
 
 
 private:
-	/*
-	 the raw offset at which the IP header starts in the packet
-	 for Ethernet, this is 14 bytes (MAC header size).
-	 This constant is set via the configure script. It defaults to 14
-	 */
-	static const int IPHeaderOffset=IP_HEADER_OFFSET;
 
 	/*
 	 Number of concurrent users of this packet. Decremented each time

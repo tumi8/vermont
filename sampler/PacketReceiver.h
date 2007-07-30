@@ -12,30 +12,32 @@
 #ifndef PACKET_RECEIVER_H
 #define PACKET_RECEIVER_H
 
-#include "ConcurrentQueue.h"
+#include "common/ConcurrentQueue.h"
+#include "common/StatisticsManager.h"
 #include "Packet.h"
 
-class PacketReceiver
+#include <string>
+
+using namespace std;
+
+
+class PacketReceiver : public StatisticsModule
 {
-protected:
-	ConcurrentQueue<Packet*> *queue;
+private:
+	ConcurrentQueue<Packet*>  queue;
+	string					  name;
 
 public:
-	PacketReceiver()
-	{
-		queue = new ConcurrentQueue<Packet*>();
-	}
+	PacketReceiver(string ownerName);
 
-	virtual ~PacketReceiver()
-	{
-		delete queue;
-	}
+	virtual ~PacketReceiver();
 
 	inline virtual ConcurrentQueue<Packet*> *getQueue() const
 	{
-		return queue;
+		return const_cast<ConcurrentQueue<Packet*>*>(&queue);
 	}
 
+	virtual std::string getStatistics();
 };
 
 #endif

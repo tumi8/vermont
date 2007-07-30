@@ -26,7 +26,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "IpfixDbWriter.hpp"
-#include "msg.h"
+#include "common/msg.h"
 
 
 /***** Internal types ******************************************************/
@@ -813,7 +813,7 @@ IpfixDbWriter::IpfixDbWriter(const char* hostName, const char* dbName,
                                    unsigned int port, uint16_t observationDomainId,
                                    int maxStatements)
 {	
-	DSETSINKOWNER("IpfixWriter");
+	setSinkOwner("IpfixWriter");
 	Table* tabl = (Table*)malloc(sizeof(Table));
 	Statement* statemen = (Statement*)malloc(sizeof(Statement));
 	statemen->statemBuffer = (char**)malloc(sizeof(char**)*maxStatements);

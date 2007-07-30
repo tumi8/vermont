@@ -26,7 +26,7 @@
 // required for htons() and htonl()
 #include <netinet/in.h>
 
-#include "msg.h"
+#include "common/msg.h"
 
 #include "PacketProcessor.h"
 

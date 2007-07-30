@@ -7,14 +7,13 @@
 #include "collector_configuration.h"
 #include "metering_configuration.h"
 #include "flowmetering_configuration.h"
-#include "expressflowmetering_configuration.h"
 #include "exporter_configuration.h"
 #include "dbwriter_configuration.h"
 
-
-#include <msg.h>
-#include <concentrator/IpfixAggregator.hpp>
+#include "concentrator/IpfixAggregator.hpp"
 #include "concentrator/IpfixReceiverUdpIpV4.hpp"
+
+#include "common/msg.h"
 
 
 CollectorConfiguration::CollectorConfiguration(xmlDocPtr document, xmlNodePtr startPoint)

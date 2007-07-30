@@ -104,11 +104,24 @@ AX_BOOST_BASE([1.33.1])
 
 # check for Boost Regex
 AX_BOOST_REGEX
-if test "x$BOOST_REGEX_LIB" = "x"; then
-	AC_MSG_ERROR([*** Boost Regex libraries not installed. Please install them.])
+if test "x$ax_cv_boost_regex" != "xyes"; then
+	AC_MSG_ERROR([*** Boost Regex suite missing or not usable. Cannot continue.])
 fi
 
-AC_CONFIG_FILES([Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile])
+# check for Boost Filesystem
+AX_BOOST_FILESYSTEM
+if test "x$ax_cv_boost_filesystem" != "xyes"; then
+	AC_MSG_ERROR([*** Boost Filesystem suite missing or not usable. Cannot continue.])
+fi
+
+# check for Boost Unit Test Framework
+AX_BOOST_UNIT_TEST_FRAMEWORK
+if test "x$ax_cv_boost_unit_test_framework" != "xyes"; then
+	AC_MSG_ERROR([*** Boost Unit Test Framework suite missing or not usable. Cannot continue.])
+fi
+
+
+AC_CONFIG_FILES([Makefile common/Makefile concentrator/Makefile sampler/Makefile ipfixlolib/Makefile tools/Makefile tests/Makefile])
 
 AC_OUTPUT
 

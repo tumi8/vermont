@@ -67,9 +67,10 @@ class Rule {
 
 		Rule();
 		~Rule();
+		void initialize();
 		void print();
 		int templateDataMatches(IpfixRecord::TemplateInfo* info, IpfixRecord::Data* data);
-		int ExptemplateDataMatches(IpfixRecord::Data* ip_data, IpfixRecord::Data* th_data, int classi);
+		bool ExptemplateDataMatches(const Packet* p);
 		int dataTemplateDataMatches(IpfixRecord::DataTemplateInfo* info, IpfixRecord::Data* data);
 
 		uint16_t id;
@@ -77,6 +78,11 @@ class Rule {
 		int fieldCount;
 		Rule::Field* field[MAX_RULE_FIELDS];
 		Hashtable* hashtable;
+
+	private:
+		Packet::IPProtocolType validProtocols; /**< types of protocols which are valid for specified rule */
+		Rule::Field** patternFields;  /**< contains array of rules which contain a pattern for packet matching */
+		uint16_t patternFieldsLen;
 };
 
 #endif
