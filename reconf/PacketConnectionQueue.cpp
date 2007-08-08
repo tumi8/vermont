@@ -33,9 +33,16 @@ void PacketConnectionQueue::receive(Packet* packet)
 void PacketConnectionQueue::process()
 {
 	Packet* packet = NULL;
+	Destination* d;
 	
-	while (dest) {
+	/* FIXME: synchronisation handling if this is called in an own thread;
+	 *	  especially if one is allowed to disconnect the from the queue
+	 */
+	while ((d = dest) != NULL) {
 		queue.pop(&packet);
-		dest->receive(packet);
+		/* this should work if dest is disconnected between the while() and the actual call
+		 * of receive() IF dest isn't freed already
+		 */
+		d->receive(packet);
 	}
 }
