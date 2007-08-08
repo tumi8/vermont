@@ -46,7 +46,16 @@ void Filter::terminate()
 void Filter::setReceiver(PacketReceiver *recv)
 {
 	hasReceiver_ = true;
-	receiver = recv->getQueue();
+
+	//FIXME: ugly hack to demonstrate the reconf work
+	receiver = NULL;
+	PacketDestination* dest = dynamic_cast<PacketDestination*>(recv);
+	if (dest != NULL) {
+		connectTo(dest);
+		return;
+	}
+	
+	msg(MSG_ERROR, "Filter: cant set PacketDestination\n");
 }
 
 bool Filter::hasReceiver()
@@ -89,7 +98,6 @@ void *Filter::filterProcess(void *arg)
 
 	/* for dumb compilers, do CSE here to spare some cycles below */
 	ConcurrentQueue<Packet*> *in_q=filter->getQueue();
-	ConcurrentQueue<Packet*> *out_q=filter->receiver;
 
 	msg(MSG_INFO, "now running the filter thread");
 	while(!filter->exitFlag) {
@@ -116,7 +124,8 @@ void *Filter::filterProcess(void *arg)
 		if(keepPacket) {
 			// push packet to the receiver
 			DPRINTF("pushing packet %d", p);
-			out_q->push(p);
+			
+			filter->dest->receive(p);
 		} else {
 			// immediately drop the packet
 			DPRINTF("releasing packet");

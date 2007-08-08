@@ -16,12 +16,14 @@
 #include "common/StatisticsManager.h"
 #include "Packet.h"
 
+#include "reconf/PacketDestination.h"
+
 #include <string>
 
 using namespace std;
 
 
-class PacketReceiver : public StatisticsModule
+class PacketReceiver : public StatisticsModule, public PacketDestination
 {
 private:
 	ConcurrentQueue<Packet*>  queue;
@@ -32,6 +34,12 @@ public:
 
 	virtual ~PacketReceiver();
 
+	virtual void receive(Packet* p)
+	{
+		msg(MSG_ERROR, "PacketReceiver::receive(Packet*) called\n");
+		queue.push(p);
+	}
+	
 	inline virtual ConcurrentQueue<Packet*> *getQueue() const
 	{
 		return const_cast<ConcurrentQueue<Packet*>*>(&queue);

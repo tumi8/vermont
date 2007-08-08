@@ -316,6 +316,14 @@ void Observer::terminateCapture()
 void Observer::addReceiver(PacketReceiver *recv)
 {
 	receivers.push_back(recv->getQueue());
+	// First attempt to convert to PacketDestination
+	
+	PacketDestination* dest = dynamic_cast<PacketDestination*>(recv);
+	if (dest != NULL) {
+		msg(MSG_ERROR, "Observer: connecting...");
+		connectTo(dest);
+	} else
+		msg(MSG_ERROR, "ERROR: we don't have a PacketDest\n");
 };
 
 /* you cannot change the caplen of an already running observer */

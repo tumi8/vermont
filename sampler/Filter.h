@@ -26,10 +26,12 @@
 #include "common/Thread.h"
 #include "common/ConcurrentQueue.h"
 
+#include "reconf/PacketSource.h"
+
 #include <vector>
 
 
-class Filter : public PacketReceiver
+class Filter : public PacketReceiver, PacketSource
 {
 	public:
 
