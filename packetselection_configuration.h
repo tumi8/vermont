@@ -30,8 +30,6 @@ public:
 	Filter* getFilters() { return filter; }
 
 protected:
-	std::vector<PacketProcessor*> filters;
-
 	Filter* filter;
 
 	PacketSink* dummySink; /**< contains a pointer if we created a DummySink, i.e. we are responsible for cleaning it up */
