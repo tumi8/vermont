@@ -25,10 +25,11 @@ vermont_SOURCES = \
 	packetreporting_configuration.cc packetreporting_configuration.h \
 	packetselection_configuration.cc packetselection_configuration.h \
 	reconf/Emitable.h \
+	reconf/FilterModule.h \
 	reconf/Destination.h \
 	reconf/Source.h \
 	reconf/PacketDestination.h \
-	reconf/PacketSource.h \ 
+	reconf/PacketSource.h \
 	reconf/PacketConnectionQueue.h \
 	vermont.cc \
 	vermontmain_configuration.cc vermontmain_configuration.h
