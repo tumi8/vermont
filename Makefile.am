@@ -7,7 +7,7 @@ else
 	LPCAP=-lpcap
 endif
 
-SUBDIRS=common cfg concentrator ipfixlolib sampler tools tests
+SUBDIRS=common cfg concentrator ipfixlolib sampler reconf tools tests
 
 bin_PROGRAMS=vermont
 
@@ -24,12 +24,12 @@ vermont_SOURCES = \
 	observer_configuration.cc observer_configuration.h \
 	packetreporting_configuration.cc packetreporting_configuration.h \
 	packetselection_configuration.cc packetselection_configuration.h \
-	reconf/Emitable.h  reconf/Emitable.cpp \
-	reconf/Destination.h reconf/Destination.cpp \
-	reconf/Source.h reconf/Source.cpp \
-	reconf/PacketDestination.h  reconf/PacketDestination.cpp  \
-	reconf/PacketSource.h reconf/PacketSource.cpp  \
-	reconf/PacketConnectionQueue.h reconf/PacketConnectionQueue.cpp \
+	reconf/Emitable.h \
+	reconf/Destination.h \
+	reconf/Source.h \
+	reconf/PacketDestination.h \
+	reconf/PacketSource.h \ 
+	reconf/PacketConnectionQueue.h \
 	vermont.cc \
 	vermontmain_configuration.cc vermontmain_configuration.h
 
@@ -51,6 +51,7 @@ vermont_LDADD= \
 	$(top_builddir)/concentrator/libconcentrator.a \
 	$(top_builddir)/sampler/libsampler.a \
 	$(top_builddir)/common/libcommon.a \
+	$(top_builddir)/reconf/libreconf.a \
 	$(top_builddir)/ipfixlolib/libipfixlo.a \
 	-lpthread \
 	$(LPCAP)
@@ -60,4 +61,5 @@ vermont_DEPENDENCIES= \
 	$(top_builddir)/concentrator/libconcentrator.a \
 	$(top_builddir)/sampler/libsampler.a \
 	$(top_builddir)/common/libcommon.a \
+	$(top_builddir)/reconf/libreconf.a \
 	$(top_builddir)/ipfixlolib/libipfixlo.a
