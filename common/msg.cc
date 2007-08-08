@@ -24,7 +24,7 @@ extern "C" {
 
 	static int msg_level=MSG_DEFAULT;
 #if defined(DEBUG)
-	static char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "INFO   ", "DEBUG  ", "VDEBUG ", 0};
+	static const char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "INFO   ", "DEBUG  ", "VDEBUG ", 0};
 #endif
 
 	/*
@@ -187,7 +187,7 @@ extern "C" {
 	 * hook functions inside different vermont modules regularly to generate
 	 * statistics
 	 */
-	int msg_stat(char *fmt, ...)
+	int msg_stat(const char *fmt, ...)
 	{
 		/* have to check if subsys is on. Else just ignore */
 		if(stat_file) {

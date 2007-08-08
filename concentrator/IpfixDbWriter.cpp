@@ -38,10 +38,10 @@
  * of the IPFIX_TYPEID and the datatype to store in database
 */
 struct Column{
-        char* cname;       /** column name */
-        int ipfixId;       /** IPFIX_TYPEID */
-        char* dataType;    /** which datatype to store in database */
-        int defaultValue;  /** when no IPFIX_TYPEID is stored in the record,
+        const char* cname;    /** column name */
+        int ipfixId;          /** IPFIX_TYPEID */
+        const char* dataType; /** which datatype to store in database */
+        int defaultValue;     /** when no IPFIX_TYPEID is stored in the record,
                             *  use defaultvalue to store in database
                             */
 };
@@ -167,7 +167,7 @@ int IpfixDbWriter::createExporterTable()
 /**
 * 	Create the table of the database
 */
-int IpfixDbWriter::createDBTable(Table* table, char* tablename)
+int IpfixDbWriter::createDBTable(Table* table, const char* tablename)
 {
 	int i;
 	char createTableStr[STARTLEN+(table->countCol* COL_WIDTH)];
@@ -274,7 +274,7 @@ int IpfixDbWriter::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::Te
 /**
  * adds an entry for an sql statement
  */
-void IpfixDbWriter::addColumnEntry(char* sql, char* insert, bool quoted, bool lastcolumn)
+void IpfixDbWriter::addColumnEntry(char* sql, const char* insert, bool quoted, bool lastcolumn)
 {
         if (quoted) strcat(sql, "'");
         strncat(sql, insert, MAX_COL_LENGTH);
@@ -422,7 +422,7 @@ char* IpfixDbWriter::getRecData(Table* table, IpfixRecord::SourceID* sourceID,
 	/**make whole query string for the insert statement*/
 	char tablename[TABLE_WIDTH] ;
         DPRINTF("flowstartsec: %d", flowstartsec);
-	char* tablen = getTableName(table, flowstartsec);
+	const char* tablen = getTableName(table, flowstartsec);
 	strcpy(tablename, tablen);
 	/** Insert statement = INSERT INTO + tablename +  Columnsname + Values of record*/
 	strcat(insert, tablename);
@@ -488,7 +488,7 @@ int IpfixDbWriter::writeToDb(Table* table, Statement* statement)
 /**
 *	Returns the tablename of a record according flowstartsec
 */
-char* IpfixDbWriter::getTableName(Table*  table , uint64_t flowstartsec)
+const char* IpfixDbWriter::getTableName(Table*  table , uint64_t flowstartsec)
 {
 	int i;
 	

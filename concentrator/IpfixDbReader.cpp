@@ -260,7 +260,7 @@ int IpfixDbReader::getTables()
 {
 	DbData* dbData = dbReader->dbData;
 	int i = 0;
-	char* wild = "h%";
+	const char* wild = "h%";
 	MYSQL_RES* dbResult = NULL;
 	MYSQL_ROW dbRow = NULL;
 	

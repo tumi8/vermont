@@ -44,7 +44,7 @@
  * Checks whether a given letter is found in an alphabet or not
  * @return 1 if @c letter is found
  */
-int is_in(char letter, char* alphabet) {
+int is_in(char letter, const char* alphabet) {
 	int i;
 	for (i = 0; i < (int)strlen(alphabet); i++) {
 		if (alphabet[i] == letter) return 1;
@@ -78,7 +78,7 @@ char* ltrim(char* text) {
  * @param delim string of delimiters that seperate tokens
  * @return pointer to first token. Call again to retrieve next token
  */
-char* get_next_token(char** text, char* delim) {
+char* get_next_token(char** text, const char* delim) {
 	char* p = *text;
 
 	if (**text == 0) return NULL;

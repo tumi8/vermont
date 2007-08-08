@@ -59,7 +59,7 @@ class FlowSink {
 		 */
 		bool terminateSink();
 
-		void setSinkOwner(char* owner);
+		void setSinkOwner(const char* owner);
 		ConcurrentQueue< boost::shared_ptr<IpfixRecord> >* getSinkQueue();
 
 	protected:
