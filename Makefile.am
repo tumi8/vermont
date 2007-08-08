@@ -24,6 +24,12 @@ vermont_SOURCES = \
 	observer_configuration.cc observer_configuration.h \
 	packetreporting_configuration.cc packetreporting_configuration.h \
 	packetselection_configuration.cc packetselection_configuration.h \
+	reconf/Emitable.h  reconf/Emitable.cpp \
+	reconf/Destination.h reconf/Destination.cpp \
+	reconf/Source.h reconf/Source.cpp \
+	reconf/PacketDestination.h  reconf/PacketDestination.cpp  \
+	reconf/PacketSource.h reconf/PacketSource.cpp  \
+	reconf/PacketConnectionQueue.h reconf/PacketConnectionQueue.cpp \
 	vermont.cc \
 	vermontmain_configuration.cc vermontmain_configuration.h
 

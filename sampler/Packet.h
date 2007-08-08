@@ -31,6 +31,8 @@
 #include "common/ManagedInstance.h"
 #include "ipfixlolib/encoding.h"
 
+#include "reconf/Emitable.h"
+
 // the various header types (actually, HEAD_PAYLOAD is not neccessarily a header but it works like one for
 // our purposes)
 #define HEAD_RAW                  1
@@ -70,7 +72,7 @@
 // Payload classification (here, payload refers to data beyond transport header)
 #define PCLASS_PAYLOAD             (1UL << 31)
 
-class Packet : public ManagedInstance<Packet>
+class Packet :  public ManagedInstance<Packet>, public Emitable
 {
 public:
 	/*
