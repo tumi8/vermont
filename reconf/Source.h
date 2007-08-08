@@ -19,6 +19,9 @@ public:
 	virtual ~Source() { }
 	
 	virtual void connectTo(Destination* dest) = 0;
+	virtual void disconnect() = 0;
+
+	virtual bool isConnected() const = 0;
 };
 
 #endif
