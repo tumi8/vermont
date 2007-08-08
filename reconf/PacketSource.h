@@ -25,6 +25,8 @@
 class PacketSource: public Source
 {
 public:
+	PacketSource() : dest(NULL) { }
+	
 	virtual void connectTo(Destination* dest);
 	virtual bool isConnected() const;
 	virtual void disconnect();
