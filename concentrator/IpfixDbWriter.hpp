@@ -114,13 +114,13 @@ class IpfixDbWriter : public FlowSink {
 
 		int createDB();
 		int createExporterTable();
-		int createDBTable(Table* table, char* tablename);
+		int createDBTable(Table* table, const char* tablename);
 		char* getRecData(Table* table,IpfixRecord::SourceID* sourceID,IpfixRecord::DataTemplateInfo* dataTemplateInfo,uint16_t length,IpfixRecord::Data* data);
 		int writeToDb(Table* table, Statement* statement);
 		int getExporterID(Table* table, IpfixRecord::SourceID* sourceID);
-		char* getTableName(Table* table, uint64_t flowstartsec);
+                const char* getTableName(Table* table, uint64_t flowstartsec);
 	private:
-		void addColumnEntry(char* sql, char* insert, bool quoted, bool lastcolumn);
+		void addColumnEntry(char* sql, const char* insert, bool quoted, bool lastcolumn);
 		void addColumnEntry(char* sql, uint64_t insert, bool quoted, bool lastcolumn);
 };
 

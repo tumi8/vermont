@@ -108,7 +108,7 @@ bool FlowSink::terminateSink() {
 	return true;
 }
 
-void FlowSink::setSinkOwner(char* owner)
+void FlowSink::setSinkOwner(const char* owner)
 {
 	ipfixRecords.setOwner(owner);
 }

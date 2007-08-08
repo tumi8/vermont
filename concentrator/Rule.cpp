@@ -79,7 +79,7 @@ void Rule::initialize()
 	}
 }
 
-char* modifier2string(Rule::Field::Modifier i) {
+const char* modifier2string(Rule::Field::Modifier i) {
 	static char s[16];
 	if (i == Rule::Field::DISCARD) return "discard";
 	if (i == Rule::Field::KEEP) return "keep";
@@ -100,7 +100,7 @@ void Rule::print() {
 	printf("Aggregate %d %d\n",id,preceding);
 	for (i=0; i < fieldCount; i++) {
 		printf("\t");
-		char* modifier = modifier2string(field[i]->modifier);
+		const char* modifier = modifier2string(field[i]->modifier);
 		if (modifier != NULL) {
 			printf("%s ", modifier);
 		} else {
