@@ -6,6 +6,7 @@ libreconf_a_SOURCES=\
 	FilterModule.h FilterModule.cpp \
 	Module.h \
 	PacketConnectionQueue.h PacketConnectionQueue.cpp \
+	PacketConnectionSplicer.h PacketConnectionSplicer.cpp \
 	PacketDestination.h  PacketDestination.cpp  \
 	PacketSource.h PacketSource.cpp  \
 	Source.h
