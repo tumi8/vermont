@@ -9,7 +9,7 @@ vermonttest_SOURCES=\
 	reconf/Destination.h \
 	reconf/Source.h \
 	reconf/PacketDestination.h \
-	reconf/PacketSource.h \ 
+	reconf/PacketSource.h \
 	reconf/PacketConnectionQueue.h \
 	test_concentrator.cpp \
 	VermontTest.cpp VermontTest.h
