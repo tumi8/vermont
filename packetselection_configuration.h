@@ -11,7 +11,7 @@
 #include <vector>
 
 
-class Filter;
+class FilterModule;
 class PacketProcessor;
 class MeteringConfiguration;
 class PacketSink;
@@ -27,10 +27,10 @@ public:
 	virtual void startSystem();
 	virtual void stopSystem();
 
-	Filter* getFilters() { return filter; }
+	FilterModule* getFilters() { return filter; }
 
 protected:
-	Filter* filter;
+	FilterModule * filter;
 
 	PacketSink* dummySink; /**< contains a pointer if we created a DummySink, i.e. we are responsible for cleaning it up */
 

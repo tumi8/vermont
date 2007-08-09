@@ -7,11 +7,14 @@
 #include "packetselection_configuration.h"
 #include "exporter_configuration.h"
 
-#include <sampler/Filter.h>
+#include "reconf/FilterModule.h"
+
 #include <sampler/IPHeaderFilter.h>
 #include <sampler/PacketProcessor.h>
 #include <sampler/HookingFilter.h>
 #include <sampler/PacketSink.h>
+#include <sampler/RandomSampler.h>
+#include <sampler/SystematicSampler.h>
 #include <sampler/stringFilter.h>
 #include <sampler/regExFilter.h>
 
@@ -19,13 +22,13 @@
 PacketSelectionConfiguration::PacketSelectionConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
 	: Configuration(document, startPoint), dummySink(0)
 {
-	filter = new Filter();
+	filter = new FilterModule();
 }
 
 PacketSelectionConfiguration::PacketSelectionConfiguration()
 	: Configuration(0, 0), dummySink(0)
 {
-	filter = new Filter();
+	filter = new FilterModule();
 }
 
 PacketSelectionConfiguration::~PacketSelectionConfiguration()
@@ -175,15 +178,14 @@ void PacketSelectionConfiguration::startSystem()
 		// be freed within the sampler)
 		dummySink = new PacketSink();
 		dummySink->runSink();
-		filter->setReceiver(dummySink);
+		filter->connectTo(dummySink);
 		msg(MSG_INFO, "Added packet sink");
 	}
-	filter->startFilter();
 }
 
 void PacketSelectionConfiguration::stopSystem()
 {
-	filter->terminate();
+//	filter->terminate();
 	if (dummySink) {
 		dummySink->terminateSink();
 	}

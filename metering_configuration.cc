@@ -11,7 +11,7 @@
 #include "flowmetering_configuration.h"
 #include "dbwriter_configuration.h"
 
-#include <sampler/Filter.h>
+#include <reconf/FilterModule.h>
 #include <sampler/ExporterSink.h>
 #include <sampler/HookingFilter.h>
 #include <sampler/ExpressHookingFilter.h>
@@ -107,7 +107,7 @@ void MeteringConfiguration::connect(Configuration* c)
 			uint16_t recordsPerPacket = packetReporting->recordLength + packetReporting->recordVLFields*captureLength;
 			msg(MSG_INFO, "Estimated record length is %u", recordsPerPacket);	
 			exporter->createExporterSink(packetReporting->t, observationDomainId, recordsPerPacket);
-			packetSelection->filter->setReceiver(exporter->getExporterSink());
+			packetSelection->filter->connectTo(exporter->getExporterSink());
 		}
 		if (flowMetering) {
 			if (packetSelection) {

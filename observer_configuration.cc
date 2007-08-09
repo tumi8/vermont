@@ -10,9 +10,10 @@
 #include "flowmetering_configuration.h"
 #include "common/msg.h"
 
+#include <reconf/FilterModule.h>
+
 #include <sampler/Template.h>
 #include <sampler/PacketProcessor.h>
-#include <sampler/Filter.h>
 #include <sampler/ExporterSink.h>
 
 
@@ -116,7 +117,7 @@ void ObserverConfiguration::connect(Configuration* c)
 		metering->setObservationDomainId(observationDomain);
 		metering->setCaptureLength(captureLength);
 		PacketSelectionConfiguration* ps = metering->getPacketSelectionConfiguration();
-		observer->addReceiver(ps->getFilters());
+		observer->connectTo(ps->getFilters());
 		return;
 	}
 	

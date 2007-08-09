@@ -313,6 +313,7 @@ void Observer::terminateCapture()
 	exitFlag = true;
 };
 
+
 void Observer::addReceiver(PacketReceiver *recv)
 {
 	receivers.push_back(recv->getQueue());
@@ -325,6 +326,7 @@ void Observer::addReceiver(PacketReceiver *recv)
 	} else
 		msg(MSG_ERROR, "ERROR: we don't have a PacketDest\n");
 };
+
 
 /* you cannot change the caplen of an already running observer */
 bool Observer::setCaptureLen(int x)
