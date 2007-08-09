@@ -280,6 +280,30 @@ int IpfixDbWriter::onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::Temp
 }
 
 /**
+ * don't do anything
+ */
+int IpfixDbWriter::onOptionsTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo)
+{
+	return 0;
+}
+
+/**
+ * don't do anything
+ */
+int IpfixDbWriter::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo)
+{
+	return 0;
+}
+
+/**
+ * don't do anything
+ */
+int IpfixDbWriter::onOptionsRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length, IpfixRecord::Data* data)
+{
+	return 0;
+}
+
+/**
  * adds an entry for an sql statement
  */
 void IpfixDbWriter::addColumnEntry(char* sql, const char* insert, bool quoted, bool lastcolumn)
