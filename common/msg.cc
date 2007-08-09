@@ -87,7 +87,7 @@ extern "C" {
 			if (retval != 0) DPRINTF("msg: pthread_mutex_lock returned error code %d", retval);
 			struct timeval tv;
 			gettimeofday(&tv, 0);
-			struct tm* tform = localtime(&tv.tv_sec);
+			struct tm* tform = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
 
 #if defined(DEBUG)
 			// determine thread id
