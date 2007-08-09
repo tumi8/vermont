@@ -270,6 +270,14 @@ int IpfixDbWriter::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::Te
 
 	return onDataDataRecord(sourceID, &dataTemplateInfo, length, data);
 }
+		
+/**
+ * don't do anything when a template was received
+ */
+int IpfixDbWriter::onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo)
+{
+	return 0;
+}
 
 /**
  * adds an entry for an sql statement
