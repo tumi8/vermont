@@ -54,7 +54,6 @@ public:
 
 	void startCapture();
 	void terminateCapture();
-	void addReceiver(PacketReceiver *recv);
 	bool setCaptureLen(int x);
 	int getCaptureLen();
 	bool setPacketTimeout(int ms);
@@ -119,9 +118,6 @@ public:
 
 	// interface we capture traffic on - string
 	char *captureInterface;
-
-	// vector of Queues that will get the packets we pass out
-	std::vector<ConcurrentQueue<Packet*> *> receivers;
 };
 
 class ObserverStatModule : public StatisticsModule

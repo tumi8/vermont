@@ -82,14 +82,14 @@ void *Observer::observerThread(void *arg)
 {
 	/* first we need to get the instance back from the void *arg */
 	Observer *obs=(Observer *)arg;
+	PacketDestination* dest;
+	InstanceManager<Packet>* packetManager = obs->packetManager;
+	
 	Packet *p;
-
 	const unsigned char *pcapData;
 	struct pcap_pkthdr packetHeader;
 
-	// calculate right amount of references to add to instance of Packet
-	int refsToAdd = obs->receivers.size()-1;
-	if (refsToAdd < 0) {
+	if (!obs->isConnected()) {
 		THROWEXCEPTION("Observer does not have any receiving modules to send packets to");
 	}
 
@@ -136,7 +136,7 @@ void *Observer::observerThread(void *arg)
 		//printf("\n");
 
 		// initialize packet structure (init copies packet data)
-		p = obs->packetManager->getNewInstance();
+		p = packetManager->getNewInstance();
 		p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts);
 
 		obs->receivedBytes += packetHeader.caplen;
@@ -151,17 +151,19 @@ void *Observer::observerThread(void *arg)
 		obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
 		obs->processedPackets++;
 
-		/* broadcast packet to all receivers */
+		dest = obs->dest;
+		
+		/* 
+		 * throw away the packet if we are not connected to a PacketDestination
+		 * Another possibility is to busy wait here and not lose actual packet
+		 */
+		if (!dest) 
+			continue;
+		
 		if (!obs->exitFlag) {
-			// set reference counter to right amount
-			if (refsToAdd > 0) p->addReference(refsToAdd);
-
-			for(vector<ConcurrentQueue<Packet*> *>::iterator it = obs->receivers.begin();
-					it != obs->receivers.end(); ++it) {
-				DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
-				(*it)->push(p);
-				DPRINTFL(MSG_VDEBUG, "packet pushed");
-			}
+			DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
+			dest->receive(p);
+			DPRINTFL(MSG_VDEBUG, "packet pushed");
 		}
 	}
 
@@ -312,21 +314,6 @@ void Observer::terminateCapture()
 {
 	exitFlag = true;
 };
-
-
-void Observer::addReceiver(PacketReceiver *recv)
-{
-	receivers.push_back(recv->getQueue());
-	// First attempt to convert to PacketDestination
-	
-	PacketDestination* dest = dynamic_cast<PacketDestination*>(recv);
-	if (dest != NULL) {
-		msg(MSG_ERROR, "Observer: connecting...");
-		connectTo(dest);
-	} else
-		msg(MSG_ERROR, "ERROR: we don't have a PacketDest\n");
-};
-
 
 /* you cannot change the caplen of an already running observer */
 bool Observer::setCaptureLen(int x)
