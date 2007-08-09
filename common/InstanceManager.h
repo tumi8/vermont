@@ -129,7 +129,7 @@ class InstanceManager
 					THROWEXCEPTION("instance (0x%08X) is not managed by InstanceManager", (void*)instance);
 				}
 				DPRINTF("removing used instance 0x%08X", (void*)instance);
-				usedInstances.remove(*iter);
+				usedInstances.erase(iter);
 #endif
 				mutex.unlock();
 			}
