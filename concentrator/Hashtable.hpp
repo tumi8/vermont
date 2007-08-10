@@ -172,13 +172,13 @@ class Hashtable : public FlowSource, StatisticsModule {
 		static void copyDataGreaterLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
 		static void copyDataSetOne(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
 		void (*getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*);
-		void fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier);
+		void fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index);
 		uint16_t expCalculateHash(const IpfixRecord::Data* data);
 		boost::shared_array<IpfixRecord::Data> buildBucketData(const Packet* p);
 		void expAggregateField(const ExpFieldData* efd, IpfixRecord::Data* baseData, const IpfixRecord::Data* deltaData);
 		void expAggregateFlow(IpfixRecord::Data* bucket, const Packet* p);
 		bool expEqualFlow(IpfixRecord::Data* bucket, const Packet* p);
-		void createMaskedField(IpfixRecord::Data* address, uint8_t* ipMask, Rule::Field::Modifier modifier);
+		void createMaskedField(IpfixRecord::Data* address, uint8_t imask);
 		void createMaskedFields(const Packet* p);
 		void updatePointers(const Packet* p);
 
