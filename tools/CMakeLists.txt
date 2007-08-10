@@ -6,7 +6,7 @@ TARGET_LINK_LIBRARIES(testCollector
 	concentrator
 	ipfixlolib
 	common
-	pthread
-	pcap
+	${CMAKE_THREAD_LIBS_INIT}
+	${PCAP_LIBRARY}
 )
 
