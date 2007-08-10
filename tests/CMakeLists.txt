@@ -9,10 +9,11 @@ TARGET_LINK_LIBRARIES(vermonttest
 	sampler
 	ipfixlolib
 	common
-	boost_regex
-	boost_filesystem
-	boost_unit_test_framework
-	pcap
+	${CMAKE_THREAD_LIBS_INIT}
+	${Boost_REGEX_LIBRARY}
+	${Boost_FILESYSTEM_LIBRARY}
+	${Boost_UNIT_TEST_FRAMEWORK_LIBRARY}
+	${PCAP_LIBRARY}
 	${MYSQL_LIBRARIES}
 	${LIBXML2_LIBRARIES}
 )
