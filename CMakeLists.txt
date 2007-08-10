@@ -1,0 +1,170 @@
+PROJECT(VERMONT)
+
+
+### cmake configuration
+
+CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+SET(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+MARK_AS_ADVANCED(
+	CMAKE_BACKWARDS_COMPATIBILITY
+	CMAKE_BUILD_TYPE
+	CMAKE_INSTALL_PREFIX
+	EXECUTABLE_OUTPUT_PATH
+	LIBRARY_OUTPUT_PATH
+)
+
+
+### basic modules
+
+SUBDIRS(common concentrator ipfixlolib sampler tools tests)
+
+ADD_EXECUTABLE(vermont
+	collector_configuration.cc
+	exporter_configuration.cc
+	metering_configuration.cc
+	observer_configuration.cc
+	vermont.cc
+	ipfix_configuration.cc
+	vermontmain_configuration.cc
+	packetselection_configuration.cc
+	packetreporting_configuration.cc
+	flowmetering_configuration.cc
+	dbwriter_configuration.cc
+	dbreader_configuration.cc
+)
+
+INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/common)
+INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/concentrator)
+INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/ipfixlolib)
+INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/sampler)
+INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/tools)
+INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/tests)
+
+LINK_DIRECTORIES(${VERMONT_SOURCE_DIR}/concentrator)
+LINK_DIRECTORIES(${VERMONT_SOURCE_DIR}/sampler)
+LINK_DIRECTORIES(${VERMONT_SOURCE_DIR}/ipfixlolib)
+
+TARGET_LINK_LIBRARIES(vermont
+	concentrator
+	sampler
+	ipfixlolib
+	common
+)
+
+
+### doxygen
+
+FIND_PACKAGE(Doxygen REQUIRED)
+
+
+### threads
+
+FIND_PACKAGE(Threads REQUIRED)
+
+
+### boost
+
+INCLUDE(FindBoost)
+MARK_AS_ADVANCED(
+	Boost_INCLUDE_DIR
+)
+FIND_PACKAGE(Boost REQUIRED)
+IF (Boost_FOUND)
+	MESSAGE(STATUS "Found boost libraries")
+	ADD_DEFINITIONS(-DHAVE_BOOST_FILESYSTEM)
+	TARGET_LINK_LIBRARIES(vermont
+		boost_regex
+		boost_filesystem
+	)
+ELSE (Boost_FOUND)
+	MESSAGE(FATAL_ERROR "Could not find boost libraries")
+	REMOVE_DEFINITIONS(-DHAVE_BOOST_FILESYSTEM)
+ENDIF (Boost_FOUND)
+INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
+
+
+### libxml2
+
+INCLUDE(FindLibXML2)
+MARK_AS_ADVANCED(
+	LIBXML2_INCLUDE_DIR
+	LIBXML2_LIBRARIES
+)
+IF (LIBXML2_INCLUDE_DIR AND LIBXML2_LIBRARIES)
+	MESSAGE(STATUS "Found libxml2 libraries")
+	INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
+	TARGET_LINK_LIBRARIES(vermont
+		${LIBXML2_LIBRARIES}
+	)
+ELSE (LIBXML2_INCLUDE_DIR AND LIBXML2_LIBRARIES)
+	MESSAGE(FATAL_ERROR "Could not find libxml2 libraries")
+ENDIF (LIBXML2_INCLUDE_DIR AND LIBXML2_LIBRARIES)
+
+
+### debug
+
+OPTION(DEBUG "Enable debug code. Vermont will run significantly slower if enabled." OFF)
+IF (DEBUG)
+	message(STATUS "Configuring build process for debug version")
+	REMOVE_DEFINITIONS(-O3)
+	ADD_DEFINITIONS(-O0 -g -pg -Wall -Werror -DDEBUG)
+ELSE (DEBUG)
+	REMOVE_DEFINITIONS(-O0 -g -pg -Wall -Werror -DDEBUG)
+	ADD_DEFINITIONS(-O3)
+ENDIF (DEBUG)
+
+
+### IP_HEADER_OFFSET
+
+SET(IP_HEADER_OFFSET 14 CACHE STRING "Start position of the IP header in an ethernet frame in Bytes")
+ADD_DEFINITIONS(-DIP_HEADER_OFFSET=${IP_HEADER_OFFSET})
+
+
+### SUPPORT_NETFLOWV9
+
+OPTION(SUPPORT_NETFLOWV9 "Enable NetFlow version 9 support" ON)
+IF (SUPPORT_NETFLOWV9)
+	ADD_DEFINITIONS(-DSUPPORT_NETFLOWV9)
+ELSE (SUPPORT_NETFLOWV9)
+	REMOVE_DEFINITIONS(-DSUPPORT_NETFLOWV9)
+ENDIF (SUPPORT_NETFLOWV9)
+
+
+### MySQL
+
+OPTION(SUPPORT_MYSQL "Enable dbwriter/dbreader support" ON)
+IF (SUPPORT_MYSQL)
+	INCLUDE(FindMySQL)
+	MARK_AS_ADVANCED(
+		MYSQL_ADD_INCLUDE_DIR
+		MYSQL_ADD_LIBRARY
+		MYSQL_CONFIG
+		MYSQL_CONFIG_PREFER_PATH
+	)
+	IF (MYSQL_FOUND)
+		MESSAGE(STATUS "Found MySQL libraries")
+		ADD_DEFINITIONS(-DDB_SUPPORT_ENABLED)
+		INCLUDE_DIRECTORIES(${MYSQL_INCLUDE_DIR})
+		TARGET_LINK_LIBRARIES(vermont
+			${MYSQL_LIBRARIES}
+		)
+	ELSE (MYSQL_FOUND)
+		MESSAGE(FATAL_ERROR "Could not find MySQL libraries")
+	ENDIF (MYSQL_FOUND)
+ELSE (SUPPORT_MYSQL)
+	REMOVE_DEFINITIONS(-DDB_SUPPORT_ENABLED)
+ENDIF (SUPPORT_MYSQL)
+
+
+### libpcap-mmap
+
+OPTION(USE_PCAPMMAP "Use libpcap-mmap." OFF)
+IF (USE_PCAPMMAP)
+	TARGET_LINK_LIBRARIES(vermont $(VERMONT_SOURCE_DIR)/../libpcap-mmap/libpcap)
+ELSE (USE_PCAPMMAP)
+	TARGET_LINK_LIBRARIES(vermont pcap)
+ENDIF (USE_PCAPMMAP)
+
+

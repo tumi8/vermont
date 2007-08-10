@@ -1,0 +1,23 @@
+ADD_LIBRARY(concentrator
+	IpfixAggregator.cpp
+	Hashtable.cpp
+	ipfix.cpp
+	IpfixReceiver.cpp
+	IpfixReceiverUdpIpV4.cpp
+	IpfixRawdirReader.cpp
+	FlowSource.cpp
+	FlowSink.cpp
+	IpfixRecord.cpp
+	IpfixPrinter.cpp
+	IpfixParser.cpp
+	IpfixPacketProcessor.cpp
+	IpfixCollector.cpp
+	Rules.cpp
+	Rule.cpp
+	IpfixSender.cpp
+	IpfixRawdirWriter.cpp
+	TemplateBuffer.cpp
+	IpfixDbReader.cpp
+	IpfixDbWriter.cpp
+)
+
