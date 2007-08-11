@@ -82,7 +82,7 @@ void *Observer::observerThread(void *arg)
 {
 	/* first we need to get the instance back from the void *arg */
 	Observer *obs=(Observer *)arg;
-	PacketDestination* dest;
+	Destination<Packet>* dest;
 	InstanceManager<Packet>* packetManager = obs->packetManager;
 	
 	Packet *p;

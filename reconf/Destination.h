@@ -6,15 +6,40 @@
 */
 
 #include "reconf/Emitable.h"
-#include "reconf/Source.h"
 
 #include <cstdio>
-class Source;
+#include <stdexcept>
 
-class Destination {
+class BaseDestination {
 public:
-	virtual ~Destination() = 0;
-	virtual void receive(Emitable *);
+	virtual ~BaseDestination();
+	virtual void receive(Emitable *) = 0;
+};
+
+template<class T>
+class Destination : public BaseDestination
+{
+public:
+	virtual void receive(Emitable* e)
+	{
+		T* p = dynamic_cast<T*>(e);
+		if (!e) {
+			throw std::runtime_error("Unsupported Emitable type\n");
+		}
+		this->receive(p);
+	}
+
+	virtual void receive(T* e)
+	{
+		printf("Emitable received\n");
+	}
+
+
+private:
+	inline void recvPacket(T* p) {
+		printf("recv called\n");
+	}
 };
 
 #endif
+

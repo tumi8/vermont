@@ -16,14 +16,14 @@
 #include "common/StatisticsManager.h"
 #include "Packet.h"
 
-#include "reconf/PacketDestination.h"
+#include "reconf/Destination.h"
 
 #include <string>
 
 using namespace std;
 
 
-class PacketReceiver : public StatisticsModule, public PacketDestination
+class PacketReceiver : public StatisticsModule, public Destination<Packet>
 {
 private:
 	ConcurrentQueue<Packet*>  queue;

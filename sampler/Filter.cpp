@@ -49,7 +49,7 @@ void Filter::setReceiver(PacketReceiver *recv)
 
 	//FIXME: ugly hack to demonstrate the reconf work
 	receiver = NULL;
-	PacketDestination* dest = dynamic_cast<PacketDestination*>(recv);
+	Destination<Packet>* dest = dynamic_cast< Destination<Packet>* >(recv);
 	if (dest != NULL) {
 		connectTo(dest);
 		return;
