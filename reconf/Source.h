@@ -26,7 +26,7 @@ template <class T>
 class Source : public BaseSource
 {
 public:
-	Source() : mutex() { }
+	Source() : mutex(), dest(NULL) { }
 	virtual ~Source() { }
 
 	virtual void connectTo(BaseDestination* destination)
