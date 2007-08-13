@@ -45,8 +45,7 @@ void ExporterSink::startNewPacketStream()
 
 // Add this packet to the packet stream
 // returns true, if the Packet was successfully added
-bool ExporterSink::addPacket(Packet *pck)
-{
+bool ExporterSink::addPacket(Packet *pck) {
 	unsigned short ttype, tlength, toffset, theader;
 	unsigned short enc_length = 0;
 	void *data, *metadata;
@@ -54,67 +53,49 @@ bool ExporterSink::addPacket(Packet *pck)
 	bool ret = true;
 
 	// first check, if we can buffer this packet
-	if(!(numPacketsToRelease < MAX_PACKETS)) 
-	{
+	if (!(numPacketsToRelease < MAX_PACKETS)) {
 		msg(MSG_ERROR, "packet buffer too small, packet dropped.");
 		DPRINTF("dropping packet");
 		pck->removeReference();
 		return false;
 	}
 
-
 	// now, check if packet matches template requirements, i.e. if all fields are available
-	if(templ->checkPacketConformity(pck->classification)) 
-	{
+	if (templ->checkPacketConformity(pck->classification)) {
 		// store current position in order to go back in case of problems
 		ipfix_set_data_field_marker(exporter);
 
-		for(int i = 0; i < templ->getFieldCount(); i++) 
-		{
+		for (int i = 0; i < templ->getFieldCount(); i++) {
 			templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
-			if(ttype >= 0x8000) 
-			{
+			if (ttype >= 0x8000) {
 				// it is a meta-field --> get the metadata
 				metadata = templ->getMetaFieldData(i);
 				ipfix_put_data_field(exporter, metadata, tlength);
-				metaFieldsToRelease[numMetaFieldsToRelease++] = metadata;
-			}
-			else if(ttype == IPFIX_TYPEID_flowStartSeconds)
-			{
+				metaFieldsToRelease[numMetaFieldsToRelease++]= metadata;
+			} else if (ttype == IPFIX_TYPEID_flowStartSeconds) {
 				ipfix_put_data_field(exporter, &(pck->time_sec_nbo), tlength);
-			}
-			else if(ttype == IPFIX_TYPEID_flowStartMilliSeconds)
-			{
+			} else if (ttype == IPFIX_TYPEID_flowStartMilliSeconds) {
 				ipfix_put_data_field(exporter, &(pck->time_msec_nbo), tlength);
-			}
-			else if(ttype == IPFIX_TYPEID_flowStartMicroSeconds)
-			{
+			} else if (ttype == IPFIX_TYPEID_flowStartMicroSeconds) {
 				ipfix_put_data_field(exporter, &(pck->time_usec_nbo), tlength);
-			}
-			else if(tlength == 65535)
-			{
+			} else if (tlength == 65535) {
 				// variable length field
-				if((data = pck->getVariableLengthPacketData(&tlength, &enc_value, &enc_length, toffset, theader)) != NULL) 
-				{
+				if ((data = pck->getVariableLengthPacketData(&tlength, &enc_value, &enc_length, toffset, theader)) != NULL) {
 					// put the length information first
 					ipfix_put_data_field(exporter, enc_value, enc_length);
 					ipfix_put_data_field(exporter, data, tlength);
-				}
-				else
-				{
+				} else {
 					msg(MSG_ERROR, "ExporterSink: getVariableLengthPacketData returned NULL! This should never happen!");
 					// delete the fields that we have already added
 					ipfix_delete_data_fields_upto_marker(exporter);
 					ret = false;
 					break;
 				}
-			}
-			else
-			{
+			} else {
 				// check if getPacketData actually returns data
 				// Note: getPacketData checks if data of size tlength is available.
 				//       if not, it returns NULL
-				if( (data = pck->getPacketData(toffset, theader, tlength)) != NULL) {
+				if ( (data = pck->getPacketData(toffset, theader, tlength)) != NULL) {
 					ipfix_put_data_field(exporter, data, tlength);
 				} else {
 					msg(MSG_ERROR, "ExporterSink: getPacketData returned NULL! packet length or pcap capture length is too small.");
@@ -125,21 +106,16 @@ bool ExporterSink::addPacket(Packet *pck)
 				}
 			}
 		}
-	}
-	else
-	{
+	} else {
 		DPRINTF("Packet does not contain all fields required by the template! Skip this packet.");
 		ret = false;
 	}
 
 	// if we will export the packet, we keep and and release it later, after we have sent the data
-	if(ret == true)
-	{
+	if (ret == true) {
 		DPRINTF("Adding packet to buffer");
 		packetsToRelease[numPacketsToRelease++] = pck;
-	}
-	else
-	{
+	} else {
 		// we do no export this packet, i.e. we can release it right now.
 		DPRINTF("dropping packet");
 		pck->removeReference();
