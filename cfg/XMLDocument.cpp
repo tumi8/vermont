@@ -131,6 +131,7 @@ void on_construct(xmlNodePtr node)
 		break;
 	case XML_TEXT_NODE:
 		PRINT_TYPE("XML_TEXT_NODE");
+		node->_private = new XMLTextNode(node);;
 		break;
 	case XML_COMMENT_NODE:
 		PRINT_TYPE("XML_COMMENT_NODE");

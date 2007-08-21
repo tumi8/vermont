@@ -6,10 +6,16 @@
 #include <string>
 #include <vector>
 
+class XMLTextNode;
+
 class XMLNode
 {
 public:
 	typedef std::vector<XMLNode*> XMLNodeSet;
+
+	template <class T>
+	class XMLSet : public std::vector<T> { };
+
 
 	XMLNode(xmlNodePtr ptr);
 	virtual ~XMLNode();
@@ -44,12 +50,27 @@ public:
 		return findChildren("");
 	}
 
+	/** Returns all non whitespace TextNodes
+	 *
+	 *  This is a conveniance function to make life easier for
+	 *  callers which are only interested in values.
+	 */
+	XMLSet<XMLTextNode*> getTextChildren();
+
+	/** Returns the value of the first TextNode
+	 *
+	 *  This is a conveniance function to make life easier for
+	 *  callers which are only interested in values.
+	 */
+	std::string getFirstText();
+
 	/** Return all children */
 	inline const XMLNodeSet getChildren() const
 	{
 		return findChildren("");
 	}
 
+protected:
 	inline xmlNodePtr cobj() {
 		return xmlNode;
 	}
@@ -60,6 +81,21 @@ public:
 
 private:
 	xmlNodePtr xmlNode;
+};
+
+
+class XMLTextNode
+	: public XMLNode
+{
+public:
+	XMLTextNode(xmlNodePtr ptr);
+	virtual ~XMLTextNode();
+
+	/** Get the value of this node. */
+	const std::string getContent();
+
+	/** checks if the node consists of only whitespace */
+	bool isBlank() const;
 };
 
 #endif /*XNODE_H_*/
