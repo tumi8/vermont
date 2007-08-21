@@ -1,5 +1,7 @@
 #include "XMLNode.h"
 
+#include <cassert>
+
 XMLNode::XMLNode(xmlNodePtr doc)
 	: xmlNode(doc)
 {
@@ -46,6 +48,7 @@ XMLNode* XMLNode::getFirstChild(const std::string& name)
 XMLNode::XMLSet<XMLTextNode*> XMLNode::getTextChildren()
 {
 	XMLNode::XMLSet<XMLTextNode*> children;
+	assert(xmlNode != NULL);
 
 	for (xmlNodePtr child = xmlNode->children; child; child = child->next) {
 		// check if name and/or type matches
@@ -65,4 +68,18 @@ std::string XMLNode::getFirstText()
 		return "";
 
 	return set.front()->getContent();
+}
+
+XMLNode::XMLSet<XMLElement*> XMLNode::getElementChildren()
+{
+	XMLNode::XMLSet<XMLElement*> children;
+
+	for (xmlNodePtr child = xmlNode->children; child; child = child->next) {
+		// check if name and/or type matches
+		if (child->_private &&  child->type == XML_ELEMENT_NODE) {
+			XMLElement* e = reinterpret_cast<XMLElement*>(child->_private);
+			children.push_back(e);
+		}
+	}
+	return children;
 }

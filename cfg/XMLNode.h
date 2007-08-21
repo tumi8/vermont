@@ -7,6 +7,7 @@
 #include <vector>
 
 class XMLTextNode;
+class XMLElement;
 
 class XMLNode
 {
@@ -53,6 +54,8 @@ public:
 		return findChildren("");
 	}
 
+	XMLSet<XMLElement*> getElementChildren();
+
 	/** Returns all non whitespace TextNodes
 	 *
 	 *  This is a conveniance function to make life easier for
@@ -83,6 +86,9 @@ protected:
 	}
 
 private:
+	XMLNode(const XMLNode&);
+	XMLNode& operator=(const XMLNode&);
+
 	xmlNodePtr xmlNode;
 };
 
