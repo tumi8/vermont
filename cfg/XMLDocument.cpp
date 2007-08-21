@@ -55,7 +55,7 @@ static void validate_error(void* ctx, const char* msg, ...)
 XMLDocument* XMLDocument::parse_file(const std::string& fileName)
 {
 	_xmlParserCtxt* ctx;
-	XMLDocument* doc;
+	XMLDocument* doc = NULL;
 	std::string exceptionMsg;
 
 	ctx = xmlCreateFileParserCtxt(fileName.c_str());
