@@ -9,6 +9,7 @@
 #include "reconf/Source.h"
 
 #include "common/ConcurrentQueue.h"
+#include "common/Thread.h"
 #include "sampler/Packet.h"
 
 template <class T>
@@ -16,39 +17,37 @@ class ConnectionQueue
 	: public Source<T>, public Destination<T>
 {
 public:
-	ConnectionQueue() : queue() { }
-	virtual ~ConnectionQueue() { }
+	ConnectionQueue()
+		: queue(), thread(process), exitFlag(false)
+	{
+		thread.run(this); 
+	}
 
-	virtual ~ConnectionQueue();
+	virtual ~ConnectionQueue() { exitFlag = true; }
 
 	virtual void receive(T* packet)
 	{
 		printf("receive(Packet*)\n");
 		queue.push(packet);
-
-		// FIXME: this should be in an own thread
-		process();
 	}
 
 private:
-	void process()
+	static void* process(void *arg)
 	{
+		ConnectionQueue* self = (ConnectionQueue*)arg;
 		T* packet = NULL;
-		Destination<T>* d;
 
-		/* FIXME: synchronisation handling if this is called in an own thread;
-		 *	  especially if one is allowed to disconnect the from the queue
-		 */
-		while ((d = dest) != NULL) {
-			queue.pop(&packet);
-			/* this should work if dest is disconnected between the while() and the actual call
-			 * of receive() IF dest isn't freed already
-			 */
-			d->receive(packet);
+		while(!self->exitFlag) {
+			self->queue.pop(&packet);
+			self->send(packet);
 		}
+		return NULL;
 	}
 
 	ConcurrentQueue<T*> queue;
+	Thread thread;
+
+	bool exitFlag;
 };
 
 #endif
