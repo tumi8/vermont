@@ -29,8 +29,10 @@ public:
 			throw std::runtime_error("ConnectionSplicer: can't add another destination\n");
 
 		destinations[size++] = d;
-
+		Source<T>::connected.inc(1);
+		
 		Source<T>::mutex.unlock();
+
 	}
 
 	virtual bool isConnected() const
@@ -38,6 +40,11 @@ public:
 		return size > 0;
 	}
 
+	virtual void disconnect()
+	{
+		THROWEXCEPTION("Can't disconnect from a splicer\n");
+	}
+	
 	virtual void receive(T* packet)
 	{
 		printf("PacketConnectionSplicer::receive(Packet*)\n");
@@ -50,6 +57,8 @@ public:
 private:
 	inline void process(T *packet)
 	{
+		sleepUntilConnected();
+		
 		/* By processing the array over a mutex proctected variable size
 		 * it should be safe to add another destination.
 		 * In the worst case, we don't push the packet to a newly added destination.
