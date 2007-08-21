@@ -6,6 +6,8 @@
 */
 
 #include "common/Mutex.h"
+#include "common/CountingSemaphore.h"
+
 
 #include "reconf/Destination.h"
 #include "reconf/Emitable.h"
@@ -26,7 +28,7 @@ template <class T>
 class Source : public BaseSource
 {
 public:
-	Source() : mutex(), dest(NULL) { }
+	Source() : mutex(), connected(1), dest(NULL) { }
 	virtual ~Source() { }
 
 	virtual void connectTo(BaseDestination* destination)
@@ -44,6 +46,7 @@ public:
 		if (dest)
 			throw std::runtime_error("ERROR: already connected\n");
 		dest = destination;
+		connected.inc(1);
 		mutex.unlock();
 	}
 
@@ -61,12 +64,33 @@ public:
 	virtual void disconnect()
 	{
 		mutex.lock();
-		dest = NULL;
+		if (!isConnected()) {
+			dest = NULL;
+			connected.dec(1);
+		}
 		mutex.unlock();
 	}
 
+	inline void sleepUntilConnected()
+	{
+		// A counting semaphore is needed here,because otherwise there could
+		// be a deadlock on disconnect and this method (if it is called inside a thread)
+		connected.dec(2);
+	}
+	
+	inline void send(T* t)
+	{
+		Destination<T>* d;
+		while ((d = dest) == NULL) {
+			sleepUntilConnected();
+		}
+		
+		d->receive(t);
+	}
+	
 protected:
 	Mutex mutex;
+	CountingSemaphore connected;
 	Destination<T>* dest;
 };
 
