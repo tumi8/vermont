@@ -44,6 +44,9 @@ public:
 		return const_cast<XMLNode*>(this)->findChildren(str);
 	}
 
+	/** return the first child with a given name */
+	XMLNode* getFirstChild(const std::string& str);
+	
 	/** Return all children */
 	inline XMLNodeSet getChildren()
 	{

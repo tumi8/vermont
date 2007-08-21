@@ -32,6 +32,17 @@ XMLNode::XMLNodeSet XMLNode::findChildren(const std::string& name)
 	return children;
 }
 
+XMLNode* XMLNode::getFirstChild(const std::string& name)
+{
+	for (xmlNodePtr child = xmlNode->children; child; child = child->next) {
+		if(child->_private &&
+				(name.empty() || name == (const char*)child->name)) {
+			return reinterpret_cast<XMLNode*>(child->_private);
+		}
+	}
+	return NULL;
+}
+
 XMLNode::XMLSet<XMLTextNode*> XMLNode::getTextChildren()
 {
 	XMLNode::XMLSet<XMLTextNode*> children;
