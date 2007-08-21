@@ -82,7 +82,6 @@ void *Observer::observerThread(void *arg)
 {
 	/* first we need to get the instance back from the void *arg */
 	Observer *obs=(Observer *)arg;
-	Destination<Packet>* dest;
 	InstanceManager<Packet>* packetManager = obs->packetManager;
 	
 	Packet *p;
@@ -151,18 +150,9 @@ void *Observer::observerThread(void *arg)
 		obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
 		obs->processedPackets++;
 
-		dest = obs->dest;
-		
-		/* 
-		 * throw away the packet if we are not connected to a PacketDestination
-		 * Another possibility is to busy wait here and not lose actual packet
-		 */
-		if (!dest) 
-			continue;
-		
 		if (!obs->exitFlag) {
 			DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
-			dest->receive(p);
+			obs->send(p);
 			DPRINTFL(MSG_VDEBUG, "packet pushed");
 		}
 	}
