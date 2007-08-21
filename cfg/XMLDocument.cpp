@@ -1,5 +1,5 @@
 #include "XMLDocument.h"
-
+#include "XMLAttribute.h"
 
 #include "common/msg.h"
 
@@ -127,6 +127,7 @@ void on_construct(xmlNodePtr node)
 		break;
 	case XML_ATTRIBUTE_NODE:
 		PRINT_TYPE("XML_ATTRIBUTE_NODE");
+		node->_private = new XMLAttribute(node);
 		break;
 	case XML_TEXT_NODE:
 		PRINT_TYPE("XML_TEXT_NODE");

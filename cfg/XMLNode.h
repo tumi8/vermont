@@ -54,6 +54,10 @@ public:
 		return xmlNode;
 	}
 
+	inline const xmlNodePtr cobj() const {
+		return xmlNode;
+	}
+
 private:
 	xmlDocPtr xmlDocument;
 	xmlNodePtr xmlNode;

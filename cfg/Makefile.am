@@ -4,6 +4,7 @@ libcfg_a_SOURCES= \
 	edge.h edge.cc \
 	graph.h graph.cc \
 	node.h node.cc \
+	XMLAttribute.h XMLAttribute.cpp \
 	XMLElement.h XMLElement.cpp \
 	XMLDocument.h XMLDocument.cpp \
 	XMLNode.h XMLNode.cpp
