@@ -30,7 +30,7 @@ void FilterModule::receive(Packet* p)
 		// push packet to the receiver
 		DPRINTF("pushing packet %d", p);
 
-		dest->receive(p);
+		send(p);
 		return;
 	}
 	
