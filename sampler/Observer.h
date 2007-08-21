@@ -38,6 +38,7 @@
 #include "common/StatisticsManager.h"
 
 #include "reconf/Source.h"
+#include "reconf/Module.h"
 
 #include <vector>
 #include <string>
@@ -46,7 +47,7 @@
 #include <arpa/inet.h>
 #include <pcap.h>
 
-class Observer : public StatisticsModule, public Source<Packet>
+class Observer : public Module, public StatisticsModule, public Source<Packet>
 {
 public:
 	Observer(const std::string& interface, InstanceManager<Packet>* manager);
