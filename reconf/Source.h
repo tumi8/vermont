@@ -60,8 +60,9 @@ public:
 
 	virtual void disconnect()
 	{
-		/* FIXME: should this be inside a mutex to prevent race conditions? */
+		mutex.lock();
 		dest = NULL;
+		mutex.unlock();
 	}
 
 protected:
