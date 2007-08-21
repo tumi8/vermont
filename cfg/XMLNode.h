@@ -59,7 +59,6 @@ public:
 	}
 
 private:
-	xmlDocPtr xmlDocument;
 	xmlNodePtr xmlNode;
 };
 
