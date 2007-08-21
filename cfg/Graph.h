@@ -15,8 +15,8 @@
 #include <cstdio>
 #include <vector>
 
-#include "edge.h"
-#include "node.h"
+#include "Edge.h"
+#include "Node.h"
 
 /**
 	@author Peter Baumann <siprbaum@users.berlios.de>

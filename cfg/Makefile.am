@@ -1,9 +1,9 @@
 noinst_LIBRARIES=libcfg.a
 
 libcfg_a_SOURCES= \
-	edge.h edge.cc \
-	graph.h graph.cc \
-	node.h node.cc \
+	Edge.h Edge.cpp \
+	Graph.h Graph.cpp \
+	Node.h Node.cpp \
 	XMLAttribute.h XMLAttribute.cpp \
 	XMLElement.h XMLElement.cpp \
 	XMLDocument.h XMLDocument.cpp \

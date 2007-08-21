@@ -1,5 +1,5 @@
-#include "node.h"
-#include "graph.h"
+#include "Node.h"
+#include "Graph.h"
 
 #include <iostream>
 
