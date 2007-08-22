@@ -11,6 +11,7 @@
 //
 
 #include "Graph.h"
+#include "CfgNode.h"
 
 #include <iostream>
 #include <iterator>
@@ -32,6 +33,7 @@ Graph::~Graph()
 {
 }
 
+/*
 Node* Graph::addNode()
 {
 	if (nodes.size() + 1  >= reserved)
@@ -42,13 +44,27 @@ Node* Graph::addNode()
 
 	return n;
 }
+*/
+
+CfgNode* Graph::addNode(Cfg* cfg)
+{
+	if (nodes.size() + 1  >= reserved)
+		throw std::runtime_error("can't handle that many nodes");
+
+	CfgNode *n = new CfgNode(this, nodes.size());
+	n->addCfg(cfg);
+	nodes.push_back(n);
+
+	return n;
+}
+
 
 void Graph::removeNode(Node* n)
 {
 	unsigned int nodes_org_size = nodes.size();
 	unsigned int pos = n->getID();
 
-	std::vector<Node *>::iterator it = find(nodes.begin(), nodes.end(), n);
+	std::vector<CfgNode *>::iterator it = find(nodes.begin(), nodes.end(), n);
 	if (it == nodes.end())
 		throw std::runtime_error("node is not in the graph");
 
@@ -127,6 +143,12 @@ Node* Graph::nodeB(Edge* e)
 
 	return nodes[B_pos];
 }
+
+Graph* Graph::accept(Connector* c)
+{
+	return c->connect(this, nodes);
+}
+
 
 std::ostream& operator<< (std::ostream& o, const Graph& g)
 {

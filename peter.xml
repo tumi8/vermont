@@ -1,0 +1,80 @@
+<ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
+    <observer id="1">
+	<interface>lo</interface>
+	<pcap_filter>ip</pcap_filter>
+	<next>2</next>
+    </observer>
+
+    <packetQueue id="2">
+        <maxSize>100</maxSize>
+        <next>4</next>
+    </packetQueue>
+
+<!--
+    <filter id="3">
+        <countBased>
+            <interval>10</interval>
+            <spacing>20</spacing>
+        </countBased>
+	<next>4</next>
+        <filterMatch>
+             <infoElementId>
+                 <ieName>destinationIPv4Address</ieName>
+                 <match>10.1.0.0/16</match>
+             </infoElementId>
+             <infoElementId>
+                 <ieName>destinationTransportPort</ieName>
+                 <match>80,443</match>
+             </infoElementId>
+        </filterMatch>
+        <randOutOfN>
+            <population>10</population>
+            <sample>5</sample>
+        </randOutOfN>
+    </filter>
+-->
+
+    <packetPrinter id="4" endPoint="true">
+    </packetPrinter>
+
+    <packetReporting>
+        <templateId>888</templateId>
+        <reportedIE>
+            <ieName>sourceIPv4Address</ieName>
+        </reportedIE>
+        <reportedIE>
+            <ieName>destinationIPv4Address</ieName>
+        </reportedIE>
+        <reportedIE>
+            <ieName>protocolIdentifier</ieName>
+        </reportedIE>
+    <next>
+        <exportingProcessId>1</exportingProcessId>
+    </next>
+
+    </packetReporting>
+    <exportingProcess id="1">
+	<ipfixPacketRestrictions>
+	    <maxPacketSize>1500</maxPacketSize>
+	    <maxExportDelay unit="msec">500</maxExportDelay>
+	</ipfixPacketRestrictions>
+	<udpTemplateManagement>
+	    <templateRefreshTimeout unit="sec">5</templateRefreshTimeout>
+	    <templateRefreshRate>100</templateRefreshRate>
+	</udpTemplateManagement>
+	<collector>
+	    <ipAddressType>4</ipAddressType>
+	    <ipAddress>127.0.0.1</ipAddress>
+	    <transportProtocol>17</transportProtocol>
+	    <port>1500</port>
+	</collector>
+    </exportingProcess>
+
+
+    <vermont_main>
+	<poll_interval unit="msec">500</poll_interval>
+	<log_file>log.stat</log_file>
+	<log_interval unit="msec">300000</log_interval>
+    </vermont_main>
+
+</ipfixConfig>

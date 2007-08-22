@@ -20,6 +20,8 @@
 #include "common/msg.h"
 #include "common/StatisticsManager.h"
 
+#include "cfg/ConfigManager.h"
+
 using namespace std;
 
 static void usage();
@@ -85,8 +87,9 @@ int main(int ac, char **dc)
 
 	setup_signal(SIGINT, sig_handler);
 	
-	
-	
+	ConfigManager manager;
+	manager.parseConfig(string(config_file));
+/*
 	try {
 		ipfixConfig = new IpfixConfiguration(config_file);
 	        ipfixConfig->readSubsystemConfiguration();
@@ -97,8 +100,8 @@ int main(int ac, char **dc)
 		delete ipfixConfig;
 		return -1;
 	}
-
-	sleep(1);
+*/
+	sleep(1000);
 
 	time_t t = time(NULL);
 	msg(MSG_DIALOG, "up and running at %s", ctime(&t));

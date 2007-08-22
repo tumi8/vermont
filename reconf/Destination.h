@@ -13,11 +13,11 @@
 class BaseDestination {
 public:
 	virtual ~BaseDestination();
-	virtual void receive(Emitable *) = 0;
+	virtual void receive(Emitable *);
 };
 
 template<class T>
-class Destination : public BaseDestination
+class Destination : public virtual BaseDestination
 {
 public:
 	virtual void receive(Emitable* e)

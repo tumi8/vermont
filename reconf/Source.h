@@ -25,7 +25,7 @@ public:
 };
 
 template <class T>
-class Source : public BaseSource
+class Source : public virtual BaseSource
 {
 public:
 	Source() : mutex(), connected(1), dest(NULL) { }
@@ -76,6 +76,7 @@ public:
 		// A counting semaphore is needed here,because otherwise there could
 		// be a deadlock on disconnect and this method (if it is called inside a thread)
 		connected.dec(2);
+		connected.inc(2);
 	}
 	
 	inline void send(T* t)

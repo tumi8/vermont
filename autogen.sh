@@ -19,7 +19,7 @@ echo "Running aclocal..."
 
 $aclocal || action_failed=1
 
-if [ $action_failed = 1 ]; then 
+if [ $action_failed = 1 ]; then
         echo "Error running aclocal. It is possible that you have an incompatible version of aclocal. Please try 1.7.9"
         return 1
 fi

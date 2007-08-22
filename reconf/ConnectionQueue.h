@@ -6,6 +6,7 @@
 */
 
 #include "reconf/Destination.h"
+#include "reconf/Module.h"
 #include "reconf/Source.h"
 
 #include "common/ConcurrentQueue.h"
@@ -15,7 +16,7 @@
 
 template <class T>
 class ConnectionQueue
-	: public Source<T>, public Destination<T>
+	: public Source<T>, public Destination<T>, public Module
 {
 public:
 	ConnectionQueue(int maxEntries = ConcurrentQueue<T*>::DEFAULT_QUEUE_SIZE)

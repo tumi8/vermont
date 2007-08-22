@@ -1,9 +1,16 @@
 noinst_LIBRARIES=libcfg.a
 
 libcfg_a_SOURCES= \
+	Cfg.h Cfg.cpp \
+	CfgNode.h CfgNode.cpp \
+	ConfigManager.h ConfigManager.cpp \
 	Edge.h Edge.cpp \
 	Graph.h Graph.cpp \
 	Node.h Node.cpp \
+	ObserverCfg.cpp \
+	PacketFilterCfg.h PacketFilterCfg.cpp \
+	PacketPrinterCfg.h \
+	QueueCfg.h \
 	XMLAttribute.h XMLAttribute.cpp \
 	XMLElement.h XMLElement.cpp \
 	XMLDocument.h XMLDocument.cpp \
