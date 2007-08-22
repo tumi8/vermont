@@ -22,7 +22,7 @@ XMLAttribute* XMLElement::getAttribute(const std::string &name)
 	if(set.size() == 0)
 		return NULL;
 
-	assert(set.size() > 1);
+	assert(set.size() >= 1);
 	return set.front();
 }
 
