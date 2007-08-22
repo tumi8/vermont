@@ -9,6 +9,7 @@
 #include "reconf/Source.h"
 
 #include "common/ConcurrentQueue.h"
+#include "common/msg.h"
 #include "common/Thread.h"
 #include "sampler/Packet.h"
 
@@ -17,8 +18,8 @@ class ConnectionQueue
 	: public Source<T>, public Destination<T>
 {
 public:
-	ConnectionQueue()
-		: queue(), thread(process), exitFlag(false)
+	ConnectionQueue(int maxEntries = ConcurrentQueue<T*>::DEFAULT_QUEUE_SIZE)
+		: queue(maxEntries), thread(process), exitFlag(false)
 	{
 		thread.run(this); 
 	}
@@ -27,7 +28,7 @@ public:
 
 	virtual void receive(T* packet)
 	{
-		printf("receive(Packet*)\n");
+		msg(MSG_INFO, "receive(Packet*)");
 		queue.push(packet);
 	}
 
@@ -41,6 +42,8 @@ private:
 			self->queue.pop(&packet);
 			self->send(packet);
 		}
+		
+		msg(MSG_INFO, "terminating queue thread");
 		return NULL;
 	}
 
