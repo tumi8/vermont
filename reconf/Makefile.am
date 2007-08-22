@@ -7,6 +7,7 @@ libreconf_a_SOURCES=\
 	Emitable.h Emitable.cpp \
 	FilterModule.h FilterModule.cpp \
 	Module.h \
+	PrinterModule.h PrinterModule.cpp \
 	Source.h
 
 AM_CXXFLAGS=-I$(top_srcdir) -Wall -Werror
