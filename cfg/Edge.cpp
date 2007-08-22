@@ -2,7 +2,7 @@
 
 inline Node* Edge::nodeA()
 {
-	return graph->nodeA(NULL);
+	return graph->nodeA(this);
 }
 
 inline Node* Edge::NodeB()
