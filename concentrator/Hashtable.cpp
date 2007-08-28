@@ -214,14 +214,15 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 		case IPFIX_TYPEID_protocolIdentifier:
 		case IPFIX_TYPEID_tcpControlBits:
 			if (efd->dstLength != 1) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
 		case IPFIX_TYPEID_sourceTransportPort:
 		case IPFIX_TYPEID_destinationTransportPort:
+		case IPFIX_TYPEID_icmpTypeCode:
 			if (efd->dstLength != 2) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
@@ -230,13 +231,13 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 		case IPFIX_TYPEID_flowStartMicroSeconds:
 		case IPFIX_TYPEID_flowStartNanoSeconds:
 			if (efd->dstLength != 4) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
 		case IPFIX_TYPEID_flowStartMilliSeconds:
 			if (efd->dstLength != 8) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
@@ -245,19 +246,19 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 		case IPFIX_TYPEID_flowEndMicroSeconds:
 		case IPFIX_TYPEID_flowEndNanoSeconds:
 			if (efd->dstLength != 4) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
 		case IPFIX_TYPEID_flowEndMilliSeconds:
 			if (efd->dstLength != 8) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
 		case IPFIX_TYPEID_octetDeltaCount:
 			if (efd->dstLength != 8) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 
 		case IPFIX_TYPEID_packetDeltaCount:
@@ -269,7 +270,7 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 					break;
 
 				default:
-					THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+					THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 					break;
 			}
 			break;
@@ -277,12 +278,12 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 		case IPFIX_TYPEID_sourceIPv4Address:
 		case IPFIX_TYPEID_destinationIPv4Address:
 			if (efd->dstLength != 5) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
 		default:
-			THROWEXCEPTION("non-aggregatable type: %d", efd->typeId);
+			THROWEXCEPTION("type unhandled by Packet Aggregator: %d (\"%s\")", efd->typeId, typeid2string(efd->typeId));
 			break;
 	}
 
