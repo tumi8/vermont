@@ -23,9 +23,7 @@ extern "C" {
 
 
 	static int msg_level=MSG_DEFAULT;
-#if defined(DEBUG)
 	static const char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "INFO   ", "DEBUG  ", "VDEBUG ", 0};
-#endif
 
 	/*
 	   we need to serialize for msg_stat()
@@ -103,7 +101,9 @@ extern "C" {
 
 			printf("%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, MSG_TAB[level]);
 #else
-			printf("%02d:%02d:%02d.%03ld", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000);
+			//printf("%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, MSG_TAB[level]);
+			// Gerhard: message level is more important than Milliseconds (at least to me)
+			printf("%02d:%02d:%02d %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, MSG_TAB[level]);
 #endif
 
 			vprintf(fmt, *args);
@@ -113,7 +113,7 @@ extern "C" {
 #if defined(DEBUG)
 				snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, MSG_TAB[level]);
 #else
-				snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000);
+				snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, MSG_TAB[level]);
 #endif
 				vsnprintf(logtext, EXCEPTION_MAXLEN-strlen(logtext), fmt, *args);
 			}
