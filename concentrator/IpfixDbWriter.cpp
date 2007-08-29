@@ -242,8 +242,8 @@ int  IpfixDbWriter::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecor
                         msg(MSG_INFO, "Writing buffered records to database");
 			writeToDb(tabl, statemen);
 		} else {
-                        msg(MSG_INFO, "Buffering record. Need %i more records before writing to database.", statemen->maxStatements - statemen->statemReceived);
 			statemen->statemReceived++;
+                        msg(MSG_INFO, "Buffering record. Need %i more records before writing to database.", statemen->maxStatements - statemen->statemReceived);
 		}
 	}
 	return 0;
@@ -496,7 +496,7 @@ int IpfixDbWriter::writeToDb(Table* table, Statement* statement)
 	/**Write the insert statement to database*/
 	for(i=0; i != statement->maxStatements; i++) {
 		if(mysql_query(conn, statement->statemBuffer[i]) != 0) {
-			msg(MSG_ERROR,"IpfixDbWriter: Insert of records failed",
+			msg(MSG_ERROR,"IpfixDbWriter: Insert of records failed. Error: %s",
 			    mysql_error(conn));
 			return 1;
 		} else {
