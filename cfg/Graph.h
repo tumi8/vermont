@@ -42,6 +42,15 @@ public:
 
 	void removeNode(Node* n1);
 
+	std::vector<Edge*> outgoingEdges(Node* n);
+
+	/** return all the nodes we are connected to as a source of the connection */
+	std::vector<CfgNode*> getDestinations(Node* n);
+
+	/** return all the nodes we are connected to as a destination of the connection */
+	std::vector<CfgNode*> getSources(Node* n);
+
+
 	void removeEdge(Node* n1, Node* n2);
 	void removeEdge(Edge* e);
 

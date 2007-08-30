@@ -152,6 +152,43 @@ Node* Graph::nodeB(Edge* e)
 	return nodes[B_pos];
 }
 
+std::vector<Edge*> Graph::outgoingEdges(Node* n)
+{
+	std::vector<Edge*> outgoing;
+	unsigned int a = n->getID();
+	
+	for (unsigned int b = 0; b < nodes.size(); b++) {
+		Edge* e = matrix[a][b];
+		if (e != NULL)
+			outgoing.push_back(e);
+	}
+	return outgoing;
+}
+
+/** return all the nodes we are connected to as a source of the connection */
+std::vector<CfgNode*> Graph::getDestinations(Node* n) {
+	std::vector<CfgNode*> result;
+	unsigned int a = n->getID();
+	
+	for (unsigned int b = 0; b < nodes.size(); b++) {
+		if (matrix[a][b] != NULL)
+			result.push_back(nodes[b]);
+	}
+	return result;
+}
+
+/** return all the nodes we are connected to as a destination of the connection */
+std::vector<CfgNode*> Graph::getSources(Node* n) {
+	std::vector<CfgNode*> result;
+	unsigned int b = n->getID();
+
+	for (unsigned int a = 0; a < nodes.size(); a++) {
+		if (matrix[a][b] != NULL)
+			result.push_back(nodes[a]);
+	}
+	return result;
+}
+
 Graph* Graph::accept(Connector* c)
 {
 	return c->connect(this);
