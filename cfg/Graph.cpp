@@ -59,6 +59,13 @@ CfgNode* Graph::addNode(Cfg* cfg)
 	return n;
 }
 
+CfgNode* Graph::getNode(unsigned int id)
+{
+	if (id > nodes.size())
+		return NULL;
+	
+	return nodes[id];
+}
 
 void Graph::removeNode(Node* n)
 {

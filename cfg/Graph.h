@@ -38,6 +38,8 @@ public:
 	CfgNode* addNode(Cfg* cfg);
 	Edge* addEdge(Node* n1, Node* n2);
 
+	CfgNode* getNode(unsigned int id);
+
 	void removeNode(Node* n1);
 
 	void removeEdge(Node* n1, Node* n2);
