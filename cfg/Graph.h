@@ -66,6 +66,8 @@ public:
 		return nodes;
 	}
 
+	void depthSearch(Node* v);
+	std::vector<CfgNode*> topoSort();
 
 	Graph* accept(Connector* c);
 
@@ -75,6 +77,13 @@ private:
 
 	unsigned int reserved;
 	Edge*** matrix;
+
+	// for topo sort
+	std::vector<int> visited;
+	std::vector<int> preOrder;
+	std::vector<int> postOrder;
+	std::vector<int> postI;
+	unsigned int cnt, topoCnt;
 };
 
 #endif

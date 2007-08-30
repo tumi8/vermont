@@ -63,7 +63,7 @@ CfgNode* Graph::getNode(unsigned int id)
 {
 	if (id > nodes.size())
 		return NULL;
-	
+
 	return nodes[id];
 }
 
@@ -156,7 +156,7 @@ std::vector<Edge*> Graph::outgoingEdges(Node* n)
 {
 	std::vector<Edge*> outgoing;
 	unsigned int a = n->getID();
-	
+
 	for (unsigned int b = 0; b < nodes.size(); b++) {
 		Edge* e = matrix[a][b];
 		if (e != NULL)
@@ -169,7 +169,7 @@ std::vector<Edge*> Graph::outgoingEdges(Node* n)
 std::vector<CfgNode*> Graph::getDestinations(Node* n) {
 	std::vector<CfgNode*> result;
 	unsigned int a = n->getID();
-	
+
 	for (unsigned int b = 0; b < nodes.size(); b++) {
 		if (matrix[a][b] != NULL)
 			result.push_back(nodes[b]);
@@ -186,6 +186,51 @@ std::vector<CfgNode*> Graph::getSources(Node* n) {
 		if (matrix[a][b] != NULL)
 			result.push_back(nodes[a]);
 	}
+	return result;
+}
+
+void Graph::depthSearch(Node* v)
+{
+	preOrder[v->getID()] = cnt--;
+
+	std::vector<CfgNode*> outNodes = getDestinations(v);
+	for (std::vector<CfgNode*>::const_iterator it = outNodes.begin();
+	     it != outNodes.end();
+	     it++) {
+		Node* other = *it;
+		if (preOrder[other->getID()] == -1)
+			depthSearch(other);
+
+	}
+
+	postOrder[v->getID()] = topoCnt;
+	postI[topoCnt--] = v->getID();
+}
+
+std::vector<CfgNode*> Graph::topoSort()
+{
+	topoCnt = cnt = nodes.size() -1;
+
+	// initialise the values
+	for (unsigned int i = 0; i < nodes.size(); i++) {
+		visited.push_back(-1);
+		preOrder.push_back(-1);
+		postOrder.push_back(-1);
+		postI.push_back(-1);
+	}
+
+	for (unsigned int i = 0; i < nodes.size(); i++) {
+		if (preOrder[i] == -1)
+			depthSearch(nodes[i]);
+	}
+
+	std::vector<CfgNode*> result(nodes.size());
+	for (size_t i = 0; i < nodes.size(); i++) {
+		result[postI[i]] = nodes[i];
+		printf("%2u: %s  ",postI[i], nodes[i]->getCfg()->getName().c_str());
+	}
+	printf("\n");
+
 	return result;
 }
 
