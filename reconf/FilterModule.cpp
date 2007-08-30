@@ -16,11 +16,11 @@ void FilterModule::receive(Packet* p)
 	// even if the processors-iterator below is NULL
 	bool keepPacket=true;
 
-	DPRINTFL(MSG_VDEBUG, "got packet");
+	DPRINTFL(MSG_VDEBUG, "FilterModule: got packet");
 
 	// run packet through all packetProcessors
-	for (it = processors.begin(); 
-	     it != processors.end() && keepPacket; ++it) 
+	for (it = processors.begin();
+	     it != processors.end() && keepPacket; ++it)
 	{
 		keepPacket = (*it)->processPacket(p);
 	}
@@ -28,21 +28,20 @@ void FilterModule::receive(Packet* p)
 	// check if we passed all filters
 	if (keepPacket) {
 		// push packet to the receiver
-		DPRINTF("pushing packet %d", p);
-
+		DPRINTF("FilterModule: pushing packet %d", p);
 		send(p);
 		return;
 	}
-	
+
 	// immediately drop the packet
-	DPRINTF("releasing packet");
+	DPRINTF("FilterModule: releasing packet");
 	p->removeReference();
 }
 
 //FIXME: this function is unneccessary, only here to help restructuring
 bool FilterModule::hasReceiver()
-{ 
-	return isConnected(); 
+{
+	return isConnected();
 }
 
 void FilterModule::addProcessor(PacketProcessor *p)
