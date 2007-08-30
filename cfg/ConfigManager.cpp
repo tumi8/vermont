@@ -13,15 +13,11 @@ Cfg* ConfigManager::configModules[] = {
 	new PacketQueueCfg(NULL),
 	new PacketPrinterCfg(NULL),
 };
-		
-ConfigManager::ConfigManager()
-{
-	graph = new Graph();
-}
 
 ConfigManager::~ConfigManager()
 {
-	delete graph;
+	if (graph)
+		delete graph;
 }
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
@@ -41,7 +37,11 @@ ConfigManager::~ConfigManager()
 void ConfigManager::parseConfig(std::string fileName)
 {
 	Observer* observer = NULL;
-	
+	Graph* oldGraph = graph;
+
+	graph = new Graph();
+
+
 	document = XMLDocument::parse_file(fileName);
 	XMLElement* root = document->getRootNode();
 
@@ -65,17 +65,29 @@ void ConfigManager::parseConfig(std::string fileName)
 				Cfg* cfg = configModules[i]->create(*it);
 				graph->addNode(cfg);
 
-				// FIXME: observer needs special hanlding
+				// FIXME: observer needs special handling
 				if ((*it)->getName() == "observer")
-					observer = dynamic_cast<ObserverCfg*>(cfg)->getInstance(); 
+					observer = dynamic_cast<ObserverCfg*>(cfg)->getInstance();
 			}
 		}
 	}
-	
-	Connector connector;
-	graph->accept(&connector);
-	
-	observer->startCapture();
+
+	if (!oldGraph) { // this is the first config we have read
+		msg(MSG_FATAL, "---------- initialisiz");
+		Connector connector;
+
+		graph->accept(&connector);
+		observer->startCapture(); // FIXME: observer could be reinstantiated
+	} else {
+		msg(MSG_FATAL, "---------- reconnect");
+		// first, connect the nodes on the new graph (but NOT the modules
+		Connector connector(true, false);
+		graph->accept(&connector);
+		msg(MSG_FATAL, "%s:%d", __FILE__, __LINE__);
+		// now connect the modules reusing those from the old graph
+		ReConnector reconnector(oldGraph);
+		graph->accept(&reconnector);
+	}
 }
 
 template <class T>

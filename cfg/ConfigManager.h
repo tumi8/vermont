@@ -14,7 +14,7 @@
 class ConfigManager
 {
 public:
-	ConfigManager();
+	ConfigManager() : graph(NULL) {	}
 	virtual ~ConfigManager();
 	
 	void parseConfig(std::string fileName);
