@@ -5,14 +5,13 @@
 	@author Peter Baumann <siprbaum@users.berlios.de>
 */
 
+#include "common/msg.h"
 #include "common/Mutex.h"
 #include "common/CountingSemaphore.h"
 
 
 #include "reconf/Destination.h"
 #include "reconf/Emitable.h"
-
-#include <stdexcept>
 
 class BaseSource {
 public:
@@ -35,7 +34,7 @@ public:
 	{
 		Destination<T>* d = dynamic_cast< Destination<T>* >(destination);
 		if (!d) {
-			throw std::runtime_error("ERROR: Can't connect to this\n");
+			THROWEXCEPTION("ERROR: Can't connect to this\n");
 		}
 		this->connectTo(d);
 	}
@@ -44,7 +43,7 @@ public:
 	{
 		mutex.lock();
 		if (dest)
-			throw std::runtime_error("ERROR: already connected\n");
+			THROWEXCEPTION("ERROR: already connected\n");
 		dest = destination;
 		connected.inc(1);
 		mutex.unlock();
@@ -64,7 +63,7 @@ public:
 	virtual void disconnect()
 	{
 		mutex.lock();
-		if (!isConnected()) {
+		if (isConnected()) {
 			dest = NULL;
 			connected.dec(1);
 		}
