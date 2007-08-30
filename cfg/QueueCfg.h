@@ -47,12 +47,6 @@ public:
 		return queue;
 	}
 	
-	void connectInstances(Cfg* other)
-	{
-		printf ("VERBINDE QUEUE MIT %u\n", other->getID());
-		getInstance()->connectTo(other->getInstance());
-	}
-
 protected:
 	QueueCfg(XMLElement* e)
 		: Cfg(e), queue(NULL)

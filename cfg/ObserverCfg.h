@@ -27,11 +27,6 @@ public:
 	
 	virtual Observer* getInstance();
 	
-	virtual void connectInstances(Cfg* other)
-	{
-		getInstance()->connectTo(other->getInstance());
-	}
-
 protected:
 	ObserverCfg(XMLElement*);
 

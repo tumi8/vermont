@@ -43,10 +43,6 @@ public:
 		return printer;
 	}
 
-	virtual void connectInstances(Cfg* other)
-	{
-		getInstance()->connectTo(other->getInstance());
-	}
 
 protected:
 	PacketPrinterCfg(XMLElement* e)	: Cfg(e), printer(NULL) { }

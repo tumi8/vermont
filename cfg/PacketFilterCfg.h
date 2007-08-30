@@ -19,11 +19,6 @@ public:
 	
 	virtual FilterModule* getInstance();
 	
-	virtual void connectInstances(Cfg* other)
-	{
-		getInstance()->connectTo(other->getInstance());
-	}
-	
 protected:
 	PacketFilterCfg(XMLElement* e);
 

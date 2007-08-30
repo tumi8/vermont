@@ -30,7 +30,7 @@ public:
 
 	virtual void connectInstances(Cfg* other)
 	{
-		throw std::runtime_error("error in connecting instances\n");
+		getInstance()->connectTo(other->getInstance());
 	};
 	
 protected:
