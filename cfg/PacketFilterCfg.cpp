@@ -7,7 +7,7 @@
 
 
 PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
-	: Cfg(elem), filter(NULL)
+	: Cfg(elem), instance(NULL)
 {
 	if (!elem)
 		return;
@@ -51,17 +51,33 @@ PacketFilterCfg* PacketFilterCfg::create(XMLElement* e)
 
 FilterModule* PacketFilterCfg::getInstance()
 {
-	if (filter != NULL)
-		return filter;
+	if (instance != NULL)
+		return instance;
 	
-	filter = new FilterModule();
+	instance = new FilterModule();
 	for (std::vector<Cfg*>::iterator it = subCfgs.begin();
 	     it != subCfgs.end();
 	     it++) {
-		filter->addProcessor(reinterpret_cast<PacketProcessor*>((*it)->getInstance()));
+		instance->addProcessor(reinterpret_cast<PacketProcessor*>((*it)->getInstance()));
 	}
-	return filter;
+	return instance;
 }
+
+bool PacketFilterCfg::deriveFrom(PacketFilterCfg* old)
+{
+	// check for same number of filters
+	if (subCfgs.size() != old->subCfgs.size())
+		return false;
+
+	for (size_t i = 0; i < subCfgs.size(); i++) {
+		if (!subCfgs[i]->deriveFrom(old->subCfgs[i]))
+			return false;
+	}
+
+	instance = old->getInstance();
+	return true;
+}
+
 
 PacketCountFilterCfg::PacketCountFilterCfg(XMLElement *e)
 	: Cfg(e)

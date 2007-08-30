@@ -21,7 +21,7 @@ public:
 	virtual std::string getName() 
 	{ 
 		// see below why this hack is needed
-		T* t;
+		T* t = NULL;
 		return get_name(t); 
 	}
 
@@ -45,6 +45,22 @@ public:
 		int maxSize = atoi(n->getFirstText().c_str());
 		queue = new ConnectionQueue<T>(maxSize);
 		return queue;
+	}
+
+	virtual bool deriveFrom(Cfg* o)
+	{
+		QueueCfg<T>* cfg = dynamic_cast< QueueCfg<T>* >(o);
+		if (cfg)
+			return deriveFrom(cfg);
+
+		THROWEXCEPTION("Derive is only allowed from within the same type");
+		return false;
+	}
+
+	virtual bool deriveFrom(QueueCfg<T>* o)
+	{
+		queue = o->getInstance();
+		return true;
 	}
 	
 protected:

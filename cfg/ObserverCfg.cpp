@@ -16,9 +16,9 @@ ObserverCfg* ObserverCfg::create(XMLElement* e)
 	assert(e->getName() == getName());
 	return new ObserverCfg(e);
 }
-	
+
 ObserverCfg::ObserverCfg(XMLElement* elem)
-	: Cfg(elem), observer(NULL)
+	: Cfg(elem), observer(NULL), interface(), pcap_filter(), capture_len(0)
 {
 
 }
@@ -29,14 +29,10 @@ ObserverCfg::~ObserverCfg()
 
 Observer* ObserverCfg::getInstance()
 {
-	if (observer != NULL)
+	if (observer)
 		return observer;
 
-	// config variables
-	std::string interface;
-	std::string pcap_filter;
-	unsigned int capture_len = 0;
-	
+
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -45,18 +41,18 @@ Observer* ObserverCfg::getInstance()
 
 		if (e->matches("interface")) {
 			interface = e->getFirstText();
-		} else 	if (e->matches("capture_len")) {
+		} else if (e->matches("capture_len")) {
 			capture_len = atoi(e->getFirstText().c_str());
-		} else 	if (e->matches("pcap_filter")) {
+		} else if (e->matches("pcap_filter")) {
 			pcap_filter = e->getFirstText();
 		} else if (e->matches("timeBased")) {
-		
+
 		} else {
 			msg(MSG_FATAL, "Unkown observer config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
-	
+
 	observer = new Observer(interface, &packetManager);
 
 	if (capture_len) {
@@ -74,4 +70,17 @@ Observer* ObserverCfg::getInstance()
 	}
 
 	return observer;
+}
+
+bool ObserverCfg::deriveFrom(ObserverCfg* old)
+{
+	if (interface != old->interface)
+		return false;
+	if (capture_len != old->capture_len)
+		return false;
+	if (pcap_filter != old->pcap_filter)
+		return false;
+
+	observer = old->getInstance();
+	return true;
 }

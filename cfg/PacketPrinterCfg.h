@@ -26,12 +26,39 @@ public:
 	
 	virtual PrinterModule* getInstance()
 	{
-		if (printer)
-			return printer;
+		if (instance)
+			return instance;
 		
-		fprintf(stderr, "INIT PRINTER\n");
+
+		instance = new PrinterModule(isEndPoint);
+		return instance;
+	}
+
+	virtual bool deriveFrom(Cfg* old)
+	{
+		PacketPrinterCfg* cfg = dynamic_cast<PacketPrinterCfg*>(old);
+		if (cfg)
+			return deriveFrom(cfg);
+
+		THROWEXCEPTION("Derive is only allowed from within the same type");
+		return false;
+	}
+
+	virtual bool deriveFrom(PacketPrinterCfg* old)
+	{
+		if (isEndPoint != old->isEndPoint)
+			return false;
 		
-		bool isEndPoint = false;
+		instance = old->getInstance();
+		return true;
+	}
+
+
+protected:
+	PacketPrinterCfg(XMLElement* e)	: Cfg(e), instance(NULL), isEndPoint(false)
+	{
+		if (!e)
+			return;
 
 		XMLAttribute* attr = _elem->getAttribute("endPoint");
 		if (attr && strcasecmp(attr->getValue().c_str(), "true") == 0)
@@ -39,16 +66,11 @@ public:
 		
 		if (isEndPoint)
 			printf("ENDPOINT\n");
-		printer = new PrinterModule(isEndPoint);
-		return printer;
 	}
-
-
-protected:
-	PacketPrinterCfg(XMLElement* e)	: Cfg(e), printer(NULL) { }
 	
 private:
-	PrinterModule* printer;
+	PrinterModule* instance;
+	bool isEndPoint;
 };
 
 #endif /*PACKETPRINTERCFG_H_*/

@@ -10,13 +10,13 @@ class Cfg
 {
 public:
 	friend class ConfigFile;
-	
+
 	virtual Cfg* create(XMLElement* e) = 0;
 	virtual ~Cfg() { }
 
-	/** returns the name (as written in the XML file) */ 
+	/** returns the name (as written in the XML file) */
 	virtual std::string getName() = 0;
-	
+
 	/** ID given in the XML file */
 	unsigned int getID();
 
@@ -25,14 +25,16 @@ public:
 
 	/** returns an instance of the module which the config element describes  
 	 *  This uses covariant return types, so every derived class has to implement it
-	 */ 
+	 */
 	virtual Module* getInstance() = 0;
+
+	virtual bool deriveFrom(Cfg*) = 0;
 
 	virtual void connectInstances(Cfg* other)
 	{
 		getInstance()->connectTo(other->getInstance());
 	};
-	
+
 protected:
 	Cfg(XMLElement* e) : _elem(e) { }
 

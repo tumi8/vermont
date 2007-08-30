@@ -19,12 +19,24 @@ public:
 	
 	virtual FilterModule* getInstance();
 	
+	virtual bool deriveFrom(Cfg* old)
+	{
+		PacketFilterCfg* cfg = dynamic_cast<PacketFilterCfg*>(old);
+		if (cfg)
+			return deriveFrom(cfg);
+
+		THROWEXCEPTION("Derive is only allowed from within the same type");
+		return false;
+	}
+
+	virtual bool deriveFrom(PacketFilterCfg* old);
+
 protected:
 	PacketFilterCfg(XMLElement* e);
 
 private:
 	std::vector<Cfg*> subCfgs;
-	FilterModule* filter;
+	FilterModule* instance;
 };
 
 class PacketCountFilterCfg
@@ -44,6 +56,27 @@ public:
 
 	virtual Module* getInstance();
 	
+	virtual bool deriveFrom(Cfg* old)
+	{
+		PacketCountFilterCfg* cfg = dynamic_cast<PacketCountFilterCfg*>(old);
+		if (cfg)
+			return deriveFrom(cfg);
+
+		THROWEXCEPTION("Can't derive from PacketCountFilter");
+		return false;
+	}
+
+	virtual bool deriveFrom(PacketCountFilterCfg* old)
+	{
+		if (getInterval() != old->getInterval())
+			return false;
+
+		if (getSpacing() != old->getSpacing())
+			return false;
+
+		return true;
+	}
+
 protected:
 	PacketCountFilterCfg(XMLElement *e);
 };
