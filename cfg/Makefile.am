@@ -4,6 +4,7 @@ libcfg_a_SOURCES= \
 	Cfg.h Cfg.cpp \
 	CfgNode.h CfgNode.cpp \
 	ConfigManager.h ConfigManager.cpp \
+	Connector.h Connector.cpp \
 	Edge.h Edge.cpp \
 	Graph.h Graph.cpp \
 	Node.h Node.cpp \

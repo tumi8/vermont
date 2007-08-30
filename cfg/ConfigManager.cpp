@@ -1,4 +1,5 @@
 #include "ConfigManager.h"
+#include "cfg/Connector.h"
 
 #include "cfg/ObserverCfg.h"
 #include "cfg/PacketFilterCfg.h"

@@ -12,6 +12,7 @@
 
 #include "Graph.h"
 #include "CfgNode.h"
+#include "Connector.h"
 
 #include <iostream>
 #include <iterator>
@@ -146,7 +147,7 @@ Node* Graph::nodeB(Edge* e)
 
 Graph* Graph::accept(Connector* c)
 {
-	return c->connect(this, nodes);
+	return c->connect(this);
 }
 
 
