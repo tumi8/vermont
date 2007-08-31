@@ -140,6 +140,8 @@ Hashtable::Hashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
  * All remaining Buckets are exported, then destroyed
  */
 Hashtable::~Hashtable() {
+	StatisticsManager::getInstance().removeModule(this);
+
 	int i;
 	for (i = 0; i < HASHTABLE_SIZE; i++) if (buckets[i] != NULL) {
 		Hashtable::Bucket* bucket = buckets[i];
