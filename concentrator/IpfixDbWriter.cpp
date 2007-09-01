@@ -38,10 +38,10 @@
  * of the IPFIX_TYPEID and the datatype to store in database
 */
 struct Column{
-        char* cname;       /** column name */
-        int ipfixId;       /** IPFIX_TYPEID */
-        char* dataType;    /** which datatype to store in database */
-        int defaultValue;  /** when no IPFIX_TYPEID is stored in the record,
+        const char* cname;    /** column name */
+        int ipfixId;          /** IPFIX_TYPEID */
+        const char* dataType; /** which datatype to store in database */
+        int defaultValue;     /** when no IPFIX_TYPEID is stored in the record,
                             *  use defaultvalue to store in database
                             */
 };
@@ -167,7 +167,7 @@ int IpfixDbWriter::createExporterTable()
 /**
 * 	Create the table of the database
 */
-int IpfixDbWriter::createDBTable(Table* table, char* tablename)
+int IpfixDbWriter::createDBTable(Table* table, const char* tablename)
 {
 	int i;
 	char createTableStr[STARTLEN+(table->countCol* COL_WIDTH)];
@@ -242,8 +242,8 @@ int  IpfixDbWriter::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecor
                         msg(MSG_INFO, "Writing buffered records to database");
 			writeToDb(tabl, statemen);
 		} else {
-                        msg(MSG_INFO, "Buffering record. Need %i more records before writing to database.", statemen->maxStatements - statemen->statemReceived);
 			statemen->statemReceived++;
+                        msg(MSG_INFO, "Buffering record. Need %i more records before writing to database.", statemen->maxStatements - statemen->statemReceived);
 		}
 	}
 	return 0;
@@ -270,11 +270,43 @@ int IpfixDbWriter::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::Te
 
 	return onDataDataRecord(sourceID, &dataTemplateInfo, length, data);
 }
+		
+/**
+ * don't do anything when a template was received
+ */
+int IpfixDbWriter::onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo)
+{
+	return 0;
+}
+
+/**
+ * don't do anything
+ */
+int IpfixDbWriter::onOptionsTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo)
+{
+	return 0;
+}
+
+/**
+ * don't do anything
+ */
+int IpfixDbWriter::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo)
+{
+	return 0;
+}
+
+/**
+ * don't do anything
+ */
+int IpfixDbWriter::onOptionsRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length, IpfixRecord::Data* data)
+{
+	return 0;
+}
 
 /**
  * adds an entry for an sql statement
  */
-void IpfixDbWriter::addColumnEntry(char* sql, char* insert, bool quoted, bool lastcolumn)
+void IpfixDbWriter::addColumnEntry(char* sql, const char* insert, bool quoted, bool lastcolumn)
 {
         if (quoted) strcat(sql, "'");
         strncat(sql, insert, MAX_COL_LENGTH);
@@ -422,7 +454,7 @@ char* IpfixDbWriter::getRecData(Table* table, IpfixRecord::SourceID* sourceID,
 	/**make whole query string for the insert statement*/
 	char tablename[TABLE_WIDTH] ;
         DPRINTF("flowstartsec: %d", flowstartsec);
-	char* tablen = getTableName(table, flowstartsec);
+	const char* tablen = getTableName(table, flowstartsec);
 	strcpy(tablename, tablen);
 	/** Insert statement = INSERT INTO + tablename +  Columnsname + Values of record*/
 	strcat(insert, tablename);
@@ -464,7 +496,7 @@ int IpfixDbWriter::writeToDb(Table* table, Statement* statement)
 	/**Write the insert statement to database*/
 	for(i=0; i != statement->maxStatements; i++) {
 		if(mysql_query(conn, statement->statemBuffer[i]) != 0) {
-			msg(MSG_ERROR,"IpfixDbWriter: Insert of records failed",
+			msg(MSG_ERROR,"IpfixDbWriter: Insert of records failed. Error: %s",
 			    mysql_error(conn));
 			return 1;
 		} else {
@@ -488,7 +520,7 @@ int IpfixDbWriter::writeToDb(Table* table, Statement* statement)
 /**
 *	Returns the tablename of a record according flowstartsec
 */
-char* IpfixDbWriter::getTableName(Table*  table , uint64_t flowstartsec)
+const char* IpfixDbWriter::getTableName(Table*  table , uint64_t flowstartsec)
 {
 	int i;
 	

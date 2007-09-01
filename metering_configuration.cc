@@ -161,7 +161,7 @@ void MeteringConfiguration::connect(Configuration* c)
 #ifdef DB_SUPPORT_ENABLED
 	DbWriterConfiguration* dbWriterConfiguration = dynamic_cast<DbWriterConfiguration*>(c);
 	if (dbWriterConfiguration) {
-		if ((!flowMetering) || (!expressflowMetering)) {
+		if (!flowMetering) {
 			THROWEXCEPTION("MeteringProcess: Can only be connected to an dbWriter if it does flowMetetering!");
 		}
 

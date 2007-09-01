@@ -59,7 +59,7 @@ class FlowSink {
 		 */
 		bool terminateSink();
 
-		void setSinkOwner(char* owner);
+		void setSinkOwner(const char* owner);
 		ConcurrentQueue< boost::shared_ptr<IpfixRecord> >* getSinkQueue();
 
 	protected:
@@ -164,7 +164,6 @@ class FlowSink {
 		 */
 		virtual int onTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo) 
 		{
-			THROWEXCEPTION("method not implemented");
 			return 1;
 		}
 
@@ -177,7 +176,6 @@ class FlowSink {
 		 */
 		virtual int onOptionsTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo) 
 		{
-			THROWEXCEPTION("method not implemented");
 			return 1;
 		}
 
@@ -190,7 +188,6 @@ class FlowSink {
 		 */
 		virtual int onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo) 
 		{
-			THROWEXCEPTION("method not implemented");
 			return 1;
 		}
 

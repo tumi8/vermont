@@ -23,9 +23,7 @@ extern "C" {
 
 
 	static int msg_level=MSG_DEFAULT;
-#if defined(DEBUG)
-	static char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "INFO   ", "DEBUG  ", "VDEBUG ", 0};
-#endif
+	static const char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "INFO   ", "DEBUG  ", "VDEBUG ", 0};
 
 	/*
 	   we need to serialize for msg_stat()
@@ -87,7 +85,7 @@ extern "C" {
 			if (retval != 0) DPRINTF("msg: pthread_mutex_lock returned error code %d", retval);
 			struct timeval tv;
 			gettimeofday(&tv, 0);
-			struct tm* tform = localtime(&tv.tv_sec);
+			struct tm* tform = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
 
 #if defined(DEBUG)
 			// determine thread id
@@ -103,7 +101,9 @@ extern "C" {
 
 			printf("%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, MSG_TAB[level]);
 #else
-			printf("%02d:%02d:%02d.%03ld", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000);
+			//printf("%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, MSG_TAB[level]);
+			// Gerhard: message level is more important than Milliseconds (at least to me)
+			printf("%02d:%02d:%02d %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, MSG_TAB[level]);
 #endif
 
 			vprintf(fmt, *args);
@@ -113,7 +113,7 @@ extern "C" {
 #if defined(DEBUG)
 				snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, MSG_TAB[level]);
 #else
-				snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000);
+				snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, MSG_TAB[level]);
 #endif
 				vsnprintf(logtext, EXCEPTION_MAXLEN-strlen(logtext), fmt, *args);
 			}
@@ -187,7 +187,7 @@ extern "C" {
 	 * hook functions inside different vermont modules regularly to generate
 	 * statistics
 	 */
-	int msg_stat(char *fmt, ...)
+	int msg_stat(const char *fmt, ...)
 	{
 		/* have to check if subsys is on. Else just ignore */
 		if(stat_file) {

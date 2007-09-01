@@ -140,12 +140,14 @@ Hashtable::Hashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
  * All remaining Buckets are exported, then destroyed
  */
 Hashtable::~Hashtable() {
+	StatisticsManager::getInstance().removeModule(this);
+
 	int i;
 	for (i = 0; i < HASHTABLE_SIZE; i++) if (buckets[i] != NULL) {
 		Hashtable::Bucket* bucket = buckets[i];
 		while (bucket != 0) {
 			Hashtable::Bucket* nextBucket = (Hashtable::Bucket*)bucket->next;
-            // we don't want to export the buckets, as the exporter thread may already be shut down!
+			// we don't want to export the buckets, as the exporter thread may already be shut down!
 			//exportBucket(bucket);
 			destroyBucket(bucket);
 			bucket = nextBucket;
@@ -153,7 +155,7 @@ Hashtable::~Hashtable() {
 	}
 
 	/* Inform Exporter of Data Template destruction */
-    // exporter has already shut down
+	// exporter has already shut down
 	/*
 	boost::shared_ptr<IpfixDataTemplateDestructionRecord> ipfixRecord(new IpfixDataTemplateDestructionRecord);
 	ipfixRecord->sourceID.reset();
@@ -183,13 +185,6 @@ void Hashtable::copyDataGreaterLengthIPNoMod(IpfixRecord::Data* dst, const Ipfix
 	bzero(dst+efd->srcLength, efd->dstLength-efd->srcLength);
 	memcpy(dst, src, efd->srcLength);
 }
-void Hashtable::copyDataGreaterLengthIPMask(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
-{
-	// attention: length MUST be 5 for destination!
-	*reinterpret_cast<uint32_t*>(dst) = *reinterpret_cast<const uint32_t*>(src);
-	// copy mask information into 5th byte
-	dst[4] = efd->data;
-}
 void Hashtable::copyDataGreaterLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
 {
 	bzero(dst, efd->dstLength-efd->srcLength);
@@ -214,21 +209,22 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 	if (efd->modifier == Rule::Field::DISCARD) {
 		THROWEXCEPTION("tried to copy data with field modifier set to discard");
 	} else if ((efd->modifier != Rule::Field::KEEP) && (efd->modifier != Rule::Field::AGGREGATE) &&
-			   (efd->modifier < Rule::Field::MASK_START) && (efd->modifier > Rule::Field::MASK_END)) {
+			(efd->modifier < Rule::Field::MASK_START) && (efd->modifier > Rule::Field::MASK_END)) {
 		THROWEXCEPTION("unknown modifier %d", efd->modifier);
 	}
 	switch (efd->typeId) {
 		case IPFIX_TYPEID_protocolIdentifier:
 		case IPFIX_TYPEID_tcpControlBits:
 			if (efd->dstLength != 1) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
 		case IPFIX_TYPEID_sourceTransportPort:
 		case IPFIX_TYPEID_destinationTransportPort:
+		case IPFIX_TYPEID_icmpTypeCode:
 			if (efd->dstLength != 2) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
@@ -237,13 +233,13 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 		case IPFIX_TYPEID_flowStartMicroSeconds:
 		case IPFIX_TYPEID_flowStartNanoSeconds:
 			if (efd->dstLength != 4) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
 		case IPFIX_TYPEID_flowStartMilliSeconds:
 			if (efd->dstLength != 8) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
@@ -252,19 +248,19 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 		case IPFIX_TYPEID_flowEndMicroSeconds:
 		case IPFIX_TYPEID_flowEndNanoSeconds:
 			if (efd->dstLength != 4) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
 		case IPFIX_TYPEID_flowEndMilliSeconds:
 			if (efd->dstLength != 8) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
 		case IPFIX_TYPEID_octetDeltaCount:
 			if (efd->dstLength != 8) {
-				THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 
 		case IPFIX_TYPEID_packetDeltaCount:
@@ -274,9 +270,9 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 				case 4:
 				case 8:
 					break;
-					
+
 				default:
-					THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+					THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 					break;
 			}
 			break;
@@ -284,12 +280,12 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 		case IPFIX_TYPEID_sourceIPv4Address:
 		case IPFIX_TYPEID_destinationIPv4Address:
 			if (efd->dstLength != 5) {
-					THROWEXCEPTION("unsupported length %d for type %d", efd->dstLength, efd->typeId);
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
 
 		default:
-			THROWEXCEPTION("non-aggregatable type: %d", efd->typeId);
+			THROWEXCEPTION("type unhandled by Packet Aggregator: %d (\"%s\")", efd->typeId, typeid2string(efd->typeId));
 			break;
 	}
 
@@ -299,10 +295,10 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 	} else if (efd->dstLength > efd->srcLength) {
 		if (efd->typeId == IPFIX_TYPEID_sourceIPv4Address || efd->typeId == IPFIX_TYPEID_destinationIPv4Address) {
 			if ((efd->modifier >= Rule::Field::MASK_START) && (efd->modifier <= Rule::Field::MASK_END)) {
-				if (efd->dstLength != 5) {
-					THROWEXCEPTION("destination data size must be 5, but is %d - need to store mask in there", efd->dstLength);
+				if (efd->dstLength != 5 && efd->srcLength != 5) {
+					THROWEXCEPTION("destination and source data size must be 5, but is %d/%d - mask needs to be stored in both of them", efd->dstLength, efd->srcLength);
 				}
-				return copyDataGreaterLengthIPMask;
+				return copyDataEqualLengthNoMod;
 			} else {
 				return copyDataGreaterLengthIPNoMod;
 			}
@@ -323,7 +319,7 @@ void (*Hashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Dat
 /**
  * helper function for buildExpHelperTable
  */
-void Hashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier)
+void Hashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index)
 {
 	efd->typeId = hfi->type.id;
 	efd->dstIndex = hfi->offset;
@@ -331,14 +327,39 @@ void Hashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi,
 	efd->dstLength = hfi->type.length;
 	efd->modifier = fieldModifier;
 	efd->varSrcIdx = IpfixRecord::TemplateInfo::isRawPacketPtrVariable(hfi->type);
-	efd->copyDataFunc = getCopyDataFunction(efd);
 
 	// initialize static source index, if current field does not have a variable pointer
 	if (!efd->varSrcIdx) {
-		// create temporary packet just for initializing our optimization structure
-		Packet p;
+		Packet p; // not good: create temporary packet just for initializing our optimization structure
 		efd->srcIndex = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(hfi->type.id, &p);
 	}
+
+	// special case for masked IPs: those contain variable pointers, if they are masked
+	if ((efd->typeId==IPFIX_TYPEID_sourceIPv4Address || efd->typeId==IPFIX_TYPEID_destinationIPv4Address) &&
+			(efd->modifier >= Rule::Field::MASK_START) && (efd->modifier <= Rule::Field::MASK_END)) {
+
+		// ok, our dst/src ip has to be masked, so this is a variable pointer
+		efd->varSrcIdx = true;
+		// calculate inverse network mask using the modifier
+		efd->data[4] = 32 - (efd->modifier - (int)Rule::Field::MASK_START); 
+		// save index of srcIndex, as this variable is overwritten by updatePointers for each packet
+		efd->origSrcIndex = efd->srcIndex;
+
+		switch (efd->typeId) {
+			case IPFIX_TYPEID_sourceIPv4Address:
+				expHelperTable.srcIpEFieldIndex = index;
+				break;
+			case IPFIX_TYPEID_destinationIPv4Address:
+				expHelperTable.dstIpEFieldIndex = index;
+				break;
+		}
+
+		// adjust srcLength, as our source length is 5 bytes including the appended mask!
+		efd->srcLength = 5;
+	}
+
+	efd->copyDataFunc = getCopyDataFunction(efd);
+
 }
 
 /**
@@ -356,7 +377,7 @@ void Hashtable::buildExpHelperTable()
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 		if (!isToBeAggregated(hfi->type)) continue;
 		ExpFieldData* efd = &expHelperTable.expFieldData[efdIdx++];
-		fillExpFieldData(efd, hfi, fieldModifier[i]);
+		fillExpFieldData(efd, hfi, fieldModifier[i], efdIdx-1);
 	}
 	expHelperTable.noAggFields = efdIdx;
 
@@ -365,7 +386,7 @@ void Hashtable::buildExpHelperTable()
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 		if (isToBeAggregated(hfi->type)) continue;
 		ExpFieldData* efd = &expHelperTable.expFieldData[efdIdx++];
-		fillExpFieldData(efd, hfi, fieldModifier[i]);
+		fillExpFieldData(efd, hfi, fieldModifier[i], efdIdx-1);
 	}
 
 	// fill structure which contains field with variable pointers
@@ -454,7 +475,7 @@ uint16_t addUint16Nbo(uint16_t i, uint16_t j) {
 uint8_t addUint8Nbo(uint8_t i, uint8_t j) {
 	return (i + j);
 }
-	
+
 /**
  * Returns the lesser of two uint32_t values in network byte order
  */
@@ -490,43 +511,43 @@ uint64_t greaterUint64Nbo(uint64_t i, uint64_t j) {
 int Hashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 {
 	switch (type.id) {
-	case IPFIX_TYPEID_flowStartSysUpTime:
-	case IPFIX_TYPEID_flowStartSeconds:
-	case IPFIX_TYPEID_flowStartMilliSeconds:
-	case IPFIX_TYPEID_flowStartMicroSeconds:
-	case IPFIX_TYPEID_flowStartNanoSeconds:
-		return 1;
+		case IPFIX_TYPEID_flowStartSysUpTime:
+		case IPFIX_TYPEID_flowStartSeconds:
+		case IPFIX_TYPEID_flowStartMilliSeconds:
+		case IPFIX_TYPEID_flowStartMicroSeconds:
+		case IPFIX_TYPEID_flowStartNanoSeconds:
+			return 1;
 
-	case IPFIX_TYPEID_flowEndSysUpTime:
-	case IPFIX_TYPEID_flowEndSeconds:
-	case IPFIX_TYPEID_flowEndMilliSeconds:
-	case IPFIX_TYPEID_flowEndMicroSeconds:
-	case IPFIX_TYPEID_flowEndNanoSeconds:
-		return 1;
+		case IPFIX_TYPEID_flowEndSysUpTime:
+		case IPFIX_TYPEID_flowEndSeconds:
+		case IPFIX_TYPEID_flowEndMilliSeconds:
+		case IPFIX_TYPEID_flowEndMicroSeconds:
+		case IPFIX_TYPEID_flowEndNanoSeconds:
+			return 1;
 
-	case IPFIX_TYPEID_octetDeltaCount:
-	case IPFIX_TYPEID_postOctetDeltaCount:
-	case IPFIX_TYPEID_packetDeltaCount:
-	case IPFIX_TYPEID_postPacketDeltaCount:
-	case IPFIX_TYPEID_droppedOctetDeltaCount:
-	case IPFIX_TYPEID_droppedPacketDeltaCount:
-		return 1;
+		case IPFIX_TYPEID_octetDeltaCount:
+		case IPFIX_TYPEID_postOctetDeltaCount:
+		case IPFIX_TYPEID_packetDeltaCount:
+		case IPFIX_TYPEID_postPacketDeltaCount:
+		case IPFIX_TYPEID_droppedOctetDeltaCount:
+		case IPFIX_TYPEID_droppedPacketDeltaCount:
+			return 1;
 
-	case IPFIX_TYPEID_octetTotalCount:
-	case IPFIX_TYPEID_packetTotalCount:
-	case IPFIX_TYPEID_droppedOctetTotalCount:
-	case IPFIX_TYPEID_droppedPacketTotalCount:
-	case IPFIX_TYPEID_postMCastPacketDeltaCount:
-	case IPFIX_TYPEID_postMCastOctetDeltaCount:
-	case IPFIX_TYPEID_observedFlowTotalCount:
-	case IPFIX_TYPEID_exportedOctetTotalCount:
-	case IPFIX_TYPEID_exportedMessageTotalCount:
-	case IPFIX_TYPEID_exportedFlowTotalCount:
-		DPRINTF("isToBeAggregated: Will not aggregate %s field", typeid2string(type.id));
-		return 0;
+		case IPFIX_TYPEID_octetTotalCount:
+		case IPFIX_TYPEID_packetTotalCount:
+		case IPFIX_TYPEID_droppedOctetTotalCount:
+		case IPFIX_TYPEID_droppedPacketTotalCount:
+		case IPFIX_TYPEID_postMCastPacketDeltaCount:
+		case IPFIX_TYPEID_postMCastOctetDeltaCount:
+		case IPFIX_TYPEID_observedFlowTotalCount:
+		case IPFIX_TYPEID_exportedOctetTotalCount:
+		case IPFIX_TYPEID_exportedMessageTotalCount:
+		case IPFIX_TYPEID_exportedFlowTotalCount:
+			DPRINTF("isToBeAggregated: Will not aggregate %s field", typeid2string(type.id));
+			return 0;
 
-	default:
-		return 0;
+		default:
+			return 0;
 	}
 }
 
@@ -657,9 +678,9 @@ uint16_t Hashtable::getHash(IpfixRecord::Data* data) {
 			continue;
 		}
 		hash = crc16(hash,
-			     dataTemplate->fieldInfo[i].type.length,
-			     (char*)data + dataTemplate->fieldInfo[i].offset
-			    );
+				dataTemplate->fieldInfo[i].type.length,
+				(char*)data + dataTemplate->fieldInfo[i].offset
+				);
 	}
 
 	return hash;
@@ -925,7 +946,7 @@ void ExpcopyData(const IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data*
  */
 void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord::Data* data)
 {
-        DPRINTF("Hashtable::aggregateTemplateData called");
+	DPRINTF("Hashtable::aggregateTemplateData called");
 	int i;
 
 	/* Create data block to be inserted into buffer... */
@@ -949,37 +970,37 @@ void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord
 			case IPFIX_TYPEID_sourceIPv4Address:
 				tfi = ti->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
 
-			if(tfi) {
-				if(hfi->type.length != 5) {
-					DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
-				} else {
-					if(tfi->type.length == 1) {
-						*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+				if(tfi) {
+					if(hfi->type.length != 5) {
+						DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 					} else {
-						DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+						if(tfi->type.length == 1) {
+							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+						} else {
+							DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+						}
 					}
 				}
-			}
-			break;
+				break;
 
-		case IPFIX_TYPEID_destinationIPv4Address:
-			tfi = ti->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
+			case IPFIX_TYPEID_destinationIPv4Address:
+				tfi = ti->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
 
-			if(tfi) {
-				if(hfi->type.length != 5) {
-					DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
-				} else {
-					if(tfi->type.length == 1) {
-						*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+				if(tfi) {
+					if(hfi->type.length != 5) {
+						DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 					} else {
-						DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+						if(tfi->type.length == 1) {
+							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+						} else {
+							DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+						}
 					}
 				}
-			}
-			break;
+				break;
 
-		default:
-			break;
+			default:
+				break;
 		}
 	}
 
@@ -1009,7 +1030,7 @@ boost::shared_array<IpfixRecord::Data> Hashtable::buildBucketData(const Packet* 
 	// new field for insertion into hashtable
 	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength]);
 	IpfixRecord::Data* data = htdata.get();
-	
+
 	// copy all data ...
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[i];
@@ -1068,10 +1089,6 @@ void Hashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Data* ba
  */
 void Hashtable::expAggregateFlow(IpfixRecord::Data* bucket, const Packet* p)
 {
-	// TODO: tobi_optimize
-	// here all fields marked as 'aggregatable' are processed.
-	// maybe we should only process fields which are really aggregatable, as e.g. dstIp or srcIp
-	// fields will noch be aggregated, as method aggregateField does not do anything with those
 	for (int i=0; i<expHelperTable.noAggFields; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[i];
 
@@ -1100,11 +1117,9 @@ bool Hashtable::expEqualFlow(IpfixRecord::Data* bucket, const Packet* p)
  * masks ip addresses inside raw packet and creates a mask field
  * (part of express aggregator)
  */
-void Hashtable::createMaskedField(IpfixRecord::Data* address, uint8_t* ipMask, Rule::Field::Modifier modifier)
+void Hashtable::createMaskedField(IpfixRecord::Data* address, uint8_t imask)
 {
-	uint8_t imask = 32 - (modifier - (int)Rule::Field::MASK_START);
-	*ipMask = imask; /* store the inverse network mask */
-
+	DPRINTF("unmasked address: %08X", *reinterpret_cast<uint32_t*>(address));
 	if (imask > 0) {
 		if (imask == 8) {
 			address[3] = 0x00;
@@ -1121,6 +1136,7 @@ void Hashtable::createMaskedField(IpfixRecord::Data* address, uint8_t* ipMask, R
 			address[2] = 0x00;
 			address[3] = 0x00;
 		} else {
+			// tobi_optimize: do this mask calculation during initialization phase of express aggregator
 			int pattern = 0;
 			int i;
 			for(i = 0; i < imask; i++) {
@@ -1129,22 +1145,28 @@ void Hashtable::createMaskedField(IpfixRecord::Data* address, uint8_t* ipMask, R
 			*(uint32_t*)address = htonl(ntohl(*(uint32_t*)(address)) & ~pattern);
 		}
 	}
+	DPRINTF("masked address: %08X", *reinterpret_cast<uint32_t*>(address));
 }
 
 /**
- * masks ip addresses inside the raw packet if desired
- * additional mask information (is 5th byte in aggregated data) is in ExpFieldData->data
+ * masks ip addresses if desired in ExpFieldData->[0-3]
+ * additional mask information (is 5th byte in aggregated data) is in ExpFieldData->data[4]
  */
 void Hashtable::createMaskedFields(const Packet* p)
 {
 	if (expHelperTable.dstIpEFieldIndex > 0) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[expHelperTable.dstIpEFieldIndex];
-		// const_cast: yes, we know that it is not allowed. this is an exception. honestly.
-		createMaskedField(const_cast<unsigned char*>(p->netHeader)+efd->srcIndex, &efd->data, efd->modifier);
+		// copy *original* ip address in *raw packet* to our temporary structure
+		*reinterpret_cast<uint32_t*>(&efd->data[0]) = *reinterpret_cast<uint32_t*>(p->netHeader+efd->origSrcIndex);
+		// then mask it
+		createMaskedField(&efd->data[0], efd->data[4]);
 	}
 	if (expHelperTable.srcIpEFieldIndex > 0) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[expHelperTable.srcIpEFieldIndex];
-		createMaskedField(const_cast<unsigned char*>(p->netHeader)+efd->srcIndex, &efd->data, efd->modifier);
+		// copy *original* ip address in *raw packet* to our temporary structure
+		*reinterpret_cast<uint32_t*>(&efd->data[0]) = *reinterpret_cast<uint32_t*>(p->netHeader+efd->origSrcIndex);
+		// then mask it
+		createMaskedField(&efd->data[0], efd->data[4]);
 	}
 }
 
@@ -1156,13 +1178,28 @@ void Hashtable::updatePointers(const Packet* p)
 {
 	for (int i=0; i<expHelperTable.varSrcPtrFieldsLen; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[expHelperTable.varSrcPtrFields[i]];
-		efd->srcIndex = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(efd->typeId, p);
+
+		// perform a hack for masked IPs:
+		// IP addresses which are to be masked are copied to efd->data[0-3] and masked there
+		// now we need to do some pointer arithmetic to be able to access those transparently afterwards
+		// note: only IP types to be masked have efd->varSrcIdx set
+		switch (efd->typeId) {
+			case IPFIX_TYPEID_destinationIPv4Address:
+			case IPFIX_TYPEID_sourceIPv4Address:
+				efd->srcIndex = reinterpret_cast<uint32_t>(&efd->data[0])-reinterpret_cast<uint32_t>(p->netHeader);
+				break;
+
+			default:
+				// standard procedure for transport header fields
+				efd->srcIndex = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(efd->typeId, p);
+				break;
+		}
 	}
 }
 
 /**
  * Replacement for ExpAggregateTemplateData
- * TODO: write doc!
+ * inserts the given raw packet into the hashtable
  * ATTENTION: 
  *  - this function expects not to be called in parallel, as it uses internal buffers which are
  *    *NOT* thread-safe
@@ -1214,7 +1251,7 @@ void Hashtable::aggregatePacket(const Packet* p)
  */
 void Hashtable::ExpAggregateTemplateData(const Packet* p)
 {
-	
+
 	/* Create data block to be inserted into buffer... */
 	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength]);
 
@@ -1265,38 +1302,38 @@ void Hashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, Ipf
 			/* copy associated mask, should there be one */
 			switch (hfi->type.id) {
 
-			case IPFIX_TYPEID_sourceIPv4Address:
-				tfi = ti->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
-				if(tfi) {
-					if(hfi->type.length != 5) {
-						DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
-					} else {
-						if(tfi->type.length == 1) {
-							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+				case IPFIX_TYPEID_sourceIPv4Address:
+					tfi = ti->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
+					if(tfi) {
+						if(hfi->type.length != 5) {
+							DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 						} else {
-							DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+							if(tfi->type.length == 1) {
+								*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+							} else {
+								DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+							}
 						}
 					}
-				}
-				break;
+					break;
 
-			case IPFIX_TYPEID_destinationIPv4Address:
-				tfi = ti->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
-				if(tfi) {
-					if(hfi->type.length != 5) {
-						DPRINTF("Tried to set mask of length %d IP address", hfi->type.length);
-					} else {
-						if(tfi->type.length == 1) {
-							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+				case IPFIX_TYPEID_destinationIPv4Address:
+					tfi = ti->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
+					if(tfi) {
+						if(hfi->type.length != 5) {
+							DPRINTF("Tried to set mask of length %d IP address", hfi->type.length);
 						} else {
-							DPRINTF("Cannot process associated mask with invalid length %d", tfi->type.length);
+							if(tfi->type.length == 1) {
+								*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
+							} else {
+								DPRINTF("Cannot process associated mask with invalid length %d", tfi->type.length);
+							}
 						}
 					}
-				}
-				break;
+					break;
 
-			default:
-				break;
+				default:
+					break;
 			}
 
 			continue;
@@ -1310,38 +1347,38 @@ void Hashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, Ipf
 			/* copy associated mask, should there be one */
 			switch (hfi->type.id) {
 
-			case IPFIX_TYPEID_sourceIPv4Address:
-				tfi = ti->getDataInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
-				if(tfi) {
-					if(hfi->type.length != 5) {
-						DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
-					} else {
-						if(tfi->type.length == 1) {
-							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
+				case IPFIX_TYPEID_sourceIPv4Address:
+					tfi = ti->getDataInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
+					if(tfi) {
+						if(hfi->type.length != 5) {
+							DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 						} else {
-							DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+							if(tfi->type.length == 1) {
+								*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
+							} else {
+								DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+							}
 						}
 					}
-				}
-				break;
+					break;
 
-			case IPFIX_TYPEID_destinationIPv4Address:
-				tfi = ti->getDataInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
-				if(tfi) {
-					if(hfi->type.length != 5) {
-						DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
-					} else {
-						if (tfi->type.length == 1) {
-							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
+				case IPFIX_TYPEID_destinationIPv4Address:
+					tfi = ti->getDataInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
+					if(tfi) {
+						if(hfi->type.length != 5) {
+							DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 						} else {
-							DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+							if (tfi->type.length == 1) {
+								*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
+							} else {
+								DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+							}
 						}
 					}
-				}
-				break;
+					break;
 
-			default:
-				break;
+				default:
+					break;
 			}
 			continue;
 		}

@@ -108,6 +108,10 @@
 				<ieName>flowEndSeconds</ieName>
 			</nonFlowKey>
 		</rule>	
+	    <expiration>
+		<inactiveTimeout unit="sec">5</inactiveTimeout>
+		<activeTimeout unit="sec">10</activeTimeout>
+	    </expiration>
 	</flowMetering>
 	<next>
 	    <dbWriterId>1</dbWriterId>

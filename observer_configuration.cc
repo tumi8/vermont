@@ -126,11 +126,19 @@ void ObserverConfiguration::connect(Configuration* c)
 
 void ObserverConfiguration::startSystem()
 {
+	if (!observer) {
+		DPRINTF("stopping non-initialized Observer");
+		return;
+	}
 	observer->startCapture();
 }
 
 void ObserverConfiguration::stopSystem()
 {
+	if (!observer) {
+		DPRINTF("stopping non-initialized Observer");
+		return;
+	}
 	observer->terminateCapture();
 }
 

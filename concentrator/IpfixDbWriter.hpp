@@ -53,6 +53,10 @@ class IpfixDbWriter : public FlowSink {
 
 		int onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data);
 		int onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
+		int onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo);
+		int onOptionsTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo);
+		int onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
+		int onOptionsRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length, IpfixRecord::Data* data);
 
 		IpfixRecord::SourceID srcId;              /**Exporter default SourceID */
 
@@ -114,13 +118,13 @@ class IpfixDbWriter : public FlowSink {
 
 		int createDB();
 		int createExporterTable();
-		int createDBTable(Table* table, char* tablename);
+		int createDBTable(Table* table, const char* tablename);
 		char* getRecData(Table* table,IpfixRecord::SourceID* sourceID,IpfixRecord::DataTemplateInfo* dataTemplateInfo,uint16_t length,IpfixRecord::Data* data);
 		int writeToDb(Table* table, Statement* statement);
 		int getExporterID(Table* table, IpfixRecord::SourceID* sourceID);
-		char* getTableName(Table* table, uint64_t flowstartsec);
+                const char* getTableName(Table* table, uint64_t flowstartsec);
 	private:
-		void addColumnEntry(char* sql, char* insert, bool quoted, bool lastcolumn);
+		void addColumnEntry(char* sql, const char* insert, bool quoted, bool lastcolumn);
 		void addColumnEntry(char* sql, uint64_t insert, bool quoted, bool lastcolumn);
 };
 

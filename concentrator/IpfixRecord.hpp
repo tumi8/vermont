@@ -157,7 +157,7 @@ class IpfixRecord {
 						break;
 
 					case IPFIX_TYPEID_icmpTypeCode:
-						type_length = 4;
+						type_length = 2;
 						return type_length;
 						break;
 

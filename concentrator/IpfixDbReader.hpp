@@ -59,13 +59,13 @@ class IpfixDbReader : public FlowSource {
 		static const int MAX_COL = 10; /**< max count of columns in the table */
 
 		typedef struct {
-			char* cname;       /**column name*/
+			const char* cname;       /**column name*/
 			uint16_t ipfixId;  /**IPFIX_TYPEID*/
 			uint8_t length;    /**IPFIX length*/
 		} columnDB;
 
 		typedef struct {
-			char* tableNames[MAX_TABLES];
+			const char* tableNames[MAX_TABLES];
 			int tableCount;
 			IpfixDbReader::columnDB* columns[MAX_COL];
 			int colCount;
