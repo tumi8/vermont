@@ -12,36 +12,25 @@ libpcap
 
 INSTALLATION
 
-You have to create a configure script first. This can be done with the
-script build-configure.sh. You need to install the autotools in order to
-create the configure script.
-I used aclocal-1.7.9, autoconf-2.60 and automake-1.7.9 to create the script.
-Other versions might work as well, but aren't tested yet.
+This project uses CMake for platform- and user-specific configuration.
+In order to create the build files for actual compilation, you will
+need to run CMake, before you can compile the sources.
+For example, the following two commands will build VERMONT in its default
+configuration on POSIX-compliant systems:
 
-After you created the configure script run
-
-$ ./configure
+$ cmake .
 $ make
 
-There are some configure switches that you should now about:
+Specific configuration options can be set prior to running make. The
+command "cmake -LH" will display a list of the most important options.
+CMake options can be set either by running cmake with one or more 
+parameters "-D OPTION=VALUE" or interactively by running "ccmake ." or 
+one of its graphical equivalents.
 
---with-ipheader-offset=ARG
+Although not strictly necessary, VERMONT binaries and data files can be 
+copied out of the source tree and to a user-defined location by running:
 
-You need to adjust the value according to the network that you want to
-monitor. The default value is 14 for ethernet devices. Other common values
-are 4 (BSD loop back device) and 18 (Ethernet von VLAN)
-
---enable-netflow-v9
-
-Enables NetFlow v9 support (turned on by default)
-
---enable-dprint
-
-Enables the DPRINT message system in VERMONT. Turned off by default
-
---enable-db
-
-Enables support for DBWriter and DBReader (turned off by default)
+$ make install 
 
 
 CONFIGURATION
