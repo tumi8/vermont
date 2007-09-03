@@ -32,45 +32,45 @@ IpfixConfiguration* ipfixConfig = NULL;
 
 int main(int ac, char **dc)
 {
- 	int c, debug_level=MSG_DEFAULT;
- 	char *config_file=NULL;
+	int c, debug_level=MSG_DEFAULT;
+	char *config_file=NULL;
 	uint32_t statInterval = 0;
 	string statFile = "stats.log";
 
 	msg_init();
 
-        /* parse command line */
-	while((c=getopt(ac, dc, "hf:ds:u:")) != -1) {
+	/* parse command line */
+	while ((c=getopt(ac, dc, "hf:ds:u:")) != -1) {
 
-                switch(c) {
+		switch (c) {
 
-                case 'f':
-                        config_file=optarg;
-                        break;
+		case 'f':
+			config_file=optarg;
+			break;
 
-                case 'd':
-                        debug_level++;
-                        break;
+		case 'd':
+			debug_level++;
+			break;
 
-				case 's':
-						statInterval = atoi(optarg);
-						break;
+		case 's':
+			statInterval = atoi(optarg);
+			break;
 
-				case 'u':
-						statFile = optarg;
+		case 'u':
+			statFile = optarg;
 
-                case 'h':
-                default:
-                        /* print usage and quit vermont, if unknow switch */
-                        usage();
-                        exit(1);
-                }
-        }
+		case 'h':
+		default:
+			/* print usage and quit vermont, if unknow switch */
+			usage();
+			exit(1);
+		}
+	}
 	
 	if (config_file == NULL) {
 		msg(MSG_FATAL, "no config file given, but mandatory");
 		usage();
-		return -1;	
+		return -1;
 	}
 
 	if (statInterval>0) {
@@ -83,10 +83,10 @@ int main(int ac, char **dc)
 
 	/* setup verboseness */
 	msg(MSG_DEFAULT, "message debug level is %d", debug_level);
-        msg_setlevel(debug_level);
+	msg_setlevel(debug_level);
 
 	setup_signal(SIGINT, sig_handler);
-	
+
 	ConfigManager manager;
 	manager.parseConfig(string(config_file));
 /*
@@ -105,11 +105,11 @@ int main(int ac, char **dc)
 
 	time_t t = time(NULL);
 	msg(MSG_DIALOG, "up and running at %s", ctime(&t));
-	
+
 	ipfixConfig->pollAggregatorLoop();
-	
+
 	delete ipfixConfig;
-	
+
 	return 0;
 }
 
@@ -118,14 +118,14 @@ int main(int ac, char **dc)
 static void usage()
 {
 	printf(
-			"VERsatile MONitoring Tool - VERMONT\n" \
-			" mandatory:\n" \
-			"    -f <xmlfile>     load config\n" \
-			" optional:\n" \
-			"    -d               increase debug level (specify multiple for even more)\n" \
-			"    -s <interval>    enable statistics in the specified interval in milliseconds\n" \
-			"    -u <file>        output statistics in specified file (default: stats.log)\n" 
-	      );
+		"VERsatile MONitoring Tool - VERMONT\n" \
+		" mandatory:\n" \
+		"    -f <xmlfile>     load config\n" \
+		" optional:\n" \
+		"    -d               increase debug level (specify multiple for even more)\n" \
+		"    -s <interval>    enable statistics in the specified interval in milliseconds\n" \
+		"    -u <file>        output statistics in specified file (default: stats.log)\n"
+	);
 }
 
 
@@ -143,22 +143,22 @@ static int setup_signal(int signal, void (*handler)(int))
 /* just shallow right now */
 static void sig_handler(int x)
 {
-    static bool shutdownInitiated = false;
+	static bool shutdownInitiated = false;
 
-    if (shutdownInitiated) {
-        msg(MSG_DIALOG, "second signal received, shutting down the hard way!");
-        exit(2);
-    }
+	if (shutdownInitiated) {
+		msg(MSG_DIALOG, "second signal received, shutting down the hard way!");
+		exit(2);
+	}
 
-    shutdownInitiated = true;
+	shutdownInitiated = true;
 	msg(MSG_DIALOG, "got signal %d - exiting", x);
 
 	// shut down all semaphores, so that shutdown will not be stalled due to some blocking stuff
 	TimeoutSemaphore::shutdown();
 
-    if (ipfixConfig) {
-        delete ipfixConfig;
-    }
+	if (ipfixConfig) {
+		delete ipfixConfig;
+	}
 
 	// TODO: maybe there are more constructors to be called?
 	exit(2);
