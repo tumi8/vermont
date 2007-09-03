@@ -1,0 +1,40 @@
+<ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
+    <observer id="1">
+	<interface>lo</interface>
+	<pcap_filter>ip</pcap_filter>
+	<next>2</next>
+    </observer>
+
+    <packetQueue id="2">
+        <maxSize>10</maxSize>
+        <next>3</next>
+    </packetQueue>
+
+    <filter id="3">
+        <countBased>
+            <interval>10</interval>
+            <spacing>20</spacing>
+        </countBased>
+	<next>4</next>
+<!--
+        <filterMatch>
+             <infoElementId>
+                 <ieName>destinationIPv4Address</ieName>
+                 <match>10.1.0.0/16</match>
+             </infoElementId>
+             <infoElementId>
+                 <ieName>destinationTransportPort</ieName>
+                 <match>80,443</match>
+             </infoElementId>
+        </filterMatch>
+        <randOutOfN>
+            <population>10</population>
+            <sample>5</sample>
+        </randOutOfN>
+-->
+    </filter>
+
+    <packetPrinter id="4" endPoint="true">
+    </packetPrinter>
+
+</ipfixConfig>

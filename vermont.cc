@@ -25,10 +25,13 @@
 using namespace std;
 
 static void usage();
-static void sig_handler(int x);
+static void sig_INT_handler(int x);
+static void sig_USR1_handler(int x);
+
 static int setup_signal(int signal, void (*handler)(int));
 
 IpfixConfiguration* ipfixConfig = NULL;
+ConfigManager manager;
 
 int main(int ac, char **dc)
 {
@@ -85,9 +88,9 @@ int main(int ac, char **dc)
 	msg(MSG_DEFAULT, "message debug level is %d", debug_level);
 	msg_setlevel(debug_level);
 
-	setup_signal(SIGINT, sig_handler);
-
-	ConfigManager manager;
+	setup_signal(SIGINT, sig_INT_handler);
+	setup_signal(SIGUSR1, sig_USR1_handler);
+	
 	manager.parseConfig(string(config_file));
 /*
 	try {
@@ -101,7 +104,8 @@ int main(int ac, char **dc)
 		return -1;
 	}
 */
-	sleep(1000);
+	unsigned int sleepTime = 1000;
+	while ((sleepTime = sleep(sleepTime)) != 0);
 
 	time_t t = time(NULL);
 	msg(MSG_DIALOG, "up and running at %s", ctime(&t));
@@ -139,9 +143,18 @@ static int setup_signal(int signal, void (*handler)(int))
 	return(sigaction(signal, &sig, NULL));
 }
 
+static void sig_USR1_handler(int x)
+{
+	int errno_save = errno;
+
+	printf("SIGUSR called\n");
+	manager.parseConfig("configs/reconf2.xml");
+
+	errno = errno_save;
+}
 
 /* just shallow right now */
-static void sig_handler(int x)
+static void sig_INT_handler(int x)
 {
 	static bool shutdownInitiated = false;
 
