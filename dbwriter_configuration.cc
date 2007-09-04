@@ -52,7 +52,10 @@ void DbWriterConfiguration::configure()
 		} else if (tagMatches(i, "port")) {
 			portNumber = atoi(getContent(i).c_str());
 		} else if (tagMatches(i, "bufferRecords")) {
-			bufferRecords = atoi(getContent(i).c_str());
+			if(atoi(getContent(i).c_str()) > 0)
+				bufferRecords = atoi(getContent(i).c_str());
+			else
+				msg(MSG_ERROR, "DbWriterConfiguration: bufferRecords is not a positive number. Ignored.");
 		}
 		i = i->next;
 	}

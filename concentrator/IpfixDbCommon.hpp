@@ -25,7 +25,7 @@
  * TABLE_WIDTH  : Length of table name string
  * COL_WIDTH    : Length of the string denotes the name of the single columns
  *                and datatype to store in table
- * INS_WIDTH    : Length of the string for insert statement in depency of count columns
+ * INS_WIDTH    : Length of the string for insert statement depending of count columns
  */
 
 #ifdef DB_SUPPORT_ENABLED
