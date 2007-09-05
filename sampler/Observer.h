@@ -11,8 +11,7 @@
 #ifndef OBSERVER_H
 #define OBSERVER_H
 
-/* default pcap packet capture length */
-#define CAPTURE_LENGTH 128
+
 /*
  the to_ms arg to pcap_open_live() - wait this long until returning from pcap_next()
  some platforms don't support it, though.
@@ -22,11 +21,6 @@
  */
 #define PCAP_TIMEOUT 100
 
-/*
- maximum physical packet length
- you may want to adjust this on a special jumbo-framed GBit network
- */
-#define CAPTURE_PHYSICAL_MAX 1526
 
 #include "Packet.h"
 #include "PacketReceiver.h"

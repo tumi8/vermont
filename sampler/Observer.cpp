@@ -14,6 +14,7 @@
 #include "common/msg.h"
 #include "common/Thread.h"
 #include "common/StatisticsManager.h"
+#include "common/defs.h"
 
 #include <pcap.h>
 #include <unistd.h>
@@ -27,7 +28,7 @@ using namespace std;
 
 
 Observer::Observer(const std::string& interface, InstanceManager<Packet>* manager) : thread(Observer::observerThread), allDevices(NULL),
-	captureDevice(NULL), capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
+	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
 	pcap_promisc(1), ready(false), filter_exp(0), packetManager(manager),
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0), 
 	lastProcessedPackets(0), exitFlag(false)
@@ -35,6 +36,13 @@ Observer::Observer(const std::string& interface, InstanceManager<Packet>* manage
 {
 	captureInterface = (char*)malloc(interface.size() + 1);
 	strcpy(captureInterface, interface.c_str());
+	
+	if(capturelen > PCAP_MAX_CAPTURE_LENGTH) {
+		THROWEXCEPTION("compile-time parameter PCAP_DEFAULT_CAPTURE_LENGTH (%d) exceeds maximum capture length %d, " 
+				"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH!", capturelen, PCAP_DEFAULT_CAPTURE_LENGTH);
+		
+	}
+	
 	StatisticsManager::getInstance().addModule(this);
 };
 
@@ -323,13 +331,11 @@ bool Observer::setCaptureLen(int x)
 {
 	/* we cant change pcap caplen if alredy pcap_open() called */
 	if(ready) {
-		msg(MSG_ERROR, "changing capture len on-the-fly is not supported by pcap");
-		return false;
+		THROWEXCEPTION("changing capture len on-the-fly is not supported by pcap");
 	}
-
-	if(x > CAPTURE_PHYSICAL_MAX) {
-		DPRINTF("Capture length %d exceeds physical MTU %d (with header)\n", x, CAPTURE_PHYSICAL_MAX);
-		return false;
+	if (x>PCAP_MAX_CAPTURE_LENGTH) {
+		THROWEXCEPTION("maximum capture length is limited by constant PCAP_MAX_CAPTURE_LENGTH (%d), "
+				"given value %d is too big", PCAP_MAX_CAPTURE_LENGTH, x);
 	}
 	capturelen=x;
 	return true;
