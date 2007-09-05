@@ -158,8 +158,13 @@ ENDIF (DEBUG)
 ### IP_HEADER_OFFSET
 
 SET(IP_HEADER_OFFSET 14 CACHE STRING "Start position of the IP header in an ethernet frame in Bytes. This value needs to be adjusted according to the network monitored. The default value is 14 for ethernet devices. Other common values are 4 (BSD loop back device) and 18 (Ethernet VLAN)")
-
 ADD_DEFINITIONS(-DIP_HEADER_OFFSET=${IP_HEADER_OFFSET})
+
+
+### PCAP_MAX_CAPTURE_LENGTH
+
+SET(PCAP_MAX_CAPTURE_LENGTH 128 CACHE STRING "Maximum PCAP packet capture length (this amount of bytes is always allocated for each packet, the smaller the better!)")
+ADD_DEFINITIONS(-DPCAP_MAX_CAPTURE_LENGTH=${PCAP_MAX_CAPTURE_LENGTH})
 
 
 ### SUPPORT_NETFLOWV9
