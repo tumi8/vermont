@@ -1,7 +1,7 @@
 #include "PacketFilterCfg.h"
 
 #include "common/msg.h"
-#include <sampler/SystematicSampler.h>
+
 
 #include <cassert>
 
@@ -80,19 +80,20 @@ bool PacketFilterCfg::deriveFrom(PacketFilterCfg* old)
 
 
 PacketCountFilterCfg::PacketCountFilterCfg(XMLElement *e)
-	: Cfg(e)
+	: Cfg(e), instance(NULL)
 {
 }
 
 PacketCountFilterCfg::~PacketCountFilterCfg()
 {
+
 }
 
 Module* PacketCountFilterCfg::getInstance()
 {
-	SystematicSampler* s;
-	s = new SystematicSampler(SYSTEMATIC_SAMPLER_COUNT_BASED,
-			          getInterval(), getSpacing());
+	if (!instance)
+		instance = new SystematicSampler(SYSTEMATIC_SAMPLER_COUNT_BASED,
+						getInterval(), getSpacing());
 
-	return (Module*)s;
+	return (Module*)instance;
 }

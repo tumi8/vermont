@@ -3,6 +3,7 @@
 
 #include <cfg/Cfg.h>
 #include "reconf/FilterModule.h"
+#include <sampler/SystematicSampler.h>
 
 #include <vector>
 
@@ -79,6 +80,9 @@ public:
 
 protected:
 	PacketCountFilterCfg(XMLElement *e);
+
+private:
+	SystematicSampler* instance;
 };
 
 
