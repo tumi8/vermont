@@ -20,32 +20,24 @@
 #include <cstdlib>
 #include <cstring>
 
-Graph::Graph() : reserved(10)
+Graph::Graph() : reserved(30)
 {
 	matrix = new Edge**[reserved];
-	for (unsigned int i = 0; i < reserved; i++) {
+	for (size_t i = 0; i < reserved; i++)
 		matrix[i] = new Edge*[reserved];
-		for (unsigned int j = 0; j < reserved; j++)
-			matrix[i][j] = NULL;
-	}
 }
 
 Graph::~Graph()
 {
+	for (size_t i = 0; i < reserved; i++) {
+		for (size_t j = 0; j < nodes.size(); j++) {
+			if (matrix[i][j] != NULL) // free all edges
+				delete matrix[i][j];
+		}
+		delete [] matrix[i];
+	}
+	delete [] matrix;
 }
-
-/*
-Node* Graph::addNode()
-{
-	if (nodes.size() + 1  >= reserved)
-		throw std::runtime_error("can't handle that many nodes");
-
-	Node *n = new Node(this, nodes.size());
-	nodes.push_back(n);
-
-	return n;
-}
-*/
 
 CfgNode* Graph::addNode(Cfg* cfg)
 {
@@ -56,6 +48,10 @@ CfgNode* Graph::addNode(Cfg* cfg)
 	n->addCfg(cfg);
 	nodes.push_back(n);
 
+	for (size_t i = 0; i < nodes.size(); i++) {
+		matrix[i][nodes.size()-1] = NULL;
+		matrix[nodes.size()-1][i] = NULL;
+	}
 	return n;
 }
 
@@ -67,32 +63,51 @@ CfgNode* Graph::getNode(unsigned int id)
 	return nodes[id];
 }
 
+/* By removing a node have all the node ID's get remaped and you
+ * would have to also remap all the Edges (which store the node ID's internally).
+ * We don't do this here because it shouldn't be neccessary because the callers are only
+ * interested in nodes and not on edges.
+ */
 void Graph::removeNode(Node* n)
 {
-	unsigned int nodes_org_size = nodes.size();
-	unsigned int pos = n->getID();
+	size_t nodes_org_size = nodes.size();
+	size_t pos = n->getID();
 
 	std::vector<CfgNode *>::iterator it = find(nodes.begin(), nodes.end(), n);
 	if (it == nodes.end())
 		throw std::runtime_error("node is not in the graph");
 
+	Edge** oldLine = matrix[pos];
 
-	delete [] matrix[pos];
+	// free all edges on that line
+	for (size_t i = 0; i < nodes.size(); i++) {
+		if (oldLine[i]) {
+			delete oldLine[i];
+			oldLine[i] = NULL;
+		}
+	}
 
 	// remove the node from the array
 	nodes.erase(it);
 
 	// remove line
-	for (unsigned int i = pos; i < nodes_org_size -1; i++) {
+	for (size_t i = pos; i < nodes_org_size -1; i++) {
 		nodes[i]->setID(i);
 		matrix[i] = matrix[i+1];
 	}
 
-	//remove column
-	for (unsigned int i = 0; i < nodes.size(); i++) {
-		for (unsigned int j = pos + 1; j < nodes_org_size; j++) {
-			matrix[i][j-1] = matrix[i][j];
+
+	// we reuse the allocated memory for the line so we reinsert it as the last line
+	matrix[nodes_org_size - 1] = oldLine;
+
+	// free the edges in the removed column
+	for (size_t i = 0; i < nodes.size(); i++) {
+		if (matrix[i][pos] != NULL) {
+			delete matrix[i][pos];
+			matrix[i][pos] = NULL;
 		}
+		memmove(&matrix[i][pos], &matrix[i][pos+1], (nodes_org_size - pos -1) * sizeof(Edge*));
+		matrix[i][nodes_org_size-1] = NULL;
 	}
 }
 
@@ -102,7 +117,6 @@ Edge* Graph::addEdge(Node* n1, Node* n2)
 		 throw std::runtime_error("Nodes are already connected");
 
 	Edge* e = new Edge(this, n1->getID() << 16 | n2->getID());
-	edges.push_back(e);
 	matrix[n1->getID()][n2->getID()] = e;
 	return e;
 }
@@ -119,8 +133,8 @@ void Graph::removeEdge(Node* n1, Node* n2)
 
 void Graph::removeEdge(Edge* e)
 {
-	unsigned int A_pos = e->getID() >> 16;
-	unsigned int B_pos = e->getID() & 0xFFFFU;
+	size_t A_pos = e->getID() >> 16;
+	size_t B_pos = e->getID() & 0xFFFFU;
 
 	if (matrix[A_pos][B_pos] == NULL)
 		throw std::runtime_error("No edge between the nodes");
@@ -132,8 +146,8 @@ void Graph::removeEdge(Edge* e)
 
 Node* Graph::nodeA(Edge* e)
 {
-	unsigned int A_pos = e->getID() >> 16;
-	unsigned int B_pos = e->getID() & 0xFFFFU;
+	size_t A_pos = e->getID() >> 16;
+	size_t B_pos = e->getID() & 0xFFFFU;
 
 	if (matrix[A_pos][B_pos] != e)
 		throw std::runtime_error("edge != edge");
@@ -143,8 +157,8 @@ Node* Graph::nodeA(Edge* e)
 
 Node* Graph::nodeB(Edge* e)
 {
-	unsigned int A_pos = e->getID() >> 16;
-	unsigned int B_pos = e->getID() & 0xFFFFU;
+	size_t A_pos = e->getID() >> 16;
+	size_t B_pos = e->getID() & 0xFFFFU;
 
 	if (matrix[A_pos][B_pos] != e)
 		throw std::runtime_error("edge != edge");
@@ -152,6 +166,7 @@ Node* Graph::nodeB(Edge* e)
 	return nodes[B_pos];
 }
 
+/*
 std::vector<Edge*> Graph::outgoingEdges(Node* n)
 {
 	std::vector<Edge*> outgoing;
@@ -164,13 +179,14 @@ std::vector<Edge*> Graph::outgoingEdges(Node* n)
 	}
 	return outgoing;
 }
+*/
 
 /** return all the nodes we are connected to as a source of the connection */
 std::vector<CfgNode*> Graph::getDestinations(Node* n) {
 	std::vector<CfgNode*> result;
-	unsigned int a = n->getID();
+	size_t a = n->getID();
 
-	for (unsigned int b = 0; b < nodes.size(); b++) {
+	for (size_t b = 0; b < nodes.size(); b++) {
 		if (matrix[a][b] != NULL)
 			result.push_back(nodes[b]);
 	}
@@ -180,9 +196,9 @@ std::vector<CfgNode*> Graph::getDestinations(Node* n) {
 /** return all the nodes we are connected to as a destination of the connection */
 std::vector<CfgNode*> Graph::getSources(Node* n) {
 	std::vector<CfgNode*> result;
-	unsigned int b = n->getID();
+	size_t b = n->getID();
 
-	for (unsigned int a = 0; a < nodes.size(); a++) {
+	for (size_t a = 0; a < nodes.size(); a++) {
 		if (matrix[a][b] != NULL)
 			result.push_back(nodes[a]);
 	}
@@ -212,14 +228,14 @@ std::vector<CfgNode*> Graph::topoSort()
 	topoCnt = cnt = nodes.size() -1;
 
 	// initialise the values
-	for (unsigned int i = 0; i < nodes.size(); i++) {
+	for (size_t i = 0; i < nodes.size(); i++) {
 		visited.push_back(-1);
 		preOrder.push_back(-1);
 		postOrder.push_back(-1);
 		postI.push_back(-1);
 	}
 
-	for (unsigned int i = 0; i < nodes.size(); i++) {
+	for (size_t i = 0; i < nodes.size(); i++) {
 		if (preOrder[i] == -1)
 			depthSearch(nodes[i]);
 	}
@@ -227,10 +243,7 @@ std::vector<CfgNode*> Graph::topoSort()
 	std::vector<CfgNode*> result(nodes.size());
 	for (size_t i = 0; i < nodes.size(); i++) {
 		result[postI[i]] = nodes[i];
-		printf("%2u: %s  ",postI[i], nodes[i]->getCfg()->getName().c_str());
 	}
-	printf("\n");
-
 	return result;
 }
 
@@ -239,18 +252,16 @@ Graph* Graph::accept(Connector* c)
 	return c->connect(this);
 }
 
-
 std::ostream& operator<< (std::ostream& o, const Graph& g)
 {
-	o << " ";
-	for (unsigned int from = 0; from < g.nodes.size(); from++) {
+	for (size_t from = 0; from < g.nodes.size(); from++) {
 		o << " " << g.nodes[from]->getID();
 	}
 	o << std::endl;
 
-	for (unsigned int from = 0; from < g.nodes.size(); from++) {
+	for (size_t from = 0; from < g.nodes.size(); from++) {
 		o << g.nodes[from]->getID();
-		for (unsigned int to = 0; to < g.nodes.size(); to++) {
+		for (size_t to = 0; to < g.nodes.size(); to++) {
 			if (g.matrix[from][to] != NULL)
 				o << " x";
 			else

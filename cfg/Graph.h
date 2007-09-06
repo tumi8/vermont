@@ -73,7 +73,6 @@ public:
 
 private:
 	std::vector<CfgNode*> nodes;
-	std::vector<Edge*> edges;
 
 	unsigned int reserved;
 	Edge*** matrix;
