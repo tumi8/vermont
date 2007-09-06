@@ -9,6 +9,7 @@
 #include "packetselection_configuration.h"
 #include "flowmetering_configuration.h"
 #include "common/msg.h"
+#include "common/PacketInstanceManager.h"
 
 #include <reconf/FilterModule.h>
 
@@ -81,7 +82,7 @@ void ObserverConfiguration::parseParameters(xmlNodePtr p)
 
 void ObserverConfiguration::setUp()
 {
-	observer = new Observer(interface.c_str(), &packetManager);
+	observer = new Observer(interface.c_str(), PacketInstanceManager::getManager());
 	if (captureLength) {
 		if (!observer->setCaptureLen(captureLength)) {
 			msg(MSG_FATAL, "Observer: wrong snaplen specified - using %d", observer->getCaptureLen());

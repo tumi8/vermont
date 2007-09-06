@@ -44,7 +44,6 @@ protected:
 
 private:
 	Observer* observer;
-	InstanceManager<Packet> packetManager;
 
 	// config variables
 	std::string interface;

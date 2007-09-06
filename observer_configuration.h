@@ -42,7 +42,6 @@ private:
 	void parseParameters(xmlNodePtr p);
 
 	Observer* observer;
-	InstanceManager<Packet> packetManager;
 };
 
 #endif
