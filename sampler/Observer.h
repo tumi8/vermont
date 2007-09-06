@@ -41,7 +41,7 @@
 class Observer : public StatisticsModule {
 
 public:
-	Observer(const std::string& interface, InstanceManager<Packet>* manager);
+	Observer(const std::string& interface, InstanceManager<Packet>* manager, bool offline);
 	~Observer();
 
 	void startCapture();
@@ -51,6 +51,8 @@ public:
 	int getCaptureLen();
 	bool setPacketTimeout(int ms);
 	int getPacketTimeout();
+	void replaceOfflineTimestamps();
+	void setOfflineSpeed(float m);
 	int getPcapStats(struct pcap_stat *out);
 	bool prepare(const std::string& filter);
 	static void doLogging(void *arg);
@@ -103,14 +105,23 @@ protected:
 	volatile uint64_t processedPackets;
 	volatile uint64_t lastProcessedPackets;
 
+	// interface we capture traffic on - string
+	char *captureInterface;
+
+	// pcap file we read traffic from - string
+	char *fileName;
+
+	// offline mode parameters
+	bool readFromFile;
+	bool replaceTimestampsFromFile;
+	uint16_t stretchTimeInt; // 1 means no timing change, 0 means that stretchTimes (float) is used
+	float stretchTime;
+
 	static void *observerThread(void *);
 
 public:
 	// is true, when application is to be shut down
 	bool exitFlag;
-
-	// interface we capture traffic on - string
-	char *captureInterface;
 
 	// vector of Queues that will get the packets we pass out
 	std::vector<ConcurrentQueue<Packet*> *> receivers;
