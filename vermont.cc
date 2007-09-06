@@ -35,6 +35,7 @@ ConfigManager manager;
 
 int main(int ac, char **dc)
 {
+
 	int c, debug_level=MSG_DEFAULT;
 	char *config_file=NULL;
 	uint32_t statInterval = 0;
@@ -165,6 +166,8 @@ static void sig_INT_handler(int x)
 
 	shutdownInitiated = true;
 	msg(MSG_DIALOG, "got signal %d - exiting", x);
+
+	manager.shutdown();
 
 	// shut down all semaphores, so that shutdown will not be stalled due to some blocking stuff
 	TimeoutSemaphore::shutdown();

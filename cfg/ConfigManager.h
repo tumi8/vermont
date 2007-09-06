@@ -14,14 +14,18 @@
 class ConfigManager
 {
 public:
-	ConfigManager() : graph(NULL) {	}
+	ConfigManager() : graph(NULL), document(NULL), old_document(NULL) { }
+
 	virtual ~ConfigManager();
 	
 	void parseConfig(std::string fileName);
 
+	void shutdown();
+
 private:
 	Graph* graph;
 	XMLDocument* document;
+	XMLDocument* old_document;
 
 	static Cfg* configModules[];
 };

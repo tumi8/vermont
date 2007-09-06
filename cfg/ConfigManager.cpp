@@ -6,6 +6,11 @@
 #include "cfg/PacketPrinterCfg.h"
 #include "cfg/QueueCfg.h"
 
+#include "common/PacketInstanceManager.h"
+
+#include <cassert>
+
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 Cfg* ConfigManager::configModules[] = {
 	new ObserverCfg(NULL),
@@ -16,23 +21,20 @@ Cfg* ConfigManager::configModules[] = {
 
 ConfigManager::~ConfigManager()
 {
-	if (graph)
+	if (graph) {
+		vector<CfgNode*> nodes = graph->getNodes();
+		for (size_t i = 0; i < nodes.size(); i++) {
+			delete nodes[i]->getCfg();
+		}
 		delete graph;
+	}
+
+	PacketInstanceManager::destroyManager();
+
+	for (size_t i = 0; i < ARRAY_SIZE(configModules); i++) {
+		delete configModules[i];
+	}
 }
-
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
-
-
-/*void addNodeAndMapping(Graph* g, Cfg* cfg)
-{
-
-	std::map<int, std::pair<Node*, Cfg*> >::iterator it = m.find(cfg->getID());
-	if (it != m.end())
-		THROWEXCEPTION("Duplicate node id\n");
-
-	m[cfg->getID()] = NodeCfgPair(n, cfg);
-}
-*/
 
 void ConfigManager::parseConfig(std::string fileName)
 {
@@ -41,7 +43,7 @@ void ConfigManager::parseConfig(std::string fileName)
 
 	graph = new Graph();
 
-
+	old_document = document;
 	document = XMLDocument::parse_file(fileName);
 	XMLElement* root = document->getRootNode();
 
@@ -88,10 +90,41 @@ void ConfigManager::parseConfig(std::string fileName)
 		ReConnector reconnector(oldGraph);
 		graph->accept(&reconnector);
 	}
+
+	if (old_document)
+		delete old_document;
 }
 
-template <class T>
-static void parseSection(ConfigManager& manager, XMLElement* e)
+void ConfigManager::shutdown()
 {
-	T* cfg = new T(e);
+	std::vector<CfgNode*> topoNodes = graph->topoSort();
+
+	for (size_t i = 0; i < topoNodes.size(); i++) {
+		CfgNode* n = topoNodes[i];
+
+		Cfg* cfg = n->getCfg();
+
+		// shutdown the thread
+		cfg->getInstance()->shutdown();
+
+		// disconnect the module from its sources ..
+		vector<CfgNode*> sources = graph->getSources(n);
+		for (size_t k = 0; k < sources.size(); k++) {
+			sources[k]->getCfg()->getInstance()->disconnect();
+		}
+	}
+
+	// free memory
+	// FIXME: this is racy because we could delete a destination which
+	//        is sill used as the thread hasn't shutdown yet
+	for (size_t i = 0; i < topoNodes.size(); i++) {
+		CfgNode* n = topoNodes[i];
+
+		DPRINTF("deleteting %s ..", n->getCfg()->getName().c_str());
+		delete n->getCfg()->getInstance();
+		delete n->getCfg();
+
+		graph->removeNode(n);
+		delete n;
+	}
 }
