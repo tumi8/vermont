@@ -25,7 +25,11 @@ public:
 		thread.run(this); 
 	}
 
-	virtual ~ConnectionQueue() { exitFlag = true; }
+	virtual ~ConnectionQueue()
+	{
+		shutdown();
+		thread.join();
+	}
 
 	virtual void receive(T* packet)
 	{
