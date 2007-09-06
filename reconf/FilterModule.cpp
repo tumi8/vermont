@@ -4,6 +4,15 @@ FilterModule::FilterModule()
 {
 }
 
+FilterModule::~FilterModule()
+{
+	vector<PacketProcessor *>::iterator it;
+
+	// delete allpacketProcessors
+	for (it = processors.begin(); it != processors.end(); ++it)
+		delete *it;
+}
+
 /*
  * this is the main filter function: each packet is run thru a series of 
  * PacketProcessors and then pushed to the next PacketSource

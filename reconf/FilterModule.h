@@ -16,6 +16,7 @@ class FilterModule
 {
 public:
 	FilterModule();
+	virtual ~FilterModule();
 
 	virtual void receive(Packet *);
 
