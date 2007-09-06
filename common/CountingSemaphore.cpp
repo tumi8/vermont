@@ -1,6 +1,8 @@
 #include "CountingSemaphore.h"
 #include "msg.h"
+#include "Time.h"
 
+#include <errno.h>
 #include <pthread.h>
 
 CountingSemaphore::CountingSemaphore (unsigned int startvalue)
@@ -14,6 +16,7 @@ CountingSemaphore::CountingSemaphore (unsigned int startvalue)
 		return;
 	}
 	val = startvalue;
+	exitFlag = false;
 }
 
 CountingSemaphore::~CountingSemaphore () {
@@ -27,19 +30,40 @@ CountingSemaphore::~CountingSemaphore () {
 	}
 }
 
-void CountingSemaphore::dec (unsigned int dec) 
+bool CountingSemaphore::dec (unsigned int dec, long timeout_ms)
 {
 	if (pthread_mutex_lock (&mutex) != 0)
 		THROWEXCEPTION("lock of mutex failed");
 
-	while (val < dec) {
-		if (pthread_cond_wait (&cond, &mutex) != 0)
-			THROWEXCEPTION("condition wait failed");
+	if (timeout_ms <= 0) {
+		while (val < dec) {
+			if (pthread_cond_wait (&cond, &mutex) != 0)
+				THROWEXCEPTION("condition wait failed");
+		}
+	} else {
+		struct timespec timeout;
+
+		while (val < dec) {
+			int retval;
+			do {
+				addToCurTime(&timeout, timeout_ms);
+
+				retval = pthread_cond_timedwait (&cond, &mutex, &timeout);
+				if (retval != 0 && errno == ETIMEDOUT) {
+					if (exitFlag)
+						return false; // FIXME: is the lock here held?
+					addToCurTime(&timeout, timeout_ms);
+				} else
+					THROWEXCEPTION("condition wait failed");
+			} while (retval != 0);
+		}
 	}
 	val -= dec;
 
 	if (pthread_mutex_unlock (&mutex) != 0)
 		THROWEXCEPTION("unlock of mutex failed");
+
+	return true;
 }
 
 void CountingSemaphore::inc (unsigned int inc) {
