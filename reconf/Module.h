@@ -9,9 +9,15 @@
 
 class Module : public virtual BaseSource, public virtual BaseDestination {
 public:	
-	virtual void connect(Module* m) {
-		this->connectTo(m);
+	Module() : exitFlag(false) { };
+
+	void shutdown()
+	{
+		exitFlag = true;
 	}
+
+protected:
+	bool exitFlag;
 };
 
 #endif
