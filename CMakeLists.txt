@@ -80,10 +80,11 @@ INSTALL(FILES ipfix-config-schema.xsd
 	DESTINATION share/vermont
 )
 
-INSTALL(DIRECTORY configs/
-	DESTINATION share/vermont/configs
-	PATTERN ".svn" EXCLUDE
-)
+# INSTALL(DIRECTORY requires cmake 2.5
+#INSTALL(DIRECTORY configs/
+#	DESTINATION share/vermont/configs
+#	PATTERN ".svn" EXCLUDE
+#)
 
 
 ### doxygen

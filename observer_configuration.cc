@@ -21,7 +21,8 @@
 
 
 ObserverConfiguration::ObserverConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
-	: Configuration(document, startPoint), observationDomain(0), captureLength(0), observer(NULL)
+	: Configuration(document, startPoint), observationDomain(0), offlinemode(false), replaceOfflineTimestamps(false),
+       	offlineSpeed(1.0), captureLength(0), observer(NULL)
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
 	if (NULL == idString) {
@@ -39,7 +40,7 @@ ObserverConfiguration::~ObserverConfiguration()
 
 void ObserverConfiguration::configure()
 {
-	msg(MSG_INFO, "ObserverConfiguration: Start reading observationProcess section");
+	msg(MSG_INFO, "ObserverConfiguration: Start reading observationPoint section");
 	xmlNodePtr i = start->xmlChildrenNode;
 	while (NULL != i) {
 		if (tagMatches(i, "observationDomainId")) {
@@ -59,28 +60,43 @@ void ObserverConfiguration::configure()
 	}
 
 	setUp();
-	msg(MSG_INFO, "ObserverConfiguration: Successfully parsed observationProcess section");
+	msg(MSG_INFO, "ObserverConfiguration: Successfully parsed observationPoint section");
 }
 
 void ObserverConfiguration::parseParameters(xmlNodePtr p)
 {
+	bool interfaceExists = false;
 	xmlNodePtr i = p->xmlChildrenNode;
 	while (NULL != i) {
-		if (tagMatches(i, "interface")) {
+		if (tagMatches(i, "interface") && !offlinemode) {
+			interfaceExists = true;
 			interface = getContent(i);
 		} else if (tagMatches(i, "pcap_filter")) {
 			pcapFilter = getContent(i);
 		} else if (tagMatches(i, "capture_len")) {
 			captureLength = atoi(getContent(i).c_str());
+		} else if (tagMatches(i, "filename")) {
+			interface = getContent(i);
+			offlinemode = true;
+		} else if (tagMatches(i, "replace_timestamps") && (getContent(i) != "false")) {
+			replaceOfflineTimestamps = true;
+		} else if (tagMatches(i, "speed_multiplier")) {
+			offlineSpeed = (float)(atof(getContent(i).c_str()));
 		}
 		i = i->next;
 	}
+	if (interfaceExists && offlinemode)
+	    msg(MSG_INFO, "ObserverConfiguration: interface and filename in observationPoint/parameter section. Interface is ignored.");
+	if (replaceOfflineTimestamps && !offlinemode)
+	    msg(MSG_INFO, "ObserverConfiguration: replace_timestamps without filename in observationPoint/parameter is ignored.");
+	if ((offlineSpeed != 1.0) && !offlinemode)
+	    msg(MSG_INFO, "ObserverConfiguration: speed_multiplier without filename in observationPoint/parameter is ignored.");
 }
 
 
 void ObserverConfiguration::setUp()
 {
-	observer = new Observer(interface.c_str(), &packetManager);
+	observer = new Observer(interface.c_str(), &packetManager, offlinemode);
 	if (captureLength) {
 		if (!observer->setCaptureLen(captureLength)) {
 			msg(MSG_FATAL, "Observer: wrong snaplen specified - using %d", observer->getCaptureLen());
@@ -91,7 +107,12 @@ void ObserverConfiguration::setUp()
 	    // we need capture length in connect()
 	    captureLength = observer->getCaptureLen();
 	}
-	
+	if (offlinemode) {
+	    if(replaceOfflineTimestamps)
+		observer->replaceOfflineTimestamps();
+	    if(offlineSpeed != 1.0)
+		observer->setOfflineSpeed(offlineSpeed);
+	}
 	
 	//pcapChar = new char[pcapFilter.size() + 1];
 	//strncpy(pcapChar, pcapFilter.c_str(), pcapFilter.size() + 1);	

@@ -34,8 +34,11 @@ protected:
 
 private:
 	unsigned int observationDomain;
+	bool offlinemode;
+	bool replaceOfflineTimestamps;
+	float offlineSpeed;
 	std::string type;
-	std::string interface;
+	std::string interface;    // used for filename in offline mode
 	std::string pcapFilter;
 	int captureLength;
 
