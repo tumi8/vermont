@@ -20,7 +20,7 @@ class ConnectionQueue
 {
 public:
 	ConnectionQueue(int maxEntries = ConcurrentQueue<T*>::DEFAULT_QUEUE_SIZE)
-		: queue(maxEntries), thread(process), exitFlag(false)
+		: queue(maxEntries), thread(process)
 	{
 		thread.run(this); 
 	}
@@ -40,8 +40,12 @@ private:
 		T* packet = NULL;
 
 		while(!self->exitFlag) {
-			self->queue.pop(&packet);
-			self->send(packet);
+			if (!self->queue.pop(2000, &packet)) {
+				msg(MSG_FATAL, "pop failed -> timeout");
+				continue;
+			}
+			if (!self->send(packet))
+				break;
 		}
 		
 		msg(MSG_INFO, "terminating queue thread");
@@ -51,7 +55,6 @@ private:
 	ConcurrentQueue<T*> queue;
 	Thread thread;
 
-	bool exitFlag;
 };
 
 #endif

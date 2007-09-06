@@ -29,7 +29,7 @@ void FilterModule::receive(Packet* p)
 	if (keepPacket) {
 		// push packet to the receiver
 		DPRINTF("FilterModule: pushing packet %d", p);
-		send(p);
+		while (!exitFlag && !send(p));
 		return;
 	}
 

@@ -70,22 +70,27 @@ public:
 		mutex.unlock();
 	}
 
-	inline void sleepUntilConnected()
+	inline bool sleepUntilConnected()
 	{
 		// A counting semaphore is needed here,because otherwise there could
 		// be a deadlock on disconnect and this method (if it is called inside a thread)
-		connected.dec(2);
+		bool retval = connected.dec(2);
 		connected.inc(2);
+		return retval;
 	}
 	
-	inline void send(T* t)
+	inline bool send(T* t)
 	{
 		Destination<T>* d;
 		while ((d = dest) == NULL) {
-			sleepUntilConnected();
+			if (!sleepUntilConnected()) {
+				DPRINTF("Can't wait for connection, perhaps the program is shutting down?");
+				return false;
+			}
 		}
 		
 		d->receive(t);
+		return true;
 	}
 	
 protected:

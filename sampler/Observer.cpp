@@ -150,10 +150,13 @@ void *Observer::observerThread(void *arg)
 		obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
 		obs->processedPackets++;
 
-		if (!obs->exitFlag) {
+
+		while (!obs->exitFlag) {
 			DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
-			obs->send(p);
-			DPRINTFL(MSG_VDEBUG, "packet pushed");
+			if (obs->send(p)) {
+				DPRINTFL(MSG_VDEBUG, "packet pushed");
+				break;
+			}
 		}
 	}
 
