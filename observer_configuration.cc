@@ -139,6 +139,6 @@ void ObserverConfiguration::stopSystem()
 		DPRINTF("stopping non-initialized Observer");
 		return;
 	}
-	observer->terminateCapture();
+	observer->shutdown();
 }
 

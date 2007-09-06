@@ -54,7 +54,6 @@ public:
 	~Observer();
 
 	void startCapture();
-	void terminateCapture();
 	bool setCaptureLen(int x);
 	int getCaptureLen();
 	bool setPacketTimeout(int ms);
@@ -114,9 +113,6 @@ protected:
 	static void *observerThread(void *);
 
 public:
-	// is true, when application is to be shut down
-	bool exitFlag;
-
 	// interface we capture traffic on - string
 	char *captureInterface;
 };

@@ -30,7 +30,7 @@ Observer::Observer(const std::string& interface, InstanceManager<Packet>* manage
 	captureDevice(NULL), capturelen(CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
 	pcap_promisc(1), ready(false), filter_exp(0), packetManager(manager),
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0), 
-	lastProcessedPackets(0), exitFlag(false)
+	lastProcessedPackets(0)
 
 {
 	captureInterface = (char*)malloc(interface.size() + 1);
@@ -44,7 +44,7 @@ Observer::~Observer()
 
 	StatisticsManager::getInstance().removeModule(this);
 
-    terminateCapture();
+    shutdown();
 
     /* collect and output statistics */
     pcap_stat pstats;
@@ -298,11 +298,6 @@ void Observer::startCapture()
 		msg(MSG_DEBUG, "now starting capturing thread");
 		thread.run(this);
 	}
-};
-
-void Observer::terminateCapture()
-{
-	exitFlag = true;
 };
 
 /* you cannot change the caplen of an already running observer */
