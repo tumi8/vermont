@@ -295,7 +295,7 @@ void *Observer::observerThread(void *arg)
 			p->init((char*)pcapData, 
 				// in constrast to live capturing, the data length is not limited
 				// to any snap length when reading from a pcap file
-				(packetHeader.caplen<PCAP_DEFAULT_CAPTURE_LENGTH) ? packetHeader.caplen : PCAP_DEFAULT_CAPTURE_LENGTH, 
+				(packetHeader.caplen<obs->capturelen) ? packetHeader.caplen : obs->capturelen, 
 				packetHeader.ts);
 
 			obs->receivedBytes += packetHeader.caplen;
