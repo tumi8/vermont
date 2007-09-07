@@ -80,7 +80,7 @@ int main(int ac, char **dc)
 
 
 	/* setup verboseness */
-	msg(MSG_DEFAULT, "message debug level is %d", debug_level);
+	msg(MSG_DIALOG, "Message debug level is %d", debug_level);
         msg_setlevel(debug_level);
 
 	setup_signal(SIGINT, sig_handler);

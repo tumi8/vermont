@@ -26,6 +26,7 @@
  * COL_WIDTH    : Length of the string denotes the name of the single columns
  *                and datatype to store in table
  * INS_WIDTH    : Length of the string for insert statement depending of count columns
+ * EXPORTER_WIDTH    : Length of the string for operations on exporter table
  */
 
 #ifdef DB_SUPPORT_ENABLED
@@ -34,5 +35,6 @@
 #define TABLE_WIDTH      16
 #define COL_WIDTH        40
 #define INS_WIDTH        25
+#define EXPORTER_WIDTH   80
 
 #endif
