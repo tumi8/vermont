@@ -102,30 +102,30 @@ void MeteringConfiguration::connect(Configuration* c)
 	ExporterConfiguration* exporter = dynamic_cast<ExporterConfiguration*>(c);
 	if (exporter) {
 		if (packetReporting) {
-			msg(MSG_DEBUG, "Connecting packetReporting to exporter");
+			msg(MSG_DEBUG, "MeteringConfiguration: Connecting packetReporting to exporter");
 			// rough estimation of the maximum record length including variable length fields
 			uint16_t recordsPerPacket = packetReporting->recordLength + packetReporting->recordVLFields*captureLength;
-			msg(MSG_INFO, "Estimated record length is %u", recordsPerPacket);	
+			msg(MSG_INFO, "MeteringConfiguration: Estimated record length is %u", recordsPerPacket);	
 			exporter->createExporterSink(packetReporting->t, observationDomainId, recordsPerPacket);
 			packetSelection->filter->setReceiver(exporter->getExporterSink());
 		}
 		if (flowMetering) {
 			if (packetSelection) {
-				msg(MSG_DEBUG, "Setting up HookingFilter for Standard Aggregator");
+				msg(MSG_DEBUG, "MeteringConfiguration: Setting up HookingFilter for Standard Aggregator");
 				HookingFilter* h = new HookingFilter(flowMetering->ipfixAggregator);
 				packetSelection->filter->addProcessor(h);
 			}
- 			msg(MSG_DEBUG, "Setting up IpfixSender");
+ 			msg(MSG_DEBUG, "MeteringConfiguration: Setting up IpfixSender");
  			exporter->createIpfixSender(observationDomainId);
  			flowMetering->ipfixAggregator->addFlowSink(exporter->getIpfixSender());
 		}
 		if (expressflowMetering) {
 			if (packetSelection) {
-				msg(MSG_DEBUG, "Setting up HookingFilter for Express Aggregator.");
+				msg(MSG_DEBUG, "MeteringConfiguration: Setting up HookingFilter for Express Aggregator.");
 				ExpressHookingFilter* h = new ExpressHookingFilter(expressflowMetering->ipfixAggregator);
 				packetSelection->filter->addProcessor(h);
 			}
- 			msg(MSG_DEBUG, "Setting up IpfixSender for Express Aggregator");
+ 			msg(MSG_DEBUG, "MeteringConfiguration: Setting up IpfixSender for Express Aggregator");
  			exporter->createIpfixSender(observationDomainId);
  			expressflowMetering->ipfixAggregator->addFlowSink(exporter->getIpfixSender());
 		}
@@ -138,12 +138,12 @@ void MeteringConfiguration::connect(Configuration* c)
 		
 		if (metering->flowMetering) {
 			HookingFilter* h = new HookingFilter(metering->flowMetering->ipfixAggregator);
-			msg(MSG_INFO, "Added HookingFilter");
+			msg(MSG_INFO, "MeteringConfiguration: Added HookingFilter");
 			packetSelection->filter->addProcessor(h);
 		}
 		if (metering->expressflowMetering) {
 			ExpressHookingFilter* h = new ExpressHookingFilter(metering->expressflowMetering->ipfixAggregator);
-			msg(MSG_INFO, "Added HookingFilter for Express Aggregator");
+			msg(MSG_INFO, "MeteringConfiguration: Added HookingFilter for Express Aggregator");
 			packetSelection->filter->addProcessor(h);
 		}
 		if (metering->packetReporting) {
@@ -167,12 +167,12 @@ void MeteringConfiguration::connect(Configuration* c)
 
                 dbWriterConfiguration->setObservationDomainId(observationDomainId);
 		if (packetSelection) {
-			msg(MSG_DEBUG, "Setting up HookingFilter");
+			msg(MSG_DEBUG, "MeteringConfiguration: Setting up HookingFilter");
 			HookingFilter* h = new HookingFilter(flowMetering->ipfixAggregator);
 			packetSelection->filter->addProcessor(h);
 		}
 
-		msg(MSG_DEBUG, "Adding aggregator call backs");
+		msg(MSG_DEBUG, "MeteringConfiguration: Adding aggregator call backs");
 		flowMetering->ipfixAggregator->addFlowSink(dbWriterConfiguration->getDbWriter());
 		return;
 	}

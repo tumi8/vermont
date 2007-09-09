@@ -104,27 +104,27 @@ void ExporterConfiguration::setUp()
 
 void ExporterConfiguration::createExporterSink(Template* t, uint16_t observationDomainId, uint16_t recordLength)
 {
-	msg(MSG_INFO, "Creating exporter sink");
+	msg(MSG_INFO, "ExporterConfiguration: Creating exporter sink");
 	exporterSink = new ExporterSink(t, observationDomainId);
 	if(recordLength || maxPacketSize)
 	{
 	    // IPFIX packet header: 16 bytes, set header: 4 bytes
 	    int recordsPerPacket = (maxPacketSize - 16 - 4) / recordLength;
 	    if(recordsPerPacket <= 0) recordsPerPacket = 1;
-	    msg(MSG_INFO, "Set maximum records per packet to %d", recordsPerPacket);
+	    msg(MSG_INFO, "ExporterConfiguration: Set maximum records per packet to %d", recordsPerPacket);
 	    exporterSink->setMaxRecords(recordsPerPacket);
 	}
 	if(exportDelay)
 	{
-	    msg(MSG_INFO, "Set maximum export timeout to %d", exportDelay);
+	    msg(MSG_INFO, "ExporterConfiguration: Set maximum export timeout to %d", exportDelay);
 	    exporterSink->setExportTimeout(exportDelay);
 	}
 	if(templateRefreshTime || templateRefreshRate)
 	{
-	    msg(MSG_ERROR, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
+	    msg(MSG_ERROR, "ExporterConfiguration: Configuration of templateRefreshRate/Time not yet supported.");
 	}
 	for (unsigned i = 0; i != collectors.size(); ++i) {
-		msg(MSG_DEBUG, "Exporter: adding collector %s:%d to ExporterSink",
+		msg(MSG_DEBUG, "ExporterConfiguration: adding collector %s:%d to ExporterSink",
 		    collectors[i]->ipAddress.c_str(),
 		    collectors[i]->port);
 		exporterSink->addCollector(collectors[i]->ipAddress.c_str(),
@@ -136,11 +136,11 @@ void ExporterConfiguration::createExporterSink(Template* t, uint16_t observation
 void ExporterConfiguration::createIpfixSender(uint16_t observationDomainId)
 {
 	if (collectors.empty()) {
-		msg(MSG_INFO, "Aggregator won't export it's result to any collector");
+		msg(MSG_INFO, "ExporterConfiguration: Aggregator won't export it's result to any collector");
 		return;
 	}
 
-	msg(MSG_DEBUG, "Exporter: Creating IpfixSender");
+	msg(MSG_DEBUG, "ExporterConfiguration: Creating IpfixSender");
 	ipfixSender = new IpfixSender(observationDomainId,
 					  collectors[0]->ipAddress.c_str(),
 					  collectors[0]->port);
@@ -150,15 +150,15 @@ void ExporterConfiguration::createIpfixSender(uint16_t observationDomainId)
 
 	if(maxPacketSize || exportDelay)
 	{
-	    msg(MSG_ERROR, "Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.");
+	    msg(MSG_ERROR, "ExporterConfiguration: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.");
 	}
 	if(templateRefreshTime || templateRefreshRate)
 	{
-	    msg(MSG_ERROR, "Exporter: Configuration of templateRefreshRate/Time not yet supported..");
+	    msg(MSG_ERROR, "ExporterConfiguration: Configuration of templateRefreshRate/Time not yet supported..");
 	}
 	for (unsigned i = 1; i != collectors.size(); ++i) {
 		if (ipfixSender->addCollector(collectors[i]->ipAddress.c_str(), collectors[i]->port)) {
-			msg(MSG_ERROR, "Config: error adding collector %s:%d to IpfixSender",
+			msg(MSG_ERROR, "ExporterConfiguration: error adding collector %s:%d to IpfixSender",
 			    collectors[i]->ipAddress.c_str(), collectors[i]->port);
 		}
 	}

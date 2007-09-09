@@ -239,7 +239,7 @@ void IpfixConfiguration::pollAggregatorLoop()
 	if (poll_interval == 0 || aggregators.empty()) {
 		while (pause() == -1 and errno == EINTR);
 	} else {
-	        msg(MSG_INFO, "Polling aggregator each %u msec", poll_interval);
+	        msg(MSG_INFO, "IpfixConfiguration: Polling aggregator each %u msec", poll_interval);
 		while (!stop) {
 			// restart nanosleep with the remaining sleep time
 			// if we got interrupted by a signal

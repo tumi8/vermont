@@ -50,19 +50,19 @@ void PacketReportingConfiguration::configure()
 
 void PacketReportingConfiguration::setUp()
 {
-	msg(MSG_DEBUG, "Creating template");
+	msg(MSG_DEBUG, "PacketReportingConfiguration: Creating template");
 	t = new Template(templateId);
 	
 	for (unsigned i = 0; i != exportedFields.size(); ++i) {
 		int tmpId = exportedFields[i]->getId();
 		if (!ipfix_id_rangecheck(tmpId)) {
-			msg(MSG_ERROR, "Template: ignoring template field %s -> %d - rangecheck not ok", exportedFields[i]->getName().c_str(), tmpId);
+			msg(MSG_ERROR, "PacketReportingConfiguration: ignoring template field %s -> %d - rangecheck not ok", exportedFields[i]->getName().c_str(), tmpId);
 			continue;
 		}
 		
 		const ipfix_identifier *id;
 		if( (tmpId == -1) || ((id=ipfix_id_lookup(tmpId)) == NULL) ) {
-			msg(MSG_ERROR, "Template: ignoring unknown template field %s", exportedFields[i]->getName().c_str());
+			msg(MSG_ERROR, "PacketReportingConfiguration: ignoring unknown template field %s", exportedFields[i]->getName().c_str());
 			continue;
 		}
 		
@@ -73,15 +73,15 @@ void PacketReportingConfiguration::setUp()
 			if ((fieldLength == 0) || (fieldLength == 65535)) {
 				fieldLength = exportedFields[i]->getLength();
 			} else {
-				msg(MSG_ERROR, "Template: this is not a variable length field, ignoring optional length");
+				msg(MSG_ERROR, "PacketReportingConfiguration: %s (%d) is not a variable length field, ignoring optional length", exportedFields[i]->getName().c_str(), id->id);
 			}
 		}
 		if (fieldLength == 65535) recordVLFields++;
 		else recordLength += fieldLength;
-		msg(MSG_INFO, "Template: adding %s -> ID %d with size %d", exportedFields[i]->getName().c_str(), id->id, fieldLength);
+		msg(MSG_INFO, "PacketReportingConfiguration: adding Template field %s -> ID %d with size %d", exportedFields[i]->getName().c_str(), id->id, fieldLength);
 		t->addField((uint16_t)id->id, fieldLength);
 	}
-	msg(MSG_DEBUG, "Template: got %d fields, record length is %u+%u*capture_len", t->getFieldCount(), recordLength,recordVLFields);
+	msg(MSG_DEBUG, "PacketReportingConfiguration: got Template with %d fields, record length is %u+%u*capture_len", t->getFieldCount(), recordLength,recordVLFields);
 }
 
 void PacketReportingConfiguration::connect(Configuration* c)

@@ -37,7 +37,7 @@ void VermontMainConfiguration::configure()
 void VermontMainConfiguration::startSystem()
 {
 	if (logfile.empty()) {
-		msg(MSG_DEBUG, "Main: logging subsystem is off");
+		msg(MSG_DEBUG, "MainConfiguration: logging subsystem is off");
 		return;
 	}
 
@@ -53,7 +53,7 @@ void VermontMainConfiguration::startSystem()
 	*/
         setvbuf(FD, (char *)NULL, _IOLBF, 0);
 
-	msg(MSG_INFO, "Logging: using %s as statistics log", logfile.c_str());
+	msg(MSG_INFO, "MainConfiguration: Logging using %s as statistics log", logfile.c_str());
 
 	/*
 	  set up the logger thread
