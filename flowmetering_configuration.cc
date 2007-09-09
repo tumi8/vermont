@@ -92,7 +92,7 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 				}
 				if (ie.getIeName() != "") {
 					if (0 == (ruleField->type.id = string2typeid(ie.getIeName().c_str()))) {
-						msg(MSG_ERROR, "Bad field type \"%s\"", ie.getIeName().c_str());
+						msg(MSG_ERROR, "FlowMeteringConfiguration: Bad field type \"%s\"", ie.getIeName().c_str());
 						throw std::exception();
 					}
 				} else {
@@ -102,7 +102,7 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 					ruleField->type.length = atoi(ie.getIeLength().c_str());
 				} else {
 					if (0 == (ruleField->type.length = string2typelength(ie.getIeName().c_str()))) {
-						msg(MSG_ERROR, "Bad field type \"%s\", l.%s", ie.getIeName().c_str(), ie.getIeLength().c_str());
+						msg(MSG_ERROR, "FlowMeteringConfiguration: Bad field type \"%s\", l.%s", ie.getIeName().c_str(), ie.getIeLength().c_str());
 						throw std::exception();
 					}
 				}
@@ -126,14 +126,14 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 					switch (ruleField->type.id) {
 					case IPFIX_TYPEID_protocolIdentifier:
 						if (parseProtoPattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-							msg(MSG_ERROR, "Bad protocol pattern \"%s\"", tmp);
+							msg(MSG_ERROR, "FlowMeteringConfiguration: Bad protocol pattern \"%s\"", tmp);
 							throw std::exception();
 						}
 						break;
 					case IPFIX_TYPEID_sourceIPv4Address:
 					case IPFIX_TYPEID_destinationIPv4Address:
 						if (parseIPv4Pattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-							msg(MSG_ERROR, "Bad IPv4 pattern \"%s\"", tmp);
+							msg(MSG_ERROR, "FlowMeteringConfiguration: Bad IPv4 pattern \"%s\"", tmp);
 							throw std::exception();
 						}
 						break;
@@ -144,19 +144,19 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 					case IPFIX_TYPEID_udpDestinationPort:
 					case IPFIX_TYPEID_tcpDestinationPort:
 						if (parsePortPattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-							msg(MSG_ERROR, "Bad PortRanges pattern \"%s\"", tmp);
+							msg(MSG_ERROR, "FlowMeteringConfiguration: Bad PortRanges pattern \"%s\"", tmp);
 							throw std::exception();
 						}
 						break;
 					case IPFIX_TYPEID_tcpControlBits:
 						if (parseTcpFlags(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-							msg(MSG_ERROR, "Bad TCP flags pattern \"%s\"", tmp);
+							msg(MSG_ERROR, "FlowMeteringConfiguration: Bad TCP flags pattern \"%s\"", tmp);
 							throw std::exception();
 						}
 						break;
 					
 					default:
-						msg(MSG_ERROR, "Fields of type \"%s\" cannot be matched against a pattern %s", "", tmp);
+						msg(MSG_ERROR, "FlowMeteringConfiguration: Fields of type \"%s\" cannot be matched against a pattern %s", "", tmp);
 						throw std::exception();
 						break;
 					}
@@ -169,7 +169,7 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 				ruleField->modifier = Rule::Field::AGGREGATE;
 				if (ie.getIeName() != "") {
 					if (0 == (ruleField->type.id = string2typeid(ie.getIeName().c_str()))) {
-						msg(MSG_ERROR, "Bad field type \"%s\"", ie.getIeName().c_str());
+						msg(MSG_ERROR, "FlowMeteringConfiguration: Bad field type \"%s\"", ie.getIeName().c_str());
 						throw std::exception();
 					}
 				} else {
@@ -179,7 +179,7 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 					ruleField->type.length = atoi(ie.getIeLength().c_str());
 				} else {
 					if (0 == (ruleField->type.length = string2typelength(ie.getIeName().c_str()))) {
-						msg(MSG_ERROR, "Bad field type \"%s\", l.%s", ie.getIeName().c_str(), ie.getIeLength().c_str());
+						msg(MSG_ERROR, "FlowMeteringConfiguration: Bad field type \"%s\", l.%s", ie.getIeName().c_str(), ie.getIeLength().c_str());
 						throw std::exception();
 					}
 				}
@@ -190,7 +190,7 @@ Rule* FlowMeteringConfiguration::readRule(xmlNodePtr p) {
 		}
 		i = i->next;
 	}
-	msg(MSG_INFO, "Got aggregation rule: ");
+	msg(MSG_INFO, "FlowMeteringConfiguration: Got aggregation rule: ");
 	rule->print();
 	return rule;
 }
@@ -203,7 +203,7 @@ void FlowMeteringConfiguration::connect(Configuration*)
 void FlowMeteringConfiguration::startSystem()
 {
 	if (running) return;
-	msg(MSG_DEBUG, "Starting aggregator.");
+	msg(MSG_DEBUG, "FlowMeteringConfiguration: Starting aggregator.");
 	ipfixAggregator->start();
 	ipfixAggregator->runSink();
 	running = true;
@@ -212,7 +212,7 @@ void FlowMeteringConfiguration::startSystem()
 void FlowMeteringConfiguration::stopSystem()
 {
 	if (!running) return;
-	msg(MSG_DEBUG, "Stopping aggregator");
+	msg(MSG_DEBUG, "FlowMeteringConfiguration: Stopping aggregator");
 	ipfixAggregator->terminateSink();
 	ipfixAggregator->stop();
 	running = false;

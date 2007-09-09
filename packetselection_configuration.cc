@@ -43,7 +43,7 @@ void PacketSelectionConfiguration::configure()
 			xmlNodePtr j = i->xmlChildrenNode;
 			int interval = 0;
 			int spacing = 0;
-			msg(MSG_INFO, "packetSelection: Creating count based sampler");
+			msg(MSG_INFO, "PacketSelectionConfiguration: Creating count based sampler");
 			while (NULL != j) { 
 				if (tagMatches(j, "interval")) {
 					interval = atoi(getContent(j).c_str());
@@ -58,7 +58,7 @@ void PacketSelectionConfiguration::configure()
 			xmlNodePtr j = i->xmlChildrenNode;
 			int interval = 0;
 			int spacing = 0;
-			msg(MSG_INFO, "packetSelection: Creating time based sampler");
+			msg(MSG_INFO, "PacketSelectionConfiguration: Creating time based sampler");
 			while (NULL != j) {
 				if (tagMatches(j, "interval")) {
 					interval = atoi(getContent(j).c_str());
@@ -73,14 +73,14 @@ void PacketSelectionConfiguration::configure()
 			xmlNodePtr j = i->xmlChildrenNode;
 			while (NULL != j) {
 				// TODO: construct filter ...
-				msg(MSG_ERROR, "packetSelection: filterMatch not yet implemented!");
+				msg(MSG_ERROR, "PacketSelectionConfiguration: filterMatch not yet implemented!");
 				j = j->next;
 			}
 		} else if (tagMatches(i, "randOutOfN")) {
 			xmlNodePtr j = i->xmlChildrenNode;
 			int N, n;
 			n = N = 0;
-			msg(MSG_INFO, "packetSelection: Creating random sampler");
+			msg(MSG_INFO, "PacketSelectionConfiguration: Creating random sampler");
 			while (NULL != j) {
 				if (tagMatches(j, "population")) {
 					N = atoi(getContent(j).c_str());
@@ -93,7 +93,7 @@ void PacketSelectionConfiguration::configure()
 		} else if (tagMatches(i, "stringFilter")) {
 			xmlNodePtr j = i->xmlChildrenNode;
 			stringFilter* sfilter = new stringFilter();
-			msg(MSG_INFO, "packetSelection: Creating string filter");
+			msg(MSG_INFO, "PacketSelectionConfiguration: Creating string filter");
 			while (NULL != j) {
 				if (tagMatches(j, "is")) {
 					xmlChar *stype = xmlGetProp(j, (const xmlChar*)"type");
@@ -115,7 +115,7 @@ void PacketSelectionConfiguration::configure()
 		} else if (tagMatches(i, "regExFilter")) {
 			xmlNodePtr j = i->xmlChildrenNode;
 			regExFilter* rfilter = new regExFilter();
-			msg(MSG_INFO, "packetSelection: Creating regular expression filter!");
+			msg(MSG_INFO, "PacketSelectionConfiguration: Creating regular expression filter!");
 			while (NULL != j) {
 				if (tagMatches(j, "matchPattern")) {
 					rfilter->match = getContent(j);
@@ -127,20 +127,20 @@ void PacketSelectionConfiguration::configure()
 			filter->addProcessor(rfilter);
 
 		} else if (tagMatches(i, "uniProb")) {
-			msg(MSG_ERROR, "packetSelection: uniProb not yet implemented!");
+			msg(MSG_ERROR, "PacketSelectionConfiguration: uniProb not yet implemented!");
 		} else if (tagMatches(i, "nonUniProb")) {
-			msg(MSG_ERROR, "packetSelection: nonUniProb not yet implemented");
+			msg(MSG_ERROR, "PacketSelectionConfiguration: nonUniProb not yet implemented");
 		} else if (tagMatches(i, "flowState")) {
-			msg(MSG_ERROR, "packetSelection: flowState not yet implemted");
+			msg(MSG_ERROR, "PacketSelectionConfiguration: flowState not yet implemted");
 		} else if (tagMatches(i, "filterHash")) {
-			msg(MSG_ERROR, "packetSelection: filterHash not yet implemented");
+			msg(MSG_ERROR, "PacketSelectionConfiguration: filterHash not yet implemented");
 		} else if (tagMatches(i, "filterRState")) {
-			msg(MSG_ERROR, "packetSelection: filterRState not yet implemented");
+			msg(MSG_ERROR, "PacketSelectionConfiguration: filterRState not yet implemented");
 		} else if (tagMatches(i, "rawFilter")) {
 			xmlNodePtr j = i->xmlChildrenNode;
 			int header, offset, size, comp, value;
 			header = offset = size = comp = value = 0;
-			msg(MSG_INFO, "packetSelection: Creating raw filter");
+			msg(MSG_INFO, "PacketSelectionConfiguration: Creating raw filter");
 			while (NULL != j) {
 				if (tagMatches(j, "header")) {
 					header =  atoi(getContent(j).c_str());
@@ -176,7 +176,7 @@ void PacketSelectionConfiguration::startSystem()
 		dummySink = new PacketSink();
 		dummySink->runSink();
 		filter->setReceiver(dummySink);
-		msg(MSG_INFO, "Added packet sink");
+		msg(MSG_INFO, "PacketSelectionConfiguration: Added packet sink");
 	}
 	filter->startFilter();
 }

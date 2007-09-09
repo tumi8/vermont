@@ -48,7 +48,7 @@ void ObserverConfiguration::configure()
 		} else if (tagMatches(i, "type")) {
 			type = getContent(i);
 			if (type != "pcap") {
-				msg(MSG_FATAL, "Vermont does not provide any observer type but pcap");
+				msg(MSG_FATAL, "ObserverConfiguration: Vermont does not provide any observer type but pcap");
 				THROWEXCEPTION("Could not read observer configuration");
 			}
 		} else if (tagMatches(i, "parameters")) {
@@ -99,7 +99,7 @@ void ObserverConfiguration::setUp()
 	observer = new Observer(interface.c_str(), &packetManager, offlinemode);
 	if (captureLength) {
 		if (!observer->setCaptureLen(captureLength)) {
-			msg(MSG_FATAL, "Observer: wrong snaplen specified - using %d", observer->getCaptureLen());
+			msg(MSG_ERROR, "ObserverConfiguration: wrong snaplen specified - using %d", observer->getCaptureLen());
 		}
 	}
 	else
@@ -117,7 +117,7 @@ void ObserverConfiguration::setUp()
 	//pcapChar = new char[pcapFilter.size() + 1];
 	//strncpy(pcapChar, pcapFilter.c_str(), pcapFilter.size() + 1);	
 	if (!observer->prepare(pcapFilter.c_str())) {
-		msg(MSG_FATAL, "Observer: preparing failed");
+		msg(MSG_FATAL, "ObserverConfiguration: preparing failed");
 		THROWEXCEPTION("Observer setup failed!");
 	}
 }
@@ -133,7 +133,7 @@ void ObserverConfiguration::connect(Configuration* c)
 
 	MeteringConfiguration* metering = dynamic_cast<MeteringConfiguration*>(c);
 	if (metering) {
-		msg(MSG_DEBUG, "Connecting observer to metering process");
+		msg(MSG_DEBUG, "ObserverConfiguration: Connecting observer to metering process");
 		metering->setObservationDomainId(observationDomain);
 		metering->setCaptureLength(captureLength);
 		PacketSelectionConfiguration* ps = metering->getPacketSelectionConfiguration();
