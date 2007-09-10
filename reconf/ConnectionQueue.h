@@ -19,7 +19,7 @@ class ConnectionQueue
 	: public Source<T>, public Destination<T>, public Module
 {
 public:
-	ConnectionQueue(int maxEntries = ConcurrentQueue<T*>::DEFAULT_QUEUE_SIZE)
+	ConnectionQueue(int maxEntries = ConcurrentQueue<T>::DEFAULT_QUEUE_SIZE)
 		: queue(maxEntries), thread(process)
 	{
 		thread.run(this); 
@@ -31,7 +31,7 @@ public:
 		thread.join();
 	}
 
-	virtual void receive(T* packet)
+	virtual void receive(T packet)
 	{
 		msg(MSG_INFO, "receive(Packet*)");
 		queue.push(packet);
@@ -41,7 +41,7 @@ private:
 	static void* process(void *arg)
 	{
 		ConnectionQueue* self = (ConnectionQueue*)arg;
-		T* packet = NULL;
+		T packet = NULL;
 
 		while(!self->exitFlag) {
 			if (!self->queue.pop(2000, &packet)) {
@@ -56,7 +56,7 @@ private:
 		return NULL;
 	}
 
-	ConcurrentQueue<T*> queue;
+	ConcurrentQueue<T> queue;
 	Thread thread;
 
 };

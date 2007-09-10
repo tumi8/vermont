@@ -22,21 +22,21 @@ class Destination : public virtual BaseDestination
 public:
 	virtual void receive(Emitable* e)
 	{
-		T* p = dynamic_cast<T*>(e);
+		T p = dynamic_cast<T>(e);
 		if (!e) {
 			throw std::runtime_error("Unsupported Emitable type\n");
 		}
 		this->receive(p);
 	}
 
-	virtual void receive(T* e)
+	virtual void receive(T e)
 	{
 		printf("Emitable received\n");
 	}
 
 
 private:
-	inline void recvPacket(T* p) {
+	inline void recvPacket(T p) {
 		printf("recv called\n");
 	}
 };

@@ -31,7 +31,7 @@
 #include <vector>
 
 
-class Filter : public PacketReceiver, Source<Packet>
+class Filter : public PacketReceiver, Source<Packet*>
 {
 	public:
 

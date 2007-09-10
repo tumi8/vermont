@@ -79,7 +79,7 @@ public:
 		return retval;
 	}
 	
-	inline bool send(T* t)
+	inline bool send(T t)
 	{
 		Destination<T>* d;
 		while ((d = dest) == NULL) {

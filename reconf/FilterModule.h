@@ -12,7 +12,7 @@
 #include "sampler/PacketProcessor.h"
 
 class FilterModule
-	: public Module, public Source<Packet>, public Destination<Packet>
+	: public Module, public Source<Packet*>, public Destination<Packet*>
 {
 public:
 	FilterModule();

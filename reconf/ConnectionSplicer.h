@@ -21,7 +21,7 @@ public:
 
 	virtual ~ConnectionSplicer() { }
 
-	virtual void connectTo(Destination<T*> d)
+	virtual void connectTo(Destination<T>* d)
 	{
 		Source<T>::mutex.lock();
 
@@ -45,7 +45,7 @@ public:
 		THROWEXCEPTION("Can't disconnect from a splicer\n");
 	}
 	
-	virtual void receive(T* packet)
+	virtual void receive(T packet)
 	{
 		printf("PacketConnectionSplicer::receive(Packet*)\n");
 
@@ -55,7 +55,7 @@ public:
 	}
 
 private:
-	inline void process(T *packet)
+	inline void process(T packet)
 	{
 		sleepUntilConnected();
 		
@@ -77,8 +77,6 @@ private:
 	Destination<T>* destinations[capacity];
 	size_t size;
 };
-
-ConnectionSplicer<Packet> a;
 
 #endif
 

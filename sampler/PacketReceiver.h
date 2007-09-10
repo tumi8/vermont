@@ -23,7 +23,7 @@
 using namespace std;
 
 
-class PacketReceiver : public StatisticsModule, public Destination<Packet>
+class PacketReceiver : public StatisticsModule, public Destination<Packet*>
 {
 private:
 	ConcurrentQueue<Packet*>  queue;

@@ -21,7 +21,7 @@ public:
 	virtual std::string getName() 
 	{ 
 		// see below why this hack is needed
-		T* t = NULL;
+		T t;
 		return get_name(t); 
 	}
 
@@ -75,7 +75,7 @@ private:
 
 
 class Packet;
-typedef QueueCfg<Packet> PacketQueueCfg;
+typedef QueueCfg<Packet*> PacketQueueCfg;
 
 // this hack with template specialization is needed because 
 // gcc (GCC) 4.1.3 20070812 (prerelease) (Debian 4.1.2-15)

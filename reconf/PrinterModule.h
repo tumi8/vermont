@@ -10,7 +10,7 @@
 #include <sampler/Packet.h>
 
 class PrinterModule
-	: public Source<Packet>, public Destination<Packet>, public Module
+	: public Source<Packet*>, public Destination<Packet*>, public Module
 {
 public:
 	PrinterModule(bool end)	: isEndPoint(end) { } ;
