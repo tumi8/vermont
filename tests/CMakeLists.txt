@@ -20,6 +20,7 @@
 ADD_EXECUTABLE(vermonttest
 	test_concentrator.cpp
 	AggregationPerfTest.cpp
+	ReconfTest.cpp
 	VermontTest.cpp
 )
 

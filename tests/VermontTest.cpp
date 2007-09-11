@@ -4,6 +4,7 @@
 
 #include "VermontTest.h"
 #include "AggregationPerfTest.h"
+#include "ReconfTest.h"
 #include "test_concentrator.h"
 
 using boost::unit_test::test_suite;
@@ -20,6 +21,7 @@ test_suite* init_unit_test_suite(int argc, char* argv[])
 
 	test->add(new AggregationPerfTestSuite(!perftest));
 	test->add(new ConcentratorTestSuite());
+	test->add(new ReconfTestSuite());
 
 	return test;
 }
