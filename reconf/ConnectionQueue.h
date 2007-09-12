@@ -52,7 +52,7 @@ private:
 		T packet = NULL;
 
 		while(!self->exitFlag) {
-			if (!self->queue.pop(2000, &packet)) {
+			if (!self->queue.pop(&packet)) {
 				msg(MSG_FATAL, "pop failed -> timeout");
 				continue;
 			}
