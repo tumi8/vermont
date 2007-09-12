@@ -9,6 +9,7 @@
 #include "concentrator/IpfixRawdirWriter.hpp"
 #include "concentrator/IpfixCollector.hpp"
 #include "concentrator/IpfixPrinter.hpp"
+#include "test.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <iostream>
@@ -40,10 +41,10 @@ class TestSink : public FlowSink {
 			uint8_t inData = data[0];
 
 			msg(MSG_DEBUG, "Received DataRecord: %d, %d, %d, %d", inSourceID, inTemplateId, inTypeId, inData);
-			if (checkSourceId) if (inSourceID != inTemplateId) BOOST_ERROR("SourceID or TemplateInfo got corrupted: inSourceID != inTemplateId");
-			if (inTemplateId != inTypeId) BOOST_ERROR("TemplateInfo got corrupted: inTemplateId != inTypeId");
-			if (inData != inTemplateId) BOOST_ERROR("IpfixRecord got corrupted: inData != inTemplateId");
-			if (inData != inTypeId) BOOST_ERROR("IpfixRecord got corrupted: inData != inTypeId");
+			if (checkSourceId) if (inSourceID != inTemplateId) ERROR("SourceID or TemplateInfo got corrupted: inSourceID != inTemplateId");
+			if (inTemplateId != inTypeId) ERROR("TemplateInfo got corrupted: inTemplateId != inTypeId");
+			if (inData != inTemplateId) ERROR("IpfixRecord got corrupted: inData != inTemplateId");
+			if (inData != inTypeId) ERROR("IpfixRecord got corrupted: inData != inTypeId");
 
 			for (int i = 0; i < rand(); i++);
 
@@ -60,12 +61,12 @@ class TestSink : public FlowSink {
 			uint8_t inDataTemplateTypeId = dataTemplateInfo->dataInfo[0].type.id;
 			uint8_t inDataTemplate = dataTemplateInfo->data[0];
 			msg(MSG_DEBUG, "Received DataDataRecord: %d, %d, %d, %d, %d, %d", inSourceID, inTemplateId, inTypeId, inData, inDataTemplateTypeId, inDataTemplate);
-			if (checkSourceId) if (inSourceID != inTemplateId) BOOST_ERROR("SourceID or TemplateInfo got corrupted: inSourceID != inTemplateId");
-			if (inTemplateId != inTypeId) BOOST_ERROR("TemplateInfo got corrupted: inTemplateId != inTypeId");
-			if (inData != inTemplateId) BOOST_ERROR("IpfixRecord got corrupted: inData != inTemplateId");
-			if (inData != inTypeId) BOOST_ERROR("IpfixRecord got corrupted: inData != inTypeId");
-			if (inData != inDataTemplateTypeId) BOOST_ERROR("IpfixRecord got corrupted: inData != inDataTemplateTypeId");
-			if (inData != inDataTemplate) BOOST_ERROR("IpfixRecord got corrupted: inData != inDataTemplate");
+			if (checkSourceId) if (inSourceID != inTemplateId) ERROR("SourceID or TemplateInfo got corrupted: inSourceID != inTemplateId");
+			if (inTemplateId != inTypeId) ERROR("TemplateInfo got corrupted: inTemplateId != inTypeId");
+			if (inData != inTemplateId) ERROR("IpfixRecord got corrupted: inData != inTemplateId");
+			if (inData != inTypeId) ERROR("IpfixRecord got corrupted: inData != inTypeId");
+			if (inData != inDataTemplateTypeId) ERROR("IpfixRecord got corrupted: inData != inDataTemplateTypeId");
+			if (inData != inDataTemplate) ERROR("IpfixRecord got corrupted: inData != inDataTemplate");
 
 			for (int i = 0; i < rand(); i++);
 
@@ -246,7 +247,7 @@ void test_ipfixlolib_rawdir() {
 	// create temporary directory
 	char* tmpdirname = strdup("/tmp/vermont-tests-concentrator-rawdir-XXXXXX");
 	if (mkdtemp(tmpdirname) == 0) {
-		BOOST_ERROR("Unable to create temporary directory. Cannot continue.");
+		ERROR("Unable to create temporary directory. Cannot continue.");
 		free(tmpdirname);
 		return;
 	}
@@ -318,7 +319,7 @@ void test_ipfixlolib_rawdir() {
 		if (testSink.receivedRecords != 16) {
 			char s[256];
 			snprintf(s, 255, "IpfixRawdirReader should have read 16 records, but read %d", testSink.receivedRecords);
-			BOOST_ERROR(s);
+			ERROR(s);
 		}
 	}
 
@@ -344,7 +345,12 @@ void test_parser_stability() {
 }
 
 
-void start_test()
+
+ConcentratorTestSuite::ConcentratorTestSuite()
+{
+}
+
+void ConcentratorTestSuite::start_test()
 {
 	// set Vermont messaging subsystem's debug level
 	//msg_setlevel(MSG_DEFAULT+99);
@@ -360,10 +366,3 @@ void start_test()
 
 	//test_parser_stability();
 }
-
-ConcentratorTestSuite::ConcentratorTestSuite()
-	: test_suite("ConcentratorTest")
-{
-	add(BOOST_TEST_CASE(&start_test));
-}
-

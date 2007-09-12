@@ -1,6 +1,10 @@
+
 #include "ReconfTest.h"
+
+#include "test.h"
 #include "sampler/SystematicSampler.h"
 #include "common/PacketInstanceManager.h"
+
 
 class PacketCounter: public Destination<Packet*>
 {
@@ -41,7 +45,7 @@ void ReconfTest::sendPacketsTo(Destination<Packet*>* dest, size_t numpackets)
 
 	// just push our sample packet a couple of times into the filter
 	struct timeval curtime;
-	BOOST_REQUIRE(gettimeofday(&curtime, 0) == 0);
+	REQUIRE(gettimeofday(&curtime, 0) == 0);
 
 	for (size_t i = 0; i < numpackets; i++) {
 		Packet* packet = PacketInstanceManager::getManager()->getNewInstance();
@@ -76,7 +80,5 @@ void ReconfTest::normalTest()
 
 	sendPacketsTo(&queue1, 100);
 	printf("the last module got %u packets\n", counter.getCount());
-
-	BOOST_CHECK(1 == 2);
 }
 

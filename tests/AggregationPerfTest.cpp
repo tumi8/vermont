@@ -3,8 +3,8 @@
 #include "sampler/ExpressHookingFilter.h"
 #include "sampler/Filter.h"
 #include "common/Time.h"
+#include "test.h"
 
-#include <boost/test/auto_unit_test.hpp>
 #include <sys/time.h>
 #include <time.h>
 
@@ -34,12 +34,12 @@ void AggregationPerfTest::normalTest()
 {
 	setup(false);
 	struct timeval starttime;
-	BOOST_REQUIRE(gettimeofday(&starttime, 0) == 0);
+	REQUIRE(gettimeofday(&starttime, 0) == 0);
 	start(numPackets);
 	struct timeval stoptime;
-	BOOST_REQUIRE(gettimeofday(&stoptime, 0) == 0);
+	REQUIRE(gettimeofday(&stoptime, 0) == 0);
 	struct timeval difftime;
-	BOOST_REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
+	REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
 
 	printf("Aggregator: needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
 
@@ -50,12 +50,12 @@ void AggregationPerfTest::expressTest()
 {
 	setup(true);
 	struct timeval starttime;
-	BOOST_REQUIRE(gettimeofday(&starttime, 0) == 0);
+	REQUIRE(gettimeofday(&starttime, 0) == 0);
 	start(numPackets);
 	struct timeval stoptime;
-	BOOST_REQUIRE(gettimeofday(&stoptime, 0) == 0);
+	REQUIRE(gettimeofday(&stoptime, 0) == 0);
 	struct timeval difftime;
-	BOOST_REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
+	REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
 
 	printf("ExpressAggregator: needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
 
@@ -67,9 +67,9 @@ Rule::Field* AggregationPerfTest::createRuleField(const string& typeId)
 	Rule::Field* ruleField = new Rule::Field();
 	ruleField->modifier = Rule::Field::KEEP;
 	ruleField->type.id = string2typeid(typeId.c_str());
-	BOOST_REQUIRE(ruleField->type.id != 0);
+	REQUIRE(ruleField->type.id != 0);
 	ruleField->type.length = string2typelength(typeId.c_str());
-	BOOST_REQUIRE(ruleField->type.length != 0);
+	REQUIRE(ruleField->type.length != 0);
 	if ((ruleField->type.id==IPFIX_TYPEID_sourceIPv4Address)
 			|| (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
 		ruleField->type.length++;
@@ -148,7 +148,7 @@ void AggregationPerfTest::start(unsigned int numpackets)
 
 	// just push our sample packet a couple of times into the filter
 	struct timeval curtime;
-	BOOST_REQUIRE(gettimeofday(&curtime, 0) == 0);
+	REQUIRE(gettimeofday(&curtime, 0) == 0);
 
 	ConcurrentQueue<Packet*>* filterq = filter->getQueue();
 	for (unsigned int i=0; i<numpackets; i++) {

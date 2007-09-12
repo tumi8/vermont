@@ -1,27 +1,29 @@
-#define BOOST_AUTO_TEST_MAIN
-#define BOOST_TEST_DYN_LINK
-#include <boost/test/unit_test.hpp>
-
 #include "VermontTest.h"
 #include "AggregationPerfTest.h"
 #include "ReconfTest.h"
 #include "test_concentrator.h"
 
-using boost::unit_test::test_suite;
 
 
 
-test_suite* init_unit_test_suite(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
-	test_suite* test(BOOST_TEST_SUITE("Vermont Testsuite"));
+	printf("Vermont Testsuite, testing ...\n");
 
 	bool perftest = false;
 
 	if (argc>1 && strcmp(argv[1], "-perf")==0) perftest = true;
 
-	test->add(new AggregationPerfTestSuite(!perftest));
-	test->add(new ConcentratorTestSuite());
-	test->add(new ReconfTestSuite());
-
-	return test;
+	
+	ReconfTest reconf;
+	reconf.normalTest();
+	
+	AggregationPerfTest aggtest(!perftest);
+	aggtest.expressTest();
+	aggtest.normalTest();
+	
+	ConcentratorTestSuite conctest;
+	conctest.start_test();
+	
+	return 0;
 }
