@@ -47,6 +47,10 @@ public:
 		thread.join();
 	}
 
+	inline int getCount() {
+		return queue.getCount();
+	}
+	
 private:
 	static void* process(void *arg)
 	{
