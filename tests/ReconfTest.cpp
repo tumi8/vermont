@@ -78,7 +78,13 @@ void ReconfTest::normalTest()
 	filter.connectTo(&queue2);
 	queue2.connectTo(&counter);
 
+	queue1.start();
+	queue2.start();
+	
 	sendPacketsTo(&queue1, 100);
 	printf("the last module got %u packets\n", counter.getCount());
+	
+	queue1.shutdown();
+	queue2.shutdown();
 }
 

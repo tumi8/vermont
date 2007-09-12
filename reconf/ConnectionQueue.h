@@ -21,20 +21,28 @@ class ConnectionQueue
 public:
 	ConnectionQueue(int maxEntries = ConcurrentQueue<T>::DEFAULT_QUEUE_SIZE)
 		: queue(maxEntries), thread(process)
-	{
-		thread.run(this); 
+	{ 
 	}
 
 	virtual ~ConnectionQueue()
 	{
-		shutdown();
-		thread.join();
+		if (running) shutdown();
 	}
 
 	virtual void receive(T packet)
 	{
 		msg(MSG_INFO, "receive(Packet*)");
 		queue.push(packet);
+	}
+	
+	virtual void performStart()
+	{
+		thread.run(this);
+	}
+	
+	virtual void performShutdown()
+	{
+		thread.join();
 	}
 
 private:
