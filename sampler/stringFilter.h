@@ -39,7 +39,7 @@ class stringFilter:public PacketProcessor
 		notFilters.push_back (string);
 	};
 
-	std::string hexparser(const std::string input);
+	static std::string hexparser(const std::string input);
 
 	virtual bool processPacket (const Packet * p);
 
