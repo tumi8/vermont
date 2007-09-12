@@ -248,13 +248,13 @@ extern "C" {
 		log_timeout.tv_nsec = ((long)ms % 1000L) * 1000000L;
 	}
 
-	void vermont_assert(const char* expr, char* description, int line, char* filename, char* funcname)
+	void vermont_assert(const char* expr, char* description, int line, char* filename, const char* prettyfuncname, const char* funcname)
 	{
-		msg_normal(MSG_ERROR, "Debug assertion: %s\n", expr);
-		msg_normal(MSG_ERROR, "Message: %s\n", description);
-		msg_normal(MSG_ERROR, "---------------------------------------------------------------\n");
-		msg_normal(MSG_ERROR, "filename: %s, line: %d, function: %s\n", filename, line, funcname);
-		msg_normal(MSG_ERROR, "returning to debugger ...");
+		msg_normal(MSG_ERROR, "Assertion: %s", expr);
+		msg_normal(MSG_ERROR, "Message: %s", description);
+		msg_normal(MSG_ERROR, "---------------------------------------------------------------");
+		msg_normal(MSG_ERROR, "filename: %s:%d, function: %s (%s)", filename, line, funcname, prettyfuncname);
+		exit(1);
 	}
 
 
