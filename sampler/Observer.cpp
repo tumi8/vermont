@@ -40,39 +40,34 @@ Observer::Observer(const std::string& interface, InstanceManager<Packet>* manage
 
 Observer::~Observer()
 {
-    msg(MSG_DEBUG, "Observer: destructor called");
+	msg(MSG_DEBUG, "Observer: destructor called");
 
 	StatisticsManager::getInstance().removeModule(this);
 
-    shutdown();
+	shutdown(false);
 
-    /* collect and output statistics */
-    pcap_stat pstats;
-    if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
-        msg(MSG_DIALOG, "PCAP statistics:");
-        msg(MSG_DIALOG, "Number of packets received on interface: %u", pstats.ps_recv);
-        msg(MSG_DIALOG, "Number of packets dropped by PCAP: %u", pstats.ps_drop);
-    }
+	/* collect and output statistics */
+	pcap_stat pstats;
+	if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
+		msg(MSG_DIALOG, "PCAP statistics:");
+		msg(MSG_DIALOG, "Number of packets received on interface: %u", pstats.ps_recv);
+		msg(MSG_DIALOG, "Number of packets dropped by PCAP: %u", pstats.ps_drop);
+	}
 
-    /* be sure the thread is ending */
-    msg(MSG_DEBUG, "joining the ObserverThread, may take a while (until next pcap data is received)");
-    thread.join();
-    msg(MSG_DEBUG, "ObserverThread joined");
+	msg(MSG_DEBUG, "freeing pcap/devices");
+	if(captureDevice) {
+		pcap_close(captureDevice);
+	}
 
-    msg(MSG_DEBUG, "freeing pcap/devices");
-    if(captureDevice) {
-        pcap_close(captureDevice);
-    }
+	/* no pcap_freecode here, is already done after attaching the filter */
 
-    /* no pcap_freecode here, is already done after attaching the filter */
+	if(allDevices) {
+		pcap_freealldevs(allDevices);
+	}
 
-    if(allDevices) {
-        pcap_freealldevs(allDevices);
-    }
-
-    free(captureInterface);
-    delete[] filter_exp;
-    msg(MSG_DEBUG, "successful shutdown");
+	free(captureInterface);
+	delete[] filter_exp;
+	msg(MSG_DEBUG, "successful shutdown");
 }
 /*
  This is the main observer loop. It graps packets from libpcap and
@@ -295,13 +290,23 @@ void Observer::doLogging(void *arg)
    call to get the main capture thread running
    open() has to be called before
 */
-void Observer::startCapture()
+void Observer::performStart()
 {
-	if(ready) {
-		msg(MSG_DEBUG, "now starting capturing thread");
-		thread.run(this);
-	}
+	if(!ready)
+		THROWEXCEPTION("Can't start capturing, observer is not ready");
+
+	msg(MSG_DEBUG, "now starting capturing thread");
+	thread.run(this);
 };
+
+void Observer::performShutdown()
+{
+	/* be sure the thread is ending */
+	msg(MSG_DEBUG, "joining the ObserverThread, may take a while (until next pcap data is received)");
+	thread.join();
+	msg(MSG_DEBUG, "ObserverThread joined");
+}
+
 
 /* you cannot change the caplen of an already running observer */
 bool Observer::setCaptureLen(int x)

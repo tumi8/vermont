@@ -38,7 +38,6 @@ ConfigManager::~ConfigManager()
 
 void ConfigManager::parseConfig(std::string fileName)
 {
-	Observer* observer = NULL;
 	Graph* oldGraph = graph;
 
 	graph = new Graph();
@@ -66,20 +65,13 @@ void ConfigManager::parseConfig(std::string fileName)
 			if ((*it)->getName() == configModules[i]->getName()) {
 				Cfg* cfg = configModules[i]->create(*it);
 				graph->addNode(cfg);
-
-				// FIXME: observer needs special handling
-				if ((*it)->getName() == "observer")
-					observer = dynamic_cast<ObserverCfg*>(cfg)->getInstance();
 			}
 		}
 	}
 
 	if (!oldGraph) { // this is the first config we have read
-		msg(MSG_FATAL, "---------- initialisiz");
 		Connector connector;
-
 		graph->accept(&connector);
-		observer->startCapture(); // FIXME: observer could be reinstantiated
 	} else {
 		msg(MSG_FATAL, "---------- reconnect");
 		// first, connect the nodes on the new graph (but NOT the modules
@@ -89,6 +81,12 @@ void ConfigManager::parseConfig(std::string fileName)
 		// now connect the modules reusing those from the old graph
 		ReConnector reconnector(oldGraph);
 		graph->accept(&reconnector);
+	}
+
+	// start the instances if not already running
+	std::vector<CfgNode*> topoNodes = graph->topoSort();
+	for (size_t i = 0; i < topoNodes.size(); i++) {
+		topoNodes[i]->getCfg()->getInstance()->start(false);
 	}
 
 	if (old_document)
@@ -105,7 +103,7 @@ void ConfigManager::shutdown()
 		Cfg* cfg = n->getCfg();
 
 		// shutdown the thread
-		cfg->getInstance()->shutdown();
+		cfg->getInstance()->shutdown(false);
 
 		// disconnect the module from its sources ..
 		vector<CfgNode*> sources = graph->getSources(n);

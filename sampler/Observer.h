@@ -53,7 +53,8 @@ public:
 	Observer(const std::string& interface, InstanceManager<Packet>* manager);
 	~Observer();
 
-	void startCapture();
+	virtual void performStart();
+	virtual void performShutdown();
 	bool setCaptureLen(int x);
 	int getCaptureLen();
 	bool setPacketTimeout(int ms);

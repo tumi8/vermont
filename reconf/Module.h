@@ -22,8 +22,11 @@ public:
 	 * is called before module receives input from other modules
 	 * e.g. used to start threads
 	 */
-	void start() 
+	void start(bool fail_if_already_running = true)
 	{
+		if (running && !fail_if_already_running)
+			return;
+
 		ASSERT(!running, "module must not be in state 'running' when started");
 		running = true;
 		exitFlag = false;
@@ -42,8 +45,11 @@ public:
 	 * shuts down the module
 	 * function only returns when module is shut down properly!
 	 */
-	void shutdown() 
+	void shutdown(bool fail_if_not_running = true)
 	{
+		if (!running && !fail_if_not_running)
+			return;
+
 		ASSERT(running, "module must be in state running when it is shut down");
 		
 		notifyShutdown();
