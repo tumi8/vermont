@@ -28,12 +28,12 @@ private:
 	static const int STANDARD_TIMEOUT = 100; // when no timeout is given by calling function, this amount of ms will be waited until the exitFlag is checked
 	sem_t* sem;
 
-	// variables for global management of all semaphores
-	static bool 		exitFlag;
+	bool exitFlag;	/**< is set to true when semaphore is to be shut down **/
 
 	sem_t last_sem;
 public:
 	TimeoutSemaphore(int initialValue = 0)
+		: exitFlag(false)
 	{
 	    	sem = new sem_t;
 		int retval = sem_init(sem, 0, initialValue);
@@ -200,9 +200,8 @@ public:
 
 	/**
 	 * shuts down the semaphore: all waiting threads will be restarted
-	 * and _all_ semaphores will never lock again
 	 */
-	inline static void shutdown()
+	void notifyShutdown()
 	{
 	    DPRINTF("shutting down");
 	    exitFlag = true;
@@ -211,7 +210,7 @@ public:
 	/**
 	 * when semaphore is shut down, it can be restarted again using this method
 	 */
-	static void restart()
+	void restart()
 	{
 	    DPRINTF("restarting");
 	    exitFlag = false;

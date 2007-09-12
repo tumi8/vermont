@@ -230,9 +230,7 @@ void test_module_coupling() {
 	sleep(1);
 
 	// shut down modules
-	TimeoutSemaphore::shutdown();
 	testSink.terminateSink();
-	TimeoutSemaphore::restart();
 
 }
 
@@ -285,9 +283,7 @@ void test_ipfixlolib_rawdir() {
 		sleep(1);
 
 		// shut down modules
-		TimeoutSemaphore::shutdown();
 		ipfixRawdirWriter.terminateSink();
-		TimeoutSemaphore::restart();
 
 	}
 
@@ -311,9 +307,7 @@ void test_ipfixlolib_rawdir() {
 		sleep(1);
 
 		// shut down modules
-		TimeoutSemaphore::shutdown();
 		testSink.terminateSink();
-		TimeoutSemaphore::restart();
 
 		// check results
 		if (testSink.receivedRecords != 16) {

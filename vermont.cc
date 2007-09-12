@@ -169,9 +169,6 @@ static void sig_INT_handler(int x)
 
 	manager.shutdown();
 
-	// shut down all semaphores, so that shutdown will not be stalled due to some blocking stuff
-	TimeoutSemaphore::shutdown();
-
 	if (ipfixConfig) {
 		delete ipfixConfig;
 	}

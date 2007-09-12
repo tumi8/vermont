@@ -20,7 +20,6 @@
 ADD_LIBRARY(common
 	CountingSemaphore.cpp
 	PacketInstanceManager.cpp
-	TimeoutSemaphore.cpp
 	msg.cc
 	StatisticsManager.cpp
 )

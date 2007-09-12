@@ -130,11 +130,9 @@ void AggregationPerfTest::setup(bool express)
 
 void AggregationPerfTest::shutdown()
 {
-	TimeoutSemaphore::shutdown();
 	filter->terminate();
 	packetSink->terminateSink();
-	ipfixAggregator->terminateSink();
-	TimeoutSemaphore::restart();
+	//ipfixAggregator->terminateSink();
 }
 
 
