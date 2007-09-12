@@ -3,9 +3,12 @@
 
 #include <cfg/Cfg.h>
 #include "reconf/FilterModule.h"
-#include <sampler/SystematicSampler.h>
 
 #include <vector>
+
+// forward declaration of instances
+class stringFilter;
+class SystematicSampler;
 
 class PacketFilterCfg
 	: public Cfg
@@ -83,6 +86,43 @@ protected:
 
 private:
 	SystematicSampler* instance;
+};
+
+
+class PacketStringFilterCfg
+	: public Cfg
+{
+public:
+	friend class PacketFilterCfg;
+
+	virtual PacketFilterCfg* create(XMLElement* e) {return NULL; };
+
+	virtual ~PacketStringFilterCfg() { };
+
+	virtual std::string getName() { return "stringBased"; }
+
+	virtual Module* getInstance();
+
+	virtual bool deriveFrom(Cfg* old)
+	{
+		PacketStringFilterCfg* cfg = dynamic_cast<PacketStringFilterCfg*>(old);
+		if (cfg)
+			return deriveFrom(cfg);
+
+		THROWEXCEPTION("Can't derive from PacketStringFilter");
+		return false;
+	}
+
+	virtual bool deriveFrom(PacketStringFilterCfg* old);
+
+protected:
+	PacketStringFilterCfg(XMLElement *e) : Cfg(e), instance(NULL)
+	{
+	}
+
+
+private:
+	stringFilter* instance;
 };
 
 
