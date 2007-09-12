@@ -57,7 +57,7 @@ void msg2(const int, const char*, const char*, const char*, const int, const cha
 void msg_setlevel(int);
 int msg_stat(const char *fmt, ...);
 int msg_stat_setup(int mode, FILE *f);
-void vermont_assert(const char* expr, char* description, int line, char* filename, const char* prettyfuncname, const char* funcname);
+void vermont_assert(const char* expr, const char* description, int line, const char* filename, const char* prettyfuncname, const char* funcname);
 void vermont_exception(const int, const char*, const char*, const char*, const char*, ...);
 
 /* msg_thread functions for the timed logger thread */

@@ -248,7 +248,7 @@ extern "C" {
 		log_timeout.tv_nsec = ((long)ms % 1000L) * 1000000L;
 	}
 
-	void vermont_assert(const char* expr, char* description, int line, char* filename, const char* prettyfuncname, const char* funcname)
+	void vermont_assert(const char* expr, const char* description, int line, const char* filename, const char* prettyfuncname, const char* funcname)
 	{
 		msg_normal(MSG_ERROR, "Assertion: %s", expr);
 		msg_normal(MSG_ERROR, "Message: %s", description);
