@@ -1,5 +1,6 @@
 #include "PacketFilterCfg.h"
 
+#include <sampler/regExFilter.h>
 #include <sampler/stringFilter.h>
 #include <sampler/SystematicSampler.h>
 #include "common/msg.h"
@@ -27,6 +28,9 @@ PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
 		} else if (e->matches("stringBased")) {
 			msg(MSG_FATAL, "Filter: Creating string based sampler");
 			c = new PacketStringFilterCfg(e);
+		} else if (e->matches("regexBased")) {
+			msg(MSG_FATAL, "Filter: Creating regex based sampler");
+			c = new PacketRegexFilterCfg(e);
 		} else if (e->matches("timeBased")) {
 			msg(MSG_FATAL, "Filter: Creating time based sampler");
 		} else {
@@ -161,4 +165,24 @@ bool PacketStringFilterCfg::deriveFrom(PacketStringFilterCfg* old)
 	}
 
 	return true;
+}
+
+// ----------------------------------------------------------------------------
+
+Module* PacketRegexFilterCfg::getInstance()
+{
+	if (!instance)
+		instance = new regExFilter();
+
+	instance->match = get("matchPattern");
+	instance->regcre();
+	return (Module*)instance;
+}
+
+bool PacketRegexFilterCfg::deriveFrom(PacketRegexFilterCfg* old)
+{
+	if (get("matchPattern") == old->get("matchPattern"))
+		return true;
+
+	return false;
 }

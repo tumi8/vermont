@@ -7,6 +7,7 @@
 #include <vector>
 
 // forward declaration of instances
+class regExFilter;
 class stringFilter;
 class SystematicSampler;
 
@@ -126,9 +127,38 @@ private:
 };
 
 
+class PacketRegexFilterCfg
+	: public Cfg
+{
+public:
+	friend class PacketFilterCfg;
 
+	virtual PacketFilterCfg* create(XMLElement* e) {return NULL; };
 
+	virtual ~PacketRegexFilterCfg() { };
 
+	virtual std::string getName() { return "regexBased"; }
+
+	virtual Module* getInstance();
+
+	virtual bool deriveFrom(Cfg* old)
+	{
+		PacketStringFilterCfg* cfg = dynamic_cast<PacketStringFilterCfg*>(old);
+		if (cfg)
+			return deriveFrom(cfg);
+
+		THROWEXCEPTION("Can't derive from PacketStringFilter");
+		return false;
+	}
+
+	virtual bool deriveFrom(PacketRegexFilterCfg* old);
+
+protected:
+	PacketRegexFilterCfg(XMLElement *e): Cfg(e), instance(NULL) { };
+
+private:
+	regExFilter* instance;
+};
 
 
 
