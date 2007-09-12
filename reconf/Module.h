@@ -15,7 +15,7 @@ protected:
 
 public:	
 	Module() 
-		: exitFlag(true), running(false)
+		: exitFlag(false), running(false)
 	{ };
 	
 	/**
