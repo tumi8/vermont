@@ -4,6 +4,7 @@
 #include "test.h"
 #include "sampler/SystematicSampler.h"
 #include "common/PacketInstanceManager.h"
+#include "common/msg.h"
 
 
 class PacketCounter: public Destination<Packet*>
@@ -22,6 +23,10 @@ public:
 		return count;
 	}
 	
+	void reset() {
+		count = 0;
+	}
+
 private:
 	unsigned int count;
 };
@@ -62,16 +67,18 @@ void ReconfTest::sendPacketsTo(Destination<Packet*>* dest, size_t numpackets)
  */
 void ReconfTest::normalTest() 
 {
+	size_t nr_of_packets = 100; // must be a dividable by 2
 	
 	// create a packet sampler which lets only half of the packets through
-	SystematicSampler sampler = SystematicSampler(SYSTEMATIC_SAMPLER_COUNT_BASED, 1, 1);
+	// NOTICE: the sampler will be destroyed by the d'tor of FilterModule
+	SystematicSampler* sampler = new SystematicSampler(SYSTEMATIC_SAMPLER_COUNT_BASED, 1, 1);
 
 	FilterModule filter;
-	filter.addProcessor(&sampler);
+	filter.addProcessor(sampler);
 
 	ConnectionQueue<Packet*> queue1(10);
 	ConnectionQueue<Packet*> queue2(20);
-	
+
 	PacketCounter counter;
 	
 	queue1.connectTo(&filter);
@@ -80,9 +87,36 @@ void ReconfTest::normalTest()
 
 	queue1.start();
 	queue2.start();
+
+	sendPacketsTo(&queue1, nr_of_packets);
+	while(queue2.getCount() > 0 || queue1.getCount() > 0) {
+		sleep(1);
+
+	}
+
+	ASSERT(counter.getCount() == nr_of_packets/2,
+	       "The filter hasn't eliminated half of the packets");
+
+	/**
+	 * remove the sampler and redo the test.
+	 * This time every packet should get through.
+	 * __________     __________    _______________
+	 * | queue1 | ->  | queue2 |-> | PacketCounter |
+	 *  --------      ----------    ---------------
+	 */
+
+	queue1.disconnect();
+	queue1.connectTo(&queue2);
+
+	counter.reset();
 	
-	sendPacketsTo(&queue1, 100);
-	printf("the last module got %u packets\n", counter.getCount());
+	sendPacketsTo(&queue1, nr_of_packets);
+	while(queue2.getCount() > 0 || queue1.getCount() > 0) {
+		sleep(1);
+
+	}
+
+	ASSERT(counter.getCount() == nr_of_packets, "Not all packages get through");
 	
 	queue1.shutdown();
 	queue2.shutdown();
