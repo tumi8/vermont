@@ -24,7 +24,7 @@ public:
 	 */
 	void start() 
 	{
-		ASSERT(running, "module must be shut down when started");
+		ASSERT(!running, "module must not be in state 'running' when started");
 		running = true;
 		exitFlag = false;
 		performStart();
@@ -44,7 +44,7 @@ public:
 	 */
 	void shutdown() 
 	{
-		ASSERT(!running, "module must be in state running when it is shut down");
+		ASSERT(running, "module must be in state running when it is shut down");
 		
 		notifyShutdown();
 		performShutdown();

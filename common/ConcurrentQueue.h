@@ -160,6 +160,28 @@ class ConcurrentQueue
 		{
 			return count;
 		};
+		
+		
+		/**
+		 * after calling this function, queue will not block again but return
+		 * all functions with an error
+		 * (useful for shutdown of this instance)
+		 */
+		void notifyShutdown() 
+		{
+			popSemaphore.notifyShutdown();
+			pushSemaphore.notifyShutdown();
+		}
+		
+		
+		/**
+		 * activates all thread-locking functionality inside the queue again
+		 */
+		void restart()
+		{
+			popSemaphore.restart();
+			pushSemaphore.restart();
+		}
 
 		int pushedCount;
 		int poppedCount;

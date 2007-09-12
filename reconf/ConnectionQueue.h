@@ -37,11 +37,13 @@ public:
 	
 	virtual void performStart()
 	{
+		queue.restart();
 		thread.run(this);
 	}
 	
 	virtual void performShutdown()
 	{
+		queue.notifyShutdown();
 		thread.join();
 	}
 
