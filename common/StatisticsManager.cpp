@@ -12,11 +12,7 @@ StatisticsManager::StatisticsManager()
 
 StatisticsManager::~StatisticsManager()
 {
-	while (!statModules.empty()) {
-		StatisticsModule* sm = statModules.front();
-		statModules.pop_front();
-		delete sm;
-	}
+	// do not free statistics modules, as they are to be freed by creating instances
 }
 
 StatisticsManager& StatisticsManager::getInstance()
