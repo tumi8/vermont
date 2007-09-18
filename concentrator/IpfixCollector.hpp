@@ -21,30 +21,35 @@
 #ifndef INCLUDED_IpfixCollector_hpp
 #define INCLUDED_IpfixCollector_hpp
 
-#include <list>
-#include <pthread.h>
-#include <stdint.h>
 #include "FlowSink.hpp"
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
+#include "IpfixRecordSender.h"
+#include "reconf/Module.h"
+
+#include <stdint.h>
+
 
 /**
- * Represents a collector
+ * Represents a collector module
+ * it always contains an IpfixReceiver (passed by constructor)
+ * and one IpfixPacketProcessor, receiver and packet processor are
+ * hard wired
  */
-class IpfixCollector {
+class IpfixCollector 
+	: public Module, public Source<IpfixRecord>, public IpfixRecordSender 
+{
 	public:
-		IpfixCollector();
-		~IpfixCollector();
+		IpfixCollector(IpfixReceiver* receiver);
+		virtual ~IpfixCollector();
 
-		int start();
-		int stop();
+		virtual void performStart();
+		virtual void performShutdown();
 
-		void addIpfixPacketProcessor(IpfixPacketProcessor* packetProcessor);
-		void addIpfixReceiver(IpfixReceiver* ipfixReceiver);
 
-	protected:
-		std::list<IpfixReceiver*> ipfixReceivers;
-		std::list<IpfixPacketProcessor*> packetProcessors;
+	private:
+		IpfixReceiver* ipfixReceiver;
+		IpfixPacketProcessor* ipfixPacketProcessor;
 
 };
 

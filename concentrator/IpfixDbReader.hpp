@@ -30,6 +30,7 @@
 #include "FlowSource.hpp"
 #include "ipfix.hpp"
 #include "ipfixlolib/ipfixlolib.h"
+#include "reconf/Module.h"
 
 #include <netinet/in.h>
 #include <time.h>
@@ -42,15 +43,16 @@
  *      IpfixDbReader powered the communication to the database server
  *      also between the other structs
  */
-class IpfixDbReader : public FlowSource {
+class IpfixDbReader : public Module, public Source<IpfixRecord*> 
+{
 	public:
 		IpfixDbReader(const char* hostname, const char* dbName,
 				const char* username, const char* password,
 				unsigned int port, uint16_t observationDomainId);
 		~IpfixDbReader();
 
-		int start();
-		int stop();
+		virtual void performStart();
+		virtual void performShutdown();
 
 		boost::shared_ptr<IpfixRecord::SourceID> srcId;
 
@@ -84,8 +86,15 @@ class IpfixDbReader : public FlowSource {
 		unsigned int flags;      /** Connectionflags (none) */
 		MYSQL* conn;             /** pointer to connection handle */    
 		IpfixDbReader::DbReader* dbReader;
-		pthread_mutex_t mutex;   /** start/stop mutex for db replaying process */
-		pthread_t thread;
+		Thread thread;
+		
+		InstanceManager<IpfixTemplateRecord> templateRecordIM;
+		InstanceManager<IpfixOptionsTemplateRecord> optionsTemplateRecordIM;
+		InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
+		InstanceManager<IpfixDataRecord> dataRecordIM;
+		InstanceManager<IpfixOptionsRecord> optionsRecordIM;
+		InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
+		InstanceManager<IpfixDataTemplateDestructionRecord> dataTemplateDestructionRecordIM;
 
 		int getTables();
 		int getColumns(int n);

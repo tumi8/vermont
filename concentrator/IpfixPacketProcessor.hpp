@@ -36,7 +36,8 @@ class IpfixParser;
  * Controls parsing of incoming packets.
  * Create witch @c createPacketProcessor()
  */
-class IpfixPacketProcessor {
+class IpfixPacketProcessor 
+{
 	public:
 		virtual ~IpfixPacketProcessor() {};
 		virtual int processPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId) = 0; /**< process (e.g. parse and enqueue) the given raw network packet */

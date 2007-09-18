@@ -19,7 +19,8 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  statEmptyBuckets(0),
 	  statExportedBuckets(0),
 	  statLastExpBuckets(0),
-	  recordSource(recordsource)
+	  recordSource(recordsource),
+	  dataDataRecordIM(0)
 	  
 {
 	int dataLength = 0; /**< length in bytes of the @c data field */
@@ -129,7 +130,7 @@ BaseHashtable::Bucket* BaseHashtable::createBucket(boost::shared_array<IpfixReco
 void BaseHashtable::exportBucket(BaseHashtable::Bucket* bucket) 
 {
 	/* Pass Data Record to exporter interface */
-	IpfixDataDataRecord* ipfixRecord = new IpfixDataDataRecord();
+	IpfixDataDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
 	ipfixRecord->sourceID.reset();
 	ipfixRecord->dataTemplateInfo = dataTemplate;
 	ipfixRecord->dataLength = fieldLength;

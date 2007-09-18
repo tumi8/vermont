@@ -40,7 +40,6 @@ public:
 	IpfixAggregator(uint32_t pollinterval);
 	virtual ~IpfixAggregator();
 
-	virtual void receive(IpfixRecord* record);
 	virtual void onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* ti,
 			uint16_t length, IpfixRecord::Data* data);
 	virtual void onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* ti,

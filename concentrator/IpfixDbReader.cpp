@@ -44,10 +44,8 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
 	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo(new IpfixRecord::DataTemplateInfo);
 	DbData* dbData = ipfixDbReader->dbReader->dbData;
 
-	// TODO: make IpfixDbReader exit if exit was requested!
-	pthread_mutex_lock(&ipfixDbReader->mutex);
 	msg(MSG_DIALOG, "Start sending tables");
-	for(i = 0; i < dbData->tableCount && i < MAX_TABLES; i++) {
+	for(i = 0; i < dbData->tableCount && i < MAX_TABLES && !ipfixDbReader->exitFlag; i++) {
 		if(ipfixDbReader->dbReaderSendNewTemplate(dataTemplateInfo, i) != 0)
 		{
 		    msg(MSG_ERROR, "IpfixDbReader: Template error, skip table");
@@ -55,9 +53,7 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
 		}
 		ipfixDbReader->dbReaderSendTable(dataTemplateInfo, i);
 		ipfixDbReader->dbReaderDestroyTemplate(dataTemplateInfo);
-		//here we can make a pause if required
-		pthread_mutex_unlock(&ipfixDbReader->mutex);
-		pthread_mutex_lock(&ipfixDbReader->mutex);
+
 	}
 
 	msg(MSG_DIALOG,"Sending from database is done");
@@ -102,10 +98,10 @@ int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<IpfixRecord::DataTe
 	}
 
 	/* Pass Data Template to flowSinks */
-	boost::shared_ptr<IpfixDataTemplateRecord> ipfixRecord(new IpfixDataTemplateRecord);
+	IpfixDataTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
 	ipfixRecord->sourceID = srcId;
 	ipfixRecord->dataTemplateInfo = dataTemplateInfo;
-	push(ipfixRecord);
+	send(ipfixRecord);
 	msg(MSG_DEBUG,"IpfixDbReader sent template for table %s", dbData->tableNames[table_index]);
 	return 0;
 }
@@ -140,7 +136,7 @@ void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, IpfixRecord::Field
 
 int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo, int table_index)
 {
-       	MYSQL_RES* dbResult = NULL;
+    MYSQL_RES* dbResult = NULL;
 	MYSQL_ROW dbRow = NULL;
 	DbData* dbData = dbReader->dbData;
 	int i;
@@ -219,13 +215,13 @@ int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<IpfixRecord::DataTemplate
 
 
 
-		boost::shared_ptr<IpfixDataDataRecord> ipfixRecord(new IpfixDataDataRecord);
+		IpfixDataDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
 		ipfixRecord->sourceID = srcId;
 		ipfixRecord->dataTemplateInfo = dataTemplateInfo;
 		ipfixRecord->dataLength = dataLength;
 		ipfixRecord->message = data;
 		ipfixRecord->data = data.get();
-		push(ipfixRecord);
+		send(ipfixRecord);
 		msg(MSG_INFO,"IpfixDbReader sent record");
 	}
 	mysql_free_result(dbResult);
@@ -241,10 +237,10 @@ int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<IpfixRecord::DataTemplate
  **/
 int IpfixDbReader::dbReaderDestroyTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo)
 {
-	boost::shared_ptr<IpfixDataTemplateDestructionRecord> ipfixRecord(new IpfixDataTemplateDestructionRecord);
+	IpfixDataTemplateDestructionRecord* ipfixRecord = dataTemplateDestructionRecordIM.getNewInstance();
 	ipfixRecord->sourceID = srcId;
 	ipfixRecord->dataTemplateInfo = dataTemplateInfo;
-	push(ipfixRecord);
+	send(ipfixRecord);
 	msg(MSG_DEBUG,"IpfixDbReader destroyed template");
 
 	return 0;
@@ -408,18 +404,18 @@ int IpfixDbReader::connectToDb(
  * Starts or resumes database
  * @param ipfixDbReader handle obtained by calling @c createipfixDbReader()
  */
-int IpfixDbReader::start() {
-	pthread_mutex_unlock(&mutex);
-	return 0;
+void IpfixDbReader::performStart() 
+{
+	thread.run(this);
 }
 
 /**
  * Temporarily pauses database
  * @param ipfixDbReader handle obtained by calling @c createipfixDbReader()
  */
-int IpfixDbReader::stop() {
-	pthread_mutex_lock(&mutex);
-	return 0;
+void IpfixDbReader::performShutdown() 
+{
+	thread.join();
 }
 
 /**
@@ -428,9 +424,6 @@ int IpfixDbReader::stop() {
  */
 IpfixDbReader::~IpfixDbReader() {
 	mysql_close(conn);
-	if (!pthread_mutex_destroy(&mutex)) {
-		msg(MSG_ERROR, "Could not destroy mutex");
-	}
 	free(dbReader->dbData);
 	free(dbReader);
 }
@@ -442,18 +435,16 @@ IpfixDbReader::~IpfixDbReader() {
 IpfixDbReader::IpfixDbReader(const char* hostName, const char* dbName, 
 				   const char* userName, const char* password,
 				   unsigned int port, uint16_t observationDomainId)
+	: thread(readFromDB),
+	  templateRecordIM(0),
+	  optionsTemplateRecordIM(0),
+	  dataTemplateRecordIM(0),
+	  dataRecordIM(0),
+	  optionsRecordIM(0),
+	  dataDataRecordIM(0),
+	  dataTemplateDestructionRecordIM(0)
 {
 	DbData* dbData;
-
-	if (pthread_mutex_init(&mutex, NULL)) {
-		msg(MSG_FATAL, "Could not init mutex");
-		goto out1;
-	}
-
-        if (pthread_mutex_lock(&mutex)) {
-                msg(MSG_FATAL, "Could not lock mutex");
-                goto out1;
-        }
 
 	dbReader = (DbReader*)malloc(sizeof(DbReader));
 	if (!dbReader) {
@@ -489,10 +480,6 @@ IpfixDbReader::IpfixDbReader(const char* hostName, const char* dbName,
 	/**initialize columns**/
 	dbData->colCount = 0;
 
-	if (pthread_create(&thread, 0, readFromDB, this)) {
-		msg(MSG_FATAL, "Could not create dbRead thread");
-                goto out3;
-	}
 	
 	return;
 

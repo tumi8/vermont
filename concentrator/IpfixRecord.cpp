@@ -21,9 +21,55 @@
 #include "common/msg.h"
 #include "IpfixRecord.hpp"
 
-IpfixRecord::IpfixRecord() {
+IpfixRecord::IpfixRecord()
+{
 }
 
 IpfixRecord::~IpfixRecord() {
+}
+
+IpfixOptionsTemplateRecord::IpfixOptionsTemplateRecord(InstanceManager<IpfixOptionsTemplateRecord>* im)
+	: ManagedInstance<IpfixOptionsTemplateRecord>(im)
+{
+}
+
+IpfixTemplateRecord::IpfixTemplateRecord(InstanceManager<IpfixTemplateRecord>* im)
+	: ManagedInstance<IpfixTemplateRecord>(im)
+{
+}
+
+IpfixDataTemplateRecord::IpfixDataTemplateRecord(InstanceManager<IpfixDataTemplateRecord>* im)
+	: ManagedInstance<IpfixDataTemplateRecord>(im)
+{
+}
+
+IpfixDataRecord::IpfixDataRecord(InstanceManager<IpfixDataRecord>* im)
+	: ManagedInstance<IpfixDataRecord>(im)
+{
+}
+
+IpfixOptionsRecord::IpfixOptionsRecord(InstanceManager<IpfixOptionsRecord>* im)
+	: ManagedInstance<IpfixOptionsRecord>(im)
+{
+}
+
+IpfixDataDataRecord::IpfixDataDataRecord(InstanceManager<IpfixDataDataRecord>* im)
+	: ManagedInstance<IpfixDataDataRecord>(im)
+{
+}
+
+IpfixTemplateDestructionRecord::IpfixTemplateDestructionRecord(InstanceManager<IpfixTemplateDestructionRecord>* im)
+	: ManagedInstance<IpfixTemplateDestructionRecord>(im)
+{
+}
+
+IpfixOptionsTemplateDestructionRecord::IpfixOptionsTemplateDestructionRecord(InstanceManager<IpfixOptionsTemplateDestructionRecord>* im)
+	: ManagedInstance<IpfixOptionsTemplateDestructionRecord>(im)
+{
+}
+
+IpfixDataTemplateDestructionRecord::IpfixDataTemplateDestructionRecord(InstanceManager<IpfixDataTemplateDestructionRecord>* im)
+	: ManagedInstance<IpfixDataTemplateDestructionRecord>(im)
+{
 }
 

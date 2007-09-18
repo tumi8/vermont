@@ -62,9 +62,7 @@ int main(int argc, char *argv[]) {
 		lport=atoi(argv[1]);
 	}
 
-	IpfixPrinter ipfixPrinter;
-	ipfixPrinter.start();
-	ipfixPrinter.runSink();
+	//IpfixPrinter ipfixPrinter;
 
 	IpfixReceiverUdpIpV4 ipfixReceiver(lport);
 	/* (not in this branch of rcvIpfix)
@@ -74,13 +72,14 @@ int main(int argc, char *argv[]) {
 	}
 	*/
 
-	IpfixParser ipfixParser;
+	// FIXME: test temporarily deactivated
+	/*IpfixParser ipfixParser;
 	ipfixParser.addFlowSink(&ipfixPrinter);
 
 	IpfixCollector ipfixCollector;
 	ipfixCollector.addIpfixReceiver(&ipfixReceiver);
 	ipfixCollector.addIpfixPacketProcessor(&ipfixParser);
-	ipfixCollector.start();
+	ipfixCollector.start();*/
 
 	msg(MSG_DIALOG, "Listening on %d. Hit Ctrl+C to quit\n", lport);
 	pause();
@@ -90,7 +89,7 @@ int main(int argc, char *argv[]) {
 	ipfixReceiver.stop();
 
 	msg(MSG_DIALOG, "stopping printer\n");
-	ipfixPrinter.stop();
+	//ipfixPrinter.stop();
 
 	return 0;
 }

@@ -78,6 +78,8 @@ protected:
 	uint16_t fieldLength; /**< length in bytes of all variable-length fields */
 	Rule::Field::Modifier* fieldModifier; /**< specifies what modifier to apply to a given field */
 	Source<IpfixRecord*>* recordSource; /**< pointer to vermont module which is able to send IpfixRecords */
+	
+	InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
 			
 	
 	int isToBeAggregated(IpfixRecord::FieldInfo::Type type);

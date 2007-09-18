@@ -43,23 +43,23 @@ protected:
 	// virtual handler functions for child classes 
 	virtual void onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo);
 	virtual void onOptionsTemplate(IpfixRecord::SourceID* sourceID,
-			IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo);
+								   IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo);
 	virtual void onDataTemplate(IpfixRecord::SourceID* sourceID,
-			IpfixRecord::DataTemplateInfo* dataTemplateInfo);
+								IpfixRecord::DataTemplateInfo* dataTemplateInfo);
 	virtual void onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo,
-			uint16_t length, IpfixRecord::Data* data);
+							  uint16_t length, IpfixRecord::Data* data);
 	virtual void onOptionsRecord(IpfixRecord::SourceID* sourceID,
-			IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length,
-			IpfixRecord::Data* data);
+								 IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length,
+								 IpfixRecord::Data* data);
 	virtual void onDataDataRecord(IpfixRecord::SourceID* sourceID,
-			IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length,
-			IpfixRecord::Data* data);
+								  IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length,
+								  IpfixRecord::Data* data);
 	virtual void onTemplateDestruction(IpfixRecord::SourceID* sourceID,
-			IpfixRecord::TemplateInfo* templateInfo);
+									   IpfixRecord::TemplateInfo* templateInfo);
 	virtual void onOptionsTemplateDestruction(IpfixRecord::SourceID* sourceID,
-			IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo);
+											  IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo);
 	virtual void onDataTemplateDestruction(IpfixRecord::SourceID* sourceID,
-			IpfixRecord::DataTemplateInfo* dataTemplateInfo);
+										   IpfixRecord::DataTemplateInfo* dataTemplateInfo);
 };
 
 #endif /*IPFIXRECORDDESTINATION_H_*/

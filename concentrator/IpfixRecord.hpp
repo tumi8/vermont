@@ -36,7 +36,8 @@ typedef uint16_t TemplateID;
 /**
  * represents one one of several IPFIX Records, e.g. a Data Record, an Options Template Record, ...
  */
-class IpfixRecord {
+class IpfixRecord
+{
 	public:
 		typedef uint8_t Data;
 
@@ -428,57 +429,67 @@ class IpfixRecord {
 		virtual ~IpfixRecord();
 };
 
-class IpfixTemplateRecord : public IpfixRecord {
+class IpfixTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixTemplateRecord> {
 	public:
+		IpfixTemplateRecord(InstanceManager<IpfixTemplateRecord>* im);
 		boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
 };
 
-class IpfixOptionsTemplateRecord : public IpfixRecord {
+class IpfixOptionsTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixOptionsTemplateRecord> {
 	public:
+		IpfixOptionsTemplateRecord(InstanceManager<IpfixOptionsTemplateRecord>* im);
 		boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
 };
 
-class IpfixDataTemplateRecord : public IpfixRecord {
+class IpfixDataTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixDataTemplateRecord> {
 	public:
+		IpfixDataTemplateRecord(InstanceManager<IpfixDataTemplateRecord>* im);
 		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
 };
 
-class IpfixDataRecord : public IpfixRecord {
+class IpfixDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataRecord> {
 	public:
+		IpfixDataRecord(InstanceManager<IpfixDataRecord>* im);
 		boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
 		int dataLength;
 		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
 		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
 };
 
-class IpfixOptionsRecord : public IpfixRecord {
+class IpfixOptionsRecord : public IpfixRecord, public ManagedInstance<IpfixOptionsRecord> {
 	public:
+		IpfixOptionsRecord(InstanceManager<IpfixOptionsRecord>* im);
 		boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
 		int dataLength;
 		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
 		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
 };
 
-class IpfixDataDataRecord : public IpfixRecord {
+class IpfixDataDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataDataRecord> 
+{
 	public:
+		IpfixDataDataRecord(InstanceManager<IpfixDataDataRecord>* im);
 		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
 		int dataLength;
 		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
 		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
 };
 
-class IpfixTemplateDestructionRecord : public IpfixRecord {
+class IpfixTemplateDestructionRecord : public IpfixRecord, public ManagedInstance<IpfixTemplateDestructionRecord> {
 	public:
+		IpfixTemplateDestructionRecord(InstanceManager<IpfixTemplateDestructionRecord>* im);
 		boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
 };
 
-class IpfixOptionsTemplateDestructionRecord : public IpfixRecord {
+class IpfixOptionsTemplateDestructionRecord : public IpfixRecord, public ManagedInstance<IpfixOptionsTemplateDestructionRecord> {
 	public:
+		IpfixOptionsTemplateDestructionRecord(InstanceManager<IpfixOptionsTemplateDestructionRecord>* im);
 		boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
 };
 
-class IpfixDataTemplateDestructionRecord : public IpfixRecord {
+class IpfixDataTemplateDestructionRecord : public IpfixRecord, public ManagedInstance<IpfixDataTemplateDestructionRecord> {
 	public:
+		IpfixDataTemplateDestructionRecord(InstanceManager<IpfixDataTemplateDestructionRecord>* im);
 		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
 };
 

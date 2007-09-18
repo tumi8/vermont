@@ -20,97 +20,52 @@
 
 // FIXME: Basic support for NetflowV9 packets, templates and flow records is provided. Will break when fed field types with type ID >= 0x8000.
 
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <unistd.h>
 
-/* for ntohll et al */
-#include "ipfixlolib/ipfixlolib.h"
-
-#include "IpfixReceiver.hpp"
-#include "TemplateBuffer.hpp"
-#include "ipfix.hpp"
-
-#include "common/msg.h"
 
 #include "IpfixCollector.hpp"
 
-/**
- * Adds a PacketProcessor to the list of PacketProcessors
- * @param ipfixCollector Collector to assign the PacketProcessor to
- * @param packetProcessor handle of packetProcessor
- */
-void IpfixCollector::addIpfixPacketProcessor(IpfixPacketProcessor* packetProcessor) {
-	packetProcessors.push_back(packetProcessor);
+#include "IpfixReceiver.hpp"
+#include "IpfixParser.hpp"
+#include "common/msg.h"
 
-	for (std::list<IpfixReceiver*>::iterator i = ipfixReceivers.begin(); i != ipfixReceivers.end(); i++) {
-		(*i)->setPacketProcessors(packetProcessors);
-	}
-}
 
 
 /**
  * Creates a new IpfixCollector.
  * Call @c startIpfixCollector() to start receiving and processing messages.
  */
-IpfixCollector::IpfixCollector() {
+IpfixCollector::IpfixCollector(IpfixReceiver* receiver)
+	: ipfixReceiver(receiver)
+{
+	ipfixPacketProcessor = new IpfixParser(this);
+	
+	// wire ipfixReceiver with ipfixPacketProcessor
+	list<IpfixPacketProcessor*> pplist;
+	pplist.push_back(ipfixPacketProcessor);
+	ipfixReceiver->setPacketProcessors(pplist);
 }
 
 /**
  * Frees memory used by a IpfixCollector.
- * @param ipfixCollector Handle returned by @c createIpfixCollector()
  */
-IpfixCollector::~IpfixCollector() {
-	for (std::list<IpfixReceiver*>::iterator i = ipfixReceivers.begin(); i != ipfixReceivers.end(); i++) {
-		//FIXME: who should delete those?
-		//delete (*i);
-	}
-	for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); i++) {
-		//FIXME: who should delete those?
-		//delete (*i);
-	}
+IpfixCollector::~IpfixCollector() 
+{
+	delete ipfixPacketProcessor;
 }
 
 /**
- * Starts receiving and processing messages.
- * All sockets prepared by calls to createIpfixCollector() will start
- * receiving messages until stopIpfixCollector() is called.
- * @return 0 on success, non-zero on error
+ * Starts receiving and processing messages by starting the
+ * ipfixReceiver
  */
-int IpfixCollector::start() {
-	int err = 0;
-	for (std::list<IpfixReceiver*>::iterator i = ipfixReceivers.begin(); i != ipfixReceivers.end(); i++) {
-		(*i)->start();
-	}
-	return err;
+void IpfixCollector::performStart() 
+{
+	ipfixReceiver->start();
 }
 
 /**
  * Stops processing messages.
- * No more messages will be processed until the next startIpfixCollector() call.
- * @return 0 on success, non-zero on error
  */
-int IpfixCollector::stop() {
-	int err = 0;
-	for (std::list<IpfixReceiver*>::iterator i = ipfixReceivers.begin(); i != ipfixReceivers.end(); i++) {
-		(*i)->stop();
-	}
-	return err;
+void IpfixCollector::performShutdown() 
+{
+	ipfixReceiver->stop();
 }
-
-/**
- * Adds a IpfixReceiver to the list of IpfixReceivers
- * @param ipfixCollector Collector to assign the IpfixReceiver to
- * @param ipfixReceiver handle of ipfixReceiver
- */
-void IpfixCollector::addIpfixReceiver(IpfixReceiver* ipfixReceiver) {
-	ipfixReceivers.push_back(ipfixReceiver);
-}
-

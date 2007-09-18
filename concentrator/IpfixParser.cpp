@@ -102,7 +102,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		templateBuffer->bufferTemplate(bt); 
 		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
 
-		boost::shared_ptr<IpfixTemplateRecord> ipfixRecord(new IpfixTemplateRecord);
+		IpfixTemplateRecord* ipfixRecord = templateRecordIM.getNewInstance();
 		ipfixRecord->sourceID = sourceId;
 		ipfixRecord->templateInfo = ti;
 		push(ipfixRecord);
@@ -186,7 +186,7 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 		templateBuffer->bufferTemplate(bt); 
 		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
 
-		boost::shared_ptr<IpfixOptionsTemplateRecord> ipfixRecord(new IpfixOptionsTemplateRecord);
+		IpfixOptionsTemplateRecord* ipfixRecord = optionsTemplateRecordIM.getNewInstance();
 		ipfixRecord->sourceID = sourceId;
 		ipfixRecord->optionsTemplateInfo = ti;
 		push(ipfixRecord);
@@ -290,7 +290,7 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		templateBuffer->bufferTemplate(bt); 
 		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
 
-		boost::shared_ptr<IpfixDataTemplateRecord> ipfixRecord(new IpfixDataTemplateRecord);
+		IpfixDataTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
 		ipfixRecord->sourceID = sourceId;
 		ipfixRecord->dataTemplateInfo = ti;
 		push(ipfixRecord);
@@ -331,7 +331,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 
 			/* We stop processing when no full record is left */
 			while (record < recordX - (bt->recordLength - 1)) {
-				boost::shared_ptr<IpfixDataRecord> ipfixRecord(new IpfixDataRecord);
+				IpfixDataRecord* ipfixRecord = dataRecordIM.getNewInstance();
 				ipfixRecord->sourceID = sourceId;
 				ipfixRecord->templateInfo = ti;
 				ipfixRecord->dataLength = bt->recordLength;
@@ -368,7 +368,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 					recordLength += fieldLength;
 				}
 
-				boost::shared_ptr<IpfixDataRecord> ipfixRecord(new IpfixDataRecord);
+				IpfixDataRecord* ipfixRecord = dataRecordIM.getNewInstance();
 				ipfixRecord->sourceID = sourceId;
 				ipfixRecord->templateInfo = ti;
 				ipfixRecord->dataLength = recordLength;
@@ -389,7 +389,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 			if (bt->recordLength < 65535) {
 				uint8_t* recordX = record+length;
 				while (record < recordX) {
-					boost::shared_ptr<IpfixOptionsRecord> ipfixRecord(new IpfixOptionsRecord);
+					IpfixOptionsRecord* ipfixRecord = optionsRecordIM.getNewInstance();
 					ipfixRecord->sourceID = sourceId;
 					ipfixRecord->optionsTemplateInfo = ti;
 					ipfixRecord->dataLength = bt->recordLength;
@@ -436,7 +436,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 						recordLength += fieldLength;
 					}
 
-					boost::shared_ptr<IpfixOptionsRecord> ipfixRecord(new IpfixOptionsRecord);
+					IpfixOptionsRecord* ipfixRecord = optionsRecordIM.getNewInstance();
 					ipfixRecord->sourceID = sourceId;
 					ipfixRecord->optionsTemplateInfo = ti;
 					ipfixRecord->dataLength = recordLength;
@@ -457,7 +457,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 					uint8_t* recordX = record+length;
 					while (record < recordX) {
 
-						boost::shared_ptr<IpfixDataDataRecord> ipfixRecord(new IpfixDataDataRecord);
+						IpfixDataDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
 						ipfixRecord->sourceID = sourceId;
 						ipfixRecord->dataTemplateInfo = ti;
 						ipfixRecord->dataLength = bt->recordLength;
@@ -488,7 +488,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 							recordLength += fieldLength;
 						}
 
-						boost::shared_ptr<IpfixDataDataRecord> ipfixRecord(new IpfixDataDataRecord);
+						IpfixDataDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
 						ipfixRecord->sourceID = sourceId;
 						ipfixRecord->dataTemplateInfo = ti;
 						ipfixRecord->dataLength = recordLength;
@@ -749,8 +749,18 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
  * Creates a new  @c IpfixParser.
  * @return handle to created instance
  */
-IpfixParser::IpfixParser() 
-	: statProcessedFlows(0)
+IpfixParser::IpfixParser(IpfixRecordSender* sender) 
+	: statProcessedFlows(0),
+	  ipfixRecordSender(sender),
+	  templateRecordIM(0),
+	  optionsTemplateRecordIM(0),
+	  dataTemplateRecordIM(0),
+	  dataRecordIM(0),
+	  optionsRecordIM(0),
+	  dataDataRecordIM(0),
+	  templateDestructionRecordIM(0),
+	  optionsTemplateDestructionRecordIM(0),
+	  dataTemplateDestructionRecordIM(0)
 {
 
 	if (pthread_mutex_init(&mutex, NULL) != 0) {
@@ -796,8 +806,8 @@ std::string IpfixParser::getStatistics()
  * needed for generating statistics, all records are passed through to
  * FlowSink::push
  */
-void IpfixParser::push(boost::shared_ptr<IpfixRecord> ipfixRecord)
+void IpfixParser::push(IpfixRecord* ipfixRecord)
 {
 	statProcessedFlows++;
-	FlowSource::push(ipfixRecord);
+	ipfixRecordSender->send(ipfixRecord);
 }
