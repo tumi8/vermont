@@ -1,6 +1,7 @@
 #include "BaseHashtable.h"
 
 #include <sstream>
+#include <stdint.h>
 
 using namespace std;
 
@@ -10,20 +11,20 @@ using namespace std;
  */
 BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, 
 		uint16_t minBufferTime, uint16_t maxBufferTime)
-	: recordSource(recordsource),
+	: minBufferTime(minBufferTime),
+	  maxBufferTime(maxBufferTime),
 	  statRecordsReceived(0),
 	  statRecordsSent(0),
 	  statTotalEntries(0),
 	  statEmptyBuckets(0),
 	  statExportedBuckets(0),
 	  statLastExpBuckets(0),
-	  minBufferTime(minBufferTime),
-	  maxBufferTime(maxBufferTime)
+	  recordSource(recordsource)
+	  
 {
-	int i;
 	int dataLength = 0; /**< length in bytes of the @c data field */
 
-	for (i = 0; i < HTABLE_SIZE; i++)
+	for (uint32_t i = 0; i < HTABLE_SIZE; i++)
 		buckets[i] = NULL;
 
 	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
@@ -40,7 +41,7 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	fieldModifier
 			= (Rule::Field::Modifier*)malloc(rule->fieldCount * sizeof(Rule::Field::Modifier));
 
-	for (i = 0; i < rule->fieldCount; i++) {
+	for (int32_t i = 0; i < rule->fieldCount; i++) {
 		Rule::Field* rf = rule->field[i];
 
 		if (rf->pattern != NULL) {
@@ -156,14 +157,13 @@ void BaseHashtable::destroyBucket(BaseHashtable::Bucket* bucket)
 void BaseHashtable::expireFlows() {
 
 	uint32_t now = time(0);
-	int i;
 
 	uint32_t noEntries = 0;
 	uint32_t emptyBuckets = 0;
 	uint32_t exportedBuckets = 0;
 	uint32_t multiEntries = 0;
 	/* check each hash bucket's spill chain */
-	for (i = 0; i < HTABLE_SIZE; i++) {
+	for (uint32_t i = 0; i < HTABLE_SIZE; i++) {
 		if (buckets[i] != 0) {
 			Bucket* bucket = buckets[i];
 			Bucket* pred = 0;

@@ -10,8 +10,8 @@
  * @param pollinterval sets the interval of polling the hashtable for expired flows
  */
 BaseAggregator::BaseAggregator(uint32_t pollinterval)
-	: thread(BaseAggregator::threadWrapper),
-	  rules(0),
+	: rules(0),
+	  thread(BaseAggregator::threadWrapper),	  
 	  pollInterval(pollinterval)
 {
 	
