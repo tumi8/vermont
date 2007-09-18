@@ -1,6 +1,5 @@
 #include "AggregationPerfTest.h"
 
-#include "sampler/ExpressHookingFilter.h"
 #include "sampler/Filter.h"
 #include "common/Time.h"
 #include "test.h"
@@ -100,7 +99,7 @@ Rules* AggregationPerfTest::createRules()
 
 void AggregationPerfTest::setup(bool express)
 {
-	packetSink = new PacketSink();
+	/*packetSink = new PacketSink();
 
 	packetManager = new InstanceManager<Packet>();
 
@@ -125,7 +124,7 @@ void AggregationPerfTest::setup(bool express)
 	packetSink->runSink();
 	ipfixAggregator->runSink();
 	ipfixAggregator->start();
-	filter->startFilter();
+	filter->startFilter();*/
 }
 
 void AggregationPerfTest::shutdown()

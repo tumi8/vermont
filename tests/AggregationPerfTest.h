@@ -3,7 +3,6 @@
 
 #include "sampler/Filter.h"
 #include "sampler/PacketSink.h"
-#include "sampler/HookingFilter.h"
 #include "concentrator/IpfixAggregator.hpp"
 #include "common/InstanceManager.h"
 
