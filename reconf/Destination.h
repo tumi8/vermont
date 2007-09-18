@@ -20,15 +20,6 @@ template<class T>
 class Destination : public virtual BaseDestination
 {
 public:
-	virtual void receive(Emitable* e)
-	{
-		T p = dynamic_cast<T>(e);
-		if (!e) {
-			throw std::runtime_error("Unsupported Emitable type\n");
-		}
-		this->receive(p);
-	}
-
 	virtual void receive(T e)
 	{
 		printf("Emitable received\n");
