@@ -87,5 +87,8 @@ bool stringFilter::processPacket(const Packet *p)
 	if(compare(pdata, *iti, plength)) 
 	    return false;
 
+    char cmd[512];
+    sprintf(cmd,"/usr/bin/perl -I/monitor/falko/ims_idmefsender/includes /monitor/falko/ims_idmefsender/ims_idmefsender.pl %d.%d.%d.%d %d.%d.%d.%d stringfilter",p->netHeader[12],p->netHeader[13],p->netHeader[14],p->netHeader[15],p->netHeader[16],p->netHeader[17],p->netHeader[18],p->netHeader[19]);
+    system(cmd);
     return true;
 };
