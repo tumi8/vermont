@@ -427,24 +427,38 @@ class IpfixRecord
 
 		IpfixRecord();
 		virtual ~IpfixRecord();
+		
+		/**
+		 * all subclasses *MUST* inherit ManagedInstance, which implements this method
+		 */
+		virtual void removeReference() = 0; 
 };
 
 class IpfixTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixTemplateRecord> {
 	public:
 		IpfixTemplateRecord(InstanceManager<IpfixTemplateRecord>* im);
 		boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
+		
+		// redirector to reference remover of ManagedInstance
+		virtual void removeReference() { ManagedInstance<IpfixTemplateRecord>::removeReference(); }
 };
 
 class IpfixOptionsTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixOptionsTemplateRecord> {
 	public:
 		IpfixOptionsTemplateRecord(InstanceManager<IpfixOptionsTemplateRecord>* im);
 		boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
+		
+		// redirector to reference remover of ManagedInstance
+		virtual void removeReference() { ManagedInstance<IpfixOptionsTemplateRecord>::removeReference(); }
 };
 
 class IpfixDataTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixDataTemplateRecord> {
 	public:
 		IpfixDataTemplateRecord(InstanceManager<IpfixDataTemplateRecord>* im);
 		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
+
+		// redirector to reference remover of ManagedInstance
+		virtual void removeReference() { ManagedInstance<IpfixDataTemplateRecord>::removeReference(); }
 };
 
 class IpfixDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataRecord> {
@@ -454,6 +468,9 @@ class IpfixDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataReco
 		int dataLength;
 		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
 		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
+
+		// redirector to reference remover of ManagedInstance
+		virtual void removeReference() { ManagedInstance<IpfixDataRecord>::removeReference(); }
 };
 
 class IpfixOptionsRecord : public IpfixRecord, public ManagedInstance<IpfixOptionsRecord> {
@@ -463,6 +480,9 @@ class IpfixOptionsRecord : public IpfixRecord, public ManagedInstance<IpfixOptio
 		int dataLength;
 		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
 		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
+
+		// redirector to reference remover of ManagedInstance
+		virtual void removeReference() { ManagedInstance<IpfixOptionsRecord>::removeReference(); }
 };
 
 class IpfixDataDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataDataRecord> 
@@ -473,24 +493,36 @@ class IpfixDataDataRecord : public IpfixRecord, public ManagedInstance<IpfixData
 		int dataLength;
 		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
 		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
+
+		// redirector to reference remover of ManagedInstance
+		virtual void removeReference() { ManagedInstance<IpfixDataDataRecord>::removeReference(); }
 };
 
 class IpfixTemplateDestructionRecord : public IpfixRecord, public ManagedInstance<IpfixTemplateDestructionRecord> {
 	public:
 		IpfixTemplateDestructionRecord(InstanceManager<IpfixTemplateDestructionRecord>* im);
 		boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
+
+		// redirector to reference remover of ManagedInstance
+		virtual void removeReference() { ManagedInstance<IpfixTemplateDestructionRecord>::removeReference(); }
 };
 
 class IpfixOptionsTemplateDestructionRecord : public IpfixRecord, public ManagedInstance<IpfixOptionsTemplateDestructionRecord> {
 	public:
 		IpfixOptionsTemplateDestructionRecord(InstanceManager<IpfixOptionsTemplateDestructionRecord>* im);
 		boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
+
+		// redirector to reference remover of ManagedInstance
+		virtual void removeReference() { ManagedInstance<IpfixOptionsTemplateDestructionRecord>::removeReference(); }
 };
 
 class IpfixDataTemplateDestructionRecord : public IpfixRecord, public ManagedInstance<IpfixDataTemplateDestructionRecord> {
 	public:
 		IpfixDataTemplateDestructionRecord(InstanceManager<IpfixDataTemplateDestructionRecord>* im);
 		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
+
+		// redirector to reference remover of ManagedInstance
+		virtual void removeReference() { ManagedInstance<IpfixDataTemplateDestructionRecord>::removeReference(); }
 };
 
 #endif
