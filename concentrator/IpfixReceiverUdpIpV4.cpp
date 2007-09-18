@@ -36,6 +36,7 @@
 #include <netdb.h>
 #include <sstream>
 
+
 using namespace std;
 
 /** 
@@ -52,8 +53,6 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port)
 		perror("Could not create socket");
 		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4");
 	}
-	
-	exit = 0;
 	
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -83,12 +82,13 @@ void IpfixReceiverUdpIpV4::run() {
 	struct sockaddr_in clientAddress;
 	socklen_t clientAddressLen;
 	
-	while(!exit) {
+	while(!exitFlag) {
 		boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
 		boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
 		int n;
 
 		clientAddressLen = sizeof(struct sockaddr_in);
+		// FIXME: recvfrom is blocking - this function does not exit when no packet arrives
 		n = recvfrom(listen_socket, data.get(), MAX_MSG_LEN,
 			     0, (struct sockaddr*)&clientAddress, &clientAddressLen);
 		if (n < 0) {
@@ -103,11 +103,9 @@ void IpfixReceiverUdpIpV4::run() {
 			memcpy(sourceID->exporterAddress.ip, &ip, 4);
 			sourceID->exporterAddress.len = 4;
 
-			pthread_mutex_lock(&mutex);
 			for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
 				(*i)->processPacket(data, n, sourceID);
 			}
-			pthread_mutex_unlock(&mutex);
 		}
 		else{
 			msg(MSG_DEBUG, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));

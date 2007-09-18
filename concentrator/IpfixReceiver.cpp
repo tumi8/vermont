@@ -37,81 +37,40 @@
 #include <netdb.h>
 
 
-IpfixReceiver::IpfixReceiver() {
+IpfixReceiver::IpfixReceiver()
+	: exitFlag(true),
+	  thread(threadWrapper)
+	  
+{
 }
 
 /**
  * Frees memory used by an IpfixReceiver.
- * Attention: Memory of the assigned PacketProcessors is NOT freed.
- * This has to be done by the calling instance itself.
- * @param ipfixReceiver Handle returned by @c createIpfixReceiver()
  */
-IpfixReceiver::~IpfixReceiver() {
-	/* general cleanup */
-	
-	//FIXME: cleanup listener thread
+IpfixReceiver::~IpfixReceiver() 
+{
 
-	if (pthread_mutex_unlock(&mutex) != 0) {
-		msg(MSG_FATAL, "Could not unlock mutex");
-	}
-
-	pthread_mutex_destroy(&mutex);
 }
 
 
 /**
  * Starts processing messages.
  * All sockets prepared by calls to @c createIpfixReceiver() will start
- * receiving messages until @c stopIpfixReceiver() is called.
- * @return 0 on success, non-zero on error
  */
-int IpfixReceiver::start() {
-	exit = 0;
-	
-	if (pthread_mutex_init(&mutex, NULL) != 0) {
-		msg(MSG_FATAL, "IpfixReceiver::start: Could not init mutex");
-		goto out1;
-	}
-	
-	if (pthread_mutex_lock(&mutex) != 0) {
-		msg(MSG_FATAL, "IpfixReceiver::start: Could not lock mutex");
-		goto out1;
-	}
-	
-	if(pthread_create(&(thread), 0, listenerThread, this) != 0) {
-		msg(MSG_FATAL, "IpfixReceiver::start: Could not create listener thread");
-		goto out1;
-	}
-
-	if (pthread_mutex_unlock(&mutex) != 0) {
-		msg(MSG_FATAL, "IpfixReceiver::start: Could not unlock mutex");
-		return -1;
-	}
-	
-	return 0;
-out1:
-	THROWEXCEPTION("IpfixReceiver::startThread: thread creation failed");
-	return 1;
+void IpfixReceiver::start() 
+{
+	exitFlag = false;
+	thread.run(this);
 }
 
 /**
  * Stops processing messages.
  * No more messages will be processed until the next startIpfixReceiver() call.
- * @return 0 on success, non-zero on error
  */
-int IpfixReceiver::stop() {
-	if (pthread_mutex_lock(&mutex) != 0) {
-		msg(MSG_FATAL, "IpfixReceiver::stop(): Could not lock mutex");
-		return -1;
-	}
-
-	void* result = NULL;
-        if (pthread_join(thread, &result)) {
-		msg(MSG_FATAL, "IpfixReceiver::stop(): Could not join thread");
-                return -1;
-        }
-            
-	return 0;
+void IpfixReceiver::stop() 
+{
+	exitFlag = true;
+	thread.join();
 }
 
 /**
@@ -121,7 +80,8 @@ int IpfixReceiver::stop() {
  * @param packetProcessor List of PacketProcessors
  * @return 0 on success, non-zero on error
  */
-int IpfixReceiver::setPacketProcessors(std::list<IpfixPacketProcessor*> packetProcessors) {
+int IpfixReceiver::setPacketProcessors(std::list<IpfixPacketProcessor*> packetProcessors) 
+{
 	this->packetProcessors = packetProcessors;
 	return 0;
 }
@@ -130,7 +90,8 @@ int IpfixReceiver::setPacketProcessors(std::list<IpfixPacketProcessor*> packetPr
  * Checks if PacketProcessors where assigned to the IpfixReceiver
  * @return 0 if no PacketProcessors where assigned, > 0 otherwise
  */
-bool IpfixReceiver::hasPacketProcessor() {
+bool IpfixReceiver::hasPacketProcessor() 
+{
 	return !packetProcessors.empty();
 }
 
@@ -140,7 +101,8 @@ bool IpfixReceiver::hasPacketProcessor() {
  * @param host address to add to the list
  * @return 0 on success, non-zero on error
  */
-int IpfixReceiver::addAuthorizedHost(const char* host) {
+int IpfixReceiver::addAuthorizedHost(const char* host) 
+{
 	struct in_addr inaddr;
 
 	if (inet_aton(host, &inaddr) == 0) {
@@ -159,7 +121,8 @@ int IpfixReceiver::addAuthorizedHost(const char* host) {
  * @param addrlen Length of inaddr
  * @return 0 if host is NOT in list, non-zero otherwise
  */
-int IpfixReceiver::isHostAuthorized(struct in_addr* inaddr, int addrlen) {
+int IpfixReceiver::isHostAuthorized(struct in_addr* inaddr, int addrlen) 
+{
 	/* if we have a list of authorized hosts, discard message if sender is not in this list */
 	if (!authHosts.empty()) {
 		for (unsigned i=0; i < authHosts.size(); ++i) {
@@ -172,25 +135,17 @@ int IpfixReceiver::isHostAuthorized(struct in_addr* inaddr, int addrlen) {
 	return 1;
 }
 
+
 /**
  * Thread function responsible for receiving packets from the network
  * @param ipfixReceiver_ pointer to an IpfixReceiver instance
  * @return NULL
  */
-void* IpfixReceiver::listenerThread(void* ipfixReceiver_) {
+void* IpfixReceiver::threadWrapper(void* ipfixReceiver_) {
    IpfixReceiver* ipfixReceiver = (IpfixReceiver*)ipfixReceiver_;
 
    ipfixReceiver->run();
 
    return NULL;
-}
-
-/**
- * Called by the logger timer thread. Dumps info using msg_stat
- */
-void IpfixReceiver::stats()
-{
-	msg_stat("Concentrator: IpfixReceiver: %6d records received", receivedRecords);
-	receivedRecords = 0;
 }
 

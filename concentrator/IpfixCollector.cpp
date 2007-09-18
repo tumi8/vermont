@@ -87,7 +87,7 @@ IpfixCollector::~IpfixCollector() {
 int IpfixCollector::start() {
 	int err = 0;
 	for (std::list<IpfixReceiver*>::iterator i = ipfixReceivers.begin(); i != ipfixReceivers.end(); i++) {
-		err += (*i)->start(); 
+		(*i)->start();
 	}
 	return err;
 }
@@ -100,7 +100,7 @@ int IpfixCollector::start() {
 int IpfixCollector::stop() {
 	int err = 0;
 	for (std::list<IpfixReceiver*>::iterator i = ipfixReceivers.begin(); i != ipfixReceivers.end(); i++) {
-		err += (*i)->stop(); 
+		(*i)->stop();
 	}
 	return err;
 }

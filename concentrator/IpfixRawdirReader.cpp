@@ -46,8 +46,6 @@ IpfixRawdirReader::IpfixRawdirReader(std::string packet_directory_path) : packet
 	if (!boost::filesystem::is_directory(full_path)) THROWEXCEPTION("Packet directory path is not a directory");
 
 	dir_iterator = boost::filesystem::directory_iterator(full_path);
-
-	exit = 0;
 }
 
 
@@ -62,7 +60,7 @@ void IpfixRawdirReader::run() {
 	boost::shared_array<uint8_t> data;
 	boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
 
-	while(!exit) {
+	while(!exitFlag) {
 
 		if (dir_iterator == end_iterator) {
 			msg(MSG_DEBUG, "No more packets in packet directory path, terminating listener thread");
@@ -105,12 +103,10 @@ void IpfixRawdirReader::run() {
 		memcpy(sourceID->exporterAddress.ip, &ip, 4);
 		sourceID->exporterAddress.len = 4;
 
-		pthread_mutex_lock(&mutex);
 		for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
 		msg(MSG_DEBUG, "Data block starts with: %x %x %x %x", data[0], data[1], data[2], data[3]);
 			(*i)->processPacket(data, n, sourceID);
 		}
-		pthread_mutex_unlock(&mutex);
 
 		//sleep(1);
 	}
