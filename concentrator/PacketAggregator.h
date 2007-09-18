@@ -22,6 +22,7 @@
 #define PACKETAGGREGATOR_H_
 
 #include "Rules.hpp"
+#include "BaseAggregator.h"
 #include "reconf/Module.h"
 #include "reconf/Source.h"
 #include "reconf/Destination.h"
@@ -36,10 +37,11 @@
  * (IpfixAggregator is mainly used for aggregation of IPFIX flows)
  * inherits functionality of ExpressAggregator
  */
-class PacketAggregator : public Module, public StatisticsModule, public Destination<Packet*>, public Source<IpfixRecord>
-{
+class PacketAggregator
+		: public BaseAggregator, public Destination<Packet*>
+ {
 public:
-	PacketAggregator();
+	PacketAggregator(uint32_t pollinterval);
 	virtual ~PacketAggregator();
 
 	void buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime);
@@ -52,7 +54,9 @@ public:
 	
 protected:
 	Rules* rules; /**< Set of rules that define the aggregator */
-	pthread_mutex_t mutex; /**< Mutex to synchronize and/or pause aggregator */
+	
+	virtual BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, 
+			uint16_t maxBufferTime);
 };
 
 #endif /*PACKETAGGREGATOR_H_*/

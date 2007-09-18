@@ -19,7 +19,6 @@
 
 ADD_LIBRARY(concentrator
 	IpfixAggregator.cpp
-	Hashtable.cpp
 	ipfix.cpp
 	IpfixReceiver.cpp
 	IpfixReceiverUdpIpV4.cpp
