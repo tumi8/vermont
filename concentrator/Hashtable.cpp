@@ -371,6 +371,10 @@ void Hashtable::buildExpHelperTable()
 	expHelperTable.expFieldData = new ExpFieldData[dataTemplate->fieldCount];
 	expHelperTable.varSrcPtrFields = new uint16_t[dataTemplate->fieldCount];
 
+	// TODO: fill with correct value!
+	expHelperTable.dstIpEFieldIndex = false;
+	expHelperTable.srcIpEFieldIndex = false;
+
 	// at first, fill data structure with aggregatable fields
 	uint16_t efdIdx = 0;
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
