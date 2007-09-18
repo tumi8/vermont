@@ -48,18 +48,7 @@ SUBDIRS(
 )
 
 ADD_EXECUTABLE(vermont
-	collector_configuration.cc
-	exporter_configuration.cc
-	metering_configuration.cc
-	observer_configuration.cc
 	vermont.cc
-	ipfix_configuration.cc
-	vermontmain_configuration.cc
-	packetselection_configuration.cc
-	packetreporting_configuration.cc
-	flowmetering_configuration.cc
-	dbwriter_configuration.cc
-	dbreader_configuration.cc
 )
 
 INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR})

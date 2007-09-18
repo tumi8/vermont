@@ -20,7 +20,6 @@
 ADD_LIBRARY(sampler
 	ExporterSink.cpp
 	Filter.cpp
-	HookingFilter.cpp
 	IPHeaderFilter.cpp
 	Observer.cpp
 	Packet.cpp
@@ -31,6 +30,5 @@ ADD_LIBRARY(sampler
 	Template.cpp
 	stringFilter.cpp
 	regExFilter.cpp
-	ExpressHookingFilter.cpp
 )
 

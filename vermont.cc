@@ -14,8 +14,6 @@
 #include <string.h>
 
 /* own systems */
-#include "ipfix_configuration.h"
-
 #include "common/TimeoutSemaphore.h"
 #include "common/msg.h"
 #include "common/StatisticsManager.h"
@@ -30,7 +28,6 @@ static void sig_USR1_handler(int x);
 
 static int setup_signal(int signal, void (*handler)(int));
 
-IpfixConfiguration* ipfixConfig = NULL;
 ConfigManager manager;
 
 int main(int ac, char **dc)
@@ -70,7 +67,7 @@ int main(int ac, char **dc)
 			exit(1);
 		}
 	}
-	
+
 	if (config_file == NULL) {
 		msg(MSG_FATAL, "no config file given, but mandatory");
 		usage();
@@ -91,29 +88,13 @@ int main(int ac, char **dc)
 
 	setup_signal(SIGINT, sig_INT_handler);
 	setup_signal(SIGUSR1, sig_USR1_handler);
-	
+
 	manager.parseConfig(string(config_file));
-/*
-	try {
-		ipfixConfig = new IpfixConfiguration(config_file);
-	        ipfixConfig->readSubsystemConfiguration();
-		ipfixConfig->connectSubsystems();
-		ipfixConfig->startSubsystems();
-	} catch (std::exception& e) {
-		msg(MSG_FATAL, "%s", e.what());
-		delete ipfixConfig;
-		return -1;
-	}
-*/
 	unsigned int sleepTime = 1000;
 	while ((sleepTime = sleep(sleepTime)) != 0);
 
 	time_t t = time(NULL);
 	msg(MSG_DIALOG, "up and running at %s", ctime(&t));
-
-	ipfixConfig->pollAggregatorLoop();
-
-	delete ipfixConfig;
 
 	return 0;
 }
@@ -168,10 +149,6 @@ static void sig_INT_handler(int x)
 	msg(MSG_DIALOG, "got signal %d - exiting", x);
 
 	manager.shutdown();
-
-	if (ipfixConfig) {
-		delete ipfixConfig;
-	}
 
 	// TODO: maybe there are more constructors to be called?
 	exit(2);

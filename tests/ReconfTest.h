@@ -5,7 +5,6 @@
 #include "reconf/ConnectionQueue.h"
 #include "reconf/FilterModule.h"
 #include "sampler/PacketSink.h"
-#include "sampler/HookingFilter.h"
 #include "concentrator/IpfixAggregator.hpp"
 #include "common/InstanceManager.h"
 
