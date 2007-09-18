@@ -30,52 +30,57 @@
  *
  * Interface for feeding generated Templates and Data Records to "ipfixlolib" 
  */
-class IpfixSender : public FlowSink, StatisticsModule {
-	public:
-		IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0);
-		virtual ~IpfixSender();
+class IpfixSender : public FlowSink, StatisticsModule
+{
+public:
+	IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0);
+	virtual ~IpfixSender();
 
-		void start();
-		void stop();
+	void start();
+	void stop();
 
-		int addCollector(const char *ip, uint16_t port);
+	int addCollector(const char *ip, uint16_t port);
 
-		int onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
-                int onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
-                int onDataDataRecord(boost::shared_ptr<IpfixDataDataRecord> rec);
-		int onIdle();
+	int onDataTemplate(IpfixRecord::SourceID* sourceID,
+			IpfixRecord::DataTemplateInfo* dataTemplateInfo);
+	int onDataTemplateDestruction(IpfixRecord::SourceID* sourceID,
+			IpfixRecord::DataTemplateInfo* dataTemplateInfo);
+	int onDataDataRecord(boost::shared_ptr<IpfixDataDataRecord> rec);
+	int onIdle();
 
-        virtual void flowSinkProcess();
-		virtual std::string getStatistics();
+	virtual void flowSinkProcess();
+	virtual std::string getStatistics();
 
-		class Collector {
-		    public:
-			Collector() : port(0)
-			{
-			    memset(&ip, 0, sizeof(ip)); 
-			}
-			~Collector() {}
-			
-			char ip[128]; /**< IP address of Collector */
-			uint16_t port; /**< Port of Collector */
-		};
-		
-	protected:
-		ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */
-		uint16_t lastTemplateId; /**< Template ID of last created Template */
-		std::vector<Collector> collectors; /**< Collectors we export to */
-		uint32_t statSentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
+	class Collector
+	{
+public:
+		Collector() :
+			port(0)
+		{
+			memset(&ip, 0, sizeof(ip));
+		}
+		~Collector() {}
 
-	private:
-		int startDataSet(uint16_t templateId);
-		int endAndSendDataSet();
+		char ip[128]; /**< IP address of Collector */
+		uint16_t port; /**< Port of Collector */
+	};
 
-		std::vector<boost::shared_ptr<IpfixRecord> > recordsToRelease;
-		
-		uint16_t ringbufferPos; /**< Pointer to next free slot in @c conversionRingbuffer. */
-		uint8_t conversionRingbuffer[65536]; /**< Ringbuffer used to store converted imasks between @c ipfix_put_data_field() and @c ipfix_send() */
-		uint16_t recordsInDataSet; /**< The number of records in the current data set */
-		uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
+protected:
+	ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */
+	uint16_t lastTemplateId; /**< Template ID of last created Template */
+	std::vector<Collector> collectors; /**< Collectors we export to */
+	uint32_t statSentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
+
+private:
+	int startDataSet(uint16_t templateId);
+	int endAndSendDataSet();
+
+	std::vector<boost::shared_ptr<IpfixRecord> > recordsToRelease;
+
+	uint16_t ringbufferPos; /**< Pointer to next free slot in @c conversionRingbuffer. */
+	uint8_t conversionRingbuffer[65536]; /**< Ringbuffer used to store converted imasks between @c ipfix_put_data_field() and @c ipfix_send() */
+	uint16_t recordsInDataSet; /**< The number of records in the current data set */
+	uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
 };
 
 #endif
