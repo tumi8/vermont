@@ -412,6 +412,7 @@ void Hashtable::expireFlows() {
 	uint32_t noEntries = 0;
 	uint32_t emptyBuckets = 0;
 	uint32_t exportedBuckets = 0;
+	uint32_t multiEntries = 0;
 	/* check each hash bucket's spill chain */
 	for (i = 0; i < bucketCount; i++) {
 		if (buckets[i] != 0) {
@@ -419,7 +420,10 @@ void Hashtable::expireFlows() {
 			Hashtable::Bucket* pred = 0;
 
 			/* iterate over spill chain */
+			bool firstentry = true;
 			while (bucket != 0) {
+				if (firstentry) firstentry = false;
+				else multiEntries++;
 				noEntries++;
 				Hashtable::Bucket* nextBucket = (Hashtable::Bucket*)bucket->next;
 				if ((now > bucket->expireTime) || (now > bucket->forceExpireTime)) {
@@ -448,6 +452,7 @@ void Hashtable::expireFlows() {
 	statTotalEntries = noEntries;
 	statEmptyBuckets = emptyBuckets;
 	statExportedBuckets += exportedBuckets;
+	statMultiEntries = multiEntries;
 }
 
 /**
@@ -1413,6 +1418,7 @@ std::string Hashtable::getStatistics()
 	ostringstream oss;
 	oss << "Hashtable: number of hashtable entries      : " << statTotalEntries << endl;
 	oss << "Hashtable: number of empty hashtable buckets: " << statEmptyBuckets << endl;
+	oss << "Hashtable: number of hashtable buckets with multiple entries: " << statMultiEntries << endl;
 	uint32_t diff = statExportedBuckets - statLastExpBuckets;
 	statLastExpBuckets += diff;
 	oss << "Hashtable: number of exported entries       : " << diff << endl;
