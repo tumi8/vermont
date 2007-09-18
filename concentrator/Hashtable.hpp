@@ -57,8 +57,8 @@
 class Hashtable : public FlowSource, StatisticsModule {
 	public:
 		// configuration options for size of hashtable
-		// TODO: should be moved to configuration file
-		static const uint32_t HTABLE_BITS = 17;
+		// FIXME: should be moved to configuration file
+		static const uint32_t HTABLE_BITS = 16;
 		static const uint32_t HTABLE_SIZE = 1<<HTABLE_BITS;
 
 		class Bucket;
@@ -120,15 +120,15 @@ class Hashtable : public FlowSource, StatisticsModule {
 			 * be touched) + mask byte
 			 */
 			uint8_t  data[5];      
-			
+
 			/**
-		     * this index is used by the createMaskedField function to determine original location of IP address
-		     * inside the raw packet (as srcIndex is overwritten with index which points to data[0]
-		     */
+			 * this index is used by the createMaskedField function to determine original location of IP address
+			 * inside the raw packet (as srcIndex is overwritten with index which points to data[0]
+			 */
 			uint32_t origSrcIndex; 
 
 			bool	 varSrcIdx; /**< specifies if the index in the raw packet data is variable between packets relative to Packet::netHeader*/
-			
+
 			Rule::Field::Modifier modifier; /**< modifier when copying field (such as a mask) */
 
 			void (*copyDataFunc) (IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*); /**< function which is able to copy data from raw packet to ipfix field */
@@ -187,5 +187,5 @@ class Hashtable : public FlowSource, StatisticsModule {
 		void updatePointers(const Packet* p);
 
 };
-	
+
 #endif

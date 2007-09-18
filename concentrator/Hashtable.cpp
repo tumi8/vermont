@@ -161,7 +161,7 @@ Hashtable::~Hashtable() {
 	ipfixRecord->dataTemplateInfo = dataTemplate;
 	flowSink->push(ipfixRecord);
 	push(ipfixRecord);
-	*/
+	 */
 
 	free(fieldModifier);
 
@@ -641,7 +641,7 @@ int Hashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::D
 	}
 
 	return 0;
-out:
+	out:
 	return 1;
 }
 
@@ -680,15 +680,15 @@ int Hashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data* flo
 uint16_t Hashtable::getHash(IpfixRecord::Data* data) {
 	int i;
 
-	uint16_t hash = 0;
+	uint32_t hash = 0;
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
 		if(isToBeAggregated(dataTemplate->fieldInfo[i].type)) {
 			continue;
 		}
 		hash = crc32(hash,
-			     dataTemplate->fieldInfo[i].type.length,
-			     (char*)data + dataTemplate->fieldInfo[i].offset
-			    );
+				dataTemplate->fieldInfo[i].type.length,
+				(char*)data + dataTemplate->fieldInfo[i].offset
+		);
 	}
 
 	return hash & HTABLE_SIZE-1;
@@ -1021,11 +1021,12 @@ void Hashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord
  */
 uint16_t Hashtable::expCalculateHash(const IpfixRecord::Data* data)
 {
-	uint16_t hash = 0;
+	uint32_t hash = 0;
 	for (int i=expHelperTable.noAggFields; i<dataTemplate->fieldCount; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[i];
 		hash = crc32(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 	}
+	//return (hash>>(32-HTABLE_BITS)) & (HTABLE_SIZE-1);
 	return hash & (HTABLE_SIZE-1);
 }
 
