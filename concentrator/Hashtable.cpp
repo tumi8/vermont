@@ -78,7 +78,7 @@ Hashtable::Hashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
 	this->minBufferTime = minBufferTime;
 	this->maxBufferTime = maxBufferTime;
 
-	bucketCount = HASHTABLE_SIZE;
+	bucketCount = HTABLE_SIZE;
 	for (i = 0; i < bucketCount; i++) buckets[i] = NULL;
 
 	recordsReceived = 0;
@@ -142,8 +142,7 @@ Hashtable::Hashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
 Hashtable::~Hashtable() {
 	StatisticsManager::getInstance().removeModule(this);
 
-	int i;
-	for (i = 0; i < HASHTABLE_SIZE; i++) if (buckets[i] != NULL) {
+	for (uint32_t i = 0; i < HTABLE_SIZE; i++) if (buckets[i] != NULL) {
 		Hashtable::Bucket* bucket = buckets[i];
 		while (bucket != 0) {
 			Hashtable::Bucket* nextBucket = (Hashtable::Bucket*)bucket->next;
@@ -681,13 +680,13 @@ uint16_t Hashtable::getHash(IpfixRecord::Data* data) {
 		if(isToBeAggregated(dataTemplate->fieldInfo[i].type)) {
 			continue;
 		}
-		hash = crc16(hash,
-				dataTemplate->fieldInfo[i].type.length,
-				(char*)data + dataTemplate->fieldInfo[i].offset
-				);
+		hash = crc32(hash,
+			     dataTemplate->fieldInfo[i].type.length,
+			     (char*)data + dataTemplate->fieldInfo[i].offset
+			    );
 	}
 
-	return hash;
+	return hash & HTABLE_SIZE-1;
 }
 
 /**
@@ -1020,9 +1019,9 @@ uint16_t Hashtable::expCalculateHash(const IpfixRecord::Data* data)
 	uint16_t hash = 0;
 	for (int i=expHelperTable.noAggFields; i<dataTemplate->fieldCount; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[i];
-		hash = crc16(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
+		hash = crc32(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 	}
-	return hash;
+	return hash & (HTABLE_SIZE-1);
 }
 
 /**

@@ -33,8 +33,6 @@
 #include <stdlib.h>
 #include <boost/smart_ptr.hpp>
 
-#define HASHTABLE_SIZE 65536
-
 /**
  * Hash-powered buffer for outgoing flows.
  * This is where outbound flows are aggregated while waiting to be exported.
@@ -58,6 +56,11 @@
  */
 class Hashtable : public FlowSource, StatisticsModule {
 	public:
+		// configuration options for size of hashtable
+		// TODO: should be moved to configuration file
+		static const uint32_t HTABLE_BITS = 17;
+		static const uint32_t HTABLE_SIZE = 1<<HTABLE_BITS;
+
 		class Bucket;
 		/**
 		 * Single Bucket containing one buffered flow's variable data.
@@ -88,7 +91,7 @@ class Hashtable : public FlowSource, StatisticsModule {
 
 
 		int bucketCount; /**< size of this hashtable (must be HASHTABLE_SIZE) */
-		Hashtable::Bucket* buckets[HASHTABLE_SIZE]; /**< array of pointers to hash buckets at start of spill chain. Members are NULL where no entry present */
+		Hashtable::Bucket* buckets[HTABLE_SIZE]; /**< array of pointers to hash buckets at start of spill chain. Members are NULL where no entry present */
 
 		int recordsReceived; /**< Statistics: Number of records received from higher-level modules */
 		int recordsSent; /**< Statistics: Number of records sent to lower-level modules */

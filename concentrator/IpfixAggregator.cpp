@@ -238,11 +238,8 @@ void IpfixAggregator::addFlowSink(FlowSink* flowSink) {
  */
 void IpfixAggregator::stats()
 {
-	int i;
-
 	pthread_mutex_lock(&mutex);
-	for (i = 0; i < rules->count; i++) {
-		int j;
+	for (int32_t i = 0; i < rules->count; i++) {
 		uint32_t usedBuckets = 0;
 		uint32_t usedHeads = 0;
 		uint32_t longestSpillchain = 0;
@@ -253,7 +250,7 @@ void IpfixAggregator::stats()
 		ht->recordsReceived = 0;
 		ht->recordsSent = 0;
 
-		for (j = 0; j < HASHTABLE_SIZE; j++) {
+		for (uint32_t j = 0; j < Hashtable::HTABLE_SIZE; j++) {
 			Hashtable::Bucket* hb = ht->buckets[j];
 			if (hb) usedHeads++;
 
