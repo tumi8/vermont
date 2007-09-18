@@ -53,7 +53,7 @@ public:
 
 	class Collector
 	{
-public:
+	public:
 		Collector() :
 			port(0)
 		{
