@@ -13,22 +13,16 @@ class AggregationPerfTest
 	public:
 		AggregationPerfTest(bool fast);
 		~AggregationPerfTest();
+		
+		void execute();
 
-		void normalTest();
-		void expressTest();
 
 	private:
-		Filter* filter;
-		PacketSink* packetSink;
-		PacketProcessor* hookingFilter;
-		IpfixAggregator* ipfixAggregator;
 		InstanceManager<Packet>* packetManager;
 
 		Rule::Field* createRuleField(const string& typeId);
 		Rules* createRules();
-		void setup(bool express);
-		void start(unsigned int numpackets);
-		void shutdown();
+		void sendPacketsTo(Destination<Packet*>* dest, uint32_t numpackets);
 
 		int numPackets;
 };

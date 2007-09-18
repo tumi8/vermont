@@ -19,11 +19,10 @@ int main(int argc, char* argv[])
 	reconf.normalTest();
 	
 	AggregationPerfTest aggtest(!perftest);
-	aggtest.expressTest();
-	aggtest.normalTest();
+	aggtest.execute();
 	
-	ConcentratorTestSuite conctest;
-	conctest.start_test();
+	/*ConcentratorTestSuite conctest;
+	conctest.start_test();*/
 	
 	return 0;
 }

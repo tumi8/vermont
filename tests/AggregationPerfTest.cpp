@@ -3,6 +3,11 @@
 #include "sampler/Filter.h"
 #include "common/Time.h"
 #include "test.h"
+#include "reconf/Module.h"
+#include "concentrator/PacketAggregator.h"
+#include "reconf/ConnectionQueue.h"
+#include "CounterDestination.h"
+#include "common/PacketInstanceManager.h"
 
 #include <sys/time.h>
 #include <time.h>
@@ -23,43 +28,9 @@ AggregationPerfTest::AggregationPerfTest(bool fast)
 
 AggregationPerfTest::~AggregationPerfTest()
 {
-	delete filter;
-	delete packetSink;
-	delete ipfixAggregator;
-	delete packetManager;
+
 }
 
-void AggregationPerfTest::normalTest()
-{
-	setup(false);
-	struct timeval starttime;
-	REQUIRE(gettimeofday(&starttime, 0) == 0);
-	start(numPackets);
-	struct timeval stoptime;
-	REQUIRE(gettimeofday(&stoptime, 0) == 0);
-	struct timeval difftime;
-	REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
-
-	printf("Aggregator: needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
-
-	shutdown();
-}
-
-void AggregationPerfTest::expressTest()
-{
-	setup(true);
-	struct timeval starttime;
-	REQUIRE(gettimeofday(&starttime, 0) == 0);
-	start(numPackets);
-	struct timeval stoptime;
-	REQUIRE(gettimeofday(&stoptime, 0) == 0);
-	struct timeval difftime;
-	REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
-
-	printf("ExpressAggregator: needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
-
-	shutdown();
-}
 
 Rule::Field* AggregationPerfTest::createRuleField(const string& typeId)
 {
@@ -97,61 +68,62 @@ Rules* AggregationPerfTest::createRules()
 	return rules;
 }
 
-void AggregationPerfTest::setup(bool express)
+void AggregationPerfTest::execute()
 {
-	/*packetSink = new PacketSink();
 
-	packetManager = new InstanceManager<Packet>();
+	// create a packet sampler which lets only half of the packets through
+	// NOTICE: the sampler will be destroyed by the d'tor of FilterModule
 
+	ConnectionQueue<Packet*> queue1(10);
+
+	PacketAggregator agg(1);
 	Rules* rules = createRules();
-	int inactiveBufferTime = 5;   // maximum number of seconds until non-active flows are exported
-	int activeBufferTime = 10;   // maximum number of seconds until active flows are exported
-	// note: we do not need to specify any receiving module for the ipfixaggregator,
-	// as deconstruction of unused instances is done with shared pointers
-	ipfixAggregator = new IpfixAggregator(rules, inactiveBufferTime, activeBufferTime);
+	agg.buildAggregator(rules, 0, 0);
+	agg.start();
+	CounterDestination<IpfixRecord*> counter;
 
-	if (express) {
-		hookingFilter = new ExpressHookingFilter(ipfixAggregator);
-	} else {
-		hookingFilter = new HookingFilter(ipfixAggregator);
-	}
+	queue1.connectTo(&agg);
+	agg.connectTo(&counter);
 
-	filter = new Filter();
-	filter->addProcessor(hookingFilter);
-	filter->setReceiver(packetSink);
+	queue1.start();
 
-	// start all needed threads
-	packetSink->runSink();
-	ipfixAggregator->runSink();
-	ipfixAggregator->start();
-	filter->startFilter();*/
+	struct timeval starttime;
+	REQUIRE(gettimeofday(&starttime, 0) == 0);
+
+	sendPacketsTo(&queue1, numPackets);
+
+	printf("counter: %d\n", counter.getCount());
+	struct timeval stoptime;
+	REQUIRE(gettimeofday(&stoptime, 0) == 0);
+	struct timeval difftime;
+	REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
+	printf("Aggregator: needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
+
+
+	agg.shutdown();
+	queue1.shutdown();
+	delete rules;
+	PacketInstanceManager::destroyManager();
 }
 
-void AggregationPerfTest::shutdown()
-{
-	filter->terminate();
-	packetSink->terminateSink();
-	//ipfixAggregator->terminateSink();
-}
 
-
-void AggregationPerfTest::start(unsigned int numpackets)
+void AggregationPerfTest::sendPacketsTo(Destination<Packet*>* dest, uint32_t numpackets)
 {
-	char packetdata[] = { 0x00, 0x12, 0x1E, 0x08, 0xE0, 0x1F, 0x00, 0x15, 0x2C, 0xDB, 0xE4, 0x00, 0x08, 0x00, 0x45, 0x00, 
-						  0x00, 0x2C, 0xEF, 0x42, 0x40, 0x00, 0x3C, 0x06, 0xB3, 0x51, 0xC3, 0x25, 0x84, 0xBE, 0x5B, 0x20, 
-						  0xF9, 0x33, 0x13, 0x8B, 0x07, 0x13, 0x63, 0xF2, 0xA0, 0x06, 0x2D, 0x07, 0x36, 0x2B, 0x50, 0x18, 
-						  0x3B, 0x78, 0x67, 0xC9, 0x00, 0x00, 0x6F, 0x45, 0x7F, 0x40 };
+	char packetdata[] = { 0x00, 0x12, 0x1E, 0x08, 0xE0, 0x1F, 0x00, 0x15, 0x2C, 0xDB, 0xE4, 0x00,
+			0x08, 0x00, 0x45, 0x00, 0x00, 0x2C, 0xEF, 0x42, 0x40, 0x00, 0x3C, 0x06, 0xB3, 0x51,
+			0xC3, 0x25, 0x84, 0xBE, 0x5B, 0x20, 0xF9, 0x33, 0x13, 0x8B, 0x07, 0x13, 0x63, 0xF2,
+			0xA0, 0x06, 0x2D, 0x07, 0x36, 0x2B, 0x50, 0x18, 0x3B, 0x78, 0x67, 0xC9, 0x00, 0x00,
+			0x6F, 0x45, 0x7F, 0x40 };
 	unsigned int packetdatalen = 58;
 
 	// just push our sample packet a couple of times into the filter
 	struct timeval curtime;
 	REQUIRE(gettimeofday(&curtime, 0) == 0);
 
-	ConcurrentQueue<Packet*>* filterq = filter->getQueue();
-	for (unsigned int i=0; i<numpackets; i++) {
-		Packet* p = packetManager->getNewInstance();
-		p->init((char*)packetdata, packetdatalen, curtime);
-		filterq->push(p);
+	for (size_t i = 0; i < numpackets; i++) {
+		Packet* packet = PacketInstanceManager::getManager()->getNewInstance();
+		packet->init((char*)packetdata, packetdatalen, curtime);
+		dest->receive(packet);
 	}
 }
 
