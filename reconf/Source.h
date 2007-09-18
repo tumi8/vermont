@@ -34,7 +34,7 @@ public:
 	{
 		Destination<T>* d = dynamic_cast< Destination<T>* >(destination);
 		if (!d) {
-			THROWEXCEPTION("ERROR: Can't connect to this\n");
+			THROWEXCEPTION("ERROR: Can't connect to this .... thing?");
 		}
 		this->connectTo(d);
 	}
