@@ -24,6 +24,9 @@
 #include "ipfix.hpp"
 
 #include "common/msg.h"
+#include <sstream>
+
+using namespace std;
 
 /*
  we start OUR template IDs at <this>
@@ -43,7 +46,7 @@
 IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) {
 	setSinkOwner("IpfixSender");
 	ipfix_exporter** exporterP = &this->ipfixExporter;
-	sentRecords = 0;
+	statSentRecords = 0;
 	recordsInDataSet = 0;
 	currentTemplateId = 0;
 	lastTemplateId = SENDER_TEMPLATE_ID_LOW;
@@ -65,8 +68,9 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t 
 		collectors.push_back(newCollector);
 	}
 	
-        msg(MSG_DEBUG, "IpfixSender: running");
-
+	StatisticsManager::getInstance().addModule(this);
+	
+	msg(MSG_DEBUG, "IpfixSender: running");
 	return;
 	
 out1:
@@ -397,7 +401,7 @@ int IpfixSender::onDataDataRecord(boost::shared_ptr<IpfixDataDataRecord> rec)
 
 	recordsInDataSet++;
 
-	sentRecords++;
+	statSentRecords++;
 	
 	recordsToRelease.push_back(rec);
 	
@@ -414,13 +418,20 @@ int IpfixSender::onIdle()
 
 
 /**
- * Called by the logger timer thread. Dumps info using msg_stat
+ * statistics function called by StatisticsManager
  */
-void IpfixSender::stats()
+std::string IpfixSender::getStatistics()
 {
-	msg_stat("Concentrator: IpfixSender: %6d records sent", sentRecords);
-	sentRecords = 0;
+	ostringstream oss;
+	
+	uint32_t sent = statSentRecords;
+	statSentRecords -= sent;
+	
+	oss << "IpfixReceiverUdpIpV4: received packets: " << sent << endl;	
+
+	return oss.str();
 }
+
 
 void IpfixSender::flowSinkProcess()
 {

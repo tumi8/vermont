@@ -30,7 +30,7 @@
  *
  * Interface for feeding generated Templates and Data Records to "ipfixlolib" 
  */
-class IpfixSender : public FlowSink {
+class IpfixSender : public FlowSink, StatisticsModule {
 	public:
 		IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0);
 		virtual ~IpfixSender();
@@ -45,9 +45,8 @@ class IpfixSender : public FlowSink {
                 int onDataDataRecord(boost::shared_ptr<IpfixDataDataRecord> rec);
 		int onIdle();
 
-	        virtual void flowSinkProcess();
-
-		void stats();
+        virtual void flowSinkProcess();
+		virtual std::string getStatistics();
 
 		class Collector {
 		    public:
@@ -65,7 +64,7 @@ class IpfixSender : public FlowSink {
 		ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */
 		uint16_t lastTemplateId; /**< Template ID of last created Template */
 		std::vector<Collector> collectors; /**< Collectors we export to */
-		uint32_t sentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
+		uint32_t statSentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
 
 	private:
 		int startDataSet(uint16_t templateId);
