@@ -22,6 +22,7 @@
 #define INSTANCEMANAGER_H
 
 #include "Mutex.h"
+#include "StatisticsManager.h"
 
 #include <queue>
 #include <list>
@@ -35,7 +36,7 @@ using namespace std;
  * ATTENTION: this class internally handles *pointers* of the given type
  */
 template<class T>
-class InstanceManager
+class InstanceManager : public StatisticsModule
 {
 	private:
 #if defined(DEBUG)
@@ -44,13 +45,16 @@ class InstanceManager
 		queue<T*> freeInstances;// unused instances
 		Mutex mutex;			// we wanna be thread-safe
 		static const int DEFAULT_NO_INSTANCES = 1000;
+		uint32_t statCreatedInstances; /**< number of created instances, used for statistical purposes */
 
 	public:
 		InstanceManager(int preAllocInstances = DEFAULT_NO_INSTANCES)
+			: statCreatedInstances(0)
 		{
 			for (int i=0; i<preAllocInstances; i++) {
 				freeInstances.push(new T(this));
 			}
+			StatisticsManager::getInstance().addModule(this);
 		}
 
 		virtual ~InstanceManager()
@@ -81,6 +85,7 @@ class InstanceManager
 
 			if (freeInstances.empty()) {
 				// create new instance
+				statCreatedInstances++;
 				instance = new T(this);
 			} else {
 				instance = freeInstances.front();
@@ -139,6 +144,13 @@ class InstanceManager
 				THROWEXCEPTION("referenceCount of instance is < 0");
 			}
 #endif
+		}
+
+		inline string getStatistics()
+		{
+			char text[200];
+			sprintf(text, "InstanceManager: instances created: %d\n", statCreatedInstances);
+			return string(text);
 		}
 };
 
