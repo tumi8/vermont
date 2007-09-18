@@ -28,7 +28,6 @@ private:
 	void copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData, 
 			IpfixRecord::FieldInfo::Type* srcType, IpfixRecord::Data* srcData, 
 			Rule::Field::Modifier modifier);
-	void createMaskedField(IpfixRecord::Data* address, uint8_t imask);
 };
 
 #endif /*FLOWHASHTABLE_H_*/

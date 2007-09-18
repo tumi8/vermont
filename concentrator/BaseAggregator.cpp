@@ -23,10 +23,6 @@ BaseAggregator::BaseAggregator(uint32_t pollinterval)
  */
 BaseAggregator::~BaseAggregator()
 {
-	for (int i = 0; i < rules->count; i++) {
-		delete rules->rule[i]->hashtable;
-	}
-	delete rules;
 }
 
 
@@ -36,7 +32,7 @@ BaseAggregator::~BaseAggregator()
 void BaseAggregator::performStart()
 {
 	DPRINTF("called");
-	ASSERT(rules != 0, "aggregator must be initialized first using function buildAggregator!");
+	ASSERT(rules != 0, "aggregator must be initialized using function buildAggregator first!");
 	
 	thread.run(this);
 }

@@ -357,6 +357,42 @@ bool PacketHashtable::expEqualFlow(IpfixRecord::Data* bucket, const Packet* p)
 
 
 /**
+ * masks ip addresses inside raw packet and creates a mask field
+ * (part of express aggregator)
+ */
+void PacketHashtable::createMaskedField(IpfixRecord::Data* address, uint8_t imask)
+{
+	DPRINTF("unmasked address: %08X", *reinterpret_cast<uint32_t*>(address));
+	if (imask > 0) {
+		if (imask == 8) {
+			address[3] = 0x00;
+		} else if (imask == 16) {
+			address[2] = 0x00;
+			address[3] = 0x00;
+		} else if (imask == 24) {
+			address[1] = 0x00;
+			address[2] = 0x00;
+			address[3] = 0x00;
+		} else if (imask == 32) {
+			address[0] = 0x00;
+			address[1] = 0x00;
+			address[2] = 0x00;
+			address[3] = 0x00;
+		} else {
+			// tobi_optimize: do this mask calculation during initialization phase of express aggregator
+			int pattern = 0;
+			int i;
+			for(i = 0; i < imask; i++) {
+				pattern |= (1 << i);
+			}
+			*(uint32_t*)address = htonl(ntohl(*(uint32_t*)(address)) & ~pattern);
+		}
+	}
+	DPRINTF("masked address: %08X", *reinterpret_cast<uint32_t*>(address));
+}
+
+
+/**
  * masks ip addresses if desired in ExpFieldData->[0-3]
  * additional mask information (is 5th byte in aggregated data) is in ExpFieldData->data[4]
  */

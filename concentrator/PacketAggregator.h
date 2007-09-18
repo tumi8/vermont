@@ -43,17 +43,11 @@ class PacketAggregator
 public:
 	PacketAggregator(uint32_t pollinterval);
 	virtual ~PacketAggregator();
-
-	void buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime);
-
-	void start();
-	void stop();
 	
 	virtual void receive(Packet* e);
 
 	
 protected:
-	Rules* rules; /**< Set of rules that define the aggregator */
 	
 	virtual BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, 
 			uint16_t maxBufferTime);
