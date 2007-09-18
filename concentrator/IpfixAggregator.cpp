@@ -24,95 +24,28 @@
 #include "IpfixAggregator.hpp"
 #include "IpfixParser.hpp"
 #include "IpfixSender.hpp"
+#include "FlowHashtable.h"
 
 #include "common/msg.h"
 
+
+
+
 /**
- * Creates a new Aggregator. Do not forget to set the callback functions, then call @c startAggregator().
- * @param ruleFile filename of file containing a set of rules
- * @param minBufferTime TODO
- * @param maxBufferTime TODO
+ * constructs a new instance
+ * @param pollinterval sets the interval of polling the hashtable for expired flows
  */
-IpfixAggregator::IpfixAggregator(char* ruleFile, uint16_t minBufferTime, uint16_t maxBufferTime)
-{
-	Rules* rules = new Rules(ruleFile);
-
-	if (!rules) {
-		THROWEXCEPTION("could not parse rules file %s", ruleFile);
-	}
-	buildAggregator(rules, minBufferTime, maxBufferTime);
-
-	setSinkOwner("IpfixAggregator");
+IpfixAggregator::IpfixAggregator(uint32_t pollinterval)
+	: BaseAggregator(pollinterval)
+{	
 }
 
-/**
- * Creates a new Aggregator. Do not forget to set the callback functions, then call @c startAggreagtor().
- * @param rules Rules for aggregator to work with
- * @param minBufferTime TODO
- * @param maxBufferTime TODO
- */
-IpfixAggregator::IpfixAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime)
-{
-	buildAggregator(rules, minBufferTime, maxBufferTime);
 
-	setSinkOwner("IpfixAggregator");
-}
-
-/**
- * Builds a new aggregator from the given rules (helper function for @c createAggregator and @c createAggregatorFromRules)
- */
-void IpfixAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime)
-{
-	int i;
-
-	this->rules = rules;
-
-	for (i = 0; i < rules->count; i++) {
-		rules->rule[i]->initialize();
-		rules->rule[i]->hashtable = new Hashtable(rules->rule[i], minBufferTime, maxBufferTime);
-	}
-
-	if (pthread_mutex_init(&mutex, NULL) != 0) {
-		msg(MSG_FATAL, "Could not init mutex");
-	}
-		
-	if (pthread_mutex_lock(&mutex) != 0) {
-		msg(MSG_FATAL, "Could not lock mutex");
-	}
-
-	msg(MSG_INFO, "Done. Parsed %d rules; minBufferTime %d, maxBufferTime %d", rules->count, minBufferTime, maxBufferTime);
-
-}
-
-/**
- * Frees memory used by an Aggregator.
- * Make sure the Aggregator is not being used before calling this method.
- */
 IpfixAggregator::~IpfixAggregator()
 {
-	int i;
-	for (i = 0; i < rules->count; i++) {
-		delete ((Hashtable*)rules->rule[i]->hashtable);
-	}
-	delete rules;
-
-	pthread_mutex_unlock(&mutex);
-	pthread_mutex_destroy(&mutex);
+	
 }
 
-/**
- * Starts or resumes processing Records
- */
-void IpfixAggregator::start() {
-	pthread_mutex_unlock(&mutex);
-}
-
-/**
- * Temporarily pauses processing Records
- */
-void IpfixAggregator::stop() {
-	pthread_mutex_lock(&mutex);
-}
 
 /**
  * Injects new DataRecords into the Aggregator.
@@ -120,9 +53,9 @@ void IpfixAggregator::stop() {
  * @param ti structure describing @c data
  * @param length length (in bytes) of @c data
  * @param data raw data block containing the Record
- * @return 0 on success, non-zero on error
  */
-int IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* ti, uint16_t length, IpfixRecord::Data* data)
+void IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, 
+		IpfixRecord::TemplateInfo* ti, uint16_t length, IpfixRecord::Data* data)
 {
 	int i;
 	DPRINTF("Got a Data Record\n");
@@ -133,49 +66,13 @@ int IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::
 	}
 #endif
 
-	// tobi_optimize: why the hell is here a mutex?!
-	// is it allowed to specify the hookingfilter to several receivers?
-	pthread_mutex_lock(&mutex);
 	for (i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->templateDataMatches(ti, data)) {
 			DPRINTF("rule %d matches", i);
 
-			((Hashtable*)rules->rule[i]->hashtable)->aggregateTemplateData(ti, data);
+			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateTemplateData(ti, data);
 		}
 	}
-	pthread_mutex_unlock(&mutex);
-
-	return 0;
-}
-
-/**
- * replacement of onDataRecord which is only able to handle raw IP packets and aggregate those
- * efficiently
- * @param packet raw network packet which was received
- * @return 0 if packet handled successfully
- */
-int IpfixAggregator::onPacket(const Packet* packet)
-{
-	int i;
-
-#if defined(DEBUG)
-	if(!rules) {
-		THROWEXCEPTION("Aggregator not started");
-	}
-#endif
-
-
-
-	pthread_mutex_lock(&mutex);
-	for (i = 0; i < rules->count; i++) {
-		if (rules->rule[i]->ExptemplateDataMatches(packet)) {
-			DPRINTF("rule %d matches\n", i);
-			((Hashtable*)rules->rule[i]->hashtable)->aggregatePacket(packet);
-		}
-	}
-	pthread_mutex_unlock(&mutex);
-	
-	return 0;
 }
 
 
@@ -185,86 +82,36 @@ int IpfixAggregator::onPacket(const Packet* packet)
  * @param ti structure describing @c data
  * @param length length (in bytes) of @c data
  * @param data raw data block containing the Record
- * @return 0 on success, non-zero on error
  */
-int IpfixAggregator::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* ti, uint16_t length, IpfixRecord::Data* data)
+void IpfixAggregator::onDataDataRecord(IpfixRecord::SourceID* sourceID, 
+		IpfixRecord::DataTemplateInfo* ti, uint16_t length, IpfixRecord::Data* data)
 {
-	int i;
 	DPRINTF("onDataDataRecord: Got a DataData Record\n");
 
+#if defined(DEBUG)
 	if(!rules) {
-		msg(MSG_FATAL, "Aggregator not started");
-		return -1;
+		THROWEXCEPTION("Aggregator not started");
 	}
+#endif
 
-	pthread_mutex_lock(&mutex);
-	for (i = 0; i < rules->count; i++) {
+	mutex.lock();
+	for (int i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->dataTemplateDataMatches(ti, data)) {
 			DPRINTF("rule %d matches\n", i);
-			((Hashtable*)rules->rule[i]->hashtable)->aggregateDataTemplateData(ti, data);
+			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateDataTemplateData(ti, data);
 		}
 	}
-	pthread_mutex_unlock(&mutex);
+	mutex.unlock();
 
-	return 0;
-}
-
-/**
- * Checks for flows buffered longer than @c ipfixAggregator::minBufferTime and/or @c ipfixAggregator::maxBufferTime and passes them to the previously defined callback functions.
- */
-void IpfixAggregator::poll() {
-	int i;
-	pthread_mutex_lock(&mutex);
-	for (i = 0; i < rules->count; i++) {
-		((Hashtable*)rules->rule[i]->hashtable)->expireFlows();
-	}
-	pthread_mutex_unlock(&mutex);
-}
-
-/**
- * Adds a set of callback functions to the list of functions to call when Templates or Records have to be sent
- * @param flowSink the destination module
- */
-void IpfixAggregator::addFlowSink(FlowSink* flowSink) {
-	int i;
-	for (i = 0; i < rules->count; i++) {
-		((Hashtable*)rules->rule[i]->hashtable)->addFlowSink(flowSink);
-	}
 }
 
 
 /**
- * Called by the logger timer thread. Dumps info using msg_stat
+ * creates hashtable for this aggregator
  */
-void IpfixAggregator::stats()
+BaseHashtable* IpfixAggregator::createHashtable(Rule* rule, uint16_t minBufferTime, 
+		uint16_t maxBufferTime)
 {
-	pthread_mutex_lock(&mutex);
-	for (int32_t i = 0; i < rules->count; i++) {
-		uint32_t usedBuckets = 0;
-		uint32_t usedHeads = 0;
-		uint32_t longestSpillchain = 0;
-		uint32_t avgAge = 0;
-
-		Hashtable* ht = rules->rule[i]->hashtable;
-		msg_stat("Concentrator: Rule %2d: Records: %6d received, %6d sent", i, ht->recordsReceived, ht->recordsSent);
-		ht->recordsReceived = 0;
-		ht->recordsSent = 0;
-
-		for (uint32_t j = 0; j < Hashtable::HTABLE_SIZE; j++) {
-			Hashtable::Bucket* hb = ht->buckets[j];
-			if (hb) usedHeads++;
-
-			uint32_t bucketsInSpillchain = 0;
-			while (hb) {
-				avgAge += time(0) - (hb->forceExpireTime - ht->maxBufferTime);
-				usedBuckets++;
-				bucketsInSpillchain++;
-				hb = hb->next;
-			}
-			if (bucketsInSpillchain > longestSpillchain) longestSpillchain = bucketsInSpillchain;
-		}
-
-		msg_stat("Concentrator: Rule %2d: Hashbuckets: %6d used, %6d at head, %6d max chain, %6d avg age", i, usedBuckets, usedHeads, longestSpillchain, usedBuckets?(avgAge / usedBuckets):0);
-	}
-	pthread_mutex_unlock(&mutex);
+	return new FlowHashtable(this, rule, minBufferTime, maxBufferTime);
 }
+

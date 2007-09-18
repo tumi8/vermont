@@ -39,7 +39,7 @@
  */
 class PacketAggregator
 		: public BaseAggregator, public Destination<Packet*>
- {
+{
 public:
 	PacketAggregator(uint32_t pollinterval);
 	virtual ~PacketAggregator();

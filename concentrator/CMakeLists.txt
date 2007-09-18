@@ -19,6 +19,11 @@
 
 ADD_LIBRARY(concentrator
 	IpfixAggregator.cpp
+	PacketAggregator.cpp
+	BaseAggregator.cpp
+	BaseHashtable.cpp
+	PacketHashtable.cpp
+	FlowHashtable.cpp
 	ipfix.cpp
 	IpfixReceiver.cpp
 	IpfixReceiverUdpIpV4.cpp
@@ -37,5 +42,6 @@ ADD_LIBRARY(concentrator
 	TemplateBuffer.cpp
 	IpfixDbReader.cpp
 	IpfixDbWriter.cpp
+	IpfixRecordDestination.cpp
 )
 

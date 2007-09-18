@@ -29,7 +29,7 @@
 
 #define MAX_RULE_FIELDS 255
 
-class Hashtable;
+class BaseHashtable;
 
 /**
  * Single aggregation rule
@@ -77,7 +77,7 @@ class Rule {
 		uint16_t preceding;
 		int fieldCount;
 		Rule::Field* field[MAX_RULE_FIELDS];
-		Hashtable* hashtable;
+		BaseHashtable* hashtable;
 
 	private:
 		Packet::IPProtocolType validProtocols; /**< types of protocols which are valid for specified rule */

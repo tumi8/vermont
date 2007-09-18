@@ -23,41 +23,32 @@
 
 #include "IpfixParser.hpp"
 #include "Rules.hpp"
-#include "Hashtable.hpp"
-#include <pthread.h>
+#include "BaseAggregator.h"
+#include "IpfixRecordDestination.h"
+#include "reconf/Module.h"
+
 
 /**
  * Represents an Aggregator.
  *
  * Uses Rules and Hashtable to implement an IPFIX Aggregator.
  */
-class IpfixAggregator : public FlowSink 
+class IpfixAggregator 
+		: public BaseAggregator, public IpfixRecordDestination
 {
-	public:
-		IpfixAggregator(char* ruleFile, uint16_t minBufferTime, uint16_t maxBufferTime);
-		IpfixAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime);
-		~IpfixAggregator();
-		void buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime);
+public:
+	IpfixAggregator(uint32_t pollinterval);
+	virtual ~IpfixAggregator();
 
-		void start();
-		void stop();
+	virtual void receive(IpfixRecord* record);
+	virtual void onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* ti,
+			uint16_t length, IpfixRecord::Data* data);
+	virtual void onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* ti,
+			uint16_t length, IpfixRecord::Data* data);
 
-		int onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* ti, uint16_t length, IpfixRecord::Data* data);
-		int onPacket(const Packet* packet);
-		int onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* ti, uint16_t length, IpfixRecord::Data* data);
-
-		void poll();
-
-		/**
-		 * Add a FlowSink that receives flows we export
-		 */
-		void addFlowSink(FlowSink* flowSink);
-
-		void stats();
-
-	protected:
-		Rules* rules; /**< Set of rules that define the aggregator */
-		pthread_mutex_t mutex; /**< Mutex to synchronize and/or pause aggregator */
+protected:
+	BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, 
+			uint16_t maxBufferTime);
 };
 
 #endif
