@@ -57,6 +57,8 @@ public:
 		running = false;
 	}
 
+	
+protected:
 	/**
 	 * is called when module is started
 	 * may be overwritten by subclasses
