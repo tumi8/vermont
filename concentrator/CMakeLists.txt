@@ -33,7 +33,6 @@ ADD_LIBRARY(concentrator
 	IpfixRecord.cpp
 	IpfixPrinter.cpp
 	IpfixParser.cpp
-	IpfixPacketProcessor.cpp
 	IpfixCollector.cpp
 	Rules.cpp
 	Rule.cpp
