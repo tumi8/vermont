@@ -45,12 +45,13 @@ class TemplateBuffer;
  * The Collector module supports higher-level modules by providing field types and offsets along 
  * with the raw data block of individual messages passed via the callback functions (see @c IpfixRecord::TemplateInfo)
  */
-class IpfixParser : public IpfixPacketProcessor, public FlowSource {
+class IpfixParser : public IpfixPacketProcessor, public FlowSource, public StatisticsModule {
 	public:
 		IpfixParser();
 		virtual ~IpfixParser();
 
-		virtual int processPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId); 
+		virtual int processPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
+		virtual std::string getStatistics(); 
 
 	protected:
 		/**
@@ -134,7 +135,11 @@ class IpfixParser : public IpfixPacketProcessor, public FlowSource {
 		void processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set);
 		int processNetflowV9Packet(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 		int processIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
+		
+		virtual void push(boost::shared_ptr<IpfixRecord> ipfixRecord);
 
+	private:
+		uint32_t statProcessedFlows; /**< amount of flows processed by parser, is regularly reset to 0, used for statistics */
 };
 
 void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* pattern);

@@ -30,6 +30,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <sstream>
 
 /* for ntohll et al */
 #include "ipfixlolib/ipfixlolib.h"
@@ -40,6 +41,8 @@
 #include "ipfix.hpp"
 
 #include "common/msg.h"
+
+using namespace std;
 
 #define MAX_MSG_LEN 65536
 
@@ -554,7 +557,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 	uint16_t tmpid;
 	while(set < setX) {
 		tmpid=ntohs(set->id);
-
+		
 		switch(tmpid) {
 		case IPFIX_SetId_DataTemplate:
 			processDataTemplateSet(sourceId, message, set);
@@ -746,7 +749,9 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
  * Creates a new  @c IpfixParser.
  * @return handle to created instance
  */
-IpfixParser::IpfixParser() {
+IpfixParser::IpfixParser() 
+	: statProcessedFlows(0)
+{
 
 	if (pthread_mutex_init(&mutex, NULL) != 0) {
 		msg(MSG_FATAL, "Could not init mutex");
@@ -755,7 +760,9 @@ IpfixParser::IpfixParser() {
 
 	templateBuffer = new TemplateBuffer(this);
 
+	StatisticsManager::getInstance().addModule(this);
 }
+
 
 /**
  * Frees memory used by an IpfixParser.
@@ -769,3 +776,28 @@ IpfixParser::~IpfixParser() {
 }
 
 
+/**
+ * statistics function called by StatisticsManager
+ */
+std::string IpfixParser::getStatistics()
+{
+	ostringstream oss;
+	
+	uint32_t recv = statProcessedFlows;
+	statProcessedFlows -= recv;
+	
+	oss << "IpfixParser: processed flows: " << recv << endl;	
+
+	return oss.str();
+}
+
+/**
+ * function push overwritten from FlowSource
+ * needed for generating statistics, all records are passed through to
+ * FlowSink::push
+ */
+void IpfixParser::push(boost::shared_ptr<IpfixRecord> ipfixRecord)
+{
+	statProcessedFlows++;
+	FlowSource::push(ipfixRecord);
+}
