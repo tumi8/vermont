@@ -18,7 +18,7 @@
  *
  */
 
-#include "crc16.hpp"
+#include "crc.hpp"
 
 #include "Hashtable.hpp"
 
