@@ -31,14 +31,17 @@
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
 
-class IpfixReceiverUdpIpV4 : public IpfixReceiver {
+class IpfixReceiverUdpIpV4 : public IpfixReceiver, StatisticsModule {
 	public:
 		IpfixReceiverUdpIpV4(int port);
 		virtual ~IpfixReceiverUdpIpV4();
 
 		virtual void run();
+		virtual std::string getStatistics();
+		
 	private:
 		int listen_socket;
+		uint32_t statReceivedPackets;  /**< number of received packets since last call of getStatistics() */ 
 };
 
 #endif

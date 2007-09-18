@@ -34,12 +34,17 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <sstream>
+
+using namespace std;
 
 /** 
  * Does UDP/IPv4 specific initialization.
  * @param port Port to listen on
  */
-IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port) {
+IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port) 
+	: statReceivedPackets(0)
+{
 	struct sockaddr_in serverAddress;
 
 	listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -58,7 +63,8 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port) {
 		perror("Could not bind socket");
 		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4");
 	}
-	return;
+
+	StatisticsManager::getInstance().addModule(this);
 }
 
 
@@ -92,6 +98,7 @@ void IpfixReceiverUdpIpV4::run() {
 		
 		if (isHostAuthorized(&clientAddress.sin_addr, sizeof(clientAddress.sin_addr))) {
 
+			statReceivedPackets++;
 			uint32_t ip = ntohl(clientAddress.sin_addr.s_addr);
 			memcpy(sourceID->exporterAddress.ip, &ip, 4);
 			sourceID->exporterAddress.len = 4;
@@ -108,3 +115,17 @@ void IpfixReceiverUdpIpV4::run() {
 	}
 }
 
+/**
+ * statistics function called by StatisticsManager
+ */
+std::string IpfixReceiverUdpIpV4::getStatistics()
+{
+	ostringstream oss;
+	
+	uint32_t recv = statReceivedPackets;
+	statReceivedPackets -= recv;
+	
+	oss << "IpfixReceiverUdpIpV4: received packets: " << recv << endl;	
+
+	return oss.str();
+}
