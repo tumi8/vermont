@@ -13,15 +13,18 @@
   </observationPoint>
   <meteringProcess id="1">
     <packetSelection>
-      <regExFilter>
+      <stringFilter>
+        <is type="ASCII">XXX blame me</is>
         <idmef>
           <destdir>idmef_work</destdir>
           <template>idmef/templates/datafilter_template.xml</template>
           <sendurl>https://server/idmef/receiver_events.cgi</sendurl>
-          <filterid>REGEX-uni-erlangen</filterid>
+          <filterid>REGEX-XXX</filterid>
         </idmef>
-        <matchPattern>XXX\s*me</matchPattern>
-      </regExFilter>
+<!--
+                <is not type="ASCII">the good one</isnot>
+-->
+      </stringFilter>
     </packetSelection>
     <packetReporting>
       <templateId>9876</templateId>
@@ -34,12 +37,6 @@
       <reportedIE>
         <ieName>protocolIdentifier</ieName>
       </reportedIE>
-<!--
-            <reportedIE>
-                <ieName>ipPayloadPacketSection</ieName>
-                <ieLength>65535</ieLength>
-            </reportedIE>
--->
     </packetReporting>
     <next>
       <exportingProcessId>1</exportingProcessId>
