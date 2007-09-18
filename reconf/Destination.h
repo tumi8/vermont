@@ -13,7 +13,6 @@
 class BaseDestination {
 public:
 	virtual ~BaseDestination();
-	virtual void receive(Emitable *);
 };
 
 template<class T>
