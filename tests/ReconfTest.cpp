@@ -5,31 +5,8 @@
 #include "sampler/SystematicSampler.h"
 #include "common/PacketInstanceManager.h"
 #include "common/msg.h"
+#include "CounterDestination.h"
 
-
-class PacketCounter: public Destination<Packet*>
-{
-public:
-	PacketCounter() : count(0) { }
-	
-	virtual void receive(Packet* packet)
-	{
-		packet->removeReference();
-		count++;
-	}
-
-	unsigned int getCount()
-	{
-		return count;
-	}
-	
-	void reset() {
-		count = 0;
-	}
-
-private:
-	unsigned int count;
-};
 
 
 ReconfTest::ReconfTest()
@@ -79,7 +56,7 @@ void ReconfTest::normalTest()
 	ConnectionQueue<Packet*> queue1(10);
 	ConnectionQueue<Packet*> queue2(20);
 
-	PacketCounter counter;
+	CounterDestination<Packet*> counter;
 	
 	queue1.connectTo(&filter);
 	filter.connectTo(&queue2);
