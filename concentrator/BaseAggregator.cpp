@@ -33,12 +33,21 @@ BaseAggregator::~BaseAggregator()
 /**
  * starts the hashtable's thread
  */
-void BaseAggregator::start()
+void BaseAggregator::performStart()
 {
-	DPRINTF("BaseAggregator::start() called");
+	DPRINTF("called");
 	ASSERT(rules != 0, "aggregator must be initialized first using function buildAggregator!");
 	
 	thread.run(this);
+}
+
+
+/**
+ * waits for the hashtable's thread
+ */
+void BaseAggregator::performShutdown()
+{
+	thread.join();
 }
 
 

@@ -15,7 +15,8 @@ public:
 	BaseAggregator(uint32_t pollinterval);
 	virtual ~BaseAggregator();
 	
-	virtual void start();
+	virtual void performStart();
+	virtual void performShutdown();
 	
 protected:
 	Rules* rules; /**< Set of rules that define the aggregator */
