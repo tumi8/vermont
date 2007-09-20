@@ -27,6 +27,7 @@
 #include <sys/time.h>
 
 #include "common/msg.h"
+#include "common/defs.h"
 #include "common/Mutex.h"
 #include "common/ManagedInstance.h"
 #include "ipfixlolib/encoding.h"
@@ -90,8 +91,6 @@ public:
 	// implemented as public-variable for speed reasons (or lazyness reasons? ;-)
 	static unsigned long totalPacketsReceived;
 
-	static const int PACKET_MAXLEN = 1500; // maximum packet length
-
 	/*
 	data: the raw packet data from the wire, including physical header
 	ipHeader: start of the IP header: data + (physical dependent) IP header offset
@@ -99,7 +98,7 @@ public:
 	ATTENTION: this array *MUST* be allocated inside the packet structure, so that it has a constant position
 	relative to other members of Packet. This is needed for optimization purposes inside the express aggregator
 	*/
-	unsigned char data[PACKET_MAXLEN];
+	unsigned char data[PCAP_MAX_CAPTURE_LENGTH];
 	unsigned char *netHeader;
 	unsigned char *transportHeader;
 	unsigned char *payload;
@@ -155,8 +154,9 @@ public:
 		varlength_index = 0;
 		ipProtocolType = NONE;
 
-		if (len > PACKET_MAXLEN) {
-			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d)", len, PACKET_MAXLEN);
+		if (len > PCAP_MAX_CAPTURE_LENGTH) {
+			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d), "
+					"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH to compensate!", len, PCAP_MAX_CAPTURE_LENGTH);
 		}
 
 		memcpy(data, packetData, len);
