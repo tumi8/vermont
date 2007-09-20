@@ -2,6 +2,7 @@
  * IPFIX Database Reader/Writer
  * Copyright (C) 2006 Jürgen Abberger
  * Copyright (C) 2006 Lothar Braun <braunl@informatik.uni-tuebingen.de>
+ * Copyright (C) 2007 Gerhard Muenz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -41,8 +42,8 @@
  */
 class IpfixDbWriter : public IpfixRecordDestination {
 	public:
-		IpfixDbWriter(const char* hostName, const char* dbName,
-				const char* userName, const char* password,
+		IpfixDbWriter(const char* host, const char* db,
+				const char* user, const char* pw,
 				unsigned int port, uint16_t observationDomainId,
 				int maxStatements);
 		~IpfixDbWriter();
@@ -76,31 +77,37 @@ class IpfixDbWriter : public IpfixRecordDestination {
 		 */
 		typedef struct {
 			int Id;          /** Id entry of sourcID and expIP in the ExporterTable */
-			// TODO: rename this into observationDomainId
-			uint32_t observationDomainId;  /** SourceID of  the exporter monitor */
+			uint32_t observationDomainId;  /** observationDomainId of  the exporter monitor */
 			uint32_t  expIp; /** IP of the exporter */
 		} ExpTable;
 
 		/** 
-		 * Store the single statements for insert in a buffer until statemReceived is equal maxstatemt   
+		 * Cache which stores recently used existing half-hour tables and exporter table entries to 
+		 * reduce/avoid unnecessary mysql lookups
+		 */
+		typedef struct {
+			int countBuffTable;                      /**counter of buffered table names*/
+			IpfixDbWriter::BufEntry tableBuffer[MAX_TABLE];         /**buffer to store struct BufEntry*/             
+			int countExpTable;                       /**counter of buffered exporter*/
+			IpfixDbWriter::ExpTable exporterBuffer[MAX_EXP_TABLE];  /**buffer to store struct expTable*/
+		} TableCache;
+
+		TableCache cache;
+
+		/** 
+		 * Buffer for insert statements
 		 */
 		typedef struct {
 			int statemReceived;                /**counter of insert into statements*/
 			char** statemBuffer;               /**buffer  of char pointers to store the insert statements*/
 			int maxStatements;
-		} Statement;
+			char** lockTables;		   /**tables to look*/
+			int maxLocks;
+		} StatementBuffer;
 
-		/** 
-		 * makes a buffer for the different tables and the different exporters
-		 */
-		typedef struct {
-			int countCol;                            /**counter of columns*/
-			int countBuffTable;                      /**counter of buffered table names*/
-			IpfixDbWriter::BufEntry tableBuffer[MAX_TABLE];         /**buffer to store struct BufEntry*/             
-			int countExpTable;                       /**counter of buffered exporter*/
-			IpfixDbWriter::ExpTable exporterBuffer[MAX_EXP_TABLE];  /**buffer to store struct expTable*/
-			IpfixDbWriter::Statement* statement;                    /**pointer to struct Statement*/
-		} Table;        
+		StatementBuffer statements;
+			
+		int numberOfColumns;         /**number of columns, used to calculate length of sql statements*/
 
 		const char* hostName;        /** Hostname*/
 		const char* dbName;          /**Name of the database*/
@@ -110,15 +117,14 @@ class IpfixDbWriter : public IpfixRecordDestination {
 		const char* socketName;      /** Socketname (use default) */
 		unsigned int flags;          /** Connectionflags (none) */
 		MYSQL* conn;                 /** pointer to connection handle */       
-		IpfixDbWriter::Table* table;                /**pointer to struct Table*/
 
 		int createDB();
 		int createExporterTable();
-		int createDBTable(Table* table, const char* tablename);
-		char* getRecData(Table* table,IpfixRecord::SourceID* sourceID,IpfixRecord::DataTemplateInfo* dataTemplateInfo,uint16_t length,IpfixRecord::Data* data);
-		int writeToDb(Table* table, Statement* statement);
-		int getExporterID(Table* table, IpfixRecord::SourceID* sourceID);
-                const char* getTableName(Table* table, uint64_t flowstartsec);
+		int createDBTable(const char* tablename);
+		char* getInsertStatement(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data, char** locks, int maxlocks);
+		int writeToDb();
+		int getExporterID(IpfixRecord::SourceID* sourceID);
+                const char* getTableName(uint64_t flowstartsec);
 	private:
 		void addColumnEntry(char* sql, const char* insert, bool quoted, bool lastcolumn);
 		void addColumnEntry(char* sql, uint64_t insert, bool quoted, bool lastcolumn);
