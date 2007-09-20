@@ -121,7 +121,7 @@ class IpfixDbWriter : public IpfixRecordDestination {
 		int createDB();
 		int createExporterTable();
 		int createDBTable(const char* tablename);
-		char* getInsertStatement(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data, char** locks, int maxlocks);
+		char* getInsertStatement(char* statemStr, IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data, char** locks, int maxlocks);
 		int writeToDb();
 		int getExporterID(IpfixRecord::SourceID* sourceID);
                 const char* getTableName(uint64_t flowstartsec);
