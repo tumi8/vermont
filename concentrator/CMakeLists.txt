@@ -28,8 +28,6 @@ ADD_LIBRARY(concentrator
 	IpfixReceiver.cpp
 	IpfixReceiverUdpIpV4.cpp
 	IpfixRawdirReader.cpp
-	FlowSource.cpp
-	FlowSink.cpp
 	IpfixRecord.cpp
 	IpfixPrinter.cpp
 	IpfixParser.cpp
