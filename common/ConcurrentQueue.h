@@ -25,7 +25,7 @@ class ConcurrentQueue
 		/**
 		 * default queue size
 		 */
-		static const int DEFAULT_QUEUE_SIZE = 100000;
+		static const int DEFAULT_QUEUE_SIZE = 1000;
 
 		ConcurrentQueue(int maxEntries = DEFAULT_QUEUE_SIZE) 
 			: pushedCount(0), poppedCount(0), queue(), count(0), lock(), popSemaphore(), pushSemaphore(maxEntries)
@@ -98,9 +98,6 @@ class ConcurrentQueue
 		// try to pop an entry from the queue before timeout occurs
 		// if successful, res will hold the popped entry and true will be returned
 		// of the timeout has been reached, res will be set to NULL and false will be returned
-		// *******************
-		// *** DEPRECATED, use pop_abs instead
-		// *******************
 		inline bool pop(long timeout_ms, T *res)
 		{
 			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
@@ -131,7 +128,6 @@ class ConcurrentQueue
 		inline bool popAbs(const struct timeval &timeout, T *res)
 		{
 			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
-
 			
 			if (popSemaphore.waitAbs(timeout)) {
 				// popSemaphore.wait() succeeded, now pop the frontmost element
@@ -152,6 +148,36 @@ class ConcurrentQueue
 				DPRINTFL(MSG_VDEBUG, "(%s) timeout or program shutdown", ownerName.c_str());
 				*res = 0;
 
+				return false;
+			}
+		}
+		
+		// like pop above, but with absolute time instead of delta.
+		// use this instead of the above, makes things easier!
+		inline bool popAbs(const struct timespec& timeout, T *res)
+		{
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
+		
+			if (popSemaphore.waitAbs(timeout)) {
+				// popSemaphore.wait() succeeded, now pop the frontmost element
+				lock.lock();
+				*res = queue.front();
+				queue.pop();
+				poppedCount++;
+				count--;
+				lock.unlock();
+		
+				pushSemaphore.post();
+		
+				DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
+		
+				return true;
+			}
+			else {
+				// timeout occured
+				DPRINTFL(MSG_VDEBUG, "(%s) timeout or program shutdown", ownerName.c_str());
+				*res = 0;
+		
 				return false;
 			}
 		}

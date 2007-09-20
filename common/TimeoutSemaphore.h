@@ -136,18 +136,28 @@ public:
 		return true;
 	}
 
+	
+	/**
+	 * see documentation for waitAbs(struct timespec)
+	 * has same functionality, just different parameter
+	 */
+	inline bool waitAbs(const struct timeval& timeout)
+	{
+		struct timespec ts;
+		
+		TIMEVAL_TO_TIMESPEC(&timeout, &ts);
+		
+		return waitAbs(ts);
+	}
 
 	// like wait() but with absolute time instead of delta. makes things easier!
 	// Use this instead of the above function
-	inline bool waitAbs(const struct timeval &timeout)
+	inline bool waitAbs(const struct timespec& ts)
 	{
-		struct timespec ts;
 		int retval;
 
 		// if program requested to shut down, just return a failure
 		if (exitFlag) return false;
-
-		TIMEVAL_TO_TIMESPEC(&timeout, &ts);
 
 		// wait until timeout
 		retval = sem_timedwait(sem, &ts);
