@@ -25,7 +25,7 @@
 
 /**
  * constructs a new instance
- * @param pollinterval sets the interval of polling the hashtable for expired flows
+ * @param pollinterval sets the interval of polling the hashtable for expired flows in ms
  */
 PacketAggregator::PacketAggregator(uint32_t pollinterval)
 	: BaseAggregator(pollinterval)

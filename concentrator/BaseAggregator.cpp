@@ -7,7 +7,7 @@
 /**
  * Creates a new Aggregator.
  * WARNING: call buildAggregator to initialize this module correctly
- * @param pollinterval sets the interval of polling the hashtable for expired flows
+ * @param pollinterval sets the interval of polling the hashtable for expired flows in ms
  */
 BaseAggregator::BaseAggregator(uint32_t pollinterval)
 	: rules(0),
@@ -89,9 +89,7 @@ void BaseAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint1
  * thread which regularly scans hashtable for expired buckets/flows
  */
 void BaseAggregator::exporterThread()
-{
-	// FIXME: an "exited" flag is also needed!
-	
+{	
 	timespec req;
 	req.tv_sec = pollInterval / 1000;
 	req.tv_nsec = (pollInterval % 1000) * 1000;

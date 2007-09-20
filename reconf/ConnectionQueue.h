@@ -31,7 +31,7 @@ public:
 
 	virtual void receive(T packet)
 	{
-		msg(MSG_INFO, "receive(Packet*)");
+		DPRINTF("receive(Packet*)");
 		queue.push(packet);
 	}
 	
