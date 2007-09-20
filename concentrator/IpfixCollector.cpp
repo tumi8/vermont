@@ -69,3 +69,13 @@ void IpfixCollector::performShutdown()
 {
 	ipfixReceiver->stop();
 }
+
+
+/**
+ * just delegates call to Source::send
+ * (needed for interface IpfixRecordSender
+ */
+bool IpfixCollector::send(IpfixRecord* ipfixRecord)
+{
+	return Source<IpfixRecord*>::send(ipfixRecord);	
+}

@@ -812,7 +812,6 @@ IpfixDbWriter::IpfixDbWriter(const char* hostName, const char* dbName,
                                    unsigned int port, uint16_t observationDomainId,
                                    int maxStatements)
 {	
-	setSinkOwner("IpfixWriter");
 	Table* tabl = (Table*)malloc(sizeof(Table));
 	Statement* statemen = (Statement*)malloc(sizeof(Statement));
 	statemen->statemBuffer = (char**)malloc(sizeof(char**)*maxStatements);
@@ -899,24 +898,6 @@ IpfixDbWriter::~IpfixDbWriter() {
 	mysql_close(conn);
 	free(table->statement);
 	free(table);
-}
-
-/**
- * Starts or resumes database
- * @param ipfixDbWriter handle obtained by calling @c createipfixDbWriter()
- */
-int IpfixDbWriter::start() {
-	/* unimplemented, we can't be paused - TODO: or should we? */
-	return 0;
-}
-
-/**
- * Temporarily pauses database
- * @param ipfixDbWriter handle obtained by calling @c createipfixDbWriter()
- */
-int IpfixDbWriter::stop() {
-	/* unimplemented, we can't be paused - TODO: or should we? */
-	return 0;
 }
 
 

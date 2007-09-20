@@ -30,12 +30,13 @@
 /**
  * IPFIX Exporter interface that exports raw packets as a series of files in a directory
  */
-class IpfixRawdirWriter : public IpfixSender {
-	public:
-		IpfixRawdirWriter(uint16_t observationDomainId, std::string packetDirectoryName = "");
-		~IpfixRawdirWriter();
+class IpfixRawdirWriter : public IpfixSender
+{
+public:
+	IpfixRawdirWriter(uint16_t observationDomainId, std::string packetDirectoryName = "");
+	~IpfixRawdirWriter();
 
-		int addCollector(std::string packetDirectoryName);
+	int addCollector(std::string packetDirectoryName);
 };
 
 #endif

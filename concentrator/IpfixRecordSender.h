@@ -21,6 +21,11 @@
  *
  */
 
+
+/**
+ * used by IpfixCollector to pass ability to send IpfixRecords to IpfixParser
+ * (reduced needed interface to a minimum)
+ */
 class IpfixRecordSender
 {
 public:

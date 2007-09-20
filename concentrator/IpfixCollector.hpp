@@ -21,7 +21,6 @@
 #ifndef INCLUDED_IpfixCollector_hpp
 #define INCLUDED_IpfixCollector_hpp
 
-#include "FlowSink.hpp"
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
 #include "IpfixRecordSender.h"
@@ -37,7 +36,7 @@
  * hard wired
  */
 class IpfixCollector 
-	: public Module, public Source<IpfixRecord>, public IpfixRecordSender 
+	: public Module, public Source<IpfixRecord*>, public IpfixRecordSender 
 {
 	public:
 		IpfixCollector(IpfixReceiver* receiver);
@@ -45,6 +44,8 @@ class IpfixCollector
 
 		virtual void performStart();
 		virtual void performShutdown();
+				
+		bool send(IpfixRecord* ipfixRecord);
 
 
 	private:

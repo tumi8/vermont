@@ -18,13 +18,15 @@
  *
  */
 
-#include <stdexcept>
-#include <string.h>
 #include "IpfixSender.hpp"
 #include "ipfix.hpp"
 
 #include "common/msg.h"
+#include "common/Time.h"
+
 #include <sstream>
+#include <stdexcept>
+#include <string.h>
 
 using namespace std;
 
@@ -43,11 +45,13 @@ using namespace std;
  * @param port destination collector's port
  * @return handle to use when calling @c destroyIpfixSender()
  */
-IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) {
-	setSinkOwner("IpfixSender");
+IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) 
+	: maxFlowLatency(100), // FIXME: this has to be set in the configuration!
+	  noCachedRecords(0),
+	  thread(threadWrapper)
+{
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 	statSentRecords = 0;
-	recordsInDataSet = 0;
 	currentTemplateId = 0;
 	lastTemplateId = SENDER_TEMPLATE_ID_LOW;
 
@@ -61,9 +65,7 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t 
 		strcpy(newCollector.ip, ip);
 		newCollector.port = port;
 
-		if(addCollector(ip, port) != 0) {
-			goto out1;
-		}
+		addCollector(ip, port);
 
 		collectors.push_back(newCollector);
 	}
@@ -73,8 +75,6 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t 
 	msg(MSG_DEBUG, "IpfixSender: running");
 	return;
 	
-out1:
-	ipfix_deinit_exporter(*exporterP);
 out:
 	THROWEXCEPTION("IpfixSender creation failed");
 	return;	
@@ -183,8 +183,7 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 	}
 
 	if (0 != ipfix_start_datatemplate_set(exporter, my_template_id, my_preceding, dataTemplateInfo->fieldCount + splitFields, dataTemplateInfo->dataCount + splitFixedfields)) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_start_datatemplate_set failed");
-		return -1;
+		THROWEXCEPTION("sndIpfix: ipfix_start_datatemplate_set failed");
 	}
 
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
@@ -392,22 +391,90 @@ void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 
 	}
 
-	recordsInDataSet++;
-
 	statSentRecords++;
 	
-	recordsToRelease.push_back(rec);
-	
-	return 0;
+	recordsToRelease.push(record);
+	noCachedRecords++;
 }
 
+
 /**
- * Send pending Data Set
+ * wrapper function for thread creation
  */
-int IpfixSender::onIdle() 
+void* IpfixSender::threadWrapper(void* instance)
 {
-	return endAndSendDataSet();
+	IpfixSender* is = reinterpret_cast<IpfixSender*>(instance);
+	is->processLoop();
+	return NULL;
 }
+
+
+/**
+ * loop which processes incoming flows and sends a new IPFIX packet
+ * when necessary
+ * it ensures, that a new packet is sent when no more flows can be stored in it
+ * (maximum size is reached), or when the specified timeout maxFlowLatency is
+ * reached after the first flow was received
+ * 
+ * NOTICE: this algorithm does *NOT* take into account that functions called by
+ * IpfixRecordDestination::receive initiate the packet send themselves (as is done
+ * when the template id changes)
+ */
+void IpfixSender::processLoop()
+{
+	timespec timeout;
+	addToCurTime(&timeout, maxFlowLatency);
+	
+	while (!exitFlag) {
+		IpfixRecord* record;
+		if (!incomingRecords.popAbs(timeout, &record)) {
+			// either timeout or exitFlag was set
+			if (exitFlag) break;
+			if (noCachedRecords > 0) {
+				// send new packet to network
+				endAndSendDataSet();
+			}
+			addToCurTime(&timeout, maxFlowLatency);
+		} else {
+			// record was received, queue it in ipfixlolib
+			IpfixRecordDestination::receive(record);
+			if (noCachedRecords >= 10) { // FIXME: we need to put as many flows in a packet as possible, not only 10!
+				// send packet
+				endAndSendDataSet();
+				addToCurTime(&timeout, maxFlowLatency);
+			}
+		}		
+	}
+}
+
+void IpfixSender::connectTo(BaseDestination*)
+{
+	THROWEXCEPTION("don't call me!");
+}
+
+void IpfixSender::disconnect()
+{
+	THROWEXCEPTION("don't call me!");
+}
+
+
+bool IpfixSender::isConnected() const
+{
+	THROWEXCEPTION("don't call me!");
+	return false;
+}
+
+
+/**
+ * if flows are cached at the moment, this function sends them to the network
+ * immediately
+ */
+void IpfixSender::flushPacket()
+{
+	endAndSendDataSet();
+}
+
+
 
 
 /**
@@ -423,54 +490,4 @@ std::string IpfixSender::getStatistics()
 	oss << "IpfixReceiverUdpIpV4: received packets: " << sent << endl;	
 
 	return oss.str();
-}
-
-
-void IpfixSender::flowSinkProcess()
-{
-	msg(MSG_INFO, "Sink: now running FlowSink thread");
-	while(!exitFlag) {
-		boost::shared_ptr<IpfixRecord> ipfixRecord;
-		if (!ipfixRecords.pop(1000, &ipfixRecord))
-		{
-			onIdle();
-			continue;
-		}
-		{
-			IpfixDataRecord* rec = dynamic_cast<IpfixDataRecord*>(ipfixRecord.get());
-			if (rec) onDataRecord(rec->sourceID.get(), rec->templateInfo.get(), rec->dataLength, rec->data);
-		}
-		{
-			boost::shared_ptr<IpfixDataDataRecord> rec = boost::dynamic_pointer_cast<IpfixDataDataRecord, IpfixRecord>(ipfixRecord);
-			if (rec) onDataDataRecord(rec);
-		}
-		{
-			IpfixOptionsRecord* rec = dynamic_cast<IpfixOptionsRecord*>(ipfixRecord.get());
-			if (rec) onOptionsRecord(rec->sourceID.get(), rec->optionsTemplateInfo.get(), rec->dataLength, rec->data);
-		}
-		{
-			IpfixTemplateRecord* rec = dynamic_cast<IpfixTemplateRecord*>(ipfixRecord.get());
-			if (rec) onTemplate(rec->sourceID.get(), rec->templateInfo.get());
-		}
-		{
-			IpfixDataTemplateRecord* rec = dynamic_cast<IpfixDataTemplateRecord*>(ipfixRecord.get());
-			if (rec) onDataTemplate(rec->sourceID.get(), rec->dataTemplateInfo.get());
-		}
-		{
-			IpfixOptionsTemplateRecord* rec = dynamic_cast<IpfixOptionsTemplateRecord*>(ipfixRecord.get());
-			if (rec) onOptionsTemplate(rec->sourceID.get(), rec->optionsTemplateInfo.get());
-		}
-		{
-			IpfixTemplateDestructionRecord* rec = dynamic_cast<IpfixTemplateDestructionRecord*>(ipfixRecord.get());
-			if (rec) onTemplateDestruction(rec->sourceID.get(), rec->templateInfo.get());
-		}
-		{
-			IpfixDataTemplateDestructionRecord* rec = dynamic_cast<IpfixDataTemplateDestructionRecord*>(ipfixRecord.get());
-			if (rec) onDataTemplateDestruction(rec->sourceID.get(), rec->dataTemplateInfo.get());
-		}
-		{
-			IpfixOptionsTemplateDestructionRecord* rec = dynamic_cast<IpfixOptionsTemplateDestructionRecord*>(ipfixRecord.get());
-			if (rec) onOptionsTemplateDestruction(rec->sourceID.get(), rec->optionsTemplateInfo.get());
-		}
-	}
 }

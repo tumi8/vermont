@@ -27,7 +27,6 @@
 
 #include "IpfixDbCommon.hpp"
 #include "IpfixParser.hpp"
-#include "FlowSource.hpp"
 #include "ipfix.hpp"
 #include "ipfixlolib/ipfixlolib.h"
 #include "reconf/Module.h"

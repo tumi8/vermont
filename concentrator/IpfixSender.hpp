@@ -82,16 +82,29 @@ protected:
 	std::vector<Collector> collectors; /**< Collectors we export to */
 	uint32_t statSentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
 
-private:
-	int startDataSet(uint16_t templateId);
-	int endAndSendDataSet();
 
-	std::vector<boost::shared_ptr<IpfixRecord> > recordsToRelease;
+private:
+	/**
+	 * specifies, how long incoming flows are to be cached at most before they are
+	 * sent in an IPFIX packet
+	 * this value specifies the maximum latency in milliseconds
+	 */
+	uint32_t maxFlowLatency;
 
 	uint16_t ringbufferPos; /**< Pointer to next free slot in @c conversionRingbuffer. */
 	uint8_t conversionRingbuffer[65536]; /**< Ringbuffer used to store converted imasks between @c ipfix_put_data_field() and @c ipfix_send() */
-	uint16_t recordsInDataSet; /**< The number of records in the current data set */
 	uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
+	uint16_t noCachedRecords; /**< number of records already passed to ipfixlob, should be equal to recordsToRelease.size() */
+	Thread thread;
+	ConcurrentQueue<IpfixRecord*> incomingRecords;
+	queue<IpfixRecord*> recordsToRelease;
+	
+	static void* threadWrapper(void* instance);
+	void processLoop();
+	void removeRecordReferences();
+	void endAndSendDataSet();
+
+	void startDataSet(uint16_t templateId);
 };
 
 #endif

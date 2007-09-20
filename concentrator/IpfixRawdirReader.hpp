@@ -38,18 +38,17 @@
  * reads raw packets from a directory containing one file per packet
  */
 class IpfixRawdirReader : public IpfixReceiver {
-	public:
-		IpfixRawdirReader(std::string packet_directory_path);
-		virtual ~IpfixRawdirReader();
+public:
+	IpfixRawdirReader(std::string packet_directory_path);
+	virtual ~IpfixRawdirReader();
 
-		virtual void run();
-	private:
-		std::string packet_directory_path;
-		boost::filesystem::directory_iterator dir_iterator;
-		boost::filesystem::directory_iterator end_iterator;
+	virtual void run();
+private:
+	std::string packet_directory_path;
+	boost::filesystem::directory_iterator dir_iterator;
+	boost::filesystem::directory_iterator end_iterator;
 };
 
 #endif
 
 #endif //HAVE_BOOST_FILESYSTEM
-
