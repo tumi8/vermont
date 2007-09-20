@@ -48,12 +48,12 @@ class IpfixDbWriter : public IpfixRecordDestination {
 				int maxStatements);
 		~IpfixDbWriter();
 
-		void onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data);
-		void onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
-		void onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo);
-		void onOptionsTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo);
-		void onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
-		void onOptionsRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length, IpfixRecord::Data* data);
+		void onDataRecord(IpfixDataRecord* record);
+		void onDataDataRecord(IpfixDataDataRecord* record);
+		void onTemplate(IpfixTemplateRecord* record);
+		void onOptionsTemplate(IpfixOptionsTemplateRecord* record);
+		void onDataTemplate(IpfixDataTemplateRecord* record);
+		void onOptionsRecord(IpfixOptionsRecord* record);
 
 		IpfixRecord::SourceID srcId;              /**Exporter default SourceID */
 
@@ -128,6 +128,9 @@ class IpfixDbWriter : public IpfixRecordDestination {
 	private:
 		void addColumnEntry(char* sql, const char* insert, bool quoted, bool lastcolumn);
 		void addColumnEntry(char* sql, uint64_t insert, bool quoted, bool lastcolumn);
+		void processDataDataRecord(IpfixRecord::SourceID* sourceID, 
+				IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, 
+				IpfixRecord::Data* data);
 };
 
 
