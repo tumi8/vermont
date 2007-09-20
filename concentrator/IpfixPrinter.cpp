@@ -46,9 +46,9 @@ IpfixPrinter::~IpfixPrinter()
  * @param sourceID SourceID of the exporting process
  * @param templateInfo Pointer to a structure defining the Template used
  */
-void IpfixPrinter::onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo) 
+void IpfixPrinter::onTemplate(IpfixTemplateRecord* record) 
 {
-	printf("\n-+--- Template (id=%u)\n", templateInfo->templateId);
+	printf("\n-+--- Template (id=%u)\n", record->templateInfo->templateId);
 	printf(" `---\n\n");
 }
 
@@ -57,10 +57,9 @@ void IpfixPrinter::onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::Temp
  * @param sourceID SourceID of the exporting process
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-void IpfixPrinter::onTemplateDestruction(IpfixRecord::SourceID* sourceID, 
-										 IpfixRecord::TemplateInfo* templateInfo) 
+void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record) 
 {
-	printf("Destroyed a Template (id=%u)\n", templateInfo->templateId);
+	printf("Destroyed a Template (id=%u)\n", record->templateInfo->templateId);
 
 }
 
@@ -71,17 +70,16 @@ void IpfixPrinter::onTemplateDestruction(IpfixRecord::SourceID* sourceID,
  * @param length Length of the data block supplied
  * @param data Pointer to a data block containing all variable fields
  */
-void IpfixPrinter::onDataRecord(IpfixRecord::SourceID* sourceID, 
-								IpfixRecord::TemplateInfo* templateInfo, 
-								uint16_t length, IpfixRecord::Data* data) 
+void IpfixPrinter::onDataRecord(IpfixDataRecord* record)
 {
 	int i;
 
-	printf("\n-+--- DataRecord (Template id=%u)\n", templateInfo->templateId);
+	printf("\n-+--- DataRecord (Template id=%u)\n", record->templateInfo->templateId);
 	printf(" `- variable data\n");
-	for (i = 0; i < templateInfo->fieldCount; i++) {
+	for (i = 0; i < record->templateInfo->fieldCount; i++) {
 		printf(" '   `- ");
-		printFieldData(templateInfo->fieldInfo[i].type, (data + templateInfo->fieldInfo[i].offset));
+		printFieldData(record->templateInfo->fieldInfo[i].type, 
+				(record->data + record->templateInfo->fieldInfo[i].offset));
 		printf("\n");
 	}
 	printf(" `---\n\n");
@@ -92,10 +90,9 @@ void IpfixPrinter::onDataRecord(IpfixRecord::SourceID* sourceID,
  * @param sourceID SourceID of the exporting process
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-void IpfixPrinter::onOptionsTemplate(IpfixRecord::SourceID* sourceID, 
-									 IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo) 
+void IpfixPrinter::onOptionsTemplate(IpfixOptionsTemplateRecord* record) 
 {
-	printf("\n-+--- OptionsTemplate (id=%u)\n", optionsTemplateInfo->templateId);
+	printf("\n-+--- OptionsTemplate (id=%u)\n", record->optionsTemplateInfo->templateId);
 	printf(" `---\n\n");
 }
 
@@ -104,10 +101,9 @@ void IpfixPrinter::onOptionsTemplate(IpfixRecord::SourceID* sourceID,
  * @param sourceID SourceID of the exporting process
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-void IpfixPrinter::onOptionsTemplateDestruction(IpfixRecord::SourceID* sourceID, 
-												IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo) 
+void IpfixPrinter::onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record) 
 {
-	printf("Destroyed an OptionsTemplate (id=%u)\n", optionsTemplateInfo->templateId);
+	printf("Destroyed an OptionsTemplate (id=%u)\n", record->optionsTemplateInfo->templateId);
 }
 
 /**
@@ -117,11 +113,9 @@ void IpfixPrinter::onOptionsTemplateDestruction(IpfixRecord::SourceID* sourceID,
  * @param length Length of the data block supplied
  * @param data Pointer to a data block containing all variable fields
  */
-void IpfixPrinter::onOptionsRecord(IpfixRecord::SourceID* sourceID, 
-										   IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, 
-										   uint16_t length, IpfixRecord::Data* data) 
+void IpfixPrinter::onOptionsRecord(IpfixOptionsRecord* record)
 {
-	printf("\n-+--- OptionsDataRecord (Template id=%u)\n", optionsTemplateInfo->templateId);
+	printf("\n-+--- OptionsDataRecord (Template id=%u)\n", record->optionsTemplateInfo->templateId);
 	printf(" `---\n\n");
 }
 
@@ -130,16 +124,16 @@ void IpfixPrinter::onOptionsRecord(IpfixRecord::SourceID* sourceID,
  * @param sourceID SourceID of the exporting process
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-void IpfixPrinter::onDataTemplate(IpfixRecord::SourceID* sourceID, 
-								  IpfixRecord::DataTemplateInfo* dataTemplateInfo) 
+void IpfixPrinter::onDataTemplate(IpfixDataTemplateRecord* record)
 {
 	int i;
 
-	printf("\n-+--- DataTemplate (id=%u)\n", dataTemplateInfo->templateId);
+	printf("\n-+--- DataTemplate (id=%u)\n", record->dataTemplateInfo->templateId);
 	printf(" `- fixed data\n");
-	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
+	for (i = 0; i < record->dataTemplateInfo->dataCount; i++) {
 		printf(" '   `- ");
-		printFieldData(dataTemplateInfo->dataInfo[i].type, (dataTemplateInfo->data + dataTemplateInfo->dataInfo[i].offset));
+		printFieldData(record->dataTemplateInfo->dataInfo[i].type, 
+				(record->dataTemplateInfo->data + record->dataTemplateInfo->dataInfo[i].offset));
 		printf("\n");
 	}
 	printf(" `---\n\n");
@@ -150,10 +144,9 @@ void IpfixPrinter::onDataTemplate(IpfixRecord::SourceID* sourceID,
  * @param sourceID SourceID of the exporting process
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-void IpfixPrinter::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, 
-											 IpfixRecord::DataTemplateInfo* dataTemplateInfo) 
+void IpfixPrinter::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record) 
 {
-	printf("Destroyed a DataTemplate (id=%u)\n", dataTemplateInfo->templateId);
+	printf("Destroyed a DataTemplate (id=%u)\n", record->dataTemplateInfo->templateId);
 }
 
 /**
@@ -163,23 +156,24 @@ void IpfixPrinter::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID,
  * @param length Length of the data block supplied
  * @param data Pointer to a data block containing all variable fields
  */
-void IpfixPrinter::onDataDataRecord(IpfixRecord::SourceID* sourceID, 
-									IpfixRecord::DataTemplateInfo* dataTemplateInfo, 
-									uint16_t length, IpfixRecord::Data* data) 
+void IpfixPrinter::onDataDataRecord(IpfixDataDataRecord* record)
 {
+	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo = record->dataTemplateInfo;
 	int i;
 
 	printf("\n-+--- DataDataRecord (Template id=%u)\n", dataTemplateInfo->templateId);
 	printf(" `- fixed data\n");
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
 		printf(" '   `- ");
-		printFieldData(dataTemplateInfo->dataInfo[i].type, (dataTemplateInfo->data + dataTemplateInfo->dataInfo[i].offset));
+		printFieldData(dataTemplateInfo->dataInfo[i].type, 
+				(dataTemplateInfo->data + dataTemplateInfo->dataInfo[i].offset));
 		printf("\n");
 	}
 	printf(" `- variable data\n");
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
 		printf(" '   `- ");
-		printFieldData(dataTemplateInfo->fieldInfo[i].type, (data + dataTemplateInfo->fieldInfo[i].offset));
+		printFieldData(dataTemplateInfo->fieldInfo[i].type, 
+				(record->data + dataTemplateInfo->fieldInfo[i].offset));
 		printf("\n");
 	}
 	printf(" `---\n\n");

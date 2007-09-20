@@ -37,54 +37,50 @@ void IpfixRecordDestination::receive(IpfixRecord* ipfixRecord)
 {
 	{
 		IpfixDataRecord* rec = dynamic_cast<IpfixDataRecord*>(ipfixRecord);
-		if (rec)
-			onDataRecord(rec->sourceID.get(), rec->templateInfo.get(), rec->dataLength, rec->data);
+		if (rec) onDataRecord(rec);
+			//onDataRecord(rec->sourceID.get(), rec->templateInfo.get(), rec->dataLength, rec->data);
 	}
 	{
 		IpfixDataDataRecord* rec = dynamic_cast<IpfixDataDataRecord*>(ipfixRecord);
-		if (rec)
-			onDataDataRecord(rec->sourceID.get(), rec->dataTemplateInfo.get(), rec->dataLength,
-					rec->data);
+		if (rec) onDataDataRecord(rec);
+			//onDataDataRecord(rec->sourceID.get(), rec->dataTemplateInfo.get(), rec->dataLength,
+				//	rec->data);
 	}
 	{
 		IpfixOptionsRecord* rec = dynamic_cast<IpfixOptionsRecord*>(ipfixRecord);
-		if (rec)
-			onOptionsRecord(rec->sourceID.get(), rec->optionsTemplateInfo.get(), rec->dataLength,
-					rec->data);
+		if (rec) onOptionsRecord(rec);
+			//onOptionsRecord(rec->sourceID.get(), rec->optionsTemplateInfo.get(), rec->dataLength,
+				//	rec->data);
 	}
 	{
 		IpfixTemplateRecord* rec = dynamic_cast<IpfixTemplateRecord*>(ipfixRecord);
-		if (rec)
-			onTemplate(rec->sourceID.get(), rec->templateInfo.get());
+		if (rec) onTemplate(rec);
+			//onTemplate(rec->sourceID.get(), rec->templateInfo.get());
 	}
 	{
 		IpfixDataTemplateRecord* rec = dynamic_cast<IpfixDataTemplateRecord*>(ipfixRecord);
-		if (rec)
-			onDataTemplate(rec->sourceID.get(), rec->dataTemplateInfo.get());
+		if (rec) onDataTemplate(rec);
+			//onDataTemplate(rec->sourceID.get(), rec->dataTemplateInfo.get());
 	}
 	{
-		IpfixOptionsTemplateRecord
-				* rec = dynamic_cast<IpfixOptionsTemplateRecord*>(ipfixRecord);
-		if (rec)
-			onOptionsTemplate(rec->sourceID.get(), rec->optionsTemplateInfo.get());
+		IpfixOptionsTemplateRecord* rec = dynamic_cast<IpfixOptionsTemplateRecord*>(ipfixRecord);
+		if (rec) onOptionsTemplate(rec);
+			//onOptionsTemplate(rec->sourceID.get(), rec->optionsTemplateInfo.get());
 	}
 	{
-		IpfixTemplateDestructionRecord
-				* rec = dynamic_cast<IpfixTemplateDestructionRecord*>(ipfixRecord);
-		if (rec)
-			onTemplateDestruction(rec->sourceID.get(), rec->templateInfo.get());
+		IpfixTemplateDestructionRecord* rec = dynamic_cast<IpfixTemplateDestructionRecord*>(ipfixRecord);
+		if (rec) onTemplateDestruction(rec);
+			//onTemplateDestruction(rec->sourceID.get(), rec->templateInfo.get());
 	}
 	{
-		IpfixDataTemplateDestructionRecord
-				* rec = dynamic_cast<IpfixDataTemplateDestructionRecord*>(ipfixRecord);
-		if (rec)
-			onDataTemplateDestruction(rec->sourceID.get(), rec->dataTemplateInfo.get());
+		IpfixDataTemplateDestructionRecord* rec = dynamic_cast<IpfixDataTemplateDestructionRecord*>(ipfixRecord);
+		if (rec) onDataTemplateDestruction(rec);
+			//onDataTemplateDestruction(rec->sourceID.get(), rec->dataTemplateInfo.get());
 	}
 	{
-		IpfixOptionsTemplateDestructionRecord
-				* rec = dynamic_cast<IpfixOptionsTemplateDestructionRecord*>(ipfixRecord);
-		if (rec)
-			onOptionsTemplateDestruction(rec->sourceID.get(), rec->optionsTemplateInfo.get());
+		IpfixOptionsTemplateDestructionRecord* rec = dynamic_cast<IpfixOptionsTemplateDestructionRecord*>(ipfixRecord);
+		if (rec) onOptionsTemplateDestruction(rec);
+			//onOptionsTemplateDestruction(rec->sourceID.get(), rec->optionsTemplateInfo.get());
 	}
 }
 
@@ -93,8 +89,7 @@ void IpfixRecordDestination::receive(IpfixRecord* ipfixRecord)
  * @param sourceID SourceID of the exporter that sent this Template
  * @param templateInfo Pointer to a structure defining this Template
  */
-void IpfixRecordDestination::onTemplate(IpfixRecord::SourceID* sourceID, 
-		IpfixRecord::TemplateInfo* templateInfo)
+void IpfixRecordDestination::onTemplate(IpfixTemplateRecord* record)
 {
 	THROWEXCEPTION("method not implemented");
 }
@@ -104,8 +99,7 @@ void IpfixRecordDestination::onTemplate(IpfixRecord::SourceID* sourceID,
  * @param sourceID SourceID of the exporter that sent this DataTemplate
  * @param optionsTemplateInfo Pointer to a structure defining this Template
  */
-void IpfixRecordDestination::onOptionsTemplate(IpfixRecord::SourceID* sourceID,
-		IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo)
+void IpfixRecordDestination::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
 {
 	THROWEXCEPTION("method not implemented");
 }
@@ -115,8 +109,7 @@ void IpfixRecordDestination::onOptionsTemplate(IpfixRecord::SourceID* sourceID,
  * @param sourceID SourceID of the exporter that sent this DataTemplate
  * @param dataTemplateInfo Pointer to a structure defining this Template
  */
-void IpfixRecordDestination::onDataTemplate(IpfixRecord::SourceID* sourceID,
-		IpfixRecord::DataTemplateInfo* dataTemplateInfo)
+void IpfixRecordDestination::onDataTemplate(IpfixDataTemplateRecord* record)
 {
 	THROWEXCEPTION("method not implemented");
 }
@@ -128,8 +121,7 @@ void IpfixRecordDestination::onDataTemplate(IpfixRecord::SourceID* sourceID,
  * @param length Length of the data block supplied
  * @param data Pointer to a data block containing all fields
  */
-void IpfixRecordDestination::onDataRecord(IpfixRecord::SourceID* sourceID,
-		IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data)
+void IpfixRecordDestination::onDataRecord(IpfixDataRecord* record)
 {
 	THROWEXCEPTION("method not implemented");
 }
@@ -143,9 +135,7 @@ void IpfixRecordDestination::onDataRecord(IpfixRecord::SourceID* sourceID,
  * @param data Pointer to a data block containing all fields
  * @return 0 if packet handled successfully
  */
-void IpfixRecordDestination::onOptionsRecord(IpfixRecord::SourceID* sourceID,
-		IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length,
-		IpfixRecord::Data* data)
+void IpfixRecordDestination::onOptionsRecord(IpfixOptionsRecord* record)
 {
 	THROWEXCEPTION("method not implemented");
 }
@@ -157,9 +147,7 @@ void IpfixRecordDestination::onOptionsRecord(IpfixRecord::SourceID* sourceID,
  * @param length Length of the data block supplied
  * @param data Pointer to a data block containing all variable fields
  */
-void IpfixRecordDestination::onDataDataRecord(IpfixRecord::SourceID* sourceID,
-		IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length,
-		IpfixRecord::Data* data)
+void IpfixRecordDestination::onDataDataRecord(IpfixDataDataRecord* record)
 {
 	THROWEXCEPTION("method not implemented");
 }
@@ -170,8 +158,7 @@ void IpfixRecordDestination::onDataDataRecord(IpfixRecord::SourceID* sourceID,
  * @param sourceID SourceID of the exporter that sent this Template
  * @param templateInfo Pointer to a structure defining this Template
  */
-void IpfixRecordDestination::onTemplateDestruction(IpfixRecord::SourceID* sourceID,
-		IpfixRecord::TemplateInfo* templateInfo)
+void IpfixRecordDestination::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
 }
 
@@ -181,8 +168,7 @@ void IpfixRecordDestination::onTemplateDestruction(IpfixRecord::SourceID* source
  * @param sourceID SourceID of the exporter that sent this OptionsTemplate
  * @param optionsTemplateInfo Pointer to a structure defining this OptionsTemplate
  */
-void IpfixRecordDestination::onOptionsTemplateDestruction(IpfixRecord::SourceID* sourceID,
-		IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo)
+void IpfixRecordDestination::onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record)
 {
 }
 
@@ -192,8 +178,7 @@ void IpfixRecordDestination::onOptionsTemplateDestruction(IpfixRecord::SourceID*
  * @param sourceID SourceID of the exporter that sent this DataTemplate
  * @param dataTemplateInfo Pointer to a structure defining this DataTemplate
  */
-void IpfixRecordDestination::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID,
-		IpfixRecord::DataTemplateInfo* dataTemplateInfo)
+void IpfixRecordDestination::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record)
 {
 }
 

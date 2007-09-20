@@ -92,15 +92,17 @@ IpfixSender::~IpfixSender() {
 /**
  * Starts or resumes sending messages
  */
-void IpfixSender::start() {
-	/* unimplemented, we can't be paused - TODO: or should we? */
+void IpfixSender::performStart() 
+{
+	thread.run(this);
 }
 
 /**
  * Temporarily pauses sending messages
  */
-void IpfixSender::stop() {
-	/* unimplemented, we can't be paused - TODO: or should we? */
+void IpfixSender::performShutdown() 
+{
+	thread.join();
 }
 
 /**
@@ -111,13 +113,12 @@ void IpfixSender::stop() {
  * @param port port number
  * FIXME: support for other than UDP
  */
-int IpfixSender::addCollector(const char *ip, uint16_t port)
+void IpfixSender::addCollector(const char *ip, uint16_t port)
 {
 	ipfix_exporter *ex = (ipfix_exporter *)ipfixExporter;
 
 	if(ipfix_add_collector(ex, ip, port, UDP) != 0) {
-		msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%d failed", ip, port);
-		return -1;
+		THROWEXCEPTION("IpfixSender: ipfix_add_collector of %s:%d failed", ip, port);
 	}
 	
 	msg(MSG_INFO, "IpfixSender: adding %s:%d to exporter", ip, port);
@@ -126,8 +127,6 @@ int IpfixSender::addCollector(const char *ip, uint16_t port)
 	strcpy(newCollector.ip, ip);
 	newCollector.port = port;
 	collectors.push_back(newCollector);
-
-	return 0;
 }
 
 /**
@@ -135,14 +134,14 @@ int IpfixSender::addCollector(const char *ip, uint16_t port)
  * @param sourceID ignored
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-int IpfixSender::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo)
+void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 {
+	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo = record->dataTemplateInfo;
 	uint16_t my_template_id;
 	uint16_t my_preceding;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	if (!exporter) {
-		msg(MSG_ERROR, "sndIpfix: Exporter not set");
-		return -1;
+		THROWEXCEPTION("sndIpfix: Exporter not set");
 	}
 
 	/* get or assign template ID */
@@ -250,20 +249,16 @@ int IpfixSender::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::Da
 	}
 
 	if (0 != ipfix_put_template_data(exporter, my_template_id, data, dataLength)) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_put_template_data failed");
 		free(data);
-		return -1;
+		THROWEXCEPTION("sndIpfix: ipfix_put_template_data failed");
 	}
 	free(data);
 
 	if (0 != ipfix_end_template_set(exporter, my_template_id)) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_end_template_set failed");
-		return -1;
+		THROWEXCEPTION("sndIpfix: ipfix_end_template_set failed");
 	}
 
 	msg(MSG_INFO, "sndIpfix created template with ID %u", my_template_id);
-
-	return 0;
 }
 
 /**
@@ -271,16 +266,15 @@ int IpfixSender::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::Da
  * @param sourceID ignored
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-int IpfixSender::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo)
+void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record)
 {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 
 	if (!exporter) {
-		msg(MSG_ERROR, "sndIpfix: Exporter not set");
-		return -1;
+		THROWEXCEPTION("exporter not set");
 	}
 
-	uint16_t my_template_id = dataTemplateInfo->templateId;
+	uint16_t my_template_id = record->dataTemplateInfo->templateId;
 
 
 	/* Remove template from ipfixlolib */
@@ -292,9 +286,7 @@ int IpfixSender::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, Ipfi
 		msg(MSG_INFO, "sndIpfix removed template with ID %u", my_template_id);
 	}
 
-	free(dataTemplateInfo->userData);
-
-	return 0;
+	free(record->dataTemplateInfo->userData);
 }
 
 
@@ -304,27 +296,23 @@ int IpfixSender::onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, Ipfi
  * @param templateId of the new Data Set
  * @return returns -1 on error, 0 otherwise
  */
-int IpfixSender::startDataSet(uint16_t templateId) 
+void IpfixSender::startDataSet(uint16_t templateId) 
 {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	uint16_t my_n_template_id = htons(templateId);
 	
 	/* check if we can use the current Data Set */
 	//TODO: make maximum number of records per Data Set variable
-	if((recordsInDataSet < 10) && (templateId == currentTemplateId))
-		return 0;
+	if((noCachedRecords < 10) && (templateId == currentTemplateId))
+		return;
 
-	if(recordsInDataSet > 0)
-		if(endAndSendDataSet() != 0)
-			return -1;
+	if(noCachedRecords > 0) endAndSendDataSet();
 	
 	if (ipfix_start_data_set(exporter, my_n_template_id) != 0 ) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_start_data_set failed!");
-		return -1;
+		THROWEXCEPTION("sndIpfix: ipfix_start_data_set failed!");
 	}
 
 	currentTemplateId = templateId;
-	return 0;
 }
 	
 
@@ -332,28 +320,36 @@ int IpfixSender::startDataSet(uint16_t templateId)
  * Terminates and sends current Data Set if available.
  * @return returns -1 on error, 0 otherwise
  */
-int IpfixSender::endAndSendDataSet() 
+void IpfixSender::endAndSendDataSet() 
 {
-	if(recordsInDataSet > 0) {
+	if(noCachedRecords > 0) {
 		ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	
 		if (ipfix_end_data_set(exporter) != 0) {
-			msg(MSG_FATAL, "sndIpfix: ipfix_end_data_set failed");
-			return -1;
+			THROWEXCEPTION("sndIpfix: ipfix_end_data_set failed");
 		}
 
 		if (ipfix_send(exporter) != 0) {
-			msg(MSG_FATAL, "sndIpfix: ipfix_send failed");
-			return -1;
+			THROWEXCEPTION("sndIpfix: ipfix_send failed");
 		}
 
-		recordsToRelease.clear();
+		removeRecordReferences();
 
-		recordsInDataSet = 0;
 		currentTemplateId = 0;
 	}
-	
-	return 0;
+}
+
+
+/**
+ * removes references to flows inside buffer recordsToRelease
+ */
+void IpfixSender::removeRecordReferences()
+{
+	while (!recordsToRelease.empty()) {
+		recordsToRelease.front()->removeReference();
+		recordsToRelease.pop();
+	}
+	noCachedRecords = 0;
 }
 	
 
@@ -361,20 +357,17 @@ int IpfixSender::endAndSendDataSet()
  * Put new Data Record in outbound exporter queue
  * @param rec Data Data Record
  */
-int IpfixSender::onDataDataRecord(boost::shared_ptr<IpfixDataDataRecord> rec)
+void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 {
-	IpfixRecord::DataTemplateInfo* dataTemplateInfo = rec->dataTemplateInfo.get();
-	IpfixRecord::Data* data = rec->data;
-
+	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo = record->dataTemplateInfo;
+	IpfixRecord::Data* data = record->data;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 
 	if (!exporter) {
-		msg(MSG_ERROR, "sndIpfix: Exporter not set");
-		return -1;
+		THROWEXCEPTION("exporter not set");
 	}
 
-	if(startDataSet(dataTemplateInfo->templateId) != 0)
-		return -1;
+	startDataSet(dataTemplateInfo->templateId);
 
 	int i;
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {

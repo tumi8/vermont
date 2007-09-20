@@ -23,32 +23,43 @@
 
 #include "IpfixParser.hpp"
 #include "ipfixlolib/ipfixlolib.h"
-#include <vector>
+#include "common/ConcurrentQueue.h"
+#include <queue>
+
+
+using namespace std;
 
 /**
  * IPFIX Exporter interface.
  *
  * Interface for feeding generated Templates and Data Records to "ipfixlolib" 
  */
-class IpfixSender : public FlowSink, StatisticsModule
+class IpfixSender : public Module, public IpfixRecordDestination, public StatisticsModule
 {
 public:
 	IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0);
 	virtual ~IpfixSender();
 
-	void start();
-	void stop();
+	void addCollector(const char *ip, uint16_t port);
+	void flushPacket();
+	
+	// inherited from Module
+	virtual void performStart();
+	virtual void performShutdown();
 
-	int addCollector(const char *ip, uint16_t port);
+	// inherited from IpfixRecordDestination
+	virtual void onDataTemplate(IpfixDataTemplateRecord* record);
+	virtual void onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record);
+	virtual void onDataDataRecord(IpfixDataDataRecord* record);
 
-	int onDataTemplate(IpfixRecord::SourceID* sourceID,
-			IpfixRecord::DataTemplateInfo* dataTemplateInfo);
-	int onDataTemplateDestruction(IpfixRecord::SourceID* sourceID,
-			IpfixRecord::DataTemplateInfo* dataTemplateInfo);
-	int onDataDataRecord(boost::shared_ptr<IpfixDataDataRecord> rec);
-	int onIdle();
+	
+	// FIXME: those functions MUST be removed, as BaseSource should not be included
+	// in class hierarchy of this module
+	virtual void connectTo(BaseDestination*);
+	virtual void disconnect();
+	virtual bool isConnected() const;
 
-	virtual void flowSinkProcess();
+	// inherited from StatisticsModule
 	virtual std::string getStatistics();
 
 	class Collector

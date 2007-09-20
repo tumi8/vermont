@@ -40,10 +40,8 @@ public:
 	IpfixAggregator(uint32_t pollinterval);
 	virtual ~IpfixAggregator();
 
-	virtual void onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* ti,
-			uint16_t length, IpfixRecord::Data* data);
-	virtual void onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* ti,
-			uint16_t length, IpfixRecord::Data* data);
+	virtual void onDataRecord(IpfixDataRecord* record);
+	virtual void onDataDataRecord(IpfixDataDataRecord* record);
 
 protected:
 	BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, 

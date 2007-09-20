@@ -37,18 +37,15 @@ class IpfixPrinter : public Module, public IpfixRecordDestination
 		IpfixPrinter();
 		~IpfixPrinter();
 
-		virtual void onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
-		virtual void onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, 
-									  uint16_t length, IpfixRecord::Data* data);
-		virtual void onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
-		virtual void onOptionsTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo);
-		virtual void onOptionsRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, 
-									 uint16_t length, IpfixRecord::Data* data);
-		virtual void onOptionsTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo);
-		virtual void onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo);
-		virtual void onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, 
-								  uint16_t length, IpfixRecord::Data* data);
-		virtual void onTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo);
+		virtual void onDataTemplate(IpfixDataTemplateRecord* record);
+		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+		virtual void onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record);
+		virtual void onOptionsTemplate(IpfixOptionsTemplateRecord* record);
+		virtual void onOptionsRecord(IpfixOptionsRecord* record);
+		virtual void onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record);
+		virtual void onTemplate(IpfixTemplateRecord* record);
+		virtual void onDataRecord(IpfixDataRecord* record);
+		virtual void onTemplateDestruction(IpfixTemplateDestructionRecord* record);
 
 	protected:
 		void* lastTemplate;

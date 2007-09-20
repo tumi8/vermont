@@ -54,8 +54,7 @@ IpfixAggregator::~IpfixAggregator()
  * @param length length (in bytes) of @c data
  * @param data raw data block containing the Record
  */
-void IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID, 
-		IpfixRecord::TemplateInfo* ti, uint16_t length, IpfixRecord::Data* data)
+void IpfixAggregator::onDataRecord(IpfixDataRecord* record)
 {
 	int i;
 	DPRINTF("Got a Data Record\n");
@@ -65,12 +64,15 @@ void IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID,
 		THROWEXCEPTION("Aggregator not started");
 	}
 #endif
+	
+	IpfixRecord::TemplateInfo* ti = record->templateInfo.get();
 
+	
 	for (i = 0; i < rules->count; i++) {
-		if (rules->rule[i]->templateDataMatches(ti, data)) {
+		if (rules->rule[i]->templateDataMatches(ti, record->data)) {
 			DPRINTF("rule %d matches", i);
 
-			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateTemplateData(ti, data);
+			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateTemplateData(ti, record->data);
 		}
 	}
 }
@@ -83,8 +85,7 @@ void IpfixAggregator::onDataRecord(IpfixRecord::SourceID* sourceID,
  * @param length length (in bytes) of @c data
  * @param data raw data block containing the Record
  */
-void IpfixAggregator::onDataDataRecord(IpfixRecord::SourceID* sourceID, 
-		IpfixRecord::DataTemplateInfo* ti, uint16_t length, IpfixRecord::Data* data)
+void IpfixAggregator::onDataDataRecord(IpfixDataDataRecord* record)
 {
 	DPRINTF("onDataDataRecord: Got a DataData Record\n");
 
@@ -96,9 +97,10 @@ void IpfixAggregator::onDataDataRecord(IpfixRecord::SourceID* sourceID,
 
 	mutex.lock();
 	for (int i = 0; i < rules->count; i++) {
-		if (rules->rule[i]->dataTemplateDataMatches(ti, data)) {
+		if (rules->rule[i]->dataTemplateDataMatches(record->dataTemplateInfo.get(), record->data)) {
 			DPRINTF("rule %d matches\n", i);
-			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateDataTemplateData(ti, data);
+			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateDataTemplateData(
+					record->dataTemplateInfo.get(), record->data);
 		}
 	}
 	mutex.unlock();

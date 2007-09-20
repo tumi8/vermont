@@ -24,8 +24,6 @@
 #define NetflowV9_SetId_Template  0
 
 #include "IpfixReceiver.hpp"
-#include "FlowSink.hpp"
-#include "FlowSource.hpp"
 #include "IpfixRecordSender.h"
 
 #include <list>

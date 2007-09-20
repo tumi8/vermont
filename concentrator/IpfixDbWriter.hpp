@@ -25,7 +25,6 @@
 #ifndef IPFIXDBWRITER_H
 #define IPFIXDBWRITER_H
 
-#include "FlowSink.hpp"
 #include "IpfixDbCommon.hpp"
 #include "IpfixParser.hpp"
 #include "ipfix.hpp"
@@ -40,7 +39,7 @@
  * IpfixDbWriter powered the communication to the database server
  * also between the other structs
  */
-class IpfixDbWriter : public FlowSink {
+class IpfixDbWriter : public IpfixRecordDestination {
 	public:
 		IpfixDbWriter(const char* hostName, const char* dbName,
 				const char* userName, const char* password,
@@ -48,15 +47,12 @@ class IpfixDbWriter : public FlowSink {
 				int maxStatements);
 		~IpfixDbWriter();
 
-		int start();
-		int stop();
-
-		int onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data);
-		int onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
-		int onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo);
-		int onOptionsTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo);
-		int onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
-		int onOptionsRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length, IpfixRecord::Data* data);
+		void onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data);
+		void onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
+		void onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo);
+		void onOptionsTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo);
+		void onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
+		void onOptionsRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length, IpfixRecord::Data* data);
 
 		IpfixRecord::SourceID srcId;              /**Exporter default SourceID */
 

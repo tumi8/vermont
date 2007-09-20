@@ -28,7 +28,7 @@
 #include <stdint.h>
 #include <boost/smart_ptr.hpp>
 #include "IpfixRecord.hpp"
-#include "FlowSink.hpp"
+
 
 class IpfixParser;
         

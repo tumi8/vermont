@@ -210,7 +210,7 @@ int IpfixDbWriter::createDBTable(Table* table, const char* tablename)
 /**
 *	function receive the DataRecord or DataDataRecord when callback is started
 */
-int  IpfixDbWriter::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data)
+void  IpfixDbWriter::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data)
 {
 	Table *tabl = table;
 	Statement* statemen = tabl->statement;
@@ -220,7 +220,7 @@ int  IpfixDbWriter::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecor
 	/** if the writeToDb process not ready - drop record*/
 	if(statemen->statemBuffer[statemen->maxStatements-1] != NULL) {
 		msg(MSG_ERROR,"IpfixDbWriter: Statement buffer is full, writing to DB in progress? - drop record");
-		return 1;
+		return;
 	}
 	
 	/** sourceid null ? use default*/
@@ -246,13 +246,12 @@ int  IpfixDbWriter::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecor
                         msg(MSG_INFO, "Buffering record. Need %i more records before writing to database.", statemen->maxStatements - statemen->statemReceived);
 		}
 	}
-	return 0;
 }
 
 /**
  *	function receive the  when callback is started
  */
-int IpfixDbWriter::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data)
+void IpfixDbWriter::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data)
 {
 	IpfixRecord::DataTemplateInfo dataTemplateInfo;
 	
@@ -269,38 +268,6 @@ int IpfixDbWriter::onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::Te
 	DPRINTF("receiveRec calls receiveDataRec\n");	
 
 	return onDataDataRecord(sourceID, &dataTemplateInfo, length, data);
-}
-		
-/**
- * don't do anything when a template was received
- */
-int IpfixDbWriter::onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo)
-{
-	return 0;
-}
-
-/**
- * don't do anything
- */
-int IpfixDbWriter::onOptionsTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo)
-{
-	return 0;
-}
-
-/**
- * don't do anything
- */
-int IpfixDbWriter::onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo)
-{
-	return 0;
-}
-
-/**
- * don't do anything
- */
-int IpfixDbWriter::onOptionsRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::OptionsTemplateInfo* optionsTemplateInfo, uint16_t length, IpfixRecord::Data* data)
-{
-	return 0;
 }
 
 /**
