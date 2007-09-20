@@ -1,8 +1,29 @@
+/*
+ * Vermont Testsuite
+ * Copyright (C) 2007 Tobias Limmer <http://www7.informatik.uni-erlangen.de/~limmer>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
+
 #include "AggregationPerfTest.h"
 
 #include "sampler/Filter.h"
 #include "common/Time.h"
 #include "test.h"
+#include "TestQueue.h"
 #include "reconf/Module.h"
 #include "concentrator/PacketAggregator.h"
 #include "reconf/ConnectionQueue.h"
@@ -19,7 +40,7 @@
 AggregationPerfTest::AggregationPerfTest(bool fast)
 {
 	if (fast) {
-		numPackets = 3000;
+		numPackets = 5000;
 	} else {
 		numPackets = 500000;
 	}
@@ -75,15 +96,15 @@ void AggregationPerfTest::execute()
 	// NOTICE: the sampler will be destroyed by the d'tor of FilterModule
 
 	ConnectionQueue<Packet*> queue1(10);
+	TestQueue<IpfixRecord*> tqueue;
 
 	PacketAggregator agg(1);
 	Rules* rules = createRules();
 	agg.buildAggregator(rules, 0, 0);
 	agg.start();
-	CounterDestination<IpfixRecord*> counter;
 
 	queue1.connectTo(&agg);
-	agg.connectTo(&counter);
+	agg.connectTo(&tqueue);
 
 	queue1.start();
 
@@ -91,8 +112,11 @@ void AggregationPerfTest::execute()
 	REQUIRE(gettimeofday(&starttime, 0) == 0);
 
 	sendPacketsTo(&queue1, numPackets);
+	
+	// check that at least one record was received
+	IpfixRecord* rec;
+	ASSERT(tqueue.pop(1000, &rec), "received timeout when should have received flow!");
 
-	printf("counter: %d\n", counter.getCount());
 	struct timeval stoptime;
 	REQUIRE(gettimeofday(&stoptime, 0) == 0);
 	struct timeval difftime;

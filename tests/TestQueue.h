@@ -18,33 +18,34 @@
  *
  */
 
-#if !defined(AGGREGATIONPERFTEST_H)
-#define AGGREGATIONPERFTEST_H
-
-#include "sampler/Filter.h"
-#include "sampler/PacketSink.h"
-#include "concentrator/IpfixAggregator.hpp"
-#include "common/InstanceManager.h"
+#ifndef TESTQUEUE_H_
+#define TESTQUEUE_H_
 
 
+#include "reconf/Destination.h"
+#include "common/ConcurrentQueue.h"
 
-class AggregationPerfTest
+
+template <class T>
+class TestQueue : public Destination<T>
 {
-	public:
-		AggregationPerfTest(bool fast);
-		~AggregationPerfTest();
-		
-		void execute();
+public:
+	TestQueue() {}
+	virtual ~TestQueue() {}
+	
+	bool pop(uint32_t timeout_ms, T* res)
+	{
+		return queue.pop(timeout_ms, res);
+	}
 
-
-	private:
-		InstanceManager<Packet>* packetManager;
-
-		Rule::Field* createRuleField(const string& typeId);
-		Rules* createRules();
-		void sendPacketsTo(Destination<Packet*>* dest, uint32_t numpackets);
-
-		int numPackets;
+	// inherited from Destination
+	virtual void receive(T packet)
+	{
+		queue.push(packet);
+	}
+	
+private:
+	ConcurrentQueue<T> queue;
 };
 
-#endif
+#endif /*TESTQUEUE_H_*/
