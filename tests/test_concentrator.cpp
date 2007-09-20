@@ -1,14 +1,13 @@
 #include "test_concentrator.h"
 
 #include "concentrator/IpfixRecord.hpp"
-#include "concentrator/FlowSource.hpp"
-#include "concentrator/FlowSink.hpp"
 #include "ipfixlolib/ipfixlolib.h"
 #include "concentrator/IpfixSender.hpp"
 #include "concentrator/IpfixRawdirReader.hpp"
 #include "concentrator/IpfixRawdirWriter.hpp"
 #include "concentrator/IpfixCollector.hpp"
 #include "concentrator/IpfixPrinter.hpp"
+#include "reconf/ConnectionQueue.h"
 #include "test.h"
 
 #include <boost/filesystem/operations.hpp>
@@ -16,7 +15,7 @@
 #include <vector>
 #include <stdlib.h>
 
-class TestSink : public FlowSink {
+class TestSink : public IpfixRecordDestination {
 	public:
 		int receivedRecords;
 		bool checkSourceId;
@@ -24,21 +23,19 @@ class TestSink : public FlowSink {
 		TestSink(bool checkSourceId = true) : receivedRecords(0), checkSourceId(checkSourceId) {
 		}
 
-		virtual int onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo) 
+		virtual void onTemplate(IpfixTemplateRecord* record) 
 		{
-			return 0;
 		}
 		
-		virtual int onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo) 
+		virtual void onDataTemplate(IpfixDataTemplateRecord* record) 
 		{
-			return 0;
 		}
 
-		virtual int onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data) {
-			uint8_t inSourceID = sourceID->exporterAddress.ip[0];
-			uint8_t inTemplateId = templateInfo->templateId - 256;
-			uint8_t inTypeId = templateInfo->fieldInfo[0].type.id;
-			uint8_t inData = data[0];
+		virtual void onDataRecord(IpfixDataRecord* record) {
+			uint8_t inSourceID = record->sourceID->exporterAddress.ip[0];
+			uint8_t inTemplateId = record->templateInfo->templateId - 256;
+			uint8_t inTypeId = record->templateInfo->fieldInfo[0].type.id;
+			uint8_t inData = record->data[0];
 
 			msg(MSG_DEBUG, "Received DataRecord: %d, %d, %d, %d", inSourceID, inTemplateId, inTypeId, inData);
 			if (checkSourceId) if (inSourceID != inTemplateId) ERROR("SourceID or TemplateInfo got corrupted: inSourceID != inTemplateId");
@@ -47,19 +44,18 @@ class TestSink : public FlowSink {
 			if (inData != inTypeId) ERROR("IpfixRecord got corrupted: inData != inTypeId");
 
 			for (int i = 0; i < rand(); i++);
-
-			return 0;
 		}
 
-		int onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data) {
+		virtual void onDataDataRecord(IpfixDataDataRecord* record)
+		{
 			receivedRecords++;
 
-			uint8_t inSourceID = sourceID->exporterAddress.ip[0];
-			uint8_t inTemplateId = dataTemplateInfo->templateId - 256;
-			uint8_t inTypeId = dataTemplateInfo->fieldInfo[0].type.id;
-			uint8_t inData = data[0];
-			uint8_t inDataTemplateTypeId = dataTemplateInfo->dataInfo[0].type.id;
-			uint8_t inDataTemplate = dataTemplateInfo->data[0];
+			uint8_t inSourceID = record->sourceID->exporterAddress.ip[0];
+			uint8_t inTemplateId = record->dataTemplateInfo->templateId - 256;
+			uint8_t inTypeId = record->dataTemplateInfo->fieldInfo[0].type.id;
+			uint8_t inData = record->data[0];
+			uint8_t inDataTemplateTypeId = record->dataTemplateInfo->dataInfo[0].type.id;
+			uint8_t inDataTemplate = record->dataTemplateInfo->data[0];
 			msg(MSG_DEBUG, "Received DataDataRecord: %d, %d, %d, %d, %d, %d", inSourceID, inTemplateId, inTypeId, inData, inDataTemplateTypeId, inDataTemplate);
 			if (checkSourceId) if (inSourceID != inTemplateId) ERROR("SourceID or TemplateInfo got corrupted: inSourceID != inTemplateId");
 			if (inTemplateId != inTypeId) ERROR("TemplateInfo got corrupted: inTemplateId != inTypeId");
@@ -69,19 +65,20 @@ class TestSink : public FlowSink {
 			if (inData != inDataTemplate) ERROR("IpfixRecord got corrupted: inData != inDataTemplate");
 
 			for (int i = 0; i < rand(); i++);
-
-			return 0;
 		}
 
 
-		int onTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo) {
-			return 0;
+		void onTemplateDestruction(IpfixTemplateDestructionRecord* record)
+		{
 		}
 
-		int getQueueLength() {
-			return ipfixRecords.getCount();
-		}
+};
 
+class DummyIpfixRecordSender : public IpfixRecordSender
+{
+public:
+	virtual ~DummyIpfixRecordSender() {}
+	virtual bool send(IpfixRecord* ipfixRecord) { return true; }
 };
 
 
@@ -199,48 +196,44 @@ IpfixDataTemplateDestructionRecord* createTestDataTemplateDestructionRecord(uint
 void test_module_coupling() {
 	std::cout << "Testing: Concentrator module coupling..." << std::endl;
 
-	// create testSink
+	ConnectionQueue<IpfixRecord*> queue1(100);
 	TestSink testSink(true);
-	testSink.runSink();
+	
+	queue1.connectTo(&testSink);	
+	queue1.start();
 
 	// create some test data
-	std::vector<boost::shared_ptr<IpfixDataRecord> > testRecords;
+	std::vector<IpfixDataRecord*> testRecords;
 	for (uint8_t magic_number = 0; magic_number < 255; magic_number++) {
 		boost::shared_ptr<IpfixRecord::SourceID> testSourceId = createTestSourceId(magic_number);
 		boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo = createTestTemplate(magic_number);
-		// FIXME: test temporarily deactivated
-		/*IpfixTemplateRecord* dtr = createTestTemplateRecord(magic_number, templateInfo);
-		testSink.push(dtr);
-		testRecords.push_back(createTestDataRecord(magic_number, testSourceId, templateInfo));*/	
+		IpfixTemplateRecord* dtr = createTestTemplateRecord(magic_number, templateInfo);
+		testSink.receive(dtr);
+		testRecords.push_back(createTestDataRecord(magic_number, testSourceId, templateInfo));	
 	}
 
 	// perform test
 	for (uint8_t magic_number = 0; magic_number < 64; magic_number++) {
-		testSink.push(testRecords[magic_number]);
+		queue1.receive(testRecords[magic_number]);
 	}
 	for (int i = 0; i < 128; i++) {
 		for (int i = 0; i < rand(); i++);
-		testSink.push(testRecords[rand() % 64]);
+		queue1.receive(testRecords[rand() % 64]);
 	}
 	for (int i = 0; i < 128; i++) {
-		while (testSink.getQueueLength() > 5);
+		while (queue1.getCount() > 5);
 		int magic_number = rand() % 3;
-		// FIXME: test temporarily deactivated
-		//if ((i % 10) == 0) testRecords[magic_number] = createTestDataRecord(magic_number, testRecords[magic_number]->sourceID, testRecords[magic_number]->templateInfo);
-		testSink.push(testRecords[magic_number]);
+		if ((i % 10) == 0) testRecords[magic_number] = createTestDataRecord(magic_number, testRecords[magic_number]->sourceID, testRecords[magic_number]->templateInfo);
+		queue1.receive(testRecords[magic_number]);
 	}
 
 	// be nice
 	for (uint8_t magic_number = 0; magic_number < 255; magic_number++) {
-		// FIXME: test temporarily deactivated
-		//testSink.push(createTestTemplateDestructionRecord(magic_number, testRecords[magic_number]->templateInfo));
+		queue1.receive(createTestTemplateDestructionRecord(magic_number, testRecords[magic_number]->templateInfo));
 	}
 
 	// give modules a chance to process their queues
 	sleep(1);
-
-	// shut down modules
-	testSink.terminateSink();
 
 }
 
@@ -253,8 +246,7 @@ void test_ipfixlolib_rawdir() {
 	std::cout << "Testing: Ipfixlolib Rawdir writing..." << std::endl;
 
 	// create temporary directory
-	// FIXME: test temporarily deactivated
-	/*char* tmpdirname = strdup("/tmp/vermont-tests-concentrator-rawdir-XXXXXX");
+	char* tmpdirname = strdup("/tmp/vermont-tests-concentrator-rawdir-XXXXXX");
 	if (mkdtemp(tmpdirname) == 0) {
 		ERROR("Unable to create temporary directory. Cannot continue.");
 		free(tmpdirname);
@@ -266,60 +258,55 @@ void test_ipfixlolib_rawdir() {
 	{
 		// create IpfixRawdirWriter
 		IpfixRawdirWriter ipfixRawdirWriter(0xbeef, tmppath);
-		ipfixRawdirWriter.runSink();
+		ipfixRawdirWriter.start();
 
 		// create some test data
-		std::vector<boost::shared_ptr<IpfixDataDataRecord> > testDataRecords;
+		std::vector<IpfixDataDataRecord*> testDataRecords;
 		for (uint8_t magic_number = 0; magic_number < 16; magic_number++) {
 			boost::shared_ptr<IpfixRecord::SourceID> testSourceId = createTestSourceId(magic_number);
 			boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo = createTestDataTemplate(magic_number);
-			boost::shared_ptr<IpfixDataTemplateRecord> dtr = createTestDataTemplateRecord(magic_number, dataTemplateInfo);
-			ipfixRawdirWriter.push(dtr);
-			ipfixRawdirWriter.onIdle();
+			IpfixDataTemplateRecord* dtr = createTestDataTemplateRecord(magic_number, dataTemplateInfo);
+			ipfixRawdirWriter.receive(dtr);
+			
 			testDataRecords.push_back(createTestDataDataRecord(magic_number, testSourceId, dataTemplateInfo));
 		}
 
 		// perform test	
 		for (uint8_t magic_number = 0; magic_number < 16; magic_number++) {
-			ipfixRawdirWriter.push(testDataRecords[magic_number]);
-			ipfixRawdirWriter.onIdle();
+			ipfixRawdirWriter.receive(testDataRecords[magic_number]);
+			ipfixRawdirWriter.flushPacket();
 		}
 
 		// be nice
 		for (uint8_t magic_number = 0; magic_number < 16; magic_number++) {
-			ipfixRawdirWriter.push(createTestDataTemplateDestructionRecord(magic_number, testDataRecords[magic_number]->dataTemplateInfo));
+			ipfixRawdirWriter.receive(createTestDataTemplateDestructionRecord(magic_number, testDataRecords[magic_number]->dataTemplateInfo));
 		}
 
 		// give modules a chance to process their queues
 		sleep(1);
 
 		// shut down modules
-		ipfixRawdirWriter.terminateSink();
+		ipfixRawdirWriter.shutdown();
 
 	}
 
 	std::cout << "Testing: Ipfixlolib Rawdir reading..." << std::endl;
 	{
 		// create testSink
-		// FIXME: test temporarily deactivated
 		TestSink testSink(false);
-		testSink.runSink();
 
 		IpfixRawdirReader ipfixRawdirReader(tmppath);
 
-		IpfixParser ipfixParser;
-		ipfixParser.addFlowSink(&testSink);
+		IpfixCollector ipfixCollector(&ipfixRawdirReader);
+		ipfixCollector.connectTo(&testSink);
 
-		IpfixCollector ipfixCollector;
-		ipfixCollector.addIpfixReceiver(&ipfixRawdirReader);
-		ipfixCollector.addIpfixPacketProcessor(&ipfixParser);
 		ipfixCollector.start();
 
 		// give modules a chance to process their queues
 		sleep(1);
 
 		// shut down modules
-		testSink.terminateSink();
+		ipfixCollector.shutdown();
 
 		// check results
 		if (testSink.receivedRecords != 16) {
@@ -327,7 +314,7 @@ void test_ipfixlolib_rawdir() {
 			snprintf(s, 255, "IpfixRawdirReader should have read 16 records, but read %d", testSink.receivedRecords);
 			ERROR(s);
 		}
-	}*/
+	}
 
 #endif
 }
@@ -335,9 +322,9 @@ void test_ipfixlolib_rawdir() {
 void test_parser_stability() {
 
 	boost::shared_ptr<IpfixRecord::SourceID> testSourceId = createTestSourceId(42);
+	DummyIpfixRecordSender recordSender;
 
-	// FIXME: test temporarily deactivated
-	/*IpfixParser ipfixParser;
+	IpfixParser ipfixParser(&recordSender);
 
 	for (int iteration = 0; iteration < 65000; iteration++) {
 		for (int len = 32; len < 64; len++) {
@@ -348,7 +335,7 @@ void test_parser_stability() {
 
 			ipfixParser.processPacket(message, len, testSourceId); 
 		}
-	}*/
+	}
 }
 
 

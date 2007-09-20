@@ -21,8 +21,8 @@ int main(int argc, char* argv[])
 	AggregationPerfTest aggtest(!perftest);
 	aggtest.execute();
 	
-	/*ConcentratorTestSuite conctest;
-	conctest.start_test();*/
+	ConcentratorTestSuite conctest;
+	conctest.start_test();
 	
 	return 0;
 }
