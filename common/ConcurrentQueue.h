@@ -75,7 +75,9 @@ class ConcurrentQueue
 
 		inline bool pop(T* res)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), maxEntries-pushSemaphore.getCount());
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)",
+					(ownerName.empty() ? "<owner not set>" : ownerName.c_str()),
+					maxEntries-pushSemaphore.getCount());
 			if (!popSemaphore.wait()) {
 				DPRINTF("(%s) failed to pop element, program is being shut down?", ownerName.c_str());
 				return false;
