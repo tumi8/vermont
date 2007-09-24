@@ -75,7 +75,8 @@ public:
 		// A counting semaphore is needed here,because otherwise there could
 		// be a deadlock on disconnect and this method (if it is called inside a thread)
 		bool retval = connected.dec(2);
-		connected.inc(2);
+		if (retval)
+			connected.inc(2);
 		return retval;
 	}
 	
