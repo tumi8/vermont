@@ -37,4 +37,38 @@
     <packetPrinter id="4" endPoint="true">
     </packetPrinter>
 
+    <psampExporter id="5">
+        <packetReporting>
+            <templateId>888</templateId>
+            <reportedIE>
+                <ieName>sourceIPv4Address</ieName>
+            </reportedIE>
+            <reportedIE>
+                <ieName>destinationIPv4Address</ieName>
+            </reportedIE>
+            <reportedIE>
+                <ieId>313</ieId>
+                <ieLength>0</ieLength>
+           </reportedIE>
+            <reportedIE>
+                <ieName>flowStartSeconds</ieName>
+            </reportedIE>
+        </packetReporting>
+
+	<ipfixPacketRestrictions>
+	    <maxPacketSize>1500</maxPacketSize>
+	    <maxExportDelay unit="msec">500</maxExportDelay>
+	</ipfixPacketRestrictions>
+	<udpTemplateManagement>
+	    <templateRefreshTimeout>10</templateRefreshTimeout>
+	    <templateRefreshRate>100</templateRefreshRate>
+	</udpTemplateManagement>
+	<collector>
+	    <ipAddressType>4</ipAddressType>
+	    <ipAddress>127.0.0.1</ipAddress>
+	    <transportProtocol>17</transportProtocol>
+	    <port>1500</port>
+	</collector>
+    </psampExporter>
+
 </ipfixConfig>
