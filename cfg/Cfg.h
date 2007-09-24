@@ -23,7 +23,7 @@ class Cfg
 public:
 	friend class ConfigFile;
 
-	virtual Cfg* create(XMLElement* e) = 0;
+	virtual Cfg* create(XMLElement* e) { return NULL; };
 	virtual ~Cfg() { }
 
 	/** returns the name (as written in the XML file) */
@@ -51,13 +51,13 @@ protected:
 	Cfg(XMLElement* e) : _elem(e) { }
 
 	/** return a string value of an elemen */
-	std::string get(const std::string& name) throw(IllegalEntry);
+	std::string get(const std::string& name, XMLElement* elem = NULL) throw(IllegalEntry);
 
 	/** returns the integer value of an XML config entry
 	 * If there is no such element in the XML file, it returns def
 	 */
-	int getInt(const std::string& name, int def = 0);
-
+	int getInt(const std::string& name, int def = 0, XMLElement* elem = NULL);
+	
 	XMLElement* _elem;
 };
 

@@ -2,21 +2,28 @@
 
 #include <cassert>
 
-std::string Cfg::get(const std::string& name) throw(IllegalEntry)
+std::string Cfg::get(const std::string& name, XMLElement* elem) throw(IllegalEntry)
 {
-	XMLNode* n = _elem->getFirstChild(name);
+	if (!elem)
+		elem = _elem;
+
+	XMLNode* n = elem->getFirstChild(name);
 	if (!n)
 		throw new IllegalEntry();
 
 	return n->getFirstText();
 }
 
-int Cfg::getInt(const std::string& name, int def)
+int Cfg::getInt(const std::string& name, int def, XMLElement* elem)
 {
-	std::string str = get(name);
-	if(str.empty())
-		return def;
-	return atoi(str.c_str());
+	std::string str;
+	try {
+		str = get(name, elem);
+		return atoi(str.c_str());
+	} catch (IllegalEntry ie) { }
+
+	// return default value
+	return def; 
 }
 
 std::vector<unsigned int> Cfg::getNext()
