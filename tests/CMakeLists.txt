@@ -25,10 +25,10 @@ ADD_EXECUTABLE(vermonttest
 )
 
 TARGET_LINK_LIBRARIES(vermonttest
-	cfg
 	concentrator
-	sampler
+	cfg
 	ipfixlolib
+	sampler
 	common
 	reconf
 	${CMAKE_THREAD_LIBS_INIT}
