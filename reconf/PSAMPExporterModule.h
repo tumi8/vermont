@@ -1,8 +1,6 @@
 /*
  * PSAMP Reference Implementation
  *
- * ExporterSink.h
- *
  * Implementation of an IPFIX exporter packet sink
  * using Jan Petranek's ipfixlolib
  *
@@ -33,7 +31,7 @@
 #define MAX_PACKET_LIFETIME 400
 
 class PSAMPExporterModule
-	: public Module, public Destination<Packet*>
+	: public Module, public Source<Packet*>, public Destination<Packet*>
 {
 public:
         PSAMPExporterModule(Template *tmpl, int sID)

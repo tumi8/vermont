@@ -19,7 +19,7 @@
 #include "common/msg.h"
 #include "ipfixlolib/ipfixlolib.h"
 
-#include "ExporterSinkModule.h"
+#include "PSAMPExporterModule.h"
 
 using namespace std;
 
