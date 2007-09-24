@@ -26,6 +26,7 @@ ADD_LIBRARY(cfg
 	Node.cpp
 	ObserverCfg.cpp
 	PacketFilterCfg.cpp
+	PacketReportingCfg.cpp
 	XMLAttribute.cpp
 	XMLElement.cpp
 	XMLDocument.cpp
