@@ -23,7 +23,38 @@ int Cfg::getInt(const std::string& name, int def, XMLElement* elem)
 	} catch (IllegalEntry ie) { }
 
 	// return default value
-	return def; 
+	return def;
+}
+
+unsigned int Cfg::getTimeInUnit(const std::string& name, timeUnit unit, XMLElement* elem)
+{
+	unsigned int time;
+	if (!elem)
+		elem = _elem;
+
+	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
+	XMLNode::XMLSet<XMLElement*>::const_iterator it = set.begin();
+	for (; it != set.end(); it++) {
+		XMLElement* e = *it;
+		if (e->getName() != name)
+			continue;
+
+		time = atoi(e->getFirstText().c_str());
+
+		XMLAttribute* a = e->getAttribute("unit");
+
+		if (a->getValue() == "sec")
+			return time * (uSEC/unit);
+		else if (a->getValue() == "msec")
+			return time * (mSEC/unit);
+		else if (a->getValue() == "usec")
+			return time * (uSEC/unit);
+		else
+			THROWEXCEPTION("Unkown time unit '%s'", a->getValue().c_str());
+	}
+
+	// we didn't find the element
+	throw new IllegalEntry();
 }
 
 std::vector<unsigned int> Cfg::getNext()

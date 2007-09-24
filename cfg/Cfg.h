@@ -9,13 +9,19 @@
 
 
 /**
- * This excecption is if someone try's to get an element which
+ * This excecption is thrown if someone try's to get an element which
  * doesn't exist
  */
 class IllegalEntry 
 	: public std::exception
 {
 		
+};
+
+enum timeUnit {
+	SEC = 1,
+	mSEC= 1000,
+	uSEC= 1000000,
 };
 
 class Cfg
@@ -50,13 +56,24 @@ public:
 protected:
 	Cfg(XMLElement* e) : _elem(e) { }
 
-	/** return a string value of an elemen */
+	/** return a string value of an elemen 
+	 * @param name the name of the element
+	 */
 	std::string get(const std::string& name, XMLElement* elem = NULL) throw(IllegalEntry);
 
 	/** returns the integer value of an XML config entry
+	 * @param name the name of the element
 	 * If there is no such element in the XML file, it returns def
 	 */
 	int getInt(const std::string& name, int def = 0, XMLElement* elem = NULL);
+	
+	/**
+	 * returns the time value specified in the element in a given unit
+	 * @param name the name of the element
+	 * @param unit the unit in which the time should be returned
+	 * @param elem the element whose children are search for the given name
+	 */
+	unsigned int getTimeInUnit(const std::string& name, timeUnit unit, XMLElement* elem = NULL);
 	
 	XMLElement* _elem;
 };
