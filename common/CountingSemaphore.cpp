@@ -32,6 +32,7 @@ CountingSemaphore::~CountingSemaphore () {
 
 bool CountingSemaphore::dec (unsigned int dec, long timeout_ms)
 {
+	bool result = true;
 	if (pthread_mutex_lock (&mutex) != 0)
 		THROWEXCEPTION("lock of mutex failed");
 
@@ -50,20 +51,23 @@ bool CountingSemaphore::dec (unsigned int dec, long timeout_ms)
 
 				retval = pthread_cond_timedwait (&cond, &mutex, &timeout);
 				if (retval != 0 && errno == ETIMEDOUT) {
-					if (exitFlag)
-						return false; // FIXME: is the lock here held?
 					addToCurTime(&timeout, timeout_ms);
-				} else
-					THROWEXCEPTION("condition wait failed");
+				}
+				
+				if (exitFlag) {
+					result = false;
+					goto out1;
+				}
 			} while (retval != 0);
 		}
 	}
 	val -= dec;
 
+out1:
 	if (pthread_mutex_unlock (&mutex) != 0)
 		THROWEXCEPTION("unlock of mutex failed");
 
-	return true;
+	return result;
 }
 
 void CountingSemaphore::inc (unsigned int inc) {
