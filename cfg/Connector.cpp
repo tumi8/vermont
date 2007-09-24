@@ -1,4 +1,5 @@
 #include "Connector.h"
+#include "CfgNode.h"
 
 #include <algorithm>
 #include <iterator>

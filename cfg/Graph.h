@@ -13,19 +13,17 @@
 #define GRAPH_H
 
 #include <cstdio>
-#include <map>
 #include <vector>
-
-#include "Edge.h"
-#include "CfgNode.h"
-
-#include "Cfg.h"
 
 /**
 	@author Peter Baumann <siprbaum@users.berlios.de>
 */
 
+class Cfg;
 class Connector;
+class Edge;
+class Node;
+class CfgNode;
 
 class Graph {
 public:

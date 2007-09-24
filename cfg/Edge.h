@@ -33,8 +33,15 @@ public:
 
 	unsigned int getID() { return id; }
 
-	Node* nodeA();
-	Node* NodeB();
+	inline Node* nodeA()
+	{
+		return graph->nodeA(this);
+	}
+
+	inline Node* NodeB()
+	{
+		return graph->nodeB(this);
+	}
 };
 
 #endif

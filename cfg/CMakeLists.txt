@@ -22,7 +22,6 @@ ADD_LIBRARY(cfg
 	CfgNode.cpp
 	ConfigManager.cpp
 	Connector.cpp
-	Edge.cpp
 	Graph.cpp
 	Node.cpp
 	ObserverCfg.cpp

@@ -1,6 +1,7 @@
 #include "ConfigManager.h"
 #include "cfg/Connector.h"
 
+#include "cfg/CfgNode.h"
 #include "cfg/ObserverCfg.h"
 #include "cfg/PacketFilterCfg.h"
 #include "cfg/PacketPrinterCfg.h"

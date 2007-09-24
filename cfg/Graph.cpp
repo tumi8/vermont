@@ -12,6 +12,7 @@
 
 #include "Graph.h"
 #include "CfgNode.h"
+#include "Edge.h"
 #include "Connector.h"
 
 #include <iostream>
