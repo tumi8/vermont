@@ -43,8 +43,13 @@ public:
 
 	/** returns an instance of the module which the config element describes  
 	 *  This uses covariant return types, so every derived class has to implement it
+	 *  if it holds a module instance (this is why the method isn't pure virtual)
 	 */
-	virtual Module* getInstance() = 0;
+	virtual Module* getInstance()
+	{
+		THROWEXCEPTION("getInstance not overloaded"); 
+		return NULL; // -Wall -Werror in debug mode needs this
+	}
 
 	virtual bool deriveFrom(Cfg*) = 0;
 
