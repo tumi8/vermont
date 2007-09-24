@@ -4,7 +4,19 @@
 #include "cfg/XMLElement.h"
 #include "reconf/Module.h"
 
+#include <exception>
 #include <string>
+
+
+/**
+ * This excecption is if someone try's to get an element which
+ * doesn't exist
+ */
+class IllegalEntry 
+	: public std::exception
+{
+		
+};
 
 class Cfg
 {
@@ -39,7 +51,7 @@ protected:
 	Cfg(XMLElement* e) : _elem(e) { }
 
 	/** return a string value of an elemen */
-	std::string get(const std::string& name);
+	std::string get(const std::string& name) throw(IllegalEntry);
 
 	/** returns the integer value of an XML config entry
 	 * If there is no such element in the XML file, it returns def

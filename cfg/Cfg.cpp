@@ -2,10 +2,12 @@
 
 #include <cassert>
 
-std::string Cfg::get(const std::string& name)
+std::string Cfg::get(const std::string& name) throw(IllegalEntry)
 {
 	XMLNode* n = _elem->getFirstChild(name);
-	assert(n);
+	if (!n)
+		throw new IllegalEntry();
+
 	return n->getFirstText();
 }
 
