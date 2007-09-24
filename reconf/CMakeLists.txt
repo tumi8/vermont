@@ -24,6 +24,7 @@ ADD_LIBRARY(reconf
 	Destination.cpp
 	Emitable.h
 	Emitable.cpp
+	ExporterSinkModule.cpp
 	FilterModule.h
 	FilterModule.cpp
 	Module.h
