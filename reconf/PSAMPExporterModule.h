@@ -36,27 +36,28 @@ class PSAMPExporterModule
 public:
         PSAMPExporterModule(Template *tmpl, int sID)
 			: sourceID(sID), templ(tmpl), thread(process),
+			  exporter(NULL),
 			  numPacketsToRelease(0), numMetaFieldsToRelease(0),
 			  ipfix_maxrecords(MAX_RECORDS_PER_PACKET),
 			  exportTimeout(MAX_PACKET_LIFETIME)
         {
-                int ret, i, tmplid;
-                unsigned short ttype, tlength, toffset, theader;
+		int ret, i, tmplid;
+		unsigned short ttype, tlength, toffset, theader;
 
-                // generate the exporter
-                ret = ipfix_init_exporter(sourceID, &exporter);
-                if(ret) {
-                        msg(MSG_FATAL, "error initializing IPFIX exporter");
-                        exit(1);
-                }
+		// generate the exporter
+		ret = ipfix_init_exporter(sourceID, &exporter);
+		if (ret) {
+			msg(MSG_FATAL, "error initializing IPFIX exporter");
+			exit(1);
+		}
 
                 // generate the ipfix template
                 tmplid = templ->getTemplateID();
                 ret =  ipfix_start_template_set(exporter, tmplid, templ->getFieldCount());
 
                 for(i = 0; i < templ->getFieldCount(); i++) {
-                        templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
-                        ipfix_put_template_field(exporter, tmplid, ttype, tlength, 0);
+			templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
+			ipfix_put_template_field(exporter, tmplid, ttype, tlength, 0);
                 }
 
                 ipfix_end_template_set(exporter, tmplid);
@@ -67,6 +68,11 @@ public:
         {
 		shutdown(false); // try to shutdown; no error if not running
                 ipfix_deinit_exporter(exporter);
+
+                // free the remaining packets
+                for (int i = 0; i < numPacketsToRelease; i++) {
+			(packetsToRelease[i])->removeReference();
+		}
         };
 
         virtual void receive(Packet* packet)
@@ -83,6 +89,8 @@ public:
         virtual void performShutdown()
         {
                 msg(MSG_DEBUG, "Sink: waiting for exporter thread");
+                connected.shutdown();
+                queue.notifyShutdown();
                 thread.join();
                 msg(MSG_DEBUG, "Sink: exporter thread joined");
         }

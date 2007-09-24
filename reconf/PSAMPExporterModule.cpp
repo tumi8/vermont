@@ -133,9 +133,9 @@ void PSAMPExporterModule::flushPacketStream() {
 void* PSAMPExporterModule::process(void *arg)
 {
 	PSAMPExporterModule *sink = (PSAMPExporterModule *)arg;
-	ConcurrentQueue<Packet*> *queue = NULL; // sink->getQueue();
+	ConcurrentQueue<Packet*> &queue = sink->queue;
 	Packet *p;
-	bool result;
+	bool result = false;
 	// our deadline
 	struct timeval deadline;
 	int pckCount;
@@ -148,7 +148,7 @@ void* PSAMPExporterModule::process(void *arg)
 		// let's get the first packet
 		gettimeofday(&deadline, 0);
 
-		result = queue->pop(&p);
+		result = queue.pop(&p);
 
 		if (result == true) {
 			// we got a packet, so let's add the record
@@ -167,7 +167,7 @@ void* PSAMPExporterModule::process(void *arg)
 
 		while (!sink->exitFlag && (pckCount < sink->ipfix_maxrecords)) {
 			// Try to get next packet from queue before our deadline
-			result = queue->popAbs(deadline, &p);
+			result = queue.popAbs(deadline, &p);
 
 			// check for timeout and break loop if neccessary
 			if (!result)
