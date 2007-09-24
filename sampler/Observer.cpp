@@ -90,7 +90,8 @@ void *Observer::observerThread(void *arg)
 	Packet *p;
 	const unsigned char *pcapData;
 	struct pcap_pkthdr packetHeader;
-
+	bool have_send = false;
+	
 	if (!obs->isConnected()) {
 		THROWEXCEPTION("Observer does not have any receiving modules to send packets to");
 	}
@@ -153,16 +154,20 @@ void *Observer::observerThread(void *arg)
 		obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
 		obs->processedPackets++;
 
-
 		while (!obs->exitFlag) {
 			DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
-			if (obs->send(p)) {
+			if (have_send = obs->send(p)) {
 				DPRINTFL(MSG_VDEBUG, "packet pushed");
 				break;
 			}
 		}
 	}
 
+	// if we aren't connected to a destination, we grab the packetand and can't
+	// send it to a destination. This would leak the packet, so clean it up... 
+	if (!have_send)
+		p->removeReference();
+	
 	msg(MSG_DEBUG, "exiting observer thread");
 	pthread_exit((void *)1);
 }
@@ -311,6 +316,7 @@ void Observer::performShutdown()
 {
 	/* be sure the thread is ending */
 	msg(MSG_DEBUG, "joining the ObserverThread, may take a while (until next pcap data is received)");
+	connected.shutdown();
 	thread.join();
 	msg(MSG_DEBUG, "ObserverThread joined");
 }
