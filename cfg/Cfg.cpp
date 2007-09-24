@@ -9,7 +9,7 @@ std::string Cfg::get(const std::string& name, XMLElement* elem) throw(IllegalEnt
 
 	XMLNode* n = elem->getFirstChild(name);
 	if (!n)
-		throw new IllegalEntry();
+		throw IllegalEntry();
 
 	return n->getFirstText();
 }
@@ -26,7 +26,8 @@ int Cfg::getInt(const std::string& name, int def, XMLElement* elem)
 	return def;
 }
 
-unsigned int Cfg::getTimeInUnit(const std::string& name, timeUnit unit, XMLElement* elem)
+unsigned int Cfg::getTimeInUnit(const std::string& name, timeUnit unit,
+				unsigned def, XMLElement* elem)
 {
 	unsigned int time;
 	if (!elem)
@@ -36,12 +37,19 @@ unsigned int Cfg::getTimeInUnit(const std::string& name, timeUnit unit, XMLEleme
 	XMLNode::XMLSet<XMLElement*>::const_iterator it = set.begin();
 	for (; it != set.end(); it++) {
 		XMLElement* e = *it;
-		if (e->getName() != name)
-			continue;
+
+		try {
+			if (e->getName() != name)
+				continue;
+		} catch (IllegalEntry ie) {
+
+		}
 
 		time = atoi(e->getFirstText().c_str());
 
 		XMLAttribute* a = e->getAttribute("unit");
+		if (!a)
+			continue;
 
 		if (a->getValue() == "sec")
 			return time * (uSEC/unit);
@@ -54,7 +62,8 @@ unsigned int Cfg::getTimeInUnit(const std::string& name, timeUnit unit, XMLEleme
 	}
 
 	// we didn't find the element
-	throw new IllegalEntry();
+	throw IllegalEntry();
+	return -1;
 }
 
 std::vector<unsigned int> Cfg::getNext()
