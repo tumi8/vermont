@@ -27,6 +27,7 @@ ADD_LIBRARY(cfg
 	ObserverCfg.cpp
 	PacketFilterCfg.cpp
 	PacketReportingCfg.cpp
+	PSAMPExporterCfg.cpp
 	XMLAttribute.cpp
 	XMLElement.cpp
 	XMLDocument.cpp

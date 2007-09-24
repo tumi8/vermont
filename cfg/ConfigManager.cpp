@@ -5,6 +5,7 @@
 #include "cfg/ObserverCfg.h"
 #include "cfg/PacketFilterCfg.h"
 #include "cfg/PacketPrinterCfg.h"
+#include "cfg/PSAMPExporterCfg.h"
 #include "cfg/QueueCfg.h"
 
 #include "common/PacketInstanceManager.h"
@@ -18,6 +19,7 @@ Cfg* ConfigManager::configModules[] = {
 	new PacketFilterCfg(NULL),
 	new PacketQueueCfg(NULL),
 	new PacketPrinterCfg(NULL),
+	new PSAMPExporterCfg(NULL),
 };
 
 ConfigManager::~ConfigManager()
