@@ -164,8 +164,6 @@ int IpfixAggregator::onPacket(const Packet* packet)
 	}
 #endif
 
-
-
 	pthread_mutex_lock(&mutex);
 	for (i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->ExptemplateDataMatches(packet)) {
