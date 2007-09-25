@@ -40,7 +40,7 @@
 AggregationPerfTest::AggregationPerfTest(bool fast)
 {
 	if (fast) {
-		numPackets = 5000;
+		numPackets = 1000;
 	} else {
 		numPackets = 500000;
 	}
