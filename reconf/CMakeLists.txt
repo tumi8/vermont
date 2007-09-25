@@ -18,18 +18,10 @@
 #
 
 ADD_LIBRARY(reconf
-	ConnectionQueue.h
-	ConnectionSplicer.h
-	Destination.h
 	Destination.cpp
-	Emitable.h
 	Emitable.cpp
-	FilterModule.h
 	FilterModule.cpp
-	Module.h
-	PrinterModule.h
 	PrinterModule.cpp
 	PSAMPExporterModule.cpp
-	Source.h
 )
 
