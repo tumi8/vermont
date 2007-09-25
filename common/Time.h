@@ -57,4 +57,19 @@ inline void addToCurTime(struct timespec* ts, long timediff_ms)
 	ts->tv_nsec = tv.tv_usec * 1000L;
 }
 
+/**
+ * compares two timespec values
+ * @returns -1 if ts1 is smaller, 0 if both are equal, 1 if ts2 is smaller
+ */
+inline int compareTime(const struct timespec& ts1, const struct timespec& ts2)
+{
+	if (ts1.tv_sec < ts2.tv_sec) return -1;
+	else if (ts1.tv_sec > ts2.tv_sec) return 1;
+	else {
+		if (ts1.tv_nsec < ts2.tv_nsec) return -1;
+		else if (ts1.tv_nsec > ts2.tv_nsec) return 1;
+	}
+	return 0;
+}
+
 #endif
