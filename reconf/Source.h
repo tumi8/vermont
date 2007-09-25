@@ -15,12 +15,22 @@
 
 class BaseSource {
 public:
-	 virtual ~BaseSource() { }
+	virtual ~BaseSource() { }
 
-	virtual void connectTo(BaseDestination* dest) = 0;
-	virtual void disconnect() = 0;
+	virtual void connectTo(BaseDestination* dest)
+	{
+		THROWEXCEPTION("this module does not implement a Source");
+	}
+	virtual void disconnect()
+	{
+		THROWEXCEPTION("this module does not implement a Source");
+	}
 
-	virtual bool isConnected() const = 0;
+	virtual bool isConnected() const
+	{
+		THROWEXCEPTION("this module does not implement a Source");
+		return false;
+	}
 };
 
 template <class T>
@@ -88,8 +98,7 @@ public:
 				DPRINTF("Can't wait for connection, perhaps the program is shutting down?");
 				return false;
 			}
-		}
-		
+		}		
 		d->receive(t);
 		return true;
 	}

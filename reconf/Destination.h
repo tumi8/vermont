@@ -6,6 +6,7 @@
 */
 
 #include "reconf/Emitable.h"
+#include "common/msg.h"
 
 #include <cstdio>
 #include <stdexcept>
@@ -21,7 +22,7 @@ class Destination : public virtual BaseDestination
 public:
 	virtual void receive(T e)
 	{
-		printf("Emitable received\n");
+		THROWEXCEPTION("module does not support reception of elements");
 	}
 
 

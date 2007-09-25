@@ -16,7 +16,15 @@ protected:
 public:	
 	Module() 
 		: exitFlag(false), running(false)
-	{ };
+	{ 
+	};
+	
+	virtual ~Module()
+	{
+		if (running) {
+			THROWEXCEPTION("you must shutdown the module first before destroying it!");
+		}
+	}
 	
 	/**
 	 * is called before module receives input from other modules
@@ -73,6 +81,15 @@ protected:
 	 */
 	virtual void performShutdown()
 	{
+	}
+	
+	/**
+	 * returns current value of exitFlag
+	 * (workaround for g++ compiler bug)
+	 */
+	virtual bool getExitFlag() const
+	{
+		return exitFlag;
 	}
 
 };
