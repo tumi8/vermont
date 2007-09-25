@@ -5,28 +5,45 @@
 	@author Peter Baumann <siprbaum@users.berlios.de>
 */
 
-#include "reconf/Destination.h"
-#include "reconf/Module.h"
-#include "reconf/Source.h"
+#include "Adapter.h"
+#include "Destination.h"
+#include "Module.h"
+#include "Source.h"
+#include "Timer.h"
 
 #include "common/ConcurrentQueue.h"
 #include "common/msg.h"
 #include "common/Thread.h"
 #include "sampler/Packet.h"
 
+#include <list>
+
+
+using namespace std;
+
+
+/**
+ * used to manage timeout entries inside ConnectionQueue
+ */
+struct TimeoutEntry 
+{
+	Notifiable* n;
+	struct timespec timeout;
+	uint32_t flag;
+};
+
+
 template <class T>
-class ConnectionQueue
-	: public Source<T>, public Destination<T>, public Module
+class ConnectionQueue : public Adapter<T>, public Timer
 {
 public:
-	ConnectionQueue(int maxEntries = ConcurrentQueue<T>::DEFAULT_QUEUE_SIZE)
-		: queue(maxEntries), thread(process)
+	ConnectionQueue(uint32_t maxEntries = 1)
+		: queue(maxEntries), thread(threadWrapper)
 	{ 
 	}
 
 	virtual ~ConnectionQueue()
 	{
-		if (running) shutdown();
 	}
 
 	virtual void receive(T packet)
@@ -47,32 +64,106 @@ public:
 		thread.join();
 	}
 
-	inline int getCount() {
+	inline int getCount() 
+	{
 		return queue.getCount();
 	}
 	
+	/**
+	 * -> see Timer::addTimeout for nonspecific description
+	 * ATTENTION: this function assumes, that it is usually called by this class's own
+	 * thread, as the thread in processLoop always calculates the time of next interruption
+	 * before it suspends and this function is not able to interrupt it
+	 */
+	virtual void addTimeout(Notifiable* n, struct timespec& ts, uint32_t flag = 0)
+	{
+		mutex.lock();
+		TimeoutEntry* e = new TimeoutEntry();
+		e->n = n;
+		e->timeout = ts;
+		e->flag = flag;
+		timeouts.push_back(e);
+		mutex.unlock();
+	}
+	
 private:
-	static void* process(void *arg)
+	ConcurrentQueue<T> queue;  /**< contains all elements which were received from previous modules */
+	Thread thread;
+	list<TimeoutEntry*> timeouts;
+	Mutex mutex;	/**< controls access to class variable timeouts */
+	
+	/**
+	 * processes all timeouts in queue which have already timed out
+	 * @param time when next timeout will occur
+	 * @returns true if timeout was available, false if not
+	 */
+	bool processTimeouts(struct timespec& nexttimeout)
+	{
+		struct timespec now;
+		addToCurTime(&now, 0);
+		bool nexttoset = false;
+		
+		mutex.lock();
+		list<TimeoutEntry*>::iterator iter = timeouts.begin();
+		while (iter != timeouts.end()) {
+			if (compareTime((*iter)->timeout, now) <= 0) {
+				// this entry has already timed out, call it now!
+				TimeoutEntry* te = *iter;
+				te->n->onTimeout(te->flag);
+				iter = timeouts.erase(iter);
+				delete te;
+				
+			} else {
+				if (!nexttoset || compareTime(nexttimeout, (*iter)->timeout) > 0) {
+					nexttoset = true;
+					nexttimeout = (*iter)->timeout;
+				}
+				iter++;
+			}
+		}
+		mutex.unlock();
+		
+		return nexttoset;
+	}
+	
+	/**
+	 * processes all incoming elements and forwards them to following modules
+	 * all timeouts of the following module are controlled here
+	 */
+	void processLoop()
+	{
+		T element;
+		while (!Module::getExitFlag()) {
+			struct timespec nexttimeout;
+			if (!processTimeouts(nexttimeout)) {
+				if (!queue.pop(&element)) {
+					DPRINTF("queue.pop failed - timeout?");
+					continue;
+				}				
+			} else {				
+				if (!queue.popAbs(nexttimeout, &element)) {
+					DPRINTF("queue.pop failed - timeout?");
+					continue;
+				}
+			}
+			
+			if (!Source<T>::send(element)) break;
+		}	
+	}
+	
+	/**
+	 * small wrapper for thread
+	 */
+	static void* threadWrapper(void *arg)
 	{
 		ConnectionQueue* self = (ConnectionQueue*)arg;
-		T packet = NULL;
+		DPRINTF("starting thread");
 
-		while(!self->exitFlag) {
-			if (!self->queue.pop(&packet)) {
-				msg(MSG_FATAL, "pop failed -> timeout");
-				continue;
-			}
-			if (!self->send(packet))
-				break;
-		}
+		self->processLoop();
 		
-		msg(MSG_INFO, "terminating queue thread");
+		DPRINTF("terminating thread");
 		return NULL;
 	}
-
-	ConcurrentQueue<T> queue;
-	Thread thread;
-
 };
 
 #endif

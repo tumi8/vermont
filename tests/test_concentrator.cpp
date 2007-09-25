@@ -235,6 +235,7 @@ void test_module_coupling() {
 	// give modules a chance to process their queues
 	sleep(1);
 
+	queue1.shutdown();
 }
 
 void test_ipfixlolib_rawdir() {
@@ -326,7 +327,7 @@ void test_parser_stability() {
 
 	IpfixParser ipfixParser(&recordSender);
 
-	for (int iteration = 0; iteration < 65000; iteration++) {
+	for (int iteration = 0; iteration < 1000; iteration++) {
 		for (int len = 32; len < 64; len++) {
 			boost::shared_array<uint8_t> message(new uint8_t[len]);
 			for (int i = 0; i < len; i++) message[i]=rand();

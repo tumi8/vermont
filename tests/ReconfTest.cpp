@@ -67,9 +67,8 @@ void ReconfTest::normalTest()
 	queue2.start();
 
 	sendPacketsTo(&queue1, nr_of_packets);
-	while (queue2.getCount() > 0|| queue1.getCount() > 0) {
+	while (queue2.getCount() > 0 || queue1.getCount() > 0) {
 		sleep(1);
-
 	}
 
 	ASSERT(counter.getCount() == nr_of_packets/2,

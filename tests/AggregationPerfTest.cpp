@@ -25,6 +25,7 @@
 #include "test.h"
 #include "TestQueue.h"
 #include "reconf/Module.h"
+#include "reconf/ThreadSafeAdapter.h"
 #include "concentrator/PacketAggregator.h"
 #include "reconf/ConnectionQueue.h"
 #include "CounterDestination.h"
@@ -44,7 +45,6 @@ AggregationPerfTest::AggregationPerfTest(bool fast)
 	} else {
 		numPackets = 500000;
 	}
-
 }
 
 AggregationPerfTest::~AggregationPerfTest()
