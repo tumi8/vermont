@@ -447,23 +447,6 @@ void IpfixSender::processLoop()
 	}
 }
 
-void IpfixSender::connectTo(BaseDestination*)
-{
-	THROWEXCEPTION("don't call me!");
-}
-
-void IpfixSender::disconnect()
-{
-	THROWEXCEPTION("don't call me!");
-}
-
-
-bool IpfixSender::isConnected() const
-{
-	THROWEXCEPTION("don't call me!");
-	return false;
-}
-
 
 /**
  * if flows are cached at the moment, this function sends them to the network

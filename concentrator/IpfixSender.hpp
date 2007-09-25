@@ -52,13 +52,6 @@ public:
 	virtual void onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record);
 	virtual void onDataDataRecord(IpfixDataDataRecord* record);
 
-	
-	// FIXME: those functions MUST be removed, as BaseSource should not be included
-	// in class hierarchy of this module
-	virtual void connectTo(BaseDestination*);
-	virtual void disconnect();
-	virtual bool isConnected() const;
-
 	// inherited from StatisticsModule
 	virtual std::string getStatistics();
 
