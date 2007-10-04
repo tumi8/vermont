@@ -12,16 +12,16 @@ using boost::shared_ptr;
 
 class ReconfTest
 {
-	public:
-		ReconfTest();
-		~ReconfTest();
-		
-		void normalTest();
-		
-	private:
-		void setup(bool express);
-		void sendPacketsTo(Destination<Packet*>* dest, size_t numpackets);
-		void shutdown();
+public:
+	ReconfTest();
+	~ReconfTest();
+
+	void normalTest();
+
+private:
+	void setup(bool express);
+	void sendPacketsTo(Destination<Packet*>* dest, size_t numpackets);
+	void shutdown();
 };
 
 

@@ -5,8 +5,11 @@
 #include "common/PacketInstanceManager.h"
 #include "common/msg.h"
 #include "CounterDestination.h"
+#include "cfg/ConfigManager.h"
+#include "reconf/ConnectionSplicer.h"
+#include "reconf/PrinterModule.h"
 
-
+#include <unistd.h>
 
 ReconfTest::ReconfTest()
 {
@@ -57,7 +60,8 @@ void ReconfTest::normalTest()
 	ConnectionQueue<Packet*> queue1(10);
 	ConnectionQueue<Packet*> queue2(20);
 
-	CounterDestination<Packet*> counter;
+	PrinterModule counter;
+	counter.doPrint(false);
 
 	queue1.connectTo(&filter);
 	filter.connectTo(&queue2);
