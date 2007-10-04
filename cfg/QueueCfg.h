@@ -11,9 +11,9 @@
 
 #include <cassert>
 
-template <class T>
+template <typename T>
 class QueueCfg
-	: public Cfg
+	: public Cfg, public CfgHelper<ConnectionQueue<Packet*> >
 {
 public:
 	friend class ConfigManager;
@@ -35,16 +35,16 @@ public:
 	
 	ConnectionQueue<T>* getInstance()
 	{
-		if (queue)
-			return queue;
+		if (instance)
+			return instance;
 	
 		XMLNode* n = _elem->getFirstChild("maxSize");
 		if (!n) // create a new queue with its default size
-			return queue = new ConnectionQueue<T>();
+			return instance = new ConnectionQueue<T>();
 
 		int maxSize = atoi(n->getFirstText().c_str());
-		queue = new ConnectionQueue<T>(maxSize);
-		return queue;
+		instance = new ConnectionQueue<T>(maxSize);
+		return instance;
 	}
 
 	virtual bool deriveFrom(Cfg* o)
@@ -57,20 +57,32 @@ public:
 		return false;
 	}
 
-	virtual bool deriveFrom(QueueCfg<T>* o)
+	virtual bool deriveFrom(QueueCfg<T>* old)
 	{
-		queue = o->getInstance();
+		// FIXME: queue size and other parameters
+		transferInstance(old);
 		return true;
+	}
+	
+	virtual void connectInstances(Cfg* other)
+	{
+		instance = getInstance();
+
+		int need_adapter = 0;
+		need_adapter |= ((getNext().size() > 1) ? NEED_SPLITTER : NO_ADAPTER);
+
+		if ((dynamic_cast<Notifiable*>(other->getInstance()) != NULL) &&
+		    (dynamic_cast<Timer*>(instance) == NULL))
+			need_adapter |= NEED_TIMEOUT;
+		
+		connectTo(other->getInstance(), need_adapter);
 	}
 	
 protected:
 	QueueCfg(XMLElement* e)
-		: Cfg(e), queue(NULL)
+		: Cfg(e)
 	{
 	}
-	
-private:
-	ConnectionQueue<T>* queue;
 };
 
 
