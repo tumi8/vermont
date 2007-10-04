@@ -14,6 +14,11 @@
 class BaseDestination {
 public:
 	virtual ~BaseDestination();
+	
+	virtual void receive(Emitable*)
+	{
+		THROWEXCEPTION("receive on BaseDestination called");
+	}
 };
 
 template<class T>
