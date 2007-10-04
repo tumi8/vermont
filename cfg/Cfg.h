@@ -44,6 +44,7 @@ public:
 	/** returns an instance of the module which the config element describes  
 	 *  This uses covariant return types, so every derived class has to implement it
 	 *  if it holds a module instance (this is why the method isn't pure virtual)
+	 *  @param create true if you want to actually create an instance (default)
 	 */
 	virtual Module* getInstance()
 	{
@@ -51,8 +52,14 @@ public:
 		return NULL; // -Wall -Werror in debug mode needs this
 	}
 
-	virtual bool deriveFrom(Cfg*) = 0;
+	/** returns true if we could reuse the other instance 
+	 *  @param other Cfg describing the old/other elemen
+	 */
+	virtual bool deriveFrom(Cfg* other) = 0;
 
+	/** connectes this module with the module from \other
+	 *  @param other the other Cfg
+	 */
 	virtual void connectInstances(Cfg* other)
 	{
 		getInstance()->connectTo(other->getInstance());
