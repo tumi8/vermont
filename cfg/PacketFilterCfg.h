@@ -12,7 +12,7 @@ class stringFilter;
 class SystematicSampler;
 
 class PacketFilterCfg
-	: public Cfg
+	: public Cfg, CfgHelper<FilterModule>
 {
 public:
 	friend class ConfigManager;
@@ -35,13 +35,26 @@ public:
 	}
 
 	virtual bool deriveFrom(PacketFilterCfg* old);
+	
+	virtual void connectInstances(Cfg* other)
+	{
+		instance = getInstance();
+
+		int need_adapter = 0;
+		need_adapter |= ((getNext().size() > 1) ? NEED_SPLITTER : NO_ADAPTER);
+
+		if ((dynamic_cast<Notifiable*>(other->getInstance()) != NULL) &&
+		    (dynamic_cast<Timer*>(instance) == NULL))
+			need_adapter |= NEED_TIMEOUT;
+		
+		connectTo(other->getInstance(), need_adapter);
+	}
 
 protected:
 	PacketFilterCfg(XMLElement* e);
 
 private:
 	std::vector<Cfg*> subCfgs;
-	FilterModule* instance;
 };
 
 class PacketCountFilterCfg

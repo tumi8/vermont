@@ -10,7 +10,7 @@
 
 
 PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
-	: Cfg(elem), instance(NULL)
+	: Cfg(elem)
 {
 	if (!elem)
 		return;
