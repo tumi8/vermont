@@ -7,7 +7,7 @@
 #include <cassert>
 
 PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem) 
-	:Cfg(elem), exportDelay(0), reporting(NULL), instance(NULL) 
+	:Cfg(elem), exportDelay(0), reporting(NULL) 
 { 
 	if (!elem) {
 		msg(MSG_FATAL, "%s:$  no xml element set", __FILE__, __LINE__);
