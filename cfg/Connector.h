@@ -21,6 +21,10 @@ class Connector
 public:
 	friend class Graph;
 
+	/** c'tor
+	 * @param connectNodes set it to true if you want that the nodes  should be connected
+	 * @param connectModules set to true if you want the modules/instances to be connected
+	 */
 	Connector(bool connectNodes = true, bool connectModules = true)
 		: connectNodes(connectNodes), connectModules(connectModules)
 	{
