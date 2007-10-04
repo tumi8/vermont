@@ -4,6 +4,9 @@
 #include "cfg/XMLElement.h"
 #include "reconf/Module.h"
 
+#include "reconf/ConnectionSplicer.h"
+#include "reconf/Timer.h"
+
 #include <exception>
 #include <string>
 
@@ -24,11 +27,19 @@ enum timeUnit {
 	uSEC= 1000000,
 };
 
+// some constant values (bitmaks
+#define NO_ADAPTER	0
+#define NEED_SPLITTER	1 << 0
+#define NEED_TIMEOUT	1 << 1
+
 class Cfg
 {
 public:
 	friend class ConfigFile;
 
+
+	
+	
 	virtual Cfg* create(XMLElement* e) { return NULL; };
 	virtual ~Cfg() { }
 
@@ -62,9 +73,14 @@ public:
 	 */
 	virtual void connectInstances(Cfg* other)
 	{
-		getInstance()->connectTo(other->getInstance());
-	};
+		THROWEXCEPTION("connectInstances must be overriden if called\n");
+	}
 
+	virtual void disconnectInstances()
+	{
+		
+	}
+	
 protected:
 	Cfg(XMLElement* e) : _elem(e) { }
 
@@ -90,5 +106,82 @@ protected:
 	
 	XMLElement* _elem;
 };
+
+/**
+ * This is a helper class to avoid code duplication over all the other Cfg subclasses
+ * It helps to manage the adapter classes like Splitter, which are otherwise very difficult
+ * to represent.
+ */
+template <typename I>
+struct CfgHelper {
+	I* instance;
+	SplitterAdapter<I>* splitterAdapter;
+
+	CfgHelper() : instance(NULL), splitterAdapter(NULL) { };
+	
+	~CfgHelper()
+	{
+		if (splitterAdapter)
+			delete splitterAdapter;
+	}
+	
+	void freeInstance()
+	{
+		if (!instance)
+			return;
+		
+		delete instance;
+		instance = NULL;
+	}
+	
+	void connectTo(BaseDestination* other, int ai)
+	{
+		if ((ai & NEED_TIMEOUT) == NEED_TIMEOUT) {
+			msg(MSG_FATAL, "we need a TimoutAdapter; this case isn't handled yet"); // FIXME: here has to be something
+			printf("%u\n", ai);
+			printf("%u\n", NO_ADAPTER);
+		}
+	
+		if ((ai & NEED_SPLITTER) == NEED_SPLITTER) {
+			if (!splitterAdapter)
+				splitterAdapter = new SplitterAdapter<I>(instance);
+			splitterAdapter->connectTo(other);
+		} else
+			instance->connectTo(other);
+	}
+
+	virtual void connectInstances(Cfg* other)
+	{
+		printf("CFGHelper::connect called\n");
+	}
+	
+	void disconnect()
+	{
+		// FIXME: implement the NEED_TIMEOUT case
+		
+		if (splitterAdapter) {
+			splitterAdapter->disconnect();
+			freeSplitter();
+		}
+		instance->disconnect();
+	} 
+
+protected:
+	inline void transferInstance(CfgHelper* other)
+	{
+		instance = other->instance;
+		other->instance = NULL;
+	}
+	
+private:
+	void freeSplitter()
+	{
+		if (!splitterAdapter)
+			return;
+		delete splitterAdapter;
+		splitterAdapter = NULL;
+	}
+};
+
 
 #endif /*CFG_H_*/
