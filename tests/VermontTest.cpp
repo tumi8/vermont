@@ -15,15 +15,16 @@ int main(int argc, char* argv[])
 	if (argc>1 && strcmp(argv[1], "-perf")==0) perftest = true;
 
 	//msg_setlevel(MSG_DEBUG);
-	
+
 	ReconfTest reconf;
 	reconf.normalTest();
-	
+	reconf.splitterTest();
+
 	AggregationPerfTest aggtest(!perftest);
 	aggtest.execute();
-	
+
 	ConcentratorTestSuite conctest;
 	conctest.start_test();
-	
+
 	return 0;
 }

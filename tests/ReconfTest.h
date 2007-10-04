@@ -17,6 +17,7 @@ public:
 	~ReconfTest();
 
 	void normalTest();
+	void splitterTest();
 
 private:
 	void setup(bool express);

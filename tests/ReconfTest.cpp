@@ -101,3 +101,62 @@ void ReconfTest::normalTest()
 	queue1.shutdown();
 	queue2.shutdown();
 }
+
+
+/**
+ * This creates the following chain:
+ *                               _______________  
+ *                              | PacketCounter | 
+ * __________     __________  /  ---------------  
+ * | sampler | -> | splitter | 
+ *  --------      ----------  \  _______________  
+ *                              | PacketCounter | 
+ *                               ---------------  
+ */
+void ReconfTest::splitterTest()
+{
+	size_t nr_of_packets = 100; // must be a dividable by 2
+	PrinterModule counter1, counter2;
+	counter1.doPrint(false);
+	counter2.doPrint(false);
+
+	// create a packet sampler which lets only half of the packets through
+	// NOTICE: the sampler will be destroyed by the d'tor of FilterModule
+	SystematicSampler* sampler = new SystematicSampler(SYSTEMATIC_SAMPLER_COUNT_BASED, 1, 1);
+
+	FilterModule filter;
+	filter.addProcessor(sampler);
+
+	SplitterAdapter<FilterModule> splitter(&filter);
+
+	splitter.connectTo(&counter1);
+	splitter.connectTo(&counter2);
+
+	splitter.start();
+
+	sendPacketsTo(&splitter, nr_of_packets);
+
+	ASSERT(counter1.getCount() == nr_of_packets/2,
+			"The filter hasn't eliminated half of the packets for counter1");
+	ASSERT(counter2.getCount() == nr_of_packets/2,
+			"The filter hasn't eliminated half of the packets for counter2");
+
+	/**
+	 * remove the sampler and redo the test.
+	 * This time every packet should get through.
+	 * __________      _______________
+	 * | sampler| ->  | PacketCounter |
+	 *  --------       ---------------
+	 */
+	splitter.disconnect();
+	counter1.reset();
+	counter2.reset();
+
+	filter.connectTo(&counter1);
+	sendPacketsTo(&filter, nr_of_packets);
+	ASSERT(counter1.getCount() == nr_of_packets/2, "Not all packages get through");
+	ASSERT(counter2.getCount() == 0, "splitter disconnect failed");
+
+	// cleanup
+	splitter.shutdown();
+}
