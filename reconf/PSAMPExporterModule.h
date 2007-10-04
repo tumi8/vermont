@@ -22,6 +22,7 @@
 #include "Packet.h"
 
 #include "reconf/Module.h"
+#include "reconf/Notifiable.h"
 
 // the maximum number of packets to be queued
 #define MAX_PACKETS 1024
@@ -31,7 +32,7 @@
 #define MAX_PACKET_LIFETIME 400
 
 class PSAMPExporterModule
-	: public Module, public Source<Packet*>, public Destination<Packet*>
+	: public Module, public Source<Packet*>, public Destination<Packet*>, public Notifiable
 {
 public:
         PSAMPExporterModule(Template *tmpl, int sID)
@@ -80,6 +81,11 @@ public:
 		queue.push(packet);
         }
 
+        virtual void onTimeout(uint32_t flag)
+        {
+        	
+        }
+        
         virtual void performStart()
         {
                 msg(MSG_DEBUG, "Sink: now starting PSAMPExporter thread");
