@@ -7,7 +7,7 @@
 #include <cassert>
 
 class PacketPrinterCfg 
-	: public Cfg
+	: public Cfg, CfgHelper<PrinterModule>
 {
 public:
 	friend class ConfigManager;
@@ -53,9 +53,21 @@ public:
 		return true;
 	}
 
+	virtual void connectInstances(Cfg* other)
+	{
+		instance = getInstance();
 
+		int need_adapter = 0;
+		need_adapter |= ((getNext().size() > 1) ? NEED_SPLITTER : NO_ADAPTER);
+
+		if ((dynamic_cast<Notifiable*>(other->getInstance()) != NULL) &&
+		    (dynamic_cast<Timer*>(instance) == NULL))
+			need_adapter |= NEED_TIMEOUT;
+		
+		connectTo(other->getInstance(), need_adapter);
+	}
 protected:
-	PacketPrinterCfg(XMLElement* e)	: Cfg(e), instance(NULL), isEndPoint(false)
+	PacketPrinterCfg(XMLElement* e)	: Cfg(e), isEndPoint(false)
 	{
 		if (!e)
 			return;
@@ -69,7 +81,6 @@ protected:
 	}
 	
 private:
-	PrinterModule* instance;
 	bool isEndPoint;
 };
 
