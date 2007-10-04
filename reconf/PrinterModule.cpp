@@ -2,11 +2,14 @@
 
 PrinterModule::~PrinterModule()
 {
+	printf("PrinterModule received %u packets!\n", count);
 }
 
 void PrinterModule::receive(Packet* p)
 {
-	msg(MSG_INFO, "packet %d received", p->totalPacketsReceived);
+	if (do_print)
+		msg(MSG_FATAL, "packet %d received", p->totalPacketsReceived);
+	count++;
 	
 	if (isEndPoint)
 		p->removeReference();
