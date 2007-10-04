@@ -15,6 +15,8 @@
 
 class BaseSource {
 public:
+	typedef Emitable* value_type;
+	
 	virtual ~BaseSource() { }
 
 	virtual void connectTo(BaseDestination* dest)
@@ -33,10 +35,12 @@ public:
 	}
 };
 
-template <class T>
+template <typename T>
 class Source : public virtual BaseSource
 {
 public:
+	typedef T value_type;
+	
 	Source() : mutex(), connected(1), dest(NULL) { }
 	virtual ~Source() { }
 
