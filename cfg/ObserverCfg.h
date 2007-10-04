@@ -15,7 +15,7 @@
 class Observer;
 
 class ObserverCfg
-	: public Cfg
+	: public Cfg, public CfgHelper<Observer>
 {
 public:
 	friend class ConfigManager;
@@ -38,13 +38,13 @@ public:
 	}
 
 	virtual bool deriveFrom(ObserverCfg* old);
+	
+	virtual void connectInstances(Cfg* other);
 
 protected:
 	ObserverCfg(XMLElement*);
 
 private:
-	Observer* observer;
-
 	// config variables
 	std::string interface;
 	std::string pcap_filter;

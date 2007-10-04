@@ -19,7 +19,7 @@ ObserverCfg* ObserverCfg::create(XMLElement* e)
 }
 
 ObserverCfg::ObserverCfg(XMLElement* elem)
-	: Cfg(elem), observer(NULL), interface(), pcap_filter(), capture_len(0)
+	: Cfg(elem), CfgHelper<Observer>(), interface(), pcap_filter(), capture_len(0)
 {
 
 }
@@ -30,8 +30,8 @@ ObserverCfg::~ObserverCfg()
 
 Observer* ObserverCfg::getInstance()
 {
-	if (observer)
-		return observer;
+	if (instance)
+		return instance;
 
 
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
@@ -54,23 +54,38 @@ Observer* ObserverCfg::getInstance()
 		}
 	}
 
-	observer = new Observer(interface, PacketInstanceManager::getManager());
+	instance = new Observer(interface, PacketInstanceManager::getManager());
 
 	if (capture_len) {
-		if(!observer->setCaptureLen(capture_len)) {
+		if(!instance->setCaptureLen(capture_len)) {
 			msg(MSG_FATAL, "Observer: wrong snaplen specified - using %d",
-					observer->getCaptureLen());
+					instance->getCaptureLen());
 		}
 	}
 
 	if (!pcap_filter.empty()) {
-		if (!observer->prepare(pcap_filter.c_str())) {
+		if (!instance->prepare(pcap_filter.c_str())) {
 			msg(MSG_FATAL, "Observer: preparing failed");
 			THROWEXCEPTION("Observer setup failed!");
 		}
 	}
 
-	return observer;
+	return instance;
+}
+
+
+void ObserverCfg::connectInstances(Cfg* other)
+{
+	instance = getInstance();
+
+	int need_adapter = 0;
+	need_adapter |= ((getNext().size() > 1) ? NEED_SPLITTER : NO_ADAPTER);
+
+	if ((dynamic_cast<Notifiable*>(other->getInstance()) != NULL) &&
+	    (dynamic_cast<Timer*>(instance) == NULL))
+		need_adapter |= NEED_TIMEOUT;
+	
+	connectTo(other->getInstance(), need_adapter);
 }
 
 bool ObserverCfg::deriveFrom(ObserverCfg* old)
@@ -82,6 +97,6 @@ bool ObserverCfg::deriveFrom(ObserverCfg* old)
 	if (pcap_filter != old->pcap_filter)
 		return false;
 
-	observer = old->getInstance();
+	transferInstance(old);
 	return true;
 }
