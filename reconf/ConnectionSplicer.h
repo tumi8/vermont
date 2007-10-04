@@ -5,6 +5,9 @@
 	@author Peter Baumann <siprbaum@users.berlios.de>
 */
 
+#include "common/msg.h"
+
+#include "reconf/Adapter.h"
 #include "reconf/Destination.h"
 #include "reconf/Source.h"
 
@@ -14,19 +17,28 @@
 
 template <class T>
 class ConnectionSplicer
-	: public Source<T>, public Destination<T>
+	: public Adapter<T>
 {
 public:
 	ConnectionSplicer(): size(0) { }
 
 	virtual ~ConnectionSplicer() { }
 
+	virtual void connectTo(BaseDestination* destination)
+	{
+		Destination<T>* d = dynamic_cast< Destination<T>* >(destination);
+		if (!d) {
+			THROWEXCEPTION("ERROR: Can't connect to this .... thing?");
+		}
+		this->connectTo(d);
+	}
+	
 	virtual void connectTo(Destination<T>* d)
 	{
 		Source<T>::mutex.lock();
 
 		if (size >= capacity)
-			throw std::runtime_error("ConnectionSplicer: can't add another destination\n");
+			THROWEXCEPTION("ConnectionSplicer: can't add another destination\n");
 
 		destinations[size++] = d;
 		Source<T>::connected.inc(1);
@@ -47,8 +59,6 @@ public:
 	
 	virtual void receive(T packet)
 	{
-		printf("PacketConnectionSplicer::receive(Packet*)\n");
-
 		// this is in an own function to later have the possibility to process
 		// the packets in an own thread; for now, I think this is not needed
 		process(packet);
@@ -57,7 +67,10 @@ public:
 private:
 	inline void process(T packet)
 	{
-		sleepUntilConnected();
+		if (!Source<T>::sleepUntilConnected()) {
+			DPRINTF("Can't wait for connection, perhaps the program is shutting down?");
+			return;
+		}
 		
 		/* By processing the array over a mutex proctected variable size
 		 * it should be safe to add another destination.
@@ -76,6 +89,66 @@ private:
 	static const size_t capacity = 10;
 	Destination<T>* destinations[capacity];
 	size_t size;
+};
+
+/** This implements a wrapper on which every other class could gain the ability to
+ *  send its flow to _several_ other classes. This couldn't be merged into the class itself
+ *  because we would loose the ability to preseve the module over a reconfiguration attempt.
+ *  (We need to destroy the splitter on disconnect)
+  */  
+template <typename T>
+struct SplitterAdapter
+	: Adapter<typename T::value_type>
+{
+	typedef typename T::value_type value_type;
+	
+	SplitterAdapter(T* obj) : adaptee(obj)
+	{
+		splitter = new ConnectionSplicer<value_type>();
+		adaptee->connectTo(splitter);
+	}
+
+	~SplitterAdapter()
+	{
+		delete splitter;
+	}
+	
+	virtual void connectTo(BaseDestination* d)
+	{
+		splitter->connectTo(d);
+	}
+
+	virtual bool isConnected() const
+	{
+		return adaptee->isConnected();
+	}
+
+	virtual void disconnect()
+	{
+		adaptee->disconnect();
+	}
+	
+	virtual void receive(value_type packet)
+	{
+		if (static_cast<BaseDestination*>(adaptee))
+			adaptee->receive(packet);
+	}
+	
+	virtual void performStart()
+	{
+		adaptee->start();
+		splitter->start();
+	}
+	
+	virtual void performShutdown()
+	{
+		adaptee->shutdown();
+		splitter->shutdown();
+	}
+
+private:
+	ConnectionSplicer<value_type>* splitter;
+	T* adaptee;
 };
 
 #endif
