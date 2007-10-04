@@ -41,7 +41,7 @@ public:
 
 	virtual bool deriveFrom(ReportedIECfg* old)
 	{
-		return true;
+		return true; // FIXME: implement
 	}
 	
 	bool hasOptionalLength() const { return ieLength != -1; }

@@ -33,11 +33,6 @@ Graph* Connector::connect(Graph*g)
 
 		std::vector<unsigned int> nexts = cfg->getNext();
 
-		 // FIXME: Splicer case
-		if (nexts.size() > 1) {
-			THROWEXCEPTION("You need a splicer; not yet implemented\n");
-		}
-
 		for (unsigned int j = 0; j < nexts.size(); j++) {
 			msg(MSG_FATAL, "to ID %d", nexts[j]);
 			CfgNode* toNode = id2node[nexts[j]];
