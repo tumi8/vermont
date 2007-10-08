@@ -41,12 +41,14 @@ public:
 	
 	bool hasOptionalLength() const { return ieLength != -1; }
 
-	std::string get_ieName() const { return ieName; }
+	std::string getIeName() const { return ieName; }
 	
-	unsigned getLength() const { return ieLength; }
+	unsigned getIeLength() const { return ieLength; }
 
-	unsigned get_ieId() const { return (ieId == -1) ? ipfix_name_lookup(ieName.c_str()) : ieId; }
+	unsigned getIeId() const { return (ieId == -1) ? ipfix_name_lookup(ieName.c_str()) : ieId; }
 
+	unsigned get_enterpriseNumber() const { return 0; /* FIXME */ };
+	
 private:
 	std::string ieName;
 	int ieLength;

@@ -48,7 +48,7 @@ Template* PacketReportingCfg::getTemplate()
         	return t;
         t = new Template(templateId);
         for (size_t i = 0; i != exportedFields.size(); ++i) {
-                int tmpId = exportedFields[i]->get_ieId();
+                int tmpId = exportedFields[i]->getIeId();
                 if (!ipfix_id_rangecheck(tmpId)) {
                         msg(MSG_ERROR, "Template: ignoring template field %s -> %d - rangecheck not ok",
                         		exportedFields[i]->getName().c_str(), tmpId);
@@ -67,7 +67,7 @@ Template* PacketReportingCfg::getTemplate()
                         // field length 65535 indicates variable length encoding
                         // we allow configuring a fixed length for IEs with variabel length (and length=0)
                         if ((fieldLength == 0) || (fieldLength == 65535)) {
-                                fieldLength = exportedFields[i]->getLength();
+                                fieldLength = exportedFields[i]->getIeLength();
                         } else {
                                 msg(MSG_ERROR, "Template: this is not a variable length field, ignoring optional length");
                         }
