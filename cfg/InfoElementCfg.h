@@ -20,7 +20,11 @@ public:
 		try {
 			ieName = get("ieName");
 			std::transform(ieName.begin(), ieName.end(), ieName.begin(), std::tolower);
-		} catch(IllegalEntry ie) { /* ingore missing ieName */ }
+		} catch (IllegalEntry ie) { /* ingore missing ieName */ }
+		
+		modifier         = getOptional("modifier");
+		enterpriseNumber = getOptional("modifier");
+		match            = getOptional("match");
 	}
 	
 	std::string getName() { return "reportedIE"; }
@@ -46,13 +50,19 @@ public:
 	unsigned getIeLength() const { return ieLength; }
 
 	unsigned getIeId() const { return (ieId == -1) ? ipfix_name_lookup(ieName.c_str()) : ieId; }
-
-	unsigned get_enterpriseNumber() const { return 0; /* FIXME */ };
 	
+	std::string getEnterpriseNumber() { return enterpriseNumber; }
+	
+	std::string getMatch() { return match; }
+	
+	std::string getModifier() { return modifier; }
 private:
 	std::string ieName;
 	int ieLength;
 	int ieId;
+	std::string enterpriseNumber;
+	std::string match;
+	std::string modifier;
 };
 
 #endif /*INFOELEMENTCFG_H_*/
