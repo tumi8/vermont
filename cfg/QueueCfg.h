@@ -11,9 +11,9 @@
 
 #include <cassert>
 
-template <typename T>
+template <class T>
 class QueueCfg
-	: public Cfg, public CfgHelper<ConnectionQueue<Packet*> >
+	: public Cfg, public CfgHelper< ConnectionQueue<T> >
 {
 public:
 	friend class ConfigManager;
@@ -35,16 +35,16 @@ public:
 	
 	ConnectionQueue<T>* getInstance()
 	{
-		if (instance)
-			return instance;
+		if (CfgHelper<ConnectionQueue<T> >::instance)
+			return CfgHelper<ConnectionQueue<T> >::instance;
 	
 		XMLNode* n = _elem->getFirstChild("maxSize");
 		if (!n) // create a new queue with its default size
-			return instance = new ConnectionQueue<T>();
+			return CfgHelper<ConnectionQueue<T> >::instance = new ConnectionQueue<T>();
 
 		int maxSize = atoi(n->getFirstText().c_str());
-		instance = new ConnectionQueue<T>(maxSize);
-		return instance;
+		CfgHelper<ConnectionQueue<T> >::instance = new ConnectionQueue<T>(maxSize);
+		return CfgHelper<ConnectionQueue<T> >::instance;
 	}
 
 	virtual bool deriveFrom(Cfg* o)
@@ -66,16 +66,16 @@ public:
 	
 	virtual void connectInstances(Cfg* other)
 	{
-		instance = getInstance();
+		CfgHelper<ConnectionQueue<T> >::instance = getInstance();
 
 		int need_adapter = 0;
 		need_adapter |= ((getNext().size() > 1) ? NEED_SPLITTER : NO_ADAPTER);
 
 		if ((dynamic_cast<Notifiable*>(other->getInstance()) != NULL) &&
-		    (dynamic_cast<Timer*>(instance) == NULL))
+		    (dynamic_cast<Timer*>(CfgHelper<ConnectionQueue<T> >::instance) == NULL))
 			need_adapter |= NEED_TIMEOUT;
 		
-		connectTo(other->getInstance(), need_adapter);
+		CfgHelper<ConnectionQueue<T> >::connectTo(other->getInstance(), need_adapter);
 	}
 	
 protected:
