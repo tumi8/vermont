@@ -429,9 +429,10 @@ class IpfixRecord
 		virtual ~IpfixRecord();
 		
 		/**
-		 * all subclasses *MUST* inherit ManagedInstance, which implements this method
+		 * all subclasses *MUST* inherit ManagedInstance, which implements these methods
 		 */
-		virtual void removeReference() = 0; 
+		virtual void removeReference() = 0;
+		virtual void addReference(int count = 1) = 0;
 };
 
 class IpfixTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixTemplateRecord> {
@@ -441,6 +442,7 @@ class IpfixTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixTemp
 		
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixTemplateRecord>::removeReference(); }
+		virtual void addReference(int count = 1) { ManagedInstance<IpfixTemplateRecord>::addReference(count); }
 };
 
 class IpfixOptionsTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixOptionsTemplateRecord> {
@@ -450,6 +452,7 @@ class IpfixOptionsTemplateRecord : public IpfixRecord, public ManagedInstance<Ip
 		
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixOptionsTemplateRecord>::removeReference(); }
+		virtual void addReference(int count = 1) { ManagedInstance<IpfixOptionsTemplateRecord>::addReference(count); }
 };
 
 class IpfixDataTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixDataTemplateRecord> {
@@ -459,6 +462,7 @@ class IpfixDataTemplateRecord : public IpfixRecord, public ManagedInstance<Ipfix
 
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixDataTemplateRecord>::removeReference(); }
+		virtual void addReference(int count = 1) { ManagedInstance<IpfixDataTemplateRecord>::addReference(count); }
 };
 
 class IpfixDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataRecord> {
@@ -471,6 +475,7 @@ class IpfixDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataReco
 
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixDataRecord>::removeReference(); }
+		virtual void addReference(int count = 1) { ManagedInstance<IpfixDataRecord>::addReference(count); }
 };
 
 class IpfixOptionsRecord : public IpfixRecord, public ManagedInstance<IpfixOptionsRecord> {
@@ -483,6 +488,7 @@ class IpfixOptionsRecord : public IpfixRecord, public ManagedInstance<IpfixOptio
 
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixOptionsRecord>::removeReference(); }
+		virtual void addReference(int count = 1) { ManagedInstance<IpfixOptionsRecord>::addReference(count); }
 };
 
 class IpfixDataDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataDataRecord> 
@@ -496,6 +502,7 @@ class IpfixDataDataRecord : public IpfixRecord, public ManagedInstance<IpfixData
 
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixDataDataRecord>::removeReference(); }
+		virtual void addReference(int count = 1) { ManagedInstance<IpfixDataDataRecord>::addReference(count); }
 };
 
 class IpfixTemplateDestructionRecord : public IpfixRecord, public ManagedInstance<IpfixTemplateDestructionRecord> {
@@ -505,6 +512,7 @@ class IpfixTemplateDestructionRecord : public IpfixRecord, public ManagedInstanc
 
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixTemplateDestructionRecord>::removeReference(); }
+		virtual void addReference(int count = 1) { ManagedInstance<IpfixTemplateDestructionRecord>::addReference(count); }
 };
 
 class IpfixOptionsTemplateDestructionRecord : public IpfixRecord, public ManagedInstance<IpfixOptionsTemplateDestructionRecord> {
@@ -514,6 +522,7 @@ class IpfixOptionsTemplateDestructionRecord : public IpfixRecord, public Managed
 
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixOptionsTemplateDestructionRecord>::removeReference(); }
+		virtual void addReference(int count = 1) { ManagedInstance<IpfixOptionsTemplateDestructionRecord>::addReference(count); }
 };
 
 class IpfixDataTemplateDestructionRecord : public IpfixRecord, public ManagedInstance<IpfixDataTemplateDestructionRecord> {
@@ -523,6 +532,7 @@ class IpfixDataTemplateDestructionRecord : public IpfixRecord, public ManagedIns
 
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixDataTemplateDestructionRecord>::removeReference(); }
+		virtual void addReference(int count = 1) { ManagedInstance<IpfixDataTemplateDestructionRecord>::addReference(count); }
 };
 
 #endif
