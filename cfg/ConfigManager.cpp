@@ -102,17 +102,24 @@ void ConfigManager::shutdown()
 {
 	std::vector<CfgNode*> topoNodes = graph->topoSort();
 
+	// shutdown the thread
+	for (size_t i = 0; i < topoNodes.size(); i++) {
+		Cfg* cfg = topoNodes[i]->getCfg();
+
+		msg(MSG_FATAL, "start shuting down %s", cfg->getName().c_str());
+		cfg->getInstance()->shutdown(false);
+		msg(MSG_FATAL, "end shuting down %s", cfg->getName().c_str());
+	}
+
+	// disconnect the modules
 	for (size_t i = 0; i < topoNodes.size(); i++) {
 		CfgNode* n = topoNodes[i];
-
 		Cfg* cfg = n->getCfg();
-
-		// shutdown the thread
-		cfg->getInstance()->shutdown(false);
 
 		// disconnect the module from its sources ..
 		vector<CfgNode*> sources = graph->getSources(n);
 		for (size_t k = 0; k < sources.size(); k++) {
+			msg(MSG_FATAL, "run %s->disconnect", cfg->getName().c_str());
 			sources[k]->getCfg()->getInstance()->disconnect();
 		}
 	}
