@@ -6,7 +6,10 @@ std::string Cfg::get(const std::string& name, XMLElement* elem) throw(IllegalEnt
 {
 	if (!elem)
 		elem = _elem;
-
+	
+	if (elem->matches(name))
+		return elem->getFirstText();
+		
 	XMLNode* n = elem->getFirstChild(name);
 	if (!n)
 		throw IllegalEntry();
