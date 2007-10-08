@@ -1,3 +1,4 @@
+#include "InfoElementCfg.h"
 #include "Template.h"
 #include "PacketReportingCfg.h"
 
@@ -13,7 +14,7 @@ PacketReportingCfg::PacketReportingCfg(XMLElement* elem)
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
 	     it++) {
-		exportedFields.push_back(new ReportedIECfg(*it));
+		exportedFields.push_back(new InfoElementCfg(*it));
 	}
 }
 
