@@ -28,6 +28,15 @@
 #include "IpfixDbReader.hpp"
 #include "common/msg.h"
 
+
+InstanceManager<IpfixTemplateRecord> IpfixDbReader::templateRecordIM(0);
+InstanceManager<IpfixOptionsTemplateRecord> IpfixDbReader::optionsTemplateRecordIM(0);
+InstanceManager<IpfixDataTemplateRecord> IpfixDbReader::dataTemplateRecordIM(0);
+InstanceManager<IpfixDataRecord> IpfixDbReader::dataRecordIM(0);
+InstanceManager<IpfixOptionsRecord> IpfixDbReader::optionsRecordIM(0);
+InstanceManager<IpfixDataDataRecord> IpfixDbReader::dataDataRecordIM(0);
+InstanceManager<IpfixDataTemplateDestructionRecord> IpfixDbReader::dataTemplateDestructionRecordIM(0);
+
 /***** Internal Functions ****************************************************/
 
 void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, IpfixRecord::FieldInfo::Type type);
@@ -435,14 +444,7 @@ IpfixDbReader::~IpfixDbReader() {
 IpfixDbReader::IpfixDbReader(const char* hostName, const char* dbName, 
 				   const char* userName, const char* password,
 				   unsigned int port, uint16_t observationDomainId)
-	: thread(readFromDB),
-	  templateRecordIM(0),
-	  optionsTemplateRecordIM(0),
-	  dataTemplateRecordIM(0),
-	  dataRecordIM(0),
-	  optionsRecordIM(0),
-	  dataDataRecordIM(0),
-	  dataTemplateDestructionRecordIM(0)
+	: thread(readFromDB)
 {
 	DbData* dbData;
 

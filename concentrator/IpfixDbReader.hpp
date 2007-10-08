@@ -87,13 +87,13 @@ class IpfixDbReader : public Module, public Source<IpfixRecord*>
 		IpfixDbReader::DbReader* dbReader;
 		Thread thread;
 		
-		InstanceManager<IpfixTemplateRecord> templateRecordIM;
-		InstanceManager<IpfixOptionsTemplateRecord> optionsTemplateRecordIM;
-		InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
-		InstanceManager<IpfixDataRecord> dataRecordIM;
-		InstanceManager<IpfixOptionsRecord> optionsRecordIM;
-		InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
-		InstanceManager<IpfixDataTemplateDestructionRecord> dataTemplateDestructionRecordIM;
+		static InstanceManager<IpfixTemplateRecord> templateRecordIM;
+		static InstanceManager<IpfixOptionsTemplateRecord> optionsTemplateRecordIM;
+		static InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
+		static InstanceManager<IpfixDataRecord> dataRecordIM;
+		static InstanceManager<IpfixOptionsRecord> optionsRecordIM;
+		static InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
+		static InstanceManager<IpfixDataTemplateDestructionRecord> dataTemplateDestructionRecordIM;
 
 		int getTables();
 		int getColumns(int n);
