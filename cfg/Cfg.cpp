@@ -14,6 +14,16 @@ std::string Cfg::get(const std::string& name, XMLElement* elem) throw(IllegalEnt
 	return n->getFirstText();
 }
 
+std::string Cfg::getOptional(const std::string& name, XMLElement* elem)
+{
+	std::string result;
+	try {
+		result = get(name, elem);
+	} catch (IllegalEntry ie) { }
+	
+	return result;
+}
+
 int Cfg::getInt(const std::string& name, int def, XMLElement* elem)
 {
 	std::string str;

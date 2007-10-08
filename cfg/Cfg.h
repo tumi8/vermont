@@ -86,9 +86,16 @@ protected:
 
 	/** return a string value of an elemen 
 	 * @param name the name of the element
+	 *  @param elem the XMLElement we want to start the search, default is the root of the node
 	 */
 	std::string get(const std::string& name, XMLElement* elem = NULL) throw(IllegalEntry);
 
+	/** searches for a optinal config entry, returns the emtpy string of not found
+	 *  @param name the name of the element
+	 *  @param elem the XMLElement we want to start the search, default is the root of the node
+	 */  
+	std::string getOptional(const std::string&name, XMLElement* elem = NULL);
+	
 	/** returns the integer value of an XML config entry
 	 * @param name the name of the element
 	 * If there is no such element in the XML file, it returns def
