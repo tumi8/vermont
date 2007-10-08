@@ -22,6 +22,7 @@ ADD_LIBRARY(cfg
 	CfgNode.cpp
 	ConfigManager.cpp
 	Connector.cpp
+	FlowMeteringCfg.cpp
 	Graph.cpp
 	Node.cpp
 	ObserverCfg.cpp
