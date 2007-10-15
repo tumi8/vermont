@@ -83,7 +83,7 @@ bool PacketFilterCfg::deriveFrom(PacketFilterCfg* old)
 			return false;
 	}
 
-	instance = old->getInstance();
+	transferInstance(old);
 	return true;
 }
 
