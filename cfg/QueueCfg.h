@@ -35,11 +35,9 @@ public:
 	
 	ConnectionQueue<T>* createInstance()
 	{
-		XMLNode* n = this->_elem->getFirstChild("maxSize");
-		if (!n) // create a new queue with its default size
+		if (!maxSize) // create a new queue with its default size
 			return CfgHelper<ConnectionQueue<T>, QueueCfg<T> >::instance = new ConnectionQueue<T>();
 
-		int maxSize = atoi(n->getFirstText().c_str());
 		CfgHelper<ConnectionQueue<T>, QueueCfg<T> >::instance = new ConnectionQueue<T>(maxSize);
 		return CfgHelper<ConnectionQueue<T>, QueueCfg<T> >::instance;
 	}
@@ -53,9 +51,16 @@ public:
 	
 protected:
 	QueueCfg(XMLElement* e)
-		: CfgHelper<ConnectionQueue<T>, QueueCfg<T> >(e)
+		: CfgHelper<ConnectionQueue<T>, QueueCfg<T> >(e), maxSize(0)
 	{
+		if (!e)
+			return;
+		
+		maxSize = this->getInt("maxSize", 0);
 	}
+	
+private:
+	size_t maxSize;
 };
 
 
