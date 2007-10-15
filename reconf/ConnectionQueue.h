@@ -86,6 +86,11 @@ public:
 	 */
 	virtual void addTimeout(Notifiable* n, struct timespec& ts, uint32_t flag = 0)
 	{
+		// check if we are running, because otherwise permant calls to this function could
+		// allocate our complete memory and its never freed
+		if (!Adapter<T>::running)
+			THROWEXCEPTION("addTimout called on a non running Queue");
+		
 		mutex.lock();
 		TimeoutEntry* e = new TimeoutEntry();
 		e->n = n;
