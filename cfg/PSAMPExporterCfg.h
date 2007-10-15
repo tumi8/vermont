@@ -10,19 +10,15 @@
  * This class holds the <collector> ... </collector> information of the config
  */
 class CollectorCfg
-	: public Cfg
+	: public CfgBase
 {
 	friend class PSAMPExporterCfg;
-	
-	bool deriveFrom(Cfg* old);
-		
-	bool deriveFrom(CollectorCfg* old);
 
 	std::string getName() { return "collector"; }
 	
 protected:
 	CollectorCfg(XMLElement* elem)
-		: Cfg(elem)
+		: CfgBase(elem)
 	{
 		try {
 			ipAddress = get("ipAddress");
@@ -45,7 +41,7 @@ protected:
 class PacketReportingCfg;
 
 class PSAMPExporterCfg
-	: public Cfg, CfgHelper<PSAMPExporterModule>
+	: public CfgHelper<PSAMPExporterModule, PSAMPExporterCfg>
 {
 	friend class ConfigManager;
 public:
@@ -53,28 +49,11 @@ public:
 
 	virtual PSAMPExporterCfg* create(XMLElement* elem);
 	
-	virtual std::string getName() { return"psampExporter"; }
+	virtual std::string getName() { return "psampExporter"; }
 	
-	//Module* getInstance();
-	virtual PSAMPExporterModule* getInstance();
+	virtual PSAMPExporterModule* createInstance();
 	
-	bool deriveFrom(Cfg* old);
-		
 	bool deriveFrom(PSAMPExporterCfg* old);
-
-	virtual void connectInstances(Cfg* other)
-	{
-		instance = getInstance();
-
-		int need_adapter = 0;
-		need_adapter |= ((getNext().size() > 1) ? NEED_SPLITTER : NO_ADAPTER);
-
-		if ((dynamic_cast<Notifiable*>(other->getInstance()) != NULL) &&
-		    (dynamic_cast<Timer*>(instance) == NULL))
-			need_adapter |= NEED_TIMEOUT;
-		
-		connectTo(other->getInstance(), need_adapter);
-	}
 
 protected:
 	PSAMPExporterCfg(XMLElement* elem); 

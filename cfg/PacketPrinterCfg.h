@@ -7,7 +7,7 @@
 #include <cassert>
 
 class PacketPrinterCfg 
-	: public Cfg, CfgHelper<PrinterModule>
+	: public CfgHelper<PrinterModule, PacketPrinterCfg>
 {
 public:
 	friend class ConfigManager;
@@ -24,24 +24,17 @@ public:
 
 	virtual std::string getName() { return "packetPrinter"; }
 	
-	virtual PrinterModule* getInstance()
+	virtual PrinterModule* createInstance()
 	{
-		if (instance)
-			return instance;
-		
-
 		instance = new PrinterModule(isEndPoint);
+		
+		std::string s;
+		char ca[10];
+		snprintf(ca, 10, "%d", getID());
+
+		instance->setPrefix(ca);
+		
 		return instance;
-	}
-
-	virtual bool deriveFrom(Cfg* old)
-	{
-		PacketPrinterCfg* cfg = dynamic_cast<PacketPrinterCfg*>(old);
-		if (cfg)
-			return deriveFrom(cfg);
-
-		THROWEXCEPTION("Derive is only allowed from within the same type");
-		return false;
 	}
 
 	virtual bool deriveFrom(PacketPrinterCfg* old)
@@ -53,21 +46,8 @@ public:
 		return true;
 	}
 
-	virtual void connectInstances(Cfg* other)
-	{
-		instance = getInstance();
-
-		int need_adapter = 0;
-		need_adapter |= ((getNext().size() > 1) ? NEED_SPLITTER : NO_ADAPTER);
-
-		if ((dynamic_cast<Notifiable*>(other->getInstance()) != NULL) &&
-		    (dynamic_cast<Timer*>(instance) == NULL))
-			need_adapter |= NEED_TIMEOUT;
-		
-		connectTo(other->getInstance(), need_adapter);
-	}
 protected:
-	PacketPrinterCfg(XMLElement* e)	: Cfg(e), isEndPoint(false)
+	PacketPrinterCfg(XMLElement* e)	: CfgHelper<PrinterModule, PacketPrinterCfg>(e), isEndPoint(false)
 	{
 		if (!e)
 			return;

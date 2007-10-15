@@ -10,7 +10,7 @@
 
 
 PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
-	: Cfg(elem)
+	: CfgHelper<FilterModule, PacketFilterCfg>(elem)
 {
 	if (!elem)
 		return;
@@ -58,11 +58,8 @@ PacketFilterCfg* PacketFilterCfg::create(XMLElement* e)
 	return new PacketFilterCfg(e);
 }
 
-FilterModule* PacketFilterCfg::getInstance()
+FilterModule* PacketFilterCfg::createInstance()
 {
-	if (instance != NULL)
-		return instance;
-	
 	instance = new FilterModule();
 	for (std::vector<Cfg*>::iterator it = subCfgs.begin();
 	     it != subCfgs.end();

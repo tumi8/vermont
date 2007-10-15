@@ -18,7 +18,7 @@ ObserverCfg* ObserverCfg::create(XMLElement* e)
 }
 
 ObserverCfg::ObserverCfg(XMLElement* elem)
-	: Cfg(elem), CfgHelper<Observer>(), interface(), pcap_filter(), capture_len(0)
+	: CfgHelper<Observer, ObserverCfg>(elem), interface(), pcap_filter(), capture_len(0)
 {
 
 }
@@ -27,12 +27,8 @@ ObserverCfg::~ObserverCfg()
 {
 }
 
-Observer* ObserverCfg::getInstance()
+Observer* ObserverCfg::createInstance()
 {
-	if (instance)
-		return instance;
-
-
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -70,21 +66,6 @@ Observer* ObserverCfg::getInstance()
 	}
 
 	return instance;
-}
-
-
-void ObserverCfg::connectInstances(Cfg* other)
-{
-	instance = getInstance();
-
-	int need_adapter = 0;
-	need_adapter |= ((getNext().size() > 1) ? NEED_SPLITTER : NO_ADAPTER);
-
-	if ((dynamic_cast<Notifiable*>(other->getInstance()) != NULL) &&
-	    (dynamic_cast<Timer*>(instance) == NULL))
-		need_adapter |= NEED_TIMEOUT;
-	
-	connectTo(other->getInstance(), need_adapter);
 }
 
 bool ObserverCfg::deriveFrom(ObserverCfg* old)

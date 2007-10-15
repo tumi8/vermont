@@ -6,7 +6,7 @@
 
 
 PacketReportingCfg::PacketReportingCfg(XMLElement* elem)
-	: Cfg(elem), recordVLFields(0), recordLength(0), templateId(0), t(NULL)
+	: CfgBase(elem), recordVLFields(0), recordLength(0), templateId(0), t(NULL)
 {
 	assert(elem);
 
@@ -25,22 +25,6 @@ PacketReportingCfg::~PacketReportingCfg()
 	delete t;
 }
 
-bool PacketReportingCfg::deriveFrom(Cfg* old)
-{
-	return false;
-	PacketReportingCfg* cfg = dynamic_cast<PacketReportingCfg*>(old);
-	if (cfg)
-		return deriveFrom(cfg);
-
-	THROWEXCEPTION("Can't derive from %s", getName().c_str());
-	return false;
-}
-
-bool PacketReportingCfg::deriveFrom(PacketReportingCfg* old)
-{
-	return false; // FIXME: implement
-}
-
 Template* PacketReportingCfg::getTemplate()
 {
         msg(MSG_DEBUG, "Creating template");
@@ -54,14 +38,14 @@ Template* PacketReportingCfg::getTemplate()
                         		exportedFields[i]->getName().c_str(), tmpId);
                         continue;
                 }
-                
+
                 const ipfix_identifier *id = ipfix_id_lookup(tmpId);
                 if ((tmpId == -1) || (id == NULL)) {
                         msg(MSG_ERROR, "Template: ignoring unknown template field %s",
                         		exportedFields[i]->getName().c_str());
                         continue;
                 }
-                
+
                 uint16_t fieldLength = id->length;
                 if (exportedFields[i]->hasOptionalLength()) {
                         // field length 65535 indicates variable length encoding
@@ -79,7 +63,7 @@ Template* PacketReportingCfg::getTemplate()
 
                 msg(MSG_FATAL, "Template: adding %s -> ID %d with size %d",
                 		exportedFields[i]->getName().c_str(), id->id, fieldLength);
-                
+
                 t->addField((uint16_t)id->id, fieldLength);
         }
         msg(MSG_FATAL, "Template: got %d fields, record length is %u+%u*capture_len",

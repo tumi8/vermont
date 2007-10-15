@@ -5,10 +5,10 @@
 #include "ipfix_names.h"
 
 class InfoElementCfg
-	: public Cfg {
+	: public CfgBase {
 public:
 	InfoElementCfg(XMLElement* _elem)
-		: Cfg(_elem), ieLength(-1), ieId(-1)
+		: CfgBase(_elem), ieLength(-1), ieId(-1)
 
 	{
 		if (!_elem)
@@ -29,20 +29,6 @@ public:
 	
 	std::string getName() { return "reportedIE"; }
 	
-	virtual bool deriveFrom(Cfg* old)	{
-		InfoElementCfg* cfg = dynamic_cast<InfoElementCfg*>(old);
-		if (cfg)
-			return deriveFrom(cfg);
-
-		THROWEXCEPTION("Can't derive from PacketCountFilter");
-		return false;
-	}
-
-	virtual bool deriveFrom(InfoElementCfg* old)
-	{
-		return true; // FIXME: implement
-	}
-	
 	bool hasOptionalLength() const { return ieLength != -1; }
 
 	std::string getIeName() const { return ieName; }
@@ -60,6 +46,7 @@ private:
 	std::string ieName;
 	int ieLength;
 	int ieId;
+
 	std::string enterpriseNumber;
 	std::string match;
 	std::string modifier;

@@ -37,6 +37,9 @@ class Adapter
 	: public Source<T>, public Destination<T>, public Module
 {
 public:
+	typedef typename Source<T>::src_value_type src_value_type;
+	typedef typename Destination<T>::dst_value_type dst_value_type;
+	
 	Adapter()
 	{
 	}

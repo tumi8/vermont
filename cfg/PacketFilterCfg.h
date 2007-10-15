@@ -12,7 +12,7 @@ class stringFilter;
 class SystematicSampler;
 
 class PacketFilterCfg
-	: public Cfg, CfgHelper<FilterModule>
+	: public CfgHelper<FilterModule, PacketFilterCfg>
 {
 public:
 	friend class ConfigManager;
@@ -22,9 +22,9 @@ public:
 
 	virtual std::string getName() { return "filter"; }
 	
-	virtual FilterModule* getInstance();
+	virtual FilterModule* createInstance();
 	
-	virtual bool deriveFrom(Cfg* old)
+	virtual bool deriveFrom(CfgBase* old)
 	{
 		PacketFilterCfg* cfg = dynamic_cast<PacketFilterCfg*>(old);
 		if (cfg)
@@ -35,20 +35,6 @@ public:
 	}
 
 	virtual bool deriveFrom(PacketFilterCfg* old);
-	
-	virtual void connectInstances(Cfg* other)
-	{
-		instance = getInstance();
-
-		int need_adapter = 0;
-		need_adapter |= ((getNext().size() > 1) ? NEED_SPLITTER : NO_ADAPTER);
-
-		if ((dynamic_cast<Notifiable*>(other->getInstance()) != NULL) &&
-		    (dynamic_cast<Timer*>(instance) == NULL))
-			need_adapter |= NEED_TIMEOUT;
-		
-		connectTo(other->getInstance(), need_adapter);
-	}
 
 protected:
 	PacketFilterCfg(XMLElement* e);
@@ -74,7 +60,7 @@ public:
 
 	virtual Module* getInstance();
 	
-	virtual bool deriveFrom(Cfg* old)
+	virtual bool deriveFrom(CfgBase* old)
 	{
 		PacketCountFilterCfg* cfg = dynamic_cast<PacketCountFilterCfg*>(old);
 		if (cfg)
@@ -95,6 +81,18 @@ public:
 		return true;
 	}
 
+	/* we have to implement those, because from an implementation standpoint
+	 * the filters could be modules of its own, but as discussed, they where just
+	 * subparts of a bigger FilterModule
+	 */
+	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void freeInstance() { THROWEXCEPTION("Not supported"); }
+	virtual void connectInstances(Cfg* other) { THROWEXCEPTION("Not supported"); }
+	virtual void disconnectInstances()  { THROWEXCEPTION("Not supported"); }
+	virtual Module* getQueueInstance()  { THROWEXCEPTION("Not supported"); return NULL; }
+	
+	
 protected:
 	PacketCountFilterCfg(XMLElement *e);
 
@@ -117,7 +115,7 @@ public:
 
 	virtual Module* getInstance();
 
-	virtual bool deriveFrom(Cfg* old)
+	virtual bool deriveFrom(CfgBase* old)
 	{
 		PacketStringFilterCfg* cfg = dynamic_cast<PacketStringFilterCfg*>(old);
 		if (cfg)
@@ -129,6 +127,17 @@ public:
 
 	virtual bool deriveFrom(PacketStringFilterCfg* old);
 
+	/* we have to implement those, because from an implementation standpoint
+	 * the filters could be modules of its own, but as discussed, they where just
+	 * subparts of a bigger FilterModule
+	 */
+	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void freeInstance() { THROWEXCEPTION("Not supported"); }
+	virtual void connectInstances(Cfg* other) { THROWEXCEPTION("Not supported"); }
+	virtual void disconnectInstances()  { THROWEXCEPTION("Not supported"); }
+	virtual Module* getQueueInstance()  { THROWEXCEPTION("Not supported"); return NULL; }
+	
 protected:
 	PacketStringFilterCfg(XMLElement *e) : Cfg(e), instance(NULL)
 	{
@@ -154,9 +163,9 @@ public:
 
 	virtual Module* getInstance();
 
-	virtual bool deriveFrom(Cfg* old)
+	virtual bool deriveFrom(CfgBase* old)
 	{
-		PacketStringFilterCfg* cfg = dynamic_cast<PacketStringFilterCfg*>(old);
+		PacketRegexFilterCfg* cfg = dynamic_cast<PacketRegexFilterCfg*>(old);
 		if (cfg)
 			return deriveFrom(cfg);
 
@@ -166,6 +175,17 @@ public:
 
 	virtual bool deriveFrom(PacketRegexFilterCfg* old);
 
+	/* we have to implement those, because from an implementation standpoint
+	 * the filters could be modules of its own, but as discussed, they where just
+	 * subparts of a bigger FilterModule
+	 */
+	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void freeInstance() { THROWEXCEPTION("Not supported"); }
+	virtual void connectInstances(Cfg* other) { THROWEXCEPTION("Not supported"); }
+	virtual void disconnectInstances()  { THROWEXCEPTION("Not supported"); }
+	virtual Module* getQueueInstance()  { THROWEXCEPTION("Not supported"); return NULL; }
+	
 protected:
 	PacketRegexFilterCfg(XMLElement *e): Cfg(e), instance(NULL) { };
 
@@ -179,37 +199,15 @@ private:
 
 
 class InfoElementId
-	: public Cfg
+	: public CfgBase
 
 {
 public:
 	InfoElementId(XMLElement* e)
-		: Cfg(e)
+		: CfgBase(e)
 	{
 
 	}
-
-	/*
-		for (XMLNode::XMLNodeSet::iterator i = xmlNodePtr i = p->xmlChildrenNode;
-		while (NULL != i) {
-			if (m.tagMatches(i, "ieName")) {
-				ieName = m.getContent(i);
-			} else if (m.tagMatches(i, "match")) {
-				match = m.getContent(i);
-			} else if (m.tagMatches(i, "modifier")) {
-				modifier = m.getContent(i);
-			} else if (m.tagMatches(i, "ieId")) {
-				ieId = m.getContent(i);
-			} else if (m.tagMatches(i, "ieLength")) {
-				ieLength = m.getContent(i);
-			} else if (m.tagMatches(i, "enterpriseNumber")) {
-				enterpriseNumber = m.getContent(i);
-			}
-			i = i->next;
-		}
-		std::transform(ieName.begin(), ieName.end(), ieName.begin(), std::tolower);
-	}
-	 */
 
 	std::string getIeName() {
 		std::string ret = get("ieName");

@@ -86,11 +86,11 @@ Graph* ReConnector::connect(Graph* g)
 					vector<CfgNode*> sources = oldGraph->getSources(topoOld[i]);
 					for (size_t k = 0; k < sources.size(); k++) {
 						fprintf(stderr, "---call ing disconnect on %d\n", sources[k]->getCfg()->getID());
-						sources[k]->getCfg()->getInstance()->disconnect();
+						sources[k]->getCfg()->disconnectInstances();
 					}
 
 					// ... and from its destination
-					newCfg->getInstance()->disconnect();
+					newCfg->disconnectInstances();
 					fprintf(stderr, "---ending disconnect for %d\n", oldCfg->getID());
 				}
 			}

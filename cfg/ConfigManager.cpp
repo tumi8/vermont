@@ -83,7 +83,7 @@ void ConfigManager::parseConfig(std::string fileName)
 	std::vector<CfgNode*> topoNodes = graph->topoSort();
 
 	for (size_t i = 0; i < topoNodes.size(); i++) {
-		topoNodes[topoNodes.size() -1 -i]->getCfg()->getInstance()->start(false);
+		topoNodes[topoNodes.size() -1 -i]->getCfg()->start(false);
 	}
 
 	if (old_document)
@@ -102,7 +102,7 @@ void ConfigManager::shutdown()
 		Cfg* cfg = topoNodes[i]->getCfg();
 
 		msg(MSG_FATAL, "start shuting down %s", cfg->getName().c_str());
-		cfg->getInstance()->shutdown(false);
+		cfg->shutdown(false);
 		msg(MSG_FATAL, "end shuting down %s", cfg->getName().c_str());
 	}
 
@@ -115,7 +115,7 @@ void ConfigManager::shutdown()
 		vector<CfgNode*> sources = graph->getSources(n);
 		for (size_t k = 0; k < sources.size(); k++) {
 			msg(MSG_FATAL, "run %s->disconnect", cfg->getName().c_str());
-			sources[k]->getCfg()->getInstance()->disconnect();
+			sources[k]->getCfg()->disconnectInstances();
 		}
 	}
 }

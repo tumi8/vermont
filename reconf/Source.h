@@ -15,7 +15,7 @@
 
 class BaseSource {
 public:
-	typedef Emitable* value_type;
+	typedef Emitable* src_value_type;
 	
 	virtual ~BaseSource() { }
 
@@ -30,7 +30,7 @@ template <typename T>
 class Source : public BaseSource
 {
 public:
-	typedef T value_type;
+	typedef T src_value_type;
 	
 	Source() : mutex(), connected(1), dest(NULL) { }
 	virtual ~Source() { }
@@ -97,7 +97,7 @@ public:
 		d->receive(t);
 		return true;
 	}
-	
+
 protected:
 	Mutex mutex;
 	CountingSemaphore connected;

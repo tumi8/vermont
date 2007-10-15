@@ -3,7 +3,7 @@
 #include "concentrator/Rules.hpp"
 
 FlowMeteringCfg::FlowMeteringCfg(XMLElement* elem)
-	: Cfg(elem), CfgHelper<IpfixAggregator>(), maxBufferTime(0), minBufferTime(0), rules(NULL)
+	: CfgHelper<IpfixAggregator, FlowMeteringCfg>(elem), maxBufferTime(0), minBufferTime(0), rules(NULL)
 {
 
 	if (!elem)
@@ -43,25 +43,12 @@ FlowMeteringCfg* FlowMeteringCfg::create(XMLElement* elem)
 	return new FlowMeteringCfg(elem);
 }
 
-IpfixAggregator* FlowMeteringCfg::getInstance()
+IpfixAggregator* FlowMeteringCfg::createInstance()
 {
-	if (instance != NULL)
-		return instance;
-
 	instance = new IpfixAggregator(0); // FIXME: where to get the parameter pollinterval?
 	instance->buildAggregator(rules, minBufferTime, maxBufferTime);
 
 	return instance;
-}
-
-bool FlowMeteringCfg::deriveFrom(Cfg* old)
-{
-	FlowMeteringCfg* cfg = dynamic_cast<FlowMeteringCfg*>(old);
-	if (cfg)
-		return deriveFrom(cfg);
-
-	THROWEXCEPTION("Can't derive from %s", getName().c_str());
-	return false;
 }
 
 bool FlowMeteringCfg::deriveFrom(FlowMeteringCfg* old)

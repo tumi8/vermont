@@ -15,32 +15,21 @@
 class Observer;
 
 class ObserverCfg
-	: public Cfg, public CfgHelper<Observer>
+	: public CfgHelper<Observer, ObserverCfg>
 {
 public:
 	friend class ConfigManager;
 
 	virtual ObserverCfg* create(XMLElement* e);
+	
 	virtual ~ObserverCfg();
 
 	virtual std::string getName() { return "observer"; }
 
-	virtual Observer* getInstance();
-
-	virtual bool deriveFrom(Cfg* old)
-	{
-		ObserverCfg* cfg = dynamic_cast<ObserverCfg*>(old);
-		if (cfg)
-			return deriveFrom(cfg);
-
-		THROWEXCEPTION("Derive is only allowed from within the same type");
-		return false;
-	}
+	virtual Observer* createInstance();
 
 	virtual bool deriveFrom(ObserverCfg* old);
 	
-	virtual void connectInstances(Cfg* other);
-
 protected:
 	ObserverCfg(XMLElement*);
 

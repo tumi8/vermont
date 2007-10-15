@@ -10,17 +10,13 @@ class InfoElementCfg;
 class Template;
 
 class PacketReportingCfg
-	: public Cfg
+	: public CfgBase
 {
 public:
 	PacketReportingCfg(XMLElement* elem);
 	~PacketReportingCfg();
 
 	std::string getName() { return "packetReporting"; }
-
-	virtual bool deriveFrom(Cfg* old);
-
-	virtual bool deriveFrom(PacketReportingCfg* old);
 
 	Template* getTemplate();
 

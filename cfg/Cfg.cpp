@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-std::string Cfg::get(const std::string& name, XMLElement* elem) throw(IllegalEntry)
+std::string CfgBase::get(const std::string& name, XMLElement* elem) throw(IllegalEntry)
 {
 	if (!elem)
 		elem = _elem;
@@ -17,7 +17,7 @@ std::string Cfg::get(const std::string& name, XMLElement* elem) throw(IllegalEnt
 	return n->getFirstText();
 }
 
-std::string Cfg::getOptional(const std::string& name, XMLElement* elem)
+std::string CfgBase::getOptional(const std::string& name, XMLElement* elem)
 {
 	std::string result;
 	try {
@@ -27,7 +27,7 @@ std::string Cfg::getOptional(const std::string& name, XMLElement* elem)
 	return result;
 }
 
-int Cfg::getInt(const std::string& name, int def, XMLElement* elem)
+int CfgBase::getInt(const std::string& name, int def, XMLElement* elem)
 {
 	std::string str;
 	try {
@@ -39,7 +39,7 @@ int Cfg::getInt(const std::string& name, int def, XMLElement* elem)
 	return def;
 }
 
-unsigned int Cfg::getTimeInUnit(const std::string& name, timeUnit unit,
+unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit,
 				unsigned def, XMLElement* elem)
 {
 	unsigned int time;

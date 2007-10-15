@@ -13,6 +13,8 @@
 
 class BaseDestination {
 public:
+	typedef Emitable* dst_value_type;
+	
 	virtual ~BaseDestination();
 	
 	virtual void receive(Emitable*) = 0;

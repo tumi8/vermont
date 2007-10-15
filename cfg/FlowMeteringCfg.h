@@ -10,7 +10,7 @@ class Rule;
 class Rules;
 
 class FlowMeteringCfg
-	: public Cfg, CfgHelper<IpfixAggregator>
+	: public CfgHelper<IpfixAggregator, FlowMeteringCfg>
 {
 public:
 	friend class ConfigManager;
@@ -21,25 +21,9 @@ public:
 	
 	virtual std::string getName() { return "flowMetering"; }
 	
-	virtual IpfixAggregator* getInstance();
+	virtual IpfixAggregator* createInstance();
 	
-	bool deriveFrom(Cfg* old);
-		
 	bool deriveFrom(FlowMeteringCfg* old);
-
-	virtual void connectInstances(Cfg* other)
-	{
-		instance = getInstance();
-
-		int need_adapter = 0;
-		need_adapter |= ((getNext().size() > 1) ? NEED_SPLITTER : NO_ADAPTER);
-
-		if ((dynamic_cast<Notifiable*>(other->getInstance()) != NULL) &&
-		    (dynamic_cast<Timer*>(instance) == NULL))
-			need_adapter |= NEED_TIMEOUT;
-		
-		connectTo(other->getInstance(), need_adapter);
-	}
 
 	Rule* readRule(XMLElement* elem);
 protected:

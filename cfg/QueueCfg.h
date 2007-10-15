@@ -13,7 +13,7 @@
 
 template <class T>
 class QueueCfg
-	: public Cfg, public CfgHelper< ConnectionQueue<T> >
+	: public CfgHelper<ConnectionQueue<T>, QueueCfg<T> >
 {
 public:
 	friend class ConfigManager;
@@ -33,28 +33,15 @@ public:
 	
 	virtual ~QueueCfg() { }
 	
-	ConnectionQueue<T>* getInstance()
+	ConnectionQueue<T>* createInstance()
 	{
-		if (CfgHelper<ConnectionQueue<T> >::instance)
-			return CfgHelper<ConnectionQueue<T> >::instance;
-	
-		XMLNode* n = _elem->getFirstChild("maxSize");
+		XMLNode* n = this->_elem->getFirstChild("maxSize");
 		if (!n) // create a new queue with its default size
-			return CfgHelper<ConnectionQueue<T> >::instance = new ConnectionQueue<T>();
+			return CfgHelper<ConnectionQueue<T>, QueueCfg<T> >::instance = new ConnectionQueue<T>();
 
 		int maxSize = atoi(n->getFirstText().c_str());
-		CfgHelper<ConnectionQueue<T> >::instance = new ConnectionQueue<T>(maxSize);
-		return CfgHelper<ConnectionQueue<T> >::instance;
-	}
-
-	virtual bool deriveFrom(Cfg* o)
-	{
-		QueueCfg<T>* cfg = dynamic_cast< QueueCfg<T>* >(o);
-		if (cfg)
-			return deriveFrom(cfg);
-
-		THROWEXCEPTION("Derive is only allowed from within the same type");
-		return false;
+		CfgHelper<ConnectionQueue<T>, QueueCfg<T> >::instance = new ConnectionQueue<T>(maxSize);
+		return CfgHelper<ConnectionQueue<T>, QueueCfg<T> >::instance;
 	}
 
 	virtual bool deriveFrom(QueueCfg<T>* old)
@@ -64,23 +51,9 @@ public:
 		return true;
 	}
 	
-	virtual void connectInstances(Cfg* other)
-	{
-		CfgHelper<ConnectionQueue<T> >::instance = getInstance();
-
-		int need_adapter = 0;
-		need_adapter |= ((getNext().size() > 1) ? NEED_SPLITTER : NO_ADAPTER);
-
-		if ((dynamic_cast<Notifiable*>(other->getInstance()) != NULL) &&
-		    (dynamic_cast<Timer*>(CfgHelper<ConnectionQueue<T> >::instance) == NULL))
-			need_adapter |= NEED_TIMEOUT;
-		
-		CfgHelper<ConnectionQueue<T> >::connectTo(other->getInstance(), need_adapter);
-	}
-	
 protected:
 	QueueCfg(XMLElement* e)
-		: Cfg(e)
+		: CfgHelper<ConnectionQueue<T>, QueueCfg<T> >(e)
 	{
 	}
 };

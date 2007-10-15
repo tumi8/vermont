@@ -98,13 +98,14 @@ private:
   */  
 template <typename T>
 struct SplitterAdapter
-	: Adapter<typename T::value_type>
+	: Source<typename T::src_value_type>, Destination<typename T::dst_value_type>, Module
 {
-	typedef typename T::value_type value_type;
+	typedef typename T::dst_value_type dst_value_type;
+	typedef typename T::src_value_type src_value_type;
 	
 	SplitterAdapter(T* obj) : adaptee(obj)
 	{
-		splitter = new ConnectionSplicer<value_type>();
+		splitter = new ConnectionSplicer<src_value_type>();
 		adaptee->connectTo(splitter);
 	}
 
@@ -113,7 +114,7 @@ struct SplitterAdapter
 		delete splitter;
 	}
 	
-	virtual void connectTo(BaseDestination* d)
+	virtual void connectTo(Destination<src_value_type>* d)
 	{
 		splitter->connectTo(d);
 	}
@@ -128,10 +129,9 @@ struct SplitterAdapter
 		adaptee->disconnect();
 	}
 	
-	virtual void receive(value_type packet)
+	virtual void receive(dst_value_type packet)
 	{
-		if (static_cast<BaseDestination*>(adaptee))
-			adaptee->receive(packet);
+		adaptee->receive(packet);
 	}
 	
 	virtual void performStart()
@@ -147,7 +147,7 @@ struct SplitterAdapter
 	}
 
 private:
-	ConnectionSplicer<value_type>* splitter;
+	ConnectionSplicer<src_value_type>* splitter;
 	T* adaptee;
 };
 
