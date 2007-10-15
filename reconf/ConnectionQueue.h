@@ -62,6 +62,15 @@ public:
 	{
 		queue.notifyShutdown();
 		thread.join();
+		
+		// remove all the dangling TimoutEntry's
+		// we can't process them anyway without a thread running
+		list<TimeoutEntry*>::iterator iter = timeouts.begin();
+		while (iter != timeouts.end()) {
+			TimeoutEntry* te = *iter;
+			iter = timeouts.erase(iter);
+			delete te;
+		}
 	}
 
 	inline int getCount() 
