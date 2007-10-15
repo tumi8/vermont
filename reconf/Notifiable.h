@@ -21,6 +21,8 @@
 #ifndef NOTIFIABLE_H_
 #define NOTIFIABLE_H_
 
+// forward declaration
+class Timer;
 
 /**
  * to be implemented by modules which need to be triggered after a timeout
@@ -37,6 +39,11 @@ public:
 	 * @param flag flag which was passed to Timer::addTimeout
 	 */
 	virtual void onTimeout(uint32_t flag) = 0;
+	
+	inline void useTimer(Timer* t) { timer = t; }
+	
+protected:
+	Timer* timer;
 };
 
 #endif /*NOTIFIABLE_H_*/
