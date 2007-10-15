@@ -32,7 +32,8 @@ FlowMeteringCfg::FlowMeteringCfg(XMLElement* elem)
 
 FlowMeteringCfg::~FlowMeteringCfg()
 {
-
+	if (instance == NULL)
+		delete rules;
 }
 
 FlowMeteringCfg* FlowMeteringCfg::create(XMLElement* elem)
