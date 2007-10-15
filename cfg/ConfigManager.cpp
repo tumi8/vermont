@@ -13,6 +13,9 @@
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+// we create a static array of all root config entrys so that we don't
+// need to hardcode the config entry name in here. Instead, we just ask the
+// module instances if they handle the specific entry. 
 Cfg* ConfigManager::configModules[] = {
 	new ObserverCfg(NULL),
 	new PacketFilterCfg(NULL),
@@ -78,13 +81,16 @@ void ConfigManager::parseConfig(std::string fileName)
 
 	// start the instances if not already running
 	std::vector<CfgNode*> topoNodes = graph->topoSort();
-	
+
 	for (size_t i = 0; i < topoNodes.size(); i++) {
 		topoNodes[topoNodes.size() -1 -i]->getCfg()->getInstance()->start(false);
 	}
 
 	if (old_document)
 		delete old_document;
+
+	if (oldGraph)
+		delete oldGraph;
 }
 
 void ConfigManager::shutdown()
