@@ -41,7 +41,7 @@
 #include <arpa/inet.h>
 #include <pcap.h>
 
-class Observer : public Module, public StatisticsModule, public Source<Packet*>
+class Observer : public Module, public StatisticsModule, public Source<Packet*>, public Destination<NullEmitable*>
 {
 public:
 	Observer(const std::string& interface);

@@ -7,7 +7,7 @@
 
 #include "Source.h"
 
-class Module : public virtual BaseSource, public virtual BaseDestination 
+class Module 
 {
 protected:
 	bool exitFlag;		/**< notifies module that shutdown is imminent */

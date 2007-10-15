@@ -19,24 +19,15 @@ public:
 	
 	virtual ~BaseSource() { }
 
-	virtual void connectTo(BaseDestination* dest)
-	{
-		THROWEXCEPTION("this module does not implement a Source");
-	}
-	virtual void disconnect()
-	{
-		THROWEXCEPTION("this module does not implement a Source");
-	}
+	virtual void connectTo(BaseDestination* dest) = 0;
 
-	virtual bool isConnected() const
-	{
-		THROWEXCEPTION("this module does not implement a Source");
-		return false;
-	}
+	virtual void disconnect() = 0;
+	
+	virtual bool isConnected() const = 0;
 };
 
 template <typename T>
-class Source : public virtual BaseSource
+class Source : public BaseSource
 {
 public:
 	typedef T value_type;

@@ -15,27 +15,42 @@ class BaseDestination {
 public:
 	virtual ~BaseDestination();
 	
-	virtual void receive(Emitable*)
-	{
-		THROWEXCEPTION("receive on BaseDestination called");
-	}
+	virtual void receive(Emitable*) = 0;
 };
 
 template<class T>
 class Destination : public virtual BaseDestination
 {
 public:
-	virtual void receive(T e)
+	typedef T dst_value_type;
+	
+	virtual void receive(Emitable* e)
 	{
-		THROWEXCEPTION("module does not support reception of elements");
+		T p = dynamic_cast<T>(e);
+		if (p == NULL)
+			THROWEXCEPTION("module does not support receiving this type of modules");
 	}
 
+	virtual void receive(T e) = 0;
 
 private:
 	inline void recvPacket(T p) {
 		printf("recv called\n");
 	}
 };
+
+template<>
+class Destination<NullEmitable*> : public BaseDestination
+{
+public:
+	typedef NullEmitable* dst_value_type;
+
+	virtual void receive(Emitable* e)
+	{
+		THROWEXCEPTION("this module is no destination!");
+	}
+};
+
 
 #endif
 
