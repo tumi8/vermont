@@ -30,13 +30,16 @@ static int setup_signal(int signal, void (*handler)(int));
 
 ConfigManager manager;
 
+// this is outside main to silent valgrind about the allocation "stats.log" which seems got never free'd
+string statFile = "stats.log";
+
 int main(int ac, char **dc)
 {
 
 	int c, debug_level=MSG_DEFAULT;
 	char *config_file=NULL;
 	uint32_t statInterval = 0;
-	string statFile = "stats.log";
+	string statFile;
 
 	msg_init();
 
