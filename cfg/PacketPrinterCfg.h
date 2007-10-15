@@ -49,7 +49,7 @@ public:
 		if (isEndPoint != old->isEndPoint)
 			return false;
 		
-		instance = old->getInstance();
+		transferInstance(old);
 		return true;
 	}
 
