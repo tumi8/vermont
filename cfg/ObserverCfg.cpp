@@ -20,15 +20,9 @@ ObserverCfg* ObserverCfg::create(XMLElement* e)
 ObserverCfg::ObserverCfg(XMLElement* elem)
 	: CfgHelper<Observer, ObserverCfg>(elem), interface(), pcap_filter(), capture_len(0)
 {
-
-}
-
-ObserverCfg::~ObserverCfg()
-{
-}
-
-Observer* ObserverCfg::createInstance()
-{
+	if (!elem)
+		return;
+		
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -37,8 +31,6 @@ Observer* ObserverCfg::createInstance()
 
 		if (e->matches("interface")) {
 			interface = e->getFirstText();
-		} else if (e->matches("capture_len")) {
-			capture_len = atoi(e->getFirstText().c_str());
 		} else if (e->matches("pcap_filter")) {
 			pcap_filter = e->getFirstText();
 		} else if (e->matches("timeBased")) {
@@ -49,6 +41,16 @@ Observer* ObserverCfg::createInstance()
 		}
 	}
 
+	capture_len = getInt("capture_len", 0);
+}
+
+ObserverCfg::~ObserverCfg()
+{
+
+}
+
+Observer* ObserverCfg::createInstance()
+{
 	instance = new Observer(interface);
 
 	if (capture_len) {
