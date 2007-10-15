@@ -23,6 +23,11 @@ public:
 		do_print = b;
 	}
 
+	void setPrefix(std::string s)
+	{
+		prefix = s;
+	}
+	
 	unsigned int getCount()
 	{
 		return count;
@@ -36,6 +41,7 @@ private:
 	bool isEndPoint;
 	bool do_print;
 	unsigned int count;
+	std::string prefix;
 };
 
 #endif /*PRINTERMODULE_H_*/

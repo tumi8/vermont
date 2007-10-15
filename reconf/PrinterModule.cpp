@@ -8,11 +8,11 @@ PrinterModule::~PrinterModule()
 void PrinterModule::receive(Packet* p)
 {
 	if (do_print)
-		msg(MSG_FATAL, "packet %d received", p->totalPacketsReceived);
+		msg(MSG_FATAL, "%s: packet %d received", prefix.c_str(), p->totalPacketsReceived);
 	count++;
 	
-	if (isEndPoint)
+	if (isEndPoint) {
 		p->removeReference();
-	else
+	} else
 		send(p);
 }
