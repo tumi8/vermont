@@ -1,6 +1,5 @@
 #include "ObserverCfg.h"
 #include "common/msg.h"
-#include "common/PacketInstanceManager.h"
 #include "cfg/XMLElement.h"
 
 #include "sampler/Observer.h"
@@ -54,7 +53,7 @@ Observer* ObserverCfg::getInstance()
 		}
 	}
 
-	instance = new Observer(interface, PacketInstanceManager::getManager());
+	instance = new Observer(interface);
 
 	if (capture_len) {
 		if(!instance->setCaptureLen(capture_len)) {

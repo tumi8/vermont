@@ -38,7 +38,7 @@ class AggregationPerfTest
 
 
 	private:
-		InstanceManager<Packet>* packetManager;
+		static InstanceManager<Packet> packetManager;
 
 		Rule::Field* createRuleField(const string& typeId);
 		Rules* createRules();

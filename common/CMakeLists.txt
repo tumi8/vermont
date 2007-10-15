@@ -19,7 +19,6 @@
 
 ADD_LIBRARY(common
 	CountingSemaphore.cpp
-	PacketInstanceManager.cpp
 	msg.cc
 	StatisticsManager.cpp
 )

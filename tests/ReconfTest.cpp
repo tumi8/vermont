@@ -2,7 +2,6 @@
 
 #include "test.h"
 #include "sampler/SystematicSampler.h"
-#include "common/PacketInstanceManager.h"
 #include "common/msg.h"
 #include "CounterDestination.h"
 #include "cfg/ConfigManager.h"
@@ -10,6 +9,8 @@
 #include "reconf/PrinterModule.h"
 
 #include <unistd.h>
+
+InstanceManager<Packet> ReconfTest::packetManager;
 
 ReconfTest::ReconfTest()
 {
@@ -33,7 +34,7 @@ void ReconfTest::sendPacketsTo(Destination<Packet*>* dest, size_t numpackets)
 	REQUIRE(gettimeofday(&curtime, 0) == 0);
 
 	for (size_t i = 0; i < numpackets; i++) {
-		Packet* packet = PacketInstanceManager::getManager()->getNewInstance();
+		Packet* packet = packetManager.getNewInstance();
 		packet->init((char*)packetdata, packetdatalen, curtime);
 		dest->receive(packet);
 	}

@@ -44,7 +44,7 @@
 class Observer : public Module, public StatisticsModule, public Source<Packet*>
 {
 public:
-	Observer(const std::string& interface, InstanceManager<Packet>* manager);
+	Observer(const std::string& interface);
 	~Observer();
 
 	virtual void performStart();
@@ -93,7 +93,7 @@ protected:
 	char* filter_exp;
 
 	// manages instances of Packets
-	InstanceManager<Packet>* packetManager;
+	static InstanceManager<Packet> packetManager;
 
 	// number of received bytes (used for statistics)
 	// attention: value may sometimes be incorrect caused by multithreading issues

@@ -23,6 +23,8 @@ private:
 	void setup(bool express);
 	void sendPacketsTo(Destination<Packet*>* dest, size_t numpackets);
 	void shutdown();
+	
+	static InstanceManager<Packet> packetManager;
 };
 
 

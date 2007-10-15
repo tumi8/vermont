@@ -25,11 +25,11 @@
 using namespace std;
 
 
+InstanceManager<Packet> Observer::packetManager; 
 
-
-Observer::Observer(const std::string& interface, InstanceManager<Packet>* manager) : thread(Observer::observerThread), allDevices(NULL),
+Observer::Observer(const std::string& interface) : thread(Observer::observerThread), allDevices(NULL),
 	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
-	pcap_promisc(1), ready(false), filter_exp(0), packetManager(manager),
+	pcap_promisc(1), ready(false), filter_exp(0),
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0), 
 	lastProcessedPackets(0)
 
@@ -85,7 +85,7 @@ void *Observer::observerThread(void *arg)
 {
 	/* first we need to get the instance back from the void *arg */
 	Observer *obs=(Observer *)arg;
-	InstanceManager<Packet>* packetManager = obs->packetManager;
+	InstanceManager<Packet>& packetManager = obs->packetManager;
 	
 	Packet *p;
 	const unsigned char *pcapData;
@@ -139,7 +139,7 @@ void *Observer::observerThread(void *arg)
 		//printf("\n");
 
 		// initialize packet structure (init copies packet data)
-		p = packetManager->getNewInstance();
+		p = packetManager.getNewInstance();
 		p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts);
 
 		obs->receivedBytes += packetHeader.caplen;

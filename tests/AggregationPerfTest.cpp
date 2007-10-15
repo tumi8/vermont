@@ -29,11 +29,11 @@
 #include "concentrator/PacketAggregator.h"
 #include "reconf/ConnectionQueue.h"
 #include "CounterDestination.h"
-#include "common/PacketInstanceManager.h"
 
 #include <sys/time.h>
 #include <time.h>
 
+InstanceManager<Packet> AggregationPerfTest::packetManager;
 
 /**
  * @param fast determines if this test should be performed really fast or slower for performance measurements
@@ -127,7 +127,6 @@ void AggregationPerfTest::execute()
 	agg.shutdown();
 	queue1.shutdown();
 	delete rules;
-	PacketInstanceManager::destroyManager();
 }
 
 
@@ -145,7 +144,7 @@ void AggregationPerfTest::sendPacketsTo(Destination<Packet*>* dest, uint32_t num
 	REQUIRE(gettimeofday(&curtime, 0) == 0);
 
 	for (size_t i = 0; i < numpackets; i++) {
-		Packet* packet = PacketInstanceManager::getManager()->getNewInstance();
+		Packet* packet = packetManager.getNewInstance();
 		packet->init((char*)packetdata, packetdatalen, curtime);
 		dest->receive(packet);
 	}

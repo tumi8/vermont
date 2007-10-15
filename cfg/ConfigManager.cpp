@@ -9,8 +9,6 @@
 #include "cfg/PSAMPExporterCfg.h"
 #include "cfg/QueueCfg.h"
 
-#include "common/PacketInstanceManager.h"
-
 #include <cassert>
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
@@ -33,8 +31,6 @@ ConfigManager::~ConfigManager()
 		}
 		delete graph;
 	}
-
-	PacketInstanceManager::destroyManager();
 
 	for (size_t i = 0; i < ARRAY_SIZE(configModules); i++) {
 		delete configModules[i];

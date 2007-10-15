@@ -6,7 +6,7 @@
 */
 class Emitable {
 public:
-	virtual ~Emitable() = 0;
+	virtual ~Emitable() { };
 };
 
 #endif
