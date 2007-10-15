@@ -128,14 +128,14 @@ void ReconfTest::splitterTest()
 	FilterModule filter;
 	filter.addProcessor(sampler);
 
-	SplitterAdapter<FilterModule> splitter(&filter);
+	ConnectionSplicer<FilterModule::src_value_type>* splitter;
+	splitter = new ConnectionSplicer<FilterModule::src_value_type>();
+	
+	filter.connectTo(splitter);
+	splitter->connectTo(&counter1);
+	splitter->connectTo(&counter2);
 
-	splitter.connectTo(&counter1);
-	splitter.connectTo(&counter2);
-
-	splitter.start();
-
-	sendPacketsTo(&splitter, nr_of_packets);
+	sendPacketsTo(&filter, nr_of_packets);
 
 	ASSERT(counter1.getCount() == nr_of_packets/2,
 			"The filter hasn't eliminated half of the packets for counter1");
@@ -149,7 +149,9 @@ void ReconfTest::splitterTest()
 	 * | sampler| ->  | PacketCounter |
 	 *  --------       ---------------
 	 */
-	splitter.disconnect();
+	
+	filter.disconnect();
+	
 	counter1.reset();
 	counter2.reset();
 
@@ -159,5 +161,5 @@ void ReconfTest::splitterTest()
 	ASSERT(counter2.getCount() == 0, "splitter disconnect failed");
 
 	// cleanup
-	splitter.shutdown();
+	delete splitter;
 }
