@@ -33,6 +33,8 @@ Graph::Graph() : reserved(30)
 
 Graph::~Graph()
 {
+	std::vector<CfgNode*> ts = topoSort();
+	
 	for (size_t i = 0; i < reserved; i++) {
 		for (size_t j = 0; j < nodes.size(); j++) {
 			if (matrix[i][j] != NULL) // free all edges
@@ -41,6 +43,14 @@ Graph::~Graph()
 		delete [] matrix[i];
 	}
 	delete [] matrix;
+	
+	// we delete in topological order so that we never get into a race
+	// where a module (which is deleted by the Cfg) is still running and wants to
+	// send data to an module which got already freed. We rely on the d'tors to do
+	// a join on the underlying thread.
+	for (size_t i = 0; i < ts.size(); i++) {
+		delete ts[i];
+	}
 }
 
 CfgNode* Graph::addNode(Cfg* cfg)

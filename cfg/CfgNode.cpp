@@ -7,6 +7,8 @@ CfgNode::CfgNode(Graph* g, unsigned int id)
 
 CfgNode::~CfgNode()
 {
+	if (cfg)
+		delete cfg;
 }
 
 void CfgNode::addCfg(Cfg* config)

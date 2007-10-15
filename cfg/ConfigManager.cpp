@@ -25,15 +25,7 @@ Cfg* ConfigManager::configModules[] = {
 ConfigManager::~ConfigManager()
 {
 	if (graph) {
-		vector<CfgNode*> nodes = graph->getNodes();
-		for (size_t i = 0; i < nodes.size(); i++) {
-			delete nodes[i]->getCfg();
-		}
 		delete graph;
-	}
-
-	for (size_t i = 0; i < ARRAY_SIZE(configModules); i++) {
-		delete configModules[i];
 	}
 }
 
@@ -118,19 +110,5 @@ void ConfigManager::shutdown()
 			msg(MSG_FATAL, "run %s->disconnect", cfg->getName().c_str());
 			sources[k]->getCfg()->getInstance()->disconnect();
 		}
-	}
-
-	// free memory
-	// FIXME: this is racy because we could delete a destination which
-	//        is sill used as the thread hasn't shutdown yet
-	for (size_t i = 0; i < topoNodes.size(); i++) {
-		CfgNode* n = topoNodes[i];
-
-		DPRINTF("deleteting %s ..", n->getCfg()->getName().c_str());
-		delete n->getCfg()->getInstance();
-		delete n->getCfg();
-
-		graph->removeNode(n);
-		delete n;
 	}
 }
