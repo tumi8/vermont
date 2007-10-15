@@ -23,7 +23,7 @@ public:
 		} catch (IllegalEntry ie) { /* ingore missing ieName */ }
 		
 		modifier         = getOptional("modifier");
-		enterpriseNumber = getOptional("modifier");
+		enterpriseNumber = getOptional("enterpriseNumber");
 		match            = getOptional("match");
 	}
 	
