@@ -35,85 +35,31 @@ class PSAMPExporterModule
 	: public Module, public Source<Packet*>, public Destination<Packet*>, public Notifiable
 {
 public:
-        PSAMPExporterModule(Template *tmpl, int sID)
-			: sourceID(sID), templ(tmpl), thread(process),
-			  exporter(NULL),
-			  numPacketsToRelease(0), numMetaFieldsToRelease(0),
-			  ipfix_maxrecords(MAX_RECORDS_PER_PACKET),
-			  exportTimeout(MAX_PACKET_LIFETIME)
-        {
-		int ret, i, tmplid;
-		unsigned short ttype, tlength, toffset, theader;
+        PSAMPExporterModule(Template *tmpl, int sID);
 
-		// generate the exporter
-		ret = ipfix_init_exporter(sourceID, &exporter);
-		if (ret) {
-			msg(MSG_FATAL, "error initializing IPFIX exporter");
-			exit(1);
-		}
+	~PSAMPExporterModule();
 
-                // generate the ipfix template
-                tmplid = templ->getTemplateID();
-                ret =  ipfix_start_template_set(exporter, tmplid, templ->getFieldCount());
+        virtual void receive(Packet* packet);
 
-                for(i = 0; i < templ->getFieldCount(); i++) {
-			templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
-			ipfix_put_template_field(exporter, tmplid, ttype, tlength, 0);
-                }
-
-                ipfix_end_template_set(exporter, tmplid);
-        };
-
-
-	~PSAMPExporterModule()
-        {
-		shutdown(false); // try to shutdown; no error if not running
-                ipfix_deinit_exporter(exporter);
-
-                // free the remaining packets
-                for (int i = 0; i < numPacketsToRelease; i++) {
-			(packetsToRelease[i])->removeReference();
-		}
-        };
-
-        virtual void receive(Packet* packet)
-        {
-		queue.push(packet);
-        }
-
-        virtual void onTimeout(uint32_t flag)
-        {
-        	
-        }
+        virtual void onTimeout(uint32_t flag);
         
-        virtual void performStart()
-        {
-                msg(MSG_DEBUG, "Sink: now starting PSAMPExporter thread");
-                thread.run(this);
-        }
+        virtual void performStart();
 
-        virtual void performShutdown()
-        {
-                msg(MSG_DEBUG, "Sink: waiting for exporter thread");
-                connected.shutdown();
-                queue.notifyShutdown();
-                thread.join();
-                msg(MSG_DEBUG, "Sink: exporter thread joined");
-        }
-
+        virtual void performShutdown();
+        
         /* max records per IPFIX packet */
-        bool setMaxRecords(int x)
+        inline bool setMaxRecords(int x)
         {
                 ipfix_maxrecords=x;
                 return true;
         }
 
-        int getMaxRecords()
+        inline int getMaxRecords()
         {
                 return ipfix_maxrecords;
 	}
 
-	bool setExportTimeout(int ms)
+	inline bool setExportTimeout(int ms)
 	{
 		exportTimeout=ms;
                 return true;
@@ -142,13 +88,8 @@ private:
         // send out the IPFIX packet stream and reset
         void flushPacketStream();
 
-        static void* process(void *);
-
-
 	int sourceID;
         Template *templ;
-        Thread thread;
-        ConcurrentQueue<Packet*> queue;
 
         ipfix_exporter *exporter;
 
@@ -164,6 +105,12 @@ private:
 
         // time-constraint for exporting data, in ms
 	int exportTimeout;
+
+	// counter for the number of packets we need to send
+	int pckCount;
+	
+	// timer stamp; this value is used to see if wee need to do a flush based on the timeout
+	uint32_t timerFlag;
 };
 
 #endif

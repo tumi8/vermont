@@ -61,8 +61,8 @@ INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/sampler)
 
 TARGET_LINK_LIBRARIES(vermont
 	cfg
-	ipfixlolib
 	reconf
+	ipfixlolib
 	sampler
 	common
 	concentrator

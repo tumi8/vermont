@@ -20,8 +20,50 @@
 #include "ipfixlolib/ipfixlolib.h"
 
 #include "PSAMPExporterModule.h"
+#include "Timer.h"
 
 using namespace std;
+
+PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, int sID)
+		: sourceID(sID), templ(tmpl),
+		  exporter(NULL),
+		  numPacketsToRelease(0), numMetaFieldsToRelease(0),
+		  ipfix_maxrecords(MAX_RECORDS_PER_PACKET),
+		  exportTimeout(MAX_PACKET_LIFETIME), pckCount(0), timerFlag(0)
+{
+	int ret, i, tmplid;
+	unsigned short ttype, tlength, toffset, theader;
+
+	// generate the exporter
+	ret = ipfix_init_exporter(sourceID, &exporter);
+	if (ret) {
+		msg(MSG_FATAL, "error initializing IPFIX exporter");
+		exit(1);
+	}
+
+        // generate the ipfix template
+        tmplid = templ->getTemplateID();
+        ret =  ipfix_start_template_set(exporter, tmplid, templ->getFieldCount());
+
+        for(i = 0; i < templ->getFieldCount(); i++) {
+		templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
+		ipfix_put_template_field(exporter, tmplid, ttype, tlength, 0);
+        }
+
+        ipfix_end_template_set(exporter, tmplid);
+}
+
+PSAMPExporterModule::~PSAMPExporterModule()
+{
+	shutdown(false); // try to shutdown; no error if not running
+        ipfix_deinit_exporter(exporter);
+
+        // free the remaining packets
+        for (int i = 0; i < numPacketsToRelease; i++) {
+		(packetsToRelease[i])->removeReference();
+	}
+};
+
 
 void PSAMPExporterModule::startNewPacketStream()
 {
@@ -127,63 +169,8 @@ void PSAMPExporterModule::flushPacketStream() {
 
 	numPacketsToRelease = 0;
 	numMetaFieldsToRelease = 0;
+	pckCount = 0;
 }
-
-
-void* PSAMPExporterModule::process(void *arg)
-{
-	PSAMPExporterModule *sink = (PSAMPExporterModule *)arg;
-	ConcurrentQueue<Packet*> &queue = sink->queue;
-	Packet *p;
-	bool result = false;
-	// our deadline
-	struct timeval deadline;
-	int pckCount;
-
-	msg(MSG_INFO, "Sink: now running ExporterSink thread");
-
-	while (!sink->exitFlag) {
-		sink->startNewPacketStream();
-
-		// let's get the first packet
-		gettimeofday(&deadline, 0);
-
-		result = queue.pop(&p);
-
-		if (result == true) {
-			// we got a packet, so let's add the record
-			result = sink->addPacket(p);
-		}
-
-		pckCount = 1;
-
-		// now calculate the deadline by which the packet has to leave the exporter
-		gettimeofday(&deadline, 0);
-		deadline.tv_usec += sink->exportTimeout * 1000L;
-		if (deadline.tv_usec > 1000000L) {
-			deadline.tv_sec += (deadline.tv_usec / 1000000L);
-			deadline.tv_usec %= 1000000L;
-		}
-
-		while (!sink->exitFlag && (pckCount < sink->ipfix_maxrecords)) {
-			// Try to get next packet from queue before our deadline
-			result = queue.popAbs(deadline, &p);
-
-			// check for timeout and break loop if neccessary
-			if (!result)
-				break;
-
-			// no timeout received, continue waiting, but
-
-			// count only if packet was added
-			if (sink->addPacket(p) == true)
-				pckCount++;
-		}
-		sink->flushPacketStream();
-	}
-	return 0;
-}
-
 
 bool PSAMPExporterModule::addCollector(const char *address, unsigned short port, const char *protocol)
 {
@@ -201,4 +188,49 @@ bool PSAMPExporterModule::addCollector(const char *address, unsigned short port,
 
 	DPRINTF("Adding %s://%s:%d", protocol, address, port);
 	return(ipfix_add_collector(exporter, address, port, proto) == 0);
+}
+
+void PSAMPExporterModule::receive(Packet* p)
+{
+	if (pckCount == 0) {
+		startNewPacketStream();
+
+		if (!addPacket(p))
+			return;
+		
+		pckCount = 1;
+
+		// now calculate the deadline by which the packet has to leave the exporter
+		struct timespec deadline;
+		addToCurTime(&deadline, exportTimeout);
+
+		if (timer)
+			timer->addTimeout(this, deadline, ++timerFlag);
+	} else {
+		// count only if packet was added
+		if (!addPacket(p))
+			return;
+		pckCount++;
+	}
+
+	if (pckCount == ipfix_maxrecords) 
+		flushPacketStream();
+}
+
+void PSAMPExporterModule::onTimeout(uint32_t flag)
+{
+	// only if the timer event wasn't processed yet we need to
+	// flush the packet stream.
+	if (flag == timerFlag)
+		flushPacketStream();
+}
+
+void PSAMPExporterModule::performStart()
+{
+
+}
+
+void PSAMPExporterModule::performShutdown()
+{
+        connected.shutdown();
 }
