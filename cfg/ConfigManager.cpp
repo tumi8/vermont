@@ -78,8 +78,9 @@ void ConfigManager::parseConfig(std::string fileName)
 
 	// start the instances if not already running
 	std::vector<CfgNode*> topoNodes = graph->topoSort();
+	
 	for (size_t i = 0; i < topoNodes.size(); i++) {
-		topoNodes[i]->getCfg()->getInstance()->start(false);
+		topoNodes[topoNodes.size() -1 -i]->getCfg()->getInstance()->start(false);
 	}
 
 	if (old_document)
