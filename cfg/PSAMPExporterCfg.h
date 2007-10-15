@@ -69,7 +69,6 @@ private:
 	/** packet restrictions */
 	uint16_t maxPacketSize;
 	unsigned exportDelay;
-	uint16_t capture_len;
 	
 	int recordsPerPacket;
 	int recordLength;

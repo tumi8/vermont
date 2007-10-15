@@ -34,7 +34,7 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 			collectors.push_back(new CollectorCfg(e));
 		} else if (e->matches("packetReporting")) {
 			reporting = new PacketReportingCfg(e);
-		} else if (e->matches("capture_len")) {
+		} else if (e->matches("captureLen")) {
 			// ignore it, already handled
 		} else {
 			THROWEXCEPTION("Illegal PSAMPExporter config entry \"%s\"found",
@@ -45,10 +45,12 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 	if (reporting == NULL)
 		THROWEXCEPTION("No packetReporting found in psampExporter config");
 	
-	//uint16_t capture_len = (uint16_t)getInt(capture_len, PCAP_DEFAULT_CAPTURE_LENGTH);
-	uint16_t capture_len = (uint16_t)getInt("capture_len", 128);
+	// determine captureLen
+	int captureLen = getInt("captureLen", PCAP_DEFAULT_CAPTURE_LENGTH);
+	
 	// rough estimation of the maximum record length including variable length fields
-	recordLength = reporting->getRecordLength() + reporting->getRecordsVariableLen() * capture_len;
+	recordLength =  reporting->getRecordLength() + 
+			reporting->getRecordsVariableLen() * captureLen;
 } 
 
 PSAMPExporterCfg* PSAMPExporterCfg::create(XMLElement* elem)
@@ -70,22 +72,28 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 {
 	instance = new PSAMPExporterModule(reporting->getTemplate(), 0); // FIXME: ID 0 is incorrect
 
-	if(recordLength || maxPacketSize)
-	{
-		// IPFIX packet header: 16 bytes, set header: 4 bytes
-		int recordsPerPacket = (maxPacketSize - 16 - 4) / recordLength;
-		if(recordsPerPacket <= 0)
-			recordsPerPacket = 1;
+	if (recordLength || maxPacketSize) {
+		int recordsPerPacket = 1;
+		
+		printf ("create recordLen = %d\n\n", recordLength);
+		printf ("create maxPaSize = %d\n\n", maxPacketSize);
+		
+		if (recordLength) { 
+			// IPFIX packet header: 16 bytes, set header: 4 bytes
+			recordsPerPacket = (maxPacketSize - 16 - 4) / recordLength;
+
+			if(recordsPerPacket <= 0)
+				recordsPerPacket = 1;
+		}
+
 		msg(MSG_INFO, "Set maximum records per packet to %d", recordsPerPacket);
 		instance->setMaxRecords(recordsPerPacket);
 	}
-	if(exportDelay)
-	{
+	if (exportDelay) {
 		msg(MSG_INFO, "Set maximum export timeout to %d", exportDelay);
 		instance->setExportTimeout(exportDelay);
 	}
-	if(templateRefreshTime || templateRefreshRate)
-	{
+	if (templateRefreshTime || templateRefreshRate) {	
 		msg(MSG_ERROR, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
 	}
 	for (unsigned i = 0; i != collectors.size(); ++i) {
