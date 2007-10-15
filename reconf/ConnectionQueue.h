@@ -44,6 +44,7 @@ public:
 
 	virtual ~ConnectionQueue()
 	{
+		this->shutdown(false);
 	}
 
 	virtual void receive(T packet)
@@ -61,6 +62,7 @@ public:
 	virtual void performShutdown()
 	{
 		queue.notifyShutdown();
+		Adapter<T>::connected.shutdown();
 		thread.join();
 		
 		// remove all the dangling TimoutEntry's
