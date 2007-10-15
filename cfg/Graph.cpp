@@ -24,8 +24,11 @@
 Graph::Graph() : reserved(30)
 {
 	matrix = new Edge**[reserved];
-	for (size_t i = 0; i < reserved; i++)
+	for (size_t i = 0; i < reserved; i++) {
 		matrix[i] = new Edge*[reserved];
+		for (size_t j = 0; j < reserved; j++)
+			matrix[i][j] = NULL;
+	}
 }
 
 Graph::~Graph()
@@ -208,7 +211,7 @@ std::vector<CfgNode*> Graph::getSources(Node* n) {
 
 void Graph::depthSearch(Node* v)
 {
-	preOrder[v->getID()] = cnt--;
+	preOrder[v->getID()] = cnt++;
 
 	std::vector<CfgNode*> outNodes = getDestinations(v);
 	for (std::vector<CfgNode*>::const_iterator it = outNodes.begin();
@@ -221,12 +224,12 @@ void Graph::depthSearch(Node* v)
 	}
 
 	postOrder[v->getID()] = topoCnt;
-	postI[topoCnt--] = v->getID();
+	postI[topoCnt++] = v->getID();
 }
 
 std::vector<CfgNode*> Graph::topoSort()
 {
-	topoCnt = cnt = nodes.size() -1;
+	topoCnt = cnt = 0;
 
 	// initialise the values
 	for (size_t i = 0; i < nodes.size(); i++) {
@@ -241,9 +244,10 @@ std::vector<CfgNode*> Graph::topoSort()
 			depthSearch(nodes[i]);
 	}
 
-	std::vector<CfgNode*> result(nodes.size());
-	for (size_t i = 0; i < nodes.size(); i++) {
-		result[postI[i]] = nodes[i];
+	size_t nz = nodes.size();
+	std::vector<CfgNode*> result(nz);
+	for (size_t i = 0; i < nz; i++) {
+		result[nz -1 - postI[i]] = nodes[i];
 	}
 	return result;
 }
