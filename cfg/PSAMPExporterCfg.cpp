@@ -23,14 +23,14 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 		XMLElement* e = *it;
 
 		if (e->matches("ipfixPacketRestrictions")) {
-			maxPacketSize = (uint16_t)getInt("maxPacketSize", 0);
+			maxPacketSize = (uint16_t)getInt("maxPacketSize", 0, e);
 			try {
-				exportDelay = getTimeInUnit("maxExportDelay", mSEC, 0);
+				exportDelay = getTimeInUnit("maxExportDelay", mSEC, 0, e);
 			} catch (IllegalEntry ie) { /* ignore if not set */ } 
 		} else if (e->matches("udpTemplateManagement")) {
 			// use 0 as default values for both if the config entry isn't found 
-			templateRefreshTime = getInt("templateRefreshTimeout", 0);
-			templateRefreshRate = getInt("templateRefreshRate", 0);
+			templateRefreshTime = getInt("templateRefreshTimeout", 0, e);
+			templateRefreshRate = getInt("templateRefreshRate", 0, e);
 		} else if (e->matches("collector")) {
 			collectors.push_back(new CollectorCfg(e));
 		} else if (e->matches("packetReporting")) {
@@ -38,7 +38,8 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 		} else if (e->matches("capture_len")) {
 			// ignore it, already handled
 		} else {
-			THROWEXCEPTION("Illegal PSAMPExporter config entry found");
+			THROWEXCEPTION("Illegal PSAMPExporter config entry \"%s\"found",
+					e->getName().c_str());
 		}
 	}
 
