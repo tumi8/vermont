@@ -29,6 +29,8 @@ static void sig_USR1_handler(int x);
 static int setup_signal(int signal, void (*handler)(int));
 
 ConfigManager manager;
+static bool run_programm = true;
+static bool reload_config= false;
 
 // this is outside main to silent valgrind about the allocation "stats.log" which seems got never free'd
 string statFile = "stats.log";
@@ -93,13 +95,27 @@ int main(int ac, char **dc)
 	setup_signal(SIGUSR1, sig_USR1_handler);
 
 	manager.parseConfig(string(config_file));
-	unsigned int sleepTime = 1000;
-	while ((sleepTime = sleep(sleepTime)) != 0);
+
+	int sleepTime=1000;
+#if defined(DEBUG)
+	// valgrind prevents from breaking the sleep on signal
+	sleepTime=1;
+#endif
+
+	while (run_programm) {
+		sleep(sleepTime);
+		if (reload_config) {
+			msg(MSG_INFO, "Reconfiguriong vermont");
+			manager.parseConfig("configs/reconf2.xml");
+			reload_config = false;
+		}
+	}
+	manager.shutdown();
 
 	time_t t = time(NULL);
 	msg(MSG_DIALOG, "up and running at %s", ctime(&t));
 
-	return 0;
+	exit(0);
 }
 
 
@@ -128,33 +144,37 @@ static int setup_signal(int signal, void (*handler)(int))
 	return(sigaction(signal, &sig, NULL));
 }
 
+/* WARNING: don't use any of the msg/DPRINTF/etc functions in the SIGNAL handlers;
+ *          they use an internal mutex to lock the display output so you get a deadlock
+ */
 static void sig_USR1_handler(int x)
 {
 	int errno_save = errno;
 
 	printf("SIGUSR called\n");
-	manager.parseConfig("configs/reconf2.xml");
-
+	reload_config = true;
+	
 	errno = errno_save;
 }
 
 /* just shallow right now */
 static void sig_INT_handler(int x)
 {
+	int errno_save = errno;
+	
 	static bool shutdownInitiated = false;
 
 	if (shutdownInitiated) {
-		msg(MSG_DIALOG, "second signal received, shutting down the hard way!");
+		printf("second signal received, shutting down the hard way!");
 		exit(2);
 	}
 
 	shutdownInitiated = true;
-	msg(MSG_DIALOG, "got signal %d - exiting", x);
+	printf("got signal %d - exiting", x);
 
-	manager.shutdown();
-
-	// TODO: maybe there are more constructors to be called?
-	exit(2);
+	run_programm = false;
+	
+	errno = errno_save;
 }
 
 
