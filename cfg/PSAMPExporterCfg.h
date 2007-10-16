@@ -2,40 +2,10 @@
 #define PSAMPEXPORTERCFG_H_
 
 #include "Cfg.h"
+#include "CollectorCfg.h"
 #include "PSAMPExporterModule.h"
 
 #include <vector>
-
-/**
- * This class holds the <collector> ... </collector> information of the config
- */
-class CollectorCfg
-	: public CfgBase
-{
-	friend class PSAMPExporterCfg;
-
-	std::string getName() { return "collector"; }
-	
-protected:
-	CollectorCfg(XMLElement* elem)
-		: CfgBase(elem)
-	{
-		try {
-			ipAddress = get("ipAddress");
-			protocolType = get("transportProtocol");
-			if (protocolType == "17")
-				protocolType = "UDP";
-			port = (uint16_t)getInt("port", 4739);
-		} catch(IllegalEntry ie) {
-			THROWEXCEPTION("Illegal Collector entry in config file");
-		}
-	}
-
-	std::string ipAddress;
-	unsigned ipAddressType;
-	std::string protocolType;
-	uint16_t port;
-};
 
 // forward declarations
 class PacketReportingCfg;
