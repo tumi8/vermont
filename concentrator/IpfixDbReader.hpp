@@ -47,7 +47,7 @@ class IpfixDbReader : public Module, public Source<IpfixRecord*>
 	public:
 		IpfixDbReader(const char* hostname, const char* dbName,
 				const char* username, const char* password,
-				unsigned int port, uint16_t observationDomainId);
+				unsigned int port, uint16_t observationDomainId); // FIXME: observationDomainId
 		~IpfixDbReader();
 
 		virtual void performStart();

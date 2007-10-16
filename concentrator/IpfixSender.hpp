@@ -37,7 +37,7 @@ using namespace std;
 class IpfixSender : public Module, public IpfixRecordDestination, public StatisticsModule
 {
 public:
-	IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0);
+	IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0); // FIXME: observationDomainId
 	virtual ~IpfixSender();
 
 	void addCollector(const char *ip, uint16_t port);
