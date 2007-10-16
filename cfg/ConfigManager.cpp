@@ -3,6 +3,7 @@
 
 #include "cfg/CfgNode.h"
 #include "cfg/FlowMeteringCfg.h"
+#include "cfg/IpfixExporterCfg.h"
 #include "cfg/ObserverCfg.h"
 #include "cfg/PacketFilterCfg.h"
 #include "cfg/PacketPrinterCfg.h"
@@ -22,6 +23,7 @@ Cfg* ConfigManager::configModules[] = {
 	new PacketQueueCfg(NULL),
 	new PacketPrinterCfg(NULL),
 	new PSAMPExporterCfg(NULL),
+	new IpfixExporterCfg(NULL),
 	new FlowMeteringCfg(NULL),
 };
 
