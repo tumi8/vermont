@@ -96,14 +96,13 @@ int main(int ac, char **dc)
 
 	manager.parseConfig(string(config_file));
 
-	int sleepTime=1000;
-#if defined(DEBUG)
-	// valgrind prevents from breaking the sleep on signal
-	sleepTime=1;
-#endif
+	sigset_t sigmask;
+	sigemptyset(&sigmask);
 
 	while (run_programm) {
-		sleep(sleepTime);
+		// sleep until we get a signal
+		sigsuspend(&sigmask);
+
 		if (reload_config) {
 			msg(MSG_INFO, "Reconfiguriong vermont");
 			manager.parseConfig("configs/reconf2.xml");
@@ -114,8 +113,6 @@ int main(int ac, char **dc)
 
 	time_t t = time(NULL);
 	msg(MSG_DIALOG, "up and running at %s", ctime(&t));
-
-	exit(0);
 }
 
 
