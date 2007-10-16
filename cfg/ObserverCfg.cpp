@@ -34,7 +34,7 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 		} else if (e->matches("pcap_filter")) {
 			pcap_filter = e->getFirstText();
 		} else if (e->matches("timeBased")) {
-
+		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unkown observer config statement %s\n", e->getName().c_str());
 			continue;

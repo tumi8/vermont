@@ -33,6 +33,8 @@ PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
 			c = new PacketRegexFilterCfg(e);
 		} else if (e->matches("timeBased")) {
 			msg(MSG_FATAL, "Filter: Creating time based sampler");
+		} else if (e->matches("next")) { // ignore next
+			continue;
 		} else {
 			msg(MSG_FATAL, "Unkown packet filter %s\n", e->getName().c_str());
 			continue;

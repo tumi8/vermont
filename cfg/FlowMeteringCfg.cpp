@@ -79,6 +79,7 @@ Rule* FlowMeteringCfg::readRule(XMLElement* elem) {
 			Rule::Field* ruleField = readNonFlowKeyRule(e);
 			if (ruleField)
 				rule->field[rule->fieldCount++] = ruleField;
+		} else if (e->matches("next")) { // ignore next
 		} else {
 			THROWEXCEPTION("Unknown rule found in %s", this->getName().c_str());
 		}
