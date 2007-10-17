@@ -1,9 +1,9 @@
-#include "FlowMeteringCfg.h"
+#include "IpfixAggregatorCfg.h"
 #include "concentrator/Rule.hpp"
 #include "concentrator/Rules.hpp"
 
-FlowMeteringCfg::FlowMeteringCfg(XMLElement* elem)
-	: CfgHelper<IpfixAggregator, FlowMeteringCfg>(elem), maxBufferTime(0), minBufferTime(0), rules(NULL)
+IpfixAggregatorCfg::IpfixAggregatorCfg(XMLElement* elem)
+	: CfgHelper<IpfixAggregator, IpfixAggregatorCfg>(elem), maxBufferTime(0), minBufferTime(0), rules(NULL)
 {
 
 	if (!elem)
@@ -30,20 +30,20 @@ FlowMeteringCfg::FlowMeteringCfg(XMLElement* elem)
 	msg(MSG_INFO, "FlowMeteringConfiguration: Successfully parsed flowMetering section");
 }
 
-FlowMeteringCfg::~FlowMeteringCfg()
+IpfixAggregatorCfg::~IpfixAggregatorCfg()
 {
 	if (instance == NULL)
 		delete rules;
 }
 
-FlowMeteringCfg* FlowMeteringCfg::create(XMLElement* elem)
+IpfixAggregatorCfg* IpfixAggregatorCfg::create(XMLElement* elem)
 {
 	assert(elem);
 	assert(elem->getName() == getName());
-	return new FlowMeteringCfg(elem);
+	return new IpfixAggregatorCfg(elem);
 }
 
-IpfixAggregator* FlowMeteringCfg::createInstance()
+IpfixAggregator* IpfixAggregatorCfg::createInstance()
 {
 	instance = new IpfixAggregator(0); // FIXME: where to get the parameter pollinterval?
 	instance->buildAggregator(rules, minBufferTime, maxBufferTime);
@@ -51,14 +51,14 @@ IpfixAggregator* FlowMeteringCfg::createInstance()
 	return instance;
 }
 
-bool FlowMeteringCfg::deriveFrom(FlowMeteringCfg* old)
+bool IpfixAggregatorCfg::deriveFrom(IpfixAggregatorCfg* old)
 {
 	return false;  // FIXME: implement it, to gain performance increase in reconnect
 }
 
 
 
-Rule* FlowMeteringCfg::readRule(XMLElement* elem) {
+Rule* IpfixAggregatorCfg::readRule(XMLElement* elem) {
 	// nonflowkey -> aggregate
 	// flowkey -> keep
 
@@ -94,7 +94,7 @@ Rule* FlowMeteringCfg::readRule(XMLElement* elem) {
 	return rule;
 }
 
-Rule::Field* FlowMeteringCfg::readNonFlowKeyRule(XMLElement* e) {
+Rule::Field* IpfixAggregatorCfg::readNonFlowKeyRule(XMLElement* e) {
 	Rule::Field* ruleField = new Rule::Field();
 	try {
 		InfoElementCfg ie(e);
@@ -130,7 +130,7 @@ Rule::Field* FlowMeteringCfg::readNonFlowKeyRule(XMLElement* e) {
 	return ruleField;
 }
 
-Rule::Field* FlowMeteringCfg::readFlowKeyRule(XMLElement* e) {
+Rule::Field* IpfixAggregatorCfg::readFlowKeyRule(XMLElement* e) {
 	Rule::Field* ruleField = new Rule::Field();
 	try {   // TODO: not sure why we don't abort here; just use the same code as before restructuring
 		// I added a delete ruleField in the catch, perhaps thats why it was needed?

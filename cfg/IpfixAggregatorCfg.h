@@ -9,29 +9,29 @@
 class Rule;
 class Rules;
 
-class FlowMeteringCfg
-	: public CfgHelper<IpfixAggregator, FlowMeteringCfg>
+class IpfixAggregatorCfg
+	: public CfgHelper<IpfixAggregator, IpfixAggregatorCfg>
 {
 public:
 	friend class ConfigManager;
 	
-	virtual ~FlowMeteringCfg();
+	virtual ~IpfixAggregatorCfg();
 
-	virtual FlowMeteringCfg* create(XMLElement* elem);
+	virtual IpfixAggregatorCfg* create(XMLElement* elem);
 	
 	virtual std::string getName() { return "flowMetering"; }
 	
 	virtual IpfixAggregator* createInstance();
 	
-	bool deriveFrom(FlowMeteringCfg* old);
+	bool deriveFrom(IpfixAggregatorCfg* old);
 
 	Rule* readRule(XMLElement* elem);
 protected:
-	FlowMeteringCfg(XMLElement* elem);
+	IpfixAggregatorCfg(XMLElement* elem);
 	
 private:
-	Rule::Field* readFlowKeyRule(XMLElement* e);
-	Rule::Field* readNonFlowKeyRule(XMLElement* e);
+	static Rule::Field* readFlowKeyRule(XMLElement* e);
+	static Rule::Field* readNonFlowKeyRule(XMLElement* e);
 	
 	unsigned maxBufferTime;	
 	unsigned minBufferTime;

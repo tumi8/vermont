@@ -22,8 +22,8 @@ ADD_LIBRARY(cfg
 	CfgNode.cpp
 	ConfigManager.cpp
 	Connector.cpp
-	FlowMeteringCfg.cpp
 	Graph.cpp
+	IpfixAggregatorCfg.cpp
 	IpfixExporterCfg.cpp
 	Node.cpp
 	ObserverCfg.cpp
