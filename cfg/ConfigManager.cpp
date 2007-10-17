@@ -5,6 +5,7 @@
 #include "cfg/IpfixAggregatorCfg.h"
 #include "cfg/IpfixExporterCfg.h"
 #include "cfg/ObserverCfg.h"
+#include "cfg/PacketAggregatorCfg.h"
 #include "cfg/PacketFilterCfg.h"
 #include "cfg/PacketPrinterCfg.h"
 #include "cfg/PSAMPExporterCfg.h"
@@ -25,6 +26,7 @@ Cfg* ConfigManager::configModules[] = {
 	new PSAMPExporterCfg(NULL),
 	new IpfixExporterCfg(NULL),
 	new IpfixAggregatorCfg(NULL),
+	new PacketAggregatorCfg(NULL),
 };
 
 ConfigManager::~ConfigManager()

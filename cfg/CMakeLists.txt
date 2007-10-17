@@ -28,6 +28,7 @@ ADD_LIBRARY(cfg
 	IpfixExporterCfg.cpp
 	Node.cpp
 	ObserverCfg.cpp
+	PacketAggregatorCfg.cpp
 	PacketFilterCfg.cpp
 	PacketReportingCfg.cpp
 	PSAMPExporterCfg.cpp
