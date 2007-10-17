@@ -18,7 +18,6 @@
 #
 
 ADD_LIBRARY(reconf
-	Destination.cpp
 	FilterModule.cpp
 	PrinterModule.cpp
 	PSAMPExporterModule.cpp

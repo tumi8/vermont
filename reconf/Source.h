@@ -13,36 +13,14 @@
 #include "reconf/Destination.h"
 #include "reconf/Emitable.h"
 
-class BaseSource {
-public:
-	typedef Emitable* src_value_type;
-	
-	virtual ~BaseSource() { }
-
-	virtual void connectTo(BaseDestination* dest) = 0;
-
-	virtual void disconnect() = 0;
-	
-	virtual bool isConnected() const = 0;
-};
-
 template <typename T>
-class Source : public BaseSource
+class Source
 {
 public:
 	typedef T src_value_type;
 	
 	Source() : mutex(), connected(1), dest(NULL) { }
 	virtual ~Source() { }
-
-	virtual void connectTo(BaseDestination* destination)
-	{
-		Destination<T>* d = dynamic_cast< Destination<T>* >(destination);
-		if (!d) {
-			THROWEXCEPTION("ERROR: Can't connect to this .... thing?");
-		}
-		this->connectTo(d);
-	}
 
 	virtual void connectTo(Destination<T>* destination)
 	{

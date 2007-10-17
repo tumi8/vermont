@@ -11,28 +11,14 @@
 #include <cstdio>
 #include <stdexcept>
 
-class BaseDestination {
-public:
-	typedef Emitable* dst_value_type;
-	
-	virtual ~BaseDestination();
-	
-	virtual void receive(Emitable*) = 0;
-};
-
 template<class T>
-class Destination : public virtual BaseDestination
+class Destination
 {
 public:
 	typedef T dst_value_type;
 	
-	virtual void receive(Emitable* e)
-	{
-		T p = dynamic_cast<T>(e);
-		if (p == NULL)
-			THROWEXCEPTION("module does not support receiving this type of modules");
-	}
-
+	virtual ~Destination() { };
+	
 	virtual void receive(T e) = 0;
 
 private:
@@ -42,11 +28,13 @@ private:
 };
 
 template<>
-class Destination<NullEmitable*> : public BaseDestination
+class Destination<NullEmitable*> 
 {
 public:
 	typedef NullEmitable* dst_value_type;
 
+	virtual ~Destination() { };
+	
 	virtual void receive(Emitable* e)
 	{
 		THROWEXCEPTION("this module is no destination!");

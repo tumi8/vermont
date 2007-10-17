@@ -24,15 +24,6 @@ public:
 
 	virtual ~ConnectionSplicer() { }
 
-	virtual void connectTo(BaseDestination* destination)
-	{
-		Destination<T>* d = dynamic_cast< Destination<T>* >(destination);
-		if (!d) {
-			THROWEXCEPTION("ERROR: Can't connect to this .... thing?");
-		}
-		this->connectTo(d);
-	}
-	
 	virtual void connectTo(Destination<T>* d)
 	{
 		Source<T>::mutex.lock();
