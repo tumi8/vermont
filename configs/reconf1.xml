@@ -3,11 +3,12 @@
 	<interface>lo</interface>
 	<pcap_filter>ip</pcap_filter>
 	<next>2</next>
+	<next>4</next>
     </observer>
 
     <packetQueue id="2">
         <maxSize>10</maxSize>
-        <next>3</next>
+        <next>6</next>
     </packetQueue>
 
     <filter id="3">
@@ -71,4 +72,89 @@
 	</collector>
     </psampExporter>
 
+    <packetAggregator id="6">
+    <rule>
+	<templateId>998</templateId>
+	<flowKey>
+	    <ieName>sourceIPv4Address</ieName>
+	    <modifier>mask/16</modifier>
+	</flowKey>
+	<flowKey>
+	    <ieName>destinationIPv4Address</ieName>
+	</flowKey>
+	<flowKey>
+	    <ieName>protocolIdentifier</ieName>
+	</flowKey>
+	<flowKey>
+	    <ieName>sourceTransportPort</ieName>
+	</flowKey>
+	<flowKey>
+	    <ieName>destinationTransportPort</ieName>
+	</flowKey>
+	<nonFlowKey>
+	    <ieName>flowStartSeconds</ieName>
+	</nonFlowKey>
+	<nonFlowKey>
+	    <ieName>flowEndSeconds</ieName>
+	</nonFlowKey>
+	<nonFlowKey>
+	    <ieName>octetDeltaCount</ieName>
+	</nonFlowKey>
+	<nonFlowKey>
+	    <ieName>packetDeltaCount</ieName>
+	</nonFlowKey>
+    </rule>
+    <rule>
+	<templateId>999</templateId>
+	<flowKey>
+	    <ieName>sourceIPv4Address</ieName>
+	    <modifier>mask/16</modifier>
+	</flowKey>
+	<flowKey>
+	    <ieName>destinationIPv4Address</ieName>
+	</flowKey>
+	<flowKey>
+	    <ieName>protocolIdentifier</ieName>
+	    <match>TCP</match>
+	</flowKey>
+	<nonFlowKey>
+	    <ieName>flowStartSeconds</ieName>
+	</nonFlowKey>
+	<nonFlowKey>
+	    <ieName>flowEndSeconds</ieName>
+	</nonFlowKey>
+	<nonFlowKey>
+	    <ieName>octetDeltaCount</ieName>
+	</nonFlowKey>
+	<nonFlowKey>
+	    <ieName>packetDeltaCount</ieName>
+	</nonFlowKey>
+    </rule>
+    <expiration>
+	<inactiveTimeout unit="sec">5</inactiveTimeout>
+	<activeTimeout unit="sec">10</activeTimeout>
+    </expiration>
+    <next>7</next>
+    </packetAggregator>
+
+    <ipfixExporter id="7">
+	<ipfixPacketRestrictions>
+	    <maxPacketSize>1500</maxPacketSize>
+	    <maxExportDelay unit="msec">500</maxExportDelay>
+	</ipfixPacketRestrictions>
+	<udpTemplateManagement>
+	    <templateRefreshTimeout>10</templateRefreshTimeout>
+	    <templateRefreshRate>100</templateRefreshRate>
+	</udpTemplateManagement>
+	<collector>
+	    <ipAddressType>4</ipAddressType>
+	    <ipAddress>127.0.0.1</ipAddress>
+	    <transportProtocol>17</transportProtocol>
+	    <port>1500</port>
+	</collector>
+    </ipfixExporter>
+
 </ipfixConfig>
+
+
+
