@@ -83,9 +83,11 @@ out:
 /**
  * Removes a collector from the list of Collectors to send Records to
  */
-IpfixSender::~IpfixSender() {
+IpfixSender::~IpfixSender()
+{
+	shutdown(false);
+	
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
-
 	ipfix_deinit_exporter(exporter);
 }
 
