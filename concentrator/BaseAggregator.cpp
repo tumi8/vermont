@@ -23,6 +23,8 @@ BaseAggregator::BaseAggregator(uint32_t pollinterval)
  */
 BaseAggregator::~BaseAggregator()
 {
+	shutdown(false);
+	
 	// for a strange case a 'delete hashtable' in Rule doesn't work, because
 	// it seems we have a cyclic dependency and the compiler complains, so delete it here
 	for (size_t i = 0; i < rules->count; i++) {
@@ -49,6 +51,7 @@ void BaseAggregator::performStart()
  */
 void BaseAggregator::performShutdown()
 {
+	connected.shutdown();
 	thread.join();
 }
 
