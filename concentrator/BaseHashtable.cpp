@@ -19,6 +19,7 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  statEmptyBuckets(0),
 	  statExportedBuckets(0),
 	  statLastExpBuckets(0),
+	  fieldModifier(0),
 	  recordSource(recordsource),
 	  dataDataRecordIM(0)
 	  

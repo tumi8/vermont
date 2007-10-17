@@ -43,8 +43,6 @@ PacketAggregator::~PacketAggregator()
  */
 void PacketAggregator::receive(Packet* e)
 {
-	int i;
-
 #if defined(DEBUG)
 	if(!rules) {
 		THROWEXCEPTION("Aggregator not started");
@@ -52,7 +50,7 @@ void PacketAggregator::receive(Packet* e)
 #endif
 
 	mutex.lock();
-	for (i = 0; i < rules->count; i++) {
+	for (size_t i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->ExptemplateDataMatches(e)) {
 			DPRINTF("rule %d matches\n", i);
 			static_cast<PacketHashtable*>(rules->rule[i]->hashtable)->aggregatePacket(e);

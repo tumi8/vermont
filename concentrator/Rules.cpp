@@ -230,8 +230,7 @@ int parseTcpFlags(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Ty
  * This will NOT destroy hashtables associated with individual rules
  */
 Rules::~Rules() {
-	int i;
-	for (i = 0; i < count; i++) {
+	for (size_t i = 0; i < count; i++) {
 		delete rule[i];
 	}
 }

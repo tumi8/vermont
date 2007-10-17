@@ -40,7 +40,7 @@
 /* --- functions ------------*/
 
 Rule::Rule() 
-	: id(0), preceding(0), fieldCount(0), patternFields(0), patternFieldsLen(0)
+	: id(0), preceding(0), fieldCount(0), hashtable(0), patternFields(0), patternFieldsLen(0)
 {
 }
 
@@ -53,7 +53,8 @@ Rule::~Rule() {
 	for (i = 0; i < fieldCount; i++) {
 		delete field[i];
 	}
-	if (patternFields) delete[] patternFields;
+	if (patternFields) 
+		delete [] patternFields;
 }
 
 /**

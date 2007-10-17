@@ -39,7 +39,7 @@ class Rules {
 		Rules(char* fname);
 		~Rules();
 
-		int count;
+		size_t count;
 		Rule* rule[MAX_RULES];
 };
 

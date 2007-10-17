@@ -56,7 +56,6 @@ IpfixAggregator::~IpfixAggregator()
  */
 void IpfixAggregator::onDataRecord(IpfixDataRecord* record)
 {
-	int i;
 	DPRINTF("Got a Data Record\n");
 
 #if defined(DEBUG)
@@ -68,7 +67,7 @@ void IpfixAggregator::onDataRecord(IpfixDataRecord* record)
 	IpfixRecord::TemplateInfo* ti = record->templateInfo.get();
 
 	
-	for (i = 0; i < rules->count; i++) {
+	for (size_t i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->templateDataMatches(ti, record->data)) {
 			DPRINTF("rule %d matches", i);
 
@@ -96,7 +95,7 @@ void IpfixAggregator::onDataDataRecord(IpfixDataDataRecord* record)
 #endif
 
 	mutex.lock();
-	for (int i = 0; i < rules->count; i++) {
+	for (size_t i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->dataTemplateDataMatches(record->dataTemplateInfo.get(), record->data)) {
 			DPRINTF("rule %d matches\n", i);
 			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateDataTemplateData(

@@ -23,6 +23,12 @@ BaseAggregator::BaseAggregator(uint32_t pollinterval)
  */
 BaseAggregator::~BaseAggregator()
 {
+	// for a strange case a 'delete hashtable' in Rule doesn't work, because
+	// it seems we have a cyclic dependency and the compiler complains, so delete it here
+	for (size_t i = 0; i < rules->count; i++) {
+		delete rules->rule[i]->hashtable;
+	}
+	delete rules;
 }
 
 
@@ -72,11 +78,9 @@ void BaseAggregator::buildAggregator(char* rulefile, uint16_t minBufferTime, uin
  */
 void BaseAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime)
 {
-	int i;
-
 	this->rules = rules;
 
-	for (i = 0; i < rules->count; i++) {
+	for (size_t i = 0; i < rules->count; i++) {
 		rules->rule[i]->initialize();
 		rules->rule[i]->hashtable = createHashtable(rules->rule[i], minBufferTime, maxBufferTime);
 	}
@@ -101,7 +105,7 @@ void BaseAggregator::exporterThread()
 		while (nanosleep(&req, &req) == -1 && errno == EINTR);
 		
 		mutex.lock();
-		for (int i = 0; i < rules->count; i++) {
+		for (size_t i = 0; i < rules->count; i++) {
 			rules->rule[i]->hashtable->expireFlows();
 		}
 		mutex.unlock();
