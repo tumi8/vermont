@@ -82,9 +82,6 @@ public:
 	virtual Cfg* create(XMLElement* e) = 0;//{ return NULL; };
 	virtual ~Cfg() { }
 
-	/** returns the name (as written in the XML file) */
-	virtual std::string getName() = 0;
-
 	/** ID given in the XML file */
 	unsigned int getID();
 
