@@ -87,7 +87,9 @@ void ConfigManager::parseConfig(std::string fileName)
 	std::vector<CfgNode*> topoNodes = graph->topoSort();
 
 	for (size_t i = 0; i < topoNodes.size(); i++) {
-		topoNodes[topoNodes.size() -1 -i]->getCfg()->start(false);
+		Cfg* cfg = topoNodes[topoNodes.size() -1 -i]->getCfg();
+		msg(MSG_INFO, "Starting module %s", cfg->getName().c_str());
+		cfg->start(false);
 	}
 
 	if (old_document)

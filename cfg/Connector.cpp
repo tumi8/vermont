@@ -43,7 +43,10 @@ Graph* Connector::connect(Graph*g)
 			if (connectNodes) // insert the connection in the graph
 				g->addEdge(fromNode, toNode);
 
-			msg(MSG_FATAL, "Connectiong %d -> %d", cfg->getID(), id2node[nexts[j]]->getCfg()->getID());
+			msg(MSG_INFO,  "Connectiong %s[Id = %d] -> %s[Id = %d]", 
+					cfg->getName().c_str(), cfg->getID(),
+					id2node[nexts[j]]->getCfg()->getName().c_str(),
+					id2node[nexts[j]]->getCfg()->getID());
 
 			if (connectModules) {// connect the modules
 				msg(MSG_FATAL, "\n\nConnect Instances\n");
