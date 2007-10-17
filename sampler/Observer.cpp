@@ -87,7 +87,7 @@ void *Observer::observerThread(void *arg)
 	Observer *obs=(Observer *)arg;
 	InstanceManager<Packet>& packetManager = obs->packetManager;
 	
-	Packet *p;
+	Packet *p = NULL;
 	const unsigned char *pcapData;
 	struct pcap_pkthdr packetHeader;
 	bool have_send = false;
@@ -165,7 +165,7 @@ void *Observer::observerThread(void *arg)
 
 	// if we aren't connected to a destination, we grab the packetand and can't
 	// send it to a destination. This would leak the packet, so clean it up... 
-	if (!have_send)
+	if (!have_send && p != NULL)
 		p->removeReference();
 	
 	msg(MSG_DEBUG, "exiting observer thread");
