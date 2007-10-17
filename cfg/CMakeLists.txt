@@ -18,6 +18,7 @@
 #
 
 ADD_LIBRARY(cfg
+	AggregatorBaseCfg.cpp
 	Cfg.cpp
 	CfgNode.cpp
 	ConfigManager.cpp
