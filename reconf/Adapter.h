@@ -46,6 +46,7 @@ public:
 	
 	virtual ~Adapter()
 	{
+		shutdown(false);
 	}
 	
 	// inherited from Destination<T>
