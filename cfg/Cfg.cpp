@@ -65,11 +65,11 @@ unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit,
 			continue;
 
 		if (a->getValue() == "sec")
-			return time * (uSEC/unit);
+			return time*unit/SEC;
 		else if (a->getValue() == "msec")
-			return time * (mSEC/unit);
+			return time*unit/mSEC;
 		else if (a->getValue() == "usec")
-			return time * (uSEC/unit);
+			return time*unit/uSEC;
 		else
 			THROWEXCEPTION("Unkown time unit '%s'", a->getValue().c_str());
 	}
