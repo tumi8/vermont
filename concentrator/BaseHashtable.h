@@ -79,7 +79,10 @@ protected:
 	Rule::Field::Modifier* fieldModifier; /**< specifies what modifier to apply to a given field */
 	Source<IpfixRecord*>* recordSource; /**< pointer to vermont module which is able to send IpfixRecords */
 	
+	bool templateSent;		/**< is set to true, when the template for exported flows was sent */
+	
 	InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
+	InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
 			
 	
 	int isToBeAggregated(IpfixRecord::FieldInfo::Type type);

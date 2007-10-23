@@ -21,8 +21,9 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  statLastExpBuckets(0),
 	  fieldModifier(0),
 	  recordSource(recordsource),
-	  dataDataRecordIM(0)
-	  
+	  templateSent(false),
+	  dataDataRecordIM(0),
+	  dataTemplateRecordIM(0)	  
 {
 	int dataLength = 0; /**< length in bytes of the @c data field */
 
@@ -156,6 +157,17 @@ void BaseHashtable::expireFlows() {
 	uint32_t emptyBuckets = 0;
 	uint32_t exportedBuckets = 0;
 	uint32_t multiEntries = 0;
+	
+	// FIXME: this is a very crude fix for the problem, that the datatemplate must be sent
+	// to an ipfixsender at least once. DOES NOT SUPPORT RECONFIGURATION!
+	if (!templateSent) {
+		IpfixDataTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
+        ipfixRecord->sourceID.reset();
+        ipfixRecord->dataTemplateInfo = dataTemplate;
+        recordSource->send(ipfixRecord);
+        templateSent = true;
+	}
+	
 	/* check each hash bucket's spill chain */
 	for (uint32_t i = 0; i < HTABLE_SIZE; i++) {
 		if (buckets[i] != 0) {
