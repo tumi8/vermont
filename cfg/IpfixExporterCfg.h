@@ -14,8 +14,6 @@ public:
 
 	virtual IpfixExporterCfg* create(XMLElement* elem);
 
-	virtual std::string getName() { return "ipfixExporter"; }
-
 	virtual IpfixSender* createInstance();
 
 	bool deriveFrom(IpfixExporterCfg* old);

@@ -1,7 +1,8 @@
 #include "PacketAggregatorCfg.h"
 
 PacketAggregatorCfg::PacketAggregatorCfg(XMLElement* elem)
-	: CfgHelper<PacketAggregator, PacketAggregatorCfg>(elem), AggregatorBaseCfg(elem)
+	: CfgHelper<PacketAggregator, PacketAggregatorCfg>(elem, "packetAggregator"),
+	AggregatorBaseCfg(elem)
 {
 }
 

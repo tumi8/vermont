@@ -7,7 +7,7 @@
 #include <cassert>
 
 PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem) 
-	: CfgHelper<PSAMPExporterModule, PSAMPExporterCfg>(elem),
+	: CfgHelper<PSAMPExporterModule, PSAMPExporterCfg>(elem, "psampExporter"),
 	templateRefreshTime(0), templateRefreshRate(0),
 	maxPacketSize(0), exportDelay(0), reporting(NULL) 
 { 

@@ -51,8 +51,11 @@ public:
 	
 protected:
 	QueueCfg(XMLElement* e)
-		: CfgHelper<ConnectionQueue<T>, QueueCfg<T> >(e), maxSize(0)
+		: CfgHelper<ConnectionQueue<T>, QueueCfg<T> >(e, "QueueCfg<unspecified>"), maxSize(0)
 	{
+		// set the correct name in CfgHelper
+		this->name = getName();
+		
 		if (!e)
 			return;
 		

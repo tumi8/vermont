@@ -20,20 +20,8 @@ public:
 	virtual PacketFilterCfg* create(XMLElement* e);
 	virtual ~PacketFilterCfg();
 
-	virtual std::string getName() { return "filter"; }
-	
 	virtual FilterModule* createInstance();
 	
-	virtual bool deriveFrom(CfgBase* old)
-	{
-		PacketFilterCfg* cfg = dynamic_cast<PacketFilterCfg*>(old);
-		if (cfg)
-			return deriveFrom(cfg);
-
-		THROWEXCEPTION("Derive is only allowed from within the same type");
-		return false;
-	}
-
 	virtual bool deriveFrom(PacketFilterCfg* old);
 
 protected:
@@ -60,7 +48,7 @@ public:
 
 	virtual Module* getInstance();
 	
-	virtual bool deriveFrom(CfgBase* old)
+	virtual bool deriveFrom(Cfg* old)
 	{
 		PacketCountFilterCfg* cfg = dynamic_cast<PacketCountFilterCfg*>(old);
 		if (cfg)
@@ -115,7 +103,7 @@ public:
 
 	virtual Module* getInstance();
 
-	virtual bool deriveFrom(CfgBase* old)
+	virtual bool deriveFrom(Cfg* old)
 	{
 		PacketStringFilterCfg* cfg = dynamic_cast<PacketStringFilterCfg*>(old);
 		if (cfg)
@@ -163,7 +151,7 @@ public:
 
 	virtual Module* getInstance();
 
-	virtual bool deriveFrom(CfgBase* old)
+	virtual bool deriveFrom(Cfg* old)
 	{
 		PacketRegexFilterCfg* cfg = dynamic_cast<PacketRegexFilterCfg*>(old);
 		if (cfg)

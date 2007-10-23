@@ -18,7 +18,10 @@ ObserverCfg* ObserverCfg::create(XMLElement* e)
 }
 
 ObserverCfg::ObserverCfg(XMLElement* elem)
-	: CfgHelper<Observer, ObserverCfg>(elem), interface(), pcap_filter(), capture_len(0)
+	: CfgHelper<Observer, ObserverCfg>(elem, "observer"),
+	interface(),
+	pcap_filter(),
+	capture_len(0)
 {
 	if (!elem)
 		return;

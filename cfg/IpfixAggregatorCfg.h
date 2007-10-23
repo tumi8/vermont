@@ -15,8 +15,6 @@ public:
 
 	virtual IpfixAggregatorCfg* create(XMLElement* elem);
 	
-	virtual std::string getName() { return "flowMetering"; }
-	
 	virtual IpfixAggregator* createInstance();
 	
 	bool deriveFrom(IpfixAggregatorCfg* old);

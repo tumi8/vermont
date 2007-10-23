@@ -16,8 +16,6 @@ public:
 	PacketReportingCfg(XMLElement* elem);
 	~PacketReportingCfg();
 
-	std::string getName() { return "packetReporting"; }
-
 	Template* getTemplate();
 
 	uint16_t getRecordLength();

@@ -25,6 +25,9 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 			// get the time values or set them to '0' if they are not specified
 			maxBufferTime = getTimeInUnit("activeTimeout",   SEC, 0, e);
 			minBufferTime = getTimeInUnit("inactiveTimeout", SEC, 0, e);
+		} else if (e->matches("next")) { // ignore next
+		} else {
+			msg(MSG_FATAL, "Unkown Aggregator config entry %s\n", e->getName().c_str());
 		}
 	}
 }
@@ -54,9 +57,8 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 			Rule::Field* ruleField = readNonFlowKeyRule(e);
 			if (ruleField)
 				rule->field[rule->fieldCount++] = ruleField;
-		} else if (e->matches("next")) { // ignore next
 		} else {
-			THROWEXCEPTION("Unknown rule found in %s", this->getName().c_str());
+			THROWEXCEPTION("Unknown rule %s in Aggregator found", e->getName().c_str());
 		}
 	}
 

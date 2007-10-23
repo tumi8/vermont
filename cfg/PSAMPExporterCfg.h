@@ -19,8 +19,6 @@ public:
 
 	virtual PSAMPExporterCfg* create(XMLElement* elem);
 	
-	virtual std::string getName() { return "psampExporter"; }
-	
 	virtual PSAMPExporterModule* createInstance();
 	
 	bool deriveFrom(PSAMPExporterCfg* old);

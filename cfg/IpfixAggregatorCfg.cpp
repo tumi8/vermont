@@ -3,7 +3,8 @@
 #include "concentrator/Rules.hpp"
 
 IpfixAggregatorCfg::IpfixAggregatorCfg(XMLElement* elem)
-	: CfgHelper<IpfixAggregator, IpfixAggregatorCfg>(elem), AggregatorBaseCfg(elem)
+	: CfgHelper<IpfixAggregator, IpfixAggregatorCfg>(elem, "ipfixAggregator"),
+	AggregatorBaseCfg(elem)
 {
 }
 

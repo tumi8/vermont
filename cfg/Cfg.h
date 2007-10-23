@@ -39,9 +39,6 @@ public:
 	CfgBase(XMLElement* e): _elem(e) { }
 	virtual ~CfgBase() { }
 	
-	/** returns the name (as written in the XML file) */
-	virtual std::string getName() = 0;
-
 	/** return a string value of an elemen 
 	 * @param name the name of the element
 	 *  @param elem the XMLElement we want to start the search, default is the root of the node
@@ -82,6 +79,9 @@ public:
 	virtual Cfg* create(XMLElement* e) = 0;//{ return NULL; };
 	virtual ~Cfg() { }
 
+	/** returns the name (as written in the XML file) */
+	virtual std::string getName() = 0;
+
 	/** ID given in the XML file */
 	unsigned int getID();
 
@@ -91,7 +91,7 @@ public:
 	/** returns true if we could reuse the other instance 
 	 *  @param other Cfg describing the old/other elemen
 	 */
-	virtual bool deriveFrom(CfgBase* other) = 0;
+	virtual bool deriveFrom(Cfg* other) = 0;
 
 	/** connectes this module with the module from \other
 	 *  @param other the other Cfg
@@ -143,17 +143,28 @@ class CfgHelper
 {
 public:
 	
-	CfgHelper(XMLElement* elem) 
-		: Cfg(elem), instance(NULL), splitter(NULL), queue(NULL), notifiable(NULL) 
+	CfgHelper(XMLElement* elem, std::string name) 
+		: Cfg(elem),
+		instance(NULL),
+		splitter(NULL),
+		queue(NULL),
+		notifiable(NULL),
+		name(name)
 	{ 
 	}
 	
 	virtual ~CfgHelper()
 	{ 
+		printf("~CfgHelper [%s]\n", this->getName().c_str());
 		shutdown(false);
 		freeTimeoutAdapter();
 		freeInstance();
 		freeSplitter();
+	}
+	
+	virtual std::string getName()
+	{
+		return name;
 	}
 	
 	/** starts the module */
@@ -207,7 +218,7 @@ public:
 	/** returns true if we could reuse the other instance 
 	 *  @param other Cfg describing the old/other element
 	 */
-	virtual bool deriveFrom(CfgBase* old)
+	virtual bool deriveFrom(Cfg* old)
 	{
 		ConfigType* cfg = dynamic_cast<ConfigType*>(old);
 		if (cfg)
@@ -329,6 +340,8 @@ protected:
 	ConnectionQueue<typename InstanceType::dst_value_type>* queue;
 	
 	Notifiable* notifiable;
+	
+	std::string name;
 private:
 	// this methods are helper functions to clean our mess up and reset the values to sane default
 	inline void freeTimeoutAdapter()

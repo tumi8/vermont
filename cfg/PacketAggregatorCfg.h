@@ -13,8 +13,6 @@ public:
 
 	virtual PacketAggregatorCfg* create(XMLElement* elem);
 	
-	virtual std::string getName() { return "packetAggregator"; }
-	
 	virtual PacketAggregator* createInstance();
 	
 	bool deriveFrom(PacketAggregatorCfg* old);

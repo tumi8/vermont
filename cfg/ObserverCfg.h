@@ -24,8 +24,6 @@ public:
 	
 	virtual ~ObserverCfg();
 
-	virtual std::string getName() { return "observer"; }
-
 	virtual Observer* createInstance();
 
 	virtual bool deriveFrom(ObserverCfg* old);

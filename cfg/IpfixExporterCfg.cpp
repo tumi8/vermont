@@ -1,7 +1,7 @@
 #include "IpfixExporterCfg.h"
 
 IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
-	: CfgHelper<IpfixSender, IpfixExporterCfg>(elem),
+	: CfgHelper<IpfixSender, IpfixExporterCfg>(elem, "ipfixExporter"),
 	templateRefreshTime(0), templateRefreshRate(0),
 	maxPacketSize(0), exportDelay(0)
 {

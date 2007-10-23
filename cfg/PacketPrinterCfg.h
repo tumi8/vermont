@@ -21,8 +21,6 @@ public:
 	}
 	
 	virtual ~PacketPrinterCfg() {};
-
-	virtual std::string getName() { return "packetPrinter"; }
 	
 	virtual PrinterModule* createInstance()
 	{
@@ -47,7 +45,9 @@ public:
 	}
 
 protected:
-	PacketPrinterCfg(XMLElement* e)	: CfgHelper<PrinterModule, PacketPrinterCfg>(e), isEndPoint(false)
+	PacketPrinterCfg(XMLElement* e)	
+		: CfgHelper<PrinterModule, PacketPrinterCfg>(e, "packetPrinter"),
+		isEndPoint(false)
 	{
 		if (!e)
 			return;
