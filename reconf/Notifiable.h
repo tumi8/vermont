@@ -38,7 +38,7 @@ public:
 	 * Timer::addTimeout
 	 * @param flag flag which was passed to Timer::addTimeout
 	 */
-	virtual void onTimeout(uint32_t flag) = 0;
+	virtual void onTimeout(void* dataPtr) = 0;
 	
 	inline void useTimer(Timer* t) { timer = t; }
 	

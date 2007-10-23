@@ -41,7 +41,7 @@ public:
 	 * @param flag user-defined flag which is passed to Notifiable::onTimeout, so that
 	 *             Notifiable may distinguish between different timeouts
 	 */
-	virtual void addTimeout(Notifiable* n, struct timespec& ts, uint32_t flag = 0) = 0;
+	virtual void addTimeout(Notifiable* n, struct timespec& ts, void* dataPtr = 0) = 0;
 };
 
 #endif /*TIMER_H_*/

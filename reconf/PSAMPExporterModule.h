@@ -41,7 +41,7 @@ public:
 
         virtual void receive(Packet* packet);
 
-        virtual void onTimeout(uint32_t flag);
+        virtual void onTimeout(void* dataPtr);
         
         virtual void performStart();
 

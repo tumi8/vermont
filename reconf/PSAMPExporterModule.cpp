@@ -205,7 +205,7 @@ void PSAMPExporterModule::receive(Packet* p)
 		addToCurTime(&deadline, exportTimeout);
 
 		if (timer)
-			timer->addTimeout(this, deadline, ++timerFlag);
+			timer->addTimeout(this, deadline, (void*)++timerFlag);
 	} else {
 		// count only if packet was added
 		if (!addPacket(p))
@@ -217,11 +217,11 @@ void PSAMPExporterModule::receive(Packet* p)
 		flushPacketStream();
 }
 
-void PSAMPExporterModule::onTimeout(uint32_t flag)
+void PSAMPExporterModule::onTimeout(void* flag)
 {
 	// only if the timer event wasn't processed yet we need to
 	// flush the packet stream.
-	if (flag == timerFlag)
+	if ((uint32_t)flag == timerFlag)
 		flushPacketStream();
 }
 

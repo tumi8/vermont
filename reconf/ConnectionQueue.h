@@ -29,7 +29,7 @@ struct TimeoutEntry
 {
 	Notifiable* n;
 	struct timespec timeout;
-	uint32_t flag;
+	void* dataPtr;
 };
 
 
@@ -86,7 +86,7 @@ public:
 	 * thread, as the thread in processLoop always calculates the time of next interruption
 	 * before it suspends and this function is not able to interrupt it
 	 */
-	virtual void addTimeout(Notifiable* n, struct timespec& ts, uint32_t flag = 0)
+	virtual void addTimeout(Notifiable* n, struct timespec& ts, void* dataPtr = 0)
 	{
 		// check if we are running, because otherwise permant calls to this function could
 		// allocate our complete memory and its never freed
@@ -97,7 +97,7 @@ public:
 		TimeoutEntry* e = new TimeoutEntry();
 		e->n = n;
 		e->timeout = ts;
-		e->flag = flag;
+		e->dataPtr = (void*)dataPtr;
 		timeouts.push_back(e);
 		mutex.unlock();
 	}
@@ -125,7 +125,7 @@ private:
 			if (compareTime((*iter)->timeout, now) <= 0) {
 				// this entry has already timed out, call it now!
 				TimeoutEntry* te = *iter;
-				te->n->onTimeout(te->flag);
+				te->n->onTimeout(te->dataPtr);
 				iter = timeouts.erase(iter);
 				delete te;
 				
