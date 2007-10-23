@@ -23,6 +23,7 @@ ADD_LIBRARY(cfg
 	CfgNode.cpp
 	ConfigManager.cpp
 	Connector.cpp
+	DelayedDeleter.cpp
 	Graph.cpp
 	IpfixAggregatorCfg.cpp
 	IpfixExporterCfg.cpp
