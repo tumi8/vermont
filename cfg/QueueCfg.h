@@ -18,7 +18,7 @@ class QueueCfg
 public:
 	friend class ConfigManager;
 	
-	virtual std::string getName() 
+	virtual std::string getName()
 	{ 
 		// see below why this hack is needed
 		T t;
@@ -65,19 +65,27 @@ private:
 
 
 class Packet;
+class IpfixRecord;
+
 typedef QueueCfg<Packet*> PacketQueueCfg;
+typedef QueueCfg<IpfixRecord*> IpfixQueueCfg;
 
 // this hack with template specialization is needed because 
 // gcc (GCC) 4.1.3 20070812 (prerelease) (Debian 4.1.2-15)
 // has in ICE if I used a static variable for the name
-template<typename X> std::string get_name(const X x)
+template<typename X> inline std::string get_name(const X x)
 {
 	return "";
 }
 
-template<> std::string get_name<Packet*>(Packet* x)
+template<> inline std::string get_name<Packet*>(Packet* x)
 {
 	return "packetQueue";
+}
+
+template<> inline std::string get_name<IpfixRecord*>(IpfixRecord* x)
+{
+	return "ipfixQueue";
 }
 
 #endif /*QUEUECFG_H_*/

@@ -24,6 +24,7 @@ Cfg* ConfigManager::configModules[] = {
 	new PacketQueueCfg(NULL),
 	new PacketPrinterCfg(NULL),
 	new PSAMPExporterCfg(NULL),
+	new IpfixQueueCfg(NULL),
 	new IpfixExporterCfg(NULL),
 	new IpfixAggregatorCfg(NULL),
 	new PacketAggregatorCfg(NULL),
