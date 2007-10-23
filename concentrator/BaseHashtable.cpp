@@ -29,6 +29,8 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	for (uint32_t i = 0; i < HTABLE_SIZE; i++)
 		buckets[i] = NULL;
 
+	msg(MSG_INFO, "Initializing hashtable with minBufferTime %d and maxBufferTime %d", minBufferTime, maxBufferTime);
+	
 	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
 	dataTemplate->templateId=rule->id;
 	dataTemplate->preceding=rule->preceding;
@@ -95,16 +97,6 @@ BaseHashtable::~BaseHashtable()
 			bucket = nextBucket;
 		}
 	}
-
-	/* Inform Exporter of Data Template destruction */
-	// exporter has already shut down
-	/*
-	boost::shared_ptr<IpfixDataTemplateDestructionRecord> ipfixRecord(new IpfixDataTemplateDestructionRecord);
-	ipfixRecord->sourceID.reset();
-	ipfixRecord->dataTemplateInfo = dataTemplate;
-	flowSink->push(ipfixRecord);
-	push(ipfixRecord);
-	 */
 
 	free(fieldModifier);
 
