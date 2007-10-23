@@ -6,6 +6,7 @@
 */
 
 #include "cfg/Cfg.h"
+#include "cfg/DelayedDeleter.h"
 #include "cfg/Graph.h"
 #include "cfg/XMLDocument.h"
 
@@ -28,6 +29,8 @@ private:
 	XMLDocument* old_document;
 
 	static Cfg* configModules[];
+	
+	DelayedDeleter deleter;
 };
 
 #endif /*CONFIGMANAGER_H_*/

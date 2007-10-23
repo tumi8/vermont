@@ -96,8 +96,14 @@ void ConfigManager::parseConfig(std::string fileName)
 	if (old_document)
 		delete old_document;
 
+	// if there is an old graph, we did a reconfiguration. So now we have to delete the
+	// old graph, but we can't delete the instances immediatly, because there is a small
+	// chance that instances which got reused could still hold a reference to a instance we
+	// want to delete right now. 
+	// => we use the deleter to delete the instances after a specific time has passed so we
+	//    are safe that no-one holds a reference on the deleted modules anymore   
 	if (oldGraph)
-		delete oldGraph;
+		deleter.addGraph(oldGraph);
 }
 
 void ConfigManager::shutdown()
