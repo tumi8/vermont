@@ -21,7 +21,7 @@ PacketAggregatorCfg* PacketAggregatorCfg::create(XMLElement* elem)
 
 PacketAggregator* PacketAggregatorCfg::createInstance()
 {
-	instance = new PacketAggregator(0); // FIXME: where to get the parameter pollinterval?
+	instance = new PacketAggregator(pollInterval);
 	instance->buildAggregator(rules, minBufferTime, maxBufferTime);
 
 	return instance;

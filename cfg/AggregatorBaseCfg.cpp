@@ -5,7 +5,7 @@
 #include  "XMLElement.h"
 
 AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
-	: CfgBase(elem)
+	: CfgBase(elem), pollInterval(200)
 {
 	if (!elem)
 		return;
@@ -25,6 +25,8 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 			// get the time values or set them to '0' if they are not specified
 			maxBufferTime = getTimeInUnit("activeTimeout",   SEC, 0, e);
 			minBufferTime = getTimeInUnit("inactiveTimeout", SEC, 0, e);
+		} else if (e->matches("pollInterval")) {
+			pollInterval = getTimeInUnit("pollInterval", mSEC, 200);
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unkown Aggregator config entry %s\n", e->getName().c_str());

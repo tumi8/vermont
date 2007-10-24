@@ -23,7 +23,7 @@ IpfixAggregatorCfg* IpfixAggregatorCfg::create(XMLElement* elem)
 
 IpfixAggregator* IpfixAggregatorCfg::createInstance()
 {
-	instance = new IpfixAggregator(0); // FIXME: where to get the parameter pollinterval?
+	instance = new IpfixAggregator(pollInterval);
 	instance->buildAggregator(rules, minBufferTime, maxBufferTime);
 
 	return instance;

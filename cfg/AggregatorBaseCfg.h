@@ -23,6 +23,7 @@ protected:
 
 	unsigned maxBufferTime;	
 	unsigned minBufferTime;
+	unsigned pollInterval;
 
 	Rules* rules;
 };
