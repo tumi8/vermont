@@ -162,10 +162,10 @@ void BaseHashtable::expireFlows() {
 	// to an ipfixsender at least once. DOES NOT SUPPORT RECONFIGURATION!
 	if (!templateSent) {
 		IpfixDataTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
-        ipfixRecord->sourceID.reset();
-        ipfixRecord->dataTemplateInfo = dataTemplate;
-        recordSource->send(ipfixRecord);
-        templateSent = true;
+		ipfixRecord->sourceID.reset();
+		ipfixRecord->dataTemplateInfo = dataTemplate;
+		recordSource->send(ipfixRecord);
+		templateSent = true;
 	}
 	
 	/* check each hash bucket's spill chain */
