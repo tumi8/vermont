@@ -82,6 +82,5 @@ bool ObserverCfg::deriveFrom(ObserverCfg* old)
 	if (pcap_filter != old->pcap_filter)
 		return false;
 
-	transferInstance(old);
 	return true;
 }

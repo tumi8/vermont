@@ -81,8 +81,6 @@ Graph* ReConnector::connect(Graph* g)
 
 				// check if we could use the same module instance in the new config
 				if (newCfg->deriveFrom(oldCfg)) {
-					// FIXME: splitter handling
-
 					fprintf(stderr, "---starting disconnect for %d\n", oldCfg->getID());
 
 					// disconnect the module form its sources ..
@@ -92,6 +90,8 @@ Graph* ReConnector::connect(Graph* g)
 						sources[k]->getCfg()->disconnectInstances();
 					}
 
+					newCfg->transferInstance(oldCfg);
+					
 					// ... and from its destination
 					newCfg->disconnectInstances();
 					fprintf(stderr, "---ending disconnect for %d\n", oldCfg->getID());

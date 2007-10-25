@@ -73,6 +73,7 @@ public:
 	 * the filters could be modules of its own, but as discussed, they where just
 	 * subparts of a bigger FilterModule
 	 */
+	virtual void transferInstance(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
 	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
 	virtual void freeInstance() { THROWEXCEPTION("Not supported"); }
@@ -119,6 +120,7 @@ public:
 	 * the filters could be modules of its own, but as discussed, they where just
 	 * subparts of a bigger FilterModule
 	 */
+	virtual void transferInstance(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
 	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
 	virtual void freeInstance() { THROWEXCEPTION("Not supported"); }
@@ -157,7 +159,7 @@ public:
 		if (cfg)
 			return deriveFrom(cfg);
 
-		THROWEXCEPTION("Can't derive from PacketStringFilter");
+		THROWEXCEPTION("Can't derive from PacketRegexFilter");
 		return false;
 	}
 
@@ -167,6 +169,7 @@ public:
 	 * the filters could be modules of its own, but as discussed, they where just
 	 * subparts of a bigger FilterModule
 	 */
+	virtual void transferInstance(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
 	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
 	virtual void freeInstance() { THROWEXCEPTION("Not supported"); }

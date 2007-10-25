@@ -92,6 +92,8 @@ public:
 	 *  @param other Cfg describing the old/other elemen
 	 */
 	virtual bool deriveFrom(Cfg* other) = 0;
+	
+	virtual void transferInstance(Cfg* other) = 0;
 
 	/** connectes this module with the module from \other
 	 *  @param other the other Cfg
@@ -317,7 +319,19 @@ public:
 		freeSplitter();
 	} 
 
-protected:
+	/** helper method to transfer one instance to another Cfg 
+	 *  @param other the Cfg entry we want to transfer the instance to
+	 */
+	inline void transferInstance(Cfg* old)
+	{
+		ConfigType* cfg = dynamic_cast<ConfigType*>(old);
+		if (cfg)
+			return this->transferInstance(cfg);
+
+		THROWEXCEPTION("Can't transfer %s from %s", 
+				this->getName().c_str(), old->getName().c_str());
+	}
+
 	
 	/** helper method to transfer one instance to another Cfg 
 	 *  @param other the Cfg entry we want to transfer the instance to
@@ -334,6 +348,8 @@ protected:
 		other->instance = NULL;
 	}
 
+protected:
+	
 	InstanceType* instance;
 	
 	ConnectionSplicer<typename InstanceType::src_value_type>* splitter;

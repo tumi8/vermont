@@ -40,7 +40,6 @@ public:
 		if (isEndPoint != old->isEndPoint)
 			return false;
 		
-		transferInstance(old);
 		return true;
 	}
 

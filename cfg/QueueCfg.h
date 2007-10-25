@@ -47,7 +47,6 @@ public:
 		if (this->maxSize != old->maxSize)
 			return false;
 
-		transferInstance(old);
 		return true;
 	}
 	

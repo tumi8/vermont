@@ -82,7 +82,6 @@ bool PacketFilterCfg::deriveFrom(PacketFilterCfg* old)
 			return false;
 	}
 
-	transferInstance(old);
 	return true;
 }
 
