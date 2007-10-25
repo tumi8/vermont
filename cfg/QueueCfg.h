@@ -44,7 +44,9 @@ public:
 
 	virtual bool deriveFrom(QueueCfg<T>* old)
 	{
-		// FIXME: queue size and other parameters
+		if (this->maxSize != old->maxSize)
+			return false;
+
 		transferInstance(old);
 		return true;
 	}
