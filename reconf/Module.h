@@ -84,6 +84,30 @@ protected:
 	}
 	
 	/**
+	 * is called when reconfiguration of vermont is imminent
+	 * may be overwritten by subclasses
+	 */
+	virtual void preReconfiguration1()
+	{
+	}
+	
+	/**
+	 * is called when reconfiguration of vermont is imminent and after preReconfiguration2
+	 * may be overwritten by subclasses
+	 */
+	virtual void preReconfiguration2()
+	{
+	}
+
+	/**
+	 * is called when reconfiguration of vermont is complete
+	 * may be overwritten by subclasses
+	 */
+	virtual void postReconfiguration()
+	{
+	}
+	
+	/**
 	 * returns current value of exitFlag
 	 * (workaround for g++ compiler bug)
 	 */
