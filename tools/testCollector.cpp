@@ -28,6 +28,7 @@
 #include "IpfixPacketProcessor.hpp"
 #include "IpfixReceiverUdpIpV4.hpp"
 #include "IpfixPrinter.hpp"
+#include "reconf/ConnectionQueue.h"
 
 #include "common/msg.h"
 
@@ -65,12 +66,20 @@ int main(int argc, char *argv[]) {
 	//IpfixPrinter ipfixPrinter;
 
 	IpfixReceiverUdpIpV4 ipfixReceiver(lport);
-	/* (not in this branch of rcvIpfix)
-	if (argc > 2) {
-		msg(MSG_DIALOG, "Adding %s to list of authorized hosts", argv[2]);
-		ipfixReceiver.addAuthorizedHost(argv[2]);
-	}
-	*/
+	IpfixCollector collector(&ipfixReceiver);
+	ConnectionQueue<IpfixRecord*> queue(100);
+	IpfixPrinter printer;
+
+	collector.connectTo(&queue);
+	queue.connectTo(&printer);
+
+	printer.start();
+	queue.start();
+	collector.start();
+
+
+
+
 
 	// FIXME: test temporarily deactivated
 	/*IpfixParser ipfixParser;
@@ -85,11 +94,10 @@ int main(int argc, char *argv[]) {
 	pause();
 	msg(MSG_DIALOG, "Stopping threads and tidying up.\n");
 
-	msg(MSG_DIALOG, "stopping collector\n");
-	ipfixReceiver.stop();
+	collector.shutdown();
+	queue.shutdown();
+	printer.shutdown();
 
-	msg(MSG_DIALOG, "stopping printer\n");
-	//ipfixPrinter.stop();
 
 	return 0;
 }
