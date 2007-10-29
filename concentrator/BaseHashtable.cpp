@@ -21,16 +21,23 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  statLastExpBuckets(0),
 	  fieldModifier(0),
 	  recordSource(recordsource),
-	  templateSent(false),
 	  dataDataRecordIM(0),
 	  dataTemplateRecordIM(0)	  
 {
-	int dataLength = 0; /**< length in bytes of the @c data field */
 
 	for (uint32_t i = 0; i < HTABLE_SIZE; i++)
 		buckets[i] = NULL;
+	
+	createDataTemplate(rule);
 
 	msg(MSG_INFO, "Initializing hashtable with minBufferTime %d and maxBufferTime %d", minBufferTime, maxBufferTime);
+
+	StatisticsManager::getInstance().addModule(this);
+}
+
+void BaseHashtable::createDataTemplate(Rule* rule)
+{
+	int dataLength = 0; /**< length in bytes of the @c data field */
 	
 	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
 	dataTemplate->templateId=rule->id;
@@ -75,8 +82,6 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 		}
 
 	}
-
-	StatisticsManager::getInstance().addModule(this);
 }
 
 
@@ -157,16 +162,7 @@ void BaseHashtable::expireFlows() {
 	uint32_t emptyBuckets = 0;
 	uint32_t exportedBuckets = 0;
 	uint32_t multiEntries = 0;
-	
-	// FIXME: this is a very crude fix for the problem, that the datatemplate must be sent
-	// to an ipfixsender at least once. DOES NOT SUPPORT RECONFIGURATION!
-	if (!templateSent) {
-		IpfixDataTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
-		ipfixRecord->sourceID.reset();
-		ipfixRecord->dataTemplateInfo = dataTemplate;
-		recordSource->send(ipfixRecord);
-		templateSent = true;
-	}
+
 	
 	/* check each hash bucket's spill chain */
 	for (uint32_t i = 0; i < HTABLE_SIZE; i++) {
@@ -256,6 +252,55 @@ int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 		default:
 			return 0;
 	}
+}
+
+
+/**
+ * sends datatemplate to following modules
+ */
+void BaseHashtable::sendDataTemplate()
+{
+	IpfixDataTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
+	ipfixRecord->sourceID.reset();
+	ipfixRecord->dataTemplateInfo = dataTemplate;
+	recordSource->send(ipfixRecord);
+}
+
+/**
+ * sends the generated template to all following modules
+ */
+void BaseHashtable::performStart()
+{
+	sendDataTemplate();
+}
+
+/**
+ * invalidates used template
+ */
+void BaseHashtable::performShutdown()
+{
+	// this tells all modules that the template should not be used any more
+	dataTemplate.get()->destroyed = true;
+}
+
+/**
+ * invalidates used template
+ */
+void BaseHashtable::preReconfiguration1()
+{
+	// this tells all modules that the template should not be used any more
+	dataTemplate.get()->destroyed = true;
+}
+
+/**
+ * recreates data template and sends it to following modules
+ */
+void BaseHashtable::postReconfiguration()
+{
+	// "de-invalidates" the template again, as this module is still working with the same template
+	// after reconfiguration (else this function would not be called)
+	dataTemplate.get()->destroyed = false;
+	sendDataTemplate();
 }
 
 

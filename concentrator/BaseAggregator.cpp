@@ -35,24 +35,53 @@ BaseAggregator::~BaseAggregator()
 
 
 /**
- * starts the hashtable's thread
+ * starts the hashtable's thread and notifies hashtables about startup
  */
 void BaseAggregator::performStart()
 {
 	DPRINTF("called");
 	ASSERT(rules != 0, "aggregator must be initialized using function buildAggregator first!");
 	
+	// notify all hashtables that start is in progress
+	for (uint32_t i=0; i<rules->count; i++) {
+		rules->rule[i]->hashtable->performStart();
+	}
+	
 	thread.run(this);
 }
 
 
 /**
- * waits for the hashtable's thread
+ * waits for the hashtable's thread and notifies hashtables
  */
 void BaseAggregator::performShutdown()
 {
+	for (uint32_t i=0; i<rules->count; i++) {
+		rules->rule[i]->hashtable->performShutdown();
+	}
+	
 	connected.shutdown();
 	thread.join();
+}
+
+/**
+ * notifies hashtables about reconfiguration
+ */
+void BaseAggregator::preReconfiguration1()
+{
+	for (uint32_t i=0; i<rules->count; i++) {
+		rules->rule[i]->hashtable->preReconfiguration1();
+	}	
+}
+
+/**
+ * notifies hashtables about reconfiguration
+ */
+void BaseAggregator::postReconfiguration()
+{
+	for (uint32_t i=0; i<rules->count; i++) {
+		rules->rule[i]->hashtable->postReconfiguration();
+	}
 }
 
 

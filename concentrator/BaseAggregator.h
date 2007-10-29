@@ -29,8 +29,12 @@ protected:
 	virtual BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime) = 0;
 	void poll();
 	void exporterThread();
+	
+	// events from Module
 	virtual void performStart();
 	virtual void performShutdown();
+	virtual void preReconfiguration1();
+	virtual void postReconfiguration();
 	
 private:
 	Thread thread;

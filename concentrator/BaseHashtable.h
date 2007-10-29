@@ -60,6 +60,26 @@ public:
 	virtual std::string getStatistics();
 	void expireFlows();
 	
+	/**
+	 * this method is called from the aggregator when the module is started
+	 */
+	void performStart();
+	
+	/**
+	 * this method is called from aggregator when module is shut down
+	 */
+	void performShutdown();
+	
+	/**
+	 * before reconfiguration this function is called by aggregator
+	 */
+	void preReconfiguration1();
+	
+	/**
+	 * after the reconfiguration the aggregator calls this function
+	 */
+	void postReconfiguration();
+	
 protected:
 	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
 	Bucket* buckets[HTABLE_SIZE]; /**< array of pointers to hash buckets at start of spill chain. Members are NULL where no entry present */
@@ -79,8 +99,6 @@ protected:
 	Rule::Field::Modifier* fieldModifier; /**< specifies what modifier to apply to a given field */
 	Source<IpfixRecord*>* recordSource; /**< pointer to vermont module which is able to send IpfixRecords */
 	
-	bool templateSent;		/**< is set to true, when the template for exported flows was sent */
-	
 	InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
 	InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
 			
@@ -89,6 +107,8 @@ protected:
 	Bucket* createBucket(boost::shared_array<IpfixRecord::Data> data);
 	void exportBucket(Bucket* bucket);
 	void destroyBucket(Bucket* bucket);
+	void createDataTemplate(Rule* rule);
+	void sendDataTemplate();
 	
 };
 
