@@ -70,6 +70,8 @@ class IpfixRecord
 		 * Template description passed to the callback function when a new Template arrives.
 		 */
 		struct TemplateInfo {
+			TemplateInfo() : destroyed(false) {	}
+			
 			~TemplateInfo() {
 				free(fieldInfo);
 			}
@@ -320,6 +322,13 @@ class IpfixRecord
 			uint16_t fieldCount; /**< number of regular fields */
 			IpfixRecord::FieldInfo* fieldInfo; /**< array of FieldInfos describing each of these fields */
 			void* userData; /**< pointer to a field that can be used by higher-level modules */
+			
+			/** 
+			 * if this template is to be destroyed because of module reconfiguration, this flag is set to true 
+			 * it should be checked in every module which caches this structure and be destroyed in method
+			 * Module::preRegistration2()
+			 **/
+			bool destroyed;	
 		};
 
 		/**
@@ -343,8 +352,10 @@ class IpfixRecord
 		/**
 		 * DataTemplate description passed to the callback function when a new DataTemplate arrives.
 		 */
-		struct DataTemplateInfo {
-			DataTemplateInfo() : freePointers(true) {
+		struct DataTemplateInfo : public TemplateInfo
+		{
+			DataTemplateInfo() : freePointers(true) 
+			{
 			}
 
 			~DataTemplateInfo() {
@@ -355,29 +366,6 @@ class IpfixRecord
 				}
 			}
 
-			IpfixRecord::FieldInfo* getFieldInfo(IpfixRecord::FieldInfo::Type* type) {
-				return getFieldInfo(type->id, type->eid);
-			}
-
-
-
-			/**
-			 * Gets a DataTemplate's FieldInfo by field id. Length is ignored.
-			 * @param fieldTypeId Field id to look for
-			 * @param fieldTypeEid Field eid to look for
-			 * @return NULL if not found
-			 */
-			IpfixRecord::FieldInfo* getFieldInfo(IpfixRecord::FieldInfo::Type::Id fieldTypeId, IpfixRecord::FieldInfo::Type::EnterpriseNo fieldTypeEid) {
-				int i;
-
-				for (i = 0; i < fieldCount; i++) {
-					if ((fieldInfo[i].type.id == fieldTypeId) && (fieldInfo[i].type.eid == fieldTypeEid)) {
-						return &fieldInfo[i];
-					}
-				}
-
-				return NULL;
-			}
 
 			IpfixRecord::FieldInfo* getDataInfo(IpfixRecord::FieldInfo::Type* type) {
 				return getDataInfo(type->id, type->eid);
@@ -401,10 +389,7 @@ class IpfixRecord
 				return NULL;		
 			}
 
-			uint16_t templateId; /**< the template id assigned to this template or 0 if we don't know or don't care */
 			uint16_t preceding; /**< the preceding rule field as defined in the draft */
-			uint16_t fieldCount; /**< number of regular fields */
-			IpfixRecord::FieldInfo* fieldInfo; /**< array of FieldInfos describing each of these fields */
 			uint16_t dataCount; /**< number of fixed-value fields */
 			IpfixRecord::FieldInfo* dataInfo; /**< array of FieldInfos describing each of these fields */
 			IpfixRecord::Data* data; /**< data start pointer for fixed-value fields */
