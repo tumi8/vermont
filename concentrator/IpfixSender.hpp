@@ -75,6 +75,7 @@ protected:
 	std::vector<Collector> collectors; /**< Collectors we export to */
 	uint32_t statSentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
 
+	virtual void preReconfiguration2();
 
 private:
 	/**
@@ -88,6 +89,7 @@ private:
 	uint8_t conversionRingbuffer[65536]; /**< Ringbuffer used to store converted imasks between @c ipfix_put_data_field() and @c ipfix_send() */
 	uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
 	uint16_t noCachedRecords; /**< number of records already passed to ipfixlob, should be equal to recordsToRelease.size() */
+	list<boost::shared_ptr<IpfixRecord::TemplateInfo> > registeredTemplates; /**< contains all templates which were already registered in ipfixlolib */
 	Thread thread;
 	ConcurrentQueue<IpfixRecord*> incomingRecords;
 	queue<IpfixRecord*> recordsToRelease;
@@ -98,6 +100,9 @@ private:
 	void endAndSendDataSet();
 
 	void startDataSet(uint16_t templateId);
+	bool isTemplateRegistered(IpfixRecord::TemplateInfo* ti);
+	void removeRegisteredTemplate(IpfixRecord::TemplateInfo* ti);
+	void addRegisteredTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> ti);
 };
 
 #endif

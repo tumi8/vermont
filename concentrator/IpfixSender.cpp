@@ -131,6 +131,45 @@ void IpfixSender::addCollector(const char *ip, uint16_t port)
 	collectors.push_back(newCollector);
 }
 
+
+/**
+ * looks in cached templates if given template is already registered there
+ * @returns true if it was found
+ */
+bool IpfixSender::isTemplateRegistered(IpfixRecord::TemplateInfo* ti)
+{
+	list<boost::shared_ptr<IpfixRecord::TemplateInfo> >::iterator iter = registeredTemplates.begin();
+	while (iter != registeredTemplates.end()) {
+		if (iter->get()->templateId == ti->templateId) return true;
+		iter++;
+	}
+	return false;
+}
+
+/**
+ * removes given template from cached templates
+ */
+void IpfixSender::removeRegisteredTemplate(IpfixRecord::TemplateInfo* ti)
+{
+	list<boost::shared_ptr<IpfixRecord::TemplateInfo> >::iterator iter = registeredTemplates.begin();
+	while (iter != registeredTemplates.end()) {
+		if (iter->get()->templateId == ti->templateId) {
+			registeredTemplates.erase(iter);
+			return;
+		}
+		iter++;
+	}
+	THROWEXCEPTION("template with ID %d not found", ti->templateId);
+}
+
+/**
+ * adds given template to the list of cached templates
+ */
+void IpfixSender::addRegisteredTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> ti)
+{
+	registeredTemplates.push_back(ti);
+}
+
 /**
  * Announces a new Template
  * @param sourceID ignored
@@ -142,9 +181,17 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 	uint16_t my_template_id;
 	uint16_t my_preceding;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
+	
 	if (!exporter) {
 		THROWEXCEPTION("sndIpfix: Exporter not set");
 	}
+	
+	if (isTemplateRegistered(dataTemplateInfo.get())) {
+		// TODO: here we should check if both templates are the same, if they are, we do not need
+		// to inform ipfixlolib about it		
+		removeRegisteredTemplate(dataTemplateInfo.get());
+	}
+	addRegisteredTemplate(dataTemplateInfo);
 
 	/* get or assign template ID */
 	if(dataTemplateInfo->templateId)
@@ -274,6 +321,8 @@ void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* 
 	if (!exporter) {
 		THROWEXCEPTION("exporter not set");
 	}
+	
+	removeRegisteredTemplate(record->dataTemplateInfo.get());
 
 	uint16_t my_template_id = record->dataTemplateInfo->templateId;
 
@@ -399,6 +448,36 @@ void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 	noCachedRecords++;
 }
 
+/**
+ * checks registered Templates if those are to be destroyed and destroys them if needed
+ */
+void IpfixSender::preReconfiguration2()
+{
+	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
+	
+	if (!exporter) {
+		THROWEXCEPTION("exporter not set");
+	}
+	
+	list<boost::shared_ptr<IpfixRecord::TemplateInfo> >::iterator iter = registeredTemplates.begin();
+	while (iter != registeredTemplates.end()) {
+		if (iter->get()->destroyed) {
+			uint16_t id = iter->get()->templateId;
+
+			// Remove template from ipfixlolib 
+			if (0 != ipfix_remove_template_set(exporter, id)) {
+				msg(MSG_FATAL, "sndIpfix: ipfix_remove_template_set failed");
+			} else {
+				msg(MSG_INFO, "sndIpfix removed template with ID %u", id);
+			}							
+			
+			iter = registeredTemplates.erase(iter);
+		} else {
+			iter++;
+		}
+	}
+}
+
 
 /**
  * wrapper function for thread creation
@@ -458,8 +537,6 @@ void IpfixSender::flushPacket()
 {
 	endAndSendDataSet();
 }
-
-
 
 
 /**
