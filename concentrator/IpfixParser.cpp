@@ -811,3 +811,58 @@ void IpfixParser::push(IpfixRecord* ipfixRecord)
 	statProcessedFlows++;
 	ipfixRecordSender->send(ipfixRecord);
 }
+
+
+void IpfixParser::performStart()
+{
+}
+
+void IpfixParser::performShutdown()
+{
+}
+
+void IpfixParser::preReconfiguration1()
+{
+	setTemplateDestroyed(true);
+}
+
+/**
+ * event forwarded from IpfixCollector, called after reconfiguration
+ */
+void IpfixParser::postReconfiguration()
+{
+	setTemplateDestroyed(false);
+	resendBufferedTemplates();
+}
+
+/**
+ * resends all buffered templates to following modules
+ */
+void IpfixParser::resendBufferedTemplates()
+{
+	TemplateBuffer::BufferedTemplate* bt = templateBuffer->getFirstBufferedTemplate();
+		
+	while (bt) {	
+		IpfixTemplateRecord* ipfixRecord = templateRecordIM.getNewInstance();
+		ipfixRecord->sourceID = bt->sourceID;
+		ipfixRecord->templateInfo = bt->templateInfo;
+		push(ipfixRecord);
+		
+		bt = bt->next;
+	}
+}
+
+/**
+ * sets 'destroyed' flag of buffered templates
+ * @param destroyed flag of buffered templates
+ */
+void IpfixParser::setTemplateDestroyed(bool destroyed)
+{
+	TemplateBuffer::BufferedTemplate* bt = templateBuffer->getFirstBufferedTemplate();
+			
+	while (bt) {
+		bt->templateInfo.get()->destroyed = destroyed;
+	
+		bt = bt->next;
+	}
+}

@@ -59,7 +59,7 @@ IpfixCollector::~IpfixCollector()
  */
 void IpfixCollector::performStart() 
 {
-	ipfixReceiver->start();
+	ipfixReceiver->performStart();
 }
 
 /**
@@ -67,7 +67,7 @@ void IpfixCollector::performStart()
  */
 void IpfixCollector::performShutdown() 
 {
-	ipfixReceiver->stop();
+	ipfixReceiver->performShutdown();
 }
 
 

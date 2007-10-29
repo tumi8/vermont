@@ -130,3 +130,11 @@ TemplateBuffer::~TemplateBuffer() {
 	}
 }
 
+/**
+ * returns first template in list
+ */
+TemplateBuffer::BufferedTemplate* TemplateBuffer::getFirstBufferedTemplate()
+{
+	return head;
+}
+

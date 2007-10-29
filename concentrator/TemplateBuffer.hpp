@@ -29,11 +29,12 @@
 
 /**
  * Represents a Template Buffer
+ * 
+ * this class also sends TemplateDestructionRecords, if a template is 
+ * removed from the buffer
  */
 class TemplateBuffer {
 	public:
-
-		struct BufferedTemplate;
 
 		/**
 		 * Represents a single Buffered Template
@@ -56,6 +57,7 @@ class TemplateBuffer {
 		TemplateBuffer::BufferedTemplate* getBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId);
 		void destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID id);
 		void bufferTemplate(TemplateBuffer::BufferedTemplate* bt);
+		TemplateBuffer::BufferedTemplate* getFirstBufferedTemplate();
 
 	protected:
 		TemplateBuffer::BufferedTemplate* head; /**< Start of BufferedTemplate chain */

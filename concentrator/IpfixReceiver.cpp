@@ -57,18 +57,30 @@ IpfixReceiver::~IpfixReceiver()
  * Starts processing messages.
  * All sockets prepared by calls to @c createIpfixReceiver() will start
  */
-void IpfixReceiver::start() 
+void IpfixReceiver::performStart() 
 {
 	exitFlag = false;
 	thread.run(this);
+	
+	std::list<IpfixPacketProcessor*>::iterator iter = packetProcessors.begin();
+	while (iter != packetProcessors.end()) {
+		(*iter)->performStart();
+		iter++;
+	}
 }
 
 /**
  * Stops processing messages.
  * No more messages will be processed until the next startIpfixReceiver() call.
  */
-void IpfixReceiver::stop() 
+void IpfixReceiver::performShutdown() 
 {
+	std::list<IpfixPacketProcessor*>::iterator iter = packetProcessors.begin();
+	while (iter != packetProcessors.end()) {
+		(*iter)->performShutdown();
+		iter++;
+	}
+	
 	exitFlag = true;
 	thread.join();
 }

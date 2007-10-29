@@ -53,6 +53,11 @@ class IpfixParser : public IpfixPacketProcessor, public StatisticsModule
 
 		virtual int processPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 		virtual std::string getStatistics(); 
+		
+		virtual void performStart();
+		virtual void performShutdown();
+		virtual void preReconfiguration1();
+		virtual void postReconfiguration();
 
 	protected:
 		/**
@@ -139,6 +144,7 @@ class IpfixParser : public IpfixPacketProcessor, public StatisticsModule
 		
 		virtual void push(IpfixRecord* ipfixRecord);
 
+
 	private:
 		uint32_t statProcessedFlows; /**< amount of flows processed by parser, is regularly reset to 0, used for statistics */
 		IpfixRecordSender* ipfixRecordSender;
@@ -153,7 +159,9 @@ class IpfixParser : public IpfixPacketProcessor, public StatisticsModule
 		InstanceManager<IpfixOptionsTemplateDestructionRecord> optionsTemplateDestructionRecordIM;
 		InstanceManager<IpfixDataTemplateDestructionRecord> dataTemplateDestructionRecordIM;
 		
-		
+		void resendBufferedTemplates();
+		void setTemplateDestroyed(bool destroyed);
+
 };
 
 void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* pattern);

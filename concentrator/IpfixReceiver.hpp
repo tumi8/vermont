@@ -43,8 +43,8 @@ class IpfixReceiver
 		IpfixReceiver();
 		virtual ~IpfixReceiver();
 
-		void start();
-		void stop();
+		void performStart();
+		void performShutdown();
 
 		int addAuthorizedHost(const char* host);
 		int isHostAuthorized(struct in_addr* inaddr, int addrlen);
