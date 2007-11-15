@@ -46,6 +46,18 @@ using namespace std;
 
 #define MAX_MSG_LEN 65536
 
+//static variables
+InstanceManager<IpfixTemplateRecord> IpfixParser::templateRecordIM(0);
+InstanceManager<IpfixOptionsTemplateRecord> IpfixParser::optionsTemplateRecordIM(0);
+InstanceManager<IpfixDataTemplateRecord> IpfixParser::dataTemplateRecordIM(0);		
+InstanceManager<IpfixDataRecord> IpfixParser::dataRecordIM(0);
+InstanceManager<IpfixOptionsRecord> IpfixParser::optionsRecordIM(0);
+InstanceManager<IpfixDataDataRecord> IpfixParser::dataDataRecordIM(0);
+InstanceManager<IpfixTemplateDestructionRecord> IpfixParser::templateDestructionRecordIM(0);
+InstanceManager<IpfixOptionsTemplateDestructionRecord> IpfixParser::optionsTemplateDestructionRecordIM(0);
+InstanceManager<IpfixDataTemplateDestructionRecord> IpfixParser::dataTemplateDestructionRecordIM(0);
+
+
 /**
  * Processes an IPFIX template set.
  * Called by processMessage
@@ -751,16 +763,7 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
  */
 IpfixParser::IpfixParser(IpfixRecordSender* sender) 
 	: statProcessedFlows(0),
-	  ipfixRecordSender(sender),
-	  templateRecordIM(0),
-	  optionsTemplateRecordIM(0),
-	  dataTemplateRecordIM(0),
-	  dataRecordIM(0),
-	  optionsRecordIM(0),
-	  dataDataRecordIM(0),
-	  templateDestructionRecordIM(0),
-	  optionsTemplateDestructionRecordIM(0),
-	  dataTemplateDestructionRecordIM(0)
+	  ipfixRecordSender(sender)
 {
 
 	if (pthread_mutex_init(&mutex, NULL) != 0) {

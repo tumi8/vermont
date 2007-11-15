@@ -149,15 +149,15 @@ class IpfixParser : public IpfixPacketProcessor, public StatisticsModule
 		uint32_t statProcessedFlows; /**< amount of flows processed by parser, is regularly reset to 0, used for statistics */
 		IpfixRecordSender* ipfixRecordSender;
 		
-		InstanceManager<IpfixTemplateRecord> templateRecordIM;
-		InstanceManager<IpfixOptionsTemplateRecord> optionsTemplateRecordIM;
-		InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;		
-		InstanceManager<IpfixDataRecord> dataRecordIM;
-		InstanceManager<IpfixOptionsRecord> optionsRecordIM;
-		InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
-		InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
-		InstanceManager<IpfixOptionsTemplateDestructionRecord> optionsTemplateDestructionRecordIM;
-		InstanceManager<IpfixDataTemplateDestructionRecord> dataTemplateDestructionRecordIM;
+		static InstanceManager<IpfixTemplateRecord> templateRecordIM;
+		static InstanceManager<IpfixOptionsTemplateRecord> optionsTemplateRecordIM;
+		static InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;		
+		static InstanceManager<IpfixDataRecord> dataRecordIM;
+		static InstanceManager<IpfixOptionsRecord> optionsRecordIM;
+		static InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
+		static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
+		static InstanceManager<IpfixOptionsTemplateDestructionRecord> optionsTemplateDestructionRecordIM;
+		static InstanceManager<IpfixDataTemplateDestructionRecord> dataTemplateDestructionRecordIM;
 		
 		void resendBufferedTemplates();
 		void setTemplateDestroyed(bool destroyed);
