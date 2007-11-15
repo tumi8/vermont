@@ -105,7 +105,7 @@ int main(int ac, char **dc)
 
 		if (reload_config) {
 			msg(MSG_INFO, "Reconfiguriong vermont");
-			manager.parseConfig("configs/reconf2.xml");
+			manager.parseConfig(string(config_file));
 			reload_config = false;
 		}
 	}
