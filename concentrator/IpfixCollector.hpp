@@ -36,7 +36,7 @@
  * hard wired
  */
 class IpfixCollector 
-	: public Module, public Source<IpfixRecord*>, public IpfixRecordSender 
+	: public Module, public Source<IpfixRecord*>, public Destination<NullEmitable*>, public IpfixRecordSender 
 {
 	public:
 		IpfixCollector(IpfixReceiver* receiver);
