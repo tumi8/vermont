@@ -1,5 +1,6 @@
 #include "ConfigManager.h"
 #include "cfg/Connector.h"
+#include "cfg/ReConnector.h"
 
 #include "cfg/CfgNode.h"
 #include "cfg/IpfixAggregatorCfg.h"

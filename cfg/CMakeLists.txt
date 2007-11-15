@@ -33,6 +33,7 @@ ADD_LIBRARY(cfg
 	PacketFilterCfg.cpp
 	PacketReportingCfg.cpp
 	PSAMPExporterCfg.cpp
+	ReConnector.cpp
 	XMLAttribute.cpp
 	XMLElement.cpp
 	XMLDocument.cpp
