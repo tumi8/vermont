@@ -69,13 +69,14 @@ public:
 		uint16_t port; /**< Port of Collector */
 	};
 
+	virtual void preReconfiguration2();
+	
 protected:
 	ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */
 	uint16_t lastTemplateId; /**< Template ID of last created Template */
 	std::vector<Collector> collectors; /**< Collectors we export to */
 	uint32_t statSentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
 
-	virtual void preReconfiguration2();
 
 private:
 	/**

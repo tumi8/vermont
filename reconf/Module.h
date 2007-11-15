@@ -65,7 +65,28 @@ public:
 		running = false;
 	}
 
+	/* this is called before connecting a module */
+	/**
+	 * is called when reconfiguration of vermont is complete
+	 * may be overwritten by subclasses
+	 */
+	virtual void postReconfiguration() { /* override this in the modules you need */ }
 	
+	/* called to inform the module that now we are doing a reconfiguration 
+	 * Could be used to invalidate some local stuff which will get invalid after
+	 * the reconfiguration (e.g. the templates)
+	 * 
+	 * May be overwritten by subclasses 
+	 */
+	virtual void preReconfiguration1() { /* override this in the modules you need */ }
+	
+	/* called after ALL modules were informed on the reconfiguration, so
+	 * they could to some local cleanup.
+	 *
+	 * May be overwritten by subclasses
+	 */
+	virtual void preReconfiguration2() { /* override this in the modules you need */ }
+
 protected:
 	/**
 	 * is called when module is started
@@ -80,30 +101,6 @@ protected:
 	 * may be overwritten by subclasses
 	 */
 	virtual void performShutdown()
-	{
-	}
-	
-	/**
-	 * is called when reconfiguration of vermont is imminent
-	 * may be overwritten by subclasses
-	 */
-	virtual void preReconfiguration1()
-	{
-	}
-	
-	/**
-	 * is called when reconfiguration of vermont is imminent and after preReconfiguration2
-	 * may be overwritten by subclasses
-	 */
-	virtual void preReconfiguration2()
-	{
-	}
-
-	/**
-	 * is called when reconfiguration of vermont is complete
-	 * may be overwritten by subclasses
-	 */
-	virtual void postReconfiguration()
 	{
 	}
 	

@@ -105,6 +105,11 @@ public:
 	virtual void start(bool fail_if_already_running = true) = 0;
 	virtual void shutdown(bool fail_if_not_running = true) = 0;
 
+	/* see in Module for the documentation for these functions */
+	virtual void postReconfiguration() = 0;
+	virtual void preReconfiguration1() = 0;
+	virtual void preReconfiguration2() = 0;
+	
 	/** this method will delete the instance */
 	virtual void freeInstance() = 0;
 
@@ -200,6 +205,23 @@ public:
 		return createInstance();
 	}
 	
+	void postReconfiguration() {
+		instance = getInstance();
+		instance->postReconfiguration();
+	}
+
+	void preReconfiguration1() {
+		if (instance == NULL)
+			return;
+		instance->preReconfiguration1();
+	}
+
+	void preReconfiguration2() {
+		if (instance == NULL)
+			return;
+		instance->preReconfiguration2();
+	}
+	
 	/** this method gets called *ONLY* if the instance needs a timer and the
 	 *  in the configuration there was no timer in front of the instance
 	 */
@@ -283,6 +305,9 @@ public:
 				THROWEXCEPTION("Unexpected error: can't cast %s to matching Destination<>",
 						other->getName().c_str());
 		}
+		
+		// call preConnect(), e.g. to tell the module to resend its template
+		this->postReconfiguration();
 		
 		// check if we need a splitter
 		if (this->getNext().size() > 1) {

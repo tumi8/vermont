@@ -17,7 +17,11 @@ public:
 		
 	void buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime);
 	void buildAggregator(char* rulefile, uint16_t minBufferTime, uint16_t maxBufferTime);
-	
+
+	// events from Module
+	virtual void preReconfiguration1();
+	virtual void postReconfiguration();
+
 protected:
 	Rules* rules; /**< Set of rules that define the aggregator */
 	Mutex mutex; /**< ensures that exporterThread does not interfere with aggregation of incoming flows */
@@ -33,8 +37,6 @@ protected:
 	// events from Module
 	virtual void performStart();
 	virtual void performShutdown();
-	virtual void preReconfiguration1();
-	virtual void postReconfiguration();
 	
 private:
 	Thread thread;

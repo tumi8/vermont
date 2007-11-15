@@ -76,6 +76,9 @@ public:
 	virtual void transferInstance(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
 	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void postReconfiguration() { THROWEXCEPTION("Not supported"); }
+	virtual void preReconfiguration1() { THROWEXCEPTION("Not supported"); }
+	virtual void preReconfiguration2() { THROWEXCEPTION("Not supported"); }
 	virtual void freeInstance() { THROWEXCEPTION("Not supported"); }
 	virtual void connectInstances(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void disconnectInstances()  { THROWEXCEPTION("Not supported"); }
@@ -123,6 +126,9 @@ public:
 	virtual void transferInstance(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
 	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void postReconfiguration() { THROWEXCEPTION("Not supported"); }
+	virtual void preReconfiguration1() { THROWEXCEPTION("Not supported"); }
+	virtual void preReconfiguration2() { THROWEXCEPTION("Not supported"); }
 	virtual void freeInstance() { THROWEXCEPTION("Not supported"); }
 	virtual void connectInstances(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void disconnectInstances()  { THROWEXCEPTION("Not supported"); }
@@ -172,6 +178,9 @@ public:
 	virtual void transferInstance(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
 	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void postReconfiguration() { THROWEXCEPTION("Not supported"); }
+	virtual void preReconfiguration1() { THROWEXCEPTION("Not supported"); }
+	virtual void preReconfiguration2() { THROWEXCEPTION("Not supported"); }
 	virtual void freeInstance() { THROWEXCEPTION("Not supported"); }
 	virtual void connectInstances(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void disconnectInstances()  { THROWEXCEPTION("Not supported"); }

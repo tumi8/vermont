@@ -44,7 +44,11 @@ class IpfixCollector
 
 		virtual void performStart();
 		virtual void performShutdown();
-				
+
+		virtual void postReconfigration();
+		virtual void preReconfiguration1();
+		virtual void preReconfiguration2();
+
 		bool send(IpfixRecord* ipfixRecord);
 
 

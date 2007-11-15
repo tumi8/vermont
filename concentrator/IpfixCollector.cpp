@@ -72,6 +72,20 @@ void IpfixCollector::performShutdown()
 	ipfixReceiver->performShutdown();
 }
 
+void IpfixCollector::postReconfigration()
+{ 
+	ipfixPacketProcessor->postReconfiguration();
+}
+
+void IpfixCollector::preReconfiguration1()
+{
+	ipfixPacketProcessor->preReconfiguration1();
+}
+
+void IpfixCollector::preReconfiguration2()
+{
+	ipfixPacketProcessor->preReconfiguration2();
+}
 
 /**
  * just delegates call to Source::send
