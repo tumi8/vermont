@@ -50,6 +50,8 @@ IpfixCollector::IpfixCollector(IpfixReceiver* receiver)
  */
 IpfixCollector::~IpfixCollector() 
 {
+	this->shutdown(false);
+	delete ipfixReceiver;
 	delete ipfixPacketProcessor;
 }
 

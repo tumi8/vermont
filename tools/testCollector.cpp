@@ -63,10 +63,9 @@ int main(int argc, char *argv[]) {
 		lport=atoi(argv[1]);
 	}
 
-	//IpfixPrinter ipfixPrinter;
-
-	IpfixReceiverUdpIpV4 ipfixReceiver(lport);
-	IpfixCollector collector(&ipfixReceiver);
+	// needs to be a pointer because its freed in d'tor of IpfixCollector
+	IpfixReceiverUdpIpV4* ipfixReceiver = new IpfixReceiverUdpIpV4(lport);
+	IpfixCollector collector(ipfixReceiver);
 	ConnectionQueue<IpfixRecord*> queue(100);
 	IpfixPrinter printer;
 
