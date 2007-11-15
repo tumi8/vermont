@@ -16,20 +16,20 @@
 #include <vector>
 
 template <class T>
-class ConnectionSplicer
+class ConnectionSplitter
 	: public Adapter<T>
 {
 public:
-	ConnectionSplicer(): size(0) { }
+	ConnectionSplitter(): size(0) { }
 
-	virtual ~ConnectionSplicer() { }
+	virtual ~ConnectionSplitter() { }
 
 	virtual void connectTo(Destination<T>* d)
 	{
 		Source<T>::mutex.lock();
 
 		if (size >= capacity)
-			THROWEXCEPTION("ConnectionSplicer: can't add another destination\n");
+			THROWEXCEPTION("ConnectionSplitter: can't add another destination\n");
 
 		destinations[size++] = d;
 		Source<T>::connected.inc(1);

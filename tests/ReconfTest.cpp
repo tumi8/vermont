@@ -5,7 +5,7 @@
 #include "common/msg.h"
 #include "CounterDestination.h"
 #include "cfg/ConfigManager.h"
-#include "reconf/ConnectionSplicer.h"
+#include "reconf/ConnectionSplitter.h"
 #include "reconf/PrinterModule.h"
 
 #include <unistd.h>
@@ -128,8 +128,8 @@ void ReconfTest::splitterTest()
 	FilterModule filter;
 	filter.addProcessor(sampler);
 
-	ConnectionSplicer<FilterModule::src_value_type>* splitter;
-	splitter = new ConnectionSplicer<FilterModule::src_value_type>();
+	ConnectionSplitter<FilterModule::src_value_type>* splitter;
+	splitter = new ConnectionSplitter<FilterModule::src_value_type>();
 	
 	filter.connectTo(splitter);
 	splitter->connectTo(&counter1);

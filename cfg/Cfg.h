@@ -5,7 +5,7 @@
 #include "reconf/Module.h"
 
 #include "reconf/ConnectionQueue.h"
-#include "reconf/ConnectionSplicer.h"
+#include "reconf/ConnectionSplitter.h"
 #include "reconf/Timer.h"
 
 #include <exception>
@@ -288,7 +288,7 @@ public:
 		if (this->getNext().size() > 1) {
 			printf("-----SPLITTER\n");
 			if (!splitter) {
-				splitter = new ConnectionSplicer<typename InstanceType::src_value_type>();
+				splitter = new ConnectionSplitter<typename InstanceType::src_value_type>();
 				instance->connectTo(splitter);
 			}
 			splitter->connectTo(dest);
@@ -352,7 +352,7 @@ protected:
 	
 	InstanceType* instance;
 	
-	ConnectionSplicer<typename InstanceType::src_value_type>* splitter;
+	ConnectionSplitter<typename InstanceType::src_value_type>* splitter;
 	ConnectionQueue<typename InstanceType::dst_value_type>* queue;
 	
 	Notifiable* notifiable;
