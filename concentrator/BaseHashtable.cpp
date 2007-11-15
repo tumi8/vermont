@@ -22,7 +22,8 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  fieldModifier(0),
 	  recordSource(recordsource),
 	  dataDataRecordIM(0),
-	  dataTemplateRecordIM(0)	  
+	  dataTemplateRecordIM(0),
+	  need_resend_template(true)
 {
 
 	for (uint32_t i = 0; i < HTABLE_SIZE; i++)
@@ -163,6 +164,11 @@ void BaseHashtable::expireFlows() {
 	uint32_t exportedBuckets = 0;
 	uint32_t multiEntries = 0;
 
+	if (need_resend_template) {
+		sendDataTemplate();
+		need_resend_template = false;
+	}
+		
 	
 	/* check each hash bucket's spill chain */
 	for (uint32_t i = 0; i < HTABLE_SIZE; i++) {
@@ -300,7 +306,6 @@ void BaseHashtable::postReconfiguration()
 	// "de-invalidates" the template again, as this module is still working with the same template
 	// after reconfiguration (else this function would not be called)
 	dataTemplate.get()->destroyed = false;
-	sendDataTemplate();
 }
 
 

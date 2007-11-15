@@ -101,7 +101,8 @@ protected:
 	
 	InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
 	InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
-			
+		
+	bool need_resend_template;
 	
 	int isToBeAggregated(IpfixRecord::FieldInfo::Type type);
 	Bucket* createBucket(boost::shared_array<IpfixRecord::Data> data);
