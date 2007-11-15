@@ -82,17 +82,42 @@ void IpfixReceiverUdpIpV4::run() {
 	struct sockaddr_in clientAddress;
 	socklen_t clientAddressLen;
 	
+	struct timespec timeOut;
+	fd_set nreadfds;
+
+	/* set a 400ms time-out on the pselect */
+	timeOut.tv_sec = 0L;
+	timeOut.tv_nsec = 400000000L;
+	
 	while(!exitFlag) {
-		boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
-		boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
 		int n;
 
+		do {
+			FD_ZERO(&nreadfds);
+			FD_SET(listen_socket, &nreadfds);
+
+			n = pselect(listen_socket + 1, &nreadfds, NULL, NULL, &timeOut, NULL);
+			if (n < 0) {
+				if (errno != EINTR)
+					THROWEXCEPTION("select failed");
+				
+				printf ("n < 0\n");
+				continue;
+			}
+			
+			if (exitFlag)
+				return;
+		} while (n == 0);
+		
+		boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
+		boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
+
+
 		clientAddressLen = sizeof(struct sockaddr_in);
-		// FIXME: recvfrom is blocking - this function does not exit when no packet arrives
 		n = recvfrom(listen_socket, data.get(), MAX_MSG_LEN,
 			     0, (struct sockaddr*)&clientAddress, &clientAddressLen);
 		if (n < 0) {
-			msg(MSG_DEBUG, "recvfrom returned without data, terminating listener thread");
+			msg(MSG_FATAL, "recvfrom returned without data, terminating listener thread");
 			break;
 		}
 		
@@ -108,7 +133,7 @@ void IpfixReceiverUdpIpV4::run() {
 			}
 		}
 		else{
-			msg(MSG_DEBUG, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
+			msg(MSG_FATAL, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
 		}
 	}
 }
