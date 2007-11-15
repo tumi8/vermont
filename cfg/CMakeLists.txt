@@ -26,6 +26,7 @@ ADD_LIBRARY(cfg
 	DelayedDeleter.cpp
 	Graph.cpp
 	IpfixAggregatorCfg.cpp
+	IpfixCollectorCfg.cpp
 	IpfixExporterCfg.cpp
 	Node.cpp
 	ObserverCfg.cpp
