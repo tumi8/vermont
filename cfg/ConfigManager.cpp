@@ -77,12 +77,13 @@ void ConfigManager::parseConfig(std::string fileName)
 		Connector connector;
 		graph->accept(&connector);
 	} else {
-		msg(MSG_FATAL, "---------- reconnect");
+		msg(MSG_FATAL, "MESSUNG: VOR GRAPH BUILD");
 		// first, connect the nodes on the new graph (but NOT the modules
 		Connector connector(true, false);
 		graph->accept(&connector);
 		msg(MSG_FATAL, "%s:%d", __FILE__, __LINE__);
 		// now connect the modules reusing those from the old graph
+		msg(MSG_FATAL, "MESSUNG: VOR RECONNECT");
 		ReConnector reconnector(oldGraph);
 		graph->accept(&reconnector);
 	}
@@ -95,6 +96,7 @@ void ConfigManager::parseConfig(std::string fileName)
 		msg(MSG_INFO, "Starting module %s", cfg->getName().c_str());
 		cfg->start(false);
 	}
+	msg(MSG_FATAL, "MESSUNG: ENDE RECONFIG");
 
 	if (old_document)
 		delete old_document;

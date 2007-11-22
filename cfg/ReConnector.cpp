@@ -33,17 +33,17 @@ Graph* ReConnector::connect(Graph* g)
 		for (size_t j = 0; j < topoNew.size(); j++) {
 			Cfg* newCfg = topoNew[j]->getCfg();
 			if (oldCfg->getID() == newCfg->getID()) { // possible match
-				msg(MSG_FATAL, "\nFOUND A MATCH BETWEEN %s(id=%d) -> %s(id=%d)\n",
+				msg(MSG_INFO, "\nFOUND A MATCH BETWEEN %s(id=%d) -> %s(id=%d)\n",
 						oldCfg->getName().c_str(), oldCfg->getID(),
 						newCfg->getName().c_str(), newCfg->getID());
 
 				// check if we could use the same module instance in the new config
 				if (newCfg->deriveFrom(oldCfg)) {
-					msg(MSG_FATAL, "REUSING     %s(id=%d)\n",
+					msg(MSG_INFO, "REUSING     %s(id=%d)\n",
 							oldCfg->getName().c_str(), oldCfg->getID());
 					newCfg->transferInstance(oldCfg);
 				} else {
-					msg(MSG_FATAL, "CAN'T REUSE %s(id=%d)\n",
+					msg(MSG_INFO, "CAN'T REUSE %s(id=%d)\n",
 							oldCfg->getName().c_str(), oldCfg->getID());
 				}
 			}

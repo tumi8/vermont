@@ -34,7 +34,7 @@ Graph* Connector::connect(Graph*g)
 		std::vector<unsigned int> nexts = cfg->getNext();
 
 		for (unsigned int j = 0; j < nexts.size(); j++) {
-			msg(MSG_FATAL, "to ID %d", nexts[j]);
+			msg(MSG_INFO, "to ID %d", nexts[j]);
 			CfgNode* toNode = id2node[nexts[j]];
 
 			if (toNode == NULL)
@@ -43,13 +43,13 @@ Graph* Connector::connect(Graph*g)
 			if (connectNodes) // insert the connection in the graph
 				g->addEdge(fromNode, toNode);
 
-			msg(MSG_INFO,  "Connectiong %s[Id = %d] -> %s[Id = %d]", 
+			msg(MSG_INFO,  "Connectiong %s[Id = %d] -> %s[Id = %d]",
 					cfg->getName().c_str(), cfg->getID(),
 					id2node[nexts[j]]->getCfg()->getName().c_str(),
 					id2node[nexts[j]]->getCfg()->getID());
 
 			if (connectModules) {// connect the modules
-				msg(MSG_FATAL, "\n\nConnect Instances\n");
+				msg(MSG_INFO, "\n\nConnect Instances\n");
 				cfg->connectInstances(toNode->getCfg());
 			}
 		}
