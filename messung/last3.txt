@@ -1,0 +1,50 @@
+
+
+# eine Raute leitet Kommentare ein
+
+
+
+#erster Verkehrsstrom
+# wichtig: damit alles funktioniert, ist ein arp-eintrag notwendig
+# sudo arp -s 192.44.88.100  00:C0:26:B8:59:C6
+stream {
+	mode = raw;
+	
+	tcp {
+		#sport_low = 5000;
+		#sport_high = 5010;
+		sport = 5010;
+		dport = 5001;
+		seq = 12345;
+		acknum = 56789;
+		win = 1000;
+		syn = 1;
+		ack = 1;
+	}
+	
+	ip {
+		src = 192.44.88.100
+		dst = 192.44.88.100
+		id = 12345;
+		ttl = 100;
+	}
+	
+	traffic {
+		burst {
+			send_packets = 1000;
+			size = 100;
+			repeat = 4000000;
+			delay = 0.01;
+		}
+	}
+}
+
+
+#zweiter Verkehrsstrom
+
+#stream {
+#	mode = raw;
+#	tcp {
+#	...
+#}
+
