@@ -1,0 +1,390 @@
+---- 1 ----
+18141
+19:13:38.421 FATAL  : /home/siprbaum/v/cfg/PSAMPExporterCfg.cpp:$  no xml element set
+19:13:38.422 ERROR  : message debug level is 2
+19:13:38.423 FATAL  : Filter: Creating count based sampler
+19:13:38.423 FATAL  : Filter: Creating count based sampler
+19:13:38.425 ERROR  : Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.
+19:13:38.425 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported..
+19:13:38.965 ERROR  : unable to determine netmask/network: eth1: no IPv4 address assigned
+-----SPLITTER
+-----SPLITTER
+19:13:38.966 ERROR  : Template: ignoring template field reportedIE -> -1 - rangecheck not ok
+19:13:38.966 FATAL  : Template: adding reportedIE -> ID 8 with size 4
+19:13:38.966 FATAL  : Template: adding reportedIE -> ID 12 with size 4
+19:13:38.966 FATAL  : Template: adding reportedIE -> ID 313 with size 0
+19:13:38.966 FATAL  : Template: adding reportedIE -> ID 150 with size 4
+19:13:38.966 FATAL  : Template: got 4 fields, record length is 12+0*capture_len
+create recordLen = 0
+
+create maxPaSize = 1500
+
+19:13:38.966 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported.
+19:13:38.967 FATAL  : MESSUNG: ENDE RECONFIG
+SIGUSR called
+19:13:43.448 FATAL  : MESSUNG: START RECONFIGURE ON SIGNAL
+19:13:43.451 FATAL  : Filter: Creating count based sampler
+19:13:43.451 FATAL  : Filter: Creating count based sampler
+19:13:43.453 ERROR  : Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.
+19:13:43.453 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported..
+19:13:43.453 FATAL  : MESSUNG: VOR GRAPH BUILD
+19:13:43.453 FATAL  : /home/siprbaum/v/cfg/ConfigManager.cpp:84
+19:13:43.453 FATAL  : MESSUNG: VOR RECONNECT
+-----SPLITTER
+-----SPLITTER
+19:13:43.455 ERROR  : Template: ignoring template field reportedIE -> -1 - rangecheck not ok
+19:13:43.455 FATAL  : Template: adding reportedIE -> ID 8 with size 4
+19:13:43.455 FATAL  : Template: adding reportedIE -> ID 12 with size 4
+19:13:43.455 FATAL  : Template: adding reportedIE -> ID 313 with size 0
+19:13:43.455 FATAL  : Template: adding reportedIE -> ID 150 with size 4
+19:13:43.455 FATAL  : Template: got 4 fields, record length is 12+0*capture_len
+create recordLen = 0
+
+create maxPaSize = 1500
+
+19:13:43.455 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported.
+19:13:43.455 FATAL  : MESSUNG: ENDE RECONFIG
+got signal 2 - exiting19:13:53.467 FATAL  : start shuting down observer
+19:13:53.524 FATAL  : end shuting down observer
+19:13:53.524 FATAL  : start shuting down packetQueue
+19:13:53.524 FATAL  : end shuting down packetQueue
+19:13:53.524 FATAL  : start shuting down filter
+19:13:53.524 FATAL  : end shuting down filter
+19:13:53.524 FATAL  : start shuting down psampExporter
+19:13:53.544 FATAL  : end shuting down psampExporter
+19:13:53.544 FATAL  : start shuting down filter
+19:13:53.544 FATAL  : end shuting down filter
+19:13:53.544 FATAL  : start shuting down packetAggregator
+19:13:53.564 FATAL  : end shuting down packetAggregator
+19:13:53.564 FATAL  : start shuting down ipfixExporter
+19:13:53.584 FATAL  : end shuting down ipfixExporter
+19:13:53.584 FATAL  : run packetQueue->disconnect
+19:13:53.584 FATAL  : run filter->disconnect
+19:13:53.584 FATAL  : run psampExporter->disconnect
+19:13:53.584 FATAL  : run filter->disconnect
+19:13:53.584 FATAL  : run packetAggregator->disconnect
+19:13:53.584 FATAL  : run ipfixExporter->disconnect
+19:13:53.584 VERMONT: up and running at Sat Nov 17 19:13:53 2007
+
+~CfgHelper [observer]
+19:13:53.584 VERMONT: PCAP statistics:
+19:13:53.584 VERMONT: Number of packets received on interface: 1023800
+19:13:53.584 VERMONT: Number of packets dropped by PCAP: 617609
+~CfgHelper [packetQueue]
+~CfgHelper [filter]
+~CfgHelper [psampExporter]
+~CfgHelper [filter]
+~CfgHelper [packetAggregator]
+~CfgHelper [ipfixExporter]
+---- 2 ----
+18155
+19:14:02.137 FATAL  : /home/siprbaum/v/cfg/PSAMPExporterCfg.cpp:$  no xml element set
+19:14:02.137 ERROR  : message debug level is 2
+19:14:02.138 FATAL  : Filter: Creating count based sampler
+19:14:02.139 FATAL  : Filter: Creating count based sampler
+19:14:02.140 ERROR  : Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.
+19:14:02.140 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported..
+19:14:02.672 ERROR  : unable to determine netmask/network: eth1: no IPv4 address assigned
+-----SPLITTER
+-----SPLITTER
+19:14:02.673 ERROR  : Template: ignoring template field reportedIE -> -1 - rangecheck not ok
+19:14:02.673 FATAL  : Template: adding reportedIE -> ID 8 with size 4
+19:14:02.673 FATAL  : Template: adding reportedIE -> ID 12 with size 4
+19:14:02.673 FATAL  : Template: adding reportedIE -> ID 313 with size 0
+19:14:02.673 FATAL  : Template: adding reportedIE -> ID 150 with size 4
+19:14:02.673 FATAL  : Template: got 4 fields, record length is 12+0*capture_len
+create recordLen = 0
+
+create maxPaSize = 1500
+
+19:14:02.673 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported.
+19:14:02.674 FATAL  : MESSUNG: ENDE RECONFIG
+SIGUSR called
+19:14:06.873 FATAL  : MESSUNG: START RECONFIGURE ON SIGNAL
+19:14:06.876 FATAL  : Filter: Creating count based sampler
+19:14:06.876 FATAL  : Filter: Creating count based sampler
+19:14:06.878 ERROR  : Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.
+19:14:06.878 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported..
+19:14:06.878 FATAL  : MESSUNG: VOR GRAPH BUILD
+19:14:06.878 FATAL  : /home/siprbaum/v/cfg/ConfigManager.cpp:84
+19:14:06.878 FATAL  : MESSUNG: VOR RECONNECT
+-----SPLITTER
+-----SPLITTER
+19:14:06.879 ERROR  : Template: ignoring template field reportedIE -> -1 - rangecheck not ok
+19:14:06.879 FATAL  : Template: adding reportedIE -> ID 8 with size 4
+19:14:06.879 FATAL  : Template: adding reportedIE -> ID 12 with size 4
+19:14:06.879 FATAL  : Template: adding reportedIE -> ID 313 with size 0
+19:14:06.879 FATAL  : Template: adding reportedIE -> ID 150 with size 4
+19:14:06.879 FATAL  : Template: got 4 fields, record length is 12+0*capture_len
+create recordLen = 0
+
+create maxPaSize = 1500
+
+19:14:06.879 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported.
+19:14:06.882 FATAL  : MESSUNG: ENDE RECONFIG
+got signal 2 - exiting19:14:16.894 FATAL  : start shuting down observer
+19:14:17.221 FATAL  : end shuting down observer
+19:14:17.221 FATAL  : start shuting down packetQueue
+19:14:17.321 FATAL  : end shuting down packetQueue
+19:14:17.321 FATAL  : start shuting down filter
+19:14:17.321 FATAL  : end shuting down filter
+19:14:17.321 FATAL  : start shuting down psampExporter
+19:14:17.331 FATAL  : end shuting down psampExporter
+19:14:17.331 FATAL  : start shuting down filter
+19:14:17.331 FATAL  : end shuting down filter
+19:14:17.331 FATAL  : start shuting down packetAggregator
+19:14:17.341 FATAL  : end shuting down packetAggregator
+19:14:17.341 FATAL  : start shuting down ipfixExporter
+19:14:17.441 FATAL  : end shuting down ipfixExporter
+19:14:17.441 FATAL  : run packetQueue->disconnect
+19:14:17.441 FATAL  : run filter->disconnect
+19:14:17.441 FATAL  : run psampExporter->disconnect
+19:14:17.441 FATAL  : run filter->disconnect
+19:14:17.441 FATAL  : run packetAggregator->disconnect
+19:14:17.441 FATAL  : run ipfixExporter->disconnect
+19:14:17.441 VERMONT: up and running at Sat Nov 17 19:14:17 2007
+
+~CfgHelper [observer]
+19:14:17.441 VERMONT: PCAP statistics:
+19:14:17.441 VERMONT: Number of packets received on interface: 1034296
+19:14:17.441 VERMONT: Number of packets dropped by PCAP: 775903
+~CfgHelper [packetQueue]
+~CfgHelper [filter]
+~CfgHelper [psampExporter]
+~CfgHelper [filter]
+~CfgHelper [packetAggregator]
+~CfgHelper [ipfixExporter]
+---- 3 ----
+18169
+19:14:24.924 FATAL  : /home/siprbaum/v/cfg/PSAMPExporterCfg.cpp:$  no xml element set
+19:14:24.925 ERROR  : message debug level is 2
+19:14:24.926 FATAL  : Filter: Creating count based sampler
+19:14:24.926 FATAL  : Filter: Creating count based sampler
+19:14:24.928 ERROR  : Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.
+19:14:24.928 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported..
+19:14:25.460 ERROR  : unable to determine netmask/network: eth1: no IPv4 address assigned
+-----SPLITTER
+-----SPLITTER
+19:14:25.461 ERROR  : Template: ignoring template field reportedIE -> -1 - rangecheck not ok
+19:14:25.461 FATAL  : Template: adding reportedIE -> ID 8 with size 4
+19:14:25.461 FATAL  : Template: adding reportedIE -> ID 12 with size 4
+19:14:25.461 FATAL  : Template: adding reportedIE -> ID 313 with size 0
+19:14:25.461 FATAL  : Template: adding reportedIE -> ID 150 with size 4
+19:14:25.461 FATAL  : Template: got 4 fields, record length is 12+0*capture_len
+create recordLen = 0
+
+create maxPaSize = 1500
+
+19:14:25.461 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported.
+19:14:25.780 FATAL  : MESSUNG: ENDE RECONFIG
+SIGUSR called
+19:14:29.953 FATAL  : MESSUNG: START RECONFIGURE ON SIGNAL
+19:14:29.954 FATAL  : Filter: Creating count based sampler
+19:14:29.954 FATAL  : Filter: Creating count based sampler
+19:14:29.956 ERROR  : Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.
+19:14:29.956 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported..
+19:14:29.956 FATAL  : MESSUNG: VOR GRAPH BUILD
+19:14:29.956 FATAL  : /home/siprbaum/v/cfg/ConfigManager.cpp:84
+19:14:29.956 FATAL  : MESSUNG: VOR RECONNECT
+-----SPLITTER
+-----SPLITTER
+19:14:29.957 ERROR  : Template: ignoring template field reportedIE -> -1 - rangecheck not ok
+19:14:29.957 FATAL  : Template: adding reportedIE -> ID 8 with size 4
+19:14:29.957 FATAL  : Template: adding reportedIE -> ID 12 with size 4
+19:14:29.957 FATAL  : Template: adding reportedIE -> ID 313 with size 0
+19:14:29.957 FATAL  : Template: adding reportedIE -> ID 150 with size 4
+19:14:29.957 FATAL  : Template: got 4 fields, record length is 12+0*capture_len
+create recordLen = 0
+
+create maxPaSize = 1500
+
+19:14:29.957 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported.
+19:14:29.957 FATAL  : MESSUNG: ENDE RECONFIG
+got signal 2 - exiting19:14:39.972 FATAL  : start shuting down observer
+19:14:39.972 FATAL  : end shuting down observer
+19:14:39.972 FATAL  : start shuting down packetQueue
+19:14:40.079 FATAL  : end shuting down packetQueue
+19:14:40.079 FATAL  : start shuting down filter
+19:14:40.079 FATAL  : end shuting down filter
+19:14:40.079 FATAL  : start shuting down psampExporter
+19:14:40.409 FATAL  : end shuting down psampExporter
+19:14:40.409 FATAL  : start shuting down filter
+19:14:40.409 FATAL  : end shuting down filter
+19:14:40.409 FATAL  : start shuting down packetAggregator
+19:14:40.418 FATAL  : end shuting down packetAggregator
+19:14:40.418 FATAL  : start shuting down ipfixExporter
+19:14:40.518 FATAL  : end shuting down ipfixExporter
+19:14:40.518 FATAL  : run packetQueue->disconnect
+19:14:40.518 FATAL  : run filter->disconnect
+19:14:40.518 FATAL  : run psampExporter->disconnect
+19:14:40.518 FATAL  : run filter->disconnect
+19:14:40.518 FATAL  : run packetAggregator->disconnect
+19:14:40.518 FATAL  : run ipfixExporter->disconnect
+19:14:40.518 VERMONT: up and running at Sat Nov 17 19:14:40 2007
+
+~CfgHelper [observer]
+19:14:40.518 VERMONT: PCAP statistics:
+19:14:40.518 VERMONT: Number of packets received on interface: 1054572
+19:14:40.518 VERMONT: Number of packets dropped by PCAP: 792945
+~CfgHelper [packetQueue]
+~CfgHelper [filter]
+~CfgHelper [psampExporter]
+~CfgHelper [filter]
+~CfgHelper [packetAggregator]
+~CfgHelper [ipfixExporter]
+---- 4 ----
+18183
+19:14:48.002 FATAL  : /home/siprbaum/v/cfg/PSAMPExporterCfg.cpp:$  no xml element set
+19:14:48.411 ERROR  : message debug level is 2
+19:14:48.412 FATAL  : Filter: Creating count based sampler
+19:14:48.412 FATAL  : Filter: Creating count based sampler
+19:14:48.414 ERROR  : Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.
+19:14:48.414 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported..
+19:14:48.947 ERROR  : unable to determine netmask/network: eth1: no IPv4 address assigned
+-----SPLITTER
+-----SPLITTER
+19:14:48.948 ERROR  : Template: ignoring template field reportedIE -> -1 - rangecheck not ok
+19:14:48.948 FATAL  : Template: adding reportedIE -> ID 8 with size 4
+19:14:48.948 FATAL  : Template: adding reportedIE -> ID 12 with size 4
+19:14:48.948 FATAL  : Template: adding reportedIE -> ID 313 with size 0
+19:14:48.948 FATAL  : Template: adding reportedIE -> ID 150 with size 4
+19:14:48.948 FATAL  : Template: got 4 fields, record length is 12+0*capture_len
+create recordLen = 0
+
+create maxPaSize = 1500
+
+19:14:48.948 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported.
+19:14:48.949 FATAL  : MESSUNG: ENDE RECONFIG
+SIGUSR called
+19:14:53.430 FATAL  : MESSUNG: START RECONFIGURE ON SIGNAL
+19:14:53.433 FATAL  : Filter: Creating count based sampler
+19:14:53.433 FATAL  : Filter: Creating count based sampler
+19:14:53.435 ERROR  : Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.
+19:14:53.435 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported..
+19:14:53.435 FATAL  : MESSUNG: VOR GRAPH BUILD
+19:14:53.435 FATAL  : /home/siprbaum/v/cfg/ConfigManager.cpp:84
+19:14:53.435 FATAL  : MESSUNG: VOR RECONNECT
+-----SPLITTER
+-----SPLITTER
+19:14:53.437 ERROR  : Template: ignoring template field reportedIE -> -1 - rangecheck not ok
+19:14:53.437 FATAL  : Template: adding reportedIE -> ID 8 with size 4
+19:14:53.437 FATAL  : Template: adding reportedIE -> ID 12 with size 4
+19:14:53.437 FATAL  : Template: adding reportedIE -> ID 313 with size 0
+19:14:53.437 FATAL  : Template: adding reportedIE -> ID 150 with size 4
+19:14:53.437 FATAL  : Template: got 4 fields, record length is 12+0*capture_len
+create recordLen = 0
+
+create maxPaSize = 1500
+
+19:14:53.437 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported.
+19:14:53.437 FATAL  : MESSUNG: ENDE RECONFIG
+got signal 2 - exiting19:15:03.449 FATAL  : start shuting down observer
+19:15:03.496 FATAL  : end shuting down observer
+19:15:03.496 FATAL  : start shuting down packetQueue
+19:15:03.506 FATAL  : end shuting down packetQueue
+19:15:03.506 FATAL  : start shuting down filter
+19:15:03.506 FATAL  : end shuting down filter
+19:15:03.506 FATAL  : start shuting down psampExporter
+19:15:03.536 FATAL  : end shuting down psampExporter
+19:15:03.536 FATAL  : start shuting down filter
+19:15:03.536 FATAL  : end shuting down filter
+19:15:03.536 FATAL  : start shuting down packetAggregator
+19:15:03.556 FATAL  : end shuting down packetAggregator
+19:15:03.556 FATAL  : start shuting down ipfixExporter
+19:15:03.666 FATAL  : end shuting down ipfixExporter
+19:15:03.666 FATAL  : run packetQueue->disconnect
+19:15:03.666 FATAL  : run filter->disconnect
+19:15:03.666 FATAL  : run psampExporter->disconnect
+19:15:03.666 FATAL  : run filter->disconnect
+19:15:03.666 FATAL  : run packetAggregator->disconnect
+19:15:03.666 FATAL  : run ipfixExporter->disconnect
+19:15:03.666 VERMONT: up and running at Sat Nov 17 19:15:03 2007
+
+~CfgHelper [observer]
+19:15:03.666 VERMONT: PCAP statistics:
+19:15:03.666 VERMONT: Number of packets received on interface: 1030790
+19:15:03.666 VERMONT: Number of packets dropped by PCAP: 766045
+~CfgHelper [packetQueue]
+~CfgHelper [filter]
+~CfgHelper [psampExporter]
+~CfgHelper [filter]
+~CfgHelper [packetAggregator]
+~CfgHelper [ipfixExporter]
+---- 5 ----
+18197
+19:15:11.909 FATAL  : /home/siprbaum/v/cfg/PSAMPExporterCfg.cpp:$  no xml element set
+19:15:11.909 ERROR  : message debug level is 2
+19:15:11.911 FATAL  : Filter: Creating count based sampler
+19:15:11.911 FATAL  : Filter: Creating count based sampler
+19:15:11.913 ERROR  : Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.
+19:15:11.913 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported..
+19:15:12.445 ERROR  : unable to determine netmask/network: eth1: no IPv4 address assigned
+-----SPLITTER
+-----SPLITTER
+19:15:12.446 ERROR  : Template: ignoring template field reportedIE -> -1 - rangecheck not ok
+19:15:12.446 FATAL  : Template: adding reportedIE -> ID 8 with size 4
+19:15:12.446 FATAL  : Template: adding reportedIE -> ID 12 with size 4
+19:15:12.446 FATAL  : Template: adding reportedIE -> ID 313 with size 0
+19:15:12.446 FATAL  : Template: adding reportedIE -> ID 150 with size 4
+19:15:12.446 FATAL  : Template: got 4 fields, record length is 12+0*capture_len
+create recordLen = 0
+
+create maxPaSize = 1500
+
+19:15:12.446 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported.
+19:15:12.446 FATAL  : MESSUNG: ENDE RECONFIG
+SIGUSR called
+19:15:16.578 FATAL  : MESSUNG: START RECONFIGURE ON SIGNAL
+19:15:16.580 FATAL  : Filter: Creating count based sampler
+19:15:16.580 FATAL  : Filter: Creating count based sampler
+19:15:16.582 ERROR  : Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.
+19:15:16.582 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported..
+19:15:16.582 FATAL  : MESSUNG: VOR GRAPH BUILD
+19:15:16.583 FATAL  : /home/siprbaum/v/cfg/ConfigManager.cpp:84
+19:15:16.583 FATAL  : MESSUNG: VOR RECONNECT
+-----SPLITTER
+-----SPLITTER
+19:15:16.584 ERROR  : Template: ignoring template field reportedIE -> -1 - rangecheck not ok
+19:15:16.584 FATAL  : Template: adding reportedIE -> ID 8 with size 4
+19:15:16.584 FATAL  : Template: adding reportedIE -> ID 12 with size 4
+19:15:16.584 FATAL  : Template: adding reportedIE -> ID 313 with size 0
+19:15:16.584 FATAL  : Template: adding reportedIE -> ID 150 with size 4
+19:15:16.584 FATAL  : Template: got 4 fields, record length is 12+0*capture_len
+create recordLen = 0
+
+create maxPaSize = 1500
+
+19:15:16.584 ERROR  : Exporter: Configuration of templateRefreshRate/Time not yet supported.
+19:15:16.585 FATAL  : MESSUNG: ENDE RECONFIG
+got signal 2 - exiting19:15:26.596 FATAL  : start shuting down observer
+19:15:26.597 FATAL  : end shuting down observer
+19:15:26.597 FATAL  : start shuting down packetQueue
+19:15:26.703 FATAL  : end shuting down packetQueue
+19:15:26.703 FATAL  : start shuting down filter
+19:15:26.704 FATAL  : end shuting down filter
+19:15:26.704 FATAL  : start shuting down psampExporter
+19:15:26.713 FATAL  : end shuting down psampExporter
+19:15:26.713 FATAL  : start shuting down filter
+19:15:26.713 FATAL  : end shuting down filter
+19:15:26.713 FATAL  : start shuting down packetAggregator
+19:15:26.723 FATAL  : end shuting down packetAggregator
+19:15:26.723 FATAL  : start shuting down ipfixExporter
+19:15:26.813 FATAL  : end shuting down ipfixExporter
+19:15:26.813 FATAL  : run packetQueue->disconnect
+19:15:26.813 FATAL  : run filter->disconnect
+19:15:26.813 FATAL  : run psampExporter->disconnect
+19:15:26.813 FATAL  : run filter->disconnect
+19:15:26.813 FATAL  : run packetAggregator->disconnect
+19:15:26.813 FATAL  : run ipfixExporter->disconnect
+19:15:26.814 VERMONT: up and running at Sat Nov 17 19:15:26 2007
+
+~CfgHelper [observer]
+19:15:26.814 VERMONT: PCAP statistics:
+19:15:26.814 VERMONT: Number of packets received on interface: 1006293
+19:15:26.814 VERMONT: Number of packets dropped by PCAP: 743844
+~CfgHelper [packetQueue]
+~CfgHelper [filter]
+~CfgHelper [psampExporter]
+~CfgHelper [filter]
+~CfgHelper [packetAggregator]
+~CfgHelper [ipfixExporter]
