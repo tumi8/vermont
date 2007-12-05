@@ -105,7 +105,6 @@ int main(int ac, char **dc)
 
 		if (reload_config) {
 			msg(MSG_INFO, "Reconfiguriong vermont");
-			msg(MSG_FATAL, "MESSUNG: START RECONFIGURE ON SIGNAL");
 			manager.parseConfig(string(config_file));
 			reload_config = false;
 		}

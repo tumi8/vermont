@@ -23,16 +23,16 @@ PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
 		XMLElement* e = *it;
 
 		if (e->matches("countBased")) {
-			msg(MSG_FATAL, "Filter: Creating count based sampler");
+			msg(MSG_INFO, "Filter: Creating count based sampler");
 			c = new PacketCountFilterCfg(e);
 		} else if (e->matches("stringBased")) {
-			msg(MSG_FATAL, "Filter: Creating string based sampler");
+			msg(MSG_INFO, "Filter: Creating string based sampler");
 			c = new PacketStringFilterCfg(e);
 		} else if (e->matches("regexBased")) {
-			msg(MSG_FATAL, "Filter: Creating regex based sampler");
+			msg(MSG_INFO, "Filter: Creating regex based sampler");
 			c = new PacketRegexFilterCfg(e);
 		} else if (e->matches("timeBased")) {
-			msg(MSG_FATAL, "Filter: Creating time based sampler");
+			msg(MSG_INFO, "Filter: Creating time based sampler");
 		} else if (e->matches("next")) { // ignore next
 			continue;
 		} else {

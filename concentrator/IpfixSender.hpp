@@ -48,6 +48,15 @@ public:
 	virtual void performShutdown();
 
 	// inherited from IpfixRecordDestination
+	virtual void onTemplate(IpfixTemplateRecord* record) {
+		// FIXME: not sure how to deal with this
+		msg(MSG_DEBUG, "%s:%u Ignoring Template", __FILE__, __LINE__);
+	};
+	virtual void onDataRecord(IpfixDataRecord* record) {
+		// FIXME: not sure how to deal with this
+		msg(MSG_DEBUG, "%s:%u Ignoring Template", __FILE__, __LINE__);
+	}
+	
 	virtual void onDataTemplate(IpfixDataTemplateRecord* record);
 	virtual void onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record);
 	virtual void onDataDataRecord(IpfixDataDataRecord* record);

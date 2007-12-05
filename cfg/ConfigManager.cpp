@@ -83,13 +83,10 @@ void ConfigManager::parseConfig(std::string fileName)
 		Connector connector;
 		graph->accept(&connector);
 	} else {
-		msg(MSG_FATAL, "MESSUNG: VOR GRAPH BUILD");
 		// first, connect the nodes on the new graph (but NOT the modules
 		Connector connector(true, false);
 		graph->accept(&connector);
-		msg(MSG_FATAL, "%s:%d", __FILE__, __LINE__);
 		// now connect the modules reusing those from the old graph
-		msg(MSG_FATAL, "MESSUNG: VOR RECONNECT");
 		ReConnector reconnector(oldGraph);
 		graph->accept(&reconnector);
 	}
@@ -102,7 +99,6 @@ void ConfigManager::parseConfig(std::string fileName)
 		msg(MSG_INFO, "Starting module %s", cfg->getName().c_str());
 		cfg->start(false);
 	}
-	msg(MSG_FATAL, "MESSUNG: ENDE RECONFIG");
 
 	if (old_document)
 		delete old_document;
@@ -124,10 +120,7 @@ void ConfigManager::shutdown()
 	// shutdown the thread
 	for (size_t i = 0; i < topoNodes.size(); i++) {
 		Cfg* cfg = topoNodes[i]->getCfg();
-
-		msg(MSG_FATAL, "start shuting down %s", cfg->getName().c_str());
 		cfg->shutdown(false);
-		msg(MSG_FATAL, "end shuting down %s", cfg->getName().c_str());
 	}
 
 	// disconnect the modules
@@ -138,7 +131,7 @@ void ConfigManager::shutdown()
 		// disconnect the module from its sources ..
 		vector<CfgNode*> sources = graph->getSources(n);
 		for (size_t k = 0; k < sources.size(); k++) {
-			msg(MSG_FATAL, "run %s->disconnect", cfg->getName().c_str());
+			msg(MSG_INFO, "run %s->disconnect", cfg->getName().c_str());
 			sources[k]->getCfg()->disconnectInstances();
 		}
 	}

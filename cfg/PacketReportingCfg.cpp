@@ -66,7 +66,7 @@ Template* PacketReportingCfg::getTemplate()
 
                 t->addField((uint16_t)id->id, fieldLength);
         }
-        msg(MSG_FATAL, "Template: got %d fields, record length is %u+%u*capture_len",
+        msg(MSG_DEBUG, "Template: got %d fields, record length is %u +%u * capture_len",
         		t->getFieldCount(), recordLength,recordVLFields);
 
         return t;

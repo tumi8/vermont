@@ -162,7 +162,7 @@ public:
 	
 	virtual ~CfgHelper()
 	{ 
-		printf("~CfgHelper [%s]\n", this->getName().c_str());
+		DPRINTF("~CfgHelper [%s]\n", this->getName().c_str());
 		shutdown(false);
 		freeTimeoutAdapter();
 		freeInstance();
@@ -311,7 +311,6 @@ public:
 		
 		// check if we need a splitter
 		if (this->getNext().size() > 1) {
-			printf("-----SPLITTER\n");
 			if (!splitter) {
 				splitter = new ConnectionSplitter<typename InstanceType::src_value_type>();
 				instance->connectTo(splitter);
