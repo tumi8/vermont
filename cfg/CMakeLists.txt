@@ -28,6 +28,7 @@ ADD_LIBRARY(cfg
 	IpfixAggregatorCfg.cpp
 	IpfixCollectorCfg.cpp
 	IpfixExporterCfg.cpp
+	IpfixPrinterCfg.cpp
 	Node.cpp
 	ObserverCfg.cpp
 	PacketAggregatorCfg.cpp

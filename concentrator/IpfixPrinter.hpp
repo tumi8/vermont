@@ -31,7 +31,7 @@
  *
  * Prints received flows to stdout 
  */
-class IpfixPrinter : public Module, public IpfixRecordDestination
+class IpfixPrinter : public Module, public IpfixRecordDestination, public Source<NullEmitable*>
 {
 	public:
 		IpfixPrinter();

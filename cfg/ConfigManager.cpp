@@ -6,6 +6,7 @@
 #include "cfg/IpfixAggregatorCfg.h"
 #include "cfg/IpfixCollectorCfg.h"
 #include "cfg/IpfixExporterCfg.h"
+#include "cfg/IpfixPrinterCfg.h"
 #include "cfg/ObserverCfg.h"
 #include "cfg/PacketAggregatorCfg.h"
 #include "cfg/PacketFilterCfg.h"
@@ -30,6 +31,7 @@ Cfg* ConfigManager::configModules[] = {
 	new IpfixQueueCfg(NULL),
 	new IpfixExporterCfg(NULL),
 	new IpfixAggregatorCfg(NULL),
+	new IpfixPrinterCfg(NULL),
 	new PacketAggregatorCfg(NULL),
 };
 
@@ -65,12 +67,16 @@ void ConfigManager::parseConfig(std::string fileName)
 	for (XMLNode::XMLSet<XMLElement*>::const_iterator it = rootElements.begin();
 	     it != rootElements.end();
 	     it++) {
+		bool found = false;
 		for (unsigned int i = 0; i < ARRAY_SIZE(configModules); i++) {
 			if ((*it)->getName() == configModules[i]->getName()) {
 				Cfg* cfg = configModules[i]->create(*it);
 				graph->addNode(cfg);
+				found = true;
 			}
 		}
+		if (!found)
+			THROWEXCEPTION("Unkown cfg entry %s found", (*it)->getName().c_str());
 	}
 
 	if (!oldGraph) { // this is the first config we have read
