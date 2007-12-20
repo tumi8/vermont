@@ -41,13 +41,13 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
 	IpfixDbReader* ipfixDbReader = (IpfixDbReader*)ipfixDbReader_;
 	int i;
 
-	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo(new IpfixRecord::DataTemplateInfo);
 	DbData* dbData = ipfixDbReader->dbReader->dbData;
 
 	// TODO: make IpfixDbReader exit if exit was requested!
 	pthread_mutex_lock(&ipfixDbReader->mutex);
 	msg(MSG_DIALOG, "Start sending tables");
 	for(i = 0; i < dbData->tableCount && i < MAX_TABLES; i++) {
+		boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo(new IpfixRecord::DataTemplateInfo);
 		if(ipfixDbReader->dbReaderSendNewTemplate(dataTemplateInfo, i) != 0)
 		{
 		    msg(MSG_ERROR, "IpfixDbReader: Template error, skip table");
@@ -163,7 +163,7 @@ int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<IpfixRecord::DataTemplate
 	}
 
 	dbResult = mysql_store_result(conn);
-	msg(MSG_DEBUG,"IpfixDbReader starts sending records from table %s", dbData->tableNames[table_index]);
+	msg(MSG_INFO,"IpfixDbReader starts sending records from table %s", dbData->tableNames[table_index]);
 	while((dbRow = mysql_fetch_row(dbResult))) {
 		if (delta == 0) {
 			for (i = 0; i != dbData->colCount; ++i) {
@@ -226,11 +226,11 @@ int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<IpfixRecord::DataTemplate
 		ipfixRecord->message = data;
 		ipfixRecord->data = data.get();
 		push(ipfixRecord);
-		msg(MSG_INFO,"IpfixDbReader sent record");
+		msg(MSG_DEBUG,"IpfixDbReader sent record");
 	}
 	mysql_free_result(dbResult);
 	
-	msg(MSG_DEBUG,"Sending from table %s done", dbData->tableNames[table_index]);
+	msg(MSG_INFO,"Sending from table %s done", dbData->tableNames[table_index]);
 
 	return 0;
 }
@@ -348,7 +348,7 @@ int IpfixDbReader::getColumns(int table_index)
 			}
 
 			dbData->columns[dbData->colCount] = getColumnByName(dbRow[0]);
-			msg(MSG_DEBUG, "Column name: %s", dbData->columns[dbData->colCount]->cname);
+			msg(MSG_VDEBUG, "Column name: %s", dbData->columns[dbData->colCount]->cname);
 			dbData->colCount++;
 		}
 	}
