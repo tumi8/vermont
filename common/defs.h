@@ -50,6 +50,12 @@
 #define AGG_DEFAULT_POLLING_TIME 10000
 
 /**
+ * defines in milliseconds, how long flow records may be cached in IpfixSender
+ * until they are sent to the network
+ */
+#define IS_DEFAULT_RECORDCACHETIMEOUT 5000
+
+/**
  * convenient way to determine size of a C array
  */
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))

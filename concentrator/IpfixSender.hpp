@@ -24,6 +24,7 @@
 #include "IpfixParser.hpp"
 #include "ipfixlolib/ipfixlolib.h"
 #include "common/ConcurrentQueue.h"
+#include "reconf/Notifiable.h"
 #include <queue>
 
 
@@ -34,7 +35,7 @@ using namespace std;
  *
  * Interface for feeding generated Templates and Data Records to "ipfixlolib" 
  */
-class IpfixSender : public Module, public Source<NullEmitable*>, public IpfixRecordDestination
+class IpfixSender : public Module, public Source<NullEmitable*>, public IpfixRecordDestination, public Notifiable
 {
 public:
 	IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0); // FIXME: observationDomainId
@@ -42,10 +43,6 @@ public:
 
 	void addCollector(const char *ip, uint16_t port);
 	void flushPacket();
-	
-	// inherited from Module
-	virtual void performStart();
-	virtual void performShutdown();
 
 	// inherited from IpfixRecordDestination
 	virtual void onTemplate(IpfixTemplateRecord* record) {
@@ -61,8 +58,10 @@ public:
 	virtual void onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record);
 	virtual void onDataDataRecord(IpfixDataDataRecord* record);
 
-	// inherited from StatisticsModule
 	virtual std::string getStatistics();
+	
+	// inherited from Notifiable
+	virtual void onTimeout(void* dataPtr);
 
 	class Collector
 	{
@@ -100,8 +99,12 @@ private:
 	uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
 	uint16_t noCachedRecords; /**< number of records already passed to ipfixlob, should be equal to recordsToRelease.size() */
 	list<boost::shared_ptr<IpfixRecord::TemplateInfo> > registeredTemplates; /**< contains all templates which were already registered in ipfixlolib */
-	Thread thread;
-	ConcurrentQueue<IpfixRecord*> incomingRecords;
+	
+	uint16_t recordCacheTimeout; /**< how long may records be cached until sent, milliseconds */
+	bool timeoutRegistered; /**< true if next timeout was already registered in timer */
+	bool recordsAlreadySent; /**< true if records were sent to the network as the packet was full */
+	timespec nextTimeout;
+	
 	queue<IpfixRecord*> recordsToRelease;
 	
 	static void* threadWrapper(void* instance);
@@ -113,6 +116,8 @@ private:
 	bool isTemplateRegistered(IpfixRecord::TemplateInfo* ti);
 	void removeRegisteredTemplate(IpfixRecord::TemplateInfo* ti);
 	void addRegisteredTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> ti);
+	void sendRecords(bool forcesend = false);
+	void registerTimeout();
 };
 
 #endif

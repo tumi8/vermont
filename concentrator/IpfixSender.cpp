@@ -23,6 +23,7 @@
 
 #include "common/msg.h"
 #include "common/Time.h"
+#include "reconf/Timer.h"
 
 #include <sstream>
 #include <stdexcept>
@@ -48,12 +49,17 @@ using namespace std;
 IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) 
 	: maxFlowLatency(100), // FIXME: this has to be set in the configuration!
 	  noCachedRecords(0),
-	  thread(threadWrapper)
+	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
+	  timeoutRegistered(false),
+	  recordsAlreadySent(false)
 {
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 	statSentRecords = 0;
 	currentTemplateId = 0;
 	lastTemplateId = SENDER_TEMPLATE_ID_LOW;
+	
+	nextTimeout.tv_sec = 0;
+	nextTimeout.tv_nsec = 0;
 
 	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
 		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
@@ -87,22 +93,6 @@ IpfixSender::~IpfixSender()
 	
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	ipfix_deinit_exporter(exporter);
-}
-
-/**
- * Starts or resumes sending messages
- */
-void IpfixSender::performStart() 
-{
-	thread.run(this);
-}
-
-/**
- * Temporarily pauses sending messages
- */
-void IpfixSender::performShutdown() 
-{
-	thread.join();
 }
 
 /**
@@ -305,6 +295,9 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 	}
 
 	msg(MSG_INFO, "sndIpfix created template with ID %u", my_template_id);
+	
+	registerTimeout();
+	sendRecords();
 }
 
 /**
@@ -335,6 +328,8 @@ void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* 
 	}
 
 	free(record->dataTemplateInfo->userData);
+	
+	sendRecords();
 }
 
 
@@ -437,13 +432,17 @@ void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 		else {
 			ipfix_put_data_field(exporter, data + fi->offset, fi->type.length);
 		}
-
 	}
+	 
+	registerTimeout();
 
 	statSentRecords++;
 	
 	recordsToRelease.push(record);
+	
 	noCachedRecords++;
+	
+	sendRecords();
 }
 
 /**
@@ -478,55 +477,21 @@ void IpfixSender::preReconfiguration2()
 
 
 /**
- * wrapper function for thread creation
+ * sends records to the network
+ * @param forcesend to send all records regardless how many were cached
  */
-void* IpfixSender::threadWrapper(void* instance)
+void IpfixSender::sendRecords(bool forcesend)
 {
-	IpfixSender* is = reinterpret_cast<IpfixSender*>(instance);
-	is->processLoop();
-	return NULL;
-}
-
-
-/**
- * loop which processes incoming flows and sends a new IPFIX packet
- * when necessary
- * it ensures, that a new packet is sent when no more flows can be stored in it
- * (maximum size is reached), or when the specified timeout maxFlowLatency is
- * reached after the first flow was received
- * 
- * NOTICE: this algorithm does *NOT* take into account that functions called by
- * IpfixRecordDestination::receive initiate the packet send themselves (as is done
- * when the template id changes)
- */
-void IpfixSender::processLoop()
-{
-	timespec timeout;
-	addToCurTime(&timeout, maxFlowLatency);
-	registerCurrentThread();
+	if (noCachedRecords == 0) return;
 	
-	while (!exitFlag) {
-		IpfixRecord* record;
-		if (!incomingRecords.popAbs(timeout, &record)) {
-			// either timeout or exitFlag was set
-			if (exitFlag) break;
-			if (noCachedRecords > 0) {
-				// send new packet to network
-				endAndSendDataSet();
-			}
-			addToCurTime(&timeout, maxFlowLatency);
-		} else {
-			// record was received, queue it in ipfixlolib
-			IpfixRecordDestination::receive(record);
-			if (noCachedRecords >= 10) { // FIXME: we need to put as many flows in a packet as possible, not only 10!
-				// send packet
-				endAndSendDataSet();
-				addToCurTime(&timeout, maxFlowLatency);
-			}
-		}		
+	// TODO: extend ipfixlolib so that as many records as possible may be stored
+	// in one network packet
+	if ((noCachedRecords >= 10) || forcesend) {
+		// send packet
+		endAndSendDataSet();
+		// set next timeout
+		addToCurTime(&nextTimeout, recordCacheTimeout);
 	}
-	
-	unregisterCurrentThread();
 }
 
 
@@ -536,7 +501,7 @@ void IpfixSender::processLoop()
  */
 void IpfixSender::flushPacket()
 {
-	endAndSendDataSet();
+	sendRecords(true);
 }
 
 
@@ -553,4 +518,38 @@ std::string IpfixSender::getStatistics()
 	oss << "IpfixReceiverUdpIpV4: received packets: " << sent << endl;	
 
 	return oss.str();
+}
+
+
+/**
+ * gets called regularly to send data over the network
+ */
+void IpfixSender::onTimeout(void* dataPtr)
+{
+	timeoutRegistered = false;
+	
+	if (recordsAlreadySent) {
+		timeval tv;
+		gettimeofday(&tv, 0);
+		if (nextTimeout.tv_sec>tv.tv_sec || (nextTimeout.tv_sec==tv.tv_sec && nextTimeout.tv_nsec>tv.tv_usec*1000)) {
+			// next timeout is in the future, reregister it
+			timer->addTimeout(this, nextTimeout, NULL);
+			// as the next timeout is not over yet, we don't need to send the records
+			return;
+		}
+	}
+	sendRecords(true);
+}
+
+/**
+ * registers timeout for function onTimeout in Timer
+ * (used to send records which are cached)
+ */
+void IpfixSender::registerTimeout()
+{
+	if (timeoutRegistered) return;
+	
+	addToCurTime(&nextTimeout, recordCacheTimeout);
+	timer->addTimeout(this, nextTimeout, NULL);
+	timeoutRegistered = true;
 }
