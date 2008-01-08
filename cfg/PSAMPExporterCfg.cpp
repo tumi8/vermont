@@ -25,7 +25,7 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 		if (e->matches("ipfixPacketRestrictions")) {
 			maxPacketSize = (uint16_t)getInt("maxPacketSize", 0, e);
 			try {
-				exportDelay = getTimeInUnit("maxExportDelay", mSEC, 0, e);
+				exportDelay = getTimeInUnit("maxExportDelay", mSEC, e);
 			} catch (IllegalEntry ie) { /* ignore if not set */ } 
 		} else if (e->matches("udpTemplateManagement")) {
 			// use 0 as default values for both if the config entry isn't found 
