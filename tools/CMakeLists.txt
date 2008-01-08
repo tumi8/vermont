@@ -21,11 +21,12 @@ ADD_EXECUTABLE(testCollector
 	testCollector.cpp
 )
 
-TARGET_LINK_LIBRARIES(testCollector
+TARGET_LINK_LIBRARIES(testCollector	
 	concentrator
 	ipfixlolib
-	common
 	reconf
+	common
+	osdep
 	${CMAKE_THREAD_LIBS_INIT}
 	${PCAP_LIBRARY}
 )

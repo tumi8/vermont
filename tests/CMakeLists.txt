@@ -25,12 +25,13 @@ ADD_EXECUTABLE(vermonttest
 )
 
 TARGET_LINK_LIBRARIES(vermonttest
-        cfg
+        cfg        
         reconf
-        sampler
-        common
+        sampler        
         concentrator
-        ipfixlolib
+        ipfixlolib  
+        common        
+        osdep      
 	${CMAKE_THREAD_LIBS_INIT}
 	${Boost_REGEX_LIBRARY}
 	${Boost_FILESYSTEM_LIBRARY}

@@ -1,6 +1,9 @@
 #include "Module.h"
 
+#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 Module::Module() 
 	: usedBytes(0), exitFlag(false), running(false)
@@ -53,13 +56,13 @@ uint32_t Module::getCurrentMemUsage()
 	return usedBytes;
 }
 
-void Module::getJiffiesUsed(list<JiffyTime>& usedJiffies)
+void Module::getJiffiesUsed(list<ThreadCPUInterface::JiffyTime>& usedJiffies)
 {
 	wThreadsMutex.lock();
-	list<JiffyTime>::iterator iter = watchedThreads.begin();
+	list<ThreadCPUInterface::JiffyTime>::iterator iter = watchedThreads.begin();
 	time_t curtime = time(0);
 	while (iter != watchedThreads.end()) {
-		JiffyTime jt = getJiffies(iter->thread);		
+		ThreadCPUInterface::JiffyTime jt = ThreadCPUInterface::getJiffies(iter->tid);		
 		jt.userJiffies -= iter->userJiffies;
 		jt.sysJiffies -= iter->sysJiffies;
 		jt.lastAccess = iter->lastAccess;
@@ -73,29 +76,41 @@ void Module::getJiffiesUsed(list<JiffyTime>& usedJiffies)
 	wThreadsMutex.unlock();
 }
 
-void Module::registerThreadID(pthread_t thread)
+void Module::registerThreadID(pid_t tid)
 {
 	wThreadsMutex.lock();
-	list<JiffyTime>::iterator iter = watchedThreads.begin();
+	list<ThreadCPUInterface::JiffyTime>::iterator iter = watchedThreads.begin();
 	while (iter != watchedThreads.end()) {
-		if (iter->thread == thread) {
+		if (iter->tid == tid) {
 			wThreadsMutex.unlock();
-			THROWEXCEPTION("thread id %d is already registered in this module", thread);
+			THROWEXCEPTION("thread id %u is already registered in this module", tid);
 		}
 		iter++;
 	}
-	JiffyTime jt = getJiffies(thread);
+	ThreadCPUInterface::JiffyTime jt = ThreadCPUInterface::getJiffies(tid);
 	jt.lastAccess = time(0);
 	
 	watchedThreads.push_back(jt);
+	wThreadsMutex.unlock();
 }
 
-void Module::unregisterThreadID(pthread_t thread)
+void Module::registerCurrentThread()
+{ 
+#if defined(__linux__)
+	pid_t tid;
+	tid = (long)syscall(SYS_gettid);
+	registerThreadID(tid);
+#else
+	registerThreadID(0);
+#endif
+}
+
+void Module::unregisterThreadID(pid_t tid)
 {
 	wThreadsMutex.lock();
-	list<JiffyTime>::iterator iter = watchedThreads.begin();
+	list<ThreadCPUInterface::JiffyTime>::iterator iter = watchedThreads.begin();
 	while (iter != watchedThreads.end()) {
-		if (iter->thread == thread) {
+		if (iter->tid == tid) {
 			watchedThreads.erase(iter);
 			wThreadsMutex.unlock();
 			return;
@@ -103,40 +118,14 @@ void Module::unregisterThreadID(pthread_t thread)
 		iter++;
 	}
 	wThreadsMutex.unlock();
-	THROWEXCEPTION("thread id %d was not found in list", thread);
+	THROWEXCEPTION("thread id %u was not found in list", tid);
 }
 
-/**
- * determines current amount of jiffies used by given thread id
- * accesses proc filesystem to get info
- */
-Module::JiffyTime Module::getJiffies(pthread_t thread)
+void Module::unregisterCurrentThread()
 {
-	pid_t pid = getpid();
-	char statfile[1024];
-	
-	snprintf(statfile, 1024, "/proc/%u/task/%u/stat", static_cast<uint32_t>(pid), static_cast<uint32_t>(thread));
-	
-	struct stat buf;
-	if (stat(statfile, &buf) != 0) {
-		THROWEXCEPTION("failed to access stat file '%s' (stat)", statfile);
-	}
-	
-	FILE* f = fopen(statfile, "r");
-	if (f == NULL) {
-		THROWEXCEPTION("failed to open stat file '%s' (fopen)", statfile);
-	}
-	
-	uint32_t utime, stime, cutime, cstime;
-	// 14. position: utime, then: stime, cutime, cstime
-	if (fscanf(f, "%*d %*s %*s %*d %*d %*d %*d %*d %*u %*d %*d %*u %*u %u %u %u %u %*u",
-			&utime, &stime, &cutime, &cstime) != 18) {
-		THROWEXCEPTION("failed to parse stat file '%s'", statfile);
-	}
-
-	fclose(f);
-	
-	JiffyTime jt = { thread, stime, utime, 0 };
-	
-	return jt;
+	pid_t tid;
+	tid = (long)syscall(SYS_gettid);
+	unregisterThreadID(tid);
 }
+
+

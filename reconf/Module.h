@@ -6,8 +6,10 @@
 */
 
 #include "Source.h"
+#include "common/ThreadCPUInterface.h"
 
 #include <list>
+#include <sys/types.h>
 
 using namespace std;
 
@@ -15,12 +17,7 @@ class Module
 {
 
 public:	
-	struct JiffyTime {
-		pthread_t thread;
-		uint32_t sysJiffies;
-		uint32_t userJiffies;
-		time_t lastAccess;
-	};
+
 	
 	Module();	
 	virtual ~Module();
@@ -74,20 +71,31 @@ public:
 	 * returns number of jiffies used by all threads since last call of this function
 	 * @param empty list which will be filled with data
 	 */
-	void getJiffiesUsed(list<JiffyTime>& usedJiffies);
+	void getJiffiesUsed(list<ThreadCPUInterface::JiffyTime>& usedJiffies);
 	
 	/**
 	 * registers given thread id as thread belonging to this module
 	 * module code should do this once for each thread that is used by it
 	 * @param thread thread id to be registered
 	 */
-	void registerThreadID(pthread_t thread);
+	void registerThreadID(pid_t tid);
+	
+	/**
+	 * registers current thread as thread belonging to this module
+	 * module code should do this once for each thread that is used by it
+	 */
+	void registerCurrentThread();
 	
 	/**
 	 * unregisters given thread id as thread belonging to this module
 	 * @param thread thread id to be unregistered
 	 */
-	void unregisterThreadID(pthread_t thread);
+	void unregisterThreadID(pid_t tid);
+	
+	/**
+	 * unregisters current thread as thread belonging to this module
+	 */
+	void unregisterCurrentThread();
 
 protected:
 	/**
@@ -119,10 +127,9 @@ protected:
 	bool running;		/**< true if module is running, false if it is shut down */
 	
 private:
-	list<JiffyTime> watchedThreads; /** all threads that are used by module */
+	list<ThreadCPUInterface::JiffyTime> watchedThreads; /** all threads that are used by module */
 	Mutex wThreadsMutex; /** mutex for locking watchedThreads */
 
-	JiffyTime getJiffies(pthread_t thread);
 };
 
 #endif
