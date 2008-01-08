@@ -59,7 +59,7 @@ CfgNode* Graph::addNode(Cfg* cfg)
 		throw std::runtime_error("can't handle that many nodes");
 
 	CfgNode *n = new CfgNode(this, nodes.size());
-	n->addCfg(cfg);
+	n->setCfg(cfg);
 	nodes.push_back(n);
 
 	for (size_t i = 0; i < nodes.size(); i++) {

@@ -11,7 +11,7 @@ public:
 	CfgNode(Graph* g, unsigned int id);
 	virtual ~CfgNode();
 
-	void addCfg(Cfg*);
+	void setCfg(Cfg*);
 	Cfg* getCfg() { return cfg; }
 private:
 	Cfg* cfg;

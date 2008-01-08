@@ -11,7 +11,7 @@ CfgNode::~CfgNode()
 		delete cfg;
 }
 
-void CfgNode::addCfg(Cfg* config)
+void CfgNode::setCfg(Cfg* config)
 {
 	cfg = config;
 }
