@@ -77,6 +77,7 @@ struct Column identify [] = {
 	{	"lastSwitched", IPFIX_TYPEID_flowEndSeconds, "INTEGER(10) UNSIGNED", 0}, // default value is invalid/not used for this entry
 	{	"firstSwitchedMillis", IPFIX_TYPEID_flowStartMilliSeconds, "SMALLINT(5) UNSIGNED", 0},
 	{	"lastSwitchedMillis", IPFIX_TYPEID_flowEndMilliSeconds, "SMALLINT(5) UNSIGNED", 0},
+	{	"tcpControlBits", IPFIX_TYPEID_tcpControlBits,  "SMALLINT(5) UNSIGNED", 0},
 	{	"exporterID",EXPORTERID, "SMALLINT(5) UNSIGNED", 0},
 	{	0} // last entry must be 0
 };
