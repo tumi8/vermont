@@ -11,10 +11,7 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 	templateRefreshTime(0), templateRefreshRate(0),
 	maxPacketSize(0), exportDelay(0), reporting(NULL) 
 { 
-	if (!elem) {
-		msg(MSG_FATAL, "%s:$  no xml element set", __FILE__, __LINE__);
-		return;
-	}
+	if (!elem) return;
 
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
