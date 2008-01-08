@@ -51,8 +51,6 @@ public:
 	virtual void receive(T packet)
 	{
 		DPRINTF("receive(Packet*)");
-		this->Sensor::usedBytes += sizeof(T);
-		statQueueEntries++;
 		queue.push(packet);
 	}
 	
@@ -92,9 +90,9 @@ public:
 	virtual void addTimeout(Notifiable* n, struct timespec& ts, void* dataPtr = 0)
 	{
 		// check if we are running, because otherwise permant calls to this function could
-		// allocate our complete memory and its never freed
+		// allocate our memory which is never freed
 		if (!Adapter<T>::running)
-			THROWEXCEPTION("addTimout called on a non running Queue");
+			THROWEXCEPTION("addTimeout called on a non running Queue");
 		
 		mutex.lock();
 		TimeoutEntry* e = new TimeoutEntry();
@@ -169,10 +167,7 @@ private:
 					continue;
 				}
 			}
-			
-			this->Sensor::usedBytes -= sizeof(T);
-			statQueueEntries--;
-			
+				
 			if (!Source<T>::send(element)) break;
 		}	
 		
@@ -199,7 +194,10 @@ private:
 	virtual string getStatisticsXML()
 	{
 		char text[200];
-		sprintf(text, "<entries>%u</entries>", statQueueEntries);
+		uint32_t entries = queue.getCount();
+		this->Sensor::usedBytes = entries*sizeof(T);
+		sprintf(text, "<entries>%u</entries>", entries);
+		printf("%s\n", text);
 		return string(text);
 	}
 };

@@ -161,7 +161,7 @@ void *Observer::observerThread(void *arg)
 		}
 	}
 
-	// if we aren't connected to a destination, we grab the packetand and can't
+	// if we aren't connected to a destination, we grab the packet and and can't
 	// send it to a destination. This would leak the packet, so clean it up... 
 	if (!have_send && p != NULL)
 		p->removeReference();

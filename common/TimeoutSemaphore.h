@@ -29,30 +29,36 @@ private:
 	sem_t* sem;
 
 	bool exitFlag;	/**< is set to true when semaphore is to be shut down **/
+	
+	struct timespec timeout;  /** used by wait to limit access to time-functions */
 
 	sem_t last_sem;
 public:
 	TimeoutSemaphore(int initialValue = 0)
 		: exitFlag(false)
 	{
-	    	sem = new sem_t;
+		sem = new sem_t;
+
+		timeout.tv_sec = 0;
+		timeout.tv_nsec = 0;
+
 		int retval = sem_init(sem, 0, initialValue);
 
 		if (retval != 0) {
-		    THROWEXCEPTION("failed to initialize semaphore, sem_init exited with code %d", errno);
+			THROWEXCEPTION("failed to initialize semaphore, sem_init exited with code %d", errno);
 		}
 
 	};
 
 	virtual ~TimeoutSemaphore()
 	{
-	    int retval = sem_destroy(sem);
-	    if (retval != 0) {
-		THROWEXCEPTION("given semaphore is not valid, failed to destroy it");
-	    }
-	    delete sem;
+		int retval = sem_destroy(sem);
+		if (retval != 0) {
+			THROWEXCEPTION("given semaphore is not valid, failed to destroy it");	
+		}
+		delete sem;
 	}
-
+	
 	// Acquire the lock if possible, or wait max. timeout_ms milliseconds
 	// for the lock to become available.
 	// if the timeout is reaced, return false
@@ -62,75 +68,69 @@ public:
 	{
 		struct timespec ts;
 		int retval;
-		// globalTimeout is for wait with timeout_ms==-1 and is used to determine
-		// next timeout, when exitFlag is to be checked next time
-		// this method saves lots of calls to gettimeofday()
-		static struct timespec globalTimeout = {0, 0};
-
+		
 		// if program requested to shut down, just return a failure
 		if (exitFlag) return false;
 
 		if (timeout_ms >= 0) {
-		    // wait until timeout
-		    addToCurTime(&ts, timeout_ms);
-		    retval = sem_timedwait(sem, &ts);
-		    if (retval != 0) {
-			switch (errno) {
-			    case EINVAL:
-				    THROWEXCEPTION("semaphore is invalid");
-				    return false;
-				    break;
-			    default:
-				    // semaphore could not be aquired because of several reasons, but none are fatal
-				    DPRINTFL(MSG_VDEBUG, "timedwait (<0) returned with %d", errno);
-				    return false;
+			// wait until timeout
+			addToCurTime(&ts, timeout_ms);
+			retval = sem_timedwait(sem, &ts);
+			if (retval != 0) {
+				switch (errno) {
+					case EINVAL:
+						THROWEXCEPTION("semaphore is invalid");
+						return false;
+						break;
+					default:
+						// semaphore could not be aquired because of several reasons, but none are fatal
+						DPRINTFL(MSG_VDEBUG, "timedwait (<0) returned with %d", errno);
+						return false;
+				}
 			}
-		    }
 		} else {
 		    // wait and check the exitFlag regularly
 		    do {
-			retval = sem_timedwait(sem, &globalTimeout);
-			if (retval != 0 && errno != ETIMEDOUT) {
-			    switch (errno) {
-				case EINVAL:
-				    /*char text[1000];
-				    char tmp[10];
-				    strcpy(text, "last_sem: ");
-				    for (unsigned int i=0; i<sizeof(sem_t); i++) {
-					sprintf(tmp, "%hhX", ((char*)&sem)[i]);
-					strcat(text, tmp);
-				    }
-				    strcat(text, ", sem: ");
-				    for (unsigned int i=0; i<sizeof(sem_t); i++) {
-					sprintf(tmp, "%hhX", ((char*)&last_sem)[i]);
-					strcat(text, tmp);
-				    }
-
-				    msg(THROWEXCEPTION, text);*/
-				    THROWEXCEPTION("semaphore is invalid");
-				    return false;
-				    break;
-				default:
-				    // semaphore could not be aquired because of several reasons, but none are fatal
-				    DPRINTFL(MSG_VDEBUG, "timedwait (>=0) returned with %d", errno);
-			    }
-			}
-			if (errno == ETIMEDOUT) {
-				// calculate absolute time from timeout
-				struct timespec tmp;
-				addToCurTime(&tmp, STANDARD_TIMEOUT);
-				// attention: next command may collide between threads, but collision does not matter
-				globalTimeout = tmp;
-			}
-
-			// if program was shutdown, exit without success
-			if (exitFlag) {
-				DPRINTFL(MSG_VDEBUG, "exitFlag is set", errno);
-			    return false;
-			}
-
+				retval = sem_timedwait(sem, &timeout);
+				if (retval != 0 && errno != ETIMEDOUT) {
+					switch (errno) {
+						case EINVAL:
+						/*char text[1000];
+						 char tmp[10];
+						 strcpy(text, "last_sem: ");
+						 for (unsigned int i=0; i<sizeof(sem_t); i++) {
+						 sprintf(tmp, "%hhX", ((char*)&sem)[i]);
+						 strcat(text, tmp);
+						 }
+						 strcat(text, ", sem: ");
+						 for (unsigned int i=0; i<sizeof(sem_t); i++) {
+						 sprintf(tmp, "%hhX", ((char*)&last_sem)[i]);
+						 strcat(text, tmp);
+						 }
+						 
+						 msg(THROWEXCEPTION, text);*/
+						THROWEXCEPTION("semaphore is invalid");
+						return false;
+						break;
+						default:
+						// semaphore could not be aquired because of several reasons, but none are fatal
+						DPRINTFL(MSG_VDEBUG, "timedwait (>=0) returned with %d", errno);
+					}
+				}
+				if (errno == ETIMEDOUT) {
+					// calculate absolute time from timeout
+					struct timespec tmp;
+					addToCurTime(&tmp, STANDARD_TIMEOUT);
+					// attention: next command may collide between threads, but collision does not matter
+					timeout = tmp;
+				}
+	
+				// if program was shutdown, exit without success
+				if (exitFlag) {
+					DPRINTFL(MSG_VDEBUG, "exitFlag is set", errno);
+					return false;
+				}
 		    } while (retval != 0);
-
 		}
 		
 		return true;
