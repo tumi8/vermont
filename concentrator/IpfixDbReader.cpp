@@ -52,6 +52,8 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
 
 	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo(new IpfixRecord::DataTemplateInfo);
 	DbData* dbData = ipfixDbReader->dbReader->dbData;
+	
+	ipfixDbReader->registerCurrentThread();
 
 	msg(MSG_DIALOG, "Start sending tables");
 	for(i = 0; i < dbData->tableCount && i < MAX_TABLES && !ipfixDbReader->exitFlag; i++) {
@@ -65,6 +67,8 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
 
 	}
 
+	ipfixDbReader->unregisterCurrentThread();
+	
 	msg(MSG_DIALOG,"Sending from database is done");
 	return 0;
 }

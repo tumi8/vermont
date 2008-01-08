@@ -130,6 +130,8 @@ void BaseAggregator::exporterThread()
 	req.tv_sec = pollInterval / 1000;
 	req.tv_nsec = (pollInterval % 1000) * 1000;
 	
+	registerCurrentThread();
+	
 	msg(MSG_INFO, "Polling aggregator each %u msec", pollInterval);	
 	while (!exitFlag) {
 		// restart nanosleep with the remaining sleep time
@@ -142,6 +144,8 @@ void BaseAggregator::exporterThread()
 		}
 		mutex.unlock();
 	}
+	
+	unregisterCurrentThread();
 }
 
 

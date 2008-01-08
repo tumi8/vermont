@@ -149,6 +149,9 @@ private:
 	void processLoop()
 	{
 		T element;
+		
+		Module::registerCurrentThread();
+		
 		while (!Module::getExitFlag()) {
 			struct timespec nexttimeout;
 			if (!processTimeouts(nexttimeout)) {
@@ -165,6 +168,8 @@ private:
 			
 			if (!Source<T>::send(element)) break;
 		}	
+		
+		Module::unregisterCurrentThread();
 	}
 	
 	/**

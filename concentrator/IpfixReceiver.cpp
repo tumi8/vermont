@@ -155,7 +155,7 @@ int IpfixReceiver::isHostAuthorized(struct in_addr* inaddr, int addrlen)
  */
 void* IpfixReceiver::threadWrapper(void* ipfixReceiver_) {
    IpfixReceiver* ipfixReceiver = (IpfixReceiver*)ipfixReceiver_;
-
+   
    ipfixReceiver->run();
 
    return NULL;

@@ -98,6 +98,7 @@ void *Filter::filterProcess(void *arg)
 
 	/* for dumb compilers, do CSE here to spare some cycles below */
 	ConcurrentQueue<Packet*> *in_q=filter->getQueue();
+	
 
 	msg(MSG_INFO, "now running the filter thread");
 	while(!filter->exitFlag) {
@@ -132,6 +133,8 @@ void *Filter::filterProcess(void *arg)
 			p->removeReference();
 		}
 	}
+	
+	
 	return 0;
 };
 

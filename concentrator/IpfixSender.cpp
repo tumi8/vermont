@@ -505,6 +505,7 @@ void IpfixSender::processLoop()
 {
 	timespec timeout;
 	addToCurTime(&timeout, maxFlowLatency);
+	registerCurrentThread();
 	
 	while (!exitFlag) {
 		IpfixRecord* record;
@@ -526,6 +527,8 @@ void IpfixSender::processLoop()
 			}
 		}		
 	}
+	
+	unregisterCurrentThread();
 }
 
 

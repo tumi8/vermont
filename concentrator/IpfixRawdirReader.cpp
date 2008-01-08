@@ -59,7 +59,7 @@ IpfixRawdirReader::~IpfixRawdirReader() {
 void IpfixRawdirReader::run() {
 	boost::shared_array<uint8_t> data;
 	boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
-
+	
 	while(!exitFlag) {
 
 		if (dir_iterator == end_iterator) {
@@ -110,6 +110,7 @@ void IpfixRawdirReader::run() {
 
 		//sleep(1);
 	}
+	
 }
 
 #endif //HAVE_BOOST_FILESYSTEM

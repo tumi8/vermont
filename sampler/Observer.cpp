@@ -91,7 +91,7 @@ void *Observer::observerThread(void *arg)
 	const unsigned char *pcapData;
 	struct pcap_pkthdr packetHeader;
 	bool have_send = false;
-	obs->registerThreadID(obs->thread.getID());
+	obs->registerCurrentThread();
 	
 	if (!obs->isConnected()) {
 		THROWEXCEPTION("Observer does not have any receiving modules to send packets to");
@@ -169,7 +169,7 @@ void *Observer::observerThread(void *arg)
 		p->removeReference();
 	
 	msg(MSG_DEBUG, "exiting observer thread");
-	obs->unregisterThreadID(obs->thread.getID());
+	obs->unregisterCurrentThread();
 	pthread_exit((void *)1);
 }
 
