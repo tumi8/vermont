@@ -39,6 +39,7 @@ MARK_AS_ADVANCED(
 ### basic modules
 
 SUBDIRS(
+	osdep
 	cfg
 	common
 	concentrator
@@ -58,6 +59,7 @@ INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/concentrator)
 INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/ipfixlolib)
 INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/reconf)
 INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/sampler)
+INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/osdep/linux)
 
 TARGET_LINK_LIBRARIES(vermont
 	cfg
@@ -65,7 +67,8 @@ TARGET_LINK_LIBRARIES(vermont
 	ipfixlolib
 	sampler
 	common
-	concentrator
+	osdep
+	concentrator	
 )
 
 INSTALL(TARGETS vermont
