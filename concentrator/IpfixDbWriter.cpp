@@ -333,8 +333,6 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
     uint64_t intdata = 0;
     uint32_t flowstartsec = 0;
 
-    bool flowstartseconds_seen = false;
-
     /**begin query string for insert statement*/
     strcpy(statemStr,"INSERT INTO ");
 
