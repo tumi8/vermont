@@ -168,7 +168,7 @@ static void sig_INT_handler(int x)
 	}
 
 	shutdownInitiated = true;
-	printf("got signal %d - exiting", x);
+	msg(MSG_FATAL, "got signal %d - exiting", x);
 
 	run_programm = false;
 	
