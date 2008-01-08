@@ -25,7 +25,7 @@
 using namespace std;
 
 
-InstanceManager<Packet> Observer::packetManager; 
+InstanceManager<Packet> Observer::packetManager("Packet"); 
 
 Observer::Observer(const std::string& interface) : thread(Observer::observerThread), allDevices(NULL),
 	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
@@ -37,27 +37,25 @@ Observer::Observer(const std::string& interface) : thread(Observer::observerThre
 	captureInterface = (char*)malloc(interface.size() + 1);
 	strcpy(captureInterface, interface.c_str());
 	
+	usedBytes += sizeof(Observer)+interface.size()+1;
+	
 	if(capturelen > PCAP_MAX_CAPTURE_LENGTH) {
 		THROWEXCEPTION("compile-time parameter PCAP_DEFAULT_CAPTURE_LENGTH (%d) exceeds maximum capture length %d, " 
 				"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH!", capturelen, PCAP_DEFAULT_CAPTURE_LENGTH);
 		
 	}
-	
-	StatisticsManager::getInstance().addModule(this);
 };
 
 Observer::~Observer()
 {
 	msg(MSG_DEBUG, "Observer: destructor called");
 
-	StatisticsManager::getInstance().removeModule(this);
-
 	shutdown(false);
 
 	/* collect and output statistics */
 	pcap_stat pstats;
 	if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
-		msg(MSG_DIALOG, "PCAP statistics:");
+		msg(MSG_DIALOG, "PCAP statistics (INFO: if statistics were activated, this information does not contain correct data!):");
 		msg(MSG_DIALOG, "Number of packets received on interface: %u", pstats.ps_recv);
 		msg(MSG_DIALOG, "Number of packets dropped by PCAP: %u", pstats.ps_drop);
 	}
@@ -188,6 +186,7 @@ bool Observer::prepare(const std::string& filter)
 	if (!filter.empty()) {
 		filter_exp = new char[filter.size() + 1];
 		strcpy(filter_exp, filter.c_str());
+		usedBytes += filter.size()+1;
 	}
 	struct in_addr i_netmask, i_network;
 
@@ -375,20 +374,24 @@ int Observer::getPcapStats(struct pcap_stat *out)
 /**
  * statistics function called by StatisticsManager
  */
-std::string Observer::getStatistics()
+std::string Observer::getStatisticsXML()
 {
 	ostringstream oss;
     pcap_stat pstats;
     if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
-		oss << "Observer: packets received on interface: " << pstats.ps_recv << endl;
-		oss << "Observer: packets dropped by PCAP      : " << pstats.ps_drop << endl;
+    	oss << "<pcap>";
+    	oss << "<received type=\"packets\">" << pstats.ps_recv << "</received>";
+    	oss << "<dropped type=\"packets\">" << pstats.ps_drop << "</dropped>";
+    	oss << "</pcap>";
 	}
 	uint64_t diff = receivedBytes-lastReceivedBytes;
 	lastReceivedBytes += diff;
-	oss << "Observer: processed bytes              : " << diff << endl;
+	oss << "<observer>";
+	oss << "<processed type=\"bytes\">" << diff << "</processed>";
 	diff = processedPackets-lastProcessedPackets;
 	lastProcessedPackets += diff;
-	oss << "Observer: processed packets            : " << diff << endl;
+	oss << "<processed type=\"packets\">" << diff << "</processed>";
+	oss << "</observer>";
 	return oss.str();
 }
 

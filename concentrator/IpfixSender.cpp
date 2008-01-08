@@ -70,8 +70,6 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t 
 		collectors.push_back(newCollector);
 	}
 	
-	StatisticsManager::getInstance().addModule(this);
-	
 	msg(MSG_DEBUG, "IpfixSender: running");
 	return;
 	

@@ -10,7 +10,7 @@
 
 #include <unistd.h>
 
-InstanceManager<Packet> ReconfTest::packetManager;
+InstanceManager<Packet> ReconfTest::packetManager("Packet");
 
 ReconfTest::ReconfTest()
 {

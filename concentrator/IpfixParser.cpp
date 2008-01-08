@@ -47,15 +47,15 @@ using namespace std;
 #define MAX_MSG_LEN 65536
 
 //static variables
-InstanceManager<IpfixTemplateRecord> IpfixParser::templateRecordIM(0);
-InstanceManager<IpfixOptionsTemplateRecord> IpfixParser::optionsTemplateRecordIM(0);
-InstanceManager<IpfixDataTemplateRecord> IpfixParser::dataTemplateRecordIM(0);		
-InstanceManager<IpfixDataRecord> IpfixParser::dataRecordIM(0);
-InstanceManager<IpfixOptionsRecord> IpfixParser::optionsRecordIM(0);
-InstanceManager<IpfixDataDataRecord> IpfixParser::dataDataRecordIM(0);
-InstanceManager<IpfixTemplateDestructionRecord> IpfixParser::templateDestructionRecordIM(0);
-InstanceManager<IpfixOptionsTemplateDestructionRecord> IpfixParser::optionsTemplateDestructionRecordIM(0);
-InstanceManager<IpfixDataTemplateDestructionRecord> IpfixParser::dataTemplateDestructionRecordIM(0);
+InstanceManager<IpfixTemplateRecord> IpfixParser::templateRecordIM("IpfixTemplateRecord", 0);
+InstanceManager<IpfixOptionsTemplateRecord> IpfixParser::optionsTemplateRecordIM("IpfixOptionsTemplateRecord", 0);
+InstanceManager<IpfixDataTemplateRecord> IpfixParser::dataTemplateRecordIM("IpfixDataTemplateRecord", 0);		
+InstanceManager<IpfixDataRecord> IpfixParser::dataRecordIM("IpfixDataRecord", 0);
+InstanceManager<IpfixOptionsRecord> IpfixParser::optionsRecordIM("IpfixOptionsRecord", 0);
+InstanceManager<IpfixDataDataRecord> IpfixParser::dataDataRecordIM("IpfixDataDataRecord", 0);
+InstanceManager<IpfixTemplateDestructionRecord> IpfixParser::templateDestructionRecordIM("IpfixTemplateDestructionRecord", 0);
+InstanceManager<IpfixOptionsTemplateDestructionRecord> IpfixParser::optionsTemplateDestructionRecordIM("IpfixOptionsTemplateDestructionRecord", 0);
+InstanceManager<IpfixDataTemplateDestructionRecord> IpfixParser::dataTemplateDestructionRecordIM("IpfixDataTemplateDestructionRecord", 0);
 
 
 /**
@@ -773,7 +773,7 @@ IpfixParser::IpfixParser(IpfixRecordSender* sender)
 
 	templateBuffer = new TemplateBuffer(this);
 
-	StatisticsManager::getInstance().addModule(this);
+	SensorManager::getInstance().addSensor(this, "IpfixParser", 0);
 }
 
 

@@ -28,7 +28,7 @@
 #include "common/msg.h"
 #include "common/Thread.h"
 #include "common/ConcurrentQueue.h"
-#include "common/InstanceManager.h"
+#include "cfg/InstanceManager.h"
 #include "common/StatisticsManager.h"
 
 #include "reconf/Source.h"
@@ -41,7 +41,7 @@
 #include <arpa/inet.h>
 #include <pcap.h>
 
-class Observer : public Module, public StatisticsModule, public Source<Packet*>, public Destination<NullEmitable*>
+class Observer : public Module, public Source<Packet*>, public Destination<NullEmitable*>
 {
 public:
 	Observer(const std::string& interface);
@@ -56,7 +56,7 @@ public:
 	int getPcapStats(struct pcap_stat *out);
 	bool prepare(const std::string& filter);
 	static void doLogging(void *arg);
-	virtual std::string getStatistics();
+	virtual std::string getStatisticsXML();
 
 
 protected:

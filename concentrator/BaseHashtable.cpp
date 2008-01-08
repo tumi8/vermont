@@ -21,8 +21,8 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  statLastExpBuckets(0),
 	  fieldModifier(0),
 	  recordSource(recordsource),
-	  dataDataRecordIM(0),
-	  dataTemplateRecordIM(0),
+	  dataDataRecordIM("IpfixDataDataRecord", 0),
+	  dataTemplateRecordIM("IpfixDataTemplateRecord", 0),
 	  need_resend_template(true)
 {
 
@@ -33,7 +33,6 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 
 	msg(MSG_INFO, "Initializing hashtable with minBufferTime %d and maxBufferTime %d", minBufferTime, maxBufferTime);
 
-	StatisticsManager::getInstance().addModule(this);
 }
 
 void BaseHashtable::createDataTemplate(Rule* rule)
@@ -92,8 +91,6 @@ void BaseHashtable::createDataTemplate(Rule* rule)
  */
 BaseHashtable::~BaseHashtable()
 {
-	StatisticsManager::getInstance().removeModule(this);
-
 	for (uint32_t i = 0; i < HTABLE_SIZE; i++) if (buckets[i] != NULL) {
 		Bucket* bucket = buckets[i];
 		while (bucket != 0) {

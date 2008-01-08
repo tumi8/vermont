@@ -45,7 +45,7 @@ class TemplateBuffer;
  * The Collector module supports higher-level modules by providing field types and offsets along 
  * with the raw data block of individual messages passed via the callback functions (see @c IpfixRecord::TemplateInfo)
  */
-class IpfixParser : public IpfixPacketProcessor, public StatisticsModule 
+class IpfixParser : public IpfixPacketProcessor, public Sensor 
 {
 	public:
 		IpfixParser(IpfixRecordSender* sender);

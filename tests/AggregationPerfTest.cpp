@@ -33,7 +33,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-InstanceManager<Packet> AggregationPerfTest::packetManager;
+InstanceManager<Packet> AggregationPerfTest::packetManager("Packet");
 
 /**
  * @param fast determines if this test should be performed really fast or slower for performance measurements

@@ -34,7 +34,7 @@ using namespace std;
  *
  * Interface for feeding generated Templates and Data Records to "ipfixlolib" 
  */
-class IpfixSender : public Module, public Source<NullEmitable*>, public IpfixRecordDestination, public StatisticsModule
+class IpfixSender : public Module, public Source<NullEmitable*>, public IpfixRecordDestination
 {
 public:
 	IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0); // FIXME: observationDomainId

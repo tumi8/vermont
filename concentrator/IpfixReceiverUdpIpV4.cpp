@@ -63,7 +63,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port)
 		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4");
 	}
 
-	StatisticsManager::getInstance().addModule(this);
+	SensorManager::getInstance().addSensor(this, "IpfixReceiverUdpIpV4", 0);
 }
 
 

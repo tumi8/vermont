@@ -31,7 +31,7 @@
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
 
-class IpfixReceiverUdpIpV4 : public IpfixReceiver, StatisticsModule {
+class IpfixReceiverUdpIpV4 : public IpfixReceiver, Sensor {
 	public:
 		IpfixReceiverUdpIpV4(int port);
 		virtual ~IpfixReceiverUdpIpV4();
