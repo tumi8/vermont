@@ -61,11 +61,6 @@ class Thread
 
 			return result;
 		}
-		
-		pthread_t getID() 
-		{
-			return thread;
-		}
 
 		~Thread()
 		{
