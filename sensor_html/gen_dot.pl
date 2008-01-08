@@ -18,7 +18,7 @@ sub getmname($)
 
 print "digraph G {\n";
 print "\tnode[fontsize=8,shape=box,fontname=Helvetica,height=.3]\n";
-my $modules = $xp->find('/vermont/sensorData/module');
+my $modules = $xp->find('/vermont/sensorData/sensor[@type=\'module\']');
 foreach my $m ($modules->get_nodelist) {
 	my $mname = getmname($m);
 	my $mid = $xp->find('@id', $m);
