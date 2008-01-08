@@ -17,6 +17,7 @@ public:
 	virtual ~GraphInstanceSupplier() {}
 	
 	virtual void lockGraph();
+	virtual bool tryLockGraph();
 	virtual void unlockGraph();
 	virtual Graph* getGraph() = 0;
 

@@ -68,7 +68,14 @@ void SensorManager::collectDataWorker()
 		// if we got interrupted by a signal
 		while (nanosleep(&req, &req) == -1 && errno == EINTR);
 		
-		graphIS->lockGraph();
+		// we must not wait for the graph lock, else there may be a race condition with
+		// the ConfigManager
+		while (!graphIS->tryLockGraph()) {
+			if (exitFlag) break;
+			timespec timeout = { 0, 200000 };
+			nanosleep(&timeout, NULL);
+		}
+		if (exitFlag) break;
 		
 		int fdlock = open(lockfile.c_str(), O_CREAT|O_RDONLY);
 		if (fdlock == -1)
@@ -90,13 +97,10 @@ void SensorManager::collectDataWorker()
 		fprintf(file, xmlglobals, "pid", text, "pid");		
 		fprintf(file, xmlglobals, "hostname", hostname, "hostname");
 		time_t curtime = time(0);
-		snprintf(text, 100, "%u", static_cast<uint32_t>(curtime));
-		fprintf(file, xmlglobals, "time", text, "time");
-		snprintf(text, 100, "%u", static_cast<uint32_t>(lasttime));
-		fprintf(file, xmlglobals, "lastTime", text, "lastTime");
-		
-		msg(MSG_INFO, "statistics data at %u", static_cast<uint32_t>(time(0)));
-		msg(MSG_INFO, "---------------------------------------");
+		fprintf(file, xmlglobals, "time", ctime(&curtime), "time");
+		fprintf(file, xmlglobals, "lastTime", ctime(&lasttime), "lastTime");
+	
+		msg(MSG_INFO, "*** sensor data at %s", ctime(&curtime));
 		
 		Graph* g = graphIS->getGraph();
 		vector<CfgNode*> nodes = g->getNodes();
@@ -124,7 +128,7 @@ void SensorManager::collectDataWorker()
 				double sysutil = jiter->sysJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
 				double userutil = jiter->userJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
 				fprintf(file, xmlmodthread, static_cast<uint32_t>(jiter->tid), sysutil, userutil);
-				msg(MSG_INFO, "   - thread (tid=%u): jiffies (sys/user): (%u/%u), utilization (sys/user): (%.2f%%/%.2f%%)", 
+				msg(MSG_INFO, " - thread (tid=%u): jiffies (sys/user): (%u/%u), util. (sys/user): (%.2f%%/%.2f%%)", 
 						static_cast<uint32_t>(jiter->tid), jiter->sysJiffies, jiter->userJiffies, sysutil, userutil);
 				
 				jiter++;
@@ -152,6 +156,7 @@ void SensorManager::collectDataWorker()
 		
 		graphIS->unlockGraph();
 	}
+	
 	
 	unregisterCurrentThread();
 }

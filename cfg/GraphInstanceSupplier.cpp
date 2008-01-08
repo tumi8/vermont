@@ -11,3 +11,8 @@ void GraphInstanceSupplier::unlockGraph()
 {
 	mutex.unlock();
 }
+
+bool GraphInstanceSupplier::tryLockGraph()
+{
+	return mutex.try_lock();
+}
