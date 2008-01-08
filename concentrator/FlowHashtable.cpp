@@ -8,19 +8,106 @@
 
 FlowHashtable::FlowHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, 
 		uint16_t minBufferTime, uint16_t maxBufferTime)
-	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime)
-{
+	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime),
+		revDataTemplateMapper(NULL),
+		biflowAggregation(rule->biflowAggregation)
+{ 
+	if (biflowAggregation) {
+		genBiflowStructs();
+	}
 }
 
 FlowHashtable::~FlowHashtable()
 {
+	if (revDataTemplateMapper) delete[] revDataTemplateMapper;
+}
+
+
+void FlowHashtable::genBiflowStructs()
+{
+	uint32_t srcIPIdx = -1;
+	uint32_t dstIPIdx = -1;
+	uint32_t srcPortIdx = -1;
+	uint32_t dstPortIdx = -1;
+	
+	for (uint32_t i=0; i<ARRAY_SIZE(revAggIndizes); i++) revAggIndizes[i] = -1;
+	
+	// search for offsets in dataTemplate
+	revDataTemplateMapper = new uint32_t[dataTemplate->fieldCount];
+	for (int i=0; i<dataTemplate->fieldCount; i++) {
+		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		switch (fi->type.id) {
+			case IPFIX_TYPEID_sourceIPv4Address:
+				srcIPIdx = i;
+				break;
+			case IPFIX_TYPEID_destinationIPv4Address:
+				dstIPIdx = i;
+				break;
+			case IPFIX_TYPEID_sourceTransportPort:
+				srcPortIdx = i;
+				break;
+			case IPFIX_TYPEID_destinationTransportPort:
+				dstPortIdx = i;
+				break;
+			case IPFIX_ETYPEID_revFlowStartSeconds:
+				revAggIndizes[0] = i;
+				break;
+			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+				revAggIndizes[1] = i;
+				break;
+			case IPFIX_ETYPEID_revFlowEndSeconds:
+				revAggIndizes[2] = i;
+				break;
+			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+				revAggIndizes[3] = i;
+				break;
+			case IPFIX_ETYPEID_revOctetDeltaCount:
+				revAggIndizes[4] = i;
+				break;
+			case IPFIX_ETYPEID_revPacketDeltaCount:
+				revAggIndizes[5] = i;
+				break;
+			case IPFIX_ETYPEID_revTcpControlBits:
+				revAggIndizes[6] = i;
+				break;
+		}
+	}
+	
+	// check if it's possible to obtain the reverse flow
+	if ((srcIPIdx<0) || (dstIPIdx<0) || (srcPortIdx<0) || (dstPortIdx<0)) {
+		THROWEXCEPTION("no biflow aggregation possible for current template, but was activated in configuration!");
+	}
+	
+	for (int i=0; i<dataTemplate->fieldCount; i++) {
+		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		switch (fi->type.id) {
+			case IPFIX_TYPEID_sourceIPv4Address:
+				revDataTemplateMapper[i] = dstIPIdx;
+				break;
+			case IPFIX_TYPEID_destinationIPv4Address:
+				revDataTemplateMapper[i] = srcIPIdx;
+				break;
+			case IPFIX_TYPEID_sourceTransportPort:
+				revDataTemplateMapper[i] = dstPortIdx;
+				break;
+			case IPFIX_TYPEID_destinationTransportPort:
+				revDataTemplateMapper[i] = srcPortIdx;
+				break;
+			default:
+				revDataTemplateMapper[i] = i;
+				break;
+		}
+	}
+	
+	
 }
 
 
 /**
  * Adds (or otherwise aggregates) @c deltaData to @c baseData
  */
-int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* baseData, IpfixRecord::Data* deltaData) {
+int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* baseData, 
+								  IpfixRecord::Data* deltaData) {
 	switch (type->id) {
 
 		case IPFIX_TYPEID_flowStartSysUpTime:
@@ -107,7 +194,7 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecor
 /**
  * Adds (or otherwise aggregates) pertinent fields of @c flow to @c baseFlow
  */
-int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data* flow)
+int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data* flow, bool reverse)
 {
 	int i;
 
@@ -127,7 +214,37 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 		if(!isToBeAggregated(fi->type)) {
 			continue;
 		}
-		aggregateField(&fi->type, baseFlow + fi->offset, flow + fi->offset);
+		if (reverse) {
+			uint32_t idx = i;
+			// look if current field is to be reverted
+			switch (fi->type.id) {
+				case IPFIX_TYPEID_flowStartSeconds:
+					if (revAggIndizes[0]>=0) idx = revAggIndizes[0];
+					break;
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+					if (revAggIndizes[1]>=0) idx = revAggIndizes[1];
+					break;
+				case IPFIX_TYPEID_flowEndSeconds:
+					if (revAggIndizes[2]>=0) idx = revAggIndizes[2];
+					break;
+				case IPFIX_TYPEID_flowEndMilliSeconds:
+					if (revAggIndizes[3]>=0) idx = revAggIndizes[3];
+					break;
+				case IPFIX_TYPEID_octetDeltaCount:
+					if (revAggIndizes[4]>=0) idx = revAggIndizes[4];
+					break;
+				case IPFIX_TYPEID_packetDeltaCount:
+					if (revAggIndizes[5]>=0) idx = revAggIndizes[5];
+					break;
+				case IPFIX_TYPEID_tcpControlBits:
+					if (revAggIndizes[6]>=0) idx = revAggIndizes[6];
+					break;
+			}
+			aggregateField(&fi->type, baseFlow + dataTemplate->fieldInfo[idx].offset, flow + fi->offset);
+			
+		} else {
+			aggregateField(&fi->type, baseFlow + fi->offset, flow + fi->offset);
+		}
 	}
 
 	return 0;
@@ -137,7 +254,7 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 /**
  * Returns a hash value corresponding to all variable, non-aggregatable fields of a flow
  */
-uint16_t FlowHashtable::getHash(IpfixRecord::Data* data) {
+uint16_t FlowHashtable::getHash(IpfixRecord::Data* data, bool reverse) {
 	int i;
 
 	uint32_t hash = 0;
@@ -145,10 +262,10 @@ uint16_t FlowHashtable::getHash(IpfixRecord::Data* data) {
 		if(isToBeAggregated(dataTemplate->fieldInfo[i].type)) {
 			continue;
 		}
+		uint32_t idx = (reverse ? revDataTemplateMapper[i] : i);
 		hash = crc32(hash,
-				dataTemplate->fieldInfo[i].type.length,
-				(char*)data + dataTemplate->fieldInfo[i].offset
-		);
+				dataTemplate->fieldInfo[idx].type.length,
+				(char*)data + dataTemplate->fieldInfo[idx].offset);
 	}
 
 	return hash & HTABLE_SIZE-1;
@@ -179,7 +296,7 @@ int FlowHashtable::equalRaw(IpfixRecord::FieldInfo::Type* data1Type, IpfixRecord
  * Checks if all of two flows' (non-aggregatable) fields are binary equal
  * @return 1 if fields are equal
  */
-int FlowHashtable::equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2)
+int FlowHashtable::equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2, bool reverse)
 {
 	int i;
 
@@ -192,13 +309,42 @@ int FlowHashtable::equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2)
 			continue;
 		}
 
-		if(!equalRaw(&fi->type, flow1 + fi->offset, &fi->type, flow2 + fi->offset)) {
-			return 0;
+		if (reverse) {
+			IpfixRecord::FieldInfo* rfi = &dataTemplate->fieldInfo[revDataTemplateMapper[i]];
+			if(!equalRaw(&fi->type, flow1 + fi->offset, 
+						 &fi->type /* both types *must* be equal, although they may not */, 
+						 flow2 + rfi->offset)) {
+				return 0;
+			}
+		} else {
+			if(!equalRaw(&fi->type, flow1 + fi->offset, &fi->type, flow2 + fi->offset)) {
+				return 0;
+			}
 		}
 	}
 
 	return 1;
 }
+
+
+BaseHashtable::Bucket* FlowHashtable::lookupBucket(uint32_t hash, IpfixRecord::Data* data, bool reverse)
+{
+	Bucket* bucket = buckets[hash];
+	
+	if (bucket != NULL) {
+		/* This slot is already used, search spill chain for equal flow */
+		while (bucket != NULL) {
+			if (equalFlow(bucket->data.get(), data, reverse)) {
+				return bucket;
+			}
+	
+			bucket = (Bucket*)bucket->next;
+		}
+	}
+	
+	return NULL;
+}
+
 
 /**
  * Inserts a data block into the hashtable
@@ -207,36 +353,27 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 {
 	statRecordsReceived++;
 
-	uint16_t hash = getHash(data.get());
-	Bucket* bucket = buckets[hash];
-
-	if (bucket == 0) {
-		/* This slot is still free, place the bucket here */
-		DPRINTF("bufferDataBlock: creating bucket\n");
-		buckets[hash] = createBucket(data);
-		return;
-	}
-
-	/* This slot is already used, search spill chain for equal flow */
-	while(1) {
-		if (equalFlow(bucket->data.get(), data.get())) {
-			DPRINTF("appending to bucket\n");
-
-			aggregateFlow(bucket->data.get(), data.get());
-			// TODO: tobi_optimize
-			// replace call of time() with access to a static variable which is updated regularly (such as every 100ms)
-			bucket->expireTime = time(0) + minBufferTime;
-
-			break;
+	uint32_t nhash = getHash(data.get(), false);
+	Bucket* bucket = lookupBucket(nhash, data.get(), false);
+	
+	if (bucket != NULL) {
+		aggregateFlow(bucket->data.get(), data.get(), false);
+		bucket->expireTime = time(0) + minBufferTime;
+	} else {
+		if (biflowAggregation) {
+			// try reverse flow
+			uint32_t rhash = getHash(data.get(), true);
+			bucket = lookupBucket(rhash, data.get(), true);
+			if (bucket != NULL) {
+				aggregateFlow(bucket->data.get(), data.get(), true);
+				bucket->expireTime = time(0) + minBufferTime;
+			}
 		}
-
-		if (bucket->next == 0) {
-			DPRINTF("creating bucket\n");
-
-			bucket->next = createBucket(data);
-			break;
+		if (bucket == NULL) {
+			Bucket* n = buckets[nhash];
+			buckets[nhash] = createBucket(data);
+			buckets[nhash]->next = n;
 		}
-		bucket = (Bucket*)bucket->next;
 	}
 }
 

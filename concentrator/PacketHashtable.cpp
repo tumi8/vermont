@@ -7,6 +7,8 @@
 PacketHashtable::PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
 	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime)
 {
+	if (rule->biflowAggregation) 
+		THROWEXCEPTION("PacketAggregator can not perform biflow aggregation, but one of its rules is configured to do that");
 	buildExpHelperTable();
 }
 

@@ -76,6 +76,7 @@ class Rule {
 		uint16_t id;
 		uint16_t preceding;
 		int fieldCount;
+		uint32_t biflowAggregation;	/**< true if biflows have to be aggregated */
 		Rule::Field* field[MAX_RULE_FIELDS];
 		BaseHashtable* hashtable;
 
