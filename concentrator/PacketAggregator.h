@@ -26,7 +26,6 @@
 #include "reconf/Module.h"
 #include "reconf/Source.h"
 #include "reconf/Destination.h"
-#include "common/StatisticsManager.h"
 
 
 #include <pthread.h>

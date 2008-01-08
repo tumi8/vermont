@@ -24,7 +24,7 @@
 #include "sampler/Filter.h"
 #include "sampler/PacketSink.h"
 #include "concentrator/IpfixAggregator.hpp"
-#include "common/InstanceManager.h"
+#include "cfg/InstanceManager.h"
 
 
 

@@ -22,7 +22,8 @@
 #define INSTANCEMANAGER_H
 
 #include "Mutex.h"
-#include "StatisticsManager.h"
+#include "SensorManager.h"
+#include "Sensor.h"
 
 #include <queue>
 #include <list>
@@ -36,7 +37,7 @@ using namespace std;
  * ATTENTION: this class internally handles *pointers* of the given type
  */
 template<class T>
-class InstanceManager : public StatisticsModule
+class InstanceManager : public Sensor
 {
 	private:
 #if defined(DEBUG)
@@ -48,13 +49,15 @@ class InstanceManager : public StatisticsModule
 		uint32_t statCreatedInstances; /**< number of created instances, used for statistical purposes */
 
 	public:
-		InstanceManager(int preAllocInstances = DEFAULT_NO_INSTANCES)
+		InstanceManager(string type, int preAllocInstances = DEFAULT_NO_INSTANCES)
 			: statCreatedInstances(0)
 		{
 			for (int i=0; i<preAllocInstances; i++) {
 				freeInstances.push(new T(this));
 			}
-			StatisticsManager::getInstance().addModule(this);
+			statCreatedInstances = preAllocInstances;
+			usedBytes += sizeof(InstanceManager<T>)+preAllocInstances*(sizeof(T)+4);
+			SensorManager::getInstance().addSensor(this, "InstanceManager (" + type + ")", 0);
 		}
 
 		virtual ~InstanceManager()
@@ -87,6 +90,7 @@ class InstanceManager : public StatisticsModule
 				// create new instance
 				statCreatedInstances++;
 				instance = new T(this);
+				usedBytes += sizeof(T)+4;
 			} else {
 				instance = freeInstances.front();
 				freeInstances.pop();
@@ -146,10 +150,10 @@ class InstanceManager : public StatisticsModule
 #endif
 		}
 
-		inline string getStatistics()
+		string getStatisticsXML()
 		{
 			char text[200];
-			sprintf(text, "InstanceManager: instances created: %d\n", statCreatedInstances);
+			sprintf(text, "<createdInstances>%u</createdInstances>", statCreatedInstances);
 			return string(text);
 		}
 };
