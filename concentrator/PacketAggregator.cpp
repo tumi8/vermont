@@ -57,6 +57,7 @@ void PacketAggregator::receive(Packet* e)
 		}
 	}
 	mutex.unlock();
+	e->removeReference();
 }
 
 
