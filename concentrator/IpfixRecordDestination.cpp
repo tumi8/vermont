@@ -91,7 +91,6 @@ void IpfixRecordDestination::receive(IpfixRecord* ipfixRecord)
  */
 void IpfixRecordDestination::onTemplate(IpfixTemplateRecord* record)
 {
-	THROWEXCEPTION("method not implemented");
 }
 
 /**
@@ -101,7 +100,6 @@ void IpfixRecordDestination::onTemplate(IpfixTemplateRecord* record)
  */
 void IpfixRecordDestination::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
 {
-	THROWEXCEPTION("method not implemented");
 }
 
 /**
@@ -111,7 +109,6 @@ void IpfixRecordDestination::onOptionsTemplate(IpfixOptionsTemplateRecord* recor
  */
 void IpfixRecordDestination::onDataTemplate(IpfixDataTemplateRecord* record)
 {
-	THROWEXCEPTION("method not implemented");
 }
 
 /**
@@ -123,7 +120,6 @@ void IpfixRecordDestination::onDataTemplate(IpfixDataTemplateRecord* record)
  */
 void IpfixRecordDestination::onDataRecord(IpfixDataRecord* record)
 {
-	THROWEXCEPTION("method not implemented");
 }
 
 
@@ -137,7 +133,6 @@ void IpfixRecordDestination::onDataRecord(IpfixDataRecord* record)
  */
 void IpfixRecordDestination::onOptionsRecord(IpfixOptionsRecord* record)
 {
-	THROWEXCEPTION("method not implemented");
 }
 
 /**
@@ -149,7 +144,6 @@ void IpfixRecordDestination::onOptionsRecord(IpfixOptionsRecord* record)
  */
 void IpfixRecordDestination::onDataDataRecord(IpfixDataDataRecord* record)
 {
-	THROWEXCEPTION("method not implemented");
 }
 
 /**
