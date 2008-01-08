@@ -21,5 +21,6 @@ ADD_LIBRARY(common
 	CountingSemaphore.cpp
 	msg.cc
 	StatisticsManager.cpp
+	ThreadCPUInterface.cpp
 )
 
