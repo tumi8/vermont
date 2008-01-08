@@ -21,7 +21,7 @@ std::map<unsigned int, CfgNode*> Connector::getId2Node(const std::vector<CfgNode
 	return id2node;
 }
 
-Graph* Connector::connect(Graph*g)
+Graph* Connector::connect(Graph* g)
 {
 	const std::vector<CfgNode*>& nodes = g->getNodes();
 
@@ -43,13 +43,13 @@ Graph* Connector::connect(Graph*g)
 			if (connectNodes) // insert the connection in the graph
 				g->addEdge(fromNode, toNode);
 
-			msg(MSG_INFO,  "Connectiong %s[Id = %d] -> %s[Id = %d]",
+			msg(MSG_INFO,  "Connecting module %s[Id = %d] -> %s[Id = %d]",
 					cfg->getName().c_str(), cfg->getID(),
 					id2node[nexts[j]]->getCfg()->getName().c_str(),
 					id2node[nexts[j]]->getCfg()->getID());
 
 			if (connectModules) {// connect the modules
-				msg(MSG_INFO, "\n\nConnect Instances\n");
+				DPRINTF("connecting instances");
 				cfg->connectInstances(toNode->getCfg());
 			}
 		}
