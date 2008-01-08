@@ -25,6 +25,7 @@ ADD_LIBRARY(cfg
 	Connector.cpp
 	DelayedDeleter.cpp
 	Graph.cpp
+	GraphInstanceSupplier.cpp
 	IpfixAggregatorCfg.cpp
 	IpfixCollectorCfg.cpp
 	IpfixExporterCfg.cpp
@@ -36,6 +37,8 @@ ADD_LIBRARY(cfg
 	PacketReportingCfg.cpp
 	PSAMPExporterCfg.cpp
 	ReConnector.cpp
+	SensorManager.cpp
+	SensorManagerCfg.cpp
 	XMLAttribute.cpp
 	XMLElement.cpp
 	XMLDocument.cpp

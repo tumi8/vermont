@@ -13,6 +13,7 @@
 #include "cfg/PacketPrinterCfg.h"
 #include "cfg/PSAMPExporterCfg.h"
 #include "cfg/QueueCfg.h"
+#include "cfg/SensorManagerCfg.h"
 
 #include <cassert>
 
@@ -33,6 +34,7 @@ Cfg* ConfigManager::configModules[] = {
 	new IpfixAggregatorCfg(NULL),
 	new IpfixPrinterCfg(NULL),
 	new PacketAggregatorCfg(NULL),
+	new SensorManagerCfg(NULL)
 };
 
 ConfigManager::~ConfigManager()
@@ -42,8 +44,13 @@ ConfigManager::~ConfigManager()
 	}
 }
 
+/**
+ * parses configuration and adjusts/creates module graph accordingly
+ * afterwards all modules are started
+ */
 void ConfigManager::parseConfig(std::string fileName)
 {
+	lockGraph();
 	Graph* oldGraph = graph;
 
 	graph = new Graph();
@@ -53,12 +60,16 @@ void ConfigManager::parseConfig(std::string fileName)
 	XMLElement* root = document->getRootNode();
 
 	// consistency checks
-	if (!root)
+	if (!root) {
+		unlockGraph();
 		THROWEXCEPTION("%s is an empty XML-Document!", fileName.c_str());
+	}
 
-	if (!root->matches("ipfixConfig"))
+	if (!root->matches("ipfixConfig")) {
+		unlockGraph();
 		THROWEXCEPTION("Root element does not match \"ipfixConfig\"."
 			       " This is not a valid configuration file!");
+	}
 
 	/* process each root element node and add a new node (with its config 
 	 * attached to the node) to the graph
@@ -71,13 +82,28 @@ void ConfigManager::parseConfig(std::string fileName)
 		for (unsigned int i = 0; i < ARRAY_SIZE(configModules); i++) {
 			if ((*it)->getName() == configModules[i]->getName()) {
 				Cfg* cfg = configModules[i]->create(*it);
+				
+				// handle special modules
+				SensorManagerCfg* smcfg = dynamic_cast<SensorManagerCfg*>(cfg);
+				if (smcfg) {
+					// SensorManager will not be connected to any modules, so its instance 
+					// needs to be started manually
+					smcfg->setGraphIS(this); 									
+				}
+				
 				graph->addNode(cfg);
 				found = true;
 			}
 		}
-		if (!found)
+	
+		if (!found) {
+			unlockGraph();
 			THROWEXCEPTION("Unkown cfg entry %s found", (*it)->getName().c_str());
+		}
 	}
+	
+	
+	
 
 	if (!oldGraph) { // this is the first config we have read
 		Connector connector;
@@ -111,10 +137,13 @@ void ConfigManager::parseConfig(std::string fileName)
 	//    are safe that no-one holds a reference on the deleted modules anymore   
 	if (oldGraph)
 		deleter.addGraph(oldGraph);
+	
+	unlockGraph();
 }
 
 void ConfigManager::shutdown()
 {
+	lockGraph();
 	std::vector<CfgNode*> topoNodes = graph->topoSort();
 
 	// shutdown the thread
@@ -135,4 +164,11 @@ void ConfigManager::shutdown()
 			sources[k]->getCfg()->disconnectInstances();
 		}
 	}
+	unlockGraph();
+}
+
+
+Graph* ConfigManager::getGraph()
+{
+	return graph;
 }
