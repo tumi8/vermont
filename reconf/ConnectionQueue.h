@@ -197,7 +197,6 @@ private:
 		uint32_t entries = queue.getCount();
 		this->Sensor::usedBytes = entries*sizeof(T);
 		sprintf(text, "<entries>%u</entries>", entries);
-		printf("%s\n", text);
 		return string(text);
 	}
 };

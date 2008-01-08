@@ -26,6 +26,7 @@ ADD_LIBRARY(cfg
 	DelayedDeleter.cpp
 	Graph.cpp
 	GraphInstanceSupplier.cpp
+	IDMEFExporterCfg.cpp
 	IpfixAggregatorCfg.cpp
 	IpfixCollectorCfg.cpp
 	IpfixExporterCfg.cpp
@@ -39,6 +40,7 @@ ADD_LIBRARY(cfg
 	ReConnector.cpp
 	SensorManager.cpp
 	SensorManagerCfg.cpp
+	TRWPortscanDetectorCfg.cpp
 	XMLAttribute.cpp
 	XMLElement.cpp
 	XMLDocument.cpp

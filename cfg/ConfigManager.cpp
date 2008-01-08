@@ -14,6 +14,8 @@
 #include "cfg/PSAMPExporterCfg.h"
 #include "cfg/QueueCfg.h"
 #include "cfg/SensorManagerCfg.h"
+#include "cfg/TRWPortscanDetectorCfg.h"
+#include "cfg/IDMEFExporterCfg.h"
 
 #include <cassert>
 
@@ -34,7 +36,9 @@ Cfg* ConfigManager::configModules[] = {
 	new IpfixAggregatorCfg(NULL),
 	new IpfixPrinterCfg(NULL),
 	new PacketAggregatorCfg(NULL),
-	new SensorManagerCfg(NULL)
+	new SensorManagerCfg(NULL),
+	new TRWPortscanDetectorCfg(NULL),
+	new IDMEFExporterCfg(NULL),
 };
 
 ConfigManager::~ConfigManager()

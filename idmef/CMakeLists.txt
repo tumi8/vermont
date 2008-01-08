@@ -1,6 +1,6 @@
 #
 # VERMONT build scripts for CMake
-# Copyright (C) 2007 Christoph Sommer <christoph.sommer@informatik.uni-erlangen.de>
+# Copyright (C) 2007 Peter Baumann <siprbaum@users.berlios.de>
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -17,30 +17,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-ADD_LIBRARY(concentrator
-	IpfixAggregator.cpp
-	PacketAggregator.cpp
-	BaseAggregator.cpp
-	BaseHashtable.cpp
-	Connection.cpp
-	PacketHashtable.cpp
-	FlowHashtable.cpp
-	ipfix.cpp
-	IpfixReceiver.cpp
-	IpfixReceiverUdpIpV4.cpp
-	IpfixRawdirReader.cpp
-	IpfixRecord.cpp
-	IpfixPrinter.cpp
-	IpfixParser.cpp
-	IpfixCollector.cpp
-	Rules.cpp
-	Rule.cpp
-	IpfixSender.cpp
-	IpfixRawdirWriter.cpp
-	TemplateBuffer.cpp
-	IpfixDbReader.cpp
-	IpfixDbWriter.cpp
-	IpfixRecordDestination.cpp
-	TRWPortscanDetector.cpp
+ADD_LIBRARY(idmef
+	IDMEFExporter.cpp
+	IDMEFMessage.cpp
 )
 
