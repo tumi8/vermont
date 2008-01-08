@@ -48,23 +48,24 @@
 		<td><xsl:value-of select="@id"/></td>
 		<td><xsl:value-of select="@name"/></td> 
 		<td><xsl:value-of select="memUsage"/></td>
-		<td class="tcontainer">
+		<td>
 			<xsl:if test="thread">
-				<table class="inner">
-					<tr><th>thread id</th><th>user utilization</th><th>system utilization</th></tr>
+				<div class="addinfoheader">thread info:</div>
+				<table class="threadtable">
+					<tr class="threadtable"><th class="threadtable">thread id</th><th class="threadtable">user utilization</th><th class="threadtable">system utilization</th></tr>
 					<xsl:for-each select="thread">
-						<tr>
-							<td><xsl:value-of select="@tid"/></td>
-							<td><xsl:value-of select="util[@type='user']"/></td>
-							<td><xsl:value-of select="util[@type='system']"/></td>
+						<tr class="threadtable">
+							<td class="threadtable"><xsl:value-of select="@tid"/></td>
+							<td class="threadtable"><xsl:value-of select="util[@type='user']"/></td>
+							<td class="threadtable"><xsl:value-of select="util[@type='system']"/></td>
 						</tr>
 					</xsl:for-each>
 				</table>
 			</xsl:if>
 			<xsl:if test="addInfo">
-				name/value info:
-				<table class="inner">
-					<tr><th>name</th><th>value</th></tr>
+				<div class="addinfoheader">name/value info:</div>
+				<table class="addinfotable">
+					<tr class="addinfotable"><th class="addinfotable">name</th><th class="addinfotable">value</th></tr>
 					<xsl:apply-templates select="addInfo/*" />
 				</table>
 			</xsl:if>
@@ -74,18 +75,18 @@
 
 <!-- additional information of sensors -->
 <xsl:template match="addInfo/pcap">
-	<tr><td>PCAP received packets:</td><td><xsl:value-of select="received" /></td></tr>
-	<tr><td>PCAP dropped packets:</td><td><xsl:value-of select="dropped" /></td></tr>
+	<tr class="addinfotable"><td class="addinfotable">PCAP received packets:</td><td class="addinfotable"><xsl:value-of select="received" /></td></tr>
+	<tr class="addinfotable"><td class="addinfotable">PCAP dropped packets:</td><td class="addinfotable"><xsl:value-of select="dropped" /></td></tr>
 </xsl:template>
 <xsl:template match="addInfo/observer">
-	<tr><td>processed bytes:</td><td><xsl:value-of select="processed[@type='bytes']" /></td></tr>
-	<tr><td>processed packets:</td><td><xsl:value-of select="processed[@type='packets']" /></td></tr>
+	<tr class="addinfotable"><td class="addinfotable">processed bytes:</td><td class="addinfotable"><xsl:value-of select="processed[@type='bytes']" /></td></tr>
+	<tr class="addinfotable"><td class="addinfotable">processed packets:</td><td class="addinfotable"><xsl:value-of select="processed[@type='packets']" /></td></tr>
 </xsl:template>
 <xsl:template match="addInfo/entries">
-	<tr><td>entries in queue:</td><td><xsl:value-of select="." /></td></tr>
+	<tr class="addinfotable"><td class="addinfotable">entries in queue:</td><td class="addinfotable"><xsl:value-of select="." /></td></tr>
 </xsl:template>
 <xsl:template match="addInfo/createdInstances">
-	<tr><td>created instances:</td><td><xsl:value-of select="." /></td></tr>
+	<tr class="addinfotable"><td class="addinfotable">created instances:</td><td class="addinfotable"><xsl:value-of select="." /></td></tr>
 </xsl:template>
 
 </xsl:stylesheet>
