@@ -27,6 +27,7 @@
 #include "reconf/Source.h"
 
 #include <list>
+#include <string>
 
 using namespace std;
 
@@ -36,15 +37,11 @@ class TRWPortscanDetector
 	  public Source<IDMEFMessage*>
 {
 	public:
-		TRWPortscanDetector(uint32_t hashbits, uint32_t texppend, uint32_t texpscan, uint32_t texpben, uint32_t tcleanint);
+		TRWPortscanDetector(uint32_t hashbits, uint32_t texppend, uint32_t texpscan, 
+				uint32_t texpben, uint32_t tcleanint, string analyzerid, string idmeftemplate);
 		virtual ~TRWPortscanDetector();
 		
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);
-		virtual void onTemplate(IpfixTemplateRecord* record);
-		virtual void onOptionsTemplate(IpfixOptionsTemplateRecord* record);
-		virtual void onDataTemplate(IpfixDataTemplateRecord* record);
-		virtual void onDataRecord(IpfixDataRecord* record);
-		virtual void onOptionsRecord(IpfixOptionsRecord* record);
 
 	private:
 		enum TRWDecision { PENDING, SCANNER, BENIGN };
@@ -66,6 +63,8 @@ class TRWPortscanDetector
 		uint32_t timeExpireScanner; // time in seconds until scanner entries are expired
 		uint32_t timeExpireBenign; // time in seconds until benign entries are expired
 		uint32_t timeCleanupInterval; // time in seconds of interval when hashtable with source hosts is cleaned up (trwEntries)
+		string analyzerId;	/**< analyzer id for IDMEF messages */
+		string idmefTemplate;	/**< template file for IDMEF messages */
 
 
 		// idmef parameters

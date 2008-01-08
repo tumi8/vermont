@@ -34,11 +34,18 @@ TRWPortscanDetectorCfg::TRWPortscanDetectorCfg(XMLElement* elem)
 			timeExpireBenign = getInt("timeexpirebenign");
 		} else if (e->matches("timecleanupinterval")) {
 			timeCleanupInterval = getInt("timecleanupinterval");
+		} else if (e->matches("analyzerid")) {
+			analyzerId = e->getFirstText();
+		} else if (e->matches("idmeftemplate")) {
+			idmefTemplate = e->getFirstText();
+		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown TRWPortscanDetector config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
+	if (analyzerId=="") THROWEXCEPTION("TRWPortscanDetectorCfg: analyzerid not set in configuration!");
+	if (idmefTemplate=="") THROWEXCEPTION("TRWPortscanDetectorCfg: idmeftemplate not set in configuration!");
 }
 
 TRWPortscanDetectorCfg::~TRWPortscanDetectorCfg()
@@ -47,7 +54,7 @@ TRWPortscanDetectorCfg::~TRWPortscanDetectorCfg()
 
 TRWPortscanDetector* TRWPortscanDetectorCfg::createInstance()
 {
-    instance = new TRWPortscanDetector(hashBits, timeExpirePending, timeExpireScanner, timeExpireBenign, timeCleanupInterval);
+    instance = new TRWPortscanDetector(hashBits, timeExpirePending, timeExpireScanner, timeExpireBenign, timeCleanupInterval, analyzerId, idmefTemplate);
     return instance;
 }
 

@@ -6,6 +6,10 @@
 
 #include "concentrator/TRWPortscanDetector.h"
 
+#include <string>
+
+using namespace std;
+
 
 class TRWPortscanDetectorCfg
 	: public CfgHelper<TRWPortscanDetector, TRWPortscanDetectorCfg>
@@ -26,6 +30,8 @@ protected:
 	uint32_t timeExpireScanner; // time in seconds until scanner entries are expired
 	uint32_t timeExpireBenign; // time in seconds until benign entries are expired
 	uint32_t timeCleanupInterval; // time in seconds of interval when hashtable with source hosts is cleaned up (trwEntries)
+	string analyzerId;	/**< analyzer id for IDMEF messages */
+	string idmefTemplate;	/**< template file for IDMEF messages */
 	
 	TRWPortscanDetectorCfg(XMLElement*);
 };

@@ -93,8 +93,8 @@ void IDMEFExporter::exportMessage(const string idmefmsg)
 
 	// save message to destination directory
 	FILE* f = fopen(filename.c_str(), "w+");
-	flockfile(f);
 	if (f == NULL) goto error;
+	flockfile(f);
 	// first line is URL where processing script should send event to
 	if (fwrite(sendURL.c_str(), 1, sendURL.size(), f) != sendURL.size()) goto error;
 	if (fwrite("\n", 1, 1, f) != 1) goto error;

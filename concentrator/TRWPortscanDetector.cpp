@@ -36,12 +36,16 @@ InstanceManager<IDMEFMessage> TRWPortscanDetector::idmefManager("IDMEFMessage");
  * attention: parameter idmefexporter must be free'd by the creating instance, TRWPortscanDetector
  * does not dare to delete it, in case it's used
  */
-TRWPortscanDetector::TRWPortscanDetector(uint32_t hashbits, uint32_t texppend, uint32_t texpscan, uint32_t texpben, uint32_t tcleanint)
+TRWPortscanDetector::TRWPortscanDetector(uint32_t hashbits, uint32_t texppend, 
+		uint32_t texpscan, uint32_t texpben, uint32_t tcleanint, 
+		string analyzerid, string idmeftemplate)
 	: hashBits(hashbits),
 	  timeExpirePending(texppend),
 	  timeExpireScanner(texpscan),
 	  timeExpireBenign(texpben),
-	  timeCleanupInterval(tcleanint)
+	  timeCleanupInterval(tcleanint),
+	  analyzerId(analyzerid),
+	  idmefTemplate(idmeftemplate)
 {
 	// make some initialization calculations
 	hashSize = 1<<hashBits;
@@ -212,10 +216,12 @@ void TRWPortscanDetector::addConnection(Connection* conn)
 		msg(MSG_DEBUG, "numFailedConns: %d, numSuccConns: %d", te->numFailedConns, te->numSuccConns);
 
 		IDMEFMessage* msg = idmefManager.getNewInstance();
+		msg->init(idmefTemplate, analyzerId);
 		msg->setVariable(PAR_SUCC_CONNS, te->numSuccConns);
 		msg->setVariable(PAR_FAILED_CONNS, te->numFailedConns);
 		msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(te->srcIP));
 		msg->setVariable(IDMEFMessage::PAR_TARGET_ADDRESS, IPToString(te->dstSubnet)+"/"+IPToString(te->dstSubnetMask));
+		msg->applyVariables();
 		send(msg);
 	}
 }
@@ -229,28 +235,4 @@ string TRWPortscanDetector::getStatistics()
 	return oss.str();
 }
 
-void TRWPortscanDetector::onTemplate(IpfixTemplateRecord* record)
-{
-	// not used
-}
-
-void TRWPortscanDetector::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
-{
-	// not used
-}
-
-void TRWPortscanDetector::onDataTemplate(IpfixDataTemplateRecord* record)
-{
-	// not used
-}
-
-void TRWPortscanDetector::onDataRecord(IpfixDataRecord* record)
-{
-	// not used
-}
-
-void TRWPortscanDetector::onOptionsRecord(IpfixOptionsRecord* record)
-{
-	// not used
-}
 
