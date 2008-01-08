@@ -39,8 +39,7 @@ int CfgBase::getInt(const std::string& name, int def, XMLElement* elem)
 	return def;
 }
 
-unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit,
-				unsigned def, XMLElement* elem)
+unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit, XMLElement* elem)
 {
 	unsigned int time;
 	if (!elem)

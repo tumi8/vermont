@@ -64,7 +64,7 @@ public:
 	 * @param elem the element whose children are search for the given name
 	 */
 	unsigned int getTimeInUnit(const std::string& name, timeUnit unit,
-				   unsigned def = 0, XMLElement* elem = NULL);
+				   XMLElement* elem = NULL);
 	
 
 	XMLElement* _elem;
@@ -177,6 +177,10 @@ public:
 	/** starts the module */
 	virtual void start(bool fail_if_already_running = true)
 	{
+		// create instance, if not already present
+		if ((splitter==NULL) && (instance==NULL) && (queue==NULL))
+			createInstance();
+		
 		if (splitter)
 			splitter->start(fail_if_already_running);
 		if (instance)
@@ -370,6 +374,15 @@ public:
 		
 		instance = other->instance;
 		other->instance = NULL;
+	}
+	
+	/** returns this module's instance as a Module
+	 * if instance does not inherit a module, NULL is returned
+	 */
+	Module* getInstanceAsModule()
+	{
+		Module* m = dynamic_cast<Module*>(instance);
+		return m;
 	}
 
 protected:
