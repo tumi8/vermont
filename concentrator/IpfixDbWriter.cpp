@@ -413,16 +413,9 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
 		case IPFIX_TYPEID_flowStartSeconds:
 		    // save time for table access
 		    flowstartsec = intdata;
-		    flowstartseconds_seen = true;
 		    break;
 
 		case IPFIX_TYPEID_flowStartMilliSeconds:
-		    // if flowStartSeconds is not stored in one of the colomns, but flowStartMilliSeconds is,
-		    // the we use flowStartMilliSeconds for table access
-		    // This is realized by storing this value only if flowStartSeconds has not yet been seen.
-		    // A later appearing flowStartSeconds will override this value.
-		    if (!flowstartseconds_seen)
-			flowstartsec = intdata/1000;
 		    // in the database the millisecond entry is counted from last second
 		    intdata %= 1000;
 		    break;
