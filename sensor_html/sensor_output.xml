@@ -8,6 +8,7 @@
 	<html>
 		<head>
 			<title>Vermont sensor data</title>
+			<link rel="stylesheet" type="text/css" href="sensor.css" />
 		</head>
 		<body>
 			<xsl:apply-templates />
@@ -17,50 +18,74 @@
 
 <xsl:template match="sensorData">
 	<table>
-		<tr><th>host: <xsl:value-of select="hostname"/></th></tr>
+		<tr><th>host: <xsl:value-of select="@host"/></th></tr>
 		<tr>
 			<td>global data:</td>
-			<td>
-				<table>
+			<td class="tcontainer">
+				<table class="inner">
 					<tr><td>process id</td><td><xsl:value-of select="pid"/></td></tr>
-					<tr><td>time of sensor data</td><td><xsl:value-of select="time"/></td></tr>
+					<tr><td>time of sensor data</td><td><xsl:value-of select="@time"/></td></tr>
 					<tr><td>time of previous access</td><td><xsl:value-of select="lastTime"/></td></tr>
 				</table>
 			</td>
 		</tr>
 		<tr>
 			<td>module data:</td>
-			<td>
-				<p>module graph:<br />
-				<img src="modules.png" />
-				</p>
-				<table>
-					<tr><th>id</th><th>name</th><th>memory usage (in bytes)</th><th>additional info</th></tr>
-					<xsl:apply-templates select="module" />
+			<td class="tcontainer">
+				<p align="center"><img src="modules.png" /></p>
+				<table class="inner">
+					<tr><th>id</th><th width="15%">name</th><th width="10%">memory usage (in bytes)</th><th>additional info</th></tr>
+					<xsl:apply-templates select="sensor[@type='module']" />
+					<xsl:apply-templates select="sensor[@type='simple']" />
 				</table>
 			</td>
 		</tr>
 	</table>
 </xsl:template>
 
-<xsl:template match="module">
+<xsl:template match="sensor">
 	<tr>
 		<td><xsl:value-of select="@id"/></td>
 		<td><xsl:value-of select="@name"/></td> 
 		<td><xsl:value-of select="memUsage"/></td>
-		<td>
-			<table>
-				<tr><th>thread id</th><th>user utilization</th><th>system utilization</th></tr>
-				<xsl:for-each select="thread">
-					<tr>
-						<td><xsl:value-of select="@tid"/></td>
-						<td><xsl:value-of select="util[@type='user']"/></td>
-						<td><xsl:value-of select="util[@type='system']"/></td>
-					</tr>
-				</xsl:for-each>
-			</table>
+		<td class="tcontainer">
+			<xsl:if test="thread">
+				<table class="inner">
+					<tr><th>thread id</th><th>user utilization</th><th>system utilization</th></tr>
+					<xsl:for-each select="thread">
+						<tr>
+							<td><xsl:value-of select="@tid"/></td>
+							<td><xsl:value-of select="util[@type='user']"/></td>
+							<td><xsl:value-of select="util[@type='system']"/></td>
+						</tr>
+					</xsl:for-each>
+				</table>
+			</xsl:if>
+			<xsl:if test="addInfo">
+				name/value info:
+				<table class="inner">
+					<tr><th>name</th><th>value</th></tr>
+					<xsl:apply-templates select="addInfo/*" />
+				</table>
+			</xsl:if>
 		</td>
 	</tr>
+</xsl:template>
+
+<!-- additional information of sensors -->
+<xsl:template match="addInfo/pcap">
+	<tr><td>PCAP received packets:</td><td><xsl:value-of select="received" /></td></tr>
+	<tr><td>PCAP dropped packets:</td><td><xsl:value-of select="dropped" /></td></tr>
+</xsl:template>
+<xsl:template match="addInfo/observer">
+	<tr><td>processed bytes:</td><td><xsl:value-of select="processed[@type='bytes']" /></td></tr>
+	<tr><td>processed packets:</td><td><xsl:value-of select="processed[@type='packets']" /></td></tr>
+</xsl:template>
+<xsl:template match="addInfo/entries">
+	<tr><td>entries in queue:</td><td><xsl:value-of select="." /></td></tr>
+</xsl:template>
+<xsl:template match="addInfo/createdInstances">
+	<tr><td>created instances:</td><td><xsl:value-of select="." /></td></tr>
 </xsl:template>
 
 </xsl:stylesheet>
