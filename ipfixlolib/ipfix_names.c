@@ -222,16 +222,53 @@ static const struct ipfix_identifier IPFIXTAB[] = {
 	{ "reserved", 212, 0 },
 	{ "headerlengthipv4", 213, 1 },
 	{ "mplspayloadlength", 214, 4 },
-	
-	{ "revflowstartseconds", IPFIX_ETYPEID_revFlowStartSeconds, IPFIX_ELENGTH_revFlowStartSeconds },
-	{ "revflowstartmilliseconds", IPFIX_ETYPEID_revFlowStartMilliSeconds, IPFIX_ELENGTH_revFlowStartMilliSeconds },
-	{ "revflowendseconds", IPFIX_ETYPEID_revFlowEndSeconds, IPFIX_ELENGTH_revFlowEndSeconds },
-	{ "revflowendmilliseconds", IPFIX_ETYPEID_revFlowEndMilliSeconds, IPFIX_ELENGTH_revFlowEndMilliSeconds },
-	{ "revoctetdeltacount", IPFIX_ETYPEID_revOctetDeltaCount, IPFIX_ELENGTH_revOctetDeltaCount },
-	{ "revpacketdeltacount", IPFIX_ETYPEID_revPacketDeltaCount, IPFIX_ELENGTH_revPacketDeltaCount },
-	{ "revtcpcontrolbits", IPFIX_ETYPEID_revTcpControlBits, IPFIX_ELENGTH_revTcpControlBits },
+	{ "selectorid", 300, 2 },
+	{ "selectorinputsequencenumber", 301, 4 },
+	{ "selectoralgorithm", 302, 1 },
+	{ "reserved", 303, 0 },
+	{ "samplingpacketinterval", 304, 4 },
+	{ "samplingpacketspace", 305, 4 },
+	{ "samplingtimeinterval", 306, 4 },
+	{ "samplingtimespace", 307, 4 },
+	{ "samplingpopulation", 308, 4 },
+	{ "samplingsize", 309, 4 },
+	{ "samplingprobabilityn", 310, 4 },
+	{ "samplingprobabilitym", 311, 4 },
+	{ "reserved", 312, 0 },
+	{ "ipheaderpacketsection", 313, 0 },
+	{ "ippayloadpacketsection", 314, 0 },
+	{ "l2headerpacketsection", 315, 0 },
+	{ "l2payloadpacketsection", 316, 0 },
+	{ "mplslabelstacksection", 317, 0 },
+	{ "mplspayloadpacketsection", 318, 0 },
+	{ "meteringprocesssid", 319, 1 },
+	{ "observationpointid", 320, 1 },
+	{ "associationsid", 321, 1 },
+	{ "reserved", 322, 0 },
+	{ "selectortype", 323, 1 },
+	{ "packetsobserved", 324, 1 },
+	{ "packetsselected", 325, 1 },
+	{ "accuracy", 326, 1 },
+	{ "reserved", 327, 0 },
+	{ "reserved", 328, 0 },
+	{ "reserved", 329, 0 },
 };
 
+static const struct ipfix_identifier BIFLOWTAB1[] = {
+	{ "revoctetdeltacount", 33793, 8 },
+	{ "revpacketdeltacount", 33794, 8 },
+	{ "reserved", 33795, 0 },
+	{ "reserved", 33796, 0 },
+	{ "reserved", 33797, 0 },
+	{ "revtcpcontrolbits", 33798, 1 },
+};
+static const struct ipfix_identifier BIFLOWTAB2[] = {
+	
+	{ "revflowstartseconds", 33942, 4 },
+	{ "revflowendseconds", 33943, 4 },
+	{ "revflowstartmilliseconds", 33944, 8 },
+	{ "revflowendmilliseconds", 33945, 8 },
+};
 
 #define PSAMP_STARTING_ID 300
 
@@ -270,9 +307,9 @@ static const struct ipfix_identifier PSAMPTAB[] = {
 
 
 
-/* ANSI-C code produced by gperf version 3.0.1 */
+//* ANSI-C code produced by gperf version 3.0.3 */
 /* Command-line: gperf -D -C -t -L ANSI-C gperf  */
-/* Computed positions: -k'1-2,5,10,12-16,$' */
+/* Computed positions: -k'1-2,7,10,12-16,$' */
 
 #if !((' ' == 32) && ('!' == 33) && ('"' == 34) && ('#' == 35) \
       && ('%' == 37) && ('&' == 38) && ('\'' == 39) && ('(' == 40) \
@@ -304,12 +341,12 @@ static const struct ipfix_identifier PSAMPTAB[] = {
 #line 1 "gperf"
 struct ipfix_midentifier { char *name; uint16_t id; };
 
-#define TOTAL_KEYWORDS 245
+#define TOTAL_KEYWORDS 252
 #define MIN_WORD_LENGTH 6
 #define MAX_WORD_LENGTH 27
-#define MIN_HASH_VALUE 30
-#define MAX_HASH_VALUE 631
-/* maximum key range = 602, duplicates = 67 */
+#define MIN_HASH_VALUE 23
+#define MAX_HASH_VALUE 670
+/* maximum key range = 648, duplicates = 67 */
 
 #ifdef __GNUC__
 __inline
@@ -323,32 +360,32 @@ hash (register const char *str, register unsigned int len)
 {
   static const unsigned short asso_values[] =
     {
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632,   0, 632,
-       10,  30,  60,  20, 100,  15,   5,   0, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632,   5,  65,  10,
-        5,   0,  50, 190, 105,  40,   5, 105,  20,  70,
-        0,  10,   0,  15,  25,   5,   0, 110,  55,  95,
-      180, 145,  10, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632, 632, 632, 632, 632,
-      632, 632, 632, 632, 632, 632
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671,   0, 671,
+       25,  40,  50,  30,  95,  15,  10,   0, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671,   0,  70,  20,
+        5,   5,   5,  79, 165,   5,   0, 160,  30,  65,
+       30,   0,  15,  40,  25,   5,   0, 140,  90, 235,
+      180,  60,   0, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671, 671, 671, 671, 671,
+      671, 671, 671, 671, 671, 671
     };
   register int hval = len;
 
@@ -376,10 +413,10 @@ hash (register const char *str, register unsigned int len)
       case 9:
       case 8:
       case 7:
+        hval += asso_values[(unsigned char)str[6]];
+      /*FALLTHROUGH*/
       case 6:
       case 5:
-        hval += asso_values[(unsigned char)str[4]];
-      /*FALLTHROUGH*/
       case 4:
       case 3:
       case 2:
@@ -394,32 +431,37 @@ hash (register const char *str, register unsigned int len)
 
 #ifdef __GNUC__
 __inline
+#ifdef __GNUC_STDC_INLINE__
+__attribute__ ((__gnu_inline__))
+#endif
 #endif
 const struct ipfix_midentifier *
 in_word_set (register const char *str, register unsigned int len)
 {
   static const struct ipfix_midentifier wordlist[] =
     {
-#line 212 "gperf"
-      {"tcpoptions", 209},
-#line 218 "gperf"
-      {"selectorid", 300},
 #line 152 "gperf"
       {"sourceid", 149},
 #line 148 "gperf"
       {"templateid", 145},
-#line 171 "gperf"
-      {"notsentoctettotalcount", 168},
-#line 199 "gperf"
-      {"ipprecedence", 196},
-#line 170 "gperf"
-      {"notsentpackettotalcount", 167},
-#line 185 "gperf"
-      {"tcpsourceport", 182},
-#line 243 "gperf"
-      {"packetsselected", 325},
 #line 145 "gperf"
       {"portid", 142},
+#line 218 "gperf"
+      {"selectorid", 300},
+#line 209 "gperf"
+      {"ismulticast", 206},
+#line 62 "gperf"
+      {"postvlanid", 59},
+#line 239 "gperf"
+      {"associationsid", 321},
+#line 178 "gperf"
+      {"postmcastoctettotalcount", 175},
+#line 212 "gperf"
+      {"tcpoptions", 209},
+#line 151 "gperf"
+      {"flowid", 148},
+#line 195 "gperf"
+      {"iptimetolive", 192},
 #line 3 "gperf"
       {"reserved", 0},
 #line 247 "gperf"
@@ -556,338 +598,350 @@ in_word_set (register const char *str, register unsigned int len)
       {"reserved", 34},
 #line 6 "gperf"
       {"reserved", 3},
-#line 27 "gperf"
-      {"postpacketdeltacount", 24},
-#line 211 "gperf"
-      {"ipv4options", 208},
-#line 137 "gperf"
-      {"droppedoctettotalcount", 134},
-#line 213 "gperf"
-      {"paddingoctets", 210},
-#line 84 "gperf"
-      {"postsourcemacaddress", 81},
-#line 138 "gperf"
-      {"droppedpackettotalcount", 135},
-#line 63 "gperf"
-      {"ipversion", 60},
-#line 175 "gperf"
-      {"postpackettotalcount", 172},
-#line 169 "gperf"
-      {"notsentflowtotalcount", 166},
-#line 135 "gperf"
-      {"droppedoctetdeltacount", 132},
+#line 171 "gperf"
+      {"notsentoctettotalcount", 168},
 #line 189 "gperf"
       {"tcpwindowsize", 186},
-#line 10 "gperf"
-      {"sourcetransportport", 7},
-#line 209 "gperf"
-      {"ismulticast", 206},
-#line 227 "gperf"
-      {"samplingsize", 309},
-#line 174 "gperf"
-      {"postoctettotalcount", 171},
-#line 62 "gperf"
-      {"postvlanid", 59},
-#line 136 "gperf"
-      {"droppedpacketdeltacount", 133},
-#line 26 "gperf"
-      {"postoctetdeltacount", 23},
-#line 144 "gperf"
-      {"linecardid", 141},
-#line 59 "gperf"
-      {"sourcemacaddress", 56},
-#line 186 "gperf"
-      {"tcpdestinationport", 183},
-#line 139 "gperf"
-      {"flowendreason", 136},
-#line 239 "gperf"
-      {"associationsid", 321},
-#line 9 "gperf"
-      {"tcpcontrolbits", 6},
-#line 225 "gperf"
-      {"samplingtimespace", 307},
-#line 154 "gperf"
-      {"flowendseconds", 151},
-#line 14 "gperf"
-      {"destinationtransportport", 11},
-#line 242 "gperf"
-      {"packetsobserved", 324},
-#line 160 "gperf"
-      {"flowendnanoseconds", 157},
 #line 23 "gperf"
       {"postmcastoctetdeltacount", 20},
-#line 151 "gperf"
-      {"flowid", 148},
-#line 178 "gperf"
-      {"postmcastoctettotalcount", 175},
-#line 159 "gperf"
-      {"flowstartnanoseconds", 156},
-#line 61 "gperf"
-      {"vlanid", 58},
-#line 153 "gperf"
-      {"flowstartseconds", 150},
-#line 150 "gperf"
-      {"wlanssid", 147},
-#line 158 "gperf"
-      {"flowendmicroseconds", 155},
-#line 190 "gperf"
-      {"tcpurgentpointer", 187},
-#line 13 "gperf"
-      {"ingressinterface", 10},
-#line 11 "gperf"
-      {"sourceipv4address", 8},
-#line 224 "gperf"
-      {"samplingtimeinterval", 306},
-#line 5 "gperf"
-      {"packetdeltacount", 2},
-#line 89 "gperf"
-      {"packettotalcount", 86},
-#line 4 "gperf"
-      {"octetdeltacount", 1},
-#line 195 "gperf"
-      {"iptimetolive", 192},
-#line 183 "gperf"
-      {"udpsourceport", 180},
-#line 223 "gperf"
-      {"samplingpacketspace", 305},
-#line 60 "gperf"
-      {"postdestinationmacaddress", 57},
-#line 237 "gperf"
-      {"meteringprocesssid", 319},
-#line 233 "gperf"
-      {"l2headerpacketsection", 315},
+#line 137 "gperf"
+      {"droppedoctettotalcount", 134},
+#line 227 "gperf"
+      {"samplingsize", 309},
+#line 63 "gperf"
+      {"ipversion", 60},
+#line 211 "gperf"
+      {"ipv4options", 208},
+#line 199 "gperf"
+      {"ipprecedence", 196},
+#line 170 "gperf"
+      {"notsentpackettotalcount", 167},
+#line 9 "gperf"
+      {"tcpcontrolbits", 6},
+#line 144 "gperf"
+      {"linecardid", 141},
+#line 169 "gperf"
+      {"notsentflowtotalcount", 166},
+#line 138 "gperf"
+      {"droppedpackettotalcount", 135},
+#line 174 "gperf"
+      {"postoctettotalcount", 171},
+#line 186 "gperf"
+      {"tcpdestinationport", 183},
+#line 26 "gperf"
+      {"postoctetdeltacount", 23},
 #line 241 "gperf"
       {"selectortype", 323},
-#line 88 "gperf"
-      {"octettotalcount", 85},
-#line 83 "gperf"
-      {"destinationmacaddress", 80},
-#line 156 "gperf"
-      {"flowendmilliseconds", 153},
-#line 231 "gperf"
-      {"ipheaderpacketsection", 313},
-#line 179 "gperf"
-      {"icmptypeipv4", 176},
-#line 238 "gperf"
-      {"observationpointid", 320},
-#line 30 "gperf"
-      {"sourceipv6address", 27},
-#line 149 "gperf"
-      {"wlanchannelid", 146},
-#line 198 "gperf"
-      {"ipdiffservcodepoint", 195},
-#line 67 "gperf"
-      {"ipv6extensionheaders", 64},
-#line 180 "gperf"
-      {"icmpcodeipv4", 177},
+#line 14 "gperf"
+      {"destinationtransportport", 11},
+#line 135 "gperf"
+      {"droppedoctetdeltacount", 132},
+#line 185 "gperf"
+      {"tcpsourceport", 182},
+#line 243 "gperf"
+      {"packetsselected", 325},
+#line 175 "gperf"
+      {"postpackettotalcount", 172},
+#line 225 "gperf"
+      {"samplingtimespace", 307},
 #line 244 "gperf"
       {"accuracy", 326},
-#line 56 "gperf"
-      {"maximumttl", 53},
-#line 197 "gperf"
-      {"ipclassofservice", 194},
-#line 219 "gperf"
-      {"selectorinputsequencenumber", 301},
-#line 184 "gperf"
-      {"udpdestinationport", 181},
-#line 210 "gperf"
-      {"internetheaderlengthipv4", 207},
-#line 24 "gperf"
-      {"flowendsysuptime", 21},
-#line 146 "gperf"
-      {"meteringprocessid", 143},
-#line 203 "gperf"
-      {"mplstoplabelttl", 200},
-#line 7 "gperf"
-      {"protocolidentifier", 4},
-#line 57 "gperf"
-      {"identificationipv4", 54},
-#line 236 "gperf"
-      {"mplspayloadpacketsection", 318},
-#line 177 "gperf"
-      {"postmcastpackettotalcount", 174},
-#line 157 "gperf"
-      {"flowstartmicroseconds", 154},
-#line 222 "gperf"
-      {"samplingpacketinterval", 304},
-#line 22 "gperf"
-      {"postmcastpacketdeltacount", 19},
-#line 8 "gperf"
-      {"classofserviceipv4", 5},
-#line 55 "gperf"
-      {"minimumttl", 52},
-#line 226 "gperf"
-      {"samplingpopulation", 308},
-#line 81 "gperf"
-      {"mplslabelstackentry9", 78},
-#line 82 "gperf"
-      {"mplslabelstackentry10", 79},
-#line 58 "gperf"
-      {"postclassofserviceipv4", 55},
-#line 36 "gperf"
-      {"igmptype", 33},
-#line 80 "gperf"
-      {"mplslabelstackentry8", 77},
-#line 235 "gperf"
-      {"mplslabelstacksection", 317},
-#line 15 "gperf"
-      {"destinationipv4address", 12},
-#line 74 "gperf"
-      {"mplslabelstackentry2", 71},
-#line 161 "gperf"
-      {"flowstartdeltamicroseconds", 158},
-#line 43 "gperf"
-      {"exportedoctettotalcount", 40},
-#line 79 "gperf"
-      {"mplslabelstackentry7", 76},
-#line 166 "gperf"
-      {"observedflowtotalcount", 163},
-#line 25 "gperf"
-      {"flowstartsysuptime", 22},
-#line 77 "gperf"
-      {"mplslabelstackentry5", 74},
-#line 155 "gperf"
-      {"flowstartmilliseconds", 152},
-#line 147 "gperf"
-      {"exportingprocessid", 144},
-#line 193 "gperf"
-      {"totallengthipv4", 190},
-#line 181 "gperf"
-      {"icmptypeipv6", 178},
-#line 75 "gperf"
-      {"mplslabelstackentry3", 72},
-#line 140 "gperf"
-      {"classofserviceipv6", 137},
-#line 162 "gperf"
-      {"flowenddeltamicroseconds", 159},
-#line 228 "gperf"
-      {"samplingprobabilityn", 310},
-#line 176 "gperf"
-      {"flowkeyindicator", 173},
-#line 182 "gperf"
-      {"icmpcodeipv6", 179},
-#line 17 "gperf"
-      {"egressinterface", 14},
-#line 141 "gperf"
-      {"postclassofserviceipv6", 138},
-#line 40 "gperf"
-      {"flowinactivetimeout", 37},
-#line 31 "gperf"
-      {"destinationipv6address", 28},
-#line 165 "gperf"
-      {"flowdurationmicroseconds", 162},
-#line 35 "gperf"
-      {"icmptypecodeipv4", 32},
+#line 10 "gperf"
+      {"sourcetransportport", 7},
+#line 27 "gperf"
+      {"postpacketdeltacount", 24},
 #line 168 "gperf"
       {"ignoredoctettotalcount", 165},
-#line 164 "gperf"
-      {"flowdurationmilliseconds", 161},
-#line 76 "gperf"
-      {"mplslabelstackentry4", 73},
-#line 201 "gperf"
-      {"octetdeltasumofsquares", 198},
+#line 36 "gperf"
+      {"igmptype", 33},
+#line 139 "gperf"
+      {"flowendreason", 136},
+#line 158 "gperf"
+      {"flowendmicroseconds", 155},
+#line 13 "gperf"
+      {"ingressinterface", 10},
+#line 213 "gperf"
+      {"paddingoctets", 210},
+#line 154 "gperf"
+      {"flowendseconds", 151},
+#line 153 "gperf"
+      {"flowstartseconds", 150},
+#line 136 "gperf"
+      {"droppedpacketdeltacount", 133},
+#line 83 "gperf"
+      {"destinationmacaddress", 80},
+#line 11 "gperf"
+      {"sourceipv4address", 8},
+#line 156 "gperf"
+      {"flowendmilliseconds", 153},
+#line 61 "gperf"
+      {"vlanid", 58},
+#line 7 "gperf"
+      {"protocolidentifier", 4},
+#line 224 "gperf"
+      {"samplingtimeinterval", 306},
+#line 59 "gperf"
+      {"sourcemacaddress", 56},
 #line 167 "gperf"
       {"ignoredpackettotalcount", 164},
-#line 29 "gperf"
-      {"maximumpacketlength", 26},
-#line 220 "gperf"
-      {"selectoralgorithm", 302},
-#line 187 "gperf"
-      {"tcpsequencenumber", 184},
+#line 57 "gperf"
+      {"identificationipv4", 54},
+#line 40 "gperf"
+      {"flowinactivetimeout", 37},
+#line 238 "gperf"
+      {"observationpointid", 320},
+#line 17 "gperf"
+      {"egressinterface", 14},
+#line 190 "gperf"
+      {"tcpurgentpointer", 187},
+#line 159 "gperf"
+      {"flowstartnanoseconds", 156},
+#line 160 "gperf"
+      {"flowendnanoseconds", 157},
+#line 24 "gperf"
+      {"flowendsysuptime", 21},
+#line 180 "gperf"
+      {"icmpcodeipv4", 177},
+#line 198 "gperf"
+      {"ipdiffservcodepoint", 195},
+#line 91 "gperf"
+      {"fragmentoffsetipv4", 88},
+#line 179 "gperf"
+      {"icmptypeipv4", 176},
+#line 242 "gperf"
+      {"packetsobserved", 324},
+#line 161 "gperf"
+      {"flowstartdeltamicroseconds", 158},
+#line 30 "gperf"
+      {"sourceipv6address", 27},
+#line 250 "gperf"
+      {"revtcpcontrolbits", 33798},
+#line 60 "gperf"
+      {"postdestinationmacaddress", 57},
+#line 157 "gperf"
+      {"flowstartmicroseconds", 154},
+#line 176 "gperf"
+      {"flowkeyindicator", 173},
+#line 146 "gperf"
+      {"meteringprocessid", 143},
+#line 237 "gperf"
+      {"meteringprocesssid", 319},
+#line 210 "gperf"
+      {"internetheaderlengthipv4", 207},
+#line 197 "gperf"
+      {"ipclassofservice", 194},
+#line 15 "gperf"
+      {"destinationipv4address", 12},
+#line 8 "gperf"
+      {"classofserviceipv4", 5},
+#line 56 "gperf"
+      {"maximumttl", 53},
+#line 155 "gperf"
+      {"flowstartmilliseconds", 152},
+#line 55 "gperf"
+      {"minimumttl", 52},
+#line 4 "gperf"
+      {"octetdeltacount", 1},
+#line 184 "gperf"
+      {"udpdestinationport", 181},
+#line 162 "gperf"
+      {"flowenddeltamicroseconds", 159},
+#line 84 "gperf"
+      {"postsourcemacaddress", 81},
+#line 58 "gperf"
+      {"postclassofserviceipv4", 55},
+#line 248 "gperf"
+      {"revoctetdeltacount", 33793},
+#line 89 "gperf"
+      {"packettotalcount", 86},
+#line 183 "gperf"
+      {"udpsourceport", 180},
+#line 5 "gperf"
+      {"packetdeltacount", 2},
+#line 25 "gperf"
+      {"flowstartsysuptime", 22},
+#line 193 "gperf"
+      {"totallengthipv4", 190},
+#line 88 "gperf"
+      {"octettotalcount", 85},
+#line 20 "gperf"
+      {"bgpdestinationasnumber", 17},
+#line 43 "gperf"
+      {"exportedoctettotalcount", 40},
+#line 165 "gperf"
+      {"flowdurationmicroseconds", 162},
+#line 177 "gperf"
+      {"postmcastpackettotalcount", 174},
+#line 31 "gperf"
+      {"destinationipv6address", 28},
+#line 140 "gperf"
+      {"classofserviceipv6", 137},
+#line 223 "gperf"
+      {"samplingpacketspace", 305},
+#line 22 "gperf"
+      {"postmcastpacketdeltacount", 19},
+#line 163 "gperf"
+      {"systeminittimemilliseconds", 160},
+#line 182 "gperf"
+      {"icmpcodeipv6", 179},
+#line 67 "gperf"
+      {"ipv6extensionheaders", 64},
+#line 231 "gperf"
+      {"ipheaderpacketsection", 313},
+#line 131 "gperf"
+      {"bgpnextadjacentasnumber", 128},
+#line 164 "gperf"
+      {"flowdurationmilliseconds", 161},
+#line 181 "gperf"
+      {"icmptypeipv6", 178},
+#line 226 "gperf"
+      {"samplingpopulation", 308},
+#line 141 "gperf"
+      {"postclassofserviceipv6", 138},
+#line 147 "gperf"
+      {"exportingprocessid", 144},
+#line 249 "gperf"
+      {"revpacketdeltacount", 33794},
+#line 201 "gperf"
+      {"octetdeltasumofsquares", 198},
+#line 203 "gperf"
+      {"mplstoplabelttl", 200},
+#line 35 "gperf"
+      {"icmptypecodeipv4", 32},
+#line 39 "gperf"
+      {"flowactivetimeout", 36},
+#line 232 "gperf"
+      {"ippayloadpacketsection", 314},
+#line 219 "gperf"
+      {"selectorinputsequencenumber", 301},
+#line 150 "gperf"
+      {"wlanssid", 147},
+#line 228 "gperf"
+      {"samplingprobabilityn", 310},
+#line 233 "gperf"
+      {"l2headerpacketsection", 315},
+#line 222 "gperf"
+      {"samplingpacketinterval", 304},
+#line 188 "gperf"
+      {"tcpacknowledgementnumber", 185},
 #line 202 "gperf"
       {"octettotalsumofsquares", 199},
 #line 49 "gperf"
       {"mplstoplabeltype", 46},
-#line 234 "gperf"
-      {"l2payloadpacketsection", 316},
-#line 91 "gperf"
-      {"fragmentoffsetipv4", 88},
-#line 12 "gperf"
-      {"sourceipv4mask", 9},
-#line 39 "gperf"
-      {"flowactivetimeout", 36},
-#line 131 "gperf"
-      {"bgpnextadjacentasnumber", 128},
-#line 232 "gperf"
-      {"ippayloadpacketsection", 314},
-#line 133 "gperf"
-      {"exporteripv4address", 130},
-#line 194 "gperf"
-      {"payloadlengthipv6", 191},
-#line 28 "gperf"
-      {"minimumpacketlength", 25},
-#line 78 "gperf"
-      {"mplslabelstackentry6", 75},
-#line 50 "gperf"
-      {"mplstoplabelipv4address", 47},
-#line 229 "gperf"
-      {"samplingprobabilitym", 311},
+#line 149 "gperf"
+      {"wlanchannelid", 146},
 #line 73 "gperf"
       {"mplstoplabelstackentry", 70},
-#line 205 "gperf"
-      {"mplslabelstackdepth", 202},
+#line 44 "gperf"
+      {"exportedmessagetotalcount", 41},
+#line 234 "gperf"
+      {"l2payloadpacketsection", 316},
+#line 133 "gperf"
+      {"exporteripv4address", 130},
+#line 220 "gperf"
+      {"selectoralgorithm", 302},
+#line 251 "gperf"
+      {"revflowstartseconds", 33942},
+#line 229 "gperf"
+      {"samplingprobabilitym", 311},
 #line 132 "gperf"
       {"bgpprevadjacentasnumber", 129},
-#line 206 "gperf"
-      {"mplstoplabelexp", 203},
-#line 188 "gperf"
-      {"tcpacknowledgementnumber", 185},
-#line 45 "gperf"
-      {"exportedflowtotalcount", 42},
-#line 32 "gperf"
-      {"sourceipv6mask", 29},
-#line 204 "gperf"
-      {"mplslabelstacklength", 201},
-#line 20 "gperf"
-      {"bgpdestinationasnumber", 17},
+#line 21 "gperf"
+      {"bgpnexthopipv4address", 18},
+#line 200 "gperf"
+      {"fragmentflagsipv4", 197},
+#line 252 "gperf"
+      {"revflowendseconds", 33943},
 #line 134 "gperf"
       {"exporteripv6address", 131},
 #line 142 "gperf"
       {"icmptypecodeipv6", 139},
-#line 143 "gperf"
-      {"mplstoplabelipv6address", 140},
-#line 34 "gperf"
-      {"flowlabelipv6", 31},
-#line 196 "gperf"
-      {"nextheaderipv6", 193},
-#line 163 "gperf"
-      {"systeminittimemilliseconds", 160},
-#line 16 "gperf"
-      {"destinationipv4mask", 13},
-#line 21 "gperf"
-      {"bgpnexthopipv4address", 18},
-#line 217 "gperf"
-      {"mplspayloadlength", 214},
-#line 48 "gperf"
-      {"destinationipv4prefix", 45},
+#line 166 "gperf"
+      {"observedflowtotalcount", 163},
 #line 18 "gperf"
       {"ipnexthopipv4address", 15},
-#line 44 "gperf"
-      {"exportedmessagetotalcount", 41},
-#line 33 "gperf"
-      {"destinationipv6mask", 30},
-#line 191 "gperf"
-      {"tcpheaderlength", 188},
+#line 196 "gperf"
+      {"nextheaderipv6", 193},
+#line 254 "gperf"
+      {"revflowendmilliseconds", 33945},
+#line 50 "gperf"
+      {"mplstoplabelipv4address", 47},
+#line 48 "gperf"
+      {"destinationipv4prefix", 45},
+#line 81 "gperf"
+      {"mplslabelstackentry9", 78},
+#line 82 "gperf"
+      {"mplslabelstackentry10", 79},
+#line 236 "gperf"
+      {"mplspayloadpacketsection", 318},
 #line 66 "gperf"
       {"bgpnexthopipv6address", 63},
-#line 172 "gperf"
-      {"destinationipv6prefix", 169},
+#line 235 "gperf"
+      {"mplslabelstacksection", 317},
+#line 12 "gperf"
+      {"sourceipv4mask", 9},
+#line 80 "gperf"
+      {"mplslabelstackentry8", 77},
+#line 34 "gperf"
+      {"flowlabelipv6", 31},
+#line 29 "gperf"
+      {"maximumpacketlength", 26},
+#line 79 "gperf"
+      {"mplslabelstackentry7", 76},
+#line 28 "gperf"
+      {"minimumpacketlength", 25},
 #line 65 "gperf"
       {"ipnexthopipv6address", 62},
+#line 16 "gperf"
+      {"destinationipv4mask", 13},
+#line 74 "gperf"
+      {"mplslabelstackentry2", 71},
+#line 77 "gperf"
+      {"mplslabelstackentry5", 74},
+#line 253 "gperf"
+      {"revflowstartmilliseconds", 33944},
+#line 206 "gperf"
+      {"mplstoplabelexp", 203},
+#line 143 "gperf"
+      {"mplstoplabelipv6address", 140},
+#line 75 "gperf"
+      {"mplslabelstackentry3", 72},
+#line 172 "gperf"
+      {"destinationipv6prefix", 169},
+#line 194 "gperf"
+      {"payloadlengthipv6", 191},
+#line 76 "gperf"
+      {"mplslabelstackentry4", 73},
+#line 32 "gperf"
+      {"sourceipv6mask", 29},
 #line 192 "gperf"
       {"ipheaderlength", 189},
-#line 208 "gperf"
-      {"udpmessagelength", 205},
-#line 200 "gperf"
-      {"fragmentflagsipv4", 197},
-#line 19 "gperf"
-      {"bgpsourceasnumber", 16},
+#line 33 "gperf"
+      {"destinationipv6mask", 30},
+#line 217 "gperf"
+      {"mplspayloadlength", 214},
 #line 47 "gperf"
       {"sourceipv4prefix", 44},
-#line 173 "gperf"
-      {"sourceipv6prefix", 170},
+#line 45 "gperf"
+      {"exportedflowtotalcount", 42},
+#line 78 "gperf"
+      {"mplslabelstackentry6", 75},
 #line 207 "gperf"
       {"ippayloadlength", 204},
+#line 191 "gperf"
+      {"tcpheaderlength", 188},
+#line 173 "gperf"
+      {"sourceipv6prefix", 170},
+#line 19 "gperf"
+      {"bgpsourceasnumber", 16},
+#line 205 "gperf"
+      {"mplslabelstackdepth", 202},
+#line 187 "gperf"
+      {"tcpsequencenumber", 184},
+#line 204 "gperf"
+      {"mplslabelstacklength", 201},
+#line 208 "gperf"
+      {"udpmessagelength", 205},
 #line 216 "gperf"
       {"headerlengthipv4", 213}
     };
@@ -896,83 +950,88 @@ in_word_set (register const char *str, register unsigned int len)
     {
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,    0,
+        -1,    1,    2,   -1,   -1,   -1,    3,    4,
+        -1,   -1,   -1,    5,   -1,   -1,   -1,    6,
+        -1,   -1,   -1,   -1,    7,    8,    9,   10,
+      -302, -241,  -68,   -1,   79,   80,   81,   -1,
+        -1,   82,   -1,   -1,   -1,   -1,   83,   -1,
+        84,   -1,   85,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   86,   87,   88,
+        89,   90,   -1,   91,   92,   -1,   -1,   -1,
+        93,   94,   -1,   -1,   95,   -1,   96,   -1,
+        -1,   97,   98,   -1,   99,   -1,   -1,   -1,
+        -1,  100,   -1,  101,  102,  103,  104,  105,
+       106,  107,  108,   -1,  109,  110,   -1,  111,
+        -1,  112,   -1,  113,   -1,   -1,  114,  115,
+        -1,  116,   -1,  117,   -1,  118,   -1,  119,
+       120,  121,  122,  123,   -1,   -1,   -1,  124,
+       125,   -1,  126,   -1,   -1,   -1,  127,   -1,
+        -1,  128,   -1,   -1,  129,  130,   -1,  131,
+        -1,   -1,   -1,  132,   -1,   -1,   -1,  133,
+        -1,   -1,  134,  135,  136,   -1,   -1,   -1,
+        -1,  137,   -1,   -1,  138,  139,   -1,   -1,
+        -1,   -1,  140,  141,  142,  143,   -1,   -1,
+        -1,   -1,   -1,   -1,  144,  145,  146,   -1,
+       147,  148,   -1,   -1,   -1,  149,   -1,   -1,
+        -1,   -1,  150,   -1,   -1,  151,  152,  153,
+        -1,  154,  155,   -1,   -1,  156,   -1,  157,
+        -1,   -1,  158,   -1,  159,   -1,  160,   -1,
+        -1,   -1,   -1,  161,  162,   -1,  163,  164,
+       165,   -1,  166,  167,  168,  169,  170,  171,
+        -1,   -1,  172,  173,  174,   -1,  175,   -1,
+        -1,  176,  177,   -1,   -1,   -1,  178,  179,
+       180,   -1,   -1,  181,   -1,   -1,  182,  183,
+       184,   -1,   -1,   -1,   -1,  185,   -1,   -1,
+        -1,   -1,  186,  187,   -1,  188,  189,  190,
+       191,   -1,   -1,   -1,  192,   -1,   -1,   -1,
+       193,   -1,  194,   -1,   -1,   -1,  195,   -1,
+        -1,   -1,   -1,   -1,   -1,  196,   -1,   -1,
+       197,   -1,  198,   -1,   -1,  199,   -1,  200,
+       201,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,    0,   -1,
-        -1,   -1,   -1,    1,   -1,   -1,    2,   -1,
-         3,   -1,   -1,   -1,   -1,   -1,   -1,    4,
-        -1,   -1,   -1,   -1,    5,    6,   -1,   -1,
-        -1,   -1,    7,   -1,    8,    9,   -1, -317,
-        -1,   78,   79,   80,   81,   -1,   82, -235,
-       -68,   83,   84,   85,   86,   87,   88,   89,
-        -1,   90,   91,   -1,   92,   93,   -1,   -1,
-        94,   95,   96,   97,   -1,   98,   -1,   -1,
-        -1,   -1,   99,  100,   -1,   -1,   -1,   -1,
-       101,   -1,   -1,  102,   -1,  103,   -1,   -1,
-        -1,   -1,  104,  105,   -1,   -1,  106,  107,
-        -1,  108,   -1,   -1,  109,  110,  111,   -1,
-        -1,   -1,   -1,  112,   -1,  113,   -1,   -1,
-        -1,   -1,   -1,  114,   -1,  115,   -1,   -1,
-        -1,   -1,  116,  117,   -1,   -1,  118,  119,
-        -1,   -1,   -1,   -1,  120,   -1,   -1,   -1,
-       121,   -1,  122,  123,  124,  125,   -1,   -1,
-       126,   -1,   -1,  127,  128,   -1,   -1,  129,
-       130,   -1,   -1,  131,   -1,  132,  133,  134,
-        -1,   -1,   -1,  135,  136,  137,  138,   -1,
-       139,  140,   -1,  141,  142,  143,  144,  145,
-        -1,  146,  147,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,  148,   -1,   -1,  149,   -1,   -1,
-        -1,   -1,  150,  151,  152,  153,  154,   -1,
-        -1,  155,   -1,   -1,  156,   -1,  157,   -1,
-        -1,  158,   -1,  159,  160,  161,  162,   -1,
-       163,  164,  165,   -1,   -1,  166,  167,   -1,
-       168,   -1,  169,   -1,  170,  171,   -1,  172,
-       173,   -1,  174,   -1,  175,   -1,  176,   -1,
-        -1,  177,   -1,   -1,  178,  179,  180,  181,
-       182,   -1,   -1,  183,   -1,  184,   -1,  185,
-        -1,   -1,  186,   -1,   -1,   -1,   -1,   -1,
-        -1,  187,   -1,  188,  189,   -1,  190,  191,
-        -1,  192,  193,  194,   -1,   -1,  195,   -1,
-        -1,   -1,   -1,  196,   -1,   -1,   -1,   -1,
-       197,   -1,   -1,   -1,  198,  199,  200,  201,
-        -1,   -1,  202,  203,   -1,   -1,   -1,  204,
-        -1,  205,   -1,   -1,  206,   -1,  207,  208,
-        -1,   -1,  209,   -1,  210,   -1,  211,   -1,
-       212,   -1,   -1,   -1,  213,   -1,  214,   -1,
-        -1,   -1,  215,   -1,   -1,  216,   -1,  217,
-       218,   -1,   -1,   -1,   -1,   -1,   -1,  219,
-        -1,  220,   -1,  221,   -1,   -1,   -1,   -1,
-        -1,   -1,  222,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,  223,  224,
-        -1,  225,   -1,   -1,  226,   -1,  227,  228,
-        -1,   -1,   -1,  229,   -1,   -1,   -1,  230,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,  231,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,  232,  233,  234,   -1,
-        -1,   -1,   -1,  235,   -1,   -1,   -1,  236,
-        -1,   -1,   -1,  237,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,  202,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,  203,  204,
+       205,   -1,   -1,   -1,   -1,   -1,   -1,  206,
+        -1,  207,  208,   -1,   -1,  209,   -1,   -1,
+        -1,  210,   -1,   -1,  211,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,  212,
+        -1,   -1,  213,   -1,   -1,   -1,  214,  215,
+        -1,   -1,  216,  217,  218,   -1,   -1,  219,
+       220,   -1,   -1,  221,  222,  223,   -1,   -1,
+        -1,  224,  225,   -1,   -1,   -1,  226,  227,
+        -1,   -1,   -1,   -1,  228,   -1,   -1,   -1,
+       229,  230,   -1,   -1,  231,   -1,  232,  233,
+        -1,   -1,   -1,   -1,   -1,  234,   -1,   -1,
+       235,   -1,   -1,   -1,  236,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,  237,   -1,   -1,
+        -1,   -1,   -1,  238,   -1,   -1,   -1,   -1,
+        -1,   -1,  239,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,  240,  241,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,  242,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+       243,   -1,   -1,   -1,   -1,  244,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,  238,  239,   -1,   -1,   -1,
+        -1,  245,   -1,   -1,   -1,   -1,  246,   -1,
+        -1,  247,   -1,   -1,  248,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,  240,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-       241,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,  249,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-       242,   -1,   -1,   -1,  243,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,  244
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,  250,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,  251
     };
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
@@ -1011,12 +1070,13 @@ in_word_set (register const char *str, register unsigned int len)
 }
 
 
+
 /* End of gperf-generated code */
 
 
 static inline int ipfix_rangecheck_ipfix(int n)
 {
-        return (n >= 0 && n < sizeof(IPFIXTAB)/sizeof(*IPFIXTAB));
+        return (n >= 0 && n < sizeof(IPFIXTAB)/sizeof(*IPFIXTAB)); 
 }
 
 static inline int ipfix_rangecheck_psamp(n)
@@ -1045,6 +1105,14 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
 		n -= PSAMP_STARTING_ID;
 		return &PSAMPTAB[n];
 	}
+    
+    // stuff for biflow types
+    if (n>=33793 && n<=33798) {
+    	return &BIFLOWTAB1[n-33793];
+    }
+    if (n>=33942 && n<=33945) {
+    	return &BIFLOWTAB2[n-33942];
+    }
 
 	return NULL;
 }

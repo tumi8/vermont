@@ -256,3 +256,11 @@
 #1028:filteringAlgorithm:octet:
 #1036:headerType:octet:
 #1037:hashFunction:octet:
+# biflow flows (using enterprise typeids, 0x8400+<typeid>)
+33793:revOctetDeltaCount:unsigned64:
+33794:revPacketDeltaCount:unsigned64:
+33798:revTcpControlBits:octet:
+33942:revFlowStartSeconds:dateTimeSeconds:
+33943:revFlowEndSeconds:dateTimeSeconds:
+33944:revFlowStartMilliSeconds:dateTimeMilliSeconds:
+33945:revFlowEndMilliSeconds:dateTimeMilliSeconds:

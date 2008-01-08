@@ -245,3 +245,10 @@ accuracy, 326
 reserved, 327
 reserved, 328
 reserved, 329
+revoctetdeltacount, 33793
+revpacketdeltacount, 33794
+revtcpcontrolbits, 33798
+revflowstartseconds, 33942
+revflowendseconds, 33943
+revflowstartmilliseconds, 33944
+revflowendmilliseconds, 33945
