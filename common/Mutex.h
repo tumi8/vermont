@@ -93,7 +93,7 @@ class Mutex
 					THROWEXCEPTION("pthread_mutex_trylock returned with unknown failure %d", retval);
 					break;
 			}
-
+			return false;
 		};
 };
 
