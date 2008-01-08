@@ -5,6 +5,7 @@
 #include "BaseHashtable.h"
 
 #include <boost/smart_ptr.hpp>
+#include <map>
 
 class FlowHashtable : public BaseHashtable
 {
@@ -23,6 +24,8 @@ private:
 	
 	/**
 	 * contain indizes to reverse aggregatable fields:
+	 *
+	 * <typeid, index to dataTemplate>
 	 * 
 	 * IPFIX_ETYPEID_revFlowStartSeconds
 	 * IPFIX_ETYPEID_revFlowStartMilliSeconds
@@ -32,7 +35,7 @@ private:
 	 * IPFIX_ETYPEID_revPacketDeltaCount
 	 * IPFIX_ETYPEID_revTcpControlBits
 	 */
-	int32_t revAggIndizes[7];
+	map<uint32_t, uint32_t> mapRevAggIndizes;
 	
 	int aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* baseData, 
 			IpfixRecord::Data* deltaData);

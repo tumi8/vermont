@@ -111,73 +111,34 @@ class IpfixRecord
 			 **/
 			static int getFieldLength(IpfixRecord::FieldInfo::Type type) {
 
-				int type_length;
-
-				switch (type.id) {
-					case IPFIX_TYPEID_packetDeltaCount:
-						type_length = 1;
-						return type_length;
-						break;
+				switch (type.id) {					
+					case IPFIX_TYPEID_protocolIdentifier:
+					case IPFIX_TYPEID_tcpControlBits:
+					case IPFIX_ETYPEID_revTcpControlBits:
+						return 1;
+						
+					case IPFIX_TYPEID_icmpTypeCode:
+					case IPFIX_TYPEID_sourceTransportPort:
+					case IPFIX_TYPEID_destinationTransportPort:
+						return 2;
 
 					case IPFIX_TYPEID_flowStartSeconds:
-						type_length = 4;
-						return type_length;
-						break;
-
-					case IPFIX_TYPEID_flowStartMilliSeconds:
-						type_length = 8;
-						return type_length;
-						break;
-
 					case IPFIX_TYPEID_flowEndSeconds:
-						type_length = 4;
-						return type_length;
-						break;
-
-					case IPFIX_TYPEID_flowEndMilliSeconds:
-						type_length = 8;
-						return type_length;
-						break;
-
-					case IPFIX_TYPEID_octetDeltaCount:
-						type_length = 2;
-						return type_length;
-						break;
-
-					case IPFIX_TYPEID_protocolIdentifier:
-						type_length = 1;
-						return type_length;
-						break;
-
 					case IPFIX_TYPEID_sourceIPv4Address:
-						type_length = 4;
-						return type_length;
-						break;
-
 					case IPFIX_TYPEID_destinationIPv4Address:
-						type_length = 4;
-						return type_length;
-						break;
+					case IPFIX_ETYPEID_revFlowStartSeconds:
+					case IPFIX_ETYPEID_revFlowEndSeconds:
+						return 4;
 
-					case IPFIX_TYPEID_icmpTypeCode:
-						type_length = 2;
-						return type_length;
-						break;
-
-					case IPFIX_TYPEID_sourceTransportPort:
-						type_length = 2;
-						return type_length;
-						break;
-
-					case IPFIX_TYPEID_destinationTransportPort:
-						type_length = 2;
-						return type_length;
-						break;
-
-					case IPFIX_TYPEID_tcpControlBits:
-						type_length = 1;
-						return type_length;
-						break;
+					case IPFIX_TYPEID_flowStartMilliSeconds:					
+					case IPFIX_TYPEID_flowEndMilliSeconds:					
+					case IPFIX_TYPEID_octetDeltaCount:
+					case IPFIX_TYPEID_packetDeltaCount:
+					case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+					case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+					case IPFIX_ETYPEID_revOctetDeltaCount:
+					case IPFIX_ETYPEID_revPacketDeltaCount:
+						return 8;
 
 					default:
 						THROWEXCEPTION("unknown typeid");
@@ -187,68 +148,11 @@ class IpfixRecord
 				THROWEXCEPTION("unknown typeid");
 				return 0;
 			}
-
-
-			/**
-			 * @returns if given field type is in varying positions inside a raw packet and inside the Packet structure
-			 */
-			static const bool isRawPacketPtrVariable(const IpfixRecord::FieldInfo::Type& type) 
-			{
-				switch (type.id) {
-					case IPFIX_TYPEID_packetDeltaCount:
-					case IPFIX_TYPEID_flowStartSeconds:
-					case IPFIX_TYPEID_flowEndSeconds:
-					case IPFIX_TYPEID_flowStartMilliSeconds: // those elements are inside the Packet structure, not in the raw packet.
-					case IPFIX_TYPEID_flowEndMilliSeconds:   // nevertheless, we may access it relative to the start of the packet data
-					case IPFIX_TYPEID_octetDeltaCount:
-					case IPFIX_TYPEID_protocolIdentifier:
-					case IPFIX_TYPEID_sourceIPv4Address:
-					case IPFIX_TYPEID_destinationIPv4Address:
-						return false;
-
-					case IPFIX_TYPEID_icmpTypeCode:
-					case IPFIX_TYPEID_sourceTransportPort:
-					case IPFIX_TYPEID_destinationTransportPort:
-					case IPFIX_TYPEID_tcpControlBits:
-						return true;
-				}
-
-				THROWEXCEPTION("invalid type (%d)", type);
-				return false;
-			}
-
-			static const Packet::IPProtocolType getValidProtocols(uint16_t typeId)
-			{
-				switch (typeId) {
-					case IPFIX_TYPEID_packetDeltaCount:
-					case IPFIX_TYPEID_flowStartSeconds:
-					case IPFIX_TYPEID_flowEndSeconds:
-					case IPFIX_TYPEID_flowStartMilliSeconds:
-					case IPFIX_TYPEID_flowEndMilliSeconds:
-					case IPFIX_TYPEID_octetDeltaCount:
-					case IPFIX_TYPEID_protocolIdentifier:
-					case IPFIX_TYPEID_sourceIPv4Address:
-					case IPFIX_TYPEID_destinationIPv4Address:
-						return Packet::IPProtocolType(Packet::TCP|Packet::UDP|Packet::ICMP);
-
-					case IPFIX_TYPEID_icmpTypeCode:
-						return Packet::ICMP;
-
-					case IPFIX_TYPEID_sourceTransportPort:
-					case IPFIX_TYPEID_destinationTransportPort:
-						return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
-
-					case IPFIX_TYPEID_tcpControlBits:
-						return Packet::TCP;
-				}
-				THROWEXCEPTION("received unknown field type id (%d)", typeId);
-				return Packet::NONE;
-			}
-
+			
 			/**
 			 * @returns an index for the given field type which is relative to the start of the Packet's netheader
 			 */
-			static const uint32_t getRawPacketFieldIndex(uint16_t typeId, const Packet* p) 
+			static const uint16_t getRawPacketFieldIndex(uint16_t typeId, const Packet* p) 
 			{
 				switch (typeId) {
 					case IPFIX_TYPEID_packetDeltaCount:
@@ -317,6 +221,44 @@ class IpfixRecord
 				THROWEXCEPTION("unknown typeid (%d)", typeId);
 				return 0;
 			}
+
+
+			static const Packet::IPProtocolType getValidProtocols(uint16_t typeId)
+			{
+				switch (typeId) {
+					case IPFIX_TYPEID_packetDeltaCount:
+					case IPFIX_TYPEID_flowStartSeconds:
+					case IPFIX_TYPEID_flowEndSeconds:
+					case IPFIX_TYPEID_flowStartMilliSeconds:
+					case IPFIX_TYPEID_flowEndMilliSeconds:
+					case IPFIX_TYPEID_octetDeltaCount:
+					case IPFIX_TYPEID_protocolIdentifier:
+					case IPFIX_TYPEID_sourceIPv4Address:
+					case IPFIX_TYPEID_destinationIPv4Address:
+					case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+					case IPFIX_ETYPEID_revFlowEndSeconds:
+					case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+					case IPFIX_ETYPEID_revFlowStartSeconds:
+					case IPFIX_ETYPEID_revOctetDeltaCount:
+					case IPFIX_ETYPEID_revPacketDeltaCount:
+					case IPFIX_ETYPEID_revTcpControlBits:
+						
+						return Packet::IPProtocolType(Packet::TCP|Packet::UDP|Packet::ICMP);
+
+					case IPFIX_TYPEID_icmpTypeCode:
+						return Packet::ICMP;
+
+					case IPFIX_TYPEID_sourceTransportPort:
+					case IPFIX_TYPEID_destinationTransportPort:
+						return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
+
+					case IPFIX_TYPEID_tcpControlBits:
+						return Packet::TCP;
+				}
+				THROWEXCEPTION("received unknown field type id (%d)", typeId);
+				return Packet::NONE;
+			}
+
 
 			uint16_t templateId; /**< the template id assigned to this template or 0 if we don't know or don't care */
 			uint16_t fieldCount; /**< number of regular fields */

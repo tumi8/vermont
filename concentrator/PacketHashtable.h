@@ -65,9 +65,11 @@ private:
 		uint16_t srcIpEFieldIndex; /**< 0 if source ip should not be masked, == index srcip, if to be masked */
 
 		ExpFieldData* expFieldData;
+		uint16_t efdLength;
 
 		uint16_t* varSrcPtrFields; /**< array with indizes to expFieldData elements, which have a srcIndex which varies from packet to packet */
 		uint16_t varSrcPtrFieldsLen; /**< length of varSrcPtrFields */
+		
 	};
 
 	ExpHelperTable expHelperTable;
@@ -88,6 +90,10 @@ private:
 	void createMaskedField(IpfixRecord::Data* address, uint8_t imask);
 	void createMaskedFields(const Packet* p);
 	void updatePointers(const Packet* p);
+	bool typeAvailable(IpfixRecord::FieldInfo::Type type);
+	uint8_t getRawPacketFieldLength(IpfixRecord::FieldInfo::Type type);
+	uint16_t getRawPacketFieldIndex(uint16_t typeId, const Packet* p);
+	bool isRawPacketPtrVariable(const IpfixRecord::FieldInfo::Type& type);
 	
 };
 

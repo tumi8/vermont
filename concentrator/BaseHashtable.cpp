@@ -222,21 +222,25 @@ int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_TYPEID_flowStartMilliSeconds:
 		case IPFIX_TYPEID_flowStartMicroSeconds:
 		case IPFIX_TYPEID_flowStartNanoSeconds:
-			return 1;
-
 		case IPFIX_TYPEID_flowEndSysUpTime:
 		case IPFIX_TYPEID_flowEndSeconds:
 		case IPFIX_TYPEID_flowEndMilliSeconds:
 		case IPFIX_TYPEID_flowEndMicroSeconds:
 		case IPFIX_TYPEID_flowEndNanoSeconds:
-			return 1;
-
 		case IPFIX_TYPEID_octetDeltaCount:
 		case IPFIX_TYPEID_postOctetDeltaCount:
 		case IPFIX_TYPEID_packetDeltaCount:
 		case IPFIX_TYPEID_postPacketDeltaCount:
 		case IPFIX_TYPEID_droppedOctetDeltaCount:
 		case IPFIX_TYPEID_droppedPacketDeltaCount:
+		case IPFIX_TYPEID_tcpControlBits:
+		case IPFIX_ETYPEID_revFlowStartSeconds:
+		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+		case IPFIX_ETYPEID_revFlowEndSeconds:
+		case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+		case IPFIX_ETYPEID_revOctetDeltaCount:
+		case IPFIX_ETYPEID_revPacketDeltaCount:
+		case IPFIX_ETYPEID_revTcpControlBits:
 			return 1;
 
 		case IPFIX_TYPEID_octetTotalCount:

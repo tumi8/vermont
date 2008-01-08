@@ -52,7 +52,7 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 		if (e->matches("templateId")) {
 			rule->id = getInt("templateId", -1, e);
 		} else if (e->matches("biflowAggregation")) {
-			rule->biflowAggregation = getInt("biflowAggregation");
+			rule->biflowAggregation = getInt("biflowAggregation", 0, e);
 		} else if (e->matches("flowKey")) {
 			Rule::Field* ruleField = readFlowKeyRule(e);
 			if (ruleField)

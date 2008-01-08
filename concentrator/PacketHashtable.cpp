@@ -2,7 +2,9 @@
 
 #include "crc.hpp"
 
+#include "ipfix.hpp"
 #include "common/Misc.h"
+
 
 PacketHashtable::PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
 	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime)
@@ -41,7 +43,7 @@ void PacketHashtable::copyDataGreaterLengthNoMod(IpfixRecord::Data* dst, const I
 }
 void PacketHashtable::copyDataSetOne(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
 {
-	bzero(dst, efd->dstLength);
+	memset(dst, 0, efd->dstLength);
 	// set last byte of array to one (network byte order!)
 	dst[efd->dstLength-1] = 1;
 }
@@ -111,19 +113,12 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecor
 			if (efd->dstLength != 8) {
 				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
+			break;
 
 		case IPFIX_TYPEID_packetDeltaCount:
-			switch (efd->dstLength) {
-				case 1:
-				case 2:
-				case 4:
-				case 8:
-					break;
-
-				default:
-					THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
-					break;
-			}
+			if (efd->dstLength != 8) {
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
+			}			
 			break;
 
 		case IPFIX_TYPEID_sourceIPv4Address:
@@ -164,6 +159,80 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecor
 	return 0;
 }
 
+/**
+ * @returns field length in bytes of corresponding entry in raw packet
+ **/
+uint8_t PacketHashtable::getRawPacketFieldLength(IpfixRecord::FieldInfo::Type type) 
+{
+
+	switch (type.id) {					
+		case IPFIX_TYPEID_protocolIdentifier:
+		case IPFIX_TYPEID_tcpControlBits:
+		case IPFIX_ETYPEID_revTcpControlBits:
+		case IPFIX_TYPEID_packetDeltaCount:		
+		case IPFIX_ETYPEID_revPacketDeltaCount:
+			return 1;
+			
+		case IPFIX_TYPEID_icmpTypeCode:
+		case IPFIX_TYPEID_sourceTransportPort:
+		case IPFIX_TYPEID_destinationTransportPort:
+		case IPFIX_TYPEID_octetDeltaCount:
+		case IPFIX_ETYPEID_revOctetDeltaCount:
+			return 2;
+
+		case IPFIX_TYPEID_flowStartSeconds:
+		case IPFIX_TYPEID_flowEndSeconds:
+		case IPFIX_TYPEID_sourceIPv4Address:
+		case IPFIX_TYPEID_destinationIPv4Address:
+		case IPFIX_ETYPEID_revFlowStartSeconds:
+		case IPFIX_ETYPEID_revFlowEndSeconds:
+			return 4;
+
+		case IPFIX_TYPEID_flowStartMilliSeconds:					
+		case IPFIX_TYPEID_flowEndMilliSeconds:							
+		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+		case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+			return 8;
+
+		default:
+			THROWEXCEPTION("unknown typeid");
+			break;
+	}
+
+	THROWEXCEPTION("unknown typeid");
+	return 0;
+}
+
+
+
+/**
+ * @returns if given field type is in varying positions inside a raw packet and inside the Packet structure
+ */
+bool PacketHashtable::isRawPacketPtrVariable(const IpfixRecord::FieldInfo::Type& type) 
+{
+	switch (type.id) {
+		case IPFIX_TYPEID_packetDeltaCount:
+		case IPFIX_TYPEID_flowStartSeconds:
+		case IPFIX_TYPEID_flowEndSeconds:
+		case IPFIX_TYPEID_flowStartMilliSeconds: // those elements are inside the Packet structure, not in the raw packet.
+		case IPFIX_TYPEID_flowEndMilliSeconds:   // nevertheless, we may access it relative to the start of the packet data
+		case IPFIX_TYPEID_octetDeltaCount:
+		case IPFIX_TYPEID_protocolIdentifier:
+		case IPFIX_TYPEID_sourceIPv4Address:
+		case IPFIX_TYPEID_destinationIPv4Address:
+			return false;
+
+		case IPFIX_TYPEID_icmpTypeCode:
+		case IPFIX_TYPEID_sourceTransportPort:
+		case IPFIX_TYPEID_destinationTransportPort:
+		case IPFIX_TYPEID_tcpControlBits:
+			return true;
+	}
+
+	THROWEXCEPTION("invalid type (%d)", type.id);
+	return false;
+}
+
 
 /**
  * helper function for buildExpHelperTable
@@ -172,10 +241,10 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo
 {
 	efd->typeId = hfi->type.id;
 	efd->dstIndex = hfi->offset;
-	efd->srcLength = IpfixRecord::TemplateInfo::getFieldLength(hfi->type);
+	efd->srcLength = getRawPacketFieldLength(hfi->type);
 	efd->dstLength = hfi->type.length;
 	efd->modifier = fieldModifier;
-	efd->varSrcIdx = IpfixRecord::TemplateInfo::isRawPacketPtrVariable(hfi->type);
+	efd->varSrcIdx = isRawPacketPtrVariable(hfi->type);
 
 	// initialize static source index, if current field does not have a variable pointer
 	if (!efd->varSrcIdx) {
@@ -212,6 +281,31 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo
 }
 
 /**
+ * @returns if given field is available in a raw ip packet
+ */
+bool PacketHashtable::typeAvailable(IpfixRecord::FieldInfo::Type type)
+{
+	switch (type.id) {
+		case IPFIX_TYPEID_packetDeltaCount:
+		case IPFIX_TYPEID_flowStartSeconds:
+		case IPFIX_TYPEID_flowEndSeconds:
+		case IPFIX_TYPEID_flowStartMilliSeconds: 
+		case IPFIX_TYPEID_flowEndMilliSeconds:   
+		case IPFIX_TYPEID_octetDeltaCount:
+		case IPFIX_TYPEID_protocolIdentifier:
+		case IPFIX_TYPEID_sourceIPv4Address:
+		case IPFIX_TYPEID_destinationIPv4Address:
+		case IPFIX_TYPEID_icmpTypeCode:
+		case IPFIX_TYPEID_sourceTransportPort:
+		case IPFIX_TYPEID_destinationTransportPort:
+		case IPFIX_TYPEID_tcpControlBits:
+			return true;
+	}
+	
+	return false;
+}
+
+/**
  * builds internal structure expHelperTable for fast aggregation of raw packets
  * used in the express aggregator
  */
@@ -228,6 +322,9 @@ void PacketHashtable::buildExpHelperTable()
 	uint16_t efdIdx = 0;
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+		if (!typeAvailable(hfi->type)) {
+			THROWEXCEPTION("Type '%s' is not contained in raw packet. Please remove it from PacketAggregator rule.", typeid2string(hfi->type.id));
+		}
 		if (!isToBeAggregated(hfi->type)) continue;
 		ExpFieldData* efd = &expHelperTable.expFieldData[efdIdx++];
 		fillExpFieldData(efd, hfi, fieldModifier[i], efdIdx-1);
@@ -241,10 +338,11 @@ void PacketHashtable::buildExpHelperTable()
 		ExpFieldData* efd = &expHelperTable.expFieldData[efdIdx++];
 		fillExpFieldData(efd, hfi, fieldModifier[i], efdIdx-1);
 	}
+	expHelperTable.efdLength = efdIdx;
 
 	// fill structure which contains field with variable pointers
 	int noVarFields = 0;
-	for (int i=0; i<dataTemplate->fieldCount; i++) {
+	for (int i=0; i<expHelperTable.efdLength; i++) {
 		if (expHelperTable.expFieldData[i].varSrcIdx) expHelperTable.varSrcPtrFields[noVarFields++] = i;
 	}
 	expHelperTable.varSrcPtrFieldsLen = noVarFields;
@@ -257,7 +355,7 @@ void PacketHashtable::buildExpHelperTable()
 uint16_t PacketHashtable::expCalculateHash(const IpfixRecord::Data* data)
 {
 	uint32_t hash = 0;
-	for (int i=expHelperTable.noAggFields; i<dataTemplate->fieldCount; i++) {
+	for (int i=expHelperTable.noAggFields; i<expHelperTable.efdLength; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[i];
 		hash = crc32(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 	}
@@ -276,7 +374,7 @@ boost::shared_array<IpfixRecord::Data> PacketHashtable::buildBucketData(const Pa
 	IpfixRecord::Data* data = htdata.get();
 
 	// copy all data ...
-	for (int i=0; i<dataTemplate->fieldCount; i++) {
+	for (int i=0; i<expHelperTable.efdLength; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[i];
 		efd->copyDataFunc(&data[efd->dstIndex], reinterpret_cast<const uint8_t*>(p->netHeader)+efd->srcIndex, efd);
 	}
@@ -347,7 +445,7 @@ void PacketHashtable::expAggregateFlow(IpfixRecord::Data* bucket, const Packet* 
  */
 bool PacketHashtable::expEqualFlow(IpfixRecord::Data* bucket, const Packet* p)
 {
-	for (int i=expHelperTable.noAggFields; i<dataTemplate->fieldCount; i++) {
+	for (int i=expHelperTable.noAggFields; i<expHelperTable.efdLength; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[i];
 
 		// just compare srcLength bytes, as we still have our original packet data
@@ -490,3 +588,5 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 		bucket = (Bucket*)bucket->next;
 	}
 }
+
+

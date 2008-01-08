@@ -30,8 +30,6 @@ void FlowHashtable::genBiflowStructs()
 	uint32_t srcPortIdx = -1;
 	uint32_t dstPortIdx = -1;
 	
-	for (uint32_t i=0; i<ARRAY_SIZE(revAggIndizes); i++) revAggIndizes[i] = -1;
-	
 	// search for offsets in dataTemplate
 	revDataTemplateMapper = new uint32_t[dataTemplate->fieldCount];
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
@@ -49,26 +47,14 @@ void FlowHashtable::genBiflowStructs()
 			case IPFIX_TYPEID_destinationTransportPort:
 				dstPortIdx = i;
 				break;
-			case IPFIX_ETYPEID_revFlowStartSeconds:
-				revAggIndizes[0] = i;
-				break;
 			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-				revAggIndizes[1] = i;
-				break;
-			case IPFIX_ETYPEID_revFlowEndSeconds:
-				revAggIndizes[2] = i;
-				break;
+			case IPFIX_ETYPEID_revFlowStartSeconds:
 			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-				revAggIndizes[3] = i;
-				break;
 			case IPFIX_ETYPEID_revOctetDeltaCount:
-				revAggIndizes[4] = i;
-				break;
 			case IPFIX_ETYPEID_revPacketDeltaCount:
-				revAggIndizes[5] = i;
-				break;
 			case IPFIX_ETYPEID_revTcpControlBits:
-				revAggIndizes[6] = i;
+			case IPFIX_ETYPEID_revFlowEndSeconds:
+				mapRevAggIndizes[fi->type.id] = i;
 				break;
 		}
 	}
@@ -121,6 +107,17 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecor
 
 			*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 			break;
+			
+		case IPFIX_ETYPEID_revFlowStartSeconds:
+			if (type->length != 4) {
+				DPRINTF("unsupported length %d for type %d", type->length, type->id);
+				goto out;
+			}
+			if (*(uint32_t*)baseData == 0)
+				*((uint32_t*)baseData) = *((uint32_t*)deltaData);
+			else if (*(uint32_t*)deltaData > 0)		// be certain that deltaData is not 0!
+				*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+			break;
 
 		case IPFIX_TYPEID_flowStartMilliSeconds:
 			if (type->length != 8) {
@@ -130,11 +127,24 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecor
 
 			*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
 			break;
+			
+		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+			if (type->length != 8) {
+				DPRINTF("unsupported length %d for type %d", type->length, type->id);
+				goto out;
+			}
+
+			if (*(uint64_t*)baseData == 0)
+				*((uint64_t*)baseData) = *((uint64_t*)deltaData);
+			else if (*(uint64_t*)deltaData > 0)		// be certain that deltaData is not 0!
+				*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+			break;
 
 		case IPFIX_TYPEID_flowEndSysUpTime:
 		case IPFIX_TYPEID_flowEndSeconds:
 		case IPFIX_TYPEID_flowEndMicroSeconds:
 		case IPFIX_TYPEID_flowEndNanoSeconds:
+		case IPFIX_ETYPEID_revFlowEndSeconds:
 			if (type->length != 4) {
 				DPRINTF("unsupported length %d for type %d", type->length, type->id);
 				goto out;
@@ -144,6 +154,7 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecor
 			break;
 
 		case IPFIX_TYPEID_flowEndMilliSeconds:
+		case IPFIX_ETYPEID_revFlowEndMilliSeconds:
 			if (type->length != 8) {
 				DPRINTF("unsupported length %d for type %d", type->length, type->id);
 				goto out;
@@ -158,6 +169,8 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecor
 		case IPFIX_TYPEID_postPacketDeltaCount:
 		case IPFIX_TYPEID_droppedOctetDeltaCount:
 		case IPFIX_TYPEID_droppedPacketDeltaCount:
+		case IPFIX_ETYPEID_revOctetDeltaCount:
+		case IPFIX_ETYPEID_revPacketDeltaCount:
 			// TODO: tobi_optimize
 			// converting all values to network byte order when sending ipfix packets would be much faster
 			switch (type->length) {
@@ -177,6 +190,12 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecor
 					DPRINTF("unsupported length %d for type %d", type->length, type->id);
 					goto out;
 			}
+			break;
+			
+		case IPFIX_TYPEID_tcpControlBits:
+		case IPFIX_ETYPEID_revTcpControlBits:
+			ASSERT(type->length==1, "unsupported length for type");
+			*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
 			break;
 
 		default:
@@ -217,30 +236,38 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 		if (reverse) {
 			uint32_t idx = i;
 			// look if current field is to be reverted
+			map<uint32_t, uint32_t>::iterator iter;
 			switch (fi->type.id) {
 				case IPFIX_TYPEID_flowStartSeconds:
-					if (revAggIndizes[0]>=0) idx = revAggIndizes[0];
+					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowStartSeconds);
+					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					break;
 				case IPFIX_TYPEID_flowStartMilliSeconds:
-					if (revAggIndizes[1]>=0) idx = revAggIndizes[1];
+					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowStartMilliSeconds);
+					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					break;
 				case IPFIX_TYPEID_flowEndSeconds:
-					if (revAggIndizes[2]>=0) idx = revAggIndizes[2];
+					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowEndSeconds);
+					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					break;
 				case IPFIX_TYPEID_flowEndMilliSeconds:
-					if (revAggIndizes[3]>=0) idx = revAggIndizes[3];
+					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowEndMilliSeconds);
+					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					break;
 				case IPFIX_TYPEID_octetDeltaCount:
-					if (revAggIndizes[4]>=0) idx = revAggIndizes[4];
+					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revOctetDeltaCount);
+					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					break;
 				case IPFIX_TYPEID_packetDeltaCount:
-					if (revAggIndizes[5]>=0) idx = revAggIndizes[5];
+					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revPacketDeltaCount);
+					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					break;
 				case IPFIX_TYPEID_tcpControlBits:
-					if (revAggIndizes[6]>=0) idx = revAggIndizes[6];
+					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revTcpControlBits);
+					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					break;
 			}
-			aggregateField(&fi->type, baseFlow + dataTemplate->fieldInfo[idx].offset, flow + fi->offset);
+			aggregateField(&dataTemplate->fieldInfo[idx].type, baseFlow + dataTemplate->fieldInfo[idx].offset, flow + fi->offset);
 			
 		} else {
 			aggregateField(&fi->type, baseFlow + fi->offset, flow + fi->offset);
@@ -268,7 +295,7 @@ uint16_t FlowHashtable::getHash(IpfixRecord::Data* data, bool reverse) {
 				(char*)data + dataTemplate->fieldInfo[idx].offset);
 	}
 
-	return hash & HTABLE_SIZE-1;
+	return hash & (HTABLE_SIZE-1);
 }
 
 /**
@@ -546,9 +573,12 @@ void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti,
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 
+		bool fieldFilled = false;
+		
 		/* Copy from matching variable field, should it exist */
 		IpfixRecord::FieldInfo* tfi = ti->getFieldInfo(&hfi->type);
 		if(tfi) {
+			fieldFilled = true;
 			copyData(&hfi->type, htdata.get() + hfi->offset, &tfi->type, data + tfi->offset, fieldModifier[i]);
 
 			/* copy associated mask, should there be one */
@@ -594,6 +624,7 @@ void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti,
 		/* No matching variable field. Copy from matching fixed field, should it exist */
 		tfi = ti->getDataInfo(&hfi->type);
 		if(tfi) {
+			fieldFilled = true;
 			copyData(&hfi->type, htdata.get() + hfi->offset, &tfi->type, ti->data + tfi->offset, fieldModifier[i]);
 
 			/* copy associated mask, should there be one */
@@ -634,8 +665,12 @@ void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti,
 			}
 			continue;
 		}
+		
+		if (!fieldFilled) {
+			// if field was not copied, fill it with 0
+			memset(htdata.get() + hfi->offset, 0, hfi->type.length);
+		}
 
-		msg(MSG_FATAL, "Flow to be buffered did not contain %s field", typeid2string(hfi->type.id));
 		continue;
 	}
 
