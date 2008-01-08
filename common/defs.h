@@ -31,6 +31,27 @@
  */
 #define PCAP_DEFAULT_CAPTURE_LENGTH 128
 
+/**
+ * default sensor manager's check interval in seconds
+ * (used if it was not specified in configuration)
+ */
+#define SM_DEFAULT_CHECK_INTERVAL 10
 
+/**
+ * default sensor manager's filename where sensor data
+ * will be written to
+ */
+#define SM_DEFAULT_OUTPUT_FNAME "sensor_output"
+
+/**
+ * default aggregator polling time in milliseconds
+ * how often should aggregator check hashtable for expired flows?
+ */
+#define AGG_DEFAULT_POLLING_TIME 10000
+
+/**
+ * convenient way to determine size of a C array
+ */
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 #endif /*DEFS_H*/
