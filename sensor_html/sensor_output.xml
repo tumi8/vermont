@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns="http://www.w3.org/1999/xhtml">
+
+<xsl:output method="html"/>
+
+<xsl:template match="/vermont">
+	<html>
+		<head>
+			<title>Vermont sensor data</title>
+		</head>
+		<body>
+			<xsl:apply-templates />
+		</body>
+	</html>
+</xsl:template>
+
+<xsl:template match="sensorData">
+	<table>
+		<tr><th>host: <xsl:value-of select="hostname"/></th></tr>
+		<tr>
+			<td>global data:</td>
+			<td>
+				<table>
+					<tr><td>process id</td><td><xsl:value-of select="pid"/></td></tr>
+					<tr><td>time of sensor data</td><td><xsl:value-of select="time"/></td></tr>
+					<tr><td>time of previous access</td><td><xsl:value-of select="lastTime"/></td></tr>
+				</table>
+			</td>
+		</tr>
+		<tr>
+			<td>module data:</td>
+			<td>
+				<p>module graph:<br />
+				<img src="modules.png" />
+				</p>
+				<table>
+					<tr><th>id</th><th>name</th><th>memory usage (in bytes)</th><th>additional info</th></tr>
+					<xsl:apply-templates select="module" />
+				</table>
+			</td>
+		</tr>
+	</table>
+</xsl:template>
+
+<xsl:template match="module">
+	<tr>
+		<td><xsl:value-of select="@id"/></td>
+		<td><xsl:value-of select="@name"/></td> 
+		<td><xsl:value-of select="memUsage"/></td>
+		<td>
+			<table>
+				<tr><th>thread id</th><th>user utilization</th><th>system utilization</th></tr>
+				<xsl:for-each select="thread">
+					<tr>
+						<td><xsl:value-of select="@tid"/></td>
+						<td><xsl:value-of select="util[@type='user']"/></td>
+						<td><xsl:value-of select="util[@type='system']"/></td>
+					</tr>
+				</xsl:for-each>
+			</table>
+		</td>
+	</tr>
+</xsl:template>
+
+</xsl:stylesheet>
