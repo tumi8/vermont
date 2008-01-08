@@ -1,6 +1,8 @@
 #if !defined(MISC_H)
 #define MISC_H
 
+#include "ipfixlolib/encoding.h"
+
 #include <sstream>
 
 using namespace std;
