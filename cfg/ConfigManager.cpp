@@ -149,6 +149,7 @@ void ConfigManager::shutdown()
 	// shutdown the thread
 	for (size_t i = 0; i < topoNodes.size(); i++) {
 		Cfg* cfg = topoNodes[i]->getCfg();
+		msg(MSG_INFO, "shutting down module %s (id=%u)", cfg->getName().c_str(), cfg->getID());
 		cfg->shutdown(false);
 	}
 
@@ -160,7 +161,7 @@ void ConfigManager::shutdown()
 		// disconnect the module from its sources ..
 		vector<CfgNode*> sources = graph->getSources(n);
 		for (size_t k = 0; k < sources.size(); k++) {
-			msg(MSG_INFO, "run %s->disconnect", cfg->getName().c_str());
+			msg(MSG_INFO, "disconnecting module %s (id=%u)", cfg->getName().c_str(), cfg->getID());
 			sources[k]->getCfg()->disconnectInstances();
 		}
 	}

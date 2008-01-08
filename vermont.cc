@@ -104,15 +104,16 @@ int main(int ac, char **dc)
 		sigsuspend(&sigmask);
 
 		if (reload_config) {
-			msg(MSG_INFO, "Reconfiguriong vermont");
+			time_t t = time(NULL);
+			msg(MSG_INFO, "Reconfiguring vermont at %s", ctime(&t));
 			manager.parseConfig(string(config_file));
 			reload_config = false;
 		}
+
+		time_t t = time(NULL);
+		msg(MSG_DIALOG, "up and running at %s", ctime(&t));
 	}
 	manager.shutdown();
-
-	time_t t = time(NULL);
-	msg(MSG_DIALOG, "up and running at %s", ctime(&t));
 }
 
 
