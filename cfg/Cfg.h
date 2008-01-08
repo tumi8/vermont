@@ -150,13 +150,14 @@ class CfgHelper
 {
 public:
 	
-	CfgHelper(XMLElement* elem, std::string name) 
+	CfgHelper(XMLElement* elem, std::string name, bool freeInstance = true) 
 		: Cfg(elem),
 		instance(NULL),
 		splitter(NULL),
 		queue(NULL),
 		notifiable(NULL),
-		name(name)
+		name(name),
+		instanceDeleteAllowed(freeInstance)
 	{ 
 	}
 	
@@ -265,7 +266,7 @@ public:
 
 	void freeInstance()
 	{
-		if (!instance)
+		if (!instance || !instanceDeleteAllowed)
 			return;
 		
 		delete instance;
@@ -395,7 +396,11 @@ protected:
 	Notifiable* notifiable;
 	
 	std::string name;
+	
 private:
+	
+	bool instanceDeleteAllowed; /** if set to true, managed module will not be freed automatically */
+	
 	// this methods are helper functions to clean our mess up and reset the values to sane default
 	inline void freeTimeoutAdapter()
 	{
