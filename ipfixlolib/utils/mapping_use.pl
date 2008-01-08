@@ -18,7 +18,7 @@ my %DATAMAP=(
 	     "unsigned64" => 8,
 	     "float32" => 4,
 	     "dateTimeSeconds" => 4,
-	     "dateTimeMilliSeconds" => 4,
+	     "dateTimeMilliSeconds" => 8,
 	     "dateTimeMicroSeconds" => 4,
 	     "dateTimeNanoSeconds" => 4,
 #	     "macAddress" => 
@@ -31,7 +31,7 @@ $i=0;
 
 
 # select output: gperf, c, html
-$output='html';
+$output='gperf';
 
 
 if($output eq 'c') {
