@@ -101,11 +101,11 @@ void AggregationPerfTest::execute()
 	PacketAggregator agg(1);
 	Rules* rules = createRules();
 	agg.buildAggregator(rules, 0, 0);
-	agg.start();
 
 	queue1.connectTo(&agg);
 	agg.connectTo(&tqueue);
 
+	agg.start();
 	queue1.start();
 
 	struct timeval starttime;
@@ -126,7 +126,6 @@ void AggregationPerfTest::execute()
 
 	agg.shutdown();
 	queue1.shutdown();
-	delete rules;
 }
 
 
