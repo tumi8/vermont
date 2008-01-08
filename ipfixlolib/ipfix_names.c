@@ -1,5 +1,6 @@
 #include <string.h>
 #include "ipfix_names.h"
+#include "concentrator/ipfix.hpp"
 
 #ifdef __cplusplus
 extern "C" {
@@ -221,6 +222,14 @@ static const struct ipfix_identifier IPFIXTAB[] = {
 	{ "reserved", 212, 0 },
 	{ "headerlengthipv4", 213, 1 },
 	{ "mplspayloadlength", 214, 4 },
+	
+	{ "revflowstartseconds", IPFIX_ETYPEID_revFlowStartSeconds, IPFIX_ELENGTH_revFlowStartSeconds },
+	{ "revflowstartmilliseconds", IPFIX_ETYPEID_revFlowStartMilliSeconds, IPFIX_ELENGTH_revFlowStartMilliSeconds },
+	{ "revflowendseconds", IPFIX_ETYPEID_revFlowEndSeconds, IPFIX_ELENGTH_revFlowEndSeconds },
+	{ "revflowendmilliseconds", IPFIX_ETYPEID_revFlowEndMilliSeconds, IPFIX_ELENGTH_revFlowEndMilliSeconds },
+	{ "revoctetdeltacount", IPFIX_ETYPEID_revOctetDeltaCount, IPFIX_ELENGTH_revOctetDeltaCount },
+	{ "revpacketdeltacount", IPFIX_ETYPEID_revPacketDeltaCount, IPFIX_ELENGTH_revPacketDeltaCount },
+	{ "revtcpcontrolbits", IPFIX_ETYPEID_revTcpControlBits, IPFIX_ELENGTH_revTcpControlBits },
 };
 
 
