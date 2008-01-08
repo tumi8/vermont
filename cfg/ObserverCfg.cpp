@@ -8,7 +8,6 @@
 #include <vector>
 #include <cassert>
 
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 ObserverCfg* ObserverCfg::create(XMLElement* e)
 {
@@ -23,9 +22,8 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 	pcap_filter(),
 	capture_len(0)
 {
-	if (!elem)
-		return;
-		
+	if (!elem) return;  // needed because of table inside ConfigManager
+	
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
