@@ -30,6 +30,7 @@ protected:
 	
 private:
 	GraphInstanceSupplier* graphIS;
+	static bool instanceCreated;
 	
 	// config variables
 	uint32_t checkInterval; /** sensor check interval in seconds */

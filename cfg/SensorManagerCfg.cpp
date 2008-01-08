@@ -4,8 +4,10 @@
 
 #include <stdlib.h>
 
+bool SensorManagerCfg::instanceCreated = false;
+
 SensorManagerCfg::SensorManagerCfg(XMLElement* elem)
-	: CfgHelper<SensorManager, SensorManagerCfg>(elem, "sensorManager"),
+	: CfgHelper<SensorManager, SensorManagerCfg>(elem, "sensorManager", false),
 	  checkInterval(SM_DEFAULT_CHECK_INTERVAL),
 	  sensorOutput(SM_DEFAULT_OUTPUT_FNAME)
 {
@@ -42,8 +44,14 @@ SensorManagerCfg* SensorManagerCfg::create(XMLElement* e)
 SensorManager* SensorManagerCfg::createInstance()
 {
 	assert(graphIS);
-	instance = new SensorManager(checkInterval, sensorOutput, graphIS);
-	
+	if (instanceCreated) {
+		THROWEXCEPTION("multiple instances of module SensorManager must not be created");
+	}
+	instance = &SensorManager::getInstance();
+	instance->setCheckInterval(checkInterval);
+	instance->setOutputFilename(sensorOutput);
+	instance->setGraphIS(graphIS);
+	instanceCreated = true;
 	return instance;
 }
 

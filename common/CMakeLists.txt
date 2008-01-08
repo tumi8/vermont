@@ -22,5 +22,6 @@ ADD_LIBRARY(common
 	msg.cc
 	StatisticsManager.cpp
 	ThreadCPUInterface.cpp
+	Sensor.cpp
 )
 

@@ -7,13 +7,12 @@
 
 #include "Source.h"
 #include "common/ThreadCPUInterface.h"
-
-#include <list>
-#include <sys/types.h>
+#include "common/Sensor.h"
 
 using namespace std;
 
-class Module 
+class Module
+	: public Sensor
 {
 
 public:	
@@ -59,43 +58,8 @@ public:
 	 *
 	 * May be overwritten by subclasses
 	 */
-	virtual void preReconfiguration2() { /* override this in the modules you need */ }
+	virtual void preReconfiguration2() { /* override this in the modules you need */ }	
 	
-	/**
-	 * returns memory usage of this module
-	 * ATTENTION: module needs to count memory usage on its own, see variable usedBytes!
-	 */
-	uint32_t getCurrentMemUsage();
-	
-	/**
-	 * returns number of jiffies used by all threads since last call of this function
-	 * @param empty list which will be filled with data
-	 */
-	void getJiffiesUsed(list<ThreadCPUInterface::JiffyTime>& usedJiffies);
-	
-	/**
-	 * registers given thread id as thread belonging to this module
-	 * module code should do this once for each thread that is used by it
-	 * @param thread thread id to be registered
-	 */
-	void registerThreadID(pid_t tid);
-	
-	/**
-	 * registers current thread as thread belonging to this module
-	 * module code should do this once for each thread that is used by it
-	 */
-	void registerCurrentThread();
-	
-	/**
-	 * unregisters given thread id as thread belonging to this module
-	 * @param thread thread id to be unregistered
-	 */
-	void unregisterThreadID(pid_t tid);
-	
-	/**
-	 * unregisters current thread as thread belonging to this module
-	 */
-	void unregisterCurrentThread();
 
 protected:
 	/**
@@ -115,21 +79,11 @@ protected:
 	 * (workaround for g++ compiler bug)
 	 */
 	virtual bool getExitFlag() const;
-	
-	/**
-	 * modules must store the amount of used memory in this variable
-	 * ATTENTION: this variable is not safely accessed in multi-threading context!
-	 * do not store temporary data there, only final values!
-	 */
-	uint32_t usedBytes;
+
 	
 	bool exitFlag;		/**< notifies module that shutdown is imminent */
 	bool running;		/**< true if module is running, false if it is shut down */
 	
-private:
-	list<ThreadCPUInterface::JiffyTime> watchedThreads; /** all threads that are used by module */
-	Mutex wThreadsMutex; /** mutex for locking watchedThreads */
-
 };
 
 #endif

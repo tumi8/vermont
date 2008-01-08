@@ -6,7 +6,11 @@
 #include <fcntl.h>
 #include <sys/file.h>
 
-SensorManager::SensorManager(uint32_t checkInterval, string outputfilename, GraphInstanceSupplier* gis)
+
+
+SensorManager::SensorManager(uint32_t checkInterval = SM_DEFAULT_CHECK_INTERVAL, 
+							 string outputfilename = SM_DEFAULT_OUTPUT_FNAME, 
+							 GraphInstanceSupplier* gis = NULL)
 	: graphIS(gis), 
 	  thread(SensorManager::threadWrapper),
 	  checkInterval(checkInterval),
@@ -20,6 +24,7 @@ SensorManager::SensorManager(uint32_t checkInterval, string outputfilename, Grap
 	msg(MSG_DIALOG, "using value %u as hertz jiffy value", hertzValue);
 	msg(MSG_FATAL, "writing sensor output data to '%s'", outputfilename.c_str());
 #endif
+	usedBytes += sizeof(SensorManager);
 }
 
 SensorManager::~SensorManager()
@@ -43,17 +48,66 @@ void SensorManager::performShutdown()
 	thread.join();
 }
 
+/**
+ * writes XML data about given sensor to file
+ */
+void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint32_t id, bool module, 
+								   time_t curtime, time_t lasttime, vector<uint32_t>* nextids)
+{
+	char* xmlmodpre = "\t\t<sensor type=\"%s\" id=\"%u\" name=\"%s\">\n";
+	char* xmlmodpost = "\t\t</sensor>\n";
+	char* xmlmodsimple = "\t\t\t<%s>%s</%s>\n";
+	char* xmlmodthread = "\t\t\t<thread tid=\"%u\"><util type=\"system\">%.2f%%</util><util type=\"user\">%.2f%%</util></thread>\n";
+	
+	char text[100];
+	
+	fprintf(file, xmlmodpre, (module ? "module" : "simple"), id, name);
+	snprintf(text, 100, "%u", s->getCurrentMemUsage());
+	fprintf(file, xmlmodsimple, "memUsage", text, "memUsage");
+	
+	msg(MSG_INFO, "module: %s, id: %u, mem usage: %u", name, id, s->getCurrentMemUsage());
+	
+#if defined(__linux__)
+	list<ThreadCPUInterface::JiffyTime> jtimes;
+	s->getJiffiesUsed(jtimes);
+	list<ThreadCPUInterface::JiffyTime>::iterator jiter = jtimes.begin();
+	while (jiter != jtimes.end()) {
+		double sysutil = jiter->sysJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
+		double userutil = jiter->userJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
+		fprintf(file, xmlmodthread, static_cast<uint32_t>(jiter->tid), sysutil, userutil);
+		msg(MSG_INFO, " - thread (tid=%u): jiffies (sys/user): (%u/%u), util. (sys/user): (%.2f%%/%.2f%%)", 
+				static_cast<uint32_t>(jiter->tid), jiter->sysJiffies, jiter->userJiffies, sysutil, userutil);
+		
+		jiter++;
+	}
+#endif
+	
+	string addinfo = s->getStatisticsXML();
+	if (addinfo.size()>0) fprintf(file, xmlmodsimple, "addInfo", addinfo.c_str(), "addInfo");
+	
+	if (nextids) {
+		vector<uint32_t>::const_iterator iditer = nextids->begin();
+		while (iditer != nextids->end()) {
+			snprintf(text, 100, "%u", *iditer);
+			fprintf(file, xmlmodsimple, "next", text, "next");
+			iditer++;
+		}
+	}
+	
+	fprintf(file, xmlmodpost);
+}
+
 void SensorManager::collectDataWorker()
 {
-	timespec req;
-	req.tv_sec = checkInterval;
-	req.tv_nsec = 0;
 	time_t lasttime = time(0);
 	
-	char* xmlpre = "<vermont>\n\t<sensorData>\n";
+	char* xmlpre = "<vermont>\n\t<sensorData time=\"%s\" host=\"%s\">\n";
 	char* xmlpost = "\t</sensorData>\n</vermont>\n";
 	char* xmlglobals = "\t\t<%s>%s</%s>\n";
 	
+	if (!graphIS) {
+		THROWEXCEPTION("GraphInstanceSupplier variable graphIS MUST be set when module is started!");
+	}
 	
 	string lockfile = outputFilename + ".lock";
 	char hostname[100];
@@ -64,6 +118,9 @@ void SensorManager::collectDataWorker()
 	
 	msg(MSG_FATAL, "SensorManager: checking sensor values every %u seconds", checkInterval);
 	while (!exitFlag) {
+		timespec req;
+		req.tv_sec = checkInterval;
+		req.tv_nsec = 0;
 		// restart nanosleep with the remaining sleep time
 		// if we got interrupted by a signal
 		while (nanosleep(&req, &req) == -1 && errno == EINTR);
@@ -90,15 +147,18 @@ void SensorManager::collectDataWorker()
 			perror("error:");
 		}
 		
-		fprintf(file, xmlpre);
-		fprintf(file, xmlglobals, "host", "test", "host");
+		time_t curtime = time(0);
+		char curtimestr[100];
+		ctime_r(&curtime, curtimestr);
+		curtimestr[strlen(curtimestr)-1] = 0;
+		fprintf(file, xmlpre, curtimestr, hostname);
 		char text[100];
 		snprintf(text, 100, "%u", static_cast<uint32_t>(getpid()));
 		fprintf(file, xmlglobals, "pid", text, "pid");		
-		fprintf(file, xmlglobals, "hostname", hostname, "hostname");
-		time_t curtime = time(0);
-		fprintf(file, xmlglobals, "time", ctime(&curtime), "time");
-		fprintf(file, xmlglobals, "lastTime", ctime(&lasttime), "lastTime");
+		char lasttimestr[100];
+		ctime_r(&lasttime, lasttimestr);
+		lasttimestr[strlen(lasttimestr)-1] = 0;
+		fprintf(file, xmlglobals, "lastTime", lasttimestr, "lastTime");
 	
 		msg(MSG_INFO, "*** sensor data at %s", ctime(&curtime));
 		
@@ -107,46 +167,21 @@ void SensorManager::collectDataWorker()
 		vector<CfgNode*>::iterator iter = nodes.begin();
 		while (iter != nodes.end()) {
 			Cfg* cfg = (*iter)->getCfg();
-			Module* m = cfg->getInstance();
-			
-			char* xmlmodpre = "\t\t<module id=\"%u\" name=\"%s\">\n";
-			char* xmlmodpost = "\t\t</module>\n";
-			char* xmlmodsimple = "\t\t\t<%s>%s</%s>\n";
-			char* xmlmodthread = "\t\t\t<thread tid=\"%u\"><util type=\"system\">%.2f%%</util><util type=\"user\">%.2f%%</util></thread>\n";
-			
-			fprintf(file, xmlmodpre, cfg->getID(), cfg->getName().c_str());
-			snprintf(text, 100, "%u", m->getCurrentMemUsage());
-			fprintf(file, xmlmodsimple, "memUsage", text, "memUsage");
-			
-			msg(MSG_INFO, "module: %s, id: %u, mem usage: %u", cfg->getName().c_str(), cfg->getID(), m->getCurrentMemUsage());
-			
-#if defined(__linux__)
-			list<ThreadCPUInterface::JiffyTime> jtimes;
-			m->getJiffiesUsed(jtimes);
-			list<ThreadCPUInterface::JiffyTime>::iterator jiter = jtimes.begin();
-			while (jiter != jtimes.end()) {
-				double sysutil = jiter->sysJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
-				double userutil = jiter->userJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
-				fprintf(file, xmlmodthread, static_cast<uint32_t>(jiter->tid), sysutil, userutil);
-				msg(MSG_INFO, " - thread (tid=%u): jiffies (sys/user): (%u/%u), util. (sys/user): (%.2f%%/%.2f%%)", 
-						static_cast<uint32_t>(jiter->tid), jiter->sysJiffies, jiter->userJiffies, sysutil, userutil);
-				
-				jiter++;
-			}
-#endif
-			
+			Sensor* s = cfg->getInstance();		
 			vector<uint32_t> nextids = cfg->getNext();
-			vector<uint32_t>::const_iterator iditer = nextids.begin();
-			while (iditer != nextids.end()) {
-				snprintf(text, 100, "%u", *iditer);
-				fprintf(file, xmlmodsimple, "next", text, "next");
-				iditer++;
-			}
-			
-			fprintf(file, xmlmodpost);
+			writeSensorXML(file, s, cfg->getName().c_str(), cfg->getID(), true, curtime, lasttime, &nextids);
 			
 			iter++;
 		}
+		
+		// iterate through all non-module sensors
+		mutex.lock();
+		list<SensorEntry>::const_iterator siter = sensors.begin();
+		while (siter != sensors.end()) {
+			writeSensorXML(file, siter->sensor, siter->name.c_str(), siter->id, false, curtime, lasttime, NULL);
+			siter++;
+		}
+		mutex.unlock();
 		
 		fprintf(file, xmlpost);
 		fclose(file);
@@ -169,4 +204,49 @@ void* SensorManager::threadWrapper(void* instance)
 	SensorManager* sm = reinterpret_cast<SensorManager*>(instance);
 	sm->collectDataWorker();	
 	return 0;
+}
+
+SensorManager& SensorManager::getInstance()
+{
+	static SensorManager smInstance;
+	return smInstance;
+}
+
+void SensorManager::setCheckInterval(uint32_t checkInterval)
+{
+	this->checkInterval = checkInterval;
+}
+
+void SensorManager::setOutputFilename(string name)
+{
+	outputFilename = name;
+}
+
+void SensorManager::addSensor(Sensor* sensor, string name, uint32_t id)
+{
+	mutex.lock();
+	SensorEntry se = {name, id, sensor};
+	sensors.push_back(se);
+	usedBytes += sizeof(se);
+	mutex.unlock();
+}
+
+void SensorManager::removeSensor(Sensor* sensor)
+{
+	mutex.lock();
+	list<SensorEntry>::iterator iter = sensors.begin();
+	bool found = false;
+	while (iter != sensors.end()) {
+		if (iter->sensor == sensor) {
+			sensors.erase(iter);
+			usedBytes -= sizeof(SensorEntry);
+			found = true;
+			break;
+		}
+		iter++;
+	}
+	if (!found) {
+		THROWEXCEPTION("did not find specified sensor in SensorManager");
+	}
+	mutex.unlock();
 }
