@@ -4,6 +4,10 @@
 #include <sys/types.h>
 #include <stdint.h>
 
+#include <vector>
+
+using namespace std;
+
 class ThreadCPUInterface
 {
 public:
@@ -15,7 +19,18 @@ public:
 		time_t lastAccess;
 	};
 	
+
+	struct SystemInfo 
+	{
+		uint16_t noCPUs;
+		vector<uint32_t> userJiffies;
+		vector<uint32_t> sysJiffies;
+		uint64_t totalMemory; // in bytes
+		uint64_t freeMemory; // in bytes
+	};
+	
 	static JiffyTime getJiffies(pid_t tid);
+	static SystemInfo getSystemInfo();
 	
 	static unsigned long long getHertzValue();
 #endif

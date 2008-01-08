@@ -40,6 +40,7 @@ private:
 	uint64_t hertzValue;
 	list<SensorEntry> sensors;
 	Mutex mutex; /** protects variable sensors */
+	ThreadCPUInterface::SystemInfo lastSystemInfo;
 	
 	// config variables
 	uint32_t checkInterval; /** check interval in seconds */

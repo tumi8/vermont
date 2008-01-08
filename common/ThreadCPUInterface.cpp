@@ -6,6 +6,9 @@
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+#include <string>
+
+
 
 ThreadCPUInterface::ThreadCPUInterface()
 {
@@ -57,5 +60,51 @@ unsigned long long ThreadCPUInterface::getHertzValue()
 {
 	return ::getHertzValue();
 }
+
+/**
+ * returns global system statistics by accessing the /proc filesystem
+ */
+ThreadCPUInterface::SystemInfo ThreadCPUInterface::getSystemInfo()
+{
+	string procfile = "/proc/meminfo";
+	FILE* f = fopen(procfile.c_str(), "r");
+	if (f == NULL) {
+		THROWEXCEPTION("failed to open file '%s' (fopen)", procfile.c_str());
+	}
+	SystemInfo si;
+	uint32_t mem;
+	if (fscanf(f, "MemTotal: %u kB\n", &mem) != 1)
+		THROWEXCEPTION("failed to parse file '%s' 1", procfile.c_str());
+	si.totalMemory = mem*1024;
+	if (fscanf(f, "MemFree: %u kB\n", &mem) != 1)
+		THROWEXCEPTION("failed to parse file '%s' 2", procfile.c_str());
+	si.freeMemory = mem;
+	if (fscanf(f, "Buffers: %u kB\n", &mem) != 1)
+		THROWEXCEPTION("failed to parse file '%s' 3", procfile.c_str());
+	si.freeMemory += mem;
+	if (fscanf(f, "Cached: %u kB\n", &mem) != 1)
+		THROWEXCEPTION("failed to parse file '%s' 4", procfile.c_str());
+	si.freeMemory += mem;
+	si.freeMemory *= 1024;
+	fclose(f);
+	
+	procfile = "/proc/stat";
+	f = fopen(procfile.c_str(), "r");
+	if (f == NULL) {
+		THROWEXCEPTION("failed to open file '%s' (fopen)", procfile.c_str());
+	}
+	if (fscanf(f, "cpu %*u %*u %*u %*u %*u %*u %*u %*u\n") != 0)
+		THROWEXCEPTION("failed to parse file '%s'", procfile.c_str());
+	uint32_t sys, user;
+	while (fscanf(f, "cpu%*d %u %*u %u %*u %*u %*u %*u %*u\n", &user, &sys) == 2) {
+		si.sysJiffies.push_back(sys);
+		si.userJiffies.push_back(user);
+	}
+	si.noCPUs = si.sysJiffies.size();
+	fclose(f);
+	
+	return si;
+}
+
 
 #endif // __linux__

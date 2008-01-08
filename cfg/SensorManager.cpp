@@ -23,6 +23,7 @@ SensorManager::SensorManager(uint32_t checkInterval = SM_DEFAULT_CHECK_INTERVAL,
 	hertzValue = ThreadCPUInterface::getHertzValue();
 	msg(MSG_DIALOG, "using value %u as hertz jiffy value", hertzValue);
 	msg(MSG_FATAL, "writing sensor output data to '%s'", outputfilename.c_str());
+	lastSystemInfo = ThreadCPUInterface::getSystemInfo();
 #endif
 	usedBytes += sizeof(SensorManager);
 }
@@ -104,6 +105,8 @@ void SensorManager::collectDataWorker()
 	char* xmlpre = "<vermont>\n\t<sensorData time=\"%s\" host=\"%s\">\n";
 	char* xmlpost = "\t</sensorData>\n</vermont>\n";
 	char* xmlglobals = "\t\t<%s>%s</%s>\n";
+	char* xmlglobalsuint = "\t\t<%s>%u</%s>\n";
+	
 	
 	if (!graphIS) {
 		THROWEXCEPTION("GraphInstanceSupplier variable graphIS MUST be set when module is started!");
@@ -159,6 +162,21 @@ void SensorManager::collectDataWorker()
 		ctime_r(&lasttime, lasttimestr);
 		lasttimestr[strlen(lasttimestr)-1] = 0;
 		fprintf(file, xmlglobals, "lastTime", lasttimestr, "lastTime");
+		
+#if defined(__linux__)		
+		ThreadCPUInterface::SystemInfo si = ThreadCPUInterface::getSystemInfo();
+		
+		fprintf(file, xmlglobalsuint, "processorAmount", si.noCPUs, "processorAmount");
+		for (uint16_t i=0; i<si.sysJiffies.size(); i++) {
+			double sysutil = (si.sysJiffies[i]-lastSystemInfo.sysJiffies[i])/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
+			double userutil = (si.userJiffies[i]-lastSystemInfo.userJiffies[i])/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
+			fprintf(file, "\t\t<processor id=\"%u\"><util type=\"system\">%.2f%%</util><util type=\"user\">%.2f%%</util></processor>\n",
+					i, sysutil, userutil);			
+		}
+		fprintf(file, "\t\t<memory><free type=\"bytes\">%llu</free><total type=\"bytes\">%llu</total></memory>\n",
+				si.freeMemory, si.totalMemory);
+		lastSystemInfo = si;
+#endif
 	
 		msg(MSG_INFO, "*** sensor data at %s", ctime(&curtime));
 		

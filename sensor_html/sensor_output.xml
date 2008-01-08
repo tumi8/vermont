@@ -26,6 +26,15 @@
 					<tr><td>process id</td><td><xsl:value-of select="pid"/></td></tr>
 					<tr><td>time of sensor data</td><td><xsl:value-of select="@time"/></td></tr>
 					<tr><td>time of previous access</td><td><xsl:value-of select="lastTime"/></td></tr>
+					<tr><td>available processors</td><td><xsl:value-of select="processorAmount"/></td></tr>
+					<xsl:for-each select="processor">
+						<tr>
+							<td>processor #<xsl:value-of select="@id" /> utilization (user/sys)</td>
+							<td><xsl:value-of select="util[@type='user']"/> / <xsl:value-of select="util[@type='system']"/></td>
+						</tr>
+					</xsl:for-each>
+					<tr><td>total memory</td><td><xsl:value-of select="memory/total div 1024"/> kB</td></tr>
+					<tr><td>free memory</td><td><xsl:value-of select="memory/free div 1024"/> kB</td></tr>
 				</table>
 			</td>
 		</tr>
