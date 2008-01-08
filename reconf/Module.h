@@ -7,64 +7,41 @@
 
 #include "Source.h"
 
+#include <list>
+
+using namespace std;
+
 class Module 
 {
-protected:
-	bool exitFlag;		/**< notifies module that shutdown is imminent */
-	bool running;		/**< true if module is running, false if it is shut down */
 
 public:	
-	Module() 
-		: exitFlag(false), running(false)
-	{ 
+	struct JiffyTime {
+		pthread_t thread;
+		uint32_t sysJiffies;
+		uint32_t userJiffies;
+		time_t lastAccess;
 	};
 	
-	virtual ~Module()
-	{
-		if (running) {
-			THROWEXCEPTION("you must shutdown the module first before destroying it!");
-		}
-	}
+	Module();	
+	virtual ~Module();
 	
 	/**
 	 * is called before module receives input from other modules
 	 * e.g. used to start threads
 	 */
-	void start(bool fail_if_already_running = true)
-	{
-		if (running && !fail_if_already_running)
-			return;
-
-		ASSERT(!running, "module must not be in state 'running' when started");
-		running = true;
-		exitFlag = false;
-		performStart();
-	}
-	
+	void start(bool fail_if_already_running = true);
+		
 	/**
 	 * notifies the module about immediate shutdown
 	 */
-	void notifyShutdown()
-	{
-		exitFlag = true;
-	}
+	void notifyShutdown();
 	
 	/**
 	 * shuts down the module
 	 * function only returns when module is shut down properly!
 	 */
-	void shutdown(bool fail_if_not_running = true)
-	{
-		if (!running && !fail_if_not_running)
-			return;
-
-		ASSERT(running, "module must be in state running when it is shut down");
-		
-		notifyShutdown();
-		performShutdown();
-		running = false;
-	}
-
+	void shutdown(bool fail_if_not_running = true);
+	
 	/* this is called before connecting a module */
 	/**
 	 * is called when reconfiguration of vermont is complete
@@ -86,33 +63,66 @@ public:
 	 * May be overwritten by subclasses
 	 */
 	virtual void preReconfiguration2() { /* override this in the modules you need */ }
+	
+	/**
+	 * returns memory usage of this module
+	 * ATTENTION: module needs to count memory usage on its own, see variable usedBytes!
+	 */
+	uint32_t getCurrentMemUsage();
+	
+	/**
+	 * returns number of jiffies used by all threads since last call of this function
+	 * @param empty list which will be filled with data
+	 */
+	void getJiffiesUsed(list<JiffyTime>& usedJiffies);
+	
+	/**
+	 * registers given thread id as thread belonging to this module
+	 * module code should do this once for each thread that is used by it
+	 * @param thread thread id to be registered
+	 */
+	void registerThreadID(pthread_t thread);
+	
+	/**
+	 * unregisters given thread id as thread belonging to this module
+	 * @param thread thread id to be unregistered
+	 */
+	void unregisterThreadID(pthread_t thread);
 
 protected:
 	/**
 	 * is called when module is started
 	 * may be overwritten by subclasses
 	 */
-	virtual void performStart()
-	{
-	}
+	virtual void performStart()	{ }
 	
 	/**
 	 * is called when module is shutdown
 	 * may be overwritten by subclasses
 	 */
-	virtual void performShutdown()
-	{
-	}
+	virtual void performShutdown() { }
 	
 	/**
 	 * returns current value of exitFlag
 	 * (workaround for g++ compiler bug)
 	 */
-	virtual bool getExitFlag() const
-	{
-		return exitFlag;
-	}
+	virtual bool getExitFlag() const;
+	
+	/**
+	 * modules must store the amount of used memory in this variable
+	 * ATTENTION: this variable is not safely accessed in multi-threading context!
+	 * do not store temporary data there, only final values!
+	 */
+	uint32_t usedBytes;
+	
+	bool exitFlag;		/**< notifies module that shutdown is imminent */
+	bool running;		/**< true if module is running, false if it is shut down */
+	
+private:
+	list<JiffyTime> watchedThreads; /** all threads that are used by module */
+	Mutex wThreadsMutex; /** mutex for locking watchedThreads */
 
+	JiffyTime getJiffies(pthread_t thread);
 };
 
 #endif

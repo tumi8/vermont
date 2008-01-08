@@ -25,6 +25,7 @@ TARGET_LINK_LIBRARIES(testCollector
 	concentrator
 	ipfixlolib
 	common
+	reconf
 	${CMAKE_THREAD_LIBS_INIT}
 	${PCAP_LIBRARY}
 )
