@@ -1,0 +1,7 @@
+IPFIX Test Packets
+=================
+
+Use netcat (nc) to send them to the UDP (test) collector.
+
+Use hex editor (e.g., ghex) to conveniently create your own packets.
+

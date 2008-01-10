@@ -69,6 +69,8 @@ class IpfixRecord {
 		 * Template description passed to the callback function when a new Template arrives.
 		 */
 		struct TemplateInfo {
+			TemplateInfo() : fieldInfo(NULL) {}
+
 			~TemplateInfo() {
 				free(fieldInfo);
 			}
@@ -326,6 +328,9 @@ class IpfixRecord {
 		 * Note that - other than in [PROTO] - fieldCount specifies only the number of regular fields
 		 */
 		struct OptionsTemplateInfo {
+			OptionsTemplateInfo() : scopeInfo(NULL), fieldInfo(NULL) {
+			}
+
 			~OptionsTemplateInfo() {
 				free(fieldInfo);
 				free(scopeInfo);
@@ -343,7 +348,7 @@ class IpfixRecord {
 		 * DataTemplate description passed to the callback function when a new DataTemplate arrives.
 		 */
 		struct DataTemplateInfo {
-			DataTemplateInfo() : freePointers(true) {
+			DataTemplateInfo() : fieldInfo(NULL), dataInfo(NULL), data(NULL), freePointers(true) {
 			}
 
 			~DataTemplateInfo() {
