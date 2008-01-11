@@ -431,10 +431,6 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
 	addColumnEntry(ColValues, intdata, true, j==numberOfColumns-1);
     }
 
-    if (flowstartsec == 0) {
-	THROWEXCEPTION("failed to get timing data from ipfix packet. this is a critical error at the moment, as no valid table can be determined. Aborting");
-    }
-
     /**make whole query string for the insert statement*/
     char tablename[TABLE_WIDTH] ;
     DPRINTF("flowstartsec: %d", flowstartsec);
@@ -454,6 +450,10 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
 	else if(strncmp(tablename, locks[j], TABLE_WIDTH) == 0)
 	    /* found tablename */
 	    break;
+    }
+
+    if (flowstartsec == 0) {
+	msg(MSG_ERROR, "IpfixDbWriter: Failed to get timing data from record. Will be saved in default table: %s", statemStr);
     }
 
     return statemStr;
