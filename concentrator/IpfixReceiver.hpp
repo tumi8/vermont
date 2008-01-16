@@ -21,9 +21,9 @@
 #ifndef _IPFIX_RECEIVER_H_
 #define _IPFIX_RECEIVER_H_
 
-#include "IpfixPacketProcessor.hpp"
 #include "reconf/Module.h"
 #include "IpfixRecordDestination.h"
+#include "IpfixPacketProcessor.hpp"
 
 #include <pthread.h>
 #include <stdint.h>

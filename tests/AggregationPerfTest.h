@@ -21,8 +21,6 @@
 #if !defined(AGGREGATIONPERFTEST_H)
 #define AGGREGATIONPERFTEST_H
 
-#include "sampler/Filter.h"
-#include "sampler/PacketSink.h"
 #include "concentrator/IpfixAggregator.hpp"
 #include "cfg/InstanceManager.h"
 

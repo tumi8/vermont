@@ -23,13 +23,11 @@
 
 
 #include "Packet.h"
-#include "PacketReceiver.h"
 
 #include "common/msg.h"
 #include "common/Thread.h"
 #include "common/ConcurrentQueue.h"
 #include "cfg/InstanceManager.h"
-#include "common/StatisticsManager.h"
 
 #include "reconf/Source.h"
 #include "reconf/Module.h"

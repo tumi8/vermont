@@ -21,10 +21,10 @@
 #ifndef INCLUDED_IpfixCollector_hpp
 #define INCLUDED_IpfixCollector_hpp
 
-#include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
 #include "IpfixRecordSender.h"
 #include "reconf/Module.h"
+#include "IpfixReceiver.hpp"
 
 #include <stdint.h>
 

@@ -20,7 +20,6 @@
 
 #include "AggregationPerfTest.h"
 
-#include "sampler/Filter.h"
 #include "common/Time.h"
 #include "test.h"
 #include "TestQueue.h"

@@ -27,11 +27,10 @@
 
 #include "IpfixRecord.hpp"
 #include "Rule.hpp"
-#include "common/StatisticsManager.h"
 #include "reconf/Module.h"
 
 
-class BaseHashtable : public StatisticsModule
+class BaseHashtable 
 {
 public:
 	// configuration options for size of hashtable

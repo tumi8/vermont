@@ -13,7 +13,6 @@
 
 #include "common/msg.h"
 #include "common/Thread.h"
-#include "common/StatisticsManager.h"
 #include "common/defs.h"
 
 #include <pcap.h>

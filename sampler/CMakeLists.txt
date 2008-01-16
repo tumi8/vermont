@@ -18,14 +18,10 @@
 #
 
 ADD_LIBRARY(sampler
-	ExporterSink.cpp
-	Filter.cpp
 	IPHeaderFilter.cpp
 	Observer.cpp
 	Packet.cpp
 	PacketIDMEFReporter.cpp
-	PacketReceiver.cpp
-	PacketSink.cpp
 	RandomSampler.cpp
 	RegExFilter.cpp
 	StringFilter.cpp

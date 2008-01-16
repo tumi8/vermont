@@ -21,13 +21,13 @@
 #ifndef INCLUDED_IpfixPacketProcessor_hpp
 #define INCLUDED_IpfixPacketProcessor_hpp
 
-#include "IpfixReceiver.hpp"
+#include "IpfixRecord.hpp"
 
 #include <list>
 #include <pthread.h>
 #include <stdint.h>
 #include <boost/smart_ptr.hpp>
-#include "IpfixRecord.hpp"
+
 
 
 class IpfixParser;
@@ -47,8 +47,6 @@ class IpfixPacketProcessor
 		virtual void preReconfiguration1() {};
 		virtual void preReconfiguration2() {};
 		virtual void postReconfiguration() {};
-
-	protected:
 
 };
 
