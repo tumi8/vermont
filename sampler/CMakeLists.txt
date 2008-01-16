@@ -23,12 +23,13 @@ ADD_LIBRARY(sampler
 	IPHeaderFilter.cpp
 	Observer.cpp
 	Packet.cpp
+	PacketIDMEFReporter.cpp
 	PacketReceiver.cpp
 	PacketSink.cpp
 	RandomSampler.cpp
+	RegExFilter.cpp
+	StringFilter.cpp
 	SystematicSampler.cpp
-	Template.cpp
-	stringFilter.cpp
-	regExFilter.cpp
+	Template.cpp	
 )
 

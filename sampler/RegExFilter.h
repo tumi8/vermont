@@ -15,28 +15,24 @@
 
 
 
-class regExFilter:public PacketProcessor
+class RegExFilter
+	: public PacketProcessor
 {
 
 public:
 
-  regExFilter ()
+  RegExFilter ()
   {
-
   };
 
-  virtual ~ regExFilter ()
+  virtual ~RegExFilter ()
   {
-
   };
 
   void regcre()
   {
   	rexp.assign(match);
-
   };
-
-
 
   virtual bool processPacket (const Packet * p);
 
@@ -44,14 +40,8 @@ public:
   std::string match;
   boost::regex rexp;
 
-
 protected:
-
-
   bool compare (char *data);
-
-
-
 
 };
 

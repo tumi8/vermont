@@ -35,6 +35,7 @@ ADD_LIBRARY(cfg
 	ObserverCfg.cpp
 	PacketAggregatorCfg.cpp
 	PacketFilterCfg.cpp
+	PacketIDMEFReporterCfg.cpp
 	PacketReportingCfg.cpp
 	PSAMPExporterCfg.cpp
 	ReConnector.cpp

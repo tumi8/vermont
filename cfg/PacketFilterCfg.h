@@ -7,8 +7,8 @@
 #include <vector>
 
 // forward declaration of instances
-class regExFilter;
-class stringFilter;
+class RegExFilter;
+class StringFilter;
 class SystematicSampler;
 
 class PacketFilterCfg
@@ -141,7 +141,7 @@ protected:
 
 
 private:
-	stringFilter* instance;
+	StringFilter* instance;
 };
 
 
@@ -190,7 +190,7 @@ protected:
 	PacketRegexFilterCfg(XMLElement *e): Cfg(e), instance(NULL) { };
 
 private:
-	regExFilter* instance;
+	RegExFilter* instance;
 };
 
 

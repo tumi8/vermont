@@ -3,10 +3,30 @@
  */
 
 
-#include "stringFilter.h"
+#include "StringFilter.h"
 
 
-std::string stringFilter::hexparser(const std::string input) 
+StringFilter::StringFilter()
+{
+}
+
+StringFilter::~StringFilter()
+{
+}
+
+void StringFilter::addandFilter(std::string string)
+{
+    if(string.size()>0)
+	andFilters.push_back (string);
+}
+
+void StringFilter::addnotFilter(std::string string)
+{
+    if(string.size()>0)
+	notFilters.push_back (string);
+}
+
+std::string StringFilter::hexparser(const std::string input) 
 {
     unsigned int i;
     std::string output("");
@@ -32,7 +52,7 @@ std::string stringFilter::hexparser(const std::string input)
  * @param plength The packetlength
  * @return true on match false otherwise
  */
-inline bool stringFilter::compare(unsigned char *pdata, std::string toMatch, unsigned int plength)
+inline bool StringFilter::compare(unsigned char *pdata, std::string toMatch, unsigned int plength)
 {
     unsigned counter=0;
     char* tmp;
@@ -65,7 +85,7 @@ inline bool stringFilter::compare(unsigned char *pdata, std::string toMatch, uns
  * @param p Packet data
  * @return true if packet contains string false otherwise
  */
-bool stringFilter::processPacket(const Packet *p)
+bool StringFilter::processPacket(const Packet *p)
 {
     unsigned char* pdata;
     unsigned int plength;
@@ -87,8 +107,5 @@ bool stringFilter::processPacket(const Packet *p)
 	if(compare(pdata, *iti, plength)) 
 	    return false;
 
-    char cmd[512];
-    sprintf(cmd,"/usr/bin/perl -I/monitor/falko/ims_idmefsender/includes /monitor/falko/ims_idmefsender/ims_idmefsender.pl %d.%d.%d.%d %d.%d.%d.%d stringfilter",p->netHeader[12],p->netHeader[13],p->netHeader[14],p->netHeader[15],p->netHeader[16],p->netHeader[17],p->netHeader[18],p->netHeader[19]);
-    system(cmd);
     return true;
 };

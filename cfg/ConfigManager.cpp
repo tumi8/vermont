@@ -16,6 +16,7 @@
 #include "cfg/SensorManagerCfg.h"
 #include "cfg/TRWPortscanDetectorCfg.h"
 #include "cfg/IDMEFExporterCfg.h"
+#include "cfg/PacketIDMEFReporterCfg.h"
 
 #include <cassert>
 
@@ -39,6 +40,7 @@ Cfg* ConfigManager::configModules[] = {
 	new SensorManagerCfg(NULL),
 	new TRWPortscanDetectorCfg(NULL),
 	new IDMEFExporterCfg(NULL),
+	new PacketIDMEFReporterCfg(NULL),
 };
 
 ConfigManager::~ConfigManager()

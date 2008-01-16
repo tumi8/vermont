@@ -1,7 +1,7 @@
 #include "PacketFilterCfg.h"
 
-#include <sampler/regExFilter.h>
-#include <sampler/stringFilter.h>
+#include <sampler/RegExFilter.h>
+#include <sampler/StringFilter.h>
 #include <sampler/SystematicSampler.h>
 #include "common/msg.h"
 
@@ -114,7 +114,7 @@ static std::string getRealValue(XMLElement* e)
 	XMLAttribute* a = e->getAttribute("type");
 
 	if (a && a->getValue() == "HEX")
-		return stringFilter::hexparser(str);
+		return StringFilter::hexparser(str);
 
 	return str;
 }
@@ -123,7 +123,7 @@ static std::string getRealValue(XMLElement* e)
 Module* PacketStringFilterCfg::getInstance()
 {
 	if (!instance)
-		instance = new stringFilter();
+		instance = new StringFilter();
 
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
@@ -170,7 +170,7 @@ bool PacketStringFilterCfg::deriveFrom(PacketStringFilterCfg* old)
 Module* PacketRegexFilterCfg::getInstance()
 {
 	if (!instance)
-		instance = new regExFilter();
+		instance = new RegExFilter();
 
 	instance->match = get("matchPattern");
 	instance->regcre();

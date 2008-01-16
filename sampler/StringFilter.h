@@ -12,53 +12,22 @@
 
 
 
-class stringFilter:public PacketProcessor
+class StringFilter : public PacketProcessor
 {
-
-    public:
-
-	stringFilter ()
-	{
-
-	};
-
-	virtual ~ stringFilter ()
-	{
-
-	};
-
-	void addandFilter (std::string string)
-	{
-	    if(string.size()>0)
-		andFilters.push_back (string);
-	};
-
-	void addnotFilter (std::string string)
-	{
-	    if(string.size()>0)
-		notFilters.push_back (string);
-	};
+public:
+	StringFilter();
+	virtual ~StringFilter();
 
 	static std::string hexparser(const std::string input);
-
 	virtual bool processPacket (const Packet * p);
+	void addandFilter(std::string string);
+	void addnotFilter(std::string string);
 
-	//  int filtertype;
-
-
-    protected:
-
-
+protected:
 	std::vector<std::string> andFilters;
 	std::vector<std::string> notFilters;
 
 	bool compare (unsigned char *data, std::string toMatch, unsigned int plength);
-
-
-	//  char *match;
-
-
-
 };
 
 #endif
