@@ -19,7 +19,12 @@ SensorManagerCfg::SensorManagerCfg(XMLElement* elem)
 	     it++) {
 		XMLElement* e = *it;
 
-		if (e->matches("check_interval")) {
+		if (e->matches("checkinterval")) {
+			checkInterval = strtol(e->getFirstText().c_str(), NULL, 10);
+			if (checkInterval == 0) {
+				THROWEXCEPTION("invalid check interval specified: '%s'", e->getFirstText().c_str());
+			}
+		} else if (e->matches("outputfile")) {
 			checkInterval = strtol(e->getFirstText().c_str(), NULL, 10);
 			if (checkInterval == 0) {
 				THROWEXCEPTION("invalid check interval specified: '%s'", e->getFirstText().c_str());

@@ -93,6 +93,68 @@ private:
 };
 
 
+class PacketTimeFilterCfg
+	: public Cfg
+{
+public:
+	friend class PacketFilterCfg;
+	
+	virtual PacketFilterCfg* create(XMLElement* e) {return NULL; };
+	
+	virtual ~PacketTimeFilterCfg();
+
+	virtual std::string getName() { return "timeBased"; }
+	
+	int getInterval() { return getInt("interval", 0); }
+	int getSpacing()  { return getInt("spacing", 0); }
+
+	virtual Module* getInstance();
+	
+	virtual bool deriveFrom(Cfg* old)
+	{
+		PacketTimeFilterCfg* cfg = dynamic_cast<PacketTimeFilterCfg*>(old);
+		if (cfg)
+			return deriveFrom(cfg);
+
+		THROWEXCEPTION("Can't derive from PacketTimeFilter");
+		return false;
+	}
+
+	virtual bool deriveFrom(PacketTimeFilterCfg* old)
+	{
+		if (getInterval() != old->getInterval())
+			return false;
+
+		if (getSpacing() != old->getSpacing())
+			return false;
+
+		return true;
+	}
+
+	/* we have to implement those, because from an implementation standpoint
+	 * the filters could be modules of its own, but as discussed, they where just
+	 * subparts of a bigger FilterModule
+	 */
+	virtual void transferInstance(Cfg* other) { THROWEXCEPTION("Not supported"); }
+	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void postReconfiguration() { THROWEXCEPTION("Not supported"); }
+	virtual void preReconfiguration1() { THROWEXCEPTION("Not supported"); }
+	virtual void preReconfiguration2() { THROWEXCEPTION("Not supported"); }
+	virtual void freeInstance() { THROWEXCEPTION("Not supported"); }
+	virtual void connectInstances(Cfg* other) { THROWEXCEPTION("Not supported"); }
+	virtual void disconnectInstances()  { THROWEXCEPTION("Not supported"); }
+	virtual Module* getQueueInstance()  { THROWEXCEPTION("Not supported"); return NULL; }
+	
+	
+protected:
+	PacketTimeFilterCfg(XMLElement *e);
+
+private:
+	SystematicSampler* instance;
+};
+
+
 class PacketStringFilterCfg
 	: public Cfg
 {

@@ -33,6 +33,7 @@ PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
 			c = new PacketRegexFilterCfg(e);
 		} else if (e->matches("timeBased")) {
 			msg(MSG_INFO, "Filter: Creating time based sampler");
+			c = new PacketTimeFilterCfg(e);
 		} else if (e->matches("next")) { // ignore next
 			continue;
 		} else {
@@ -104,6 +105,28 @@ Module* PacketCountFilterCfg::getInstance()
 
 	return (Module*)instance;
 }
+
+
+
+PacketTimeFilterCfg::PacketTimeFilterCfg(XMLElement *e)
+	: Cfg(e), instance(NULL)
+{
+}
+
+PacketTimeFilterCfg::~PacketTimeFilterCfg()
+{
+
+}
+
+Module* PacketTimeFilterCfg::getInstance()
+{
+	if (!instance)
+		instance = new SystematicSampler(SYSTEMATIC_SAMPLER_TIME_BASED,
+						getInterval(), getSpacing());
+
+	return (Module*)instance;
+}
+
 
 
 

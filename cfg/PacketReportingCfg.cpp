@@ -14,7 +14,11 @@ PacketReportingCfg::PacketReportingCfg(XMLElement* elem)
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
 	     it++) {
-		exportedFields.push_back(new InfoElementCfg(*it));
+		if ((*it)->getName()=="templateId") {
+			templateId = getInt("templateId", 0, elem);
+		} else {
+			exportedFields.push_back(new InfoElementCfg(*it));
+		}
 	}
 }
 

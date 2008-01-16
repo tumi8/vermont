@@ -2,7 +2,7 @@
 #include <concentrator/IpfixReceiverUdpIpV4.hpp>
 
 IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
-	: CfgHelper<IpfixCollector, IpfixCollectorCfg>(elem, "collectingProcess"),
+	: CfgHelper<IpfixCollector, IpfixCollectorCfg>(elem, "ipfixCollector"),
 	listener(NULL),
 	ipfixCollector(NULL),
         observationDomainId(0)

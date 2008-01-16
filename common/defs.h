@@ -41,7 +41,7 @@
  * default sensor manager's filename where sensor data
  * will be written to
  */
-#define SM_DEFAULT_OUTPUT_FNAME "sensor_output"
+#define SM_DEFAULT_OUTPUT_FNAME "sensor_output.xml"
 
 /**
  * default aggregator polling time in milliseconds

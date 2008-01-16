@@ -10,7 +10,7 @@ IDMEFExporterCfg* IDMEFExporterCfg::create(XMLElement* e)
 }
 
 IDMEFExporterCfg::IDMEFExporterCfg(XMLElement* elem)
-    : CfgHelper<IDMEFExporter, IDMEFExporterCfg>(elem, "IDMEFExporter"),
+    : CfgHelper<IDMEFExporter, IDMEFExporterCfg>(elem, "idmefExporter"),
       destDirectory("idmef_work")
 {
     if (!elem) return;

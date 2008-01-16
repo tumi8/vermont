@@ -131,14 +131,14 @@
 		</collector>
 	</ipfixExporter>
 	
-	<TRWPortscanDetector id="8">
+	<trwPortscanDetector id="8">
 		<analyzerid>trwportscandetector</analyzerid>
 		<idmeftemplate>idmef/templates/trwportscan_template.xml</idmeftemplate>
 		<next>9</next>
-	</TRWPortscanDetector>
+	</trwPortscanDetector>
 	
-	<IDMEFExporter id="9">
+	<idmefExporter id="9">
 		<sendurl>http://localhost</sendurl>
-	</IDMEFExporter>
+	</idmefExporter>
 	
 </ipfixConfig>

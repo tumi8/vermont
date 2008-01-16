@@ -9,7 +9,7 @@ TRWPortscanDetectorCfg* TRWPortscanDetectorCfg::create(XMLElement* e)
 }
 
 TRWPortscanDetectorCfg::TRWPortscanDetectorCfg(XMLElement* elem)
-    : CfgHelper<TRWPortscanDetector, TRWPortscanDetectorCfg>(elem, "TRWPortscanDetector"),
+    : CfgHelper<TRWPortscanDetector, TRWPortscanDetectorCfg>(elem, "trwPortscanDetector"),
       hashBits(20),
       timeExpirePending(60*60*24),
       timeExpireScanner(60*30),
