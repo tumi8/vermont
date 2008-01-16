@@ -1,3 +1,4 @@
+#ifdef __linux__
 #include "sysinfo.h"
 
 #include "version.c"
@@ -171,4 +172,6 @@ unsigned long long getHertzValue()
 	
 	return Hertz; 
 }
+
+#endif // __linux__
 

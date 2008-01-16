@@ -1,7 +1,10 @@
 #include "ThreadCPUInterface.h"
 
 #include "common/msg.h"
+
+#ifdef __linux__
 #include "osdep/linux/sysinfo.h"
+#endif
 
 #include <sys/stat.h>
 #include <sys/syscall.h>

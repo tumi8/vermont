@@ -33,7 +33,11 @@ public:
 	static SystemInfo getSystemInfo();
 	
 	static unsigned long long getHertzValue();
-#endif
+#else
+	struct SystemInfo
+	{
+	};
+#endif // __linux__
 	
 private:
 	ThreadCPUInterface();

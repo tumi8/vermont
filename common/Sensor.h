@@ -32,7 +32,9 @@ public:
 	 * returns number of jiffies used by all threads since last call of this function
 	 * @param empty list which will be filled with data
 	 */
+#ifdef __linux__
 	void getJiffiesUsed(list<ThreadCPUInterface::JiffyTime>& usedJiffies);
+#endif
 	
 	/**
 	 * registers given thread id as thread belonging to this module
@@ -67,7 +69,9 @@ protected:
 	uint32_t usedBytes;
 	
 private:
+#ifdef __linux__
 	list<ThreadCPUInterface::JiffyTime> watchedThreads; /** all threads that are used by module */
+#endif
 	Mutex wThreadsMutex; /** mutex for locking watchedThreads */
 };
 

@@ -75,7 +75,7 @@ unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit, XMLE
 
 	// we didn't find the element
 	throw IllegalEntry();
-	return -1;
+	return 0;
 }
 
 std::vector<unsigned int> Cfg::getNext()

@@ -20,6 +20,7 @@ uint32_t Sensor::getCurrentMemUsage()
 	return usedBytes;
 }
 
+#ifdef __linux__
 void Sensor::getJiffiesUsed(list<ThreadCPUInterface::JiffyTime>& usedJiffies)
 {
 	wThreadsMutex.lock();
@@ -39,9 +40,11 @@ void Sensor::getJiffiesUsed(list<ThreadCPUInterface::JiffyTime>& usedJiffies)
 	}
 	wThreadsMutex.unlock();
 }
+#endif
 
 void Sensor::registerThreadID(pid_t tid)
 {
+#ifdef __linux__
 	wThreadsMutex.lock();
 	list<ThreadCPUInterface::JiffyTime>::iterator iter = watchedThreads.begin();
 	while (iter != watchedThreads.end()) {
@@ -56,6 +59,9 @@ void Sensor::registerThreadID(pid_t tid)
 	
 	watchedThreads.push_back(jt);
 	wThreadsMutex.unlock();
+#else
+	// do nothing in non-linux oses
+#endif
 }
 
 void Sensor::registerCurrentThread()
@@ -65,12 +71,13 @@ void Sensor::registerCurrentThread()
 	tid = (long)syscall(SYS_gettid);
 	registerThreadID(tid);
 #else
-	registerThreadID(0);
+	// do nothing in non-linux oses
 #endif
 }
 
 void Sensor::unregisterThreadID(pid_t tid)
 {
+#ifdef __linux__
 	wThreadsMutex.lock();
 	list<ThreadCPUInterface::JiffyTime>::iterator iter = watchedThreads.begin();
 	while (iter != watchedThreads.end()) {
@@ -83,11 +90,18 @@ void Sensor::unregisterThreadID(pid_t tid)
 	}
 	wThreadsMutex.unlock();
 	THROWEXCEPTION("thread id %u was not found in list", tid);
+#else
+	// do nothing in non-linux oses
+#endif
 }
 
 void Sensor::unregisterCurrentThread()
 {
+#ifdef __linux__
 	pid_t tid;
 	tid = (long)syscall(SYS_gettid);
 	unregisterThreadID(tid);
+#else
+	// do nothing in non-linux oses
+#endif
 }

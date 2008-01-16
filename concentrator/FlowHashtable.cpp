@@ -25,10 +25,10 @@ FlowHashtable::~FlowHashtable()
 
 void FlowHashtable::genBiflowStructs()
 {
-	uint32_t srcIPIdx = -1;
-	uint32_t dstIPIdx = -1;
-	uint32_t srcPortIdx = -1;
-	uint32_t dstPortIdx = -1;
+	int32_t srcIPIdx = -1;
+	int32_t dstIPIdx = -1;
+	int32_t srcPortIdx = -1;
+	int32_t dstPortIdx = -1;
 	
 	// search for offsets in dataTemplate
 	revDataTemplateMapper = new uint32_t[dataTemplate->fieldCount];
