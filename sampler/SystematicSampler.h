@@ -29,12 +29,10 @@ public:
          if type is TimeBasedSampler, then onTime and offTime are specified in milliseconds
          and specify how long to keep capturing packets.
          */
-        SystematicSampler(int type, unsigned long onTime, unsigned long offTime) :
-                samplingType(type), samplingOnTime(onTime), samplingOffTime(offTime), packetCount(0)
+        SystematicSampler(int type, unsigned long interval, unsigned long spacing) :
+                samplingType(type), samplingOnTime(spacing), samplingOffTime(interval-spacing), interval(interval), packetCount(0)
         {
                 gettimeofday(&startTime, 0);
-
-                interval = samplingOnTime + samplingOffTime;
         };
 
         virtual ~SystematicSampler()
