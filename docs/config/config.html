@@ -1,0 +1,996 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"><head>
+
+
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"><title>VERMONT configuration</title>
+
+<link rel="stylesheet" type="text/css" href="stylish.css">
+<link rel="stylesheet" type="text/css" href="highlight.css">
+<head><title>Vermont configuration</title></head>
+	<body>
+		
+		<h1>VERMONT configuration</h1>
+		
+		<p>Back to <a href="http://vermont.berlios.de/index.html">VERMONT
+			Home</a> .</p>
+		
+		<h2>General remarks</h2>
+		<p>The configuration of VERMONT is separated into several modules:</p>
+		<ul>
+			<li><a href="#Observer">Observer</a>
+			</li>
+			<li><a href="#PacketFilter">PacketFilter</a>
+			</li>
+			<li><a href="#PacketQueue">PacketQueue</a>
+			</li>
+			<li><a href="#PacketAggregator">PacketAggregator</a>
+			</li>
+			<li><a href="#PacketIDMEFReporter">PacketIDMEFReporter</a>
+			</li>
+			<li><a href="#PSAMPExporter">PSAMPExporter</a>
+			</li>
+			<li><a href="#IpfixCollector">IpfixCollector</a>
+			</li>
+			<li><a href="#IpfixQueue">IpfixQueue</a>
+			</li>
+			<li><a href="#IpfixAggregator">IpfixAggregator</a>
+			</li>
+			<li><a href="#IpfixExporter">IpfixExporter</a>
+			</li>
+			<li><a href="#IpfixPrinter">IpfixPrinter</a>
+			</li>
+			<li><a href="#TRWPortscanDetector">TRWPortscanDetector</a>
+			</li>
+			<li><a href="#IDMEFExporter">IDMEFExporter</a>
+			</li>
+			<li><a href="#SensorManager">SensorManager</a>
+			</li>
+		</ul>
+		<p>Modules can be linked to a chain, so that the output of the preceding module is
+			used as input for the successing module(s). To specify the connections,
+			each module ist identified by a unique ID number. For modules with
+			successors, the IDs of the successing modules are listed in the module
+			configuration as <b>&lt;next&gt;</b> tags. Two modules may be only be connected, if
+			they use the same output and input element type.</p>
+		
+		
+		<h2><a name="Observer">Observer (observation point)</a></h2>
+		<p>Captures raw packets using the PCAP interface.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>none</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>Packet</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">	
+<span class="kwa">&lt;observer id=</span><span class="str">&quot;1&quot;</span><span class="kwa">&gt;</span>
+	<span class="kwa">&lt;interface&gt;</span>eth1<span class="kwa">&lt;/interface&gt;</span>
+	<span class="kwa">&lt;pcap_filter&gt;</span>ip<span class="kwa">&lt;/pcap_filter&gt;</span>
+	<span class="kwa">&lt;next&gt;</span><span class="num">2</span><span class="kwa">&lt;/next&gt;</span>
+<span class="kwa">&lt;/observer&gt;</span>
+			</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>interface</td>
+					<td>none</td>
+					<td>Interface PCAP listens to.</td>
+				</tr>
+				<tr>
+					<td>pcap_filter</td>
+					<td>none</td>
+					<td>Filter specification which is passed to PCAP (usually "ip" to
+						only capture IP packets).</td>
+				</tr>
+			</tbody>
+		</table>
+		
+		
+		<h2><a name="cp">PacketFilter</a></h2>
+		<p>Forwards packets which match specified filter configuration and drops non-matching packets.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>Packet</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>Packet</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+<pre class="hl"><span class="kwa">&lt;filter id=</span><span class="str">&quot;2&quot;</span><span class="kwa">&gt;</span>
+	<span class="kwa">&lt;countBased&gt;</span>
+		<span class="kwa">&lt;interval&gt;</span><span class="num">4</span><span class="kwa">&lt;/interval&gt;</span>
+		<span class="kwa">&lt;spacing&gt;</span><span class="num">2</span><span class="kwa">&lt;/spacing&gt;</span>
+	<span class="kwa">&lt;countBased&gt;</span>
+	<span class="kwa">&lt;timeBased&gt;</span>
+		<span class="kwa">&lt;interval&gt;</span><span class="num">100</span><span class="kwa">&lt;/interval&gt;</span>
+		<span class="kwa">&lt;spacing&gt;</span><span class="num">50</span><span class="kwa">&lt;/spacing&gt;</span>
+	<span class="kwa">&lt;/timeBased&gt;</span>
+	<span class="kwa">&lt;stringBased&gt;</span>
+		<span class="kwa">&lt;is&gt;</span>bla<span class="kwa">&lt;/is&gt;</span>
+		<span class="kwa">&lt;isnot&gt;</span>blub<span class="kwa">&lt;/isnot&gt;</span>
+		<span class="kwa">&lt;is type=</span><span class="str">&quot;HEX&quot;</span><span class="kwa">&gt;</span><span class="num">0xFF024F</span><span class="kwa">&lt;/is&gt;</span>
+	<span class="kwa">&lt;/stringBased&gt;</span>
+	<span class="kwa">&lt;regexBased&gt;</span>
+		<span class="kwa">&lt;matchPattern&gt;</span>is\s*not<span class="kwa">&lt;/matchPattern&gt;</span>
+	<span class="kwa">&lt;/regexBased&gt;</span>
+	<span class="kwa">&lt;next&gt;</span><span class="num">3</span><span class="kwa">&lt;/next&gt;</span>
+<span class="kwa">&lt;/filter&gt;</span>
+</pre>
+
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>countBased</td>
+					<td>none</td>
+					<td>Creates a count-based filter. Spacing defines the number of packets accepted 
+						at the beginning of the period, interval specifies the length of the period</td>
+				</tr>
+				<tr>
+					<td>timeBased</td>
+					<td>none</td>
+					<td>Creates a time-based filter. Spacing defines the number of milliseconds during which
+						time all incoming packets are accepted at the beginning of the period, interval 
+						specifies the length of the period in milliseconds.</td>
+				</tr>
+				<tr>
+					<td>interval</td>
+					<td>none</td>
+					<td>Belongs to either countBased or timeBased filter. Specifies length of period.</td>
+				</tr>
+				<tr>
+					<td>spacing</td>
+					<td>none</td>
+					<td>Belongs to either countBased or timeBased filter. Specifies amount of time or number of packets accepted.</td>
+				</tr>
+				<tr>
+					<td>stringBased</td>
+					<td>none</td>
+					<td>Creates a string-based filter which scans for specified strings inside the packet payload. If more than one
+						search element is specified, only packets will be forwarded which match *all* specifications.</td>
+				</tr>
+				<tr>
+					<td>is</td>
+					<td>none</td>
+					<td>Accepts packets which contain included ASCII string. If attribute "type" is set to "HEX", the 
+						tag's content MUST include a hexstring which specifies the binary data to be searched for.</td>
+				</tr>
+				<tr>
+					<td>isnot</td>
+					<td>none</td>
+					<td>Drops packets which contain included ASCII string. If attribute "type" is set to "HEX", the 
+						tag's content MUST include a hexstring which specifies the binary data to be searched for.</td>
+				</tr>
+				<tr>
+					<td>regexBased</td>
+					<td>none</td>
+					<td>Creates a regex-based filter which scans for specified regexes inside the packet payload. If more than one
+						regex is specified, only packets will be forwarded which match *all* specifications.</td>
+				</tr>
+				<tr>
+					<td>matchPattern</td>
+					<td>none</td>
+					<td>Specifies a regular expression used by the regex-based filter.</td>
+				</tr>
+			</tbody>
+		</table>
+		
+		
+		<h2><a name="PacketQueue">PacketQueue</a></h2>
+		<p>Caches packets in a queue until next module is ready to process them.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>Packet</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>Packet</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">	
+<span class="kwa">&lt;packetQueue id=</span><span class="str">&quot;3&quot;</span><span class="kwa">&gt;</span>
+	<span class="kwa">&lt;maxSize&gt;</span><span class="num">10</span><span class="kwa">&lt;/maxSize&gt;</span>
+	<span class="kwa">&lt;next&gt;</span><span class="num">6</span><span class="kwa">&lt;/next&gt;</span>
+<span class="kwa">&lt;/packetQueue&gt;</span>			
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>maxSize</td>
+					<td>0</td>
+					<td>Maximum number of items in queue. If queue is full, no new packets are accepted and 
+						preceding modules are paused.</td>
+				</tr>
+			</tbody>
+		</table>
+		
+		<h2><a name="PacketAggregator">PacketAggregator</a></h2>
+		<p>Aggregates incoming raw packets to flows according to specified parameters.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>Packet</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>IpfixRecord</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">
+<span class="kwa">&lt;packetAggregator id=</span><span class="str">&quot;6&quot;</span><span class="kwa">&gt;</span>
+	<span class="kwa">&lt;rule&gt;</span>
+		<span class="kwa">&lt;templateId&gt;</span><span class="num">998</span><span class="kwa">&lt;/templateId&gt;</span>
+		<span class="kwa">&lt;flowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>sourceIPv4Address<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/flowKey&gt;</span>
+		<span class="kwa">&lt;flowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>destinationIPv4Address<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/flowKey&gt;</span>
+		<span class="kwa">&lt;flowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>protocolIdentifier<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/flowKey&gt;</span>
+		<span class="kwa">&lt;flowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>sourceTransportPort<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/flowKey&gt;</span>
+		<span class="kwa">&lt;flowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>destinationTransportPort<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/flowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>flowStartMilliSeconds<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>flowEndMilliSeconds<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>octetDeltaCount<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>packetDeltaCount<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>tcpControlBits<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+	<span class="kwa">&lt;/rule&gt;</span>
+	<span class="kwa">&lt;expiration&gt;</span>
+		<span class="kwa">&lt;inactiveTimeout unit=</span><span class="str">&quot;sec&quot;</span><span class="kwa">&gt;</span><span class="num">1</span><span class="kwa">&lt;/inactiveTimeout&gt;</span>
+		<span class="kwa">&lt;activeTimeout unit=</span><span class="str">&quot;sec&quot;</span><span class="kwa">&gt;</span><span class="num">1</span><span class="kwa">&lt;/activeTimeout&gt;</span>
+	<span class="kwa">&lt;/expiration&gt;</span>
+	<span class="kwa">&lt;pollInterval unit=</span><span class="str">&quot;msec&quot;</span><span class="kwa">&gt;</span><span class="num">1000</span><span class="kwa">&lt;/pollInterval&gt;</span>
+	<span class="kwa">&lt;next&gt;</span><span class="num">4</span><span class="kwa">&lt;/next&gt;</span>
+<span class="kwa">&lt;/packetAggregator&gt;</span>				
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>templateId</td>
+					<td>none</td>
+					<td>Template ID (mandadory!).</td>
+				</tr>
+				<tr>
+					<td>flowKey</td>
+					<td></td>
+					<td>Flow key information element - flows are aggregated according to those keys.</td>
+				</tr>
+				<tr>
+					<td>nonFlowKey</td>
+					<td>none</td>
+					<td>Non-flow key information element - those IEs are aggregated.</td>
+				</tr>
+				
+				<tr>
+					<td>ieName</td>
+					<td>none</td>
+					<td>name of the IE.</td>
+				</tr>
+				<tr>
+					<td>modifier</td>
+					<td>none</td>
+					<td>Optional field modifier for flow key IEs ("discard",
+						"mask/X").</td>
+				</tr>
+				<tr>
+					<td>match</td>
+					<td>0</td>
+					<td>Optional flow key filter for protocol identifier ("TCP", "UDP",
+						"ICMP", or IANA number), IP addresses ("A.B.C.D/M"), port
+						numbers (separated by ",", port range "A:B"), TCP control bits
+						("FIN", "SYN", "RST", "PSH", "ACK", "URG", separated by
+						",").</td>
+				</tr>
+				<tr>
+					<td>inactiveTimeout</td>
+					<td>0</td>
+					<td>Expiration timeout for idle/inactive flows.</td>
+				</tr>				
+				<tr>
+					<td>activeTimeout</td>
+					<td>0</td>
+					<td>Periodic expiration timeout for long-lasting flows (typically
+						larger than inactiveTimeout).</td>
+				</tr>		
+				<tr>
+					<td>pollInterval</td>
+					<td>0</td>
+					<td>Length of interval when flows should be exported to next module.</td>
+				</tr>
+			</tbody>
+		</table>
+		
+		<h2><a name="PacketIDMEFReporter">PacketIDMEFReporter</a></h2>
+		<p>For each incoming packet an IDMEF message is generated. An extract of the packet 
+			payload called snapshot may be included in the IDMEF message.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>Packet</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>IDMEFMessage</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">
+<span class="kwa">&lt;packetIDMEFReporter&gt;</span>
+	<span class="kwa">&lt;snapshotoffset&gt;</span><span class="num">12</span><span class="kwa">&lt;/snapshotoffset&gt;</span>
+	<span class="kwa">&lt;snapshotlength&gt;</span><span class="num">20</span><span class="kwa">&lt;/snapshotlength&gt;</span>
+	<span class="kwa">&lt;analyzerid&gt;</span>idmefreporter<span class="kwa">&lt;/analyzerid&gt;</span>
+	<span class="kwa">&lt;idmeftemplate&gt;</span>idmef/templates/idmefreporter_template.xml<span class="kwa">&lt;/idmeftemplate&gt;</span>
+<span class="kwa">&lt;/packetIDMEFReporter&gt;</span>				
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>snapshotoffset</td>
+					<td>0</td>
+					<td>Byte offset from start of packet payload.</td>
+				</tr>
+				<tr>
+					<td>snapshotlength</td>
+					<td>0</td>
+					<td>Byte length of snapshot. If it exceeds packet length, snapshot will be truncated.</td>
+				</tr>
+				<tr>
+					<td>analyzerid</td>
+					<td>none</td>
+					<td>Analyzer ID that will be included in IDMEF message.</td>
+				</tr>
+				<tr>
+					<td>idmeftemplate</td>
+					<td>none</td>
+					<td>Path to template file for IDMEF message.</td>
+				</tr>
+			</tbody>
+		</table>
+		
+		<h2><a name="PSAMPExporter">PSAMPExporter</a></h2>
+		<p>Exports incoming packets as PSAMP records over the network.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>Packet</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>none</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">	
+<span class="kwa">&lt;psampExporter&gt;</span>
+	<span class="kwa">&lt;ipfixPacketRestrictions&gt;</span>
+		<span class="kwa">&lt;maxPacketSize&gt;</span><span class="num">200</span><span class="kwa">&lt;/maxPacketSize&gt;</span>
+		<span class="kwa">&lt;maxExportDelay unit=</span><span class="str">&quot;msec&quot;</span><span class="kwa">&gt;</span><span class="num">500</span><span class="kwa">&lt;/maxExportDelay&gt;</span>
+	<span class="kwa">&lt;/ipfixPacketRestrictions&gt;</span>
+	<span class="kwa">&lt;packetReporting&gt;</span>
+		<span class="kwa">&lt;templateId&gt;</span><span class="num">888</span><span class="kwa">&lt;/templateId&gt;</span>
+		<span class="kwa">&lt;reportedIE&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>sourceIPv4Address<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/reportedIE&gt;</span>
+		<span class="kwa">&lt;reportedIE&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>destinationIPv4Address<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/reportedIE&gt;</span>
+		<span class="kwa">&lt;reportedIE&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>ipPayloadPacketSection<span class="kwa">&lt;/ieName&gt;</span>
+			<span class="kwa">&lt;ieLength&gt;</span><span class="num">65535</span><span class="kwa">&lt;/ieLength&gt;</span>
+		<span class="kwa">&lt;/reportedIE&gt;</span>
+	<span class="kwa">&lt;/packetReporting&gt;</span>
+	<span class="kwa">&lt;collector&gt;</span>
+		<span class="kwa">&lt;ipAddress&gt;</span><span class="num">127.0.0.1</span><span class="kwa">&lt;/ipAddress&gt;</span>
+		<span class="kwa">&lt;transportProtocol&gt;</span>UDP<span class="kwa">&lt;/transportProtocol&gt;</span>
+		<span class="kwa">&lt;port&gt;</span><span class="num">4739</span><span class="kwa">&lt;/port&gt;</span>
+	<span class="kwa">&lt;/collector&gt;</span>
+<span class="kwa">&lt;/psampExporter&gt;</span>			
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>ipfixPacketRestrictions</td>
+					<td>none</td>
+					<td>Restrictions for IPFIX packets.</td>
+				</tr>
+				<tr>
+					<td>maxPacketSize</td>
+					<td>none</td>
+					<td>Maximum size of IPFIX packets.</td>
+				</tr>
+				<tr>
+					<td>maxExportDelay</td>
+					<td>none</td>
+					<td>Maximum delay until IPFIX packet is sent to destination.</td>
+				</tr>
+				<tr>
+					<td>packetReporting</td>
+					<td>none</td>
+					<td>Specifies elements to be exported for one template.</td>
+				</tr>
+				<tr>
+					<td>templateId</td>
+					<td>0</td>
+					<td>Specifies template ID.</td>
+				</tr>
+				<tr>
+					<td>reportedIE</td>
+					<td>none</td>
+					<td>Specifies one information element to be reported.</td>
+				</tr>
+				<tr>
+					<td>ieName</td>
+					<td>none</td>
+					<td>IPFIX type id of element to be exported.</td>
+				</tr>
+				<tr>
+					<td>ieLength</td>
+					<td>none</td>
+					<td>Optional specification of element length (usually only used by "ipPayloadPacketSection".</td>
+				</tr>
+				<tr>
+					<td>collector</td>
+					<td>none</td>
+					<td>Contains specification of one destination for PSAMP records.</td>
+				</tr>
+				<tr>
+					<td>idAddress</td>
+					<td>none</td>
+					<td>IP address of destination.</td>
+				</tr>
+				<tr>
+					<td>transportProtocol</td>
+					<td>none</td>
+					<td>Transport protocol to be used. Currently only "UDP" is supported.</td>
+				</tr>
+				<tr>
+					<td>port</td>
+					<td>4739</td>
+					<td>Port of destination.</td>
+				</tr>
+		
+			</tbody>
+		</table>
+		
+		
+		<h2><a name="IpfixCollector">IpfixCollector</a></h2>
+		<p></p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>none</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>IpfixRecord</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">
+<span class="kwa">&lt;ipfixCollector&gt;</span>
+	<span class="kwa">&lt;listener&gt;</span>
+		<span class="kwa">&lt;ipAddress&gt;</span><span class="num">0.0.0.0</span><span class="kwa">&lt;/ipAddress&gt;</span>
+		<span class="kwa">&lt;transportProtocol&gt;</span>UDP<span class="kwa">&lt;/transportProtocol&gt;</span>
+		<span class="kwa">&lt;port&gt;</span><span class="num">4739</span><span class="kwa">&lt;/port&gt;</span>
+	<span class="kwa">&lt;/listener&gt;</span>
+<span class="kwa">&lt;/ipfixCollector&gt;</span>				
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>listener</td>
+					<td>none</td>
+					<td>Specifies a port where to listen for IPFIX flows.</td>
+				</tr>
+				<tr>
+					<td>ipAddress</td>
+					<td>none</td>
+					<td>Not used at the moment.</td>
+				</tr>
+				<tr>
+					<td>transportProtocol</td>
+					<td>none</td>
+					<td>Must be set to "UDP", as only UDP is supported at the moment.</td>
+				</tr>
+				<tr>
+					<td>port</td>
+					<td>4739</td>
+					<td>Port where Vermont listenes for incoming IPFIX flows.</td>
+				</tr>
+			</tbody>
+		</table>
+	
+		
+		<h2><a name="IpfixQueue">IpfixQueue</a></h2>
+		<p>Caches IPFIX records in a queue until next module is ready to process them.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>IpfixRecord</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>IpfixRecord</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">	
+<span class="kwa">&lt;ipfixQueue id=</span><span class="str">&quot;3&quot;</span><span class="kwa">&gt;</span>
+	<span class="kwa">&lt;maxSize&gt;</span><span class="num">10</span><span class="kwa">&lt;/maxSize&gt;</span>
+	<span class="kwa">&lt;next&gt;</span><span class="num">6</span><span class="kwa">&lt;/next&gt;</span>
+<span class="kwa">&lt;/ipfixQueue&gt;</span>			
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>maxSize</td>
+					<td>0</td>
+					<td>Maximum number of items in queue. If queue is full, no new packets are accepted and 
+						preceding modules are paused.</td>
+				</tr>
+			</tbody>
+		</table>
+		
+		
+		<h2><a name="IpfixAggregator">IpfixAggregator</a></h2>
+		<p>Aggregates incoming IPFIX flows according to specified parameters. Configuration is similar to module PacketAggregator.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>IpfixRecord</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>IpfixRecord</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">
+<span class="kwa">&lt;ipfixAggregator id=</span><span class="str">&quot;6&quot;</span><span class="kwa">&gt;</span>
+	<span class="kwa">&lt;rule&gt;</span>
+		<span class="kwa">&lt;templateId&gt;</span><span class="num">998</span><span class="kwa">&lt;/templateId&gt;</span>
+		<span class="kwa">&lt;biflowAggregation&gt;</span><span class="num">1</span><span class="kwa">&lt;/biflowAggregation&gt;</span>				
+		<span class="kwa">&lt;flowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>sourceIPv4Address<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/flowKey&gt;</span>
+		<span class="kwa">&lt;flowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>destinationIPv4Address<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/flowKey&gt;</span>
+		<span class="kwa">&lt;flowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>protocolIdentifier<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/flowKey&gt;</span>
+		<span class="kwa">&lt;flowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>sourceTransportPort<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/flowKey&gt;</span>
+		<span class="kwa">&lt;flowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>destinationTransportPort<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/flowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>flowStartMilliSeconds<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>flowEndMilliSeconds<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>octetDeltaCount<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>packetDeltaCount<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>tcpControlBits<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>revflowStartMilliSeconds<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>revflowEndMilliSeconds<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>revoctetDeltaCount<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>revpacketDeltaCount<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>
+		<span class="kwa">&lt;nonFlowKey&gt;</span>
+			<span class="kwa">&lt;ieName&gt;</span>revtcpControlBits<span class="kwa">&lt;/ieName&gt;</span>
+		<span class="kwa">&lt;/nonFlowKey&gt;</span>			
+	<span class="kwa">&lt;/rule&gt;</span>
+	<span class="kwa">&lt;expiration&gt;</span>
+		<span class="kwa">&lt;inactiveTimeout unit=</span><span class="str">&quot;sec&quot;</span><span class="kwa">&gt;</span><span class="num">1</span><span class="kwa">&lt;/inactiveTimeout&gt;</span>
+		<span class="kwa">&lt;activeTimeout unit=</span><span class="str">&quot;sec&quot;</span><span class="kwa">&gt;</span><span class="num">1</span><span class="kwa">&lt;/activeTimeout&gt;</span>
+	<span class="kwa">&lt;/expiration&gt;</span>
+	<span class="kwa">&lt;pollInterval unit=</span><span class="str">&quot;msec&quot;</span><span class="kwa">&gt;</span><span class="num">1000</span><span class="kwa">&lt;/pollInterval&gt;</span>
+	<span class="kwa">&lt;next&gt;</span><span class="num">4</span><span class="kwa">&lt;/next&gt;</span>
+<span class="kwa">&lt;/packetAggregator&gt;</span>				
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>rule</td>
+					<td>none</td>
+					<td>Specifies a rule according to which is aggregated. More than one rule may be specified per aggregator.</td>
+				</tr>
+				<tr>
+					<td>biflowAggregation</td>
+					<td>0</td>
+					<td>Specifies if biflow aggregation is to be performed (0=no biflow, 1=biflow). Only valid in IpfixAggregator. 
+						To accomodate biflow information elements, Vermont-specific enterprise type ids were specified: 
+						revFlowStartMilliSeconds, revFlowEndMilliSeconds, revFlowStartSeconds, revFlowEndSeconds, 
+						revOctetDeltaCount, revPacketDeltaCount and revTcpControlBits.</td>
+				</tr>
+				<tr>
+					<td>templateId</td>
+					<td>none</td>
+					<td>Template ID (mandadory!).</td>
+				</tr>
+				<tr>
+					<td>flowKey</td>
+					<td></td>
+					<td>Flow key information element - flows are aggregated according to those keys.</td>
+				</tr>
+				<tr>
+					<td>nonFlowKey</td>
+					<td>none</td>
+					<td>Non-flow key information element - those IEs are aggregated.</td>
+				</tr>
+				
+				<tr>
+					<td>ieName</td>
+					<td>none</td>
+					<td>name of the IE.</td>
+				</tr>
+				<tr>
+					<td>modifier</td>
+					<td>none</td>
+					<td>Optional field modifier for flow key IEs ("discard",
+						"mask/X").</td>
+				</tr>
+				<tr>
+					<td>match</td>
+					<td>0</td>
+					<td>Optional flow key filter for protocol identifier ("TCP", "UDP",
+						"ICMP", or IANA number), IP addresses ("A.B.C.D/M"), port
+						numbers (separated by ",", port range "A:B"), TCP control bits
+						("FIN", "SYN", "RST", "PSH", "ACK", "URG", separated by
+						",").</td>
+				</tr>
+				<tr>
+					<td>inactiveTimeout</td>
+					<td>0</td>
+					<td>Expiration timeout for idle/inactive flows.</td>
+				</tr>				
+				<tr>
+					<td>activeTimeout</td>
+					<td>0</td>
+					<td>Periodic expiration timeout for long-lasting flows (typically
+						larger than inactiveTimeout).</td>
+				</tr>		
+				<tr>
+					<td>pollInterval</td>
+					<td>0</td>
+					<td>Length of interval when flows should be exported to next module.</td>
+				</tr>
+			</tbody>
+		</table>
+		
+		<h2><a name="IpfixExporter">IpfixExporter</a></h2>
+		<p></p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>IpfixRecord</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>none</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+<span class="kwa">&lt;ipfixExporter id=</span><span class="str">&quot;7&quot;</span><span class="kwa">&gt;</span>
+	<span class="kwa">&lt;udpTemplateManagement&gt;</span>
+		<span class="kwa">&lt;templateRefreshTimeout&gt;</span><span class="num">10</span><span class="kwa">&lt;/templateRefreshTimeout&gt;</span>
+	<span class="kwa">&lt;/udpTemplateManagement&gt;</span>
+	<span class="kwa">&lt;collector&gt;</span>
+		<span class="kwa">&lt;ipAddressType&gt;</span><span class="num">4</span><span class="kwa">&lt;/ipAddressType&gt;</span>
+		<span class="kwa">&lt;ipAddress&gt;</span><span class="num">127.0.0.1</span><span class="kwa">&lt;/ipAddress&gt;</span>
+		<span class="kwa">&lt;transportProtocol&gt;</span><span class="num">17</span><span class="kwa">&lt;/transportProtocol&gt;</span>
+		<span class="kwa">&lt;port&gt;</span><span class="num">1500</span><span class="kwa">&lt;/port&gt;</span>
+	<span class="kwa">&lt;/collector&gt;</span>
+<span class="kwa">&lt;/ipfixExporter&gt;</span>		
+		<pre class="hl">	
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>				
+				<tr><td>templateRefreshTimeout</td><td>20sec</td><td>Interval for periodic sending of templates. This value is currently not configurable.</td></tr>
+				<tr><td>ipAddressType</td><td>4</td><td>Currently, only IPv4 is supported.</td></tr>
+				<tr><td>ipAddress</td><td>none</td><td>IP address of the collector the packets are sent to.</td></tr>				
+				<tr><td>transportProtocol</td><td>none</td><td>Currently, only UDP (17) is supported.</td></tr>
+				<tr><td>port</td><td>4739</td><td>Port number of the collector.</td></tr>
+			</tbody>
+		</table>
+	
+		
+		<h2><a name="IpfixPrinter">IpfixPrinter</a></h2>
+		<p>Prints incoming Ipfix flows to stdout for debugging purposes.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>IpfixRecord</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>none</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">
+<span class="kwa">&lt;ipfixPrinter id=</span><span class="str">&quot;8&quot;</span><span class="kwa">&gt;</span>
+<span class="kwa">&lt;/ipfixPrinter&gt;</span>				
+		</pre>
+		<p>Parameters:</p>
+		<p>none</p>
+
+		
+		<h2><a name="TRWPortscanDetector">TRWPortscanDetector</a></h2>
+		<p>Detects horizontal portscans in incoming IPFIX flows. Attention: IPFIX flows must be aggregated to biflows.
+			To achieve best results, flows should contain the following IEs:</p>	
+		<ul>
+			<li>sourceIPv4Address</li>
+			<li>destinationIPv4Address</li>
+			<li>sourceTransportPort</li>
+			<li>destinationTransportPort</li>
+			<li>protocolIdentifier</li>
+			<li>flowStartMilliSeconds</li>
+			<li>flowEndMilliSeconds</li>
+			<li>revFlowStartMilliSeconds</li>
+			<li>revFlowEndMilliSeconds</li>
+			<li>octetDeltaCount</li>
+			<li>revOctetDeltaCount</li>
+			<li>packetDeltaCount</li>
+			<li>revPacketDeltaCount</li>
+			<li>tcpControlBits</li>
+			<li>revTcpControlBits</li>
+		</ul>					
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>IpfixRecord</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>IDMEFMessage</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">	
+<span class="kwa">&lt;TRWPortscanDetector id=</span><span class="str">&quot;8&quot;</span><span class="kwa">&gt;</span>
+	<span class="kwa">&lt;analyzerid&gt;</span>trwportscandetector<span class="kwa">&lt;/analyzerid&gt;</span>
+	<span class="kwa">&lt;idmeftemplate&gt;</span>idmef/templates/trwportscan_template.xml<span class="kwa">&lt;/idmeftemplate&gt;</span>
+	<span class="kwa">&lt;hashbits&gt;</span><span class="num">20</span><span class="kwa">&lt;/hashbits&gt;</span>
+	<span class="kwa">&lt;timeexpirepending&gt;</span><span class="num">86400</span><span class="kwa">&lt;/timeexpirepending&gt;</span>
+	<span class="kwa">&lt;timeexpirescanner&gt;</span><span class="num">1800</span><span class="kwa">&lt;/timeexpirescanner&gt;</span>
+	<span class="kwa">&lt;timeexpirebenign&gt;</span><span class="num">1800</span><span class="kwa">&lt;/timeexpirebenign&gt;</span>
+	<span class="kwa">&lt;timecleanupinterval&gt;</span><span class="num">10</span><span class="kwa">&lt;/timecleanupinterval&gt;</span>
+	<span class="kwa">&lt;next&gt;</span><span class="num">9</span><span class="kwa">&lt;/next&gt;</span>
+<span class="kwa">&lt;/TRWPortscanDetector&gt;</span>			
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>analyzerid</td>
+					<td>none</td>
+					<td>Analyzer ID which is inserted into the generated IDMEF message.</td>
+				</tr>
+				<tr>
+					<td>idmeftemplate</td>
+					<td>none</td>
+					<td>Path to IDMEF template which is used to generate the IDMEF message.</td>
+				</tr>
+				<tr>
+					<td>hashbits</td>
+					<td>20</td>
+					<td>Amount of bits used for hashtable to contain watched IP addresses.</td>
+				</tr>
+				<tr>
+					<td>timeexpirepending</td>
+					<td>86400</td>
+					<td>Seconds, until non-classified inactive IP addresses are purged from table.</td>
+				</tr>
+				<tr>
+					<td>timeexpirescanner</td>
+					<td>1800</td>
+					<td>Seconds, until as portscanner classified IP addresses are purged from table.</td>
+				</tr>
+				<tr>
+					<td>timeexpirebenign</td>
+					<td>1800</td>
+					<td>Seconds, until as benign classified IP addresses are purged from table.</td>
+				</tr>
+				<tr>
+					<td>timecleanupinterval</td>
+					<td>10</td>
+					<td>Interval length in seconds, when IP address table is scanned for entries to be purged.</td>
+				</tr>		
+			</tbody>
+		</table>
+		
+		
+		<h2><a name="IDMEFExporter">IDMEFExporter</a></h2>
+		<p>Exports incoming IDMEF messages to the external perl script idmefsender.pl which sends it over the
+		network to a specified URL.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>IDMEFMessage</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>none</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">	
+<span class="kwa">&lt;IDMEFExporter id=</span><span class="str">&quot;9&quot;</span><span class="kwa">&gt;</span>
+	<span class="kwa">&lt;sendurl&gt;</span>http://localhost<span class="kwa">&lt;/sendurl&gt;</span>
+	<span class="kwa">&lt;destdir&gt;</span>idmef_work<span class="kwa">&lt;/destdir&gt;</span>
+<span class="kwa">&lt;/IDMEFExporter&gt;</span>			
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>sendurl</td>
+					<td>none</td>
+					<td>Destination URL where IDMEF messages must sent to.</td>
+				</tr>
+				<tr>
+					<td>destdir</td>
+					<td>idmef_work</td>
+					<td>Directory, where IDMEF messages are temporary stored. 
+						There they are picked up by the external perl script idmefsender.pl in directory /tools.</td>
+				</tr>		
+			</tbody>
+		</table>
+		
+		
+		<h2><a name="SensorManager">SensorManager</a></h2>
+		<p>Module which controls all sensors ("Messf&uuml;hler") inside Vermont. It does not have any in- or output
+			types. If this module is specified in the configuration, available sensors are activated and polled regularly.
+			It may only be specified once.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>none</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>none</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">	
+<span class="kwa">&lt;sensorManager id=</span><span class="str">&quot;99&quot;</span><span class="kwa">&gt;</span>
+	<span class="kwa">&lt;checkinterval&gt;</span><span class="num">2</span><span class="kwa">&lt;/checkinterval&gt;</span>
+	<span class="kwa">&lt;outputfile&gt;</span>sensor_output.xml<span class="kwa">&lt;/outputfile&gt;</span>
+<span class="kwa">&lt;/sensorManager&gt;</span>			
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>checkinterval</td>
+					<td>2</td>
+					<td>Interval in seconds, when all sensors are polled and the output file is written to.</td>
+				</tr>
+				<tr>
+					<td>outputfile</td>
+					<td>sensor_output.xml</td>
+					<td>Path to file, where sensor data is stored.</td>
+				</tr>		
+			</tbody>
+		</table>					
+	</body>
+</html>

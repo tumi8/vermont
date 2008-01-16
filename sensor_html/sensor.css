@@ -1,0 +1,73 @@
+* {
+	font-family: Helvetica,Arial,sans-serif;
+	font-size: 99%;
+}
+
+table.addinfotable {
+	font-size: 95%;
+	border:none;
+	vertical-align:top;
+}
+td.addinfotable, th.addinfotable, tr.addinfotable {
+	border:none;
+	vertical-align:top;
+	padding:2px;
+}
+table.threadtable {
+	font-size: 95%;
+	border:none;
+	vertical-align:top;
+}
+td.threadtable, th.threadtable, tr.threadtable {
+	border:none;
+	vertical-align:top;
+	padding:2px;
+}
+
+td, th {
+	border-left: 1px solid;
+	border-right: 1px solid;
+	vertical-align:top;
+	padding:2px;
+}
+
+td.tcontainer {
+	padding:0px;
+}
+
+tr {
+	border-top: 1px solid;
+	border-bottom: 1px solid;
+}
+
+div.addinfoheader {
+	font-weight:bold;
+}
+
+/* ensure that inner tables do not have border lines around the table */
+table.inner tr:first-child {
+	border-top:none;
+}
+table.inner tr:last-child {
+	border-bottom:none;
+}
+table.inner td:first-child, table.inner th:first-child {
+	border-left:none;
+}
+table.inner td:last-child, table.inner th:last-child {
+	border-right:none;
+}
+
+table {
+	border-collapse:collapse;
+	border: 1px solid;
+}
+
+table.inner {
+	width:100%;
+	border:none;
+}
+
+td img {
+	text-align:center;
+}
