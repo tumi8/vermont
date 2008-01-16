@@ -150,6 +150,26 @@ class IpfixRecord
 			}
 			
 			/**
+			 * @returns if the given IPFIX field type is filled by a biflow aggregator although there
+			 * is no corresponding source field
+			 */
+			static bool isBiflowField(IpfixRecord::FieldInfo::Type type)
+			{
+				switch (type.id) {
+					case IPFIX_ETYPEID_revTcpControlBits:
+					case IPFIX_ETYPEID_revFlowStartSeconds:
+					case IPFIX_ETYPEID_revFlowEndSeconds:
+					case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+					case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+					case IPFIX_ETYPEID_revOctetDeltaCount:
+					case IPFIX_ETYPEID_revPacketDeltaCount:
+						return true;
+				}
+				
+				return false;
+			}
+			
+			/**
 			 * @returns an index for the given field type which is relative to the start of the Packet's netheader
 			 */
 			static const uint16_t getRawPacketFieldIndex(uint16_t typeId, const Packet* p) 
@@ -202,10 +222,11 @@ class IpfixRecord
 						}
 						break;
 
-					case IPFIX_TYPEID_destinationTransportPort:						if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
+					case IPFIX_TYPEID_destinationTransportPort:						
+						if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
 							return p->transportHeader + 2 - p->netHeader;
 						} else {
-							THROWEXCEPTION("given typeid is %d, protocol type is %d, but expected was %d or %d", typeId, p->ipProtocolType, Packet::UDP, Packet::TCP);
+							DPRINTFL(MSG_VDEBUG, "given typeid is %d, protocol type is %d, but expected was %d or %d", typeId, p->ipProtocolType, Packet::UDP, Packet::TCP);
 						}
 						break;
 
@@ -213,13 +234,13 @@ class IpfixRecord
 						if(p->ipProtocolType == Packet::TCP) {
 							return p->transportHeader + 13 - p->netHeader;
 						} else {
-							THROWEXCEPTION("given typeid is %d, protocol type is %d, but expected was %d", typeId, p->ipProtocolType, Packet::TCP);
+							DPRINTFL(MSG_VDEBUG, "given typeid is %d, protocol type is %d, but expected was %d", typeId, p->ipProtocolType, Packet::TCP);
 						}
 						break;	
 				}
 
-				THROWEXCEPTION("unknown typeid (%d)", typeId);
-				return 0;
+				// return just pointer to zero bytes as result
+				return reinterpret_cast<const unsigned char*>(&p->zeroBytes) - p->netHeader;
 			}
 
 

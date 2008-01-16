@@ -29,13 +29,13 @@
 #include "common/msg.h"
 
 
-InstanceManager<IpfixTemplateRecord> IpfixDbReader::templateRecordIM(0);
-InstanceManager<IpfixOptionsTemplateRecord> IpfixDbReader::optionsTemplateRecordIM(0);
-InstanceManager<IpfixDataTemplateRecord> IpfixDbReader::dataTemplateRecordIM(0);
-InstanceManager<IpfixDataRecord> IpfixDbReader::dataRecordIM(0);
-InstanceManager<IpfixOptionsRecord> IpfixDbReader::optionsRecordIM(0);
-InstanceManager<IpfixDataDataRecord> IpfixDbReader::dataDataRecordIM(0);
-InstanceManager<IpfixDataTemplateDestructionRecord> IpfixDbReader::dataTemplateDestructionRecordIM(0);
+InstanceManager<IpfixTemplateRecord> IpfixDbReader::templateRecordIM("IpfixTemplateRecord");
+InstanceManager<IpfixOptionsTemplateRecord> IpfixDbReader::optionsTemplateRecordIM("IpfixOptionsTemplateRecord");
+InstanceManager<IpfixDataTemplateRecord> IpfixDbReader::dataTemplateRecordIM("IpfixDataTemplateRecord");
+InstanceManager<IpfixDataRecord> IpfixDbReader::dataRecordIM("IpfixDataRecord");
+InstanceManager<IpfixOptionsRecord> IpfixDbReader::optionsRecordIM("IpfixOptionsRecord");
+InstanceManager<IpfixDataDataRecord> IpfixDbReader::dataDataRecordIM("IpfixDataDataRecord");
+InstanceManager<IpfixDataTemplateDestructionRecord> IpfixDbReader::dataTemplateDestructionRecordIM("IpfixDataTemplateDestructionRecord");
 
 /***** Internal Functions ****************************************************/
 

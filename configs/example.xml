@@ -1,6 +1,6 @@
 <ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
 	<sensorManager id="99">
-		<check_interval>2</check_interval>
+		<checkinterval>2</checkinterval>
 	</sensorManager>
 	<observer id="1">
 		<interface>eth1</interface>

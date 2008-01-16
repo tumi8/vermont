@@ -99,6 +99,7 @@ public:
 	relative to other members of Packet. This is needed for optimization purposes inside the express aggregator
 	*/
 	unsigned char data[PCAP_MAX_CAPTURE_LENGTH];
+	uint64_t zeroBytes;		/**< needed for reference in fields which are not available in PacketHashtable */
 	unsigned char *netHeader;
 	unsigned char *transportHeader;
 	unsigned char *payload;
@@ -130,6 +131,7 @@ public:
 
 	Packet(InstanceManager<Packet>* im) 
 		: ManagedInstance<Packet>(im),
+		  zeroBytes(0),
 		  netHeader(data + IPHeaderOffset), // netHeader must not be changed afterwards
 		  netHeaderOffset(IPHeaderOffset)
 	{

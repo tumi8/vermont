@@ -78,6 +78,13 @@ struct Column identify [] = {
 	{	"firstSwitchedMillis", IPFIX_TYPEID_flowStartMilliSeconds, "SMALLINT(5) UNSIGNED", 0},
 	{	"lastSwitchedMillis", IPFIX_TYPEID_flowEndMilliSeconds, "SMALLINT(5) UNSIGNED", 0},
 	{	"tcpControlBits", IPFIX_TYPEID_tcpControlBits,  "SMALLINT(5) UNSIGNED", 0},
+	{	"revbytes", IPFIX_ETYPEID_revOctetDeltaCount, "BIGINT(20) UNSIGNED", 0},
+	{	"revpkts", IPFIX_ETYPEID_revPacketDeltaCount, "BIGINT(20) UNSIGNED", 0},
+	{	"revFirstSwitched", IPFIX_ETYPEID_revFlowStartSeconds, "INTEGER(10) UNSIGNED", 0}, // default value is invalid/not used for this entry
+	{	"revLastSwitched", IPFIX_ETYPEID_revFlowEndSeconds, "INTEGER(10) UNSIGNED", 0}, // default value is invalid/not used for this entry
+	{	"revFirstSwitchedMillis", IPFIX_ETYPEID_revFlowStartMilliSeconds, "SMALLINT(5) UNSIGNED", 0},
+	{	"revLastSwitchedMillis", IPFIX_ETYPEID_revFlowEndMilliSeconds, "SMALLINT(5) UNSIGNED", 0},
+	{	"revTcpControlBits", IPFIX_ETYPEID_revTcpControlBits,  "SMALLINT(5) UNSIGNED", 0},
 	{	"exporterID",EXPORTERID, "SMALLINT(5) UNSIGNED", 0},
 	{	0} // last entry must be 0
 };
@@ -311,8 +318,6 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
 	uint64_t intdata = 0;
 	uint32_t flowstartsec = 0;
 
-	bool flowstartseconds_seen = false;
-
 	/**begin query string for insert statement*/
 	strcpy(statemStr,"INSERT INTO ");
 
@@ -360,56 +365,86 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
 				// for some Ids, we have an alternative
 				switch (identify[j].ipfixId) {
 					case IPFIX_TYPEID_flowStartSeconds:
-					// look for alternative (flowStartMilliSeconds/1000)
-					if(dataTemplateInfo->fieldCount > 0) {
-						for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-							if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartMilliSeconds) {
-								intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
-								notfound = false;
-								break;
+						// look for alternative (flowStartMilliSeconds/1000)
+						if(dataTemplateInfo->fieldCount > 0) {
+							for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+								if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartMilliSeconds) {
+									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
+									notfound = false;
+									break;
+								}
 							}
 						}
-					}
+						break;
+					case IPFIX_ETYPEID_revFlowStartSeconds:
+						// look for alternative (revFlowStartMilliSeconds/1000)
+						if(dataTemplateInfo->fieldCount > 0) {
+							for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+								if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowStartMilliSeconds) {
+									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
+									notfound = false;
+									break;
+								}
+							}
+						}
+						break;
 					case IPFIX_TYPEID_flowEndSeconds:
-					// look for alternative (flowEndMilliSeconds/1000)
-					if(dataTemplateInfo->fieldCount > 0) {
-						for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-							if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndMilliSeconds) {
-								intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
-								notfound = false;
-								break;
+						// look for alternative (flowEndMilliSeconds/1000)
+						if(dataTemplateInfo->fieldCount > 0) {
+							for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+								if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndMilliSeconds) {
+									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
+									notfound = false;
+									break;
+								}
 							}
 						}
-					}
+						break;
+					case IPFIX_ETYPEID_revFlowEndSeconds:
+						// look for alternative (revFlowEndMilliSeconds/1000)
+						if(dataTemplateInfo->fieldCount > 0) {
+							for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+								if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowEndMilliSeconds) {
+									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
+									notfound = false;
+									break;
+								}
+							}
+						}
+						break;
 				}
 				// if still not found, get default value
 				if(notfound)
-				intdata = getdefaultIPFIXdata(identify[j].ipfixId);
+					intdata = getdefaultIPFIXdata(identify[j].ipfixId);
 			}
 
 			// we need extra treatment for timing related fields
 			switch (identify[j].ipfixId) {
 				case IPFIX_TYPEID_flowStartSeconds:
-				// save time for table access
-				flowstartsec = intdata;
-				flowstartseconds_seen = true;
-				break;
+					// save time for table access
+					printf("intdata (seconds): %llu\n", intdata);
+					if (flowstartsec==0) flowstartsec = intdata;
+					break;
 
 				case IPFIX_TYPEID_flowStartMilliSeconds:
-				// if flowStartSeconds is not stored in one of the colomns, but flowStartMilliSeconds is,
-				// the we use flowStartMilliSeconds for table access
-				// This is realized by storing this value only if flowStartSeconds has not yet been seen.
-				// A later appearing flowStartSeconds will override this value.
-				if (!flowstartseconds_seen)
-				flowstartsec = intdata/1000;
-				// in the database the millisecond entry is counted from last second
-				intdata %= 1000;
-				break;
+					// if flowStartSeconds is not stored in one of the columns, but flowStartMilliSeconds is,
+					// the we use flowStartMilliSeconds for table access
+					// This is realized by storing this value only if flowStartSeconds has not yet been seen.
+					// A later appearing flowStartSeconds will override this value.
+					printf("intdata (milliseconds): %llu\n", intdata);
+					if (flowstartsec==0)
+						flowstartsec = intdata/1000;
+					// in the database the millisecond entry is counted from last second
+					intdata %= 1000;
+					break;
+
 
 				case IPFIX_TYPEID_flowEndMilliSeconds:
-				// in the database the millisecond entry is counted from last second
-				intdata %= 1000;
-				break;
+				case IPFIX_ETYPEID_revFlowStartMilliSeconds:				
+				case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+					// in the database the millisecond entry is counted from last second
+					intdata %= 1000;
+					break;
 			}
 		}
 
@@ -419,8 +454,11 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
 		addColumnEntry(ColValues, intdata, true, j==numberOfColumns-1);
 	}
 
+	printf("colnames: '%s', colvals: '%s'\n", ColNames, ColValues);
 	if (flowstartsec == 0) {
-		THROWEXCEPTION("failed to get timing data from ipfix packet. this is a critical error at the moment, as no valid table can be determined. Aborting");
+		printf("failed to get timing data\n");
+		//THROWEXCEPTION("failed to get timing data from ipfix packet. this is a critical error at the moment, as no valid table can be determined. Aborting");
+		return "";
 	}
 
 	/**make whole query string for the insert statement*/

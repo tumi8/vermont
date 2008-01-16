@@ -65,10 +65,15 @@ void Rule::initialize()
 {
 	// determine which protocols are valid for this template
 	validProtocols = Packet::ALL;
+	bool protocolid = false;
 	for (int i=0; i<fieldCount; i++) {
 		Rule::Field* f = field[i];
+		if (f->type.id==IPFIX_TYPEID_protocolIdentifier) protocolid = true;
 		validProtocols = Packet::IPProtocolType(validProtocols & IpfixRecord::TemplateInfo::getValidProtocols(f->type.id));
 	}
+	// small exception: if protocol id is inside the template, we assume that all types of protocols are valid
+	if (protocolid) validProtocols = Packet::ALL;
+	
 	DPRINTF("valid protocols for this template: %02X", validProtocols);
 
 	// write all rules containing a pattern to be matched for in array
@@ -366,7 +371,9 @@ int Rule::templateDataMatches(IpfixRecord::TemplateInfo* info, IpfixRecord::Data
 				if (!checkAssociatedMask(info, data, ruleField)) return 0;
 				continue;
 			}
-
+			
+			if (biflowAggregation && IpfixRecord::TemplateInfo::isBiflowField(ruleField->type)) return 1;
+			
 			/* no corresponding data field found, this flow cannot match */
 			msg(MSG_DEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;
@@ -375,6 +382,9 @@ int Rule::templateDataMatches(IpfixRecord::TemplateInfo* info, IpfixRecord::Data
 		else if (field[i]->modifier != Rule::Field::DISCARD) {
 			fieldInfo = info->getFieldInfo(&ruleField->type);
 			if (fieldInfo) continue;
+			
+			if (biflowAggregation && IpfixRecord::TemplateInfo::isBiflowField(ruleField->type)) return 1;
+			
 			msg(MSG_DEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;
 		}

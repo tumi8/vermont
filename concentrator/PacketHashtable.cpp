@@ -551,6 +551,7 @@ void PacketHashtable::updatePointers(const Packet* p)
  */
 void PacketHashtable::aggregatePacket(const Packet* p)
 {
+	DPRINTF("PacketHashtable::aggregatePacket()");
 	updatePointers(p);
 	createMaskedFields(p);
 

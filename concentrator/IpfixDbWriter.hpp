@@ -40,7 +40,9 @@
  * IpfixDbWriter powered the communication to the database server
  * also between the other structs
  */
-class IpfixDbWriter : public IpfixRecordDestination {
+class IpfixDbWriter 
+	: public IpfixRecordDestination, public Module, public Source<NullEmitable*>
+{
 	public:
 		IpfixDbWriter(const char* host, const char* db,
 				const char* user, const char* pw,
@@ -50,10 +52,6 @@ class IpfixDbWriter : public IpfixRecordDestination {
 
 		void onDataRecord(IpfixDataRecord* record);
 		void onDataDataRecord(IpfixDataDataRecord* record);
-		void onTemplate(IpfixTemplateRecord* record);
-		void onOptionsTemplate(IpfixOptionsTemplateRecord* record);
-		void onDataTemplate(IpfixDataTemplateRecord* record);
-		void onOptionsRecord(IpfixOptionsRecord* record);
 
 		IpfixRecord::SourceID srcId;              /**Exporter default SourceID */
 

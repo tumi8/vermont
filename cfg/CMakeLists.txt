@@ -29,6 +29,8 @@ ADD_LIBRARY(cfg
 	IDMEFExporterCfg.cpp
 	IpfixAggregatorCfg.cpp
 	IpfixCollectorCfg.cpp
+	IpfixDbReaderCfg.cpp
+	IpfixDbWriterCfg.cpp
 	IpfixExporterCfg.cpp
 	IpfixPrinterCfg.cpp
 	Node.cpp

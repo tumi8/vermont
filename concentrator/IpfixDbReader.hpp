@@ -42,7 +42,7 @@
  *      IpfixDbReader powered the communication to the database server
  *      also between the other structs
  */
-class IpfixDbReader : public Module, public Source<IpfixRecord*> 
+class IpfixDbReader : public Module, public Source<IpfixRecord*>, public Destination<NullEmitable*> 
 {
 	public:
 		IpfixDbReader(const char* hostname, const char* dbName,
