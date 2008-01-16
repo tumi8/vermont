@@ -295,7 +295,8 @@ public:
 						(other->getQueueInstance());
 
 				if (!destQueue)
-					THROWEXCEPTION("Queue is not a timer; this should never happen");
+					THROWEXCEPTION("Queue is not a timer; this should never happen. Perhaps modules " 
+							"with incompatible output/input types are connected in configuration?");
 				
 				timer = destQueue;
 				dest  = destQueue;
