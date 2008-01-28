@@ -42,5 +42,6 @@ ADD_LIBRARY(concentrator
 	IpfixDbWriter.cpp
 	IpfixRecordDestination.cpp
 	TRWPortscanDetector.cpp
+	RBSWormDetector.cpp
 )
 
