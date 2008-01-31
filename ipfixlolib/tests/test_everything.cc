@@ -2,12 +2,7 @@
  This file is part of IPFIXLOLIB
  TEST CODE
  Published under GPL v2
- Ronny T. Lampert, 2005-01
-
- based upon the original IPFIXLOLIB
- by Jan Petranek, University of Tuebingen
- 2004-11-18
- jan@petranek.de
+ Alex Melnik, 2007
  */
 
 #include <stdio.h>
