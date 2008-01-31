@@ -23,10 +23,12 @@
  * Dumps received flows to stdout
  */
 
+
 #include "IpfixCollector.hpp"
 #include "IpfixParser.hpp"
 #include "IpfixPacketProcessor.hpp"
 #include "IpfixReceiverUdpIpV4.hpp"
+#include "IpfixReceiverSctpIpV4.hpp"
 #include "IpfixPrinter.hpp"
 
 #include "common/msg.h"
@@ -55,7 +57,7 @@ int main(int argc, char *argv[]) {
 	int lport = DEFAULT_LISTEN_PORT;
 
 	msg_setlevel(MSG_DEBUG);
-
+	
 	signal(SIGINT, sigint);
 
 	if(argv[1]) {
@@ -66,7 +68,14 @@ int main(int argc, char *argv[]) {
 	ipfixPrinter.start();
 	ipfixPrinter.runSink();
 
-	IpfixReceiverUdpIpV4 ipfixReceiver(lport);
+#ifdef SUPPORT_SCTP
+	// If you want to create a SCTP testCollector 	
+   	IpfixReceiverSctpIpV4 ipfixReceiver(lport, "127.0.0.1");
+#endif
+	// If you want to create a UDP testCollector
+    	IpfixReceiverUdpIpV4 ipfixReceiver2(4711);
+	
+	
 	/* (not in this branch of rcvIpfix)
 	if (argc > 2) {
 		msg(MSG_DIALOG, "Adding %s to list of authorized hosts", argv[2]);
@@ -75,19 +84,26 @@ int main(int argc, char *argv[]) {
 	*/
 
 	IpfixParser ipfixParser;
+	ipfixParser.setTemplateLivetime(0);
 	ipfixParser.addFlowSink(&ipfixPrinter);
 
 	IpfixCollector ipfixCollector;
+#ifdef SUPPORT_SCTP
 	ipfixCollector.addIpfixReceiver(&ipfixReceiver);
+#endif
+	ipfixCollector.addIpfixReceiver(&ipfixReceiver2);
 	ipfixCollector.addIpfixPacketProcessor(&ipfixParser);
 	ipfixCollector.start();
 
-	msg(MSG_DIALOG, "Listening on %d. Hit Ctrl+C to quit\n", lport);
+	msg(MSG_DIALOG, "Hit Ctrl+C to quit");
 	pause();
 	msg(MSG_DIALOG, "Stopping threads and tidying up.\n");
 
 	msg(MSG_DIALOG, "stopping collector\n");
+#ifdef SUPPORT_SCTP
 	ipfixReceiver.stop();
+#endif
+	ipfixReceiver2.stop();
 
 	msg(MSG_DIALOG, "stopping printer\n");
 	ipfixPrinter.stop();

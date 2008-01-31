@@ -12,6 +12,7 @@
 
 #include "concentrator/IpfixAggregator.hpp"
 #include "concentrator/IpfixReceiverUdpIpV4.hpp"
+#include "concentrator/IpfixReceiverSctpIpV4.hpp"
 
 #include "common/msg.h"
 
@@ -47,7 +48,7 @@ void CollectorConfiguration::configure()
 		if (tagMatches(i, "listener")) {
 			readListener(i);
 		} else if (tagMatches(i, "udpTemplateLifetime")) {
-			msg(MSG_DEBUG, "Don't know how to handle udpTemplateLifetime! Ignored.");
+			templateLifetime = getTimeInSecs(i);
 		} else if (tagMatches(i, "observationDomainId")) {
 			observationDomainId = atoi(getContent(i).c_str());
 		} else if (tagMatches(i, "next")) {
@@ -75,11 +76,19 @@ void CollectorConfiguration::readListener(xmlNodePtr p)
 			}
 		} else  if (tagMatches(i, "ipAddress")) {
 			listener->ipAddress = getContent(i);
-			msg(MSG_DEBUG, "Listening on a specific interface isn't supported right now. Vermont will listen on all interfaces. \"ipAddress\" will be ignored at the moment");
 		} else if (tagMatches(i, "transportProtocol")) {
-			listener->protocolType = atoi(getContent(i).c_str());
-			if (listener->protocolType != 17) {
-				msg(MSG_ERROR, "Vermont doesn't support any protocol other than UDP (17). transportProtocol will be ignored at the moment");
+			if ((getContent(i) == "17") || (getContent(i) == "UDP")) {
+				listener->protocolType = 17;
+#ifdef SUPPORT_SCTP
+			}else if ((getContent(i) == "132") || (getContent(i) == "SCTP")){
+				listener->protocolType = 132;
+#endif
+		/*
+			}else if ((getContent(i) == "6") || (getContent(i) == "TCP")){
+				listener->protocolType = 6;
+		*/
+			}else{
+				THROWEXCEPTION("Unsupported protocol %s. Vermont only supports UDP (17) and SCTP (132). For using SCTP make sure you did not turn it off in ./configure",getContent(i).c_str());
 			}
 		} else if (tagMatches(i, "port")) {
 			listener->port = (uint16_t)atoi(getContent(i).c_str());
@@ -97,16 +106,28 @@ void CollectorConfiguration::setUp()
 	}
 
 	for (unsigned i = 0; i != listeners.size(); ++i) {
-		IpfixReceiver* ipfixReceiver = new IpfixReceiverUdpIpV4(listeners[i]->port);
+		IpfixReceiver* ipfixReceiver;
+		switch(listeners[i]->protocolType){
+			case 17:
+				ipfixReceiver = new IpfixReceiverUdpIpV4(listeners[i]->port, listeners[i]->ipAddress);
+				break;
+			case 132:
+				ipfixReceiver = new IpfixReceiverSctpIpV4(listeners[i]->port, listeners[i]->ipAddress);
+				break;
+		}
 		if (!ipfixReceiver) {
 			THROWEXCEPTION("Could not create receiver");
 		}
 		ipfixCollector->addIpfixReceiver(ipfixReceiver);
+				
 	}
 
 	ipfixParser = new IpfixParser;
 	if (!ipfixParser) {
 		THROWEXCEPTION("Could not create IPFIX parser");
+	}
+	if (templateLifetime){
+		ipfixParser->setTemplateLivetime(templateLifetime);
 	}
 }
 

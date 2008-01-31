@@ -57,6 +57,7 @@ class IpfixReceiver {
 	
 		int exit; /**< exit flag to terminate thread */
 		pthread_mutex_t mutex; /**< Mutex to pause receiving thread */
+		uint16_t receiverPort;
 
 	private:
 		pthread_t thread; /**< Thread ID for this particular instance, to sync against etc */

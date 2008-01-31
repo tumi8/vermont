@@ -32,13 +32,13 @@
  */
 class IpfixSender : public FlowSink {
 	public:
-		IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0);
+		IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0, ipfix_transport_protocol proto = UDP);
 		virtual ~IpfixSender();
 
 		void start();
 		void stop();
 
-		int addCollector(const char *ip, uint16_t port);
+		int addCollector(const char *ip, uint16_t port, ipfix_transport_protocol proto);
 
 		int onDataTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
                 int onDataTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo);
@@ -48,23 +48,28 @@ class IpfixSender : public FlowSink {
 	        virtual void flowSinkProcess();
 
 		void stats();
-
-		class Collector {
-		    public:
-			Collector() : port(0)
-			{
-			    memset(&ip, 0, sizeof(ip)); 
-			}
-			~Collector() {}
+		// Set up time after that Templates are going to be resent
+		bool setTemplateTransmissionTimer(uint32_t timer){
+			ipfix_set_template_transmission_timer(ipfixExporter, timer);
 			
-			char ip[128]; /**< IP address of Collector */
-			uint16_t port; /**< Port of Collector */
-		};
+			return true;
+		}
+		// Set up SCTP packet lifetime
+		bool setSctpLifetime(uint32_t time){
+			ipfix_set_sctp_lifetime(ipfixExporter, time);
+			
+			return true;
+		}
+		// Set up SCTP reconnect timer
+		bool setSctpReconnectTimeout(uint32_t time){
+			ipfix_set_sctp_reconnect_timer(ipfixExporter, time);
+			
+			return true;
+		}
 		
 	protected:
 		ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */
 		uint16_t lastTemplateId; /**< Template ID of last created Template */
-		std::vector<Collector> collectors; /**< Collectors we export to */
 		uint32_t sentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
 
 	private:

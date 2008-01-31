@@ -23,6 +23,7 @@ ADD_LIBRARY(concentrator
 	ipfix.cpp
 	IpfixReceiver.cpp
 	IpfixReceiverUdpIpV4.cpp
+	IpfixReceiverSctpIpV4.cpp
 	IpfixRawdirReader.cpp
 	FlowSource.cpp
 	FlowSink.cpp

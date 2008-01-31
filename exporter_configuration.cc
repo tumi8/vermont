@@ -4,7 +4,8 @@
 #include <sampler/ExporterSink.h>
 
 ExporterConfiguration::ExporterConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
-	: Configuration(document, startPoint), maxPacketSize(0), exportDelay(0), templateRefreshTime(0), templateRefreshRate(0), 
+	: Configuration(document, startPoint), maxPacketSize(0), exportDelay(0), templateRefreshTime(0), templateRefreshRate(0), dataLifetime(0),
+	reconnectTimeout(0),
 	exporterSink(0), ipfixSender(0)
 {
 	xmlChar* idString = xmlGetProp(startPoint, (const xmlChar*)"id");
@@ -36,6 +37,8 @@ void ExporterConfiguration::configure()
 			readPacketRestrictions(i);
 		} else if (tagMatches(i, "udpTemplateManagement")) {
 			readUdpTemplateManagement(i);
+		} else if (tagMatches(i, "sctpManagement")) {
+			readSctpManagement(i);
 		} else if (tagMatches(i, "collector")) {
 			readCollector(i);
 		}
@@ -62,10 +65,24 @@ void ExporterConfiguration::readUdpTemplateManagement(xmlNodePtr p)
 	xmlNodePtr i = p->xmlChildrenNode;
 	while (NULL != i) {
 		if (tagMatches(i, "templateRefreshTimeout")) {
-			templateRefreshTime = getTimeInMsecs(i);
+			templateRefreshTime = getTimeInSecs(i);
 		} else if (tagMatches(i, "templateRefreshRate")) {
 			templateRefreshRate = (unsigned)atoi(getContent(i).c_str());
 		}
+		i = i->next;
+	}
+}
+
+void ExporterConfiguration::readSctpManagement(xmlNodePtr p)
+{
+	xmlNodePtr i = p->xmlChildrenNode;
+	while (NULL != i) {
+		if (tagMatches(i, "dataLifetime")) {
+			dataLifetime = getTimeInMsecs(i);
+		} 
+		if (tagMatches(i, "reconnectTimeout")) {
+			reconnectTimeout = getTimeInSecs(i);
+		} 
 		i = i->next;
 	}
 }
@@ -85,9 +102,18 @@ void ExporterConfiguration::readCollector(xmlNodePtr p)
 		} else  if (tagMatches(i, "ipAddress")) {
 			c->ipAddress = getContent(i);
 		} else if (tagMatches(i, "transportProtocol")) {
-			c->protocolType = getContent(i);
-			if (c->protocolType == "17") {
-				c->protocolType = "UDP";
+			if ((getContent(i) == "17") || (getContent(i) == "UDP")) {
+				c->protocolType = UDP;
+#ifdef SUPPORT_SCTP
+			}else if ((getContent(i) == "132") || (getContent(i) == "SCTP")){
+				c->protocolType = SCTP;
+#endif
+		/*
+			}else if ((getContent(i) == "6") || (getContent(i) == "TCP")){
+				c->protocolType = TCP;
+		*/
+			}else{
+				THROWEXCEPTION("Unsupported protocol %s. Vermont only supports UDP (17) and SCTP (132). For using SCTP make sure you did not turn it off in ./configure", getContent(i).c_str());
 			}
 		} else if (tagMatches(i, "port")) {
 			c->port = (uint16_t)atoi(getContent(i).c_str());
@@ -119,9 +145,21 @@ void ExporterConfiguration::createExporterSink(Template* t, uint16_t observation
 	    msg(MSG_INFO, "ExporterConfiguration: Set maximum export timeout to %d", exportDelay);
 	    exporterSink->setExportTimeout(exportDelay);
 	}
-	if(templateRefreshTime || templateRefreshRate)
+	if(templateRefreshRate)
 	{
-	    msg(MSG_ERROR, "ExporterConfiguration: Configuration of templateRefreshRate/Time not yet supported.");
+	    msg(MSG_ERROR, "ExporterConfiguration: Configuration of templateRefreshRate not yet supported..");
+	}
+	if(templateRefreshTime > 0){
+		exporterSink->setTemplateTransmissionTimer(templateRefreshTime);
+		msg(MSG_DEBUG, "ExporterConfiguration: templateRefreshTime set to %d",templateRefreshTime );
+	}
+	if(dataLifetime > 0){
+		exporterSink->setSctpLifetime(dataLifetime);
+		msg(MSG_DEBUG, "ExporterConfiguration: SCTP dataLifetime set to %d",dataLifetime );
+	}
+	if(reconnectTimeout > -1){
+		exporterSink->setSctpReconnectTimeout(reconnectTimeout);
+		msg(MSG_DEBUG, "ExporterConfiguration: SCTP reconnectTimeout set to %d",reconnectTimeout );
 	}
 	for (unsigned i = 0; i != collectors.size(); ++i) {
 		msg(MSG_DEBUG, "ExporterConfiguration: adding collector %s:%d to ExporterSink",
@@ -129,7 +167,7 @@ void ExporterConfiguration::createExporterSink(Template* t, uint16_t observation
 		    collectors[i]->port);
 		exporterSink->addCollector(collectors[i]->ipAddress.c_str(),
 					   collectors[i]->port,
-					   collectors[i]->protocolType.c_str());
+					   collectors[i]->protocolType);
 	}
 }
 
@@ -143,7 +181,8 @@ void ExporterConfiguration::createIpfixSender(uint16_t observationDomainId)
 	msg(MSG_DEBUG, "ExporterConfiguration: Creating IpfixSender");
 	ipfixSender = new IpfixSender(observationDomainId,
 					  collectors[0]->ipAddress.c_str(),
-					  collectors[0]->port);
+					  collectors[0]->port,
+					  collectors[0]->protocolType);
 	if (!ipfixSender) {
 		THROWEXCEPTION("Could not create IpfixSender!");
 	}
@@ -152,12 +191,25 @@ void ExporterConfiguration::createIpfixSender(uint16_t observationDomainId)
 	{
 	    msg(MSG_ERROR, "ExporterConfiguration: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.");
 	}
-	if(templateRefreshTime || templateRefreshRate)
+	if(templateRefreshRate)
 	{
-	    msg(MSG_ERROR, "ExporterConfiguration: Configuration of templateRefreshRate/Time not yet supported..");
+	    msg(MSG_ERROR, "ExporterConfiguration: Configuration of templateRefreshRate not yet supported..");
+	}
+	if(templateRefreshTime > 0){
+		ipfixSender->setTemplateTransmissionTimer(templateRefreshTime);
+		msg(MSG_DEBUG, "ExporterConfiguration: templateRefreshTime set to %d",templateRefreshTime );
+	}
+	if(dataLifetime > 0){
+		ipfixSender->setSctpLifetime(dataLifetime);
+		msg(MSG_DEBUG, "ExporterConfiguration: SCTP dataLifetime set to %d",dataLifetime );
+	}
+	if(reconnectTimeout > -1){
+		ipfixSender->setSctpReconnectTimeout(reconnectTimeout);
+		msg(MSG_DEBUG, "ExporterConfiguration: SCTP reconnectTimeout set to %d",reconnectTimeout );
 	}
 	for (unsigned i = 1; i != collectors.size(); ++i) {
-		if (ipfixSender->addCollector(collectors[i]->ipAddress.c_str(), collectors[i]->port)) {
+		if (ipfixSender->addCollector(collectors[i]->ipAddress.c_str(), collectors[i]->port,
+					    collectors[i]->protocolType)) {
 			msg(MSG_ERROR, "ExporterConfiguration: error adding collector %s:%d to IpfixSender",
 			    collectors[i]->ipAddress.c_str(), collectors[i]->port);
 		}
