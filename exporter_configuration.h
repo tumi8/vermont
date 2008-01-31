@@ -3,7 +3,7 @@
 
 
 #include "ipfix_configuration.h"
-
+#include "ipfixlolib/ipfixlolib.h"
 
 #include <concentrator/IpfixSender.hpp>
 
@@ -36,18 +36,21 @@ private:
 	struct Collector {
 		std::string ipAddress;
 		unsigned ipAddressType;
-		std::string protocolType;
+		ipfix_transport_protocol protocolType;
 		uint16_t port;
 	};
 
 	void readPacketRestrictions(xmlNodePtr p);
 	void readUdpTemplateManagement(xmlNodePtr p);
+	void readSctpManagement(xmlNodePtr p);
 	void readCollector(xmlNodePtr i);
 
 	uint16_t maxPacketSize;
 	unsigned exportDelay;
 	unsigned templateRefreshTime;
 	unsigned templateRefreshRate;
+	unsigned dataLifetime;
+	int reconnectTimeout;
 	
 	std::vector<Collector*> collectors;
 

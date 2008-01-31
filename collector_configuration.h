@@ -42,6 +42,7 @@ private:
 
 	std::vector<Listener*> listeners;
 	uint16_t observationDomainId;
+	uint16_t templateLifetime;
 	
 	IpfixCollector* ipfixCollector;
 	IpfixParser* ipfixParser;

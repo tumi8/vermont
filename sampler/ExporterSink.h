@@ -127,7 +127,26 @@ public:
                 return true;
 	}
 
-        bool addCollector(const char *address, unsigned short port, const char *protocol);
+        bool addCollector(const char *address, unsigned short port, ipfix_transport_protocol proto);
+	
+	// Set up time after that Templates are going to be resent
+	bool setTemplateTransmissionTimer(uint32_t timer){
+		ipfix_set_template_transmission_timer(exporter, timer);
+		
+		return true;
+	}
+	// Set up SCTP packet lifetime
+	bool setSctpLifetime(uint32_t time){
+		ipfix_set_sctp_lifetime(exporter, time);
+		
+		return true;
+	}
+	// Set up SCTP reconnect timer
+	bool setSctpReconnectTimeout(uint32_t time){
+		ipfix_set_sctp_reconnect_timer(exporter, time);
+		
+		return true;
+	}
 
 protected:
         int sourceID;

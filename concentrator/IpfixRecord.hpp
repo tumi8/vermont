@@ -416,15 +416,40 @@ class IpfixRecord {
 			bool freePointers;  /** small helper variable to indicate if pointers should be freed on destruction */
 		};
 
+		/* This struct is called SourceID for historic reasons. 
+		 * A better name would be something like TemplateScope (TransportSession + ObservationDomainId)
+		 */
 		struct SourceID {
 
 			struct ExporterAddress {
-				char ip[MAX_ADDRESS_LEN];
+				uint8_t ip[MAX_ADDRESS_LEN];
 				uint8_t len;
 			};
 
 			uint32_t observationDomainId;
 			SourceID::ExporterAddress exporterAddress;
+			uint16_t exporterPort;
+			uint16_t receiverPort;
+			uint8_t protocol;
+			int fileDescriptor;
+
+			bool operator==(const struct SourceID & x) {
+				if(protocol == 132) /* compare file descriptors instead of IP addresses because of possible multihoming */
+					return (observationDomainId == x.observationDomainId) && 
+// 					(exporterPort == x.exporterPort) && 
+// 					(receiverPort == x.receiverPort) && 
+// 					(protocol == x.protocol) && 
+					(fileDescriptor == x.fileDescriptor);
+				else /* UDP: fileDescriptor only specifies the Collector endpoint*/
+					return (observationDomainId == x.observationDomainId) && 
+					(exporterPort == x.exporterPort) && 
+					//(receiverPort == x.receiverPort) &&
+					(fileDescriptor == x.fileDescriptor) && 
+					//(protocol == x.protocol) && 
+					(exporterAddress.len == x.exporterAddress.len) && 
+					(memcmp(exporterAddress.ip, x.exporterAddress.ip, exporterAddress.len) == 0 );
+					
+			}
 		};
 
 		boost::shared_ptr<IpfixRecord::SourceID> sourceID;

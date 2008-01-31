@@ -93,7 +93,7 @@ class IpfixDbReader : public FlowSource {
 		int dbReaderSendNewTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo, int table_index);
 		int dbReaderSendTable(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo, int n);
 		int dbReaderDestroyTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo);
-		int connectToDb(const char* hostName, const char* dbName, const char* username, const char* password, unsigned int port, uint16_t observationDomainId);
+		int connectToDb(const char* hostName, const char* dbName, const char* username, const char* password, unsigned int port);
 		IpfixDbReader::columnDB* getColumnByName(const char* name);
 };
 

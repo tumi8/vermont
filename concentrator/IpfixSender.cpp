@@ -40,7 +40,7 @@
  * @param port destination collector's port
  * @return handle to use when calling @c destroyIpfixSender()
  */
-IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) {
+IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port, ipfix_transport_protocol proto) {
 	setSinkOwner("IpfixSender");
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 	sentRecords = 0;
@@ -54,15 +54,9 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t 
 	}
 
 	if (ip && port) {
-		Collector newCollector;
-		strcpy(newCollector.ip, ip);
-		newCollector.port = port;
-
-		if(addCollector(ip, port) != 0) {
+		if(addCollector(ip, port, proto) != 0) {
 			goto out1;
 		}
-
-		collectors.push_back(newCollector);
 	}
 	
         msg(MSG_DEBUG, "IpfixSender: running");
@@ -107,22 +101,17 @@ void IpfixSender::stop() {
  * @param port port number
  * FIXME: support for other than UDP
  */
-int IpfixSender::addCollector(const char *ip, uint16_t port)
+int IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_protocol proto)
 {
 	ipfix_exporter *ex = (ipfix_exporter *)ipfixExporter;
 
-	if(ipfix_add_collector(ex, ip, port, UDP) != 0) {
+       	msg(MSG_INFO, "IpfixSender: adding %s://%s:%d to exporter", (proto==UDP)?"UDP":"SCTP", ip, port);
+
+	if(ipfix_add_collector(ex, ip, port, proto) != 0) {
 		msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%d failed", ip, port);
 		return -1;
 	}
 	
-	msg(MSG_INFO, "IpfixSender: adding %s:%d to exporter", ip, port);
-
-	Collector newCollector;
-	strcpy(newCollector.ip, ip);
-	newCollector.port = port;
-	collectors.push_back(newCollector);
-
 	return 0;
 }
 
@@ -333,7 +322,7 @@ int IpfixSender::endAndSendDataSet()
 	if(recordsInDataSet > 0) {
 		ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	
-		if (ipfix_end_data_set(exporter) != 0) {
+		if (ipfix_end_data_set(exporter, recordsInDataSet) != 0) {
 			msg(MSG_FATAL, "sndIpfix: ipfix_end_data_set failed");
 			return -1;
 		}

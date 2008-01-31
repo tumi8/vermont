@@ -52,6 +52,8 @@ class IpfixParser : public IpfixPacketProcessor, public FlowSource {
 
 		virtual int processPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId); 
 
+		void setTemplateLivetime(uint16_t time);
+
 	protected:
 		/**
 		 * IPFIX header helper.
@@ -126,9 +128,11 @@ class IpfixParser : public IpfixPacketProcessor, public FlowSource {
 		friend class TemplateBuffer;
 		TemplateBuffer* templateBuffer; /**< TemplateBuffer* structure */
 
+		uint16_t templateLivetime;
+
 		pthread_mutex_t mutex; /**< Used to give only one IpfixReceiver access to the IpfixPacketProcessor */
 
-		void processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
+		uint32_t processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		void processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		void processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		void processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
@@ -136,7 +140,5 @@ class IpfixParser : public IpfixPacketProcessor, public FlowSource {
 		int processIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 
 };
-
-void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* pattern);
 
 #endif

@@ -362,7 +362,7 @@ int IpfixDbReader::getColumns(int table_index)
 int IpfixDbReader::connectToDb(
 		const char* hostName, const char* dbName, 
 		const char* userName, const char* password,
-		unsigned int port, uint16_t observationDomainId)
+		unsigned int port)
 
 {
 	/** get the mysl init handle*/
@@ -382,8 +382,7 @@ int IpfixDbReader::connectToDb(
 	this->portNum = port;
 	this->socketName = 0;	  		
 	this->flags = 0;
-	srcId.reset(new IpfixRecord::SourceID);
-	srcId->observationDomainId = observationDomainId;
+
 	/**Initialize structure members DbData*/
 	dbReader->dbData->colCount = 0;
 	dbReader->dbData->tableCount = 0;
@@ -468,8 +467,17 @@ IpfixDbReader::IpfixDbReader(const char* hostName, const char* dbName,
 	}
 	
 	dbReader->dbData = dbData;
+	
+	srcId.reset(new IpfixRecord::SourceID);
+	srcId->observationDomainId = observationDomainId;
+	srcId->exporterAddress.len = 0;
+	srcId->exporterPort = 0;
+	srcId->receiverPort = 0;
+	srcId->protocol = 0;
+	srcId->fileDescriptor = 0;
+
 	if (connectToDb(hostName, dbName, userName,
-			password, port, observationDomainId)) {
+			password, port)) {
 		goto out3;
 	}
 	msg(MSG_DEBUG,"Connected to database");

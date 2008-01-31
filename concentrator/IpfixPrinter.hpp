@@ -21,7 +21,7 @@
 #ifndef PRINTIPFIX_H
 #define PRINTIPFIX_H
 
-#include "IpfixParser.hpp"
+#include "FlowSink.hpp"
 
 /**
  * IPFIX Printer module.
@@ -47,9 +47,12 @@ class IpfixPrinter : public FlowSink {
 		int onTemplate(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo);
 		int onDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo, uint16_t length, IpfixRecord::Data* data);
 		int onTemplateDestruction(IpfixRecord::SourceID* sourceID, IpfixRecord::TemplateInfo* templateInfo);
+		
 
 	protected:
 		void* lastTemplate;
 };
+void printProtocol(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
+void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* pattern);
 
 #endif

@@ -117,6 +117,7 @@ int parseProtoPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo
 	if (strcmp(s, "TCP") == 0) proto = IPFIX_protocolIdentifier_TCP;
 	if (strcmp(s, "UDP") == 0) proto = IPFIX_protocolIdentifier_UDP;
 	if (strcmp(s, "RAW") == 0) proto = IPFIX_protocolIdentifier_RAW;
+	if (strcmp(s, "SCTP") == 0) proto = IPFIX_protocolIdentifier_SCTP;
 
 	if (proto == -1) 
 	{

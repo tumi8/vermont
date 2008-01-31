@@ -32,6 +32,7 @@
 #define IPFIX_protocolIdentifier_ICMP         1
 #define IPFIX_protocolIdentifier_TCP          6
 #define IPFIX_protocolIdentifier_UDP         17
+#define IPFIX_protocolIdentifier_SCTP       132
 #define IPFIX_protocolIdentifier_RAW        255
 
 #define IPFIX_SetId_Template                                    2
