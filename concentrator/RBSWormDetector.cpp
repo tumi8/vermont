@@ -40,42 +40,42 @@ InstanceManager<IDMEFMessage> RBSWormDetector::idmefManager("IDMEFMessage");
 RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend, 
 		uint32_t texpworm, uint32_t texpben, uint32_t tadaptint,uint32_t tcleanupint, float lambdaratio,
 		string analyzerid, string idmeftemplate)
-	: hashBits(hashbits),
-	  timeExpirePending(texppend),
-	  timeExpireWorm(texpworm),
-	  timeExpireBenign(texpben),
-	  timeAdaptInterval(tadaptint),
-	  timeCleanupInterval(tcleanupint),
-	  lambda_ratio(lambdaratio),
-	  analyzerId(analyzerid),
-	  idmefTemplate(idmeftemplate)
+: hashBits(hashbits),
+	timeExpirePending(texppend),
+	timeExpireWorm(texpworm),
+	timeExpireBenign(texpben),
+	timeAdaptInterval(tadaptint),
+	timeCleanupInterval(tcleanupint),
+	lambda_ratio(lambdaratio),
+	analyzerId(analyzerid),
+	idmefTemplate(idmeftemplate)
 {
 	// make some initialization calculations
 	hashSize = 1<<hashBits;
 	lambda_0 = 0;
 	lambda_1 = 0;
-	
-	
+
+
 	/* caution: usually the lambda values are calculated after timeAdaptInterval but you can preset them */
 	lambda_0 = 3.5; // fanout frequency of a benign host
 	lambda_1 = lambda_ratio * lambda_0; // fanout frequency of a infected host
-	
-	
+
+
 	float logeta_1 = logf(P_D/P_F);
 	float logeta_0 = logf(1-P_D);
-		
+
 	if (lambda_0 && lambda_1) 
 	{
-	float temp_z = logf(lambda_1/lambda_0);
-	float temp_n = lambda_1 - lambda_0;
-	
-	slope_0 = temp_z/temp_n - logeta_0/temp_n;
-	slope_1 = temp_z/temp_n - logeta_1/temp_n;
+		float temp_z = logf(lambda_1/lambda_0);
+		float temp_n = lambda_1 - lambda_0;
+
+		slope_0 = temp_z/temp_n - logeta_0/temp_n;
+		slope_1 = temp_z/temp_n - logeta_1/temp_n;
 	}
-	
+
 	lastAdaption = time(0);
 	lastCleanup = time(0);
-	
+
 	rbsEntries = new list<RBSEntry*>[hashSize];
 }
 
@@ -88,7 +88,7 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 {
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
-	
+
 	conn.swapIfNeeded();
 
 	// only use this connection if it was a connection attempt
@@ -110,34 +110,56 @@ RBSWormDetector::RBSEntry* RBSWormDetector::createEntry(Connection* conn)
 }
 
 
- /**
+/**
  * adapt new benign/worm frequencies
  */
 void RBSWormDetector::adaptFrequencies () 
-	{
+{
 	time_t curtime = time(0);
 	uint32_t count = 0;	
-	int i = 0;	
-	uint32_t num10 = rbsEntries[i].size()/10;
 	uint32_t temp1 = 0;
-	rbsEntries[i].sort(RBSWormDetector::comp_entries);
-	
-	list<RBSEntry*>::iterator iter = rbsEntries[i].begin();
-		
+
+
+	list<RBSEntry*> adaptList;	
+
+	//put all entries in one list to calculate trimmed mean
+	for (uint32_t i=0; i<hashSize; i++) {
+		if (rbsEntries[i].size()==0) continue;
+
+		list<RBSEntry*>::iterator iter = rbsEntries[i].begin();
+
 		while (iter != rbsEntries[i].end()) 
 		{
-			count++;
-			//trim bottom and top 10%
-			if (count > num10 && count <( rbsEntries[i].size() - num10)) 
-					temp1 += (*iter)->numFanouts/((*iter)->startTime-curtime);
-
+			adaptList.push_back(*iter);
 			iter++;	
 		}
+	}
+	
+	//sort list to cut off top and bottom 10 percent
+	adaptList.sort(RBSWormDetector::comp_entries);
+
+	uint32_t num10 = adaptList.size()/10;
+
+	list<RBSEntry*>::iterator iter = adaptList.begin();
+
+
+	while (iter != adaptList.end()) 
+	{
+
+
+		count++;
+		//trim bottom and top 10%
+		if (count > num10 && count <( adaptList.size() - num10)) 
+			temp1 += (*iter)->numFanouts/((*iter)->startTime-curtime);
+
+		iter++;
+	}
+
 
 	lambda_0 = temp1;		
 	lambda_1 = lambda_ratio*lambda_0;
-		
-	}
+
+}
 /**
  * erases entries in our hashtable which are expired
  */	
@@ -169,15 +191,14 @@ void RBSWormDetector::cleanupEntries()
 RBSWormDetector::RBSEntry* RBSWormDetector::getEntry(Connection* conn)
 {
 	time_t curtime = time(0);
-//	uint32_t hash = crc32(0, 2, &reinterpret_cast<char*>(&conn->srcIP)[2]) & (hashSize-1);
-	uint32_t hash = 0;
+	uint32_t hash = crc32(0, 2, &reinterpret_cast<char*>(&conn->srcIP)[2]) & (hashSize-1);
 
 	//regularly adapt new values
 	if (lastAdaption+timeAdaptInterval < (uint32_t) curtime) 
-		{
-			adaptFrequencies();
-			lastAdaption = curtime;
-		}
+	{
+		adaptFrequencies();
+		lastAdaption = curtime;
+	}
 
 	// regularly cleanup expired entries in hashtable
 	if (lastCleanup+timeCleanupInterval < (uint32_t)curtime) {
@@ -215,27 +236,27 @@ void RBSWormDetector::addConnection(Connection* conn)
 	if (find(te->accessedHosts.begin(), te->accessedHosts.end(), conn->dstIP) != te->accessedHosts.end()) return;
 
 	te->accessedHosts.push_back(conn->dstIP);
-	
+
 	te->timeExpire = time(0) + timeExpirePending;
-	
+
 
 	// aggregate new connection into entry
 	te->numFanouts++;
-	
+
 	// calculate thresholds
-	
+
 	float thresh_0 = te->numFanouts * slope_0;
 	float thresh_1 = te->numFanouts * slope_1;
 	float time_ela = time(0) - te->startTime;
 	// look if information is adequate for deciding on host
 	if (time_ela>thresh_0)
-		 {
+	{
 		// no worm, just let entry stay here until it expires
 		te->timeExpire = time(0)+timeExpireBenign;
 		te->decision = BENIGN;
 	}
-	 else if (time_ela<thresh_1) 
-	 	{
+	else if (time_ela<thresh_1) 
+	{
 		//this is a worm
 		te->decision = WORM;
 		statNumWorms++;
