@@ -68,15 +68,18 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 	{
 		float temp_z = logf(lambda_1/lambda_0);
 		float temp_n = lambda_1 - lambda_0;
-
-		slope_0 = temp_z/temp_n - logeta_0/temp_n;
-		slope_1 = temp_z/temp_n - logeta_1/temp_n;
+		slope_0a = temp_z/temp_n; 
+		slope_0b = logeta_0/temp_n;
+		slope_1a = temp_z/temp_n;
+		slope_1b = logeta_1/temp_n;
 	}
 
 	lastAdaption = time(0);
 	lastCleanup = time(0);
 
 	rbsEntries = new list<RBSEntry*>[hashSize];
+	msg(MSG_INFO,"RBSWormDetector started");
+	msg(MSG_INFO,"Initial values: lambdas %f %f, slopes %f - %f, slopes %f - %f",lambda_0,lambda_1,slope_0a,slope_0b,slope_1a,slope_1b);
 }
 
 RBSWormDetector::~RBSWormDetector()
@@ -106,6 +109,7 @@ RBSWormDetector::RBSEntry* RBSWormDetector::createEntry(Connection* conn)
 	rbs->timeExpire = time(0) + timeExpirePending;
 	rbs->decision = PENDING;
 	statEntriesAdded++;
+	msg(MSG_INFO,"New RBSEntry created");
 	return rbs;
 }
 
@@ -159,6 +163,17 @@ void RBSWormDetector::adaptFrequencies ()
 	lambda_0 = temp1;		
 	lambda_1 = lambda_ratio*lambda_0;
 
+
+	float logeta_1 = logf(P_D/P_F);
+	float logeta_0 = logf(1-P_D);
+		float temp_z = logf(lambda_1/lambda_0);
+		float temp_n = lambda_1 - lambda_0;
+		slope_0a = temp_z/temp_n;
+		slope_0b = logeta_0/temp_n;
+		slope_1a = temp_z/temp_n;
+		slope_1b = logeta_1/temp_n;
+
+	msg(MSG_INFO,"Adapted Frequencies, lambda_0=%f",lambda_0);
 }
 /**
  * erases entries in our hashtable which are expired
@@ -245,9 +260,13 @@ void RBSWormDetector::addConnection(Connection* conn)
 
 	// calculate thresholds
 
-	float thresh_0 = te->numFanouts * slope_0;
-	float thresh_1 = te->numFanouts * slope_1;
+	float thresh_0 = te->numFanouts * slope_0a - slope_0b;
+	float thresh_1 = te->numFanouts * slope_1a - slope_1b;
 	float time_ela = time(0) - te->startTime;
+
+	msg(MSG_INFO,"Thresholds calculated: %f %f %f",thresh_0, thresh_1,time_ela);
+	msg(MSG_INFO, "dstIP: %s", IPToString(conn->dstIP).c_str());
+	msg(MSG_INFO, "srcIP: %s", IPToString(te->srcIP).c_str());
 	// look if information is adequate for deciding on host
 	if (time_ela>thresh_0)
 	{
@@ -263,7 +282,7 @@ void RBSWormDetector::addConnection(Connection* conn)
 		te->timeExpire = time(0)+timeExpireWorm;
 		msg(MSG_DEBUG, "Worm detected:");
 		msg(MSG_DEBUG, "srcIP: %s", IPToString(te->srcIP).c_str());
-		msg(MSG_DEBUG, "numFanOut: %d, totalTime: %d", time_ela);
+		msg(MSG_DEBUG, "numFanOut: %d, totalTime: %d",te->numFanouts, time_ela);
 
 		IDMEFMessage* msg = idmefManager.getNewInstance();
 		msg->init(idmefTemplate, analyzerId);

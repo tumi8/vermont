@@ -64,7 +64,7 @@ class RBSWormDetector
 		uint32_t timeAdaptInterval; // time in seconds of interval when lamdbas (expected benign & worm frequencies) are changed
 		string analyzerId;	/**< analyzer id for IDMEF messages */
 		string idmefTemplate;	/**< template file for IDMEF messages */
-
+		float lambda_ratio;
 
 		// idmef parameters
 		const static char* PAR_FAN_OUT; // = "FAN_OUT";
@@ -74,8 +74,8 @@ class RBSWormDetector
 		uint32_t statEntriesAdded;
 		uint32_t statEntriesRemoved;
 		uint32_t statNumWorms;
-		float lambda_0,lambda_1,lambda_ratio;
-		float slope_0,slope_1;
+		float lambda_0,lambda_1;
+		float slope_0a,slope_0b,slope_1a,slope_1b;
 		time_t lastCleanup,lastAdaption;
 		
 		// manages instances of IDMEFMessages

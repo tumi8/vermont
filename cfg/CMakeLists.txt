@@ -44,6 +44,7 @@ ADD_LIBRARY(cfg
 	SensorManager.cpp
 	SensorManagerCfg.cpp
 	TRWPortscanDetectorCfg.cpp
+	RBSWormDetectorCfg.cpp
 	XMLAttribute.cpp
 	XMLElement.cpp
 	XMLDocument.cpp

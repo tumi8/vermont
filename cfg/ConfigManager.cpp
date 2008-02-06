@@ -15,6 +15,7 @@
 #include "cfg/QueueCfg.h"
 #include "cfg/SensorManagerCfg.h"
 #include "cfg/TRWPortscanDetectorCfg.h"
+#include "cfg/RBSWormDetectorCfg.h"
 #include "cfg/IDMEFExporterCfg.h"
 #include "cfg/PacketIDMEFReporterCfg.h"
 #include "cfg/IpfixDbReaderCfg.h"
@@ -41,6 +42,7 @@ Cfg* ConfigManager::configModules[] = {
 	new PacketAggregatorCfg(NULL),
 	new SensorManagerCfg(NULL),
 	new TRWPortscanDetectorCfg(NULL),
+	new RBSWormDetectorCfg(NULL),
 	new IDMEFExporterCfg(NULL),
 	new PacketIDMEFReporterCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
