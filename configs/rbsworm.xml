@@ -117,13 +117,13 @@
 
 <rbsWormDetector id="8">
 	<analyzerid>rbswormdetector</analyzerid>
-	<idmeftemplate>idmef/templates/trwportscan_template.xml</idmeftemplate>
+	<idmeftemplate>idmef/templates/rbsdetector_template.xml</idmeftemplate>
 	<hashbits>20</hashbits>
 	<timeexpirepending>86400</timeexpirepending>
 	<timeexpireworm>1800</timeexpireworm>
-	<timeexpirebenign>1800</timeexpirebenign>
-	<timeadaptinterval>3600</timeadaptinterval>
-	<timecleanupinterval>100</timecleanupinterval>
+	<timeexpirebenign>900</timeexpirebenign>
+	<timeadaptinterval>600</timeadaptinterval>
+	<timecleanupinterval>300</timecleanupinterval>
 	<lambdaratio>5</lambdaratio>
 	<next>9</next>
 </rbsWormDetector>	

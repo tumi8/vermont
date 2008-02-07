@@ -68,6 +68,7 @@ class RBSWormDetector
 
 		// idmef parameters
 		const static char* PAR_FAN_OUT; // = "FAN_OUT";
+		const static char* PAR_TOTALTIME; // = "FAN_OUT";
 		
 
 		list<RBSEntry*>* rbsEntries;

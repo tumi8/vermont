@@ -30,7 +30,7 @@ protected:
 	uint32_t timeExpireWorm; // time in seconds until worm entries are expired
 	uint32_t timeExpireBenign; // time in seconds until benign entries are expired
 	uint32_t timeAdaptInterval; // time in seconds of interval when lambdas are being recalculated
-	uint32_t timeCleanupInterval; // time in seconds of interval when hashtable with source hosts is cleaned up (trwEntries)
+	uint32_t timeCleanupInterval; // time in seconds of interval when hashtable with source hosts is cleaned up (rbsEntries)
 	string analyzerId;	/**< analyzer id for IDMEF messages */
 	string idmefTemplate;	/**< template file for IDMEF messages */
 	float lambda_ratio; //**< expected connection ratio of good and bad hosts */

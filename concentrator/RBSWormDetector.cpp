@@ -29,6 +29,7 @@
 #define P_D 0.99 // probability of worm detection
 
 const char* RBSWormDetector::PAR_FAN_OUT = "FAN_OUT"; 
+const char* RBSWormDetector::PAR_TOTALTIME = "TOTALTIME"; 
 
 
 InstanceManager<IDMEFMessage> RBSWormDetector::idmefManager("IDMEFMessage");
@@ -79,7 +80,7 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 
 	rbsEntries = new list<RBSEntry*>[hashSize];
 	msg(MSG_INFO,"RBSWormDetector started");
-	msg(MSG_INFO,"Initial values: lambdas %f %f, slopes %f - %f, slopes %f - %f",lambda_0,lambda_1,slope_0a,slope_0b,slope_1a,slope_1b);
+	msg(MSG_INFO,"Initial values: lambdas %f %f, slopes %f - %f, slopes %f - %f, adaptinterval: %d ,cleaninterval: %d",lambda_0,lambda_1,slope_0a,slope_0b,slope_1a,slope_1b,timeAdaptInterval,timeCleanupInterval);
 }
 
 RBSWormDetector::~RBSWormDetector()
@@ -159,7 +160,10 @@ void RBSWormDetector::adaptFrequencies ()
 		iter++;
 	}
 
-
+	if (temp1 < 3) {
+		msg(MSG_DEBUG,"too little traffic");
+		return;
+	}
 	lambda_0 = temp1;		
 	lambda_1 = lambda_ratio*lambda_0;
 
@@ -267,6 +271,9 @@ void RBSWormDetector::addConnection(Connection* conn)
 	msg(MSG_INFO,"Thresholds calculated: %f %f %f",thresh_0, thresh_1,time_ela);
 	msg(MSG_INFO, "dstIP: %s", IPToString(conn->dstIP).c_str());
 	msg(MSG_INFO, "srcIP: %s", IPToString(te->srcIP).c_str());
+	
+	if (te->numFanouts < lambda_0) return;  //need more connections to evaluate
+
 	// look if information is adequate for deciding on host
 	if (time_ela>thresh_0)
 	{
@@ -287,6 +294,7 @@ void RBSWormDetector::addConnection(Connection* conn)
 		IDMEFMessage* msg = idmefManager.getNewInstance();
 		msg->init(idmefTemplate, analyzerId);
 		msg->setVariable(PAR_FAN_OUT, te->numFanouts);
+		msg->setVariable(PAR_TOTALTIME, (int) time_ela);
 		msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(te->srcIP));
 		msg->applyVariables();
 		send(msg);
