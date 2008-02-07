@@ -102,6 +102,9 @@ void MeteringConfiguration::connect(Configuration* c)
 	ExporterConfiguration* exporter = dynamic_cast<ExporterConfiguration*>(c);
 	if (exporter) {
 		if (packetReporting) {
+			if (!packetSelection) {
+				THROWEXCEPTION("MeteringConfiguration: packetReporting can only be connected to observationPoint!");
+			}
 			msg(MSG_DEBUG, "MeteringConfiguration: Connecting packetReporting to exporter");
 			// rough estimation of the maximum record length including variable length fields
 			uint16_t recordsPerPacket = packetReporting->recordLength + packetReporting->recordVLFields*captureLength;
@@ -137,22 +140,32 @@ void MeteringConfiguration::connect(Configuration* c)
 		metering->setObservationDomainId(observationDomainId);
 		
 		if (metering->flowMetering) {
-			HookingFilter* h = new HookingFilter(metering->flowMetering->ipfixAggregator);
-			msg(MSG_INFO, "MeteringConfiguration: Added HookingFilter");
-			packetSelection->filter->addProcessor(h);
+			if (packetSelection) {
+				msg(MSG_DEBUG, "MeteringConfiguration: Setting up HookingFilter for Standard Aggregator");
+				HookingFilter* h = new HookingFilter(metering->flowMetering->ipfixAggregator);
+				packetSelection->filter->addProcessor(h);
+			}
 		}
 		if (metering->expressflowMetering) {
-			ExpressHookingFilter* h = new ExpressHookingFilter(metering->expressflowMetering->ipfixAggregator);
-			msg(MSG_INFO, "MeteringConfiguration: Added HookingFilter for Express Aggregator");
-			packetSelection->filter->addProcessor(h);
+			if (packetSelection) {
+				msg(MSG_DEBUG, "MeteringConfiguration: Setting up HookingFilter for Express Aggregator.");
+				ExpressHookingFilter* h = new ExpressHookingFilter(metering->expressflowMetering->ipfixAggregator);
+				packetSelection->filter->addProcessor(h);
+			}
 		}
 		if (metering->packetReporting) {
 			// install our packetSelection into the other meteringprocess
-			delete metering->packetSelection;
-			metering->packetSelection = packetSelection;
-			// since the other metering process will no handle the packet selection
-			// work, we can forget it and lean back
-			packetSelection = NULL;
+			// and forget our packetReporting in this chain
+			if (packetSelection) {
+				delete metering->packetSelection;
+				metering->packetSelection = packetSelection;
+				// the other metering process will now handle the packet selection
+				// avoid double freeing, set pointer to NULL (unfortunately, we cannot use
+				// the packet selection in other contexts any more)
+				packetSelection = NULL;
+			}
+			else
+				THROWEXCEPTION("MeteringConfiguration: packetReporting can only be connected to observationPoint!");
 		}
 		
 		return;
@@ -161,19 +174,30 @@ void MeteringConfiguration::connect(Configuration* c)
 #ifdef DB_SUPPORT_ENABLED
 	DbWriterConfiguration* dbWriterConfiguration = dynamic_cast<DbWriterConfiguration*>(c);
 	if (dbWriterConfiguration) {
-		if (!flowMetering) {
-			THROWEXCEPTION("MeteringProcess: Can only be connected to an dbWriter if it does flowMetetering!");
+		if (!(flowMetering || expressflowMetering)) {
+			THROWEXCEPTION("MeteringProcess: Only flowMetering and expressflowMetering can be connected to dbWriter!");
 		}
 
                 dbWriterConfiguration->setObservationDomainId(observationDomainId);
-		if (packetSelection) {
-			msg(MSG_DEBUG, "MeteringConfiguration: Setting up HookingFilter");
-			HookingFilter* h = new HookingFilter(flowMetering->ipfixAggregator);
-			packetSelection->filter->addProcessor(h);
+		if (flowMetering) {
+			if (packetSelection) {
+				msg(MSG_DEBUG, "MeteringConfiguration: Setting up HookingFilter for Standard Aggregator");
+				HookingFilter* h = new HookingFilter(flowMetering->ipfixAggregator);
+				packetSelection->filter->addProcessor(h);
+			}
+ 			msg(MSG_DEBUG, "MeteringConfiguration: Setting up IpfixSender");
+			flowMetering->ipfixAggregator->addFlowSink(dbWriterConfiguration->getDbWriter());
+		}
+		if (expressflowMetering) {
+			if (packetSelection) {
+				msg(MSG_DEBUG, "MeteringConfiguration: Setting up HookingFilter for Express Aggregator.");
+				ExpressHookingFilter* h = new ExpressHookingFilter(expressflowMetering->ipfixAggregator);
+				packetSelection->filter->addProcessor(h);
+			}
+ 			msg(MSG_DEBUG, "MeteringConfiguration: Setting up IpfixDbWriter for Express Aggregator");
+ 			expressflowMetering->ipfixAggregator->addFlowSink(dbWriterConfiguration->getDbWriter());
 		}
 
-		msg(MSG_DEBUG, "MeteringConfiguration: Adding aggregator call backs");
-		flowMetering->ipfixAggregator->addFlowSink(dbWriterConfiguration->getDbWriter());
 		return;
 	}
 #endif
