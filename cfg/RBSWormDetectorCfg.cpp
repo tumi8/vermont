@@ -30,7 +30,7 @@ lambda_ratio(5)
 			hashBits = getInt("hashbits");
 		} else if (e->matches("timeexpirepending")) {
 			timeExpirePending = getInt("timeexpirepending");
-		} else if (e->matches("timeexpirescanner")) {
+		} else if (e->matches("timeexpireworm")) {
 			timeExpireWorm = getInt("timeexpireworm");
 		} else if (e->matches("timeexpirebenign")) {
 			timeExpireBenign = getInt("timeexpirebenign");
@@ -38,7 +38,7 @@ lambda_ratio(5)
 			timeAdaptInterval = getInt("timeadaptinterval");
 		} else if (e->matches("timecleanupinterval")) {
 			timeCleanupInterval = getInt("timecleanupinterval");
-		} else if (e->matches("lambda_ratio")) {
+		} else if (e->matches("lambdaratio")) {
 			lambda_ratio = (float) getInt("lambdaratio"); //no getfloat :(
 		} else if (e->matches("analyzerid")) {
 			analyzerId = e->getFirstText();
