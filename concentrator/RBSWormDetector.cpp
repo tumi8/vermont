@@ -93,8 +93,6 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 
-	conn.swapIfNeeded();
-
 	// only use this connection if it was a connection attempt
 	if (conn.srcTcpControlBits&Connection::SYN) {
 		addConnection(&conn);
@@ -210,7 +208,7 @@ void RBSWormDetector::cleanupEntries()
 RBSWormDetector::RBSEntry* RBSWormDetector::getEntry(Connection* conn)
 {
 	time_t curtime = time(0);
-	uint32_t hash = crc32(0, 2, &reinterpret_cast<char*>(&conn->srcIP)[2]) & (hashSize-1);
+	uint32_t hash = crc32(0, 4, reinterpret_cast<char*>(&conn->srcIP)) & (hashSize-1);
 
 	//regularly adapt new values
 	if (lastAdaption+timeAdaptInterval < (uint32_t) curtime) 
