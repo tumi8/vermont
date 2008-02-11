@@ -58,8 +58,8 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 
 
 	/* caution: usually the lambda values are calculated after timeAdaptInterval but you can preset them */
-	lambda_0 = 3.5; // fanout frequency of a benign host
-	lambda_1 = lambda_ratio * lambda_0; // fanout frequency of a infected host
+	//lambda_0 = 3.5; // fanout frequency of a benign host
+	//lambda_1 = lambda_ratio * lambda_0; // fanout frequency of a infected host
 
 
 	float logeta_1 = logf(P_D/P_F);
@@ -94,110 +94,74 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 	Connection conn(record);
 
 	// only use this connection if it was a connection attempt
-	if (conn.srcTcpControlBits&Connection::SYN) {
+	if (conn.srcTcpControlBits&Connection::SYN ) {
+	//	msg(MSG_INFO,"NEW CONN: %x",conn.dstTcpControlBits);
 		addConnection(&conn);
 	}
-}
-
-RBSWormDetector::RBSEntry* RBSWormDetector::createEntry(Connection* conn)
-{
-	RBSEntry* rbs = new RBSEntry();
-	rbs->srcIP = conn->srcIP;
-	rbs->numFanouts = 1;
-	rbs->startTime = time(0);
-	rbs->timeExpire = time(0) + timeExpirePending;
-	rbs->decision = PENDING;
-	statEntriesAdded++;
-	msg(MSG_INFO,"New RBSEntry created");
-	return rbs;
-}
-
-
-/**
- * adapt new benign/worm frequencies
- */
-void RBSWormDetector::adaptFrequencies () 
-{
-	time_t curtime = time(0);
-	uint32_t count = 0;	
-	uint32_t temp1 = 0;
-
-
-	list<RBSEntry*> adaptList;	
-
-	//put all entries in one list to calculate trimmed mean
-	for (uint32_t i=0; i<hashSize; i++) {
-		if (rbsEntries[i].size()==0) continue;
-
-		list<RBSEntry*>::iterator iter = rbsEntries[i].begin();
-
-		while (iter != rbsEntries[i].end()) 
-		{
-			adaptList.push_back(*iter);
-			iter++;	
-		}
-	}
 	
-	//sort list to cut off top and bottom 10 percent
-	adaptList.sort(RBSWormDetector::comp_entries);
-
-	uint32_t num10 = adaptList.size()/10;
-
-	list<RBSEntry*>::iterator iter = adaptList.begin();
-
-
-	while (iter != adaptList.end()) 
-	{
-
-
-		count++;
-		//trim bottom and top 10%
-		if (count > num10 && count <( adaptList.size() - num10)) 
-			temp1 += (*iter)->numFanouts/((*iter)->startTime-curtime);
-
-		iter++;
-	}
-
-	if (temp1 < 3) {
-		msg(MSG_DEBUG,"too little traffic");
-		return;
-	}
-	lambda_0 = temp1;		
-	lambda_1 = lambda_ratio*lambda_0;
-
-
-	float logeta_1 = logf(P_D/P_F);
-	float logeta_0 = logf(1-P_D);
-		float temp_z = logf(lambda_1/lambda_0);
-		float temp_n = lambda_1 - lambda_0;
-		slope_0a = temp_z/temp_n;
-		slope_0b = logeta_0/temp_n;
-		slope_1a = temp_z/temp_n;
-		slope_1b = logeta_1/temp_n;
-
-	msg(MSG_INFO,"Adapted Frequencies, lambda_0=%f",lambda_0);
 }
-/**
- * erases entries in our hashtable which are expired
- */	
-void RBSWormDetector::cleanupEntries()
+
+
+void RBSWormDetector::addConnection(Connection* conn)
 {
-	time_t curtime = time(0);
+	RBSEntry* te = getEntry(conn);
+	
+	//we are still in the startup phase, dont do anything
+	if (lambda_0 == 0) return;
 
-	for (uint32_t i=0; i<hashSize; i++) {
-		if (rbsEntries[i].size()==0) continue;
+	// this host was already decided on, don't do anything any more
+	if (te->decision != PENDING) return;
 
-		list<RBSEntry*>::iterator iter = rbsEntries[i].begin();
-		while (iter != rbsEntries[i].end()) {
-			if (curtime > (*iter)->timeExpire) {
-				RBSEntry* te = *iter;
-				iter = rbsEntries[i].erase(iter);
-				delete te;
-				statEntriesRemoved++;
-			} else {
-				iter++;
-			}
-		}
+
+	te->timeExpire = time(0) + timeExpirePending;
+
+	// only work with this connection, if it wasn't accessed earlier by this host
+	if (find(te->accessedHosts.begin(), te->accessedHosts.end(), conn->dstIP) != te->accessedHosts.end()) return;
+
+	te->accessedHosts.push_back(conn->dstIP);
+
+	te->timeExpire = time(0) + timeExpirePending;
+
+
+	// aggregate new connection into entry
+	te->numFanouts++;
+
+	// calculate thresholds
+
+	float thresh_0 = te->numFanouts * slope_0a - slope_0b;
+	float thresh_1 = te->numFanouts * slope_1a - slope_1b;
+	uint32_t time_ela = time(0) - te->startTime;
+
+	msg(MSG_INFO,"Thresholds calculated: H1: %f H0: %f TIME: %d CONNS: %d",thresh_0, thresh_1,time_ela,te->numFanouts);
+	msg(MSG_INFO, "dstIP: %s", IPToString(conn->dstIP).c_str());
+	msg(MSG_INFO, "srcIP: %s", IPToString(te->srcIP).c_str());
+
+	if (te->numFanouts < lambda_0) return;  //need more connections to evaluate
+
+	// look if information is adequate for deciding on host
+	if (time_ela>thresh_0)
+	{
+		// no worm, just let entry stay here until it expires
+		te->timeExpire = time(0)+timeExpireBenign;
+		te->decision = BENIGN;
+	}
+	else if (time_ela<thresh_1) 
+	{
+		//this is a worm
+		te->decision = WORM;
+		statNumWorms++;
+		te->timeExpire = time(0)+timeExpireWorm;
+		msg(MSG_DEBUG, "Worm detected:");
+		msg(MSG_DEBUG, "srcIP: %s", IPToString(te->srcIP).c_str());
+		msg(MSG_DEBUG, "numFanOut: %d, totalTime: %d",te->numFanouts, time_ela);
+
+		IDMEFMessage* msg = idmefManager.getNewInstance();
+		msg->init(idmefTemplate, analyzerId);
+		msg->setVariable(PAR_FAN_OUT, te->numFanouts);
+		msg->setVariable(PAR_TOTALTIME, (int) time_ela);
+		msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(te->srcIP));
+		msg->applyVariables();
+		send(msg);
 	}
 }
 
@@ -239,65 +203,116 @@ RBSWormDetector::RBSEntry* RBSWormDetector::getEntry(Connection* conn)
 	return rbs;
 }
 
-void RBSWormDetector::addConnection(Connection* conn)
+/**
+ * creates a new rbs entry and sets status to pending
+ */
+
+RBSWormDetector::RBSEntry* RBSWormDetector::createEntry(Connection* conn)
 {
-	RBSEntry* te = getEntry(conn);
+	RBSEntry* rbs = new RBSEntry();
+	rbs->srcIP = conn->srcIP;
+	rbs->numFanouts = 0;
+	rbs->startTime = time(0);
+	rbs->timeExpire = time(0) + timeExpirePending;
+	rbs->decision = PENDING;
+	statEntriesAdded++;
+	msg(MSG_INFO,"New RBSEntry created");
+	return rbs;
+}
 
-	// this host was already decided on, don't do anything any more
-	if (te->decision != PENDING) return;
+/**
+ * erases entries in our hashtable which are expired
+ */	
+void RBSWormDetector::cleanupEntries()
+{
+	time_t curtime = time(0);
 
+	for (uint32_t i=0; i<hashSize; i++) {
+		if (rbsEntries[i].size()==0) continue;
 
-	te->timeExpire = time(0) + timeExpirePending;
-
-	// only work with this connection, if it wasn't accessed earlier by this host
-	if (find(te->accessedHosts.begin(), te->accessedHosts.end(), conn->dstIP) != te->accessedHosts.end()) return;
-
-	te->accessedHosts.push_back(conn->dstIP);
-
-	te->timeExpire = time(0) + timeExpirePending;
-
-
-	// aggregate new connection into entry
-	te->numFanouts++;
-
-	// calculate thresholds
-
-	float thresh_0 = te->numFanouts * slope_0a - slope_0b;
-	float thresh_1 = te->numFanouts * slope_1a - slope_1b;
-	float time_ela = time(0) - te->startTime;
-
-	msg(MSG_INFO,"Thresholds calculated: %f %f %f",thresh_0, thresh_1,time_ela);
-	msg(MSG_INFO, "dstIP: %s", IPToString(conn->dstIP).c_str());
-	msg(MSG_INFO, "srcIP: %s", IPToString(te->srcIP).c_str());
-	
-	if (te->numFanouts < lambda_0) return;  //need more connections to evaluate
-
-	// look if information is adequate for deciding on host
-	if (time_ela>thresh_0)
-	{
-		// no worm, just let entry stay here until it expires
-		te->timeExpire = time(0)+timeExpireBenign;
-		te->decision = BENIGN;
-	}
-	else if (time_ela<thresh_1) 
-	{
-		//this is a worm
-		te->decision = WORM;
-		statNumWorms++;
-		te->timeExpire = time(0)+timeExpireWorm;
-		msg(MSG_DEBUG, "Worm detected:");
-		msg(MSG_DEBUG, "srcIP: %s", IPToString(te->srcIP).c_str());
-		msg(MSG_DEBUG, "numFanOut: %d, totalTime: %d",te->numFanouts, time_ela);
-
-		IDMEFMessage* msg = idmefManager.getNewInstance();
-		msg->init(idmefTemplate, analyzerId);
-		msg->setVariable(PAR_FAN_OUT, te->numFanouts);
-		msg->setVariable(PAR_TOTALTIME, (int) time_ela);
-		msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(te->srcIP));
-		msg->applyVariables();
-		send(msg);
+		list<RBSEntry*>::iterator iter = rbsEntries[i].begin();
+		while (iter != rbsEntries[i].end()) {
+			if (curtime > (*iter)->timeExpire) {
+				RBSEntry* te = *iter;
+				iter = rbsEntries[i].erase(iter);
+				delete te;
+				statEntriesRemoved++;
+			} else {
+				iter++;
+			}
+		}
 	}
 }
+
+
+
+/**
+ * adapt new benign/worm frequencies based on stored data
+ */
+void RBSWormDetector::adaptFrequencies () 
+{
+	time_t curtime = time(0);
+	uint32_t count = 0;	
+	uint32_t temp1 = 0;
+
+
+	list<RBSEntry*> adaptList;	
+
+	//put all entries in one list to calculate trimmed mean
+	for (uint32_t i=0; i<hashSize; i++) {
+		if (rbsEntries[i].size()==0) continue;
+
+		list<RBSEntry*>::iterator iter = rbsEntries[i].begin();
+
+		while (iter != rbsEntries[i].end()) 
+		{
+			adaptList.push_back(*iter);
+			iter++;	
+		}
+	}
+
+	//sort list to cut off top and bottom 10 percent
+	adaptList.sort(RBSWormDetector::comp_entries);
+
+	uint32_t num10 = adaptList.size()/10;
+
+	list<RBSEntry*>::iterator iter = adaptList.begin();
+
+
+	while (iter != adaptList.end()) 
+	{
+		count++;
+		//trim bottom and top 10%
+		if (count > num10 && count <( adaptList.size() - num10)) 
+			temp1 += (*iter)->numFanouts/((*iter)->startTime-curtime);
+
+		iter++;
+	}
+
+	if (temp1 < 3) {
+		msg(MSG_DEBUG,"too little traffic");
+		return;
+	}
+
+	lambda_0 = temp1;		
+	lambda_1 = lambda_ratio*lambda_0;
+
+	float logeta_1 = logf(P_D/P_F);
+	float logeta_0 = logf(1-P_D);
+	float temp_z = logf(lambda_1/lambda_0);
+	float temp_n = lambda_1 - lambda_0;
+	slope_0a = temp_z/temp_n;
+	slope_0b = logeta_0/temp_n;
+	slope_1a = temp_z/temp_n;
+	slope_1b = logeta_1/temp_n;
+
+	msg(MSG_INFO,"Adapted Frequencies, lambda_0=%f",lambda_0);
+}
+
+/*
+ * compare fuction to sort entry list
+ * 
+ */
 bool RBSWormDetector::comp_entries(RBSEntry* a,RBSEntry* b) {
 	uint32_t curtime = time(0);
 	return (a->numFanouts/(a->startTime - curtime)) <  (b->numFanouts/(b->startTime - curtime));
@@ -309,6 +324,17 @@ string RBSWormDetector::getStatistics()
 	oss << "rbsworm: ips cached       : " << statEntriesAdded-statEntriesRemoved << endl;
 	oss << "rbsworm: ips removed      : " << statEntriesRemoved << endl;
 	oss << "rbsworm: worms detected: " << statNumWorms << endl;
+	return oss.str();
+}
+
+std::string RBSWormDetector::getStatisticsXML()
+{
+	ostringstream oss;
+	oss << "<rbswormdetector>" << endl;
+	oss << "<frequencies>" << lambda_0 << " " << lambda_1 << "</frequencies>" << endl;
+	oss << "<entrycount>" << statEntriesAdded-statEntriesRemoved << "</entrycount>" << endl;
+	oss << "<wormsdetected>" << statNumWorms << "</wormsdetected>" << endl;
+	oss << "</rbswormdetector>" << endl;
 	return oss.str();
 }
 

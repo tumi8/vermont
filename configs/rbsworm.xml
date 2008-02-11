@@ -1,10 +1,10 @@
 <ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
-        <!--<sensorManager id="99">
-                <checkinterval>2</checkinterval>
-        </sensorManager>-->
+       <sensorManager id="99">
+                <checkinterval>10</checkinterval>
+        </sensorManager>
 
 <observer id="1">
-	<interface>lo</interface>
+	<interface>eth0</interface>
 	<pcap_filter>ip</pcap_filter>
 	<next>3</next>
 </observer>
@@ -49,7 +49,7 @@
 		</nonFlowKey>
 	</rule>
 	<expiration>
-		<inactiveTimeout unit="sec">10</inactiveTimeout>
+		<inactiveTimeout unit="sec">2</inactiveTimeout>
 		<activeTimeout unit="sec">60</activeTimeout>
 	</expiration>
 	<pollInterval unit="msec">1000</pollInterval>
