@@ -109,6 +109,19 @@ void IDMEFMessage::setVariable(const string key, const uint32_t value)
 	parameterValues[key] = valtext;
 }
 
+void IDMEFMessage::setVariable(const string key, const uint16_t value)
+{
+	char valtext[15];
+	snprintf(valtext, 15, "%u", value);
+	parameterValues[key] = valtext;
+}
+void IDMEFMessage::setVariable(const string key,const double value) 
+{
+
+	char valtext[15];
+	snprintf(valtext,15, "%f",value);
+	parameterValues[key] = valtext;
+}
 /**
  * returns ntp time string for idmef message
  */

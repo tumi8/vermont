@@ -49,7 +49,7 @@ class RBSWormDetector
 			uint32_t dstSubnet;
 			uint32_t dstSubnetMask;
 			uint32_t numFanouts;
-			uint32_t startTime;
+			struct timeval startTime;
 			int32_t timeExpire;
 			list<uint32_t> accessedHosts;
 			RBSDecision decision;

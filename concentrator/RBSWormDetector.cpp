@@ -58,8 +58,8 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 
 
 	/* caution: usually the lambda values are calculated after timeAdaptInterval but you can preset them */
-	//lambda_0 = 3.5; // fanout frequency of a benign host
-	//lambda_1 = lambda_ratio * lambda_0; // fanout frequency of a infected host
+	lambda_0 = 3.5; // fanout frequency of a benign host
+	lambda_1 = lambda_ratio * lambda_0; // fanout frequency of a infected host
 
 
 	float logeta_1 = logf(P_D/P_F);
@@ -130,9 +130,19 @@ void RBSWormDetector::addConnection(Connection* conn)
 
 	float thresh_0 = te->numFanouts * slope_0a - slope_0b;
 	float thresh_1 = te->numFanouts * slope_1a - slope_1b;
-	uint32_t time_ela = time(0) - te->startTime;
+	
+	struct timeval time_elams;
+	gettimeofday(&time_elams,NULL);
+	
+	double time_ela = time_elams.tv_sec - (te->startTime).tv_sec ;
+	msg(MSG_INFO,"%f",time_ela);
+	time_ela += ((double) time_elams.tv_usec - (double)(te->startTime).tv_usec) / 1000000;
 
-	msg(MSG_INFO,"Thresholds calculated: H1: %f H0: %f TIME: %d CONNS: %d",thresh_0, thresh_1,time_ela,te->numFanouts);
+	msg(MSG_INFO,"%d",time_elams.tv_usec);
+	msg(MSG_INFO,"%d",(te->startTime).tv_usec);
+	msg(MSG_INFO,"%f",((double) time_elams.tv_usec - (double) (te->startTime).tv_usec) / 1000000);
+
+	msg(MSG_INFO,"Thresholds calculated: H1: %f H0: %f TIME: %f CONNS: %d",thresh_0, thresh_1,time_ela,te->numFanouts);
 	msg(MSG_INFO, "dstIP: %s", IPToString(conn->dstIP).c_str());
 	msg(MSG_INFO, "srcIP: %s", IPToString(te->srcIP).c_str());
 
@@ -158,7 +168,7 @@ void RBSWormDetector::addConnection(Connection* conn)
 		IDMEFMessage* msg = idmefManager.getNewInstance();
 		msg->init(idmefTemplate, analyzerId);
 		msg->setVariable(PAR_FAN_OUT, te->numFanouts);
-		msg->setVariable(PAR_TOTALTIME, (int) time_ela);
+		msg->setVariable(PAR_TOTALTIME, time_ela);
 		msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(te->srcIP));
 		msg->applyVariables();
 		send(msg);
@@ -212,7 +222,7 @@ RBSWormDetector::RBSEntry* RBSWormDetector::createEntry(Connection* conn)
 	RBSEntry* rbs = new RBSEntry();
 	rbs->srcIP = conn->srcIP;
 	rbs->numFanouts = 0;
-	rbs->startTime = time(0);
+	gettimeofday(&rbs->startTime,NULL);
 	rbs->timeExpire = time(0) + timeExpirePending;
 	rbs->decision = PENDING;
 	statEntriesAdded++;
@@ -284,7 +294,7 @@ void RBSWormDetector::adaptFrequencies ()
 		count++;
 		//trim bottom and top 10%
 		if (count > num10 && count <( adaptList.size() - num10)) 
-			temp1 += (*iter)->numFanouts/((*iter)->startTime-curtime);
+			temp1 += (*iter)->numFanouts/(((*iter)->startTime).tv_sec - curtime);
 
 		iter++;
 	}
@@ -315,7 +325,7 @@ void RBSWormDetector::adaptFrequencies ()
  */
 bool RBSWormDetector::comp_entries(RBSEntry* a,RBSEntry* b) {
 	uint32_t curtime = time(0);
-	return (a->numFanouts/(a->startTime - curtime)) <  (b->numFanouts/(b->startTime - curtime));
+	return (a->numFanouts/((a->startTime).tv_sec - curtime)) <  (b->numFanouts/((b->startTime).tv_sec - curtime));
 }
 
 string RBSWormDetector::getStatistics()
