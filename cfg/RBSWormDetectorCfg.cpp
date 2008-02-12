@@ -39,7 +39,7 @@ lambda_ratio(5)
 		} else if (e->matches("timecleanupinterval")) {
 			timeCleanupInterval = getInt("timecleanupinterval");
 		} else if (e->matches("lambdaratio")) {
-			lambda_ratio = (float) getInt("lambdaratio"); //no getfloat :(
+			lambda_ratio = getFloat("lambdaratio"); //no getfloat :(
 		} else if (e->matches("analyzerid")) {
 			analyzerId = e->getFirstText();
 		} else if (e->matches("idmeftemplate")) {

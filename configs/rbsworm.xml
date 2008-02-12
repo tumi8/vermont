@@ -131,7 +131,7 @@
 	<timeexpirebenign>900</timeexpirebenign>
 	<timeadaptinterval>600</timeadaptinterval>
 	<timecleanupinterval>300</timecleanupinterval>
-	<lambdaratio>5</lambdaratio>
+	<lambdaratio>5.5</lambdaratio>
 	<next>9</next>
 </rbsWormDetector>	
 

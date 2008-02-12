@@ -57,6 +57,7 @@ public:
 	 */
 	int getInt(const std::string& name, int def = 0, XMLElement* elem = NULL);
 	
+	double getFloat(const std::string& name, double def = 0, XMLElement* elem = NULL);
 	/**
 	 * returns the time value specified in the element in a given unit
 	 * @param name the name of the element
