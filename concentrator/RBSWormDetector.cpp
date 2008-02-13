@@ -58,7 +58,7 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 
 
 	/* caution: usually the lambda values are calculated after timeAdaptInterval but you can preset them */
-	lambda_0 = 3.5; // fanout frequency of a benign host
+//	lambda_0 = 3.5; // fanout frequency of a benign host
 	lambda_1 = lambda_ratio * lambda_0; // fanout frequency of a infected host
 
 
@@ -77,6 +77,9 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 
 	lastAdaption = time(0);
 	lastCleanup = time(0);
+	statEntriesAdded = 0;
+	statEntriesRemoved = 0;
+	statNumWorms = 0;
 
 	rbsEntries = new list<RBSEntry*>[hashSize];
 	msg(MSG_INFO,"RBSWormDetector started");
@@ -109,6 +112,9 @@ void RBSWormDetector::addConnection(Connection* conn)
 	//we are still in the startup phase, dont do anything
 	if (lambda_0 == 0) return;
 
+	// aggregate new connection into entry even if its not processed, we need the average values
+	te->numFanouts++;
+
 	// this host was already decided on, don't do anything any more
 	if (te->decision != PENDING) return;
 
@@ -123,8 +129,6 @@ void RBSWormDetector::addConnection(Connection* conn)
 	te->timeExpire = time(0) + timeExpirePending;
 
 
-	// aggregate new connection into entry
-	te->numFanouts++;
 
 	// calculate thresholds
 
@@ -344,6 +348,7 @@ std::string RBSWormDetector::getStatisticsXML()
 	oss << "<frequencies>" << lambda_0 << " " << lambda_1 << "</frequencies>" << endl;
 	oss << "<entrycount>" << statEntriesAdded-statEntriesRemoved << "</entrycount>" << endl;
 	oss << "<wormsdetected>" << statNumWorms << "</wormsdetected>" << endl;
+	oss << "<nextadaptionin>" << timeAdaptInterval - (time(0) - lastAdaption)   << "</nextadaptionin>" << endl;
 	oss << "</rbswormdetector>" << endl;
 	return oss.str();
 }
