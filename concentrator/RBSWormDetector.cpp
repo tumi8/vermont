@@ -58,7 +58,7 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 
 
 	/* caution: usually the lambda values are calculated after timeAdaptInterval but you can preset them */
-//	lambda_0 = 3.5; // fanout frequency of a benign host
+	//	lambda_0 = 3.5; // fanout frequency of a benign host
 	lambda_1 = lambda_ratio * lambda_0; // fanout frequency of a infected host
 
 
@@ -98,26 +98,25 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 
 	// only use this connection if it was a connection attempt
 	if (conn.srcTcpControlBits&Connection::SYN ) {
-	//	msg(MSG_INFO,"NEW CONN: %x",conn.dstTcpControlBits);
-	//
-	uint32_t unisubnet = 2210136064;
-	uint32_t unisubmask = 4294901760;
+		//	msg(MSG_INFO,"NEW CONN: %x",conn.dstTcpControlBits);
+		//
+		uint32_t unisubnet = ntohl(2210136064UL);
+		uint32_t unisubmask = ntohl(4294901760UL);
 
-
-if (conn.srcIP < 2210201600UL && conn.srcIP > 2210136064UL ) 
+		if ((conn.srcIP & unisubmask) == unisubnet) 
 		{
-	msg(MSG_FATAL,"%u",conn.srcIP);
-//		addConnection(&conn);
+			msg(MSG_FATAL,"%s", IPToString(conn.srcIP).c_str());
+			addConnection(&conn);
 		}
-}
-	
+
+	}
 }
 
 
 void RBSWormDetector::addConnection(Connection* conn)
 {
 	RBSEntry* te = getEntry(conn);
-	
+
 	//we are still in the startup phase, dont do anything
 	if (lambda_0 == 0) return;
 
@@ -143,10 +142,10 @@ void RBSWormDetector::addConnection(Connection* conn)
 
 	float thresh_0 = te->numFanouts * slope_0a - slope_0b;
 	float thresh_1 = te->numFanouts * slope_1a - slope_1b;
-	
+
 	struct timeval time_elams;
 	gettimeofday(&time_elams,NULL);
-	
+
 	double time_ela = time_elams.tv_sec - (te->startTime).tv_sec ;
 	msg(MSG_INFO,"%f",time_ela);
 	time_ela += ((double) time_elams.tv_usec - (double)(te->startTime).tv_usec) / 1000000;
