@@ -4,7 +4,7 @@
         </sensorManager>
 
 <observer id="1">
-	<interface>eth0</interface>
+	<interface>eth1</interface>
 	<pcap_filter>ip</pcap_filter>
 	<next>3</next>
 </observer>

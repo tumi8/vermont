@@ -99,8 +99,17 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 	// only use this connection if it was a connection attempt
 	if (conn.srcTcpControlBits&Connection::SYN ) {
 	//	msg(MSG_INFO,"NEW CONN: %x",conn.dstTcpControlBits);
-		addConnection(&conn);
-	}
+	//
+	uint32_t unisubnet = 2210136064;
+	uint32_t unisubmask = 4294901760;
+
+
+if (conn.srcIP < 2210201600UL && conn.srcIP > 2210136064UL ) 
+		{
+	msg(MSG_FATAL,"%u",conn.srcIP);
+//		addConnection(&conn);
+		}
+}
 	
 }
 
