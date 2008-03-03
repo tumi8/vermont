@@ -47,7 +47,10 @@ class RBSWormDetector
 		struct RBSEntry {
 			uint32_t srcIP;
 			uint32_t numFanouts;
-			struct timeval startTime;
+			uint64_t startTime;
+			uint64_t lastPacket;
+			uint32_t totalSSDur;
+			uint32_t totalSSNum;
 			double mean;
 			int32_t timeExpire;
 			list<uint32_t> accessedHosts;

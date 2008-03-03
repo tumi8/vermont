@@ -148,13 +148,6 @@ void Connection::swapDataFields()
  */
 void Connection::swapIfNeeded()
 {
-	// try to find initiating host by analyzing the SYN and ACK bits
-	if ((srcTcpControlBits&SYN) && !(srcTcpControlBits&ACK)) return;
-	if ((dstTcpControlBits&SYN) && !(dstTcpControlBits&ACK)) {
-		swapDataFields();
-		return;
-	}
-
 	// now try the starting time
 	if (srcTimeStart>dstTimeStart) swapDataFields();
 }

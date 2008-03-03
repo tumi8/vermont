@@ -98,6 +98,8 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 
+	conn.swapIfNeeded();
+
 	// only use this connection if it was a connection attempt
 	if (conn.srcTcpControlBits&Connection::SYN ) {
 		//	msg(MSG_INFO,"NEW CONN: %x",conn.dstTcpControlBits);
@@ -124,24 +126,37 @@ void RBSWormDetector::addConnection(Connection* conn)
 
 	// aggregate new connection into entry even if its not processed, we need the average values
 	te->numFanouts++;
-	
+
 	te->accessedHosts.push_back(conn->dstIP);
 
 	te->timeExpire = time(0) + timeExpirePending;
 
-	struct timeval time_elams;
-	gettimeofday(&time_elams,NULL);
-
-	double time_ela = time_elams.tv_sec - (te->startTime).tv_sec ;
-	time_ela += ((double) time_elams.tv_usec - (double)(te->startTime).tv_usec) / 1000000;
+	uint64_t time_elams = ntohll(conn->srcTimeStart); 
+	//timeelams represents time since 1970 in milliseconds
 	
-	if (te->numFanouts > 1) 
-	{
-		//calculate mean interarrival time
-		te->mean = time_ela / (te->numFanouts-1); 
-	//	msg(MSG_FATAL,"%f for %u in %f",te->mean,te->numFanouts,time_ela);
+	double trace_ela = (double) (time_elams - te->startTime) / 1000;
+	//traceela is packet trace time in seconds
+
+	uint64_t intarrival = abs((int64_t) (time_elams - te->lastPacket));
+	//duration between last 2 packets
+	msg(MSG_FATAL,"interarrival %llu",intarrival); 
+
+	if (intarrival < 1000) 
+	{	
+		//last 2 packets occured within 1 second;
+		te->totalSSNum++;
+		te->totalSSDur += intarrival;
+
+			if (te->totalSSDur < 1000) 
+			te->mean = 1 / (double) (te->totalSSNum);
+			else
+			te->mean = (te->totalSSDur/ (double) 1000) / (double) (te->totalSSNum);
+
+//		msg(MSG_FATAL,"2 Schnelle pakete, innerhalb %llu new mean %f",intarrival,te->mean);
+
 	}
 
+	te->lastPacket = time_elams;
 
 	//we are still in the startup phase, dont do anything
 	if (lambda_0 == 0) return;
@@ -155,24 +170,25 @@ void RBSWormDetector::addConnection(Connection* conn)
 	float thresh_0 = te->numFanouts * slope_0a - slope_0b;
 	float thresh_1 = te->numFanouts * slope_1a - slope_1b;
 
+	/*
 	msg(MSG_INFO,"%d",time_elams.tv_usec);
-	msg(MSG_INFO,"%d",(te->startTime).tv_usec);
+	msg(MSG_INFO,"%d",te->startTime);
 	msg(MSG_INFO,"%f",((double) time_elams.tv_usec - (double) (te->startTime).tv_usec) / 1000000);
-
-	msg(MSG_INFO,"Thresholds calculated: H1: %f H0: %f TIME: %f CONNS: %d",thresh_0, thresh_1,time_ela,te->numFanouts);
+*/
+	msg(MSG_INFO,"Thresholds calculated: H1: %f H0: %f TIME: %f CONNS: %d",thresh_0, thresh_1,trace_ela,te->numFanouts);
 	msg(MSG_INFO, "dstIP: %s", IPToString(conn->dstIP).c_str());
 	msg(MSG_INFO, "srcIP: %s", IPToString(te->srcIP).c_str());
 
 	if (te->numFanouts < lambda_0) return;  //need more connections to evaluate
 
 	// look if information is adequate for deciding on host
-	if (time_ela>thresh_0)
+	if (trace_ela>thresh_0)
 	{
 		// no worm, just let entry stay here until it expires
 		te->timeExpire = time(0)+timeExpireBenign;
 		te->decision = BENIGN;
 	}
-	else if (time_ela<thresh_1) 
+	else if (trace_ela<thresh_1) 
 	{
 		//this is a worm
 		te->decision = WORM;
@@ -180,12 +196,12 @@ void RBSWormDetector::addConnection(Connection* conn)
 		te->timeExpire = time(0)+timeExpireWorm;
 		msg(MSG_DEBUG, "Worm detected:");
 		msg(MSG_DEBUG, "srcIP: %s", IPToString(te->srcIP).c_str());
-		msg(MSG_DEBUG, "numFanOut: %d, totalTime: %d",te->numFanouts, time_ela);
+		msg(MSG_DEBUG, "numFanOut: %d, totalTime: %d",te->numFanouts, trace_ela);
 
 		IDMEFMessage* msg = idmefManager.getNewInstance();
 		msg->init(idmefTemplate, analyzerId);
-		msg->setVariable(PAR_FAN_OUT, te->numFanouts);
-		msg->setVariable(PAR_TOTALTIME, time_ela);
+		msg->setVariable(PAR_FAN_OUT, (uint32_t) te->numFanouts);
+		msg->setVariable(PAR_TOTALTIME, (uint32_t) trace_ela);
 		msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(te->srcIP));
 		msg->applyVariables();
 		send(msg);
@@ -239,7 +255,12 @@ RBSWormDetector::RBSEntry* RBSWormDetector::createEntry(Connection* conn)
 	RBSEntry* rbs = new RBSEntry();
 	rbs->srcIP = conn->srcIP;
 	rbs->numFanouts = 0;
-	gettimeofday(&rbs->startTime,NULL);
+	rbs->totalSSDur = 0;
+	rbs->lastPacket = 0;
+	struct timeval temp;
+	gettimeofday(&temp,NULL);
+	rbs->startTime = ntohll(conn->srcTimeStart);
+	rbs->totalSSNum = 0;
 	rbs->timeExpire = time(0) + timeExpirePending;
 	rbs->decision = PENDING;
 	rbs->mean = 0;
@@ -319,18 +340,18 @@ void RBSWormDetector::adaptFrequencies ()
 		{
 			if ((*iter)->mean > 0) 
 			{
-			valid++;
-			 temp1 += (*iter)->mean;
-			 }
-			 else {
-			 invalid++;
-			 }
+				valid++;
+				temp1 += (*iter)->mean;
+			}
+			else {
+				invalid++;
+			}
 		}
 		iter++;
 	}
 
 	msg(MSG_FATAL,"valid entries %u invalid %u total %u cut %u",valid,invalid,count,2*num10);
-	
+
 	msg(MSG_FATAL,"calculated mean interarrival time=%f seconds",temp1/valid);
 	lambda_0 = 1.0 / (temp1/valid);	
 	lambda_1 = lambda_ratio*lambda_0;
