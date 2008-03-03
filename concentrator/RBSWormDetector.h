@@ -46,10 +46,9 @@ class RBSWormDetector
 		enum RBSDecision { PENDING, WORM, BENIGN };
 		struct RBSEntry {
 			uint32_t srcIP;
-			uint32_t dstSubnet;
-			uint32_t dstSubnetMask;
 			uint32_t numFanouts;
 			struct timeval startTime;
+			double mean;
 			int32_t timeExpire;
 			list<uint32_t> accessedHosts;
 			RBSDecision decision;

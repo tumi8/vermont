@@ -1,3 +1,4 @@
+
 /*
  * VERMONT 
  * Copyright (C) 2008 David Eckhoff <sidaeckh@informatik.stud.uni-erlangen.de>
@@ -84,6 +85,7 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 	rbsEntries = new list<RBSEntry*>[hashSize];
 	msg(MSG_INFO,"RBSWormDetector started");
 	msg(MSG_INFO,"Initial values: lambdas %f %f, slopes %f - %f, slopes %f - %f, adaptinterval: %d ,cleaninterval: %d",lambda_0,lambda_1,slope_0a,slope_0b,slope_1a,slope_1b,timeAdaptInterval,timeCleanupInterval);
+	msg(MSG_FATAL,"%d",hashSize);
 }
 
 RBSWormDetector::~RBSWormDetector()
@@ -105,7 +107,6 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 
 		if ((conn.srcIP & unisubmask) == unisubnet) 
 		{
-			msg(MSG_FATAL,"%s", IPToString(conn.srcIP).c_str());
 			addConnection(&conn);
 		}
 
@@ -117,38 +118,42 @@ void RBSWormDetector::addConnection(Connection* conn)
 {
 	RBSEntry* te = getEntry(conn);
 
-	//we are still in the startup phase, dont do anything
-	if (lambda_0 == 0) return;
-
-	// aggregate new connection into entry even if its not processed, we need the average values
-	te->numFanouts++;
-
-	// this host was already decided on, don't do anything any more
-	if (te->decision != PENDING) return;
-
-
-	te->timeExpire = time(0) + timeExpirePending;
 
 	// only work with this connection, if it wasn't accessed earlier by this host
 	if (find(te->accessedHosts.begin(), te->accessedHosts.end(), conn->dstIP) != te->accessedHosts.end()) return;
 
+	// aggregate new connection into entry even if its not processed, we need the average values
+	te->numFanouts++;
+	
 	te->accessedHosts.push_back(conn->dstIP);
 
 	te->timeExpire = time(0) + timeExpirePending;
-
-
-
-	// calculate thresholds
-
-	float thresh_0 = te->numFanouts * slope_0a - slope_0b;
-	float thresh_1 = te->numFanouts * slope_1a - slope_1b;
 
 	struct timeval time_elams;
 	gettimeofday(&time_elams,NULL);
 
 	double time_ela = time_elams.tv_sec - (te->startTime).tv_sec ;
-	msg(MSG_INFO,"%f",time_ela);
 	time_ela += ((double) time_elams.tv_usec - (double)(te->startTime).tv_usec) / 1000000;
+	
+	if (te->numFanouts > 1) 
+	{
+		//calculate mean interarrival time
+		te->mean = time_ela / (te->numFanouts-1); 
+	//	msg(MSG_FATAL,"%f for %u in %f",te->mean,te->numFanouts,time_ela);
+	}
+
+
+	//we are still in the startup phase, dont do anything
+	if (lambda_0 == 0) return;
+
+
+	// this host was already decided on, don't do anything any more
+	if (te->decision != PENDING) return;
+
+
+	// calculate thresholds
+	float thresh_0 = te->numFanouts * slope_0a - slope_0b;
+	float thresh_1 = te->numFanouts * slope_1a - slope_1b;
 
 	msg(MSG_INFO,"%d",time_elams.tv_usec);
 	msg(MSG_INFO,"%d",(te->startTime).tv_usec);
@@ -199,8 +204,8 @@ RBSWormDetector::RBSEntry* RBSWormDetector::getEntry(Connection* conn)
 	//regularly adapt new values
 	if (lastAdaption+timeAdaptInterval < (uint32_t) curtime) 
 	{
-		adaptFrequencies();
 		lastAdaption = curtime;
+		adaptFrequencies();
 	}
 
 	// regularly cleanup expired entries in hashtable
@@ -237,6 +242,7 @@ RBSWormDetector::RBSEntry* RBSWormDetector::createEntry(Connection* conn)
 	gettimeofday(&rbs->startTime,NULL);
 	rbs->timeExpire = time(0) + timeExpirePending;
 	rbs->decision = PENDING;
+	rbs->mean = 0;
 	statEntriesAdded++;
 	msg(MSG_INFO,"New RBSEntry created");
 	return rbs;
@@ -275,7 +281,7 @@ void RBSWormDetector::adaptFrequencies ()
 {
 	time_t curtime = time(0);
 	uint32_t count = 0;	
-	uint32_t temp1 = 0;
+	double temp1 = 0;
 
 
 	list<RBSEntry*> adaptList;	
@@ -292,31 +298,41 @@ void RBSWormDetector::adaptFrequencies ()
 			iter++;	
 		}
 	}
-
+	msg(MSG_FATAL,"Superlist created. Size: %u",adaptList.size());
+	time_t bla = time(0);
 	//sort list to cut off top and bottom 10 percent
-	adaptList.sort(RBSWormDetector::comp_entries);
+	adaptList.sort(RBSWormDetector::comp_entries);	
+	msg(MSG_FATAL,"Superlist sorted. Time: %u",time(0)-bla);
 
 	uint32_t num10 = adaptList.size()/10;
 
+
 	list<RBSEntry*>::iterator iter = adaptList.begin();
 
-
+	uint32_t valid = 0;
+	uint32_t invalid = 0;
 	while (iter != adaptList.end()) 
 	{
 		count++;
 		//trim bottom and top 10%
 		if (count > num10 && count <( adaptList.size() - num10)) 
-			temp1 += (*iter)->numFanouts/(((*iter)->startTime).tv_sec - curtime);
-
+		{
+			if ((*iter)->mean > 0) 
+			{
+			valid++;
+			 temp1 += (*iter)->mean;
+			 }
+			 else {
+			 invalid++;
+			 }
+		}
 		iter++;
 	}
 
-	if (temp1 < 3) {
-		msg(MSG_DEBUG,"too little traffic");
-		return;
-	}
-
-	lambda_0 = temp1;		
+	msg(MSG_FATAL,"valid entries %u invalid %u total %u cut %u",valid,invalid,count,2*num10);
+	
+	msg(MSG_FATAL,"calculated mean interarrival time=%f seconds",temp1/valid);
+	lambda_0 = 1.0 / (temp1/valid);	
 	lambda_1 = lambda_ratio*lambda_0;
 
 	float logeta_1 = logf(P_D/P_F);
@@ -328,7 +344,7 @@ void RBSWormDetector::adaptFrequencies ()
 	slope_1a = temp_z/temp_n;
 	slope_1b = logeta_1/temp_n;
 
-	msg(MSG_INFO,"Adapted Frequencies, lambda_0=%f",lambda_0);
+	msg(MSG_FATAL,"Adapted Frequencies, lambda_0=%f",lambda_0);
 }
 
 /*
@@ -337,7 +353,7 @@ void RBSWormDetector::adaptFrequencies ()
  */
 bool RBSWormDetector::comp_entries(RBSEntry* a,RBSEntry* b) {
 	uint32_t curtime = time(0);
-	return (a->numFanouts/((a->startTime).tv_sec - curtime)) <  (b->numFanouts/((b->startTime).tv_sec - curtime));
+	return a->mean < b->mean;
 }
 
 string RBSWormDetector::getStatistics()
@@ -357,6 +373,7 @@ std::string RBSWormDetector::getStatisticsXML()
 	oss << "<entrycount>" << statEntriesAdded-statEntriesRemoved << "</entrycount>" << endl;
 	oss << "<wormsdetected>" << statNumWorms << "</wormsdetected>" << endl;
 	oss << "<nextadaptionin>" << timeAdaptInterval - (time(0) - lastAdaption)   << "</nextadaptionin>" << endl;
+	oss << "<nextcleanup>" << timeCleanupInterval - (time(0) - lastCleanup)   << "</nextcleanup>" << endl;
 	oss << "</rbswormdetector>" << endl;
 	return oss.str();
 }

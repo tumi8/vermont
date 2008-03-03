@@ -69,7 +69,7 @@
 	<timeexpireworm>1800</timeexpireworm>
 	<timeexpirebenign>900</timeexpirebenign>
 	<timeadaptinterval>600</timeadaptinterval>
-	<timecleanupinterval>300</timecleanupinterval>
+	<timecleanupinterval>15000</timecleanupinterval>
 	<lambdaratio>5</lambdaratio>
 	<next>9</next>
 </rbsWormDetector>	
