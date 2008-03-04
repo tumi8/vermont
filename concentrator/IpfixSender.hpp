@@ -100,11 +100,10 @@ private:
 	uint16_t recordCacheTimeout; /**< how long may records be cached until sent, milliseconds */
 	bool timeoutRegistered; /**< true if next timeout was already registered in timer */
 	bool recordsAlreadySent; /**< true if records were sent to the network as the packet was full */
-	uint32_t maxPacketRate; /**< maximum number of packets sent per second */
 	struct timeval curTimeStep; /**< current time used for determining packet rate */
 	uint32_t packetsSentStep; /**< number of packets sent in timestep (usually 100ms)*/
 	uint32_t udpRateLimit;  /** maximum number of packets per seconds to be sent over the wire */
-	
+
 	timespec nextTimeout;
 	
 	queue<IpfixRecord*> recordsToRelease;

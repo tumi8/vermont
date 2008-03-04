@@ -54,6 +54,7 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, uint32_t udpRateLimit)
 {
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 	statSentDataRecords = 0;
+	statPacketsInFlows = 0;
 	currentTemplateId = 0;
 	lastTemplateId = SENDER_TEMPLATE_ID_LOW;
 	
@@ -370,7 +371,7 @@ void IpfixSender::endAndSendDataSet()
 		struct timeval tv;
 		gettimeofday(&tv, 0);
 		if ((tv.tv_sec==curTimeStep.tv_sec) && (tv.tv_usec/100000==curTimeStep.tv_usec/100000)) {			
-			if (packetsSentStep>maxPacketRate/10) {
+			if (packetsSentStep>udpRateLimit/10) {
 				// wait until current timestep is over
 				usleep(100000-(tv.tv_usec%100000));				
 			}

@@ -551,7 +551,7 @@ void PacketHashtable::updatePointers(const Packet* p)
  */
 void PacketHashtable::aggregatePacket(const Packet* p)
 {
-	// the following lock should almost never fail (only during reconfiguration)
+	// the following lock should almost never block (only during reconfiguration)
 	while (__sync_lock_test_and_set(&aggInProgress, 1)) {
 		timespec req;
 		req.tv_sec = 0;

@@ -114,9 +114,6 @@ void ConfigManager::parseConfig(std::string fileName)
 		}
 	}
 	
-	
-	
-
 	if (!oldGraph) { // this is the first config we have read
 		Connector connector;
 		graph->accept(&connector);

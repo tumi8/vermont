@@ -41,7 +41,7 @@ class IpfixReceiverUdpIpV4 : public IpfixReceiver, Sensor {
 		
 	private:
 		int listen_socket;
-		uint32_t statReceivedPackets;  /**< number of received packets since last call of getStatistics() */ 
+		uint32_t statReceivedPackets;  /**< number of received packets */ 
 };
 
 #endif
