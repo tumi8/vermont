@@ -36,7 +36,7 @@ class ManagedInstance
 
 	private:
 		InstanceManager<T>* myInstanceManager;
-		unsigned int referenceCount;
+		int32_t referenceCount;
 #if defined(DEBUG)
         bool deletedByManager;
 #endif
