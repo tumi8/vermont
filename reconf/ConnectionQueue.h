@@ -38,7 +38,7 @@ class ConnectionQueue : public Adapter<T>, public Timer
 {
 public:
 	ConnectionQueue(uint32_t maxEntries = 1)
-		: queue(maxEntries), thread(threadWrapper), statQueueEntries(0)
+		: queue(maxEntries), thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
 	{ 
 		this->Sensor::usedBytes = sizeof(ConnectionQueue);
 	}
@@ -51,6 +51,7 @@ public:
 	virtual void receive(T packet)
 	{
 		DPRINTF("receive(Packet*)");
+		statTotalReceived++;
 		queue.push(packet);
 	}
 	
@@ -109,6 +110,7 @@ private:
 	list<TimeoutEntry*> timeouts;
 	Mutex mutex;	/**< controls access to class variable timeouts */
 	uint32_t statQueueEntries;
+	uint32_t statTotalReceived;
 	
 	/**
 	 * processes all timeouts in queue which have already timed out
@@ -196,7 +198,7 @@ private:
 		char text[200];
 		uint32_t entries = queue.getCount();
 		this->Sensor::usedBytes = entries*sizeof(T);
-		sprintf(text, "<entries>%u</entries>", entries);
+		snprintf(text, ARRAY_SIZE(text), "<entries>%u</entries><totalReceived>%u</totalReceived>", entries, statTotalReceived);
 		return string(text);
 	}
 };
