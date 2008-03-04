@@ -349,6 +349,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 				ipfixRecord->dataLength = bt->recordLength;
 				ipfixRecord->message = message;
 				ipfixRecord->data = record;
+				statTotalDataRecords++;
 				push(ipfixRecord);
 				record = record + bt->recordLength;
 			}
@@ -386,6 +387,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 				ipfixRecord->dataLength = recordLength;
 				ipfixRecord->message = message;
 				ipfixRecord->data = record;
+				statTotalDataRecords++;
 				push(ipfixRecord);
 				record = record + recordLength;
 			}
@@ -406,7 +408,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 					ipfixRecord->optionsTemplateInfo = ti;
 					ipfixRecord->dataLength = bt->recordLength;
 					ipfixRecord->message = message;
-					ipfixRecord->data = record;
+					ipfixRecord->data = record;					
 					push(ipfixRecord);
 					record = record + bt->recordLength;
 				}
@@ -581,7 +583,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 			processOptionsTemplateSet(sourceId, message, set);
 			break;
 		default:
-			if(tmpid >= IPFIX_SetId_Data_Start) {
+			if(tmpid >= IPFIX_SetId_Data_Start) {				
 				processDataSet(sourceId, message, set);
 			} else {
 				msg(MSG_ERROR, "processIpfixPacket: Unsupported Set ID - expected 2/3/4/256+, got %d", tmpid);
@@ -762,7 +764,7 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
  * @return handle to created instance
  */
 IpfixParser::IpfixParser(IpfixRecordSender* sender) 
-	: statProcessedFlows(0),
+	: statTotalDataRecords(0),
 	  ipfixRecordSender(sender)
 {
 
@@ -792,26 +794,20 @@ IpfixParser::~IpfixParser() {
 /**
  * statistics function called by StatisticsManager
  */
-std::string IpfixParser::getStatistics()
+std::string IpfixParser::getStatisticsXML()
 {
 	ostringstream oss;
 	
-	uint32_t recv = statProcessedFlows;
-	statProcessedFlows -= recv;
-	
-	oss << "IpfixParser: processed flows: " << recv << endl;	
+	oss << "<totalDataRecords>" << statTotalDataRecords << "</totalDataRecords>";	
 
 	return oss.str();
 }
 
 /**
  * function push overwritten from FlowSource
- * needed for generating statistics, all records are passed through to
- * FlowSink::push
  */
 void IpfixParser::push(IpfixRecord* ipfixRecord)
 {
-	statProcessedFlows++;
 	ipfixRecordSender->send(ipfixRecord);
 }
 
