@@ -141,6 +141,7 @@ int ipfix_init_exporter(uint32_t source_id, ipfix_exporter **exporter)
         tmp->sequence_number = 0;
         tmp->collector_num = 0; // valgrind kindly asked me to inititalize this value JanP
         tmp->collector_max_num = 0;
+        tmp->force_template_send = 1;
 
 
         // initialize the sendbuffers
@@ -790,10 +791,12 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
         time_t time_now = time(NULL);
 
         // has the timer expired?
-        if ( (time_now - exporter->last_template_transmission_time) >  exporter->template_transmission_timer) {
+        if ( exporter->force_template_send || ((time_now - exporter->last_template_transmission_time) >  exporter->template_transmission_timer)) {
 
-                // send the template date
-
+        		exporter->force_template_send = 0;
+                
+        		// send the template date
+        	
                 // hope, the template sendbuffer is valid.
 
                 // update the sendbuffer header, as we must set the export time & sequence number!
@@ -993,7 +996,7 @@ int ipfix_start_data_set(ipfix_exporter *exporter, uint16_t template_id)
 {
 	ipfix_set_manager *manager = &(exporter->data_sendbuffer->set_manager);
 	unsigned current = manager->set_counter;
-    
+	
 	// security check
 	if(exporter->data_sendbuffer->current != exporter->data_sendbuffer->committed) {
                 msg(MSG_ERROR, "IPFIX: start_data_set called twice.");
@@ -1174,6 +1177,7 @@ out:
  */
 int ipfix_start_datatemplate_set (ipfix_exporter *exporter, uint16_t template_id, uint16_t preceding, uint16_t field_count, uint16_t fixedfield_count)
 {
+		exporter->force_template_send = 1;
         // are we updating an existing template?
         int i;
         int searching;

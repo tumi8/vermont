@@ -301,6 +301,10 @@ typedef struct {
 	// we also need some timer / counter to indicate,
 	// if we should send the templates too.
 	uint32_t last_template_transmission_time;
+	
+	// force template send next time packets are sent (to include new template ids)
+	uint32_t force_template_send;
+	
 	// time, after templates are transmitted again
 	uint32_t template_transmission_timer;
 
