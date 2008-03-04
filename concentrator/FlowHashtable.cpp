@@ -215,27 +215,13 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecor
  */
 int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data* flow, bool reverse)
 {
-	// the following lock should almost never fail (only during reconfiguration)
-	while (atomic_lock(&aggInProgress)) {
-		timespec req;
-		req.tv_sec = 0;
-		req.tv_nsec = 50000000;
-		nanosleep(&req, &req);
-	}
-		
 	int i;
 
 	if(!baseFlow) {
-		DPRINTF("aggregateFlow: baseFlow is NULL");
-		msg(MSG_INFO, "sync lock release");
-		atomic_release(&aggInProgress);
 		return 1;
 	}
 
 	if(!flow){
-		DPRINTF("aggregateFlow: flow is NULL");
-		msg(MSG_INFO, "sync lock release");
-		atomic_release(&aggInProgress);
 		return 1;
 	}
 
@@ -285,7 +271,7 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 			aggregateField(&fi->type, baseFlow + fi->offset, flow + fi->offset);
 		}
 	}
-	
+
 	atomic_release(&aggInProgress);
 
 	return 0;
@@ -510,6 +496,8 @@ void FlowHashtable::copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord:
  */
 void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord::Data* data)
 {
+	DPRINTF("called");
+
 	// the following lock should almost never fail (only during reconfiguration)
 	while (atomic_lock(&aggInProgress)) {
 		timespec req;
@@ -517,7 +505,6 @@ void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRe
 		req.tv_nsec = 50000000;
 		nanosleep(&req, &req);
 	}
-	DPRINTF("FlowHashtable::aggregateTemplateData called");
 	int i;
 
 	/* Create data block to be inserted into buffer... */
