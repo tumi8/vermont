@@ -49,6 +49,10 @@ class IpfixPrinter : public Module, public IpfixRecordDestination, public Source
 
 	protected:
 		void* lastTemplate;
+		uint32_t linesPrinted;
+		
+	private:
+		void printUint(char* buf, IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
 };
 
 #endif

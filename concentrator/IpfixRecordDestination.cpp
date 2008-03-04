@@ -38,49 +38,38 @@ void IpfixRecordDestination::receive(IpfixRecord* ipfixRecord)
 	{
 		IpfixDataRecord* rec = dynamic_cast<IpfixDataRecord*>(ipfixRecord);
 		if (rec) onDataRecord(rec);
-			//onDataRecord(rec->sourceID.get(), rec->templateInfo.get(), rec->dataLength, rec->data);
 	}
 	{
 		IpfixDataDataRecord* rec = dynamic_cast<IpfixDataDataRecord*>(ipfixRecord);
 		if (rec) onDataDataRecord(rec);
-			//onDataDataRecord(rec->sourceID.get(), rec->dataTemplateInfo.get(), rec->dataLength,
-				//	rec->data);
 	}
 	{
 		IpfixOptionsRecord* rec = dynamic_cast<IpfixOptionsRecord*>(ipfixRecord);
 		if (rec) onOptionsRecord(rec);
-			//onOptionsRecord(rec->sourceID.get(), rec->optionsTemplateInfo.get(), rec->dataLength,
-				//	rec->data);
 	}
 	{
 		IpfixTemplateRecord* rec = dynamic_cast<IpfixTemplateRecord*>(ipfixRecord);
 		if (rec) onTemplate(rec);
-			//onTemplate(rec->sourceID.get(), rec->templateInfo.get());
 	}
 	{
 		IpfixDataTemplateRecord* rec = dynamic_cast<IpfixDataTemplateRecord*>(ipfixRecord);
 		if (rec) onDataTemplate(rec);
-			//onDataTemplate(rec->sourceID.get(), rec->dataTemplateInfo.get());
 	}
 	{
 		IpfixOptionsTemplateRecord* rec = dynamic_cast<IpfixOptionsTemplateRecord*>(ipfixRecord);
 		if (rec) onOptionsTemplate(rec);
-			//onOptionsTemplate(rec->sourceID.get(), rec->optionsTemplateInfo.get());
 	}
 	{
 		IpfixTemplateDestructionRecord* rec = dynamic_cast<IpfixTemplateDestructionRecord*>(ipfixRecord);
 		if (rec) onTemplateDestruction(rec);
-			//onTemplateDestruction(rec->sourceID.get(), rec->templateInfo.get());
 	}
 	{
 		IpfixDataTemplateDestructionRecord* rec = dynamic_cast<IpfixDataTemplateDestructionRecord*>(ipfixRecord);
 		if (rec) onDataTemplateDestruction(rec);
-			//onDataTemplateDestruction(rec->sourceID.get(), rec->dataTemplateInfo.get());
 	}
 	{
 		IpfixOptionsTemplateDestructionRecord* rec = dynamic_cast<IpfixOptionsTemplateDestructionRecord*>(ipfixRecord);
 		if (rec) onOptionsTemplateDestruction(rec);
-			//onOptionsTemplateDestruction(rec->sourceID.get(), rec->optionsTemplateInfo.get());
 	}
 }
 
@@ -91,6 +80,7 @@ void IpfixRecordDestination::receive(IpfixRecord* ipfixRecord)
  */
 void IpfixRecordDestination::onTemplate(IpfixTemplateRecord* record)
 {
+	record->removeReference();
 }
 
 /**
@@ -100,6 +90,7 @@ void IpfixRecordDestination::onTemplate(IpfixTemplateRecord* record)
  */
 void IpfixRecordDestination::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
 {
+	record->removeReference();
 }
 
 /**
@@ -109,6 +100,7 @@ void IpfixRecordDestination::onOptionsTemplate(IpfixOptionsTemplateRecord* recor
  */
 void IpfixRecordDestination::onDataTemplate(IpfixDataTemplateRecord* record)
 {
+	record->removeReference();
 }
 
 /**
@@ -120,6 +112,7 @@ void IpfixRecordDestination::onDataTemplate(IpfixDataTemplateRecord* record)
  */
 void IpfixRecordDestination::onDataRecord(IpfixDataRecord* record)
 {
+	record->removeReference();
 }
 
 
@@ -133,6 +126,7 @@ void IpfixRecordDestination::onDataRecord(IpfixDataRecord* record)
  */
 void IpfixRecordDestination::onOptionsRecord(IpfixOptionsRecord* record)
 {
+	record->removeReference();
 }
 
 /**
@@ -144,6 +138,7 @@ void IpfixRecordDestination::onOptionsRecord(IpfixOptionsRecord* record)
  */
 void IpfixRecordDestination::onDataDataRecord(IpfixDataDataRecord* record)
 {
+	record->removeReference();
 }
 
 /**
@@ -154,6 +149,7 @@ void IpfixRecordDestination::onDataDataRecord(IpfixDataDataRecord* record)
  */
 void IpfixRecordDestination::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
+	record->removeReference();
 }
 
 /**
@@ -164,6 +160,7 @@ void IpfixRecordDestination::onTemplateDestruction(IpfixTemplateDestructionRecor
  */
 void IpfixRecordDestination::onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record)
 {
+	record->removeReference();
 }
 
 /**
@@ -174,6 +171,7 @@ void IpfixRecordDestination::onOptionsTemplateDestruction(IpfixOptionsTemplateDe
  */
 void IpfixRecordDestination::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record)
 {
+	record->removeReference();
 }
 
 

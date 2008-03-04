@@ -50,6 +50,7 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 {
 	printf("\n-+--- Template (id=%u)\n", record->templateInfo->templateId);
 	printf(" `---\n\n");
+	record->removeReference();
 }
 
 /**
@@ -60,7 +61,28 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record) 
 {
 	printf("Destroyed a Template (id=%u)\n", record->templateInfo->templateId);
+	record->removeReference();
+}
 
+
+void IpfixPrinter::printUint(char* buf, IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
+	switch (type.length) {
+	case 1:
+		sprintf(buf, "%hhu",*(uint8_t*)data);
+		return;
+	case 2:
+		sprintf(buf, "%hu",ntohs(*(uint16_t*)data));
+		return;
+	case 4:
+		sprintf(buf, "%u",ntohl(*(uint32_t*)data));
+		return;
+	case 8:
+		sprintf(buf, "%Lu",ntohll(*(uint64_t*)data));
+		return;
+	default:
+		msg(MSG_ERROR, "Uint with length %d unparseable", type.length);
+		return;
+	}
 }
 
 /**
@@ -94,6 +116,7 @@ void IpfixPrinter::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
 {
 	printf("\n-+--- OptionsTemplate (id=%u)\n", record->optionsTemplateInfo->templateId);
 	printf(" `---\n\n");
+	record->removeReference();
 }
 
 /**
@@ -104,6 +127,7 @@ void IpfixPrinter::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
 void IpfixPrinter::onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record) 
 {
 	printf("Destroyed an OptionsTemplate (id=%u)\n", record->optionsTemplateInfo->templateId);
+	record->removeReference();
 }
 
 /**
@@ -117,6 +141,7 @@ void IpfixPrinter::onOptionsRecord(IpfixOptionsRecord* record)
 {
 	printf("\n-+--- OptionsDataRecord (Template id=%u)\n", record->optionsTemplateInfo->templateId);
 	printf(" `---\n\n");
+	record->removeReference();
 }
 
 /**
@@ -137,6 +162,7 @@ void IpfixPrinter::onDataTemplate(IpfixDataTemplateRecord* record)
 		printf("\n");
 	}
 	printf(" `---\n\n");
+	record->removeReference();
 }
 
 /**
@@ -147,6 +173,7 @@ void IpfixPrinter::onDataTemplate(IpfixDataTemplateRecord* record)
 void IpfixPrinter::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record) 
 {
 	printf("Destroyed a DataTemplate (id=%u)\n", record->dataTemplateInfo->templateId);
+	record->removeReference();
 }
 
 /**
@@ -177,5 +204,6 @@ void IpfixPrinter::onDataDataRecord(IpfixDataDataRecord* record)
 		printf("\n");
 	}
 	printf(" `---\n\n");
+	record->removeReference();
 }
 

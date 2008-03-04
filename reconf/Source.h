@@ -78,7 +78,9 @@ public:
 
 protected:
 	Mutex mutex;
-	CountingSemaphore connected;
+	CountingSemaphore connected;	
+
+private:	
 	Destination<T>* dest;
 };
 
