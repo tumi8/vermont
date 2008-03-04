@@ -70,10 +70,10 @@ class IpfixRecord
 		 * Template description passed to the callback function when a new Template arrives.
 		 */
 		struct TemplateInfo {
-			TemplateInfo() : destroyed(false) {	}
+			TemplateInfo() : destroyed(false), freePointers(true) {	}
 			
 			~TemplateInfo() {
-				free(fieldInfo);
+				if (freePointers) free(fieldInfo);
 			}
 
 			/**
@@ -292,6 +292,8 @@ class IpfixRecord
 			 * Module::preRegistration2()
 			 **/
 			bool destroyed;	
+			
+			bool freePointers;  /** small helper variable to indicate if pointers should be freed on destruction */
 		};
 
 		/**
@@ -317,7 +319,7 @@ class IpfixRecord
 		 */
 		struct DataTemplateInfo : public TemplateInfo
 		{
-			DataTemplateInfo() : freePointers(true) 
+			DataTemplateInfo()
 			{
 			}
 
@@ -356,8 +358,7 @@ class IpfixRecord
 			uint16_t dataCount; /**< number of fixed-value fields */
 			IpfixRecord::FieldInfo* dataInfo; /**< array of FieldInfos describing each of these fields */
 			IpfixRecord::Data* data; /**< data start pointer for fixed-value fields */
-			void* userData; /**< pointer to a field that can be used by higher-level modules */
-			bool freePointers;  /** small helper variable to indicate if pointers should be freed on destruction */
+			void* userData; /**< pointer to a field that can be used by higher-level modules */			
 		};
 
 		struct SourceID {

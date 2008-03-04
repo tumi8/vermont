@@ -238,9 +238,8 @@ void IpfixDbWriter::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 	/** if statement counter lower as  max count, insert record in statement buffer*/
 	if (statements.statemReceived < statements.maxStatements) {
 		/** make an sql insert statement from the record data */
-		statements.statemBuffer[statements.statemReceived] = getInsertStatement(
-				statements.statemBuffer[statements.statemReceived],
-				sourceID, dataTemplateInfo, length, data, statements.lockTables, statements.maxLocks);
+		getInsertStatement(statements.statemBuffer[statements.statemReceived],
+						   sourceID, dataTemplateInfo, length, data, statements.lockTables, statements.maxLocks);
 		// only insert statement if getInsertStatement produced one
 		if (statements.statemBuffer[statements.statemReceived][0]!=0) {
 			DPRINTF("Insert statement: %s\n", statements.statemBuffer[statements.statemReceived]);
@@ -264,6 +263,8 @@ void IpfixDbWriter::onDataDataRecord(IpfixDataDataRecord* record)
 {
 	processDataDataRecord(record->sourceID.get(), record->dataTemplateInfo.get(), 
 			record->dataLength, record->data);
+	
+	record->removeReference();
 }
 
 /**
@@ -283,9 +284,9 @@ void IpfixDbWriter::onDataRecord(IpfixDataRecord* record)
 	dataTemplateInfo.data = NULL; /**< data start pointer for fixed-value fields */
 	dataTemplateInfo.userData = record->templateInfo->userData; /**< pointer to a field that can be used by higher-level modules */
 
-	DPRINTF("receiveRec calls receiveDataRec");
-
 	processDataDataRecord(record->sourceID.get(), &dataTemplateInfo, record->dataLength, record->data);
+	
+	record->removeReference();
 }
 
 /**
@@ -314,7 +315,7 @@ void IpfixDbWriter::addColumnEntry(char* sql, uint64_t insert, bool quoted, bool
  *	loop over the IpfixRecord::DataTemplateInfo (fieldinfo,datainfo) to get the IPFIX values to store in database
  *	The result is written into statemStr which must have sufficient space!
  */
-char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* sourceID,
+void IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* sourceID,
 		IpfixRecord::DataTemplateInfo* dataTemplateInfo,uint16_t length, IpfixRecord::Data* data, char** locks, int maxlocks)
 {
 	int j, k;
@@ -434,7 +435,6 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
 						}
 					}
 					// save time for table access
-					printf("intdata (seconds): %llu\n", intdata);
 					if (flowstartsec==0) flowstartsec = intdata;
 					break;
 					
@@ -455,7 +455,6 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
 					// the we use flowStartMilliSeconds for table access
 					// This is realized by storing this value only if flowStartSeconds has not yet been seen.
 					// A later appearing flowStartSeconds will override this value.
-					printf("intdata (milliseconds): %llu\n", intdata);
 					if (flowstartsec==0)
 						flowstartsec = intdata/1000;
 					// in the database the millisecond entry is counted from last second
@@ -478,11 +477,10 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
 		addColumnEntry(ColValues, intdata, true, j==numberOfColumns-1);
 	}
 
-	printf("colnames: '%s', colvals: '%s'\n", ColNames, ColValues);
 	if (flowstartsec == 0) {
-		printf("failed to get timing data\n");
+		statemStr[0] = 0;
 		//THROWEXCEPTION("failed to get timing data from ipfix packet. this is a critical error at the moment, as no valid table can be determined. Aborting");
-		return "";
+		return;
 	}
 
 	/**make whole query string for the insert statement*/
@@ -505,8 +503,6 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
 		/* found tablename */
 		break;
 	}
-
-	return statemStr;
 }
 
 /**
@@ -702,7 +698,7 @@ int IpfixDbWriter::getExporterID(IpfixRecord::SourceID* sourceID)
 	char selectStr[70];
 	char stringtmp[10];
 	uint32_t expIp;
-
+	
 	expIp = *(uint32_t*)(sourceID->exporterAddress.ip);
 
 #ifdef DEBUG
