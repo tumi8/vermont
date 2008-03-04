@@ -65,7 +65,7 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 	snprintf(text, 100, "%u", s->getCurrentMemUsage());
 	fprintf(file, xmlmodsimple, "memUsage", text, "memUsage");
 	
-	DPRINTF("module: %s, id: %u, mem usage: %u", name, id, s->getCurrentMemUsage());
+	//DPRINTF("module: %s, id: %u, mem usage: %u", name, id, s->getCurrentMemUsage());
 	
 #if defined(__linux__)
 	char* xmlmodthread = "\t\t\t<thread tid=\"%u\"><util type=\"system\">%.2f%%</util><util type=\"user\">%.2f%%</util></thread>\n";
@@ -76,8 +76,8 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 		double sysutil = jiter->sysJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
 		double userutil = jiter->userJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
 		fprintf(file, xmlmodthread, static_cast<uint32_t>(jiter->tid), sysutil, userutil);
-		DPRINTF(" - thread (tid=%u): jiffies (sys/user): (%u/%u), util. (sys/user): (%.2f%%/%.2f%%)", 
-				static_cast<uint32_t>(jiter->tid), jiter->sysJiffies, jiter->userJiffies, sysutil, userutil);
+		//DPRINTF(" - thread (tid=%u): jiffies (sys/user): (%u/%u), util. (sys/user): (%.2f%%/%.2f%%)", 
+		//		static_cast<uint32_t>(jiter->tid), jiter->sysJiffies, jiter->userJiffies, sysutil, userutil);
 		
 		jiter++;
 	}
@@ -185,7 +185,7 @@ void SensorManager::collectDataWorker()
 		lastSystemInfo = si;
 #endif
 	
-		DPRINTF("*** sensor data at %s", ctime(&curtime));
+		//DPRINTF("*** sensor data at %s", ctime(&curtime));
 		
 		Graph* g = graphIS->getGraph();
 		vector<CfgNode*> nodes = g->getNodes();
