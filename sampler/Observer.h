@@ -92,6 +92,8 @@ protected:
 
 	// manages instances of Packets
 	static InstanceManager<Packet> packetManager;
+	
+	uint32_t observationDomainID;
 
 	// number of received bytes (used for statistics)
 	// attention: value may sometimes be incorrect caused by multithreading issues

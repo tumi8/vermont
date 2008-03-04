@@ -143,7 +143,7 @@ void AggregationPerfTest::sendPacketsTo(Destination<Packet*>* dest, uint32_t num
 
 	for (size_t i = 0; i < numpackets; i++) {
 		Packet* packet = packetManager.getNewInstance();
-		packet->init((char*)packetdata, packetdatalen, curtime);
+		packet->init((char*)packetdata, packetdatalen, curtime, 0);
 		dest->receive(packet);
 	}
 }

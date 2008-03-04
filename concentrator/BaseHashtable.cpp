@@ -21,12 +21,15 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  statLastExpBuckets(0),
 	  fieldModifier(0),
 	  recordSource(recordsource),
+	  sourceID(new IpfixRecord::SourceID),
 	  dataDataRecordIM("IpfixDataDataRecord", 0),
 	  dataTemplateRecordIM("IpfixDataTemplateRecord", 0),
 	  aggInProgress(false),
 	  resendTemplate(true)	  
 {
 
+	memset(sourceID.get(), 0, sizeof(IpfixRecord::SourceID));
+	
 	for (uint32_t i = 0; i < HTABLE_SIZE; i++)
 		buckets[i] = NULL;
 	
@@ -110,13 +113,14 @@ BaseHashtable::~BaseHashtable()
 /**
  * Initializes memory for a new bucket in @c ht containing @c data
  */
-BaseHashtable::Bucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Data> data) 
+BaseHashtable::Bucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid) 
 {
 	Bucket* bucket = new Bucket();
 	bucket->expireTime = time(0) + minBufferTime;
 	bucket->forceExpireTime = time(0) + maxBufferTime;
 	bucket->data = data;
 	bucket->next = 0;
+	bucket->observationDomainID = obsdomainid;
 
 	return bucket;
 }
@@ -129,7 +133,7 @@ void BaseHashtable::exportBucket(BaseHashtable::Bucket* bucket)
 {
 	/* Pass Data Record to exporter interface */
 	IpfixDataDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
-	ipfixRecord->sourceID.reset();
+	ipfixRecord->sourceID = sourceID;
 	ipfixRecord->dataTemplateInfo = dataTemplate;
 	ipfixRecord->dataLength = fieldLength;
 	ipfixRecord->message = bucket->data;

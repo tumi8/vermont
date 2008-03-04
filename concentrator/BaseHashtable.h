@@ -52,6 +52,7 @@ public:
 		uint32_t forceExpireTime; /**< timestamp when this bucket is forced to expire */
 		boost::shared_array<IpfixRecord::Data> data; /**< contains variable fields of aggregated flow; format defined in Hashtable::dataInfo::fieldInfo */
 		Bucket* next; /**< next bucket in spill chain */
+		uint32_t observationDomainID;
 	};
 			
 			
@@ -105,6 +106,7 @@ protected:
 	uint16_t fieldLength; /**< length in bytes of all variable-length fields */
 	Rule::Field::Modifier* fieldModifier; /**< specifies what modifier to apply to a given field */
 	Source<IpfixRecord*>* recordSource; /**< pointer to vermont module which is able to send IpfixRecords */
+	boost::shared_ptr<IpfixRecord::SourceID> sourceID; /**< used for hack: we *must* supply an observationDomainID, so take a static one */ 
 	
 	InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
 	InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
@@ -114,7 +116,7 @@ protected:
 	bool resendTemplate; /**< set to true if template needs to be sent again */
 	
 	int isToBeAggregated(IpfixRecord::FieldInfo::Type type);
-	Bucket* createBucket(boost::shared_array<IpfixRecord::Data> data);
+	Bucket* createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid);
 	void exportBucket(Bucket* bucket);
 	void destroyBucket(Bucket* bucket);
 	void createDataTemplate(Rule* rule);

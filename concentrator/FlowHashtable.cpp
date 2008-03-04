@@ -412,7 +412,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 		}
 		if (bucket == NULL) {
 			Bucket* n = buckets[nhash];
-			buckets[nhash] = createBucket(data);
+			buckets[nhash] = createBucket(data, 0); // FIXME: insert observationDomainID!
 			buckets[nhash]->next = n;
 		}
 	}

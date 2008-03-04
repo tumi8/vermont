@@ -28,7 +28,7 @@ InstanceManager<Packet> Observer::packetManager("Packet");
 
 Observer::Observer(const std::string& interface) : thread(Observer::observerThread), allDevices(NULL),
 	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
-	pcap_promisc(1), ready(false), filter_exp(0),
+	pcap_promisc(1), ready(false), filter_exp(0), observationDomainID(0), // FIXME: this must be configured!
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0), 
 	lastProcessedPackets(0), statTotalLostPackets(0), statTotalRecvPackets(0)
 
@@ -137,7 +137,7 @@ void *Observer::observerThread(void *arg)
 
 		// initialize packet structure (init copies packet data)
 		p = packetManager.getNewInstance();
-		p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts);
+		p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, obs->observationDomainID);
 
 		obs->receivedBytes += packetHeader.caplen;
 

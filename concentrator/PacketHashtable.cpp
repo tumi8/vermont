@@ -570,7 +570,7 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 	if (bucket == 0) {
 		// slot is free, place bucket there
 		DPRINTF("creating new bucket");
-		buckets[hash] = createBucket(buildBucketData(p));
+		buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID);
 		atomic_release(&aggInProgress);
 		return;
 	}
@@ -592,7 +592,7 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 		if (bucket->next == 0) {
 			DPRINTF("creating bucket\n");
 
-			bucket->next = createBucket(buildBucketData(p));
+			bucket->next = createBucket(buildBucketData(p), p->observationDomainID);
 			break;
 		}
 		bucket = (Bucket*)bucket->next;

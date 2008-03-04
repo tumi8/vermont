@@ -86,10 +86,12 @@ public:
 	// Transport header classifications (used in Packet::ipProtocolType)
 	// Note: ALL is reserved and enables bitoperations using the enums
 	enum IPProtocolType { NONE=0x00, TCP=0x01, UDP=0x02, ICMP=0x04, IGMP=0x08, ALL=0xFF };
-
+	
 	// The number of total packets received, will be incremented by each constructor call
 	// implemented as public-variable for speed reasons (or lazyness reasons? ;-)
 	static unsigned long totalPacketsReceived;
+	
+	uint32_t observationDomainID;
 
 	/*
 	data: the raw packet data from the wire, including physical header
@@ -144,7 +146,7 @@ public:
 	{
 	}
 	
-	inline void init(char* packetData, int len, struct timeval time) 
+	inline void init(char* packetData, int len, struct timeval time, uint32_t obsdomainid) 
 	{
 		transportHeader = NULL;
 		payload = NULL;
@@ -155,6 +157,7 @@ public:
 		timestamp = time;
 		varlength_index = 0;
 		ipProtocolType = NONE;
+		observationDomainID = obsdomainid;
 
 		if (len > PCAP_MAX_CAPTURE_LENGTH) {
 			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d), "
