@@ -7,7 +7,9 @@
 
 #include "common/msg.h"
 #include "common/Mutex.h"
+#include "common/defs.h"
 #include "common/CountingSemaphore.h"
+#include "common/atomic_lock.h"
 
 
 #include "reconf/Destination.h"
@@ -19,7 +21,7 @@ class Source
 public:
 	typedef T src_value_type;
 	
-	Source() : mutex(), connected(1), dest(NULL) { }
+	Source() : mutex(), connected(1), disconnectInProgress(false), syncLock(1), dest(NULL) { }
 	virtual ~Source() { }
 
 	virtual void connectTo(Destination<T>* destination)
@@ -29,6 +31,7 @@ public:
 			THROWEXCEPTION("ERROR: already connected\n");
 		dest = destination;
 		connected.inc(1);
+		atomic_release(&syncLock);
 		mutex.unlock();
 	}
 
@@ -45,12 +48,22 @@ public:
 
 	virtual void disconnect()
 	{
-		mutex.lock();
+		disconnectInProgress = true;
+		mutex.lock();		
 		if (isConnected()) {
+			// wait until function send has returned
+			while (atomic_lock(&syncLock)) {
+				timespec req;
+				req.tv_sec = 0;
+				req.tv_nsec = 1000000;
+				nanosleep(&req, &req);
+			}
 			dest = NULL;
 			connected.dec(1);
 		}
+		
 		mutex.unlock();
+		disconnectInProgress = false;
 	}
 
 	inline bool sleepUntilConnected()
@@ -64,23 +77,36 @@ public:
 	}
 	
 	inline bool send(T t)
-	{
-		Destination<T>* d;
-		while ((d = dest) == NULL) {
+	{		
+		while (atomic_lock(&syncLock)) {
 			if (!sleepUntilConnected()) {
 				DPRINTF("Can't wait for connection, perhaps the program is shutting down?");
 				return false;
 			}
-		}		
-		d->receive(t);
+		}
+		dest->receive(t);
+		atomic_release(&syncLock);
+		
 		return true;
 	}
+	
+	inline uint32_t atomicLock()
+	{
+		return atomic_lock(&syncLock);
+	}
+	
+	inline void atomicRelease()
+	{
+		atomic_release(&syncLock);
+	}	
 
 protected:
 	Mutex mutex;
-	CountingSemaphore connected;	
+	CountingSemaphore connected;		
+	bool disconnectInProgress;
 
-private:	
+private:
+	alock_t syncLock; /**< is locked when an element is sent to next module or no next module is available */
 	Destination<T>* dest;
 };
 

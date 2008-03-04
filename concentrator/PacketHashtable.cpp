@@ -552,7 +552,7 @@ void PacketHashtable::updatePointers(const Packet* p)
 void PacketHashtable::aggregatePacket(const Packet* p)
 {
 	// the following lock should almost never block (only during reconfiguration)
-	while (__sync_lock_test_and_set(&aggInProgress, 1)) {
+	while (atomic_lock(&aggInProgress)) {
 		timespec req;
 		req.tv_sec = 0;
 		req.tv_nsec = 50000000;
@@ -571,7 +571,7 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 		// slot is free, place bucket there
 		DPRINTF("creating new bucket");
 		buckets[hash] = createBucket(buildBucketData(p));
-		__sync_lock_release(&aggInProgress);
+		atomic_release(&aggInProgress);
 		return;
 	}
 
@@ -597,7 +597,7 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 		}
 		bucket = (Bucket*)bucket->next;
 	}
-	__sync_lock_release(&aggInProgress);
+	atomic_release(&aggInProgress);
 }
 
 

@@ -67,10 +67,5 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 
-// workaround for missing gcc functionality in non-linux environments
-#if !defined(__linux__)
-#define __sync_lock_test_and_set(...) 0
-#define __sync_lock_release(...)
-#endif
 
 #endif /*DEFS_H*/

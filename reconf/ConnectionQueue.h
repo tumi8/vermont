@@ -103,6 +103,7 @@ public:
 		timeouts.push_back(e);
 		mutex.unlock();
 	}
+
 	
 private:
 	ConcurrentQueue<T> queue;  /**< contains all elements which were received from previous modules */
@@ -129,7 +130,28 @@ private:
 			if (compareTime((*iter)->timeout, now) <= 0) {
 				// this entry has already timed out, call it now!
 				TimeoutEntry* te = *iter;
+				
+				// wait if successing module is already called by another thread through this queue
+				bool locked = true;
+				while (Source<T>::atomicLock()) {
+					if (Source<T>::disconnectInProgress) {
+						locked = false;
+						break;
+					}
+					timespec req;
+					req.tv_sec = 0;
+					req.tv_nsec = 1000000;
+					nanosleep(&req, &req);
+				}
+				if (Source<T>::disconnectInProgress) {
+					if (locked) Source<T>::atomicRelease();
+					break;
+				}
+				
 				te->n->onTimeout(te->dataPtr);
+				
+				Source<T>::atomicRelease();
+				
 				iter = timeouts.erase(iter);
 				delete te;
 				

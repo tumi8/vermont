@@ -1,5 +1,5 @@
-#ifndef PETERSINK_H
-#define PETERSINK_H
+#ifndef DESTINATION_H
+#define DESTINATION_H
 
 /**
 	@author Peter Baumann <siprbaum@users.berlios.de>
@@ -10,6 +10,7 @@
 
 #include <cstdio>
 #include <stdexcept>
+
 
 template<class T>
 class Destination

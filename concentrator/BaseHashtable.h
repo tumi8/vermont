@@ -29,6 +29,8 @@
 #include "Rule.hpp"
 #include "reconf/Module.h"
 
+#include "common/atomic_lock.h"
+
 
 class BaseHashtable 
 {
@@ -106,9 +108,9 @@ protected:
 	InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
 	InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
 	
-	bool aggInProgress; /** indicates if currently an element is aggregated in the hashtable, used for atomic lock for preReconfiguration */
+	alock_t aggInProgress; /** indicates if currently an element is aggregated in the hashtable, used for atomic lock for preReconfiguration */
 		
-	bool need_resend_template;
+	bool resendTemplate; /**< set to true if template needs to be sent again */
 	
 	int isToBeAggregated(IpfixRecord::FieldInfo::Type type);
 	Bucket* createBucket(boost::shared_array<IpfixRecord::Data> data);

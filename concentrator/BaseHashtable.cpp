@@ -23,7 +23,8 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  recordSource(recordsource),
 	  dataDataRecordIM("IpfixDataDataRecord", 0),
 	  dataTemplateRecordIM("IpfixDataTemplateRecord", 0),
-	  need_resend_template(true)
+	  aggInProgress(false),
+	  resendTemplate(true)	  
 {
 
 	for (uint32_t i = 0; i < HTABLE_SIZE; i++)
@@ -155,7 +156,7 @@ void BaseHashtable::destroyBucket(BaseHashtable::Bucket* bucket)
 void BaseHashtable::expireFlows(bool all) 
 {
 	// the following lock should almost never fail (only during reconfiguration)
-	while (__sync_lock_test_and_set(&aggInProgress, 1)) {
+	while (atomic_lock(&aggInProgress)) {
 		timespec req;
 		req.tv_sec = 0;
 		req.tv_nsec = 50000000;
@@ -169,9 +170,9 @@ void BaseHashtable::expireFlows(bool all)
 	uint32_t exportedBuckets = 0;
 	uint32_t multiEntries = 0;
 
-	if (need_resend_template) {
+	if (resendTemplate) {
 		sendDataTemplate();
-		need_resend_template = false;
+		resendTemplate = false;
 	}
 		
 	
@@ -216,7 +217,7 @@ void BaseHashtable::expireFlows(bool all)
 	statExportedBuckets += exportedBuckets;
 	statMultiEntries = multiEntries;
 	
-	__sync_lock_release(&aggInProgress);
+	atomic_release(&aggInProgress);
 }
 
 
