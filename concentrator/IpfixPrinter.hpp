@@ -34,7 +34,7 @@
 class IpfixPrinter : public Module, public IpfixRecordDestination, public Source<NullEmitable*>
 {
 	public:
-		IpfixPrinter();
+		IpfixPrinter(bool lineoutput = false);
 		~IpfixPrinter();
 
 		virtual void onDataTemplate(IpfixDataTemplateRecord* record);
@@ -52,7 +52,10 @@ class IpfixPrinter : public Module, public IpfixRecordDestination, public Source
 		uint32_t linesPrinted;
 		
 	private:
+		bool lineOutput;
+		
 		void printUint(char* buf, IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
+		void printOneLineRecord(IpfixDataRecord* record);
 };
 
 #endif

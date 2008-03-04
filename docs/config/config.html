@@ -815,12 +815,25 @@
 			</tr>
 		</table>
 		<p>Example:</p>
-		<pre class="hl">
-<span class="kwa">&lt;ipfixPrinter id=</span><span class="str">&quot;8&quot;</span><span class="kwa">&gt;</span>
-<span class="kwa">&lt;/ipfixPrinter&gt;</span>				
+<pre class="hl"><span class="kwa">&lt;ipfixPrinter id=</span><span class="str">&quot;8&quot;</span><span class="kwa">&gt;</span>
+	<span class="kwa">&lt;lineOutput&gt;</span><span class="num">1</span><span class="kwa">&lt;/lineOutput&gt;</span>
+<span class="kwa">&lt;/ipfixPrinter&gt;</span>
 		</pre>
 		<p>Parameters:</p>
-		<p>none</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>lineOutput</td>
+					<td>0</td>
+					<td>Specifies if a special one-line-per-flow output should be used if value equals 1.</td>
+				</tr>
+			</tbody>
+		</table>
 
 
 		<h2><a name="IpfixDbReader">IpfixDbReader</a></h2>

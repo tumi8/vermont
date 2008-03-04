@@ -20,6 +20,9 @@ public:
 	
 protected:
 	IpfixPrinterCfg(XMLElement*);
+	
+private:
+	bool lineOutput;
 
 };
 

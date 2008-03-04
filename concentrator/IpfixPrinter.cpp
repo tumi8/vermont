@@ -28,7 +28,8 @@
  * Creates a new IpfixPrinter. Do not forget to call @c startIpfixPrinter() to begin printing
  * @return handle to use when calling @c destroyIpfixPrinter()
  */
-IpfixPrinter::IpfixPrinter() 
+IpfixPrinter::IpfixPrinter(bool lineoutput) 
+	: linesPrinted(0), lineOutput(lineoutput)
 {
 	lastTemplate = 0;	
 }
@@ -85,6 +86,144 @@ void IpfixPrinter::printUint(char* buf, IpfixRecord::FieldInfo::Type type, Ipfix
 	}
 }
 
+
+/**
+ * prints a datarecord in a special, easy-to-read data format in one line
+ */
+void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
+{
+	boost::shared_ptr<IpfixRecord::TemplateInfo> dataTemplateInfo = record->templateInfo;
+		char buf[100], buf2[100];
+		
+		if (linesPrinted==0 || linesPrinted>50) {
+			printf("%22s %20s %8s %5s %21s %21s %5s %5s\n", "Flow recvd.", "Flow start", "Duratn", "Prot", "Src IP:Port", "Dst IP:Port", "Pckts", "Bytes");
+			printf("-----------------------------------------------------------------------------------------------------------------\n");
+			linesPrinted = 0;
+		}
+		struct tm* tm;
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		tm = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
+		strftime(buf, ARRAY_SIZE(buf), "%F %T", tm);
+		snprintf(buf2, ARRAY_SIZE(buf2), "%s.%03ld", buf, tv.tv_usec/1000);
+		printf("%22s ", buf2);
+		
+		uint32_t timetype = 0;
+		uint32_t starttime = 0;
+		IpfixRecord::FieldInfo* fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSeconds, 0);
+		if (fi != NULL) {
+			timetype = IPFIX_TYPEID_flowStartSeconds;
+			time_t t = ntohl(*reinterpret_cast<time_t*>(record->data+fi->offset));
+			starttime = t;
+			tm = localtime(&t);
+			strftime(buf, 50, "%F %T", tm);
+		} else {
+			fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0);
+			if (fi != NULL) {
+				timetype = IPFIX_TYPEID_flowStartMilliSeconds;
+				uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
+				time_t t = t2/1000;
+				starttime = t;
+				tm = localtime(&t);
+				strftime(buf, 50, "%F %T", tm);
+			} else {
+				fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSysUpTime, 0);
+				if (fi != NULL) {
+					timetype = IPFIX_TYPEID_flowStartSysUpTime;
+					starttime = ntohl(*reinterpret_cast<uint32_t*>(record->data+fi->offset));
+					snprintf(buf, 50, "%u:%02u.%04u", starttime/60000, (starttime%60000)/1000, starttime%1000);
+				} else {
+					strcpy(buf, "---");
+				}
+			}
+		}
+		if (timetype != 0) {
+			printf("%20s ", buf);
+			
+			uint32_t dur = 0;
+			switch (timetype) {
+				case IPFIX_TYPEID_flowStartSeconds:
+					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndSeconds, 0);
+					if (fi != NULL) {
+						dur = ntohl(*reinterpret_cast<uint32_t*>(record->data+fi->offset)) - starttime; 
+						dur *= 1000;
+					}
+					break;
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
+					if (fi != NULL) {
+						dur = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset))/1000 - starttime; 
+						dur *= 1000;
+					}
+					break;
+				case IPFIX_TYPEID_flowStartSysUpTime:
+					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndSysUpTime, 0);
+					if (fi != NULL) {
+						dur = ntohl(*reinterpret_cast<uint32_t*>(record->data+fi->offset)) - starttime;
+					}
+					break;
+			}
+			snprintf(buf, 50, "%u.%04u", (dur)/1000, dur%1000);
+			printf("%8s ", buf);
+		}
+		else {
+			printf("%20s %8s ", "---", "---");
+		}
+		
+
+		
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_protocolIdentifier, 0);
+		if (fi != NULL && fi->type.length==1) {
+			snprintf(buf, ARRAY_SIZE(buf), "%hhu", *reinterpret_cast<uint8_t*>(record->data+fi->offset));
+		} else {
+			snprintf(buf, ARRAY_SIZE(buf), "---");
+		}
+		printf("%5s ", buf);
+		
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
+		uint32_t srcip = 0;
+		if (fi != NULL && fi->type.length>=4) {
+			srcip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
+		}
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
+		uint32_t srcport = 0;
+		if (fi != NULL && fi->type.length==2) {
+			srcport = *reinterpret_cast<uint16_t*>(record->data+fi->offset);
+		}
+		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (srcip>>0)&0xFF, (srcip>>8)&0xFF, (srcip>>16)&0xFF, (srcip>>24)&0xFF, srcport);
+		printf("%21s ", buf);
+		
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
+		uint32_t dstip = 0;
+		if (fi != NULL && fi->type.length>=4) {
+			dstip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
+		}
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
+		uint32_t dstport = 0;
+		if (fi != NULL && fi->type.length==2) {
+			dstport = *reinterpret_cast<uint16_t*>(record->data+fi->offset);
+		}
+		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (dstip>>0)&0xFF, (dstip>>8)&0xFF, (dstip>>16)&0xFF, (dstip>>24)&0xFF, dstport);
+		printf("%21s ", buf);
+		
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_packetDeltaCount, 0);
+		if (fi != NULL) {
+			printUint(buf, fi->type, record->data+fi->offset);
+		} else {
+			snprintf(buf, ARRAY_SIZE(buf), "---");
+		}
+		printf("%5s ", buf);
+
+		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_octetDeltaCount, 0);
+		if (fi != NULL) {
+			printUint(buf, fi->type, record->data+fi->offset);
+		} else {
+			snprintf(buf, ARRAY_SIZE(buf), "---");
+		}
+		printf("%5s \n", buf);
+		linesPrinted++;
+}
+
 /**
  * Prints a DataRecord
  * @param sourceID SourceID of the exporting process
@@ -94,17 +233,23 @@ void IpfixPrinter::printUint(char* buf, IpfixRecord::FieldInfo::Type type, Ipfix
  */
 void IpfixPrinter::onDataRecord(IpfixDataRecord* record)
 {
-	int i;
-
-	printf("\n-+--- DataRecord (Template id=%u)\n", record->templateInfo->templateId);
-	printf(" `- variable data\n");
-	for (i = 0; i < record->templateInfo->fieldCount; i++) {
-		printf(" '   `- ");
-		printFieldData(record->templateInfo->fieldInfo[i].type, 
-				(record->data + record->templateInfo->fieldInfo[i].offset));
-		printf("\n");
+	if (lineOutput) {
+		printOneLineRecord(record);
+	} else {
+		int i;
+	
+		printf("\n-+--- DataRecord (Template id=%u)\n", record->templateInfo->templateId);
+		printf(" `- variable data\n");
+		for (i = 0; i < record->templateInfo->fieldCount; i++) {
+			printf(" '   `- ");
+			printFieldData(record->templateInfo->fieldInfo[i].type, 
+					(record->data + record->templateInfo->fieldInfo[i].offset));
+			printf("\n");
+		}
+		printf(" `---\n\n");
 	}
-	printf(" `---\n\n");
+	
+	record->removeReference();
 }
 
 /**
