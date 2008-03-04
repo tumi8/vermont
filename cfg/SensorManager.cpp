@@ -126,7 +126,7 @@ void SensorManager::collectDataWorker()
 			// if we got interrupted by a signal
 			timespec req;
 			req.tv_sec = 0;
-			req.tv_nsec = 50000000;
+			req.tv_nsec = 500000000;
 			while (nanosleep(&req, &req) == -1 && errno == EINTR);
 			i++;
 		}
