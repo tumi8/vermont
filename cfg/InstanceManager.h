@@ -24,6 +24,7 @@
 #include "Mutex.h"
 #include "SensorManager.h"
 #include "Sensor.h"
+#include "defs.h"
 
 #include <queue>
 #include <list>
@@ -153,7 +154,7 @@ class InstanceManager : public Sensor
 		string getStatisticsXML()
 		{
 			char text[200];
-			sprintf(text, "<createdInstances>%u</createdInstances>", statCreatedInstances);
+			snprintf(text, ARRAY_SIZE(text), "<createdInstances>%u</createdInstances>", statCreatedInstances);
 			return string(text);
 		}
 };

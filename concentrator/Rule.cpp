@@ -91,7 +91,7 @@ const char* modifier2string(Rule::Field::Modifier i) {
 	if (i == Rule::Field::KEEP) return "keep";
 	if (i == Rule::Field::AGGREGATE) return "aggregate";
 	if ((i >= Rule::Field::MASK_START) && (i <= Rule::Field::MASK_END)) {
-		sprintf(s, "mask/%d", i - Rule::Field::MASK_START);
+		snprintf(s, ARRAY_SIZE(s), "mask/%d", i - Rule::Field::MASK_START);
 		return s;
 	}
 	return "unknownModifier";

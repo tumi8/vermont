@@ -306,7 +306,7 @@ void IpfixDbWriter::addColumnEntry(char* sql, const char* insert, bool quoted, b
 void IpfixDbWriter::addColumnEntry(char* sql, uint64_t insert, bool quoted, bool lastcolumn)
 {
 	char strdata[30];
-	sprintf(strdata, "%Lu", insert);
+	snprintf(strdata, ARRAY_SIZE(strdata), "%Lu", insert);
 	addColumnEntry(sql, strdata, quoted, lastcolumn);
 }
 
@@ -633,17 +633,17 @@ char* getTableNamDependTime(char* tablename, uint64_t flowstartsec)
 	/** for use local time, change expression gmtime() to localtime()*/
 	timeNow = gmtime(&t);
 	strcpy(tablename,"h_");
-	sprintf(strtmp,"%u",timeNow->tm_year+1900);
+	snprintf(strtmp, ARRAY_SIZE(strtmp), "%u",timeNow->tm_year+1900);
 	strncat(tablename,strtmp,strlen(strtmp)+1);
-	sprintf(strtmp,"%02u",timeNow->tm_mon+1);
+	snprintf(strtmp, ARRAY_SIZE(strtmp), "%02u",timeNow->tm_mon+1);
 	strncat(tablename,strtmp,strlen(strtmp)+1);
-	sprintf(strtmp,"%02u",timeNow->tm_mday);
-	strncat(tablename,strtmp,strlen(strtmp)+1);
-	strncat(tablename,"_",sizeof(char)+1);
-	sprintf(strtmp,"%02u",timeNow->tm_hour);
+	snprintf(strtmp, ARRAY_SIZE(strtmp), "%02u",timeNow->tm_mday);
 	strncat(tablename,strtmp,strlen(strtmp)+1);
 	strncat(tablename,"_",sizeof(char)+1);
-	sprintf(strtmp,"%u",timeNow->tm_min<30?0:1);
+	snprintf(strtmp, ARRAY_SIZE(strtmp), "%02u",timeNow->tm_hour);
+	strncat(tablename,strtmp,strlen(strtmp)+1);
+	strncat(tablename,"_",sizeof(char)+1);
+	snprintf(strtmp, ARRAY_SIZE(strtmp), "%u",timeNow->tm_min<30?0:1);
 	strncat(tablename,strtmp,strlen(strtmp)+1);
 
 	return tablename;
@@ -726,11 +726,11 @@ int IpfixDbWriter::getExporterID(IpfixRecord::SourceID* sourceID)
 
 	// it is not: try to get it from the database
 
-	sprintf(selectStr, "%s", "SELECT id FROM exporter WHERE sourceID=");
-	sprintf(stringtmp,"%u",sourceID->observationDomainId);
+	snprintf(selectStr, ARRAY_SIZE(selectStr), "%s", "SELECT id FROM exporter WHERE sourceID=");
+	snprintf(stringtmp, ARRAY_SIZE(stringtmp),"%u",sourceID->observationDomainId);
 	strncat(selectStr, stringtmp,strlen(stringtmp)+1);
 	strncat(selectStr," AND srcIP=",(11*sizeof(char))+1);
-	sprintf(stringtmp,"%u",expIp);
+	snprintf(stringtmp, ARRAY_SIZE(stringtmp),"%u",expIp);
 	strncat(selectStr, stringtmp,strlen(stringtmp)+1);
 
 	if(mysql_query(conn, selectStr) != 0) {
@@ -756,10 +756,10 @@ int IpfixDbWriter::getExporterID(IpfixRecord::SourceID* sourceID)
 		char LockExporter[STARTLEN] = "LOCK TABLES exporter WRITE";
 		char UnLockExporter[STARTLEN] = "UNLOCK TABLES";
 		char insertStr[70] = "INSERT INTO exporter (ID,sourceID,srcIP) VALUES('NULL','";
-		sprintf(stringtmp,"%u",sourceID->observationDomainId);
+		snprintf(stringtmp, ARRAY_SIZE(stringtmp), "%u",sourceID->observationDomainId);
 		strncat(insertStr,stringtmp,strlen(stringtmp)+1);
 		strncat(insertStr,"','",(3*sizeof(char))+1);
-		sprintf(stringtmp,"%u",expIp);
+		snprintf(stringtmp, ARRAY_SIZE(stringtmp), "%u",expIp);
 		strncat(insertStr, stringtmp,strlen(stringtmp)+1);
 		strncat(insertStr,"')",(2*sizeof(char))+1);
 
