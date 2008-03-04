@@ -172,7 +172,6 @@ void on_destruct(xmlNode* n)
 
 XMLDocument::Initializer::Initializer()
 {
-	fprintf(stderr, "initializer\n");
 	xmlInitParser();
 	xmlRegisterNodeDefault(on_construct);
 	xmlDeregisterNodeDefault(on_destruct);

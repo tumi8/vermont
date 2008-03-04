@@ -233,7 +233,7 @@ public:
 	ConnectionQueue<typename InstanceType::dst_value_type>* getQueueInstance()
 	{
 		if (!queue) {
-			DPRINTF("Automatic creation of Queue (we need a Timer in front of us");
+			msg(MSG_DIALOG, "queue is required by module id=%u but is not configured. Inserting a default queue with max size 1 (attention: this is inefficient!)", getID());
 			queue = new ConnectionQueue<typename InstanceType::dst_value_type>(1);
 		}
 		

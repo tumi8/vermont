@@ -117,7 +117,7 @@ void SensorManager::collectDataWorker()
 		
 	registerCurrentThread();
 	
-	msg(MSG_FATAL, "SensorManager: checking sensor values every %u seconds", checkInterval);
+	msg(MSG_DIALOG, "SensorManager: checking sensor values every %u seconds", checkInterval);
 	while (!exitFlag) {		
 		uint32_t sleepcount = checkInterval*2;
 		uint32_t i = 0;

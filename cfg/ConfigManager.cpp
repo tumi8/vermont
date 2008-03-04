@@ -169,8 +169,8 @@ void ConfigManager::shutdown()
 
 		// disconnect the module from its sources ..
 		vector<CfgNode*> sources = graph->getSources(n);
-		for (size_t k = 0; k < sources.size(); k++) {
-			msg(MSG_INFO, "disconnecting module %s (id=%u)", cfg->getName().c_str(), cfg->getID());
+		msg(MSG_INFO, "disconnecting module %s (id=%u)", cfg->getName().c_str(), cfg->getID());
+		for (size_t k = 0; k < sources.size(); k++) {			
 			sources[k]->getCfg()->disconnectInstances();
 		}
 	}
