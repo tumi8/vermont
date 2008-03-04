@@ -38,7 +38,7 @@ using namespace std;
 class IpfixSender : public Module, public Source<NullEmitable*>, public IpfixRecordDestination, public Notifiable
 {
 public:
-	IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0); // FIXME: observationDomainId
+	IpfixSender(uint16_t observationDomainId, uint32_t maxPacketRate = IS_DEFAULT_MAXUDPRATE);
 	virtual ~IpfixSender();
 
 	void addCollector(const char *ip, uint16_t port);
@@ -84,18 +84,12 @@ protected:
 	ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */
 	uint16_t lastTemplateId; /**< Template ID of last created Template */
 	std::vector<Collector> collectors; /**< Collectors we export to */
-	uint32_t statSentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
+	uint32_t statSentDataRecords; /**< Statistics: Total number of data records sent since last statistics were polled */
 	uint32_t statSentPackets; /**< Statistics: total number of packets sent over the network */
 	uint32_t statPacketsInFlows; /**< Statistics: total number of packets within flows */
 
 
 private:
-	/**
-	 * specifies, how long incoming flows are to be cached at most before they are
-	 * sent in an IPFIX packet
-	 * this value specifies the maximum latency in milliseconds
-	 */
-	uint32_t maxFlowLatency;
 
 	uint16_t ringbufferPos; /**< Pointer to next free slot in @c conversionRingbuffer. */
 	uint8_t conversionRingbuffer[65536]; /**< Ringbuffer used to store converted imasks between @c ipfix_put_data_field() and @c ipfix_send() */
@@ -109,6 +103,7 @@ private:
 	uint32_t maxPacketRate; /**< maximum number of packets sent per second */
 	struct timeval curTimeStep; /**< current time used for determining packet rate */
 	uint32_t packetsSentStep; /**< number of packets sent in timestep (usually 100ms)*/
+	uint32_t udpRateLimit;  /** maximum number of packets per seconds to be sent over the wire */
 	
 	timespec nextTimeout;
 	

@@ -42,21 +42,18 @@ using namespace std;
 /**
  * Creates a new IPFIX Exporter. Do not forget to call @c startIpfixSender() to begin sending
  * @param sourceID Source ID this exporter will report
- * @param ip destination collector's address
- * @param port destination collector's port
  * @return handle to use when calling @c destroyIpfixSender()
  */
-IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) 
+IpfixSender::IpfixSender(uint16_t observationDomainId, uint32_t udpRateLimit) 
 	: statSentPackets(0),
-	  maxFlowLatency(100), // FIXME: this has to be set in the configuration!
 	  noCachedRecords(0),
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
 	  timeoutRegistered(false),
 	  recordsAlreadySent(false),
-	  maxPacketRate(500)	// FIXME: set this in configuration!
+	  udpRateLimit(udpRateLimit)
 {
 	ipfix_exporter** exporterP = &this->ipfixExporter;
-	statSentRecords = 0;
+	statSentDataRecords = 0;
 	currentTemplateId = 0;
 	lastTemplateId = SENDER_TEMPLATE_ID_LOW;
 	
@@ -68,16 +65,6 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t 
 	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
 		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
 		goto out;
-	}
-
-	if (ip && port) {
-		Collector newCollector;
-		strcpy(newCollector.ip, ip);
-		newCollector.port = port;
-
-		addCollector(ip, port);
-
-		collectors.push_back(newCollector);
 	}
 	
 	msg(MSG_DEBUG, "IpfixSender: running");
@@ -463,7 +450,7 @@ void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 	 
 	registerTimeout();
 
-	statSentRecords++;
+	statSentDataRecords++;
 	
 	recordsToRelease.push(record);
 	
@@ -577,7 +564,7 @@ void IpfixSender::onReconfiguration1()
 string IpfixSender::getStatisticsXML()
 {
 	char buf[200];
-	snprintf(buf, ARRAY_SIZE(buf), "<totalSentRecords>%u</totalSentRecords><totalSentUDPPackets>%u</totalSentUDPPackets><totalPacketsInFlows>%u</totalPacketsInFlows>", 
-			statSentRecords, statSentPackets, statPacketsInFlows);
+	snprintf(buf, ARRAY_SIZE(buf), "<totalSentDataRecords>%u</totalSentDataRecords><totalSentUDPDataRecordPackets>%u</totalSentUDPDataRecordPackets><totalPacketsInFlows>%u</totalPacketsInFlows>", 
+			statSentDataRecords, statSentPackets, statPacketsInFlows);
 	return buf;
 }

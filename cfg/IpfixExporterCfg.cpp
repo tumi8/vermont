@@ -32,6 +32,8 @@ IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 #endif
 		} else if (e->matches("collector")) {
 			collectors.push_back(new CollectorCfg(e));
+		} else if (e->matches("maxUdpRate")) {
+					udpRateLimit = getInt("maxUdpRate", IS_DEFAULT_MAXUDPRATE);
 		} else {
 			THROWEXCEPTION("Illegal PSAMPExporter config entry \"%s\" found",
 					e->getName().c_str());

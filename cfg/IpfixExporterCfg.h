@@ -34,7 +34,9 @@ private:
 	/** packet restrictions */
 	uint16_t maxPacketSize;
 	unsigned exportDelay;
-
+	
+	uint32_t udpRateLimit;
+	
 	int recordsPerPacket;
 	int recordLength;
 };

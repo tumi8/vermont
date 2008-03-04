@@ -56,6 +56,12 @@
 #define IS_DEFAULT_RECORDCACHETIMEOUT 5000
 
 /**
+ * defines in packets per seconds, how many udp packets are to be sent over
+ * the wire
+ */
+#define IS_DEFAULT_MAXUDPRATE 500
+
+/**
  * convenient way to determine size of a C array
  */
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
