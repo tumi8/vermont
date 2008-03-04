@@ -28,7 +28,8 @@
  * @param pollinterval sets the interval of polling the hashtable for expired flows in ms
  */
 PacketAggregator::PacketAggregator(uint32_t pollinterval)
-	: BaseAggregator(pollinterval)
+	: BaseAggregator(pollinterval),
+	  statPacketsReceived(0)
 {	
 }
 
@@ -48,6 +49,8 @@ void PacketAggregator::receive(Packet* e)
 		THROWEXCEPTION("Aggregator not started");
 	}
 #endif
+	
+	statPacketsReceived++;
 
 	for (size_t i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->ExptemplateDataMatches(e)) {
@@ -66,4 +69,13 @@ BaseHashtable* PacketAggregator::createHashtable(Rule* rule, uint16_t minBufferT
 		uint16_t maxBufferTime)
 {
 	return new PacketHashtable(this, rule, minBufferTime, maxBufferTime);
+}
+
+
+string PacketAggregator::getStatisticsXML()
+{
+	char buf[100];
+	snprintf(buf, ARRAY_SIZE(buf), "<totalReceivedPackets>%u</totalReceivedPackets>", statPacketsReceived);
+	
+	return buf;
 }

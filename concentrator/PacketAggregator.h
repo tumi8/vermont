@@ -44,12 +44,16 @@ public:
 	virtual ~PacketAggregator();
 	
 	virtual void receive(Packet* e);
+	
+	virtual string getStatisticsXML();
 
 	
-protected:
-	
+protected:	
 	virtual BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, 
 			uint16_t maxBufferTime);
+	
+private:
+	uint32_t statPacketsReceived;
 };
 
 #endif /*PACKETAGGREGATOR_H_*/
