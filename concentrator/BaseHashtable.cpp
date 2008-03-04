@@ -152,8 +152,16 @@ void BaseHashtable::destroyBucket(BaseHashtable::Bucket* bucket)
 /**
  * Exports all expired flows and removes them from the buffer
  */
-void BaseHashtable::expireFlows() {
-
+void BaseHashtable::expireFlows(bool all) 
+{
+	// the following lock should almost never fail (only during reconfiguration)
+	while (__sync_lock_test_and_set(&aggInProgress, 1)) {
+		timespec req;
+		req.tv_sec = 0;
+		req.tv_nsec = 50000000;
+		nanosleep(&req, &req);
+	}
+	
 	uint32_t now = time(0);
 
 	uint32_t noEntries = 0;
@@ -180,7 +188,7 @@ void BaseHashtable::expireFlows() {
 				else multiEntries++;
 				noEntries++;
 				Bucket* nextBucket = (Bucket*)bucket->next;
-				if ((now > bucket->expireTime) || (now > bucket->forceExpireTime)) {
+				if ((now > bucket->expireTime) || (now > bucket->forceExpireTime) || all) {
 					if(now > bucket->forceExpireTime)  DPRINTF("expireFlows: forced expiry");
 					else if(now > bucket->expireTime)  DPRINTF("expireFlows: normal expiry");
 
@@ -207,6 +215,8 @@ void BaseHashtable::expireFlows() {
 	statEmptyBuckets = emptyBuckets;
 	statExportedBuckets += exportedBuckets;
 	statMultiEntries = multiEntries;
+	
+	__sync_lock_release(&aggInProgress);
 }
 
 
