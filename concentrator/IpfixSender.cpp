@@ -47,11 +47,13 @@ using namespace std;
  * @return handle to use when calling @c destroyIpfixSender()
  */
 IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port) 
-	: maxFlowLatency(100), // FIXME: this has to be set in the configuration!
+	: statSentPackets(0),
+	  maxFlowLatency(100), // FIXME: this has to be set in the configuration!
 	  noCachedRecords(0),
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
 	  timeoutRegistered(false),
-	  recordsAlreadySent(false)
+	  recordsAlreadySent(false),
+	  maxPacketRate(500)	// FIXME: set this in configuration!
 {
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 	statSentRecords = 0;
@@ -60,6 +62,8 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t 
 	
 	nextTimeout.tv_sec = 0;
 	nextTimeout.tv_nsec = 0;
+	curTimeStep.tv_sec = 0;
+	curTimeStep.tv_usec = 0;
 
 	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
 		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
@@ -176,10 +180,11 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 	
 	if (isTemplateRegistered(dataTemplateInfo.get())) {
 		// TODO: here we should check if both templates are the same, if they are, we do not need
-		// to inform ipfixlolib about it		
-		removeRegisteredTemplate(dataTemplateInfo.get());
+		// to inform ipfixlolib about it	
+		// we just assume that templates using the same id are identical		
+	} else {
+		addRegisteredTemplate(dataTemplateInfo);
 	}
-	addRegisteredTemplate(dataTemplateInfo);
 
 	/* get or assign template ID */
 	if(dataTemplateInfo->templateId)
@@ -371,6 +376,23 @@ void IpfixSender::endAndSendDataSet()
 		if (ipfix_end_data_set(exporter) != 0) {
 			THROWEXCEPTION("sndIpfix: ipfix_end_data_set failed");
 		}
+		
+		// determine if we need to wait (we don't want to exceed the defined packet rate per second)
+		// check in 100ms steps if maximum packet rate is reached - if yes, wait until the 100ms step
+		// is over
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		if ((tv.tv_sec==curTimeStep.tv_sec) && (tv.tv_usec/100000==curTimeStep.tv_usec/100000)) {			
+			if (packetsSentStep>maxPacketRate/10) {
+				// wait until current timestep is over
+				usleep(100000-(tv.tv_usec%100000));				
+			}
+		} else {
+			curTimeStep = tv;
+			packetsSentStep = 0;
+		}
+		
+		packetsSentStep++;
 
 		if (ipfix_send(exporter) != 0) {
 			THROWEXCEPTION("sndIpfix: ipfix_send failed");
