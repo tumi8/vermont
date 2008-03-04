@@ -34,7 +34,6 @@ Graph* Connector::connect(Graph* g)
 		std::vector<unsigned int> nexts = cfg->getNext();
 
 		for (unsigned int j = 0; j < nexts.size(); j++) {
-			msg(MSG_INFO, "to ID %d", nexts[j]);
 			CfgNode* toNode = id2node[nexts[j]];
 
 			if (toNode == NULL)
