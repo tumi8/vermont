@@ -23,6 +23,8 @@ public:
 	virtual void onReconfiguration1();
 	virtual void postReconfiguration();
 
+	virtual string getStatisticsXML();
+
 protected:
 	Rules* rules; /**< Set of rules that define the aggregator */
 	Mutex mutex; /**< ensures that exporterThread does not interfere with aggregation of incoming flows */

@@ -82,7 +82,7 @@ private:
 	static void copyDataSetOne(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
 	void (*getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*);
 	void fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index);
-	uint16_t expCalculateHash(const IpfixRecord::Data* data);
+	uint32_t expCalculateHash(const IpfixRecord::Data* data);
 	boost::shared_array<IpfixRecord::Data> buildBucketData(const Packet* p);
 	void expAggregateField(const ExpFieldData* efd, IpfixRecord::Data* baseData, const IpfixRecord::Data* deltaData);
 	void expAggregateFlow(IpfixRecord::Data* bucket, const Packet* p);

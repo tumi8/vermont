@@ -28,16 +28,17 @@
 #include "IpfixRecord.hpp"
 #include "Rule.hpp"
 #include "reconf/Module.h"
+#include "common/Sensor.h"
 
 #include "common/atomic_lock.h"
 
 
-class BaseHashtable 
+class BaseHashtable : public Sensor
 {
 public:
 	// configuration options for size of hashtable
 	// FIXME: should be moved to configuration file
-	static const uint32_t HTABLE_BITS = 16;
+	static const uint32_t HTABLE_BITS = 18;
 	static const uint32_t HTABLE_SIZE = 1<<HTABLE_BITS;
 	
 	/**
@@ -58,7 +59,7 @@ public:
 			uint16_t maxBufferTime);
 	virtual ~BaseHashtable();
 	
-	virtual std::string getStatistics();
+	virtual std::string getStatisticsXML();
 	void expireFlows(bool all = false);
 	
 	/**

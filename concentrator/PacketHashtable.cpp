@@ -352,9 +352,9 @@ void PacketHashtable::buildExpHelperTable()
 /**
  * calculates hash for given raw packet data in express aggregator
  */
-uint16_t PacketHashtable::expCalculateHash(const IpfixRecord::Data* data)
+uint32_t PacketHashtable::expCalculateHash(const IpfixRecord::Data* data)
 {
-	uint32_t hash = 0;
+	uint32_t hash = 0xAAAAAAAA;
 	for (int i=expHelperTable.noAggFields; i<expHelperTable.efdLength; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[i];
 		hash = crc32(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
@@ -563,7 +563,7 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 	updatePointers(p);
 	createMaskedFields(p);
 
-	uint16_t hash = expCalculateHash(p->netHeader);
+	uint32_t hash = expCalculateHash(p->netHeader);
 
 	// search bucket inside hashtable
 	Bucket* bucket = buckets[hash];

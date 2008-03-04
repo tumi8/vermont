@@ -22,6 +22,7 @@
 
 #include "PacketHashtable.h"
 
+#include <sstream>
 
 /**
  * constructs a new instance
@@ -74,8 +75,9 @@ BaseHashtable* PacketAggregator::createHashtable(Rule* rule, uint16_t minBufferT
 
 string PacketAggregator::getStatisticsXML()
 {
-	char buf[100];
-	snprintf(buf, ARRAY_SIZE(buf), "<totalReceivedPackets>%u</totalReceivedPackets>", statPacketsReceived);
+	ostringstream oss;
+	oss << "<totalReceivedPackets>" << statPacketsReceived << "</totalReceivedPackets";
+	oss << BaseAggregator::getStatisticsXML();
 	
-	return buf;
+	return oss.str();
 }

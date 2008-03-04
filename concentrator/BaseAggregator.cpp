@@ -3,6 +3,7 @@
 #include "BaseHashtable.h"
 
 #include <time.h>
+#include <sstream>
 
 /**
  * Creates a new Aggregator.
@@ -165,4 +166,15 @@ void* BaseAggregator::threadWrapper(void* instance)
 	BaseAggregator* agg = reinterpret_cast<BaseAggregator*>(instance);
 	agg->exporterThread();	
 	return 0;
+}
+
+string BaseAggregator::getStatisticsXML()
+{
+	ostringstream oss;
+	for (size_t i=0; i<rules->count; i++) {
+		oss << "<hashtable rule=\"" << i << "\">";
+		oss << rules->rule[i]->hashtable->getStatisticsXML();
+		oss << "</hashtable>";
+	}
+	return oss.str();
 }

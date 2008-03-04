@@ -327,14 +327,14 @@ void BaseHashtable::postReconfiguration()
 }
 
 
-std::string BaseHashtable::getStatistics()
+std::string BaseHashtable::getStatisticsXML()
 {
 	ostringstream oss;
-	oss << "Hashtable: number of hashtable entries      : " << statTotalEntries << endl;
-	oss << "Hashtable: number of empty hashtable buckets: " << statEmptyBuckets << endl;
-	oss << "Hashtable: number of hashtable buckets with multiple entries: " << statMultiEntries << endl;
+	oss << "<entries>" << statTotalEntries << "</entries>";
+	oss << "<emptyBuckets>" << statEmptyBuckets << "</emptyBuckets>";
+	oss << "<multientryBuckets>" << statMultiEntries << "</multientryBuckets>";
 	uint32_t diff = statExportedBuckets - statLastExpBuckets;
 	statLastExpBuckets += diff;
-	oss << "Hashtable: number of exported entries       : " << diff << endl;
+	oss << "<exportedEntries>" << diff << "</exportedEntries>";
 	return oss.str();
 }

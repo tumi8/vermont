@@ -40,7 +40,7 @@ private:
 	int aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* baseData, 
 			IpfixRecord::Data* deltaData);
 	int aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data* flow, bool reverse);
-	uint16_t getHash(IpfixRecord::Data* data, bool reverse);	
+	uint32_t getHash(IpfixRecord::Data* data, bool reverse);	
 	int equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2, bool reverse);
 	Bucket* lookupBucket(uint32_t hash, IpfixRecord::Data* data, bool reverse);
 	void bufferDataBlock(boost::shared_array<IpfixRecord::Data> data);

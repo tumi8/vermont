@@ -295,7 +295,7 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 /**
  * Returns a hash value corresponding to all variable, non-aggregatable fields of a flow
  */
-uint16_t FlowHashtable::getHash(IpfixRecord::Data* data, bool reverse) {
+uint32_t FlowHashtable::getHash(IpfixRecord::Data* data, bool reverse) {
 	int i;
 
 	uint32_t hash = 0;
