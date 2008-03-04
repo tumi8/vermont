@@ -37,7 +37,7 @@ class IpfixReceiverUdpIpV4 : public IpfixReceiver, Sensor {
 		virtual ~IpfixReceiverUdpIpV4();
 
 		virtual void run();
-		virtual std::string getStatistics();
+		virtual std::string getStatisticsXML();
 		
 	private:
 		int listen_socket;

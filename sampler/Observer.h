@@ -102,6 +102,9 @@ protected:
 	// attention: value may sometimes be incorrect caused by multithreading issues
 	volatile uint64_t processedPackets;
 	volatile uint64_t lastProcessedPackets;
+	
+	uint32_t statTotalLostPackets;
+	uint32_t statTotalRecvPackets;
 
 	static void *observerThread(void *);
 

@@ -51,7 +51,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port)
 	listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
 	if(listen_socket < 0) {
 		perror("Could not create socket");
-		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4");
+		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed");
 	}
 	
 	serverAddress.sin_family = AF_INET;
@@ -141,14 +141,11 @@ void IpfixReceiverUdpIpV4::run() {
 /**
  * statistics function called by StatisticsManager
  */
-std::string IpfixReceiverUdpIpV4::getStatistics()
+std::string IpfixReceiverUdpIpV4::getStatisticsXML()
 {
 	ostringstream oss;
 	
-	uint32_t recv = statReceivedPackets;
-	statReceivedPackets -= recv;
-	
-	oss << "IpfixReceiverUdpIpV4: received packets: " << recv << endl;	
+	oss << "<receivedPackets>" << statReceivedPackets << "</receivedPackets>" << endl;	
 
 	return oss.str();
 }

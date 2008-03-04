@@ -30,7 +30,7 @@ Observer::Observer(const std::string& interface) : thread(Observer::observerThre
 	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
 	pcap_promisc(1), ready(false), filter_exp(0),
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0), 
-	lastProcessedPackets(0)
+	lastProcessedPackets(0), statTotalLostPackets(0), statTotalRecvPackets(0)
 
 {
 	captureInterface = (char*)malloc(interface.size() + 1);
@@ -378,9 +378,13 @@ std::string Observer::getStatisticsXML()
 	ostringstream oss;
     pcap_stat pstats;
     if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
+    	statTotalLostPackets += pstats.ps_drop;
+    	statTotalRecvPackets += pstats.ps_recv;
     	oss << "<pcap>";
     	oss << "<received type=\"packets\">" << pstats.ps_recv << "</received>";
     	oss << "<dropped type=\"packets\">" << pstats.ps_drop << "</dropped>";
+    	oss << "<totalReceived type=\"packets\">" << statTotalRecvPackets << "</totalReceived>";
+    	oss << "<totalDropped type=\"packets\">" << statTotalLostPackets << "</totalDropped>";
     	oss << "</pcap>";
 	}
 	uint64_t diff = receivedBytes-lastReceivedBytes;
@@ -393,6 +397,3 @@ std::string Observer::getStatisticsXML()
 	oss << "</observer>";
 	return oss.str();
 }
-
-
-//static void plain_c_sucks_because_people_dont_seem_to_have_a_caps_key_and_like_to_type_stupid_underscores_alot(){}
