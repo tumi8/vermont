@@ -74,6 +74,8 @@ void IpfixAggregator::onDataRecord(IpfixDataRecord* record)
 			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateTemplateData(ti, record->data);
 		}
 	}
+
+	record->removeReference();
 }
 
 
@@ -104,6 +106,7 @@ void IpfixAggregator::onDataDataRecord(IpfixDataDataRecord* record)
 	}
 	mutex.unlock();
 
+	record->removeReference();
 }
 
 

@@ -81,11 +81,12 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 	statEntriesAdded = 0;
 	statEntriesRemoved = 0;
 	statNumWorms = 0;
+	statCurBenign = 0;
 
 	rbsEntries = new list<RBSEntry*>[hashSize];
 	msg(MSG_INFO,"RBSWormDetector started");
-	msg(MSG_INFO,"Initial values: lambdas %f %f, slopes %f - %f, slopes %f - %f, adaptinterval: %d ,cleaninterval: %d",lambda_0,lambda_1,slope_0a,slope_0b,slope_1a,slope_1b,timeAdaptInterval,timeCleanupInterval);
-	msg(MSG_FATAL,"%d",hashSize);
+	//msg(MSG_INFO,"Initial values: lambdas %f %f, slopes %f - %f, slopes %f - %f, adaptinterval: %d ,cleaninterval: %d",lambda_0,lambda_1,slope_0a,slope_0b,slope_1a,slope_1b,timeAdaptInterval,timeCleanupInterval);
+//	msg(MSG_FATAL,"%d",hashSize);
 }
 
 RBSWormDetector::~RBSWormDetector()
@@ -99,7 +100,6 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 	Connection conn(record);
 
 	conn.swapIfNeeded();
-
 	// only use this connection if it was a connection attempt
 	if (conn.srcTcpControlBits&Connection::SYN ) {
 		//	msg(MSG_INFO,"NEW CONN: %x",conn.dstTcpControlBits);
@@ -113,13 +113,13 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 		}
 
 	}
+	record->removeReference();
 }
 
 
 void RBSWormDetector::addConnection(Connection* conn)
 {
 	RBSEntry* te = getEntry(conn);
-
 
 	// only work with this connection, if it wasn't accessed earlier by this host
 	if (find(te->accessedHosts.begin(), te->accessedHosts.end(), conn->dstIP) != te->accessedHosts.end()) return;
@@ -129,7 +129,6 @@ void RBSWormDetector::addConnection(Connection* conn)
 
 	te->accessedHosts.push_back(conn->dstIP);
 
-	te->timeExpire = time(0) + timeExpirePending;
 
 	uint64_t time_elams = ntohll(conn->srcTimeStart); 
 	//timeelams represents time since 1970 in milliseconds
@@ -139,7 +138,6 @@ void RBSWormDetector::addConnection(Connection* conn)
 
 	uint64_t intarrival = abs((int64_t) (time_elams - te->lastPacket));
 	//duration between last 2 packets
-	msg(MSG_FATAL,"interarrival %llu",intarrival); 
 
 	if (intarrival < 1000) 
 	{	
@@ -147,9 +145,9 @@ void RBSWormDetector::addConnection(Connection* conn)
 		te->totalSSNum++;
 		te->totalSSDur += intarrival;
 
-			if (te->totalSSDur < 1000) 
-			te->mean = 1 / (double) (te->totalSSNum);
-			else
+	//		if (te->totalSSDur < 1000) 
+	//		te->mean = 1 / (double) (te->totalSSNum);
+	//		else
 			te->mean = (te->totalSSDur/ (double) 1000) / (double) (te->totalSSNum);
 
 //		msg(MSG_FATAL,"2 Schnelle pakete, innerhalb %llu new mean %f",intarrival,te->mean);
@@ -165,6 +163,7 @@ void RBSWormDetector::addConnection(Connection* conn)
 	// this host was already decided on, don't do anything any more
 	if (te->decision != PENDING) return;
 
+	te->timeExpire = time(0) + timeExpirePending;
 
 	// calculate thresholds
 	float thresh_0 = te->numFanouts * slope_0a - slope_0b;
@@ -187,6 +186,7 @@ void RBSWormDetector::addConnection(Connection* conn)
 		// no worm, just let entry stay here until it expires
 		te->timeExpire = time(0)+timeExpireBenign;
 		te->decision = BENIGN;
+		statCurBenign++;
 	}
 	else if (trace_ela<thresh_1) 
 	{
@@ -201,7 +201,7 @@ void RBSWormDetector::addConnection(Connection* conn)
 		IDMEFMessage* msg = idmefManager.getNewInstance();
 		msg->init(idmefTemplate, analyzerId);
 		msg->setVariable(PAR_FAN_OUT, (uint32_t) te->numFanouts);
-		msg->setVariable(PAR_TOTALTIME, (uint32_t) trace_ela);
+		msg->setVariable(PAR_TOTALTIME, trace_ela);
 		msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(te->srcIP));
 		msg->applyVariables();
 		send(msg);
@@ -283,6 +283,11 @@ void RBSWormDetector::cleanupEntries()
 		while (iter != rbsEntries[i].end()) {
 			if (curtime > (*iter)->timeExpire) {
 				RBSEntry* te = *iter;
+				if ((*iter)->decision == BENIGN)
+				{
+				statCurBenign--;
+				}
+
 				iter = rbsEntries[i].erase(iter);
 				delete te;
 				statEntriesRemoved++;
@@ -303,6 +308,7 @@ void RBSWormDetector::adaptFrequencies ()
 	time_t curtime = time(0);
 	uint32_t count = 0;	
 	double temp1 = 0;
+	uint32_t invalid = 0;
 
 
 	list<RBSEntry*> adaptList;	
@@ -315,7 +321,11 @@ void RBSWormDetector::adaptFrequencies ()
 
 		while (iter != rbsEntries[i].end()) 
 		{
+			if ((*iter)->mean != 0)
+			{
+			invalid++;
 			adaptList.push_back(*iter);
+			}
 			iter++;	
 		}
 	}
@@ -331,22 +341,21 @@ void RBSWormDetector::adaptFrequencies ()
 	list<RBSEntry*>::iterator iter = adaptList.begin();
 
 	uint32_t valid = 0;
-	uint32_t invalid = 0;
 	while (iter != adaptList.end()) 
 	{
 		count++;
 		//trim bottom and top 10%
 		if (count > num10 && count <( adaptList.size() - num10)) 
 		{
-			if ((*iter)->mean > 0) 
-			{
 				valid++;
 				temp1 += (*iter)->mean;
-			}
-			else {
-				invalid++;
-			}
 		}
+
+		(*iter)->mean = 0;
+		(*iter)->totalSSDur = 0;
+		(*iter)->totalSSNum = 0;
+		(*iter)->lastPacket = 0;
+		(*iter)->accessedHosts.clear();
 		iter++;
 	}
 
@@ -392,6 +401,8 @@ std::string RBSWormDetector::getStatisticsXML()
 	oss << "<rbswormdetector>" << endl;
 	oss << "<frequencies>" << lambda_0 << " " << lambda_1 << "</frequencies>" << endl;
 	oss << "<entrycount>" << statEntriesAdded-statEntriesRemoved << "</entrycount>" << endl;
+
+	oss << "<currentBenign>" << statCurBenign << "</currentBenign>" << endl;
 	oss << "<wormsdetected>" << statNumWorms << "</wormsdetected>" << endl;
 	oss << "<nextadaptionin>" << timeAdaptInterval - (time(0) - lastAdaption)   << "</nextadaptionin>" << endl;
 	oss << "<nextcleanup>" << timeCleanupInterval - (time(0) - lastCleanup)   << "</nextcleanup>" << endl;

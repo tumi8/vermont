@@ -77,6 +77,7 @@ class RBSWormDetector
 		uint32_t statEntriesAdded;
 		uint32_t statEntriesRemoved;
 		uint32_t statNumWorms;
+		uint32_t statCurBenign;
 		float lambda_0,lambda_1;
 		float slope_0a,slope_0b,slope_1a,slope_1b;
 		time_t lastCleanup,lastAdaption;

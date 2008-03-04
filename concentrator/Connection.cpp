@@ -149,7 +149,7 @@ void Connection::swapDataFields()
 void Connection::swapIfNeeded()
 {
 	// now try the starting time
-	if (srcTimeStart>dstTimeStart) swapDataFields();
+	if (ntohll(srcTimeStart)>ntohll(dstTimeStart)) swapDataFields();
 }
 
 string Connection::printTcpControlBits(uint8_t bits)
