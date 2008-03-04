@@ -65,12 +65,22 @@ void BaseAggregator::performShutdown()
 }
 
 /**
- * notifies hashtables about reconfiguration
+ * notifies all hashtables about imminent reconfiguration
  */
-void BaseAggregator::preReconfiguration1()
+void BaseAggregator::preReconfiguration()
 {
 	for (uint32_t i=0; i<rules->count; i++) {
-		rules->rule[i]->hashtable->preReconfiguration1();
+		rules->rule[i]->hashtable->preReconfiguration();
+	}
+}
+
+/**
+ * notifies hashtables about reconfiguration
+ */
+void BaseAggregator::onReconfiguration1()
+{
+	for (uint32_t i=0; i<rules->count; i++) {
+		rules->rule[i]->hashtable->onReconfiguration1();
 	}	
 }
 
@@ -138,11 +148,9 @@ void BaseAggregator::exporterThread()
 		// if we got interrupted by a signal
 		while (nanosleep(&req, &req) == -1 && errno == EINTR);
 		
-		mutex.lock();
 		for (size_t i = 0; i < rules->count; i++) {
 			rules->rule[i]->hashtable->expireFlows();
 		}
-		mutex.unlock();
 	}
 	
 	unregisterCurrentThread();

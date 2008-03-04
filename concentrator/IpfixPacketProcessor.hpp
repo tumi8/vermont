@@ -44,8 +44,8 @@ class IpfixPacketProcessor
 		
 		virtual void performStart() {};
 		virtual void performShutdown() {};
-		virtual void preReconfiguration1() {};
-		virtual void preReconfiguration2() {};
+		virtual void onReconfiguration1() {};
+		virtual void onReconfiguration2() {};
 		virtual void postReconfiguration() {};
 
 };

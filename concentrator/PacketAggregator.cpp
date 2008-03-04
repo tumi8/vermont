@@ -49,14 +49,12 @@ void PacketAggregator::receive(Packet* e)
 	}
 #endif
 
-	mutex.lock();
 	for (size_t i = 0; i < rules->count; i++) {
 		if (rules->rule[i]->ExptemplateDataMatches(e)) {
 			DPRINTF("rule %d matches\n", i);
 			static_cast<PacketHashtable*>(rules->rule[i]->hashtable)->aggregatePacket(e);
 		}
 	}
-	mutex.unlock();
 	e->removeReference();
 }
 

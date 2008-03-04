@@ -33,6 +33,16 @@ public:
 	std::string getProtocolType() { return protocolType; }
 	uint16_t getPort() { return port; }
 	
+	bool equalTo(CollectorCfg* other)
+	{
+		if ((ipAddress == other->ipAddress) &&
+			(ipAddressType == other->ipAddressType) &&
+			(protocolType == other->protocolType) &&
+			(port == other->port)) return true;
+		
+		return false;
+	}
+	
 private:	
 	std::string ipAddress;
 	unsigned ipAddressType;

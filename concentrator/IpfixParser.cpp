@@ -824,7 +824,7 @@ void IpfixParser::performShutdown()
 {
 }
 
-void IpfixParser::preReconfiguration1()
+void IpfixParser::onReconfiguration1()
 {
 	setTemplateDestroyed(true);
 }

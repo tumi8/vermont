@@ -103,7 +103,6 @@ void IpfixAggregator::onDataDataRecord(IpfixDataDataRecord* record)
 		}
 	}
 	mutex.unlock();
-
 }
 
 

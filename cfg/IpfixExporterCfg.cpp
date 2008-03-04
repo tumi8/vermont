@@ -69,5 +69,30 @@ IpfixExporterCfg* IpfixExporterCfg::create(XMLElement* elem)
 
 bool IpfixExporterCfg::deriveFrom(IpfixExporterCfg* other)
 {
-	return false;
+	return equalTo(other);
+}
+
+bool IpfixExporterCfg::equalTo(IpfixExporterCfg* other)
+{
+	if (maxPacketSize != other->maxPacketSize) return false;
+	if (exportDelay != other->exportDelay) return false;
+	if (templateRefreshTime != other->templateRefreshTime) return false;
+	if (templateRefreshRate != other->templateRefreshRate) return false;
+	if (collectors.size() != other->collectors.size()) return false;
+	std::vector<CollectorCfg*>::const_iterator iter = collectors.begin();
+	while (iter != collectors.end()) {
+		std::vector<CollectorCfg*>::const_iterator biter = other->collectors.begin();
+		bool found = false;
+		while (biter != collectors.end()) {
+			if ((*iter)->equalTo(*biter)) {
+				found = true;
+				break;
+			}
+			biter++;
+		}
+		if (!found) return false;
+		iter++;
+	}
+	
+	return true;
 }

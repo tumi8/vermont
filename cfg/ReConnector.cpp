@@ -12,17 +12,18 @@ Graph* ReConnector::connect(Graph* g)
 
 	/* disconnect all modules */
 	for (size_t i = 0; i < topoOld.size(); i++) {
+		topoOld[i]->getCfg()->getInstance()->preReconfiguration();
 		topoOld[i]->getCfg()->disconnectInstances();
 	}
 	
-	/* call preReconfiguration1 on all modules */
+	/* call onReconfiguration1 on all modules */
 	for (size_t i = 0; i < topoOld.size(); i++) {
-		topoOld[i]->getCfg()->preReconfiguration1();
+		topoOld[i]->getCfg()->onReconfiguration1();
 	}
 	
 	/* call preConfiguration2 on all modules */
 	for (size_t i = 0; i < topoOld.size(); i++) {
-		topoOld[i]->getCfg()->preReconfiguration2();
+		topoOld[i]->getCfg()->onReconfiguration2();
 	}
 	
 	
@@ -33,17 +34,17 @@ Graph* ReConnector::connect(Graph* g)
 		for (size_t j = 0; j < topoNew.size(); j++) {
 			Cfg* newCfg = topoNew[j]->getCfg();
 			if (oldCfg->getID() == newCfg->getID()) { // possible match
-				msg(MSG_INFO, "\nFOUND A MATCH BETWEEN %s(id=%d) -> %s(id=%d)\n",
+				msg(MSG_INFO, "found a match between %s(id=%d) -> %s(id=%d)\n",
 						oldCfg->getName().c_str(), oldCfg->getID(),
 						newCfg->getName().c_str(), newCfg->getID());
 
 				// check if we could use the same module instance in the new config
 				if (newCfg->deriveFrom(oldCfg)) {
-					msg(MSG_INFO, "REUSING     %s(id=%d)\n",
+					msg(MSG_INFO, "reusing %s(id=%d)\n",
 							oldCfg->getName().c_str(), oldCfg->getID());
 					newCfg->transferInstance(oldCfg);
 				} else {
-					msg(MSG_INFO, "CAN'T REUSE %s(id=%d)\n",
+					msg(MSG_INFO, "can't reuse %s(id=%d)\n",
 							oldCfg->getName().c_str(), oldCfg->getID());
 				}
 			}

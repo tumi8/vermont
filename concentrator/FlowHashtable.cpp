@@ -215,15 +215,27 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecor
  */
 int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data* flow, bool reverse)
 {
+	// the following lock should almost never fail (only during reconfiguration)
+	while (__sync_lock_test_and_set(&aggInProgress, 1)) {
+		timespec req;
+		req.tv_sec = 0;
+		req.tv_nsec = 50000000;
+		nanosleep(&req, &req);
+	}
+		
 	int i;
 
 	if(!baseFlow) {
 		DPRINTF("aggregateFlow: baseFlow is NULL");
+		msg(MSG_INFO, "sync lock release");
+		__sync_lock_release(&aggInProgress);
 		return 1;
 	}
 
 	if(!flow){
 		DPRINTF("aggregateFlow: flow is NULL");
+		msg(MSG_INFO, "sync lock release");
+		__sync_lock_release(&aggInProgress);
 		return 1;
 	}
 
@@ -273,6 +285,8 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 			aggregateField(&fi->type, baseFlow + fi->offset, flow + fi->offset);
 		}
 	}
+	
+	__sync_lock_release(&aggInProgress);
 
 	return 0;
 }
@@ -496,6 +510,13 @@ void FlowHashtable::copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord:
  */
 void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord::Data* data)
 {
+	// the following lock should almost never fail (only during reconfiguration)
+	while (__sync_lock_test_and_set(&aggInProgress, 1)) {
+		timespec req;
+		req.tv_sec = 0;
+		req.tv_nsec = 50000000;
+		nanosleep(&req, &req);
+	}
 	DPRINTF("FlowHashtable::aggregateTemplateData called");
 	int i;
 
@@ -556,6 +577,7 @@ void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRe
 
 	/* ...then buffer it */
 	bufferDataBlock(htdata);
+	__sync_lock_release(&aggInProgress);
 }
 
 
@@ -565,6 +587,15 @@ void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRe
 void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::Data* data)
 {
 	DPRINTF("called");
+	
+	// the following lock should almost never fail (only during reconfiguration)
+	while (__sync_lock_test_and_set(&aggInProgress, 1)) {
+		timespec req;
+		req.tv_sec = 0;
+		req.tv_nsec = 50000000;
+		nanosleep(&req, &req);
+	}
+	
 	int i;
 
 	/* Create data block to be inserted into buffer... */
@@ -676,4 +707,6 @@ void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti,
 
 	/* ...then buffer it */
 	bufferDataBlock(htdata);
+	
+	__sync_lock_release(&aggInProgress);
 }

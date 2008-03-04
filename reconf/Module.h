@@ -38,27 +38,38 @@ public:
 	 */
 	void shutdown(bool fail_if_not_running = true);
 	
-	/* this is called before connecting a module */
 	/**
 	 * is called when reconfiguration of vermont is complete
 	 * may be overwritten by subclasses
 	 */
 	virtual void postReconfiguration() { /* override this in the modules you need */ }
 	
-	/* called to inform the module that now we are doing a reconfiguration 
+	/**
+	 * called to inform the module that now we are doing a reconfiguration 
 	 * Could be used to invalidate some local stuff which will get invalid after
 	 * the reconfiguration (e.g. the templates)
+	 * is called *after* modules were disconnected
 	 * 
 	 * May be overwritten by subclasses 
 	 */
-	virtual void preReconfiguration1() { /* override this in the modules you need */ }
+	virtual void onReconfiguration1() { /* override this in the modules you need */ }
 	
-	/* called after ALL modules were informed on the reconfiguration, so
+	/**
+	 * called after ALL modules were informed on the reconfiguration, so
 	 * they could to some local cleanup.
+	 * is called directly after all modules have processed onReconfiguration1
 	 *
 	 * May be overwritten by subclasses
 	 */
-	virtual void preReconfiguration2() { /* override this in the modules you need */ }	
+	virtual void onReconfiguration2() { /* override this in the modules you need */ }	
+	
+	/**
+	 * called immediately before module is disconnected from successing modules,
+	 * modules preceding the module are already disconnected
+	 * ATTENTION: there MAY be another element still be processed in the module,
+	 * that means the module programmer MUST pay attention to deadlocks
+	 */
+	virtual void preReconfiguration() { /* override this in the modules you need */ }
 	
 
 protected:

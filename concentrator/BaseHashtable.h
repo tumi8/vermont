@@ -57,7 +57,7 @@ public:
 	virtual ~BaseHashtable();
 	
 	virtual std::string getStatistics();
-	void expireFlows();
+	void expireFlows(bool all = false);
 	
 	/**
 	 * this method is called from the aggregator when the module is started
@@ -72,7 +72,12 @@ public:
 	/**
 	 * before reconfiguration this function is called by aggregator
 	 */
-	void preReconfiguration1();
+	void preReconfiguration();
+	
+	/**
+	 * during reconfiguration this function is called by aggregator
+	 */
+	void onReconfiguration1();
 	
 	/**
 	 * after the reconfiguration the aggregator calls this function
@@ -100,6 +105,8 @@ protected:
 	
 	InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
 	InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
+	
+	bool aggInProgress; /** indicates if currently an element is aggregated in the hashtable, used for atomic lock for preReconfiguration */
 		
 	bool need_resend_template;
 	

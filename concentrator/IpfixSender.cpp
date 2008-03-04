@@ -430,6 +430,11 @@ void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 			ipfix_put_data_field(exporter, mask, 1);
 		}
 		else {
+			if (fi->type.id == IPFIX_TYPEID_packetDeltaCount && fi->type.length<=8) {
+				uint64_t p = 0;
+				memcpy(&p, data+fi->offset, fi->type.length);
+				statPacketsInFlows += ntohll(p);
+			}
 			ipfix_put_data_field(exporter, data + fi->offset, fi->type.length);
 		}
 	}
@@ -448,7 +453,7 @@ void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 /**
  * checks registered Templates if those are to be destroyed and destroys them if needed
  */
-void IpfixSender::preReconfiguration2()
+void IpfixSender::onReconfiguration2()
 {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	
@@ -489,6 +494,7 @@ void IpfixSender::sendRecords(bool forcesend)
 	if ((noCachedRecords >= 10) || forcesend) {
 		// send packet
 		endAndSendDataSet();
+		statSentPackets++;
 		// set next timeout
 		addToCurTime(&nextTimeout, recordCacheTimeout);
 	}
@@ -502,22 +508,6 @@ void IpfixSender::sendRecords(bool forcesend)
 void IpfixSender::flushPacket()
 {
 	sendRecords(true);
-}
-
-
-/**
- * statistics function called by StatisticsManager
- */
-std::string IpfixSender::getStatistics()
-{
-	ostringstream oss;
-	
-	uint32_t sent = statSentRecords;
-	statSentRecords -= sent;
-	
-	oss << "IpfixReceiverUdpIpV4: received packets: " << sent << endl;	
-
-	return oss.str();
 }
 
 
@@ -552,4 +542,20 @@ void IpfixSender::registerTimeout()
 	addToCurTime(&nextTimeout, recordCacheTimeout);
 	timer->addTimeout(this, nextTimeout, NULL);
 	timeoutRegistered = true;
+}
+
+/**
+ * during reconfiguration ensure, that all cached flows are exported
+ */
+void IpfixSender::onReconfiguration1()
+{
+	sendRecords(true);
+}
+
+string IpfixSender::getStatisticsXML()
+{
+	char buf[200];
+	snprintf(buf, ARRAY_SIZE(buf), "<totalSentRecords>%u</totalSentRecords><totalSentUDPPackets>%u</totalSentUDPPackets><totalPacketsInFlows>%u</totalPacketsInFlows>", 
+			statSentRecords, statSentPackets, statPacketsInFlows);
+	return buf;
 }

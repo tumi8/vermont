@@ -35,7 +35,8 @@
  * Call @c startIpfixCollector() to start receiving and processing messages.
  */
 IpfixCollector::IpfixCollector(IpfixReceiver* receiver)
-	: ipfixReceiver(receiver)
+	: ipfixReceiver(receiver),
+	  statRecvdRecords(0)
 {
 	ipfixPacketProcessor = new IpfixParser(this);
 	
@@ -77,21 +78,29 @@ void IpfixCollector::postReconfigration()
 	ipfixPacketProcessor->postReconfiguration();
 }
 
-void IpfixCollector::preReconfiguration1()
+void IpfixCollector::onReconfiguration1()
 {
-	ipfixPacketProcessor->preReconfiguration1();
+	ipfixPacketProcessor->onReconfiguration1();
 }
 
-void IpfixCollector::preReconfiguration2()
+void IpfixCollector::onReconfiguration2()
 {
-	ipfixPacketProcessor->preReconfiguration2();
+	ipfixPacketProcessor->onReconfiguration2();
 }
 
 /**
- * just delegates call to Source::send
+ * just delegates call to Source::send and collects statistics
  * (needed for interface IpfixRecordSender
  */
 bool IpfixCollector::send(IpfixRecord* ipfixRecord)
 {
+	statRecvdRecords++;
 	return Source<IpfixRecord*>::send(ipfixRecord);	
+}
+
+string IpfixCollector::getStatisticsXML()
+{
+	char buf[50];
+	snprintf(buf, ARRAY_SIZE(buf), "<receivedRecords>%u</receivedRecords>", statRecvdRecords);
+	return buf;
 }

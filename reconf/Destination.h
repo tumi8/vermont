@@ -20,11 +20,6 @@ public:
 	virtual ~Destination() { };
 	
 	virtual void receive(T e) = 0;
-
-private:
-	inline void recvPacket(T p) {
-		printf("recv called\n");
-	}
 };
 
 template<>

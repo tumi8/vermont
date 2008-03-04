@@ -300,10 +300,16 @@ void BaseHashtable::performShutdown()
 	dataTemplate.get()->destroyed = true;
 }
 
+void BaseHashtable::preReconfiguration()
+{
+	msg(MSG_INFO, "forcing export for flows");
+	expireFlows(true);
+}
+
 /**
  * invalidates used template
  */
-void BaseHashtable::preReconfiguration1()
+void BaseHashtable::onReconfiguration1()
 {
 	// this tells all modules that the template should not be used any more
 	dataTemplate.get()->destroyed = true;

@@ -56,7 +56,7 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		
 		virtual void performStart();
 		virtual void performShutdown();
-		virtual void preReconfiguration1();
+		virtual void onReconfiguration1();
 		virtual void postReconfiguration();
 
 	protected:

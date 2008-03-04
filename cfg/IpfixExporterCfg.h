@@ -17,6 +17,8 @@ public:
 	virtual IpfixSender* createInstance();
 
 	bool deriveFrom(IpfixExporterCfg* old);
+	
+	bool equalTo(IpfixExporterCfg* other);
 
 protected:
 	IpfixExporterCfg(XMLElement* elem);

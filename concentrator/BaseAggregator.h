@@ -19,7 +19,8 @@ public:
 	void buildAggregator(char* rulefile, uint16_t minBufferTime, uint16_t maxBufferTime);
 
 	// events from Module
-	virtual void preReconfiguration1();
+	virtual void preReconfiguration();
+	virtual void onReconfiguration1();
 	virtual void postReconfiguration();
 
 protected:

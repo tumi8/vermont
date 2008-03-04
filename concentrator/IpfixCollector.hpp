@@ -46,15 +46,18 @@ class IpfixCollector
 		virtual void performShutdown();
 
 		virtual void postReconfigration();
-		virtual void preReconfiguration1();
-		virtual void preReconfiguration2();
+		virtual void onReconfiguration1();
+		virtual void onReconfiguration2();
 
 		bool send(IpfixRecord* ipfixRecord);
+		
+		virtual string getStatisticsXML();
 
 
 	private:
 		IpfixReceiver* ipfixReceiver;
 		IpfixPacketProcessor* ipfixPacketProcessor;
+		uint32_t statRecvdRecords;
 
 };
 

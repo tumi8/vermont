@@ -58,7 +58,7 @@ public:
 	virtual void onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record);
 	virtual void onDataDataRecord(IpfixDataDataRecord* record);
 
-	virtual std::string getStatistics();
+	virtual void onReconfiguration1();
 	
 	// inherited from Notifiable
 	virtual void onTimeout(void* dataPtr);
@@ -77,13 +77,16 @@ public:
 		uint16_t port; /**< Port of Collector */
 	};
 
-	virtual void preReconfiguration2();
+	virtual void onReconfiguration2();
+	virtual string getStatisticsXML();
 	
 protected:
 	ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */
 	uint16_t lastTemplateId; /**< Template ID of last created Template */
 	std::vector<Collector> collectors; /**< Collectors we export to */
 	uint32_t statSentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
+	uint32_t statSentPackets; /**< Statistics: total number of packets sent over the network */
+	uint32_t statPacketsInFlows; /**< Statistics: total number of packets within flows */
 
 
 private:
@@ -103,6 +106,10 @@ private:
 	uint16_t recordCacheTimeout; /**< how long may records be cached until sent, milliseconds */
 	bool timeoutRegistered; /**< true if next timeout was already registered in timer */
 	bool recordsAlreadySent; /**< true if records were sent to the network as the packet was full */
+	uint32_t maxPacketRate; /**< maximum number of packets sent per second */
+	struct timeval curTimeStep; /**< current time used for determining packet rate */
+	uint32_t packetsSentStep; /**< number of packets sent in timestep (usually 100ms)*/
+	
 	timespec nextTimeout;
 	
 	queue<IpfixRecord*> recordsToRelease;

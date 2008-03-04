@@ -107,8 +107,8 @@ public:
 
 	/* see in Module for the documentation for these functions */
 	virtual void postReconfiguration() = 0;
-	virtual void preReconfiguration1() = 0;
-	virtual void preReconfiguration2() = 0;
+	virtual void onReconfiguration1() = 0;
+	virtual void onReconfiguration2() = 0;
 	
 	/** this method will delete the instance */
 	virtual void freeInstance() = 0;
@@ -215,16 +215,16 @@ public:
 		instance->postReconfiguration();
 	}
 
-	void preReconfiguration1() {
+	void onReconfiguration1() {
 		if (instance == NULL)
 			return;
-		instance->preReconfiguration1();
+		instance->onReconfiguration1();
 	}
 
-	void preReconfiguration2() {
+	void onReconfiguration2() {
 		if (instance == NULL)
 			return;
-		instance->preReconfiguration2();
+		instance->onReconfiguration2();
 	}
 	
 	/** this method gets called *ONLY* if the instance needs a timer and the
