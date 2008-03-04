@@ -147,6 +147,7 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 
 	private:
 		uint32_t statTotalDataRecords; /**< amount of data records processed by parser */
+		uint32_t statTotalDRPackets; /**< amount of UDP packets containing data records processed by parser */
 		IpfixRecordSender* ipfixRecordSender;
 		
 		static InstanceManager<IpfixTemplateRecord> templateRecordIM;

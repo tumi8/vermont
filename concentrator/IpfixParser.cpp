@@ -558,7 +558,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
     sourceId->observationDomainId = ntohl(header->observationDomainId);
 
 	if (ntohs(header->length) != length) {
-		DPRINTF("Bad message length - expected %#06x, got %#06x\n", length, ntohs(header->length));
+		msg(MSG_ERROR, "Bad message length - expected %#06x, got %#06x\n", length, ntohs(header->length));
 		return -1;
 	}
 
@@ -583,7 +583,8 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 			processOptionsTemplateSet(sourceId, message, set);
 			break;
 		default:
-			if(tmpid >= IPFIX_SetId_Data_Start) {				
+			if(tmpid >= IPFIX_SetId_Data_Start) {	
+				statTotalDRPackets++;
 				processDataSet(sourceId, message, set);
 			} else {
 				msg(MSG_ERROR, "processIpfixPacket: Unsupported Set ID - expected 2/3/4/256+, got %d", tmpid);
@@ -765,6 +766,7 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
  */
 IpfixParser::IpfixParser(IpfixRecordSender* sender) 
 	: statTotalDataRecords(0),
+	  statTotalDRPackets(0),
 	  ipfixRecordSender(sender)
 {
 
@@ -798,7 +800,8 @@ std::string IpfixParser::getStatisticsXML()
 {
 	ostringstream oss;
 	
-	oss << "<totalDataRecords>" << statTotalDataRecords << "</totalDataRecords>";	
+	oss << "<totalDataRecords>" << statTotalDataRecords << "</totalDataRecords>";
+	oss << "<totalDataRecordUDPPackets>" << statTotalDRPackets << "</totalDataRecordUDPPackets>";
 
 	return oss.str();
 }
