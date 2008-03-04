@@ -34,6 +34,7 @@ IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 			collectors.push_back(new CollectorCfg(e));
 		} else if (e->matches("maxUdpRate")) {
 					udpRateLimit = getInt("maxUdpRate", IS_DEFAULT_MAXUDPRATE);
+					msg(MSG_INFO, "Exporter: using maximum UDP packet rate of %d packets/s", udpRateLimit);
 		} else {
 			THROWEXCEPTION("Illegal PSAMPExporter config entry \"%s\" found",
 					e->getName().c_str());
@@ -49,7 +50,7 @@ IpfixExporterCfg::~IpfixExporterCfg()
 
 IpfixSender* IpfixExporterCfg::createInstance()
 {
-	instance = new IpfixSender(0); // FIXME: observationDomainId
+	instance = new IpfixSender(0, udpRateLimit); // FIXME: observationDomainId
 
 	for (unsigned i = 0; i != collectors.size(); ++i) {
 		msg(MSG_DEBUG, "IpfixExporter: adding collector %s:%d",
