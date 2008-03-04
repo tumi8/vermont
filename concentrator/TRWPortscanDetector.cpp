@@ -82,6 +82,8 @@ void TRWPortscanDetector::onDataDataRecord(IpfixDataDataRecord* record)
 	if (conn.srcTcpControlBits&Connection::SYN) {
 		addConnection(&conn);
 	}
+
+	record->removeReference();
 }
 
 TRWPortscanDetector::TRWEntry* TRWPortscanDetector::createEntry(Connection* conn)
