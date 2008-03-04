@@ -241,15 +241,18 @@ void IpfixDbWriter::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 		statements.statemBuffer[statements.statemReceived] = getInsertStatement(
 				statements.statemBuffer[statements.statemReceived],
 				sourceID, dataTemplateInfo, length, data, statements.lockTables, statements.maxLocks);
-		DPRINTF("Insert statement: %s\n", statements.statemBuffer[statements.statemReceived]);
-		/** statemBuffer is filled ->  insert in table*/
-		if(statements.statemReceived == statements.maxStatements-1) {
-			msg(MSG_INFO, "Writing buffered records to database");
-			writeToDb();
-		}
-		else {
-			statements.statemReceived++;
-			msg(MSG_DEBUG, "Buffering record. Need %i more records before writing to database.", statements.maxStatements - statements.statemReceived);
+		// only insert statement if getInsertStatement produced one
+		if (statements.statemBuffer[statements.statemReceived][0]!=0) {
+			DPRINTF("Insert statement: %s\n", statements.statemBuffer[statements.statemReceived]);
+			/** statemBuffer is filled ->  insert in table*/
+			if(statements.statemReceived == statements.maxStatements-1) {
+				msg(MSG_INFO, "Writing buffered records to database");
+				writeToDb();
+			}
+			else {
+				statements.statemReceived++;
+				msg(MSG_DEBUG, "Buffering record. Need %i more records before writing to database.", statements.maxStatements - statements.statemReceived);
+			}
 		}
 	}
 }
@@ -421,9 +424,30 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
 			// we need extra treatment for timing related fields
 			switch (identify[j].ipfixId) {
 				case IPFIX_TYPEID_flowStartSeconds:
+					if(intdata==0) {
+						// if no flow start time is available, maybe this is is from a netflow from Cisco
+						// then use flowStartSysUpTime as flow start time
+						for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+							if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSysUpTime) {
+								intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+							}
+						}
+					}
 					// save time for table access
 					printf("intdata (seconds): %llu\n", intdata);
 					if (flowstartsec==0) flowstartsec = intdata;
+					break;
+					
+				case IPFIX_TYPEID_flowEndSeconds:
+					if(intdata==0) {
+						// if no flow end time is available, maybe this is is from a netflow from Cisco
+						// then use flowEndSysUpTime as flow start time
+						for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+							if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSysUpTime) {
+								intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+							}
+						}
+					}
 					break;
 
 				case IPFIX_TYPEID_flowStartMilliSeconds:
@@ -564,7 +588,7 @@ const char* IpfixDbWriter::getTableName(uint64_t flowstartsec)
 		}
 	}
 
-	/**Tablename is not in table cache*/
+	/* Tablename is not in table cache */
 	char tabNam[TABLE_WIDTH];
 	getTableNamDependTime(tabNam, flowstartsec);
 
