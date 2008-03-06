@@ -133,6 +133,13 @@ void RBSWormDetector::addConnection(Connection* conn)
 	
 	// only work with this connection, if it wasn't accessed earlier by this host
 	if (find(te->accessedHosts.begin(), te->accessedHosts.end(), conn->dstIP) != te->accessedHosts.end()) return;
+	
+	//host was moved from benign to pending
+	if (te->switched)
+	{
+	te->switched = false;
+	te->startTime = ntohll(conn->srcTimeStart);
+	}
 
 	uint64_t time_elams = ntohll(conn->srcTimeStart); 
 	//timeelams represents time since 1970 in milliseconds
@@ -171,11 +178,10 @@ void RBSWormDetector::addConnection(Connection* conn)
 	msg(MSG_INFO,"%d",time_elams.tv_usec);
 	msg(MSG_INFO,"%d",te->startTime);
 	msg(MSG_INFO,"%f",((double) time_elams.tv_usec - (double) (te->startTime).tv_usec) / 1000000);
-*/
 	msg(MSG_INFO,"Thresholds calculated: H1: %f H0: %f TIME: %f CONNS: %d",thresh_0, thresh_1,trace_ela,te->numFanouts);
 	msg(MSG_INFO, "dstIP: %s", IPToString(conn->dstIP).c_str());
 	msg(MSG_INFO, "srcIP: %s", IPToString(te->srcIP).c_str());
-
+*/
 	if (te->numFanouts < lambda_0) return;  //need more connections to evaluate
 
 	// look if information is adequate for deciding on host
@@ -264,15 +270,12 @@ RBSWormDetector::RBSEntry* RBSWormDetector::createEntry(Connection* conn)
 	rbs->numFanouts = 0;
 	rbs->totalSSDur = 0;
 	rbs->lastPacket = 0;
-	struct timeval temp;
-	gettimeofday(&temp,NULL);
 	rbs->startTime = ntohll(conn->srcTimeStart);
 	rbs->totalSSNum = 0;
 	rbs->timeExpire = time(0) + timeExpirePending;
 	rbs->decision = PENDING;
 	rbs->mean = 0;
 	statEntriesAdded++;
-	msg(MSG_INFO,"New RBSEntry created");
 	return rbs;
 }
 
@@ -292,12 +295,19 @@ void RBSWormDetector::cleanupEntries()
 				RBSEntry* te = *iter;
 				if ((*iter)->decision == BENIGN)
 				{
+				te->decision = PENDING;
+				te->switched = true;
+				te->numFanouts = 0;
+				te->timeExpire = time(0) + timeExpirePending;
+				te->accessedHosts.clear();
 				statCurBenign--;
 				}
-
+				else
+				{
 				iter = rbsEntries[i].erase(iter);
 				delete te;
 				statEntriesRemoved++;
+				}
 			} else {
 				iter++;
 			}

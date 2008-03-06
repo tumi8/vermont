@@ -52,6 +52,7 @@ class RBSWormDetector
 			uint64_t lastPacket;
 			uint32_t totalSSDur;
 			uint32_t totalSSNum;
+			bool switched;
 			double mean;
 			int32_t timeExpire;
 			list<uint32_t> accessedHosts;
