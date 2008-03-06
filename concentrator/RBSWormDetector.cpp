@@ -127,21 +127,15 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 void RBSWormDetector::addConnection(Connection* conn)
 {
 	RBSEntry* te = getEntry(conn);
-
+	
+	//worms must not influence our average fanout frequency of non-worm hosts
+	if (te->decision == WORM) return;
+	
 	// only work with this connection, if it wasn't accessed earlier by this host
 	if (find(te->accessedHosts.begin(), te->accessedHosts.end(), conn->dstIP) != te->accessedHosts.end()) return;
 
-	// aggregate new connection into entry even if its not processed, we need the average values
-	te->numFanouts++;
-
-	te->accessedHosts.push_back(conn->dstIP);
-
-
 	uint64_t time_elams = ntohll(conn->srcTimeStart); 
 	//timeelams represents time since 1970 in milliseconds
-	
-	double trace_ela = (double) (time_elams - te->startTime) / 1000;
-	//traceela is packet trace time in seconds
 
 	uint64_t intarrival = abs((int64_t) (time_elams - te->lastPacket));
 	//duration between last 2 packets
@@ -151,14 +145,7 @@ void RBSWormDetector::addConnection(Connection* conn)
 		//last 2 packets occured within 1 second;
 		te->totalSSNum++;
 		te->totalSSDur += intarrival;
-
-	//		if (te->totalSSDur < 1000) 
-	//		te->mean = 1 / (double) (te->totalSSNum);
-	//		else
-			te->mean = (te->totalSSDur/ (double) 1000) / (double) (te->totalSSNum);
-
-//		msg(MSG_FATAL,"2 Schnelle pakete, innerhalb %llu new mean %f",intarrival,te->mean);
-
+		te->mean = (te->totalSSDur/ (double) 1000) / (double) (te->totalSSNum);
 	}
 
 	te->lastPacket = time_elams;
@@ -166,11 +153,15 @@ void RBSWormDetector::addConnection(Connection* conn)
 	//we are still in the startup phase, dont do anything
 	if (lambda_0 == 0) return;
 
-
 	// this host was already decided on, don't do anything any more
 	if (te->decision != PENDING) return;
 
 	te->timeExpire = time(0) + timeExpirePending;
+	te->numFanouts++;
+	te->accessedHosts.push_back(conn->dstIP);
+
+	double trace_ela = (double) (time_elams - te->startTime) / 1000;
+	//traceela is packet trace time in seconds
 
 	// calculate thresholds
 	float thresh_0 = te->numFanouts * slope_0a - slope_0b;
@@ -324,8 +315,6 @@ void RBSWormDetector::adaptFrequencies ()
 	time_t curtime = time(0);
 	uint32_t count = 0;	
 	double temp1 = 0;
-	uint32_t invalid = 0;
-
 
 	list<RBSEntry*> adaptList;	
 
@@ -337,22 +326,17 @@ void RBSWormDetector::adaptFrequencies ()
 
 		while (iter != rbsEntries[i].end()) 
 		{
-			if ((*iter)->mean != 0)
+			if ((*iter)->mean != 0 && (*iter)->decision != WORM)
 			{
-			invalid++;
 			adaptList.push_back(*iter);
 			}
 			iter++;	
 		}
 	}
-	msg(MSG_FATAL,"Superlist created. Size: %u",adaptList.size());
-	time_t bla = time(0);
 	//sort list to cut off top and bottom 10 percent
 	adaptList.sort(RBSWormDetector::comp_entries);	
-	msg(MSG_FATAL,"Superlist sorted. Time: %u",time(0)-bla);
 
 	uint32_t num10 = adaptList.size()/10;
-
 
 	list<RBSEntry*>::iterator iter = adaptList.begin();
 
@@ -375,9 +359,9 @@ void RBSWormDetector::adaptFrequencies ()
 		iter++;
 	}
 
-	msg(MSG_FATAL,"valid entries %u invalid %u total %u cut %u",valid,invalid,count,2*num10);
+//	msg(MSG_INFO,"valid entries %u total %u cut %u",valid,count,2*num10);
+//	msg(MSG_INFO,"calculated mean interarrival time=%f seconds",temp1/valid);
 
-	msg(MSG_FATAL,"calculated mean interarrival time=%f seconds",temp1/valid);
 	lambda_0 = 1.0 / (temp1/valid);	
 	lambda_1 = lambda_ratio*lambda_0;
 

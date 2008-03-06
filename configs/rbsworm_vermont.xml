@@ -124,9 +124,9 @@
 	<idmeftemplate>idmef/templates/rbsdetector_template.xml</idmeftemplate>
 	<hashbits>20</hashbits>
 	<subnet>131.188.0.0/16</subnet>
-	<timeexpirepending>900</timeexpirepending>
+	<timeexpirepending>1800</timeexpirepending>
 	<timeexpireworm>1800</timeexpireworm>
-	<timeexpirebenign>300</timeexpirebenign>
+	<timeexpirebenign>601</timeexpirebenign>
 	<timeadaptinterval>600</timeadaptinterval>
 	<timecleanupinterval>300</timecleanupinterval>
 	<lambdaratio>4</lambdaratio>
