@@ -317,6 +317,8 @@ void RBSWormDetector::adaptFrequencies ()
 	double temp1 = 0;
 
 	list<RBSEntry*> adaptList;	
+	bool first = false;
+	if (lambda_0 == 0) first = true;
 
 	//put all entries in one list to calculate trimmed mean
 	for (uint32_t i=0; i<hashSize; i++) {
@@ -329,6 +331,13 @@ void RBSWormDetector::adaptFrequencies ()
 			if ((*iter)->mean != 0 && (*iter)->decision != WORM)
 			{
 			adaptList.push_back(*iter);
+			}
+			if (first)
+			{
+			RBSEntry* te = *iter;
+			iter=rbsEntries[i].erase(iter);
+			delete te;
+			statEntriesRemoved++;
 			}
 			iter++;	
 		}
@@ -374,7 +383,7 @@ void RBSWormDetector::adaptFrequencies ()
 	slope_1a = temp_z/temp_n;
 	slope_1b = logeta_1/temp_n;
 
-	msg(MSG_FATAL,"Adapted Frequencies, lambda_0=%f",lambda_0);
+	msg(MSG_FATAL,"Adapted Frequencies, lambda_0=%f out of %d",lambda_0,valid++);
 }
 
 /*
