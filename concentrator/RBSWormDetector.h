@@ -27,6 +27,7 @@
 
 #include <list>
 #include <string>
+#include <map>
 
 using namespace std;
 
@@ -37,7 +38,7 @@ class RBSWormDetector
 {
 	public:
 		RBSWormDetector(uint32_t hashbits, uint32_t texppend, uint32_t texpworm, 
-				uint32_t texpben, uint32_t tadaptint,uint32_t tcleanupint, float lambda_ratio, string analyzerid, string idmeftemplate);
+				uint32_t texpben, uint32_t tadaptint,uint32_t tcleanupint, float lambda_ratio, string analyzerid, string idmeftemplate,map<uint32_t,uint32_t> subNets);
 		virtual ~RBSWormDetector();
 		
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);
@@ -67,10 +68,11 @@ class RBSWormDetector
 		string analyzerId;	/**< analyzer id for IDMEF messages */
 		string idmefTemplate;	/**< template file for IDMEF messages */
 		float lambda_ratio;
-
+		map<uint32_t,uint32_t> subnets;
 		// idmef parameters
 		const static char* PAR_FAN_OUT; // = "FAN_OUT";
 		const static char* PAR_TOTALTIME; // = "FAN_OUT";
+		const static char* PAR_HOSTS; // = "FAN_OUT";
 		
 
 		list<RBSEntry*>* rbsEntries;

@@ -15,6 +15,7 @@
       <Node category="hosts">
         <Address category="ipv4-addr">
           <address>%SOURCE_ADDRESS%</address>
+	 <hosts>%HOSTS%</hosts>
         </Address>
       </Node>
     </Source>

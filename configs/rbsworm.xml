@@ -127,6 +127,7 @@
 	<analyzerid>rbswormdetector</analyzerid>
 	<idmeftemplate>idmef/templates/rbsdetector_template.xml</idmeftemplate>
 	<hashbits>20</hashbits>
+	<subnet>131.188.0.0/16</subnet>
 	<timeexpirepending>86400</timeexpirepending>
 	<timeexpireworm>1800</timeexpireworm>
 	<timeexpirebenign>900</timeexpirebenign>

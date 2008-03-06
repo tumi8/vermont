@@ -31,6 +31,7 @@
 
 const char* RBSWormDetector::PAR_FAN_OUT = "FAN_OUT"; 
 const char* RBSWormDetector::PAR_TOTALTIME = "TOTALTIME"; 
+const char* RBSWormDetector::PAR_HOSTS = "HOSTS"; 
 
 
 InstanceManager<IDMEFMessage> RBSWormDetector::idmefManager("IDMEFMessage");
@@ -41,7 +42,7 @@ InstanceManager<IDMEFMessage> RBSWormDetector::idmefManager("IDMEFMessage");
  */
 RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend, 
 		uint32_t texpworm, uint32_t texpben, uint32_t tadaptint,uint32_t tcleanupint, float lambdaratio,
-		string analyzerid, string idmeftemplate)
+		string analyzerid, string idmeftemplate,map<uint32_t,uint32_t> subNets)
 : hashBits(hashbits),
 	timeExpirePending(texppend),
 	timeExpireWorm(texpworm),
@@ -50,12 +51,12 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 	timeCleanupInterval(tcleanupint),
 	lambda_ratio(lambdaratio),
 	analyzerId(analyzerid),
-	idmefTemplate(idmeftemplate)
+	idmefTemplate(idmeftemplate),
+	subnets(subNets)
 {
 	// make some initialization calculations
 	hashSize = 1<<hashBits;
 	lambda_0 = 0;
-	lambda_1 = 0;
 
 
 	/* caution: usually the lambda values are calculated after timeAdaptInterval but you can preset them */
@@ -104,13 +105,18 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 	if (conn.srcTcpControlBits&Connection::SYN ) {
 		//	msg(MSG_INFO,"NEW CONN: %x",conn.dstTcpControlBits);
 		//
-		uint32_t unisubnet = ntohl(2210136064UL);
-		uint32_t unisubmask = ntohl(4294901760UL);
+		bool valid = false;
 
-		if ((conn.srcIP & unisubmask) == unisubnet) 
+		map<uint32_t,uint32_t>::iterator iter = subnets.begin();
+		while (iter != subnets.end()) 
 		{
-			addConnection(&conn);
+		if ((conn.srcIP & iter->second) == iter->first) 
+		{
+			valid=true;
+			break;
 		}
+		}
+		if (valid) addConnection(&conn);
 
 	}
 	record->removeReference();
@@ -202,6 +208,15 @@ void RBSWormDetector::addConnection(Connection* conn)
 		msg->init(idmefTemplate, analyzerId);
 		msg->setVariable(PAR_FAN_OUT, (uint32_t) te->numFanouts);
 		msg->setVariable(PAR_TOTALTIME, trace_ela);
+		string hosts;
+		list<uint32_t>::iterator iter = te->accessedHosts.begin();
+		while(iter != te->accessedHosts.end()) 
+		{
+		hosts.append(IPToString(*iter));
+		hosts.append(" ");
+		iter++;
+		}	
+		msg->setVariable(PAR_HOSTS,hosts.c_str());
 		msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(te->srcIP));
 		msg->applyVariables();
 		send(msg);

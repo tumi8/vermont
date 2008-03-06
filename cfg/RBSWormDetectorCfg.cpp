@@ -1,5 +1,8 @@
 #include "RBSWormDetectorCfg.h"
-
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 RBSWormDetectorCfg* RBSWormDetectorCfg::create(XMLElement* e)
 {
@@ -39,7 +42,20 @@ lambda_ratio(5)
 		} else if (e->matches("timecleanupinterval")) {
 			timeCleanupInterval = getInt("timecleanupinterval");
 		} else if (e->matches("lambdaratio")) {
-			lambda_ratio = getFloat("lambdaratio"); //no getfloat :(
+			lambda_ratio = getFloat("lambdaratio"); 
+		} else if (e->matches("subnet")) {
+			string ipstring = e->getFirstText();
+			uint32_t ip = 0;
+			uint32_t subnet = inet_addr("255.255.255.255");
+			int last_pos = ipstring.find("/");
+		        if (last_pos)
+			{
+		        string tempstr = ipstring.substr(0,last_pos);
+		        ip = inet_addr(tempstr.c_str());
+			tempstr = ipstring.substr(last_pos+1,ipstring.length());
+			subnet <<= (32-atoi(tempstr.c_str()));
+			}
+			subnets[ip] = htonl(subnet);
 		} else if (e->matches("analyzerid")) {
 			analyzerId = e->getFirstText();
 		} else if (e->matches("idmeftemplate")) {
@@ -60,7 +76,7 @@ RBSWormDetectorCfg::~RBSWormDetectorCfg()
 
 RBSWormDetector* RBSWormDetectorCfg::createInstance()
 {
-    instance = new RBSWormDetector(hashBits, timeExpirePending, timeExpireWorm, timeExpireBenign, timeAdaptInterval, timeCleanupInterval,lambda_ratio, analyzerId, idmefTemplate);
+    instance = new RBSWormDetector(hashBits, timeExpirePending, timeExpireWorm, timeExpireBenign, timeAdaptInterval, timeCleanupInterval,lambda_ratio, analyzerId, idmefTemplate, subnets);
     return instance;
 }
 

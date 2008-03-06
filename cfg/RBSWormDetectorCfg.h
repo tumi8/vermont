@@ -7,6 +7,7 @@
 #include "concentrator/RBSWormDetector.h"
 
 #include <string>
+#include <map>
 
 using namespace std;
 
@@ -34,7 +35,7 @@ protected:
 	string analyzerId;	/**< analyzer id for IDMEF messages */
 	string idmefTemplate;	/**< template file for IDMEF messages */
 	float lambda_ratio; //**< expected connection ratio of good and bad hosts */
-	
+	map<uint32_t,uint32_t> subnets;	
 	RBSWormDetectorCfg(XMLElement*);
 };
 
