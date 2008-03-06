@@ -115,6 +115,7 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 			valid=true;
 			break;
 		}
+		iter++;
 		}
 		if (valid) addConnection(&conn);
 
