@@ -372,7 +372,7 @@ void RBSWormDetector::adaptFrequencies ()
 		iter++;
 	}
 
-	if (valid>0 && temp>0)
+	if (valid>0 && temp1>0)
 	lambda_0 = 1.0 / (temp1/valid);	
 	lambda_1 = lambda_ratio*lambda_0;
 
