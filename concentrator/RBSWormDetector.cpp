@@ -342,13 +342,7 @@ void RBSWormDetector::adaptFrequencies ()
 			{
 			adaptList.push_back(*iter);
 			}
-			if (first)
-			{
-			RBSEntry* te = *iter;
-			iter=rbsEntries[i].erase(iter);
-			delete te;
-			statEntriesRemoved++;
-			}
+		
 			iter++;	
 		}
 	}
@@ -394,6 +388,23 @@ void RBSWormDetector::adaptFrequencies ()
 	slope_1b = logeta_1/temp_n;
 
 	msg(MSG_FATAL,"Adapted Frequencies, lambda_0=%f out of %d",lambda_0,valid++);
+
+	if (!first) return;
+
+	for (uint32_t i=0; i<hashSize; i++) 
+	{
+		if (rbsEntries[i].size()==0) continue;
+
+		list<RBSEntry*>::iterator iter = rbsEntries[i].begin();
+
+		while (iter != rbsEntries[i].end()) 
+		{
+			RBSEntry* te = *iter;
+			iter=rbsEntries[i].erase(iter);
+			delete te;
+			statEntriesRemoved++;
+		}
+	}
 }
 
 /*
