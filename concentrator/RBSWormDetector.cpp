@@ -103,8 +103,7 @@ void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
 	conn.swapIfNeeded();
 	// only use this connection if it was a connection attempt
 	if (conn.srcTcpControlBits&Connection::SYN ) {
-		//	msg(MSG_INFO,"NEW CONN: %x",conn.dstTcpControlBits);
-		//
+
 		bool valid = false;
 
 		map<uint32_t,uint32_t>::iterator iter = subnets.begin();
@@ -131,22 +130,25 @@ void RBSWormDetector::addConnection(Connection* conn)
 	//worms must not influence our average fanout frequency of non-worm hosts
 	if (te->decision == WORM) return;
 	
+	// FOLLOWING CODE IS FOR BENIGN AND PENDING HOSTS
+
 	// only work with this connection, if it wasn't accessed earlier by this host
 	if (find(te->accessedHosts.begin(), te->accessedHosts.end(), conn->dstIP) != te->accessedHosts.end()) return;
-	
-	//host was moved from benign to pending
-	if (te->switched)
+	te->accessedHosts.push_back(conn->dstIP);
+
+	//host was moved from benign to pending (for average fanouts)
+	if (te->switched)	
 	{
 	te->switched = false;
 	te->startTime = ntohll(conn->srcTimeStart);
 	}
 
-	uint64_t time_elams = ntohll(conn->srcTimeStart); 
 	//timeelams represents time since 1970 in milliseconds
+	uint64_t time_elams = ntohll(conn->srcTimeStart); 
 
-	uint64_t intarrival = abs((int64_t) (time_elams - te->lastPacket));
 	//duration between last 2 packets
-
+	uint64_t intarrival = abs((int64_t) (time_elams - te->lastPacket));
+	
 	if (intarrival < 1000) 
 	{	
 		//last 2 packets occured within 1 second;
@@ -157,15 +159,19 @@ void RBSWormDetector::addConnection(Connection* conn)
 
 	te->lastPacket = time_elams;
 
-	//we are still in the startup phase, dont do anything
+	//we are still in the startup phase, dont decide on hosts
 	if (lambda_0 == 0) return;
 
 	// this host was already decided on, don't do anything any more
 	if (te->decision != PENDING) return;
 
+
+	// FOLLOWING CODE IS FOR PENDING HOSTS ONLY
+
+
 	te->timeExpire = time(0) + timeExpirePending;
 	te->numFanouts++;
-	te->accessedHosts.push_back(conn->dstIP);
+	
 
 	double trace_ela = (double) (time_elams - te->startTime) / 1000;
 	//traceela is packet trace time in seconds
@@ -174,15 +180,8 @@ void RBSWormDetector::addConnection(Connection* conn)
 	float thresh_0 = te->numFanouts * slope_0a - slope_0b;
 	float thresh_1 = te->numFanouts * slope_1a - slope_1b;
 
-	/*
-	msg(MSG_INFO,"%d",time_elams.tv_usec);
-	msg(MSG_INFO,"%d",te->startTime);
-	msg(MSG_INFO,"%f",((double) time_elams.tv_usec - (double) (te->startTime).tv_usec) / 1000000);
-	msg(MSG_INFO,"Thresholds calculated: H1: %f H0: %f TIME: %f CONNS: %d",thresh_0, thresh_1,trace_ela,te->numFanouts);
-	msg(MSG_INFO, "dstIP: %s", IPToString(conn->dstIP).c_str());
-	msg(MSG_INFO, "srcIP: %s", IPToString(te->srcIP).c_str());
-*/
-	if (te->numFanouts < lambda_0) return;  //need more connections to evaluate
+	//need more connections to evaluate
+	if (te->numFanouts < lambda_0) return;  
 
 	// look if information is adequate for deciding on host
 	if (trace_ela>thresh_0)
@@ -235,12 +234,13 @@ RBSWormDetector::RBSEntry* RBSWormDetector::getEntry(Connection* conn)
 	{
 		lastAdaption = curtime;
 		adaptFrequencies();
+		
 	}
 
 	// regularly cleanup expired entries in hashtable
 	if (lastCleanup+timeCleanupInterval < (uint32_t)curtime) {
-		cleanupEntries();
 		lastCleanup = curtime;
+		cleanupEntries();		
 	}
 
 	list<RBSEntry*>::iterator iter = rbsEntries[hash].begin();
@@ -293,6 +293,7 @@ void RBSWormDetector::cleanupEntries()
 		while (iter != rbsEntries[i].end()) {
 			if (curtime > (*iter)->timeExpire) {
 				RBSEntry* te = *iter;
+				//BENIGN Host are not erased but moved to pending state with all stats reset except the subsecond interarrival times
 				if ((*iter)->decision == BENIGN)
 				{
 				te->decision = PENDING;
@@ -301,9 +302,11 @@ void RBSWormDetector::cleanupEntries()
 				te->timeExpire = time(0) + timeExpirePending;
 				te->accessedHosts.clear();
 				statCurBenign--;
+				iter++;
 				}
 				else
 				{
+				//Host can be cleaned
 				iter = rbsEntries[i].erase(iter);
 				delete te;
 				statEntriesRemoved++;
@@ -314,8 +317,6 @@ void RBSWormDetector::cleanupEntries()
 		}
 	}
 }
-
-
 
 /**
  * adapt new benign/worm frequencies based on stored data
@@ -342,7 +343,6 @@ void RBSWormDetector::adaptFrequencies ()
 			{
 			adaptList.push_back(*iter);
 			}
-		
 			iter++;	
 		}
 	}
@@ -363,7 +363,7 @@ void RBSWormDetector::adaptFrequencies ()
 				valid++;
 				temp1 += (*iter)->mean;
 		}
-
+		//reset all data. we need a clean start every 10 minutes.
 		(*iter)->mean = 0;
 		(*iter)->totalSSDur = 0;
 		(*iter)->totalSSNum = 0;
@@ -372,12 +372,12 @@ void RBSWormDetector::adaptFrequencies ()
 		iter++;
 	}
 
-//	msg(MSG_INFO,"valid entries %u total %u cut %u",valid,count,2*num10);
-//	msg(MSG_INFO,"calculated mean interarrival time=%f seconds",temp1/valid);
-
+	if (valid>0 && temp>0)
 	lambda_0 = 1.0 / (temp1/valid);	
 	lambda_1 = lambda_ratio*lambda_0;
 
+	if (lambda_0)
+		{
 	float logeta_1 = logf(P_D/P_F);
 	float logeta_0 = logf(1-P_D);
 	float temp_z = logf(lambda_1/lambda_0);
@@ -386,11 +386,16 @@ void RBSWormDetector::adaptFrequencies ()
 	slope_0b = logeta_0/temp_n;
 	slope_1a = temp_z/temp_n;
 	slope_1b = logeta_1/temp_n;
-
-	msg(MSG_FATAL,"Adapted Frequencies, lambda_0=%f out of %d",lambda_0,valid++);
-
+	msg(MSG_FATAL,"Adapted Frequencies, lambda_0=%f with hosts=%d",lambda_0,valid++);
+		}
+	else
+		{
+	msg(MSG_ERROR,"Too little traffic for adaption");
+		}
+	
 	if (!first) return;
 
+	//after the first adaption all hosts are cleared no matter what.
 	for (uint32_t i=0; i<hashSize; i++) 
 	{
 		if (rbsEntries[i].size()==0) continue;
