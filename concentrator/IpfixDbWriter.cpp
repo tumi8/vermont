@@ -217,8 +217,7 @@ int  IpfixDbWriter::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecor
 
     /** check if statement buffer is not full*/
     if(statements.statemBuffer[statements.maxStatements-1][0] != '\0') {
-	msg(MSG_ERROR,"IpfixDbWriter: Statement buffer is full, this should never happen - drop record");
-	return 1;
+        THROWEXCEPTION("IpfixDbWriter: Statement buffer is full, this should never happen.");
     }
 
     /** sourceid null ? use default*/
@@ -230,11 +229,12 @@ int  IpfixDbWriter::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecor
     /** if statement counter lower as  max count, insert record in statement buffer*/
     if(statements.statemReceived < statements.maxStatements) {	
 	/** make an sql insert statement from the record data */
-	if((statements.statemBuffer[statements.statemReceived] = getInsertStatement(
+	statements.statemBuffer[statements.statemReceived] = getInsertStatement(
 		statements.statemBuffer[statements.statemReceived], 
-		sourceID, dataTemplateInfo, length, data, statements.lockTables, statements.maxLocks))
-		== NULL) {
-	    /* what can we do? */
+		sourceID, dataTemplateInfo, length, data, statements.lockTables, statements.maxLocks);
+	/* check if we got a statement */
+	if(statements.statemBuffer[statements.statemReceived][0] == '\0') {
+	    msg(MSG_ERROR,"IpfixDbWriter: Could not generate statement from record.");
 	    return 1;
 	}
 	DPRINTF("Insert statement: %s\n", statements.statemBuffer[statements.statemReceived]);	
@@ -439,8 +439,10 @@ char* IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* 
     char tablename[TABLE_WIDTH] ;
     DPRINTF("flowstartsec: %d", flowstartsec);
     const char* tablen = getTableName(flowstartsec);
-    if(tablen == NULL)
-	return NULL;
+    if(tablen == NULL) {
+	strcpy(statemStr,"\0");
+	return statemStr;
+    }
     strcpy(tablename, tablen);
     /** Insert statement = INSERT INTO + tablename +  Columnsname + Values of record*/
     strcat(statemStr, tablename);
