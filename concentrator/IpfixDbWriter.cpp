@@ -492,10 +492,17 @@ int IpfixDbWriter::writeToDb()
     }
 
     if(mysql_query(conn, LockTables) != 0) {
-	msg(MSG_ERROR,"IpfixDbWriter: Lock of table failed. Error: %s",
-		mysql_error(conn));
+	msg(MSG_ERROR,"IpfixDbWriter: Lock of table failed, dropping %d records. Error: %s",
+		statements.statemReceived, mysql_error(conn));
+	// drop records and free buffer, hoping that the locking problem is temporary and 
+	// will not occur the next time
+	for(i=0; i != statements.maxStatements; i++) {
+	    statements.statemBuffer[i][0] = '\0';
+	}
+	statements.statemReceived = 0;
 	return 1;		    
     }
+
     /**Write the insert statement to database*/
     for(i=0; i != statements.maxStatements; i++) {
 	if(statements.statemBuffer[i][0] != '\0') {
@@ -509,6 +516,7 @@ int IpfixDbWriter::writeToDb()
 	    statements.statemBuffer[i][0] = '\0';
 	}
     }
+    statements.statemReceived = 0;
 
     char UnLockTable[STARTLEN] = "UNLOCK TABLES";
     if(mysql_query(conn, UnLockTable) != 0) {
@@ -516,7 +524,6 @@ int IpfixDbWriter::writeToDb()
 		mysql_error(conn));
 	return 1;
     }
-    statements.statemReceived = 0;
     msg(MSG_DEBUG,"Write to database is complete");
     return 0;
 }
