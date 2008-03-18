@@ -328,6 +328,7 @@ class IpfixRecord
 				    free(fieldInfo);
 				    free(dataInfo);
 				    free(data);
+				    freePointers = false;
 				}
 			}
 

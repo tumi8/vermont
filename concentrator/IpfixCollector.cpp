@@ -94,6 +94,9 @@ void IpfixCollector::onReconfiguration2()
  */
 bool IpfixCollector::send(IpfixRecord* ipfixRecord)
 {
+	// do not send anything any more, if module is to be stopped
+	if (exitFlag) return false;
+	
 	statRecvdRecords++;
 	return Source<IpfixRecord*>::send(ipfixRecord);	
 }
