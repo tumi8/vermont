@@ -516,6 +516,10 @@ void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRe
 
 		if(!tfi) {
 			DPRINTF("Flow to be buffered did not contain %s field\n", typeid2string(hfi->type.id));
+			
+			// if field was not copied, fill it with 0
+			memset(htdata.get() + hfi->offset, 0, hfi->type.length);
+			
 			continue;
 		}
 
