@@ -83,20 +83,18 @@ int main(int ac, char **dc)
 
 	sigset_t sigmask;
 	sigemptyset(&sigmask);
+	
+	msg(MSG_DIALOG, "vermont is up and running");
 
-	while (run_programm) {
+	while (run_programm) {		
 		// sleep until we get a signal
 		sigsuspend(&sigmask);
 
 		if (reload_config) {
-			time_t t = time(NULL);
-			msg(MSG_INFO, "Reconfiguring vermont at %s", ctime(&t));
+			msg(MSG_INFO, "reconfiguring vermont");
 			manager.parseConfig(string(config_file));
 			reload_config = false;
 		}
-
-		time_t t = time(NULL);
-		msg(MSG_DIALOG, "up and running at %s", ctime(&t));
 	}
 	manager.shutdown();
 }
