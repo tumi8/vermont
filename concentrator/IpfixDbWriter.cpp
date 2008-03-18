@@ -176,7 +176,7 @@ int IpfixDbWriter::createExporterTable()
  */
 int IpfixDbWriter::createDBTable(const char* tablename)
 {
-	int i;
+	uint32_t i;
 	char createTableStr[STARTLEN+(numberOfColumns * COL_WIDTH)];
 	strcpy(createTableStr , "CREATE TABLE IF NOT EXISTS ");
 	strncat(createTableStr,tablename,strlen(tablename)+1);
@@ -235,15 +235,17 @@ void IpfixDbWriter::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 		sourceID = &srcId;
 	}
 
-	/** if statement counter lower as  max count, insert record in statement buffer*/
+	// if statement counter lower as  max count, insert record in statement buffer
 	if (statements.statemReceived < statements.maxStatements) {
-		/** make an sql insert statement from the record data */
+		// make an sql insert statement from the record data
 		getInsertStatement(statements.statemBuffer[statements.statemReceived],
 						   sourceID, dataTemplateInfo, length, data, statements.lockTables, statements.maxLocks);
 		// only insert statement if getInsertStatement produced one
 		if (statements.statemBuffer[statements.statemReceived][0]!=0) {
+			if (strlen(statements.statemBuffer[statements.statemReceived])>=STARTLEN+(numberOfColumns*INS_WIDTH))
+				msg(MSG_INFO, "length is %d, expected was %d", strlen(statements.statemBuffer[statements.statemReceived]), STARTLEN+(numberOfColumns*INS_WIDTH));
 			DPRINTF("Insert statement: %s\n", statements.statemBuffer[statements.statemReceived]);
-			/** statemBuffer is filled ->  insert in table*/
+			// statemBuffer is filled ->  insert in table
 			if(statements.statemReceived == statements.maxStatements-1) {
 				msg(MSG_INFO, "Writing buffered records to database");
 				writeToDb();
@@ -316,9 +318,9 @@ void IpfixDbWriter::addColumnEntry(char* sql, uint64_t insert, bool quoted, bool
  *	The result is written into statemStr which must have sufficient space!
  */
 void IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* sourceID,
-		IpfixRecord::DataTemplateInfo* dataTemplateInfo,uint16_t length, IpfixRecord::Data* data, char** locks, int maxlocks)
+		IpfixRecord::DataTemplateInfo* dataTemplateInfo,uint16_t length, IpfixRecord::Data* data, char** locks, uint32_t maxlocks)
 {
-	int j, k;
+	uint32_t j, k;
 	uint64_t intdata = 0;
 	uint32_t flowstartsec = 0;
 
@@ -511,12 +513,12 @@ void IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* s
  */
 int IpfixDbWriter::writeToDb()
 {
-	int i;
+	uint32_t i;
 
 	char LockTables[STARTLEN + (TABLE_WIDTH * statements.maxLocks * 2)];
 
 	strcpy(LockTables,"LOCK TABLES ");
-	/**Lock all tables to store the insert statements*/
+	//Lock all tables to store the insert statements
 	for(i=0; i < statements.maxLocks; i++) {
 		if(statements.lockTables[i][0] != '\0') {
 			strncat(LockTables, statements.lockTables[i], strlen(statements.lockTables[i])+1);
@@ -533,7 +535,7 @@ int IpfixDbWriter::writeToDb()
 				mysql_error(conn));
 		return 1;
 	}
-	/**Write the insert statement to database*/
+	// Write the insert statement to database
 	for(i=0; i != statements.maxStatements; i++) {
 		if(statements.statemBuffer[i][0] != '\0') {
 			if(mysql_query(conn, statements.statemBuffer[i]) != 0) {
@@ -564,7 +566,7 @@ int IpfixDbWriter::writeToDb()
  */
 const char* IpfixDbWriter::getTableName(uint64_t flowstartsec)
 {
-	int i;
+	uint32_t i;
 
 #ifdef DEBUG
 	DPRINTF("Content of table cache :\n");
@@ -690,7 +692,7 @@ uint64_t getTableEndTime(uint64_t startTime)
  */
 int IpfixDbWriter::getExporterID(IpfixRecord::SourceID* sourceID)
 {
-	int i;
+	uint32_t i;
 	MYSQL_RES* dbResult;
 	MYSQL_ROW dbRow;
 	int exporterID = 0;
@@ -903,7 +905,7 @@ IpfixDbWriter::IpfixDbWriter(const char* host, const char* db,
 	/**Initialize table cache*/
 	cache.countBuffTable = 0;
 	cache.countExpTable = 0;
-	int i;
+	uint32_t i;
 	for(i = 0; i < MAX_TABLE; i++) {
 		cache.tableBuffer[i].startTableTime = 0;
 		cache.tableBuffer[i].endTableTime = 0;
@@ -921,17 +923,17 @@ IpfixDbWriter::IpfixDbWriter(const char* host, const char* db,
 	numberOfColumns++;
 
 	/**Initialize structure members Statement*/
-	statements.statemBuffer = (char**)malloc(sizeof(char**)*maxStatements);
+	statements.statemBuffer = new char*[maxStatements]; //(char**)malloc(sizeof(char**)*maxStatements);
 	statements.maxStatements = maxStatements;
 	statements.statemReceived = 0;
 	for( i = 0; i != statements.maxStatements; i++) {
-		statements.statemBuffer[i] = (char*) malloc((STARTLEN+(numberOfColumns * INS_WIDTH)) * sizeof(char));
+		statements.statemBuffer[i] = new char[STARTLEN+(numberOfColumns*INS_WIDTH)]; //(char*) malloc((STARTLEN+(numberOfColumns * INS_WIDTH)) * sizeof(char));
 		statements.statemBuffer[i][0] = '\0';
 	}
-	statements.lockTables = (char**)malloc(sizeof(char**)*maxStatements);
+	statements.lockTables = new char*[maxStatements]; //(char**)malloc(sizeof(char**)*maxStatements);
 	statements.maxLocks = maxStatements; // worst case: every entry in another table
 	for( i = 0; i != statements.maxLocks; i++) {
-		statements.lockTables[i] = (char*) malloc(TABLE_WIDTH * sizeof(char));
+		statements.lockTables[i] = new char[TABLE_WIDTH]; //(char*) malloc(TABLE_WIDTH * sizeof(char));
 		statements.lockTables[i][0] = '\0';
 	}
 
@@ -965,16 +967,16 @@ IpfixDbWriter::IpfixDbWriter(const char* host, const char* db,
  */
 IpfixDbWriter::~IpfixDbWriter()
 {
-	int i;
+	uint32_t i;
 
 	writeToDb();
 	mysql_close(conn);
 
 	for(i=0; i<statements.statemReceived; i++)
-	free(statements.statemBuffer[i]);
+		delete[] statements.statemBuffer[i];
 
-	free(statements.statemBuffer);
-	free(statements.lockTables);
+	delete[] statements.statemBuffer;
+	delete[] statements.lockTables;
 }
 
 #endif

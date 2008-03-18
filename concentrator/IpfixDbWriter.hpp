@@ -56,8 +56,8 @@ class IpfixDbWriter
 		IpfixRecord::SourceID srcId;              /**Exporter default SourceID */
 
 	protected:
-		static const int MAX_TABLE = 3; /**< count of buffered tablenames */ 
-		static const int MAX_EXP_TABLE = 3; /**< Count of buffered exporters. Increase this value if you use more exporters in parallel */
+		static const uint32_t MAX_TABLE = 3; /**< count of buffered tablenames */ 
+		static const uint32_t MAX_EXP_TABLE = 3; /**< Count of buffered exporters. Increase this value if you use more exporters in parallel */
 
 		/**
 		 * Struct stores for each BufEntry TableBuffer[maxTable]
@@ -84,9 +84,9 @@ class IpfixDbWriter
 		 * reduce/avoid unnecessary mysql lookups
 		 */
 		typedef struct {
-			int countBuffTable;                      /**counter of buffered table names*/
+			uint32_t countBuffTable;                      /**counter of buffered table names*/
 			IpfixDbWriter::BufEntry tableBuffer[MAX_TABLE];         /**buffer to store struct BufEntry*/             
-			int countExpTable;                       /**counter of buffered exporter*/
+			uint32_t countExpTable;                       /**counter of buffered exporter*/
 			IpfixDbWriter::ExpTable exporterBuffer[MAX_EXP_TABLE];  /**buffer to store struct expTable*/
 		} TableCache;
 
@@ -96,16 +96,16 @@ class IpfixDbWriter
 		 * Buffer for insert statements
 		 */
 		typedef struct {
-			int statemReceived;                /**counter of insert into statements*/
+			uint32_t statemReceived;                /**counter of insert into statements*/
 			char** statemBuffer;               /**buffer  of char pointers to store the insert statements*/
-			int maxStatements;
+			uint32_t  maxStatements;
 			char** lockTables;		   /**tables to look*/
-			int maxLocks;
+			uint maxLocks;
 		} StatementBuffer;
 
 		StatementBuffer statements;
 			
-		int numberOfColumns;         /**number of columns, used to calculate length of sql statements*/
+		uint32_t numberOfColumns;         /**number of columns, used to calculate length of sql statements*/
 
 		const char* hostName;        /** Hostname*/
 		const char* dbName;          /**Name of the database*/
@@ -119,7 +119,7 @@ class IpfixDbWriter
 		int createDB();
 		int createExporterTable();
 		int createDBTable(const char* tablename);
-		void getInsertStatement(char* statemStr, IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data, char** locks, int maxlocks);
+		void getInsertStatement(char* statemStr, IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data, char** locks, uint32_t maxlocks);
 		int writeToDb();
 		int getExporterID(IpfixRecord::SourceID* sourceID);
                 const char* getTableName(uint64_t flowstartsec);
