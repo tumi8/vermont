@@ -367,14 +367,14 @@ int Rule::templateDataMatches(IpfixRecord::TemplateInfo* info, IpfixRecord::Data
 			}
 
 			/* no corresponding data field found, this flow cannot match */
-			msg(MSG_DEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
+			msg(MSG_VDEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;
 		}
 		/* if a non-discarding rule field specifies no pattern, check at least if the data field exists */
 		else if (field[i]->modifier != Rule::Field::DISCARD) {
 			fieldInfo = info->getFieldInfo(&ruleField->type);
 			if (fieldInfo) continue;
-			msg(MSG_DEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
+			msg(MSG_VDEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;
 		}
 	}
@@ -513,7 +513,7 @@ int Rule::dataTemplateDataMatches(IpfixRecord::DataTemplateInfo* info, IpfixReco
 			// FIXME: if a non-discarding rule field specifies no pattern check at least if the data field exists?
 
 			/* no corresponding data field or fixed data field found, this flow cannot match */
-			msg(MSG_DEBUG, "No corresponding DataDataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
+			msg(MSG_VDEBUG, "No corresponding DataDataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;
 		}
 	}
