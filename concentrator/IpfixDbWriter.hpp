@@ -121,7 +121,10 @@ class IpfixDbWriter : public FlowSink {
 		const char* socketName;      /** Socketname (use default) */
 		unsigned int flags;          /** Connectionflags (none) */
 		MYSQL* conn;                 /** pointer to connection handle */       
+		
+		bool dbError;		     /* True if a DB error occured, initiates reconnect to DB server */
 
+		int connectToDB();
 		int createDB();
 		int createExporterTable();
 		int createDBTable(const char* tablename);
