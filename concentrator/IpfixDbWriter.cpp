@@ -99,6 +99,49 @@ uint32_t getipv4address(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* da
 
 
 /**
+ * (re)connect to database
+ */
+int IpfixDbWriter::connectToDB()
+{
+    dbError = true;
+
+    // close (in the case that it was already connected)
+    mysql_close(conn);
+
+    /** get the mysl init handle*/
+    conn = mysql_init(0);
+    if(conn == 0) {
+	msg(MSG_FATAL,"IpfixDbWriter: Get MySQL connect handle failed. Error: %s",
+		mysql_error(conn));
+	return -1;
+    } else {
+	msg(MSG_DEBUG,"IpfixDbWriter got MySQL init handler");
+    }
+
+    /**Connect to Database*/
+    if (!mysql_real_connect(conn,
+		hostName, userName,
+		password, 0, portNum,
+		socketName, flags)) {
+	msg(MSG_FATAL,"IpfixDbWriter: Connection to database failed. Error: %s",
+		mysql_error(conn));
+	return -1;
+    } else {
+	msg(MSG_DEBUG,"IpfixDbWriter succesfully connected to database");
+    }
+    /** create Database*/
+    if(createDB() !=0)
+	return -1;
+    /**create table exporter*/
+    if(createExporterTable() !=0)
+	return -1;
+
+    dbError = false;
+    return 0;
+}
+
+
+/**
  * create the database given by the name dbnam->dbn
  */
 int IpfixDbWriter::createDB()
@@ -201,6 +244,7 @@ int IpfixDbWriter::createDBTable(const char* tablename)
     if(mysql_query(conn,createTableStr) != 0) {
 	msg(MSG_FATAL,"IpfixDbWriter: Creation of table failed. Error: %s",
 		mysql_error(conn));
+	dbError = true;
 	return 1;
     } else {
 	msg(MSG_INFO, "Table %s created ",tablename);
@@ -214,6 +258,10 @@ int IpfixDbWriter::createDBTable(const char* tablename)
 int  IpfixDbWriter::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data)
 {
     DPRINTF("Processing data record\n");
+
+    if(dbError)
+	if(connectToDB() == -1)
+	    return -1;
 
     /** check if statement buffer is not full*/
     if(statements.statemBuffer[statements.maxStatements-1][0] != '\0') {
@@ -235,18 +283,19 @@ int  IpfixDbWriter::onDataDataRecord(IpfixRecord::SourceID* sourceID, IpfixRecor
 	/* check if we got a statement */
 	if(statements.statemBuffer[statements.statemReceived][0] == '\0') {
 	    msg(MSG_ERROR,"IpfixDbWriter: Could not generate statement from record.");
-	    return 1;
-	}
-	DPRINTF("Insert statement: %s\n", statements.statemBuffer[statements.statemReceived]);	
-	/** statemBuffer is filled ->  insert in table*/	
-	if(statements.statemReceived == statements.maxStatements-1) {
-	    msg(MSG_INFO, "Writing buffered records to database");
-	    writeToDb();
 	} else {
-	    statements.statemReceived++;
-	    msg(MSG_DEBUG, "Buffering record. Need %i more records before writing to database.", statements.maxStatements - statements.statemReceived);
+	    DPRINTF("Insert statement: %s\n", statements.statemBuffer[statements.statemReceived]);	
+	    /** statemBuffer is filled ->  insert in table*/	
+	    if(statements.statemReceived == statements.maxStatements-1) {
+		msg(MSG_INFO, "Writing buffered records to database");
+		writeToDb();
+	    } else {
+		statements.statemReceived++;
+		msg(MSG_DEBUG, "Buffering record. Need %i more records before writing to database.", statements.maxStatements - statements.statemReceived);
+	    }
 	}
     }
+    // try reconnect to DB if error occurred
     return 0;
 }
 
@@ -477,6 +526,7 @@ int IpfixDbWriter::writeToDb()
     int i ;
 
     char LockTables[STARTLEN + (TABLE_WIDTH * statements.maxLocks * 2)] ; 
+    char UnLockTable[STARTLEN] = "UNLOCK TABLES";
 
     strcpy(LockTables,"LOCK TABLES ");
     /**Lock all tables to store the insert statements*/
@@ -494,13 +544,7 @@ int IpfixDbWriter::writeToDb()
     if(mysql_query(conn, LockTables) != 0) {
 	msg(MSG_ERROR,"IpfixDbWriter: Lock of table failed, dropping %d records. Error: %s",
 		statements.statemReceived, mysql_error(conn));
-	// drop records and free buffer, hoping that the locking problem is temporary and 
-	// will not occur the next time
-	for(i=0; i != statements.maxStatements; i++) {
-	    statements.statemBuffer[i][0] = '\0';
-	}
-	statements.statemReceived = 0;
-	return 1;		    
+	goto dbwriteerror;
     }
 
     /**Write the insert statement to database*/
@@ -509,7 +553,7 @@ int IpfixDbWriter::writeToDb()
 	    if(mysql_query(conn, statements.statemBuffer[i]) != 0) {
 		msg(MSG_ERROR,"IpfixDbWriter: Insert of records failed. Error: %s",
 			mysql_error(conn));
-		return 1;
+		goto dbwriteerror;
 	    } else {
 		DPRINTF("Record inserted\n");
 	    }
@@ -518,14 +562,22 @@ int IpfixDbWriter::writeToDb()
     }
     statements.statemReceived = 0;
 
-    char UnLockTable[STARTLEN] = "UNLOCK TABLES";
     if(mysql_query(conn, UnLockTable) != 0) {
 	msg(MSG_ERROR,"IpfixDbWriter: Unlock of tables failed",
 		mysql_error(conn));
-	return 1;
+	goto dbwriteerror;
     }
     msg(MSG_DEBUG,"Write to database is complete");
     return 0;
+
+dbwriteerror:
+    dbError = true;
+    // drop records and free buffer
+    for(i=0; i != statements.maxStatements; i++) {
+	statements.statemBuffer[i][0] = '\0';
+    }
+    statements.statemReceived = 0;
+    return 1;		    
 }
 
 /**
@@ -843,14 +895,6 @@ IpfixDbWriter::IpfixDbWriter(const char* host, const char* db,
 {	
     setSinkOwner("IpfixWriter");
 
-    conn = mysql_init(0);  /** get the mysl init handle*/
-    if(conn == 0) {
-	msg(MSG_FATAL,"IpfixDbWriter: Get MySQL connect handle failed. Error: %s",
-		mysql_error(conn));
-	goto out;
-    } else {
-	msg(MSG_DEBUG,"IpfixDbWriter got MySQL init handler");
-    }
     /**Initialize structure members IpfixDbWriter*/
     hostName = host;
     dbName = db;
@@ -901,24 +945,8 @@ IpfixDbWriter::IpfixDbWriter(const char* host, const char* db,
 	statements.lockTables[i][0] = '\0'; 
     }
 
-    /**Connect to Database*/
-    if (!mysql_real_connect(conn,
-		hostName, userName,
-		password, 0, portNum,
-		socketName, flags)) {
-	msg(MSG_FATAL,"IpfixDbWriter: Connection to database failed. Error: %s",
-		mysql_error(conn));
-	goto out;
-    } else {
-	msg(MSG_DEBUG,"IpfixDbWriter succesfully connected to database");
-    }
-    /** create Database*/
-    if(createDB() !=0)
-	goto out;
-    /**create table exporter*/
-    if(createExporterTable() !=0)
-	goto out;
-
+    connectToDB();
+    
     return;
 
 out: 
