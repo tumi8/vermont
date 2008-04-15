@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
    	IpfixReceiverSctpIpV4 ipfixReceiver(lport, "127.0.0.1");
 #endif
 	// If you want to create a UDP testCollector
-    	IpfixReceiverUdpIpV4 ipfixReceiver2(4711);
+    	IpfixReceiverUdpIpV4 ipfixReceiver2(lport);
 	
 	
 	/* (not in this branch of rcvIpfix)
