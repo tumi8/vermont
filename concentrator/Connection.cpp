@@ -75,41 +75,41 @@ Connection::Connection(IpfixDataDataRecord* record)
 	
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0);
 	if (fi != 0) {
-		srcTimeStart = *(uint64_t*)(record->data + fi->offset);
+		srcTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
 	} else {
 		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSeconds, 0);
 		if (fi != 0) {
-			srcTimeStart = *(uint32_t*)(record->data + fi->offset);
+			srcTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
 			srcTimeStart *= 1000;
 		}
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
 	if (fi != 0) {
-		srcTimeEnd = *(uint64_t*)(record->data + fi->offset);
+		srcTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
 	} else {
 		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndSeconds, 0);
 		if (fi != 0) {
-			srcTimeEnd = *(uint32_t*)(record->data + fi->offset);
+			srcTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
 			srcTimeEnd *= 1000;
 		}
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartMilliSeconds, 0);
 	if (fi != 0) {
-		dstTimeStart = *(uint64_t*)(record->data + fi->offset);
+		dstTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
 	} else {
 		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartSeconds, 0);
 		if (fi != 0) {
-			dstTimeStart = *(uint32_t*)(record->data + fi->offset);
+			dstTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
 			dstTimeStart *= 1000;
 		}
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndMilliSeconds, 0);
 	if (fi != 0) {
-		dstTimeEnd = *(uint64_t*)(record->data + fi->offset);
+		dstTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
 	} else {
 		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndSeconds, 0);
 		if (fi != 0) {
-			dstTimeEnd = *(uint32_t*)(record->data + fi->offset);
+			dstTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
 			dstTimeEnd *= 1000;
 		}
 	}
