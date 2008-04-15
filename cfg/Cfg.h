@@ -57,6 +57,12 @@ public:
 	 */
 	int getInt(const std::string& name, int def = 0, XMLElement* elem = NULL);
 	
+	/** returns the double value of an XML config entry
+	 * @param name the name of the element
+	 * If there is no such element in the XML file, it returns def
+	 */
+	double getDouble(const std::string& name, double def = 0, XMLElement* elem = NULL);
+	
 	/**
 	 * returns the time value specified in the element in a given unit
 	 * @param name the name of the element

@@ -27,6 +27,18 @@ std::string CfgBase::getOptional(const std::string& name, XMLElement* elem)
 	return result;
 }
 
+double CfgBase::getDouble(const std::string& name, double def, XMLElement* elem)
+{
+	std::string str;
+	try {
+		str = get(name, elem);
+		return atof(str.c_str());
+	} catch (IllegalEntry ie) { }
+
+	// return default value
+	return def;
+}
+
 int CfgBase::getInt(const std::string& name, int def, XMLElement* elem)
 {
 	std::string str;
