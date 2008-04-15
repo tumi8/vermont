@@ -37,7 +37,24 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	createDataTemplate(rule);
 
 	msg(MSG_INFO, "Initializing hashtable with minBufferTime %d and maxBufferTime %d", minBufferTime, maxBufferTime);
+}
 
+/**
+ * returns value > 0  if given type needs additional private data for aggregation
+ * this is included in dataRecords after the "normal" fields
+ */
+uint32_t BaseHashtable::getPrivateDataLength(IpfixRecord::FieldInfo::Type type)
+{
+	switch (type.id) {
+		case IPFIX_ETYPEID_frontPayload:
+		case IPFIX_ETYPEID_revFrontPayload:
+			return 8; // four bytes TCP sequence ID, fource bytes for byte-counter for aggregated data
+		
+		default:
+			return 0;
+	}
+	
+	return 0;
 }
 
 void BaseHashtable::createDataTemplate(Rule* rule)
@@ -69,6 +86,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			IpfixRecord::FieldInfo* fi = &dataTemplate->dataInfo[dataTemplate->dataCount - 1];
 			fi->type = rf->type;
 			fi->offset = dataLength;
+			fi->privDataOffset = 0;
 			dataLength += fi->type.length;
 			dataTemplate->data = (IpfixRecord::Data*)realloc(dataTemplate->data, dataLength);
 			memcpy(dataTemplate->data + fi->offset, rf->pattern, fi->type.length);
@@ -82,10 +100,21 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[dataTemplate->fieldCount - 1];
 			fi->type = rf->type;
 			fi->offset = fieldLength;
+			fi->privDataOffset = 0;
 			fieldLength += fi->type.length;
 			fieldModifier[dataTemplate->fieldCount - 1] = rf->modifier;
 		}
-
+	}
+	
+	// add private data offsets for fields
+	privDataLength = 0;
+	for (uint32_t i=0; i<dataTemplate->fieldCount++; i++) {
+		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		uint32_t len = getPrivateDataLength(fi->type);
+		if (len>0) {
+			fi->privDataOffset = fieldLength+privDataLength;
+			privDataLength += len;
+		}
 	}
 }
 
@@ -250,6 +279,7 @@ int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_TYPEID_droppedOctetDeltaCount:
 		case IPFIX_TYPEID_droppedPacketDeltaCount:
 		case IPFIX_TYPEID_tcpControlBits:
+		case IPFIX_ETYPEID_frontPayload:
 		case IPFIX_ETYPEID_revFlowStartSeconds:
 		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
 		case IPFIX_ETYPEID_revFlowEndSeconds:

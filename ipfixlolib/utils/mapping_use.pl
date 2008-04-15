@@ -31,7 +31,7 @@ $i=0;
 
 
 # select output: gperf, c, html
-$output='gperf';
+$output='c';
 
 
 if($output eq 'c') {

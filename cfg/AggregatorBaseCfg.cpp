@@ -63,7 +63,7 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 				rule->field[rule->fieldCount++] = ruleField;
 		} else {
 			THROWEXCEPTION("Unknown rule %s in Aggregator found", e->getName().c_str());
-		}
+		}		
 	}
 
 	// we found no rules, so do cleanup
@@ -78,36 +78,37 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 {
 	Rule::Field* ruleField = new Rule::Field();
-	try {
-		InfoElementCfg ie(e);
-		ruleField->modifier = Rule::Field::AGGREGATE;
+	InfoElementCfg ie(e);
+	ruleField->modifier = Rule::Field::AGGREGATE;
 
-		// parse name
-		if (ie.getIeName() != "") {
-			if (0 == (ruleField->type.id = string2typeid(ie.getIeName().c_str()))) {
-				msg(MSG_ERROR, "Bad field type \"%s\"", ie.getIeName().c_str());
-				throw std::exception();
-			}
-		} else
-			ruleField->type.id = ie.getIeId();
-
-		// parse length
-		if (ie.hasOptionalLength()) {
-			ruleField->type.length = ie.getIeLength();
-		} else {
-			if (0 == (ruleField->type.length = string2typelength(ie.getIeName().c_str()))) {
-				msg(MSG_ERROR, "Bad field type \"%s\"", ie.getIeName().c_str());
-				throw std::exception();
-			}
+	// parse name
+	if (ie.getIeName() != "") {
+		if (0 == (ruleField->type.id = string2typeid(ie.getIeName().c_str()))) {
+			msg(MSG_ERROR, "Bad field type \"%s\"", ie.getIeName().c_str());
+			throw std::exception();
 		}
+	} else
+		ruleField->type.id = ie.getIeId();
 
-		if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
-			ruleField->type.length++; // for additional mask field
+	// parse length
+	if (ie.hasOptionalLength()) {
+		ruleField->type.length = ie.getIeLength();
+	} else {
+		if (0 == (ruleField->type.length = string2typelength(ie.getIeName().c_str()))) {
+			msg(MSG_ERROR, "Bad field type \"%s\", or length of field must be specified!", ie.getIeName().c_str());
+			throw std::exception();
 		}
-	} catch (std::exception e) {
-		delete ruleField;
-		ruleField = NULL;
 	}
+
+	if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
+		ruleField->type.length++; // for additional mask field
+	}
+	
+	if (ruleField->type.id==IPFIX_ETYPEID_frontPayload) {
+		if (ruleField->type.length<5)
+			THROWEXCEPTION("type %s must have at least size 5!", typeid2string(ruleField->type.id));
+	}
+
 
 	return ruleField;
 }
@@ -142,7 +143,7 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 			ruleField->type.length = ie.getIeLength();
 		} else {
 			if (0 == (ruleField->type.length = string2typelength(ie.getIeName().c_str()))) {
-				msg(MSG_ERROR, "Bad field type \"%s", ie.getIeName().c_str());
+				msg(MSG_ERROR, "Bad field type \"%s\", no length was specified!", ie.getIeName().c_str());
 				throw std::exception();
 			}
 		}
@@ -206,6 +207,7 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 		delete ruleField;
 		ruleField = NULL;
 	}
+
 
 	return ruleField;
 }

@@ -47,6 +47,47 @@ void PacketHashtable::copyDataSetOne(IpfixRecord::Data* dst, const IpfixRecord::
 	// set last byte of array to one (network byte order!)
 	dst[efd->dstLength-1] = 1;
 }
+void PacketHashtable::copyDataFrontPayload(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
+{
+	aggregateFrontPayload(dst, reinterpret_cast<const Packet*>(src), efd, true);
+}
+
+/**
+ * aggregates payload of packets to a certain maximum amount
+ * only sequence number is regarded, succeeding packets with same sequence number 
+ * will overwrite data
+ * ATTENTION: no stream reassembly is performed!
+ */
+void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* dst, const Packet* src, const ExpFieldData* efd, bool firstpacket)
+{
+	uint32_t seq = ntohl(*reinterpret_cast<const uint32_t*>(src->data+src->transportHeaderOffset+4));
+	DPRINTFL(MSG_VDEBUG, "seq:%u", seq);
+	
+	if (firstpacket) {
+		if (src->data[src->transportHeaderOffset+13] & 0x02) {
+			// SYN packet, so sequence number will be increased without any payload
+			seq++;
+		}
+		*reinterpret_cast<uint32_t*>(dst) = seq;
+		memset(dst+4, 0, efd->dstLength-4);
+	}
+	
+	// ignore packets that do either contain no payload or were not interpreted correctly
+	if (src->payloadOffset==0 || src->payloadOffset==src->transportHeaderOffset) return;
+	
+	uint16_t plen = src->data_length-src->payloadOffset;
+	uint32_t fseq = *reinterpret_cast<const uint32_t*>(dst);
+	
+	DPRINTFL(MSG_VDEBUG, "plen:%u, fseq:%u, seq:%u, dstleng:%u", plen, fseq, seq, efd->dstLength);
+
+	if (seq-fseq+4<efd->dstLength) {
+		uint32_t pos = seq-fseq;
+		uint32_t len = efd->dstLength-4-pos;
+		if (plen<len) len = plen;
+		DPRINTFL(MSG_VDEBUG, "inserting payload data at %u with elngth %u", pos, len);
+		memcpy(dst+4+pos, src->data+src->payloadOffset, len);
+	}
+}
 
 
 /**
@@ -127,6 +168,11 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecor
 				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
 			break;
+		case IPFIX_ETYPEID_frontPayload:
+			if (efd->dstLength < 5) {
+				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
+			}
+			break;
 
 		default:
 			THROWEXCEPTION("type unhandled by Packet Aggregator: %d (\"%s\")", efd->typeId, typeid2string(efd->typeId));
@@ -134,7 +180,9 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecor
 	}
 
 	// now decide on the correct copy function
-	if (efd->dstLength == efd->srcLength) {
+	if (efd->typeId == IPFIX_ETYPEID_frontPayload) {
+		return copyDataFrontPayload;
+	} else if (efd->dstLength == efd->srcLength) {
 		return copyDataEqualLengthNoMod;
 	} else if (efd->dstLength > efd->srcLength) {
 		if (efd->typeId == IPFIX_TYPEID_sourceIPv4Address || efd->typeId == IPFIX_TYPEID_destinationIPv4Address) {
@@ -193,6 +241,9 @@ uint8_t PacketHashtable::getRawPacketFieldLength(IpfixRecord::FieldInfo::Type ty
 		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
 		case IPFIX_ETYPEID_revFlowEndMilliSeconds:
 			return 8;
+			
+		case IPFIX_ETYPEID_frontPayload:
+			return type.length;				// length is variable and is set in configuration
 
 		default:
 			THROWEXCEPTION("unknown typeid");
@@ -226,6 +277,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const IpfixRecord::FieldInfo::Type&
 		case IPFIX_TYPEID_sourceTransportPort:
 		case IPFIX_TYPEID_destinationTransportPort:
 		case IPFIX_TYPEID_tcpControlBits:
+		case IPFIX_ETYPEID_frontPayload:
 			return true;
 	}
 
@@ -299,6 +351,7 @@ bool PacketHashtable::typeAvailable(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_TYPEID_sourceTransportPort:
 		case IPFIX_TYPEID_destinationTransportPort:
 		case IPFIX_TYPEID_tcpControlBits:
+		case IPFIX_ETYPEID_frontPayload:
 			return true;
 	}
 	
@@ -370,7 +423,7 @@ uint32_t PacketHashtable::expCalculateHash(const IpfixRecord::Data* data)
 boost::shared_array<IpfixRecord::Data> PacketHashtable::buildBucketData(const Packet* p)
 {
 	// new field for insertion into hashtable
-	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength]);
+	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength+privDataLength]);
 	IpfixRecord::Data* data = htdata.get();
 
 	// copy all data ...
@@ -415,6 +468,10 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 
 		case IPFIX_TYPEID_tcpControlBits:  // 1 byte src and dst, bitwise-or flows
 			*(uint8_t*)baseData |= *(uint8_t*)deltaData;
+			break;
+			
+		case IPFIX_ETYPEID_frontPayload:
+			aggregateFrontPayload(baseData, reinterpret_cast<const Packet*>(deltaData), efd);
 			break;
 
 			// no other types needed, as this is only for raw field input
@@ -523,14 +580,21 @@ void PacketHashtable::updatePointers(const Packet* p)
 	for (int i=0; i<expHelperTable.varSrcPtrFieldsLen; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[expHelperTable.varSrcPtrFields[i]];
 
-		// perform a hack for masked IPs:
-		// IP addresses which are to be masked are copied to efd->data[0-3] and masked there
-		// now we need to do some pointer arithmetic to be able to access those transparently afterwards
-		// note: only IP types to be masked have efd->varSrcIdx set
+
 		switch (efd->typeId) {
+			// perform a hack for masked IPs:
+			// IP addresses which are to be masked are copied to efd->data[0-3] and masked there
+			// now we need to do some pointer arithmetic to be able to access those transparently afterwards
+			// note: only IP types to be masked have efd->varSrcIdx set
 			case IPFIX_TYPEID_destinationIPv4Address:
 			case IPFIX_TYPEID_sourceIPv4Address:
 				efd->srcIndex = reinterpret_cast<uint32_t>(&efd->data[0])-reinterpret_cast<uint32_t>(p->netHeader);
+				break;
+			
+			// aggregation and copy functions for frontPayload need to have source pointer 
+			// pointing to packet structure
+			case IPFIX_ETYPEID_frontPayload:
+				efd->srcIndex = reinterpret_cast<uint32_t>(p)-reinterpret_cast<uint32_t>(p->netHeader);
 				break;
 
 			default:

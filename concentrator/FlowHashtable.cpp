@@ -508,7 +508,7 @@ void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRe
 	int i;
 
 	/* Create data block to be inserted into buffer... */
-	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength]);
+	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength+privDataLength]);
 
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
@@ -590,7 +590,7 @@ void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti,
 	int i;
 
 	/* Create data block to be inserted into buffer... */
-	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength]);
+	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength+privDataLength]);
 
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];

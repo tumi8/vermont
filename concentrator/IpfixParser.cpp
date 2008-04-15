@@ -720,6 +720,17 @@ static void printUint(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data
 	}
 }
 
+static void printFrontPayload(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) 
+{
+	printf("SEQ:%u,'", *reinterpret_cast<uint32_t*>(data));
+	for (uint32_t i=4; i<type.length; i++) {
+		char c = data[i];
+		if (isprint(c)) printf("%c", c);
+		else printf(".");
+	}
+	printf("'");
+}
+
 
 /**
  * Prints a string representation of IpfixRecord::Data to stdout.
@@ -748,6 +759,14 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
 		printf("destinationTransportPort:");
 		printPort(type, pattern);
 		break;
+	case IPFIX_ETYPEID_frontPayload:
+		printf("frontPayload:");
+		printFrontPayload(type, pattern);
+		break;
+	case IPFIX_ETYPEID_revFrontPayload:
+			printf("revFrontPayload:");
+			printFrontPayload(type, pattern);
+			break;
 	default:
 		s = typeid2string(type.id);
 		if (s != NULL) {

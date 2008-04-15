@@ -104,6 +104,7 @@ protected:
 	uint32_t statMultiEntries; /**< number of entries in hashtable which are not in a single bucket, used for statistics */
 	
 	uint16_t fieldLength; /**< length in bytes of all variable-length fields */
+	uint16_t privDataLength; /**< length in bytes of all private data fields that are not exported with IPFIX but needed with flow record for aggregation */
 	Rule::Field::Modifier* fieldModifier; /**< specifies what modifier to apply to a given field */
 	Source<IpfixRecord*>* recordSource; /**< pointer to vermont module which is able to send IpfixRecords */
 	boost::shared_ptr<IpfixRecord::SourceID> sourceID; /**< used for hack: we *must* supply an observationDomainID, so take a static one */ 
@@ -121,6 +122,7 @@ protected:
 	void destroyBucket(Bucket* bucket);
 	void createDataTemplate(Rule* rule);
 	void sendDataTemplate();
+	uint32_t getPrivateDataLength(IpfixRecord::FieldInfo::Type);
 	
 };
 

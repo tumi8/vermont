@@ -79,7 +79,9 @@ private:
 	static void copyDataGreaterLengthIPNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataGreaterLengthIPMask(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataGreaterLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void copyDataFrontPayload(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataSetOne(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void aggregateFrontPayload(IpfixRecord::Data* dst, const Packet* src, const ExpFieldData* efd, bool firstpacket = false);
 	void (*getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*);
 	void fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index);
 	uint32_t expCalculateHash(const IpfixRecord::Data* data);

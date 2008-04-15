@@ -19,6 +19,7 @@
 #include "cfg/PacketIDMEFReporterCfg.h"
 #include "cfg/IpfixDbReaderCfg.h"
 #include "cfg/IpfixDbWriterCfg.h"
+#include "cfg/IpfixPayloadWriterCfg.h"
 
 #include <cassert>
 
@@ -43,6 +44,7 @@ Cfg* ConfigManager::configModules[] = {
 	new TRWPortscanDetectorCfg(NULL),
 	new IDMEFExporterCfg(NULL),
 	new PacketIDMEFReporterCfg(NULL),
+	new IpfixPayloadWriterCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
 	new IpfixDbReaderCfg(NULL),
 	new IpfixDbWriterCfg(NULL),

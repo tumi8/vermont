@@ -63,6 +63,7 @@ class IpfixRecord
 
 			IpfixRecord::FieldInfo::Type type;
 			int32_t offset; /**< offset in bytes from a data start pointer. For internal purposes 0xFFFFFFFF is defined as yet unknown */
+			int32_t privDataOffset; /**< offset in bytes from data start pointer for internal private data which is not exported via IPFIX */
 		};
 
 
@@ -256,14 +257,12 @@ class IpfixRecord
 					case IPFIX_TYPEID_protocolIdentifier:
 					case IPFIX_TYPEID_sourceIPv4Address:
 					case IPFIX_TYPEID_destinationIPv4Address:
-					case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+					case IPFIX_ETYPEID_revPacketDeltaCount:
+					case IPFIX_ETYPEID_revFlowStartSeconds:
 					case IPFIX_ETYPEID_revFlowEndSeconds:
 					case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-					case IPFIX_ETYPEID_revFlowStartSeconds:
+					case IPFIX_ETYPEID_revFlowEndMilliSeconds:
 					case IPFIX_ETYPEID_revOctetDeltaCount:
-					case IPFIX_ETYPEID_revPacketDeltaCount:
-					case IPFIX_ETYPEID_revTcpControlBits:
-						
 						return Packet::IPProtocolType(Packet::TCP|Packet::UDP|Packet::ICMP);
 
 					case IPFIX_TYPEID_icmpTypeCode:
@@ -271,9 +270,12 @@ class IpfixRecord
 
 					case IPFIX_TYPEID_sourceTransportPort:
 					case IPFIX_TYPEID_destinationTransportPort:
+					case IPFIX_ETYPEID_frontPayload:
+					case IPFIX_ETYPEID_revFrontPayload:
 						return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
 
 					case IPFIX_TYPEID_tcpControlBits:
+					case IPFIX_ETYPEID_revTcpControlBits:
 						return Packet::TCP;
 				}
 				THROWEXCEPTION("received unknown field type id (%d)", typeId);
