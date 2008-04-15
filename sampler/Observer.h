@@ -42,7 +42,7 @@
 class Observer : public Module, public Source<Packet*>, public Destination<NullEmitable*>
 {
 public:
-	Observer(const std::string& interface);
+	Observer(const std::string& interface, bool offline);
 	~Observer();
 
 	virtual void performStart();
@@ -51,6 +51,8 @@ public:
 	int getCaptureLen();
 	bool setPacketTimeout(int ms);
 	int getPacketTimeout();
+	void replaceOfflineTimestamps();
+	void setOfflineSpeed(float m);
 	int getPcapStats(struct pcap_stat *out);
 	bool prepare(const std::string& filter);
 	static void doLogging(void *arg);
@@ -76,7 +78,7 @@ protected:
 	char errorBuffer[PCAP_ERRBUF_SIZE];
 
 	// also called snaplen; only sniff this much bytes from each packet
-	int capturelen;
+	uint32_t capturelen;
 
 	// wait this much ms until pcap_read() returns and get ALL packets received
 	int pcap_timeout;
@@ -105,14 +107,22 @@ protected:
 	volatile uint64_t processedPackets;
 	volatile uint64_t lastProcessedPackets;
 	
+	// interface we capture traffic on - string
+	char *captureInterface;
+
+	// pcap file we read traffic from - string
+	char *fileName;
+
+	// offline mode parameters
+	bool readFromFile;
+	bool replaceTimestampsFromFile;
+	uint16_t stretchTimeInt; // 1 means no timing change, 0 means that stretchTimes (float) is used
+	float stretchTime;
+	
 	uint32_t statTotalLostPackets;
 	uint32_t statTotalRecvPackets;
 
 	static void *observerThread(void *);
-
-public:
-	// interface we capture traffic on - string
-	char *captureInterface;
 };
 
 #endif

@@ -20,7 +20,10 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 	: CfgHelper<Observer, ObserverCfg>(elem, "observer"),
 	interface(),
 	pcap_filter(),
-	capture_len(0)
+	capture_len(0),
+	offline(false),
+	replaceOfflineTimestamps(false),
+	offlineSpeed(1.0)
 {
 	if (!elem) return;  // needed because of table inside ConfigManager
 	
@@ -34,7 +37,13 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 			interface = e->getFirstText();
 		} else if (e->matches("pcap_filter")) {
 			pcap_filter = e->getFirstText();
-		} else if (e->matches("timeBased")) {
+		} else if (e->matches("filename")) {
+			interface = e->getFirstText();
+			offline = true;
+		} else if (e->matches("replaceTimestamps")) {
+			replaceOfflineTimestamps = getInt("replaceTimestamps")>0;
+		} else if (e->matches("offlineSpeed")) {
+			offlineSpeed = getDouble("offlineSpeed");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unkown observer config statement %s\n", e->getName().c_str());
@@ -52,7 +61,9 @@ ObserverCfg::~ObserverCfg()
 
 Observer* ObserverCfg::createInstance()
 {
-	instance = new Observer(interface);
+	instance = new Observer(interface, offline);
+	instance->setOfflineSpeed(offlineSpeed);
+	if (offline) instance->replaceOfflineTimestamps();
 
 	if (capture_len) {
 		if(!instance->setCaptureLen(capture_len)) {

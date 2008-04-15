@@ -89,13 +89,31 @@
 				<tr>
 					<td>interface</td>
 					<td>none</td>
-					<td>Interface PCAP listens to.</td>
+					<td>Interface PCAP listens to. Do not use in combination with parameter filename.</td>
+				</tr>
+				<tr>
+					<td>filename</td>
+					<td>none</td>
+					<td>Must be specified if Vermont needs to read from file and contains its filename.
+					    Do not use in combination with parameter interface.</td>
 				</tr>
 				<tr>
 					<td>pcap_filter</td>
 					<td>none</td>
 					<td>Filter specification which is passed to PCAP (usually "ip" to
 						only capture IP packets).</td>
+				</tr>
+				<tr>
+					<td>replaceTimestamps</td>
+					<td>none</td>
+					<td>Only applies to PCAP file reading. Replaces PCAP packet timestamps with current
+						time.</td>
+				</tr>
+				<tr>
+					<td>offlineSpeed</td>
+					<td>1.0</td>
+					<td>Only applies to PCAP file reading. Sets the speed multiplier for offline
+						PCAP file reading.</td>
 				</tr>
 			</tbody>
 		</table>

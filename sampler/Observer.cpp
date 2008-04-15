@@ -20,21 +20,82 @@
 #include <iostream>
 #include <sstream>
 
+/* Code adopted from tcpreplay: */
+/* subtract uvp from tvp and store in vvp */
+#ifndef timersub
+#define timersub(tvp, uvp, vvp)                 \
+     do {                                        \
+         (vvp)->tv_sec = (tvp)->tv_sec - (uvp)->tv_sec;      \
+         (vvp)->tv_usec = (tvp)->tv_usec - (uvp)->tv_usec;   \
+         if ((vvp)->tv_usec < 0) {               \
+             (vvp)->tv_sec--;                    \
+             (vvp)->tv_usec += 1000000;          \
+         }                                       \
+     } while (0)
+#endif
+/* add tvp and uvp and store in vvp */
+#ifndef timeradd
+#define timeradd(tvp, uvp, vvp)                 \
+    do {                                        \
+        (vvp)->tv_sec = (tvp)->tv_sec + (uvp)->tv_sec;      \
+        (vvp)->tv_usec = (tvp)->tv_usec + (uvp)->tv_usec;   \
+        if ((vvp)->tv_usec >= 1000000) {        \
+            (vvp)->tv_sec++;                    \
+            (vvp)->tv_usec -= 1000000;          \
+        }                                       \
+    } while (0)
+#endif
+/* compare tvp and uvp using cmp */
+#ifndef timercmp
+#define timercmp(tvp, uvp, cmp)                 \
+    (((tvp)->tv_sec == (uvp)->tv_sec) ?         \
+    ((tvp)->tv_usec cmp (uvp)->tv_usec) :       \
+    ((tvp)->tv_sec cmp (uvp)->tv_sec))
+#endif
+/* multiply tvp by x and store in uvp */
+#define timermul(tvp, uvp, x)                   \
+    do {                                        \
+        (uvp)->tv_sec = (tvp)->tv_sec * x;      \
+        (uvp)->tv_usec = (tvp)->tv_usec * x;    \
+        while((uvp)->tv_usec > 1000000) {       \
+            (uvp)->tv_sec++;                    \
+            (uvp)->tv_usec -= 1000000;          \
+        }                                       \
+    } while(0)
+/* multiply tvp by x and store in uvp (with cast) */
+#define timermulfloat(tvp, uvp, x)              \
+    do {                                        \
+        (uvp)->tv_sec = (time_t)((tvp)->tv_sec * x);      \
+        (uvp)->tv_usec = (suseconds_t)((tvp)->tv_usec * x);    \
+        while((uvp)->tv_usec > 1000000) {       \
+            (uvp)->tv_sec++;                    \
+            (uvp)->tv_usec -= 1000000;          \
+        }                                       \
+    } while(0)
 
 using namespace std;
 
 
 InstanceManager<Packet> Observer::packetManager("Packet"); 
 
-Observer::Observer(const std::string& interface) : thread(Observer::observerThread), allDevices(NULL),
+Observer::Observer(const std::string& interface, bool offline) : thread(Observer::observerThread), allDevices(NULL),
 	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
 	pcap_promisc(1), ready(false), filter_exp(0), observationDomainID(0), // FIXME: this must be configured!
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0), 
-	lastProcessedPackets(0), statTotalLostPackets(0), statTotalRecvPackets(0)
+	lastProcessedPackets(0), 
+	captureInterface(NULL), fileName(NULL), replaceTimestampsFromFile(false),
+	stretchTimeInt(1), stretchTime(1.0), statTotalLostPackets(0), statTotalRecvPackets(0)
 
 {
-	captureInterface = (char*)malloc(interface.size() + 1);
-	strcpy(captureInterface, interface.c_str());
+	if(offline) {
+		readFromFile = true;
+		fileName = (char*)malloc(interface.size() + 1);
+		strcpy(fileName, interface.c_str());
+	} else {
+		readFromFile = false;
+		captureInterface = (char*)malloc(interface.size() + 1);
+		strcpy(captureInterface, interface.c_str());
+	}
 	
 	usedBytes += sizeof(Observer)+interface.size()+1;
 	
@@ -98,72 +159,161 @@ void *Observer::observerThread(void *arg)
 	msg(MSG_INFO, "now running capturing thread for device %s", obs->captureInterface);
 
 
-	while(!obs->exitFlag) {
-		// wait until data can be read from pcap file descriptor
-		fd_set fd_wait;
-		FD_ZERO(&fd_wait);
-		FD_SET(pcap_fileno(obs->captureDevice), &fd_wait);
-		struct timeval st;
-		st.tv_sec = 1;
-		st.tv_usec = 0;
-		int result = select(FD_SETSIZE, &fd_wait, NULL, NULL, &st);
-		if (result == -1) {
-			msg(MSG_FATAL, "select() on pcap file descriptor returned -1");
-			break;
-		}
-		if (result == 0) {
-			continue;
-		}
-
-		/*
-		 get next packet (no zero-copy possible *sigh*)
-		 NOTICE: potential bottleneck, if pcap_next() is calling gettimeofday() at a high rate;
-		 there is partially caching function described in an Sun or IBM (Developerworks) article
-		 that can act as a via LD_PRELOAD used overlay function.
-		 unfortunately I don't have an URL ready -Freek
-		 */
-		DPRINTFL(MSG_VDEBUG, "trying to get packet from pcap");
-		pcapData=pcap_next(obs->captureDevice, &packetHeader);
-		if(!pcapData)
+	if(!obs->readFromFile) {
+		while(!obs->exitFlag) {
+			// wait until data can be read from pcap file descriptor
+			fd_set fd_wait;
+			FD_ZERO(&fd_wait);
+			FD_SET(pcap_fileno(obs->captureDevice), &fd_wait);
+			struct timeval st;
+			st.tv_sec = 1;
+			st.tv_usec = 0;
+			int result = select(FD_SETSIZE, &fd_wait, NULL, NULL, &st);
+			if (result == -1) {
+				msg(MSG_FATAL, "select() on pcap file descriptor returned -1");
+				break;
+			}
+			if (result == 0) {
+				continue;
+			}
+	
+			/*
+			 get next packet (no zero-copy possible *sigh*)
+			 NOTICE: potential bottleneck, if pcap_next() is calling gettimeofday() at a high rate;
+			 there is partially caching function described in an Sun or IBM (Developerworks) article
+			 that can act as a via LD_PRELOAD used overlay function.
+			 unfortunately I don't have an URL ready -Freek
+			 */
+			DPRINTFL(MSG_VDEBUG, "trying to get packet from pcap");
+			pcapData = pcap_next(obs->captureDevice, &packetHeader);
+			if(!pcapData)
 			/* no packet data was available */
 			continue;
-		DPRINTFL(MSG_VDEBUG, "got new packet!");
-
-		// show current packet as c-structure on stdout
-		//for (unsigned int i=0; i<packetHeader.caplen; i++) {
+			DPRINTFL(MSG_VDEBUG, "got new packet!");
+	
+			// show current packet as c-structure on stdout
+			//for (unsigned int i=0; i<packetHeader.caplen; i++) {
 			//printf("0x%02hhX, ", ((unsigned char*)pcapData)[i]);
-		//}
-		//printf("\n");
-
-		// initialize packet structure (init copies packet data)
-		p = packetManager.getNewInstance();
-		p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, obs->observationDomainID);
-
-		obs->receivedBytes += packetHeader.caplen;
-
-		DPRINTF("received packet at %u.%04u, len=%d",
-			(unsigned)p->timestamp.tv_sec,
-			(unsigned)p->timestamp.tv_usec / 1000,
-			packetHeader.caplen
+			//}
+			//printf("\n");
+	
+			// initialize packet structure (init copies packet data)
+			p = packetManager.getNewInstance();
+			p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, obs->observationDomainID);
+	
+			obs->receivedBytes += packetHeader.caplen;
+	
+			DPRINTF("received packet at %u.%04u, len=%d",
+					(unsigned)p->timestamp.tv_sec,
+					(unsigned)p->timestamp.tv_usec / 1000,
+					packetHeader.caplen
 			);
+	
+			// update statistics
+			obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
+			obs->processedPackets++;
+	
+			while (!obs->exitFlag) {
+				DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
+				if (have_send = obs->send(p)) {
+					DPRINTFL(MSG_VDEBUG, "packet pushed");
+					break;
+				}
+			}
+		}
+	} else {
+		// file handle
+		FILE* fh = pcap_file(obs->captureDevice);
+		// timestamps in current time
+		struct timeval now, start = {0,0};
+		// timestamps in old time
+		struct timeval first = {0,0};
+		// differences
+		struct timeval wait_val, delta_now, delta_file, delta_to_be;
+		struct timespec wait_spec;
+		bool firstPacket = true;
+		// let's wait one seconds until other modules are ready
+		sleep(1);
+		// read-from-file loop
+		while(!obs->exitFlag) {
 
-		// update statistics
-		obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
-		obs->processedPackets++;
-
-		while (!obs->exitFlag) {
-			DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
-			if (have_send = obs->send(p)) {
-				DPRINTFL(MSG_VDEBUG, "packet pushed");
+			DPRINTFL(MSG_VDEBUG, "trying to get packet from pcap file");
+			pcapData=pcap_next(obs->captureDevice, &packetHeader);
+			if(!pcapData) {
+				/* no packet data was available */
+				if(feof(fh))
+				        msg(MSG_DIALOG, "Observer: reached end of file.");
+      				break;
+      			}
+			DPRINTFL(MSG_VDEBUG, "got new packet!");
+			
+			if (gettimeofday(&now, NULL) < 0) {
+				msg(MSG_FATAL, "Error gettimeofday: %s", strerror(errno));
 				break;
+			}
+			if(firstPacket)
+			{
+				start = now;
+				first = packetHeader.ts;
+				firstPacket = false;
+      		}
+			else {
+				timersub(&now, &start, &delta_now);
+				timersub(&packetHeader.ts, &first, &delta_file);
+				if(obs->stretchTimeInt != 1) {
+					if(obs->stretchTimeInt == 0)
+						timermulfloat(&delta_file, &delta_to_be, obs->stretchTime);
+					else
+						timermul(&delta_file, &delta_to_be, obs->stretchTimeInt);
+				}
+				else
+					delta_to_be = delta_file;
+				DPRINTF("delta_now %d.%d delta_to_be %d.%d", delta_now.tv_sec, delta_now.tv_usec,  delta_to_be.tv_sec, delta_to_be.tv_usec);
+				if(timercmp(&delta_now, &delta_to_be, <))
+				{
+					timersub(&delta_to_be, &delta_now, &wait_val);
+					wait_spec.tv_sec = wait_val.tv_sec;
+					wait_spec.tv_nsec = wait_val.tv_usec * 1000;
+					if(nanosleep(&wait_spec, NULL) != 0)
+						msg(MSG_INFO, "Observer: nanosleep returned nonzero value");
+				}
+				else if (delta_now.tv_sec > (delta_to_be.tv_sec + 1))
+				    msg(MSG_ERROR, "Observer: reading from file is more than 1 second behind schedule!");
+  	}
+
+			// optionally replace the timestamp with current time
+			if (obs->replaceTimestampsFromFile)
+			    timeradd(&start, &delta_to_be, &packetHeader.ts);
+			
+			// initialize packet structure (init copies packet data)
+			p = obs->packetManager.getNewInstance();
+			p->init((char*)pcapData, 
+				// in constrast to live capturing, the data length is not limited
+				// to any snap length when reading from a pcap file
+				(packetHeader.caplen < obs->capturelen) ? packetHeader.caplen : obs->capturelen, 
+				packetHeader.ts, obs->observationDomainID);
+
+			obs->receivedBytes += packetHeader.caplen;
+
+			DPRINTF("received packet at %u.%04u, len=%d",
+				(unsigned)p->timestamp.tv_sec,
+				(unsigned)p->timestamp.tv_usec / 1000,
+				packetHeader.caplen
+				);
+
+			// update statistics
+			obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
+			obs->processedPackets++;
+	
+			while (!obs->exitFlag) {
+				DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
+				if (have_send = obs->send(p)) {
+					DPRINTFL(MSG_VDEBUG, "packet pushed");
+					break;
+				}
 			}
 		}
 	}
-
-	// if we aren't connected to a destination, we grab the packet and and can't
-	// send it to a destination. This would leak the packet, so clean it up... 
-	if (!have_send && p != NULL)
-		p->removeReference();
 	
 	msg(MSG_DEBUG, "exiting observer thread");
 	obs->unregisterCurrentThread();
@@ -179,6 +329,7 @@ void *Observer::observerThread(void *arg)
 bool Observer::prepare(const std::string& filter)
 {
 	int dataLink = 0;
+	struct in_addr i_netmask, i_network;
 
 	// we need to store the filter expression, because pcap needs
 	// a char* and doesn't accept a const char* ... nasty pcap-devs!!!
@@ -187,69 +338,80 @@ bool Observer::prepare(const std::string& filter)
 		strcpy(filter_exp, filter.c_str());
 		usedBytes += filter.size()+1;
 	}
-	struct in_addr i_netmask, i_network;
 
-	// query all available capture devices
-	msg(MSG_INFO, "Finding devices");
-	if(pcap_findalldevs(&allDevices, errorBuffer) == -1) {
-		msg(MSG_FATAL, "error getting list of interfaces: %s", errorBuffer);
-		goto out;
-	}
-
-	for(pcap_if_t *dev = allDevices; dev != NULL; dev=dev->next) {
-		msg(MSG_DEBUG, "PCAP: name=%s, desc=%s", dev->name, dev->description);
-	}
-
-	msg(MSG_INFO,
-	    "pcap opening interface=%s, promisc=%d, snaplen=%d, timeout=%d",
-	    captureInterface, pcap_promisc, capturelen, pcap_timeout
-	   );
-	captureDevice=pcap_open_live(captureInterface, capturelen, pcap_promisc, pcap_timeout, errorBuffer);
-	// check for errors
-	if(!captureDevice) {
-		msg(MSG_FATAL, "Error initializing pcap interface: %s", errorBuffer);
-		goto out1;
-	}
-
-	// make reads non-blocking
-	if(pcap_setnonblock(captureDevice, 1, errorBuffer) == -1) {
-		msg(MSG_FATAL, "Error setting pcap interface to non-blocking: %s", errorBuffer);
-		goto out2;
-	}
-
-	dataLink = pcap_datalink(captureDevice);
-	// IP_HEADER_OFFSET is set by the configure script
-	switch (dataLink) {
-	case DLT_EN10MB:
-		if (IP_HEADER_OFFSET != 14 && IP_HEADER_OFFSET != 18) {
-			msg(MSG_FATAL, "IP_HEADER_OFFSET on an ethernet device has to be 14 or 18 Bytes. Please adjust that value via configure --with-ipheader-offset");
+	if (!readFromFile) {
+		// query all available capture devices
+		msg(MSG_INFO, "Finding devices");
+		if(pcap_findalldevs(&allDevices, errorBuffer) == -1) {
+			msg(MSG_FATAL, "error getting list of interfaces: %s", errorBuffer);
+			goto out;
+		}
+	
+		for(pcap_if_t *dev = allDevices; dev != NULL; dev=dev->next) {
+			msg(MSG_DEBUG, "PCAP: name=%s, desc=%s", dev->name, dev->description);
+		}
+	
+		msg(MSG_INFO,
+		    "pcap opening interface=%s, promisc=%d, snaplen=%d, timeout=%d",
+		    captureInterface, pcap_promisc, capturelen, pcap_timeout
+		   );
+		captureDevice=pcap_open_live(captureInterface, capturelen, pcap_promisc, pcap_timeout, errorBuffer);
+		// check for errors
+		if(!captureDevice) {
+			msg(MSG_FATAL, "Error initializing pcap interface: %s", errorBuffer);
+			goto out1;
+		}
+	
+		// make reads non-blocking
+		if(pcap_setnonblock(captureDevice, 1, errorBuffer) == -1) {
+			msg(MSG_FATAL, "Error setting pcap interface to non-blocking: %s", errorBuffer);
 			goto out2;
 		}
-		break;
-	case DLT_LOOP:
-	case DLT_NULL:
-		if (IP_HEADER_OFFSET != 4) {
-			msg(MSG_FATAL, "IP_HEADER_OFFSET on BSD loop back device has to be 4 Bytes. Please adjust that value via configure --with-ipheader-offset");
-			goto out2;
+	
+		dataLink = pcap_datalink(captureDevice);
+		// IP_HEADER_OFFSET is set by the configure script
+		switch (dataLink) {
+		case DLT_EN10MB:
+			if (IP_HEADER_OFFSET != 14 && IP_HEADER_OFFSET != 18) {
+				msg(MSG_FATAL, "IP_HEADER_OFFSET on an ethernet device has to be 14 or 18 Bytes. Please adjust that value via configure --with-ipheader-offset");
+				goto out2;
+			}
+			break;
+		case DLT_LOOP:
+		case DLT_NULL:
+			if (IP_HEADER_OFFSET != 4) {
+				msg(MSG_FATAL, "IP_HEADER_OFFSET on BSD loop back device has to be 4 Bytes. Please adjust that value via configure --with-ipheader-offset");
+				goto out2;
+			}
+			break;
+		default:
+			msg(MSG_ERROR, "You are using an unkown IP_HEADER_OFFSET and data link combination. This can make problems. Please check if you use the correct IP_HEADER_OFFSET for your data link, if you see strange IPFIX/PSAMP packets.");
 		}
-		break;
-	default:
-		msg(MSG_ERROR, "You are using an unkown IP_HEADER_OFFSET and data link combination. This can make problems. Please check if you use the correct IP_HEADER_OFFSET for your data link, if you see strange IPFIX/PSAMP packets.");
-	}
+	
+	
+		/* we need the netmask for the pcap_compile */
+		if(pcap_lookupnet(captureInterface, &network, &netmask, errorBuffer) == -1) {
+			msg(MSG_ERROR, "unable to determine netmask/network: %s", errorBuffer);
+			network=0;
+			netmask=0;
+		}
+		i_network.s_addr=network;
+		i_netmask.s_addr=netmask;
+		msg(MSG_DEBUG, "pcap seems to run on network %s", inet_ntoa(i_network));
+		msg(MSG_INFO, "pcap seems to run on netmask %s", inet_ntoa(i_netmask));
+	} else {
+		captureDevice=pcap_open_offline(fileName, errorBuffer);
+		// check for errors
+		if(!captureDevice) {
+			msg(MSG_FATAL, "Error opening pcap file %s: %s", fileName, errorBuffer);
+			goto out1;
+		}
 
-
-	/* we need the netmask for the pcap_compile */
-	if(pcap_lookupnet(captureInterface, &network, &netmask, errorBuffer) == -1) {
-		msg(MSG_ERROR, "unable to determine netmask/network: %s", errorBuffer);
-		network=0;
 		netmask=0;
 	}
-	i_network.s_addr=network;
-	i_netmask.s_addr=netmask;
-	msg(MSG_DEBUG, "pcap seems to run on network %s", inet_ntoa(i_network));
-	msg(MSG_INFO, "pcap seems to run on netmask %s", inet_ntoa(i_netmask));
 
-	if(filter_exp) {
+
+	if (filter_exp) {
 		msg(MSG_DEBUG, "compiling pcap filter code from: %s", filter_exp);
 		if(pcap_compile(captureDevice, &pcap_filter, filter_exp, 1, netmask) == -1) {
 			msg(MSG_FATAL, "unable to validate+compile pcap filter");
@@ -341,6 +503,31 @@ int Observer::getCaptureLen()
 	return capturelen;
 }
 
+void Observer::replaceOfflineTimestamps()
+{
+	replaceTimestampsFromFile = true;
+}
+
+void Observer::setOfflineSpeed(float m)
+{
+	if(m == 1.0)
+		return;
+
+	stretchTime = 1/m;
+	if(m < 1.0) {
+		// speed decrease, try integer conversion
+		stretchTimeInt = (uint16_t)(1/m);
+		// allow only 10% inaccuracy, i.e.
+		// (1/m - stretchTimeInt)/(1/m) = 1-stretchTimeInt*m < 0.1
+		if((1 - stretchTimeInt * m) > 0.1) 
+			stretchTimeInt = 0; // use float
+		else
+		    msg(MSG_INFO, "Observer: speed multiplier set to %f in order to allow integer multiplication.", 1.0/stretchTimeInt);
+	}
+	else
+		stretchTimeInt = 0;
+		
+}
 
 bool Observer::setPacketTimeout(int ms)
 {
