@@ -16,6 +16,7 @@
 /* own systems */
 #include "common/TimeoutSemaphore.h"
 #include "common/msg.h"
+#include "common/VermontControl.h"
 
 #include "cfg/ConfigManager.h"
 
@@ -28,8 +29,6 @@ static void sig_USR1_handler(int x);
 static int setup_signal(int signal, void (*handler)(int));
 
 ConfigManager manager;
-static bool run_programm = true;
-static bool reload_config= false;
 
 // this is outside main to silent valgrind about the allocation "stats.log" which seems got never free'd
 string statFile = "stats.log";
@@ -71,6 +70,10 @@ int main(int ac, char **dc)
 		usage();
 		return -1;
 	}
+	
+	if (sem_init(&mainSemaphore, 0, 0) == -1) {
+		THROWEXCEPTION("failed to setup semaphore");
+	}
 
 	/* setup verboseness */
 	msg(MSG_DEFAULT, "message debug level is %d", debug_level);
@@ -86,9 +89,11 @@ int main(int ac, char **dc)
 	
 	msg(MSG_DIALOG, "vermont is up and running");
 
-	while (run_programm) {		
+	while (run_program) {		
 		// sleep until we get a signal
-		sigsuspend(&sigmask);
+		int s;
+		while ((s = sem_wait(&mainSemaphore)) == -1 && errno == EINTR) {} // restart when interrupted by handler
+		if (s == -1) THROWEXCEPTION("failed to execute sem_wait");
 
 		if (reload_config) {
 			msg(MSG_INFO, "reconfiguring vermont");
@@ -131,10 +136,11 @@ static void sig_USR1_handler(int x)
 {
 	int errno_save = errno;
 
-	printf("SIGUSR called\n");
+	DPRINTF("SIGUSR called");
 	reload_config = true;
 	
 	errno = errno_save;
+	wakeupMainThread();
 }
 
 /* just shallow right now */
@@ -148,15 +154,14 @@ static void sig_INT_handler(int x)
 		printf("second signal received, shutting down the hard way!");
 		exit(2);
 	}
-
+	
 	shutdownInitiated = true;
+
 	msg(MSG_FATAL, "got signal %d - exiting", x);
 
-	run_programm = false;
-	
+	initiateShutdown();
 	errno = errno_save;
 }
-
 
 //static void __cplusplus_really_sucks_andPeopleUsingVeryStrangeNamingConventionsWithLongLongExplicitBlaBlaAndfUnNycasE()
 //{

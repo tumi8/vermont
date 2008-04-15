@@ -38,6 +38,7 @@ private:
 	unsigned int capture_len;
 	bool offline;
 	bool replaceOfflineTimestamps;
+	bool offlineAutoExit;
 	float offlineSpeed;
 };
 

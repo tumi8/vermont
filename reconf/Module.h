@@ -30,13 +30,13 @@ public:
 	/**
 	 * notifies the module about immediate shutdown
 	 */
-	void notifyShutdown();
+	void notifyShutdown(bool shutdownProperly);
 	
 	/**
 	 * shuts down the module
-	 * function only returns when module is shut down properly!
+	 * function only returns when module is shut down!
 	 */
-	void shutdown(bool fail_if_not_running = true);
+	void shutdown(bool fail_if_not_running = true, bool shutdownProperly = false);
 	
 	/**
 	 * is called when reconfiguration of vermont is complete
@@ -80,7 +80,8 @@ protected:
 	virtual void performStart()	{ }
 	
 	/**
-	 * is called when module is shutdown
+	 * is called when module is shutdown, function may assume that all preceding modules are already
+	 * shut down and do not forward any elements any more
 	 * may be overwritten by subclasses
 	 */
 	virtual void performShutdown() { }
@@ -90,10 +91,27 @@ protected:
 	 * (workaround for g++ compiler bug)
 	 */
 	virtual bool getExitFlag() const;
+	
+	/**
+	 * returns current value of shutdownProperly
+	 * (workaround for g++ compiler bug)
+	 */
+	virtual bool getShutdownProperly() const;
+	
+	/**
+	 * notifies Vermont to be shut down immediately
+	 */
+	void shutdownVermont();
 
 	
 	bool exitFlag;		/**< notifies module that shutdown is imminent */
 	bool running;		/**< true if module is running, false if it is shut down */
+	/**
+	 * true if module has to shut down properly and to export all data to succeeding modules
+	 * ATTENTION: it is assumed that when this variable is set to true, no data will be
+	 * input to the module any more
+	 */
+	bool shutdownProperly; 
 	
 };
 

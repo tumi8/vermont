@@ -154,6 +154,12 @@ void BaseAggregator::exporterThread()
 		}
 	}
 	
+	if (getShutdownProperly()) {
+		for (size_t i = 0; i < rules->count; i++) {
+			rules->rule[i]->hashtable->expireFlows(true);
+		}
+	}
+	
 	unregisterCurrentThread();
 }
 

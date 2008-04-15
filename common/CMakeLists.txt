@@ -22,5 +22,6 @@ ADD_LIBRARY(common
 	msg.cc
 	ThreadCPUInterface.cpp
 	Sensor.cpp
+	VermontControl.cpp
 )
 

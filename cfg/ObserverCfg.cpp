@@ -23,6 +23,7 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 	capture_len(0),
 	offline(false),
 	replaceOfflineTimestamps(false),
+	offlineAutoExit(true),
 	offlineSpeed(1.0)
 {
 	if (!elem) return;  // needed because of table inside ConfigManager
@@ -44,9 +45,11 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 			replaceOfflineTimestamps = getInt("replaceTimestamps")>0;
 		} else if (e->matches("offlineSpeed")) {
 			offlineSpeed = getDouble("offlineSpeed");
+		} else if (e->matches("offlineAutoExit")) {
+			offlineAutoExit = getInt("offlineAutoExit")>0;
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unkown observer config statement %s\n", e->getName().c_str());
+			msg(MSG_FATAL, "Unknown observer config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
@@ -63,6 +66,7 @@ Observer* ObserverCfg::createInstance()
 {
 	instance = new Observer(interface, offline);
 	instance->setOfflineSpeed(offlineSpeed);
+	instance->setOfflineAutoExit(offlineAutoExit);
 	if (offline) instance->replaceOfflineTimestamps();
 
 	if (capture_len) {

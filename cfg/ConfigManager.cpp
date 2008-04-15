@@ -155,11 +155,11 @@ void ConfigManager::shutdown()
 	lockGraph();
 	std::vector<CfgNode*> topoNodes = graph->topoSort();
 
-	// shutdown the thread
+	// shutdown modules
 	for (size_t i = 0; i < topoNodes.size(); i++) {
 		Cfg* cfg = topoNodes[i]->getCfg();
 		msg(MSG_INFO, "shutting down module %s (id=%u)", cfg->getName().c_str(), cfg->getID());
-		cfg->shutdown(false);
+		cfg->shutdown(true, true);
 	}
 
 	// disconnect the modules

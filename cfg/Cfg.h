@@ -109,7 +109,7 @@ public:
 
 	/* start/stop the instance */
 	virtual void start(bool fail_if_already_running = true) = 0;
-	virtual void shutdown(bool fail_if_not_running = true) = 0;
+	virtual void shutdown(bool fail_if_not_running = true, bool finishProperly = false) = 0;
 
 	/* see in Module for the documentation for these functions */
 	virtual void postReconfiguration() = 0;
@@ -197,14 +197,14 @@ public:
 	}
 
 	/* stops the module */
-	virtual void shutdown(bool fail_if_not_running = true)
+	virtual void shutdown(bool fail_if_not_running = true, bool shutdownProperly = false)
 	{
 		if (queue)
-			queue->shutdown(fail_if_not_running);
+			queue->shutdown(fail_if_not_running, shutdownProperly);
 		if (instance)
-			instance->shutdown(fail_if_not_running);
+			instance->shutdown(fail_if_not_running, shutdownProperly);
 		if (splitter)
-			splitter->shutdown(fail_if_not_running);
+			splitter->shutdown(fail_if_not_running, shutdownProperly);
 	}
 
 	/** returns the module instance (if neccessary, it will create it */

@@ -88,6 +88,7 @@ protected:
 	uint32_t statSentPackets; /**< Statistics: total number of packets sent over the network */
 	uint32_t statPacketsInFlows; /**< Statistics: total number of packets within flows */
 
+	void performShutdown(); 
 
 private:
 

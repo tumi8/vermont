@@ -61,11 +61,26 @@ public:
 		thread.run(this);
 	}
 	
+	/**
+	 * attention: this function assumes, that *no* elements will be inserted into the queue any more!
+	 */
 	virtual void performShutdown()
 	{
-		queue.notifyShutdown();
-		Adapter<T>::connected.shutdown();
+		if (!Module::getShutdownProperly()) {
+			// this is an unclean shutdown, as elements in the queue will be lost
+			queue.notifyShutdown();
+			Adapter<T>::connected.shutdown();
+		} else {
+			if (queue.getCount()==0) {
+				queue.notifyShutdown();
+			}
+		}
+		
 		thread.join();
+		
+		if (Module::getShutdownProperly()) {
+			Adapter<T>::connected.shutdown();
+		}
 		
 		// remove all the dangling TimoutEntry's
 		// we can't process them anyway without a thread running
@@ -178,7 +193,11 @@ private:
 		
 		Module::registerCurrentThread();
 		
-		while (!Module::getExitFlag()) {
+		while (true) {
+			if (Module::getExitFlag()) {
+				if (!Module::getShutdownProperly()) break;
+				else if (queue.getCount() == 0) break;
+			}
 			struct timespec nexttimeout;
 			if (!processTimeouts(nexttimeout)) {
 				if (!queue.pop(&element)) {

@@ -48,6 +48,7 @@ public:
 	virtual void performStart();
 	virtual void performShutdown();
 	bool setCaptureLen(int x);
+	void setOfflineAutoExit(bool autoexit);
 	int getCaptureLen();
 	bool setPacketTimeout(int ms);
 	int getPacketTimeout();
@@ -118,6 +119,7 @@ protected:
 	bool replaceTimestampsFromFile;
 	uint16_t stretchTimeInt; // 1 means no timing change, 0 means that stretchTimes (float) is used
 	float stretchTime;
+	bool autoExit;
 	
 	uint32_t statTotalLostPackets;
 	uint32_t statTotalRecvPackets;

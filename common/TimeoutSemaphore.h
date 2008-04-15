@@ -28,7 +28,7 @@ private:
 	static const int STANDARD_TIMEOUT = 100; // when no timeout is given by calling function, this amount of ms will be waited until the exitFlag is checked
 	sem_t* sem;
 
-	bool exitFlag;	/**< is set to true when semaphore is to be shut down **/
+	bool exitFlag;	/**< is set to true when semaphore is to be fshut down **/
 	
 	struct timespec timeout;  /** used by wait to limit access to time-functions */
 

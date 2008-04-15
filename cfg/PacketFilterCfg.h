@@ -75,7 +75,7 @@ public:
 	 */
 	virtual void transferInstance(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
-	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void shutdown(bool fail_if_not_running = true, bool shutdownProperly = false) { THROWEXCEPTION("Not supported"); }
 	virtual void postReconfiguration() { THROWEXCEPTION("Not supported"); }
 	virtual void onReconfiguration1() { THROWEXCEPTION("Not supported"); }
 	virtual void onReconfiguration2() { THROWEXCEPTION("Not supported"); }
@@ -137,7 +137,7 @@ public:
 	 */
 	virtual void transferInstance(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
-	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void shutdown(bool fail_if_not_running = true, bool shutdownProperly = false) { THROWEXCEPTION("Not supported"); }
 	virtual void postReconfiguration() { THROWEXCEPTION("Not supported"); }
 	virtual void onReconfiguration1() { THROWEXCEPTION("Not supported"); }
 	virtual void onReconfiguration2() { THROWEXCEPTION("Not supported"); }
@@ -187,7 +187,7 @@ public:
 	 */
 	virtual void transferInstance(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
-	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void shutdown(bool fail_if_not_running = true, bool shutdownProperly = false) { THROWEXCEPTION("Not supported"); }
 	virtual void postReconfiguration() { THROWEXCEPTION("Not supported"); }
 	virtual void onReconfiguration1() { THROWEXCEPTION("Not supported"); }
 	virtual void onReconfiguration2() { THROWEXCEPTION("Not supported"); }
@@ -239,7 +239,7 @@ public:
 	 */
 	virtual void transferInstance(Cfg* other) { THROWEXCEPTION("Not supported"); }
 	virtual void start(bool fail_if_already_running = true) { THROWEXCEPTION("Not supported"); }
-	virtual void shutdown(bool fail_if_not_running = true) { THROWEXCEPTION("Not supported"); }
+	virtual void shutdown(bool fail_if_not_running = true, bool shutdownProperly = false) { THROWEXCEPTION("Not supported"); }
 	virtual void postReconfiguration() { THROWEXCEPTION("Not supported"); }
 	virtual void onReconfiguration1() { THROWEXCEPTION("Not supported"); }
 	virtual void onReconfiguration2() { THROWEXCEPTION("Not supported"); }

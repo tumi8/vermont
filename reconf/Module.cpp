@@ -1,5 +1,8 @@
 #include "Module.h"
 
+#include "common/VermontControl.h"
+
+#include <signal.h>
 
 Module::Module() 
 	: exitFlag(false), running(false)
@@ -25,19 +28,20 @@ void Module::start(bool fail_if_already_running)
 	performStart();
 }
 
-void Module::notifyShutdown()
+void Module::notifyShutdown(bool shutdownProperly)
 {
+	this->shutdownProperly = shutdownProperly; 
 	exitFlag = true;
 }
 
-void Module::shutdown(bool fail_if_not_running)
+void Module::shutdown(bool fail_if_not_running, bool shutdownProperly)
 {
 	if (!running && !fail_if_not_running)
 		return;
 
 	ASSERT(running, "module must be in state running when it is shut down");
 	
-	notifyShutdown();
+	notifyShutdown(shutdownProperly);
 	performShutdown();
 	running = false;
 }
@@ -47,5 +51,15 @@ bool Module::getExitFlag() const
 	return exitFlag;
 }
 
+bool Module::getShutdownProperly() const
+{
+	return shutdownProperly;
+}
+
+void Module::shutdownVermont()
+{
+	DPRINTF("initiating Vermont shutdown");
+	::initiateShutdown();
+}
 
 

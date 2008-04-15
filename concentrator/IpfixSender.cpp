@@ -555,6 +555,14 @@ void IpfixSender::registerTimeout()
 }
 
 /**
+ * sends all cached records
+ */
+void IpfixSender::performShutdown()
+{
+	sendRecords(true);
+}
+
+/**
  * during reconfiguration ensure, that all cached flows are exported
  */
 void IpfixSender::onReconfiguration1()

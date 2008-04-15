@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <sstream>
+#include <math.h>
 
 /* Code adopted from tcpreplay: */
 /* subtract uvp from tvp and store in vvp */
@@ -84,7 +85,8 @@ Observer::Observer(const std::string& interface, bool offline) : thread(Observer
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0), 
 	lastProcessedPackets(0), 
 	captureInterface(NULL), fileName(NULL), replaceTimestampsFromFile(false),
-	stretchTimeInt(1), stretchTime(1.0), statTotalLostPackets(0), statTotalRecvPackets(0)
+	stretchTimeInt(1), stretchTime(1.0), autoExit(true),
+	statTotalLostPackets(0), statTotalRecvPackets(0)
 
 {
 	if(offline) {
@@ -232,8 +234,6 @@ void *Observer::observerThread(void *arg)
 		struct timeval wait_val, delta_now, delta_file, delta_to_be;
 		struct timespec wait_spec;
 		bool firstPacket = true;
-		// let's wait one seconds until other modules are ready
-		sleep(1);
 		// read-from-file loop
 		while(!obs->exitFlag) {
 
@@ -277,9 +277,9 @@ void *Observer::observerThread(void *arg)
 					if(nanosleep(&wait_spec, NULL) != 0)
 						msg(MSG_INFO, "Observer: nanosleep returned nonzero value");
 				}
-				else if (delta_now.tv_sec > (delta_to_be.tv_sec + 1))
+				else if (delta_now.tv_sec > (delta_to_be.tv_sec + 1) && obs->stretchTime!=INFINITY)
 				    msg(MSG_ERROR, "Observer: reading from file is more than 1 second behind schedule!");
-  	}
+			}
 
 			// optionally replace the timestamp with current time
 			if (obs->replaceTimestampsFromFile)
@@ -313,6 +313,12 @@ void *Observer::observerThread(void *arg)
 				}
 			}
 		}
+	}
+	
+	if (obs->readFromFile && obs->autoExit) {
+		// notify Vermont to shut down
+		DPRINTF("notifying Vermont to shut down, as all PCAP file data was read");
+		obs->shutdownVermont();
 	}
 	
 	msg(MSG_DEBUG, "exiting observer thread");
@@ -527,6 +533,11 @@ void Observer::setOfflineSpeed(float m)
 	else
 		stretchTimeInt = 0;
 		
+}
+
+void Observer::setOfflineAutoExit(bool autoexit)
+{
+	autoExit = autoexit;
 }
 
 bool Observer::setPacketTimeout(int ms)
