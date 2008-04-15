@@ -20,7 +20,7 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 	: CfgHelper<Observer, ObserverCfg>(elem, "observer"),
 	interface(),
 	pcap_filter(),
-	capture_len(0),
+	capture_len(PCAP_DEFAULT_CAPTURE_LENGTH),
 	offline(false),
 	replaceOfflineTimestamps(false),
 	offlineAutoExit(true),
@@ -47,14 +47,15 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 			offlineSpeed = getDouble("offlineSpeed");
 		} else if (e->matches("offlineAutoExit")) {
 			offlineAutoExit = getInt("offlineAutoExit")>0;
+		} else if (e->matches("captureLength")) {
+			capture_len = getInt("captureLength");	
+			msg(MSG_ERROR, "capturelen: %d", capture_len);
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown observer config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
-
-	capture_len = getInt("capture_len", 0);
 }
 
 ObserverCfg::~ObserverCfg()
@@ -67,7 +68,7 @@ Observer* ObserverCfg::createInstance()
 	instance = new Observer(interface, offline);
 	instance->setOfflineSpeed(offlineSpeed);
 	instance->setOfflineAutoExit(offlineAutoExit);
-	if (offline) instance->replaceOfflineTimestamps();
+	if (replaceOfflineTimestamps) instance->replaceOfflineTimestamps();
 
 	if (capture_len) {
 		if(!instance->setCaptureLen(capture_len)) {
