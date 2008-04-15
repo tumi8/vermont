@@ -49,7 +49,7 @@ IpfixPayloadWriter::~IpfixPayloadWriter()
 
 void IpfixPayloadWriter::onDataDataRecord(IpfixDataDataRecord* record)
 {
-	if (noConnections<connCounter) {
+	if (noConnections<=connCounter) {
 		record->removeReference();
 		return;
 	}
@@ -57,7 +57,7 @@ void IpfixPayloadWriter::onDataDataRecord(IpfixDataDataRecord* record)
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 	
-	conn.swapIfNeeded();
+	bool swapped = conn.swapIfNeeded();
 	
 	char filename[2][100];
 	snprintf(filename[0], 100, "%s-%02d-%s.%d-%s.%d", filenamePrefix.c_str(), 
@@ -78,17 +78,21 @@ void IpfixPayloadWriter::onDataDataRecord(IpfixDataDataRecord* record)
 	char* payload[2] = {0, 0};
 	IpfixRecord::FieldInfo* fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayload, 0);
 	if (fi != 0) {
-		payload[0] = (char*)(record->data + fi->offset + 4);
+		payload[0] = (char*)(record->data + fi->offset);
 	} else {
 		msg(MSG_INFO, "failed to extract payload for flow record, continuing anyway ...");
 	}
-	uint32_t plen = fi->type.length-4;
-
+	uint32_t plen = fi->type.length;
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayload, 0);
 	if (fi != 0) {
-		payload[1] = (char*)(record->data + fi->offset + 4);
+		payload[1] = (char*)(record->data + fi->offset);
 	} else {
 		msg(MSG_INFO, "failed to extract payload for flow record, continuing anyway ...");
+	}
+	if (swapped) {
+		char* tmp = payload[0];
+		payload[0] = payload[1];
+		payload[1] = tmp;
 	}
 	
 	// save payload in two files

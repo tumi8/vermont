@@ -73,7 +73,7 @@ class Connection
 		uint32_t getHash(bool to, uint32_t maxval);
 		void aggregate(Connection* c, uint32_t expireTime, bool to);
 		void swapDataFields();
-		void swapIfNeeded();
+		bool swapIfNeeded();
 };
 
 #endif

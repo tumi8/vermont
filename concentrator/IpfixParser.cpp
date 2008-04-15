@@ -722,8 +722,7 @@ static void printUint(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data
 
 static void printFrontPayload(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) 
 {
-	printf("SEQ:%u,'", *reinterpret_cast<uint32_t*>(data));
-	for (uint32_t i=4; i<type.length; i++) {
+	for (uint32_t i=0; i<type.length; i++) {
 		char c = data[i];
 		if (isprint(c)) printf("%c", c);
 		else printf(".");

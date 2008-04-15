@@ -145,11 +145,16 @@ void Connection::swapDataFields()
  * a nice little function here: it tries to determine the host which initiated the
  * connection and, if needed, swaps all data so that the initiating host is
  * specified as source host
+ * @returns true if fields were swapped
  */
-void Connection::swapIfNeeded()
+bool Connection::swapIfNeeded()
 {
 	// now try the starting time
-	if (srcTimeStart>dstTimeStart) swapDataFields();
+	if (srcTimeStart>dstTimeStart) {
+		swapDataFields();
+		return true;
+	}
+	return false;
 }
 
 string Connection::printTcpControlBits(uint8_t bits)

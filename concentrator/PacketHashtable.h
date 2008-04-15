@@ -52,6 +52,8 @@ private:
 		bool varSrcIdx; /**< specifies if the index in the raw packet data is variable between packets relative to Packet::netHeader*/
 
 		Rule::Field::Modifier modifier; /**< modifier when copying field (such as a mask) */
+		
+		uint32_t privDataOffset; /**< offset for private data inside flow, if available */
 
 		void (*copyDataFunc)(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*); /**< function which is able to copy data from raw packet to ipfix field */
 
@@ -75,13 +77,13 @@ private:
 	ExpHelperTable expHelperTable;
 	
 	void buildExpHelperTable();
-	static void copyDataEqualLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
-	static void copyDataGreaterLengthIPNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
-	static void copyDataGreaterLengthIPMask(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
-	static void copyDataGreaterLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
-	static void copyDataFrontPayload(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
-	static void copyDataSetOne(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd);
-	static void aggregateFrontPayload(IpfixRecord::Data* dst, const Packet* src, const ExpFieldData* efd, bool firstpacket = false);
+	static void copyDataEqualLengthNoMod(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void copyDataGreaterLengthIPNoMod(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void copyDataGreaterLengthIPMask(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void copyDataGreaterLengthNoMod(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void copyDataFrontPayload(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void copyDataSetOne(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void aggregateFrontPayload(IpfixRecord::Data* bucket, const Packet* src, const ExpFieldData* efd, bool firstpacket = false);
 	void (*getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*);
 	void fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index);
 	uint32_t expCalculateHash(const IpfixRecord::Data* data);

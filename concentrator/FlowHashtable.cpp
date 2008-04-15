@@ -54,6 +54,7 @@ void FlowHashtable::genBiflowStructs()
 			case IPFIX_ETYPEID_revPacketDeltaCount:
 			case IPFIX_ETYPEID_revTcpControlBits:
 			case IPFIX_ETYPEID_revFlowEndSeconds:
+			case IPFIX_ETYPEID_revFrontPayload:
 				mapRevAggIndizes[fi->type.id] = i;
 				break;
 		}
@@ -92,10 +93,14 @@ void FlowHashtable::genBiflowStructs()
 /**
  * Adds (or otherwise aggregates) @c deltaData to @c baseData
  */
-int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* baseData, 
-								  IpfixRecord::Data* deltaData) {
+int FlowHashtable::aggregateField(IpfixRecord::FieldInfo* basefi, IpfixRecord::FieldInfo* deltafi, IpfixRecord::Data* base, 
+								  IpfixRecord::Data* delta) {
+	IpfixRecord::Data* baseData = base+basefi->offset;
+	IpfixRecord::Data* deltaData = delta+deltafi->offset;
+	IpfixRecord::FieldInfo::Type* type = &basefi->type;
+	uint32_t* plen;
+	
 	switch (type->id) {
-
 		case IPFIX_TYPEID_flowStartSysUpTime:
 		case IPFIX_TYPEID_flowStartSeconds:
 		case IPFIX_TYPEID_flowStartMicroSeconds:
@@ -197,6 +202,16 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecor
 			ASSERT(type->length==1, "unsupported length for type");
 			*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
 			break;
+			
+		case IPFIX_ETYPEID_frontPayload:
+		case IPFIX_ETYPEID_revFrontPayload:
+			plen = reinterpret_cast<uint32_t*>(base+basefi->privDataOffset+4);
+			// only copy payload if it was not inserted into the field yet
+			if (*plen == 0) {
+				memcpy(baseData, deltaData, type->length);
+				*plen = *reinterpret_cast<uint32_t*>(delta+deltafi->privDataOffset+4);
+			}
+			break;
 
 		default:
 			DPRINTF("non-aggregatable type: %d", type->id);
@@ -264,11 +279,15 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revTcpControlBits);
 					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					break;
+				case IPFIX_ETYPEID_frontPayload:
+					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFrontPayload);
+					if (iter != mapRevAggIndizes.end()) idx = iter->second;
+					break;
 			}
-			aggregateField(&dataTemplate->fieldInfo[idx].type, baseFlow + dataTemplate->fieldInfo[idx].offset, flow + fi->offset);
+			aggregateField(&dataTemplate->fieldInfo[idx], fi, baseFlow, flow);
 			
 		} else {
-			aggregateField(&fi->type, baseFlow + fi->offset, flow + fi->offset);
+			aggregateField(fi, fi, baseFlow, flow);
 		}
 	}
 
@@ -408,33 +427,55 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
  * Copies \c srcData to \c dstData applying \c modifier.
  * Takes care to pad \c srcData with zero-bytes in case it is shorter than \c dstData.
  */
-void FlowHashtable::copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData, IpfixRecord::FieldInfo::Type* srcType, IpfixRecord::Data* srcData, Rule::Field::Modifier modifier)
+void FlowHashtable::copyData(IpfixRecord::FieldInfo* dstFI, IpfixRecord::Data* dst, IpfixRecord::FieldInfo* srcFI, IpfixRecord::Data* src, Rule::Field::Modifier modifier)
 {
+	IpfixRecord::FieldInfo::Type* dstType = &dstFI->type;
+	IpfixRecord::FieldInfo::Type* srcType = &srcFI->type;
+	IpfixRecord::Data* dstData = dst+dstFI->offset;
+	IpfixRecord::Data* srcData = src+srcFI->offset;
 	if((dstType->id != srcType->id) || (dstType->eid != srcType->eid)) {
 		DPRINTF("copyData: Tried to copy field to destination of different type\n");
 		return;
 	}
 
 	/* Copy data, care for length differences */
+	uint32_t copylen = 0;
 	if(dstType->length == srcType->length) {
-		memcpy(dstData, srcData, srcType->length);
+		copylen = srcType->length;
+		memcpy(dstData, srcData, copylen);
 
 	} else if(dstType->length > srcType->length) {
-
+		copylen = srcType->length;
 		/* TODO: We simply pad with zeroes - will this always be correct? */
-		if((dstType->id == IPFIX_TYPEID_sourceIPv4Address) || (dstType->id == IPFIX_TYPEID_destinationIPv4Address)) {
-			/* Fields of type IPv4Address-type are padded on the right */
-			bzero(dstData, dstType->length);
-			memcpy(dstData, srcData, srcType->length);
-		} else {
-			/* TODO: all other types are padded on the left, i.e. the "big" end */
-			bzero(dstData, dstType->length);
-			memcpy(dstData + dstType->length - srcType->length, srcData, srcType->length);
+		switch (dstType->id) {
+			/* Fields of type IPv4Address-type and payload are padded on the right */
+			case IPFIX_TYPEID_sourceIPv4Address:
+			case IPFIX_TYPEID_destinationIPv4Address:
+			case IPFIX_ETYPEID_frontPayload:
+			case IPFIX_ETYPEID_revFrontPayload:
+				bzero(dstData+copylen, dstType->length-copylen);
+				memcpy(dstData, srcData, copylen);
+				break;
+				
+			default:
+				bzero(dstData, dstType->length-srcType->length);
+				memcpy(dstData + dstType->length - srcType->length, srcData, copylen);
+				break;
 		}
 
 	} else {
-		DPRINTF("Target buffer too small. Buffer expected %s of length %d, got one with length %dn", typeid2string(dstType->id), srcType->length, dstType->length);
-		return;
+		if (dstType->id == IPFIX_ETYPEID_frontPayload || dstType->id == IPFIX_ETYPEID_revFrontPayload) {
+			copylen = dstType->length;
+			memcpy(dstData, srcData, copylen);
+		} else {
+			DPRINTF("Target buffer too small. Buffer expected %s of length %d, got one with length %dn", typeid2string(dstType->id), srcType->length, dstType->length);
+			return;
+		}
+	}
+	
+	// save used length of payload field
+	if (dstType->id == IPFIX_ETYPEID_frontPayload || dstType->id == IPFIX_ETYPEID_revFrontPayload) {
+		*reinterpret_cast<uint32_t*>(&dst[dstFI->privDataOffset+4]) = copylen;
 	}
 
 	/* Apply modifier */
@@ -509,12 +550,15 @@ void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRe
 
 	/* Create data block to be inserted into buffer... */
 	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength+privDataLength]);
+	
+	// set private data fields to zero
+	memset(htdata.get()+fieldLength, 0, privDataLength);
 
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 		IpfixRecord::FieldInfo* tfi = ti->getFieldInfo(&hfi->type);
 
-		if(!tfi) {
+		if (!tfi) {
 			DPRINTF("Flow to be buffered did not contain %s field\n", typeid2string(hfi->type.id));
 			
 			// if field was not copied, fill it with 0
@@ -525,7 +569,7 @@ void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRe
 
 		DPRINTFL(MSG_VDEBUG, "copyData for type %d, offset %x, starting from pointer %X", tfi->type.id, tfi->offset, data+tfi->offset);
 		DPRINTFL(MSG_VDEBUG, "copyData to offset %X", hfi->offset);
-		copyData(&hfi->type, htdata.get() + hfi->offset, &tfi->type, data + tfi->offset, fieldModifier[i]);
+		copyData(hfi, htdata.get(), tfi, data, fieldModifier[i]);
 
 		/* copy associated mask, should there be one */
 		switch (hfi->type.id) {
@@ -591,6 +635,9 @@ void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti,
 
 	/* Create data block to be inserted into buffer... */
 	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength+privDataLength]);
+	
+	// set private data fields to zero
+	memset(htdata.get()+fieldLength, 0, privDataLength);
 
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
@@ -599,9 +646,10 @@ void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti,
 		
 		/* Copy from matching variable field, should it exist */
 		IpfixRecord::FieldInfo* tfi = ti->getFieldInfo(&hfi->type);
-		if(tfi) {
+		if (tfi) {
+			// this path is normal for normal flow data records!
 			fieldFilled = true;
-			copyData(&hfi->type, htdata.get() + hfi->offset, &tfi->type, data + tfi->offset, fieldModifier[i]);
+			copyData(hfi, htdata.get(), tfi, data, fieldModifier[i]);
 
 			/* copy associated mask, should there be one */
 			switch (hfi->type.id) {
@@ -645,9 +693,9 @@ void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti,
 
 		/* No matching variable field. Copy from matching fixed field, should it exist */
 		tfi = ti->getDataInfo(&hfi->type);
-		if(tfi) {
+		if (tfi) {
 			fieldFilled = true;
-			copyData(&hfi->type, htdata.get() + hfi->offset, &tfi->type, ti->data + tfi->offset, fieldModifier[i]);
+			copyData(hfi, htdata.get(), tfi, ti->data, fieldModifier[i]);
 
 			/* copy associated mask, should there be one */
 			switch (hfi->type.id) {

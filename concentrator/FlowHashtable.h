@@ -37,8 +37,8 @@ private:
 	 */
 	map<uint32_t, uint32_t> mapRevAggIndizes;
 	
-	int aggregateField(IpfixRecord::FieldInfo::Type* type, IpfixRecord::Data* baseData, 
-			IpfixRecord::Data* deltaData);
+	int aggregateField(IpfixRecord::FieldInfo* basefi, IpfixRecord::FieldInfo* deltafi, IpfixRecord::Data* base, 
+		  IpfixRecord::Data* delta);
 	int aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data* flow, bool reverse);
 	uint32_t getHash(IpfixRecord::Data* data, bool reverse);	
 	int equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2, bool reverse);
@@ -46,9 +46,8 @@ private:
 	void bufferDataBlock(boost::shared_array<IpfixRecord::Data> data);
 	int equalRaw(IpfixRecord::FieldInfo::Type* data1Type, IpfixRecord::Data* data1, 
 			IpfixRecord::FieldInfo::Type* data2Type, IpfixRecord::Data* data2);
-	void copyData(IpfixRecord::FieldInfo::Type* dstType, IpfixRecord::Data* dstData, 
-			IpfixRecord::FieldInfo::Type* srcType, IpfixRecord::Data* srcData, 
-			Rule::Field::Modifier modifier);
+	void copyData(IpfixRecord::FieldInfo* dstFI, IpfixRecord::Data* dst, 
+			IpfixRecord::FieldInfo* srcFI, IpfixRecord::Data* src, Rule::Field::Modifier modifier);
 	void genBiflowStructs();
 };
 

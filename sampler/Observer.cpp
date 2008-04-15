@@ -492,6 +492,7 @@ void Observer::performShutdown()
 /* you cannot change the caplen of an already running observer */
 bool Observer::setCaptureLen(int x)
 {
+	msg(MSG_DEBUG, "Observer: setting capture length to %d bytes", x);
 	/* we cant change pcap caplen if alredy pcap_open() called */
 	if(ready) {
 		THROWEXCEPTION("changing capture len on-the-fly is not supported by pcap");

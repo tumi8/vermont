@@ -108,7 +108,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 	
 	// add private data offsets for fields
 	privDataLength = 0;
-	for (uint32_t i=0; i<dataTemplate->fieldCount++; i++) {
+	for (uint32_t i=0; i<dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 		uint32_t len = getPrivateDataLength(fi->type);
 		if (len>0) {

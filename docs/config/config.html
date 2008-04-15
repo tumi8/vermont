@@ -92,6 +92,13 @@
 					<td>Interface PCAP listens to. Do not use in combination with parameter filename.</td>
 				</tr>
 				<tr>
+					<td>captureLength</td>
+					<td>128</td>
+					<td>Sets the capture length of each packet. Packets bigger than that size are truncated.
+						ATTENTION: if payload is analyzed in later modules, this parameter needs to be large
+						enough!</td>
+				</tr>
+				<tr>
 					<td>filename</td>
 					<td>none</td>
 					<td>Must be specified if Vermont needs to read from file and contains its filename.

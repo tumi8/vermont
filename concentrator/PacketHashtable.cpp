@@ -27,29 +27,33 @@ PacketHashtable::~PacketHashtable()
  * those copy data from the original raw packet into the ipfix bucket in the hashtable
  * (always called, when a new bucket has to be created for a new flow)
  */
-void PacketHashtable::copyDataEqualLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
+void PacketHashtable::copyDataEqualLengthNoMod(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd)
 {
+	IpfixRecord::Data* dst = bucket+efd->dstIndex;
 	memcpy(dst, src, efd->srcLength);
 }
-void PacketHashtable::copyDataGreaterLengthIPNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
+void PacketHashtable::copyDataGreaterLengthIPNoMod(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd)
 {
+	IpfixRecord::Data* dst = bucket+efd->dstIndex;
 	bzero(dst+efd->srcLength, efd->dstLength-efd->srcLength);
 	memcpy(dst, src, efd->srcLength);
 }
-void PacketHashtable::copyDataGreaterLengthNoMod(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
+void PacketHashtable::copyDataGreaterLengthNoMod(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd)
 {
+	IpfixRecord::Data* dst = bucket+efd->dstIndex;
 	bzero(dst, efd->dstLength-efd->srcLength);
 	memcpy(dst+efd->dstLength-efd->srcLength, src, efd->srcLength);
 }
-void PacketHashtable::copyDataSetOne(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
+void PacketHashtable::copyDataSetOne(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd)
 {
+	IpfixRecord::Data* dst = bucket+efd->dstIndex;
 	memset(dst, 0, efd->dstLength);
 	// set last byte of array to one (network byte order!)
 	dst[efd->dstLength-1] = 1;
 }
-void PacketHashtable::copyDataFrontPayload(IpfixRecord::Data* dst, const IpfixRecord::Data* src, ExpFieldData* efd)
+void PacketHashtable::copyDataFrontPayload(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd)
 {
-	aggregateFrontPayload(dst, reinterpret_cast<const Packet*>(src), efd, true);
+	aggregateFrontPayload(bucket, reinterpret_cast<const Packet*>(src), efd, true);
 }
 
 /**
@@ -58,8 +62,9 @@ void PacketHashtable::copyDataFrontPayload(IpfixRecord::Data* dst, const IpfixRe
  * will overwrite data
  * ATTENTION: no stream reassembly is performed!
  */
-void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* dst, const Packet* src, const ExpFieldData* efd, bool firstpacket)
+void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, const Packet* src, const ExpFieldData* efd, bool firstpacket)
 {
+	IpfixRecord::Data* dst = bucket+efd->dstIndex;
 	uint32_t seq = ntohl(*reinterpret_cast<const uint32_t*>(src->data+src->transportHeaderOffset+4));
 	DPRINTFL(MSG_VDEBUG, "seq:%u", seq);
 	
@@ -68,24 +73,27 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* dst, const Packet
 			// SYN packet, so sequence number will be increased without any payload
 			seq++;
 		}
-		*reinterpret_cast<uint32_t*>(dst) = seq;
-		memset(dst+4, 0, efd->dstLength-4);
+		// store sequence number and length of captured payload in private data
+		*reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset) = seq;
+		*reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4) = 0;
+		memset(dst, 0, efd->dstLength);
 	}
 	
 	// ignore packets that do either contain no payload or were not interpreted correctly
 	if (src->payloadOffset==0 || src->payloadOffset==src->transportHeaderOffset) return;
 	
 	uint16_t plen = src->data_length-src->payloadOffset;
-	uint32_t fseq = *reinterpret_cast<const uint32_t*>(dst);
+	uint32_t fseq = *reinterpret_cast<const uint32_t*>(bucket+efd->privDataOffset);
 	
 	DPRINTFL(MSG_VDEBUG, "plen:%u, fseq:%u, seq:%u, dstleng:%u", plen, fseq, seq, efd->dstLength);
 
-	if (seq-fseq+4<efd->dstLength) {
+	if (seq-fseq<efd->dstLength) {
 		uint32_t pos = seq-fseq;
-		uint32_t len = efd->dstLength-4-pos;
+		uint32_t len = efd->dstLength-pos;
 		if (plen<len) len = plen;
-		DPRINTFL(MSG_VDEBUG, "inserting payload data at %u with elngth %u", pos, len);
-		memcpy(dst+4+pos, src->data+src->payloadOffset, len);
+		DPRINTFL(MSG_VDEBUG, "inserting payload data at %u with length %u", pos, len);
+		memcpy(dst+pos, src->data+src->payloadOffset, len);
+		*reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4) += len;
 	}
 }
 
@@ -297,6 +305,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo
 	efd->dstLength = hfi->type.length;
 	efd->modifier = fieldModifier;
 	efd->varSrcIdx = isRawPacketPtrVariable(hfi->type);
+	efd->privDataOffset = hfi->privDataOffset;
 
 	// initialize static source index, if current field does not have a variable pointer
 	if (!efd->varSrcIdx) {
@@ -429,7 +438,7 @@ boost::shared_array<IpfixRecord::Data> PacketHashtable::buildBucketData(const Pa
 	// copy all data ...
 	for (int i=0; i<expHelperTable.efdLength; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[i];
-		efd->copyDataFunc(&data[efd->dstIndex], reinterpret_cast<const uint8_t*>(p->netHeader)+efd->srcIndex, efd);
+		efd->copyDataFunc(data, reinterpret_cast<const uint8_t*>(p->netHeader)+efd->srcIndex, efd);
 	}
 
 	return htdata;
@@ -439,8 +448,10 @@ boost::shared_array<IpfixRecord::Data> PacketHashtable::buildBucketData(const Pa
  * aggregates the given field of the raw packet data into a hashtable bucket
  * (part of express aggregator)
  */
-void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Data* baseData, const IpfixRecord::Data* deltaData)
+void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Data* bucket, const IpfixRecord::Data* deltaData)
 {
+	IpfixRecord::Data* baseData = bucket+efd->dstIndex;
+
 	switch (efd->typeId) {
 		case IPFIX_TYPEID_flowStartSeconds:
 			*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
@@ -471,7 +482,7 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 			break;
 			
 		case IPFIX_ETYPEID_frontPayload:
-			aggregateFrontPayload(baseData, reinterpret_cast<const Packet*>(deltaData), efd);
+			aggregateFrontPayload(bucket, reinterpret_cast<const Packet*>(deltaData), efd);
 			break;
 
 			// no other types needed, as this is only for raw field input
@@ -491,7 +502,7 @@ void PacketHashtable::expAggregateFlow(IpfixRecord::Data* bucket, const Packet* 
 	for (int i=0; i<expHelperTable.noAggFields; i++) {
 		ExpFieldData* efd = &expHelperTable.expFieldData[i];
 
-		expAggregateField(efd, bucket+efd->dstIndex, p->netHeader+efd->srcIndex);
+		expAggregateField(efd, bucket, p->netHeader+efd->srcIndex);
 	}
 }
 
