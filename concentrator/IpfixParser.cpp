@@ -486,11 +486,11 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				DPRINTF("Got a Data Set that contained not a single full record");
 			}
 			else while (record < endOfSet) {
-			    //FIXME: We need to use a copy of the TemplateInfo here since we overwrite field length values
 				int recordLength=0;
 				int fieldLength;
 				int i;
 				bool incomplete = false;
+				ti = boost::shared_ptr<IpfixRecord::TemplateInfo>(new IpfixRecord::TemplateInfo(*bt->templateInfo.get()));
 				for (i = 0; i < ti->fieldCount; i++) {
 					if (!ti->fieldInfo[i].type.isVariableLength) {
 						fieldLength = ti->fieldInfo[i].type.length;
@@ -561,11 +561,11 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				DPRINTF("Got a Data Set that contained not a single full record");
 			}
 			else while (record < endOfSet) {
-			    //FIXME: We need to use a copy of the TemplateInfo here since we overwrite field length values
 				int recordLength=0;
 				int fieldLength;
 				int i;
 				bool incomplete = false;
+				ti = boost::shared_ptr<IpfixRecord::OptionsTemplateInfo>(new IpfixRecord::OptionsTemplateInfo(*bt->optionsTemplateInfo.get()));
 				for (i = 0; i < ti->scopeCount; i++) {
 					if (!ti->scopeInfo[i].type.isVariableLength) {
 						fieldLength = ti->scopeInfo[i].type.length;
@@ -668,11 +668,11 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				DPRINTF("Got a Data Set that contained not a single full record");
 			}
 			else while (record < endOfSet) {
-			    //FIXME: We need to use a copy of the TemplateInfo here since we overwrite field length values
 				int recordLength=0;
 				int fieldLength;
 				int i;
 				bool incomplete = false;
+				ti =  boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*bt->dataTemplateInfo.get()));
 				for (i = 0; i < ti->fieldCount; i++) {
 					if (!ti->fieldInfo[i].type.isVariableLength) {
 						fieldLength = ti->fieldInfo[i].type.length;
