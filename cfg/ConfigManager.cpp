@@ -3,6 +3,7 @@
 #include "cfg/ReConnector.h"
 
 #include "cfg/CfgNode.h"
+#include "cfg/AutoFocusCfg.h"
 #include "cfg/IpfixAggregatorCfg.h"
 #include "cfg/IpfixCollectorCfg.h"
 #include "cfg/IpfixExporterCfg.h"
@@ -30,6 +31,7 @@
 // module instances if they handle the specific entry. 
 Cfg* ConfigManager::configModules[] = {
 	new ObserverCfg(NULL),
+	new AutoFocusCfg(NULL),
 	new PacketFilterCfg(NULL),
 	new PacketQueueCfg(NULL),
 	new PacketPrinterCfg(NULL),
@@ -78,7 +80,6 @@ void ConfigManager::parseConfig(std::string fileName)
 		unlockGraph();
 		THROWEXCEPTION("%s is an empty XML-Document!", fileName.c_str());
 	}
-
 	if (!root->matches("ipfixConfig")) {
 		unlockGraph();
 		THROWEXCEPTION("Root element does not match \"ipfixConfig\"."

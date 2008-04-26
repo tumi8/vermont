@@ -27,6 +27,7 @@ ADD_LIBRARY(cfg
 	Graph.cpp
 	GraphInstanceSupplier.cpp
 	IDMEFExporterCfg.cpp
+	AutoFocusCfg.cpp
 	IpfixAggregatorCfg.cpp
 	IpfixCollectorCfg.cpp
 	IpfixDbReaderCfg.cpp

@@ -1,0 +1,80 @@
+<ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
+	<sensorManager id="99">
+		<checkinterval>2</checkinterval>
+	</sensorManager>
+	<observer id="1">
+		<interface>eth1</interface>
+		<pcap_filter>ip</pcap_filter>
+		<next>2</next>
+	</observer>
+
+	<packetQueue id="2">
+		<maxSize>1000</maxSize>
+		<next>6</next>
+	</packetQueue>
+	
+	<packetAggregator id="6">
+		<rule>
+			<templateId>998</templateId>
+			<flowKey>
+				<ieName>sourceIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>protocolIdentifier</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>sourceTransportPort</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationTransportPort</ieName>
+			</flowKey>
+			<nonFlowKey>
+				<ieName>flowStartMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>flowEndMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>octetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>packetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>tcpControlBits</ieName>
+			</nonFlowKey>
+		</rule>
+		<expiration>
+			<inactiveTimeout unit="sec">5</inactiveTimeout>
+			<activeTimeout unit="sec">10</activeTimeout>
+		</expiration>
+		<pollInterval unit="msec">5000</pollInterval>
+		<next>4</next>
+	</packetAggregator>
+
+	<ipfixQueue id="4">
+		<maxSize>100000</maxSize>
+		<next>3</next>
+	</ipfixQueue>
+
+	<ipfixExporter id="3">
+		<ipfixPacketRestrictions>
+			<maxPacketSize>1500</maxPacketSize>
+			<maxExportDelay unit="msec">500</maxExportDelay>
+		</ipfixPacketRestrictions>
+		<udpTemplateManagement>
+			<templateRefreshTimeout>10</templateRefreshTimeout>
+			<templateRefreshRate>10</templateRefreshRate>
+		</udpTemplateManagement>
+		<collector>
+			<ipAddressType>4</ipAddressType>
+			<ipAddress>192.168.9.47</ipAddress>
+			<!--<ipAddress>127.0.0.1</ipAddress>-->
+			<transportProtocol>17</transportProtocol>
+			<port>1500</port>
+		</collector>
+	</ipfixExporter>
+</ipfixConfig>
