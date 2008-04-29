@@ -33,18 +33,24 @@ InstanceManager<IDMEFMessage> AutoFocus::idmefManager("IDMEFMessage");
  * attention: parameter idmefexporter must be free'd by the creating instance, TRWPortWormDetector
  * does not dare to delete it, in case it's used
  */
-	AutoFocus::AutoFocus(uint32_t hashbits, uint32_t ttreeint, uint32_t nummaxr, string analyzerid, string idmeftemplate)
+	AutoFocus::AutoFocus(uint32_t hashbits, uint32_t ttreeint, uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate)
 : hashBits(hashbits),
 	timeTreeInterval(ttreeint),
 	numMaxResults(nummaxr),
+	numTrees(numtrees),
 	analyzerId(analyzerid),
-	idmefTemplate(idmeftemplate)
+	idmefTemplate(idmeftemplate),
+	m_treeRecords(numtrees)
 
 {
 	hashSize = 1<<hashBits;
 	lastTreeBuilt = time(0);
 	statEntriesAdded = 0;
 	totalData = 0;
+
+	m_treeCount = 0;
+	m_treeRecords.clear();
+
 	listIPRecords = new list<IPRecord*>[hashSize];
 	msg(MSG_INFO,"AutoFocus started");
 }
@@ -59,19 +65,19 @@ void AutoFocus::onDataDataRecord(IpfixDataDataRecord* record)
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 
-	
+
 	uint32_t subnet = ntohl(2210136064UL);
 	uint32_t mask = ntohl(4294901760UL);
 
-	
+
 	if ((conn.srcIP & mask) != subnet) 
 	{
-	conn.srcIP = conn.dstIP;
+		conn.srcIP = conn.dstIP;
 	}
 
 	if ((conn.srcIP & mask) == subnet) 
 	{
-	addConnection(&conn);
+		addConnection(&conn);
 	}
 
 	record->removeReference();
@@ -81,7 +87,7 @@ void AutoFocus::onDataDataRecord(IpfixDataDataRecord* record)
 void AutoFocus::addConnection(Connection* conn)
 {
 	IPRecord* te = getEntry(conn);
-	
+
 	uint64_t deltacount = ntohll(conn->srcOctets) + ntohll(conn->dstOctets);
 
 	te->payload += deltacount;
@@ -99,7 +105,7 @@ AutoFocus::IPRecord* AutoFocus::getEntry(Connection* conn)
 	time_t curtime = time(0);
 	uint32_t hash = crc32(0, 4, reinterpret_cast<char*>(&conn->srcIP)) & (hashSize-1);
 
-	
+
 	if (lastTreeBuilt+timeTreeInterval < (uint32_t) curtime) 
 	{
 		lastTreeBuilt = curtime;
@@ -128,6 +134,19 @@ AutoFocus::IPRecord* AutoFocus::getEntry(Connection* conn)
  * creates a new iprecord and sets status to pending
  */
 
+void AutoFocus::deleteTree(treeNode* root) 
+{
+
+	if (root->left != NULL)
+		deleteTree(root->left);
+
+	if (root->right != NULL)
+		deleteTree(root->right);
+
+	delete root;
+	return;
+}
+
 AutoFocus::IPRecord* AutoFocus::createEntry(Connection* conn)
 {
 	IPRecord* te = new IPRecord();
@@ -136,6 +155,153 @@ AutoFocus::IPRecord* AutoFocus::createEntry(Connection* conn)
 	te->payload = 0;
 	statEntriesAdded++;
 	return te;
+}
+
+
+void AutoFocus::deleteRecord(int index)
+{
+
+	deleteTree(m_treeRecords[index]->root);	
+	delete m_treeRecords[index];
+}
+
+AutoFocus::treeNode* AutoFocus::getComparismValue(treeNode* match,uint32_t index)
+{
+	if (m_treeRecords[index] == NULL) return NULL;
+	else 
+	{
+		uint32_t sip = ntohl(match->data.subnetIP);
+		uint32_t sbits = match->data.subnetBits;
+		treeNode* current = m_treeRecords[index]->root;
+		treeNode* before = current;
+
+//		msg(MSG_FATAL,"Searching predecessor of %s/%d",IPToString(ntohl(sip)).c_str(),sbits);
+		while (current != NULL)
+		{
+			before = current;
+			if (current->data.subnetBits == 32) return current;	
+
+			uint32_t a = distance(match,current->left); 
+
+			//check if our subnet is included in one of the child subnets 
+
+	//		msg(MSG_FATAL,"Checking left node %s/%d",IPToString(current->left->data.subnetIP).c_str(),current->left->data.subnetBits);
+
+			if (current->left->data.subnetBits <= 32- (uint32_t) (round(log(a)/log(2)+0.5)) && current->left->data.subnetBits <= sbits) 
+			{
+			//	msg(MSG_FATAL,"Subnet is included in left");
+				current = current->left;
+				continue;
+
+			}
+
+
+			uint32_t b = distance(match,current->right); 
+
+	//		msg(MSG_FATAL,"Checking right node %s/%d",IPToString(current->right->data.subnetIP).c_str(),current->right->data.subnetBits);
+
+			if (current->right->data.subnetBits <= 32- (uint32_t) (round(log(b)/log(2)+0.5)) && current->right->data.subnetBits <= sbits) 
+			{
+
+			//	msg(MSG_FATAL,"Subnet is included in right");
+				current = current->right;
+				continue;
+			}
+
+			//our subnet is not included in one of the child subnets, so there are 3 possible matches, left,right and current
+	//		msg(MSG_FATAL,"its not included in any node");
+
+			//now check if one of the child subnets is included in ours
+			
+			bool right = false;
+			bool left = false;
+			if ( sbits <= 32- (uint32_t) (round(log(a)/log(2)+0.5)) && sbits <= current->left->data.subnetBits )
+			{
+				left = true;
+	//			msg(MSG_FATAL,"left subnet is included");
+			}
+			
+			if ( sbits <= 32- (uint32_t) (round(log(b)/log(2)+0.5)) && sbits <= current->right->data.subnetBits )
+			{
+	//			msg(MSG_FATAL,"right subnet is included");
+				right = true;
+			}
+
+			if (left && right) return current;
+			if (left) return current->left;
+			if (right) return current->right;
+
+			return before;
+
+		}
+
+			return before;
+	}
+
+}
+void AutoFocus::evaluate()
+{
+
+	uint32_t index = (m_treeCount-1) % numTrees;
+
+
+//msg(MSG_FATAL,"evaluating index %d",index);
+	treeRecord* currentTree = m_treeRecords[index];
+
+	list<treeNode*>::iterator iter = currentTree->specNodes.begin();
+
+	msg(MSG_FATAL,"---------------------");
+	while (iter != currentTree->specNodes.end()) 
+	{
+
+		uint64_t temp = (*iter)->data.payload * 100;
+		double part =  (double) temp /  (double) currentTree->totalTraffic;
+
+		treeNode* last_value = getComparismValue(*iter,(index+numTrees-1) % numTrees);
+		
+
+		if (last_value) 
+		{
+		msg(MSG_FATAL,"SUBNET: %s/%d\t TRAFFIC (MB) %03llu\t DELTA: (PREV.\t %s/%d)\t %03lld\t  %01.2f%%",IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,(*iter)->data.payload/1024/1024,IPToString(last_value->data.subnetIP).c_str(),last_value->data.subnetBits,(int64_t) ((int64_t) (*iter)->data.payload - (int64_t) last_value->data.payload) /1024/1024,part);
+	
+
+		}
+		else 
+		{
+
+
+		msg(MSG_FATAL,"SUBNET: %s/%d\t TRAFFIC (MB) %3llu\t %01.2f%%",IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,(*iter)->data.payload/1024/1024,part);
+
+		}
+			
+
+
+		
+		iter++;
+	}
+
+
+	msg(MSG_FATAL,"---------------------");
+
+}
+
+void AutoFocus::cleanUp()
+{
+
+
+	for (uint32_t i=0; i<hashSize; i++) {
+		if (listIPRecords[i].size()==0) continue;
+
+		list<IPRecord*>::iterator iter = listIPRecords[i].begin();
+		while (iter != listIPRecords[i].end()) {
+			delete *iter;
+			iter++;
+		}
+		listIPRecords[i].clear();
+	}
+	totalData = 0;	
+
+
 }
 
 uint32_t AutoFocus::distance(treeNode* a,treeNode* b) 
@@ -150,12 +316,15 @@ void AutoFocus::buildTree ()
 	treeNode* root;
 	list<treeNode*> tree;
 
+	treeRecord* curTreeRecord = new treeRecord;
+	curTreeRecord->totalTraffic = totalData;
+
 	//msg(MSG_FATAL,"Values %lu %u",totalData,numMaxResults);
 
 	uint64_t threshold = (uint64_t) (totalData / numMaxResults);
 
-//	msg(MSG_FATAL,"THRESHOLD %lu",threshold);
-//	msg(MSG_FATAL,"MAKING SUPERLIST");
+	//	msg(MSG_FATAL,"THRESHOLD %lu",threshold);
+	//	msg(MSG_FATAL,"MAKING SUPERLIST");
 
 	for (uint32_t i=0; i<hashSize; i++) {
 		if (listIPRecords[i].size()==0) continue;
@@ -171,13 +340,12 @@ void AutoFocus::buildTree ()
 			entry->left = NULL;
 			entry->right = NULL;
 			entry->delta = (*iter)->payload;
-	//		msg(MSG_FATAL,"%lu",entry->delta);
+			//		msg(MSG_FATAL,"%lu",entry->delta);
 			tree.push_back(entry);
 			iter++;	
 		}
 	}
 
-	msg(MSG_FATAL,"LIST SORTED");
 	tree.sort(AutoFocus::comp_entries);
 
 	//* BUILD TREE *//
@@ -191,12 +359,9 @@ void AutoFocus::buildTree ()
 
 		if ((*iter)->delta > threshold) 
 		{
-			uint64_t temp = (*iter)->delta * 100;
-			double part =  (double) temp /  (double) totalData;
-			
-			msg(MSG_FATAL,"IP %s/%d",IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits);
-			msg(MSG_FATAL,"Total Traffic %llu, Delta Traffic %llu, Percentage of total traffic %f",(*iter)->data.payload,(*iter)->delta,part);
-		
+			(*iter)->ddata = (*iter)->delta;
+
+			curTreeRecord->specNodes.push_back(*iter);
 			(*iter)->delta = 0;
 		}
 
@@ -229,7 +394,7 @@ void AutoFocus::buildTree ()
 			uint32_t ip1 = ntohl(((*iter)->data).subnetIP);
 			uint64_t d1 = (*iter)->delta;
 			uint64_t p1 = (*iter)->data.payload; 
-			
+
 			iter = tree.erase(iter);
 			newnode->right = *iter;
 
@@ -256,6 +421,22 @@ void AutoFocus::buildTree ()
 
 
 	}
+
+	curTreeRecord->root = tree.front();
+
+
+	if (m_treeRecords[m_treeCount % numTrees] != NULL)
+
+	{
+		deleteRecord(m_treeCount % numTrees);	
+
+	}
+
+
+	m_treeRecords[m_treeCount % numTrees] = curTreeRecord;
+	m_treeCount++;
+	evaluate();
+	cleanUp();
 
 }
 

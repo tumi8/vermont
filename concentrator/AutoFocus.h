@@ -27,7 +27,7 @@
 
 #include <list>
 #include <string>
-#include <map>
+#include <vector>
 
 using namespace std;
 
@@ -38,7 +38,7 @@ class AutoFocus
 {
 	public:
 		AutoFocus(uint32_t hashbits
-				, uint32_t ttreeint,uint32_t nummaxr, string analyzerid, string idmeftemplate);
+				, uint32_t ttreeint,uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate);
 		virtual ~AutoFocus();
 
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);
@@ -56,9 +56,17 @@ class AutoFocus
 		typedef	struct treeNode {
 			IPRecord data;
 			uint64_t delta;
+			uint64_t ddata;
 			treeNode* left;
 			treeNode* right;
 		}treeNode;
+
+		typedef struct treeRecord {
+			treeNode* root;
+			list<treeNode*> specNodes;
+			uint64_t totalTraffic;
+			}treeRecord;
+
 
 		uint64_t totalData;
 
@@ -67,14 +75,15 @@ class AutoFocus
 		uint32_t timeTreeInterval; // time in seconds when tree is rebuilt
 		uint32_t lastTreeBuilt;
 		uint32_t numMaxResults;
+		uint32_t numTrees;
 
 
 		string analyzerId;	/**< analyzer id for IDMEF messages */
 		string idmefTemplate;	/**< template file for IDMEF messages */
 		uint32_t statEntriesAdded;
 
-
-
+		vector<treeRecord*> m_treeRecords;
+		uint32_t m_treeCount;
 
 		list<IPRecord*>* listIPRecords;
 
@@ -83,7 +92,11 @@ class AutoFocus
 		static bool comp_entries(treeNode*,treeNode*);
 
 		void buildTree();
-
+		void cleanUp();
+		void evaluate();
+		void deleteRecord(int);
+		void deleteTree(treeNode*);
+		treeNode* getComparismValue(treeNode*,uint32_t);
 		IPRecord* createEntry(Connection* conn);
 		IPRecord* getEntry(Connection* conn);
 

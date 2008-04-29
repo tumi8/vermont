@@ -29,6 +29,8 @@ AutoFocusCfg::AutoFocusCfg(XMLElement* elem)
 			hashBits = getInt("hashbits");
 		} else if (e->matches("timetreeinterval")) {
 			timeTreeInterval = getInt("timetreeinterval");
+		} else if (e->matches("numtrees")) {
+			numTrees = getInt("numtrees");
 		} else if (e->matches("nummaxresults")) {
 			numMaxResults = getInt("nummaxresults");
 		} else if (e->matches("analyzerid")) {
@@ -51,7 +53,7 @@ AutoFocusCfg::~AutoFocusCfg()
 
 AutoFocus* AutoFocusCfg::createInstance()
 {
-    instance = new AutoFocus(hashBits, timeTreeInterval, numMaxResults, analyzerId, idmefTemplate);
+    instance = new AutoFocus(hashBits, timeTreeInterval, numMaxResults, numTrees, analyzerId, idmefTemplate);
     return instance;
 }
 

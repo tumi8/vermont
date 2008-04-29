@@ -125,6 +125,7 @@
 	<hashbits>20</hashbits>
 	<timetreeinterval>20</timetreeinterval>
 	<nummaxresults>20</nummaxresults>
+	<numtrees>5</numtrees>
 	<next>9</next>
 </AutoFocus>	
 
