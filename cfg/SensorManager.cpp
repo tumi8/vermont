@@ -68,7 +68,7 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 	//DPRINTF("module: %s, id: %u, mem usage: %u", name, id, s->getCurrentMemUsage());
 	
 #if defined(__linux__)
-	char* xmlmodthread = "\t\t\t<thread tid=\"%u\"><util type=\"system\">%.2f%%</util><util type=\"user\">%.2f%%</util></thread>\n";
+	char* xmlmodthread = "\t\t\t<thread tid=\"%u\"><util type=\"system\">%.2f</util><util type=\"user\">%.2f</util></thread>\n";
 	list<ThreadCPUInterface::JiffyTime> jtimes;
 	s->getJiffiesUsed(jtimes);
 	list<ThreadCPUInterface::JiffyTime>::iterator jiter = jtimes.begin();
@@ -177,7 +177,7 @@ void SensorManager::collectDataWorker()
 		for (uint16_t i=0; i<si.sysJiffies.size(); i++) {
 			double sysutil = (si.sysJiffies[i]-lastSystemInfo.sysJiffies[i])/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
 			double userutil = (si.userJiffies[i]-lastSystemInfo.userJiffies[i])/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
-			fprintf(file, "\t\t<processor id=\"%u\"><util type=\"system\">%.2f%%</util><util type=\"user\">%.2f%%</util></processor>\n",
+			fprintf(file, "\t\t<processor id=\"%u\"><util type=\"system\">%.2f</util><util type=\"user\">%.2f</util></processor>\n",
 					i, sysutil, userutil);			
 		}
 		fprintf(file, "\t\t<memory><free type=\"bytes\">%llu</free><total type=\"bytes\">%llu</total></memory>\n",
