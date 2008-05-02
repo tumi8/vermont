@@ -76,7 +76,7 @@ BaseHashtable* PacketAggregator::createHashtable(Rule* rule, uint16_t minBufferT
 string PacketAggregator::getStatisticsXML()
 {
 	ostringstream oss;
-	oss << "<totalReceivedPackets>" << statPacketsReceived << "</totalReceivedPackets";
+	oss << "<totalReceivedPackets>" << statPacketsReceived << "</totalReceivedPackets>";
 	oss << BaseAggregator::getStatisticsXML();
 	
 	return oss.str();
