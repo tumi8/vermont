@@ -52,7 +52,7 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		virtual ~IpfixParser();
 
 		virtual int processPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
-		virtual std::string getStatisticsXML(); 
+		virtual std::string getStatisticsXML(double interval); 
 		
 		virtual void performStart();
 		virtual void performShutdown();

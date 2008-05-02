@@ -228,12 +228,12 @@ void TRWPortscanDetector::addConnection(Connection* conn)
 	}
 }
 
-string TRWPortscanDetector::getStatistics()
+string TRWPortscanDetector::getStatisticsXML(double interval)
 {
 	ostringstream oss;
-	oss << "trwportscan: ips cached       : " << statEntriesAdded-statEntriesRemoved << endl;
-	oss << "trwportscan: ips removed      : " << statEntriesRemoved << endl;
-	oss << "trwportscan: scanners detected: " << statNumScanners << endl;
+	oss << "<hostsCached>" << statEntriesAdded-statEntriesRemoved << "</hostsCached>";
+	oss << "<totalHostsRemoved>" << statEntriesRemoved << "</totalHostsRemoved>";
+	oss << "<totalScannersDetected>" << statNumScanners << "</totalScannersDetected>";
 	return oss.str();
 }
 

@@ -572,7 +572,7 @@ int Observer::getPcapStats(struct pcap_stat *out)
 /**
  * statistics function called by StatisticsManager
  */
-std::string Observer::getStatisticsXML()
+std::string Observer::getStatisticsXML(double interval)
 {
 	ostringstream oss;
     pcap_stat pstats;
@@ -580,8 +580,8 @@ std::string Observer::getStatisticsXML()
     	statTotalLostPackets += pstats.ps_drop;
     	statTotalRecvPackets += pstats.ps_recv;
     	oss << "<pcap>";
-    	oss << "<received type=\"packets\">" << pstats.ps_recv << "</received>";
-    	oss << "<dropped type=\"packets\">" << pstats.ps_drop << "</dropped>";
+    	oss << "<received type=\"packets\">" << (uint32_t)((double)pstats.ps_recv/interval) << "</received>";
+    	oss << "<dropped type=\"packets\">" << (uint32_t)((double)pstats.ps_drop/interval) << "</dropped>";
     	oss << "<totalReceived type=\"packets\">" << statTotalRecvPackets << "</totalReceived>";
     	oss << "<totalDropped type=\"packets\">" << statTotalLostPackets << "</totalDropped>";
     	oss << "</pcap>";
@@ -589,10 +589,10 @@ std::string Observer::getStatisticsXML()
 	uint64_t diff = receivedBytes-lastReceivedBytes;
 	lastReceivedBytes += diff;
 	oss << "<observer>";
-	oss << "<processed type=\"bytes\">" << diff << "</processed>";
+	oss << "<processed type=\"bytes\">" << (uint32_t)((double)diff/interval) << "</processed>";
 	diff = processedPackets-lastProcessedPackets;
 	lastProcessedPackets += diff;
-	oss << "<processed type=\"packets\">" << diff << "</processed>";
+	oss << "<processed type=\"packets\">" << (uint32_t)((double)diff/interval) << "</processed>";
 	oss << "</observer>";
 	return oss.str();
 }

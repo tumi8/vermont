@@ -57,7 +57,7 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 {
 	char* xmlmodpre = "\t\t<sensor type=\"%s\" id=\"%u\" name=\"%s\">\n";
 	char* xmlmodpost = "\t\t</sensor>\n";
-	char* xmlmodsimple = "\t\t\t<%s>%s</%s>\n";	
+	char* xmlmodsimple = "\t\t\t<%s>%s</%s>\n";
 	
 	char text[100];
 	
@@ -83,7 +83,7 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 	}
 #endif
 	
-	string addinfo = s->getStatisticsXML();
+	string addinfo = s->getStatisticsXML(curtime-lasttime);
 	if (addinfo.size()>0) fprintf(file, xmlmodsimple, "addInfo", addinfo.c_str(), "addInfo");
 	
 	if (nextids) {

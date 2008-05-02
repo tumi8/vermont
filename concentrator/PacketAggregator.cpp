@@ -73,11 +73,11 @@ BaseHashtable* PacketAggregator::createHashtable(Rule* rule, uint16_t minBufferT
 }
 
 
-string PacketAggregator::getStatisticsXML()
+string PacketAggregator::getStatisticsXML(double interval)
 {
 	ostringstream oss;
 	oss << "<totalReceivedPackets>" << statPacketsReceived << "</totalReceivedPackets>";
-	oss << BaseAggregator::getStatisticsXML();
+	oss << BaseAggregator::getStatisticsXML(interval);
 	
 	return oss.str();
 }

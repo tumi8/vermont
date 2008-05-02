@@ -84,7 +84,7 @@ class TRWPortscanDetector
 		TRWEntry* createEntry(Connection* conn);
 		TRWEntry* getEntry(Connection* conn);
 		void addConnection(Connection* conn);
-		virtual string getStatistics();
+		virtual string getStatisticsXML(double interval);
 		void cleanupEntries();
 };
 

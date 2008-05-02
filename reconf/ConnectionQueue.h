@@ -234,7 +234,7 @@ private:
 	/**
 	 * inherited from Sensor
 	 */
-	virtual string getStatisticsXML()
+	virtual string getStatisticsXML(double interval)
 	{
 		char text[200];
 		uint32_t entries = queue.getCount();

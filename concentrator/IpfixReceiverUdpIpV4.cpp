@@ -141,7 +141,7 @@ void IpfixReceiverUdpIpV4::run() {
 /**
  * statistics function called by StatisticsManager
  */
-std::string IpfixReceiverUdpIpV4::getStatisticsXML()
+std::string IpfixReceiverUdpIpV4::getStatisticsXML(double interval)
 {
 	ostringstream oss;
 	

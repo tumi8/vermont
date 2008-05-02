@@ -151,7 +151,7 @@ class InstanceManager : public Sensor
 #endif
 		}
 
-		string getStatisticsXML()
+		string getStatisticsXML(double interval)
 		{
 			char text[200];
 			snprintf(text, ARRAY_SIZE(text), "<createdInstances>%u</createdInstances>", statCreatedInstances);

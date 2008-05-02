@@ -60,7 +60,7 @@ public:
 			uint16_t maxBufferTime);
 	virtual ~BaseHashtable();
 	
-	virtual std::string getStatisticsXML();
+	virtual std::string getStatisticsXML(double interval);
 	void expireFlows(bool all = false);
 	
 	/**

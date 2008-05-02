@@ -23,7 +23,7 @@ public:
 	virtual void onReconfiguration1();
 	virtual void postReconfiguration();
 
-	virtual string getStatisticsXML();
+	virtual string getStatisticsXML(double interval);
 
 protected:
 	Rules* rules; /**< Set of rules that define the aggregator */

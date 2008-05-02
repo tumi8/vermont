@@ -18,9 +18,10 @@ public:
 	virtual ~Sensor();
 	
 	/**
+	 * @param time in seconds when this function was called last time (to be used for calculating average)
 	 * @returns a string containing statistics about the current module in XML format
 	 */
-	virtual string getStatisticsXML() { return ""; /* override this in the modules you need */ }
+	virtual string getStatisticsXML(double interval) { return ""; /* override this in the modules you need */ }
 	
 	/**
 	 * returns memory usage of this module

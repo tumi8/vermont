@@ -45,7 +45,7 @@ public:
 	
 	virtual void receive(Packet* e);
 	
-	virtual string getStatisticsXML();
+	virtual string getStatisticsXML(double interval);
 
 	
 protected:	

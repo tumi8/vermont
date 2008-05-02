@@ -362,7 +362,7 @@ void BaseHashtable::postReconfiguration()
 }
 
 
-std::string BaseHashtable::getStatisticsXML()
+std::string BaseHashtable::getStatisticsXML(double interval)
 {
 	ostringstream oss;
 	oss << "<entries>" << statTotalEntries << "</entries>";
@@ -370,6 +370,6 @@ std::string BaseHashtable::getStatisticsXML()
 	oss << "<multientryBuckets>" << statMultiEntries << "</multientryBuckets>";
 	uint32_t diff = statExportedBuckets - statLastExpBuckets;
 	statLastExpBuckets += diff;
-	oss << "<exportedEntries>" << diff << "</exportedEntries>";
+	oss << "<exportedEntries>" << (uint32_t)((double)diff/interval) << "</exportedEntries>";
 	return oss.str();
 }

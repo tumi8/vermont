@@ -78,7 +78,7 @@ public:
 	};
 
 	virtual void onReconfiguration2();
-	virtual string getStatisticsXML();
+	virtual string getStatisticsXML(double interval);
 	
 protected:
 	ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */

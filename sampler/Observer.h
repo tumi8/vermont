@@ -57,7 +57,7 @@ public:
 	int getPcapStats(struct pcap_stat *out);
 	bool prepare(const std::string& filter);
 	static void doLogging(void *arg);
-	virtual std::string getStatisticsXML();
+	virtual std::string getStatisticsXML(double interval);
 
 
 protected:

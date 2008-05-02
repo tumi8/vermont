@@ -814,7 +814,7 @@ IpfixParser::~IpfixParser() {
 /**
  * statistics function called by StatisticsManager
  */
-std::string IpfixParser::getStatisticsXML()
+std::string IpfixParser::getStatisticsXML(double interval)
 {
 	ostringstream oss;
 	

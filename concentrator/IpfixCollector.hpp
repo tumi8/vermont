@@ -51,7 +51,7 @@ class IpfixCollector
 
 		bool send(IpfixRecord* ipfixRecord);
 		
-		virtual string getStatisticsXML();
+		virtual string getStatisticsXML(double interval);
 
 
 	private:

@@ -570,7 +570,7 @@ void IpfixSender::onReconfiguration1()
 	sendRecords(true);
 }
 
-string IpfixSender::getStatisticsXML()
+string IpfixSender::getStatisticsXML(double interval)
 {
 	char buf[200];
 	snprintf(buf, ARRAY_SIZE(buf), "<totalSentDataRecords>%u</totalSentDataRecords><totalSentUDPDataRecordPackets>%u</totalSentUDPDataRecordPackets><totalPacketsInFlows>%u</totalPacketsInFlows>", 

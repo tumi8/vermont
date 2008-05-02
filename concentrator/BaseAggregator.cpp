@@ -174,12 +174,12 @@ void* BaseAggregator::threadWrapper(void* instance)
 	return 0;
 }
 
-string BaseAggregator::getStatisticsXML()
+string BaseAggregator::getStatisticsXML(double interval)
 {
 	ostringstream oss;
 	for (size_t i=0; i<rules->count; i++) {
 		oss << "<hashtable rule=\"" << i << "\">";
-		oss << rules->rule[i]->hashtable->getStatisticsXML();
+		oss << rules->rule[i]->hashtable->getStatisticsXML(interval);
 		oss << "</hashtable>";
 	}
 	return oss.str();
