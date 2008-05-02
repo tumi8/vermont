@@ -65,11 +65,13 @@ void PacketHashtable::copyDataFrontPayload(IpfixRecord::Data* bucket, const Ipfi
 void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, const Packet* src, const ExpFieldData* efd, bool firstpacket)
 {
 	IpfixRecord::Data* dst = bucket+efd->dstIndex;
-	uint32_t seq = ntohl(*reinterpret_cast<const uint32_t*>(src->data+src->transportHeaderOffset+4));
-	DPRINTFL(MSG_VDEBUG, "seq:%u", seq);
+	uint32_t seq = 0;
+	if (src->ipProtocolType==Packet::TCP)
+		seq = ntohl(*reinterpret_cast<const uint32_t*>(src->data+src->transportHeaderOffset+4));
+	DPRINTFL(MSG_VDEBUG, "seq:%u, len:%u, udp:%u", seq, *reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4), src->ipProtocolType==Packet::UDP);
 	
 	if (firstpacket) {
-		if (src->data[src->transportHeaderOffset+13] & 0x02) {
+		if (src->ipProtocolType==Packet::TCP && src->data[src->transportHeaderOffset+13] & 0x02) {
 			// SYN packet, so sequence number will be increased without any payload
 			seq++;
 		}
@@ -84,11 +86,12 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, const Pac
 	
 	uint16_t plen = src->data_length-src->payloadOffset;
 	uint32_t fseq = *reinterpret_cast<const uint32_t*>(bucket+efd->privDataOffset);
+	uint32_t fpos = *reinterpret_cast<const uint32_t*>(bucket+efd->privDataOffset+4);
 	
 	DPRINTFL(MSG_VDEBUG, "plen:%u, fseq:%u, seq:%u, dstleng:%u", plen, fseq, seq, efd->dstLength);
 
 	if (seq-fseq<efd->dstLength) {
-		uint32_t pos = seq-fseq;
+		uint32_t pos = (seq!=0 ? seq-fseq : fpos);
 		uint32_t len = efd->dstLength-pos;
 		if (plen<len) len = plen;
 		DPRINTFL(MSG_VDEBUG, "inserting payload data at %u with length %u", pos, len);
