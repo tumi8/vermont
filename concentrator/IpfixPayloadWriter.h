@@ -40,12 +40,15 @@ class IpfixPayloadWriter
 		virtual ~IpfixPayloadWriter();
 		
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+		
+	protected:
+		virtual void performShutdown();
 
 	private:
 		string path;
 		string filenamePrefix;
 		uint32_t noConnections; // how many connections of a run should be recorded?
-		uint32_t connCounter;	// counts current number of connections/flows
+		list<Connection*> connections; // sorted list of recorded connections
 		bool filewarningIssued; 
 };
 

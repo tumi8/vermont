@@ -28,12 +28,16 @@
 
 /**
  * creates new connection element
+ * and initializes values with given IPFIX record
+ * NOTE: all values are *copied*, no reference will be kept to original IPFIX record
  * @param connTimeout time in seconds when connection element times out
  */
 Connection::Connection(IpfixDataDataRecord* record)
 	: srcOctets(0), dstOctets(0),
 	  srcPackets(0), dstPackets(0),
-	  srcTcpControlBits(0), dstTcpControlBits(0)
+	  srcTcpControlBits(0), dstTcpControlBits(0),
+	  srcPayload(0), srcPayloadLen(0),
+	  dstPayload(0), dstPayloadLen(0)
 {
 	// convert IpfixDataDataRecord to Connection
 	IpfixRecord::FieldInfo* fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
@@ -124,7 +128,25 @@ Connection::Connection(IpfixDataDataRecord* record)
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, 0);
 	if (fi != 0) srcTcpControlBits = *(uint8_t*)(record->data + fi->offset);
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revTcpControlBits, 0);
-	if (fi != 0) dstTcpControlBits = *(uint8_t*)(record->data + fi->offset);
+	if (fi != 0) dstTcpControlBits = *(uint8_t*)(record->data + fi->offset);	
+	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayload, 0);
+	if (fi != 0 && fi->type.length) {
+		srcPayloadLen = fi->type.length;
+		srcPayload = new char[srcPayloadLen];
+		memcpy(srcPayload, record->data + fi->offset, srcPayloadLen);		
+	}
+	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayload, 0);
+	if (fi != 0 && fi->type.length) {
+		dstPayloadLen = fi->type.length;
+		dstPayload = new char[dstPayloadLen];
+		memcpy(dstPayload, record->data + fi->offset, dstPayloadLen);
+	}
+}
+
+Connection::~Connection()
+{	
+	if (srcPayload) delete[] srcPayload;
+	if (dstPayload) delete[] dstPayload;
 }
 
 /**
@@ -139,6 +161,8 @@ void Connection::swapDataFields()
 	swap(srcOctets, dstOctets);
 	swap(srcPackets, dstPackets);
 	swap(srcTcpControlBits, dstTcpControlBits);
+	swap(srcPayload, dstPayload);
+	swap(srcPayloadLen, dstPayloadLen);
 }
 
 /**
@@ -150,7 +174,7 @@ void Connection::swapDataFields()
 bool Connection::swapIfNeeded()
 {
 	// now try the starting time
-	if (srcTimeStart>dstTimeStart) {
+	if ((dstTimeStart!=0) && (srcTimeStart>dstTimeStart)) {
 		swapDataFields();
 		return true;
 	}

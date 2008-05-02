@@ -57,6 +57,10 @@ class Connection
 		uint8_t srcTcpControlBits;
 		uint8_t dstTcpControlBits;
 		uint8_t protocol;
+		char* srcPayload;
+		uint32_t srcPayloadLen;
+		char* dstPayload;
+		uint32_t dstPayloadLen;
 
 		/** 
 		 * time in seconds from 1970 on when this record will expire
@@ -65,6 +69,7 @@ class Connection
 		uint32_t timeExpire; 
 
 		Connection(IpfixDataDataRecord* record);
+		virtual ~Connection();
 		void init(uint32_t connTimeout);
 		void addFlow(Connection* c);
 		string toString();
