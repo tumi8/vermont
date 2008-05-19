@@ -1,5 +1,5 @@
 /*
- * VERMONT 
+  VERMONT 
  * Copyright (C) 2008 David Eckhoff <sidaeckh@informatik.stud.uni-erlangen.de>
  *
  * This program is free software; you can redistribute it and/or
@@ -37,12 +37,13 @@ class AutoFocus
 	public Source<IDMEFMessage*>
 {
 	public:
+		
+		enum logtype { lg_payload, lg_fanouts };
 		AutoFocus(uint32_t hashbits
 				, uint32_t ttreeint,uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate);
 		virtual ~AutoFocus();
 
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);
-
 	private:
 
 		typedef struct IPRecord {
@@ -50,7 +51,7 @@ class AutoFocus
 			uint32_t subnetIP;
 			uint32_t subnetBits;
 			uint64_t payload;
-
+			uint64_t fanouts;
 		}IPRecord;
 
 		typedef	struct treeNode {
@@ -65,6 +66,7 @@ class AutoFocus
 			treeNode* root;
 			list<treeNode*> specNodes;
 			uint64_t totalTraffic;
+			uint64_t totalFanouts;
 			}treeRecord;
 
 
@@ -76,7 +78,7 @@ class AutoFocus
 		uint32_t lastTreeBuilt;
 		uint32_t numMaxResults;
 		uint32_t numTrees;
-
+		logtype lg_type;
 
 		string analyzerId;	/**< analyzer id for IDMEF messages */
 		string idmefTemplate;	/**< template file for IDMEF messages */

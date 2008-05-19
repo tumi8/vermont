@@ -51,6 +51,9 @@ InstanceManager<IDMEFMessage> AutoFocus::idmefManager("IDMEFMessage");
 	m_treeCount = 0;
 	m_treeRecords.clear();
 
+
+	lg_type = AutoFocus::lg_fanouts;
+
 	listIPRecords = new list<IPRecord*>[hashSize];
 	msg(MSG_INFO,"AutoFocus started");
 }
@@ -89,11 +92,29 @@ void AutoFocus::addConnection(Connection* conn)
 	IPRecord* te = getEntry(conn);
 
 	uint64_t deltacount = ntohll(conn->srcOctets) + ntohll(conn->dstOctets);
-
+	uint32_t fanout = 0;
 	te->payload += deltacount;
-	totalData += deltacount;
 
-	//if (te->payload != 0) msg(MSG_FATAL,"new payload: %llu",te->payload);
+	if ((conn->srcTcpControlBits&Connection::SYN) && (ntohll(conn->srcTimeStart)<ntohll(conn->dstTimeStart)))
+	{
+		fanout = 1;
+		te->fanouts++;
+	}
+
+	switch (lg_type) {
+		case AutoFocus::lg_payload: 
+			{
+				totalData += deltacount; 
+				break;
+			}
+		case AutoFocus::lg_fanouts:
+			{
+				totalData += fanout;
+				break;
+			}
+		default: break;
+	}
+
 }
 
 /**
@@ -153,6 +174,7 @@ AutoFocus::IPRecord* AutoFocus::createEntry(Connection* conn)
 	te->subnetIP = conn->srcIP;
 	te->subnetBits = 32;
 	te->payload = 0;
+	te->fanouts = 0;
 	statEntriesAdded++;
 	return te;
 }
@@ -175,7 +197,7 @@ AutoFocus::treeNode* AutoFocus::getComparismValue(treeNode* match,uint32_t index
 		treeNode* current = m_treeRecords[index]->root;
 		treeNode* before = current;
 
-//		msg(MSG_FATAL,"Searching predecessor of %s/%d",IPToString(ntohl(sip)).c_str(),sbits);
+		//		msg(MSG_FATAL,"Searching predecessor of %s/%d",IPToString(ntohl(sip)).c_str(),sbits);
 		while (current != NULL)
 		{
 			before = current;
@@ -185,11 +207,11 @@ AutoFocus::treeNode* AutoFocus::getComparismValue(treeNode* match,uint32_t index
 
 			//check if our subnet is included in one of the child subnets 
 
-	//		msg(MSG_FATAL,"Checking left node %s/%d",IPToString(current->left->data.subnetIP).c_str(),current->left->data.subnetBits);
+			//		msg(MSG_FATAL,"Checking left node %s/%d",IPToString(current->left->data.subnetIP).c_str(),current->left->data.subnetBits);
 
 			if (current->left->data.subnetBits <= 32- (uint32_t) (round(log(a)/log(2)+0.5)) && current->left->data.subnetBits <= sbits) 
 			{
-			//	msg(MSG_FATAL,"Subnet is included in left");
+				//	msg(MSG_FATAL,"Subnet is included in left");
 				current = current->left;
 				continue;
 
@@ -198,32 +220,32 @@ AutoFocus::treeNode* AutoFocus::getComparismValue(treeNode* match,uint32_t index
 
 			uint32_t b = distance(match,current->right); 
 
-	//		msg(MSG_FATAL,"Checking right node %s/%d",IPToString(current->right->data.subnetIP).c_str(),current->right->data.subnetBits);
+			//		msg(MSG_FATAL,"Checking right node %s/%d",IPToString(current->right->data.subnetIP).c_str(),current->right->data.subnetBits);
 
 			if (current->right->data.subnetBits <= 32- (uint32_t) (round(log(b)/log(2)+0.5)) && current->right->data.subnetBits <= sbits) 
 			{
 
-			//	msg(MSG_FATAL,"Subnet is included in right");
+				//	msg(MSG_FATAL,"Subnet is included in right");
 				current = current->right;
 				continue;
 			}
 
 			//our subnet is not included in one of the child subnets, so there are 3 possible matches, left,right and current
-	//		msg(MSG_FATAL,"its not included in any node");
+			//		msg(MSG_FATAL,"its not included in any node");
 
 			//now check if one of the child subnets is included in ours
-			
+
 			bool right = false;
 			bool left = false;
 			if ( sbits <= 32- (uint32_t) (round(log(a)/log(2)+0.5)) && sbits <= current->left->data.subnetBits )
 			{
 				left = true;
-	//			msg(MSG_FATAL,"left subnet is included");
+				//			msg(MSG_FATAL,"left subnet is included");
 			}
-			
+
 			if ( sbits <= 32- (uint32_t) (round(log(b)/log(2)+0.5)) && sbits <= current->right->data.subnetBits )
 			{
-	//			msg(MSG_FATAL,"right subnet is included");
+				//			msg(MSG_FATAL,"right subnet is included");
 				right = true;
 			}
 
@@ -235,7 +257,7 @@ AutoFocus::treeNode* AutoFocus::getComparismValue(treeNode* match,uint32_t index
 
 		}
 
-			return before;
+		return before;
 	}
 
 }
@@ -245,38 +267,83 @@ void AutoFocus::evaluate()
 	uint32_t index = (m_treeCount-1) % numTrees;
 
 
-//msg(MSG_FATAL,"evaluating index %d",index);
+	//msg(MSG_FATAL,"evaluating index %d",index);
 	treeRecord* currentTree = m_treeRecords[index];
 
 	list<treeNode*>::iterator iter = currentTree->specNodes.begin();
 
 	msg(MSG_FATAL,"---------------------");
+	switch (lg_type) {
+		case AutoFocus::lg_payload: 
+			msg(MSG_FATAL,"Sort Critiera: payload");
+			break;
+		case AutoFocus::lg_fanouts:
+			msg(MSG_FATAL,"Sort Criteria: fanouts");
+			break;
+		default: break; 
+	}
+
+
 	while (iter != currentTree->specNodes.end()) 
 	{
 
-		uint64_t temp = (*iter)->data.payload * 100;
-		double part =  (double) temp /  (double) currentTree->totalTraffic;
-
+		double percentage = 0;
 		treeNode* last_value = getComparismValue(*iter,(index+numTrees-1) % numTrees);
-		
+		treeRecord* last_tree = m_treeRecords[(index+numTrees-1) %numTrees];
 
-		if (last_value) 
-		{
-		msg(MSG_FATAL,"SUBNET: %s/%d\t TRAFFIC (MB) %03llu\t DELTA: (PREV.\t %s/%d)\t %03lld\t  %01.2f%%",IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,(*iter)->data.payload/1024/1024,IPToString(last_value->data.subnetIP).c_str(),last_value->data.subnetBits,(int64_t) ((int64_t) (*iter)->data.payload - (int64_t) last_value->data.payload) /1024/1024,part);
-	
+		switch (lg_type) {
+			case AutoFocus::lg_payload: 
 
+				percentage = (double) ((*iter)->data.payload*100) / (double) currentTree->totalTraffic;	
+
+				if (last_value) 
+				{
+					double last_percentage = (double) (last_value->data.payload*100) / (double) last_tree->totalTraffic;	
+					double change = (double) ((*iter)->data.payload * 100) / (double) last_value->data.payload - 100.0;
+
+					msg(MSG_FATAL,"SUBNET: %s/%d\t\t TRAFFIC: %03llu MB (%01.2f%%)\t PREVIOUSLY: %03llu MB (%01.2f%%)\t CHANGE: (%01.2f%%)\t",
+							IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
+							(*iter)->data.payload/1024/1024,percentage,
+							last_value->data.payload /1024/1024,last_percentage,
+							change);
+				}
+				else 
+				{
+					msg(MSG_FATAL,"SUBNET: %s/%d\t\t TRAFFIC: %03llu MB (%01.2f%%)\t",
+							IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
+							(*iter)->data.payload/1024/1024,percentage);
+				}
+				break;
+
+
+			case AutoFocus::lg_fanouts:
+
+				percentage = (double) ((*iter)->data.fanouts*100) / (double) currentTree->totalFanouts;	
+
+
+				if (last_value) 
+				{
+					double last_percentage = (double) (last_value->data.fanouts*100) / (double) last_tree->totalFanouts;	
+					double change = (double) ((*iter)->data.fanouts * 100) / (double) last_value->data.fanouts - 100.0;
+
+					msg(MSG_FATAL,"SUBNET: %s/%d\t FANOUTS: %03llu (%01.2f%%)\t PREVIOUSLY: %03llu (%01.2f%%)\t CHANGE: %01.2f%%\t",
+							IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
+							(*iter)->data.fanouts,percentage,
+							last_value->data.fanouts,last_percentage,
+							change);
+				}
+				else 
+				{
+					msg(MSG_FATAL,"SUBNET: %s/%d\t	FANOUTS: %03llu (%01.2f%%)\t",
+							IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
+							(*iter)->data.fanouts,percentage);
+				}
+				break;
+
+			default: break; 
 		}
-		else 
-		{
 
 
-		msg(MSG_FATAL,"SUBNET: %s/%d\t TRAFFIC (MB) %3llu\t %01.2f%%",IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,(*iter)->data.payload/1024/1024,part);
-
-		}
-			
-
-
-		
 		iter++;
 	}
 
@@ -300,7 +367,7 @@ void AutoFocus::cleanUp()
 		listIPRecords[i].clear();
 	}
 	totalData = 0;	
-
+	statEntriesAdded = 0;	
 
 }
 
@@ -317,13 +384,21 @@ void AutoFocus::buildTree ()
 	list<treeNode*> tree;
 
 	treeRecord* curTreeRecord = new treeRecord;
+
+	switch (lg_type) {
+	case AutoFocus::lg_payload:
 	curTreeRecord->totalTraffic = totalData;
+	break;
+	case AutoFocus::lg_fanouts:
+	curTreeRecord->totalFanouts = totalData;
+	default: break;
+	}
 
 	//msg(MSG_FATAL,"Values %lu %u",totalData,numMaxResults);
 
 	uint64_t threshold = (uint64_t) (totalData / numMaxResults);
 
-	//	msg(MSG_FATAL,"THRESHOLD %lu",threshold);
+	msg(MSG_FATAL,"THRESHOLD %lu",threshold);
 	//	msg(MSG_FATAL,"MAKING SUPERLIST");
 
 	for (uint32_t i=0; i<hashSize; i++) {
@@ -337,9 +412,21 @@ void AutoFocus::buildTree ()
 			entry->data.subnetIP = (*iter)->subnetIP;
 			entry->data.subnetBits = (*iter)->subnetBits;
 			entry->data.payload = (*iter)->payload;
+			entry->data.fanouts = (*iter)->fanouts;
 			entry->left = NULL;
 			entry->right = NULL;
-			entry->delta = (*iter)->payload;
+			switch (lg_type) {
+				case AutoFocus::lg_payload: {
+							entry->delta = (*iter)->payload;
+							break;
+						}
+				case AutoFocus::lg_fanouts: {
+							 entry->delta = (*iter)->fanouts;
+							 break;
+						 }
+				default: break;
+			}
+
 			//		msg(MSG_FATAL,"%lu",entry->delta);
 			tree.push_back(entry);
 			iter++;	
@@ -360,9 +447,8 @@ void AutoFocus::buildTree ()
 		if ((*iter)->delta > threshold) 
 		{
 			(*iter)->ddata = (*iter)->delta;
-
-			curTreeRecord->specNodes.push_back(*iter);
 			(*iter)->delta = 0;
+			curTreeRecord->specNodes.push_back(*iter);
 		}
 
 
@@ -394,6 +480,7 @@ void AutoFocus::buildTree ()
 			uint32_t ip1 = ntohl(((*iter)->data).subnetIP);
 			uint64_t d1 = (*iter)->delta;
 			uint64_t p1 = (*iter)->data.payload; 
+			uint64_t f1 = (*iter)->data.fanouts;
 
 			iter = tree.erase(iter);
 			newnode->right = *iter;
@@ -401,10 +488,14 @@ void AutoFocus::buildTree ()
 			uint32_t ip2 = ntohl(((*iter)->data).subnetIP);
 			uint64_t d2 = (*iter)->delta;
 			uint64_t p2 = (*iter)->data.payload; 
+			uint64_t f2 = (*iter)->data.fanouts;
+
 
 			newnode->delta = d1+d2;
-			//msg(MSG_FATAL,"%lu %lu %lu",newnode->delta,d1,d2);
+
+
 			newnode->data.payload = p1+p2;
+			newnode->data.fanouts = f1+f2;
 
 			iter = tree.erase(iter);
 
@@ -459,7 +550,7 @@ std::string AutoFocus::getStatisticsXML()
 	ostringstream oss;
 	oss << "<AutoFocus>" << endl;
 	oss << "<entrycount>" << statEntriesAdded  << "</entrycount>" << endl;
-
+	oss << "<totalData>" << totalData << "</totalData>" << endl;
 	oss << "<nexttreein>" << timeTreeInterval - (time(0) - lastTreeBuilt)   << "</nexttreein>" << endl;
 	oss << "</AutoFocus>" << endl;
 	return oss.str();
