@@ -92,7 +92,7 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 		instance->setExportTimeout(exportDelay);
 	}
 	if (templateRefreshTime || templateRefreshRate) {	
-		msg(MSG_ERROR, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
+		msg(MSG_DIALOG, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
 	}
 	for (unsigned i = 0; i != collectors.size(); ++i) {
 		msg(MSG_DEBUG, "Exporter: adding collector %s:%d to ExporterSink",

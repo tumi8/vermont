@@ -48,7 +48,7 @@ const int EXCEPTION_MAXLEN = 1024;
 #define MSG_ERROR 2    // error or warning messages which are shown during default execution
 #define MSG_DIALOG 1   // messages which are shown during default execution
 #define MSG_FATAL 0    // fatal messages which are shown every time
-#define MSG_DEFAULT MSG_ERROR
+//#define MSG_DEFAULT MSG_ERROR
 
 
 void msg_init();

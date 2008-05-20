@@ -38,14 +38,14 @@ Template* PacketReportingCfg::getTemplate()
         for (size_t i = 0; i != exportedFields.size(); ++i) {
                 int tmpId = exportedFields[i]->getIeId();
                 if (!ipfix_id_rangecheck(tmpId)) {
-                        msg(MSG_ERROR, "Template: ignoring template field %s -> %d - rangecheck not ok",
+                        msg(MSG_DIALOG, "Template: ignoring template field %s -> %d - rangecheck not ok",
                         		exportedFields[i]->getName().c_str(), tmpId);
                         continue;
                 }
 
                 const ipfix_identifier *id = ipfix_id_lookup(tmpId);
                 if ((tmpId == -1) || (id == NULL)) {
-                        msg(MSG_ERROR, "Template: ignoring unknown template field %s",
+                        msg(MSG_DIALOG, "Template: ignoring unknown template field %s",
                         		exportedFields[i]->getName().c_str());
                         continue;
                 }
@@ -57,7 +57,7 @@ Template* PacketReportingCfg::getTemplate()
                         if ((fieldLength == 0) || (fieldLength == 65535)) {
                                 fieldLength = exportedFields[i]->getIeLength();
                         } else {
-                                msg(MSG_ERROR, "Template: this is not a variable length field, ignoring optional length");
+                                msg(MSG_DIALOG, "Template: this is not a variable length field, ignoring optional length");
                         }
                 }
                 if (fieldLength == 65535)

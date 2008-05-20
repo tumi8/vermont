@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 
-	static int msg_level=MSG_DEFAULT;
+	static int msg_level=MSG_ERROR;
 	static const char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "INFO   ", "DEBUG  ", "VDEBUG ", 0};
 
 	/*

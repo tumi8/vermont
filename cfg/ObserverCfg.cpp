@@ -49,7 +49,6 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 			offlineAutoExit = getInt("offlineAutoExit")>0;
 		} else if (e->matches("captureLength")) {
 			capture_len = getInt("captureLength");	
-			msg(MSG_ERROR, "capturelen: %d", capture_len);
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown observer config statement %s\n", e->getName().c_str());

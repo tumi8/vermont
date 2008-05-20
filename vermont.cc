@@ -36,7 +36,7 @@ string statFile = "stats.log";
 int main(int ac, char **dc)
 {
 
-	int c, debug_level=MSG_DEFAULT;
+	int c, debug_level=MSG_ERROR;
 	char *config_file=NULL;
 
 	msg_init();
@@ -76,7 +76,7 @@ int main(int ac, char **dc)
 	}
 
 	/* setup verboseness */
-	msg(MSG_DEFAULT, "message debug level is %d", debug_level);
+	msg(MSG_DIALOG, "message debug level is %d", debug_level);
 	msg_setlevel(debug_level);
 
 	setup_signal(SIGINT, sig_INT_handler);
