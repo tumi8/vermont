@@ -55,9 +55,9 @@ void SensorManager::performShutdown()
 void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint32_t id, bool module, 
 								   time_t curtime, time_t lasttime, vector<uint32_t>* nextids)
 {
-	char* xmlmodpre = "\t\t<sensor type=\"%s\" id=\"%u\" name=\"%s\">\n";
-	char* xmlmodpost = "\t\t</sensor>\n";
-	char* xmlmodsimple = "\t\t\t<%s>%s</%s>\n";
+	const char* xmlmodpre = "\t\t<sensor type=\"%s\" id=\"%u\" name=\"%s\">\n";
+	const char* xmlmodpost = "\t\t</sensor>\n";
+	const char* xmlmodsimple = "\t\t\t<%s>%s</%s>\n";
 	
 	char text[100];
 	
@@ -68,7 +68,7 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 	//DPRINTF("module: %s, id: %u, mem usage: %u", name, id, s->getCurrentMemUsage());
 	
 #if defined(__linux__)
-	char* xmlmodthread = "\t\t\t<thread tid=\"%u\"><util type=\"system\">%.2f</util><util type=\"user\">%.2f</util></thread>\n";
+	const char* xmlmodthread = "\t\t\t<thread tid=\"%u\"><util type=\"system\">%.2f</util><util type=\"user\">%.2f</util></thread>\n";
 	list<ThreadCPUInterface::JiffyTime> jtimes;
 	s->getJiffiesUsed(jtimes);
 	list<ThreadCPUInterface::JiffyTime>::iterator jiter = jtimes.begin();
@@ -102,9 +102,9 @@ void SensorManager::collectDataWorker()
 {
 	time_t lasttime = time(0);
 	
-	char* xmlpre = "<vermont>\n\t<sensorData time=\"%s\" host=\"%s\">\n";
-	char* xmlpost = "\t</sensorData>\n</vermont>\n";
-	char* xmlglobals = "\t\t<%s>%s</%s>\n";	
+	const char* xmlpre = "<vermont>\n\t<sensorData time=\"%s\" host=\"%s\">\n";
+	const char* xmlpost = "\t</sensorData>\n</vermont>\n";
+	const char* xmlglobals = "\t\t<%s>%s</%s>\n";	
 	
 	if (!graphIS) {
 		THROWEXCEPTION("GraphInstanceSupplier variable graphIS MUST be set when module is started!");
@@ -170,7 +170,7 @@ void SensorManager::collectDataWorker()
 		fprintf(file, xmlglobals, "lastTime", lasttimestr, "lastTime");
 		
 #if defined(__linux__)		
-		char* xmlglobalsuint = "\t\t<%s>%u</%s>\n";
+		const char* xmlglobalsuint = "\t\t<%s>%u</%s>\n";
 		ThreadCPUInterface::SystemInfo si = ThreadCPUInterface::getSystemInfo();
 		
 		fprintf(file, xmlglobalsuint, "processorAmount", si.noCPUs, "processorAmount");
