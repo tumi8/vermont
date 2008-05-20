@@ -127,6 +127,7 @@
 	<nummaxresults>20</nummaxresults>
 	<numtrees>5</numtrees>
 	<next>9</next>
+	<key>fanouts</key>
 </AutoFocus>	
 
 <idmefExporter id="9">

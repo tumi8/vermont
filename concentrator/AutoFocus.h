@@ -40,7 +40,7 @@ class AutoFocus
 		
 		enum logtype { lg_payload, lg_fanouts };
 		AutoFocus(uint32_t hashbits
-				, uint32_t ttreeint,uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate);
+				, uint32_t ttreeint,uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate, logtype lgtype);
 		virtual ~AutoFocus();
 
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);

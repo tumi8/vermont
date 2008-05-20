@@ -33,7 +33,7 @@ InstanceManager<IDMEFMessage> AutoFocus::idmefManager("IDMEFMessage");
  * attention: parameter idmefexporter must be free'd by the creating instance, TRWPortWormDetector
  * does not dare to delete it, in case it's used
  */
-	AutoFocus::AutoFocus(uint32_t hashbits, uint32_t ttreeint, uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate)
+	AutoFocus::AutoFocus(uint32_t hashbits, uint32_t ttreeint, uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate, logtype lgtype)
 : hashBits(hashbits),
 	timeTreeInterval(ttreeint),
 	numMaxResults(nummaxr),
@@ -52,7 +52,7 @@ InstanceManager<IDMEFMessage> AutoFocus::idmefManager("IDMEFMessage");
 	m_treeRecords.clear();
 
 
-	lg_type = AutoFocus::lg_fanouts;
+	lg_type = lgtype;
 
 	listIPRecords = new list<IPRecord*>[hashSize];
 	msg(MSG_INFO,"AutoFocus started");
@@ -269,6 +269,7 @@ void AutoFocus::evaluate()
 
 	//msg(MSG_FATAL,"evaluating index %d",index);
 	treeRecord* currentTree = m_treeRecords[index];
+	treeRecord* last_tree = m_treeRecords[(index+numTrees-1) %numTrees];
 
 	list<treeNode*>::iterator iter = currentTree->specNodes.begin();
 
@@ -289,7 +290,6 @@ void AutoFocus::evaluate()
 
 		double percentage = 0;
 		treeNode* last_value = getComparismValue(*iter,(index+numTrees-1) % numTrees);
-		treeRecord* last_tree = m_treeRecords[(index+numTrees-1) %numTrees];
 
 		switch (lg_type) {
 			case AutoFocus::lg_payload: 
@@ -347,10 +347,34 @@ void AutoFocus::evaluate()
 		iter++;
 	}
 
+	switch (lg_type) {
+		case lg_payload:
+			if (last_tree) 
+			{
+				msg(MSG_FATAL,"Total: \t%03llu\t %03llu\t (%01.2f%%)\t",currentTree->totalTraffic,last_tree->totalTraffic,(double) currentTree->totalTraffic * 100.0 / (double) last_tree->totalTraffic - 100.0);
+			}
+			else (MSG_FATAL,"Total \t%03llu\t",currentTree->totalTraffic);
+
+			break;
+		case lg_fanouts:
+			if (last_tree)
+			{
+				msg(MSG_FATAL,"Total: \t%03llu\t %03llu\t (%01.2f%%)\t",currentTree->totalFanouts,last_tree->totalFanouts,(double) currentTree->totalFanouts * 100.0 / (double) last_tree->totalFanouts - 100.0);
+			}
+			else (MSG_FATAL,"Total \t%03llu\t",currentTree->totalFanouts);
+			break;
+		default:break;
+	}
 
 	msg(MSG_FATAL,"---------------------");
-
+	/*
+	   treeNode* left =  currentTree->root->left;
+	   msg(MSG_FATAL,"%s/%d/t/t %03llu\t %03llu",IPToString(left->data.subnetIP).c_str(),left->data.subnetBits,left->data.fanouts,left->delta);
+	   left = currentTree->root->right;
+	   msg(MSG_FATAL,"%s/%d/t/t %03llu\t %03llu",IPToString(left->data.subnetIP).c_str(),left->data.subnetBits,left->data.fanouts,left->delta);
+	   */
 }
+
 
 void AutoFocus::cleanUp()
 {
@@ -386,12 +410,12 @@ void AutoFocus::buildTree ()
 	treeRecord* curTreeRecord = new treeRecord;
 
 	switch (lg_type) {
-	case AutoFocus::lg_payload:
-	curTreeRecord->totalTraffic = totalData;
-	break;
-	case AutoFocus::lg_fanouts:
-	curTreeRecord->totalFanouts = totalData;
-	default: break;
+		case AutoFocus::lg_payload:
+			curTreeRecord->totalTraffic = totalData;
+			break;
+		case AutoFocus::lg_fanouts:
+			curTreeRecord->totalFanouts = totalData;
+		default: break;
 	}
 
 	//msg(MSG_FATAL,"Values %lu %u",totalData,numMaxResults);
@@ -417,13 +441,13 @@ void AutoFocus::buildTree ()
 			entry->right = NULL;
 			switch (lg_type) {
 				case AutoFocus::lg_payload: {
-							entry->delta = (*iter)->payload;
-							break;
-						}
+								    entry->delta = (*iter)->payload;
+								    break;
+							    }
 				case AutoFocus::lg_fanouts: {
-							 entry->delta = (*iter)->fanouts;
-							 break;
-						 }
+								    entry->delta = (*iter)->fanouts;
+								    break;
+							    }
 				default: break;
 			}
 
@@ -503,6 +527,15 @@ void AutoFocus::buildTree ()
 
 			newnode->data.subnetIP = htonl((ip1>>subbits)<<subbits);
 			newnode->data.subnetBits = 32 - subbits;
+
+
+			if (newnode->delta > threshold) 
+			{
+				newnode->ddata = newnode->delta;
+				newnode->delta = 0;
+				curTreeRecord->specNodes.push_back(newnode);
+			}
+
 			iter--;
 			if (*iter != tree.front()) iter--;
 		}
