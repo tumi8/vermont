@@ -28,6 +28,7 @@ protected:
 	string path;			/**< path where files are written to */
 	string filenamePrefix;	/**< prefix of all filenames that are created */
 	uint32_t noConnections; /**< how many connections of a run should be recorded? */
+	bool ignoreEmptyPayload; /**< ignores all flows having empty payload in both directions when set */
 	
 	IpfixPayloadWriterCfg(XMLElement*);
 };

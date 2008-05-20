@@ -48,7 +48,7 @@ uint32_t BaseHashtable::getPrivateDataLength(IpfixRecord::FieldInfo::Type type)
 	switch (type.id) {
 		case IPFIX_ETYPEID_frontPayload:
 		case IPFIX_ETYPEID_revFrontPayload:
-			return 8; // four bytes TCP sequence ID, fource bytes for byte-counter for aggregated data
+			return 8; // four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
 		
 		default:
 			return 0;
@@ -107,6 +107,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 	}
 	
 	// add private data offsets for fields
+	uint32_t fpLengthOffset = 0;
 	privDataLength = 0;
 	for (uint32_t i=0; i<dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
@@ -114,6 +115,19 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 		if (len>0) {
 			fi->privDataOffset = fieldLength+privDataLength;
 			privDataLength += len;
+		}	
+		if (fi->type.id==IPFIX_ETYPEID_frontPayload) fpLengthOffset = fi->privDataOffset+4;
+	}
+	
+	// update private data offsets for fields which access private data from other fields
+	// example: front payload length accesses data from front payload
+	for (uint32_t i=0; i<dataTemplate->fieldCount; i++) {
+		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		if (fi->type.id==IPFIX_ETYPEID_frontPayloadLen) {
+			if (!fpLengthOffset) {
+				THROWEXCEPTION("no front payload field specified in template, so front payload length is not available either");
+			}
+			fi->privDataOffset = fpLengthOffset;
 		}
 	}
 }
@@ -280,6 +294,9 @@ int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_TYPEID_droppedPacketDeltaCount:
 		case IPFIX_TYPEID_tcpControlBits:
 		case IPFIX_ETYPEID_frontPayload:
+		case IPFIX_ETYPEID_frontPayloadLen:
+		case IPFIX_ETYPEID_revFrontPayload:
+		case IPFIX_ETYPEID_revFrontPayloadLen:
 		case IPFIX_ETYPEID_revFlowStartSeconds:
 		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
 		case IPFIX_ETYPEID_revFlowEndSeconds:

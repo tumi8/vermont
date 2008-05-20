@@ -246,10 +246,12 @@ reserved, 327
 reserved, 328
 reserved, 329
 frontpayload, 32896
+frontpayloadlen, 32897
 revoctetdeltacount, 33793
 revpacketdeltacount, 33794
 revtcpcontrolbits, 33798
 revfrontpayload, 33920
+revfrontpayloadlen, 33921
 revflowstartseconds, 33942
 revflowendseconds, 33943
 revflowstartmilliseconds, 33944

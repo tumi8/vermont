@@ -139,6 +139,7 @@ int string2typelength(const char*s);
 #define IPFIX_TYPEID_totalLengthIPv4                190
 
 #define IPFIX_ETYPEID_frontPayload					(IPFIX_ENTERPRISE_TYPE | 0x80)
+#define IPFIX_ETYPEID_frontPayloadLen				(IPFIX_ENTERPRISE_TYPE | 0x81)
 
 // information elements for biflows
 #define IPFIX_REVERSE_ETYPE							(IPFIX_ENTERPRISE_TYPE | 0x0400)
@@ -150,6 +151,7 @@ int string2typelength(const char*s);
 #define IPFIX_ETYPEID_revPacketDeltaCount			(IPFIX_TYPEID_packetDeltaCount | IPFIX_REVERSE_ETYPE)
 #define IPFIX_ETYPEID_revTcpControlBits				(IPFIX_TYPEID_tcpControlBits | IPFIX_REVERSE_ETYPE)
 #define IPFIX_ETYPEID_revFrontPayload				(IPFIX_ETYPEID_frontPayload | IPFIX_REVERSE_ETYPE)
+#define IPFIX_ETYPEID_revFrontPayloadLen			(IPFIX_ETYPEID_frontPayloadLen | IPFIX_REVERSE_ETYPE)
 
 
 #define IPFIX_LENGTH_ipVersion                      IPFIX_LENGTH_octet
@@ -247,6 +249,9 @@ int string2typelength(const char*s);
 #define IPFIX_LENGTH_tcpUrgentPointer               IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_totalLengthIPv4                IPFIX_LENGTH_unsigned16
 
+// enterprise TYPEIDs
+#define IPFIX_ELENGTH_frontPayloadLen				IPFIX_LENGTH_unsigned32
+
 // lengths for biflows elements
 #define IPFIX_ELENGTH_revFlowStartSeconds			IPFIX_LENGTH_flowStartSeconds
 #define IPFIX_ELENGTH_revFlowStartMilliSeconds		IPFIX_LENGTH_flowStartMilliSeconds
@@ -255,6 +260,7 @@ int string2typelength(const char*s);
 #define IPFIX_ELENGTH_revOctetDeltaCount			IPFIX_LENGTH_octetDeltaCount
 #define IPFIX_ELENGTH_revPacketDeltaCount			IPFIX_LENGTH_packetDeltaCount
 #define IPFIX_ELENGTH_revTcpControlBits				IPFIX_LENGTH_tcpControlBits
+#define IPFIX_ELENGTH_revFrontPayloadLen			IPFIX_LENGTH_unsigned32
 
 #define MAX_MSG_LEN   65536
 

@@ -271,7 +271,9 @@ class IpfixRecord
 					case IPFIX_TYPEID_sourceTransportPort:
 					case IPFIX_TYPEID_destinationTransportPort:
 					case IPFIX_ETYPEID_frontPayload:
+					case IPFIX_ETYPEID_frontPayloadLen:
 					case IPFIX_ETYPEID_revFrontPayload:
+					case IPFIX_ETYPEID_revFrontPayloadLen:
 						return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
 
 					case IPFIX_TYPEID_tcpControlBits:

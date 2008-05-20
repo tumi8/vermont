@@ -55,6 +55,13 @@ void PacketHashtable::copyDataFrontPayload(IpfixRecord::Data* bucket, const Ipfi
 {
 	aggregateFrontPayload(bucket, reinterpret_cast<const Packet*>(src), efd, true);
 }
+// copies data from given private data offset for this flow (is usually set to the private data element for the 
+// position pointer from copyDataFrontPayload
+void PacketHashtable::copyDataFrontPayloadLen(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd)
+{
+	IpfixRecord::Data* dst = bucket+efd->dstIndex;
+	*reinterpret_cast<uint32_t*>(dst) = htonl(*reinterpret_cast<const uint32_t*>(bucket+efd->privDataOffset));
+}
 
 /**
  * aggregates payload of packets to a certain maximum amount
@@ -150,6 +157,7 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecor
 		case IPFIX_TYPEID_flowEndSeconds:
 		case IPFIX_TYPEID_flowEndMicroSeconds:
 		case IPFIX_TYPEID_flowEndNanoSeconds:
+		case IPFIX_ETYPEID_frontPayloadLen:
 			if (efd->dstLength != 4) {
 				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
 			}
@@ -192,7 +200,9 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecor
 
 	// now decide on the correct copy function
 	if (efd->typeId == IPFIX_ETYPEID_frontPayload) {
-		return copyDataFrontPayload;
+		return copyDataFrontPayload; 
+	} else if (efd->typeId == IPFIX_ETYPEID_frontPayloadLen) {
+		return copyDataFrontPayloadLen;
 	} else if (efd->dstLength == efd->srcLength) {
 		return copyDataEqualLengthNoMod;
 	} else if (efd->dstLength > efd->srcLength) {
@@ -245,6 +255,7 @@ uint8_t PacketHashtable::getRawPacketFieldLength(IpfixRecord::FieldInfo::Type ty
 		case IPFIX_TYPEID_destinationIPv4Address:
 		case IPFIX_ETYPEID_revFlowStartSeconds:
 		case IPFIX_ETYPEID_revFlowEndSeconds:
+		case IPFIX_ETYPEID_frontPayloadLen:
 			return 4;
 
 		case IPFIX_TYPEID_flowStartMilliSeconds:					
@@ -289,6 +300,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const IpfixRecord::FieldInfo::Type&
 		case IPFIX_TYPEID_destinationTransportPort:
 		case IPFIX_TYPEID_tcpControlBits:
 		case IPFIX_ETYPEID_frontPayload:
+		case IPFIX_ETYPEID_frontPayloadLen:
 			return true;
 	}
 
@@ -309,6 +321,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo
 	efd->modifier = fieldModifier;
 	efd->varSrcIdx = isRawPacketPtrVariable(hfi->type);
 	efd->privDataOffset = hfi->privDataOffset;
+	efd->fpLenOffset = 0;
 
 	// initialize static source index, if current field does not have a variable pointer
 	if (!efd->varSrcIdx) {
@@ -339,9 +352,8 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo
 		// adjust srcLength, as our source length is 5 bytes including the appended mask!
 		efd->srcLength = 5;
 	}
-
+	
 	efd->copyDataFunc = getCopyDataFunction(efd);
-
 }
 
 /**
@@ -363,6 +375,7 @@ bool PacketHashtable::typeAvailable(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_TYPEID_sourceTransportPort:
 		case IPFIX_TYPEID_destinationTransportPort:
 		case IPFIX_TYPEID_tcpControlBits:
+		case IPFIX_ETYPEID_frontPayloadLen:
 		case IPFIX_ETYPEID_frontPayload:
 			return true;
 	}
@@ -486,6 +499,10 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 			
 		case IPFIX_ETYPEID_frontPayload:
 			aggregateFrontPayload(bucket, reinterpret_cast<const Packet*>(deltaData), efd);
+			break;
+			
+		case IPFIX_ETYPEID_frontPayloadLen:
+			*(uint32_t*)baseData = htonl(*reinterpret_cast<const uint32_t*>(bucket+efd->privDataOffset));
 			break;
 
 			// no other types needed, as this is only for raw field input

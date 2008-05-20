@@ -34,17 +34,20 @@
  * attention: parameter idmefexporter must be free'd by the creating instance, TRWPortscanDetector
  * does not dare to delete it, in case it's used
  */
-IpfixPayloadWriter::IpfixPayloadWriter(string path, string prefix, uint32_t noconns)
+IpfixPayloadWriter::IpfixPayloadWriter(string path, string prefix, uint32_t noconns, bool ignoreEmptyPayload)
 	: path(path),
 	  filenamePrefix(prefix),
 	  noConnections(noconns),
-	  filewarningIssued(false)
+	  filewarningIssued(false),
+	  ignoreEmptyPayload(ignoreEmptyPayload)
 {
 }
+
 
 IpfixPayloadWriter::~IpfixPayloadWriter()
 {
 }
+
 
 void IpfixPayloadWriter::onDataDataRecord(IpfixDataDataRecord* record)
 {	
@@ -52,24 +55,28 @@ void IpfixPayloadWriter::onDataDataRecord(IpfixDataDataRecord* record)
 	Connection* conn = new Connection(record);	
 	conn->swapIfNeeded();
 	
-	// insert entry into sorted list
-	list<Connection*>::iterator iter = connections.begin();
 	bool inserted = false;
-	uint32_t counter = 0;
-	while (iter != connections.end() && counter<noConnections) {
-		if ((*iter)->srcTimeStart>conn->srcTimeStart) {
-			connections.insert(iter, conn);
-			inserted = true;
-			break;
-		}
-		counter++;
-		iter++;
-	}
-	if ((!inserted) && (counter<noConnections)) {
-		connections.push_back(conn);
-		inserted = true;
-	}
 	
+	if (!ignoreEmptyPayload || conn->srcPayloadLen>0 || conn->dstPayloadLen>0) { 	
+		// insert entry into sorted list
+		list<Connection*>::iterator iter = connections.begin();
+		
+		uint32_t counter = 0;
+		while (iter != connections.end() && counter<noConnections) {
+			if ((*iter)->srcTimeStart>conn->srcTimeStart) {
+				connections.insert(iter, conn);
+				inserted = true;
+				break;
+			}
+			counter++;
+			iter++;
+		}
+		if ((!inserted) && (counter<noConnections)) {
+			connections.push_back(conn);
+			inserted = true;
+		}
+	}
+		
 	if (!inserted) delete conn;
 	
 	record->removeReference();
@@ -96,30 +103,29 @@ void IpfixPayloadWriter::performShutdown()
 		
 		struct stat s;
 		if (stat(filepayload[0].c_str(), &s) == 0 && !filewarningIssued) {
-			msg(MSG_ERROR, "files in IpfixPayloadWriter destination directory already present, overwriting ...");
+			msg(MSG_DIALOG, "files in IpfixPayloadWriter destination directory already present, overwriting ...");
 			filewarningIssued = true;
 		}
 	
 		
 		// save payload in two files
 		FILE* f;
-		char buf[100];
-		uint32_t buflen = (conn->srcPayloadLen > 100 ? 100 : conn->srcPayloadLen);
+		char buf[100];		
 		if (conn->srcPayload) {
 			f = fopen(filepayload[0].c_str(), "w+");
 			if (f == NULL) goto error;
-			if (fwrite(conn->srcPayload, conn->srcPayloadLen, 1, f) != 1) 
-				THROWEXCEPTION("failed to write to file '%s', error: %s", filepayload[0].c_str(), strerror(errno));
+			if (conn->srcPayloadLen && fwrite(conn->srcPayload, conn->srcPayloadLen, 1, f) != 1) 
+				THROWEXCEPTION("failed to write to file '%s', error: %s, 1", filepayload[0].c_str(), strerror(errno));
 			if (fclose(f) != 0) 
-				THROWEXCEPTION("failed to write to file '%s', error: %s", filepayload[0].c_str(), strerror(errno));
+				THROWEXCEPTION("failed to write to file '%s', error: %s, 2", filepayload[0].c_str(), strerror(errno));
 		}
 		if (conn->dstPayload) {
 			f = fopen(filepayload[1].c_str(), "w+");
 			if (f == NULL) goto error;
-			if (fwrite(conn->dstPayload, conn->dstPayloadLen, 1, f) != 1) 
-				THROWEXCEPTION("failed to write to file '%s', error: %s", filepayload[1].c_str(), strerror(errno));
+			if (conn->dstPayloadLen && fwrite(conn->dstPayload, conn->dstPayloadLen, 1, f) != 1) 
+				THROWEXCEPTION("failed to write to file '%s', error: %s, 3", filepayload[1].c_str(), strerror(errno));
 			if (fclose(f) != 0) 
-				THROWEXCEPTION("failed to write to file '%s', error: %s", filepayload[1].c_str(), strerror(errno));
+				THROWEXCEPTION("failed to write to file '%s', error: %s, 4", filepayload[1].c_str(), strerror(errno));
 		}
 	
 		// save additional data
@@ -147,26 +153,36 @@ void IpfixPayloadWriter::performShutdown()
 		if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;
 		snprintf(buf, 100, "protocol: %d\n", conn->protocol);
 		if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;
+		snprintf(buf, 100, "srcPayloadLen: %d\n", conn->srcPayloadLen);
+		if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;
+		snprintf(buf, 100, "dstPayloadLen: %d\n", conn->dstPayloadLen);
+		if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;
 	
 		if (conn->srcPayload != 0) {
 			snprintf(buf, 100, "nicePayload: ");
-			if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;	
-			memcpy(buf, conn->srcPayload, buflen);
-			for (uint32_t i=0; i<buflen && i<conn->srcPayloadLen; i++) {
-				if (!isprint(buf[i])) buf[i] = '.';
+			if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;
+			if (conn->srcPayloadLen>0) {
+				uint32_t buflen = (conn->srcPayloadLen > ARRAY_SIZE(buf) ? ARRAY_SIZE(buf) : conn->srcPayloadLen);
+				memcpy(buf, conn->srcPayload, buflen);
+				for (uint32_t i=0; i<buflen && i<conn->srcPayloadLen; i++) {
+					if (!isprint(buf[i])) buf[i] = '.';
+				}
+				if (fwrite(buf, buflen, 1, f) != 1) goto error;
 			}
-			if (fwrite(buf, buflen, 1, f) != 1) goto error;
 			if (fwrite("\n", 1, 1, f) != 1) goto error;
 		}
 		
 		if (conn->dstPayload != 0) {
 			snprintf(buf, 100, "revNicePayload: ");
-			if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;	
-			memcpy(buf, conn->dstPayload, buflen);
-			for (uint32_t i=0; i<buflen && i<conn->dstPayloadLen; i++) {
-				if (!isprint(buf[i])) buf[i] = '.';
+			if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;
+			if (conn->dstPayloadLen>0) {
+				uint32_t buflen = (conn->dstPayloadLen > ARRAY_SIZE(buf) ? ARRAY_SIZE(buf) : conn->dstPayloadLen);
+				memcpy(buf, conn->dstPayload, buflen);				
+				for (uint32_t i=0; i<buflen && i<conn->dstPayloadLen; i++) {
+					if (!isprint(buf[i])) buf[i] = '.';
+				}
+				if (fwrite(buf, buflen, 1, f) != 1) goto error;
 			}
-			if (fwrite(buf, buflen, 1, f) != 1) goto error;
 			if (fwrite("\n", 1, 1, f) != 1) goto error;
 		}
 		

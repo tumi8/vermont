@@ -11,7 +11,8 @@ IpfixPayloadWriterCfg* IpfixPayloadWriterCfg::create(XMLElement* e)
 
 IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
     : CfgHelper<IpfixPayloadWriter, IpfixPayloadWriterCfg>(elem, "ipfixPayloadWriter"),
-      noConnections(0)
+      noConnections(0),
+      ignoreEmptyPayload(false)
 {
     if (!elem) return;
 
@@ -27,6 +28,8 @@ IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
 			filenamePrefix = e->getFirstText();
 		} else if (e->matches("connNumber")) {
 			noConnections = getInt("connNumber");
+		} else if (e->matches("ignoreEmptyPayload")) {
+			ignoreEmptyPayload = getInt("ignoreEmptyPayload");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixPayloadWriter config statement %s\n", e->getName().c_str());
@@ -48,7 +51,7 @@ IpfixPayloadWriterCfg::~IpfixPayloadWriterCfg()
 
 IpfixPayloadWriter* IpfixPayloadWriterCfg::createInstance()
 {
-    instance = new IpfixPayloadWriter(path, filenamePrefix, noConnections);
+    instance = new IpfixPayloadWriter(path, filenamePrefix, noConnections, ignoreEmptyPayload);
     return instance;
 }
 

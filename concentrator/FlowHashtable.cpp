@@ -55,6 +55,7 @@ void FlowHashtable::genBiflowStructs()
 			case IPFIX_ETYPEID_revTcpControlBits:
 			case IPFIX_ETYPEID_revFlowEndSeconds:
 			case IPFIX_ETYPEID_revFrontPayload:
+			case IPFIX_ETYPEID_revFrontPayloadLen:
 				mapRevAggIndizes[fi->type.id] = i;
 				break;
 		}
@@ -212,6 +213,13 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo* basefi, IpfixRecord::F
 				*plen = *reinterpret_cast<uint32_t*>(delta+deltafi->privDataOffset+4);
 			}
 			break;
+			
+		case IPFIX_ETYPEID_frontPayloadLen:
+		case IPFIX_ETYPEID_revFrontPayloadLen:
+			// ensure that this field is only written once with data (same behavior as for frontpayload)
+			if (*((uint32_t*)baseData)==0) {
+				*((uint32_t*)baseData) = *((uint32_t*)deltaData);
+			}
 
 		default:
 			DPRINTF("non-aggregatable type: %d", type->id);
@@ -281,6 +289,10 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 					break;
 				case IPFIX_ETYPEID_frontPayload:
 					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFrontPayload);
+					if (iter != mapRevAggIndizes.end()) idx = iter->second;
+					break;
+				case IPFIX_ETYPEID_frontPayloadLen:
+					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFrontPayloadLen);
 					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					break;
 			}

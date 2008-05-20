@@ -257,11 +257,13 @@
 #1036:headerType:octet:
 #1037:hashFunction:octet:
 32896:frontPayload:octetArray:
+32897:frontPayloadLen:unsigned32:
 # biflow flows (using enterprise typeids, 0x8400+<typeid>)
 33793:revOctetDeltaCount:unsigned64:
 33794:revPacketDeltaCount:unsigned64:
 33798:revTcpControlBits:octet:
 33920:revFrontPayload:octetArray:
+33921:revFrontPayloadLen:unsigned32:
 33942:revFlowStartSeconds:dateTimeSeconds:
 33943:revFlowEndSeconds:dateTimeSeconds:
 33944:revFlowStartMilliSeconds:dateTimeMilliSeconds:

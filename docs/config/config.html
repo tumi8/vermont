@@ -43,6 +43,8 @@
 			</li>
 			<li><a href="#IpfixDbWriter">IpfixDbWriter</a>
 			</li>
+			<li><a href="#IpfixPayloadWriter">IpfixPayloadWriter</a>
+			</li>
 			<li><a href="#TRWPortscanDetector">TRWPortscanDetector</a>
 			</li>
 			<li><a href="#IDMEFExporter">IDMEFExporter</a>
@@ -978,6 +980,72 @@
 					<td>username</td>
 					<td>none</td>
 					<td>Username for database access.</td>
+				</tr>
+				<tr>
+					<td>password</td>
+					<td>none</td>
+					<td>Password for database access.</td>
+				</tr>
+				<tr>
+					<td>bufferrecords</td>
+					<td>30</td>
+					<td>Amount of flow records to buffer until they are written to the database.</td>
+				</tr>
+			</tbody>
+		</table>
+		
+		
+		<h2><a name="IpfixPayloadWriter">IpfixPayloadWriter</a></h2>
+		<p>Writes IPFIX records including front payload into files. Only the first N (to be set 
+			in parameters) flows in chronological order are regarded. It is expected, that incoming flows are biflows 
+			and include front payload. For each biflow, three files are generated: .info contains header information 
+			of the flow, two .payload files contain front payload in both directions. </p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>IpfixRecord</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>none</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">
+ <span class="kwa">&lt;ipfixPayloadWriter id=</span><span class="str">&quot;5&quot;</span><span class="kwa">&gt;</span>
+		 <span class="kwa">&lt;destPath&gt;</span>payload_work<span class="kwa">&lt;/destPath&gt;</span>
+		 <span class="kwa">&lt;filenamePrefix&gt;</span>vfp<span class="kwa">&lt;/filenamePrefix&gt;</span>
+		 <span class="kwa">&lt;connNumber&gt;</span><span class="num">10</span><span class="kwa">&lt;/connNumber&gt;</span>
+		 <span class="kwa">&lt;ignoreEmptyPayload&gt;</span><span class="num">1</span><span class="kwa">&lt;/ignoreEmptyPayload&gt;</span>
+ <span class="kwa">&lt;/ipfixPayloadWriter&gt;</span>
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>destPath</td>
+					<td>none</td>
+					<td>Relative path where output files are stored.</td>
+				</tr>
+				<tr>
+					<td>filenamePrefix</td>
+					<td>none</td>
+					<td>Prefix for generated filenames.</td>
+				</tr>
+				<tr>
+					<td>connNumber</td>
+					<td>none</td>
+					<td>Amount of connections that are recorded.</td>
+				</tr>
+				<tr>
+					<td>ignoreEmptyPayload</td>
+					<td>false</td>
+					<td>Set to true if all connections/biflows with empty payload shoud be ignored.</td>
 				</tr>
 				<tr>
 					<td>password</td>
