@@ -103,6 +103,7 @@ class AutoFocus
 		IPRecord* getEntry(Connection* conn);
 
 		void addConnection(Connection* conn);
+		void check_node(treeRecord*,treeNode*,uint64_t);
 
 
 		// manages instances of IDMEFMessages

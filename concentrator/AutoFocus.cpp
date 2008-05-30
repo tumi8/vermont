@@ -468,14 +468,8 @@ void AutoFocus::buildTree ()
 	{
 
 
-		if ((*iter)->delta > threshold) 
-		{
-			(*iter)->ddata = (*iter)->delta;
-			(*iter)->delta = 0;
-			curTreeRecord->specNodes.push_back(*iter);
-		}
-
-
+		check_node(curTreeRecord,*iter,threshold);
+		
 		if (*iter == tree.back()) { iter++; continue; }
 
 		uint32_t a = distance(*iter,*(iter++));
@@ -509,6 +503,8 @@ void AutoFocus::buildTree ()
 			iter = tree.erase(iter);
 			newnode->right = *iter;
 
+			check_node(curTreeRecord,*iter,threshold);
+
 			uint32_t ip2 = ntohl(((*iter)->data).subnetIP);
 			uint64_t d2 = (*iter)->delta;
 			uint64_t p2 = (*iter)->data.payload; 
@@ -528,13 +524,7 @@ void AutoFocus::buildTree ()
 			newnode->data.subnetIP = htonl((ip1>>subbits)<<subbits);
 			newnode->data.subnetBits = 32 - subbits;
 
-
-			if (newnode->delta > threshold) 
-			{
-				newnode->ddata = newnode->delta;
-				newnode->delta = 0;
-				curTreeRecord->specNodes.push_back(newnode);
-			}
+			check_node(curTreeRecord,newnode,threshold);
 
 			iter--;
 			if (*iter != tree.front()) iter--;
@@ -564,6 +554,16 @@ void AutoFocus::buildTree ()
 
 }
 
+
+void AutoFocus::check_node(treeRecord* curTreeRecord,treeNode* newnode,uint64_t threshold)
+{
+			if (newnode->delta > threshold) 
+			{
+				newnode->ddata = newnode->delta;
+				newnode->delta = 0;
+				curTreeRecord->specNodes.push_back(newnode);
+			}
+		}
 /*
  * compare fuction to sort entry list
  * 
