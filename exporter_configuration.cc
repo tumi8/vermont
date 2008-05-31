@@ -108,6 +108,10 @@ void ExporterConfiguration::readCollector(xmlNodePtr p)
 			}else if ((getContent(i) == "132") || (getContent(i) == "SCTP")){
 				c->protocolType = SCTP;
 #endif
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+			}else if (getContent(i) == "RAWDIR"){
+				c->protocolType = RAWDIR;
+#endif
 		/*
 			}else if ((getContent(i) == "6") || (getContent(i) == "TCP")){
 				c->protocolType = TCP;

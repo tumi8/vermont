@@ -105,7 +105,17 @@ int IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_pro
 {
 	ipfix_exporter *ex = (ipfix_exporter *)ipfixExporter;
 
-       	msg(MSG_INFO, "IpfixSender: adding %s://%s:%d to exporter", (proto==UDP)?"UDP":"SCTP", ip, port);
+	switch(proto) {
+	    case UDP:
+		msg(MSG_INFO, "IpfixSender: adding UDP://%s:%d to exporter", ip, port);
+		break;
+	    case SCTP:
+		msg(MSG_INFO, "IpfixSender: adding SCTP://%s:%d to exporter", ip, port);
+		break;
+	    case RAWDIR:
+		msg(MSG_INFO, "IpfixSender: adding RAWDIR://%s to exporter", ip);
+		break;
+	}
 
 	if(ipfix_add_collector(ex, ip, port, proto) != 0) {
 		msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%d failed", ip, port);
