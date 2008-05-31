@@ -4,6 +4,9 @@
 
  Header for encoding functions suitable for IPFIX
 
+ Changes by Gerhard Muenz, 2008-03
+   non-blocking SCTP socket
+ 
  Changes by Alex Melnik, 2007-12
    Added SCTP support
    Corrected sequence number calculation
@@ -1156,12 +1159,20 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 			case RAWDIR:
+				if(ipfix_prepend_header(exporter,
+					    exporter->template_sendbuffer->committed_data_length,
+					    exporter->template_sendbuffer) != 0 ) {
+				    msg(MSG_ERROR, "IPFIX: prepending header failed");
+				    return -1;
+				}
 				packet_directory_path = exporter->collector_arr[i].packet_directory_path;
 				char fnamebuf[1024];
 				sprintf(fnamebuf, "%s/%08d", packet_directory_path, exporter->collector_arr[i].packets_written++);
 				int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
-				// TODO: we should also check, what writev returned. NO ERROR HANDLING IMPLEMENTED YET!
-				writev(f, exporter->template_sendbuffer->entries, exporter->template_sendbuffer->current);
+				if(f<0)
+				    msg(MSG_ERROR, "IPFIX: could not open RAWDIR file %s", fnamebuf);
+				else if(writev(f, exporter->template_sendbuffer->entries, exporter->template_sendbuffer->current)<0)
+				    msg(MSG_ERROR, "IPFIX: could not write to RAWDIR file %s", fnamebuf);
 				close(f);
 			break;
 #endif	
@@ -1282,11 +1293,20 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 				case RAWDIR:
+					if(ipfix_prepend_header(exporter,
+						    exporter->template_sendbuffer->committed_data_length,
+						    exporter->template_sendbuffer) != 0 ) {
+					    msg(MSG_ERROR, "IPFIX: prepending header failed");
+					    return -1;
+					}
 					packet_directory_path = exporter->collector_arr[i].packet_directory_path;
 					char fnamebuf[1024];
 					sprintf(fnamebuf, "%s/%08d", packet_directory_path, exporter->collector_arr[i].packets_written++);
 					int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
-					writev(f, exporter->data_sendbuffer->entries, exporter->data_sendbuffer->current);
+					if(f<0)
+					    msg(MSG_ERROR, "IPFIX: could not open RAWDIR file %s", fnamebuf);
+					else if(writev(f, exporter->data_sendbuffer->entries, exporter->data_sendbuffer->current)<0)
+					    msg(MSG_ERROR, "IPFIX: could not write to RAWDIR file %s", fnamebuf);
 					close(f);
 					break;
 #endif
