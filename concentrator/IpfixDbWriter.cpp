@@ -719,7 +719,7 @@ int IpfixDbWriter::getExporterID(IpfixRecord::SourceID* sourceID)
     uint32_t expIp = 0;
 
     if(sourceID->exporterAddress.len == 4) 
-	expIp = *(uint32_t*)(sourceID->exporterAddress.ip); 
+	expIp = ntohl(*(uint32_t*)(sourceID->exporterAddress.ip)); 
 
 #ifdef DEBUG
     DPRINTF("Content of exporterBuffer\n");
@@ -949,9 +949,9 @@ IpfixDbWriter::IpfixDbWriter(const char* host, const char* db,
     
     return;
 
-out: 
-    THROWEXCEPTION("IpfixDbWriter creation failed");
-    return;	
+//out: 
+//    THROWEXCEPTION("IpfixDbWriter creation failed");
+//    return;	
 }
 
 /**
