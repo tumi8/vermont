@@ -106,7 +106,6 @@ void printProtocol(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
 }
 
 static void printUint(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
-	uint16_t i;
 	switch (type.length) {
 	case 1:
 		printf("%hhu",*(uint8_t*)data);
