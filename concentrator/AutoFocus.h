@@ -24,8 +24,8 @@
 #include "IpfixRecordDestination.h"
 #include "Connection.h"
 #include "reconf/Source.h"
+#include "autofocus_report.h"
 #include "autofocus_attribute.h"
-
 #include <list>
 #include <string>
 #include <vector>
@@ -38,19 +38,19 @@ class AutoFocus
 	public Source<IDMEFMessage*>
 {
 	public:
-		
-		enum report_enum { payload_tcp, payload_udp, fanouts, NUM_REPORTS };
+
+
 		AutoFocus(uint32_t hashbits
 				, uint32_t ttreeint,uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate, logtype lgtype);
 		virtual ~AutoFocus();
-
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+
 	private:
 
 		typedef struct IPRecord {
 			uint32_t subnetIP;
 			uint32_t subnetBits;
-			map<reportnum,attribute*>
+			map<report::report_enum,attribute*> attributes;
 		}IPRecord;
 
 		typedef	struct treeNode {
@@ -61,9 +61,8 @@ class AutoFocus
 
 		typedef struct treeRecord {
 			treeNode* root;
-			list<report*> reports;
+			std::list<report*> reports;
 			}treeRecord;
-
 
 
 		uint32_t hashSize;

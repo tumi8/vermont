@@ -4,6 +4,8 @@
 #include "Connection.h"
 #include "autofocus_report.h"
 
+class report;
+
 class attribute
 {
 
@@ -15,7 +17,8 @@ class attribute
 
 	public:
 
-		virtual attribute(report*)=0;
+		virtual attribute(report*);
+		virtual attribute(attribute*);
 		virtual void aggregate(Connection) =0 ;
 
 }
