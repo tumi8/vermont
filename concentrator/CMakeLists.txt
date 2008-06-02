@@ -40,6 +40,7 @@ ADD_LIBRARY(concentrator
 	IpfixRawdirWriter.cpp
 	autofocus_report.cpp
 	autofocus_attribute.cpp
+	autofocus_iprecord.h
 	TemplateBuffer.cpp
 	IpfixDbReader.cpp
 	IpfixDbWriter.cpp
