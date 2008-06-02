@@ -12,7 +12,7 @@ enum report_enum { payload_tcp, payload_udp, fanouts, NUM_REPORTS };
 typedef struct IPRecord {
 	uint32_t subnetIP;
 	uint32_t subnetBits;
-	std::map<report_enum,attribute*> attributes;
+	std::map<report_enum,attribute*> m_attributes;
 }IPRecord;
 
 typedef	struct treeNode {
