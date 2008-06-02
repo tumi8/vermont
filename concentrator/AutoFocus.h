@@ -24,6 +24,7 @@
 #include "IpfixRecordDestination.h"
 #include "Connection.h"
 #include "reconf/Source.h"
+#include "autofocus_attribute.h"
 
 #include <list>
 #include <string>
@@ -38,7 +39,7 @@ class AutoFocus
 {
 	public:
 		
-		enum logtype { lg_payload, lg_fanouts };
+		enum report_enum { payload_tcp, payload_udp, fanouts, NUM_REPORTS };
 		AutoFocus(uint32_t hashbits
 				, uint32_t ttreeint,uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate, logtype lgtype);
 		virtual ~AutoFocus();
@@ -47,30 +48,23 @@ class AutoFocus
 	private:
 
 		typedef struct IPRecord {
-
 			uint32_t subnetIP;
 			uint32_t subnetBits;
-			uint64_t payload;
-			uint64_t fanouts;
+			map<reportnum,attribute*>
 		}IPRecord;
 
 		typedef	struct treeNode {
 			IPRecord data;
-			uint64_t delta;
-			uint64_t ddata;
 			treeNode* left;
 			treeNode* right;
 		}treeNode;
 
 		typedef struct treeRecord {
 			treeNode* root;
-			list<treeNode*> specNodes;
-			uint64_t totalTraffic;
-			uint64_t totalFanouts;
+			list<report*> reports;
 			}treeRecord;
 
 
-		uint64_t totalData;
 
 		uint32_t hashSize;
 		uint32_t hashBits;	/**< amount of bits used for hashtable */
@@ -78,7 +72,6 @@ class AutoFocus
 		uint32_t lastTreeBuilt;
 		uint32_t numMaxResults;
 		uint32_t numTrees;
-		logtype lg_type;
 
 		string analyzerId;	/**< analyzer id for IDMEF messages */
 		string idmefTemplate;	/**< template file for IDMEF messages */
@@ -88,7 +81,8 @@ class AutoFocus
 		uint32_t m_treeCount;
 
 		list<IPRecord*>* listIPRecords;
-
+	
+		std::list<attribute*> m_attributes;
 
 		uint32_t distance(treeNode*,treeNode*);
 		static bool comp_entries(treeNode*,treeNode*);
@@ -98,6 +92,7 @@ class AutoFocus
 		void evaluate();
 		void deleteRecord(int);
 		void deleteTree(treeNode*);
+		void initiateRecord(int);
 		treeNode* getComparismValue(treeNode*,uint32_t);
 		IPRecord* createEntry(Connection* conn);
 		IPRecord* getEntry(Connection* conn);
@@ -112,5 +107,6 @@ class AutoFocus
 		virtual string getStatistics();
 		virtual std::string getStatisticsXML();
 };
+
 
 #endif

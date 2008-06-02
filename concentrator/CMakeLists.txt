@@ -38,6 +38,8 @@ ADD_LIBRARY(concentrator
 	Rule.cpp
 	IpfixSender.cpp
 	IpfixRawdirWriter.cpp
+	autofocus_report.cpp
+	autofocus_attribute.cpp
 	TemplateBuffer.cpp
 	IpfixDbReader.cpp
 	IpfixDbWriter.cpp
