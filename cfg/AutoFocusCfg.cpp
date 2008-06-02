@@ -37,20 +37,6 @@ AutoFocusCfg::AutoFocusCfg(XMLElement* elem)
 			analyzerId = e->getFirstText();
 		} else if (e->matches("idmeftemplate")) {
 			idmefTemplate = e->getFirstText();
-		} else if (e->matches("key")) {
-	
-			if (!strncmp(e->getFirstText().c_str(),"payload",strlen("payload")))
-			{
-			lg_type = AutoFocus::lg_payload;	
-			msg(MSG_FATAL,"watching payload");
-			}
-			else if (!strncmp(e->getFirstText().c_str(),"fanouts",strlen("fanouts")))
-			{
-			lg_type = AutoFocus::lg_fanouts;
-			msg(MSG_FATAL,"watching fanouts");
-			}
-
-
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown AutoFocus config statement %s\n", e->getName().c_str());
@@ -67,7 +53,7 @@ AutoFocusCfg::~AutoFocusCfg()
 
 AutoFocus* AutoFocusCfg::createInstance()
 {
-    instance = new AutoFocus(hashBits, timeTreeInterval, numMaxResults, numTrees, analyzerId, idmefTemplate,lg_type);
+    instance = new AutoFocus(hashBits, timeTreeInterval, numMaxResults, numTrees, analyzerId, idmefTemplate);
     return instance;
 }
 

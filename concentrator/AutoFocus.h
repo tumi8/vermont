@@ -24,8 +24,9 @@
 #include "IpfixRecordDestination.h"
 #include "Connection.h"
 #include "reconf/Source.h"
-#include "autofocus_report.h"
+#include "autofocus_iprecord.h"
 #include "autofocus_attribute.h"
+#include "autofocus_report.h"
 #include <list>
 #include <string>
 #include <vector>
@@ -41,28 +42,12 @@ class AutoFocus
 
 
 		AutoFocus(uint32_t hashbits
-				, uint32_t ttreeint,uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate, logtype lgtype);
+				, uint32_t ttreeint,uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate);
 		virtual ~AutoFocus();
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);
 
 	private:
 
-		typedef struct IPRecord {
-			uint32_t subnetIP;
-			uint32_t subnetBits;
-			map<report::report_enum,attribute*> attributes;
-		}IPRecord;
-
-		typedef	struct treeNode {
-			IPRecord data;
-			treeNode* left;
-			treeNode* right;
-		}treeNode;
-
-		typedef struct treeRecord {
-			treeNode* root;
-			std::list<report*> reports;
-			}treeRecord;
 
 
 		uint32_t hashSize;
@@ -97,8 +82,8 @@ class AutoFocus
 		IPRecord* getEntry(Connection* conn);
 
 		void addConnection(Connection* conn);
-		void check_node(treeRecord*,treeNode*,uint64_t);
-
+		void check_node(treeRecord*,treeNode*);
+		void aggregate_newnode(treeNode*);
 
 		// manages instances of IDMEFMessages
 		static InstanceManager<IDMEFMessage> idmefManager;
