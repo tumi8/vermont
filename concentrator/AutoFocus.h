@@ -25,7 +25,7 @@
 #include "Connection.h"
 #include "reconf/Source.h"
 #include "autofocus_iprecord.h"
-#include "autofocus_af_attribute.h"
+#include "autofocus_attribute.h"
 #include "autofocus_report.h"
 #include <list>
 #include <string>

@@ -1,5 +1,5 @@
 #include "autofocus_report.h"
-#include "autofocus_af_attribute.h"
+#include "autofocus_attribute.h"
 #include "autofocus_iprecord.h"
 #include "common/Misc.h"
 report::report() 

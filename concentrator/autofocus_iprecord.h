@@ -3,7 +3,7 @@
 
 #include <map>
 #include <list>
-#include "autofocus_af_attribute.h"
+#include "autofocus_attribute.h"
 
 class report;
 class af_attribute;

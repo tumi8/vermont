@@ -18,7 +18,7 @@ class af_attribute
 	public:
 		uint64_t numCount;
 		uint64_t delta;
-		af_attribute();
+		af_attribute() {};
 		af_attribute(report*);
 		virtual void aggregate(IPRecord*,Connection*) =0 ;
 		virtual void collect(af_attribute*,af_attribute*)=0;

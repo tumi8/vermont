@@ -18,7 +18,7 @@ class report
 		std::list<treeNode*> specNodes;
 	public:
 		report();
-		~report();
+		~report() {};
 		uint64_t getTotal();
 
 		virtual af_attribute* createaf_attribute() =0;
