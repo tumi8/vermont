@@ -25,7 +25,7 @@
 #include "Connection.h"
 #include "reconf/Source.h"
 #include "autofocus_iprecord.h"
-#include "autofocus_attribute.h"
+#include "autofocus_af_attribute.h"
 #include "autofocus_report.h"
 #include <list>
 #include <string>
@@ -66,7 +66,7 @@ class AutoFocus
 
 		list<IPRecord*>* listIPRecords;
 	
-		std::list<attribute*> m_m_attributes;
+		std::list<af_attribute*> m_m_attributes;
 
 		uint32_t distance(treeNode*,treeNode*);
 		static bool comp_entries(treeNode*,treeNode*);

@@ -1,5 +1,5 @@
 #include "autofocus_report.h"
-#include "autofocus_attribute.h"
+#include "autofocus_af_attribute.h"
 #include "autofocus_iprecord.h"
 #include "common/Misc.h"
 report::report() 
@@ -17,7 +17,7 @@ void report::aggregate(uint64_t p_num)
 	numTotal += p_num;
 }
 
-attribute* rep_payload_tcp::createAttribute()
+af_attribute* rep_payload_tcp::createaf_attribute()
 {
 	return new atr_payload_tcp(this);
 }
@@ -26,7 +26,7 @@ report_enum rep_payload_tcp::getID()
 	return payload_tcp;
 }
 
-attribute* rep_payload_udp::createAttribute()
+af_attribute* rep_payload_udp::createaf_attribute()
 {
 	return new atr_payload_udp(this);
 }
@@ -36,7 +36,7 @@ report_enum rep_payload_udp::getID()
 	return payload_udp;
 }
 
-attribute* rep_fanouts::createAttribute()
+af_attribute* rep_fanouts::createaf_attribute()
 {
 	return new atr_fanouts(this);
 }

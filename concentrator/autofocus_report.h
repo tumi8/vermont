@@ -4,7 +4,7 @@
 #include <list>
 #include "autofocus_iprecord.h"
 
-class attribute;
+class af_attribute;
 
 
 struct treeNode;
@@ -21,7 +21,7 @@ class report
 		~report();
 		uint64_t getTotal();
 
-		virtual attribute* createAttribute() =0;
+		virtual af_attribute* createaf_attribute() =0;
 
 		virtual void aggregate(uint64_t);
 		virtual void post(treeRecord*,treeRecord*,uint32_t)=0;
@@ -32,14 +32,14 @@ class report
 
 class rep_payload_tcp : public report
 {
-		attribute* createAttribute();
+		af_attribute* createaf_attribute();
 		void post(treeRecord*,treeRecord*,uint32_t);
 		report_enum getID();
 };
 
 class rep_payload_udp :public report
 {
-		attribute* createAttribute();
+		af_attribute* createaf_attribute();
 		void post(treeRecord*,treeRecord*,uint32_t);
 		report_enum getID();
 
@@ -47,7 +47,7 @@ class rep_payload_udp :public report
 
 class rep_fanouts :public report
 {
-		attribute* createAttribute();
+		af_attribute* createaf_attribute();
 		void post(treeRecord*,treeRecord*,uint32_t);
 		report_enum getID();
 

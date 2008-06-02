@@ -1,8 +1,8 @@
-#include "autofocus_attribute.h"
+#include "autofocus_af_attribute.h"
 #include "autofocus_report.h"
 #include "autofocus_iprecord.h"
 
-attribute::attribute(report* rep)
+af_attribute::af_attribute(report* rep)
 	{
 	m_report = rep;
 	numCount = 0;
@@ -33,40 +33,40 @@ void atr_fanouts::aggregate(IPRecord* te,Connection* conn)
 
 	}
 
-void atr_fanouts::collect(attribute* a,attribute* b) 
+void atr_fanouts::collect(af_attribute* a,af_attribute* b) 
 {
 	numCount = a->numCount + b->numCount;
 	delta = a->delta + b->delta;
 	
 }
-void atr_payload_tcp::collect(attribute* a,attribute* b) 
+void atr_payload_tcp::collect(af_attribute* a,af_attribute* b) 
 {
 	numCount = a->numCount + b->numCount;
 	delta = a->delta + b->delta;
 	
 }
-void atr_payload_udp::collect(attribute* a,attribute* b) 
+void atr_payload_udp::collect(af_attribute* a,af_attribute* b) 
 {
 	numCount = a->numCount + b->numCount;
 	delta = a->delta + b->delta;
 	
 }
 
-attribute* atr_payload_tcp::getCopy()
+af_attribute* atr_payload_tcp::getCopy()
 {
 	atr_payload_tcp* ret =  new atr_payload_tcp(m_report);
 	ret->numCount = numCount;
 	ret->delta = delta;
 	return ret;
 }
-attribute* atr_payload_udp::getCopy()
+af_attribute* atr_payload_udp::getCopy()
 {
 	atr_payload_udp* ret =  new atr_payload_udp(m_report);
 	ret->numCount = numCount;
 	ret->delta = delta;
 	return ret;
 }
-attribute* atr_fanouts::getCopy()
+af_attribute* atr_fanouts::getCopy()
 {
 	atr_fanouts* ret =  new atr_fanouts(m_report);
 	ret->numCount = numCount;

@@ -90,7 +90,7 @@ void AutoFocus::addConnection(Connection* conn)
 {
 	IPRecord* te = getEntry(conn);
 
-	std::map<report_enum,attribute*>::iterator iter = te->m_attributes.begin();
+	std::map<report_enum,af_attribute*>::iterator iter = te->m_attributes.begin();
 
 	while (iter != te->m_attributes.end())
 	{
@@ -162,7 +162,7 @@ IPRecord* AutoFocus::createEntry(Connection* conn)
 
 	while (iter != m_treeRecords[m_treeCount % numTrees]->reports.end())
 	{
-		te->m_attributes[(*iter)->getID()] = (*iter)->createAttribute();
+		te->m_attributes[(*iter)->getID()] = (*iter)->createaf_attribute();
 		iter++;
 	}
 	statEntriesAdded++;
@@ -266,7 +266,7 @@ void AutoFocus::buildTree ()
 			entry->right = NULL;
 			entry->data.m_attributes = (*iter)->m_attributes;
 /*
-			std::map<report_enum,attribute*>::iterator iter2 = (*iter)->m_attributes.begin();
+			std::map<report_enum,af_attribute*>::iterator iter2 = (*iter)->m_attributes.begin();
 
 			while (iter2 != (*iter)->m_attributes.end())
 			{
@@ -369,7 +369,7 @@ void AutoFocus::aggregate_newnode(treeNode* newnode)
 
 	while (iter != m_treeRecords[m_treeCount % numTrees]->reports.end())
 	{
-		newnode->data.m_attributes[(*iter)->getID()] = (*iter)->createAttribute();
+		newnode->data.m_attributes[(*iter)->getID()] = (*iter)->createaf_attribute();
 		newnode->data.m_attributes[(*iter)->getID()]->collect(newnode->left->data.m_attributes[(*iter)->getID()],newnode->right->data.m_attributes[(*iter)->getID()]);
 		iter++;
 	}

@@ -3,16 +3,16 @@
 
 #include <map>
 #include <list>
-#include "autofocus_attribute.h"
+#include "autofocus_af_attribute.h"
 
 class report;
-class attribute;
+class af_attribute;
 enum report_enum { payload_tcp, payload_udp, fanouts, NUM_REPORTS };
 
 typedef struct IPRecord {
 	uint32_t subnetIP;
 	uint32_t subnetBits;
-	std::map<report_enum,attribute*> m_attributes;
+	std::map<report_enum,af_attribute*> m_attributes;
 }IPRecord;
 
 typedef	struct treeNode {
