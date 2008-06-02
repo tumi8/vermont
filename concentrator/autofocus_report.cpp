@@ -52,7 +52,7 @@ void rep_fanouts::post(treeRecord* currentTree,treeRecord* lastTree,uint32_t ind
 	while (iter != specNodes.end()) 
 	{
 
-		uint64_t data = (*iter)->data.attributes[fanouts]->numCount;
+		uint64_t data = (*iter)->data.m_attributes[fanouts]->numCount;
 
 		double percentage = (double) (data*100) / (double) numTotal;	
 
@@ -73,7 +73,7 @@ void rep_payload_tcp::post(treeRecord* currentTree,treeRecord* lastTree,uint32_t
 	while (iter != specNodes.end()) 
 	{
 
-		uint64_t data = (*iter)->data.attributes[payload_tcp]->numCount;
+		uint64_t data = (*iter)->data.m_attributes[payload_tcp]->numCount;
 
 		double percentage = (double) (data*100) / (double) numTotal;	
 
@@ -95,9 +95,9 @@ void report::checkNode(treeNode* newnode,uint32_t numMax)
 {
 	int threshold = numTotal / numMax;
 
-	if (newnode->data.attributes[getID()]->delta > threshold) 
+	if (newnode->data.m_attributes[getID()]->delta > threshold) 
 	{
-		newnode->data.attributes[getID()]->delta = 0;
+		newnode->data.m_attributes[getID()]->delta = 0;
 		specNodes.push_back(newnode);
 	}
 }

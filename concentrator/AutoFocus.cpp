@@ -90,9 +90,9 @@ void AutoFocus::addConnection(Connection* conn)
 {
 	IPRecord* te = getEntry(conn);
 
-	std::map<report_enum,attribute*>::iterator iter = te->attributes.begin();
+	std::map<report_enum,attribute*>::iterator iter = te->m_attributes.begin();
 
-	while (iter != te->attributes.end())
+	while (iter != te->m_attributes.end())
 	{
 		(iter->second)->aggregate(te,conn);
 		iter++;
@@ -162,7 +162,7 @@ IPRecord* AutoFocus::createEntry(Connection* conn)
 
 	while (iter != m_treeRecords[m_treeCount % numTrees]->reports.end())
 	{
-		te->attributes[(*iter)->getID()] = (*iter)->createAttribute();
+		te->m_attributes[(*iter)->getID()] = (*iter)->createAttribute();
 		iter++;
 	}
 	statEntriesAdded++;
@@ -264,14 +264,14 @@ void AutoFocus::buildTree ()
 			entry->data.subnetBits = (*iter)->subnetBits;
 			entry->left = NULL;
 			entry->right = NULL;
-			entry->data.attributes = (*iter)->attributes;
+			entry->data.m_attributes = (*iter)->m_attributes;
 /*
-			std::map<report_enum,attribute*>::iterator iter2 = (*iter)->attributes.begin();
+			std::map<report_enum,attribute*>::iterator iter2 = (*iter)->m_attributes.begin();
 
-			while (iter2 != (*iter)->attributes.end())
+			while (iter2 != (*iter)->m_attributes.end())
 			{
 
-				entry->data.attributes[iter2->first] = (iter2->second)->getCopy();
+				entry->data.m_attributes[iter2->first] = (iter2->second)->getCopy();
 				iter2++;
 }
 */
@@ -369,8 +369,8 @@ void AutoFocus::aggregate_newnode(treeNode* newnode)
 
 	while (iter != m_treeRecords[m_treeCount % numTrees]->reports.end())
 	{
-		newnode->data.attributes[(*iter)->getID()] = (*iter)->createAttribute();
-		newnode->data.attributes[(*iter)->getID()]->collect(newnode->left->data.attributes[(*iter)->getID()],newnode->right->data.attributes[(*iter)->getID()]);
+		newnode->data.m_attributes[(*iter)->getID()] = (*iter)->createAttribute();
+		newnode->data.m_attributes[(*iter)->getID()]->collect(newnode->left->data.m_attributes[(*iter)->getID()],newnode->right->data.m_attributes[(*iter)->getID()]);
 		iter++;
 	}
 }
