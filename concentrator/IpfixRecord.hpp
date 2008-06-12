@@ -73,6 +73,15 @@ class IpfixRecord
 		struct TemplateInfo {
 			TemplateInfo() : fieldInfo(NULL), destroyed(false), freePointers(true) {	}
 
+			TemplateInfo(const TemplateInfo& t)
+			{
+				templateId = t.templateId;
+				fieldCount = t.fieldCount; /**< number of regular fields */
+				fieldInfo = (IpfixRecord::FieldInfo*)malloc(fieldCount*sizeof(FieldInfo));
+				memcpy(fieldInfo, t.fieldInfo, fieldCount*sizeof(FieldInfo));
+				userData = t.userData;
+			}
+
 			~TemplateInfo() {
 				if (freePointers) free(fieldInfo);
 			}
@@ -308,6 +317,21 @@ class IpfixRecord
 			OptionsTemplateInfo() : scopeInfo(NULL), fieldInfo(NULL) {
 			}
 
+			OptionsTemplateInfo(const OptionsTemplateInfo& t)
+			{
+				templateId = t.templateId;
+				
+				scopeCount = t.scopeCount;
+				scopeInfo = (FieldInfo*)malloc(scopeCount*sizeof(FieldInfo));
+				memcpy(scopeInfo, t.scopeInfo, scopeCount*sizeof(FieldInfo));
+				
+				fieldCount = t.fieldCount; /**< number of regular fields */
+				fieldInfo = (FieldInfo*)malloc(fieldCount*sizeof(FieldInfo));
+				memcpy(fieldInfo, t.fieldInfo, fieldCount*sizeof(FieldInfo));
+				
+				userData = t.userData;
+			}
+
 			~OptionsTemplateInfo() {
 				free(fieldInfo);
 				free(scopeInfo);
@@ -327,6 +351,23 @@ class IpfixRecord
 		struct DataTemplateInfo : public TemplateInfo
 		{
 			DataTemplateInfo() : dataInfo(NULL), data(NULL) {
+			}
+			
+			DataTemplateInfo(const DataTemplateInfo& t)
+			{
+				templateId = t.templateId;
+				preceding = t.preceding;
+				
+				fieldCount = t.fieldCount;
+				fieldInfo = (FieldInfo*)malloc(fieldCount*sizeof(FieldInfo));
+				memcpy(fieldInfo, t.fieldInfo, fieldCount*sizeof(FieldInfo));
+
+				dataCount = t.dataCount;
+				dataInfo = (FieldInfo*)malloc(dataCount*sizeof(FieldInfo));
+				memcpy(dataInfo, t.dataInfo, dataCount*sizeof(FieldInfo));
+				
+				userData = t.userData;
+				freePointers = t.freePointers;
 			}
 
 			~DataTemplateInfo() {
