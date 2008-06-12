@@ -103,7 +103,7 @@ extern "C" {
 #else
 			//printf("%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, MSG_TAB[level]);
 			// Gerhard: message level is more important than Milliseconds (at least to me)
-			printf("%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, MSG_TAB[level]);
+			printf("%02d/%02d %02d:%02d:%02d %6s", tform->tm_mday, tform->tm_mon, tform->tm_hour, tform->tm_min, tform->tm_sec, MSG_TAB[level]);
 #endif
 
 			vprintf(fmt, *args);
