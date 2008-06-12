@@ -38,7 +38,7 @@ class BaseHashtable : public Sensor
 public:
 	// configuration options for size of hashtable
 	// FIXME: should be moved to configuration file
-	static const uint32_t HTABLE_BITS = 18;
+	static const uint32_t HTABLE_BITS = 19;
 	static const uint32_t HTABLE_SIZE = 1<<HTABLE_BITS;
 	
 	/**
