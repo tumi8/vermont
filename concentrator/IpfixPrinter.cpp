@@ -106,6 +106,7 @@ void printProtocol(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
 }
 
 static void printUint(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
+	uint16_t i;
 	switch (type.length) {
 	case 1:
 		printf("%hhu",*(uint8_t*)data);
@@ -120,7 +121,11 @@ static void printUint(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data
 		printf("%Lu",ntohll(*(uint64_t*)data));
 		return;
 	default:
-		msg(MSG_ERROR, "Uint with length %d unparseable", type.length);
+		for(uint16_t i = 0; i < type.length; i++) {
+		    printf("%02hhX",*(uint8_t*)(data+i));
+		}
+		printf(" (%u bytes)", type.length);
+		//msg(MSG_ERROR, "Uint with length %d unparseable", type.length);
 		return;
 	}
 }
@@ -134,29 +139,29 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
 
 	switch (type.id) {
 	case IPFIX_TYPEID_protocolIdentifier:
-		printf("protocolIdentifier:");
+		printf("protocolIdentifier: ");
 		printProtocol(type, pattern);
 		break;
 	case IPFIX_TYPEID_sourceIPv4Address:
-		printf("sourceIPv4Address:");
+		printf("sourceIPv4Address: ");
 		printIPv4(type, pattern);
 		break;
 	case IPFIX_TYPEID_destinationIPv4Address:
-		printf("destinationIPv4Address:");
+		printf("destinationIPv4Address: ");
 		printIPv4(type, pattern);
 		break;
 	case IPFIX_TYPEID_sourceTransportPort:
-		printf("sourceTransportPort:");
+		printf("sourceTransportPort: ");
 		printPort(type, pattern);
 		break;
 	case IPFIX_TYPEID_destinationTransportPort:
-		printf("destinationTransportPort:");
+		printf("destinationTransportPort: ");
 		printPort(type, pattern);
 		break;
 	default:
 		s = typeid2string(type.id);
 		if (s != NULL) {
-			printf("%s:", s);
+			printf("%s: ", s);
 			printUint(type, pattern);
 		} else {
 			DPRINTF("Field with ID %d unparseable\n", type.id);
