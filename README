@@ -5,9 +5,15 @@ Released under GPL2, no guarantees, no warranty
 
 REQUIREMENTS
 
-Decent and recent gcc compiler w/ C++ support (there are some gcc-isms)
-libpcap
-*nix (Linux and recent FreeBSD preferred, other untested)
+- Decent and recent gcc compiler w/ C++ support (there are some gcc-isms)
+- libpcap
+- *nix (Linux and recent FreeBSD preferred, other untested)
+- boost (you need at least boost_filesystem, boost_regex and
+  boost_unit_test_framework)
+- libxml
+
+Optional:
+- mysql
 
 
 INSTALLATION
