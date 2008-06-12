@@ -246,7 +246,7 @@ int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<IpfixRecord::DataTemplate
 
 
 /**
- * get all tableNames in database that matches with the wildcard "h%"
+ * get all tableNames in database that matches with the wildcard "h\_%"
  **/
 int IpfixDbReader::dbReaderDestroyTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo)
 {
@@ -263,13 +263,13 @@ int IpfixDbReader::dbReaderDestroyTemplate(boost::shared_ptr<IpfixRecord::DataTe
 
 
 /**
- * get all tableNames in database that matches with the wildcard "h%"
+ * get all tableNames in database that matches with the wildcard "h\_%"
  **/
 int IpfixDbReader::getTables()
 {
 	DbData* dbData = dbReader->dbData;
 	int i = 0;
-	const char* wild = "h%";
+	const char* wild = "h\\_%";
 	MYSQL_RES* dbResult = NULL;
 	MYSQL_ROW dbRow = NULL;
 	
