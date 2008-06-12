@@ -78,13 +78,15 @@ int main(int argc, char *argv[]) {
 	// If you want to create a SCTP testCollector 	
    	IpfixReceiverSctpIpV4 ipfixReceiver(lport, "127.0.0.1");
    	IpfixCollector collector(&ipfixReceiver);
-#endif
 	collector.connectTo(&queue);
+#endif
 	queue.connectTo(&printer);
 
 	printer.start();
 	queue.start();
+#ifdef SUPPORT_SCTP
 	collector.start();
+#endif
 
 
 	// If you want to create a UDP testCollector
@@ -115,7 +117,9 @@ int main(int argc, char *argv[]) {
 	msg(MSG_DIALOG, "Stopping threads and tidying up.\n");
 
 	msg(MSG_DIALOG, "stopping collector\n");
+#ifdef SUPPORT_SCTP
 	collector.shutdown();
+#endif
 	queue.shutdown();
 	printer.shutdown();
 #ifdef SUPPORT_SCTP
