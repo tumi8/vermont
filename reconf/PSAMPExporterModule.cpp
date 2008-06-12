@@ -153,7 +153,7 @@ error2:
 // send out the IPFIX packet stream and reset
 void PSAMPExporterModule::flushPacketStream() {
 	// end the packet stream and send the IPFIX packet out through the wire
-	ipfix_end_data_set(exporter);
+	ipfix_end_data_set(exporter, numPacketsToRelease);
 	ipfix_send(exporter);
 
 	DPRINTF("dropping %d packets", numPacketsToRelease);

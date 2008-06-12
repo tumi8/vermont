@@ -23,6 +23,7 @@
 #include "IpfixPacketProcessor.hpp"
 #include "IpfixParser.hpp"
 #include "IpfixReceiverUdpIpV4.hpp"
+#include "IpfixReceiverSctpIpV4.hpp"
 #include "ipfix.hpp"
 #include "common/msg.h"
 

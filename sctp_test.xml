@@ -1,0 +1,118 @@
+<ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
+
+    <observationPoint id="1">
+	<observationDomainId>4711</observationDomainId>
+	<type>pcap</type>
+	<parameters>
+		<interface>eth1</interface>
+		<pcap_filter>ip</pcap_filter>
+	</parameters>
+	<next>
+	    <meteringProcessId>1</meteringProcessId>
+	</next>
+    </observationPoint>
+    <meteringProcess id="1">
+	    <flowMetering>
+		    <rule>
+			    <templateId>998</templateId>
+			    <flowKey>
+				    <ieName>sourceIPv4Address</ieName>
+			    </flowKey>
+			    <flowKey>
+				    <ieName>destinationIPv4Address</ieName>
+			    </flowKey>
+			    <flowKey>
+				    <ieName>protocolIdentifier</ieName>
+			    </flowKey>
+		    </rule>
+		    <expiration>
+			    <activeTimeout unit="sec">5</activeTimeout>
+			    <inactiveTimeout unit="sec">5</inactiveTimeout>
+ 		    </expiration>
+	    </flowMetering>
+	    <next>
+	    	<exportingProcessId>1</exportingProcessId>
+	    </next>
+    </meteringProcess>
+    <!--<meteringProcess id="2">
+	    <flowMetering>
+		    <rule>
+			    <templateId>4711</templateId>
+			    <flowKey>
+				    <ieName>protocolIdentifier</ieName>
+				    <match>UDP</match>
+			    </flowKey>
+		    </rule>
+		    <expiration>
+			    <activeTimeout unit="sec">5</activeTimeout>
+			    <inactiveTimeout unit="sec">5</inactiveTimeout>
+		    </expiration>
+	    </flowMetering>
+	    <next>
+		    <exportingProcessId>1</exportingProcessId>
+	    </next>
+    </meteringProcess>-->
+    <!-- 
+    <meteringProcess id="1">
+	    <packetSelection>
+		    <randOutOfN>
+			    <population>10</population>
+			    <sample>5</sample>
+		    </randOutOfN>
+	    </packetSelection>
+	    <packetReporting>
+		    <templateId>888</templateId>
+		    <reportedIE>
+			    <ieName>sourceIPv4Address</ieName>
+		    </reportedIE>
+		    <reportedIE>
+			    <ieName>destinationIPv4Address</ieName>
+		    </reportedIE>
+		    <reportedIE>
+			    <ieName>protocolIdentifier</ieName>
+		    </reportedIE>
+	    </packetReporting>
+	    <next>
+		    <exportingProcessId>1</exportingProcessId>
+	    </next>
+    </meteringProcess>
+    !-->    
+    <exportingProcess id="1">
+	<ipfixPacketRestrictions>
+	    <maxPacketSize>1500</maxPacketSize>
+	    <maxExportDelay unit="msec">500</maxExportDelay>
+	</ipfixPacketRestrictions>
+	<udpTemplateManagement>
+ 	    <templateRefreshTimeout unit="sec">10</templateRefreshTimeout>
+	    <templateRefreshRate>100</templateRefreshRate>
+	</udpTemplateManagement>
+	<sctpManagement>
+		<dataLifetime unit="msec">10000</dataLifetime>
+		<reconnectTimeout unit="sec">5</reconnectTimeout>
+	</sctpManagement>
+	<collector>
+	    <ipAddressType>4</ipAddressType>
+	    <ipAddress>127.0.0.1</ipAddress>
+	    <transportProtocol>132</transportProtocol>
+	    <port>1500</port>
+	</collector>
+	<!--<collector>
+		<ipAddressType>4</ipAddressType>
+		<ipAddress>10.32.136.3</ipAddress>
+		<transportProtocol>17</transportProtocol>
+		<port>4711</port>
+	</collector>-->
+    </exportingProcess>
+
+    
+    <vermont_main>
+	<poll_interval unit="msec">500</poll_interval>
+	<log_file>log.stat</log_file>
+	<log_interval unit="msec">30000</log_interval>
+    </vermont_main>
+    
+</ipfixConfig>
+		    
+			
+		
+		

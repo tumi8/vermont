@@ -23,10 +23,12 @@
  * Dumps received flows to stdout
  */
 
+
 #include "IpfixCollector.hpp"
 #include "IpfixParser.hpp"
 #include "IpfixPacketProcessor.hpp"
 #include "IpfixReceiverUdpIpV4.hpp"
+#include "IpfixReceiverSctpIpV4.hpp"
 #include "IpfixPrinter.hpp"
 #include "reconf/ConnectionQueue.h"
 
@@ -56,7 +58,7 @@ int main(int argc, char *argv[]) {
 	int lport = DEFAULT_LISTEN_PORT;
 
 	msg_setlevel(MSG_DEBUG);
-
+	
 	signal(SIGINT, sigint);
 
 	if(argv[1]) {
@@ -64,11 +66,19 @@ int main(int argc, char *argv[]) {
 	}
 
 	// needs to be a pointer because its freed in d'tor of IpfixCollector
-	IpfixReceiverUdpIpV4* ipfixReceiver = new IpfixReceiverUdpIpV4(lport);
-	IpfixCollector collector(ipfixReceiver);
+	//IpfixReceiverUdpIpV4* ipfixReceiver = new IpfixReceiverUdpIpV4(lport);
+	
 	ConnectionQueue<IpfixRecord*> queue(100);
 	IpfixPrinter printer;
 
+
+
+
+#ifdef SUPPORT_SCTP
+	// If you want to create a SCTP testCollector 	
+   	IpfixReceiverSctpIpV4 ipfixReceiver(lport, "127.0.0.1");
+   	IpfixCollector collector(&ipfixReceiver);
+#endif
 	collector.connectTo(&queue);
 	queue.connectTo(&printer);
 
@@ -77,26 +87,41 @@ int main(int argc, char *argv[]) {
 	collector.start();
 
 
+	// If you want to create a UDP testCollector
+    	IpfixReceiverUdpIpV4 ipfixReceiver2(4711);
+	
+	
+	/* (not in this branch of rcvIpfix)
+	if (argc > 2) {
+		msg(MSG_DIALOG, "Adding %s to list of authorized hosts", argv[2]);
+		ipfixReceiver.addAuthorizedHost(argv[2]);
+	}
+	*/
 
-
-
-	// FIXME: test temporarily deactivated
 	/*IpfixParser ipfixParser;
+	ipfixParser.setTemplateLivetime(0);
 	ipfixParser.addFlowSink(&ipfixPrinter);
 
 	IpfixCollector ipfixCollector;
+#ifdef SUPPORT_SCTP
 	ipfixCollector.addIpfixReceiver(&ipfixReceiver);
+#endif
+	ipfixCollector.addIpfixReceiver(&ipfixReceiver2);
 	ipfixCollector.addIpfixPacketProcessor(&ipfixParser);
 	ipfixCollector.start();*/
 
-	msg(MSG_DIALOG, "Listening on %d. Hit Ctrl+C to quit\n", lport);
+	msg(MSG_DIALOG, "Hit Ctrl+C to quit");
 	pause();
 	msg(MSG_DIALOG, "Stopping threads and tidying up.\n");
 
+	msg(MSG_DIALOG, "stopping collector\n");
 	collector.shutdown();
 	queue.shutdown();
 	printer.shutdown();
-
+#ifdef SUPPORT_SCTP
+	//ipfixReceiver.shutdown();
+#endif
+	//ipfixReceiver2.shutdown();
 
 	return 0;
 }

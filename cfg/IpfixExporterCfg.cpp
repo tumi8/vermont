@@ -50,14 +50,13 @@ IpfixExporterCfg::~IpfixExporterCfg()
 
 IpfixSender* IpfixExporterCfg::createInstance()
 {
-	instance = new IpfixSender(0, udpRateLimit); // FIXME: observationDomainId
+	instance = new IpfixSender(0, 0, 0, UDP, udpRateLimit); // FIXME: observationDomainId
 
 	for (unsigned i = 0; i != collectors.size(); ++i) {
 		msg(MSG_DEBUG, "IpfixExporter: adding collector %s:%d",
 				collectors[i]->getIpAddress().c_str(),
 				collectors[i]->getPort());
-		instance->addCollector(collectors[i]->getIpAddress().c_str(),
-				       collectors[i]->getPort());
+		instance->addCollector(collectors[i]->getIpAddress().c_str(), collectors[i]->getPort(), UDP);
 	}
 
 	return instance;

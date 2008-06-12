@@ -25,7 +25,7 @@
 #include <time.h>
 #include <boost/smart_ptr.hpp>
 
-#define TEMPLATE_EXPIRE_SECS  70
+#define DEFAULT_TEMPLATE_EXPIRE_SECS  70
 
 /**
  * Represents a Template Buffer

@@ -102,6 +102,48 @@ uint32_t getdefaultIPFIXdata(int ipfixtype);
 uint32_t getipv4address(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
 
 /**
+ * (re)connect to database
+ */
+void IpfixDbWriter::connectToDB()
+{
+    dbError = true;
+
+    // close (in the case that it was already connected)
+    mysql_close(conn);
+
+    /** get the mysl init handle*/
+    conn = mysql_init(0);
+    if(conn == 0) {
+		msg(MSG_FATAL,"IpfixDbWriter: Get MySQL connect handle failed. Error: %s",
+			mysql_error(conn));
+		return;
+    } else {
+    	msg(MSG_DEBUG,"IpfixDbWriter got MySQL init handler");
+    }
+
+    /**Connect to Database*/
+    if (!mysql_real_connect(conn,
+		hostName, userName,
+		password, 0, portNum,
+		socketName, flags)) {
+		msg(MSG_FATAL,"IpfixDbWriter: Connection to database failed. Error: %s",
+			mysql_error(conn));
+		return;
+    } else {
+    	msg(MSG_DEBUG,"IpfixDbWriter succesfully connected to database");
+    }
+    /** create Database*/
+    if(createDB() !=0)
+    	return;
+    /**create table exporter*/
+    if(createExporterTable() !=0)
+    	return;
+
+    dbError = false;
+}
+
+
+/**
  * create the database given by the name dbnam->dbn
  */
 int IpfixDbWriter::createDB()
@@ -136,8 +178,7 @@ int IpfixDbWriter::createDB()
 		msg(MSG_FATAL,"IpfixDbWriter: Database %s not selectable. Error: %s",
 				dbName, mysql_error(conn));
 		return 1;
-	}
-	else {
+	} else {
 		msg(MSG_DEBUG,"Database %s selected", dbName);
 	}
 	return 0;
@@ -164,8 +205,7 @@ int IpfixDbWriter::createExporterTable()
 		msg(MSG_FATAL,"IpfixDbWriter: Creation of table Exporter failed. Error: %s",
 				mysql_error(conn));
 		return 1;
-	}
-	else {
+	} else {
 		msg(MSG_DEBUG,"Exporter table created");
 	}
 	return 0;
@@ -186,7 +226,7 @@ int IpfixDbWriter::createDBTable(const char* tablename)
 		strncat(createTableStr,identify[i].cname,strlen(identify[i].cname)+1);
 		strncat(createTableStr," ",sizeof(char)+1);
 		strncat(createTableStr,identify[i].dataType,strlen(identify[i].dataType)+1);
-		if( i != numberOfColumns-1) {
+		if (i!= numberOfColumns-1) {
 			strncat(createTableStr,",",sizeof(char)+1);
 		}
 	}
@@ -207,12 +247,24 @@ int IpfixDbWriter::createDBTable(const char* tablename)
 	if(mysql_query(conn,createTableStr) != 0) {
 		msg(MSG_FATAL,"IpfixDbWriter: Creation of table failed. Error: %s",
 				mysql_error(conn));
+		dbError = true;
 		return 1;
 	}
 	else {
 		msg(MSG_INFO, "Table %s created ",tablename);
 	}
 	return 0;
+}
+
+/**
+ *	function receive the DataRecord or DataDataRecord when callback is started
+ */
+void IpfixDbWriter::onDataDataRecord(IpfixDataDataRecord* record)
+{
+	processDataDataRecord(record->sourceID.get(), record->dataTemplateInfo.get(), 
+			record->dataLength, record->data);
+	
+	record->removeReference();
 }
 
 /**
@@ -223,6 +275,9 @@ void IpfixDbWriter::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 		IpfixRecord::Data* data)
 {
 	DPRINTF("Processing data record");
+
+	if (dbError) return;
+	connectToDB();
 
 	/** check if statement buffer is not full*/
 	if(statements.statemBuffer[statements.maxStatements-1][0] != '\0') {
@@ -254,20 +309,12 @@ void IpfixDbWriter::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 				statements.statemReceived++;
 				msg(MSG_DEBUG, "Buffering record. Need %i more records before writing to database.", statements.maxStatements - statements.statemReceived);
 			}
+		} else {
+			msg(MSG_ERROR, "Could not generate SQL-statement from record");
 		}
 	}
 }
 
-/**
- *	function receive the DataRecord or DataDataRecord when callback is started
- */
-void IpfixDbWriter::onDataDataRecord(IpfixDataDataRecord* record)
-{
-	processDataDataRecord(record->sourceID.get(), record->dataTemplateInfo.get(), 
-			record->dataLength, record->data);
-	
-	record->removeReference();
-}
 
 /**
  *	function receive the  when callback is started
@@ -345,8 +392,7 @@ void IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* s
 			uint32_t expID = getExporterID(sourceID);
 			intdata = expID;
 			notfound = false;
-		}
-		else {
+		} else {
 			// try to gather data required for the field
 			if(dataTemplateInfo->fieldCount > 0) {
 				// look inside the ipfix data packet
@@ -483,6 +529,10 @@ void IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* s
 	char tablename[TABLE_WIDTH];
 	DPRINTF("flowstartsec: %d", flowstartsec);
 	const char* tablen = getTableName(flowstartsec);
+	if(tablen == NULL) {
+		statemStr[0] = 0;
+		return;
+    }
 	strcpy(tablename, tablen);
 	/** Insert statement = INSERT INTO + tablename +  Columnsname + Values of record*/
 	strcat(statemStr, tablename);
@@ -494,8 +544,8 @@ void IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* s
 		if(locks[j][0] == '\0') {
 			/* empty slot, i.e. no more table names. insert the current one */
 			strcpy(locks[j], tablename);
-			break;}
-		else if(strncmp(tablename, locks[j], TABLE_WIDTH) == 0)
+			break;
+		} else if(strncmp(tablename, locks[j], TABLE_WIDTH) == 0)
 		/* found tablename */
 		break;
 	}
@@ -514,6 +564,7 @@ int IpfixDbWriter::writeToDb()
 	uint32_t i;
 
 	char LockTables[STARTLEN + (TABLE_WIDTH * statements.maxLocks * 2)];
+	char UnLockTable[STARTLEN] = "UNLOCK TABLES";
 
 	strcpy(LockTables,"LOCK TABLES ");
 	//Lock all tables to store the insert statements
@@ -529,34 +580,41 @@ int IpfixDbWriter::writeToDb()
 	}
 
 	if(mysql_query(conn, LockTables) != 0) {
-		msg(MSG_ERROR,"IpfixDbWriter: Lock of table failed. Error: %s",
-				mysql_error(conn));
-		return 1;
-	}
+		msg(MSG_ERROR,"IpfixDbWriter: Lock of table failed, dropping %d records. Error: %s",
+			statements.statemReceived, mysql_error(conn));
+		goto dbwriteerror;
+    }
 	// Write the insert statement to database
 	for(i=0; i != statements.maxStatements; i++) {
 		if(statements.statemBuffer[i][0] != '\0') {
 			if(mysql_query(conn, statements.statemBuffer[i]) != 0) {
 				msg(MSG_ERROR,"IpfixDbWriter: Insert of records failed. Error: %s",
 						mysql_error(conn));
-				return 1;
-			}
-			else {
+				goto dbwriteerror;
+			} else {
 				DPRINTF("Record inserted\n");
 			}
 			statements.statemBuffer[i][0] = '\0';
 		}
 	}
-
-	char UnLockTable[STARTLEN] = "UNLOCK TABLES";
+	statements.statemReceived = 0;
+	
 	if(mysql_query(conn, UnLockTable) != 0) {
 		msg(MSG_ERROR,"IpfixDbWriter: Unlock of tables failed",
 				mysql_error(conn));
-		return 1;
+	goto dbwriteerror;
+    }
+    msg(MSG_DEBUG,"Write to database is complete");
+    return 0;
+
+dbwriteerror:
+    dbError = true;
+    // drop records and free buffer
+    for(i=0; i != statements.maxStatements; i++) {
+	statements.statemBuffer[i][0] = '\0';
 	}
 	statements.statemReceived = 0;
-	msg(MSG_DEBUG,"Write to database is complete");
-	return 0;
+	return 1;
 }
 
 /**
@@ -608,8 +666,7 @@ const char* IpfixDbWriter::getTableName(uint64_t flowstartsec)
 	if(cache.countBuffTable < MAX_TABLE-1) {
 		cache.countBuffTable++;
 		return cache.tableBuffer[cache.countBuffTable-1].TableName;
-	}
-	else {
+	} else {
 		cache.countBuffTable = 0;
 		return cache.tableBuffer[MAX_TABLE-1].TableName;
 	}
@@ -660,8 +717,7 @@ uint64_t getTableStartTime(uint64_t flowstartsec)
 		timeNow->tm_sec = 0;
 		startTime = mktime(timeNow);
 		return startTime;
-	}
-	else {
+	} else {
 		timeNow->tm_min = 30;
 		timeNow->tm_sec = 0;
 		startTime = mktime(timeNow);
@@ -698,7 +754,8 @@ int IpfixDbWriter::getExporterID(IpfixRecord::SourceID* sourceID)
 	char statementStr[EXPORTER_WIDTH];
 	uint32_t expIp;
 	
-	expIp = *(uint32_t*)(sourceID->exporterAddress.ip);
+	if(sourceID->exporterAddress.len == 4) 
+		expIp = *(uint32_t*)(sourceID->exporterAddress.ip);
 
 #ifdef DEBUG
 	DPRINTF("Content of exporterBuffer\n");
@@ -784,8 +841,7 @@ int IpfixDbWriter::getExporterID(IpfixRecord::SourceID* sourceID)
 
 	if(cache.countExpTable < MAX_EXP_TABLE-1) {
 		cache.countExpTable++;
-	}
-	else {
+	} else {
 		cache.countExpTable = 0;
 	}
 
@@ -832,16 +888,16 @@ uint64_t getIPFIXValue(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* dat
 {
 	switch (type.length) {
 		case 1:
-		return (*(uint8_t*)data);
+			return (*(uint8_t*)data);
 		case 2:
-		return ntohs(*(uint16_t*)data);
+			return ntohs(*(uint16_t*)data);
 		case 4:
-		return ntohl(*(uint32_t*)data);
+			return ntohl(*(uint32_t*)data);
 		case 8:
-		return ntohll(*(uint64_t*)data);
+			return ntohll(*(uint64_t*)data);
 		default:
-		printf("Uint with length %d unparseable\n", type.length);
-		return 0;
+			printf("Uint with length %d unparseable\n", type.length);
+			return 0;
 	}
 }
 
@@ -871,15 +927,6 @@ IpfixDbWriter::IpfixDbWriter(const char* host, const char* db,
 		unsigned int port, uint16_t observationDomainId,
 		int maxStatements)
 {
-	conn = mysql_init(0); /** get the mysl init handle*/
-	if(conn == 0) {
-		msg(MSG_FATAL,"IpfixDbWriter: Get MySQL connect handle failed. Error: %s",
-				mysql_error(conn));
-		goto out;
-	}
-	else {
-		msg(MSG_DEBUG,"IpfixDbWriter got MySQL init handler");
-	}
 	/**Initialize structure members IpfixDbWriter*/
 	hostName = host;
 	dbName = db;
@@ -888,7 +935,12 @@ IpfixDbWriter::IpfixDbWriter(const char* host, const char* db,
 	portNum = port;
 	socketName = 0;
 	flags = 0;
+    srcId.exporterAddress.len = 0;
 	srcId.observationDomainId = observationDomainId;
+    srcId.exporterPort = 0;
+    srcId.receiverPort = 0;
+    srcId.protocol = 0;
+    srcId.fileDescriptor = 0;
 
 	/**Initialize table cache*/
 	cache.countBuffTable = 0;
@@ -925,28 +977,7 @@ IpfixDbWriter::IpfixDbWriter(const char* host, const char* db,
 		statements.lockTables[i][0] = '\0';
 	}
 
-	/**Connect to Database*/
-	if (!mysql_real_connect(conn, hostName, userName,
-					password, 0, portNum, socketName, flags)) {
-		msg(MSG_FATAL,"IpfixDbWriter: Connection to database failed. Error: %s",
-				mysql_error(conn));
-		goto out;
-	}
-	else {
-		msg(MSG_DEBUG,"IpfixDbWriter succesfully connected to database");
-	}
-	/** create Database*/
-	if (createDB()!=0)
-	goto out;
-	/**create table exporter*/
-	if (createExporterTable()!=0)
-	goto out;
-
-	return;
-
-	out:
-	THROWEXCEPTION("IpfixDbWriter creation failed");
-	return;
+	connectToDB();
 }
 
 /**

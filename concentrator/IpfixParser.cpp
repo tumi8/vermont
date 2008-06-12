@@ -39,6 +39,7 @@
 #include "IpfixParser.hpp"
 #include "TemplateBuffer.hpp"
 #include "ipfix.hpp"
+#include "IpfixPrinter.hpp"
 
 #include "common/msg.h"
 
@@ -131,7 +132,10 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		}
         
 		templateBuffer->bufferTemplate(bt); 
-		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
+		if((sourceId->protocol == IPFIX_protocolIdentifier_UDP) && (templateLivetime > 0))
+			bt->expires = time(0) + templateLivetime;
+		else
+			bt->expires = 0;
 
 		IpfixTemplateRecord* ipfixRecord = templateRecordIM.getNewInstance();
 		ipfixRecord->sourceID = sourceId;
@@ -258,7 +262,10 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 			}
 		}
 		templateBuffer->bufferTemplate(bt); 
-		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
+		if((sourceId->protocol == IPFIX_protocolIdentifier_UDP) && (templateLivetime > 0))
+			bt->expires = time(0) + templateLivetime;
+		else
+			bt->expires = 0;
 
 		IpfixOptionsTemplateRecord* ipfixRecord = optionsTemplateRecordIM.getNewInstance();
 		ipfixRecord->sourceID = sourceId;
@@ -420,8 +427,11 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		record += dataLength;
 
 		templateBuffer->bufferTemplate(bt); 
-		bt->expires = time(0) + TEMPLATE_EXPIRE_SECS;
-
+		if((sourceId->protocol == IPFIX_protocolIdentifier_UDP) && (templateLivetime > 0))
+			bt->expires = time(0) + templateLivetime;
+		else
+			bt->expires = 0;
+		
 		IpfixDataTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
 		ipfixRecord->sourceID = sourceId;
 		ipfixRecord->dataTemplateInfo = ti;
@@ -433,13 +443,22 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
  * Processes an IPFIX data set.
  * Called by processMessage
  */
-void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
+uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
 	TemplateBuffer::BufferedTemplate* bt = templateBuffer->getBufferedTemplate(sourceId, ntohs(set->id));
+	uint32_t numberOfRecords = 0;
 
 	if (bt == 0) {
 		/* this error may come in rapid succession; I hope I don't regret it */
-		msg(MSG_INFO, "Template %d unknown to collecting process", ntohs(set->id));
-		return;
+		if(sourceId->exporterAddress.len == 4) {
+			msg(MSG_INFO, "Template %d from %u.%u.%u.%u unknown to collecting process", 
+				ntohs(set->id), (uint8_t)sourceId->exporterAddress.ip[3], 
+				(uint8_t)sourceId->exporterAddress.ip[2], (uint8_t)sourceId->exporterAddress.ip[1], 
+				(uint8_t)sourceId->exporterAddress.ip[0]);
+		} else {
+			msg(MSG_INFO, "Template %d from non-IPv4 unknown to collecting process", ntohs(set->id));
+		}
+		DPRINTF("Protocol: %u  Remote Port: %u", sourceId->protocol, sourceId->exporterPort);
+		return 0;
 	}
         
 	uint8_t* endOfSet = (uint8_t*)set + ntohs(set->length);
@@ -448,7 +467,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 	/* check if set length lies within message boundaries */
 	if (endOfSet > endOfMessage) {
 		msg(MSG_ERROR, "IpfixParser: Data set exceeds message boundary!");
-		return;
+		return 0;
 	}
 
 #ifdef SUPPORT_NETFLOWV9
@@ -475,6 +494,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 				statTotalDataRecords++;
 				push(ipfixRecord);
 				record = record + bt->recordLength;
+				numberOfRecords++;
 			}
 		} else {
 			/* Variable-length record */
@@ -529,6 +549,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 				statTotalDataRecords++;
 				push(ipfixRecord);
 				record = record + recordLength;
+				numberOfRecords++;
 			}
 		}
 	} else if (bt->setID == IPFIX_SetId_OptionsTemplate) {
@@ -551,6 +572,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 				statTotalDataRecords++;
 				push(ipfixRecord);
 				record = record + bt->recordLength;
+				numberOfRecords++;
 			}
 		} else {
 			/* We assume that each field is at least 1 byte */
@@ -636,6 +658,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 				statTotalDataRecords++;
 				push(ipfixRecord);
 				record = record + recordLength;
+				numberOfRecords++;
 			}
 		}
 	} else if (bt->setID == IPFIX_SetId_DataTemplate) {
@@ -658,6 +681,7 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 				statTotalDataRecords++;
 				push(ipfixRecord);
 				record = record + bt->recordLength;
+				numberOfRecords++;
 			}
 		} else {
 			/* We assume that each field is at least 1 byte */
@@ -711,11 +735,13 @@ void IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> source
 				statTotalDataRecords++;
 				push(ipfixRecord);
 				record = record + recordLength;
+				numberOfRecords++;
 			}
 		}	
 	} else {
 	    msg(MSG_FATAL, "Data Set based on known but unhandled template type %d", bt->setID);
 	}
+	return numberOfRecords;
 }
 
         
@@ -782,6 +808,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 	uint8_t* endOfMessage = (uint8_t*)((uint8_t*)message.get() + length); 
 
 	uint16_t tmpid;
+	uint32_t numberOfDataRecords;
 	/* while there is space for a set header... */
 	while((uint8_t*)(set) + 4 <= endOfMessage) {
 		/* check set length */
@@ -805,13 +832,16 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 		default:
 			if(tmpid >= IPFIX_SetId_Data_Start) {
 				statTotalDRPackets++;
-				processDataSet(sourceId, message, set, endOfMessage);
+				numberOfDataRecords += processDataSet(sourceId, message, set, endOfMessage);
 			} else {
 				msg(MSG_ERROR, "processIpfixPacket: Unsupported Set ID - expected 2/3/4/256+, got %d", tmpid);
 			}
 		}
 		set = (IpfixSetHeader*)((uint8_t*)set + ntohs(set->length));
 	}
+	
+	//FIXME: check for out-of-order messages and lost records
+	msg(MSG_VDEBUG, "Message contained %u records, sequence number was %u", numberOfDataRecords, ntohl(header->sequenceNo));
 
 	return 0;
 }
@@ -845,167 +875,16 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
 #endif
 }
 	
-static void printIPv4(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
-	int octet1 = 0;
-	int octet2 = 0;
-	int octet3 = 0;
-	int octet4 = 0;
-	int imask = 0;
-	if (type.length >= 1) octet1 = data[0];
-	if (type.length >= 2) octet2 = data[1];
-	if (type.length >= 3) octet3 = data[2];
-	if (type.length >= 4) octet4 = data[3];
-	if (type.length >= 5) imask = data[4];
-	if (type.length > 5) {
-		DPRINTF("IPv4 Address with length %d unparseable\n", type.length);
-		return;
-	}
-
-	if ((type.length == 5) /*&& (imask != 0)*/) {
-		printf("%d.%d.%d.%d/%d", octet1, octet2, octet3, octet4, 32-imask);
-	} else {
-		printf("%d.%d.%d.%d", octet1, octet2, octet3, octet4);
-	}
-}
-
-static void printPort(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
-	if (type.length == 0) {
-		printf("zero-length Port");
-		return;
-	}
-	if (type.length == 2) {
-		int port = ((uint16_t)data[0] << 8)+data[1];
-		printf("%d", port);
-		return;
-	}
-	if ((type.length >= 4) && ((type.length % 4) == 0)) {
-		int i;
-		for (i = 0; i < type.length; i+=4) {
-			int starti = ((uint16_t)data[i+0] << 8)+data[i+1];
-			int endi = ((uint16_t)data[i+2] << 8)+data[i+3];
-			if (i > 0) printf(",");
-			if (starti != endi) {
-				printf("%d:%d", starti, endi);
-			} else {
-				printf("%d", starti);
-			}
-		}
-		return;
-	}
-
-	printf("Port with length %d unparseable", type.length);
-}
-
-void printProtocol(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
-	if (type.length != 1) {
-		printf("Protocol with length %d unparseable", type.length);
-		return;
-	}
-	switch (data[0]) {
-	case IPFIX_protocolIdentifier_ICMP:
-		printf("ICMP");
-		return;
-	case IPFIX_protocolIdentifier_TCP:
-		printf("TCP");
-		return;
-	case IPFIX_protocolIdentifier_UDP: 
-		printf("UDP");
-		return;
-	case IPFIX_protocolIdentifier_RAW: 
-		printf("RAW");
-		return;
-	default:
-		printf("unknownProtocol");
-		return;
-	}
-}
-
-static void printUint(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
-	switch (type.length) {
-	case 1:
-		printf("%hhu",*(uint8_t*)data);
-		return;
-	case 2:
-		printf("%hu",ntohs(*(uint16_t*)data));
-		return;
-	case 4:
-		printf("%u",ntohl(*(uint32_t*)data));
-		return;
-	case 8:
-		printf("%Lu",ntohll(*(uint64_t*)data));
-		return;
-	default:
-		msg(MSG_ERROR, "Uint with length %d unparseable", type.length);
-		return;
-	}
-}
-
-static void printFrontPayload(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) 
-{
-	for (uint32_t i=0; i<type.length; i++) {
-		char c = data[i];
-		if (isprint(c)) printf("%c", c);
-		else printf(".");
-	}
-	printf("'");
-}
-
-
-/**
- * Prints a string representation of IpfixRecord::Data to stdout.
- */
-void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* pattern) {
-	char* s;
-
-	switch (type.id) {
-	case IPFIX_TYPEID_protocolIdentifier:
-		printf("protocolIdentifier:");
-		printProtocol(type, pattern);
-		break;
-	case IPFIX_TYPEID_sourceIPv4Address:
-		printf("sourceIPv4Address:");
-		printIPv4(type, pattern);
-		break;
-	case IPFIX_TYPEID_destinationIPv4Address:
-		printf("destinationIPv4Address:");
-		printIPv4(type, pattern);
-		break;
-	case IPFIX_TYPEID_sourceTransportPort:
-		printf("sourceTransportPort:");
-		printPort(type, pattern);
-		break;
-	case IPFIX_TYPEID_destinationTransportPort:
-		printf("destinationTransportPort:");
-		printPort(type, pattern);
-		break;
-	case IPFIX_ETYPEID_frontPayload:
-		printf("frontPayload:");
-		printFrontPayload(type, pattern);
-		break;
-	case IPFIX_ETYPEID_revFrontPayload:
-			printf("revFrontPayload:");
-			printFrontPayload(type, pattern);
-			break;
-	default:
-		s = typeid2string(type.id);
-		if (s != NULL) {
-			printf("%s:", s);
-			printUint(type, pattern);
-		} else {
-			DPRINTF("Field with ID %d unparseable\n", type.id);
-		}
-		break;
-	}
-}
 
 /**
  * Creates a new  @c IpfixParser.
  * @return handle to created instance
  */
 IpfixParser::IpfixParser(IpfixRecordSender* sender) 
-	: statTotalDataRecords(0),
-	  statTotalDRPackets(0),
-	  ipfixRecordSender(sender)
+	: templateLivetime(DEFAULT_TEMPLATE_EXPIRE_SECS),
+	  statTotalDataRecords(0),
+  	  statTotalDRPackets(0),
+  	  ipfixRecordSender(sender)
 {
 
 	if (pthread_mutex_init(&mutex, NULL) != 0) {

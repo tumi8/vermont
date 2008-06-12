@@ -114,7 +114,8 @@ class IpfixDbWriter
 		unsigned int portNum;        /** Portnumber (use default) */
 		const char* socketName;      /** Socketname (use default) */
 		unsigned int flags;          /** Connectionflags (none) */
-		MYSQL* conn;                 /** pointer to connection handle */       
+		MYSQL* conn;                 /** pointer to connection handle */  
+		int dbError;
 
 		int createDB();
 		int createExporterTable();
@@ -124,6 +125,7 @@ class IpfixDbWriter
 		int getExporterID(IpfixRecord::SourceID* sourceID);
                 const char* getTableName(uint64_t flowstartsec);
 	private:
+		void connectToDB();
 		void addColumnEntry(char* sql, const char* insert, bool quoted, bool lastcolumn);
 		void addColumnEntry(char* sql, uint64_t insert, bool quoted, bool lastcolumn);
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID, 

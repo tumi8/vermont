@@ -28,7 +28,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "Rule.hpp"
-#include "IpfixParser.hpp"
+#include "IpfixPrinter.hpp"
 #include "ipfix.hpp"
 
 #include "common/msg.h"

@@ -38,10 +38,10 @@ using namespace std;
 class IpfixSender : public Module, public Source<NullEmitable*>, public IpfixRecordDestination, public Notifiable
 {
 public:
-	IpfixSender(uint16_t observationDomainId, uint32_t maxPacketRate = IS_DEFAULT_MAXUDPRATE);
+	IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0, ipfix_transport_protocol proto = UDP, uint32_t maxPacketRate = IS_DEFAULT_MAXUDPRATE);
 	virtual ~IpfixSender();
 
-	void addCollector(const char *ip, uint16_t port);
+	void addCollector(const char *ip, uint16_t port, ipfix_transport_protocol proto);
 	void flushPacket();
 
 	// inherited from IpfixRecordDestination
@@ -63,19 +63,6 @@ public:
 	// inherited from Notifiable
 	virtual void onTimeout(void* dataPtr);
 
-	class Collector
-	{
-	public:
-		Collector() :
-			port(0)
-		{
-			memset(&ip, 0, sizeof(ip));
-		}
-		~Collector() {}
-
-		char ip[128]; /**< IP address of Collector */
-		uint16_t port; /**< Port of Collector */
-	};
 
 	virtual void onReconfiguration2();
 	virtual string getStatisticsXML(double interval);
@@ -83,12 +70,29 @@ public:
 protected:
 	ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */
 	uint16_t lastTemplateId; /**< Template ID of last created Template */
-	std::vector<Collector> collectors; /**< Collectors we export to */
 	uint32_t statSentDataRecords; /**< Statistics: Total number of data records sent since last statistics were polled */
 	uint32_t statSentPackets; /**< Statistics: total number of packets sent over the network */
 	uint32_t statPacketsInFlows; /**< Statistics: total number of packets within flows */
-
+		
 	void performShutdown(); 
+	uint32_t sentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
+
+	timespec nextTimeout;
+
+	queue<IpfixRecord*> recordsToRelease;
+
+	static void* threadWrapper(void* instance);
+	void processLoop();
+	void removeRecordReferences();
+	void endAndSendDataSet();
+
+	void startDataSet(uint16_t templateId);
+	bool isTemplateRegistered(IpfixRecord::TemplateInfo* ti);
+	void removeRegisteredTemplate(IpfixRecord::TemplateInfo* ti);
+	void addRegisteredTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> ti);
+	void sendRecords(bool forcesend = false);
+	void registerTimeout();
+
 
 private:
 
@@ -105,21 +109,25 @@ private:
 	uint32_t packetsSentStep; /**< number of packets sent in timestep (usually 100ms)*/
 	uint32_t udpRateLimit;  /** maximum number of packets per seconds to be sent over the wire */
 
-	timespec nextTimeout;
+	// Set up time after that Templates are going to be resent
+	bool setTemplateTransmissionTimer(uint32_t timer){
+		ipfix_set_template_transmission_timer(ipfixExporter, timer);
+		
+		return true;
+	}
+	// Set up SCTP packet lifetime
+	bool setSctpLifetime(uint32_t time){
+		ipfix_set_sctp_lifetime(ipfixExporter, time);
+		
+		return true;
+	}
+	// Set up SCTP reconnect timer
+	bool setSctpReconnectTimeout(uint32_t time){
+		ipfix_set_sctp_reconnect_timer(ipfixExporter, time);
+		
+		return true;
+	}
 	
-	queue<IpfixRecord*> recordsToRelease;
-	
-	static void* threadWrapper(void* instance);
-	void processLoop();
-	void removeRecordReferences();
-	void endAndSendDataSet();
-
-	void startDataSet(uint16_t templateId);
-	bool isTemplateRegistered(IpfixRecord::TemplateInfo* ti);
-	void removeRegisteredTemplate(IpfixRecord::TemplateInfo* ti);
-	void addRegisteredTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> ti);
-	void sendRecords(bool forcesend = false);
-	void registerTimeout();
 };
 
 #endif

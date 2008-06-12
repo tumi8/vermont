@@ -42,10 +42,13 @@ using namespace std;
 /** 
  * Does UDP/IPv4 specific initialization.
  * @param port Port to listen on
+ * @param ipAddr interface to use, if equals "", all interfaces will be used
  */
-IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port) 
+IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
 	: statReceivedPackets(0)
 {
+	receiverPort = port;
+
 	struct sockaddr_in serverAddress;
 
 	listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
@@ -54,16 +57,26 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port)
 		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed");
 	}
 	
+	// if ipAddr set: listen on a specific interface 
+	// else: listen on all interfaces
+	if(ipAddr == "")
+		serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
+	else
+		serverAddress.sin_addr.s_addr = inet_addr(ipAddr.c_str());
+	
 	serverAddress.sin_family = AF_INET;
-	serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 	serverAddress.sin_port = htons(port);
 	if(bind(listen_socket, (struct sockaddr*)&serverAddress, 
 		sizeof(struct sockaddr_in)) < 0) {
 		perror("Could not bind socket");
-		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4");
+		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4 %s:%d",ipAddr.c_str(), port );
 	}
 
 	SensorManager::getInstance().addSensor(this, "IpfixReceiverUdpIpV4", 0);
+
+	msg(MSG_INFO, "UDP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
+								port, 
+								listen_socket);
 }
 
 
@@ -122,17 +135,19 @@ void IpfixReceiverUdpIpV4::run() {
 		}
 		
 		if (isHostAuthorized(&clientAddress.sin_addr, sizeof(clientAddress.sin_addr))) {
-
 			statReceivedPackets++;
-			uint32_t ip = ntohl(clientAddress.sin_addr.s_addr);
-			memcpy(sourceID->exporterAddress.ip, &ip, 4);
+// 			uint32_t ip = clientAddress.sin_addr.s_addr;
+			memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
 			sourceID->exporterAddress.len = 4;
-
+			sourceID->exporterPort = ntohs(clientAddress.sin_port);
+			sourceID->protocol = IPFIX_protocolIdentifier_UDP;
+			sourceID->receiverPort = receiverPort;
+			sourceID->fileDescriptor = listen_socket;
+			pthread_mutex_lock(&mutex);
 			for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
 				(*i)->processPacket(data, n, sourceID);
 			}
-		}
-		else{
+		} else {
 			msg(MSG_FATAL, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
 		}
 	}

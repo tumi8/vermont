@@ -32,8 +32,22 @@
 TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId) {
 	time_t now = time(0);
 	TemplateBuffer::BufferedTemplate* bt = head;
+
+#ifdef DEBUG
+	DPRINTF("ALL TEMPLATES ---------------------------");
 	while (bt != 0) {
-		if ((bt->sourceID->observationDomainId == sourceId->observationDomainId) && (bt->templateID == templateId)) {
+		DPRINTF("bt->sourceID %lu %u %u %u.%u.%u.%u %u %u ptr: %lu size: %lu", bt->sourceID.get()->observationDomainId, bt->sourceID.get()->exporterPort, bt->sourceID.get()->receiverPort, bt->sourceID.get()->exporterAddress.ip[0], bt->sourceID.get()->exporterAddress.ip[1], bt->sourceID.get()->exporterAddress.ip[2], bt->sourceID.get()->exporterAddress.ip[3], bt->sourceID.get()->exporterAddress.len, bt->sourceID.get()->protocol, bt->sourceID.get(), sizeof(IpfixRecord::SourceID));
+		
+		bt = (TemplateBuffer::BufferedTemplate*)bt->next;
+	}
+	DPRINTF("END ALL TEMPLATES --------------------------");
+	
+	bt = head;
+	DPRINTF("Searching for : sourceID %lu %u %u %u.%u.%u.%u  %u %u", sourceId.get()->observationDomainId, sourceId.get()->exporterPort, sourceId.get()->receiverPort, sourceId.get()->exporterAddress.ip[0], sourceId.get()->exporterAddress.ip[1], sourceId.get()->exporterAddress.ip[2], sourceId.get()->exporterAddress.ip[3], sourceId.get()->exporterAddress.len, sourceId.get()->protocol);
+#endif
+	
+	while (bt != 0) {
+		if ((*(bt->sourceID.get()) == *(sourceId.get())) && (bt->templateID == templateId)){
 			if ((bt->expires) && (bt->expires < now)) {
 				destroyBufferedTemplate(sourceId, templateId);
 				return 0;
@@ -42,6 +56,7 @@ TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::sha
 		}
 		bt = (TemplateBuffer::BufferedTemplate*)bt->next;
 	}
+	DPRINTF("getBufferedTemplate not found!!!");
 	return 0;
 }
 
@@ -65,8 +80,7 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 	bool found = false;
 	while (bt != 0) {
 		/* templateId == setID means that all templates of this set type shall be removed */
-		if ((bt->sourceID->observationDomainId == sourceId->observationDomainId) 
-				&& ((bt->templateID == templateId) || (bt->setID == templateId))) {
+		if ((*(bt->sourceID.get()) == *(sourceId.get())) && ((bt->templateID == templateId) || (bt->setID == templateId))) {
 			found = true;
 			if (predecessor != 0) {
 				predecessor->next = bt->next;

@@ -27,6 +27,7 @@ ADD_LIBRARY(concentrator
 	FlowHashtable.cpp
 	ipfix.cpp
 	IpfixReceiverUdpIpV4.cpp
+	IpfixReceiverSctpIpV4.cpp
 	IpfixRawdirReader.cpp
 	IpfixReceiver.cpp
 	IpfixRecord.cpp

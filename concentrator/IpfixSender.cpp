@@ -42,9 +42,11 @@ using namespace std;
 /**
  * Creates a new IPFIX Exporter. Do not forget to call @c startIpfixSender() to begin sending
  * @param sourceID Source ID this exporter will report
+ * @param ip destination collector's address
+ * @param port destination collector's port
  * @return handle to use when calling @c destroyIpfixSender()
  */
-IpfixSender::IpfixSender(uint16_t observationDomainId, uint32_t udpRateLimit) 
+IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port, ipfix_transport_protocol proto, uint32_t udpRateLimit)
 	: statSentPackets(0),
 	  noCachedRecords(0),
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
@@ -66,6 +68,10 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, uint32_t udpRateLimit)
 	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
 		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
 		goto out;
+	}
+
+	if (ip && port) {
+		addCollector(ip, port, proto);
 	}
 	
 	msg(MSG_DEBUG, "IpfixSender: running");
@@ -95,20 +101,16 @@ IpfixSender::~IpfixSender()
  * @param port port number
  * FIXME: support for other than UDP
  */
-void IpfixSender::addCollector(const char *ip, uint16_t port)
+void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_protocol proto)
 {
 	ipfix_exporter *ex = (ipfix_exporter *)ipfixExporter;
 
-	if(ipfix_add_collector(ex, ip, port, UDP) != 0) {
-		THROWEXCEPTION("IpfixSender: ipfix_add_collector of %s:%d failed", ip, port);
-	}
-	
-	msg(MSG_INFO, "IpfixSender: adding %s:%d to exporter", ip, port);
+	msg(MSG_INFO, "IpfixSender: adding %s://%s:%d to exporter", (proto==UDP)?"UDP":"SCTP", ip, port);
 
-	Collector newCollector;
-	strcpy(newCollector.ip, ip);
-	newCollector.port = port;
-	collectors.push_back(newCollector);
+	if(ipfix_add_collector(ex, ip, port, proto) != 0) {
+		msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%d failed", ip, port);
+		return;
+	}
 }
 
 
@@ -166,13 +168,13 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 		THROWEXCEPTION("sndIpfix: Exporter not set");
 	}
 	
-	if (isTemplateRegistered(dataTemplateInfo.get())) {
-		// TODO: here we should check if both templates are the same, if they are, we do not need
-		// to inform ipfixlolib about it	
-		// we just assume that templates using the same id are identical		
-	} else {
-		addRegisteredTemplate(dataTemplateInfo);
-	}
+ 	if (isTemplateRegistered(dataTemplateInfo.get())) {
+ 		// TODO: here we should check if both templates are the same, if they are, we do not need
+ 		// to inform ipfixlolib about it	
+ 		// we just assume that templates using the same id are identical		
+ 	} else {
+ 		addRegisteredTemplate(dataTemplateInfo);
+ 	}
 
 	/* get or assign template ID */
 	if(dataTemplateInfo->templateId)
@@ -289,7 +291,6 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 
 	msg(MSG_INFO, "sndIpfix created template with ID %u", my_template_id);
 	
-	registerTimeout();
 	sendRecords();
 }
 
@@ -342,7 +343,8 @@ void IpfixSender::startDataSet(uint16_t templateId)
 	if((noCachedRecords < 10) && (templateId == currentTemplateId))
 		return;
 
-	if(noCachedRecords > 0) endAndSendDataSet();
+	if(noCachedRecords > 0)
+		endAndSendDataSet();
 	
 	if (ipfix_start_data_set(exporter, my_n_template_id) != 0 ) {
 		THROWEXCEPTION("sndIpfix: ipfix_start_data_set failed!");
@@ -361,7 +363,7 @@ void IpfixSender::endAndSendDataSet()
 	if(noCachedRecords > 0) {
 		ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	
-		if (ipfix_end_data_set(exporter) != 0) {
+		if (ipfix_end_data_set(exporter, noCachedRecords) != 0) {
 			THROWEXCEPTION("sndIpfix: ipfix_end_data_set failed");
 		}
 		

@@ -1,6 +1,6 @@
 /*
- * IPFIX Concentrator Module Library
- * Copyright (C) 2004 Christoph Sommer <http://www.deltadevelopment.de/users/christoph/ipfix/>
+ * IPFIX Concentrator Module Library - SCTP Receiver
+ * Copyright (C) 2007 Alex Melnik
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,9 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-
-#ifndef _IPFIX_RECEIVER_UDPIPV4_H_
-#define _IPFIX_RECEIVER_UDPIPV4_H_
+#ifndef _IPFIX_RECEIVER_SCTPIPV4_H_
+#define _IPFIX_RECEIVER_SCTPIPV4_H_
 
 #include <pthread.h>
 #include <stdint.h>
@@ -31,17 +30,31 @@
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
 
-class IpfixReceiverUdpIpV4 : public IpfixReceiver, Sensor {
+//Maximum number of simultanious connections
+#define SCTP_MAX_CONNECTIONS 5
+
+
+class IpfixReceiverSctpIpV4 : public IpfixReceiver {
+#ifdef SUPPORT_SCTP
 	public:
-		IpfixReceiverUdpIpV4(int port, std::string ipAddr = "");
-		virtual ~IpfixReceiverUdpIpV4();
+		IpfixReceiverSctpIpV4(int port, std::string ipAddr = "");
+		virtual ~IpfixReceiverSctpIpV4();
 
 		virtual void run();
-		virtual std::string getStatisticsXML(double interval);
-		
 	private:
 		int listen_socket;
-		uint32_t statReceivedPackets;  /**< number of received packets */ 
+#else
+	public:
+		IpfixReceiverSctpIpV4(int port, std::string ipAddr) {
+			THROWEXCEPTION("SCTP not supported!");
+		}
+		
+		virtual ~IpfixReceiverSctpIpV4() {}
+
+		virtual void run() {}
+
+#endif /*SUPPORT_SCTP*/
 };
 
 #endif
+
