@@ -91,8 +91,16 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			dataTemplate->data = (IpfixRecord::Data*)realloc(dataTemplate->data, dataLength);
 			memcpy(dataTemplate->data + fi->offset, rf->pattern, fi->type.length);
 		}
-
-		if (rf->modifier != Rule::Field::DISCARD) {
+		/* gerhard: If we have a pattern (and fixed value field), the variable length field is implicitely discarded.
+		 * Note: This is necessary because of the double meaning/usage of Rule::Field.type.length: 
+		 * If a pattern is present, this variable holds the length of the pattern (or fixed length field) 
+		 * and not the length of the normal field holding a single value. As a consequence, we cannot use
+		 * Rule.Field.type.length as length of the variable field.
+		 * If someone really wants to enable the export of both, pattern and variable field of the same
+		 * type, then he has to remove the double meaning/usage (or set the variable field length to the
+		 * default value for the specific type). 
+		 */
+		else if (rf->modifier != Rule::Field::DISCARD) {
 			/* define new data field with Rule::Field's type */
 			dataTemplate->fieldCount++;
 			dataTemplate->fieldInfo = (IpfixRecord::FieldInfo*)realloc(dataTemplate->fieldInfo,

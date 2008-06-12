@@ -429,7 +429,9 @@ bool Rule::ExptemplateDataMatches(const Packet* p)
 					uint32_t daddr = getIPv4Address(&fi.type, field_data);
 					uint32_t paddr = getIPv4Address(&ruleField->type, ruleField->pattern);
 
-					return ((daddr >> pmaski) == (paddr >> pmaski));
+					if ((daddr >> pmaski) != (paddr >> pmaski)) 
+						return false;
+					break;
 				}
 			case IPFIX_TYPEID_destinationIPv4Address: 
 				{
@@ -447,7 +449,8 @@ bool Rule::ExptemplateDataMatches(const Packet* p)
 					uint32_t daddr = getIPv4Address( &fi.type, field_data);
 					uint32_t paddr = getIPv4Address(&ruleField->type, ruleField->pattern);
 
-					return ((daddr >> pmaski) == (paddr >> pmaski));
+					if ((daddr >> pmaski) != (paddr >> pmaski))
+						return false;
 					break;
 				}
 			case IPFIX_TYPEID_sourceTransportPort: 
@@ -456,7 +459,8 @@ bool Rule::ExptemplateDataMatches(const Packet* p)
 					fi.type.id = IPFIX_TYPEID_sourceTransportPort;
 					fi.type.length = 2;
 					fi.offset = 0;
-					return matchesPortPattern(&fi.type, field_data, &ruleField->type, ruleField->pattern);
+					if (!matchesPortPattern(&fi.type, field_data, &ruleField->type, ruleField->pattern))
+						return false;
 					break;
 				}
 			case IPFIX_TYPEID_destinationTransportPort: 
@@ -465,11 +469,13 @@ bool Rule::ExptemplateDataMatches(const Packet* p)
 					fi.type.id = IPFIX_TYPEID_destinationTransportPort;
 					fi.type.length = 2;
 					fi.offset = 2;
-					return matchesPortPattern(&fi.type, field_data, &ruleField->type, ruleField->pattern);
+					if (!matchesPortPattern(&fi.type, field_data, &ruleField->type, ruleField->pattern))
+						return false;
 					break;
 				}
 			default:
-				return matchesRawPattern(&ruleField->type, field_data, &ruleField->type, ruleField->pattern);
+				if (!matchesRawPattern(&ruleField->type, field_data, &ruleField->type, ruleField->pattern))
+					return false;
 				break;
 		}
 

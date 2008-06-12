@@ -288,7 +288,7 @@ void *Observer::observerThread(void *arg)
 			// initialize packet structure (init copies packet data)
 			p = obs->packetManager.getNewInstance();
 			p->init((char*)pcapData, 
-				// in constrast to live capturing, the data length is not limited
+				// in contrast to live capturing, the data length is not limited
 				// to any snap length when reading from a pcap file
 				(packetHeader.caplen < obs->capturelen) ? packetHeader.caplen : obs->capturelen, 
 				packetHeader.ts, obs->observationDomainID);
