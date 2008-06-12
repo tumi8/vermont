@@ -454,7 +454,7 @@ void IpfixDbWriter::getInsertStatement(char* statemStr, IpfixRecord::SourceID* s
 
 				case IPFIX_TYPEID_flowStartMilliSeconds:
 					// if flowStartSeconds is not stored in one of the columns, but flowStartMilliSeconds is,
-					// the we use flowStartMilliSeconds for table access
+					// then we use flowStartMilliSeconds for table access
 					// This is realized by storing this value only if flowStartSeconds has not yet been seen.
 					// A later appearing flowStartSeconds will override this value.
 					if (flowstartsec==0)

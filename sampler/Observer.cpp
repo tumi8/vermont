@@ -87,7 +87,6 @@ Observer::Observer(const std::string& interface, bool offline) : thread(Observer
 	captureInterface(NULL), fileName(NULL), replaceTimestampsFromFile(false),
 	stretchTimeInt(1), stretchTime(1.0), autoExit(true),
 	statTotalLostPackets(0), statTotalRecvPackets(0)
-
 {
 	if(offline) {
 		readFromFile = true;

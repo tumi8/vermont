@@ -62,32 +62,32 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 {
 	TemplateBuffer::BufferedTemplate* predecessor = 0;
 	TemplateBuffer::BufferedTemplate* bt = head;
+	bool found = false;
 	while (bt != 0) {
-		if ((bt->sourceID->observationDomainId == sourceId->observationDomainId) && (bt->templateID == templateId)) break;
-		predecessor = bt;
-		bt = (TemplateBuffer::BufferedTemplate*)bt->next;
-	}
-	if (bt == 0) return;
-	if (predecessor != 0) {
-		predecessor->next = bt->next;
-	} else {
-		head = (TemplateBuffer::BufferedTemplate*)bt->next;
-	}
-	if (bt->setID == IPFIX_SetId_Template) {
-		/* Invoke all registered callback functions */
-		IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
-		ipfixRecord->sourceID = sourceId;
-		ipfixRecord->templateInfo = bt->templateInfo;
-		ipfixParser->ipfixRecordSender->send(ipfixRecord);
-	} else
+		/* templateId == setID means that all templates of this set type shall be removed */
+		if ((bt->sourceID->observationDomainId == sourceId->observationDomainId) 
+				&& ((bt->templateID == templateId) || (bt->setID == templateId))) {
+			found = true;
+			if (predecessor != 0) {
+				predecessor->next = bt->next;
+			} else {
+				head = (TemplateBuffer::BufferedTemplate*)bt->next;
+			}
+			if (bt->setID == IPFIX_SetId_Template) {
+				/* Invoke all registered callback functions */
+				IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
+				ipfixRecord->sourceID = sourceId;
+				ipfixRecord->templateInfo = bt->templateInfo;
+				ipfixParser->ipfixRecordSender->send(ipfixRecord);
+			} else
 #ifdef SUPPORT_NETFLOWV9
-		if (bt->setID == NetflowV9_SetId_Template) {
-			/* Invoke all registered callback functions */
-			IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
-			ipfixRecord->sourceID = sourceId;
-			ipfixRecord->templateInfo = bt->templateInfo;
-			ipfixParser->ipfixRecordSender->send(ipfixRecord);
-		} else
+			if (bt->setID == NetflowV9_SetId_Template) {
+				/* Invoke all registered callback functions */
+				IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
+				ipfixRecord->sourceID = sourceId;
+				ipfixRecord->templateInfo = bt->templateInfo;
+				ipfixParser->ipfixRecordSender->send(ipfixRecord);
+			} else
 #endif
 			if (bt->setID == IPFIX_SetId_OptionsTemplate) {
 				/* Invoke all registered callback functions */
@@ -95,19 +95,28 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 				ipfixRecord->sourceID = sourceId;
 				ipfixRecord->optionsTemplateInfo = bt->optionsTemplateInfo;
 				ipfixParser->ipfixRecordSender->send(ipfixRecord);
-			} else {
-				if (bt->setID == IPFIX_SetId_DataTemplate) {
-					/* Invoke all registered callback functions */
-					IpfixDataTemplateDestructionRecord* ipfixRecord = ipfixParser->dataTemplateDestructionRecordIM.getNewInstance();
-					ipfixRecord->sourceID = sourceId;
-					ipfixRecord->dataTemplateInfo = bt->dataTemplateInfo;
-					ipfixParser->ipfixRecordSender->send(ipfixRecord);
+			} else if (bt->setID == IPFIX_SetId_DataTemplate) {
+				/* Invoke all registered callback functions */
+				IpfixDataTemplateDestructionRecord* ipfixRecord = ipfixParser->dataTemplateDestructionRecordIM.getNewInstance();
+				ipfixRecord->sourceID = sourceId;
+				ipfixRecord->dataTemplateInfo = bt->dataTemplateInfo;
+				ipfixParser->ipfixRecordSender->send(ipfixRecord);
 
-				} else {
-					msg(MSG_FATAL, "Unknown template type requested to be freed: %d", bt->setID);
-				}
+			} else {
+				msg(MSG_FATAL, "Unknown template type requested to be freed: %d", bt->setID);
 			}
-		delete bt;
+			TemplateBuffer::BufferedTemplate* toBeFreed = bt;
+			bt = (TemplateBuffer::BufferedTemplate*)bt->next;
+			delete toBeFreed;
+		} else {
+			predecessor = bt;
+			bt = (TemplateBuffer::BufferedTemplate*)bt->next;
+		}
+	}
+	if (!found) {
+		DPRINTF("Destroy template - no matching template found (id=%u)", templateId);
+	}
+		
 }
 
 /**
