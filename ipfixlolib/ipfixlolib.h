@@ -23,9 +23,6 @@
  jan@petranek.de
  */
 
-// whether to support writing raw packets as a series of files in a directory
-#define IPFIXLOLIB_RAWDIR_SUPPORT
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
