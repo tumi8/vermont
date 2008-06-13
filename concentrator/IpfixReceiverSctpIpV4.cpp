@@ -107,7 +107,7 @@ void IpfixReceiverSctpIpV4::run() {
 	int rfd;
 	
 	
-	while(!exit) {
+	while(!exitFlag) {
 		
 		readfds = fd_array; // because select() changes readfds
 		ret = select(maxfd + 1, &readfds, NULL, NULL, NULL); // check only for something to read

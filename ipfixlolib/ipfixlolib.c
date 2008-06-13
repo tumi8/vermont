@@ -1123,7 +1123,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 							msg(MSG_ERROR, "IPFIX: prepending header failed");
 							return -1;
 						}
-						if(bytes_sent = sctp_sendmsgv(exporter->collector_arr[i].data_socket,
+						if((bytes_sent = sctp_sendmsgv(exporter->collector_arr[i].data_socket,
 							exporter->sctp_template_sendbuffer->entries,
 							exporter->sctp_template_sendbuffer->current,
 							(struct sockaddr*)&(exporter->collector_arr[i].addr),
@@ -1132,7 +1132,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 							0,//Stream Number
 							0,//packet lifetime in ms (0 = reliable, do not change for tamplates)
 							0
-							) == -1) {
+							)) == -1) {
 							// send failed
 							msg(MSG_ERROR, "ipfix_send_templates(): could not send to %s:%d errno: %s  (SCTP)",exporter->collector_arr[i].ipv4address, exporter->collector_arr[i].port_number, strerror(errno));
 							ipfix_sctp_reconnect(exporter, i); //1st reconnect attempt 
@@ -1202,7 +1202,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
         int data_length=0;
         
 #ifdef SUPPORT_SCTP
-	time_t time_now = time(NULL);
+	//time_t time_now = time(NULL);
 #endif
         
         // is there data to send?
