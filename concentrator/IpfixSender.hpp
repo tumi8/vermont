@@ -38,7 +38,8 @@ using namespace std;
 class IpfixSender : public Module, public Source<NullEmitable*>, public IpfixRecordDestination, public Notifiable
 {
 public:
-	IpfixSender(uint16_t observationDomainId, const char* ip = 0, uint16_t port = 0, ipfix_transport_protocol proto = UDP, uint32_t maxPacketRate = IS_DEFAULT_MAXUDPRATE);
+	IpfixSender(uint16_t observationDomainId, uint32_t maxRecordRate, uint32_t sctpDataLifetime, uint32_t sctpReconnectInterval,
+			uint32_t templateRefreshInterval, uint32_t templateRefreshRate);
 	virtual ~IpfixSender();
 
 	void addCollector(const char *ip, uint16_t port, ipfix_transport_protocol proto);
@@ -106,8 +107,8 @@ private:
 	bool timeoutRegistered; /**< true if next timeout was already registered in timer */
 	bool recordsAlreadySent; /**< true if records were sent to the network as the packet was full */
 	struct timeval curTimeStep; /**< current time used for determining packet rate */
-	uint32_t packetsSentStep; /**< number of packets sent in timestep (usually 100ms)*/
-	uint32_t udpRateLimit;  /** maximum number of packets per seconds to be sent over the wire */
+	uint32_t recordsSentStep; /**< number of records sent in timestep (usually 100ms)*/
+	uint32_t maxRecordRate;  /** maximum number of records per seconds to be sent over the wire */
 
 	// Set up time after that Templates are going to be resent
 	bool setTemplateTransmissionTimer(uint32_t timer){
@@ -115,19 +116,7 @@ private:
 		
 		return true;
 	}
-	// Set up SCTP packet lifetime
-	bool setSctpLifetime(uint32_t time){
-		ipfix_set_sctp_lifetime(ipfixExporter, time);
-		
-		return true;
-	}
-	// Set up SCTP reconnect timer
-	bool setSctpReconnectTimeout(uint32_t time){
-		ipfix_set_sctp_reconnect_timer(ipfixExporter, time);
-		
-		return true;
-	}
-	
+
 };
 
 #endif

@@ -69,7 +69,7 @@ public:
 	 * @param unit the unit in which the time should be returned
 	 * @param elem the element whose children are search for the given name
 	 */
-	unsigned int getTimeInUnit(const std::string& name, timeUnit unit,
+	unsigned int getTimeInUnit(const std::string& name, timeUnit unit, uint32_t def = 0,
 				   XMLElement* elem = NULL);
 	
 

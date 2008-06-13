@@ -3,6 +3,8 @@
 
 #include "Cfg.h"
 
+#include "ipfixlolib.h"
+
 #include <string>
 
 /**
@@ -19,10 +21,14 @@ public:
 	{
 		try {
 			ipAddress = get("ipAddress");
-			protocolType = get("transportProtocol");
-			if (protocolType == "17")
-				protocolType = "UDP";
-			port = (uint16_t)getInt("port", 4739);
+			string prot = get("transportProtocol");
+			if (prot=="17" || prot=="UDP")
+				protocolType = UDP;
+			else if (prot=="132" || prot=="SCTP")
+				protocolType = SCTP;
+			else THROWEXCEPTION("Invalid configuration parameter for transportProtocol (%s)", prot.c_str());
+			port = (uint16_t)getInt("port", 4739);			
+			
 		} catch(IllegalEntry ie) {
 			THROWEXCEPTION("Illegal Collector entry in config file");
 		}
@@ -30,7 +36,7 @@ public:
 
 	std::string getIpAddress() { return ipAddress; }
 	//unsigned getIpAddressType() { return ipAddressType; }
-	std::string getProtocolType() { return protocolType; }
+	ipfix_transport_protocol getProtocolType() { return protocolType; }
 	uint16_t getPort() { return port; }
 	
 	bool equalTo(CollectorCfg* other)
@@ -46,7 +52,7 @@ public:
 private:	
 	std::string ipAddress;
 	//unsigned ipAddressType;
-	std::string protocolType;
+	ipfix_transport_protocol protocolType;
 	uint16_t port;
 };
 

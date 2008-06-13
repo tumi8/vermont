@@ -51,7 +51,7 @@ int CfgBase::getInt(const std::string& name, int def, XMLElement* elem)
 	return def;
 }
 
-unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit, XMLElement* elem)
+unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit, uint32_t def, XMLElement* elem)
 {
 	unsigned int time;
 	if (!elem)
@@ -84,10 +84,9 @@ unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit, XMLE
 		else
 			THROWEXCEPTION("Unkown time unit '%s'", a->getValue().c_str());
 	}
-
-	// we didn't find the element
-	throw IllegalEntry();
-	return 0;
+	
+	// we didn't find the element, return default
+	return def;
 }
 
 std::vector<unsigned int> Cfg::getNext()

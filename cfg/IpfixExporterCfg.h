@@ -27,15 +27,19 @@ private:
 	/** this holds the info for all the hosts we want to export to */
 	std::vector<CollectorCfg*> collectors;
 
-	/** udpTemplateManagement */
+	/** template management */
 	unsigned templateRefreshTime;
 	unsigned templateRefreshRate;
+	
+	/** sctp parameters */
+	uint32_t sctpDataLifetime;
+	uint32_t sctpReconnectInterval;
 
 	/** packet restrictions */
 	uint16_t maxPacketSize;
 	unsigned exportDelay;
 	
-	uint32_t udpRateLimit;
+	uint32_t recordRateLimit;
 	
 	int recordsPerPacket;
 	int recordLength;

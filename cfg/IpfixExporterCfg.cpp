@@ -2,13 +2,23 @@
 
 IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 	: CfgHelper<IpfixSender, IpfixExporterCfg>(elem, "ipfixExporter"),
-	templateRefreshTime(0), templateRefreshRate(0),
-	maxPacketSize(0), exportDelay(0)
+	templateRefreshTime(IS_DEFAULT_TEMPLATE_TIMEINTERVAL), templateRefreshRate(0),	
+	sctpDataLifetime(0), sctpReconnectInterval(0),
+	maxPacketSize(0), exportDelay(0),
+	recordRateLimit(0)	
 {
 
 	if (!elem) {
 		return;
 	}
+	
+	recordRateLimit = getInt("maxRecordRate", IS_DEFAULT_MAXRECORDRATE);
+	msg(MSG_INFO, "Exporter: using maximum rate of %d records/second", recordRateLimit);
+	sctpDataLifetime = getTimeInUnit("sctpDataLifetime", mSEC, IS_DEFAULT_SCTP_DATALIFETIME);
+	sctpReconnectInterval = getTimeInUnit("sctpReconnectInterval", SEC, IS_DEFAULT_SCTP_RECONNECTINTERVAL);
+	templateRefreshRate = getInt("templateRefreshRate", IS_DEFAULT_TEMPLATE_RECORDINTERVAL);
+	templateRefreshTime = getTimeInUnit("templateRefreshInterval", SEC, IS_DEFAULT_TEMPLATE_TIMEINTERVAL);
+	
 
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
@@ -16,25 +26,11 @@ IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 	     it++) {
 		XMLElement* e = *it;
 
-		if (e->matches("ipfixPacketRestrictions")) {
-			msg(MSG_ERROR, "Exporter: maxPacketSize and/or exportDelay not yet supported by IpfixSender. Ignored.");
-#if 0			// not supported yet
-			maxPacketSize = (uint16_t)getInt("maxPacketSize", 0, e);
-			try {
-				exportDelay = getTimeInUnit("maxExportDelay", mSEC, 0, e);
-			} catch (IllegalEntry ie) { /* ignore if not set */ }
-#endif
-		} else if (e->matches("udpTemplateManagement")) {
-			msg(MSG_ERROR, "Exporter: Configuration of templateRefreshRate/Time not yet supported..");
-#if 0			// not supported yet
-			templateRefreshTime = getInt("templateRefreshTimeout", 0, e);
-			templateRefreshRate = getInt("templateRefreshRate", 0, e);
-#endif
-		} else if (e->matches("collector")) {
+		if (e->matches("collector")) {
 			collectors.push_back(new CollectorCfg(e));
-		} else if (e->matches("maxUdpRate")) {
-					udpRateLimit = getInt("maxUdpRate", IS_DEFAULT_MAXUDPRATE);
-					msg(MSG_INFO, "Exporter: using maximum UDP packet rate of %d packets/s", udpRateLimit);
+		} else if (e->matches("maxRecordRate") || e->matches("sctpDataLifetime") || e->matches("sctpReconnectInterval")
+				|| e->matches("templateRefreshRate")|| e->matches("templateRefreshInterval")) {		
+			// already done!
 		} else {
 			THROWEXCEPTION("Illegal PSAMPExporter config entry \"%s\" found",
 					e->getName().c_str());
@@ -50,7 +46,8 @@ IpfixExporterCfg::~IpfixExporterCfg()
 
 IpfixSender* IpfixExporterCfg::createInstance()
 {
-	instance = new IpfixSender(0, 0, 0, UDP, udpRateLimit); // FIXME: observationDomainId
+	instance = new IpfixSender(0, recordRateLimit, sctpDataLifetime, 
+			sctpReconnectInterval, templateRefreshTime, templateRefreshRate); // FIXME: observationDomainId
 
 	for (unsigned i = 0; i != collectors.size(); ++i) {
 		msg(MSG_DEBUG, "IpfixExporter: adding collector %s:%d",

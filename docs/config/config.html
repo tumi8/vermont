@@ -547,6 +547,16 @@
 					<td>4739</td>
 					<td>Port of destination.</td>
 				</tr>
+				<tr>
+					<td>templateRefreshRate</td>
+					<td>5000</td>
+					<td>Number of records, until template is resent.</td>
+				</tr>
+				<tr>
+					<td>templateRefreshInterval</td>
+					<td>30s</td>
+					<td>Time, until template is resent.</td>
+				</tr>
 		
 			</tbody>
 		</table>
@@ -805,9 +815,10 @@
 		</table>
 		<p>Example:</p>
 <span class="kwa">&lt;ipfixExporter id=</span><span class="str">&quot;7&quot;</span><span class="kwa">&gt;</span>
-	<span class="kwa">&lt;udpTemplateManagement&gt;</span>
-		<span class="kwa">&lt;templateRefreshTimeout&gt;</span><span class="num">10</span><span class="kwa">&lt;/templateRefreshTimeout&gt;</span>
-	<span class="kwa">&lt;/udpTemplateManagement&gt;</span>
+	<span class="kwa">&lt;templateRefreshInterval&gt;</span><span class="num">10</span><span class="kwa">&lt;/templateRefreshInterval&gt;</span>
+	<span class="kwa">&lt;maxRecordRate&gt;</span><span class="num">5000</span><span class="kwa">&lt;/maxRecordRate&gt;</span>
+	<span class="kwa">&lt;sctpDataLifetime unit=</span><span class="str">&quot;msec&quot;</span><span class="kwa">&gt;</span><span class="num">10000</span><span class="kwa">&lt;/sctpDataLifetime&gt;</span>
+	<span class="kwa">&lt;sctpReconnectInterval unit=</span><span class="str">&quot;sec&quot;</span><span class="kwa">&gt;</span><span class="num">30</span><span class="kwa">&lt;/sctpReconnectInterval&gt;</span>
 	<span class="kwa">&lt;collector&gt;</span>
 		<span class="kwa">&lt;ipAddressType&gt;</span><span class="num">4</span><span class="kwa">&lt;/ipAddressType&gt;</span>
 		<span class="kwa">&lt;ipAddress&gt;</span><span class="num">127.0.0.1</span><span class="kwa">&lt;/ipAddress&gt;</span>
@@ -825,12 +836,15 @@
 					<th>Default value</th>
 					<th>Description</th>
 				</tr>				
-				<tr><td>templateRefreshTimeout</td><td>20sec</td><td>Interval for periodic sending of templates. This value is currently not configurable.</td></tr>
+				<tr><td>templateRefreshInteval</td><td>20s</td><td>Interval for periodic sending of templates.</td></tr>
+				<tr><td>templateRefreshRate</td><td>10000</td><td>Interval for periodic sending of templates in records.</td></tr>
 				<tr><td>ipAddressType</td><td>4</td><td>Currently, only IPv4 is supported.</td></tr>
 				<tr><td>ipAddress</td><td>none</td><td>IP address of the collector the packets are sent to.</td></tr>				
 				<tr><td>transportProtocol</td><td>none</td><td>Currently, only UDP (17) is supported.</td></tr>
 				<tr><td>port</td><td>4739</td><td>Port number of the collector.</td></tr>
-				<tr><td>maxUdpRate</td><td>500</td><td>Maximum number of UDP packets per second sent to collector.</td></tr>
+				<tr><td>maxRecordRate</td><td>5000</td><td>Maximum number of flow records per second sent to collector.</td></tr>
+				<tr><td>sctpDataLifetime</td><td>10000ms</td><td>Time how long SCTP considers a packet valid and tries to retransmit it.</td></tr>
+				<tr><td>sctpReconnectInterval</td><td>30s</td><td>Time that Exporter waits to reestablish a lost connection.</td></tr>
 			</tbody>
 		</table>
 	

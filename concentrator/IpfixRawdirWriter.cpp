@@ -38,7 +38,9 @@
  * @param port destination collector's port
  * @return handle to use when calling @c destroyIpfixRawdirWriter()
  */
-IpfixRawdirWriter::IpfixRawdirWriter(uint16_t observationDomainId, std::string packetDirectoryName) : IpfixSender(observationDomainId) {
+IpfixRawdirWriter::IpfixRawdirWriter(uint16_t observationDomainId, std::string packetDirectoryName) 
+	: IpfixSender(observationDomainId, IS_DEFAULT_MAXRECORDRATE, IS_DEFAULT_SCTP_DATALIFETIME, IS_DEFAULT_SCTP_RECONNECTINTERVAL,
+			IS_DEFAULT_TEMPLATE_TIMEINTERVAL, IS_DEFAULT_TEMPLATE_RECORDINTERVAL) {
 
 	if (packetDirectoryName != "") {
 		if(addCollector(packetDirectoryName) != 0) {

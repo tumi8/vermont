@@ -56,10 +56,34 @@
 #define IS_DEFAULT_RECORDCACHETIMEOUT 5000
 
 /**
- * defines in packets per seconds, how many udp packets are to be sent over
+ * defines in packets per seconds, how many udp records are to be sent over
  * the wire
  */
-#define IS_DEFAULT_MAXUDPRATE 500
+#define IS_DEFAULT_MAXRECORDRATE 5000
+
+/**
+ * defines amount of milliseconds, how long a SCTP socket tries to retransmit
+ * data
+ */
+#define IS_DEFAULT_SCTP_DATALIFETIME 10000
+
+/**
+ * defines interval in seconds, how often IpfixExporter tries to reestablish a
+ * lost SCTP connection
+ */
+#define IS_DEFAULT_SCTP_RECONNECTINTERVAL 30
+
+/**
+ * defines interval in seconds, how often IpfixExporter resends an IPFIX template
+ */
+#define IS_DEFAULT_TEMPLATE_TIMEINTERVAL 30
+
+/**
+ * defines interval in records, how often IpfixExporter resends an IPFIX template
+ */
+#define IS_DEFAULT_TEMPLATE_RECORDINTERVAL 10000
+
+
 
 /**
  * convenient way to determine size of a C array

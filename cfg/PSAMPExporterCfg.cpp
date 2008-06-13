@@ -21,13 +21,11 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 
 		if (e->matches("ipfixPacketRestrictions")) {
 			maxPacketSize = (uint16_t)getInt("maxPacketSize", 0, e);
-			try {
-				exportDelay = getTimeInUnit("maxExportDelay", mSEC, e);
-			} catch (IllegalEntry ie) { /* ignore if not set */ } 
+			exportDelay = getTimeInUnit("maxExportDelay", mSEC, 0, e);
 		} else if (e->matches("udpTemplateManagement")) {
 			// use 0 as default values for both if the config entry isn't found 
-			templateRefreshTime = getInt("templateRefreshTimeout", 0, e);
-			templateRefreshRate = getInt("templateRefreshRate", 0, e);
+			templateRefreshTime = getTimeInUnit("templateRefreshTimeout", SEC, IS_DEFAULT_TEMPLATE_TIMEINTERVAL, e);
+			templateRefreshRate = getInt("templateRefreshRate", IS_DEFAULT_TEMPLATE_RECORDINTERVAL, e);
 		} else if (e->matches("collector")) {
 			collectors.push_back(new CollectorCfg(e));
 		} else if (e->matches("packetReporting")) {
@@ -100,7 +98,7 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 				collectors[i]->getPort());
 		instance->addCollector(collectors[i]->getIpAddress().c_str(),
 				collectors[i]->getPort(),
-				collectors[i]->getProtocolType().c_str());
+				collectors[i]->getProtocolType());
 	}
 
 	return instance;

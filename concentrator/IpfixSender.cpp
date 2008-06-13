@@ -46,13 +46,14 @@ using namespace std;
  * @param port destination collector's port
  * @return handle to use when calling @c destroyIpfixSender()
  */
-IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t port, ipfix_transport_protocol proto, uint32_t udpRateLimit)
+IpfixSender::IpfixSender(uint16_t observationDomainId, uint32_t maxRecordRate, uint32_t sctpDataLifetime, uint32_t sctpReconnectInterval,
+		uint32_t templateRefreshInterval, uint32_t templateRefreshRate)
 	: statSentPackets(0),
 	  noCachedRecords(0),
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
 	  timeoutRegistered(false),
 	  recordsAlreadySent(false),
-	  udpRateLimit(udpRateLimit)
+	  maxRecordRate(maxRecordRate)
 {
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 	statSentDataRecords = 0;
@@ -69,10 +70,11 @@ IpfixSender::IpfixSender(uint16_t observationDomainId, const char* ip, uint16_t 
 		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
 		goto out;
 	}
-
-	if (ip && port) {
-		addCollector(ip, port, proto);
-	}
+	
+	ipfix_set_sctp_lifetime(ipfixExporter, sctpDataLifetime);
+	ipfix_set_sctp_reconnect_timer(ipfixExporter, sctpReconnectInterval);
+	ipfix_set_template_transmission_timer(ipfixExporter, templateRefreshInterval);
+	
 	
 	msg(MSG_DEBUG, "IpfixSender: running");
 	return;
@@ -388,16 +390,14 @@ void IpfixSender::endAndSendDataSet()
 		struct timeval tv;
 		gettimeofday(&tv, 0);
 		if ((tv.tv_sec==curTimeStep.tv_sec) && (tv.tv_usec/100000==curTimeStep.tv_usec/100000)) {			
-			if (packetsSentStep>udpRateLimit/10) {
+			if (recordsSentStep>maxRecordRate/10) {
 				// wait until current timestep is over
 				usleep(100000-(tv.tv_usec%100000));				
 			}
 		} else {
 			curTimeStep = tv;
-			packetsSentStep = 0;
+			recordsSentStep = 0;
 		}
-		
-		packetsSentStep++;
 
 		if (ipfix_send(exporter) != 0) {
 			THROWEXCEPTION("sndIpfix: ipfix_send failed");
@@ -469,6 +469,7 @@ void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 	registerTimeout();
 
 	statSentDataRecords++;
+	recordsSentStep++;
 	
 	recordsToRelease.push(record);
 	

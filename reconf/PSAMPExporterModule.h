@@ -65,7 +65,7 @@ public:
                 return true;
 	}
 
-        bool addCollector(const char *address, unsigned short port, const char *protocol);
+        bool addCollector(const char *address, unsigned short port, ipfix_transport_protocol protocol);
 
 private:
 

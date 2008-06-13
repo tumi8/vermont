@@ -33,8 +33,8 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	
 	if (listener == NULL)
 		THROWEXCEPTION("collectingProcess has to listen on one address!");
-	if (listener->getProtocolType() != "UDP")
-		THROWEXCEPTION("collectingProcess can handle only UPD!");
+	if (listener->getProtocolType() != UDP && listener->getProtocolType() != SCTP)
+		THROWEXCEPTION("collectingProcess can handle only UDP or SCTP!");
 	
 	msg(MSG_INFO, "CollectorConfiguration: Successfully parsed collectingProcess section");
 }
