@@ -6,12 +6,14 @@
 
 #include "metering_configuration.h"
 #include "exporter_configuration.h"
+#include "pcapexporter_configuration.h"
 #include "packetselection_configuration.h"
 #include "packetreporting_configuration.h"
 #include "flowmetering_configuration.h"
 #include "dbwriter_configuration.h"
 
 #include <sampler/Filter.h>
+#include <sampler/PcapExporterSink.h>
 #include <sampler/ExporterSink.h>
 #include <sampler/HookingFilter.h>
 #include <sampler/ExpressHookingFilter.h>
@@ -50,6 +52,11 @@ void MeteringConfiguration::setObservationDomainId(uint16_t id)
 void MeteringConfiguration::setCaptureLength(int len)
 {
 	captureLength = len;
+}
+
+void MeteringConfiguration::setDataLinkType(int type)
+{
+	dataLinkType = type;
 }
 
 void MeteringConfiguration::configure()
@@ -98,6 +105,7 @@ void MeteringConfiguration::connect(Configuration* c)
 	// - an metering process (if the source does PacketSelection
 	//   and the destination does FlowMetering or PacketReporting
 	// - an dbWriter (if it does FlowMetering)
+	// - a pcapexporter process
 
 	ExporterConfiguration* exporter = dynamic_cast<ExporterConfiguration*>(c);
 	if (exporter) {
@@ -201,6 +209,14 @@ void MeteringConfiguration::connect(Configuration* c)
 		return;
 	}
 #endif
+	
+	PcapExporterConfiguration* pcapExporter = dynamic_cast<PcapExporterConfiguration*>(c);
+	if (pcapExporter) {
+		msg(MSG_DEBUG, "MeteringConfiguration: Adding pcapExporter to filter");
+		pcapExporter->getExporterSink()->setDataLinkType(dataLinkType);
+		getPacketSelectionConfiguration()->filter->setReceiver(pcapExporter->getExporterSink());
+		return;
+	}
 
 	THROWEXCEPTION("Cannot connect %s to metering process!", c->getId().c_str());
 }

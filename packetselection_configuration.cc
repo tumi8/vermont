@@ -14,6 +14,8 @@
 #include <sampler/PacketSink.h>
 #include <sampler/stringFilter.h>
 #include <sampler/regExFilter.h>
+#include <sampler/ConnectionFilter.h>
+#include <sampler/StateConnectionFilter.h>
 
 
 PacketSelectionConfiguration::PacketSelectionConfiguration(xmlDocPtr document, xmlNodePtr startPoint)
@@ -156,6 +158,44 @@ void PacketSelectionConfiguration::configure()
 				j = j->next;
 			}
 			filter->addProcessor(new IPHeaderFilter(header, offset, size, comp, value));
+		} else if (tagMatches(i, "connectionFilter")) {
+#ifdef HAVE_CONNECTION_FILTER
+			xmlNodePtr j = i->xmlChildrenNode;
+			int bytes = 0;
+			int timeout = 0;
+			int size = 0;
+			int hashFunctions = 0;
+			msg(MSG_INFO, "PacketSelectionConfiguration: Creating connection filter");
+			while (NULL != j) {
+				if (tagMatches(j, "exportBytes")) {
+					bytes = atoi(getContent(j).c_str());
+				} else if (tagMatches(j, "timeout")) {
+					timeout = atoi(getContent(j).c_str());
+				} else if (tagMatches(j, "filterSize")) {
+					size = atoi(getContent(j).c_str());
+				} else if (tagMatches(j, "hashFunctions")) {
+					hashFunctions = atoi(getContent(j).c_str());
+				}
+				j = j->next;
+			}
+			filter->addProcessor(new ConnectionFilter(timeout, bytes, hashFunctions, size));
+#else
+			THROWEXCEPTION("Cannot configure ConnectionFilter because connection filter was disabled at compile time");
+#endif
+		} else if (tagMatches(i, "stateConnectionFilter")) {
+			xmlNodePtr j = i->xmlChildrenNode;
+			int bytes = 0;
+			int timeout = 0;
+			msg(MSG_INFO, "PacketSelectionConfiguration: Creating connection filter");
+			while (NULL != j) {
+				if (tagMatches(j, "exportBytes")) {
+					bytes = atoi(getContent(j).c_str());
+				} else if (tagMatches(j, "timeout")) {
+					timeout = atoi(getContent(j).c_str());
+				}
+				j = j->next;
+			}
+			filter->addProcessor(new StateConnectionFilter(timeout, bytes));
 		}
 		i = i->next;
 	}

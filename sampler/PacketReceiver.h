@@ -18,17 +18,14 @@
 
 #include <string>
 
-using namespace std;
-
-
 class PacketReceiver : public StatisticsModule
 {
 private:
 	ConcurrentQueue<Packet*>  queue;
-	string					  name;
+	std::string name;
 
 public:
-	PacketReceiver(string ownerName);
+	PacketReceiver(const std::string& ownerName);
 
 	virtual ~PacketReceiver();
 

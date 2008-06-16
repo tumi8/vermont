@@ -43,6 +43,7 @@ SUBDIRS(common concentrator ipfixlolib sampler)
 ADD_EXECUTABLE(vermont
 	collector_configuration.cc
 	exporter_configuration.cc
+	pcapexporter_configuration.cc
 	metering_configuration.cc
 	observer_configuration.cc
 	vermont.cc
@@ -159,9 +160,11 @@ IF (DEBUG)
 	message(STATUS "Configuring build process for debug version")
 	REMOVE_DEFINITIONS(-O3)
 	ADD_DEFINITIONS(-O0 -g -pg -Wall -Werror -DDEBUG)
+	SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "-g -pg")
 ELSE (DEBUG)
 	REMOVE_DEFINITIONS(-O0 -g -pg -Wall -Werror -DDEBUG)
 	ADD_DEFINITIONS(-O3)
+	SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "")
 ENDIF (DEBUG)
 
 
@@ -253,6 +256,39 @@ ELSE (SUPPORT_SCTP)
     REMOVE_DEFINITIONS(-DSUPPORT_SCTP)
 ENDIF (SUPPORT_SCTP)
 
+### connection filter
+
+OPTION(CONNECTION_FILTER "Enables/disables the connection filter." ON)
+
+IF (CONNECTION_FILTER)
+	ADD_DEFINITIONS(-DHAVE_CONNECTION_FILTER)
+ENDIF(CONNECTION_FILTER)
+
+### gsl
+
+OPTION(USE_GSL "Enables/disables GSL in connectionflter." ON)
+IF (CONNECTION_FILTER AND NOT USE_GSL)
+ 	MESSAGE(FATAL_ERROR "GSL is needed for Connectionfilter at the moment.
+	You cannot have -DCONNECTION_FILTER=ON and -DUSE_GSL=OFF")
+ENDIF (CONNECTION_FILTER AND NOT USE_GSL)
+
+IF (USE_GSL)
+	FIND_PACKAGE(GSL)
+	MARK_AS_ADVANCED(
+		GSL_INCLUDE_DIR
+		GSL_LIBRARIES
+		GSL_LIBRARY
+		BLAS_LIBRARY
+	)	
+	IF (GSL_FOUND)
+		MESSAGE(STATUS "GNU scientific library found")
+	ELSE (GSL_FOUND)
+		MESSAGE(FATAL_ERROR "GNU scientific library not found. Please
+			install the library or use -DCONNECTION_FILTER=OFF")
+	ENDIF (GSL_FOUND)
+	ADD_DEFINITIONS(-DHAVE_GSL)
+	TARGET_LINK_LIBRARIES(vermont ${GSL_LIBRARIES})
+ENDIF (USE_GSL)
 
 ### tools
 

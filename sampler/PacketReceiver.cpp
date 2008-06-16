@@ -3,7 +3,7 @@
 #include <sstream>
 
 
-PacketReceiver::PacketReceiver(string ownerName)
+PacketReceiver::PacketReceiver(const std::string& ownerName)
         : name(ownerName)
 {
         queue.setOwner(ownerName);
@@ -21,7 +21,7 @@ PacketReceiver::~PacketReceiver()
  */
 std::string PacketReceiver::getStatistics()
 {
-        ostringstream oss;
+        std::ostringstream oss;
         oss << "PacketReceiver(" << name << "): current queue size: " << queue.getCount();
 
         return oss.str();

@@ -32,7 +32,7 @@ class AggregationPerfTest
 		IpfixAggregator* ipfixAggregator;
 		InstanceManager<Packet>* packetManager;
 
-		Rule::Field* createRuleField(const string& typeId);
+		Rule::Field* createRuleField(const std::string& typeId);
 		Rules* createRules();
 
 		int numPackets;

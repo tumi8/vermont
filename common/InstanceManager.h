@@ -26,8 +26,6 @@
 #include <queue>
 #include <list>
 
-using namespace std;
-
 /**
  * manages instances of the given type to avoid news/deletes in program
  * managed types *should* be inherited from ManagedInstance
@@ -38,9 +36,9 @@ class InstanceManager
 {
 	private:
 #if defined(DEBUG)
-		list<T*> usedInstances;	// instances with active references (only used for debugging purposes)
+		std::list<T*> usedInstances;	// instances with active references (only used for debugging purposes)
 #endif
-		queue<T*> freeInstances;// unused instances
+		std::queue<T*> freeInstances;// unused instances
 		Mutex mutex;			// we wanna be thread-safe
 		static const int DEFAULT_NO_INSTANCES = 1000;
 
@@ -124,7 +122,7 @@ class InstanceManager
 				mutex.lock();
 				freeInstances.push(instance);
 #if defined(DEBUG)
-				typename list<T*>::iterator iter = find(usedInstances.begin(), usedInstances.end(), instance);
+				typename std::list<T*>::iterator iter = find(usedInstances.begin(), usedInstances.end(), instance);
 				if (iter == usedInstances.end()) {
 					THROWEXCEPTION("instance (0x%08X) is not managed by InstanceManager", (void*)instance);
 				}

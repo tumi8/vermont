@@ -115,6 +115,8 @@ public:
 
 	// The number of captured bytes
 	unsigned int data_length;
+	// The pcap packet length
+	unsigned int pcap_packet_length;
 
 	// when was the packet received?
 	struct timeval timestamp;
@@ -140,7 +142,7 @@ public:
 	{
 	}
 	
-	inline void init(char* packetData, int len, struct timeval time) 
+	inline void init(char* packetData, unsigned int len, struct timeval time, unsigned int packet_length) 
 	{
 		transportHeader = NULL;
 		payload = NULL;
@@ -151,6 +153,7 @@ public:
 		timestamp = time;
 		varlength_index = 0;
 		ipProtocolType = NONE;
+		pcap_packet_length = packet_length;
 
 		if (len > PCAP_MAX_CAPTURE_LENGTH) {
 			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d), "

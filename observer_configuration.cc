@@ -136,6 +136,7 @@ void ObserverConfiguration::connect(Configuration* c)
 		msg(MSG_DEBUG, "ObserverConfiguration: Connecting observer to metering process");
 		metering->setObservationDomainId(observationDomain);
 		metering->setCaptureLength(captureLength);
+		metering->setDataLinkType(observer->getDataLinkType());
 		PacketSelectionConfiguration* ps = metering->getPacketSelectionConfiguration();
 		observer->addReceiver(ps->getFilters());
 		return;

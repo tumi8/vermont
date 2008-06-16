@@ -33,6 +33,7 @@ public:
 
 	void setObservationDomainId(uint16_t id);
 	void setCaptureLength(int len);
+	void setDataLinkType(int type);
 
 	FlowMeteringConfiguration* getFlowMeteringConfiguration() { return flowMetering; }
 	FlowMeteringConfiguration* getExpressFlowMeteringConfiguration() { return expressflowMetering; }
@@ -46,6 +47,7 @@ private:
 
 	uint16_t observationDomainId;
 	int captureLength;
+	int dataLinkType;
 };
 
 #endif
