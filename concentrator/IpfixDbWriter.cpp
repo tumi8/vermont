@@ -109,7 +109,7 @@ void IpfixDbWriter::connectToDB()
     dbError = true;
 
     // close (in the case that it was already connected)
-    mysql_close(conn);
+    if (conn) mysql_close(conn);
 
     /** get the mysl init handle*/
     conn = mysql_init(0);
@@ -166,18 +166,16 @@ int IpfixDbWriter::createDB()
 	strncat(createDbStr,dbName,strlen(dbName));
 	/**create database*/
 	if(mysql_query(conn, createDbStr) != 0 ) {
-		msg(MSG_FATAL,"IpfixDbWriter: Creation of database %s failed. Error: %s",
+		THROWEXCEPTION("IpfixDbWriter: Creation of database %s failed. Error: %s",
 				dbName, mysql_error(conn));
-		return 1;
 	}
 	else {
 		msg(MSG_INFO,"Database %s created",dbName);
 	}
 	/** use database  with dbName**/
 	if(mysql_select_db(conn, dbName) !=0) {
-		msg(MSG_FATAL,"IpfixDbWriter: Database %s not selectable. Error: %s",
+		THROWEXCEPTION("IpfixDbWriter: Database %s not selectable. Error: %s",
 				dbName, mysql_error(conn));
-		return 1;
 	} else {
 		msg(MSG_DEBUG,"Database %s selected", dbName);
 	}
@@ -935,6 +933,7 @@ IpfixDbWriter::IpfixDbWriter(const char* host, const char* db,
 	userName = user;
 	password = pw;
 	portNum = port;
+	conn = 0;
 	socketName = 0;
 	flags = 0;
     srcId.exporterAddress.len = 0;
