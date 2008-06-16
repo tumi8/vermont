@@ -38,7 +38,7 @@ class AggregationPerfTest
 	private:
 		static InstanceManager<Packet> packetManager;
 
-		Rule::Field* createRuleField(const string& typeId);
+		Rule::Field* createRuleField(const std::string& typeId);
 		Rules* createRules();
 		void sendPacketsTo(Destination<Packet*>* dest, uint32_t numpackets);
 

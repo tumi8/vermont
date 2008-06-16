@@ -22,6 +22,8 @@ ADD_EXECUTABLE(vermonttest
 	AggregationPerfTest.cpp
 	ReconfTest.cpp
 	VermontTest.cpp
+	#BloomFilterTest.cpp tobi_merge
+	#ConnectionFilterTest.cpp tobi_merge
 )
 
 TARGET_LINK_LIBRARIES(vermonttest
@@ -45,4 +47,8 @@ IF (MYSQL_FOUND)
 	)
 ENDIF (MYSQL_FOUND)
 
-
+IF (CONNECTION_FILTER)
+	TARGET_LINK_LIBRARIES(vermonttest
+		${GSL_LIBRARIES}
+	)
+ENDIF (CONNECTION_FILTER)

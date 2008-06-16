@@ -120,6 +120,8 @@ public:
 
 	// The number of captured bytes
 	unsigned int data_length;
+	// original packet length
+	uint32_t pcapPacketLength;
 
 	// when was the packet received?
 	struct timeval timestamp;
@@ -146,7 +148,10 @@ public:
 	{
 	}
 	
-	inline void init(char* packetData, int len, struct timeval time, uint32_t obsdomainid) 
+	/**
+	 * @param origplen original packet length
+	 */
+	inline void init(char* packetData, int len, struct timeval time, uint32_t obsdomainid, uint32_t origplen) 
 	{
 		transportHeader = NULL;
 		payload = NULL;
@@ -158,6 +163,7 @@ public:
 		varlength_index = 0;
 		ipProtocolType = NONE;
 		observationDomainID = obsdomainid;
+		pcapPacketLength = origplen;
 
 		if (len > PCAP_MAX_CAPTURE_LENGTH) {
 			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d), "

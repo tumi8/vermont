@@ -1,6 +1,8 @@
 #include "VermontTest.h"
 #include "AggregationPerfTest.h"
 #include "ReconfTest.h"
+//#include "BloomFilterTest.h" tobi_merge
+//#include "ConnectionFilterTest.h" tobi_merge
 #include "test_concentrator.h"
 
 
@@ -25,6 +27,13 @@ int main(int argc, char* argv[])
 
 	ConcentratorTestSuite conctest;
 	conctest.start_test();
+
+	//test->add(new AggregationPerfTestSuite(!perftest));
+	//test->add(new ConcentratorTestSuite());
+#ifdef HAVE_CONNECTION_FILTER
+	//test->add(new BloomFilterTestSuite()); tobi_merge
+	//test->add(new ConnectionFilterTestSuite()); tobi_merge
+#endif
 
 	return 0;
 }

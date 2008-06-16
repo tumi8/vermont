@@ -58,6 +58,7 @@ public:
 	bool prepare(const std::string& filter);
 	static void doLogging(void *arg);
 	virtual std::string getStatisticsXML(double interval);
+	int getDataLinkType();
 
 
 protected:

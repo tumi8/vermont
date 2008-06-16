@@ -26,6 +26,9 @@ ADD_LIBRARY(sampler
 	RegExFilter.cpp
 	StringFilter.cpp
 	SystematicSampler.cpp
-	Template.cpp	
+	Template.cpp
+	ConnectionFilter.cpp
+	StateConnectionFilter.cpp
+	PcapExporterSink.cpp
 )
 

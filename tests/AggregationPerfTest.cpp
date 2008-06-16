@@ -52,7 +52,7 @@ AggregationPerfTest::~AggregationPerfTest()
 }
 
 
-Rule::Field* AggregationPerfTest::createRuleField(const string& typeId)
+Rule::Field* AggregationPerfTest::createRuleField(const std::string& typeId)
 {
 	Rule::Field* ruleField = new Rule::Field();
 	ruleField->modifier = Rule::Field::KEEP;
@@ -143,7 +143,7 @@ void AggregationPerfTest::sendPacketsTo(Destination<Packet*>* dest, uint32_t num
 
 	for (size_t i = 0; i < numpackets; i++) {
 		Packet* packet = packetManager.getNewInstance();
-		packet->init((char*)packetdata, packetdatalen, curtime, 0);
+		packet->init((char*)packetdata, packetdatalen, curtime, 0, packetdatalen);
 		dest->receive(packet);
 	}
 }
