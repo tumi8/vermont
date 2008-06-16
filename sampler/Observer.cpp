@@ -199,7 +199,7 @@ void *Observer::observerThread(void *arg)
 
 			// initialize packet structure (init copies packet data)
 			p = obs->packetManager->getNewInstance();
-			p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts);
+			p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, packetHeader.len);
 
 			obs->receivedBytes += packetHeader.caplen;
 
@@ -235,6 +235,11 @@ void *Observer::observerThread(void *arg)
 		struct timeval first = {0,0};
 		// differences
 		struct timeval wait_val, delta_now, delta_file, delta_to_be;
+		
+		// make compiler happy ...
+		delta_to_be.tv_sec = 0;
+		delta_to_be.tv_usec = 0;
+
 		struct timespec wait_spec;
 		bool firstPacket = true;
 		// let's wait one seconds until other modules are ready
@@ -295,8 +300,9 @@ void *Observer::observerThread(void *arg)
 			p->init((char*)pcapData, 
 				// in constrast to live capturing, the data length is not limited
 				// to any snap length when reading from a pcap file
-				((int)packetHeader.caplen < obs->capturelen) ? (int)packetHeader.caplen : obs->capturelen, 
-				packetHeader.ts);
+				(packetHeader.caplen < obs->capturelen) ? packetHeader.caplen : obs->capturelen, 
+				packetHeader.ts,
+				packetHeader.len);
 
 			obs->receivedBytes += packetHeader.caplen;
 
@@ -337,7 +343,6 @@ void *Observer::observerThread(void *arg)
  */
 bool Observer::prepare(const std::string& filter)
 {
-	int dataLink = 0;
 	struct in_addr i_netmask, i_network;
 
 	// we need to store the filter expression, because pcap needs
@@ -376,9 +381,8 @@ bool Observer::prepare(const std::string& filter)
 			goto out2;
 		}
 
-		dataLink = pcap_datalink(captureDevice);
 		// IP_HEADER_OFFSET is set by the configure script
-		switch (dataLink) {
+		switch (getDataLinkType()) {
 		case DLT_EN10MB:
 			if (IP_HEADER_OFFSET != 14 && IP_HEADER_OFFSET != 18) {
 				msg(MSG_FATAL, "IP_HEADER_OFFSET on an ethernet device has to be 14 or 18 Bytes. Please adjust that value via configure --with-ipheader-offset");
@@ -392,6 +396,11 @@ bool Observer::prepare(const std::string& filter)
 				goto out2;
 			}
 			break;
+		case DLT_LINUX_SLL:
+			if (IP_HEADER_OFFSET != 16) {
+				msg(MSG_FATAL, "IP_HEADER_OFFSET on linux cooked devices has to be 16 Bytes. Please adjust that value via configure --with-ipheader-offset");
+				goto out2;
+			}
 		default:
 			msg(MSG_ERROR, "You are using an unkown IP_HEADER_OFFSET and data link combination. This can make problems. Please check if you use the correct IP_HEADER_OFFSET for your data link, if you see strange IPFIX/PSAMP packets.");
 		}
@@ -507,6 +516,11 @@ bool Observer::setCaptureLen(int x)
 int Observer::getCaptureLen()
 {
 	return capturelen;
+}
+
+int Observer::getDataLinkType()
+{
+	return pcap_datalink(captureDevice);
 }
 
 void Observer::replaceOfflineTimestamps()

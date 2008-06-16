@@ -344,7 +344,7 @@ void test_parser_stability() {
 }
 
 
-void start_test()
+static void start_test()
 {
 	// set Vermont messaging subsystem's debug level
 	//msg_setlevel(MSG_DEFAULT+99);

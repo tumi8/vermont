@@ -28,13 +28,14 @@ class ExporterConfiguration;
 
 namespace configTypes
 {
-	const std::string observer  = "observer";
-	const std::string exporter  = "exporter";
-	const std::string collector = "collector";
-	const std::string metering  = "metering";
-	const std::string dbwriter  = "dbwriter";
-	const std::string dbreader  = "dbreader";
-	const std::string main      = "main";
+	const std::string observer     = "observer";
+	const std::string exporter     = "exporter";
+	const std::string collector    = "collector";
+	const std::string metering     = "metering";
+	const std::string dbwriter     = "dbwriter";
+	const std::string dbreader     = "dbreader";
+	const std::string main         = "main";
+	const std::string pcapExporter = "pcapexporter";
 };
 
 

@@ -112,9 +112,13 @@ int IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_pro
 	    case SCTP:
 		msg(MSG_INFO, "IpfixSender: adding SCTP://%s:%d to exporter", ip, port);
 		break;
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 	    case RAWDIR:
 		msg(MSG_INFO, "IpfixSender: adding RAWDIR://%s to exporter", ip);
 		break;
+#endif
+	    case TCP:
+	        msg(MSG_INFO, "IpfixSender: adding TCP://%s:%d to exporter", ip, port);
 	}
 
 	if(ipfix_add_collector(ex, ip, port, proto) != 0) {

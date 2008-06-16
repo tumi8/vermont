@@ -15,7 +15,7 @@
 class Sink : public PacketReceiver {
 
 public:
-	Sink(string ownerName) : PacketReceiver(ownerName)
+	Sink(const std::string& ownerName) : PacketReceiver(ownerName)
 	{
 	}
 

@@ -3,6 +3,7 @@
 #include "metering_configuration.h"
 #include "collector_configuration.h"
 #include "exporter_configuration.h"
+#include "pcapexporter_configuration.h"
 #include "flowmetering_configuration.h"
 #include "vermontmain_configuration.h"
 #include "dbwriter_configuration.h"
@@ -50,7 +51,9 @@ void Configuration::fillNextVector(xmlNodePtr p)
 		} else if (tagMatches(j, "dbWriterId")) {
 			nextVector.push_back(configTypes::dbwriter +
 					     getContent(j));
-		} 
+		} else if (tagMatches(j, "pcapExporterId")) {
+			nextVector.push_back(configTypes::pcapExporter + getContent(j));
+		}
 		j = j->next;
 	}
 
@@ -115,6 +118,8 @@ IpfixConfiguration::IpfixConfiguration(const std::string& configFile)
 			conf = new MeteringConfiguration(document, current);
 		} else if (xmlCompare(current, "exportingProcess")) {
 			conf = new ExporterConfiguration(document, current);
+		} else if (xmlCompare(current, "pcapExporter")) {
+			conf = new PcapExporterConfiguration(document, current);
 		} else if (xmlCompare(current, "collectingProcess")) {
 			conf = new CollectorConfiguration(document, current);
 		} else if (xmlCompare(current, "dbWriter")) {
@@ -129,7 +134,7 @@ IpfixConfiguration::IpfixConfiguration(const std::string& configFile)
 			conf = new DbReaderConfiguration(document, current);
 #else
 			msg(MSG_ERROR, "IpfixConfiguration: Vermont was compiled without "
-				       "support for dbReader. Ignoring entry in conifg file!");
+				       "support for dbReader. Ignoring entry in config file!");
 #endif
 		}
 		if (conf) {
@@ -171,12 +176,13 @@ void IpfixConfiguration::connectSubsystems()
 	std::string TYPES[] = {
 		configTypes::observer,
 		configTypes::exporter,
+		configTypes::pcapExporter,
 		configTypes::dbwriter,
 		configTypes::dbreader,
 		configTypes::collector,
 		configTypes::metering,
 	};
-	for (unsigned t = 0; t != 6; ++t) {
+	for (unsigned t = 0; t != 7; ++t) {
 		for (SubsystemConfiguration::iterator i = subsystems.begin();
 		     i != subsystems.end(); ++i) {	
 			std::string id = i->first;
