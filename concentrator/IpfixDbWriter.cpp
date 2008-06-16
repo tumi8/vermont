@@ -276,8 +276,10 @@ void IpfixDbWriter::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 {
 	DPRINTF("Processing data record");
 
-	if (dbError) return;
-	connectToDB();
+	if (dbError) {
+		connectToDB();
+		if (dbError) return;
+	}
 
 	/** check if statement buffer is not full*/
 	if(statements.statemBuffer[statements.maxStatements-1][0] != '\0') {
