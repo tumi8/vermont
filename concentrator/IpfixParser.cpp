@@ -42,6 +42,7 @@
 #include "IpfixPrinter.hpp"
 
 #include "common/msg.h"
+#include "common/Misc.h"
 
 using namespace std;
 
@@ -450,10 +451,8 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 	if (bt == 0) {
 		/* this error may come in rapid succession; I hope I don't regret it */
 		if(sourceId->exporterAddress.len == 4) {
-			msg(MSG_INFO, "Template %d from %u.%u.%u.%u unknown to collecting process", 
-				ntohs(set->id), (uint8_t)sourceId->exporterAddress.ip[3], 
-				(uint8_t)sourceId->exporterAddress.ip[2], (uint8_t)sourceId->exporterAddress.ip[1], 
-				(uint8_t)sourceId->exporterAddress.ip[0]);
+			msg(MSG_INFO, "Template %d from %s unknown to collecting process", 
+				ntohs(set->id), IPToString(*reinterpret_cast<uint32_t*>(&sourceId->exporterAddress)).c_str());
 		} else {
 			msg(MSG_INFO, "Template %d from non-IPv4 unknown to collecting process", ntohs(set->id));
 		}
