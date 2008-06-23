@@ -48,7 +48,7 @@ report_enum rep_fanouts::getID()
 void rep_fanouts::post(treeRecord* currentTree,treeRecord* lastTree,uint32_t index)
 {
 	list<treeNode*>::iterator iter = specNodes.begin();
-
+	msg(MSG_FATAL,"Total count %d",numTotal);
 	while (iter != specNodes.end()) 
 	{
 
@@ -67,6 +67,7 @@ void rep_fanouts::post(treeRecord* currentTree,treeRecord* lastTree,uint32_t ind
 
 void rep_payload_tcp::post(treeRecord* currentTree,treeRecord* lastTree,uint32_t index)
 {
+	msg(MSG_FATAL,"Total count %d",numTotal);
 
 	list<treeNode*>::iterator iter = specNodes.begin();
 

@@ -1,55 +1,68 @@
 #include "autofocus_attribute.h"
 #include "autofocus_report.h"
 #include "autofocus_iprecord.h"
+#include <iostream>
 
 af_attribute::af_attribute(report* rep)
-	{
+{
 	m_report = rep;
 	numCount = 0;
 	delta = 0;
-	}
+}
 
 void atr_payload_tcp::aggregate(IPRecord* te,Connection* conn)
-	{
+{
 	uint64_t deltacount = ntohll(conn->srcOctets) + ntohll(conn->dstOctets);
 	numCount += deltacount;
-
 	m_report->aggregate(deltacount);
-	}
+}
 
 void atr_payload_udp::aggregate(IPRecord* te, Connection* con)
-	{
+{
 
-	}
+}
 
 void atr_fanouts::aggregate(IPRecord* te,Connection* conn)
-	{
+{
 
 	if ((conn->srcTcpControlBits&Connection::SYN) && (ntohll(conn->srcTimeStart)<ntohll(conn->dstTimeStart)))
-		{
+	{
 		numCount++;
 		m_report->aggregate(1);	
-		}
-
 	}
+
+}
+
+void atr_payload_udp::test() 
+{
+	std::cerr << "UDP " << numCount << std::endl;
+}
+void atr_payload_tcp::test() 
+{
+	std::cerr << "TCP  " << numCount << std::endl;
+}
+void atr_fanouts::test() 
+{
+	std::cerr << "FANOUTS " << numCount << std::endl;
+}
 
 void atr_fanouts::collect(af_attribute* a,af_attribute* b) 
 {
 	numCount = a->numCount + b->numCount;
 	delta = a->delta + b->delta;
-	
+
 }
 void atr_payload_tcp::collect(af_attribute* a,af_attribute* b) 
 {
 	numCount = a->numCount + b->numCount;
 	delta = a->delta + b->delta;
-	
+
 }
 void atr_payload_udp::collect(af_attribute* a,af_attribute* b) 
 {
 	numCount = a->numCount + b->numCount;
 	delta = a->delta + b->delta;
-	
+
 }
 
 af_attribute* atr_payload_tcp::getCopy()

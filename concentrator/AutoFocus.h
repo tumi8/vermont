@@ -66,7 +66,6 @@ class AutoFocus
 
 		list<IPRecord*>* listIPRecords;
 	
-		std::list<af_attribute*> m_m_attributes;
 
 		uint32_t distance(treeNode*,treeNode*);
 		static bool comp_entries(treeNode*,treeNode*);

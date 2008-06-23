@@ -147,6 +147,13 @@ void AutoFocus::deleteTree(treeNode* root)
 	if (root->right != NULL)
 		deleteTree(root->right);
 
+	std::map<report_enum,af_attribute*>::iterator iter = root->data.m_attributes.begin();
+
+	while (iter != root->data.m_attributes.end())	
+	{
+		delete (iter->second);	
+		iter++;
+	}
 	delete root;
 	return;
 }
@@ -172,7 +179,7 @@ IPRecord* AutoFocus::createEntry(Connection* conn)
 
 void AutoFocus::deleteRecord(int index)
 {
-
+	msg(MSG_FATAL,"Deleting Index %d",index);
 	deleteTree(m_treeRecords[index]->root);	
 
 	std::list<report*>::iterator iter = m_treeRecords[index]->reports.begin();
@@ -246,6 +253,7 @@ void AutoFocus::initiateRecord(int index)
 }
 void AutoFocus::buildTree () 
 {
+	msg(MSG_FATAL,"STARTING TREE BUILDING");
 	treeNode* root;
 	list<treeNode*> tree;
 
@@ -265,23 +273,35 @@ void AutoFocus::buildTree ()
 			entry->left = NULL;
 			entry->right = NULL;
 			entry->data.m_attributes = (*iter)->m_attributes;
-/*
+
+
 			std::map<report_enum,af_attribute*>::iterator iter2 = (*iter)->m_attributes.begin();
 
 			while (iter2 != (*iter)->m_attributes.end())
 			{
-
-				entry->data.m_attributes[iter2->first] = (iter2->second)->getCopy();
+				(iter2->second)->delta = (iter2->second)->numCount;
 				iter2++;
-}
-*/
+			}
+			/*
+			   std::map<report_enum,af_attribute*>::iterator iter2 = (*iter)->m_attributes.begin();
+
+			   while (iter2 != (*iter)->m_attributes.end())
+			   {
+
+			   entry->data.m_attributes[iter2->first] = (iter2->second)->getCopy();
+			   iter2++;
+			   }
+			   */
 			tree.push_back(entry);
 			iter++;	
 		}
 	}
 
+	msg(MSG_FATAL,"converted iprecords to treenodes");
+
 	tree.sort(AutoFocus::comp_entries);
 
+	msg(MSG_FATAL,"everything is sorted %d",tree.size());
 	//* BUILD TREE *//
 
 	list<treeNode*>::iterator iter = tree.begin();
