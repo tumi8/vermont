@@ -288,7 +288,7 @@ IF (USE_GSL)
 		MESSAGE(STATUS "GNU scientific library found")
 	ELSE (GSL_FOUND)
 		MESSAGE(FATAL_ERROR "GNU scientific library not found. Please
-			install the library or use -DCONNECTION_FILTER=OFF")
+			install the library or use -DCONNECTION_FILTER=OFF and -DUSE_GSL=OFF")
 	ENDIF (GSL_FOUND)
 	ADD_DEFINITIONS(-DHAVE_GSL)
 	TARGET_LINK_LIBRARIES(vermont ${GSL_LIBRARIES})
