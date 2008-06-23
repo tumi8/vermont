@@ -107,8 +107,8 @@
 		</nonFlowKey>			
 	</rule>
 	<expiration>
-		<inactiveTimeout unit="sec">20</inactiveTimeout>
-		<activeTimeout unit="sec">20</activeTimeout>
+		<inactiveTimeout unit="sec">10</inactiveTimeout>
+		<activeTimeout unit="sec">10</activeTimeout>
 	</expiration>
 	<pollInterval unit="msec">1000</pollInterval>
 	<next>2</next>
@@ -125,7 +125,7 @@
 	<hashbits>20</hashbits>
 	<timetreeinterval>40</timetreeinterval>
 	<nummaxresults>20</nummaxresults>
-	<numtrees>5</numtrees>
+	<numtrees>2</numtrees>
 	<next>9</next>
 	<key>fanouts</key>
 </AutoFocus>	

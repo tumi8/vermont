@@ -248,6 +248,11 @@ void AutoFocus::initiateRecord(int index)
 	m_treeRecords[index % numTrees]->reports.push_back(new rep_payload_tcp());
 	m_treeRecords[index % numTrees]->reports.push_back(new rep_payload_udp());
 	m_treeRecords[index % numTrees]->reports.push_back(new rep_fanouts());
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_fanins());
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_packets_tcp());
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_packets_udp());
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_failed());
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_simult());
 
 
 }

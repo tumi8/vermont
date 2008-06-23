@@ -52,4 +52,40 @@ class rep_fanouts :public report
 		report_enum getID();
 
 };
+
+class rep_fanins :public report
+{
+		af_attribute* createaf_attribute();
+		void post(treeRecord*,treeRecord*,uint32_t);
+		report_enum getID();
+
+};
+class rep_packets_tcp :public report
+{
+		af_attribute* createaf_attribute();
+		void post(treeRecord*,treeRecord*,uint32_t);
+		report_enum getID();
+
+};
+class rep_packets_udp :public report
+{
+		af_attribute* createaf_attribute();
+		void post(treeRecord*,treeRecord*,uint32_t);
+		report_enum getID();
+
+};
+class rep_failed :public report
+{
+		af_attribute* createaf_attribute();
+		void post(treeRecord*,treeRecord*,uint32_t);
+		report_enum getID();
+
+};
+class rep_simult :public report
+{
+		af_attribute* createaf_attribute();
+		void post(treeRecord*,treeRecord*,uint32_t);
+		report_enum getID();
+
+};
 #endif

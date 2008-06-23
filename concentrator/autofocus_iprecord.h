@@ -7,7 +7,8 @@
 
 class report;
 class af_attribute;
-enum report_enum { payload_tcp, payload_udp, fanouts, NUM_REPORTS };
+enum report_enum { payload_tcp, payload_udp, fanouts, fanins, packets_tcp, packets_udp, failed, simult, NUM_REPORTS };
+
 
 typedef struct IPRecord {
 	uint32_t subnetIP;

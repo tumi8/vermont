@@ -3,7 +3,7 @@
 
 #include "Connection.h"
 #include "autofocus_iprecord.h"
-
+#include <list>
 
 class report;
 class AutoFocus;
@@ -23,7 +23,6 @@ class af_attribute
 		virtual void test()=0;
 		virtual void aggregate(IPRecord*,Connection*) =0 ;
 		virtual void collect(af_attribute*,af_attribute*)=0;
-		virtual af_attribute* getCopy()=0;
 
 };
 
@@ -33,7 +32,6 @@ class atr_payload_tcp : public af_attribute
 		atr_payload_tcp(report* r):af_attribute(r){};
 		void collect(af_attribute*,af_attribute*);
 		void aggregate(IPRecord*,Connection*);
-		af_attribute* getCopy();
 		void test();
 };
 
@@ -44,7 +42,6 @@ class atr_payload_udp : public af_attribute
 		void aggregate(IPRecord*,Connection*);
 		void collect(af_attribute*,af_attribute*);
 		void test();
-		af_attribute* getCopy();
 };
 class atr_fanouts : public af_attribute
 {
@@ -53,7 +50,48 @@ class atr_fanouts : public af_attribute
 		void aggregate(IPRecord*,Connection*);
 		void collect(af_attribute*,af_attribute*);
 		void test();
-		af_attribute* getCopy();
+};
+class atr_fanins : public af_attribute
+{
+	public:
+		atr_fanins(report* r):af_attribute(r){};
+		void aggregate(IPRecord*,Connection*);
+		void collect(af_attribute*,af_attribute*);
+		void test();
+};
+class atr_packets_tcp : public af_attribute
+{
+	public:
+		atr_packets_tcp(report* r):af_attribute(r){};
+		void aggregate(IPRecord*,Connection*);
+		void collect(af_attribute*,af_attribute*);
+		void test();
+};
+class atr_packets_udp : public af_attribute
+{
+	public:
+		atr_packets_udp(report* r):af_attribute(r){};
+		void aggregate(IPRecord*,Connection*);
+		void collect(af_attribute*,af_attribute*);
+		void test();
+};
+class atr_failed : public af_attribute
+{
+	public:
+		atr_failed(report* r):af_attribute(r){};
+		void aggregate(IPRecord*,Connection*);
+		void collect(af_attribute*,af_attribute*);
+		void test();
+};
+class atr_simult : public af_attribute
+{
+	private:
+		list<uint32_t> accessedHosts;
+	public:
+		atr_simult(report* r):af_attribute(r){};
+		void aggregate(IPRecord*,Connection*);
+		void collect(af_attribute*,af_attribute*);
+		void test();
 };
 
 #endif
