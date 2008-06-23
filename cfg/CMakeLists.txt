@@ -31,6 +31,7 @@ ADD_LIBRARY(cfg
 	IpfixCollectorCfg.cpp
 	IpfixDbReaderCfg.cpp
 	IpfixDbWriterCfg.cpp
+	IpfixDbWriterPgCfg.cpp
 	IpfixExporterCfg.cpp
 	IpfixPayloadWriterCfg.cpp
 	IpfixPrinterCfg.cpp

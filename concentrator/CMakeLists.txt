@@ -41,6 +41,7 @@ ADD_LIBRARY(concentrator
 	TemplateBuffer.cpp
 	IpfixDbReader.cpp
 	IpfixDbWriter.cpp
+	IpfixDbWriterPg.cpp
 	IpfixRecordDestination.cpp
 	TRWPortscanDetector.cpp
 	IpfixPayloadWriter.cpp

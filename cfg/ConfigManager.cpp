@@ -19,6 +19,7 @@
 #include "cfg/PacketIDMEFReporterCfg.h"
 #include "cfg/IpfixDbReaderCfg.h"
 #include "cfg/IpfixDbWriterCfg.h"
+#include "cfg/IpfixDbWriterPgCfg.h"
 #include "cfg/IpfixPayloadWriterCfg.h"
 
 #include <cassert>
@@ -48,6 +49,9 @@ Cfg* ConfigManager::configModules[] = {
 #ifdef DB_SUPPORT_ENABLED
 	new IpfixDbReaderCfg(NULL),
 	new IpfixDbWriterCfg(NULL),
+#endif
+#ifdef PG_SUPPORT_ENABLED
+	new IpfixDbWriterPgCfg(NULL),
 #endif
 };
 
