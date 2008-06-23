@@ -206,7 +206,7 @@ IF (SUPPORT_MYSQL)
 		MYSQL_CONFIG_PREFER_PATH
 	)
 	IF (NOT MYSQL_FOUND)
-		MESSAGE(STATUS "Could not find MySQL libraries. Disabling dbwriter/dbreader support.")
+		MESSAGE(FATAL_ERROR "Could not find MySQL libraries. Disabling dbwriter/dbreader support.")
 	ENDIF (NOT MYSQL_FOUND)
 ENDIF (SUPPORT_MYSQL)
 IF (MYSQL_FOUND)
