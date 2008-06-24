@@ -104,7 +104,7 @@ report_enum rep_simult::getID()
 }
 //------------------------------------------------------------
 
-void rep_payload_tcp::post(vector<treeRecord*>* currentTree,treeRecord* lastTree,uint32_t index)
+void rep_payload_tcp::post(vector<treeRecord*>& lastTree,uint32_t index)
 {
 	msg(MSG_FATAL,"Total count TCP %d",numTotal/1024/1024);
 
@@ -125,7 +125,7 @@ void rep_payload_tcp::post(vector<treeRecord*>* currentTree,treeRecord* lastTree
 	}
 }
 
-void rep_payload_udp::post(vector<treeRecord*>* currentTree,treeRecord* lastTree,uint32_t index)
+void rep_payload_udp::post(vector<treeRecord*>& lastTree,uint32_t index)
 {
 
 	msg(MSG_FATAL,"Total count UDP %d",numTotal/1024/1024);
@@ -147,7 +147,7 @@ void rep_payload_udp::post(vector<treeRecord*>* currentTree,treeRecord* lastTree
 	}
 
 }
-void rep_fanouts::post(vector<treeRecord*>*  currentTree,treeRecord* lastTree,uint32_t index)
+void rep_fanouts::post(vector<treeRecord*>& currentTree,treeRecord* lastTree,uint32_t index)
 {
 	list<treeNode*>::iterator iter = specNodes.begin();
 	msg(MSG_FATAL,"Total count FanOuts %d",numTotal);
@@ -166,7 +166,7 @@ void rep_fanouts::post(vector<treeRecord*>*  currentTree,treeRecord* lastTree,ui
 	}
 }
 
-void rep_fanins::post(vector<treeRecord*>*  currentTree,treeRecord* lastTree,uint32_t index)
+void rep_fanins::post(vector<treeRecord*>& currentTree,treeRecord* lastTree,uint32_t index)
 {
 	list<treeNode*>::iterator iter = specNodes.begin();
 	msg(MSG_FATAL,"Total count FanIns %d",numTotal);
@@ -185,7 +185,7 @@ void rep_fanins::post(vector<treeRecord*>*  currentTree,treeRecord* lastTree,uin
 	}
 }
 
-void rep_packets_tcp::post(vector<treeRecord*>*  currentTree,treeRecord* lastTree,uint32_t index)
+void rep_packets_tcp::post(vector<treeRecord*>& currentTree,treeRecord* lastTree,uint32_t index)
 {
 	list<treeNode*>::iterator iter = specNodes.begin();
 	msg(MSG_FATAL,"Total count packets TCP %d",numTotal);
@@ -204,7 +204,7 @@ void rep_packets_tcp::post(vector<treeRecord*>*  currentTree,treeRecord* lastTre
 	}
 }
 
-void rep_packets_udp::post(vector<treeRecord*>* currentTree,treeRecord* lastTree,uint32_t index)
+void rep_packets_udp::post(vector<treeRecord*>& lastTree,uint32_t index)
 {
 	list<treeNode*>::iterator iter = specNodes.begin();
 	msg(MSG_FATAL,"Total count packets UDP %d",numTotal);
@@ -223,7 +223,7 @@ void rep_packets_udp::post(vector<treeRecord*>* currentTree,treeRecord* lastTree
 	}
 }
 
-void rep_failed::post(vector<treeRecord*>* currentTree,treeRecord* lastTree,uint32_t index)
+void rep_failed::post(vector<treeRecord*>& lastTree,uint32_t index)
 {
 	list<treeNode*>::iterator iter = specNodes.begin();
 	msg(MSG_FATAL,"Total count failed %d",numTotal);
@@ -242,7 +242,7 @@ void rep_failed::post(vector<treeRecord*>* currentTree,treeRecord* lastTree,uint
 	}
 }
 
-void rep_simult::post(vector<treeRecord*>*  currentTree,treeRecord* lastTree,uint32_t index)
+void rep_simult::post(vector<treeRecord*>& currentTree,treeRecord* lastTree,uint32_t index)
 {
 	list<treeNode*>::iterator iter = specNodes.begin();
 	msg(MSG_FATAL,"Total count simult %d",numTotal);
@@ -262,7 +262,7 @@ void rep_simult::post(vector<treeRecord*>*  currentTree,treeRecord* lastTree,uin
 }
 //------------------------------------------------------------
 
-treeNode* report::getComparismValue(treeNode* match,vector<treeRecord>& m_treeRecords,uint32_t index)
+treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& index)
 {
 	if (m_treeRecords[index - 1 m_treeRecord.size() % m_treeRecord.size()] == NULL) return NULL;
 	else 

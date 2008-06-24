@@ -24,9 +24,9 @@ class report
 		virtual af_attribute* createaf_attribute() =0;
 
 		virtual void aggregate(uint64_t);
-		virtual void post(vector<treeRecord*>* *,treeRecord*,uint32_t)=0;
+		virtual void post(vector<treeRecord*>& *,treeRecord*,uint32_t)=0;
 		virtual void checkNode(treeNode*,uint32_t);
-		treeNode* getComparismValue(treeNode*,vector<treeRecord>&,uint32_t);
+		treeNode* getComparismValue(treeNode*,vector<treeRecord*>& ,uint32_t);
 		virtual report_enum getID()=0;
 };
 
@@ -34,14 +34,14 @@ class report
 class rep_payload_tcp : public report
 {
 		af_attribute* createaf_attribute();
-		void post(vector<treeRecord*>* *,treeRecord*,uint32_t);
+		void post(vector<treeRecord*>& *,treeRecord*,uint32_t);
 		report_enum getID();
 };
 
 class rep_payload_udp :public report
 {
 		af_attribute* createaf_attribute();
-		void post(vector<treeRecord*>* *,treeRecord*,uint32_t);
+		void post(vector<treeRecord*>& *,treeRecord*,uint32_t);
 		report_enum getID();
 
 };
@@ -49,7 +49,7 @@ class rep_payload_udp :public report
 class rep_fanouts :public report
 {
 		af_attribute* createaf_attribute();
-		void post(vector<treeRecord*>* *,treeRecord*,uint32_t);
+		void post(vector<treeRecord*>& *,treeRecord*,uint32_t);
 		report_enum getID();
 
 };
@@ -57,35 +57,35 @@ class rep_fanouts :public report
 class rep_fanins :public report
 {
 		af_attribute* createaf_attribute();
-		void post(vector<treeRecord*>* *,treeRecord*,uint32_t);
+		void post(vector<treeRecord*>& *,treeRecord*,uint32_t);
 		report_enum getID();
 
 };
 class rep_packets_tcp :public report
 {
 		af_attribute* createaf_attribute();
-		void post(vector<treeRecord*>* *,treeRecord*,uint32_t);
+		void post(vector<treeRecord*>& *,treeRecord*,uint32_t);
 		report_enum getID();
 
 };
 class rep_packets_udp :public report
 {
 		af_attribute* createaf_attribute();
-		void post(vector<treeRecord*>* *,treeRecord*,uint32_t);
+		void post(vector<treeRecord*>& *,treeRecord*,uint32_t);
 		report_enum getID();
 
 };
 class rep_failed :public report
 {
 		af_attribute* createaf_attribute();
-		void post(vector<treeRecord*>* *,treeRecord*,uint32_t);
+		void post(vector<treeRecord*>& *,treeRecord*,uint32_t);
 		report_enum getID();
 
 };
 class rep_simult :public report
 {
 		af_attribute* createaf_attribute();
-		void post(vector<treeRecord*>* *,treeRecord*,uint32_t);
+		void post(vector<treeRecord*>& *,treeRecord*,uint32_t);
 		report_enum getID();
 
 };
