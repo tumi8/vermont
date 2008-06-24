@@ -85,7 +85,7 @@ Observer::Observer(const std::string& interface, bool offline) : thread(Observer
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0), 
 	lastProcessedPackets(0), 
 	captureInterface(NULL), fileName(NULL), replaceTimestampsFromFile(false),
-	stretchTimeInt(1), stretchTime(1.0), autoExit(true),
+	stretchTimeInt(1), stretchTime(1.0), autoExit(true), slowMessageShown(false),
 	statTotalLostPackets(0), statTotalRecvPackets(0)
 {
 	if(offline) {
@@ -282,7 +282,10 @@ void *Observer::observerThread(void *arg)
 						msg(MSG_INFO, "Observer: nanosleep returned nonzero value");
 				}
 				else if (delta_now.tv_sec > (delta_to_be.tv_sec + 1) && obs->stretchTime!=INFINITY)
-				    msg(MSG_ERROR, "Observer: reading from file is more than 1 second behind schedule!");
+				    if (!obs->slowMessageShown) {
+				    	obs->slowMessageShown = true;
+				    	msg(MSG_ERROR, "Observer: reading from file is more than 1 second behind schedule!");
+				    }
 			}
 
 			// optionally replace the timestamp with current time

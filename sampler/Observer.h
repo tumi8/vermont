@@ -122,6 +122,8 @@ protected:
 	float stretchTime;
 	bool autoExit;
 	
+	bool slowMessageShown;	// true if message was shown that vermont is too slow to read file in time
+	
 	uint32_t statTotalLostPackets;
 	uint32_t statTotalRecvPackets;
 
