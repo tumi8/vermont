@@ -209,7 +209,7 @@ void AutoFocus::evaluate()
 
 	while (iter != currentTree->reports.end())
 	{
-		(*iter)->post(currentTree,last_tree,index);
+		(*iter)->post(&m_treeRecords,last_tree,index);
 		iter++;
 	}
 
@@ -420,78 +420,6 @@ bool AutoFocus::comp_entries(treeNode* a,treeNode* b) {
 	return ntohl(a->data.subnetIP) < ntohl(b->data.subnetIP);
 }
 
-treeNode* AutoFocus::getComparismValue(treeNode* match,uint32_t index)
-{
-	if (m_treeRecords[index] == NULL) return NULL;
-	else 
-	{
-		uint32_t sip = ntohl(match->data.subnetIP);
-		uint32_t sbits = match->data.subnetBits;
-		treeNode* current = m_treeRecords[index]->root;
-		treeNode* before = current;
-
-		//		msg(MSG_FATAL,"Searching predecessor of %s/%d",IPToString(ntohl(sip)).c_str(),sbits);
-		while (current != NULL)
-		{
-			before = current;
-			if (current->data.subnetBits == 32) return current;	
-
-			uint32_t a = distance(match,current->left); 
-
-			//check if our subnet is included in one of the child subnets 
-
-			//		msg(MSG_FATAL,"Checking left node %s/%d",IPToString(current->left->data.subnetIP).c_str(),current->left->data.subnetBits);
-
-			if (current->left->data.subnetBits <= 32- (uint32_t) (round(log(a)/log(2)+0.5)) && current->left->data.subnetBits <= sbits) 
-			{
-				//	msg(MSG_FATAL,"Subnet is included in left");
-				current = current->left;
-				continue;
-
-			}
-
-			uint32_t b = distance(match,current->right); 
-
-			//		msg(MSG_FATAL,"Checking right node %s/%d",IPToString(current->right->data.subnetIP).c_str(),current->right->data.subnetBits);
-
-			if (current->right->data.subnetBits <= 32- (uint32_t) (round(log(b)/log(2)+0.5)) && current->right->data.subnetBits <= sbits) 
-			{
-
-				//	msg(MSG_FATAL,"Subnet is included in right");
-				current = current->right;
-				continue;
-			}
-
-			//our subnet is not included in one of the child subnets, so there are 3 possible matches, left,right and current
-			//		msg(MSG_FATAL,"its not included in any node");
-
-			//now check if one of the child subnets is included in ours
-
-			bool right = false;
-			bool left = false;
-			if ( sbits <= 32- (uint32_t) (round(log(a)/log(2)+0.5)) && sbits <= current->left->data.subnetBits )
-			{
-				left = true;
-				//			msg(MSG_FATAL,"left subnet is included");
-			}
-
-			if ( sbits <= 32- (uint32_t) (round(log(b)/log(2)+0.5)) && sbits <= current->right->data.subnetBits )
-			{
-				//			msg(MSG_FATAL,"right subnet is included");
-				right = true;
-			}
-
-			if (left && right) return current;
-			if (left) return current->left;
-			if (right) return current->right;
-
-			return before;
-
-		}
-
-		return before;
-	}
-}
 string AutoFocus::getStatistics()
 {
 	ostringstream oss;

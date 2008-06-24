@@ -76,7 +76,6 @@ class AutoFocus
 		void deleteRecord(int);
 		void deleteTree(treeNode*);
 		void initiateRecord(int);
-		treeNode* getComparismValue(treeNode*,uint32_t);
 		IPRecord* createEntry(Connection* conn);
 		IPRecord* getEntry(Connection* conn);
 

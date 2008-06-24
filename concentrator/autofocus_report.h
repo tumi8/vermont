@@ -26,6 +26,7 @@ class report
 		virtual void aggregate(uint64_t);
 		virtual void post(treeRecord*,treeRecord*,uint32_t)=0;
 		virtual void checkNode(treeNode*,uint32_t);
+		treeNode* getComparismValue(treeNode*,vector<treeRecord>&,uint32_t);
 		virtual report_enum getID()=0;
 };
 
