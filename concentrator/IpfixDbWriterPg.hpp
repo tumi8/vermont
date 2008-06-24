@@ -57,54 +57,32 @@ class IpfixDbWriterPg
 		IpfixRecord::SourceID srcId;              /**Exporter default SourceID */
 
 	protected:
-		static const uint32_t MAX_TABLE = 3; /**< count of buffered tablenames */ 
-		static const uint32_t MAX_EXP_TABLE = 3; /**< Count of buffered exporters. Increase this value if you use more exporters in parallel */
+		static const uint32_t MAX_EXP_TABLE = 10; /**< Count of buffered exporters. Increase this value if you use more exporters in parallel */
 
-		/**
-		 * Struct stores for each BufEntry TableBuffer[maxTable]
-		 *  start-, endtime and tablename for the different tables
-		 */
-		typedef struct {
-			uint64_t startTableTime;
-			uint64_t endTableTime;                          
-			char TableName[TABLE_WIDTH];
-		} BufEntry;
-
-		/**
-		 * Store for each expTable ExporterBuffer[maxExpTable]
-		 * exporterID,srcID and expIP for the different exporters
-		 */
-		typedef struct {
-			int Id;          /** Id entry of sourcID and expIP in the ExporterTable */
-			uint32_t observationDomainId;  /** observationDomainId of  the exporter monitor */
-			uint32_t  expIp; /** IP of the exporter */
-		} ExpTable;
-
-		/** 
-		 * Cache which stores recently used existing half-hour tables and exporter table entries to 
-		 * reduce/avoid unnecessary mysql lookups
-		 */
-		typedef struct {
-			uint32_t countBuffTable;                      /**counter of buffered table names*/
-			IpfixDbWriterPg::BufEntry tableBuffer[MAX_TABLE];         /**buffer to store struct BufEntry*/             
-			uint32_t countExpTable;                       /**counter of buffered exporter*/
-			IpfixDbWriterPg::ExpTable exporterBuffer[MAX_EXP_TABLE];  /**buffer to store struct expTable*/
-		} TableCache;
-
-		TableCache cache;
 
 		/** 
 		 * Buffer for insert statements
 		 */
-		typedef struct {
-			uint32_t statemReceived;                /**counter of insert into statements*/
-			char** statemBuffer;               /**buffer  of char pointers to store the insert statements*/
-			uint32_t  maxStatements;
-			char** lockTables;		   /**tables to look*/
-			uint maxLocks;
-		} StatementBuffer;
+		struct InsertBuffer {
+			uint32_t curRows;           /** counter of rows to be inserted */
+			uint32_t maxRows;			/** maximum number of insert rows in buffer */
+			char* appendPtr;		/** pointer to sql which marks position where to insert new data */
+			char* bodyPtr;			/** pointer to sql which marks position where prefix of SQL statement ends */
+			char* sql;     			/** one large buffer to contain INSERT statement */			
+		};
+		
+		/**
+		 * Stores information about different exporters encountered in SourceID
+		 */
+		struct ExporterEntry {
+			int Id;          /** Id entry of sourcID and expIP in the ExporterTable */
+			uint32_t observationDomainId;  /** observationDomainId of  the exporter monitor */
+			uint32_t  ip; /** IP of the exporter */
+		};
 
-		StatementBuffer statements;
+		InsertBuffer insertBuffer;
+		ExporterEntry exporterEntries[MAX_EXP_TABLE];
+		uint32_t curExporterEntries;
 			
 		uint32_t numberOfColumns;         /**number of columns, used to calculate length of sql statements*/
 
@@ -121,14 +99,15 @@ class IpfixDbWriterPg
 
 		int createExporterTable();
 		int createDBTable(const char* tablename);
-		void getInsertStatement(char* statemStr, IpfixRecord::SourceID* sourceID, IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data, char** locks, uint32_t maxlocks);
+		void addColumnEntry(const char* insert, bool quoted, bool lastcolumn);
+		void addColumnEntry(const uint64_t insert, bool quoted, bool lastcolumn);
+		void fillInsertRow(IpfixRecord::SourceID* sourceID,
+				IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
 		int writeToDb();
 		int getExporterID(IpfixRecord::SourceID* sourceID);
                 const char* getTableName(uint64_t flowstartsec);
 	private:
 		void connectToDB();
-		void addColumnEntry(char* sql, const char* insert, bool quoted, bool lastcolumn);
-		void addColumnEntry(char* sql, uint64_t insert, bool quoted, bool lastcolumn);
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID, 
 				IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, 
 				IpfixRecord::Data* data);
