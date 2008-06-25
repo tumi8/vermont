@@ -3,6 +3,8 @@
 #include "autofocus_iprecord.h"
 #include "common/Misc.h"
 #include <vector>
+#include <math.h>
+#include <iostream>
 
 using namespace std;
 report::report() 
@@ -242,39 +244,59 @@ void rep_failed::post(vector<treeRecord*>& lastTree,uint32_t index)
 	}
 }
 
-void rep_simult::post(vector<treeRecord*>& currentTree,uint32_t index)
+void rep_simult::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
 	list<treeNode*>::iterator iter = specNodes.begin();
+	
+	uint32_t lastindex = (index - 1 + p_treeRecords.capacity()) % p_treeRecords.capacity();
+	
+	if (p_treeRecords[lastindex] != NULL) 
+	{
+		double change = (double) (numTotal * 100) / (double) p_treeRecords[lastindex]->root->data.m_attributes[simult]->numCount - 100.0;	
+		msg(MSG_FATAL,"Total count simult %03llu CHANGE: %01.2f%%",numTotal,change);
+	}
+else {
 	msg(MSG_FATAL,"Total count simult %d",numTotal);
+}
+
 	while (iter != specNodes.end()) 
 	{
 
-		treeNode* before = getComparismValue(*iter,*currentTree,index);
+		treeNode* before = getComparismValue(*iter,p_treeRecords,index);
+
 		uint64_t data = (*iter)->data.m_attributes[simult]->numCount;
 		double percentage = (double) (data*100) / (double) numTotal;	
 
 		msg(MSG_FATAL,"SUBNET: %s/%d\t	ConnectionCount: %03llu (%01.2f%%)\t",
 				IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
 				data,percentage);
-
+		if (before != NULL)
+		{
+		double change = (double) (data * 100) / (double) before->data.m_attributes[simult]->numCount - 100.0;	
+		msg(MSG_FATAL,"SUBNET: %s/%d\t	Before: %03llu Change: %01.2f%%\t",
+				IPToString(before->data.subnetIP).c_str(),before->data.subnetBits,before->data.m_attributes[simult]->numCount,change);
+		}
 		iter++;
 	}
 }
 //------------------------------------------------------------
 
-treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& index)
+treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeRecords,uint32_t index)
 {
-	if (m_treeRecords[index - 1 m_treeRecord.size() % m_treeRecord.size()] == NULL) return NULL;
+	uint32_t lastindex = (index - 1 + m_treeRecords.capacity()) % m_treeRecords.capacity();
+
+	if (m_treeRecords[lastindex] == NULL) { return NULL; }
 	else 
 	{
 		uint32_t sip = ntohl(match->data.subnetIP);
 		uint32_t sbits = match->data.subnetBits;
-		treeNode* current = m_treeRecords[iindex - 1 m_treeRecord.size() % m_treeRecord.size()]->root;
+		treeNode* current = m_treeRecords[lastindex]->root;
 		treeNode* before = current;
 
 		//		msg(MSG_FATAL,"Searching predecessor of %s/%d",IPToString(ntohl(sip)).c_str(),sbits);
 		while (current != NULL)
 		{
+			
 			before = current;
 			if (current->data.subnetBits == 32) return current;	
 
@@ -326,9 +348,8 @@ treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& index)
 			if (left && right) return current;
 			if (left) return current->left;
 			if (right) return current->right;
-
+			
 			return before;
-
 		}
 
 		return before;
@@ -343,4 +364,9 @@ void report::checkNode(treeNode* newnode,uint32_t numMax)
 		newnode->data.m_attributes[getID()]->delta = 0;
 		specNodes.push_back(newnode);
 	}
+}
+
+uint32_t report::distance(treeNode* a,treeNode* b) 
+{
+	return ntohl(a->data.subnetIP) ^ ntohl(b->data.subnetIP);
 }

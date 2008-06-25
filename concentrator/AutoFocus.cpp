@@ -40,7 +40,7 @@ InstanceManager<IDMEFMessage> AutoFocus::idmefManager("IDMEFMessage");
 	numTrees(numtrees),
 	analyzerId(analyzerid),
 	idmefTemplate(idmeftemplate),
-	m_treeRecords(numtrees)
+	m_treeRecords(numtrees,NULL)
 
 {
 	hashSize = 1<<hashBits;
@@ -209,7 +209,7 @@ void AutoFocus::evaluate()
 
 	while (iter != currentTree->reports.end())
 	{
-		(*iter)->post(&m_treeRecords,last_tree,index);
+		(*iter)->post(m_treeRecords,index);
 		iter++;
 	}
 
@@ -380,9 +380,9 @@ void AutoFocus::buildTree ()
 
 	m_treeCount++;
 
-	initiateRecord(m_treeCount % numTrees);
 
 	evaluate();
+	initiateRecord(m_treeCount % numTrees);
 	cleanUp();
 
 }

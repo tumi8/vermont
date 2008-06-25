@@ -123,7 +123,7 @@
 	<analyzerid>AutoFocus</analyzerid>
 	<idmeftemplate>idmef/templates/AutoFocus_template.xml</idmeftemplate>
 	<hashbits>20</hashbits>
-	<timetreeinterval>40</timetreeinterval>
+	<timetreeinterval>25</timetreeinterval>
 	<nummaxresults>20</nummaxresults>
 	<numtrees>2</numtrees>
 	<next>9</next>
