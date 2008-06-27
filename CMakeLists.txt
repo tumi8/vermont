@@ -19,7 +19,6 @@
 
 PROJECT(VERMONT)
 
-
 ### CMake configuration
 
 # allow building with old CMake. Use some bundled modules as a fallback

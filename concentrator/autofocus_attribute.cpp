@@ -12,6 +12,15 @@ af_attribute::af_attribute(report* rep)
 
 //------------------------------------------------------------
 
+
+atr_simult::~atr_simult() 
+{
+
+}
+
+
+//------------------------------------------------------------
+
 void atr_payload_tcp::aggregate(IPRecord* te,Connection* conn)
 {
 	if (conn->protocol != 6) return;
@@ -88,8 +97,8 @@ void atr_simult::aggregate(IPRecord* te,Connection* conn)
 	numCount++;
 	m_report->aggregate(1);	
 
-
 }
+
 //------------------------------------------------------------
 void atr_payload_udp::test() 
 {

@@ -30,6 +30,7 @@ protected:
 	uint32_t timeTreeInterval; // time in seconds of interval when tree is being rebuilt
 	uint32_t numMaxResults; //max number of results
 	uint32_t numTrees;
+	uint32_t minSubbits;
 	string analyzerId;	/**< analyzer id for IDMEF messages */
 	string idmefTemplate;	/**< template file for IDMEF messages */
 	

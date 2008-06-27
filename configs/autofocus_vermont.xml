@@ -125,6 +125,7 @@
 	<hashbits>20</hashbits>
 	<timetreeinterval>25</timetreeinterval>
 	<nummaxresults>20</nummaxresults>
+	<minSubbits>25</minSubbits>
 	<numtrees>2</numtrees>
 	<next>9</next>
 	<key>fanouts</key>

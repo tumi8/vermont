@@ -33,14 +33,15 @@ InstanceManager<IDMEFMessage> AutoFocus::idmefManager("IDMEFMessage");
  * attention: parameter idmefexporter must be free'd by the creating instance, TRWPortWormDetector
  * does not dare to delete it, in case it's used
  */
-	AutoFocus::AutoFocus(uint32_t hashbits, uint32_t ttreeint, uint32_t nummaxr, uint32_t numtrees, string analyzerid, string idmeftemplate)
+	AutoFocus::AutoFocus(uint32_t hashbits, uint32_t ttreeint, uint32_t nummaxr, uint32_t numtrees, uint32_t subbits,string analyzerid, string idmeftemplate)
 : hashBits(hashbits),
 	timeTreeInterval(ttreeint),
 	numMaxResults(nummaxr),
 	numTrees(numtrees),
 	analyzerId(analyzerid),
 	idmefTemplate(idmeftemplate),
-	m_treeRecords(numtrees,NULL)
+	m_treeRecords(numtrees,NULL),
+	m_minSubbits(subbits)
 
 {
 	hashSize = 1<<hashBits;
@@ -59,7 +60,32 @@ InstanceManager<IDMEFMessage> AutoFocus::idmefManager("IDMEFMessage");
 
 AutoFocus::~AutoFocus()
 {
-	delete[] listIPRecords;
+	for (uint32_t i=0; i<hashSize; i++) {
+		if (listIPRecords[i].size()==0) continue;
+
+		list<IPRecord*>::iterator iter = listIPRecords[i].begin();
+		while (iter != listIPRecords[i].end()) {
+			std::map<report_enum,af_attribute*>::iterator iter2 = (*iter)->m_attributes.begin();
+
+			while (iter2 != (*iter)->m_attributes.end())	
+			{
+				delete (iter2->second);	
+				iter2++;
+			}
+			delete *iter;
+			iter++;
+		}
+		listIPRecords[i].clear();
+	}
+	delete listIPRecords;
+
+	for (int i = 0; i < numTrees;i++)
+	{
+		if (m_treeRecords[i] != NULL)
+			deleteRecord(i);
+
+	}
+
 }
 
 void AutoFocus::onDataDataRecord(IpfixDataDataRecord* record)
@@ -219,7 +245,7 @@ void AutoFocus::evaluate()
 void AutoFocus::cleanUp()
 {
 
-
+	//atrributes are not deleted here, because the data is stll linked in the treeNodes
 	for (uint32_t i=0; i<hashSize; i++) {
 		if (listIPRecords[i].size()==0) continue;
 
@@ -245,14 +271,14 @@ void AutoFocus::initiateRecord(int index)
 		deleteRecord(index % numTrees);
 
 	m_treeRecords[index % numTrees] = new treeRecord;
-	m_treeRecords[index % numTrees]->reports.push_back(new rep_payload_tcp());
-	m_treeRecords[index % numTrees]->reports.push_back(new rep_payload_udp());
-	m_treeRecords[index % numTrees]->reports.push_back(new rep_fanouts());
-	m_treeRecords[index % numTrees]->reports.push_back(new rep_fanins());
-	m_treeRecords[index % numTrees]->reports.push_back(new rep_packets_tcp());
-	m_treeRecords[index % numTrees]->reports.push_back(new rep_packets_udp());
-	m_treeRecords[index % numTrees]->reports.push_back(new rep_failed());
-	m_treeRecords[index % numTrees]->reports.push_back(new rep_simult());
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_payload_tcp(m_minSubbits));
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_payload_udp(m_minSubbits));
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_fanouts(m_minSubbits));
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_fanins(m_minSubbits));
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_packets_tcp(m_minSubbits));
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_packets_udp(m_minSubbits));
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_failed(m_minSubbits));
+	m_treeRecords[index % numTrees]->reports.push_back(new rep_simult(m_minSubbits));
 
 
 }

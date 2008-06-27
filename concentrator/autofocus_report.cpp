@@ -6,10 +6,13 @@
 #include <math.h>
 #include <iostream>
 
+#define THRESHOLD 25
+
 using namespace std;
-report::report() 
+report::report(uint32_t a) 
 {
 	numTotal = 0;
+	minSubbits = a;
 }
 
 uint64_t report::getTotal()
@@ -106,180 +109,104 @@ report_enum rep_simult::getID()
 }
 //------------------------------------------------------------
 
-void rep_payload_tcp::post(vector<treeRecord*>& lastTree,uint32_t index)
+void rep_payload_tcp::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	msg(MSG_FATAL,"Total count TCP %d",numTotal/1024/1024);
-
-	list<treeNode*>::iterator iter = specNodes.begin();
-
-	while (iter != specNodes.end()) 
-	{
-
-		uint64_t data = (*iter)->data.m_attributes[payload_tcp]->numCount;
-
-		double percentage = (double) (data*100) / (double) numTotal;	
-
-		msg(MSG_FATAL,"SUBNET: %s/%d\t\t TRAFFIC: %03llu MB (%01.2f%%)\t",
-				IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
-				data/1024/1024,percentage);
-
-		iter++;
-	}
+	f_post(p_treeRecords,index,payload_tcp,"Datavolume TCP","Volume");
 }
 
-void rep_payload_udp::post(vector<treeRecord*>& lastTree,uint32_t index)
+void rep_payload_udp::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-
-	msg(MSG_FATAL,"Total count UDP %d",numTotal/1024/1024);
-
-	list<treeNode*>::iterator iter = specNodes.begin();
-
-	while (iter != specNodes.end()) 
-	{
-
-		uint64_t data = (*iter)->data.m_attributes[payload_udp]->numCount;
-
-		double percentage = (double) (data*100) / (double) numTotal;	
-
-		msg(MSG_FATAL,"SUBNET: %s/%d\t\t TRAFFIC: %03llu MB (%01.2f%%)\t",
-				IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
-				data/1024/1024,percentage);
-
-		iter++;
-	}
-
+	f_post(p_treeRecords,index,payload_udp,"Datavolume UDP","Volume");
 }
-void rep_fanouts::post(vector<treeRecord*>& currentTree,uint32_t index)
+void rep_fanouts::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	list<treeNode*>::iterator iter = specNodes.begin();
-	msg(MSG_FATAL,"Total count FanOuts %d",numTotal);
-	while (iter != specNodes.end()) 
-	{
-
-		uint64_t data = (*iter)->data.m_attributes[fanouts]->numCount;
-
-		double percentage = (double) (data*100) / (double) numTotal;	
-
-		msg(MSG_FATAL,"SUBNET: %s/%d\t	FANOUTS: %03llu (%01.2f%%)\t",
-				IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
-				data,percentage);
-
-		iter++;
-	}
+	f_post(p_treeRecords,index,fanouts,"Outgoing Connections","Outgoing");
 }
 
-void rep_fanins::post(vector<treeRecord*>& currentTree,uint32_t index)
+void rep_fanins::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	list<treeNode*>::iterator iter = specNodes.begin();
-	msg(MSG_FATAL,"Total count FanIns %d",numTotal);
-	while (iter != specNodes.end()) 
-	{
-
-		uint64_t data = (*iter)->data.m_attributes[fanins]->numCount;
-
-		double percentage = (double) (data*100) / (double) numTotal;	
-
-		msg(MSG_FATAL,"SUBNET: %s/%d\t	FANOUTS: %03llu (%01.2f%%)\t",
-				IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
-				data,percentage);
-
-		iter++;
-	}
+	f_post(p_treeRecords,index,fanins,"Incoming Connections","Incoming");
 }
 
-void rep_packets_tcp::post(vector<treeRecord*>& currentTree,uint32_t index)
+void rep_packets_tcp::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	list<treeNode*>::iterator iter = specNodes.begin();
-	msg(MSG_FATAL,"Total count packets TCP %d",numTotal);
-	while (iter != specNodes.end()) 
-	{
-
-		uint64_t data = (*iter)->data.m_attributes[packets_tcp]->numCount;
-
-		double percentage = (double) (data*100) / (double) numTotal;	
-
-		msg(MSG_FATAL,"SUBNET: %s/%d\t	PacketCount: %03llu (%01.2f%%)\t",
-				IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
-				data,percentage);
-
-		iter++;
-	}
+	f_post(p_treeRecords,index,packets_tcp,"Packetcount TCP","Packets");
 }
 
-void rep_packets_udp::post(vector<treeRecord*>& lastTree,uint32_t index)
+void rep_packets_udp::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	list<treeNode*>::iterator iter = specNodes.begin();
-	msg(MSG_FATAL,"Total count packets UDP %d",numTotal);
-	while (iter != specNodes.end()) 
-	{
-
-		uint64_t data = (*iter)->data.m_attributes[packets_udp]->numCount;
-
-		double percentage = (double) (data*100) / (double) numTotal;	
-
-		msg(MSG_FATAL,"SUBNET: %s/%d\t	PacketCount: %03llu (%01.2f%%)\t",
-				IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
-				data,percentage);
-
-		iter++;
-	}
+	f_post(p_treeRecords,index,packets_udp,"Packetcount UDP","Packets");
 }
 
-void rep_failed::post(vector<treeRecord*>& lastTree,uint32_t index)
+void rep_failed::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	list<treeNode*>::iterator iter = specNodes.begin();
-	msg(MSG_FATAL,"Total count failed %d",numTotal);
-	while (iter != specNodes.end()) 
-	{
-
-		uint64_t data = (*iter)->data.m_attributes[failed]->numCount;
-
-		double percentage = (double) (data*100) / (double) numTotal;	
-
-		msg(MSG_FATAL,"SUBNET: %s/%d\t	PacketCount: %03llu (%01.2f%%)\t",
-				IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
-				data,percentage);
-
-		iter++;
-	}
+	f_post(p_treeRecords,index,failed,"Failed Connections","Failed");
 }
 
 void rep_simult::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
+	f_post(p_treeRecords,index,simult,"Simultanous Connections","Connectioncount");
+}
+//-----------------------------------------------------------
+
+void report::f_post(vector<treeRecord*>& p_treeRecords,uint32_t index,report_enum attribute,string text1,string text2)
+{
+
 	list<treeNode*>::iterator iter = specNodes.begin();
-	
+
 	uint32_t lastindex = (index - 1 + p_treeRecords.capacity()) % p_treeRecords.capacity();
-	
+	double change_global;
 	if (p_treeRecords[lastindex] != NULL) 
 	{
-		double change = (double) (numTotal * 100) / (double) p_treeRecords[lastindex]->root->data.m_attributes[simult]->numCount - 100.0;	
-		msg(MSG_FATAL,"Total count simult %03llu CHANGE: %01.2f%%",numTotal,change);
+		change_global = (double) (numTotal * 100) / (double) p_treeRecords[lastindex]->root->data.m_attributes[attribute]->numCount - 100.0;	
+		msg(MSG_FATAL,"Total %s %03llu CHANGE: %01.2f%%",text1.c_str(),numTotal,change_global);
 	}
-else {
-	msg(MSG_FATAL,"Total count simult %d",numTotal);
-}
+	else {
+		msg(MSG_FATAL,"Total %s %d",text1.c_str(),numTotal);
+	}
 
 	while (iter != specNodes.end()) 
 	{
 
+		if ((*iter)->data.subnetBits < minSubbits) 
+		{ 
+			iter = specNodes.erase(iter);
+			continue;
+		}
+
 		treeNode* before = getComparismValue(*iter,p_treeRecords,index);
 
-		uint64_t data = (*iter)->data.m_attributes[simult]->numCount;
+		uint64_t data = (*iter)->data.m_attributes[attribute]->numCount;
 		double percentage = (double) (data*100) / (double) numTotal;	
 
-		msg(MSG_FATAL,"SUBNET: %s/%d\t	ConnectionCount: %03llu (%01.2f%%)\t",
-				IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
-				data,percentage);
 		if (before != NULL)
 		{
-		double change = (double) (data * 100) / (double) before->data.m_attributes[simult]->numCount - 100.0;	
-		msg(MSG_FATAL,"SUBNET: %s/%d\t	Before: %03llu Change: %01.2f%%\t",
-				IPToString(before->data.subnetIP).c_str(),before->data.subnetBits,before->data.m_attributes[simult]->numCount,change);
+
+			double change = (double) (data * 100) / (double) before->data.m_attributes[attribute]->numCount - 100.0;	
+
+			if (abs((int) (change_global - change)) < THRESHOLD) 
+			{
+				iter = specNodes.erase(iter);
+				continue;
+			}
+			msg(MSG_FATAL,"SUBNET: %s/%d\t\t %s\t %03llu (%03llu)\t\t %01.2f%% (%01.2f%%)\t",
+					IPToString(before->data.subnetIP).c_str(),before->data.subnetBits,text2.c_str(),data,before->data.m_attributes[attribute]->numCount,percentage,change);
+		}
+		else 
+		{
+			msg(MSG_FATAL,"SUBNET: %s/%d\t	%s: %03llu (%01.2f%%)\t",
+				IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
+				text2.c_str(),data,percentage);
 		}
 		iter++;
 	}
+
 }
-//------------------------------------------------------------
+
+
+//-----------------------------------------------------------
+
+
 
 treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeRecords,uint32_t index)
 {
@@ -296,7 +223,7 @@ treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeR
 		//		msg(MSG_FATAL,"Searching predecessor of %s/%d",IPToString(ntohl(sip)).c_str(),sbits);
 		while (current != NULL)
 		{
-			
+
 			before = current;
 			if (current->data.subnetBits == 32) return current;	
 
@@ -348,7 +275,7 @@ treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeR
 			if (left && right) return current;
 			if (left) return current->left;
 			if (right) return current->right;
-			
+
 			return before;
 		}
 

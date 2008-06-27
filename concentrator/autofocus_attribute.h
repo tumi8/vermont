@@ -18,6 +18,7 @@ class af_attribute
 	public:
 		uint64_t numCount;
 		uint64_t delta;
+		virtual ~af_attribute() {};
 		af_attribute() {};
 		af_attribute(report*);
 		virtual void test()=0;
@@ -87,7 +88,8 @@ class atr_simult : public af_attribute
 {
 	private:
 		list<uint32_t> accessedHosts;
-	public:
+	public:	
+		~atr_simult();
 		atr_simult(report* r):af_attribute(r){};
 		void aggregate(IPRecord*,Connection*);
 		void collect(af_attribute*,af_attribute*);
