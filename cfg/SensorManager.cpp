@@ -14,7 +14,8 @@ SensorManager::SensorManager(uint32_t checkInterval = SM_DEFAULT_CHECK_INTERVAL,
 	: graphIS(gis), 
 	  thread(SensorManager::threadWrapper),
 	  checkInterval(checkInterval),
-	  outputFilename(outputfilename)
+	  outputFilename(outputfilename),
+	  smExitFlag(false)
 {
 #if !defined(__linux__)
 	msg(MSG_DIALOG, "WARNING: this instance of vermont is *not* compiled for linux, support for CPU sensors is disabled");
@@ -26,6 +27,9 @@ SensorManager::SensorManager(uint32_t checkInterval = SM_DEFAULT_CHECK_INTERVAL,
 	lastSystemInfo = ThreadCPUInterface::getSystemInfo();
 #endif
 	usedBytes += sizeof(SensorManager);
+				
+	if (gethostname(hostname, 100) != 0) 
+		THROWEXCEPTION("failed to get hostname by gethostname()!");
 }
 
 SensorManager::~SensorManager()
@@ -44,9 +48,15 @@ void SensorManager::performStart()
 	thread.run(this);
 }
 
+void SensorManager::stopSMThread()
+{
+	smExitFlag = true;
+	thread.join();	
+}
+
 void SensorManager::performShutdown()
 {
-	thread.join();
+	stopSMThread();
 }
 
 /**
@@ -98,30 +108,113 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 	fprintf(file, xmlmodpost);
 }
 
-void SensorManager::collectDataWorker()
+void SensorManager::retrieveStatistics()
 {
-	time_t lasttime = time(0);
-	
 	const char* xmlpre = "<vermont>\n\t<sensorData time=\"%s\" host=\"%s\">\n";
 	const char* xmlpost = "\t</sensorData>\n</vermont>\n";
 	const char* xmlglobals = "\t\t<%s>%s</%s>\n";	
 	
+	string lockfile = outputFilename + ".lock";
+	
+	// we must not wait for the graph lock, else there may be a race condition with
+	// the ConfigManager
+	while (!graphIS->tryLockGraph()) {
+		if (smExitFlag) break;
+		timespec timeout = { 0, 200000 };
+		nanosleep(&timeout, NULL);
+	}
+	
+	if (smExitFlag) return;
+	
+	int fdlock = open(lockfile.c_str(), O_CREAT|O_RDONLY);
+	if (fdlock == -1)
+		msg(MSG_DEBUG, "failed to open file %s, error code %d", lockfile.c_str(), errno);
+	
+	if (flock(fdlock, LOCK_EX)!=0)			
+		msg(MSG_DEBUG, "failed to activate exclusive lock on file %s (flock())", lockfile.c_str());
+	
+	FILE* file = fopen(outputFilename.c_str(), "w");
+	if (!file) {
+		THROWEXCEPTION("failed to reopen file %s", outputFilename.c_str());
+		perror("error:");
+	}
+	
+	time_t curtime = time(0);
+	char curtimestr[100];
+	ctime_r(&curtime, curtimestr);
+	curtimestr[strlen(curtimestr)-1] = 0;
+	fprintf(file, xmlpre, curtimestr, hostname);
+	char text[100];
+	snprintf(text, 100, "%u", static_cast<uint32_t>(getpid()));
+	fprintf(file, xmlglobals, "pid", text, "pid");		
+	char lasttimestr[100];
+	ctime_r(&lasttime, lasttimestr);
+	lasttimestr[strlen(lasttimestr)-1] = 0;
+	fprintf(file, xmlglobals, "lastTime", lasttimestr, "lastTime");
+	
+#if defined(__linux__)		
+	const char* xmlglobalsuint = "\t\t<%s>%u</%s>\n";
+	ThreadCPUInterface::SystemInfo si = ThreadCPUInterface::getSystemInfo();
+	
+	fprintf(file, xmlglobalsuint, "processorAmount", si.noCPUs, "processorAmount");
+	for (uint16_t i=0; i<si.sysJiffies.size(); i++) {
+		double sysutil = (si.sysJiffies[i]-lastSystemInfo.sysJiffies[i])/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
+		double userutil = (si.userJiffies[i]-lastSystemInfo.userJiffies[i])/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
+		fprintf(file, "\t\t<processor id=\"%u\"><util type=\"system\">%.2f</util><util type=\"user\">%.2f</util></processor>\n",
+				i, sysutil, userutil);			
+	}
+	fprintf(file, "\t\t<memory><free type=\"bytes\">%llu</free><total type=\"bytes\">%llu</total></memory>\n",
+			si.freeMemory, si.totalMemory);
+	lastSystemInfo = si;
+#endif
+
+	//DPRINTF("*** sensor data at %s", ctime(&curtime));
+	
+	Graph* g = graphIS->getGraph();
+	vector<CfgNode*> nodes = g->getNodes();
+	vector<CfgNode*>::iterator iter = nodes.begin();
+	while (iter != nodes.end()) {
+		Cfg* cfg = (*iter)->getCfg();
+		Sensor* s = cfg->getInstance();		
+		vector<uint32_t> nextids = cfg->getNext();
+		writeSensorXML(file, s, cfg->getName().c_str(), cfg->getID(), true, curtime, lasttime, &nextids);
+		
+		iter++;
+	}
+	
+	// iterate through all non-module sensors
+	mutex.lock();
+	list<SensorEntry>::const_iterator siter = sensors.begin();
+	while (siter != sensors.end()) {
+		writeSensorXML(file, siter->sensor, siter->name.c_str(), siter->id, false, curtime, lasttime, NULL);
+		siter++;
+	}
+	mutex.unlock();
+	
+	fprintf(file, xmlpost);
+	fclose(file);
+	close(fdlock);
+	
+	
+	
+	graphIS->unlockGraph();
+}
+
+void SensorManager::collectDataWorker()
+{
+	lasttime = time(0);
+		
 	if (!graphIS) {
 		THROWEXCEPTION("GraphInstanceSupplier variable graphIS MUST be set when module is started!");
 	}
-	
-	string lockfile = outputFilename + ".lock";
-	char hostname[100];
-	if (gethostname(hostname, 100) != 0) 
-		THROWEXCEPTION("failed to get hostname by gethostname()!");
 		
 	registerCurrentThread();
 	
 	msg(MSG_DIALOG, "SensorManager: checking sensor values every %u seconds", checkInterval);
-	while (!exitFlag) {		
+	while (!smExitFlag) {		
 		uint32_t sleepcount = checkInterval*2;
 		uint32_t i = 0;
-		while (i<sleepcount && !exitFlag) {
+		while (i<sleepcount && !smExitFlag) {
 			// restart nanosleep with the remaining sleep time
 			// if we got interrupted by a signal
 			timespec req;
@@ -130,91 +223,12 @@ void SensorManager::collectDataWorker()
 			while (nanosleep(&req, &req) == -1 && errno == EINTR);
 			i++;
 		}
-			
+					
+		if (smExitFlag) break;
 		
-		if (exitFlag) break;
-		
-		// we must not wait for the graph lock, else there may be a race condition with
-		// the ConfigManager
-		while (!graphIS->tryLockGraph()) {
-			if (exitFlag) break;
-			timespec timeout = { 0, 200000 };
-			nanosleep(&timeout, NULL);
-		}
-		if (exitFlag) break;
-		
-		int fdlock = open(lockfile.c_str(), O_CREAT|O_RDONLY);
-		if (fdlock == -1)
-			msg(MSG_DEBUG, "failed to open file %s, error code %d", lockfile.c_str(), errno);
-		
-		if (flock(fdlock, LOCK_EX)!=0)			
-			msg(MSG_DEBUG, "failed to activate exclusive lock on file %s (flock())", lockfile.c_str());
-		
-		FILE* file = fopen(outputFilename.c_str(), "w");
-		if (!file) {
-			THROWEXCEPTION("failed to reopen file %s", outputFilename.c_str());
-			perror("error:");
-		}
-		
-		time_t curtime = time(0);
-		char curtimestr[100];
-		ctime_r(&curtime, curtimestr);
-		curtimestr[strlen(curtimestr)-1] = 0;
-		fprintf(file, xmlpre, curtimestr, hostname);
-		char text[100];
-		snprintf(text, 100, "%u", static_cast<uint32_t>(getpid()));
-		fprintf(file, xmlglobals, "pid", text, "pid");		
-		char lasttimestr[100];
-		ctime_r(&lasttime, lasttimestr);
-		lasttimestr[strlen(lasttimestr)-1] = 0;
-		fprintf(file, xmlglobals, "lastTime", lasttimestr, "lastTime");
-		
-#if defined(__linux__)		
-		const char* xmlglobalsuint = "\t\t<%s>%u</%s>\n";
-		ThreadCPUInterface::SystemInfo si = ThreadCPUInterface::getSystemInfo();
-		
-		fprintf(file, xmlglobalsuint, "processorAmount", si.noCPUs, "processorAmount");
-		for (uint16_t i=0; i<si.sysJiffies.size(); i++) {
-			double sysutil = (si.sysJiffies[i]-lastSystemInfo.sysJiffies[i])/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
-			double userutil = (si.userJiffies[i]-lastSystemInfo.userJiffies[i])/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
-			fprintf(file, "\t\t<processor id=\"%u\"><util type=\"system\">%.2f</util><util type=\"user\">%.2f</util></processor>\n",
-					i, sysutil, userutil);			
-		}
-		fprintf(file, "\t\t<memory><free type=\"bytes\">%llu</free><total type=\"bytes\">%llu</total></memory>\n",
-				si.freeMemory, si.totalMemory);
-		lastSystemInfo = si;
-#endif
-	
-		//DPRINTF("*** sensor data at %s", ctime(&curtime));
-		
-		Graph* g = graphIS->getGraph();
-		vector<CfgNode*> nodes = g->getNodes();
-		vector<CfgNode*>::iterator iter = nodes.begin();
-		while (iter != nodes.end()) {
-			Cfg* cfg = (*iter)->getCfg();
-			Sensor* s = cfg->getInstance();		
-			vector<uint32_t> nextids = cfg->getNext();
-			writeSensorXML(file, s, cfg->getName().c_str(), cfg->getID(), true, curtime, lasttime, &nextids);
-			
-			iter++;
-		}
-		
-		// iterate through all non-module sensors
-		mutex.lock();
-		list<SensorEntry>::const_iterator siter = sensors.begin();
-		while (siter != sensors.end()) {
-			writeSensorXML(file, siter->sensor, siter->name.c_str(), siter->id, false, curtime, lasttime, NULL);
-			siter++;
-		}
-		mutex.unlock();
-		
-		fprintf(file, xmlpost);
-		fclose(file);
-		close(fdlock);
+		retrieveStatistics();
 		
 		lasttime = time(0);
-		
-		graphIS->unlockGraph();
 	}
 	
 	

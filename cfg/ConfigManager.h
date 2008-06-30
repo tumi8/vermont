@@ -19,7 +19,7 @@ class ConfigManager
 	: GraphInstanceSupplier
 {
 public:
-	ConfigManager() : graph(NULL), document(NULL), old_document(NULL) { }
+	ConfigManager();
 
 	virtual ~ConfigManager();
 	
@@ -36,6 +36,7 @@ private:
 	static Cfg* configModules[];
 	
 	DelayedDeleter deleter;
+	SensorManager* sensorManager;
 	
 	
 	void readGlobalConfig(XMLElement* e);

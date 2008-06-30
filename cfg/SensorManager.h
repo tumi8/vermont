@@ -21,6 +21,8 @@ public:
 	void setOutputFilename(string name);
 	void addSensor(Sensor* sensor, const string name, uint32_t id);
 	void removeSensor(Sensor* sensor);
+	void stopSMThread();
+	void retrieveStatistics();
 	
 	
 	
@@ -45,6 +47,9 @@ private:
 	// config variables
 	uint32_t checkInterval; /** check interval in seconds */
 	string outputFilename;
+	time_t lasttime;
+	bool smExitFlag; /** own exit flag, as sensor manager thread should quit last */
+	char hostname[100];
 
 	SensorManager(uint32_t checkInterval, string outputfilename, GraphInstanceSupplier* gis);
 	
