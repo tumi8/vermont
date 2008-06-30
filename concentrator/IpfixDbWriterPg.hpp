@@ -58,6 +58,8 @@ class IpfixDbWriterPg
 
 	protected:
 		static const uint32_t MAX_EXP_TABLE = 10; /**< Count of buffered exporters. Increase this value if you use more exporters in parallel */
+		static const uint32_t MAX_USEDTABLES = 5; /**< Number of cached entries for used (and created tables) */
+		static const uint64_t TABLE_INTERVAL = 1000*24*3600; /**< Interval, in which new tables should be created (milliseconds).*/
 
 
 		/** 
@@ -70,6 +72,15 @@ class IpfixDbWriterPg
 			char* bodyPtr;			/** pointer to sql which marks position where prefix of SQL statement ends */
 			char* sql;     			/** one large buffer to contain INSERT statement */			
 		};
+		
+		struct Table {
+			string name;
+			uint64_t timeStart;
+			uint64_t timeEnd;
+		};
+		
+
+		list<string> usedTables;		
 		
 		/**
 		 * Stores information about different exporters encountered in SourceID
@@ -93,19 +104,20 @@ class IpfixDbWriterPg
 		unsigned int portNum;        /** Portnumber (use default) */
 		const char* socketName;      /** Socketname (use default) */
 		unsigned int flags;          /** Connectionflags (none) */
-		PGconn* conn;                 /** pointer to connection handle */  
+		PGconn* conn;                /** pointer to connection handle */  
 		int dbError;
-		string tableName;
+		Table curTable;			/** table name for currently cached entries in insertBuffer */
 
 		int createExporterTable();
-		int createDBTable(const char* tablename);
+		bool createDBTable(const char* tablename);
 		void addColumnEntry(const char* insert, bool quoted, bool lastcolumn);
 		void addColumnEntry(const uint64_t insert, bool quoted, bool lastcolumn);
 		void fillInsertRow(IpfixRecord::SourceID* sourceID,
 				IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
-		int writeToDb();
+		bool writeToDb();
 		int getExporterID(IpfixRecord::SourceID* sourceID);
-                const char* getTableName(uint64_t flowstartsec);
+        bool checkCurrentTable(uint64_t flowStart);
+        bool setCurrentTable(uint64_t flowStart);
 	private:
 		void connectToDB();
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID, 
@@ -115,8 +127,6 @@ class IpfixDbWriterPg
 		/***** Internal Functions ****************************************************/
 
 		char* getTableNamDependTime(char* tablename,uint64_t flowstartsec);
-		uint64_t getTableStartTime(uint64_t flowstartsec);
-		uint64_t getTableEndTime(uint64_t StartTime);
 		
 		uint64_t getdata(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
 		uint64_t getIPFIXValue(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);

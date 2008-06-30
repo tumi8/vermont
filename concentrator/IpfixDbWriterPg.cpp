@@ -32,6 +32,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sstream>
+#include <algorithm>
 
 using namespace std;
 
@@ -106,8 +107,7 @@ void IpfixDbWriterPg::connectToDB()
     	return;
     }
     /**create table exporter*/
-    if (createExporterTable()!=0) return;
-    if (createDBTable(tableName.c_str())) return;
+    if (createExporterTable()!=0) return;    
 
     dbError = false;
 }
@@ -159,9 +159,15 @@ int IpfixDbWriterPg::createExporterTable()
 /**
  * 	Create a table in the database
  */
-int IpfixDbWriterPg::createDBTable(const char* tablename)
+bool IpfixDbWriterPg::createDBTable(const char* tablename)
 {
 	uint32_t i;
+	
+	if (find(usedTables.begin(), usedTables.end(), tablename)!=usedTables.end()) {
+		// found cached entry!
+		DPRINTF("Table '%s' already created.", tablename);
+		return true;
+	}
 	
 	ostringstream ctsql;
 	
@@ -173,7 +179,7 @@ int IpfixDbWriterPg::createDBTable(const char* tablename)
 		msg(MSG_FATAL, "IpfixDbWriterPg: Failed to check if table 'exporter' exists. Error: %s",
 				PQerrorMessage(conn));
 		PQclear(res);
-		return 1;
+		return false;
 	}
 	if (atoi(PQgetvalue(res, 0, 0))!=1) {
 		PQclear(res);
@@ -194,14 +200,29 @@ int IpfixDbWriterPg::createDBTable(const char* tablename)
 					PQerrorMessage(conn));
 			dbError = true;
 			PQclear(res);
-			return 1;
-		}
-		else {
+			return false;
+		} else {
 			PQclear(res);
 			msg(MSG_INFO, "Table %s created ",tablename);
+			usedTables.push_back(tablename);
+			if (usedTables.size()>MAX_USEDTABLES) usedTables.pop_front();
+		}
+		ostringstream cisql;
+		cisql << "CREATE INDEX " << tablename << "_firstswitched ON " << tablename;
+		cisql << "(firstswitched)";
+		res = PQexec(conn, cisql.str().c_str());
+		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+			msg(MSG_FATAL,"IpfixDbWriterPg: Creation of index failed. Error: %s",
+					PQerrorMessage(conn));
+			dbError = true;
+			PQclear(res);
+			return false;
+		} else {
+			PQclear(res);
+			msg(MSG_INFO, "Index %s_firstswitched created ", tablename);
 		}
 	}
-	return 0;
+	return true;
 }
 
 /**
@@ -231,7 +252,11 @@ void IpfixDbWriterPg::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 
 	/** check if statement buffer is not full*/
 	if(insertBuffer.curRows==insertBuffer.maxRows) {
-		THROWEXCEPTION("IpfixDbWriterPg: Statement buffer is full, this should never happen! Aborting ...");
+		msg(MSG_ERROR, "failed to write data to database, trying again ...");
+		if (!writeToDb()) {
+			msg(MSG_ERROR, "dropping record");
+			return;
+		}
 	}
 
 	/** sourceid null ? use default*/
@@ -273,6 +298,43 @@ void IpfixDbWriterPg::onDataRecord(IpfixDataRecord* record)
 	record->removeReference();
 }
 
+bool IpfixDbWriterPg::checkCurrentTable(uint64_t flowStart)
+{
+	return curTable.timeStart!=0 && (curTable.timeStart<=flowStart && curTable.timeEnd>=flowStart);
+}
+
+bool IpfixDbWriterPg::setCurrentTable(uint64_t flowStart)
+{
+	if (insertBuffer.curRows) THROWEXCEPTION("programming error: setCurrentTable MUST NOT be called when entries are still cached!");
+	string tablename = "h_";
+	
+	char timebuffer[25];
+	struct tm date;
+	time_t seconds = (flowStart/TABLE_INTERVAL)*TABLE_INTERVAL/1000; // round down to start of interval and convert ms -> s
+	gmtime_r(&seconds, &date);
+	strftime(timebuffer, ARRAY_SIZE(timebuffer), "%y%m%d_%H%M%S", &date);
+	tablename += timebuffer;
+	
+	if (!createDBTable(tablename.c_str())) return false;
+	
+	// build SQL INSERT statement
+	ostringstream sql;
+	sql << "INSERT INTO " << tablename << " (";
+	for (uint32_t i=0; i<numberOfColumns; i++) {
+		sql << identify[i].cname;
+		if (i<numberOfColumns-1) sql << ", ";
+	}
+	sql << ") VALUES ";
+	strcpy(insertBuffer.sql, sql.str().c_str());
+	insertBuffer.bodyPtr = insertBuffer.sql + sql.str().size();
+	insertBuffer.appendPtr = insertBuffer.bodyPtr;
+
+	curTable.name = tablename;
+	curTable.timeStart = (flowStart/TABLE_INTERVAL)*TABLE_INTERVAL; // round down to start of interval (this is millisecond time!)
+	curTable.timeEnd = curTable.timeStart+TABLE_INTERVAL-1;
+	return true;
+}
+
 
 /**
  *	loop over the IpfixRecord::DataTemplateInfo (fieldinfo,datainfo) to get the IPFIX values to store in database
@@ -282,9 +344,11 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data)
 {
 	uint32_t j, k;
-	uint64_t intdata = 0;
+	uint64_t intdata = 0;	
+	ostringstream insertsql;
+	uint64_t flowstart = 0;
 	
-	strcat(insertBuffer.appendPtr++, "(");
+	insertsql << "(";
 
 	/**loop over the columname and loop over the IPFIX_TYPEID of the record
 	 to get the corresponding data to store */
@@ -386,6 +450,9 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 							}
 						}
 					}
+					// save time for table access
+					if (flowstart==0) flowstart = intdata;
+					
 					break;
 					
 				case IPFIX_TYPEID_flowEndMilliSeconds:
@@ -409,82 +476,46 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			// convert IPv4 address to string notation, as this is required by Postgres
 			case IPFIX_TYPEID_sourceIPv4Address:
 			case IPFIX_TYPEID_destinationIPv4Address:
-				addColumnEntry(IPToString(intdata).c_str(), true, j==numberOfColumns-1);
+				insertsql << "'" << IPToString(intdata) << "'";
 				break;
 			// all other integer data is directly converted to a string
 			default:
-				addColumnEntry(intdata, false, j==numberOfColumns-1);
+				insertsql << intdata;
 				break;
+		}
+		if (j!=numberOfColumns-1) insertsql << ",";
+
+	}
+	
+	insertsql << "),";
+	
+	
+	// if this flow belongs to a different table, flush all cached entries now
+	// and get new table
+	if (!checkCurrentTable(flowstart)) {
+		if (!writeToDb()) {
+			msg(MSG_ERROR, "failed to flush table, dropping record");
+			return;
+		}
+		if (!setCurrentTable(flowstart)) {
+			msg(MSG_ERROR, "failed to change table, dropping record");
+			return;
 		}
 	}
 	
+	
+	strcat(insertBuffer.appendPtr, insertsql.str().c_str());
+	insertBuffer.appendPtr += insertsql.str().size();
 	insertBuffer.curRows++;
-	strcat(insertBuffer.appendPtr, "),");
-	insertBuffer.appendPtr += 2;
-}
-
-/**
- * adds an entry for an sql statement
- */
-void IpfixDbWriterPg::addColumnEntry(const char* insert, bool quoted, bool lastcolumn)
-{
-	if (quoted) strcat(insertBuffer.appendPtr++, "'");
-	strncat(insertBuffer.appendPtr, insert, MAX_COL_LENGTH);
-	insertBuffer.appendPtr += strlen(insert);
-	if (quoted) strcat(insertBuffer.appendPtr++, "'");
-	if (!lastcolumn) strcat(insertBuffer.appendPtr++, ",");
-}
-
-/**
- * adds an entry for an sql statement
- */
-void IpfixDbWriterPg::addColumnEntry(const uint64_t insert, bool quoted, bool lastcolumn)
-{
-	char strdata[30];
-	snprintf(strdata, ARRAY_SIZE(strdata), "%Lu", insert);
-	addColumnEntry(strdata, quoted, lastcolumn);
 }
 
 /**
  *	Function writes the content of the statemBuffer to database
  *	statemBuffer consist of single insert statements
  */
-int IpfixDbWriterPg::writeToDb()
+bool IpfixDbWriterPg::writeToDb()
 {
-	//uint32_t i;
-	//ostringstream sql;
-
-	/*PGresult* res = PQexec(conn, "BEGIN");
-	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		msg(MSG_ERROR,"IpfixDbWriterPg: Begin transaction failed. Error: %s",
-				PQerrorMessage(conn));
-		PQclear(res);
-		goto dbwriteerror;
-	}
-	PQclear(res);
-	
-	// create prepared statement	
-	sql << "INSERT INTO " << tableName << " (";
-	for (uint32_t i=0; i<numberOfColumns; i++) {
-		sql << identify[i].cname;
-		if (i<numberOfColumns-1) sql << ", ";
-	}
-	sql << ") VALUES (";
-	for (uint32_t i=0; i<numberOfColumns; i++) {
-		sql << "$" << (i+1);
-		if (i<numberOfColumns-1) sql << ", ";
-	}
-	sql << ")";
-	res = PQprepare(conn, "", sql.str().c_str(), numberOfColumns, NULL);
-	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		msg(MSG_ERROR,"IpfixDbWriterPg: Preparing SQL statement failed. Error: %s",
-				PQerrorMessage(conn));
-		PQclear(res);
-		goto dbwriteerror;
-	}
-	PQclear(res);*/
-	
-	if (insertBuffer.curRows==0) return 0;
+	if (insertBuffer.curRows==0) return true;
 	
 	// delete last comma from sql string, as it is always inserted by fillRowColumns
 	insertBuffer.appendPtr[-1] = 0;
@@ -503,28 +534,12 @@ int IpfixDbWriterPg::writeToDb()
 	insertBuffer.appendPtr = insertBuffer.bodyPtr;
 	*insertBuffer.appendPtr = 0;
 	
-	// flush buffer to database
-	/*if (PQflush(conn)!=0) {
-		msg(MSG_ERROR, "IpfixDbWriterPg: SQL statement flush failed. Error: %s",
-					PQerrorMessage(conn));
-			goto dbwriteerror;
-	}
-	
-	
-	res = PQexec(conn, "COMMIT");
-	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		msg(MSG_ERROR,"IpfixDbWriterPg: Commit transaction failed. Error: %s",
-				PQerrorMessage(conn));
-		PQclear(res);
-		goto dbwriteerror;
-	}
-	PQclear(res);*/
     msg(MSG_DEBUG,"Write to database is complete");
-    return 0;
+    return true;
 
 dbwriteerror:
     dbError = true;
-	return 1;
+	return false;
 }
 
 /**
@@ -701,30 +716,22 @@ IpfixDbWriterPg::IpfixDbWriterPg(const char* host, const char* db,
     srcId.receiverPort = 0;
     srcId.protocol = 0;
     srcId.fileDescriptor = 0;
-    tableName = "flows";
     bzero(&exporterEntries, sizeof(exporterEntries));
     curExporterEntries = 0;
+    curTable.timeStart = 0;
+    curTable.timeEnd = 0;
+    curTable.name = "";
 
 	/**count columns*/
 	numberOfColumns = 0;
 	for(uint32_t i=0; identify[i].cname!=0; i++) numberOfColumns++;
 	
-	// build SQL INSERT statement
-	ostringstream sql;
-	sql << "INSERT INTO " << tableName << " (";
-	for (uint32_t i=0; i<numberOfColumns; i++) {
-		sql << identify[i].cname;
-		if (i<numberOfColumns-1) sql << ", ";
-	}
-	sql << ") VALUES ";
-
+	
 	/**Initialize structure members Statement*/
 	insertBuffer.curRows = 0;
 	insertBuffer.maxRows = maxStatements;
-	insertBuffer.sql = new char[(INS_WIDTH+3)*(numberOfColumns+1)*maxStatements+sql.str().size()+1];
-	strcpy(insertBuffer.sql, sql.str().c_str());
-	insertBuffer.appendPtr = insertBuffer.sql+sql.str().size();
-	insertBuffer.bodyPtr = insertBuffer.sql+sql.str().size();
+	insertBuffer.sql = new char[(INS_WIDTH+3)*(numberOfColumns+1)*maxStatements+numberOfColumns*20+60+1];
+	*insertBuffer.sql = 0;
 
 	connectToDB();
 }
