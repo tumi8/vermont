@@ -113,6 +113,7 @@ Observer::~Observer()
 
 	shutdown(false);
 
+
 	/* collect and output statistics */
 	pcap_stat pstats;
 	if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
@@ -246,7 +247,7 @@ void *Observer::observerThread(void *arg)
 			if(!pcapData) {
 				/* no packet data was available */
 				if(feof(fh))
-				        msg(MSG_DIALOG, "Observer: reached end of file.");
+				        msg(MSG_DIALOG, "Observer: reached end of file (%llu packets)", obs->processedPackets);
       				break;
       			}
 			DPRINTFL(MSG_VDEBUG, "got new packet!");
@@ -300,7 +301,6 @@ void *Observer::observerThread(void *arg)
 				(packetHeader.caplen < obs->capturelen) ? packetHeader.caplen : obs->capturelen, 
 				packetHeader.ts, obs->observationDomainID, packetHeader.len);
 
-			obs->receivedBytes += packetHeader.caplen;
 
 			DPRINTF("received packet at %u.%04u, len=%d",
 				(unsigned)p->timestamp.tv_sec,
@@ -309,7 +309,7 @@ void *Observer::observerThread(void *arg)
 				);
 
 			// update statistics
-			obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
+			obs->receivedBytes += packetHeader.caplen;
 			obs->processedPackets++;
 	
 			while (!obs->exitFlag) {
@@ -608,6 +608,7 @@ std::string Observer::getStatisticsXML(double interval)
 	diff = processedPackets-lastProcessedPackets;
 	lastProcessedPackets += diff;
 	oss << "<processed type=\"packets\">" << (uint32_t)((double)diff/interval) << "</processed>";
+	oss << "<totalProcessed type=\"packets\">" << processedPackets << "</totalProcessed>";
 	oss << "</observer>";
 	return oss.str();
 }
