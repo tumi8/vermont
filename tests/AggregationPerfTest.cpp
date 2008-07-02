@@ -21,7 +21,7 @@
 #include "AggregationPerfTest.h"
 
 #include "common/Time.h"
-#include "test.h"
+#include "TestSuiteBase.h"
 #include "TestQueue.h"
 #include "reconf/Module.h"
 #include "reconf/ThreadSafeAdapter.h"
@@ -88,7 +88,7 @@ Rules* AggregationPerfTest::createRules()
 	return rules;
 }
 
-void AggregationPerfTest::execute()
+Test::TestResult AggregationPerfTest::execTest()
 {
 
 	// create a packet sampler which lets only half of the packets through
@@ -125,6 +125,8 @@ void AggregationPerfTest::execute()
 
 	agg.shutdown();
 	queue1.shutdown();
+
+	return PASSED;
 }
 
 

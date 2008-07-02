@@ -3,15 +3,13 @@
 #ifndef _CONNECTION_FILTER_TEST_H_
 #define _CONNECTION_FILTER_TEST_H_
 
-#include <boost/test/unit_test.hpp>
+#include "TestSuiteBase.h"
 
-using boost::unit_test::test_suite;
-
-
-class ConnectionFilterTestSuite : public test_suite
+class ConnectionFilterTestSuite : public Test
 {
-	public:
-		ConnectionFilterTestSuite();
+public:
+	ConnectionFilterTestSuite();
+	virtual TestResult execTest();
 };
 
 #endif

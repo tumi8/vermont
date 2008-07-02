@@ -7,18 +7,21 @@
 #include "concentrator/IpfixAggregator.hpp"
 #include "cfg/InstanceManager.h"
 
+#include "TestSuiteBase.h"
+
 using boost::shared_ptr;
 
-class ReconfTest
+class ReconfTest : public Test
 {
 public:
 	ReconfTest();
 	~ReconfTest();
 
+	virtual TestResult execTest();
+private:
 	void normalTest();
 	void splitterTest();
 
-private:
 	void setup(bool express);
 	void sendPacketsTo(Destination<Packet*>* dest, size_t numpackets);
 	void shutdown();

@@ -1,5 +1,9 @@
+#ifndef _TEST_SUITE_BASE_H_
+#define _TEST_SUITE_BASE_H_
 
 #include "common/msg.h"
+
+#include <vector>
 
 
 #define ERROR(fmt, args...) vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, fmt, ##args)
@@ -19,3 +23,26 @@
 			vermont_assert(#cond, "", __LINE__, __FILE__, __PRETTY_FUNCTION__, __func__);			\
 		}																							\
 	}
+
+class Test {
+public:
+	typedef enum {
+		FAILED,
+		PASSED
+	} TestResult;
+	virtual TestResult execTest() = 0;
+};
+
+class TestSuite {
+public:
+	TestSuite();
+	~TestSuite();
+	void add(Test* test);
+	void run();
+
+private:
+	std::vector<Test*> tests; 
+};
+
+
+#endif

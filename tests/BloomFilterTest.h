@@ -3,15 +3,13 @@
 #ifndef _BLOOMFILTER_TEST_H_
 #define _BLOOMFILTER_TEST_H_
 
-#include <boost/test/unit_test.hpp>
+#include "TestSuiteBase.h"
 
-using boost::unit_test::test_suite;
-
-
-class BloomFilterTestSuite : public test_suite
+class BloomFilterTestSuite : public Test
 {
 	public:
 		BloomFilterTestSuite();
+		virtual TestResult execTest();
 };
 
 

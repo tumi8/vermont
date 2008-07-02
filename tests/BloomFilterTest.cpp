@@ -10,15 +10,11 @@
 
 #include <ctime>
 
-static void startTests();
-
 static QuintupleKey key1;
 static QuintupleKey key2;
 
 BloomFilterTestSuite::BloomFilterTestSuite()
-        : test_suite("BloomFilterTest")
 {
-        add(BOOST_TEST_CASE(&startTests));
 }
 
 static void setupGlobalKey()
@@ -42,16 +38,16 @@ static void testBloomFilter()
 	HashParams hashParams(10);
 	BloomFilter* bf = new BloomFilter(&hashParams, 1000);
 
-	BOOST_REQUIRE(bf->get(key1.data, key1.len) == false);
-	BOOST_REQUIRE(bf->get(key1.data, key1.len) == false);
+	REQUIRE(bf->get(key1.data, key1.len) == false);
+	REQUIRE(bf->get(key1.data, key1.len) == false);
 
 	bf->set(key1.data, key1.len);
-	BOOST_REQUIRE(bf->get(key1.data, key1.len) == true);
+	REQUIRE(bf->get(key1.data, key1.len) == true);
 	
-	BOOST_REQUIRE(bf->get(key2.data, key2.len) == false);
+	REQUIRE(bf->get(key2.data, key2.len) == false);
 	bf->set(key2.data, key2.len);
-	BOOST_REQUIRE(bf->get(key2.data, key2.len) == true);
-	BOOST_REQUIRE(bf->get(key1.data, key1.len) == true);
+	REQUIRE(bf->get(key2.data, key2.len) == true);
+	REQUIRE(bf->get(key1.data, key1.len) == true);
 
 	delete bf;
 }
@@ -62,33 +58,33 @@ static void testCountBloomFilter()
 	CountBloomFilter* bf = new CountBloomFilter(&hashParams, 1000);
 
 	std::cout << "bf(key1) == " << bf->get(key1.data, key1.len) << std::endl;
-        BOOST_REQUIRE(bf->get(key1.data, key1.len) == 0);
+        REQUIRE(bf->get(key1.data, key1.len) == 0);
         std::cout << "bf(key2) == " << bf->get(key2.data, key2.len) << std::endl;
-        BOOST_REQUIRE(bf->get(key2.data, key2.len) == 0);
+        REQUIRE(bf->get(key2.data, key2.len) == 0);
 	
         bf->set(key1.data, key1.len, 100);
 	std::cout << "bf(key1) == " << bf->get(key1.data, key1.len) << std::endl;
 	std::cout << "bf(key2) == " << bf->get(key2.data, key2.len) << std::endl;
-        BOOST_REQUIRE(bf->get(key1.data, key1.len) == 100);
-        BOOST_REQUIRE(bf->get(key2.data, key2.len) == 0);
+        REQUIRE(bf->get(key1.data, key1.len) == 100);
+        REQUIRE(bf->get(key2.data, key2.len) == 0);
 	
         bf->set(key2.data, key2.len, 1000);
 	std::cout << "bf(key1) == " << bf->get(key1.data, key1.len) << std::endl;
 	std::cout << "bf(key2) == " << bf->get(key2.data, key2.len) << std::endl;
-        BOOST_REQUIRE(bf->get(key2.data, key2.len) == 1000);
-        BOOST_REQUIRE(bf->get(key1.data, key1.len) == 100);
+        REQUIRE(bf->get(key2.data, key2.len) == 1000);
+        REQUIRE(bf->get(key1.data, key1.len) == 100);
 
 	bf->set(key1.data, key1.len, 100);
 	std::cout << "bf(key1) == " << bf->get(key1.data, key1.len) << std::endl;
-	BOOST_REQUIRE(bf->get(key1.data, key1.len) == 200);
+	REQUIRE(bf->get(key1.data, key1.len) == 200);
 
 	bf->set(key1.data, key1.len, -200);
 	std::cout << "bf(key1) == " << bf->get(key1.data, key1.len) << std::endl;
-	BOOST_REQUIRE(bf->get(key1.data, key1.len) == 0);	
+	REQUIRE(bf->get(key1.data, key1.len) == 0);	
 
 	bf->set(key2.data, key1.len, -1000);
 	std::cout << "bf(key2) == " << bf->get(key2.data, key2.len) << std::endl;
-	BOOST_REQUIRE(bf->get(key2.data, key2.len) == 0);
+	REQUIRE(bf->get(key2.data, key2.len) == 0);
 
 	delete bf;
 }
@@ -101,23 +97,23 @@ static void testAgeBloomFilter()
 	time_t now = time(NULL);
 	time_t later = now + 10;
 
-        BOOST_REQUIRE(bf->get(key1.data, key1.len) == 0);
-        BOOST_REQUIRE(bf->get(key1.data, key1.len) == 0);
+        REQUIRE(bf->get(key1.data, key1.len) == 0);
+        REQUIRE(bf->get(key1.data, key1.len) == 0);
 
         bf->set(key1.data, key1.len, now);
-        BOOST_REQUIRE(bf->get(key1.data, key1.len) == now);
-        BOOST_REQUIRE(bf->get(key2.data, key2.len) == 0);
+        REQUIRE(bf->get(key1.data, key1.len) == now);
+        REQUIRE(bf->get(key2.data, key2.len) == 0);
 
         bf->set(key2.data, key2.len, later);
-        BOOST_REQUIRE(bf->get(key2.data, key2.len) == later);
-        BOOST_REQUIRE(bf->get(key1.data, key1.len) == now);	
+        REQUIRE(bf->get(key2.data, key2.len) == later);
+        REQUIRE(bf->get(key1.data, key1.len) == now);	
 
-	BOOST_REQUIRE(bf->get(key2.data, key2.len) > bf->get(key1.data, key1.len));
+	REQUIRE(bf->get(key2.data, key2.len) > bf->get(key1.data, key1.len));
 
 	delete bf;
 }
 
-static void startTests()
+Test::TestResult  BloomFilterTestSuite::execTest()
 {
 	std::cout << "Running tests on BloomFilter classes" << std::endl;
 	msg_init();
@@ -134,6 +130,8 @@ static void startTests()
 	testCountBloomFilter();
 
 	std::cout << "All tests on all BloomFilter classes passed" << std::endl;
+
+	return PASSED;
 }
 
 #endif

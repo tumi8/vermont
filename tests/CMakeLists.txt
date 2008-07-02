@@ -19,11 +19,12 @@
 
 ADD_EXECUTABLE(vermonttest
 	test_concentrator.cpp
+	TestSuiteBase.cpp
 	AggregationPerfTest.cpp
 	ReconfTest.cpp
 	VermontTest.cpp
-	#BloomFilterTest.cpp tobi_merge
-	#ConnectionFilterTest.cpp tobi_merge
+	BloomFilterTest.cpp 
+	ConnectionFilterTest.cpp
 )
 
 TARGET_LINK_LIBRARIES(vermonttest

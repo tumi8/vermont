@@ -8,7 +8,7 @@
 #include "concentrator/IpfixCollector.hpp"
 #include "concentrator/IpfixPrinter.hpp"
 #include "reconf/ConnectionQueue.h"
-#include "test.h"
+#include "TestSuiteBase.h"
 
 #include <boost/filesystem/operations.hpp>
 #include <iostream>
@@ -345,7 +345,7 @@ ConcentratorTestSuite::ConcentratorTestSuite()
 {
 }
 
-void ConcentratorTestSuite::start_test()
+Test::TestResult ConcentratorTestSuite::execTest()
 {
 	// set Vermont messaging subsystem's debug level
 	//msg_setlevel(MSG_DEFAULT+99);

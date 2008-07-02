@@ -24,17 +24,15 @@
 #include "concentrator/IpfixAggregator.hpp"
 #include "cfg/InstanceManager.h"
 
+#include "TestSuiteBase.h"
 
-
-class AggregationPerfTest
+class AggregationPerfTest : public Test
 {
 	public:
 		AggregationPerfTest(bool fast);
 		~AggregationPerfTest();
 		
-		void execute();
-
-
+		virtual TestResult execTest();
 	private:
 		static InstanceManager<Packet> packetManager;
 

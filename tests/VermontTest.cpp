@@ -1,10 +1,11 @@
 #include "VermontTest.h"
 #include "AggregationPerfTest.h"
 #include "ReconfTest.h"
-//#include "BloomFilterTest.h" tobi_merge
-//#include "ConnectionFilterTest.h" tobi_merge
+#include "BloomFilterTest.h" 
+#include "ConnectionFilterTest.h"
 #include "test_concentrator.h"
 
+#include "TestSuiteBase.h"
 
 
 
@@ -17,23 +18,18 @@ int main(int argc, char* argv[])
 	if (argc>1 && strcmp(argv[1], "-perf")==0) perftest = true;
 
 	//msg_setlevel(MSG_DEBUG);
+	
+	TestSuite testSuite;
 
-	ReconfTest reconf;
-	reconf.normalTest();
-	reconf.splitterTest();
-
-	AggregationPerfTest aggtest(!perftest);
-	aggtest.execute();
-
-	ConcentratorTestSuite conctest;
-	conctest.start_test();
-
-	//test->add(new AggregationPerfTestSuite(!perftest));
-	//test->add(new ConcentratorTestSuite());
+	testSuite.add(new ReconfTest());
+	testSuite.add(new AggregationPerfTest(!perftest));
+	testSuite.add(new ConcentratorTestSuite());
 #ifdef HAVE_CONNECTION_FILTER
-	//test->add(new BloomFilterTestSuite()); tobi_merge
-	//test->add(new ConnectionFilterTestSuite()); tobi_merge
+	testSuite.add(new BloomFilterTestSuite());
+	testSuite.add(new ConnectionFilterTestSuite());
 #endif
+	testSuite.run();
 
 	return 0;
 }
+

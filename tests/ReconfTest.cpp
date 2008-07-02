@@ -1,6 +1,6 @@
 #include "ReconfTest.h"
 
-#include "test.h"
+#include "TestSuiteBase.h"
 #include "sampler/SystematicSampler.h"
 #include "common/msg.h"
 #include "CounterDestination.h"
@@ -18,6 +18,14 @@ ReconfTest::ReconfTest()
 
 ReconfTest::~ReconfTest()
 {
+}
+
+Test::TestResult ReconfTest::execTest()
+{
+	normalTest();
+	splitterTest();
+
+	return PASSED;
 }
 
 void ReconfTest::sendPacketsTo(Destination<Packet*>* dest, size_t numpackets)
@@ -53,7 +61,7 @@ void ReconfTest::normalTest()
 
 	// create a packet sampler which lets only half of the packets through
 	// NOTICE: the sampler will be destroyed by the d'tor of FilterModule
-	SystematicSampler* sampler = new SystematicSampler(SYSTEMATIC_SAMPLER_COUNT_BASED, 1, 1);
+	SystematicSampler* sampler = new SystematicSampler(SYSTEMATIC_SAMPLER_COUNT_BASED, 2, 1);
 
 	FilterModule filter;
 	filter.addProcessor(sampler);
@@ -123,7 +131,7 @@ void ReconfTest::splitterTest()
 
 	// create a packet sampler which lets only half of the packets through
 	// NOTICE: the sampler will be destroyed by the d'tor of FilterModule
-	SystematicSampler* sampler = new SystematicSampler(SYSTEMATIC_SAMPLER_COUNT_BASED, 1, 1);
+	SystematicSampler* sampler = new SystematicSampler(SYSTEMATIC_SAMPLER_COUNT_BASED, 2, 1);
 
 	FilterModule filter;
 	filter.addProcessor(sampler);
