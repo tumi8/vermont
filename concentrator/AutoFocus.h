@@ -70,10 +70,14 @@ class AutoFocus
 
 		uint32_t distance(treeNode*,treeNode*);
 		static bool comp_entries(treeNode*,treeNode*);
+		static bool metasort(treeNode*,treeNode*);
+
+
 
 		void buildTree();
 		void cleanUp();
 		void evaluate();
+		void metalist();
 		void deleteRecord(int);
 		void deleteTree(treeNode*);
 		void initiateRecord(int);

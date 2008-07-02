@@ -27,6 +27,7 @@
 #include <iostream>
 #include "autofocus_iprecord.h"
 
+
 InstanceManager<IDMEFMessage> AutoFocus::idmefManager("IDMEFMessage");
 
 /**
@@ -77,7 +78,8 @@ AutoFocus::~AutoFocus()
 		}
 		listIPRecords[i].clear();
 	}
-	delete listIPRecords;
+
+	delete[] listIPRecords;
 
 	for (int i = 0; i < numTrees;i++)
 	{
@@ -85,7 +87,7 @@ AutoFocus::~AutoFocus()
 			deleteRecord(i);
 
 	}
-
+	msg(MSG_FATAL,"Autofocus is done");
 }
 
 void AutoFocus::onDataDataRecord(IpfixDataDataRecord* record)
@@ -206,7 +208,9 @@ IPRecord* AutoFocus::createEntry(Connection* conn)
 void AutoFocus::deleteRecord(int index)
 {
 	msg(MSG_FATAL,"Deleting Index %d",index);
-	deleteTree(m_treeRecords[index]->root);	
+
+	if (m_treeRecords[index]->root != NULL)
+		deleteTree(m_treeRecords[index]->root);	
 
 	std::list<report*>::iterator iter = m_treeRecords[index]->reports.begin();
 	while (iter != m_treeRecords[index]->reports.end())
@@ -238,9 +242,105 @@ void AutoFocus::evaluate()
 		(*iter)->post(m_treeRecords,index);
 		iter++;
 	}
+	metalist();
 
 }
 
+void AutoFocus::metalist() 
+{
+
+	if (m_treeCount-1 < 1) 
+	{
+		msg(MSG_FATAL,"meta list skipped, waiting for valuable data");
+		return;
+
+	}
+	uint32_t index = (m_treeCount-1) % numTrees;
+
+	std::list<treeNode*> meta; 
+	std::list<report*>::iterator iter = m_treeRecords[index]->reports.begin();
+
+	while (iter != m_treeRecords[index]->reports.end())
+	{
+		std::list<treeNode*>::iterator specit = (*iter)->specNodes.begin();
+
+		while (specit != (*iter)->specNodes.end())
+		{
+
+			if (find(meta.begin(),meta.end(),*specit) == meta.end())
+			{
+				meta.push_back(*specit);
+			}
+			specit++;
+
+		}
+		iter++;
+	}
+
+	meta.sort(AutoFocus::metasort);
+	std::cerr << "meta size " << meta.size() << endl;
+
+	std::list<treeNode*>::iterator metait = meta.begin();
+
+	char num[50];
+
+	while (metait != meta.end())
+	{
+
+		std::list<report*>::iterator iter = m_treeRecords[index]->reports.begin();
+
+
+		msg(MSG_FATAL,"----");
+		msg(MSG_FATAL,"SUBNET %s/%d\t\tPriority Value %d",IPToString((*metait)->data.subnetIP).c_str(),(*metait)->data.subnetBits,(*metait)->prio);
+
+		std::string output;
+		uint64_t data;
+		double percentage;
+		double change;	
+		double change_global;
+
+		while (iter != m_treeRecords[index]->reports.end())
+		{
+		change_global = (double) ((*iter)->numTotal * 100) / (double) m_treeRecords[(index - 1 + m_treeRecords.capacity()) % m_treeRecords.capacity()]->root->data.m_attributes[(*iter)->getID()]->numCount - 100.0;	
+			data = (*metait)->data.m_attributes[(*iter)->getID()]->numCount;
+			std::string locl;
+			locl.append("\n");
+			sprintf(num,"%25s",(*iter)->global.c_str());
+			locl.append(num);
+			locl.append("\t");
+			sprintf(num,"%10llu\0",data);
+			locl.append(num);
+			locl.append(" \t");
+			percentage = (double) (data*100) / (double) (*iter)->numTotal;
+			sprintf(num,"%7.2f%%\0",percentage);
+			locl.append(" ");
+			locl.append(num);
+			
+			treeNode* before = (*iter)->getComparismValue(*metait,m_treeRecords,index);
+			change = (double) (data*100) / (double) before->data.m_attributes[(*iter)->getID()]->numCount - 100.0;
+
+			locl.append("\tChange: Absolute: ");
+			sprintf(num,"%7.2f\0",change);
+			locl.append(num);
+			locl.append("\tRelative: ");
+			sprintf(num,"%7.2f\0",change_global - change);
+		
+			locl.append(num);
+	
+			double percentage2 = (double) ((*metait)->data.m_attributes[(*iter)->getID()]->delta * 100) / (double) (*iter)->numTotal;
+			if (find((*iter)->specNodes.begin(),(*iter)->specNodes.end(),*metait) != (*iter)->specNodes.end()) 
+			{
+			locl.append("\t<-------");
+			}
+			output.append(locl);
+			iter++;
+		}
+		msg(MSG_FATAL,"%s",output.c_str());
+		metait++;
+
+	}
+
+}
 
 void AutoFocus::cleanUp()
 {
@@ -271,6 +371,7 @@ void AutoFocus::initiateRecord(int index)
 		deleteRecord(index % numTrees);
 
 	m_treeRecords[index % numTrees] = new treeRecord;
+	m_treeRecords[index % numTrees]->root = NULL;
 	m_treeRecords[index % numTrees]->reports.push_back(new rep_payload_tcp(m_minSubbits));
 	m_treeRecords[index % numTrees]->reports.push_back(new rep_payload_udp(m_minSubbits));
 	m_treeRecords[index % numTrees]->reports.push_back(new rep_fanouts(m_minSubbits));
@@ -303,6 +404,7 @@ void AutoFocus::buildTree ()
 			entry->data.subnetBits = (*iter)->subnetBits;
 			entry->left = NULL;
 			entry->right = NULL;
+			entry->prio = 0;
 			entry->data.m_attributes = (*iter)->m_attributes;
 
 
@@ -366,7 +468,7 @@ void AutoFocus::buildTree ()
 		{
 
 			treeNode* newnode = new treeNode;
-
+			newnode->prio = 0;
 			tree.insert(iter,newnode);
 			newnode->left = *iter;
 
@@ -405,6 +507,7 @@ void AutoFocus::buildTree ()
 	curTreeRecord->root = tree.front();
 
 	m_treeCount++;
+
 
 
 	evaluate();
@@ -446,6 +549,11 @@ bool AutoFocus::comp_entries(treeNode* a,treeNode* b) {
 	return ntohl(a->data.subnetIP) < ntohl(b->data.subnetIP);
 }
 
+bool AutoFocus::metasort(treeNode* a,treeNode* b)
+{
+	return a->prio > b->prio;
+
+}
 string AutoFocus::getStatistics()
 {
 	ostringstream oss;

@@ -5,6 +5,8 @@
 #include <list>
 #include "autofocus_attribute.h"
 
+#define THRESHOLD 40
+
 class report;
 class af_attribute;
 enum report_enum { payload_tcp, payload_udp, fanouts, fanins, packets_tcp, packets_udp, failed, simult, NUM_REPORTS };
@@ -18,6 +20,7 @@ typedef struct IPRecord {
 
 typedef	struct treeNode {
 	IPRecord data;
+	uint32_t prio;
 	treeNode* left;
 	treeNode* right;
 }treeNode;

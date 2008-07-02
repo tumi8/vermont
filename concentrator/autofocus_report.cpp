@@ -6,8 +6,6 @@
 #include <math.h>
 #include <iostream>
 
-#define THRESHOLD 25
-
 using namespace std;
 report::report(uint32_t a) 
 {
@@ -111,45 +109,45 @@ report_enum rep_simult::getID()
 
 void rep_payload_tcp::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	f_post(p_treeRecords,index,payload_tcp,"Datavolume TCP","Volume");
+	f_post(p_treeRecords,index,payload_tcp);
 }
 
 void rep_payload_udp::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	f_post(p_treeRecords,index,payload_udp,"Datavolume UDP","Volume");
+	f_post(p_treeRecords,index,payload_udp);
 }
 void rep_fanouts::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	f_post(p_treeRecords,index,fanouts,"Outgoing Connections","Outgoing");
+	f_post(p_treeRecords,index,fanouts);
 }
 
 void rep_fanins::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	f_post(p_treeRecords,index,fanins,"Incoming Connections","Incoming");
+	f_post(p_treeRecords,index,fanins);
 }
 
 void rep_packets_tcp::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	f_post(p_treeRecords,index,packets_tcp,"Packetcount TCP","Packets");
+	f_post(p_treeRecords,index,packets_tcp);
 }
 
 void rep_packets_udp::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	f_post(p_treeRecords,index,packets_udp,"Packetcount UDP","Packets");
+	f_post(p_treeRecords,index,packets_udp);
 }
 
 void rep_failed::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	f_post(p_treeRecords,index,failed,"Failed Connections","Failed");
+	f_post(p_treeRecords,index,failed);
 }
 
 void rep_simult::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 {
-	f_post(p_treeRecords,index,simult,"Simultanous Connections","Connectioncount");
+	f_post(p_treeRecords,index,simult);
 }
 //-----------------------------------------------------------
 
-void report::f_post(vector<treeRecord*>& p_treeRecords,uint32_t index,report_enum attribute,string text1,string text2)
+void report::f_post(vector<treeRecord*>& p_treeRecords,uint32_t index,report_enum attribute)
 {
 
 	list<treeNode*>::iterator iter = specNodes.begin();
@@ -159,16 +157,18 @@ void report::f_post(vector<treeRecord*>& p_treeRecords,uint32_t index,report_enu
 	if (p_treeRecords[lastindex] != NULL) 
 	{
 		change_global = (double) (numTotal * 100) / (double) p_treeRecords[lastindex]->root->data.m_attributes[attribute]->numCount - 100.0;	
-		msg(MSG_FATAL,"Total %s %03llu CHANGE: %01.2f%%",text1.c_str(),numTotal,change_global);
+	//	msg(MSG_FATAL,"Total %s %03llu CHANGE: %01.2f%%",global.c_str(),numTotal,change_global);
 	}
 	else {
-		msg(MSG_FATAL,"Total %s %d",text1.c_str(),numTotal);
+	//	msg(MSG_FATAL,"Total %s %d",global.c_str(),numTotal);
 	}
 
 	while (iter != specNodes.end()) 
 	{
 
-		if ((*iter)->data.subnetBits < minSubbits) 
+		//msg(MSG_FATAL,"SUBNET: %s/%d\t\t %s\t",IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits, global.c_str());
+
+		if ((*iter)->data.subnetBits < minSubbits)
 		{ 
 			iter = specNodes.erase(iter);
 			continue;
@@ -189,14 +189,14 @@ void report::f_post(vector<treeRecord*>& p_treeRecords,uint32_t index,report_enu
 				iter = specNodes.erase(iter);
 				continue;
 			}
-			msg(MSG_FATAL,"SUBNET: %s/%d\t\t %s\t %03llu (%03llu)\t\t %01.2f%% (%01.2f%%)\t",
-					IPToString(before->data.subnetIP).c_str(),before->data.subnetBits,text2.c_str(),data,before->data.m_attributes[attribute]->numCount,percentage,change);
+
+			(*iter)->prio += abs((int)change);
+		//msg(MSG_FATAL,"prio SUBNET: %s/%d\t\t %s\t %d",IPToString(before->data.subnetIP).c_str(),before->data.subnetBits,local.c_str(),abs((int)change));
+//		msg(MSG_FATAL,"SUBNET: %s/%d\t\t %s\t %03llu (%03llu)\t\t %01.2f%% (%01.2f%%)\t",IPToString(before->data.subnetIP).c_str(),before->data.subnetBits,local.c_str(),data,before->data.m_attributes[attribute]->numCount,percentage,change);
 		}
 		else 
 		{
-			msg(MSG_FATAL,"SUBNET: %s/%d\t	%s: %03llu (%01.2f%%)\t",
-				IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,
-				text2.c_str(),data,percentage);
+//			msg(MSG_FATAL,"SUBNET: %s/%d\t	%s: %03llu (%01.2f%%)\t",			IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,				local.c_str(),data,percentage);
 		}
 		iter++;
 	}
@@ -286,7 +286,7 @@ void report::checkNode(treeNode* newnode,uint32_t numMax)
 {
 	int threshold = numTotal / numMax;
 
-	if (newnode->data.m_attributes[getID()]->delta > threshold) 
+	if (newnode->data.m_attributes[getID()]->delta >= threshold) 
 	{
 		newnode->data.m_attributes[getID()]->delta = 0;
 		specNodes.push_back(newnode);
