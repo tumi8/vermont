@@ -42,6 +42,7 @@ ADD_LIBRARY(cfg
 	PacketIDMEFReporterCfg.cpp
 	PacketReportingCfg.cpp
 	PSAMPExporterCfg.cpp
+	PCAPExporterCfg.cpp
 	ReConnector.cpp
 	SensorManager.cpp
 	SensorManagerCfg.cpp

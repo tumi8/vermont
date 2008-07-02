@@ -21,6 +21,7 @@ ADD_LIBRARY(reconf
 	FilterModule.cpp
 	PrinterModule.cpp
 	PSAMPExporterModule.cpp
+	PCAPExporterModule.cpp
 	Module.cpp
 )
 

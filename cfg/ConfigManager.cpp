@@ -12,6 +12,7 @@
 #include "cfg/PacketFilterCfg.h"
 #include "cfg/PacketPrinterCfg.h"
 #include "cfg/PSAMPExporterCfg.h"
+#include "cfg/PCAPExporterCfg.h"
 #include "cfg/QueueCfg.h"
 #include "cfg/SensorManagerCfg.h"
 #include "cfg/TRWPortscanDetectorCfg.h"
@@ -34,6 +35,7 @@ Cfg* ConfigManager::configModules[] = {
 	new PacketFilterCfg(NULL),
 	new PacketQueueCfg(NULL),
 	new PacketPrinterCfg(NULL),
+	new PCAPExporterCfg(NULL),
 	new PSAMPExporterCfg(NULL),
 	new IpfixCollectorCfg(NULL),
 	new IpfixQueueCfg(NULL),
