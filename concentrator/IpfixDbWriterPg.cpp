@@ -60,13 +60,13 @@ const IpfixDbWriterPg::Column IpfixDbWriterPg::identify [] = {
 	{	"dstTos", IPFIX_TYPEID_classOfServiceIPv4, "smallint", 0},
 	{	"bytes", IPFIX_TYPEID_octetDeltaCount, "bigint", 0},
 	{	"pkts", IPFIX_TYPEID_packetDeltaCount, "bigint", 0},
-	{	"firstSwitched", IPFIX_TYPEID_flowStartMilliSeconds, "bigint", 0}, // default value is invalid/not used for this entry
-	{	"lastSwitched", IPFIX_TYPEID_flowEndMilliSeconds, "bigint", 0}, // default value is invalid/not used for this entry
+	{	"firstSwitched", IPFIX_TYPEID_flowStartMilliSeconds, "timestamp", 0}, // default value is invalid/not used for this entry
+	{	"lastSwitched", IPFIX_TYPEID_flowEndMilliSeconds, "timestamp", 0}, // default value is invalid/not used for this entry
 	{	"tcpControlBits", IPFIX_TYPEID_tcpControlBits,  "smallint", 0},
 	{	"revbytes", IPFIX_ETYPEID_revOctetDeltaCount, "bigint", 0},
 	{	"revpkts", IPFIX_ETYPEID_revPacketDeltaCount, "bigint", 0},
-	{	"revFirstSwitched", IPFIX_ETYPEID_revFlowStartMilliSeconds, "bigint", 0}, // default value is invalid/not used for this entry
-	{	"revLastSwitched", IPFIX_ETYPEID_revFlowEndMilliSeconds, "bigint", 0}, // default value is invalid/not used for this entry
+	{	"revFirstSwitched", IPFIX_ETYPEID_revFlowStartMilliSeconds, "timestamp", 0}, // default value is invalid/not used for this entry
+	{	"revLastSwitched", IPFIX_ETYPEID_revFlowEndMilliSeconds, "timestamp", 0}, // default value is invalid/not used for this entry
 	{	"revTcpControlBits", IPFIX_ETYPEID_revTcpControlBits,  "smallint", 0},
 	{	"exporterID",EXPORTERID, "integer", 0},
 	{	0} // last entry must be 0
@@ -143,7 +143,7 @@ int IpfixDbWriterPg::createExporterTable()
 																 "srcIP inet)";
 		res = PQexec(conn, ctexporter.c_str());
 		if(PQresultStatus(res) != PGRES_COMMAND_OK) {
-			msg(MSG_FATAL, "IpfixDbWriterPg: Creation of table Exporter failed. Error: %s",
+			msg(MSG_FATAL, "IpfixDbWriterPg: Creation of table Exporter failed.  Error: %s",
 					PQerrorMessage(conn));
 			PQclear(res);
 			return 1;
@@ -156,16 +156,36 @@ int IpfixDbWriterPg::createExporterTable()
 	return 0;
 }
 
+bool IpfixDbWriterPg::checkRelationExists(const char* relname)
+{
+	// check if table needs to be created
+	ostringstream oss;
+	oss << "SELECT COUNT(*) FROM pg_class where relname='" << relname << "'";
+	PGresult* res = PQexec(conn, oss.str().c_str());
+	if((PQresultStatus(res) != PGRES_TUPLES_OK) || (PQntuples(res)==0)) {
+		msg(MSG_FATAL, "IpfixDbWriterPg: Failed to check if relation '%s' exists. Error: %s",
+				relname, PQerrorMessage(conn));
+		PQclear(res);
+		return false;
+	}
+	if (atoi(PQgetvalue(res, 0, 0))==1) {
+		PQclear(res);
+		return true;
+	}
+	PQclear(res);
+	return false;
+}
+
 /**
  * 	Create a table in the database
  */
-bool IpfixDbWriterPg::createDBTable(const char* tablename)
+bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime)
 {
 	uint32_t i;
 	
-	if (find(usedTables.begin(), usedTables.end(), tablename)!=usedTables.end()) {
+	if (find(usedPartitions.begin(), usedPartitions.end(), partitionname)!=usedPartitions.end()) {
 		// found cached entry!
-		DPRINTF("Table '%s' already created.", tablename);
+		DPRINTF("Partition '%s' already created.", partitionname);
 		return true;
 	}
 	
@@ -173,17 +193,8 @@ bool IpfixDbWriterPg::createDBTable(const char* tablename)
 	
 	ostringstream oss;
 	// check if table needs to be created
-	oss << "SELECT COUNT(*) FROM pg_class where relname='" << tablename << "'";
-	PGresult* res = PQexec(conn, oss.str().c_str());
-	if((PQresultStatus(res) != PGRES_TUPLES_OK) || (PQntuples(res)==0)) {
-		msg(MSG_FATAL, "IpfixDbWriterPg: Failed to check if table 'exporter' exists. Error: %s",
-				PQerrorMessage(conn));
-		PQclear(res);
-		return false;
-	}
-	if (atoi(PQgetvalue(res, 0, 0))!=1) {
-		PQclear(res);
-		ctsql << "CREATE TABLE " << tablename << " (";
+	if (!checkRelationExists(tablePrefix.c_str())) {
+		ctsql << "CREATE TABLE " << tablePrefix << " (";
 		/**collect the names for columns and the dataTypes for the table in a string*/
 		for(i=0; i < numberOfColumns; i++) {
 			ctsql << identify[i].cname << " " << identify[i].dataType;
@@ -194,7 +205,7 @@ bool IpfixDbWriterPg::createDBTable(const char* tablename)
 		ctsql << ")";
 	
 		/** create table*/
-		res = PQexec(conn, ctsql.str().c_str());
+		PGresult* res = PQexec(conn, ctsql.str().c_str());
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 			msg(MSG_FATAL,"IpfixDbWriterPg: Creation of table failed. Error: %s",
 					PQerrorMessage(conn));
@@ -203,14 +214,39 @@ bool IpfixDbWriterPg::createDBTable(const char* tablename)
 			return false;
 		} else {
 			PQclear(res);
-			msg(MSG_INFO, "Table %s created ",tablename);
-			usedTables.push_back(tablename);
-			if (usedTables.size()>MAX_USEDTABLES) usedTables.pop_front();
+			msg(MSG_INFO, "Table %s created ", tablePrefix.c_str());
 		}
+	}
+	if (!checkRelationExists(partitionname)) {
+		// create partition
+		ostringstream cpsql;
+		
+		cpsql << "CREATE TABLE " << partitionname << " (CHECK (firstswitched>='"; 
+		cpsql << getTimeAsString(starttime, "%Y-%m-%d %H:%M:%S", true);
+		cpsql << "' AND firstswitched<='" << getTimeAsString(endtime, "%Y-%m-%d %H:%M:%S", true);
+		cpsql << "')) INHERITS (" << tablePrefix << ")";
+	
+		PGresult* res = PQexec(conn, cpsql.str().c_str());
+		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+			msg(MSG_FATAL,"IpfixDbWriterPg: Creation of partition failed. Error: %s",
+					PQerrorMessage(conn));
+			dbError = true;
+			PQclear(res);
+			return false;
+		} else {
+			PQclear(res);
+			msg(MSG_INFO, "Partition %s created ", partitionname);
+			usedPartitions.push_back(partitionname);
+			if (usedPartitions.size()>MAX_USEDTABLES) usedPartitions.pop_front();
+		}
+	}
+		
+	string indexname = string(partitionname) + "_firstswitched";
+	if (!checkRelationExists(indexname.c_str())) {
 		ostringstream cisql;
-		cisql << "CREATE INDEX " << tablename << "_firstswitched ON " << tablename;
+		cisql << "CREATE INDEX " << indexname <<" ON " << partitionname;
 		cisql << "(firstswitched)";
-		res = PQexec(conn, cisql.str().c_str());
+		PGresult* res = PQexec(conn, cisql.str().c_str());
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 			msg(MSG_FATAL,"IpfixDbWriterPg: Creation of index failed. Error: %s",
 					PQerrorMessage(conn));
@@ -219,7 +255,7 @@ bool IpfixDbWriterPg::createDBTable(const char* tablename)
 			return false;
 		} else {
 			PQclear(res);
-			msg(MSG_INFO, "Index %s_firstswitched created ", tablename);
+			msg(MSG_INFO, "Index %s_firstswitched created ", partitionname);
 		}
 	}
 	return true;
@@ -303,19 +339,33 @@ bool IpfixDbWriterPg::checkCurrentTable(uint64_t flowStart)
 	return curTable.timeStart!=0 && (curTable.timeStart<=flowStart && curTable.timeEnd>=flowStart);
 }
 
+string IpfixDbWriterPg::getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addmilliseconds)
+{
+	char timebuffer[40];
+	struct tm date;
+	time_t seconds = milliseconds/1000; // round down to start of interval and convert ms -> s
+	gmtime_r(&seconds, &date);
+	strftime(timebuffer, ARRAY_SIZE(timebuffer), formatstring, &date);
+	if (addmilliseconds) {
+#if DEBUG
+		if (ARRAY_SIZE(timebuffer)-strlen(timebuffer)<4) THROWEXCEPTION("IpfixDbWriterPg: buffer size too small");
+#endif		
+		snprintf(timebuffer+strlen(timebuffer), 5, ".%03u", static_cast<uint32_t>(milliseconds%1000));
+	}
+	return string(timebuffer);
+}
+
 bool IpfixDbWriterPg::setCurrentTable(uint64_t flowStart)
 {
 	if (insertBuffer.curRows) THROWEXCEPTION("programming error: setCurrentTable MUST NOT be called when entries are still cached!");
-	string tablename = "h_";
+	string tablename = tablePrefix;
 	
-	char timebuffer[25];
-	struct tm date;
-	time_t seconds = (flowStart/TABLE_INTERVAL)*TABLE_INTERVAL/1000; // round down to start of interval and convert ms -> s
-	gmtime_r(&seconds, &date);
-	strftime(timebuffer, ARRAY_SIZE(timebuffer), "%y%m%d_%H%M%S", &date);
-	tablename += timebuffer;
+	uint64_t starttime = (flowStart/TABLE_INTERVAL)*TABLE_INTERVAL; // round down to start of interval
+	uint64_t endtime = starttime+TABLE_INTERVAL-1; 
 	
-	if (!createDBTable(tablename.c_str())) return false;
+	tablename += getTimeAsString(starttime, "_%y%m%d_%H%M%S", false);
+	
+	if (!createDBTable(tablename.c_str(), starttime, endtime)) return false;
 	
 	// build SQL INSERT statement
 	ostringstream sql;
@@ -330,8 +380,8 @@ bool IpfixDbWriterPg::setCurrentTable(uint64_t flowStart)
 	insertBuffer.appendPtr = insertBuffer.bodyPtr;
 
 	curTable.name = tablename;
-	curTable.timeStart = (flowStart/TABLE_INTERVAL)*TABLE_INTERVAL; // round down to start of interval (this is millisecond time!)
-	curTable.timeEnd = curTable.timeStart+TABLE_INTERVAL-1;
+	curTable.timeStart = starttime;
+	curTable.timeEnd = endtime;
 	return true;
 }
 
@@ -478,6 +528,15 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			case IPFIX_TYPEID_destinationIPv4Address:
 				insertsql << "'" << IPToString(intdata) << "'";
 				break;
+				
+			// convert integer to timestamps
+			case IPFIX_TYPEID_flowStartMilliSeconds:
+			case IPFIX_TYPEID_flowEndMilliSeconds:
+			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+			case IPFIX_ETYPEID_revFlowEndMilliSeconds:				
+				insertsql << "'" << getTimeAsString(intdata, "%Y-%m-%d %H:%M:%S", true) << "'";
+				break;
+
 			// all other integer data is directly converted to a string
 			default:
 				insertsql << intdata;
@@ -721,6 +780,7 @@ IpfixDbWriterPg::IpfixDbWriterPg(const char* host, const char* db,
     curTable.timeStart = 0;
     curTable.timeEnd = 0;
     curTable.name = "";
+    tablePrefix = "f"; // TODO: make this in config file configurable!
 
 	/**count columns*/
 	numberOfColumns = 0;

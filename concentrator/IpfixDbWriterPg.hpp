@@ -80,7 +80,7 @@ class IpfixDbWriterPg
 		};
 		
 
-		list<string> usedTables;		
+		list<string> usedPartitions;	/**< list of partitions that were last used */		
 		
 		/**
 		 * Stores information about different exporters encountered in SourceID
@@ -107,9 +107,10 @@ class IpfixDbWriterPg
 		PGconn* conn;                /** pointer to connection handle */  
 		int dbError;
 		Table curTable;			/** table name for currently cached entries in insertBuffer */
+		string tablePrefix;			/** prefix for all tables */
 
 		int createExporterTable();
-		bool createDBTable(const char* tablename);
+		bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime);
 		void addColumnEntry(const char* insert, bool quoted, bool lastcolumn);
 		void addColumnEntry(const uint64_t insert, bool quoted, bool lastcolumn);
 		void fillInsertRow(IpfixRecord::SourceID* sourceID,
@@ -118,6 +119,8 @@ class IpfixDbWriterPg
 		int getExporterID(IpfixRecord::SourceID* sourceID);
         bool checkCurrentTable(uint64_t flowStart);
         bool setCurrentTable(uint64_t flowStart);
+        string getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addmilliseconds);
+		bool checkRelationExists(const char* relname);
 	private:
 		void connectToDB();
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID, 
