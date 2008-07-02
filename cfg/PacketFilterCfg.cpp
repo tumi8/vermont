@@ -3,6 +3,8 @@
 #include <sampler/RegExFilter.h>
 #include <sampler/StringFilter.h>
 #include <sampler/SystematicSampler.h>
+#include <sampler/StateConnectionFilter.h>
+#include <sampler/ConnectionFilter.h>
 #include "common/msg.h"
 
 
@@ -34,6 +36,12 @@ PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
 		} else if (e->matches("timeBased")) {
 			msg(MSG_INFO, "Filter: Creating time based sampler");
 			c = new PacketTimeFilterCfg(e);
+		} else if (e->matches("stateConnectionBased")) {
+			msg(MSG_INFO, "Filter: Creating state connection based sampler");
+			c = new PacketStateConnectionFilterCfg(e);
+		} else if (e->matches("connectionBased")) {
+			msg(MSG_INFO, "Filter: Creating connection based sampler");
+			c = new PacketConnectionFilterCfg(e);
 		} else if (e->matches("next")) { // ignore next
 			continue;
 		} else {
@@ -87,8 +95,14 @@ bool PacketFilterCfg::deriveFrom(PacketFilterCfg* old)
 }
 
 
+PacketFilterHelperCfg::PacketFilterHelperCfg(XMLElement *e)
+	: Cfg(e)
+{
+
+}
+
 PacketCountFilterCfg::PacketCountFilterCfg(XMLElement *e)
-	: Cfg(e), instance(NULL)
+	: PacketFilterHelperCfg(e), instance(NULL)
 {
 }
 
@@ -109,7 +123,7 @@ Module* PacketCountFilterCfg::getInstance()
 
 
 PacketTimeFilterCfg::PacketTimeFilterCfg(XMLElement *e)
-	: Cfg(e), instance(NULL)
+	: PacketFilterHelperCfg(e), instance(NULL)
 {
 }
 
@@ -207,3 +221,52 @@ bool PacketRegexFilterCfg::deriveFrom(PacketRegexFilterCfg* old)
 
 	return false;
 }
+
+
+// ----------------------------------------------------------------------------
+
+Module* PacketStateConnectionFilterCfg::getInstance()
+{
+	if (!instance) {
+		instance = new StateConnectionFilter(
+			getInt("timeout", 3),
+			getInt("bytes", 100));
+	}
+
+	return (Module*)instance;
+}
+
+bool PacketStateConnectionFilterCfg::deriveFrom(PacketStateConnectionFilterCfg* old)
+{
+	if (get("timeout") == old->get("timeout") && get("bytes") == old->get("bytes"))
+		return true;
+	return false;
+}
+
+// ----------------------------------------------------------------------------
+
+Module* PacketConnectionFilterCfg::getInstance()
+{
+	if (!instance) {
+		instance = new ConnectionFilter(
+			getInt("timeout", 3),
+			getInt("bytes", 100),
+			getInt("hashFunctions", 3),
+			getInt("filterSize", 1000));
+	}
+
+	return (Module*)instance;
+
+}
+
+bool PacketConnectionFilterCfg::deriveFrom(PacketConnectionFilterCfg* old)
+{
+	if (get("timeout") == old->get("timeout") &&
+	    get("bytes") == old->get("bytes") &&
+	    get("hashFunctions") == old->get("hashFunctions") &&
+	    get("filterSize") == old->get("filterSize")) {
+		return true;
+	}
+	return false;
+}
+
