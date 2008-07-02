@@ -4,7 +4,7 @@
 	</sensorManager>
 	<observer id="1">
 		<!--<interface>lo</interface>-->
-		<filename>connectionfiltertest.pcap</filename>
+		<filename>data/connectionfiltertest.pcap</filename>
 		<pcap_filter>ip</pcap_filter>
 		<offlineAutoExit>1</offlineAutoExit>
 		<offlineSpeed>0</offlineSpeed>
@@ -18,7 +18,7 @@
 	</packetQueue>
 	
 	<pcapExporter id="5">
-		<destPath>gen_output/pcap_export</destPath>
+		<filename>gen_output/pcap_export</filename>
 	</pcapExporter>
 
 </ipfixConfig>
