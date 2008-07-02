@@ -39,9 +39,11 @@ PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
 		} else if (e->matches("stateConnectionBased")) {
 			msg(MSG_INFO, "Filter: Creating state connection based sampler");
 			c = new PacketStateConnectionFilterCfg(e);
+#ifdef HAVE_CONNECTION_FILTER
 		} else if (e->matches("connectionBased")) {
 			msg(MSG_INFO, "Filter: Creating connection based sampler");
 			c = new PacketConnectionFilterCfg(e);
+#endif
 		} else if (e->matches("next")) { // ignore next
 			continue;
 		} else {
@@ -245,6 +247,7 @@ bool PacketStateConnectionFilterCfg::deriveFrom(PacketStateConnectionFilterCfg* 
 
 // ----------------------------------------------------------------------------
 
+#ifdef HAVE_CONNECTION_FILTER
 Module* PacketConnectionFilterCfg::getInstance()
 {
 	if (!instance) {
@@ -269,4 +272,4 @@ bool PacketConnectionFilterCfg::deriveFrom(PacketConnectionFilterCfg* old)
 	}
 	return false;
 }
-
+#endif

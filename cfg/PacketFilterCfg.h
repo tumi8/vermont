@@ -246,6 +246,7 @@ private:
 	StateConnectionFilter* instance;
 };
 
+#ifdef HAVE_CONNECTION_FILTER
 class PacketConnectionFilterCfg
 	: public PacketFilterHelperCfg
 {
@@ -277,8 +278,7 @@ protected:
 private:
 	ConnectionFilter* instance;
 };
-
-
+#endif
 
 
 
