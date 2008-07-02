@@ -74,5 +74,11 @@ inline uint64_t greaterUint64Nbo(uint64_t i, uint64_t j) {
 	return (ntohll(i) > ntohll(j))?(i):(j);
 }
 
+/**
+ * Implementation of strnlen fro non-GNU systems
+ */
+#ifndef _GNU_SOURCE
+size_t strnlen(const char* s, size_t maxlen);
+#endif
 
 #endif

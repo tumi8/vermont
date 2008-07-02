@@ -26,5 +26,6 @@ ADD_LIBRARY(common
 	BloomFilter.cpp
 	AgeBloomFilter.cpp
 	CountBloomFilter.cpp
+	Misc.cpp
 )
 

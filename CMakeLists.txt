@@ -68,10 +68,10 @@ TARGET_LINK_LIBRARIES(vermont
 	reconf
 	ipfixlolib
 	sampler
-	common
-	osdep
 	concentrator	
 	idmef
+	common
+	osdep
 )
 
 INSTALL(TARGETS vermont
