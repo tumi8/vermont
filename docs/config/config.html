@@ -29,6 +29,8 @@
 			</li>
 			<li><a href="#PSAMPExporter">PSAMPExporter</a>
 			</li>
+			<li><a href="#PCAPExporter">PCAPExporter</a>
+			</li>
 			<li><a href="#IpfixCollector">IpfixCollector</a>
 			</li>
 			<li><a href="#IpfixQueue">IpfixQueue</a>
@@ -563,7 +565,45 @@
 			</tbody>
 		</table>
 		
-		
+	<h2><a name="PCAPExporter">PCAPExporter</a></h2>
+		<p>Exports incoming packets into a file in PCAP format.</p>
+		<table>
+			<tr>
+				<th>Input type:</th>
+				<td>Packet</td>
+			</tr>
+			<tr>
+				<th>Output type:</th>
+				<td>none</td>
+			</tr>
+		</table>
+		<p>Example:</p>
+		<pre class="hl">	
+<span class="kwa">&lt;pcapExporter&gt;</span>
+	<span class="kwa">&lt;filename&gt;</span>output.pcap</span><span class="kwa">&lt;/filename&gt;</span>
+<span class="kwa">&lt;/psampExporter&gt;</span>			
+		</pre>
+		<p>Parameters:</p>
+		<table>
+			<tbody>
+				<tr>
+					<th>Parameter</th>
+					<th>Default value</th>
+					<th>Description</th>
+				</tr>
+				<tr>
+					<td>filename</td>
+					<td>none</td>
+					<td>Name of the output pcap file.</td>
+				</tr>
+				<tr>
+					<td>linkType</td>
+					<td>EN10MB</td>
+					<td>Data link type of the output file. Names are DLT_ names form the pcap man page with the DLT_ removed.</td>
+				</tr>
+			</tbody>
+		</table>
+	
 		<h2><a name="IpfixCollector">IpfixCollector</a></h2>
 		<p></p>
 		<table>
