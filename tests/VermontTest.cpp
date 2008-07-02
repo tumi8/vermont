@@ -4,6 +4,7 @@
 #include "BloomFilterTest.h" 
 #include "ConnectionFilterTest.h"
 #include "test_concentrator.h"
+#include "ConfigTester.h"
 
 #include "TestSuiteBase.h"
 
@@ -28,6 +29,8 @@ int main(int argc, char* argv[])
 	testSuite.add(new BloomFilterTestSuite());
 	testSuite.add(new ConnectionFilterTestSuite());
 #endif
+	testSuite.add(new ConfigTester());
+
 	testSuite.run();
 
 	return 0;

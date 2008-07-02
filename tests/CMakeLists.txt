@@ -25,6 +25,7 @@ ADD_EXECUTABLE(vermonttest
 	VermontTest.cpp
 	BloomFilterTest.cpp 
 	ConnectionFilterTest.cpp
+	ConfigTester.cpp
 )
 
 TARGET_LINK_LIBRARIES(vermonttest
