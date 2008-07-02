@@ -19,7 +19,12 @@ PCAPExporterCfg::PCAPExporterCfg(XMLElement* elem)
 		if (e->matches("filename")) {
 			fileName = e->getFirstText();
 		} else if (e->matches("linkType")) {
-			link_type = pcap_datalink_name_to_val(e->getFirstText().c_str());
+			int tmp =  pcap_datalink_name_to_val(e->getFirstText().c_str());
+			if (tmp == -1) {
+				msg(MSG_ERROR, "Found illegal link type");
+			} else {
+				link_type = tmp;
+			}
 		}
 	}
 } 
@@ -38,6 +43,7 @@ PCAPExporterCfg::~PCAPExporterCfg()
 PCAPExporterModule* PCAPExporterCfg::createInstance()
 {
 	instance = new PCAPExporterModule(fileName);
+	instance->setDataLinkType(link_type);
 	return instance;
 }
 
