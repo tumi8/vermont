@@ -232,6 +232,43 @@
 					<td>none</td>
 					<td>Specifies a regular expression used by the regex-based filter.</td>
 				</tr>
+				<tr>
+					<td>stateConnectionBased</td>
+					<td>none</td>
+					<td>Creates a filter which searches for TCP connections and matches all packets that contain the first N
+						payload bytes. It uses a determinstic algorithm that will consume all the memory necessary to store
+						all seen TCP connections.</td>
+				</tr>
+				<tr>
+					<td>connectionBased</td>
+					<td>none</td>
+					<td>Same as stateConnectionBased filter, but uses a different algorithm for TCP connection tracking. The algorithm
+						is probabilistic and uses a fixed amount of memory to store the TCP connections.</td>
+				</tr>
+				<tr>
+					<td>timeout</td>
+					<td>3</td>
+					<td>Belongs to either stateConnectionBased or connectionBased filter. Specifies the time in seconds a seen TCP
+						connection request is valid, before it will time out.</td>
+				</tr>
+				<tr>
+					<td>bytes</td>
+					<td>100</td>
+					<td>Belongs to either stateConnectionBased or connectionBased filter. Specifies how much Payload should be exported
+						in bytes.</td>
+				</tr>
+				<tr>
+					<td>hashFunctions</td>
+					<td>3</td>
+					<td>Belongs to connectionBased filter. Specifies the number of hash functions that are used to index the bloom filters.
+						</td>
+				</tr>
+				<tr>
+					<td>filterSize</td>
+					<td>1000</td>
+					<td>Belongs to connectionBased filter. Specifies the size of the bloom filters that are used by the connection
+						based filter.</td>
+				</tr>
 			</tbody>
 		</table>
 		
