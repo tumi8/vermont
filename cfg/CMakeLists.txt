@@ -44,6 +44,8 @@ ADD_LIBRARY(cfg
 	PSAMPExporterCfg.cpp
 	PCAPExporterCfg.cpp
 	ReConnector.cpp
+	AutoFocusCfg.cpp
+	RBSWormDetectorCfg.cpp
 	SensorManager.cpp
 	SensorManagerCfg.cpp
 	TRWPortscanDetectorCfg.cpp

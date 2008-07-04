@@ -43,7 +43,12 @@ ADD_LIBRARY(concentrator
 	IpfixDbWriter.cpp
 	IpfixDbWriterPg.cpp
 	IpfixRecordDestination.cpp
+	AutoFocus.cpp
+	autofocus_report.cpp
+        autofocus_attribute.cpp
+        autofocus_iprecord.h
 	TRWPortscanDetector.cpp
+	RBSWormDetector.cpp
 	IpfixPayloadWriter.cpp
 )
 

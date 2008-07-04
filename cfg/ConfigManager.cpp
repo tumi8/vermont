@@ -19,6 +19,8 @@
 #include "cfg/IDMEFExporterCfg.h"
 #include "cfg/PacketIDMEFReporterCfg.h"
 #include "cfg/IpfixDbReaderCfg.h"
+#include "cfg/RBSWormDetectorCfg.h"
+#include "cfg/AutoFocusCfg.h"
 #include "cfg/IpfixDbWriterCfg.h"
 #include "cfg/IpfixDbWriterPgCfg.h"
 #include "cfg/IpfixPayloadWriterCfg.h"
@@ -45,6 +47,8 @@ Cfg* ConfigManager::configModules[] = {
 	new PacketAggregatorCfg(NULL),
 	new SensorManagerCfg(NULL),
 	new TRWPortscanDetectorCfg(NULL),
+	new RBSWormDetectorCfg(NULL),
+	new AutoFocusCfg(NULL),
 	new IDMEFExporterCfg(NULL),
 	new PacketIDMEFReporterCfg(NULL),
 	new IpfixPayloadWriterCfg(NULL),
