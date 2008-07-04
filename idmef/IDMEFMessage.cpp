@@ -24,10 +24,10 @@ const char* IDMEFMessage::PAR_NTP_TIME = "NTP_TIME";
 
 
 
-IDMEFMessage::IDMEFMessage(InstanceManager<IDMEFMessage>* im)
-	: ManagedInstance<IDMEFMessage>(im)
+	IDMEFMessage::IDMEFMessage(InstanceManager<IDMEFMessage>* im)
+: ManagedInstance<IDMEFMessage>(im)
 {
-	
+
 }
 
 /**
@@ -39,7 +39,7 @@ void IDMEFMessage::init(const string tmplfilename, string analyzerid)
 {
 	analyzerId = analyzerid;
 	time_t t = time(0);
-	
+
 	if (this->hostname == "") {
 		// retrieve default values
 		char hostname[512];
@@ -53,9 +53,9 @@ void IDMEFMessage::init(const string tmplfilename, string analyzerid)
 		ipAddress = inet_ntoa(*((struct in_addr *)he->h_addr));
 		msg(MSG_DIALOG, "using hostname %s and ip address %s", this->hostname.c_str(), ipAddress.c_str());
 	}
-	
+
 	readTemplate(tmplfilename);
-	
+
 	// set idmef parameters
 	setVariable(PAR_ANALYZER_ID, analyzerId);
 	setVariable(PAR_ANALYZER_IP, ipAddress);
@@ -108,7 +108,18 @@ void IDMEFMessage::setVariable(const string key, const uint32_t value)
 	snprintf(valtext, 15, "%u", value);
 	parameterValues[key] = valtext;
 }
-
+void IDMEFMessage::setVariable(const string key, const uint16_t value)
+{
+	char valtext[15];
+	snprintf(valtext, 15, "%u", value);
+	parameterValues[key] = valtext;
+}
+void IDMEFMessage::setVariable(const string key,const double value) 
+{
+	char valtext[15];
+	snprintf(valtext,15, "%f",value);
+	parameterValues[key] = valtext;
+}
 /**
  * returns ntp time string for idmef message
  */

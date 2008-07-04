@@ -22,6 +22,8 @@ public:
 	void init(const string tmplfilename, string analyzerid);
 	void setVariable(const string key, const string value);
 	void setVariable(const string key, const uint32_t value);
+	void setVariable(const string key, const uint16_t value);
+	void setVariable(const string key, const double value);
 	void applyVariables();
 	string getMessage();
 	
