@@ -182,7 +182,7 @@ void Connection::swapDataFields()
 bool Connection::swapIfNeeded()
 {
 	// now try the starting time
-	if ((dstTimeStart!=0) && (ntohll(srcTimeStart)>ntohll(dstTimeStart))) {
+	if ((dstTimeStart!=0) && (srcTimeStart>dstTimeStart)) {
 		swapDataFields();
 		return true;
 	}
