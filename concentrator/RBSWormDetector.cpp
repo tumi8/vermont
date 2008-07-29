@@ -147,7 +147,7 @@ void RBSWormDetector::addConnection(Connection* conn)
 	uint64_t time_elams = ntohll(conn->srcTimeStart); 
 
 	//duration between last 2 packets
-	uint64_t intarrival = abs((int64_t) (time_elams - te->lastPacket));
+	uint64_t intarrival = labs((int64_t) (time_elams - te->lastPacket));
 	
 	if (intarrival < 1000) 
 	{	
