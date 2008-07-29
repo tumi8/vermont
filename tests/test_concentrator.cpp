@@ -360,4 +360,6 @@ Test::TestResult ConcentratorTestSuite::execTest()
 	test_ipfixlolib_rawdir();
 
 	//test_parser_stability();
+	
+	return Test::FAILED;
 }

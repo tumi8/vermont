@@ -39,10 +39,10 @@ InstanceManager<IDMEFMessage> AutoFocus::idmefManager("IDMEFMessage");
 	timeTreeInterval(ttreeint),
 	numMaxResults(nummaxr),
 	numTrees(numtrees),
+	m_minSubbits(subbits),
 	analyzerId(analyzerid),
 	idmefTemplate(idmeftemplate),
-	m_treeRecords(numtrees,NULL),
-	m_minSubbits(subbits)
+	m_treeRecords(numtrees,NULL)	
 
 {
 	hashSize = 1<<hashBits;
@@ -81,7 +81,7 @@ AutoFocus::~AutoFocus()
 
 	delete[] listIPRecords;
 
-	for (int i = 0; i < numTrees;i++)
+	for (uint32_t i = 0; i < numTrees;i++)
 	{
 		if (m_treeRecords[i] != NULL)
 			deleteRecord(i);
@@ -232,7 +232,6 @@ void AutoFocus::evaluate()
 
 	//msg(MSG_FATAL,"evaluating index %d",index);
 	treeRecord* currentTree = m_treeRecords[index];
-	treeRecord* last_tree = m_treeRecords[(index+numTrees-1) %numTrees];
 
 
 	std::list<report*>::iterator iter = currentTree->reports.begin();
@@ -308,11 +307,11 @@ void AutoFocus::metalist()
 			sprintf(num,"%25s",(*iter)->global.c_str());
 			locl.append(num);
 			locl.append("\t");
-			sprintf(num,"%10llu\0",data);
+			sprintf(num,"%10llu",data);
 			locl.append(num);
 			locl.append(" \t");
 			percentage = (double) (data*100) / (double) (*iter)->numTotal;
-			sprintf(num,"%7.2f%%\0",percentage);
+			sprintf(num,"%7.2f%%",percentage);
 			locl.append(" ");
 			locl.append(num);
 			
@@ -320,14 +319,13 @@ void AutoFocus::metalist()
 			change = (double) (data*100) / (double) before->data.m_attributes[(*iter)->getID()]->numCount - 100.0;
 
 			locl.append("\tChange: Absolute: ");
-			sprintf(num,"%7.2f\0",change);
+			sprintf(num,"%7.2f",change);
 			locl.append(num);
 			locl.append("\tRelative: ");
-			sprintf(num,"%7.2f\0",change_global - change);
+			sprintf(num,"%7.2f",change_global - change);
 		
 			locl.append(num);
 	
-			double percentage2 = (double) ((*metait)->data.m_attributes[(*iter)->getID()]->delta * 100) / (double) (*iter)->numTotal;
 			if (find((*iter)->specNodes.begin(),(*iter)->specNodes.end(),*metait) != (*iter)->specNodes.end()) 
 			{
 			locl.append("\t<-------");
@@ -386,7 +384,6 @@ void AutoFocus::initiateRecord(int index)
 void AutoFocus::buildTree () 
 {
 	msg(MSG_FATAL,"STARTING TREE BUILDING");
-	treeNode* root;
 	list<treeNode*> tree;
 
 	treeRecord* curTreeRecord = m_treeRecords[m_treeCount % numTrees];
@@ -480,8 +477,7 @@ void AutoFocus::buildTree ()
 
 			check_node(curTreeRecord,*iter);
 
-			uint32_t ip2 = ntohl(((*iter)->data).subnetIP);
-
+			
 			aggregate_newnode(newnode);
 
 

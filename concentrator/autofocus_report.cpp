@@ -177,7 +177,6 @@ void report::f_post(vector<treeRecord*>& p_treeRecords,uint32_t index,report_enu
 		treeNode* before = getComparismValue(*iter,p_treeRecords,index);
 
 		uint64_t data = (*iter)->data.m_attributes[attribute]->numCount;
-		double percentage = (double) (data*100) / (double) numTotal;	
 
 		if (before != NULL)
 		{
@@ -215,7 +214,6 @@ treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeR
 	if (m_treeRecords[lastindex] == NULL) { return NULL; }
 	else 
 	{
-		uint32_t sip = ntohl(match->data.subnetIP);
 		uint32_t sbits = match->data.subnetBits;
 		treeNode* current = m_treeRecords[lastindex]->root;
 		treeNode* before = current;
@@ -284,7 +282,7 @@ treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeR
 }
 void report::checkNode(treeNode* newnode,uint32_t numMax)
 {
-	int threshold = numTotal / numMax;
+	uint32_t threshold = numTotal / numMax;
 
 	if (newnode->data.m_attributes[getID()]->delta >= threshold) 
 	{

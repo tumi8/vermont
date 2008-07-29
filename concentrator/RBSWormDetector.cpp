@@ -46,12 +46,12 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 : hashBits(hashbits),
 	timeExpirePending(texppend),
 	timeExpireWorm(texpworm),
-	timeExpireBenign(texpben),
-	timeAdaptInterval(tadaptint),
+	timeExpireBenign(texpben),	
 	timeCleanupInterval(tcleanupint),
-	lambda_ratio(lambdaratio),
+	timeAdaptInterval(tadaptint),	
 	analyzerId(analyzerid),
 	idmefTemplate(idmeftemplate),
+	lambda_ratio(lambdaratio),	
 	subnets(subNets)
 {
 	// make some initialization calculations
@@ -323,7 +323,6 @@ void RBSWormDetector::cleanupEntries()
  */
 void RBSWormDetector::adaptFrequencies () 
 {
-	time_t curtime = time(0);
 	uint32_t count = 0;	
 	double temp1 = 0;
 
@@ -417,7 +416,6 @@ void RBSWormDetector::adaptFrequencies ()
  * 
  */
 bool RBSWormDetector::comp_entries(RBSEntry* a,RBSEntry* b) {
-	uint32_t curtime = time(0);
 	return a->mean < b->mean;
 }
 

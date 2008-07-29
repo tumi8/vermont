@@ -11,7 +11,6 @@
 #include <iostream>
 
 
-static void startTests();
 static pcap_t *captureDevice;
 static char errorBuffer[PCAP_ERRBUF_SIZE]; 
 

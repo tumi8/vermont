@@ -43,7 +43,6 @@ void PCAPExporterModule::performShutdown()
 void PCAPExporterModule::receive(Packet* packet)
 {
 	static struct pcap_pkthdr packetHeader;
-	static char errbuf[PCAP_ERRBUF_SIZE];
 	packetHeader.ts = packet->timestamp;
 	packetHeader.caplen = packet->data_length;
 	packetHeader.len = packet->pcapPacketLength;
