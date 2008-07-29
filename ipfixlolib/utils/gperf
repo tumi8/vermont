@@ -247,6 +247,7 @@ reserved, 328
 reserved, 329
 frontpayload, 32896
 frontpayloadlen, 32897
+maxpacketgap, 32898
 revoctetdeltacount, 33793
 revpacketdeltacount, 33794
 revtcpcontrolbits, 33798

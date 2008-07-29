@@ -196,6 +196,7 @@ class IpfixRecord
 
 					case IPFIX_TYPEID_flowStartMilliSeconds:
 					case IPFIX_TYPEID_flowEndMilliSeconds:
+					case IPFIX_ETYPEID_maxPacketGap:
 						return reinterpret_cast<const unsigned char*>(&p->time_msec_nbo) - p->netHeader;
 						break;
 
@@ -272,6 +273,7 @@ class IpfixRecord
 					case IPFIX_ETYPEID_revFlowStartMilliSeconds:
 					case IPFIX_ETYPEID_revFlowEndMilliSeconds:
 					case IPFIX_ETYPEID_revOctetDeltaCount:
+					case IPFIX_ETYPEID_maxPacketGap:
 						return Packet::IPProtocolType(Packet::TCP|Packet::UDP|Packet::ICMP);
 
 					case IPFIX_TYPEID_icmpTypeCode:

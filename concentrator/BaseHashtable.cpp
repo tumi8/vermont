@@ -46,9 +46,10 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 uint32_t BaseHashtable::getPrivateDataLength(IpfixRecord::FieldInfo::Type type)
 {
 	switch (type.id) {
-		case IPFIX_ETYPEID_frontPayload:
-		case IPFIX_ETYPEID_revFrontPayload:
-			return 8; // four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
+		case IPFIX_ETYPEID_frontPayload:		// four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
+		case IPFIX_ETYPEID_revFrontPayload:		// "
+		case IPFIX_ETYPEID_maxPacketGap:		// old flow end time (to calculate packet gap)
+			return 8; 
 		
 		default:
 			return 0;
@@ -312,6 +313,7 @@ int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_ETYPEID_revOctetDeltaCount:
 		case IPFIX_ETYPEID_revPacketDeltaCount:
 		case IPFIX_ETYPEID_revTcpControlBits:
+		case IPFIX_ETYPEID_maxPacketGap:
 			return 1;
 
 		case IPFIX_TYPEID_octetTotalCount:

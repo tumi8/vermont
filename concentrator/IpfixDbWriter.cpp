@@ -85,6 +85,7 @@ struct Column identify [] = {
 	{	"revFirstSwitchedMillis", IPFIX_ETYPEID_revFlowStartMilliSeconds, "SMALLINT(5) UNSIGNED", 0},
 	{	"revLastSwitchedMillis", IPFIX_ETYPEID_revFlowEndMilliSeconds, "SMALLINT(5) UNSIGNED", 0},
 	{	"revTcpControlBits", IPFIX_ETYPEID_revTcpControlBits,  "SMALLINT(5) UNSIGNED", 0},
+	{	"maxPacketGap", IPFIX_ETYPEID_maxPacketGap,  "BIGINT(20) UNSIGNED", 0},
 	{	"exporterID",EXPORTERID, "SMALLINT(5) UNSIGNED", 0},
 	{	0} // last entry must be 0
 };

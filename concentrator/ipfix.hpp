@@ -141,6 +141,7 @@ int string2typelength(const char*s);
 
 #define IPFIX_ETYPEID_frontPayload					(IPFIX_ENTERPRISE_TYPE | 0x80)
 #define IPFIX_ETYPEID_frontPayloadLen				(IPFIX_ENTERPRISE_TYPE | 0x81)
+#define IPFIX_ETYPEID_maxPacketGap					(IPFIX_ENTERPRISE_TYPE | 0x82)
 
 // information elements for biflows
 #define IPFIX_REVERSE_ETYPE							(IPFIX_ENTERPRISE_TYPE | 0x0400)
