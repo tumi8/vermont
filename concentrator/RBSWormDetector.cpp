@@ -146,15 +146,19 @@ void RBSWormDetector::addConnection(Connection* conn)
 	//timeelams represents time since 1970 in milliseconds
 	uint64_t time_elams = ntohll(conn->srcTimeStart); 
 
+//	msg(MSG_FATAL,"%llu",uint32_t(time_elams/1000));
+
 	//duration between last 2 packets
 	uint64_t intarrival = labs((int64_t) (time_elams - te->lastPacket));
 	
 	if (intarrival < 1000) 
 	{	
-		//last 2 packets occured within 1 second;
+//		msg(MSG_FATAL,"last 2 packets occured within 1 second");
 		te->totalSSNum++;
 		te->totalSSDur += intarrival;
+		msg(MSG_FATAL,"interarrival %llu",intarrival);
 		te->mean = (te->totalSSDur/ (double) 1000) / (double) (te->totalSSNum);
+		msg(MSG_FATAL,"new mean %lf",te->mean);
 	}
 
 	te->lastPacket = time_elams;
@@ -348,6 +352,7 @@ void RBSWormDetector::adaptFrequencies ()
 	//sort list to cut off top and bottom 10 percent
 	adaptList.sort(RBSWormDetector::comp_entries);	
 
+	msg(MSG_FATAL,"meta list size %d",adaptList.size());
 	uint32_t num10 = adaptList.size()/10;
 
 	list<RBSEntry*>::iterator iter = adaptList.begin();
@@ -428,7 +433,7 @@ string RBSWormDetector::getStatistics()
 	return oss.str();
 }
 
-std::string RBSWormDetector::getStatisticsXML()
+std::string RBSWormDetector::getStatisticsXML(double)
 {
 	ostringstream oss;
 	oss << "<rbswormdetector>" << endl;

@@ -93,7 +93,7 @@ class RBSWormDetector
 		void addConnection(Connection* conn);
 		static bool comp_entries(RBSEntry*,RBSEntry*);
 		virtual string getStatistics();
-		virtual std::string getStatisticsXML();
+		virtual std::string getStatisticsXML(double);
 		void cleanupEntries();
 		void adaptFrequencies();
 };
