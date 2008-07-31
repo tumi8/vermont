@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE IDMEF-Message PUBLIC "-//IETF//DTD RFC XXXX IDMEF v1.0//EN" "idmef-message.dtd">
+<IDMEF-Message>
+  <Alert messageid="%MESSAGE_ID%">
+    <Analyzer model="vermont RBS WormDetector" analyzerid="%ANALYZER_ID%">
+      <Node category="hosts">
+        <name>%ANALYZER_HOST%</name>
+        <Address category="ipv4-addr">
+          <address>%ANALYZER_IP%</address>
+        </Address>
+      </Node>
+    </Analyzer>
+    <CreateTime ntpstamp="%NTP_TIME%">%CREATE_TIME%</CreateTime>
+    <Source>
+      <Node category="hosts">
+        <Address category="ipv4-addr">
+          <address>%SOURCE_ADDRESS%</address>
+	 <hosts>%HOSTS%</hosts>
+        </Address>
+      </Node>
+    </Source>
+    <Classification text="Worm" ident="%FAN_OUT% outgoing connections in %TOTALTIME% seconds"/>
+  </Alert>
+</IDMEF-Message>
