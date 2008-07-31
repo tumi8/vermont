@@ -140,22 +140,25 @@ void RBSWormDetector::addConnection(Connection* conn)
 	if (te->switched)	
 	{
 	te->switched = false;
-	te->startTime = ntohll(conn->srcTimeStart);
+	te->startTime = conn->srcTimeStart;
 	}
 
 	//timeelams represents time since 1970 in milliseconds
-	uint64_t time_elams = ntohll(conn->srcTimeStart); 
-
+	uint64_t time_elams = conn->srcTimeStart; 
+	
 //	msg(MSG_FATAL,"%llu",uint32_t(time_elams/1000));
 
 	//duration between last 2 packets
 	uint64_t intarrival = labs((int64_t) (time_elams - te->lastPacket));
-	
+
+	uint64_t lol = 12345678912345ULL;	
 	if (intarrival < 1000) 
 	{	
 //		msg(MSG_FATAL,"last 2 packets occured within 1 second");
 		te->totalSSNum++;
 		te->totalSSDur += intarrival;
+		msg(MSG_FATAL,"%llu",lol);
+		msg(MSG_FATAL,"FIRST: %lu THIS: %lu",te->lastPacket,time_elams);
 		msg(MSG_FATAL,"interarrival %llu",intarrival);
 		te->mean = (te->totalSSDur/ (double) 1000) / (double) (te->totalSSNum);
 		msg(MSG_FATAL,"new mean %lf",te->mean);
@@ -274,7 +277,7 @@ RBSWormDetector::RBSEntry* RBSWormDetector::createEntry(Connection* conn)
 	rbs->numFanouts = 0;
 	rbs->totalSSDur = 0;
 	rbs->lastPacket = 0;
-	rbs->startTime = ntohll(conn->srcTimeStart);
+	rbs->startTime = conn->srcTimeStart;
 	rbs->totalSSNum = 0;
 	rbs->timeExpire = time(0) + timeExpirePending;
 	rbs->decision = PENDING;

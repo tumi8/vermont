@@ -12,7 +12,7 @@ AutoFocusCfg* AutoFocusCfg::create(XMLElement* e)
 }
 
 AutoFocusCfg::AutoFocusCfg(XMLElement* elem)
-    : CfgHelper<AutoFocus, AutoFocusCfg>(elem, "AutoFocus"),
+    : CfgHelper<AutoFocus, AutoFocusCfg>(elem,"AutoFocus"),
       hashBits(20),
       timeTreeInterval(3600),
       numMaxResults(20)
