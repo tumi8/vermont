@@ -9,7 +9,8 @@ bool SensorManagerCfg::instanceCreated = false;
 SensorManagerCfg::SensorManagerCfg(XMLElement* elem)
 	: CfgHelper<SensorManager, SensorManagerCfg>(elem, "sensorManager", false),
 	  checkInterval(SM_DEFAULT_CHECK_INTERVAL),
-	  sensorOutput(SM_DEFAULT_OUTPUT_FNAME)
+	  sensorOutput(SM_DEFAULT_OUTPUT_FNAME),
+	  append(SM_DEFAULT_APPEND)
 {
 	if (!elem) return; // needed because of table inside ConfigManager
 	
@@ -25,10 +26,12 @@ SensorManagerCfg::SensorManagerCfg(XMLElement* elem)
 				THROWEXCEPTION("invalid check interval specified: '%s'", e->getFirstText().c_str());
 			}
 		} else if (e->matches("outputfile")) {
-			checkInterval = strtol(e->getFirstText().c_str(), NULL, 10);
-			if (checkInterval == 0) {
-				THROWEXCEPTION("invalid check interval specified: '%s'", e->getFirstText().c_str());
+			sensorOutput = e->getFirstText().c_str();
+			if (sensorOutput.size() == 0) {
+				THROWEXCEPTION("invalid sensor outut file specified: '%s'", e->getFirstText().c_str());
 			}
+		} else if (e->matches("append")) {
+			append = getInt("append")>0;
 		} else {
 			msg(MSG_FATAL, "Unknown sensor manager config statement: %s", e->getName().c_str());
 		}
@@ -56,6 +59,7 @@ SensorManager* SensorManagerCfg::createInstance()
 	instance->setCheckInterval(checkInterval);
 	instance->setOutputFilename(sensorOutput);
 	instance->setGraphIS(graphIS);
+	instance->setAppend(append);
 	instanceCreated = true;
 	return instance;
 }

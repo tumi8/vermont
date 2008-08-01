@@ -10,12 +10,14 @@
 
 SensorManager::SensorManager(uint32_t checkInterval = SM_DEFAULT_CHECK_INTERVAL, 
 							 string outputfilename = SM_DEFAULT_OUTPUT_FNAME, 
+							 bool append = SM_DEFAULT_APPEND,
 							 GraphInstanceSupplier* gis = NULL)
 	: graphIS(gis), 
 	  thread(SensorManager::threadWrapper),
 	  checkInterval(checkInterval),
 	  outputFilename(outputfilename),
-	  smExitFlag(false)
+	  smExitFlag(false),
+	  append(append)
 {
 #if !defined(__linux__)
 	msg(MSG_DIALOG, "WARNING: this instance of vermont is *not* compiled for linux, support for CPU sensors is disabled");
@@ -133,7 +135,8 @@ void SensorManager::retrieveStatistics()
 	if (flock(fdlock, LOCK_EX)!=0)			
 		msg(MSG_DEBUG, "failed to activate exclusive lock on file %s (flock())", lockfile.c_str());
 	
-	FILE* file = fopen(outputFilename.c_str(), "w");
+	const char* openflags = (append ? "a" : "w");
+	FILE* file = fopen(outputFilename.c_str(), openflags);
 	if (!file) {
 		THROWEXCEPTION("failed to reopen file %s", outputFilename.c_str());
 		perror("error:");
@@ -259,6 +262,11 @@ void SensorManager::setCheckInterval(uint32_t checkInterval)
 void SensorManager::setOutputFilename(string name)
 {
 	outputFilename = name;
+}
+
+void SensorManager::setAppend(bool append)
+{
+	this->append = append;
 }
 
 void SensorManager::addSensor(Sensor* sensor, string name, uint32_t id)

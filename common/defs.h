@@ -44,6 +44,12 @@
 #define SM_DEFAULT_OUTPUT_FNAME "sensor_output.xml"
 
 /**
+ * default sensor manager's flag variable that determines, if
+ * output file should be appended to or overwritten
+ */
+#define SM_DEFAULT_APPEND 0
+
+/**
  * default aggregator polling time in milliseconds
  * how often should aggregator check hashtable for expired flows?
  */

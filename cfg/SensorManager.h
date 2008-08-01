@@ -19,6 +19,7 @@ public:
 	void setGraphIS(GraphInstanceSupplier* gis);
 	void setCheckInterval(uint32_t checkInterval);
 	void setOutputFilename(string name);
+	void setAppend(bool append);
 	void addSensor(Sensor* sensor, const string name, uint32_t id);
 	void removeSensor(Sensor* sensor);
 	void stopSMThread();
@@ -50,8 +51,9 @@ private:
 	time_t lasttime;
 	bool smExitFlag; /** own exit flag, as sensor manager thread should quit last */
 	char hostname[100];
+	bool append; /** sets if file should be appended to, and not overwritten */
 
-	SensorManager(uint32_t checkInterval, string outputfilename, GraphInstanceSupplier* gis);
+	SensorManager(uint32_t checkInterval, string outputfilename, bool append, GraphInstanceSupplier* gis);
 	
 	static void* threadWrapper(void* instance);
 	void collectDataWorker();
