@@ -458,7 +458,7 @@ boost::shared_array<IpfixRecord::Data> PacketHashtable::buildBucketData(const Pa
 void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Data* bucket, const IpfixRecord::Data* deltaData)
 {
 	IpfixRecord::Data* baseData = bucket+efd->dstIndex;
-	uint32_t gap;
+	int64_t gap;
 
 	switch (efd->typeId) {
 		case IPFIX_TYPEID_flowStartSeconds:
@@ -498,9 +498,10 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 			break;
 		
 		case IPFIX_ETYPEID_maxPacketGap:				
-			gap = ntohll(*(uint64_t*)deltaData)-ntohll(*reinterpret_cast<const uint64_t*>(bucket+efd->privDataOffset));
+			gap = (int64_t)ntohll(*(uint64_t*)deltaData)-(int64_t)ntohll(*reinterpret_cast<const uint64_t*>(bucket+efd->privDataOffset));
+			if (gap<0) gap = -gap;
 			DPRINTFL(MSG_VDEBUG, "gap: %u, oldgap: %u", gap, ntohl(*(uint32_t*)baseData));
-			if (gap > ntohl(*(uint32_t*)baseData)) *(uint32_t*)baseData = htonl(gap);
+			if ((uint32_t)gap > ntohl(*(uint32_t*)baseData)) *(uint32_t*)baseData = htonl(gap);
 			*reinterpret_cast<uint64_t*>(bucket+efd->privDataOffset) = *(uint64_t*)deltaData;
 			break;
 
