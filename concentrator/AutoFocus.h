@@ -92,7 +92,7 @@ class AutoFocus
 		static InstanceManager<IDMEFMessage> idmefManager;
 
 		virtual string getStatistics();
-		virtual std::string getStatisticsXML();
+		virtual std::string getStatisticsXML(double);
 };
 
 

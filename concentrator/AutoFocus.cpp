@@ -118,6 +118,8 @@ void AutoFocus::addConnection(Connection* conn)
 {
 	IPRecord* te = getEntry(conn);
 
+
+
 	std::map<report_enum,af_attribute*>::iterator iter = te->m_attributes.begin();
 
 	while (iter != te->m_attributes.end())
@@ -140,6 +142,8 @@ IPRecord* AutoFocus::getEntry(Connection* conn)
 
 	if (lastTreeBuilt+timeTreeInterval < (uint32_t) curtime) 
 	{
+
+		msg(MSG_FATAL,"%d %d %d",lastTreeBuilt,timeTreeInterval,(time_t) curtime);
 		lastTreeBuilt = curtime;
 		buildTree();
 
@@ -556,7 +560,7 @@ string AutoFocus::getStatistics()
 	return oss.str();
 }
 
-std::string AutoFocus::getStatisticsXML()
+std::string AutoFocus::getStatisticsXML(double)
 {
 	ostringstream oss;
 	oss << "<AutoFocus>" << endl;
