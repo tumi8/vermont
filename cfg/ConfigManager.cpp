@@ -101,7 +101,7 @@ void ConfigManager::parseConfig(std::string fileName)
 			       " This is not a valid configuration file!");
 	}
 
-	/* process each root element node and add a new node (with its config 
+	/* process each root element node and add a new node (with its config
 	 * attached to the node) to the graph
 	 */
 	XMLNode::XMLSet<XMLElement*> rootElements = root->getElementChildren();
@@ -112,27 +112,27 @@ void ConfigManager::parseConfig(std::string fileName)
 		for (unsigned int i = 0; i < ARRAY_SIZE(configModules); i++) {
 			if ((*it)->getName() == configModules[i]->getName()) {
 				Cfg* cfg = configModules[i]->create(*it);
-				
+
 				// handle special modules
 				SensorManagerCfg* smcfg = dynamic_cast<SensorManagerCfg*>(cfg);
 				if (smcfg) {
-					// SensorManager will not be connected to any modules, so its instance 
+					// SensorManager will not be connected to any modules, so its instance
 					// needs to be started manually
 					smcfg->setGraphIS(this);
 					sensorManager = smcfg->getInstance();
 				}
-				
+
 				graph->addNode(cfg);
 				found = true;
 			}
 		}
-	
+
 		if (!found) {
 			unlockGraph();
-			THROWEXCEPTION("Unkown cfg entry %s found", (*it)->getName().c_str());
+			msg(MSG_INFO, "Unkown cfg entry %s found", (*it)->getName().c_str());
 		}
 	}
-	
+
 	if (!oldGraph) { // this is the first config we have read
 		Connector connector;
 		graph->accept(&connector);
