@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 
-#if defined(__linux__)
+#if defined(__linux__) && (__GNUC__ >= 4)
 
 typedef uint32_t alock_t;
 #define atomic_lock(a) __sync_lock_test_and_set(a, 1)
@@ -18,7 +18,7 @@ typedef uint32_t alock_t;
 struct alock_t {
 	uint32_t value;
 	Mutex mutex;
-	
+
 	alock_t() : value(0) {}
 	alock_t(uint32_t v) : value(v) {}
 };
