@@ -527,7 +527,7 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			// convert IPv4 address to string notation, as this is required by Postgres
 			case IPFIX_TYPEID_sourceIPv4Address:
 			case IPFIX_TYPEID_destinationIPv4Address:
-				insertsql << "'" << IPToString(intdata) << "'";
+				insertsql << "'" << IPToString(ntohl(intdata)) << "'";
 				break;
 				
 			// convert integer to timestamps
