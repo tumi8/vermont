@@ -13,7 +13,7 @@ SensorManagerCfg::SensorManagerCfg(XMLElement* elem)
 	  append(SM_DEFAULT_APPEND)
 {
 	if (!elem) return; // needed because of table inside ConfigManager
-	
+
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -53,7 +53,7 @@ SensorManager* SensorManagerCfg::createInstance()
 {
 	assert(graphIS);
 	if (instanceCreated) {
-		THROWEXCEPTION("multiple instances of module SensorManager must not be created");
+		//THROWEXCEPTION("multiple instances of module SensorManager must not be created");
 	}
 	instance = &SensorManager::getInstance();
 	instance->setCheckInterval(checkInterval);
