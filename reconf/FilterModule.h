@@ -24,6 +24,7 @@ public:
 	std::vector<PacketProcessor*> getProcessors();
 
 	bool hasReceiver();
+	virtual std::string getStatisticsXML(double interval);
 
 private:
 	std::vector<PacketProcessor* > processors;

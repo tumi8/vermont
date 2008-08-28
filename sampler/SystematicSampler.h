@@ -33,13 +33,15 @@ public:
                 samplingType(type), samplingOnTime(spacing), samplingOffTime(interval-spacing), interval(interval), packetCount(0)
         {
                 gettimeofday(&startTime, 0);
-        };
+                msg(MSG_INFO, "creating systematic sampler with interval=%d and spacing=%d", interval, spacing);
+        }
 
         virtual ~SystematicSampler()
 	{
 	};
 
         virtual bool processPacket(const Packet *p);
+        virtual std::string getStatisticsXML(double interval);
 
 protected:
         int samplingType;

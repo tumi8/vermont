@@ -11,6 +11,10 @@
 
 #include "SystematicSampler.h"
 
+#include <sstream>
+
+using namespace std;
+
 bool SystematicSampler::processPacket(const Packet *p)
 {
 	struct timeval elapsed;
@@ -36,4 +40,24 @@ bool SystematicSampler::processPacket(const Packet *p)
 	}
 
 	return 0;
+}
+
+std::string SystematicSampler::getStatisticsXML(double interval)
+{
+	ostringstream oss;
+
+	oss << "<SystematicSampler type=\"";
+	switch (samplingType) {
+		case SYSTEMATIC_SAMPLER_TIME_BASED:
+			oss << "timeBased\">";
+			break;
+		case SYSTEMATIC_SAMPLER_COUNT_BASED:
+			oss << "countBased\">";
+			break;
+	}
+
+	oss << "<spacing>" << samplingOnTime << "</spacing>";
+	oss << "<interval>" << this->interval << "</interval>";
+	oss << "</SystematicSampler>";
+	return oss.str();
 }

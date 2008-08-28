@@ -14,6 +14,8 @@
 
 #include "Packet.h"
 
+#include <string>
+
 class PacketProcessor
 {
 public:
@@ -25,6 +27,8 @@ public:
 	virtual bool processPacket(const Packet *p) = 0;
 
 	virtual ~PacketProcessor() { };
+
+	virtual std::string getStatisticsXML(double interval) { return ""; }
 };
 
 #endif

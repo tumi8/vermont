@@ -1,5 +1,9 @@
 #include "reconf/FilterModule.h"
 
+#include <sstream>
+
+using namespace std;
+
 FilterModule::FilterModule()
 {
 }
@@ -14,7 +18,7 @@ FilterModule::~FilterModule()
 }
 
 /*
- * this is the main filter function: each packet is run thru a series of 
+ * this is the main filter function: each packet is run thru a series of
  * PacketProcessors and then pushed to the next PacketSource
  */
 void FilterModule::receive(Packet* p)
@@ -63,7 +67,14 @@ std::vector<PacketProcessor *> FilterModule::getProcessors()
 	return processors;
 }
 
-
-
-
-
+/**
+ * statistics function called by StatisticsManager
+ */
+std::string FilterModule::getStatisticsXML(double interval)
+{
+	ostringstream oss;
+	for (vector<PacketProcessor *>::iterator it = processors.begin(); it != processors.end(); ++it) {
+		oss << (*it)->getStatisticsXML(interval);
+	}
+	return oss.str();
+}
