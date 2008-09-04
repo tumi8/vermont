@@ -1,4 +1,4 @@
-<ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
+<ipfixConfig>
 	<sensorManager id="99">
 		<checkinterval>2</checkinterval>
 	</sensorManager>
