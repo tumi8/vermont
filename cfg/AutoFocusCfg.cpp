@@ -37,8 +37,8 @@ AutoFocusCfg::AutoFocusCfg(XMLElement* elem)
 			minSubbits = getInt("minSubbits");
 		} else if (e->matches("analyzerid")) {
 			analyzerId = e->getFirstText();
-		} else if (e->matches("idmeftemplate")) {
-			idmefTemplate = e->getFirstText();
+		} else if (e->matches("reportfile")) {
+			reportfile = e->getFirstText();
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown AutoFocus config statement %s\n", e->getName().c_str());
@@ -46,7 +46,6 @@ AutoFocusCfg::AutoFocusCfg(XMLElement* elem)
 		}
 	}
 	if (analyzerId=="") THROWEXCEPTION("AutoFocus: analyzerid not set in configuration!");
-	if (idmefTemplate=="") THROWEXCEPTION("AutoFocus: idmeftemplate not set in configuration!");
 }
 
 AutoFocusCfg::~AutoFocusCfg()
@@ -55,7 +54,7 @@ AutoFocusCfg::~AutoFocusCfg()
 
 AutoFocus* AutoFocusCfg::createInstance()
 {
-    instance = new AutoFocus(hashBits, timeTreeInterval, numMaxResults, numTrees, minSubbits, analyzerId, idmefTemplate);
+    instance = new AutoFocus(hashBits, timeTreeInterval, numMaxResults, numTrees, minSubbits, analyzerId, reportfile);
     return instance;
 }
 

@@ -4,7 +4,7 @@
         </sensorManager>
 
 <observer id="1">
-	<interface>eth0</interface>
+	<interface>eth1</interface>
 	<pcap_filter>ip</pcap_filter>
 	<next>3</next>
 </observer>
@@ -121,7 +121,7 @@
 
 <AutoFocus id="8">
 	<analyzerid>AutoFocus</analyzerid>
-	<idmeftemplate>idmef/templates/AutoFocus_template.xml</idmeftemplate>
+	<reportfile>af_reports.txt</reportfile>
 	<hashbits>20</hashbits>
 	<timetreeinterval>600</timetreeinterval>
 	<nummaxresults>20</nummaxresults>

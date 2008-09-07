@@ -32,7 +32,7 @@ protected:
 	uint32_t numTrees;
 	uint32_t minSubbits;
 	string analyzerId;	/**< analyzer id for IDMEF messages */
-	string idmefTemplate;	/**< template file for IDMEF messages */
+	string reportfile;	/**< template file for IDMEF messages */
 	
 	AutoFocusCfg(XMLElement*);
 };

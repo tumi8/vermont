@@ -42,7 +42,7 @@ class AutoFocus
 
 
 		AutoFocus(uint32_t hashbits
-				, uint32_t ttreeint,uint32_t nummaxr, uint32_t numtrees, uint32_t subbits, string analyzerid, string idmeftemplate);
+				, uint32_t ttreeint,uint32_t nummaxr, uint32_t numtrees, uint32_t subbits, string analyzerid, string reportfile);
 		virtual ~AutoFocus();
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);
 
@@ -59,7 +59,7 @@ class AutoFocus
 		uint32_t m_minSubbits;
 
 		string analyzerId;	/**< analyzer id for IDMEF messages */
-		string idmefTemplate;	/**< template file for IDMEF messages */
+		string reportfile;	/**< template file for IDMEF messages */
 		uint32_t statEntriesAdded;
 
 		vector<treeRecord*> m_treeRecords;
