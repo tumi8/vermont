@@ -311,7 +311,7 @@ void AutoFocus::metalist()
 
 		std::list<report*>::iterator iter = m_treeRecords[index]->reports.begin();
 		
-		myfile << "Time" << iota(time());
+		myfile << "Time" << time(0) << std::endl;
 		myfile << "----\n";
 		myfile << "SUBNET ";
 		myfile << IPToString((*metait)->data.subnetIP).c_str();
