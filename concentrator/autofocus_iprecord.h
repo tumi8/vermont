@@ -9,6 +9,11 @@
 
 class report;
 class af_attribute;
+
+/*
+ * IPRecord Container
+ *
+ */
 enum report_enum { payload_tcp, payload_udp, fanouts, fanins, packets_tcp, packets_udp, failed, simult, NUM_REPORTS };
 
 

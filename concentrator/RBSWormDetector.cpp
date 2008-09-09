@@ -86,10 +86,10 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 
 	rbsEntries = new list<RBSEntry*>[hashSize];
 	msg(MSG_INFO,"RBSWormDetector started");
-	//msg(MSG_INFO,"Initial values: lambdas %f %f, slopes %f - %f, slopes %f - %f, adaptinterval: %d ,cleaninterval: %d",lambda_0,lambda_1,slope_0a,slope_0b,slope_1a,slope_1b,timeAdaptInterval,timeCleanupInterval);
-//	msg(MSG_FATAL,"%d",hashSize);
 }
-
+/*
+ * Destructor frees memory
+ */
 RBSWormDetector::~RBSWormDetector()
 {
 	delete[] rbsEntries;
@@ -146,20 +146,16 @@ void RBSWormDetector::addConnection(Connection* conn)
 	//timeelams represents time since 1970 in milliseconds
 	uint64_t time_elams = conn->srcTimeStart; 
 	
-//	msg(MSG_FATAL,"%llu",uint32_t(time_elams/1000));
 
 	//duration between last 2 packets
 	uint64_t intarrival = labs((int64_t) (time_elams - te->lastPacket));
 
+	//last two connection attempts where within 1 second
 	if (intarrival < 1000) 
 	{	
-//		msg(MSG_FATAL,"last 2 packets occured within 1 second");
 		te->totalSSNum++;
 		te->totalSSDur += intarrival;
-	//	msg(MSG_FATAL,"FIRST: %lu THIS: %lu",te->lastPacket,time_elams);
-	//	msg(MSG_FATAL,"interarrival %llu",intarrival);
 		te->mean = (te->totalSSDur/ (double) 1000) / (double) (te->totalSSNum);
-	//	msg(MSG_FATAL,"new mean %lf",te->mean);
 	}
 
 	te->lastPacket = time_elams;
@@ -381,6 +377,8 @@ void RBSWormDetector::adaptFrequencies ()
 	lambda_0 = 1.0 / (temp1/valid);	
 	lambda_1 = lambda_ratio*lambda_0;
 
+
+	//recalculate slopes of threshold lines
 	if (lambda_0)
 		{
 	float logeta_1 = logf(P_D/P_F);

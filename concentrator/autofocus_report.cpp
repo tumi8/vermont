@@ -147,6 +147,11 @@ void rep_simult::post(vector<treeRecord*>& p_treeRecords,uint32_t index)
 }
 //-----------------------------------------------------------
 
+/*
+ * Print out all nodes that are reportworthy. 
+ * printing to stdout is not enabled, instead save hosts in a list so a metalist can be created later
+ *
+ */
 void report::f_post(vector<treeRecord*>& p_treeRecords,uint32_t index,report_enum attribute)
 {
 
@@ -206,7 +211,11 @@ void report::f_post(vector<treeRecord*>& p_treeRecords,uint32_t index,report_enu
 //-----------------------------------------------------------
 
 
-
+/*
+ * This function provides the possibility to compare a host's value to the one in the last tree
+ *
+ *
+ */
 treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeRecords,uint32_t index)
 {
 	uint32_t lastindex = (index - 1 + m_treeRecords.capacity()) % m_treeRecords.capacity();
@@ -280,6 +289,10 @@ treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeR
 		return before;
 	}
 }
+/*
+ * check if a node exceeds its threshold
+ *
+ */
 void report::checkNode(treeNode* newnode,uint32_t numMax)
 {
 	uint32_t threshold = numTotal / numMax;
