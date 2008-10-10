@@ -9,12 +9,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -52,8 +52,8 @@ const uint16_t MAX_COL_LENGTH = 22;
 const uint16_t ID_FIRSTSWITCHED_IDX = 8;
 const uint16_t ID_LASTSWITCHED_IDX = 9;
 const IpfixDbWriterPg::Column IpfixDbWriterPg::identify [] = {
-	{	"dstIP", IPFIX_TYPEID_destinationIPv4Address, "inet",0},
-	{	"srcIP", IPFIX_TYPEID_sourceIPv4Address, "inet", 0},
+	{	"srcIP", IPFIX_TYPEID_sourceIPv4Address, "inet",0},
+	{	"dstIP", IPFIX_TYPEID_destinationIPv4Address, "inet", 0},
 	{	"srcPort", IPFIX_TYPEID_sourceTransportPort, "integer", 0},
 	{	"dstPort", IPFIX_TYPEID_destinationTransportPort, "integer",0},
 	{	"proto",IPFIX_TYPEID_protocolIdentifier , "smallint", 0},
@@ -108,7 +108,7 @@ void IpfixDbWriterPg::connectToDB()
     	return;
     }
     /**create table exporter*/
-    if (createExporterTable()!=0) return;    
+    if (createExporterTable()!=0) return;
 
     dbError = false;
 }
@@ -138,7 +138,7 @@ int IpfixDbWriterPg::createExporterTable()
 		PQclear(res);
 		return 1;
 	}
-	if (atoi(PQgetvalue(res, 0, 0))!=1) {		
+	if (atoi(PQgetvalue(res, 0, 0))!=1) {
 		string ctexporter = "CREATE TABLE exporter (id serial PRIMARY KEY, "
 																 "sourceID integer, "
 																 "srcIP inet)";
@@ -153,7 +153,7 @@ int IpfixDbWriterPg::createExporterTable()
 			msg(MSG_DEBUG, "Exporter table created");
 		}
 	}
-	
+
 	return 0;
 }
 
@@ -183,15 +183,15 @@ bool IpfixDbWriterPg::checkRelationExists(const char* relname)
 bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime)
 {
 	uint32_t i;
-	
+
 	if (find(usedPartitions.begin(), usedPartitions.end(), partitionname)!=usedPartitions.end()) {
 		// found cached entry!
 		DPRINTF("Partition '%s' already created.", partitionname);
 		return true;
 	}
-	
+
 	ostringstream ctsql;
-	
+
 	ostringstream oss;
 	// check if table needs to be created
 	if (!checkRelationExists(tablePrefix.c_str())) {
@@ -204,7 +204,7 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 			}
 		}
 		ctsql << ")";
-	
+
 		/** create table*/
 		PGresult* res = PQexec(conn, ctsql.str().c_str());
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
@@ -221,12 +221,12 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 	if (!checkRelationExists(partitionname)) {
 		// create partition
 		ostringstream cpsql;
-		
-		cpsql << "CREATE TABLE " << partitionname << " (CHECK (firstswitched>='"; 
+
+		cpsql << "CREATE TABLE " << partitionname << " (CHECK (firstswitched>='";
 		cpsql << getTimeAsString(starttime, "%Y-%m-%d %H:%M:%S", true);
 		cpsql << "' AND firstswitched<='" << getTimeAsString(endtime, "%Y-%m-%d %H:%M:%S", true);
 		cpsql << "')) INHERITS (" << tablePrefix << ")";
-	
+
 		PGresult* res = PQexec(conn, cpsql.str().c_str());
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 			msg(MSG_FATAL,"IpfixDbWriterPg: Creation of partition failed. Error: %s",
@@ -241,7 +241,7 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 			if (usedPartitions.size()>MAX_USEDTABLES) usedPartitions.pop_front();
 		}
 	}
-		
+
 	string indexname = string(partitionname) + "_firstswitched";
 	if (!checkRelationExists(indexname.c_str())) {
 		ostringstream cisql;
@@ -267,17 +267,17 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
  */
 void IpfixDbWriterPg::onDataDataRecord(IpfixDataDataRecord* record)
 {
-	processDataDataRecord(record->sourceID.get(), record->dataTemplateInfo.get(), 
+	processDataDataRecord(record->sourceID.get(), record->dataTemplateInfo.get(),
 			record->dataLength, record->data);
-	
+
 	record->removeReference();
 }
 
 /**
  * save given elements of record to database
  */
-void IpfixDbWriterPg::processDataDataRecord(IpfixRecord::SourceID* sourceID, 
-		IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, 
+void IpfixDbWriterPg::processDataDataRecord(IpfixRecord::SourceID* sourceID,
+		IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length,
 		IpfixRecord::Data* data)
 {
 	DPRINTF("Processing data record");
@@ -304,7 +304,7 @@ void IpfixDbWriterPg::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 
 	// insert record into buffer
 	fillInsertRow(sourceID, dataTemplateInfo, length, data);
-	
+
 	// statemBuffer is filled ->  insert in table
 	if(insertBuffer.curRows==insertBuffer.maxRows) {
 		msg(MSG_INFO, "Writing buffered records to database");
@@ -331,7 +331,7 @@ void IpfixDbWriterPg::onDataRecord(IpfixDataRecord* record)
 	dataTemplateInfo.userData = record->templateInfo->userData; /**< pointer to a field that can be used by higher-level modules */
 
 	processDataDataRecord(record->sourceID.get(), &dataTemplateInfo, record->dataLength, record->data);
-	
+
 	record->removeReference();
 }
 
@@ -350,7 +350,7 @@ string IpfixDbWriterPg::getTimeAsString(uint64_t milliseconds, const char* forma
 	if (addmilliseconds) {
 #if DEBUG
 		if (ARRAY_SIZE(timebuffer)-strlen(timebuffer)<4) THROWEXCEPTION("IpfixDbWriterPg: buffer size too small");
-#endif		
+#endif
 		snprintf(timebuffer+strlen(timebuffer), 5, ".%03u", static_cast<uint32_t>(milliseconds%1000));
 	}
 	return string(timebuffer);
@@ -360,14 +360,14 @@ bool IpfixDbWriterPg::setCurrentTable(uint64_t flowStart)
 {
 	if (insertBuffer.curRows) THROWEXCEPTION("programming error: setCurrentTable MUST NOT be called when entries are still cached!");
 	string tablename = tablePrefix;
-	
+
 	uint64_t starttime = (flowStart/TABLE_INTERVAL)*TABLE_INTERVAL; // round down to start of interval
-	uint64_t endtime = starttime+TABLE_INTERVAL-1; 
-	
+	uint64_t endtime = starttime+TABLE_INTERVAL-1;
+
 	tablename += getTimeAsString(starttime, "_%y%m%d_%H%M%S", false);
-	
+
 	if (!createDBTable(tablename.c_str(), starttime, endtime)) return false;
-	
+
 	// build SQL INSERT statement
 	ostringstream sql;
 	sql << "INSERT INTO " << tablename << " (";
@@ -395,10 +395,10 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data)
 {
 	uint32_t j, k;
-	uint64_t intdata = 0;	
+	uint64_t intdata = 0;
 	ostringstream insertsql;
 	uint64_t flowstart = 0;
-	
+
 	insertsql << "(";
 
 	/**loop over the columname and loop over the IPFIX_TYPEID of the record
@@ -503,9 +503,9 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 					}
 					// save time for table access
 					if (flowstart==0) flowstart = intdata;
-					
+
 					break;
-					
+
 				case IPFIX_TYPEID_flowEndMilliSeconds:
 					if(intdata==0) {
 						// if no flow end time is available, maybe this is is from a netflow from Cisco
@@ -519,22 +519,22 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 					break;
 			}
 		}
-	
-		
+
+
 		DPRINTF("saw ipfix id %d in packet with intdata %llX", identify[j].ipfixId, intdata);
-		
+
 		switch (identify[j].ipfixId) {
 			// convert IPv4 address to string notation, as this is required by Postgres
 			case IPFIX_TYPEID_sourceIPv4Address:
 			case IPFIX_TYPEID_destinationIPv4Address:
 				insertsql << "'" << IPToString(ntohl(intdata)) << "'";
 				break;
-				
+
 			// convert integer to timestamps
 			case IPFIX_TYPEID_flowStartMilliSeconds:
 			case IPFIX_TYPEID_flowEndMilliSeconds:
 			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-			case IPFIX_ETYPEID_revFlowEndMilliSeconds:				
+			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
 				insertsql << "'" << getTimeAsString(intdata, "%Y-%m-%d %H:%M:%S", true) << "'";
 				break;
 
@@ -546,10 +546,10 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		if (j!=numberOfColumns-1) insertsql << ",";
 
 	}
-	
+
 	insertsql << "),";
-	
-	
+
+
 	// if this flow belongs to a different table, flush all cached entries now
 	// and get new table
 	if (!checkCurrentTable(flowstart)) {
@@ -562,8 +562,8 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			return;
 		}
 	}
-	
-	
+
+
 	strcat(insertBuffer.appendPtr, insertsql.str().c_str());
 	insertBuffer.appendPtr += insertsql.str().size();
 	insertBuffer.curRows++;
@@ -576,10 +576,10 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 bool IpfixDbWriterPg::writeToDb()
 {
 	if (insertBuffer.curRows==0) return true;
-	
+
 	// delete last comma from sql string, as it is always inserted by fillRowColumns
 	insertBuffer.appendPtr[-1] = 0;
-	
+
 	// Write rows to database
 	PGresult* res = PQexec(conn, insertBuffer.sql);
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
@@ -589,11 +589,11 @@ bool IpfixDbWriterPg::writeToDb()
 		goto dbwriteerror;
 	}
 	PQclear(res);
-	
+
 	insertBuffer.curRows = 0;
 	insertBuffer.appendPtr = insertBuffer.bodyPtr;
 	*insertBuffer.appendPtr = 0;
-	
+
     msg(MSG_DEBUG,"Write to database is complete");
     return true;
 
@@ -603,7 +603,7 @@ dbwriteerror:
 }
 
 /**
- *	Returns the exporterID 
+ *	Returns the exporterID
  *  	For every different sourcID and expIp a unique ExporterID will be generated from the database
  * 	First lookup for the ExporterID in the exporterBuffer according sourceID and expIp, is there nothing
  *  	lookup in the ExporterTable, is there also nothing insert sourceID and expIp an return the generated
@@ -616,8 +616,8 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 
 	char statementStr[EXPORTER_WIDTH];
 	uint32_t expIp = 0;
-	
-	if(sourceID->exporterAddress.len == 4) 
+
+	if(sourceID->exporterAddress.len == 4)
 		expIp = *(uint32_t*)(sourceID->exporterAddress.ip);
 
 	/** Is the exporterID already in exporterBuffer? */
@@ -643,14 +643,14 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 
 	/** is the exporterID in the exporter table ?*/
 	if (PQntuples(res)) {
-		exporterID = atoi(PQgetvalue(res, 0, 0));		
+		exporterID = atoi(PQgetvalue(res, 0, 0));
 		DPRINTF("ExporterID %d is in exporter table\n",exporterID);
 
 	}
 	else
 	{
 		PQclear(res);
-		
+
 		/**ExporterID is not in exporter table - insert expID and expIp and return the exporterID*/
 		sprintf(statementStr, "INSERT INTO exporter (sourceID, srcIP) VALUES ('%u','%s') RETURNING id",
 				sourceID->observationDomainId, IPToString(expIp).c_str());
@@ -668,8 +668,8 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 	PQclear(res);
 
 	if (curExporterEntries==MAX_EXP_TABLE-1) {
-		// maybe here we should check how often this happens and display a severe warning if too 
-		// many parallel streams are received at once 
+		// maybe here we should check how often this happens and display a severe warning if too
+		// many parallel streams are received at once
 		msg(MSG_INFO, "IpfixDbWriterPg: turnover for exporter cache occurred.");
 		curExporterEntries = 0;
 	}
@@ -716,7 +716,7 @@ uint32_t IpfixDbWriterPg::getipv4address( IpfixRecord::FieldInfo::Type type, Ipf
 }
 
 /**
- *	get the IPFIX value 
+ *	get the IPFIX value
  */
 uint64_t IpfixDbWriterPg::getIPFIXValue(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data)
 {
@@ -736,7 +736,7 @@ uint64_t IpfixDbWriterPg::getIPFIXValue(IpfixRecord::FieldInfo::Type type, Ipfix
 }
 
 /**
- *	if there no IPFIX_TYPEID in the given data record 
+ *	if there no IPFIX_TYPEID in the given data record
  * 	get the default value to store in the database columns
  */
 uint32_t IpfixDbWriterPg::getdefaultIPFIXdata(int ipfixtype_id)
@@ -786,8 +786,8 @@ IpfixDbWriterPg::IpfixDbWriterPg(const char* host, const char* db,
 	/**count columns*/
 	numberOfColumns = 0;
 	for(uint32_t i=0; identify[i].cname!=0; i++) numberOfColumns++;
-	
-	
+
+
 	/**Initialize structure members Statement*/
 	insertBuffer.curRows = 0;
 	insertBuffer.maxRows = maxStatements;
@@ -806,7 +806,7 @@ IpfixDbWriterPg::~IpfixDbWriterPg()
 	writeToDb();
 	if (conn) PQfinish(conn);
 
-	delete[] insertBuffer.sql;	
+	delete[] insertBuffer.sql;
 }
 
 #endif
