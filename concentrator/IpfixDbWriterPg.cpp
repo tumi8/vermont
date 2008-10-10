@@ -27,6 +27,7 @@
 #include "IpfixDbWriterPg.hpp"
 #include "common/msg.h"
 #include "common/Misc.h"
+#include "common/Time.h"
 
 #include <stdexcept>
 #include <string.h>
@@ -49,8 +50,6 @@ const uint16_t MAX_COL_LENGTH = 22;
  *	ExporterID is no IPFIX_TYPEID, its user specified
  *      Attention: order of entries is important!
  */
-const uint16_t ID_FIRSTSWITCHED_IDX = 8;
-const uint16_t ID_LASTSWITCHED_IDX = 9;
 const IpfixDbWriterPg::Column IpfixDbWriterPg::identify [] = {
 	{	"srcIP", IPFIX_TYPEID_sourceIPv4Address, "inet",0},
 	{	"dstIP", IPFIX_TYPEID_destinationIPv4Address, "inet", 0},
@@ -340,18 +339,18 @@ bool IpfixDbWriterPg::checkCurrentTable(uint64_t flowStart)
 	return curTable.timeStart!=0 && (curTable.timeStart<=flowStart && curTable.timeEnd>=flowStart);
 }
 
-string IpfixDbWriterPg::getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addmilliseconds)
+string IpfixDbWriterPg::getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addfraction, uint32_t microseconds)
 {
 	char timebuffer[40];
 	struct tm date;
 	time_t seconds = milliseconds/1000; // round down to start of interval and convert ms -> s
 	gmtime_r(&seconds, &date);
 	strftime(timebuffer, ARRAY_SIZE(timebuffer), formatstring, &date);
-	if (addmilliseconds) {
+	if (addfraction) {
 #if DEBUG
-		if (ARRAY_SIZE(timebuffer)-strlen(timebuffer)<4) THROWEXCEPTION("IpfixDbWriterPg: buffer size too small");
+		if (ARRAY_SIZE(timebuffer)-strlen(timebuffer)<7) THROWEXCEPTION("IpfixDbWriterPg: buffer size too small");
 #endif
-		snprintf(timebuffer+strlen(timebuffer), 5, ".%03u", static_cast<uint32_t>(milliseconds%1000));
+		snprintf(timebuffer+strlen(timebuffer), 8, ".%06u", static_cast<uint32_t>(milliseconds%1000)*1000+(microseconds%1000));
 	}
 	return string(timebuffer);
 }
@@ -387,6 +386,15 @@ bool IpfixDbWriterPg::setCurrentTable(uint64_t flowStart)
 }
 
 
+// extract seconds, ms and ys from ntp time
+void IpfixDbWriterPg::extractNtp64(uint64_t& intdata, uint32_t& micros)
+{
+	timeval t = timentp64(*((ntp64*)(&intdata)));
+	intdata = (uint64_t)t.tv_sec*1000+t.tv_usec/1000;
+	micros = t.tv_usec%1000;
+}
+
+
 /**
  *	loop over the IpfixRecord::DataTemplateInfo (fieldinfo,datainfo) to get the IPFIX values to store in database
  *  results are stored in insertBuffer.sql
@@ -405,6 +413,7 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 	 to get the corresponding data to store */
 	for( j=0; j<numberOfColumns; j++) {
 		bool notfound = true;
+		uint32_t microseconds = 0; // special case for handle of microseconds (will not be contained in intdata)
 
 		if (identify[j].ipfixId == EXPORTERID) {
 			/**lookup exporter buffer to get exporterID from sourcID and expIp**/
@@ -443,6 +452,11 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
 									notfound = false;
 									break;
+								} else if (dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartNanoSeconds) {
+									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+									extractNtp64(intdata, microseconds);
+									notfound = false;
+									break;
 								}
 							}
 						}
@@ -453,6 +467,11 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 							for(k=0; k < dataTemplateInfo->fieldCount; k++) {
 								if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowStartSeconds) {
 									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
+									notfound = false;
+									break;
+								} else if (dataTemplateInfo->fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowStartNanoSeconds) {
+									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+									extractNtp64(intdata, microseconds);
 									notfound = false;
 									break;
 								}
@@ -467,6 +486,11 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
 									notfound = false;
 									break;
+								} else if (dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndNanoSeconds) {
+									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+									extractNtp64(intdata, microseconds);
+									notfound = false;
+									break;
 								}
 							}
 						}
@@ -477,6 +501,11 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 							for(k=0; k < dataTemplateInfo->fieldCount; k++) {
 								if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowEndSeconds) {
 									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
+									notfound = false;
+									break;
+								} else if (dataTemplateInfo->fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowEndNanoSeconds) {
+									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+									extractNtp64(intdata, microseconds);
 									notfound = false;
 									break;
 								}
@@ -501,8 +530,6 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 							}
 						}
 					}
-					// save time for table access
-					if (flowstart==0) flowstart = intdata;
 
 					break;
 
@@ -532,10 +559,12 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 
 			// convert integer to timestamps
 			case IPFIX_TYPEID_flowStartMilliSeconds:
+				// save time for table access
+				if (flowstart==0) flowstart = intdata;
 			case IPFIX_TYPEID_flowEndMilliSeconds:
 			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
 			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-				insertsql << "'" << getTimeAsString(intdata, "%Y-%m-%d %H:%M:%S", true) << "'";
+				insertsql << "'" << getTimeAsString(intdata, "%Y-%m-%d %H:%M:%S", true, microseconds) << "'";
 				break;
 
 			// all other integer data is directly converted to a string

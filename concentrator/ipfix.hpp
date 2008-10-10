@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -147,8 +147,10 @@ int string2typelength(const char*s);
 #define IPFIX_REVERSE_ETYPE							(IPFIX_ENTERPRISE_TYPE | 0x0400)
 #define IPFIX_ETYPEID_revFlowStartSeconds			(IPFIX_TYPEID_flowStartSeconds | IPFIX_REVERSE_ETYPE)
 #define IPFIX_ETYPEID_revFlowStartMilliSeconds		(IPFIX_TYPEID_flowStartMilliSeconds | IPFIX_REVERSE_ETYPE)
+#define IPFIX_ETYPEID_revFlowStartNanoSeconds		(IPFIX_TYPEID_flowStartNanoSeconds | IPFIX_REVERSE_ETYPE)
 #define IPFIX_ETYPEID_revFlowEndSeconds				(IPFIX_TYPEID_flowEndSeconds | IPFIX_REVERSE_ETYPE)
 #define IPFIX_ETYPEID_revFlowEndMilliSeconds		(IPFIX_TYPEID_flowEndMilliSeconds | IPFIX_REVERSE_ETYPE)
+#define IPFIX_ETYPEID_revFlowEndNanoSeconds			(IPFIX_TYPEID_flowEndNanoSeconds | IPFIX_REVERSE_ETYPE)
 #define IPFIX_ETYPEID_revOctetDeltaCount			(IPFIX_TYPEID_octetDeltaCount | IPFIX_REVERSE_ETYPE)
 #define IPFIX_ETYPEID_revPacketDeltaCount			(IPFIX_TYPEID_packetDeltaCount | IPFIX_REVERSE_ETYPE)
 #define IPFIX_ETYPEID_revTcpControlBits				(IPFIX_TYPEID_tcpControlBits | IPFIX_REVERSE_ETYPE)
@@ -257,8 +259,10 @@ int string2typelength(const char*s);
 // lengths for biflows elements
 #define IPFIX_ELENGTH_revFlowStartSeconds			IPFIX_LENGTH_flowStartSeconds
 #define IPFIX_ELENGTH_revFlowStartMilliSeconds		IPFIX_LENGTH_flowStartMilliSeconds
+#define IPFIX_ELENGTH_revFlowStartNanoSeconds		IPFIX_LENGTH_flowStartNanoSeconds
 #define IPFIX_ELENGTH_revFlowEndSeconds				IPFIX_LENGTH_flowEndSeconds
 #define IPFIX_ELENGTH_revFlowEndMilliSeconds		IPFIX_LENGTH_flowEndMilliSeconds
+#define IPFIX_ELENGTH_revFlowEndNanoSeconds		I	IPFIX_LENGTH_flowEndNanoSeconds
 #define IPFIX_ELENGTH_revOctetDeltaCount			IPFIX_LENGTH_octetDeltaCount
 #define IPFIX_ELENGTH_revPacketDeltaCount			IPFIX_LENGTH_packetDeltaCount
 #define IPFIX_ELENGTH_revTcpControlBits				IPFIX_LENGTH_tcpControlBits

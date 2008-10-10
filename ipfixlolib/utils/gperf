@@ -257,3 +257,5 @@ revflowstartseconds, 33942
 revflowendseconds, 33943
 revflowstartmilliseconds, 33944
 revflowendmilliseconds, 33945
+revflowstartnanoseconds, 33948
+revflowendnanoseconds, 33949

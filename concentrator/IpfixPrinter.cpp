@@ -18,10 +18,12 @@
  *
  */
 
+#include "IpfixPrinter.hpp"
+#include "common/Time.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "IpfixPrinter.hpp"
 
 /**
  * print functions which have formerly been in IpfixParser.cpp
@@ -135,6 +137,8 @@ static void printUint(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data
  */
 void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* pattern) {
 	char* s;
+	timeval t;
+	uint64_t hbnum;
 
 	switch (type.id) {
 	case IPFIX_TYPEID_protocolIdentifier:
@@ -156,6 +160,19 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
 	case IPFIX_TYPEID_destinationTransportPort:
 		printf("destinationTransportPort: ");
 		printPort(type, pattern);
+		break;
+	case IPFIX_TYPEID_flowStartNanoSeconds:
+	case IPFIX_TYPEID_flowEndNanoSeconds:
+	case IPFIX_ETYPEID_revFlowStartNanoSeconds:
+	case IPFIX_ETYPEID_revFlowEndNanoSeconds:
+		printf("%s: ", typeid2string(type.id));
+		hbnum = ntohll(*(uint64_t*)pattern);
+		if (hbnum>0) {
+			t = timentp64(*((ntp64*)(&hbnum)));
+			printf("%d.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
+		} else {
+			printf("no value (only zeroes in field)");
+		}
 		break;
 	default:
 		s = typeid2string(type.id);

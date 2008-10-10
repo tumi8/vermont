@@ -13,15 +13,15 @@
 class PacketHashtable : public BaseHashtable
 {
 public:
-	PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, 
+	PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 			uint16_t minBufferTime, uint16_t maxBufferTime);
 	virtual ~PacketHashtable();
-	
+
 	void aggregatePacket(const Packet* p);
-	
+
 
 private:
-	/** 
+	/**
 	 * fast accessible structure containing data for aggregation, the first noAggFields members of array
 	 * are aggregatable
 	 */
@@ -36,7 +36,7 @@ private:
 		uint16_t srcLength; /**< length of source field data */
 		uint16_t dstLength; /**< length of destination field data */
 
-		/** 
+		/**
 		 * additional data stored by aggregation function
 		 * if ip addresses need to be masked, this contains the masked ips (as the raw packet data must not
 		 * be touched) + mask byte
@@ -52,9 +52,9 @@ private:
 		bool varSrcIdx; /**< specifies if the index in the raw packet data is variable between packets relative to Packet::netHeader*/
 
 		Rule::Field::Modifier modifier; /**< modifier when copying field (such as a mask) */
-		
+
 		uint32_t privDataOffset; /**< offset for private data inside flow, if available */
-		
+
 		uint32_t fpLenOffset; /**< relative offset for front payload length, 0 if field is not available in template/flow */
 
 		void (*copyDataFunc)(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*); /**< function which is able to copy data from raw packet to ipfix field */
@@ -73,11 +73,11 @@ private:
 
 		uint16_t* varSrcPtrFields; /**< array with indizes to expFieldData elements, which have a srcIndex which varies from packet to packet */
 		uint16_t varSrcPtrFieldsLen; /**< length of varSrcPtrFields */
-		
+
 	};
 
 	ExpHelperTable expHelperTable;
-	
+
 	void buildExpHelperTable();
 	static void copyDataEqualLengthNoMod(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataGreaterLengthIPNoMod(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
@@ -87,6 +87,7 @@ private:
 	static void copyDataFrontPayloadLen(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataSetOne(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataMaxPacketGap(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void copyDataNanoseconds(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void aggregateFrontPayload(IpfixRecord::Data* bucket, const Packet* src, const ExpFieldData* efd, bool firstpacket = false);
 	void (*getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*);
 	void fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index);
@@ -102,7 +103,7 @@ private:
 	uint8_t getRawPacketFieldLength(IpfixRecord::FieldInfo::Type type);
 	uint16_t getRawPacketFieldIndex(uint16_t typeId, const Packet* p);
 	bool isRawPacketPtrVariable(const IpfixRecord::FieldInfo::Type& type);
-	
+
 };
 
 #endif /*PACKETHASHTABLE_H_*/

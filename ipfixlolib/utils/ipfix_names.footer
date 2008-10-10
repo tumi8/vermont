@@ -48,6 +48,13 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
 	if (n>=33942 && n<=33945) {
 		return &BIFLOWTAB2[n-33942];
 	}
+	
+	switch (n) {
+	   case IPFIX_ETYPEID_revFlowStartNanoSeconds:
+	       return &SWITCHFLOWTAB[0];
+	   case IPFIX_ETYPEID_revFlowEndNanoSeconds:
+           return &SWITCHFLOWTAB[1];
+    };
 
 	return NULL;
 }

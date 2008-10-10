@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -48,7 +48,7 @@ class IpfixRecord
 			/**
 			 * IPFIX field type and length.
 			 * if "id" is < 0x8000, i.e. no user-defined type, "eid" is 0
-			 */ 
+			 */
 			struct Type {
 
 				typedef uint16_t Id;
@@ -58,7 +58,7 @@ class IpfixRecord
 				IpfixRecord::FieldInfo::Type::Id id; /**< type tag of this field, according to [INFO] */
 				IpfixRecord::FieldInfo::Type::Length length; /**< length in bytes of this field */
 				int isVariableLength; /**< true if this field's length might change from record to record, false otherwise */
-				IpfixRecord::FieldInfo::Type::EnterpriseNo eid; /**< enterpriseNo for user-defined data types (i.e. type >= 0x8000) */	
+				IpfixRecord::FieldInfo::Type::EnterpriseNo eid; /**< enterpriseNo for user-defined data types (i.e. type >= 0x8000) */
 			};
 
 			IpfixRecord::FieldInfo::Type type;
@@ -116,17 +116,29 @@ class IpfixRecord
 				return NULL;
 			}
 
+			int getFieldIndex(IpfixRecord::FieldInfo::Type::Id fieldTypeId, IpfixRecord::FieldInfo::Type::EnterpriseNo fieldTypeEid) {
+				int i;
+
+				for (i = 0; i < fieldCount; i++) {
+					if ((fieldInfo[i].type.id == fieldTypeId) && (fieldInfo[i].type.eid == fieldTypeEid)) {
+						return i;
+					}
+				}
+
+				return -1;
+			}
+
 			/**
 			 * gets a type's length
 			 **/
 			static int getFieldLength(IpfixRecord::FieldInfo::Type type) {
 
-				switch (type.id) {					
+				switch (type.id) {
 					case IPFIX_TYPEID_protocolIdentifier:
 					case IPFIX_TYPEID_tcpControlBits:
 					case IPFIX_ETYPEID_revTcpControlBits:
 						return 1;
-						
+
 					case IPFIX_TYPEID_icmpTypeCode:
 					case IPFIX_TYPEID_sourceTransportPort:
 					case IPFIX_TYPEID_destinationTransportPort:
@@ -140,12 +152,14 @@ class IpfixRecord
 					case IPFIX_ETYPEID_revFlowEndSeconds:
 						return 4;
 
-					case IPFIX_TYPEID_flowStartMilliSeconds:					
-					case IPFIX_TYPEID_flowEndMilliSeconds:					
+					case IPFIX_TYPEID_flowStartMilliSeconds:
+					case IPFIX_TYPEID_flowEndMilliSeconds:
 					case IPFIX_TYPEID_octetDeltaCount:
 					case IPFIX_TYPEID_packetDeltaCount:
 					case IPFIX_ETYPEID_revFlowStartMilliSeconds:
 					case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+					case IPFIX_ETYPEID_revFlowStartNanoSeconds:
+					case IPFIX_ETYPEID_revFlowEndNanoSeconds:
 					case IPFIX_ETYPEID_revOctetDeltaCount:
 					case IPFIX_ETYPEID_revPacketDeltaCount:
 						return 8;
@@ -158,7 +172,7 @@ class IpfixRecord
 				THROWEXCEPTION("unknown typeid");
 				return 0;
 			}
-			
+
 			/**
 			 * @returns if the given IPFIX field type is filled by a biflow aggregator although there
 			 * is no corresponding source field
@@ -171,18 +185,20 @@ class IpfixRecord
 					case IPFIX_ETYPEID_revFlowEndSeconds:
 					case IPFIX_ETYPEID_revFlowStartMilliSeconds:
 					case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+					case IPFIX_ETYPEID_revFlowStartNanoSeconds:
+					case IPFIX_ETYPEID_revFlowEndNanoSeconds:
 					case IPFIX_ETYPEID_revOctetDeltaCount:
 					case IPFIX_ETYPEID_revPacketDeltaCount:
 						return true;
 				}
-				
+
 				return false;
 			}
-			
+
 			/**
 			 * @returns an index for the given field type which is relative to the start of the Packet's netheader
 			 */
-			static const uint16_t getRawPacketFieldIndex(uint16_t typeId, const Packet* p) 
+			static const uint16_t getRawPacketFieldIndex(uint16_t typeId, const Packet* p)
 			{
 				switch (typeId) {
 					case IPFIX_TYPEID_packetDeltaCount:
@@ -198,6 +214,11 @@ class IpfixRecord
 					case IPFIX_TYPEID_flowEndMilliSeconds:
 					case IPFIX_ETYPEID_maxPacketGap:
 						return reinterpret_cast<const unsigned char*>(&p->time_msec_nbo) - p->netHeader;
+						break;
+
+					case IPFIX_TYPEID_flowStartNanoSeconds:
+					case IPFIX_TYPEID_flowEndNanoSeconds:
+						return reinterpret_cast<const unsigned char*>(&p->timestamp) - p->netHeader;
 						break;
 
 					case IPFIX_TYPEID_octetDeltaCount:
@@ -233,7 +254,7 @@ class IpfixRecord
 						}
 						break;
 
-					case IPFIX_TYPEID_destinationTransportPort:						
+					case IPFIX_TYPEID_destinationTransportPort:
 						if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
 							return p->transportHeader + 2 - p->netHeader;
 						} else {
@@ -247,7 +268,7 @@ class IpfixRecord
 						} else {
 							DPRINTFL(MSG_VDEBUG, "given typeid is %d, protocol type is %d, but expected was %d", typeId, p->ipProtocolType, Packet::TCP);
 						}
-						break;	
+						break;
 				}
 
 				// return just pointer to zero bytes as result
@@ -263,6 +284,8 @@ class IpfixRecord
 					case IPFIX_TYPEID_flowEndSeconds:
 					case IPFIX_TYPEID_flowStartMilliSeconds:
 					case IPFIX_TYPEID_flowEndMilliSeconds:
+					case IPFIX_TYPEID_flowStartNanoSeconds:
+					case IPFIX_TYPEID_flowEndNanoSeconds:
 					case IPFIX_TYPEID_octetDeltaCount:
 					case IPFIX_TYPEID_protocolIdentifier:
 					case IPFIX_TYPEID_sourceIPv4Address:
@@ -272,6 +295,8 @@ class IpfixRecord
 					case IPFIX_ETYPEID_revFlowEndSeconds:
 					case IPFIX_ETYPEID_revFlowStartMilliSeconds:
 					case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+					case IPFIX_ETYPEID_revFlowStartNanoSeconds:
+					case IPFIX_ETYPEID_revFlowEndNanoSeconds:
 					case IPFIX_ETYPEID_revOctetDeltaCount:
 					case IPFIX_ETYPEID_maxPacketGap:
 						return Packet::IPProtocolType(Packet::TCP|Packet::UDP|Packet::ICMP);
@@ -300,14 +325,14 @@ class IpfixRecord
 			uint16_t fieldCount; /**< number of regular fields */
 			IpfixRecord::FieldInfo* fieldInfo; /**< array of FieldInfos describing each of these fields */
 			void* userData; /**< pointer to a field that can be used by higher-level modules */
-			
-			/** 
-			 * if this template is to be destroyed because of module reconfiguration, this flag is set to true 
+
+			/**
+			 * if this template is to be destroyed because of module reconfiguration, this flag is set to true
 			 * it should be checked in every module which caches this structure and be destroyed in method
 			 * Module::preRegistration2()
 			 **/
-			bool destroyed;	
-			
+			bool destroyed;
+
 			bool freePointers;  /** small helper variable to indicate if pointers should be freed on destruction */
 		};
 
@@ -322,15 +347,15 @@ class IpfixRecord
 			OptionsTemplateInfo(const OptionsTemplateInfo& t)
 			{
 				templateId = t.templateId;
-				
+
 				scopeCount = t.scopeCount;
 				scopeInfo = (FieldInfo*)malloc(scopeCount*sizeof(FieldInfo));
 				memcpy(scopeInfo, t.scopeInfo, scopeCount*sizeof(FieldInfo));
-				
+
 				fieldCount = t.fieldCount; /**< number of regular fields */
 				fieldInfo = (FieldInfo*)malloc(fieldCount*sizeof(FieldInfo));
 				memcpy(fieldInfo, t.fieldInfo, fieldCount*sizeof(FieldInfo));
-				
+
 				userData = t.userData;
 			}
 
@@ -354,12 +379,12 @@ class IpfixRecord
 		{
 			DataTemplateInfo() : dataInfo(NULL), data(NULL) {
 			}
-			
+
 			DataTemplateInfo(const DataTemplateInfo& t)
 			{
 				templateId = t.templateId;
 				preceding = t.preceding;
-				
+
 				fieldCount = t.fieldCount;
 				fieldInfo = (FieldInfo*)malloc(fieldCount*sizeof(FieldInfo));
 				memcpy(fieldInfo, t.fieldInfo, fieldCount*sizeof(FieldInfo));
@@ -367,7 +392,7 @@ class IpfixRecord
 				dataCount = t.dataCount;
 				dataInfo = (FieldInfo*)malloc(dataCount*sizeof(FieldInfo));
 				memcpy(dataInfo, t.dataInfo, dataCount*sizeof(FieldInfo));
-				
+
 				userData = t.userData;
 				freePointers = t.freePointers;
 			}
@@ -401,17 +426,17 @@ class IpfixRecord
 					}
 				}
 
-				return NULL;		
+				return NULL;
 			}
 
 			uint16_t preceding; /**< the preceding rule field as defined in the draft */
 			uint16_t dataCount; /**< number of fixed-value fields */
 			IpfixRecord::FieldInfo* dataInfo; /**< array of FieldInfos describing each of these fields */
 			IpfixRecord::Data* data; /**< data start pointer for fixed-value fields */
-			void* userData; /**< pointer to a field that can be used by higher-level modules */			
+			void* userData; /**< pointer to a field that can be used by higher-level modules */
 		};
 
-		/* This struct is called SourceID for historic reasons. 
+		/* This struct is called SourceID for historic reasons.
 		 * A better name would be something like TemplateScope (TransportSession + ObservationDomainId)
 		 */
 		struct SourceID {
@@ -430,20 +455,20 @@ class IpfixRecord
 
 			bool operator==(const struct SourceID & x) {
 				if(protocol == 132) /* compare file descriptors instead of IP addresses because of possible multihoming */
-					return (observationDomainId == x.observationDomainId) && 
-// 					(exporterPort == x.exporterPort) && 
-// 					(receiverPort == x.receiverPort) && 
-// 					(protocol == x.protocol) && 
+					return (observationDomainId == x.observationDomainId) &&
+// 					(exporterPort == x.exporterPort) &&
+// 					(receiverPort == x.receiverPort) &&
+// 					(protocol == x.protocol) &&
 					(fileDescriptor == x.fileDescriptor);
 				else /* UDP: fileDescriptor only specifies the Collector endpoint*/
-					return (observationDomainId == x.observationDomainId) && 
-					(exporterPort == x.exporterPort) && 
+					return (observationDomainId == x.observationDomainId) &&
+					(exporterPort == x.exporterPort) &&
 					//(receiverPort == x.receiverPort) &&
-					(fileDescriptor == x.fileDescriptor) && 
-					//(protocol == x.protocol) && 
-					(exporterAddress.len == x.exporterAddress.len) && 
+					(fileDescriptor == x.fileDescriptor) &&
+					//(protocol == x.protocol) &&
+					(exporterAddress.len == x.exporterAddress.len) &&
 					(memcmp(exporterAddress.ip, x.exporterAddress.ip, exporterAddress.len) == 0 );
-					
+
 			}
 		};
 
@@ -451,7 +476,7 @@ class IpfixRecord
 
 		IpfixRecord();
 		virtual ~IpfixRecord();
-		
+
 		/**
 		 * all subclasses *MUST* inherit ManagedInstance, which implements these methods
 		 */
@@ -463,7 +488,7 @@ class IpfixTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixTemp
 	public:
 		IpfixTemplateRecord(InstanceManager<IpfixTemplateRecord>* im);
 		boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
-		
+
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixTemplateRecord>::removeReference(); }
 		virtual void addReference(int count = 1) { ManagedInstance<IpfixTemplateRecord>::addReference(count); }
@@ -473,7 +498,7 @@ class IpfixOptionsTemplateRecord : public IpfixRecord, public ManagedInstance<Ip
 	public:
 		IpfixOptionsTemplateRecord(InstanceManager<IpfixOptionsTemplateRecord>* im);
 		boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
-		
+
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixOptionsTemplateRecord>::removeReference(); }
 		virtual void addReference(int count = 1) { ManagedInstance<IpfixOptionsTemplateRecord>::addReference(count); }
@@ -515,7 +540,7 @@ class IpfixOptionsRecord : public IpfixRecord, public ManagedInstance<IpfixOptio
 		virtual void addReference(int count = 1) { ManagedInstance<IpfixOptionsRecord>::addReference(count); }
 };
 
-class IpfixDataDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataDataRecord> 
+class IpfixDataDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataDataRecord>
 {
 	public:
 		IpfixDataDataRecord(InstanceManager<IpfixDataDataRecord>* im);

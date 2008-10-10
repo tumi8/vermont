@@ -9,12 +9,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -62,7 +62,7 @@ class IpfixDbWriterPg
 		static const uint64_t TABLE_INTERVAL = 1000*24*3600; /**< Interval, in which new tables should be created (milliseconds).*/
 
 
-		/** 
+		/**
 		 * Buffer for insert statements
 		 */
 		struct InsertBuffer {
@@ -70,18 +70,18 @@ class IpfixDbWriterPg
 			uint32_t maxRows;			/** maximum number of insert rows in buffer */
 			char* appendPtr;		/** pointer to sql which marks position where to insert new data */
 			char* bodyPtr;			/** pointer to sql which marks position where prefix of SQL statement ends */
-			char* sql;     			/** one large buffer to contain INSERT statement */			
+			char* sql;     			/** one large buffer to contain INSERT statement */
 		};
-		
+
 		struct Table {
 			string name;
 			uint64_t timeStart;
 			uint64_t timeEnd;
 		};
-		
 
-		list<string> usedPartitions;	/**< list of partitions that were last used */		
-		
+
+		list<string> usedPartitions;	/**< list of partitions that were last used */
+
 		/**
 		 * Stores information about different exporters encountered in SourceID
 		 */
@@ -94,7 +94,7 @@ class IpfixDbWriterPg
 		InsertBuffer insertBuffer;
 		ExporterEntry exporterEntries[MAX_EXP_TABLE];
 		uint32_t curExporterEntries;
-			
+
 		uint32_t numberOfColumns;         /**number of columns, used to calculate length of sql statements*/
 
 		const char* hostName;        /** Hostname*/
@@ -104,7 +104,7 @@ class IpfixDbWriterPg
 		unsigned int portNum;        /** Portnumber (use default) */
 		const char* socketName;      /** Socketname (use default) */
 		unsigned int flags;          /** Connectionflags (none) */
-		PGconn* conn;                /** pointer to connection handle */  
+		PGconn* conn;                /** pointer to connection handle */
 		int dbError;
 		Table curTable;			/** table name for currently cached entries in insertBuffer */
 		string tablePrefix;			/** prefix for all tables */
@@ -119,27 +119,28 @@ class IpfixDbWriterPg
 		int getExporterID(IpfixRecord::SourceID* sourceID);
         bool checkCurrentTable(uint64_t flowStart);
         bool setCurrentTable(uint64_t flowStart);
-        string getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addmilliseconds);
+        string getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addfraction, uint32_t microseconds = 0);
 		bool checkRelationExists(const char* relname);
 	private:
 		void connectToDB();
-		void processDataDataRecord(IpfixRecord::SourceID* sourceID, 
-				IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, 
+		void processDataDataRecord(IpfixRecord::SourceID* sourceID,
+				IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length,
 				IpfixRecord::Data* data);
-		
+
 		/***** Internal Functions ****************************************************/
 
 		char* getTableNamDependTime(char* tablename,uint64_t flowstartsec);
-		
+
 		uint64_t getdata(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
 		uint64_t getIPFIXValue(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
 		uint32_t getdefaultIPFIXdata(int ipfixtype);
-		
+
 		uint32_t getipv4address(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
-		
-		
+		void extractNtp64(uint64_t& intdata, uint32_t& micros);
+
+
 		/**
-		 * Identify the depency between columns names and 
+		 * Identify the depency between columns names and
 		 * IPFIX_TYPEID working with a char pointer array
 		 * in this array there is also standing  the defaultvalue
 		 * of the IPFIX_TYPEID and the datatype to store in database
@@ -147,14 +148,14 @@ class IpfixDbWriterPg
 		struct Column {
 			const char* cname; /** column name */
 			int ipfixId; /** IPFIX_TYPEID */
-			const char* dataType; /** which datatype to store in database */			 
+			const char* dataType; /** which datatype to store in database */
 			/**
 			 *  when no IPFIX_TYPEID is stored in the record,
 			 *  use defaultvalue to store in database
 			 */
 			int defaultValue;
 		};
-		const static Column identify[]; 
+		const static Column identify[];
 };
 
 
