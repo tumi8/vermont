@@ -9,7 +9,7 @@ using namespace std;
 /**
  * Creates and initializes a new hashtable buffer for flows matching @c rule
  */
-BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, 
+BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 		uint16_t minBufferTime, uint16_t maxBufferTime)
 	: minBufferTime(minBufferTime),
 	  maxBufferTime(maxBufferTime),
@@ -26,14 +26,14 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  dataDataRecordIM("IpfixDataDataRecord", 0),
 	  dataTemplateRecordIM("IpfixDataTemplateRecord", 0),
 	  aggInProgress(false),
-	  resendTemplate(true)	  
+	  resendTemplate(true)
 {
 
 	memset(sourceID.get(), 0, sizeof(IpfixRecord::SourceID));
-	
+
 	for (uint32_t i = 0; i < HTABLE_SIZE; i++)
 		buckets[i] = NULL;
-	
+
 	createDataTemplate(rule);
 
 	msg(MSG_INFO, "Initializing hashtable with minBufferTime %d and maxBufferTime %d", minBufferTime, maxBufferTime);
@@ -49,19 +49,19 @@ uint32_t BaseHashtable::getPrivateDataLength(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_ETYPEID_frontPayload:		// four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
 		case IPFIX_ETYPEID_revFrontPayload:		// "
 		case IPFIX_ETYPEID_maxPacketGap:		// old flow end time (to calculate packet gap)
-			return 8; 
-		
+			return 8;
+
 		default:
 			return 0;
 	}
-	
+
 	return 0;
 }
 
 void BaseHashtable::createDataTemplate(Rule* rule)
 {
 	int dataLength = 0; /**< length in bytes of the @c data field */
-	
+
 	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
 	dataTemplate->templateId=rule->id;
 	dataTemplate->preceding=rule->preceding;
@@ -93,13 +93,13 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			memcpy(dataTemplate->data + fi->offset, rf->pattern, fi->type.length);
 		}
 		/* gerhard: If we have a pattern (and fixed value field), the variable value field is implicitely discarded.
-		 * Note: This is necessary because of the double meaning/usage of Rule::Field.type.length: 
-		 * If a pattern is present, this variable holds the length of the pattern (or fixed length field) 
+		 * Note: This is necessary because of the double meaning/usage of Rule::Field.type.length:
+		 * If a pattern is present, this variable holds the length of the pattern (or fixed length field)
 		 * and not the length of the normal field holding a single value. As a consequence, we cannot use
 		 * Rule.Field.type.length as length of the variable value field.
 		 * If someone really wants to enable the export of both, pattern and variable value field of the same
 		 * type, then he has to remove the double meaning/usage (or set the variable field length to the
-		 * default value for the specific type). 
+		 * default value for the specific type).
 		 */
 		else if (rf->modifier != Rule::Field::DISCARD) {
 			/* define new data field with Rule::Field's type */
@@ -114,7 +114,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			fieldModifier[dataTemplate->fieldCount - 1] = rf->modifier;
 		}
 	}
-	
+
 	// add private data offsets for fields
 	uint32_t fpLengthOffset = 0;
 	privDataLength = 0;
@@ -124,10 +124,10 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 		if (len>0) {
 			fi->privDataOffset = fieldLength+privDataLength;
 			privDataLength += len;
-		}	
+		}
 		if (fi->type.id==IPFIX_ETYPEID_frontPayload) fpLengthOffset = fi->privDataOffset+4;
 	}
-	
+
 	// update private data offsets for fields which access private data from other fields
 	// example: front payload length accesses data from front payload
 	for (uint32_t i=0; i<dataTemplate->fieldCount; i++) {
@@ -166,7 +166,7 @@ BaseHashtable::~BaseHashtable()
 /**
  * Initializes memory for a new bucket in @c ht containing @c data
  */
-BaseHashtable::Bucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid) 
+BaseHashtable::Bucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid)
 {
 	Bucket* bucket = new Bucket();
 	bucket->expireTime = time(0) + minBufferTime;
@@ -182,7 +182,7 @@ BaseHashtable::Bucket* BaseHashtable::createBucket(boost::shared_array<IpfixReco
 /**
  * Exports the given @c bucket
  */
-void BaseHashtable::exportBucket(BaseHashtable::Bucket* bucket) 
+void BaseHashtable::exportBucket(BaseHashtable::Bucket* bucket)
 {
 	/* Pass Data Record to exporter interface */
 	IpfixDataDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
@@ -191,7 +191,7 @@ void BaseHashtable::exportBucket(BaseHashtable::Bucket* bucket)
 	ipfixRecord->dataLength = fieldLength;
 	ipfixRecord->message = bucket->data;
 	ipfixRecord->data = bucket->data.get();
-	
+
 	recordSource->send(ipfixRecord);
 
 	statRecordsSent++;
@@ -201,7 +201,7 @@ void BaseHashtable::exportBucket(BaseHashtable::Bucket* bucket)
 /**
  * De-allocates memory used by the given @c bucket
  */
-void BaseHashtable::destroyBucket(BaseHashtable::Bucket* bucket) 
+void BaseHashtable::destroyBucket(BaseHashtable::Bucket* bucket)
 {
 	delete bucket;
 }
@@ -210,7 +210,7 @@ void BaseHashtable::destroyBucket(BaseHashtable::Bucket* bucket)
 /**
  * Exports all expired flows and removes them from the buffer
  */
-void BaseHashtable::expireFlows(bool all) 
+void BaseHashtable::expireFlows(bool all)
 {
 	// the following lock should almost never fail (only during reconfiguration)
 	while (atomic_lock(&aggInProgress)) {
@@ -219,7 +219,7 @@ void BaseHashtable::expireFlows(bool all)
 		req.tv_nsec = 50000000;
 		nanosleep(&req, &req);
 	}
-	
+
 	uint32_t now = time(0);
 
 	uint32_t noEntries = 0;
@@ -231,8 +231,8 @@ void BaseHashtable::expireFlows(bool all)
 		sendDataTemplate();
 		resendTemplate = false;
 	}
-		
-	
+
+
 	/* check each hash bucket's spill chain */
 	for (uint32_t i = 0; i < HTABLE_SIZE; i++) {
 		if (buckets[i] != 0) {
@@ -267,13 +267,13 @@ void BaseHashtable::expireFlows(bool all)
 		} else {
 			emptyBuckets++;
 		}
-	} 	
+	}
 
 	statTotalEntries = noEntries;
 	statEmptyBuckets = emptyBuckets;
 	statExportedBuckets += exportedBuckets;
 	statMultiEntries = multiEntries;
-	
+
 	atomic_release(&aggInProgress);
 }
 
@@ -308,8 +308,10 @@ int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_ETYPEID_revFrontPayloadLen:
 		case IPFIX_ETYPEID_revFlowStartSeconds:
 		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+		case IPFIX_ETYPEID_revFlowStartNanoSeconds:
 		case IPFIX_ETYPEID_revFlowEndSeconds:
 		case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+		case IPFIX_ETYPEID_revFlowEndNanoSeconds:
 		case IPFIX_ETYPEID_revOctetDeltaCount:
 		case IPFIX_ETYPEID_revPacketDeltaCount:
 		case IPFIX_ETYPEID_revTcpControlBits:

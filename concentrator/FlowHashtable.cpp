@@ -3,6 +3,7 @@
 #include "crc.hpp"
 
 #include "common/Misc.h"
+#include "IpfixPrinter.hpp"
 
 
 
@@ -63,7 +64,7 @@ void FlowHashtable::genBiflowStructs()
 				break;
 			case IPFIX_TYPEID_destinationIPv4Address:
 				dstIPIdx = i;
-				mapReverseElement(IPFIX_TYPEID_sourceIPv4Address);
+				flowReverseMapper.push_back(i);
 				break;
 			case IPFIX_TYPEID_sourceTransportPort:
 				srcPortIdx = i;
@@ -71,11 +72,11 @@ void FlowHashtable::genBiflowStructs()
 				break;
 			case IPFIX_TYPEID_destinationTransportPort:
 				dstPortIdx = i;
-				mapReverseElement(IPFIX_TYPEID_sourceTransportPort);
+				flowReverseMapper.push_back(i);
 				break;
 			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-			case IPFIX_ETYPEID_revFlowStartNanoSeconds:
 			case IPFIX_ETYPEID_revFlowStartSeconds:
+			case IPFIX_ETYPEID_revFlowStartNanoSeconds:
 			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
 			case IPFIX_ETYPEID_revFlowEndNanoSeconds:
 			case IPFIX_ETYPEID_revOctetDeltaCount:
@@ -84,13 +85,18 @@ void FlowHashtable::genBiflowStructs()
 			case IPFIX_ETYPEID_revFlowEndSeconds:
 			case IPFIX_ETYPEID_revFrontPayload:
 			case IPFIX_ETYPEID_revFrontPayloadLen:
-				mapReverseElement(fi->type.id^IPFIX_REVERSE_ETYPE);
 				mapRevAggIndizes[fi->type.id] = i;
-				break;
+				// missing break is intended!
+
 			default:
 				// this call is dangerous, as calculated type ids may not exist at all
 				// but mapReverseElement will detect those and throw an exception
-				mapReverseElement(fi->type.id|IPFIX_ENTERPRISE_TYPE|IPFIX_REVERSE_ETYPE);
+				if ((fi->type.id&IPFIX_REVERSE_ETYPE)==0)
+					mapReverseElement(fi->type.id|IPFIX_ENTERPRISE_TYPE|IPFIX_REVERSE_ETYPE);
+				else
+					// do not reverse element
+					flowReverseMapper.push_back(i);
+
 		}
 	}
 
@@ -282,9 +288,9 @@ int FlowHashtable::compare4ByteField(IpfixRecord::Data* baseFlow, IpfixRecord::F
 
 	uint32_t base = ntohl(*((uint32_t*)baseData));
 	uint32_t delta = ntohl(*((uint32_t*)deltaData));
-	if (base<delta) return 1;
+	if (base<delta) return -1;
 	else if (base==delta) return 0;
-	else return -1;
+	else return 1;
 }
 
 /**
@@ -300,9 +306,9 @@ int FlowHashtable::compare8ByteField(IpfixRecord::Data* baseFlow, IpfixRecord::F
 
 	uint64_t base = ntohll(*((uint64_t*)baseData));
 	uint64_t delta = ntohll(*((uint64_t*)deltaData));
-	if (base<delta) return 1;
+	if (base<delta) return -1;
 	else if (base==delta) return 0;
-	else return -1;
+	else return 1;
 }
 
 /**
@@ -334,17 +340,17 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 				case IPFIX_TYPEID_flowStartSeconds:
 					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowStartSeconds);
 					if (iter != mapRevAggIndizes.end()) idx = iter->second;
-					secequality = compare4ByteField(baseFlow, &dataTemplate->fieldInfo[idx], flow, fi);
+					secequality = compare4ByteField(baseFlow, fi, flow, fi);
 					break;
 				case IPFIX_TYPEID_flowStartMilliSeconds:
 					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowStartMilliSeconds);
 					if (iter != mapRevAggIndizes.end()) idx = iter->second;
-					msequality = compare8ByteField(baseFlow, &dataTemplate->fieldInfo[idx], flow, fi);
+					msequality = compare8ByteField(baseFlow, fi, flow, fi);
 					break;
 				case IPFIX_TYPEID_flowStartNanoSeconds:
 					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowStartNanoSeconds);
 					if (iter != mapRevAggIndizes.end()) idx = iter->second;
-					nsequality = compare8ByteField(baseFlow, &dataTemplate->fieldInfo[idx], flow, fi);
+					nsequality = compare8ByteField(baseFlow, fi, flow, fi);
 					break;
 				case IPFIX_TYPEID_flowEndSeconds:
 					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowEndSeconds);
@@ -381,11 +387,11 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 			}
 			aggregateField(&dataTemplate->fieldInfo[idx], fi, baseFlow, flow);
 
-			// check if flow should be reversed
-			if (secequality>0) result = 1;
-			else if (msequality>0) result = 1;
-			else if (secequality==0 && nsequality>0) result = 1;
 
+			// check if flow should be reversed
+			if (nsequality>0) result = 1;
+			else if (secequality>0) result = 1;
+			else if (msequality>0) result = 1;
 		} else {
 			aggregateField(fi, fi, baseFlow, flow);
 		}
@@ -503,6 +509,7 @@ void FlowHashtable::reverseFlowBucket(Bucket* bucket)
 		IpfixRecord::FieldInfo* fi2 = &dataTemplate->fieldInfo[flowReverseMapper[i]];
 
 		if (fi != fi2) {
+			//msg(MSG_ERROR, "mapping idx %d to idx %d", i, flowReverseMapper[i]);
 			IpfixRecord::Data* src = bucket->data.get()+fi->offset;
 			IpfixRecord::Data* dst = bucket->data.get()+fi2->offset;
 			uint32_t len = fi->type.length;
@@ -522,19 +529,24 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 	statRecordsReceived++;
 
 	uint32_t nhash = getHash(data.get(), false);
+	DPRINTFL(MSG_VDEBUG, "nhash=%u", nhash);
 	Bucket* prevbucket;
 	Bucket* bucket = lookupBucket(nhash, data.get(), false, &prevbucket);
 
 	if (bucket != NULL) {
+		DPRINTFL(MSG_VDEBUG, "aggregating flow");
 		aggregateFlow(bucket->data.get(), data.get(), false);
 		bucket->expireTime = time(0) + minBufferTime;
 	} else {
 		if (biflowAggregation) {
 			// try reverse flow
 			uint32_t rhash = getHash(data.get(), true);
+			DPRINTFL(MSG_VDEBUG, "rhash=%u", rhash);
 			bucket = lookupBucket(rhash, data.get(), true, &prevbucket);
 			if (bucket != NULL) {
+				DPRINTFL(MSG_VDEBUG, "aggregating reverse flow");
 				if (aggregateFlow(bucket->data.get(), data.get(), true)==1) {
+					DPRINTFL(MSG_VDEBUG, "reversing whole flow");
 					// reverse flow
 					reverseFlowBucket(bucket);
 					// delete reference from hash table
@@ -544,6 +556,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 						prevbucket->next = bucket->next;
 					// insert into hash table again
 					nhash = getHash(bucket->data.get(), false);
+					DPRINTFL(MSG_VDEBUG, "nhash=%u", nhash);
 					bucket->next = buckets[nhash];
 					buckets[nhash] = bucket;
 
@@ -552,6 +565,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 			}
 		}
 		if (bucket == NULL) {
+			DPRINTFL(MSG_VDEBUG, "creating new bucket");
 			Bucket* n = buckets[nhash];
 			buckets[nhash] = createBucket(data, 0); // FIXME: insert observationDomainID!
 			buckets[nhash]->next = n;
