@@ -144,9 +144,24 @@ inline ntp64 ntp64time(timeval tv)
 {
         ntp64 n;
         n.upper = (uint32_t)tv.tv_sec + GETTIMEOFDAY_TO_NTP_OFFSET;
+        //msg(MSG_ERROR, "upper: %u", n.upper);
         n.lower = usec2ntp((uint32_t)tv.tv_usec);
+        //msg(MSG_ERROR, "lower: %u", n.lower);
         return (n);
 }
+
+// workaround function for gcc compiler bug ...
+// gcc did not want to return correct content of variable of n (see ntp64time)
+inline uint64_t ntp64timegcc(timeval tv)
+{
+        uint64_t n;
+        n = ((uint64_t)tv.tv_sec + GETTIMEOFDAY_TO_NTP_OFFSET) << 32;
+        //msg(MSG_ERROR, "upper: %u", n.upper);
+        n |= usec2ntp((uint32_t)tv.tv_usec);
+        //msg(MSG_ERROR, "lower: %u", n.lower);
+        return (n);
+}
+
 
 // uses same mechanism as usec2ntp, some there is some error during conversion!
 inline timeval timentp64(ntp64 n)
@@ -154,6 +169,7 @@ inline timeval timentp64(ntp64 n)
 	timeval tv;
 	tv.tv_sec = n.upper-GETTIMEOFDAY_TO_NTP_OFFSET;
 	tv.tv_usec = n.lower/4294;
+	//msg(MSG_ERROR, "sec: %u, usec: %u", tv.tv_sec, tv.tv_usec);
     return tv;
 }
 
