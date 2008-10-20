@@ -16,20 +16,21 @@ class IpfixPayloadWriterCfg
 {
 public:
 	friend class ConfigManager;
-	
+
 	virtual IpfixPayloadWriterCfg* create(XMLElement* e);
 	virtual ~IpfixPayloadWriterCfg();
-	
+
 	virtual IpfixPayloadWriter* createInstance();
 	virtual bool deriveFrom(IpfixPayloadWriterCfg* old);
-	
+
 protected:
-	
+
 	string path;			/**< path where files are written to */
 	string filenamePrefix;	/**< prefix of all filenames that are created */
 	uint32_t noConnections; /**< how many connections of a run should be recorded? */
 	bool ignoreEmptyPayload; /**< ignores all flows having empty payload in both directions when set */
-	
+	bool ignoreIncompleteTCP; /**< ignores all TCP flows without set TCP flag in both directions */
+
 	IpfixPayloadWriterCfg(XMLElement*);
 };
 

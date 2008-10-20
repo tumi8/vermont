@@ -1,17 +1,17 @@
 /*
- * VERMONT 
+ * VERMONT
  * Copyright (C) 2007 Tobias Limmer <tobias.limmer@informatik.uni-erlangen.de>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -34,12 +34,13 @@
  * attention: parameter idmefexporter must be free'd by the creating instance, TRWPortscanDetector
  * does not dare to delete it, in case it's used
  */
-IpfixPayloadWriter::IpfixPayloadWriter(string path, string prefix, uint32_t noconns, bool ignoreEmptyPayload)
+IpfixPayloadWriter::IpfixPayloadWriter(string path, string prefix, uint32_t noconns, bool ignoreEmptyPayload, bool ignoreIncompleteTCP)
 	: path(path),
 	  filenamePrefix(prefix),
 	  noConnections(noconns),
 	  filewarningIssued(false),
-	  ignoreEmptyPayload(ignoreEmptyPayload)
+	  ignoreEmptyPayload(ignoreEmptyPayload),
+	  ignoreIncompleteTCP(ignoreIncompleteTCP)
 {
 }
 
@@ -50,17 +51,19 @@ IpfixPayloadWriter::~IpfixPayloadWriter()
 
 
 void IpfixPayloadWriter::onDataDataRecord(IpfixDataDataRecord* record)
-{	
+{
 	// convert ipfixrecord to connection struct
-	Connection* conn = new Connection(record);	
+	Connection* conn = new Connection(record);
 	conn->swapIfNeeded();
-	
+
 	bool inserted = false;
-	
-	if (!ignoreEmptyPayload || conn->srcPayloadLen>0 || conn->dstPayloadLen>0) { 	
+
+	if ((!ignoreEmptyPayload || conn->srcPayloadLen>0 || conn->dstPayloadLen>0) &&
+		(!ignoreIncompleteTCP || conn->protocol!=6 ||
+				((conn->srcTcpControlBits&2)==2 && ((conn->dstTcpControlBits&2)==2)))) { // check if both directions have SYN flag set
 		// insert entry into sorted list
 		list<Connection*>::iterator iter = connections.begin();
-		
+
 		uint32_t counter = 0;
 		while (iter != connections.end() && counter<noConnections) {
 			if ((*iter)->srcTimeStart>conn->srcTimeStart) {
@@ -76,16 +79,16 @@ void IpfixPayloadWriter::onDataDataRecord(IpfixDataDataRecord* record)
 			inserted = true;
 		}
 	}
-		
+
 	if (!inserted) delete conn;
-	
+
 	record->removeReference();
 }
 
 void IpfixPayloadWriter::performShutdown()
 {
-	string fileinfo;	
-	
+	string fileinfo;
+
 	// write the first N entries in connection list to directory in files
 	list<Connection*>::iterator iter = connections.begin();
 	uint32_t i = 0;
@@ -93,41 +96,41 @@ void IpfixPayloadWriter::performShutdown()
 		if (i>=noConnections) break;
 		Connection* conn = *iter;
 		char filename[2][100];
-		snprintf(filename[0], 100, "%s-%02d-%s.%d-%s.%d", filenamePrefix.c_str(), 
+		snprintf(filename[0], 100, "%s-%02d-%s.%d-%s.%d", filenamePrefix.c_str(),
 				i, IPToString(conn->srcIP).c_str(), ntohs(conn->srcPort), IPToString(conn->dstIP).c_str(), ntohs(conn->dstPort));
-		snprintf(filename[1], 100, "%s-%02d-%s.%d-%s.%d", filenamePrefix.c_str(), 
+		snprintf(filename[1], 100, "%s-%02d-%s.%d-%s.%d", filenamePrefix.c_str(),
 				i, IPToString(conn->dstIP).c_str(), ntohs(conn->dstPort), IPToString(conn->srcIP).c_str(), ntohs(conn->srcPort));
-		
+
 		string filepayload[2] = { path + "/" + string(filename[0]) + ".payload", path + "/" + string(filename[1]) + ".payload" };
 		fileinfo = path + "/" + string(filename[0]) + ".info";
-		
+
 		struct stat s;
 		if (stat(filepayload[0].c_str(), &s) == 0 && !filewarningIssued) {
 			msg(MSG_DIALOG, "files in IpfixPayloadWriter destination directory already present, overwriting ...");
 			filewarningIssued = true;
 		}
-	
-		
+
+
 		// save payload in two files
 		FILE* f;
-		char buf[100];		
+		char buf[100];
 		if (conn->srcPayload) {
 			f = fopen(filepayload[0].c_str(), "w+");
 			if (f == NULL) goto error;
-			if (conn->srcPayloadLen && fwrite(conn->srcPayload, conn->srcPayloadLen, 1, f) != 1) 
+			if (conn->srcPayloadLen && fwrite(conn->srcPayload, conn->srcPayloadLen, 1, f) != 1)
 				THROWEXCEPTION("failed to write to file '%s', error: %s, 1", filepayload[0].c_str(), strerror(errno));
-			if (fclose(f) != 0) 
+			if (fclose(f) != 0)
 				THROWEXCEPTION("failed to write to file '%s', error: %s, 2", filepayload[0].c_str(), strerror(errno));
 		}
 		if (conn->dstPayload) {
 			f = fopen(filepayload[1].c_str(), "w+");
 			if (f == NULL) goto error;
-			if (conn->dstPayloadLen && fwrite(conn->dstPayload, conn->dstPayloadLen, 1, f) != 1) 
+			if (conn->dstPayloadLen && fwrite(conn->dstPayload, conn->dstPayloadLen, 1, f) != 1)
 				THROWEXCEPTION("failed to write to file '%s', error: %s, 3", filepayload[1].c_str(), strerror(errno));
-			if (fclose(f) != 0) 
+			if (fclose(f) != 0)
 				THROWEXCEPTION("failed to write to file '%s', error: %s, 4", filepayload[1].c_str(), strerror(errno));
 		}
-	
+
 		// save additional data
 		f = fopen(fileinfo.c_str(), "w+");
 		if (f == NULL) goto error;
@@ -157,7 +160,7 @@ void IpfixPayloadWriter::performShutdown()
 		if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;
 		snprintf(buf, 100, "dstPayloadLen: %d\n", conn->dstPayloadLen);
 		if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;
-	
+
 		if (conn->srcPayload != 0) {
 			snprintf(buf, 100, "nicePayload: ");
 			if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;
@@ -171,13 +174,13 @@ void IpfixPayloadWriter::performShutdown()
 			}
 			if (fwrite("\n", 1, 1, f) != 1) goto error;
 		}
-		
+
 		if (conn->dstPayload != 0) {
 			snprintf(buf, 100, "revNicePayload: ");
 			if (fwrite(buf, strnlen(buf, 100), 1, f) != 1) goto error;
 			if (conn->dstPayloadLen>0) {
 				uint32_t buflen = (conn->dstPayloadLen > ARRAY_SIZE(buf) ? ARRAY_SIZE(buf) : conn->dstPayloadLen);
-				memcpy(buf, conn->dstPayload, buflen);				
+				memcpy(buf, conn->dstPayload, buflen);
 				for (uint32_t i=0; i<buflen && i<conn->dstPayloadLen; i++) {
 					if (!isprint(buf[i])) buf[i] = '.';
 				}
@@ -185,20 +188,20 @@ void IpfixPayloadWriter::performShutdown()
 			}
 			if (fwrite("\n", 1, 1, f) != 1) goto error;
 		}
-		
+
 		if (fclose(f) != 0) goto error;
-		
+
 		iter++;
 		i++;
 	}
-	
+
 	// delete entries in list
-	while (!connections.empty()) {		
+	while (!connections.empty()) {
 		Connection* c = connections.back();
 		delete c;
 		connections.pop_back();
 	}
-	
+
 	return;
 
 error:

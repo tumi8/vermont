@@ -12,7 +12,8 @@ IpfixPayloadWriterCfg* IpfixPayloadWriterCfg::create(XMLElement* e)
 IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
     : CfgHelper<IpfixPayloadWriter, IpfixPayloadWriterCfg>(elem, "ipfixPayloadWriter"),
       noConnections(0),
-      ignoreEmptyPayload(false)
+      ignoreEmptyPayload(false),
+      ignoreIncompleteTCP(false)
 {
     if (!elem) return;
 
@@ -30,6 +31,8 @@ IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
 			noConnections = getInt("connNumber");
 		} else if (e->matches("ignoreEmptyPayload")) {
 			ignoreEmptyPayload = getInt("ignoreEmptyPayload");
+		} else if (e->matches("ignoreIncompleteTCP")) {
+			ignoreIncompleteTCP = getInt("ignoreIncompleteTCP");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixPayloadWriter config statement %s\n", e->getName().c_str());
@@ -39,7 +42,7 @@ IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
 	if (path=="") THROWEXCEPTION("IpfixPayloadWriterCfg: destPath not set in configuration!");
 	if (filenamePrefix=="") THROWEXCEPTION("IpfixPayloadWriterCfg: filenamePrefix not set in configuration!");
 	if (noConnections==0) THROWEXCEPTION("IpfixPayloadWriterCfg: connNumber not set in configuration, or value not > 0!");
-	
+
 	struct stat s;
 	if (stat(path.c_str(), &s) != 0)
 		THROWEXCEPTION("IpfixPayloadWriterCfg: failed to access destination path '%s', error: %s", path.c_str(), strerror(errno));
@@ -51,7 +54,7 @@ IpfixPayloadWriterCfg::~IpfixPayloadWriterCfg()
 
 IpfixPayloadWriter* IpfixPayloadWriterCfg::createInstance()
 {
-    instance = new IpfixPayloadWriter(path, filenamePrefix, noConnections, ignoreEmptyPayload);
+    instance = new IpfixPayloadWriter(path, filenamePrefix, noConnections, ignoreEmptyPayload, ignoreIncompleteTCP);
     return instance;
 }
 

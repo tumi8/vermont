@@ -1,17 +1,17 @@
 /*
- * VERMONT 
+ * VERMONT
  * Copyright (C) 2007 Tobias Limmer <tobias.limmer@informatik.uni-erlangen.de>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -56,65 +56,84 @@ Connection::Connection(IpfixDataDataRecord* record)
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
 	if (fi != 0) {
-		srcPort = *(uint16_t*)(record->data + fi->offset); 
+		srcPort = *(uint16_t*)(record->data + fi->offset);
 	} else {
 		msg(MSG_INFO, "failed to determine source port for record, assuming 0");
 		srcPort = 0;
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
 	if (fi != 0) {
-		dstPort = *(uint16_t*)(record->data + fi->offset); 
+		dstPort = *(uint16_t*)(record->data + fi->offset);
 	} else {
 		msg(MSG_INFO, "failed to determine destination port for record, assuming 0");
 		srcPort = 0;
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_protocolIdentifier, 0);
 	if (fi != 0) {
-		protocol = *(uint8_t*)(record->data + fi->offset); 
+		protocol = *(uint8_t*)(record->data + fi->offset);
 	} else {
 		msg(MSG_INFO, "failed to determine protocol for record, using 0");
 		protocol = 0;
 	}
-	
-	
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0);
+
+	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0);
 	if (fi != 0) {
-		srcTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
+		srcTimeStart = convertNtp64(*(uint64_t*)(record->data + fi->offset));
 	} else {
-		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSeconds, 0);
+		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0);
 		if (fi != 0) {
-			srcTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
-			srcTimeStart *= 1000;
+			srcTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
+		} else {
+			fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSeconds, 0);
+			if (fi != 0) {
+				srcTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
+				srcTimeStart *= 1000;
+			}
 		}
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
+	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoSeconds, 0);
 	if (fi != 0) {
-		srcTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
+		srcTimeEnd = convertNtp64(*(uint64_t*)(record->data + fi->offset));
 	} else {
-		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndSeconds, 0);
+		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
 		if (fi != 0) {
-			srcTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
-			srcTimeEnd *= 1000;
+			srcTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
+		} else {
+			fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndSeconds, 0);
+			if (fi != 0) {
+				srcTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
+				srcTimeEnd *= 1000;
+			}
 		}
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartMilliSeconds, 0);
+	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartNanoSeconds, 0);
 	if (fi != 0) {
-		dstTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
+		dstTimeStart = convertNtp64(*(uint64_t*)(record->data + fi->offset));
 	} else {
-		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartSeconds, 0);
+		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartMilliSeconds, 0);
 		if (fi != 0) {
-			dstTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
-			dstTimeStart *= 1000;
+			dstTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
+		} else {
+			fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartSeconds, 0);
+			if (fi != 0) {
+				dstTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
+				dstTimeStart *= 1000;
+			}
 		}
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndMilliSeconds, 0);
+	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndNanoSeconds, 0);
 	if (fi != 0) {
-		dstTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
+		dstTimeEnd = convertNtp64(*(uint64_t*)(record->data + fi->offset));
 	} else {
-		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndSeconds, 0);
+		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndMilliSeconds, 0);
 		if (fi != 0) {
-			dstTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
-			dstTimeEnd *= 1000;
+			dstTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
+		} else {
+			fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndSeconds, 0);
+			if (fi != 0) {
+				dstTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
+				dstTimeEnd *= 1000;
+			}
 		}
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_octetDeltaCount, 0);
@@ -128,23 +147,23 @@ Connection::Connection(IpfixDataDataRecord* record)
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, 0);
 	if (fi != 0) srcTcpControlBits = *(uint8_t*)(record->data + fi->offset);
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revTcpControlBits, 0);
-	if (fi != 0) dstTcpControlBits = *(uint8_t*)(record->data + fi->offset);	
+	if (fi != 0) dstTcpControlBits = *(uint8_t*)(record->data + fi->offset);
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayload, 0);
 	if (fi != 0 && fi->type.length) {
 		IpfixRecord::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadLen, 0);
-		if (filen != 0) 
+		if (filen != 0)
 			srcPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
-		else 
+		else
 			srcPayloadLen = fi->type.length;
 		srcPayload = new char[srcPayloadLen];
-		memcpy(srcPayload, record->data + fi->offset, srcPayloadLen);		
+		memcpy(srcPayload, record->data + fi->offset, srcPayloadLen);
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayload, 0);
 	if (fi != 0 && fi->type.length) {
 		IpfixRecord::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayloadLen, 0);
-		if (filen != 0) 
+		if (filen != 0)
 			dstPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
-		else 
+		else
 			dstPayloadLen = fi->type.length;
 		dstPayload = new char[dstPayloadLen];
 		memcpy(dstPayload, record->data + fi->offset, dstPayloadLen);
@@ -152,9 +171,16 @@ Connection::Connection(IpfixDataDataRecord* record)
 }
 
 Connection::~Connection()
-{	
+{
 	if (srcPayload) delete[] srcPayload;
 	if (dstPayload) delete[] dstPayload;
+}
+
+uint64_t Connection::convertNtp64(uint64_t ntptime)
+{
+	uint64_t ntp2 = ntohll(ntptime);
+	timeval tv = timentp64(*(ntp64*)(&ntp2));
+	return tv.tv_sec*1000+tv.tv_usec/1000;
 }
 
 /**
@@ -216,7 +242,7 @@ string Connection::toString()
 	if (dstTimeEnd) oss << "dstTimeEnd: " << dstTimeEnd << endl;
 	oss << "srcOctets: " << srcOctets << ", dstOctets: " << dstOctets << endl;
 	oss << "srcPackets: " << srcPackets << ", dstPackets: " << dstPackets << endl;
-	if (srcTcpControlBits || dstTcpControlBits) oss << "srcTcpControlBits: " << printTcpControlBits(srcTcpControlBits) 
+	if (srcTcpControlBits || dstTcpControlBits) oss << "srcTcpControlBits: " << printTcpControlBits(srcTcpControlBits)
 													<< ", dstTcpControlBits: " << printTcpControlBits(dstTcpControlBits) << endl;
 	if (protocol) oss << "protocol: " << static_cast<uint32_t>(protocol) << endl;
 	oss << "srcPayloadLen: " << srcPayloadLen << endl;
