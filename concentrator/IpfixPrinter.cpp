@@ -327,7 +327,15 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 					starttime = ntohl(*reinterpret_cast<uint32_t*>(record->data+fi->offset));
 					snprintf(buf, 50, "%u:%02u.%04u", starttime/60000, (starttime%60000)/1000, starttime%1000);
 				} else {
-					strcpy(buf, "---");
+					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSeconds, 0);
+					if (fi != NULL) {
+						timetype = IPFIX_TYPEID_flowStartNanoSeconds;
+						uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
+						timeval t = timentp64(*((ntp64*)(&t2)));
+						tm = localtime(&t.tv_sec);
+						strftime(buf, 50, "%F %T", tm);
+						starttime = t.tv_sec;
+					}
 				}
 			}
 		}
@@ -346,7 +354,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 				case IPFIX_TYPEID_flowStartMilliSeconds:
 					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
 					if (fi != NULL) {
-						dur = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset))/1000 - starttime;
+						dur = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset)) - starttime;
 						dur *= 1000;
 					}
 					break;
@@ -354,8 +362,16 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndSysUpTime, 0);
 					if (fi != NULL) {
 						dur = ntohl(*reinterpret_cast<uint32_t*>(record->data+fi->offset)) - starttime;
+						dur *= 1000;
 					}
 					break;
+				case IPFIX_TYPEID_flowStartNanoSeconds:
+					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoSeconds, 0);
+					if (fi != NULL) {
+						uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
+						timeval t = timentp64(*((ntp64*)(&t2)));
+						dur = t.tv_sec*1000+t.tv_usec/1000 - starttime;
+					}
 			}
 			snprintf(buf, 50, "%u.%04u", (dur)/1000, dur%1000);
 			printf("%8s ", buf);
