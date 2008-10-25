@@ -144,7 +144,8 @@ int string2typelength(const char*s);
 #define IPFIX_ETYPEID_maxPacketGap					(IPFIX_ENTERPRISE_TYPE | 0x82)
 
 // information elements for biflows
-#define IPFIX_REVERSE_ETYPE							(IPFIX_ENTERPRISE_TYPE | 0x0400)
+#define IPFIX_REVERSE_TYPE							0x0400
+#define IPFIX_REVERSE_ETYPE							(IPFIX_ENTERPRISE_TYPE | IPFIX_REVERSE_TYPE)
 #define IPFIX_ETYPEID_revFlowStartSeconds			(IPFIX_TYPEID_flowStartSeconds | IPFIX_REVERSE_ETYPE)
 #define IPFIX_ETYPEID_revFlowStartMilliSeconds		(IPFIX_TYPEID_flowStartMilliSeconds | IPFIX_REVERSE_ETYPE)
 #define IPFIX_ETYPEID_revFlowStartNanoSeconds		(IPFIX_TYPEID_flowStartNanoSeconds | IPFIX_REVERSE_ETYPE)

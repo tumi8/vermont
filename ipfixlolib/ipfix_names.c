@@ -276,7 +276,7 @@ static const struct ipfix_identifier IPFIXTAB[] = {
 };
 /* written 260 entries */
 static const struct ipfix_identifier FRONTPAYLOAD[] = { {"frontpayload", 32896, 0}, {"frontpayloadlen", 32897, 4}};
-static const struct ipfix_identifier MAXPACKETGAP[] = { {"frontpayload", 32898, 4} };
+
 static const struct ipfix_identifier BIFLOWTAB1[] = { { "revoctetdeltacount", 33793, 8 }, {
 		"revpacketdeltacount", 33794, 8 }, { "reserved", 33795, 0 }, { "reserved", 33796, 0 }, {
 		"reserved", 33797, 0 }, { "revtcpcontrolbits", 33798, 1 }, 
@@ -291,7 +291,8 @@ static const struct ipfix_identifier BIFLOWTAB2[] = {
 static const struct ipfix_identifier SWITCHFLOWTAB[] = {
     { "revflowstartnanoseconds", 33948, 8 }, 
     { "revflowendnanoseconds", 33949, 8 },
-    { "revmaxpacketgap", 32898, 4 }
+    { "revmaxpacketgap", 33922, 4 },
+    { "maxpacketgap", 32898, 4}
 };
 
 #define PSAMP_STARTING_ID 300
@@ -1120,10 +1121,6 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
 	if (n>=32896 && n<=32897) {
 		return &FRONTPAYLOAD[n-32896];
 	}
-	
-	if (n==32898) {
-		return &MAXPACKETGAP[0];
-	}
 
 	// stuff for biflow types
 	if (n>=33793 && n<=33798) {
@@ -1142,6 +1139,8 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
            return &SWITCHFLOWTAB[1];
 	   case IPFIX_ETYPEID_revMaxPacketGap:
            return &SWITCHFLOWTAB[2];
+       case IPFIX_ETYPEID_maxPacketGap:
+           return &SWITCHFLOWTAB[3];
     };
 
 	return NULL;

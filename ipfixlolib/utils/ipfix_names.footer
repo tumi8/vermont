@@ -34,10 +34,6 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
 	if (n>=32896 && n<=32897) {
 		return &FRONTPAYLOAD[n-32896];
 	}
-	
-	if (n==32898) {
-		return &MAXPACKETGAP[0];
-	}
 
 	// stuff for biflow types
 	if (n>=33793 && n<=33798) {
@@ -56,6 +52,8 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
            return &SWITCHFLOWTAB[1];
 	   case IPFIX_ETYPEID_revMaxPacketGap:
            return &SWITCHFLOWTAB[2];
+       case IPFIX_ETYPEID_maxPacketGap:
+           return &SWITCHFLOWTAB[3];
     };
 
 	return NULL;

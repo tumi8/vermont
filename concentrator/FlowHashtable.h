@@ -22,20 +22,6 @@ private:
 	uint32_t* revDataTemplateMapper; /**< contains indizes to dataTemplate for a reverse flow*/
 	bool biflowAggregation; /**< set to true if biflow aggregation is to be done*/
 
-	/**
-	 * contain indizes to reverse aggregatable fields:
-	 *
-	 * <typeid, index to dataTemplate>
-	 *
-	 * IPFIX_ETYPEID_revFlowStartSeconds
-	 * IPFIX_ETYPEID_revFlowStartMilliSeconds
-	 * IPFIX_ETYPEID_revFlowEndSeconds
-	 * IPFIX_ETYPEID_revFlowEndMilliSeconds
-	 * IPFIX_ETYPEID_revOctetDeltaCount
-	 * IPFIX_ETYPEID_revPacketDeltaCount
-	 * IPFIX_ETYPEID_revTcpControlBits
-	 */
-	map<uint32_t, uint32_t> mapRevAggIndizes;
 
 	/**
 	 * contains indizes to reversed flow fields

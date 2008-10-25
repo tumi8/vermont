@@ -52,7 +52,9 @@ void FlowHashtable::genBiflowStructs()
 
 	// search for offsets in dataTemplate
 	revDataTemplateMapper = new uint32_t[dataTemplate->fieldCount];
+	DPRINTF("fieldCount=%d", dataTemplate->fieldCount);
 	for (int32_t i=0; i<dataTemplate->fieldCount; i++) {
+		DPRINTF("fieldCount=%d", i);
 		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 		if (fi->type.length>maxFieldSize) maxFieldSize = fi->type.length;
 		switch (fi->type.id) {
@@ -65,7 +67,7 @@ void FlowHashtable::genBiflowStructs()
 				break;
 			case IPFIX_TYPEID_destinationIPv4Address:
 				dstIPIdx = i;
-				flowReverseMapper.push_back(i);
+				mapReverseElement(fi->type.id);
 				break;
 			case IPFIX_TYPEID_sourceTransportPort:
 				srcPortIdx = i;
@@ -73,33 +75,20 @@ void FlowHashtable::genBiflowStructs()
 				break;
 			case IPFIX_TYPEID_destinationTransportPort:
 				dstPortIdx = i;
-				flowReverseMapper.push_back(i);
+				mapReverseElement(fi->type.id);
 				break;
-			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-			case IPFIX_ETYPEID_revFlowStartSeconds:
-			case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-			case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-			case IPFIX_ETYPEID_revOctetDeltaCount:
-			case IPFIX_ETYPEID_revPacketDeltaCount:
-			case IPFIX_ETYPEID_revTcpControlBits:
-			case IPFIX_ETYPEID_revFlowEndSeconds:
-			case IPFIX_ETYPEID_revFrontPayload:
-			case IPFIX_ETYPEID_revFrontPayloadLen:
-			case IPFIX_ETYPEID_revMaxPacketGap:
-				mapRevAggIndizes[fi->type.id] = i;
-				// missing break is intended!
 
 			default:
 				// this call is dangerous, as calculated type ids may not exist at all
 				// but mapReverseElement will detect those and throw an exception
-				if ((fi->type.id&IPFIX_REVERSE_ETYPE)==0) {
+				DPRINTF("field %s", typeid2string(fi->type.id));
+				if ((fi->type.id&IPFIX_REVERSE_TYPE)==0) {
 					mapReverseElement(fi->type.id|IPFIX_ENTERPRISE_TYPE|IPFIX_REVERSE_ETYPE);
-					DPRINTF("FlowHashtable: mapping element %d to element %d", fi->type.id, fi->type.id|IPFIX_ENTERPRISE_TYPE|IPFIX_REVERSE_ETYPE);
+					DPRINTF("FlowHashtable: mapping field %s to field %s", typeid2string(fi->type.id), typeid2string(fi->type.id|IPFIX_ENTERPRISE_TYPE|IPFIX_REVERSE_ETYPE));
 				} else {
 					// do not reverse element
-					flowReverseMapper.push_back(i);
-					DPRINTF("FlowHashtable: mapping element %d to element %d", fi->type.id, fi->type.id);
+					mapReverseElement(fi->type.id);
+					DPRINTF("FlowHashtable: not mapping field %s", typeid2string(fi->type.id));
 				}
 
 		}
@@ -345,60 +334,21 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 			int secequality = -2;
 			int msequality = -2;
 			int nsequality = -2;
-			uint32_t idx = i;
 			// look if current field is to be reverted, if yes, map fields
 			// additionally check, if flow should be reversed
 			map<uint32_t, uint32_t>::iterator iter;
 			switch (fi->type.id) {
 				case IPFIX_TYPEID_flowStartSeconds:
-					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowStartSeconds);
-					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					secequality = compare4ByteField(baseFlow, fi, flow, fi);
 					break;
 				case IPFIX_TYPEID_flowStartMilliSeconds:
-					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowStartMilliSeconds);
-					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					msequality = compare8ByteField(baseFlow, fi, flow, fi);
 					break;
 				case IPFIX_TYPEID_flowStartNanoSeconds:
-					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowStartNanoSeconds);
-					if (iter != mapRevAggIndizes.end()) idx = iter->second;
 					nsequality = compare8ByteField(baseFlow, fi, flow, fi);
 					break;
-				case IPFIX_TYPEID_flowEndSeconds:
-					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowEndSeconds);
-					if (iter != mapRevAggIndizes.end()) idx = iter->second;
-					break;
-				case IPFIX_TYPEID_flowEndMilliSeconds:
-					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowEndMilliSeconds);
-					if (iter != mapRevAggIndizes.end()) idx = iter->second;
-					break;
-				case IPFIX_TYPEID_flowEndNanoSeconds:
-					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFlowEndNanoSeconds);
-					if (iter != mapRevAggIndizes.end()) idx = iter->second;
-					break;
-				case IPFIX_TYPEID_octetDeltaCount:
-					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revOctetDeltaCount);
-					if (iter != mapRevAggIndizes.end()) idx = iter->second;
-					break;
-				case IPFIX_TYPEID_packetDeltaCount:
-					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revPacketDeltaCount);
-					if (iter != mapRevAggIndizes.end()) idx = iter->second;
-					break;
-				case IPFIX_TYPEID_tcpControlBits:
-					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revTcpControlBits);
-					if (iter != mapRevAggIndizes.end()) idx = iter->second;
-					break;
-				case IPFIX_ETYPEID_frontPayload:
-					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFrontPayload);
-					if (iter != mapRevAggIndizes.end()) idx = iter->second;
-					break;
-				case IPFIX_ETYPEID_frontPayloadLen:
-					iter = mapRevAggIndizes.find(IPFIX_ETYPEID_revFrontPayloadLen);
-					if (iter != mapRevAggIndizes.end()) idx = iter->second;
-					break;
 			}
-			aggregateField(&dataTemplate->fieldInfo[idx], fi, baseFlow, flow);
+			aggregateField(&dataTemplate->fieldInfo[flowReverseMapper[i]], fi, baseFlow, flow);
 
 
 			// check if flow should be reversed

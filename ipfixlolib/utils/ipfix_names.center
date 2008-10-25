@@ -1,6 +1,6 @@
 
 static const struct ipfix_identifier FRONTPAYLOAD[] = { {"frontpayload", 32896, 0}, {"frontpayloadlen", 32897, 4}};
-static const struct ipfix_identifier MAXPACKETGAP[] = { {"frontpayload", 32898, 4} };
+
 static const struct ipfix_identifier BIFLOWTAB1[] = { { "revoctetdeltacount", 33793, 8 }, {
 		"revpacketdeltacount", 33794, 8 }, { "reserved", 33795, 0 }, { "reserved", 33796, 0 }, {
 		"reserved", 33797, 0 }, { "revtcpcontrolbits", 33798, 1 }, 
@@ -15,7 +15,8 @@ static const struct ipfix_identifier BIFLOWTAB2[] = {
 static const struct ipfix_identifier SWITCHFLOWTAB[] = {
     { "revflowstartnanoseconds", 33948, 8 }, 
     { "revflowendnanoseconds", 33949, 8 },
-    { "revmaxpacketgap", 32898, 4 }
+    { "revmaxpacketgap", 33922, 4 },
+    { "maxpacketgap", 32898, 4}
 };
 
 #define PSAMP_STARTING_ID 300
