@@ -13,8 +13,8 @@ static const struct ipfix_identifier BIFLOWTAB2[] = {
 };
 
 static const struct ipfix_identifier SWITCHFLOWTAB[] = {
-    { "revflowstartnanoseconds", 33948, 4 }, 
-    { "revflowendnanoseconds", 33949, 4 },
+    { "revflowstartnanoseconds", 33948, 8 }, 
+    { "revflowendnanoseconds", 33949, 8 },
     { "revmaxpacketgap", 32898, 4 }
 };
 

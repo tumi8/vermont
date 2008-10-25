@@ -253,7 +253,7 @@ revpacketdeltacount, 33794
 revtcpcontrolbits, 33798
 revfrontpayload, 33920
 revfrontpayloadlen, 33921
-revmaxpacketgapunsigned32, 33922
+revmaxpacketgap, 33922
 revflowstartseconds, 33942
 revflowendseconds, 33943
 revflowstartmilliseconds, 33944

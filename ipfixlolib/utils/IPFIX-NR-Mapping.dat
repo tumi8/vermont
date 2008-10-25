@@ -265,7 +265,7 @@
 33798:revTcpControlBits:octet:
 33920:revFrontPayload:octetArray:
 33921:revFrontPayloadLen:unsigned32:
-33922:revMaxPacketGapunsigned32:
+33922:revMaxPacketGap:unsigned32:
 33942:revFlowStartSeconds:dateTimeSeconds:
 33943:revFlowEndSeconds:dateTimeSeconds:
 33944:revFlowStartMilliSeconds:dateTimeMilliSeconds:
