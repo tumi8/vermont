@@ -48,7 +48,7 @@
 //
 // This bitmask defines various classifications for the packet. Which protocol headers it contains for example
 // Bits:
-//   3                   2                   1  
+//   3                   2                   1
 // 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
 // |               |~~~~~~~~~~~~~~~~~~~~~| |~~~~~~~~~~~~~~~~~~~~~|
 // |               |                     | +---------------------+----- Network headers
@@ -68,7 +68,7 @@
 #define PCLASS_TRN_IGMP            (1UL << 15)
 
 #define PCLASS_TRNMASK             0x00fff000
-// .... etc. etc. etc. 
+// .... etc. etc. etc.
 
 // Payload classification (here, payload refers to data beyond transport header)
 #define PCLASS_PAYLOAD             (1UL << 31)
@@ -86,11 +86,11 @@ public:
 	// Transport header classifications (used in Packet::ipProtocolType)
 	// Note: ALL is reserved and enables bitoperations using the enums
 	enum IPProtocolType { NONE=0x00, TCP=0x01, UDP=0x02, ICMP=0x04, IGMP=0x08, ALL=0xFF };
-	
+
 	// The number of total packets received, will be incremented by each constructor call
 	// implemented as public-variable for speed reasons (or lazyness reasons? ;-)
 	static unsigned long totalPacketsReceived;
-	
+
 	uint32_t observationDomainID;
 
 	/*
@@ -106,7 +106,7 @@ public:
 	unsigned char *transportHeader;
 	unsigned char *payload;
 
-	// The offsets of the different headers with respect to *data 
+	// The offsets of the different headers with respect to *data
 	unsigned int netHeaderOffset;
 	unsigned int transportHeaderOffset;
 	unsigned int payloadOffset;
@@ -133,7 +133,7 @@ public:
 	uint8_t varlength_index;
 
 
-	Packet(InstanceManager<Packet>* im) 
+	Packet(InstanceManager<Packet>* im)
 		: ManagedInstance<Packet>(im),
 		  zeroBytes(0),
 		  netHeader(data + IPHeaderOffset), // netHeader must not be changed afterwards
@@ -141,17 +141,17 @@ public:
 	{
 	}
 
-	Packet() 
+	Packet()
 		: ManagedInstance<Packet>(0),
 		  netHeader(data + IPHeaderOffset),
 		  netHeaderOffset(IPHeaderOffset)
 	{
 	}
-	
+
 	/**
 	 * @param origplen original packet length
 	 */
-	inline void init(char* packetData, int len, struct timeval time, uint32_t obsdomainid, uint32_t origplen) 
+	inline void init(char* packetData, int len, struct timeval time, uint32_t obsdomainid, uint32_t origplen)
 	{
 		transportHeader = NULL;
 		payload = NULL;
@@ -175,7 +175,7 @@ public:
 		// timestamps in network byte order (needed for export or concentrator)
 		time_sec_nbo = htonl(timestamp.tv_sec);
 		time_usec_nbo = htonl(timestamp.tv_usec);
-		    
+
 		// calculate time since 1970 in milliseconds according to IPFIX standard
 		time_msec_nbo = htonll(((unsigned long long)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
 		DPRINTFL(MSG_VDEBUG, "timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
@@ -212,8 +212,12 @@ public:
 				data_length = endOfIpOffset;
 			}
 
-			// check if there is data for the transport header
-			if(transportHeaderOffset < data_length)
+			// get fragment offset
+			uint16_t fragoffset = (*(uint16_t*)(netHeader+6))&0xFF1F;
+
+			// do not use transport header, if this is not the first fragment
+			// in the end, all fragments are discarded by vermont (TODO!)
+			if(transportHeaderOffset < data_length && fragoffset==0)
 				transportHeader = data + transportHeaderOffset;
 			else
 				transportHeaderOffset = 0;
@@ -303,9 +307,9 @@ public:
 			else
 				// there is no payload
 				payloadOffset = 0;
-
-			//fprintf(stderr, "class %08lx, proto %d, data %p, net %p, trn %p, payload %p\n", classification, protocol, data, netHeader, transportHeader, payload);
 		}
+
+		DPRINTFL(MSG_VDEBUG, "Packet::classify: class %08lx, proto %d, data %p, net %p, trn %p, payload %p\n", classification, protocol, data, netHeader, transportHeader, payload);
 	}
 
 	// read data from the IP header
@@ -319,8 +323,8 @@ public:
 	//
 	// ATTENTION: If the returned pointer actually points to data of size fieldLength is only
 	// checked for HEAD_RAW, HEAD_NETWORK_AND_BEYOND, HEAD_TRANSPORT_AND_BEYOND, and HEAD_PAYLOAD.
-	// For fields within the network or transport header (HEAD_NETWORK, HEAD_TRANSPORT), we assume 
-	// that it was verified before that the packet is of the correct packet class and that its buffer 
+	// For fields within the network or transport header (HEAD_NETWORK, HEAD_TRANSPORT), we assume
+	// that it was verified before that the packet is of the correct packet class and that its buffer
 	// holds enough data.
 	// You can check the packet class for a single field using match(). If you want to check
 	// against all fields in a template, you should use checkPacketConformity() of the Template class.
@@ -330,7 +334,7 @@ public:
 	    DPRINTF("offset: %d header: %d fieldlen: %d available: %d\n", offset, header, fieldLength, data_length);
 	    switch(header)
 	    {
-		
+
 		// for the following types, we omit the length check
 		case HEAD_NETWORK:
 		    return netHeader + offset;
@@ -355,37 +359,37 @@ public:
 	}
 
 	// returns the pointer packetdata within the packet at position (header, offset)
-        // determines the encoded available data length and the length of the encoded length value in octets 
+        // determines the encoded available data length and the length of the encoded length value in octets
 	// (=1 if length < 255, =3 if 255 <= length <= 65535)
 	// cf. IPFIX protocol draft
 	void * getVariableLengthPacketData(unsigned short *length, uint8_t **enc_value, unsigned short *enc_len, int offset, int header)
 	{
 	    int len;
 	    void *packetdata = NULL;
-	    
+
 	    // check if we have enough space to buffer at least one octet
 	    if(!(varlength_index < sizeof(varlength)))
 	    {
 		msg(MSG_ERROR, "getVariableLengthPacketData: varlength[] is too small");
 		return NULL;
 	    }
-	    
+
 	    switch(header)
 	    {
 		case HEAD_RAW:
 		    len = data_length - offset;
 		    packetdata = data + offset;
 		    break;
-		    
+
 		case HEAD_NETWORK:
 		    // return only data inside network header
 		    if(transportHeader == NULL)
 			len = data_length - netHeaderOffset - offset;
-		    else 
+		    else
 			len = transportHeaderOffset - netHeaderOffset - offset;
 		    packetdata = netHeader + offset;
 		    break;
-		    
+
 		case HEAD_TRANSPORT:
 		    // return only data inside transport header
 		    if(payload == NULL)
@@ -399,7 +403,7 @@ public:
 		    len = data_length - netHeaderOffset - offset;
 		    packetdata = netHeader + offset;
 		    break;
-		    
+
 		case HEAD_TRANSPORT_AND_BEYOND:
 		    len = data_length - transportHeaderOffset - offset;
 		    packetdata = transportHeader + offset;

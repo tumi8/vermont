@@ -77,13 +77,13 @@
 using namespace std;
 
 
-InstanceManager<Packet> Observer::packetManager("Packet"); 
+InstanceManager<Packet> Observer::packetManager("Packet");
 
 Observer::Observer(const std::string& interface, bool offline) : thread(Observer::observerThread), allDevices(NULL),
-	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT), 
+	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT),
 	pcap_promisc(1), ready(false), filter_exp(0), observationDomainID(0), // FIXME: this must be configured!
-	receivedBytes(0), lastReceivedBytes(0), processedPackets(0), 
-	lastProcessedPackets(0), 
+	receivedBytes(0), lastReceivedBytes(0), processedPackets(0),
+	lastProcessedPackets(0),
 	captureInterface(NULL), fileName(NULL), replaceTimestampsFromFile(false),
 	stretchTimeInt(1), stretchTime(1.0), autoExit(true), slowMessageShown(false),
 	statTotalLostPackets(0), statTotalRecvPackets(0)
@@ -97,13 +97,13 @@ Observer::Observer(const std::string& interface, bool offline) : thread(Observer
 		captureInterface = (char*)malloc(interface.size() + 1);
 		strcpy(captureInterface, interface.c_str());
 	}
-	
+
 	usedBytes += sizeof(Observer)+interface.size()+1;
-	
+
 	if(capturelen > PCAP_MAX_CAPTURE_LENGTH) {
-		THROWEXCEPTION("compile-time parameter PCAP_DEFAULT_CAPTURE_LENGTH (%d) exceeds maximum capture length %d, " 
+		THROWEXCEPTION("compile-time parameter PCAP_DEFAULT_CAPTURE_LENGTH (%d) exceeds maximum capture length %d, "
 				"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH!", capturelen, PCAP_DEFAULT_CAPTURE_LENGTH);
-		
+
 	}
 };
 
@@ -146,15 +146,26 @@ void *Observer::observerThread(void *arg)
 	/* first we need to get the instance back from the void *arg */
 	Observer *obs=(Observer *)arg;
 	InstanceManager<Packet>& packetManager = obs->packetManager;
-	
+
 	Packet *p = NULL;
 	const unsigned char *pcapData;
 	struct pcap_pkthdr packetHeader;
 	bool have_send = false;
 	obs->registerCurrentThread();
-	
+
 	if (!obs->isConnected()) {
 		THROWEXCEPTION("Observer does not have any receiving modules to send packets to");
+	}
+
+	msg(MSG_INFO, "Observer started with following parameters:");
+	msg(MSG_INFO, "  - readFromFile=%d", obs->readFromFile);
+	if (obs->fileName) msg(MSG_INFO, "  - fileName=%s", obs->fileName);
+	if (obs->captureInterface) msg(MSG_INFO, "  - captureInterface=%s", obs->captureInterface);
+	msg(MSG_INFO, "  - capturelen=%d", obs->capturelen);
+	if (obs->readFromFile) {
+		msg(MSG_INFO, "  - autoExit=%d", obs->autoExit);
+		msg(MSG_INFO, "  - stretchTime=%f", obs->stretchTime);
+		msg(MSG_INFO, "  - replaceTimestampsFromFile=%f", obs->replaceTimestampsFromFile);
 	}
 
 	// start capturing packets
@@ -178,7 +189,7 @@ void *Observer::observerThread(void *arg)
 			if (result == 0) {
 				continue;
 			}
-	
+
 			/*
 			 get next packet (no zero-copy possible *sigh*)
 			 NOTICE: potential bottleneck, if pcap_next() is calling gettimeofday() at a high rate;
@@ -192,29 +203,29 @@ void *Observer::observerThread(void *arg)
 			/* no packet data was available */
 			continue;
 			DPRINTFL(MSG_VDEBUG, "got new packet!");
-	
+
 			// show current packet as c-structure on stdout
 			//for (unsigned int i=0; i<packetHeader.caplen; i++) {
 			//printf("0x%02hhX, ", ((unsigned char*)pcapData)[i]);
 			//}
 			//printf("\n");
-	
+
 			// initialize packet structure (init copies packet data)
 			p = packetManager.getNewInstance();
 			p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, obs->observationDomainID, packetHeader.len);
-	
+
 			obs->receivedBytes += packetHeader.caplen;
-	
+
 			DPRINTF("received packet at %u.%04u, len=%d",
 					(unsigned)p->timestamp.tv_sec,
 					(unsigned)p->timestamp.tv_usec / 1000,
 					packetHeader.caplen
 			);
-	
+
 			// update statistics
 			obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
 			obs->processedPackets++;
-	
+
 			while (!obs->exitFlag) {
 				DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
 				if (have_send = obs->send(p)) {
@@ -232,7 +243,7 @@ void *Observer::observerThread(void *arg)
 		struct timeval first = {0,0};
 		// differences
 		struct timeval wait_val, delta_now, delta_file, delta_to_be;
-		
+
 		// make compiler happy ...
 		delta_to_be.tv_sec = 0;
 		delta_to_be.tv_usec = 0;
@@ -251,7 +262,7 @@ void *Observer::observerThread(void *arg)
       				break;
       			}
 			DPRINTFL(MSG_VDEBUG, "got new packet!");
-			
+
 			if (gettimeofday(&now, NULL) < 0) {
 				msg(MSG_FATAL, "Error gettimeofday: %s", strerror(errno));
 				break;
@@ -292,17 +303,17 @@ void *Observer::observerThread(void *arg)
 			// optionally replace the timestamp with current time
 			if (obs->replaceTimestampsFromFile)
 			    timeradd(&start, &delta_to_be, &packetHeader.ts);
-			
+
 			// initialize packet structure (init copies packet data)
 			p = obs->packetManager.getNewInstance();
-			p->init((char*)pcapData, 
+			p->init((char*)pcapData,
 				// in contrast to live capturing, the data length is not limited
 				// to any snap length when reading from a pcap file
-				(packetHeader.caplen < obs->capturelen) ? packetHeader.caplen : obs->capturelen, 
+				(packetHeader.caplen < obs->capturelen) ? packetHeader.caplen : obs->capturelen,
 				packetHeader.ts, obs->observationDomainID, packetHeader.len);
 
 
-			DPRINTF("received packet at %u.%04u, len=%d",
+			DPRINTF("received packet at %u.%03u, len=%d",
 				(unsigned)p->timestamp.tv_sec,
 				(unsigned)p->timestamp.tv_usec / 1000,
 				packetHeader.caplen
@@ -311,7 +322,7 @@ void *Observer::observerThread(void *arg)
 			// update statistics
 			obs->receivedBytes += packetHeader.caplen;
 			obs->processedPackets++;
-	
+
 			while (!obs->exitFlag) {
 				DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
 				if (have_send = obs->send(p)) {
@@ -321,13 +332,13 @@ void *Observer::observerThread(void *arg)
 			}
 		}
 	}
-	
+
 	if (obs->readFromFile && obs->autoExit) {
 		// notify Vermont to shut down
 		DPRINTF("notifying Vermont to shut down, as all PCAP file data was read");
 		obs->shutdownVermont();
 	}
-	
+
 	msg(MSG_DEBUG, "exiting observer thread");
 	obs->unregisterCurrentThread();
 	pthread_exit((void *)1);
@@ -358,11 +369,11 @@ bool Observer::prepare(const std::string& filter)
 			msg(MSG_FATAL, "error getting list of interfaces: %s", errorBuffer);
 			goto out;
 		}
-	
+
 		for(pcap_if_t *dev = allDevices; dev != NULL; dev=dev->next) {
 			msg(MSG_DEBUG, "PCAP: name=%s, desc=%s", dev->name, dev->description);
 		}
-	
+
 		msg(MSG_INFO,
 		    "pcap opening interface=%s, promisc=%d, snaplen=%d, timeout=%d",
 		    captureInterface, pcap_promisc, capturelen, pcap_timeout
@@ -373,13 +384,13 @@ bool Observer::prepare(const std::string& filter)
 			msg(MSG_FATAL, "Error initializing pcap interface: %s", errorBuffer);
 			goto out1;
 		}
-	
+
 		// make reads non-blocking
 		if(pcap_setnonblock(captureDevice, 1, errorBuffer) == -1) {
 			msg(MSG_FATAL, "Error setting pcap interface to non-blocking: %s", errorBuffer);
 			goto out2;
 		}
-	
+
 		// IP_HEADER_OFFSET is set by the configure script
 		switch (getDataLinkType()) {
 		case DLT_EN10MB:
@@ -403,8 +414,8 @@ bool Observer::prepare(const std::string& filter)
 		default:
 			msg(MSG_ERROR, "You are using an unkown IP_HEADER_OFFSET and data link combination. This can make problems. Please check if you use the correct IP_HEADER_OFFSET for your data link, if you see strange IPFIX/PSAMP packets.");
 		}
-	
-	
+
+
 		/* we need the netmask for the pcap_compile */
 		if(pcap_lookupnet(captureInterface, &network, &netmask, errorBuffer) == -1) {
 			msg(MSG_ERROR, "unable to determine netmask/network: %s", errorBuffer);
@@ -541,14 +552,14 @@ void Observer::setOfflineSpeed(float m)
 		stretchTimeInt = (uint16_t)(1/m);
 		// allow only 10% inaccuracy, i.e.
 		// (1/m - stretchTimeInt)/(1/m) = 1-stretchTimeInt*m < 0.1
-		if((1 - stretchTimeInt * m) > 0.1) 
+		if((1 - stretchTimeInt * m) > 0.1)
 			stretchTimeInt = 0; // use float
 		else
 		    msg(MSG_INFO, "Observer: speed multiplier set to %f in order to allow integer multiplication.", 1.0/stretchTimeInt);
 	}
 	else
 		stretchTimeInt = 0;
-		
+
 }
 
 void Observer::setOfflineAutoExit(bool autoexit)
