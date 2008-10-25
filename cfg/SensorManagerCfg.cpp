@@ -56,10 +56,7 @@ SensorManager* SensorManagerCfg::createInstance()
 		//THROWEXCEPTION("multiple instances of module SensorManager must not be created");
 	}
 	instance = &SensorManager::getInstance();
-	instance->setCheckInterval(checkInterval);
-	instance->setOutputFilename(sensorOutput);
-	instance->setGraphIS(graphIS);
-	instance->setAppend(append);
+	instance->setParameters(checkInterval, sensorOutput, append, graphIS);
 	instanceCreated = true;
 	return instance;
 }
