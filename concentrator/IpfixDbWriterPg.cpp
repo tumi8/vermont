@@ -68,6 +68,7 @@ const IpfixDbWriterPg::Column IpfixDbWriterPg::identify [] = {
 	{	"revLastSwitched", IPFIX_ETYPEID_revFlowEndMilliSeconds, "timestamp", 0}, // default value is invalid/not used for this entry
 	{	"revTcpControlBits", IPFIX_ETYPEID_revTcpControlBits,  "smallint", 0},
 	{	"maxPacketGap", IPFIX_ETYPEID_maxPacketGap,  "bigint", 0},
+	{	"revMaxPacketGap", IPFIX_ETYPEID_revMaxPacketGap,  "bigint", 0},
 	{	"exporterID",EXPORTERID, "integer", 0},
 	{	0} // last entry must be 0
 };

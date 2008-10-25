@@ -148,8 +148,10 @@ class IpfixRecord
 					case IPFIX_TYPEID_flowEndSeconds:
 					case IPFIX_TYPEID_sourceIPv4Address:
 					case IPFIX_TYPEID_destinationIPv4Address:
+					case IPFIX_ETYPEID_maxPacketGap:
 					case IPFIX_ETYPEID_revFlowStartSeconds:
 					case IPFIX_ETYPEID_revFlowEndSeconds:
+					case IPFIX_ETYPEID_revMaxPacketGap:
 						return 4;
 
 					case IPFIX_TYPEID_flowStartMilliSeconds:
@@ -189,6 +191,7 @@ class IpfixRecord
 					case IPFIX_ETYPEID_revFlowEndNanoSeconds:
 					case IPFIX_ETYPEID_revOctetDeltaCount:
 					case IPFIX_ETYPEID_revPacketDeltaCount:
+					case IPFIX_ETYPEID_revMaxPacketGap:
 						return true;
 				}
 
@@ -299,6 +302,7 @@ class IpfixRecord
 					case IPFIX_ETYPEID_revFlowEndNanoSeconds:
 					case IPFIX_ETYPEID_revOctetDeltaCount:
 					case IPFIX_ETYPEID_maxPacketGap:
+					case IPFIX_ETYPEID_revMaxPacketGap:
 						return Packet::IPProtocolType(Packet::TCP|Packet::UDP|Packet::ICMP);
 
 					case IPFIX_TYPEID_icmpTypeCode:

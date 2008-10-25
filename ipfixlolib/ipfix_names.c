@@ -266,6 +266,7 @@ static const struct ipfix_identifier IPFIXTAB[] = {
 	{ "revtcpcontrolbits", 33798, 1 },
 	{ "revfrontpayload", 33920, 0 },
 	{ "revfrontpayloadlen", 33921, 4 },
+	{ "revmaxpacketgapunsigned32", 33922, 0 },
 	{ "revflowstartseconds", 33942, 4 },
 	{ "revflowendseconds", 33943, 4 },
 	{ "revflowstartmilliseconds", 33944, 8 },
@@ -273,23 +274,24 @@ static const struct ipfix_identifier IPFIXTAB[] = {
 	{ "revflowstartnanoseconds", 33948, 8 },
 	{ "revflowendnanoseconds", 33949, 8 },
 };
-/* written 259 entries */
+/* written 260 entries */
 static const struct ipfix_identifier FRONTPAYLOAD[] = { {"frontpayload", 32896, 0}, {"frontpayloadlen", 32897, 4}};
 static const struct ipfix_identifier MAXPACKETGAP[] = { {"frontpayload", 32898, 4} };
 static const struct ipfix_identifier BIFLOWTAB1[] = { { "revoctetdeltacount", 33793, 8 }, {
 		"revpacketdeltacount", 33794, 8 }, { "reserved", 33795, 0 }, { "reserved", 33796, 0 }, {
-		"reserved", 33797, 0 }, { "revtcpcontrolbits", 33798, 1 },
+		"reserved", 33797, 0 }, { "revtcpcontrolbits", 33798, 1 }, 
 };
 static const struct ipfix_identifier REVFRONTPAYLOAD[] = { {"revfrontpayload", 33920, 0}, {"revfrontpayloadlen", 33921, 4} };
 static const struct ipfix_identifier BIFLOWTAB2[] = {
 
 { "revflowstartseconds", 33942, 4 }, { "revflowendseconds", 33943, 4 }, {
-		"revflowstartmilliseconds", 33944, 8 }, { "revflowendmilliseconds", 33945, 8 },
+		"revflowstartmilliseconds", 33944, 8 }, { "revflowendmilliseconds", 33945, 8 }, 
 };
 
 static const struct ipfix_identifier SWITCHFLOWTAB[] = {
-    { "revflowstartnanoseconds", 33948, 8 },
-    { "revflowendnanoseconds", 33949, 8 }
+    { "revflowstartnanoseconds", 33948, 4 }, 
+    { "revflowendnanoseconds", 33949, 4 },
+    { "revmaxpacketgap", 32898, 4 }
 };
 
 #define PSAMP_STARTING_ID 300
@@ -306,7 +308,7 @@ static const struct ipfix_identifier PSAMPTAB[] = { { "selectorid", 300, 2 }, {
 				"meteringprocesssid", 319, 1 }, { "observationpointid", 320, 1 }, {
 				"associationsid", 321, 1 }, { "reserved", 322, 0 }, { "selectortype", 323, 1 }, {
 				"packetsobserved", 324, 1 }, { "packetsselected", 325, 1 }, { "accuracy", 326, 1 },
-		{ "reserved", 327, 0 }, { "reserved", 328, 0 }, { "reserved", 329, 0 },
+		{ "reserved", 327, 0 }, { "reserved", 328, 0 }, { "reserved", 329, 0 }, 
 };
 /* ANSI-C code produced by gperf version 3.0.3 */
 /* Command-line: gperf -D -C -t -L ANSI-C gperf  */
@@ -342,7 +344,7 @@ static const struct ipfix_identifier PSAMPTAB[] = { { "selectorid", 300, 2 }, {
 #line 1 "gperf"
 struct ipfix_midentifier { char *name; uint16_t id; };
 
-#define TOTAL_KEYWORDS 259
+#define TOTAL_KEYWORDS 260
 #define MIN_WORD_LENGTH 6
 #define MAX_WORD_LENGTH 27
 #define MIN_HASH_VALUE 23
@@ -829,7 +831,7 @@ in_word_set (register const char *str, register unsigned int len)
       {"egressinterface", 14},
 #line 234 "gperf"
       {"l2payloadpacketsection", 316},
-#line 256 "gperf"
+#line 257 "gperf"
       {"revflowstartseconds", 33942},
 #line 206 "gperf"
       {"mplstoplabelexp", 203},
@@ -839,7 +841,7 @@ in_word_set (register const char *str, register unsigned int len)
       {"destinationipv6address", 28},
 #line 182 "gperf"
       {"icmpcodeipv6", 179},
-#line 261 "gperf"
+#line 262 "gperf"
       {"revflowendnanoseconds", 33949},
 #line 176 "gperf"
       {"flowkeyindicator", 173},
@@ -857,21 +859,21 @@ in_word_set (register const char *str, register unsigned int len)
       {"samplingprobabilityn", 310},
 #line 173 "gperf"
       {"sourceipv6prefix", 170},
-#line 257 "gperf"
+#line 258 "gperf"
       {"revflowendseconds", 33943},
-#line 260 "gperf"
+#line 261 "gperf"
       {"revflowstartnanoseconds", 33948},
 #line 229 "gperf"
       {"samplingprobabilitym", 311},
 #line 45 "gperf"
       {"exportedflowtotalcount", 42},
-#line 259 "gperf"
+#line 260 "gperf"
       {"revflowendmilliseconds", 33945},
 #line 18 "gperf"
       {"ipnexthopipv4address", 15},
 #line 166 "gperf"
       {"observedflowtotalcount", 163},
-#line 258 "gperf"
+#line 259 "gperf"
       {"revflowstartmilliseconds", 33944},
 #line 172 "gperf"
       {"destinationipv6prefix", 169},
@@ -945,6 +947,8 @@ in_word_set (register const char *str, register unsigned int len)
       {"flowlabelipv6", 31},
 #line 192 "gperf"
       {"ipheaderlength", 189},
+#line 256 "gperf"
+      {"revmaxpacketgapunsigned32", 33922},
 #line 207 "gperf"
       {"ippayloadlength", 204},
 #line 191 "gperf"
@@ -969,7 +973,7 @@ in_word_set (register const char *str, register unsigned int len)
         -1,    1,    2,   -1,   -1,   -1,    3,    4,
         -1,   -1,   -1,    5,   -1,   -1,   -1,    6,
         -1,   -1,   -1,   -1,    7,    8,   -1,    9,
-      -309, -249,  -68,   -1,   78,   79,   80,   -1,
+      -310, -250,  -68,   -1,   78,   79,   80,   -1,
         -1,   81,   -1,   -1,   -1,   82,   83,   -1,
         84,   -1,   85,   86,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   87,   88,   89,
@@ -1034,29 +1038,29 @@ in_word_set (register const char *str, register unsigned int len)
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,  252,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,  253,   -1,   -1,   -1,   -1,  254,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,  252,   -1,   -1,   -1,   -1,  253,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,  254,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,  255,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,  256,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,  257,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,  255,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,  256,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,  257,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,  258,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
         -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
-        -1,   -1,   -1,   -1,   -1,   -1,   -1,  258
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,   -1,
+        -1,   -1,   -1,   -1,   -1,   -1,   -1,  259
     };
 
   if (len <= MAX_WORD_LENGTH && len >= MIN_WORD_LENGTH)
@@ -1129,7 +1133,7 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
 	if (n>=32896 && n<=32897) {
 		return &FRONTPAYLOAD[n-32896];
 	}
-
+	
 	if (n==32898) {
 		return &MAXPACKETGAP[0];
 	}
@@ -1143,12 +1147,14 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
 	if (n>=33942 && n<=33945) {
 		return &BIFLOWTAB2[n-33942];
 	}
-
+	
 	switch (n) {
 	   case IPFIX_ETYPEID_revFlowStartNanoSeconds:
 	       return &SWITCHFLOWTAB[0];
 	   case IPFIX_ETYPEID_revFlowEndNanoSeconds:
            return &SWITCHFLOWTAB[1];
+	   case IPFIX_ETYPEID_revMaxPacketGap:
+           return &SWITCHFLOWTAB[2];
     };
 
 	return NULL;

@@ -316,6 +316,7 @@ int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_ETYPEID_revPacketDeltaCount:
 		case IPFIX_ETYPEID_revTcpControlBits:
 		case IPFIX_ETYPEID_maxPacketGap:
+		case IPFIX_ETYPEID_revMaxPacketGap:
 			return 1;
 
 		case IPFIX_TYPEID_octetTotalCount:

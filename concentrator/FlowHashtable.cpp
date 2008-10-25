@@ -19,6 +19,7 @@ FlowHashtable::FlowHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	}
 }
 
+
 FlowHashtable::~FlowHashtable()
 {
 	if (revDataTemplateMapper) delete[] revDataTemplateMapper;
@@ -85,17 +86,21 @@ void FlowHashtable::genBiflowStructs()
 			case IPFIX_ETYPEID_revFlowEndSeconds:
 			case IPFIX_ETYPEID_revFrontPayload:
 			case IPFIX_ETYPEID_revFrontPayloadLen:
+			case IPFIX_ETYPEID_revMaxPacketGap:
 				mapRevAggIndizes[fi->type.id] = i;
 				// missing break is intended!
 
 			default:
 				// this call is dangerous, as calculated type ids may not exist at all
 				// but mapReverseElement will detect those and throw an exception
-				if ((fi->type.id&IPFIX_REVERSE_ETYPE)==0)
+				if ((fi->type.id&IPFIX_REVERSE_ETYPE)==0) {
 					mapReverseElement(fi->type.id|IPFIX_ENTERPRISE_TYPE|IPFIX_REVERSE_ETYPE);
-				else
+					DPRINTF("FlowHashtable: mapping element %d to element %d", fi->type.id, fi->type.id|IPFIX_ENTERPRISE_TYPE|IPFIX_REVERSE_ETYPE);
+				} else {
 					// do not reverse element
 					flowReverseMapper.push_back(i);
+					DPRINTF("FlowHashtable: mapping element %d to element %d", fi->type.id, fi->type.id);
+				}
 
 		}
 	}
@@ -263,6 +268,14 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo* basefi, IpfixRecord::F
 			if (*((uint32_t*)baseData)==0) {
 				*((uint32_t*)baseData) = *((uint32_t*)deltaData);
 			}
+			break;
+
+		case IPFIX_ETYPEID_maxPacketGap:
+		case IPFIX_ETYPEID_revMaxPacketGap:
+			*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+			// FIXME: additionally, start and end times of both flows should be compared
+			// - this one could be the greatest gap!
+			break;
 
 		default:
 			DPRINTF("non-aggregatable type: %d", type->id);

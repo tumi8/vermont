@@ -54,6 +54,8 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
 	       return &SWITCHFLOWTAB[0];
 	   case IPFIX_ETYPEID_revFlowEndNanoSeconds:
            return &SWITCHFLOWTAB[1];
+	   case IPFIX_ETYPEID_revMaxPacketGap:
+           return &SWITCHFLOWTAB[2];
     };
 
 	return NULL;
