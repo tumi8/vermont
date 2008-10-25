@@ -8,8 +8,8 @@
 
 
 FlowHashtable::FlowHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
-		uint16_t minBufferTime, uint16_t maxBufferTime)
-	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime),
+		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
+	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits),
 		revDataTemplateMapper(NULL),
 		biflowAggregation(rule->biflowAggregation),
 		switchArray(NULL)
@@ -383,7 +383,7 @@ uint32_t FlowHashtable::getHash(IpfixRecord::Data* data, bool reverse) {
 				(char*)data + dataTemplate->fieldInfo[idx].offset);
 	}
 
-	return hash & (HTABLE_SIZE-1);
+	return hash & (htableSize-1);
 }
 
 /**

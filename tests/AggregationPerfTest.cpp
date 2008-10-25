@@ -99,7 +99,7 @@ Test::TestResult AggregationPerfTest::execTest()
 
 	PacketAggregator agg(1);
 	Rules* rules = createRules();
-	agg.buildAggregator(rules, 0, 0);
+	agg.buildAggregator(rules, 0, 0, 16);
 
 	queue1.connectTo(&agg);
 	agg.connectTo(&tqueue);

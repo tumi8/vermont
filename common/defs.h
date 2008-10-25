@@ -89,6 +89,11 @@
  */
 #define IS_DEFAULT_TEMPLATE_RECORDINTERVAL 10000
 
+/**
+ * defines default size of used hashtables in bits
+ */
+#define HT_DEFAULT_BITSIZE 17
+
 
 
 /**

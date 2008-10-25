@@ -10,8 +10,10 @@ using namespace std;
  * Creates and initializes a new hashtable buffer for flows matching @c rule
  */
 BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
-		uint16_t minBufferTime, uint16_t maxBufferTime)
-	: minBufferTime(minBufferTime),
+		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
+	: htableBits(hashbits),
+	  htableSize(1<<hashbits),
+	  minBufferTime(minBufferTime),
 	  maxBufferTime(maxBufferTime),
 	  statRecordsReceived(0),
 	  statRecordsSent(0),
@@ -28,15 +30,19 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  aggInProgress(false),
 	  resendTemplate(true)
 {
+	msg(MSG_INFO, "Hashtable initialized with following parameters:");
+	msg(MSG_INFO, "  - minBufferTime=%d", minBufferTime);
+	msg(MSG_INFO, "  - maxBufferTime=%d", maxBufferTime);
+	msg(MSG_INFO, "  - htableBits=%d", hashbits);
 
 	memset(sourceID.get(), 0, sizeof(IpfixRecord::SourceID));
 
-	for (uint32_t i = 0; i < HTABLE_SIZE; i++)
+	buckets = new Bucket*[htableSize];
+	for (uint32_t i = 0; i < htableSize; i++)
 		buckets[i] = NULL;
 
 	createDataTemplate(rule);
 
-	msg(MSG_INFO, "Initializing hashtable with minBufferTime %d and maxBufferTime %d", minBufferTime, maxBufferTime);
 }
 
 /**
@@ -148,7 +154,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
  */
 BaseHashtable::~BaseHashtable()
 {
-	for (uint32_t i = 0; i < HTABLE_SIZE; i++) if (buckets[i] != NULL) {
+	for (uint32_t i = 0; i < htableSize; i++) if (buckets[i] != NULL) {
 		Bucket* bucket = buckets[i];
 		while (bucket != 0) {
 			Bucket* nextBucket = (Bucket*)bucket->next;
@@ -159,6 +165,7 @@ BaseHashtable::~BaseHashtable()
 		}
 	}
 
+	delete[] buckets;
 	free(fieldModifier);
 
 }
@@ -234,7 +241,7 @@ void BaseHashtable::expireFlows(bool all)
 
 
 	/* check each hash bucket's spill chain */
-	for (uint32_t i = 0; i < HTABLE_SIZE; i++) {
+	for (uint32_t i = 0; i < htableSize; i++) {
 		if (buckets[i] != 0) {
 			Bucket* bucket = buckets[i];
 			Bucket* pred = 0;

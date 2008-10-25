@@ -11,6 +11,7 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 		return;
 	
 	rules = new Rules;
+	htableBits = HT_DEFAULT_BITSIZE;
 
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
@@ -29,6 +30,8 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 			if (!minBufferTime) THROWEXCEPTION("inactive timeout not set in configuration for aggregator");
 		} else if (e->matches("pollInterval")) {
 			pollInterval = getTimeInUnit("pollInterval", mSEC, AGG_DEFAULT_POLLING_TIME);
+		} else if (e->matches("hashtableBits")) {
+			htableBits = getInt("hashtableBits", HT_DEFAULT_BITSIZE);
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unkown Aggregator config entry %s\n", e->getName().c_str());

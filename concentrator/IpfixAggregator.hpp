@@ -45,7 +45,7 @@ public:
 
 protected:
 	BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, 
-			uint16_t maxBufferTime);
+			uint16_t maxBufferTime, uint8_t hashbits);
 };
 
 #endif

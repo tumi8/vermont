@@ -11,7 +11,7 @@ class FlowHashtable : public BaseHashtable
 {
 public:
 	FlowHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
-			uint16_t minBufferTime, uint16_t maxBufferTime);
+			uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits);
 	virtual ~FlowHashtable();
 
 	void aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord::Data* data);

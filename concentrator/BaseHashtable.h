@@ -36,11 +36,6 @@
 class BaseHashtable : public Sensor
 {
 public:
-	// configuration options for size of hashtable
-	// FIXME: should be moved to configuration file
-	static const uint32_t HTABLE_BITS = 19;
-	static const uint32_t HTABLE_SIZE = 1<<HTABLE_BITS;
-
 	/**
 	 * Single Bucket containing one buffered flow's variable data.
 	 * Is either a direct entry in @c Hashtable::bucket or a member of another Hashtable::Bucket's spillchain
@@ -57,7 +52,7 @@ public:
 
 
 	BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, uint16_t minBufferTime,
-			uint16_t maxBufferTime);
+			uint16_t maxBufferTime, uint8_t hashbits);
 	virtual ~BaseHashtable();
 
 	virtual std::string getStatisticsXML(double interval);
@@ -90,7 +85,10 @@ public:
 
 protected:
 	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
-	Bucket* buckets[HTABLE_SIZE]; /**< array of pointers to hash buckets at start of spill chain. Members are NULL where no entry present */
+	Bucket** buckets; /**< array of pointers to hash buckets at start of spill chain. Members are NULL where no entry present */
+
+	uint32_t htableBits;
+	uint32_t htableSize;
 
 	uint16_t minBufferTime; /**< If for a buffered flow no new aggregatable flows arrive for this many seconds, export it */
 	uint16_t maxBufferTime; /**< If a buffered flow was kept buffered for this many seconds, export it */

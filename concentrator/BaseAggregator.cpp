@@ -102,14 +102,14 @@ void BaseAggregator::postReconfiguration()
  * @param minBufferTime minimum buffer time for flows in hashtable
  * @param maxBufferTime maximum buffer time for flows in hashtable
  */
-void BaseAggregator::buildAggregator(char* rulefile, uint16_t minBufferTime, uint16_t maxBufferTime)
+void BaseAggregator::buildAggregator(char* rulefile, uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
 {
 	Rules* rules = new Rules(rulefile);
 
 	if (!rules) {
 		THROWEXCEPTION("could not parse rules file %s", rulefile);
 	}
-	buildAggregator(rules, minBufferTime, maxBufferTime);
+	buildAggregator(rules, minBufferTime, maxBufferTime, hashbits);
 }
 
 
@@ -119,13 +119,13 @@ void BaseAggregator::buildAggregator(char* rulefile, uint16_t minBufferTime, uin
  * @param minBufferTime minimum buffer time for flows in hashtable
  * @param maxBufferTime maximum buffer time for flows in hashtable
  */
-void BaseAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime)
+void BaseAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
 {
 	this->rules = rules;
 
 	for (size_t i = 0; i < rules->count; i++) {
 		rules->rule[i]->initialize();
-		rules->rule[i]->hashtable = createHashtable(rules->rule[i], minBufferTime, maxBufferTime);
+		rules->rule[i]->hashtable = createHashtable(rules->rule[i], minBufferTime, maxBufferTime, hashbits);
 	}
 
 	msg(MSG_INFO, "Done. Parsed %d rules; minBufferTime %d, maxBufferTime %d", rules->count, minBufferTime, maxBufferTime);

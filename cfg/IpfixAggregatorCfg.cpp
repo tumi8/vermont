@@ -24,7 +24,7 @@ IpfixAggregatorCfg* IpfixAggregatorCfg::create(XMLElement* elem)
 IpfixAggregator* IpfixAggregatorCfg::createInstance()
 {
 	instance = new IpfixAggregator(pollInterval);
-	instance->buildAggregator(rules, minBufferTime, maxBufferTime);
+	instance->buildAggregator(rules, minBufferTime, maxBufferTime, htableBits);
 
 	return instance;
 }

@@ -24,6 +24,7 @@ protected:
 	unsigned maxBufferTime;	
 	unsigned minBufferTime;
 	unsigned pollInterval;
+	uint8_t htableBits;
 
 	Rules* rules;
 };

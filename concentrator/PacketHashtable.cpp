@@ -7,8 +7,9 @@
 #include "common/Time.h"
 
 
-PacketHashtable::PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime)
-	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime)
+PacketHashtable::PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, 
+		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
+	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits)
 {
 	if (rule->biflowAggregation)
 		THROWEXCEPTION("PacketAggregator can not perform biflow aggregation, but one of its rules is configured to do that");
@@ -455,7 +456,7 @@ uint32_t PacketHashtable::expCalculateHash(const IpfixRecord::Data* data)
 		hash = crc32(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 	}
 	//return (hash>>(32-HTABLE_BITS)) & (HTABLE_SIZE-1);
-	return hash & (HTABLE_SIZE-1);
+	return hash & (htableSize-1);
 }
 
 /**
