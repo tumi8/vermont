@@ -55,6 +55,7 @@ uint32_t BaseHashtable::getPrivateDataLength(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_ETYPEID_frontPayload:		// four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
 		case IPFIX_ETYPEID_revFrontPayload:		// "
 		case IPFIX_ETYPEID_maxPacketGap:		// old flow end time (to calculate packet gap)
+		case IPFIX_ETYPEID_revMaxPacketGap:		// old flow end time (to calculate packet gap)
 			return 8;
 
 		default:

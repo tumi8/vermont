@@ -119,7 +119,7 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 		}
 	}
 
-	fprintf(file, xmlmodpost);
+	fprintf(file, "%s", xmlmodpost);
 }
 
 void SensorManager::retrieveStatistics()
@@ -206,7 +206,7 @@ void SensorManager::retrieveStatistics()
 	}
 	mutex.unlock();
 
-	fprintf(file, xmlpost);
+	fprintf(file, "%s", xmlpost);
 	fclose(file);
 	close(fdlock);
 

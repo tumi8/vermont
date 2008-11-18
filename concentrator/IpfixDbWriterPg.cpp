@@ -51,7 +51,7 @@ const uint16_t MAX_COL_LENGTH = 22;
  *      Attention: order of entries is important!
  */
 const IpfixDbWriterPg::Column IpfixDbWriterPg::identify [] = {
-	{	"srcIP", IPFIX_TYPEID_sourceIPv4Address, "inet",0},
+	{	"srcIP", IPFIX_TYPEID_sourceIPv4Address, "inet", 0},
 	{	"dstIP", IPFIX_TYPEID_destinationIPv4Address, "inet", 0},
 	{	"srcPort", IPFIX_TYPEID_sourceTransportPort, "integer", 0},
 	{	"dstPort", IPFIX_TYPEID_destinationTransportPort, "integer",0},

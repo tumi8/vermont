@@ -7,7 +7,7 @@
 #include "common/Time.h"
 
 
-PacketHashtable::PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, 
+PacketHashtable::PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
 	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits)
 {
@@ -77,7 +77,7 @@ void PacketHashtable::copyDataNanoseconds(IpfixRecord::Data* bucket, const Ipfix
 	DPRINTFL(MSG_VDEBUG, "ntp2: %llu, ntptime/ntp2 %llX/%llX", ntp2, ntptime, ntp2);
 	memcpy(bucket+efd->dstIndex, &ntp2, sizeof(ntp2));
 #ifdef DEBUG
-	if (ntohll(*(uint64_t*)(bucket+efd->dstIndex))<(1000000000ULL+2208988800U<<32) || ntohll(*(uint64_t*)(bucket+efd->dstIndex))>(1300000000ULL+2208988800U<<32)) {
+	if (ntohll(*(uint64_t*)(bucket+efd->dstIndex))<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)(bucket+efd->dstIndex))>(1300000000ULL+(2208988800ULL<<32))) {
 		msg(MSG_ERROR, "time before: %ds", reinterpret_cast<const struct timeval*>(src)->tv_sec);
 		msg(MSG_ERROR, "copy invalid end nano seconds: %lld s (%llX)", (ntohll(*(uint64_t*)(bucket+efd->dstIndex))>>32)-2208988800U, *(uint64_t*)(bucket+efd->dstIndex));
 	}
@@ -506,7 +506,7 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 			DPRINTFL(MSG_VDEBUG, "base: %llX , delta: %llX", ntohll(*(uint64_t*)baseData), ntohll(ntp2));
 			*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, ntp2);
 #ifdef DEBUG
-			if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+2208988800U<<32) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+2208988800U<<32)) {
+			if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32))) {
 				msg(MSG_ERROR, "invalid start nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
 				msg(MSG_ERROR, "base: %llX , delta: %llX", *(uint64_t*)baseData, *(uint64_t*)deltaData);
 			}
@@ -526,7 +526,7 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 			ntp2 = htonll(ntptime);
 			*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, ntp2);
 #ifdef DEBUG
-			if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+2208988800U<<32) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+2208988800U<<32))
+			if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32)))
 				msg(MSG_ERROR, "invalid end nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
 #endif
 			break;
@@ -552,9 +552,11 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 			break;
 
 		case IPFIX_ETYPEID_maxPacketGap:
-			gap = (int64_t)ntohll(*(uint64_t*)deltaData)-(int64_t)ntohll(*reinterpret_cast<const uint64_t*>(bucket+efd->privDataOffset));
+			gap = (int64_t)ntohll(*(int64_t*)deltaData)-(int64_t)ntohll(*reinterpret_cast<const uint64_t*>(bucket+efd->privDataOffset));
 			if (gap<0) gap = -gap;
 			DPRINTFL(MSG_VDEBUG, "gap: %u, oldgap: %u", gap, ntohl(*(uint32_t*)baseData));
+
+			//msg(MSG_INFO, "gap: %u, oldgap: %u", gap, ntohl(*(uint32_t*)baseData));
 			if ((uint32_t)gap > ntohl(*(uint32_t*)baseData)) *(uint32_t*)baseData = htonl(gap);
 			*reinterpret_cast<uint64_t*>(bucket+efd->privDataOffset) = *(uint64_t*)deltaData;
 			break;

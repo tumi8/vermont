@@ -1,17 +1,17 @@
 /*
- * VERMONT 
+ * VERMONT
  * Copyright (C) 2007 Tobias Limmer <tobias.limmer@informatik.uni-erlangen.de>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -21,8 +21,9 @@
 #include "IDMEFExporter.h"
 
 #include <sys/stat.h>
+#include <string.h>
 
-	 
+
 uint32_t IDMEFExporter::filenameCounter = 0;
 
 bool IDMEFExporter::filewarningIssued = false;
@@ -33,7 +34,7 @@ Mutex IDMEFExporter::mutex;
 /**
  * initializes a new instance of IDMEFExporter
  * @param destdir destination directory, where all exported IDMEF messages are to be stored
- * @param sendurl destination URL which is to be used by the perl script which processes the 
+ * @param sendurl destination URL which is to be used by the perl script which processes the
  *                destination directory
  */
 IDMEFExporter::IDMEFExporter(const string destdir, const string sendurl)
@@ -82,7 +83,7 @@ string IDMEFExporter::getFilename()
  * exports an IDMEF message
  * to do this, the internally stored IDMEF template is processed with all keys of the internal
  * parameterMap and then the file is saved in the destination directory
- * the external process which sends the IDMEF messages uses the URL given in the first line of 
+ * the external process which sends the IDMEF messages uses the URL given in the first line of
  * the saved message
  */
 void IDMEFExporter::exportMessage(const string idmefmsg)

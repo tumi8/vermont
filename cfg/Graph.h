@@ -14,6 +14,7 @@
 
 #include <cstdio>
 #include <vector>
+#include <ostream>
 
 /**
 	@author Peter Baumann <siprbaum@users.berlios.de>

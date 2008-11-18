@@ -14,7 +14,7 @@ const char* PacketIDMEFReporter::PAR_SNAPSHOT = "PacketSnapshot";
 
 InstanceManager<IDMEFMessage> PacketIDMEFReporter::idmefManager("IDMEFMessage");
 
-	
+
 
 PacketIDMEFReporter::PacketIDMEFReporter(string idmeftemplate, string analyzerid, uint16_t snapshotoff, uint16_t snapshotlen)
 	: analyzerId(analyzerid), idmefTemplate(idmeftemplate),
@@ -43,7 +43,7 @@ void PacketIDMEFReporter::analyzePacket(Packet* p, IDMEFMessage* msg)
 	uint16_t packetlen = *(uint16_t*)(p->netHeader+i);
 	snprintf(buffer, 20, "%hu", packetlen);
 	msg->setVariable(PAR_LENGTH, buffer);
-	if (protocol & (Packet::TCP|Packet::UDP)>0) {
+	if ((protocol & (Packet::TCP|Packet::UDP))>0) {
 		i = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(IPFIX_TYPEID_sourceTransportPort, p);
 		uint16_t srcport = *(uint16_t*)(p->netHeader+i);
 		snprintf(buffer, 20, "%hu", srcport);

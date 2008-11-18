@@ -123,8 +123,8 @@ Test::TestResult AggregationPerfTest::execTest()
 	printf("Aggregator: needed time for processing %d packets: %d.%06d seconds\n", numPackets, (int)difftime.tv_sec, (int)difftime.tv_usec);
 
 
-	agg.shutdown();
 	queue1.shutdown();
+	agg.shutdown();
 
 	return PASSED;
 }

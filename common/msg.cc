@@ -15,6 +15,8 @@
 #include <map>
 #include <stdexcept>
 #include <sstream>
+#include <stdlib.h>
+#include <string.h>
 #include "msg.h"
 
 #ifdef __cplusplus
@@ -123,7 +125,7 @@ extern "C" {
 	}
 
 	/**
-	  used for internal logging 
+	  used for internal logging
 	  just outputs the given string without any additions like line numbers and so on
 	  */
 	void msg_normal(const int level, const char *fmt, ...)
@@ -300,7 +302,7 @@ extern "C" {
 
 	nanosleep(&log_timeout, NULL);
 
-	// now walk through all log functions and call them 
+	// now walk through all log functions and call them
 	pthread_mutex_lock(&stat_lock);
 
 	msg_stat("Vermont: Beginning statistics dump at %u", time(NULL));
@@ -309,7 +311,7 @@ extern "C" {
 	(log_functions[i])(log_function_params[i]);
 	}
 	}
-	// append \n to get one empty line between following dumps 
+	// append \n to get one empty line between following dumps
 	msg_stat("Vermont: Statistics dump finished at %u\n", time(NULL));
 
 	pthread_mutex_unlock(&stat_lock);

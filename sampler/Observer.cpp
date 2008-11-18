@@ -228,7 +228,7 @@ void *Observer::observerThread(void *arg)
 
 			while (!obs->exitFlag) {
 				DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
-				if (have_send = obs->send(p)) {
+				if ((have_send = obs->send(p))) {
 					DPRINTFL(MSG_VDEBUG, "packet pushed");
 					break;
 				}
@@ -325,7 +325,7 @@ void *Observer::observerThread(void *arg)
 
 			while (!obs->exitFlag) {
 				DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
-				if (have_send = obs->send(p)) {
+				if ((have_send = obs->send(p))) {
 					DPRINTFL(MSG_VDEBUG, "packet pushed");
 					break;
 				}
