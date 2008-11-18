@@ -183,7 +183,9 @@ void *Observer::observerThread(void *arg)
 			st.tv_usec = 0;
 			int result = select(FD_SETSIZE, &fd_wait, NULL, NULL, &st);
 			if (result == -1) {
-				msg(MSG_FATAL, "select() on pcap file descriptor returned -1");
+				if (errno==EINTR) continue; // just continue on interrupted system call
+				msg(MSG_FATAL, "select() on pcap file descriptor returned -1, error: %s", strerror(errno));
+				msg(MSG_FATAL, "shutting down observer");
 				break;
 			}
 			if (result == 0) {
