@@ -140,13 +140,6 @@ void SensorManager::retrieveStatistics()
 
 	if (smExitFlag) return;
 
-	int fdlock = open(lockfile.c_str(), O_CREAT|O_RDONLY);
-	if (fdlock == -1)
-		msg(MSG_DEBUG, "failed to open file %s, error code %d", lockfile.c_str(), errno);
-
-	if (flock(fdlock, LOCK_EX)!=0)
-		msg(MSG_DEBUG, "failed to activate exclusive lock on file %s (flock())", lockfile.c_str());
-
 	const char* openflags = (append ? "a" : "w");
 	FILE* file = fopen(outputFilename.c_str(), openflags);
 	if (!file) {
@@ -208,7 +201,6 @@ void SensorManager::retrieveStatistics()
 
 	fprintf(file, "%s", xmlpost);
 	fclose(file);
-	close(fdlock);
 
 
 
