@@ -91,11 +91,21 @@ class QuintupleKey
 				port1 = *((uint16_t*)(p->transportHeader));
 				port2 = *((uint16_t*)(p->transportHeader + 2));
 
-				getQuintuple()->srcIp   = ip1>ip2?ip1:ip2;
-				getQuintuple()->dstIp   = ip1>ip2?ip2:ip1;
-				getQuintuple()->proto   = p->ipProtocolType;
-				getQuintuple()->srcPort = port1>port2?port1:port2;
-				getQuintuple()->dstPort = port1>port2?port2:port1;
+				if (ip1 == ip2) {
+					getQuintuple()->srcIp = getQuintuple()->dstIp = ip1;
+					getQuintuple()->srcPort = port1>port2?port1:port2;
+					getQuintuple()->srcPort = port1>port2?port2:port1;
+				} else if (ip1 > ip2) {
+					getQuintuple()->srcIp = ip1;
+					getQuintuple()->dstIp = ip2;
+					getQuintuple()->srcPort = port1;
+					getQuintuple()->dstPort = port2;
+				} else {
+					getQuintuple()->srcIp = ip2;
+					getQuintuple()->dstIp = ip1;
+					getQuintuple()->srcPort = port2;
+					getQuintuple()->dstPort = port1;
+				}
 			}
 		}
 

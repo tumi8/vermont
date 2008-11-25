@@ -22,7 +22,7 @@
 #define MANAGEDINSTANCE_H
 
 #include "msg.h"
-#include "InstanceManager.h"
+#include "cfg/InstanceManager.h"
 
 /**
  * represents an instance which can be managed by ResourceManager

@@ -11,8 +11,6 @@
 #include <unistd.h>
 #include <string>
 
-
-
 ThreadCPUInterface::ThreadCPUInterface()
 {
 }
@@ -69,7 +67,7 @@ unsigned long long ThreadCPUInterface::getHertzValue()
  */
 ThreadCPUInterface::SystemInfo ThreadCPUInterface::getSystemInfo()
 {
-	string procfile = "/proc/meminfo";
+	std::string procfile = "/proc/meminfo";
 	FILE* f = fopen(procfile.c_str(), "r");
 	if (f == NULL) {
 		THROWEXCEPTION("failed to open file '%s' (fopen)", procfile.c_str());

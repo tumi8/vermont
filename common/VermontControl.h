@@ -1,9 +1,7 @@
 #ifndef VERMONTCONTROL_H_
 #define VERMONTCONTROL_H_
 
-
 #include <semaphore.h>
-
 
 extern bool run_program;
 extern bool reload_config;

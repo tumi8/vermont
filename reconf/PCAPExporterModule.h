@@ -21,6 +21,7 @@ public:
 	virtual void performShutdown();
 
 	void setDataLinkType(int type);
+	void setSnaplen(int len);
 
 private:
 	static void* pcapExporterSink(void* data);
@@ -29,6 +30,7 @@ private:
 	pcap_t* dummy;
 	pcap_dumper_t* dumper;
 	int link_type;
+	int snaplen;
 };
 
 #endif

@@ -51,6 +51,20 @@ int CfgBase::getInt(const std::string& name, int def, XMLElement* elem)
 	return def;
 }
 
+bool CfgBase::getBool(const std::string& name, bool def, XMLElement* elem)
+{
+	std::string str;
+	try {
+		str = get(name, elem);
+		// make lower case
+		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+		return (str == "true");
+	} catch (IllegalEntry ie) { }
+
+	// return default value
+	return def;
+}
+
 unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit, uint32_t def, XMLElement* elem)
 {
 	unsigned int time;

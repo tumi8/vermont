@@ -8,18 +8,22 @@ StateConnectionFilter::StateConnectionFilter(unsigned timeout, unsigned bytes)
 	this->exportBytes = bytes;
 }
 
-bool StateConnectionFilter::processPacket(const Packet* p)
+bool StateConnectionFilter::processPacket(Packet* p)
 {
 	return processPacket(p, true);
 }
 
-bool StateConnectionFilter::processPacket(const Packet* p, bool connFilterResult)
+bool StateConnectionFilter::processPacket(Packet* p, bool connFilterResult)
 {
 	unsigned flagsOffset = p->transportHeaderOffset + 13;
 	static const uint8_t SYN = 0x02;
 	static const uint8_t FIN = 0x01;
 	static const uint8_t RST = 0x04;
-	unsigned payloadLen = p->data_length - p->payloadOffset;
+	unsigned payloadLen;
+	if (p->classification & PCLASS_PAYLOAD)
+		payloadLen = p->data_length - p->payloadOffset;
+	else
+		payloadLen = 0;
 
 	if (p->ipProtocolType != Packet::TCP) {
 		DPRINTF("Got a non-TCP packet. Protocol-type is %i", p->ipProtocolType);

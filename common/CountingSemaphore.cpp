@@ -4,6 +4,7 @@
 
 #include <errno.h>
 #include <pthread.h>
+#include <stdio.h>
 
 CountingSemaphore::CountingSemaphore (unsigned int startvalue)
 {

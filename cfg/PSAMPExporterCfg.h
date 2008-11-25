@@ -3,7 +3,7 @@
 
 #include "Cfg.h"
 #include "CollectorCfg.h"
-#include "PSAMPExporterModule.h"
+#include "reconf/PSAMPExporterModule.h"
 
 #include <vector>
 
@@ -40,6 +40,8 @@ private:
 	
 	int recordsPerPacket;
 	int recordLength;
+
+	uint32_t observationDomainId;
 	
 	PacketReportingCfg* reporting;
 };

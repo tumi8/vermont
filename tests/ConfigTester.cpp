@@ -3,7 +3,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <cstdlib>
-#include <string.h>
+#include <cstring>
 
 ConfigTester::ConfigTester()
 {

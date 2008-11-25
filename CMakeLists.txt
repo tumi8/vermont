@@ -47,6 +47,7 @@ SUBDIRS(
 	sampler
 	reconf
 	idmef
+	anon
 )
 
 if(COMMAND cmake_policy)
@@ -61,14 +62,6 @@ ADD_EXECUTABLE(vermont
 )
 
 INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR})
-INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/cfg)
-INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/common)
-INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/concentrator)
-INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/ipfixlolib)
-INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/reconf)
-INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/sampler)
-INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/idmef)
-INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/osdep/linux)
 
 TARGET_LINK_LIBRARIES(vermont
 	cfg
@@ -79,6 +72,7 @@ TARGET_LINK_LIBRARIES(vermont
 	idmef
 	common
 	osdep
+	anon
 )
 
 INSTALL(TARGETS vermont
@@ -170,7 +164,7 @@ OPTION(DEBUG "Enable debug code. Vermont will run significantly slower if enable
 IF (DEBUG)
 	message(STATUS "Configuring build process for debug version")
 	REMOVE_DEFINITIONS(-O3)
-	ADD_DEFINITIONS(-O0 -g -pg -Wall -Werror -DDEBUG)
+	ADD_DEFINITIONS(-O0 -g -pg -Wall -DDEBUG)
 	SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "-g -pg")
 ELSE (DEBUG)
 	REMOVE_DEFINITIONS(-O0 -g -pg -Wall -Werror -DDEBUG)
@@ -290,35 +284,34 @@ ENDIF (SUPPORT_SCTP)
 ### connection filter
 
 OPTION(CONNECTION_FILTER "Enables/disables the connection filter." OFF)
+OPTION(USE_GSL "Enables/disables GSL in connectionflter." ON)
 
-IF (CONNECTION_FILTER)
-	ADD_DEFINITIONS(-DHAVE_CONNECTION_FILTER)
-ENDIF(CONNECTION_FILTER)
-
-### gsl
-
-OPTION(USE_GSL "Enables/disables GSL in connectionflter." OFF)
 IF (CONNECTION_FILTER AND NOT USE_GSL)
- 	MESSAGE(FATAL_ERROR "GSL is needed for Connectionfilter at the moment. You cannot have -DCONNECTION_FILTER=ON and -DUSE_GSL=OFF")
+       MESSAGE(FATAL_ERROR "GSL is needed for Connectionfilter at the moment.
+       You cannot have -DCONNECTION_FILTER=ON and -DUSE_GSL=OFF")
 ENDIF (CONNECTION_FILTER AND NOT USE_GSL)
 
-IF (USE_GSL)
-	FIND_PACKAGE(GSL)
-	MARK_AS_ADVANCED(
-		GSL_INCLUDE_DIR
-		GSL_LIBRARIES
-		GSL_LIBRARY
-		BLAS_LIBRARY
-	)	
-	IF (GSL_FOUND)
-		MESSAGE(STATUS "GNU scientific library found")
+IF (CONNECTION_FILTER)
+	### gsl
+	IF (USE_GSL)
+		FIND_PACKAGE(GSL)
+		MARK_AS_ADVANCED(
+			GSL_INCLUDE_DIR
+			GSL_LIBRARIES
+			GSL_LIBRARY
+			BLAS_LIBRARY
+		)	
+		IF (GSL_FOUND)
+			MESSAGE(STATUS "GNU scientific library found")
+		ELSE (GSL_FOUND)
+			MESSAGE(FATAL_ERROR "GNU scientific library not found. Please
+			install the library or use -DCONNECTION_FILTER=OFF and -DUSE_GSL=OFF")
+		ENDIF (GSL_FOUND)
 		ADD_DEFINITIONS(-DHAVE_GSL)
-        TARGET_LINK_LIBRARIES(vermont ${GSL_LIBRARIES})
-	ELSE (GSL_FOUND)	   
-		MESSAGE(FATAL_ERROR "GNU scientific library not found.")
-	ENDIF (GSL_FOUND)
-	
-ENDIF (USE_GSL)
+		TARGET_LINK_LIBRARIES(vermont ${GSL_LIBRARIES})
+	ENDIF (USE_GSL)
+	ADD_DEFINITIONS(-DHAVE_CONNECTION_FILTER)
+ENDIF(CONNECTION_FILTER)
 
 ### tools
 

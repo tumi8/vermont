@@ -24,8 +24,8 @@
 
 using namespace std;
 
-PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, int sID) // FIXME: observationDomainId = sID
-		: sourceID(sID), templ(tmpl),
+PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDomainId)
+		: sourceID(observationDomainId), templ(tmpl),
 		  exporter(NULL),
 		  numPacketsToRelease(0), numMetaFieldsToRelease(0),
 		  ipfix_maxrecords(MAX_RECORDS_PER_PACKET),
@@ -152,6 +152,11 @@ error2:
 
 // send out the IPFIX packet stream and reset
 void PSAMPExporterModule::flushPacketStream() {
+	// do nothing if no records can be sent
+	if (numPacketsToRelease == 0) {
+		return;
+	}
+
 	// end the packet stream and send the IPFIX packet out through the wire
 	ipfix_end_data_set(exporter, numPacketsToRelease);
 	ipfix_send(exporter);
@@ -174,7 +179,7 @@ void PSAMPExporterModule::flushPacketStream() {
 
 bool PSAMPExporterModule::addCollector(const char *address, unsigned short port, ipfix_transport_protocol protocol)
 {
-	DPRINTF("Adding %s://%s:%d", protocol, address, port);
+	DPRINTF("Adding %i://%s:%d", protocol, address, port);
 	return(ipfix_add_collector(exporter, address, port, protocol) == 0);
 }
 

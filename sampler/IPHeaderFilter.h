@@ -65,7 +65,7 @@ public:
 		}
 	}
 
-	virtual bool processPacket(const Packet *p);
+	virtual bool processPacket(Packet *p);
 
 protected:
 	bool compareValues(int srcvalue, int dstvalue);

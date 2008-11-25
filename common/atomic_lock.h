@@ -1,7 +1,6 @@
 #if !defined(ATOMIC_LOCK_H)
 #define ATOMIC_LOCK_H
 
-
 #include "Mutex.h"
 
 #include <stdint.h>

@@ -1,5 +1,5 @@
 #include "InfoElementCfg.h"
-#include "Template.h"
+#include "sampler/Template.h"
 #include "PacketReportingCfg.h"
 
 #include <cassert>

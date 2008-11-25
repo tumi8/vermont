@@ -4,9 +4,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <string.h>
-
-
+#include <cstring>
 
 string IDMEFMessage::hostname;
 string IDMEFMessage::domainname;
@@ -25,7 +23,7 @@ const char* IDMEFMessage::PAR_NTP_TIME = "NTP_TIME";
 
 
 
-	IDMEFMessage::IDMEFMessage(InstanceManager<IDMEFMessage>* im)
+IDMEFMessage::IDMEFMessage(InstanceManager<IDMEFMessage>* im)
 : ManagedInstance<IDMEFMessage>(im)
 {
 

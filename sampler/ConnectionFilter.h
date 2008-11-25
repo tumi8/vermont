@@ -14,7 +14,7 @@ public:
 	ConnectionFilter(unsigned timeout, unsigned bytes, unsigned hashFunctions, unsigned FilterSize, unsigned seed);
 
 
-	virtual bool processPacket(const Packet* p);
+	virtual bool processPacket(Packet* p);
 protected:
 	HashParams hashParams;
 	AgeBloomFilter synFilter;

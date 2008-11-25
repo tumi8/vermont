@@ -23,5 +23,6 @@ ADD_LIBRARY(reconf
 	PSAMPExporterModule.cpp
 	PCAPExporterModule.cpp
 	Module.cpp
+	RecordAnonymizer.cpp
 )
 

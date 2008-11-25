@@ -38,7 +38,7 @@ using namespace std;
 class IpfixSender : public Module, public Source<NullEmitable*>, public IpfixRecordDestination, public Notifiable
 {
 public:
-	IpfixSender(uint16_t observationDomainId, uint32_t maxRecordRate, uint32_t sctpDataLifetime, uint32_t sctpReconnectInterval,
+	IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, uint32_t sctpDataLifetime, uint32_t sctpReconnectInterval,
 			uint32_t templateRefreshInterval, uint32_t templateRefreshRate);
 	virtual ~IpfixSender();
 

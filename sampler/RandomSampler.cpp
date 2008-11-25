@@ -50,7 +50,7 @@ RandomSampler::RandomSampler(int n, int N) : samplingSize(N), acceptSize(n), cur
         }
 };
 
-bool RandomSampler::processPacket(const Packet *p)
+bool RandomSampler::processPacket(Packet *p)
 {
         bool accepted = sampleMask[currentPos];
 

@@ -57,7 +57,7 @@ class IpfixReceiver
 		std::list<IpfixPacketProcessor*> packetProcessors; /**< Authorized incoming packets are forwarded to the packetProcessors. The list of packetProcessor must be created, managed and destroyed by an superior instance. The IpfixReceiver will only work with the given list */
 		bool exitFlag;
 	
-		pthread_mutex_t mutex; /**< Mutex to pause receiving thread */
+		Mutex mutex;
 		uint16_t receiverPort;
 
 	private:

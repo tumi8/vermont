@@ -34,7 +34,7 @@ public:
   	rexp.assign(match);
   };
 
-  virtual bool processPacket (const Packet * p);
+  virtual bool processPacket (Packet * p);
 
   int filtertype;
   std::string match;

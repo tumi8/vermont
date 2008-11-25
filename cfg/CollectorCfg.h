@@ -3,7 +3,7 @@
 
 #include "Cfg.h"
 
-#include "ipfixlolib.h"
+#include "ipfixlolib/ipfixlolib.h"
 
 #include <string>
 
@@ -20,17 +20,18 @@ public:
 		: CfgBase(elem)
 	{
 		try {
-			ipAddress = get("ipAddress");
+			ipAddress = getOptional("ipAddress");
 			string prot = get("transportProtocol");
 			if (prot=="17" || prot=="UDP")
 				protocolType = UDP;
 			else if (prot=="132" || prot=="SCTP")
 				protocolType = SCTP;
-			else THROWEXCEPTION("Invalid configuration parameter for transportProtocol (%s)", prot.c_str());
+			else 
+				THROWEXCEPTION("Invalid configuration parameter for transportProtocol (%s)", prot.c_str());
 			port = (uint16_t)getInt("port", 4739);			
 			
 		} catch(IllegalEntry ie) {
-			THROWEXCEPTION("Illegal Collector entry in config file");
+			THROWEXCEPTION("Illegal Collector entry in config file, transport protocol required");
 		}
 	}
 

@@ -13,9 +13,7 @@
 
 #include <sstream>
 
-using namespace std;
-
-bool SystematicSampler::processPacket(const Packet *p)
+bool SystematicSampler::processPacket(Packet *p)
 {
 	struct timeval elapsed;
 	unsigned long msecs;
@@ -61,3 +59,4 @@ std::string SystematicSampler::getStatisticsXML(double interval)
 	oss << "</SystematicSampler>";
 	return oss.str();
 }
+

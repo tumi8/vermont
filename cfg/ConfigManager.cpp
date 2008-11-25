@@ -24,6 +24,7 @@
 #include "cfg/IpfixDbWriterCfg.h"
 #include "cfg/IpfixDbWriterPgCfg.h"
 #include "cfg/IpfixPayloadWriterCfg.h"
+#include "cfg/RecordAnonymizerCfg.h"
 
 #include <cassert>
 
@@ -52,6 +53,7 @@ Cfg* ConfigManager::configModules[] = {
 	new IDMEFExporterCfg(NULL),
 	new PacketIDMEFReporterCfg(NULL),
 	new IpfixPayloadWriterCfg(NULL),
+	new RecordAnonymizerCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
 	new IpfixDbReaderCfg(NULL),
 	new IpfixDbWriterCfg(NULL),

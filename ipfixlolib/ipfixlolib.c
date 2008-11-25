@@ -1433,6 +1433,11 @@ int ipfix_end_data_set(ipfix_exporter *exporter, uint16_t number_of_records)
 	unsigned current = manager->set_counter;
 	uint16_t record_length;
 
+	if(exporter->data_sendbuffer->current == exporter->data_sendbuffer->committed) {
+                msg(MSG_ERROR, "IPFIX: ipfix_end_data_set called but there is no started set to end.");
+                return -1;
+        }
+
 	// add number of data records to sequence number increment
 	exporter->sn_increment += number_of_records;
 

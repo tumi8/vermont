@@ -50,7 +50,7 @@ inline int IPHeaderFilter::getData(void *data, int size)
         }
 }
 
-bool IPHeaderFilter::processPacket(const Packet *p)
+bool IPHeaderFilter::processPacket(Packet *p)
 {
         int srcvalue;
         void *start;

@@ -24,7 +24,7 @@ public:
 	 processes a packet and returns true if the packet passes the
 	 filter/sampler and false if it should be dropped
 	*/
-	virtual bool processPacket(const Packet *p) = 0;
+	virtual bool processPacket(Packet *p) = 0;
 
 	virtual ~PacketProcessor() { };
 

@@ -6,8 +6,8 @@
  */
 
 #include <stdio.h>
-#include "../ipfixlolib.h"
-#include "msg.h"
+#include "ipfixlolib/ipfixlolib.h"
+#include "common/msg.h"
 
 #define MY_SOURCE_ID 70538
 #define TEST_INIT_LOOP 1

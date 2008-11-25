@@ -57,6 +57,12 @@ public:
 	 */
 	int getInt(const std::string& name, int def = 0, XMLElement* elem = NULL);
 	
+	/** returns the bool  value of an XML config entry
+	 * @param name the name of the element
+	 * If there is no such element in the XML file, it returns def
+	 */
+	bool getBool(const std::string& name, bool def = false, XMLElement* elem = NULL);
+
 	/** returns the double value of an XML config entry
 	 * @param name the name of the element
 	 * If there is no such element in the XML file, it returns def

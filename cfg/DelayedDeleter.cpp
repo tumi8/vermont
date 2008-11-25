@@ -4,7 +4,7 @@
 #include <cassert>
 #include <iterator>
 
-#include <CfgNode.h>
+#include "cfg/CfgNode.h"
 
 // try out some STL template magic
 static inline void delme(CfgNode* node)

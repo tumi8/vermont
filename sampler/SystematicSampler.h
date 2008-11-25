@@ -40,7 +40,7 @@ public:
 	{
 	};
 
-        virtual bool processPacket(const Packet *p);
+        virtual bool processPacket(Packet *p);
         virtual std::string getStatisticsXML(double interval);
 
 protected:

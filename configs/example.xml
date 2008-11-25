@@ -3,7 +3,7 @@
 		<checkinterval>2</checkinterval>
 	</sensorManager>
 	<observer id="1">
-		<interface>eth1</interface>
+		<interface>eth0</interface>
 		<pcap_filter>ip</pcap_filter>
 		<next>2</next>
 	</observer>
@@ -115,6 +115,7 @@
 	</ipfixAggregator>
 	
 	<ipfixExporter id="7">
+		<!--
 		<ipfixPacketRestrictions>
 			<maxPacketSize>1500</maxPacketSize>
 			<maxExportDelay unit="msec">500</maxExportDelay>
@@ -123,6 +124,7 @@
 			<templateRefreshTimeout>10</templateRefreshTimeout>
 			<templateRefreshRate>100</templateRefreshRate>
 		</udpTemplateManagement>
+		-->
 		<collector>
 			<ipAddressType>4</ipAddressType>
 			<ipAddress>127.0.0.1</ipAddress>

@@ -42,11 +42,11 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 			interface = e->getFirstText();
 			offline = true;
 		} else if (e->matches("replaceTimestamps")) {
-			replaceOfflineTimestamps = getInt("replaceTimestamps")>0;
+			replaceOfflineTimestamps = getBool("replaceTimestamps", replaceOfflineTimestamps);
 		} else if (e->matches("offlineSpeed")) {
 			offlineSpeed = getDouble("offlineSpeed");
 		} else if (e->matches("offlineAutoExit")) {
-			offlineAutoExit = getInt("offlineAutoExit")>0;
+			offlineAutoExit = getBool("offlineAutoExit", offlineAutoExit);
 		} else if (e->matches("captureLength")) {
 			capture_len = getInt("captureLength");	
 		} else if (e->matches("next")) { // ignore next

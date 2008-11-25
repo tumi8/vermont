@@ -85,7 +85,7 @@ inline bool StringFilter::compare(unsigned char *pdata, std::string toMatch, uns
  * @param p Packet data
  * @return true if packet contains string false otherwise
  */
-bool StringFilter::processPacket(const Packet *p)
+bool StringFilter::processPacket(Packet *p)
 {
     unsigned char* pdata;
     unsigned int plength;

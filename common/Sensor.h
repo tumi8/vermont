@@ -3,13 +3,9 @@
 
 #include "ThreadCPUInterface.h"
 #include "Mutex.h"
-#include "msg.h"
 
 #include <string>
 #include <list>
-#include <sys/types.h>
-
-using namespace std;
 
 class Sensor
 {
@@ -21,7 +17,7 @@ public:
 	 * @param time in seconds when this function was called last time (to be used for calculating average)
 	 * @returns a string containing statistics about the current module in XML format
 	 */
-	virtual string getStatisticsXML(double interval) { return ""; /* override this in the modules you need */ }
+	virtual std::string getStatisticsXML(double interval) { return ""; /* override this in the modules you need */ }
 	
 	/**
 	 * returns memory usage of this module
@@ -34,7 +30,7 @@ public:
 	 * @param empty list which will be filled with data
 	 */
 #ifdef __linux__
-	void getJiffiesUsed(list<ThreadCPUInterface::JiffyTime>& usedJiffies);
+	void getJiffiesUsed(std::list<ThreadCPUInterface::JiffyTime>& usedJiffies);
 #endif
 	
 	/**
@@ -71,7 +67,7 @@ protected:
 	
 private:
 #ifdef __linux__
-	list<ThreadCPUInterface::JiffyTime> watchedThreads; /** all threads that are used by module */
+	std::list<ThreadCPUInterface::JiffyTime> watchedThreads; /** all threads that are used by module */
 #endif
 	Mutex wThreadsMutex; /** mutex for locking watchedThreads */
 };

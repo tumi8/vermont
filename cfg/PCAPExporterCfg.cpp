@@ -25,6 +25,8 @@ PCAPExporterCfg::PCAPExporterCfg(XMLElement* elem)
 			} else {
 				link_type = tmp;
 			}
+		} else if (e->matches("snaplen")) {
+			snaplen = getInt("snaplen", PCAP_MAX_CAPTURE_LENGTH, e);
 		}
 	}
 } 
@@ -44,6 +46,7 @@ PCAPExporterModule* PCAPExporterCfg::createInstance()
 {
 	instance = new PCAPExporterModule(fileName);
 	instance->setDataLinkType(link_type);
+	instance->setSnaplen(snaplen);
 	return instance;
 }
 

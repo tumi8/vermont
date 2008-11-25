@@ -13,8 +13,8 @@ class StateConnectionFilter : public PacketProcessor {
 public:
 	StateConnectionFilter(unsigned timeout, unsigned bytes);
 
-	bool processPacket(const Packet* p, bool connFilterResult);
-	virtual bool processPacket(const Packet* p);
+	bool processPacket(Packet* p, bool connFilterResult);
+	virtual bool processPacket(Packet* p);
 protected:
 	unsigned timeout;
 	unsigned exportBytes;

@@ -5,7 +5,7 @@ IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 	templateRefreshTime(IS_DEFAULT_TEMPLATE_TIMEINTERVAL), templateRefreshRate(0),	
 	sctpDataLifetime(0), sctpReconnectInterval(0),
 	maxPacketSize(0), exportDelay(0),
-	recordRateLimit(0)	
+	recordRateLimit(0), observationDomainId(0)
 {
 
 	if (!elem) {
@@ -13,6 +13,7 @@ IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 	}
 	
 	recordRateLimit = getInt("maxRecordRate", IS_DEFAULT_MAXRECORDRATE);
+	observationDomainId = getInt("observationDomainId", 0);
 	msg(MSG_INFO, "Exporter: using maximum rate of %d records/second", recordRateLimit);
 	sctpDataLifetime = getTimeInUnit("sctpDataLifetime", mSEC, IS_DEFAULT_SCTP_DATALIFETIME);
 	sctpReconnectInterval = getTimeInUnit("sctpReconnectInterval", SEC, IS_DEFAULT_SCTP_RECONNECTINTERVAL);
@@ -29,10 +30,10 @@ IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 		if (e->matches("collector")) {
 			collectors.push_back(new CollectorCfg(e));
 		} else if (e->matches("maxRecordRate") || e->matches("sctpDataLifetime") || e->matches("sctpReconnectInterval")
-				|| e->matches("templateRefreshRate")|| e->matches("templateRefreshInterval")) {		
+				|| e->matches("templateRefreshRate")|| e->matches("templateRefreshInterval") || e->matches("observationDomainId")) {		
 			// already done!
 		} else {
-			THROWEXCEPTION("Illegal PSAMPExporter config entry \"%s\" found",
+			THROWEXCEPTION("Illegal Exporter config entry \"%s\" found",
 					e->getName().c_str());
 		}
 	}
@@ -46,14 +47,15 @@ IpfixExporterCfg::~IpfixExporterCfg()
 
 IpfixSender* IpfixExporterCfg::createInstance()
 {
-	instance = new IpfixSender(0, recordRateLimit, sctpDataLifetime, 
-			sctpReconnectInterval, templateRefreshTime, templateRefreshRate); // FIXME: observationDomainId
+	instance = new IpfixSender(observationDomainId, recordRateLimit, sctpDataLifetime, 
+			sctpReconnectInterval, templateRefreshTime, templateRefreshRate);
 
 	for (unsigned i = 0; i != collectors.size(); ++i) {
-		msg(MSG_DEBUG, "IpfixExporter: adding collector %s:%d",
+		msg(MSG_DEBUG, "IpfixExporter: adding collector %s://%s:%d",
+				collectors[i]->getProtocolType()==SCTP?"SCTP":"UDP",
 				collectors[i]->getIpAddress().c_str(),
 				collectors[i]->getPort());
-		instance->addCollector(collectors[i]->getIpAddress().c_str(), collectors[i]->getPort(), UDP);
+		instance->addCollector(collectors[i]->getIpAddress().c_str(), collectors[i]->getPort(), collectors[i]->getProtocolType());
 	}
 
 	return instance;

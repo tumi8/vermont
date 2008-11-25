@@ -46,7 +46,7 @@ using namespace std;
  * @param port destination collector's port
  * @return handle to use when calling @c destroyIpfixSender()
  */
-IpfixSender::IpfixSender(uint16_t observationDomainId, uint32_t maxRecordRate, uint32_t sctpDataLifetime, uint32_t sctpReconnectInterval,
+IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, uint32_t sctpDataLifetime, uint32_t sctpReconnectInterval,
 		uint32_t templateRefreshInterval, uint32_t templateRefreshRate)
 	: statSentPackets(0),
 	  noCachedRecords(0),
@@ -196,6 +196,8 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
  	}
 
 	/* get or assign template ID */
+	// FIXME: Move the dynamic template ID assignement to the Aggregator!
+	// As it is now, the dynamic template ID assignement does not work with copy mode Record Anonymization.
 	if(dataTemplateInfo->templateId)
 	    my_template_id = dataTemplateInfo->templateId;
 	else

@@ -33,8 +33,10 @@ protected:
 	string user;	/**< user name for login to database */
 	string password;	/**< password for login to database */
 	uint16_t bufferRecords;	/**< amount of records to buffer until they are written to database */
+	uint32_t observationDomainId;	/**< default observation domain id (overrides the one received in the records */
+	vector<string> colNames; /**< column names */
 
-	
+	void readColumns(XMLElement* elem);
 	IpfixDbWriterCfg(XMLElement*);
 };
 

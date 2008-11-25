@@ -96,21 +96,28 @@ void IpfixReceiverSctpIpV4::run() {
 	clientAddressLen = sizeof(struct sockaddr_in);
 	
 	fd_set fd_array; //all active filedescriptors
+	fd_set readfds;  //parameter for for pselect
 	int maxfd;
+	
+	int ret;
+	int rfd;
+	struct timespec timeOut;
 	
 	FD_ZERO(&fd_array);
 	FD_SET(listen_socket, &fd_array); // add listensocket
 	maxfd = listen_socket;
 	
-	fd_set readfds;
-	int ret;
-	int rfd;
-	
+	/* set a 400ms time-out on the pselect */
+	timeOut.tv_sec = 0L;
+	timeOut.tv_nsec = 400000000L;
 	
 	while(!exitFlag) {
-		
 		readfds = fd_array; // because select() changes readfds
-		ret = select(maxfd + 1, &readfds, NULL, NULL, NULL); // check only for something to read
+		ret = pselect(maxfd + 1, &readfds, NULL, NULL, &timeOut, NULL); // check only for something to read
+		if (ret == 0) {
+			/* Timeout */
+			continue;
+    		}
 		if ((ret == -1) && (errno == EINTR)) {
 			/* There was a signal... ignore */
 			continue;
@@ -135,7 +142,7 @@ void IpfixReceiverSctpIpV4::run() {
 				THROWEXCEPTION("IpfixReceiverSctpIpV4: unable to accept new connection");
 			}
 		}
-// 		check all connected sockets for new available data
+		// check all connected sockets for new available data
 		for (rfd = listen_socket + 1; rfd <= maxfd; ++rfd) {
       			if (FD_ISSET(rfd, &readfds)) {
 				boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
@@ -155,11 +162,11 @@ void IpfixReceiverSctpIpV4::run() {
 						sourceID->protocol = IPFIX_protocolIdentifier_SCTP;
 						sourceID->receiverPort = receiverPort;
 						sourceID->fileDescriptor = rfd;
-						pthread_mutex_lock(&mutex);
+						mutex.lock();
 						for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
 							(*i)->processPacket(data, ret, sourceID);
 						}
-						pthread_mutex_unlock(&mutex);
+						mutex.unlock();
 					}
 					else{
 						msg(MSG_DEBUG, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
@@ -168,6 +175,7 @@ void IpfixReceiverSctpIpV4::run() {
       			}
       		}
 	}
+	msg(MSG_DEBUG, "IpfixReceiverSctpIpV4: Exiting");
 }
 
 #endif /*SUPPORT_SCTP*/

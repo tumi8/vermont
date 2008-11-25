@@ -1,10 +1,14 @@
 #include "PacketFilterCfg.h"
+#include "InfoElementCfg.h"
+#include "RecordAnonymizerCfg.h"
 
 #include <sampler/RegExFilter.h>
 #include <sampler/StringFilter.h>
 #include <sampler/SystematicSampler.h>
 #include <sampler/StateConnectionFilter.h>
 #include <sampler/ConnectionFilter.h>
+#include <sampler/AnonFilter.h>
+#include <sampler/PayloadFilter.h>
 #include "common/msg.h"
 
 
@@ -44,6 +48,12 @@ PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
 			msg(MSG_INFO, "Filter: Creating connection based sampler");
 			c = new PacketConnectionFilterCfg(e);
 #endif
+		} else if (e->matches("anonFilter")) {
+			msg(MSG_INFO, "Filter: Creating anonymization filter");
+			c = new PacketAnonFilterCfg(e);
+		} else if (e->matches("payloadFilter")) {
+			msg(MSG_INFO, "Filter: Creating payload filter");
+			c = new PacketPayloadFilterCfg(e);
 		} else if (e->matches("next")) { // ignore next
 			continue;
 		} else {
@@ -273,3 +283,46 @@ bool PacketConnectionFilterCfg::deriveFrom(PacketConnectionFilterCfg* old)
 	return false;
 }
 #endif
+
+// ----------------------------------------------------------------------------
+
+Module* PacketAnonFilterCfg::getInstance()
+{
+	if (!instance) {
+		instance = new AnonFilter();
+	}
+
+	RecordAnonymizerCfg::initInstance(this, instance, _elem->getElementChildren());
+
+	return (Module*)instance;
+
+}
+
+bool PacketAnonFilterCfg::deriveFrom(PacketAnonFilterCfg* old)
+{
+	/*
+	if (get("timeout") == old->get("timeout") &&
+	    get("bytes") == old->get("bytes") &&
+	    get("hashFunctions") == old->get("hashFunctions") &&
+	    get("filterSize") == old->get("filterSize")) {
+		return true;
+	}
+	*/
+	return false;
+}
+
+// ----------------------------------------------------------------------------
+
+Module* PacketPayloadFilterCfg::getInstance()
+{
+	if (!instance) {
+		instance = new PayloadFilter();
+	}
+	return (Module*)instance;
+}
+
+bool PacketPayloadFilterCfg::deriveFrom(PacketPayloadFilterCfg* old)
+{
+	return true;
+}
+

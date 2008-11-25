@@ -21,10 +21,10 @@
 #if !defined(INSTANCEMANAGER_H)
 #define INSTANCEMANAGER_H
 
-#include "Mutex.h"
+#include "common/Mutex.h"
 #include "SensorManager.h"
-#include "Sensor.h"
-#include "defs.h"
+#include "common/Sensor.h"
+#include "common/defs.h"
 
 #include <queue>
 #include <list>

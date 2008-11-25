@@ -27,7 +27,7 @@ public:
 	{
 	};
 	
-        virtual bool processPacket(const Packet *p);
+        virtual bool processPacket(Packet *p);
 
 protected:
         /* N */

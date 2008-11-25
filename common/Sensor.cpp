@@ -1,4 +1,5 @@
 #include "Sensor.h"
+#include "msg.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -21,10 +22,10 @@ uint32_t Sensor::getCurrentMemUsage()
 }
 
 #ifdef __linux__
-void Sensor::getJiffiesUsed(list<ThreadCPUInterface::JiffyTime>& usedJiffies)
+void Sensor::getJiffiesUsed(std::list<ThreadCPUInterface::JiffyTime>& usedJiffies)
 {
 	wThreadsMutex.lock();
-	list<ThreadCPUInterface::JiffyTime>::iterator iter = watchedThreads.begin();
+	std::list<ThreadCPUInterface::JiffyTime>::iterator iter = watchedThreads.begin();
 	time_t curtime = time(0);
 	while (iter != watchedThreads.end()) {
 		ThreadCPUInterface::JiffyTime jt = ThreadCPUInterface::getJiffies(iter->tid);		
@@ -46,7 +47,7 @@ void Sensor::registerThreadID(pid_t tid)
 {
 #ifdef __linux__
 	wThreadsMutex.lock();
-	list<ThreadCPUInterface::JiffyTime>::iterator iter = watchedThreads.begin();
+	std::list<ThreadCPUInterface::JiffyTime>::iterator iter = watchedThreads.begin();
 	while (iter != watchedThreads.end()) {
 		if (iter->tid == tid) {
 			wThreadsMutex.unlock();
@@ -79,7 +80,7 @@ void Sensor::unregisterThreadID(pid_t tid)
 {
 #ifdef __linux__
 	wThreadsMutex.lock();
-	list<ThreadCPUInterface::JiffyTime>::iterator iter = watchedThreads.begin();
+	std::list<ThreadCPUInterface::JiffyTime>::iterator iter = watchedThreads.begin();
 	while (iter != watchedThreads.end()) {
 		if (iter->tid == tid) {
 			watchedThreads.erase(iter);

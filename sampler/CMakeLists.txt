@@ -29,5 +29,7 @@ ADD_LIBRARY(sampler
 	Template.cpp
 	ConnectionFilter.cpp
 	StateConnectionFilter.cpp
+	AnonFilter.cpp
+	PayloadFilter.cpp
 )
 

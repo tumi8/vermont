@@ -80,6 +80,8 @@ class IpfixRecord
 				fieldInfo = (IpfixRecord::FieldInfo*)malloc(fieldCount*sizeof(FieldInfo));
 				memcpy(fieldInfo, t.fieldInfo, fieldCount*sizeof(FieldInfo));
 				userData = t.userData;
+				destroyed = t.destroyed;
+				freePointers = t.freePointers;
 			}
 
 			~TemplateInfo() {
@@ -381,7 +383,7 @@ class IpfixRecord
 		 */
 		struct DataTemplateInfo : public TemplateInfo
 		{
-			DataTemplateInfo() : dataInfo(NULL), data(NULL) {
+			DataTemplateInfo() : TemplateInfo(), preceding(0), dataCount(0), dataInfo(NULL), dataLength(0), data(NULL), anonymized (false) {
 			}
 
 			DataTemplateInfo(const DataTemplateInfo& t)
@@ -397,7 +399,13 @@ class IpfixRecord
 				dataInfo = (FieldInfo*)malloc(dataCount*sizeof(FieldInfo));
 				memcpy(dataInfo, t.dataInfo, dataCount*sizeof(FieldInfo));
 
+				dataLength = t.dataLength;
+				data = (Data*)malloc(dataLength*sizeof(Data));
+				memcpy(data, t.data, dataLength*sizeof(Data));
+				anonymized = t.anonymized;
+
 				userData = t.userData;
+				destroyed = t.destroyed;
 				freePointers = t.freePointers;
 			}
 
@@ -436,7 +444,9 @@ class IpfixRecord
 			uint16_t preceding; /**< the preceding rule field as defined in the draft */
 			uint16_t dataCount; /**< number of fixed-value fields */
 			IpfixRecord::FieldInfo* dataInfo; /**< array of FieldInfos describing each of these fields */
+			uint16_t dataLength;
 			IpfixRecord::Data* data; /**< data start pointer for fixed-value fields */
+			bool anonymized; /** flag that indicates if fixed-value fields have been anonymized */
 			void* userData; /**< pointer to a field that can be used by higher-level modules */
 		};
 
@@ -457,7 +467,7 @@ class IpfixRecord
 			uint8_t protocol;
 			int fileDescriptor;
 
-			bool operator==(const struct SourceID & x) {
+			bool operator==(const struct SourceID & x) const {
 				if(protocol == 132) /* compare file descriptors instead of IP addresses because of possible multihoming */
 					return (observationDomainId == x.observationDomainId) &&
 // 					(exporterPort == x.exporterPort) &&

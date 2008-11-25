@@ -1,7 +1,7 @@
 #include <cfg/ReConnector.h>
 #include <cfg/CfgNode.h>
 
-#include <msg.h>
+#include "common/msg.h"
 
 Graph* ReConnector::connect(Graph* g)
 {

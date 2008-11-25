@@ -1,5 +1,6 @@
 #include "IpfixCollectorCfg.h"
 #include <concentrator/IpfixReceiverUdpIpV4.hpp>
+#include <concentrator/IpfixReceiverSctpIpV4.hpp>
 
 IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector, IpfixCollectorCfg>(elem, "ipfixCollector"),
@@ -52,7 +53,12 @@ IpfixCollectorCfg* IpfixCollectorCfg::create(XMLElement* elem)
 
 IpfixCollector* IpfixCollectorCfg::createInstance()
 {
-	IpfixReceiver* ipfixReceiver = new IpfixReceiverUdpIpV4(listener->getPort());	
+	IpfixReceiver* ipfixReceiver;
+	if (listener->getProtocolType() == SCTP)
+		ipfixReceiver = new IpfixReceiverSctpIpV4(listener->getPort(), listener->getIpAddress());	
+	else 
+		ipfixReceiver = new IpfixReceiverUdpIpV4(listener->getPort(), listener->getIpAddress());	
+
 	if (!ipfixReceiver) {
 		THROWEXCEPTION("Could not create IpfixReceiver");
 	}

@@ -37,4 +37,29 @@
 #define INS_WIDTH        25
 #define EXPORTER_WIDTH   80
 
+// column names
+#define CN_srcIP 	"srcIP"
+#define CN_dstIP 	"dstIP"
+#define CN_srcPort 	"srcPort"
+#define CN_dstPort 	"dstPort"
+#define CN_proto	"proto"
+#define CN_dstTos       "dstTos"
+#define CN_bytes       	"bytes"
+#define CN_pkts       	"pkts"
+#define CN_firstSwitched 	"firstSwitched"
+#define CN_lastSwitched 	"lastSwitched"
+#define CN_firstSwitchedMillis 	"firstSwitchedMillis"
+#define CN_lastSwitchedMillis 	"lastSwitchedMillis"
+#define CN_exporterID 	"exporterID"
+
+#define CN_tcpControlBits	"tcpControlBits"
+#define CN_revbytes		"revbytes"
+#define CN_revpkts		"revpkts"
+#define CN_revFirstSwitched	"revFirstSwitched"
+#define CN_revLastSwitched	"revLastSwitched"
+#define CN_revFirstSwitchedMillis	"revFirstSwitchedMillis"
+#define CN_revLastSwitchedMillis	"revLastSwitchedMillis"
+#define CN_revTcpControlBits	"revTcpControlBits"
+#define CN_maxPacketGap		"maxPacketGap"
+
 #endif

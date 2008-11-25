@@ -217,7 +217,7 @@ class ConcurrentQueue
 
 	protected:
 		std::queue<T> queue;
-		int count;
+		volatile int count;
 		Mutex lock;
 		TimeoutSemaphore popSemaphore;
 		TimeoutSemaphore pushSemaphore;

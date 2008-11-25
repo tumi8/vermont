@@ -19,7 +19,7 @@ public:
 	virtual ~StringFilter();
 
 	static std::string hexparser(const std::string input);
-	virtual bool processPacket (const Packet * p);
+	virtual bool processPacket (Packet * p);
 	void addandFilter(std::string string);
 	void addnotFilter(std::string string);
 

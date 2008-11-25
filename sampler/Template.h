@@ -55,11 +55,6 @@ class Template
 		// be checked against the packet classification before exporting
 		unsigned long fieldValidPacketClasses[MAX_TEMPLATE_FIELDS];
 
-		// determin offset, header and packet class for a given field ID
-		// if needed, make this method public
-		bool getFieldOffsetAndHeader(uint16_t id, uint16_t *offset, unsigned short *header, unsigned long *validPacketClass);
-
-
 	public:
 		Template(unsigned short id) : templateID(id), fieldCount(0)
 		{
@@ -159,6 +154,8 @@ class Template
 			return true;
 		}
 
+		// determin offset, header and packet class for a given field ID
+		static bool getFieldOffsetAndHeader(uint16_t id, uint16_t *offset, unsigned short *header, unsigned long *validPacketClass);
 
 };
 

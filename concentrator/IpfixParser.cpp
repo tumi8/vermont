@@ -421,8 +421,9 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		}
 
 		/* Copy fixed data block */
-		ti->data = (uint8_t*)malloc(dataLength);
-		memcpy(ti->data, record, dataLength);
+		ti->data = (IpfixRecord::Data*)malloc(dataLength*sizeof(IpfixRecord::Data));
+		ti->dataLength = dataLength;
+		memcpy(ti->data, record, dataLength*sizeof(IpfixRecord::Data));
 		 
 		/* Advance record to end of fixed data block, i.e. start of next template record */
 		record += dataLength;
@@ -796,7 +797,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
     sourceId->observationDomainId = ntohl(header->observationDomainId);
 
 	if (ntohs(header->length) != length) {
-		msg(MSG_ERROR, "IpfixParser: Bad message length - expected %#06x, got %#06x\n", length, ntohs(header->length));
+		msg(MSG_ERROR, "IpfixParser: Bad message length - packet length is  %#06x, header length field is %#06x\n", length, ntohs(header->length));
 		return -1;
 	}
 
@@ -840,7 +841,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 	}
 	
 	//FIXME: check for out-of-order messages and lost records
-	msg(MSG_VDEBUG, "Message contained %u records, sequence number was %u", numberOfDataRecords, ntohl(header->sequenceNo));
+	msg(MSG_VDEBUG, "Message contained %u bytes, sequence number was %u", numberOfDataRecords, ntohl(header->sequenceNo));
 
 	return 0;
 }

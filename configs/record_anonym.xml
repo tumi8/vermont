@@ -1,0 +1,37 @@
+<ipfixConfig>
+	<ipfixCollector id="1">
+		<listener>
+			<transportProtocol>SCTP</transportProtocol>
+		</listener>
+		<next>2</next>
+	</ipfixCollector>
+
+	<ipfixQueue id="2">
+		<maxSize>1000</maxSize>
+		<next>3</next>
+		<next>6</next>
+	</ipfixQueue>
+
+	<anonRecord id="3">
+		<anonField>
+			<anonIE>
+				<ieName>sourceIPv4Address</ieName>
+			</anonIE>
+			<anonMethod>CryptoPan</anonMethod>
+			<anonParam>insert key here</anonParam>
+		</anonField>
+		<anonField>
+			<anonIE>
+				<ieName>destinationIPv4Address</ieName>
+				<ieLength>4</ieLength>
+			</anonIE>
+		<anonMethod>CryptoPan</anonMethod>
+			<anonParam>insert key here</anonParam>
+		</anonField>
+		<copyMode>true</copyMode>
+		<next>6</next>
+	</anonRecord>
+	
+	<ipfixPrinter id="6">
+	</ipfixPrinter>	
+</ipfixConfig>

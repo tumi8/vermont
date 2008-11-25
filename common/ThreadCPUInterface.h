@@ -6,8 +6,6 @@
 
 #include <vector>
 
-using namespace std;
-
 class ThreadCPUInterface
 {
 public:
@@ -23,8 +21,8 @@ public:
 	struct SystemInfo 
 	{
 		uint16_t noCPUs;
-		vector<uint32_t> userJiffies;
-		vector<uint32_t> sysJiffies;
+		std::vector<uint32_t> userJiffies;
+		std::vector<uint32_t> sysJiffies;
 		uint64_t totalMemory; // in bytes
 		uint64_t freeMemory; // in bytes
 	};

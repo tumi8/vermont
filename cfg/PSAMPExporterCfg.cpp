@@ -1,6 +1,6 @@
 #include "PacketReportingCfg.h"
 #include "PSAMPExporterCfg.h"
-#include "PSAMPExporterModule.h"
+#include "reconf/PSAMPExporterModule.h"
 
 #include "common/defs.h"
 
@@ -13,6 +13,12 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 { 
 	if (!elem) return;
 
+	observationDomainId = getInt("observationDomainId", 0);
+
+	// determine captureLen
+	// FIXME: undocumented parameter, this value should come from observer
+	int captureLen = getInt("captureLen", PCAP_DEFAULT_CAPTURE_LENGTH);
+	
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -30,7 +36,7 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 			collectors.push_back(new CollectorCfg(e));
 		} else if (e->matches("packetReporting")) {
 			reporting = new PacketReportingCfg(e);
-		} else if (e->matches("captureLen")) {
+		} else if (e->matches("captureLen") || e->matches("observationDomainId")) {
 			// ignore it, already handled
 		} else {
 			THROWEXCEPTION("Illegal PSAMPExporter config entry \"%s\"found",
@@ -40,9 +46,6 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 
 	if (reporting == NULL)
 		THROWEXCEPTION("No packetReporting found in psampExporter config");
-	
-	// determine captureLen
-	int captureLen = getInt("captureLen", PCAP_DEFAULT_CAPTURE_LENGTH);
 	
 	// rough estimation of the maximum record length including variable length fields
 	recordLength =  reporting->getRecordLength() + 
@@ -66,7 +69,7 @@ PSAMPExporterCfg::~PSAMPExporterCfg()
 
 PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 {
-	instance = new PSAMPExporterModule(reporting->getTemplate(), 0); // FIXME: ID 0 is incorrect
+	instance = new PSAMPExporterModule(reporting->getTemplate(), observationDomainId);
 
 	if (recordLength || maxPacketSize) {
 		int recordsPerPacket = 1;
@@ -93,7 +96,8 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 		msg(MSG_DIALOG, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
 	}
 	for (unsigned i = 0; i != collectors.size(); ++i) {
-		msg(MSG_DEBUG, "Exporter: adding collector %s:%d to ExporterSink",
+		msg(MSG_DEBUG, "PsampExporter: adding collector %s://%s:%d",
+				collectors[i]->getProtocolType()==SCTP?"SCTP":"UDP",
 				collectors[i]->getIpAddress().c_str(),
 				collectors[i]->getPort());
 		instance->addCollector(collectors[i]->getIpAddress().c_str(),

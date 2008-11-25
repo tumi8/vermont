@@ -14,8 +14,6 @@
 
 #include "msg.h"
 
-#include <pthread.h>
-
 typedef void* (*ThreadFunc)(void *);
 
 class Thread

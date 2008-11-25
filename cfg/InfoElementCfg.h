@@ -2,7 +2,7 @@
 #define INFOELEMENTCFG_H_
 
 #include "Cfg.h"
-#include "ipfix_names.h"
+#include "ipfixlolib/ipfix_names.h"
 
 class InfoElementCfg
 	: public CfgBase {

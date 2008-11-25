@@ -25,7 +25,6 @@
 #ifndef IPFIXDBREADER_H
 #define IPFIXDBREADER_H
 
-#include "IpfixDbCommon.hpp"
 #include "IpfixParser.hpp"
 #include "ipfix.hpp"
 #include "ipfixlolib/ipfixlolib.h"
@@ -45,9 +44,10 @@
 class IpfixDbReader : public Module, public Source<IpfixRecord*>, public Destination<NullEmitable*> 
 {
 	public:
-		IpfixDbReader(const char* hostname, const char* dbName,
-				const char* username, const char* password,
-				unsigned int port, uint16_t observationDomainId); // FIXME: observationDomainId
+		IpfixDbReader(const string& hostname, const string& dbname,
+				const string& username, const string& password,
+				unsigned port, uint16_t observationDomainId, 
+				bool timeshift, bool fullspeed);
 		~IpfixDbReader();
 
 		virtual void performStart();
@@ -56,53 +56,32 @@ class IpfixDbReader : public Module, public Source<IpfixRecord*>, public Destina
 		boost::shared_ptr<IpfixRecord::SourceID> srcId;
 
 	protected:
-		static const int MAX_TABLES = 10; /**< count of tables that will be send */
-		static const int MAX_COL = 10; /**< max count of columns in the table */
-
 		typedef struct {
-			const char* cname;       /**column name*/
 			uint16_t ipfixId;  /**IPFIX_TYPEID*/
 			uint8_t length;    /**IPFIX length*/
 		} columnDB;
 
-		typedef struct {
-			const char* tableNames[MAX_TABLES];
-			int tableCount;
-			IpfixDbReader::columnDB* columns[MAX_COL];
-			int colCount;
-		} DbData;
+		vector<string> tables;
+		vector<columnDB> columns;
+		string columnNames; 
+		string orderBy; 
+		unsigned recordLength;
+		bool timeshift, fullspeed;
 
-		typedef struct {
-			IpfixDbReader::DbData* dbData;
-		} DbReader;
-
-		const char* hostName;    /** Hostname*/
-		const char* dbName;      /**Name of the database*/
-		const char* userName;    /**Username (default: Standarduser) */
-		const char* password;    /** Password (default: none) */
-		unsigned int portNum;    /** Portnumber (use default) */
-		const char* socketName ;      /** Socketname (use default) */
-		unsigned int flags;      /** Connectionflags (none) */
 		MYSQL* conn;             /** pointer to connection handle */    
-		IpfixDbReader::DbReader* dbReader;
 		Thread thread;
 		
 		static InstanceManager<IpfixTemplateRecord> templateRecordIM;
-		static InstanceManager<IpfixOptionsTemplateRecord> optionsTemplateRecordIM;
-		static InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
 		static InstanceManager<IpfixDataRecord> dataRecordIM;
-		static InstanceManager<IpfixOptionsRecord> optionsRecordIM;
-		static InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
-		static InstanceManager<IpfixDataTemplateDestructionRecord> dataTemplateDestructionRecordIM;
+		static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
 
 		int getTables();
-		int getColumns(int n);
+		int getColumns(const string& tableName);
 		static void* readFromDB(void* ipfixDbReader_);
-		int dbReaderSendNewTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo, int table_index);
-		int dbReaderSendTable(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo, int n);
-		int dbReaderDestroyTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo);
-		int connectToDb(const char* hostName, const char* dbName, const char* username, const char* password, unsigned int port);
-		IpfixDbReader::columnDB* getColumnByName(const char* name);
+		int dbReaderSendNewTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo, const string& tableName);
+		int dbReaderSendTable(boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo, const string& tableName);
+		int dbReaderDestroyTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo);
+		int connectToDb( const string& hostName, const string& dbName, const string& userName, const string& password, unsigned int port);
 };
 
         

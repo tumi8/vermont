@@ -9,14 +9,15 @@
 #include <stdarg.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/time.h>
 #include <time.h>
 #include <assert.h>
 #include <map>
 #include <stdexcept>
 #include <sstream>
+#include <cstring>
 #include <stdlib.h>
-#include <string.h>
 #include "msg.h"
 
 #ifdef __cplusplus

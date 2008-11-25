@@ -83,6 +83,21 @@
 		<username>nastyWriter</username>
 		<password>write@ccess</password>
 		<bufferrecords>5</bufferrecords>
+		<columns>
+			<name>dstIP</name>
+			<name>srcIP</name>
+			<name>srcPort</name>
+			<name>dstPort</name>
+			<name>proto</name>
+			<name>dstTos</name>
+			<name>bytes</name>
+			<name>pkts</name>
+			<name>firstSwitched</name>
+			<name>lastSwitched</name>
+			<name>firstSwitchedMillis</name>
+			<name>lastSwitchedMillis</name>
+			<name>exporterID</name>
+		</columns>
 	</ipfixDbWriter>
 			
 	<ipfixPrinter id="5">

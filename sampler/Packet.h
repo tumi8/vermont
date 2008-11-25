@@ -148,6 +148,38 @@ public:
 	{
 	}
 
+/*
+	void copyPacket(Packet* other)
+	{
+		observationDomainID = other->observationDomainID;
+		memcpy(&data, &other->data, PCAP_MAX_CAPTURE_LENGTH);
+		netHeader = other->netHeader;
+		transportHeader = other->transportHeader;
+		payload = other->payload;
+
+		zeroBytes = other->zeroBytes;
+
+		netHeaderOffset = other->netHeaderOffset;
+		transportHeaderOffset = other->transportHeaderOffset;
+		payloadOffset = other->payloadOffset;
+
+		classification = other->classification;
+		ipProtocolType = other->ipProtocolType;
+
+		data_length = other->data_length;
+
+		pcapPacketLength = other->pcapPacketLength;
+
+		timestamp = other->timestamp;
+		time_sec_nbo = other->time_sec_nbo;
+		time_usec_nbo = other->time_usec_nbo;
+		time_msec_nbo = other->time_msec_nbo;
+
+		memcpy(&varlength, &other->varlength, sizeof(varlength));
+		varlength_index = other->varlength_index; 
+	}
+*/
+
 	/**
 	 * @param origplen original packet length
 	 */
@@ -186,8 +218,7 @@ public:
 		classify();
 	};
 
-	// Delete the packet and free all data associated with it. Should only be called
-	// if users==0 !
+	// Delete the packet and free all data associated with it.
 	~Packet()
 	{
 	}
@@ -458,18 +489,6 @@ public:
 	}
 
 
-
-private:
-
-	/*
-	 Number of concurrent users of this packet. Decremented each time
-	 release() is called. After it reaches zero, the packet is deleted.
-         */
-	int users;
-
-	Mutex refCountLock;
-
-	bool packetFreed;
 
 };
 

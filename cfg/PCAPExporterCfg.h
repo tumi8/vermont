@@ -2,7 +2,7 @@
 #define PCAPEXPORTERCFG_H_
 
 #include "Cfg.h"
-#include "PCAPExporterModule.h"
+#include "reconf/PCAPExporterModule.h"
 
 #include <vector>
 
@@ -26,6 +26,7 @@ protected:
 private:
 	std::string fileName;
 	int link_type;
+	int snaplen;
 };
 
 

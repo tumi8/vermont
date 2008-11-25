@@ -44,6 +44,7 @@ ADD_LIBRARY(cfg
 	PSAMPExporterCfg.cpp
 	PCAPExporterCfg.cpp
 	ReConnector.cpp
+	RecordAnonymizerCfg.cpp
 	AutoFocusCfg.cpp
 	RBSWormDetectorCfg.cpp
 	SensorManager.cpp

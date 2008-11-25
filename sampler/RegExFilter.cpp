@@ -13,7 +13,7 @@ inline bool RegExFilter::compare(char *pdata)
 
 };
 
-bool RegExFilter::processPacket(const Packet* p)
+bool RegExFilter::processPacket(Packet* p)
 {
 	const unsigned char* pdata;
 	unsigned int plength;

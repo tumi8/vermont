@@ -13,8 +13,7 @@ IpfixDbWriterCfg* IpfixDbWriterCfg::create(XMLElement* e)
 
 IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
     : CfgHelper<IpfixDbWriter, IpfixDbWriterCfg>(elem, "ipfixDbWriter"),
-      port(0),
-      bufferRecords(30)
+      port(0), bufferRecords(30), observationDomainId(0)
 {
     if (!elem) return;
 
@@ -36,6 +35,10 @@ IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
 			password = e->getFirstText();
 		} else if (e->matches("bufferrecords")) {
 			bufferRecords = getInt("bufferrecords");
+		} else if (e->matches("columns")) {
+			readColumns(e);
+		} else if (e->matches("observationDomainId")) {
+			observationDomainId = getInt("observationDomainId");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
@@ -49,6 +52,23 @@ IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
 	if (password=="") THROWEXCEPTION("IpfixDbWriterCfg: password not set in configuration!");
 }
 
+void IpfixDbWriterCfg::readColumns(XMLElement* elem) {
+	colNames.clear();
+	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
+	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
+	     it != set.end();
+	     it++) {
+		XMLElement* e = *it;
+
+		if (e->matches("name")) {
+			colNames.push_back(e->getFirstText());
+		} else {
+			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
+			continue;
+		}		
+	}
+
+}
 
 IpfixDbWriterCfg::~IpfixDbWriterCfg()
 {
@@ -57,7 +77,7 @@ IpfixDbWriterCfg::~IpfixDbWriterCfg()
 
 IpfixDbWriter* IpfixDbWriterCfg::createInstance()
 {
-    instance = new IpfixDbWriter(hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, 0, bufferRecords);
+    instance = new IpfixDbWriter(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
     return instance;
 }
 

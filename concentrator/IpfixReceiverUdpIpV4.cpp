@@ -94,42 +94,44 @@ IpfixReceiverUdpIpV4::~IpfixReceiverUdpIpV4() {
 void IpfixReceiverUdpIpV4::run() {
 	struct sockaddr_in clientAddress;
 	socklen_t clientAddressLen;
+	clientAddressLen = sizeof(struct sockaddr_in);
 	
+	fd_set fd_array; //all active filedescriptors
+	fd_set readfds;  //parameter for for pselect
+
+	int ret;
 	struct timespec timeOut;
-	fd_set nreadfds;
+
+	FD_ZERO(&fd_array);
+	FD_SET(listen_socket, &fd_array);
 
 	/* set a 400ms time-out on the pselect */
 	timeOut.tv_sec = 0L;
 	timeOut.tv_nsec = 400000000L;
 	
 	while(!exitFlag) {
-		int n;
+		readfds = fd_array; // because select() changes readfds
+		ret = pselect(listen_socket + 1, &readfds, NULL, NULL, &timeOut, NULL);
+		if (ret == 0) {
+			/* Timeout */
+			continue;
+    		}
+		if ((ret == -1) && (errno == EINTR)) {
+			/* There was a signal... ignore */
+			continue;
+    		}
+    		if (ret < 0) {
+    			msg(MSG_ERROR ,"select() returned with an error");
+			THROWEXCEPTION("IpfixReceiverUdpIpV4: terminating listener thread");
+			break;
+		}
 
-		do {
-			FD_ZERO(&nreadfds);
-			FD_SET(listen_socket, &nreadfds);
-
-			n = pselect(listen_socket + 1, &nreadfds, NULL, NULL, &timeOut, NULL);
-			if (n < 0) {
-				if (errno != EINTR)
-					THROWEXCEPTION("select failed");
-				
-				printf ("n < 0\n");
-				continue;
-			}
-			
-			if (exitFlag)
-				return;
-		} while (n == 0);
-		
 		boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
 		boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
 
-
-		clientAddressLen = sizeof(struct sockaddr_in);
-		n = recvfrom(listen_socket, data.get(), MAX_MSG_LEN,
+		ret = recvfrom(listen_socket, data.get(), MAX_MSG_LEN,
 			     0, (struct sockaddr*)&clientAddress, &clientAddressLen);
-		if (n < 0) {
+		if (ret < 0) {
 			msg(MSG_FATAL, "recvfrom returned without data, terminating listener thread");
 			break;
 		}
@@ -143,14 +145,16 @@ void IpfixReceiverUdpIpV4::run() {
 			sourceID->protocol = IPFIX_protocolIdentifier_UDP;
 			sourceID->receiverPort = receiverPort;
 			sourceID->fileDescriptor = listen_socket;
-			pthread_mutex_lock(&mutex);
+			mutex.lock();
 			for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
-				(*i)->processPacket(data, n, sourceID);
+				(*i)->processPacket(data, ret, sourceID);
 			}
+			mutex.unlock();
 		} else {
 			msg(MSG_FATAL, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
 		}
 	}
+	msg(MSG_DEBUG, "IpfixReceiverUdpIpV4: Exiting");
 }
 
 /**

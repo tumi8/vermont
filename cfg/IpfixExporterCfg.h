@@ -40,6 +40,7 @@ private:
 	unsigned exportDelay;
 	
 	uint32_t recordRateLimit;
+	uint32_t observationDomainId;
 	
 	int recordsPerPacket;
 	int recordLength;

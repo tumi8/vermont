@@ -30,7 +30,9 @@ IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
 		} else if (e->matches("connNumber")) {
 			noConnections = getInt("connNumber");
 		} else if (e->matches("ignoreEmptyPayload")) {
-			ignoreEmptyPayload = getInt("ignoreEmptyPayload");
+			ignoreEmptyPayload = getBool("ignoreEmptyPayload");
+		} else if (e->matches("ignoreIncompleteTCP")) {
+			ignoreIncompleteTCP = getInt("ignoreIncompleteTCP");
 		} else if (e->matches("ignoreIncompleteTCP")) {
 			ignoreIncompleteTCP = getInt("ignoreIncompleteTCP");
 		} else if (e->matches("next")) { // ignore next

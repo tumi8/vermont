@@ -9,8 +9,6 @@
 #include <sys/time.h>
 #include <stdint.h>
 
-
-
 /* Subtract the `struct timeval' values X and Y,
    storing the result in RESULT.
    Return 1 if the difference is negative, otherwise 0.  */
