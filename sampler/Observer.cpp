@@ -83,7 +83,7 @@ Observer::Observer(const std::string& interface, bool offline) : thread(Observer
 	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT),
 	pcap_promisc(1), ready(false), filter_exp(0), observationDomainID(0), // FIXME: this must be configured!
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0),
-	lastProcessedPackets(0),
+	lastProcessedPackets(0), statLastRecvPackets(0), statLastDroppedPackets(0),
 	captureInterface(NULL), fileName(NULL), replaceTimestampsFromFile(false),
 	stretchTimeInt(1), stretchTime(1.0), autoExit(true), slowMessageShown(false),
 	statTotalLostPackets(0), statTotalRecvPackets(0)
@@ -605,11 +605,16 @@ std::string Observer::getStatisticsXML(double interval)
 	ostringstream oss;
     pcap_stat pstats;
     if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
-    	statTotalLostPackets += pstats.ps_drop;
-    	statTotalRecvPackets += pstats.ps_recv;
+    	unsigned int recv = pstats.ps_recv-statLastRecvPackets;
+    	unsigned int dropped = pstats.ps_drop-statLastDroppedPackets;
+    	statLastDroppedPackets = pstats.ps_drop;
+    	statLastRecvPackets = pstats.ps_recv;
+
+    	statTotalLostPackets += dropped;
+    	statTotalRecvPackets += recv;
     	oss << "<pcap>";
-    	oss << "<received type=\"packets\">" << (uint32_t)((double)pstats.ps_recv/interval) << "</received>";
-    	oss << "<dropped type=\"packets\">" << (uint32_t)((double)pstats.ps_drop/interval) << "</dropped>";
+    	oss << "<received type=\"packets\">" << (uint32_t)((double)recv/interval) << "</received>";
+    	oss << "<dropped type=\"packets\">" << (uint32_t)((double)dropped/interval) << "</dropped>";
     	oss << "<totalReceived type=\"packets\">" << statTotalRecvPackets << "</totalReceived>";
     	oss << "<totalDropped type=\"packets\">" << statTotalLostPackets << "</totalDropped>";
     	oss << "</pcap>";

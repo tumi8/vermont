@@ -96,7 +96,7 @@ protected:
 
 	// manages instances of Packets
 	static InstanceManager<Packet> packetManager;
-	
+
 	uint32_t observationDomainID;
 
 	// number of received bytes (used for statistics)
@@ -108,7 +108,10 @@ protected:
 	// attention: value may sometimes be incorrect caused by multithreading issues
 	volatile uint64_t processedPackets;
 	volatile uint64_t lastProcessedPackets;
-	
+
+	volatile uint32_t statLastRecvPackets;
+	volatile uint32_t statLastDroppedPackets;
+
 	// interface we capture traffic on - string
 	char *captureInterface;
 
@@ -121,9 +124,9 @@ protected:
 	uint16_t stretchTimeInt; // 1 means no timing change, 0 means that stretchTimes (float) is used
 	float stretchTime;
 	bool autoExit;
-	
+
 	bool slowMessageShown;	// true if message was shown that vermont is too slow to read file in time
-	
+
 	uint32_t statTotalLostPackets;
 	uint32_t statTotalRecvPackets;
 
