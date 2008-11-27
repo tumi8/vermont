@@ -248,15 +248,18 @@ OPTION(USE_PCAPMMAP "Use libpcap-mmap." OFF)
 MARK_AS_ADVANCED(
 	PCAP_LIBRARY_REGULAR
 	PCAP_LIBRARY_MMAP
+	PCAP_INCLUDE_PATH
 )
 
 IF (USE_PCAPMMAP)
-    FIND_LIBRARY(PCAP_LIBRARY_MMAP NAMES pcap pcap-mmap PATHS ${VERMONT_SOURCE_DIR} ${VERMONT_SOURCE_DIR}/../libpcap-mmap ${VERMONT_SOURCE_DIR}/../../../trunk/libpcap-mmap NO_DEFAULT_PATH)
+    FIND_LIBRARY(PCAP_LIBRARY_MMAP NAMES pcap pcap-mmap PATHS ${VERMONT_SOURCE_DIR} ${VERMONT_SOURCE_DIR}/libpcap-mmap ${VERMONT_SOURCE_DIR}/../libpcap-mmap ${VERMONT_SOURCE_DIR}/../../../trunk/libpcap-mmap NO_DEFAULT_PATH)
+	FIND_PATH(PCAP_INCLUDE_PATH NAMES pcap.h PATHS ${VERMONT_SOURCE_DIR} ${VERMONT_SOURCE_DIR}/libpcap-mmap ${VERMONT_SOURCE_DIR}/../libpcap-mmap ${VERMONT_SOURCE_DIR}/../../../trunk/libpcap-mmap NO_DEFAULT_PATH)
     SET(PCAP_LIBRARY "${PCAP_LIBRARY_MMAP}")
     IF (PCAP_LIBRARY_MMAP)
         SET(PCAP_LIBRARY "${PCAP_LIBRARY_MMAP}")
+		INCLUDE_DIRECTORIES(${PCAP_INCLUDE_PATH})
     ELSE (PCAP_LIBRARY_MMAP)
-        MESSAGE(FATAL_ERROR "Could not find libpcap-mmap")
+        MESSAGE(FATAL_ERROR "Could not find libpcap-mmap. This script also looks in directory ./libpcap-mmap, so maybe you want to create a symlink to the directory of the library.")
     ENDIF (PCAP_LIBRARY_MMAP)
 ELSE (USE_PCAPMMAP)
     FIND_LIBRARY(PCAP_LIBRARY_REGULAR NAMES pcap)
