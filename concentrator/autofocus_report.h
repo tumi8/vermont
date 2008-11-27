@@ -10,7 +10,7 @@ class af_attribute;
 struct treeNode;
 struct treeRecord;
 
-class report 
+class report
 {
 	protected:
 
@@ -21,11 +21,11 @@ class report
 		std::string global;
 		std::string local;
 		report(uint32_t);
-		~report() {};
+		virtual ~report() {};
 		uint64_t getTotal();
 
 		virtual af_attribute* createaf_attribute() =0;
-		uint32_t distance(treeNode* a,treeNode* b); 
+		uint32_t distance(treeNode* a,treeNode* b);
 		virtual void aggregate(uint64_t);
 		virtual void post(vector<treeRecord*>& ,uint32_t)=0;
 		virtual void checkNode(treeNode*,uint32_t);
@@ -38,8 +38,9 @@ class report
 class rep_payload_tcp : public report
 {
 	public:
-		rep_payload_tcp(uint32_t bits):report(bits) 
-	{ 
+		rep_payload_tcp(uint32_t bits):report(bits)
+
+	{
 		global = "Datavolume TCP";
 		local = "Volume";
 	}
@@ -51,8 +52,8 @@ class rep_payload_tcp : public report
 class rep_payload_udp :public report
 {
 	public:
-		rep_payload_udp(uint32_t bits):report(bits) 
-	{ 
+		rep_payload_udp(uint32_t bits):report(bits)
+	{
 		global = "Datavolume UDP";
 		local = "Volume";
 	}
@@ -65,8 +66,8 @@ class rep_payload_udp :public report
 class rep_fanouts :public report
 {
 	public:
-		rep_fanouts(uint32_t bits):report(bits) 
-	{ 
+		rep_fanouts(uint32_t bits):report(bits)
+	{
 		global = "Outgoing Connections";
 		local = "Connections";
 	}
@@ -80,7 +81,7 @@ class rep_fanins :public report
 {
 	public:
 		rep_fanins(uint32_t bits):report(bits)
-	{ 
+	{
 		global = "Incoming Connections";
 		local = "Connections";
 	}
@@ -93,8 +94,8 @@ class rep_fanins :public report
 class rep_packets_tcp :public report
 {
 	public:
-		rep_packets_tcp(uint32_t bits):report(bits) 
-	{ 
+		rep_packets_tcp(uint32_t bits):report(bits)
+	{
 		global = "Packetcount TCP";
 		local = "Packets";
 
@@ -107,7 +108,7 @@ class rep_packets_tcp :public report
 class rep_packets_udp :public report
 {
 	public:
-		rep_packets_udp(uint32_t bits):report(bits) 
+		rep_packets_udp(uint32_t bits):report(bits)
 	{
 		global = "Packetcount UDP";
 		local = "Packets";
@@ -120,7 +121,7 @@ class rep_packets_udp :public report
 class rep_failed :public report
 {
 	public:
-		rep_failed(uint32_t bits):report(bits) 
+		rep_failed(uint32_t bits):report(bits)
 	{
 		global = "Failed Connectons";
 		local = "Failed";
@@ -133,8 +134,8 @@ class rep_failed :public report
 class rep_simult :public report
 {
 	public:
-		rep_simult(uint32_t bits):report(bits) 
-	{ 
+		rep_simult(uint32_t bits):report(bits)
+	{
 		global = "Simultanous Connections";
 		local = "Connections";
 	}
