@@ -6,10 +6,10 @@ std::string CfgBase::get(const std::string& name, XMLElement* elem) throw(Illega
 {
 	if (!elem)
 		elem = _elem;
-	
+
 	if (elem->matches(name))
 		return elem->getFirstText();
-		
+
 	XMLNode* n = elem->getFirstChild(name);
 	if (!n)
 		throw IllegalEntry();
@@ -23,7 +23,7 @@ std::string CfgBase::getOptional(const std::string& name, XMLElement* elem)
 	try {
 		result = get(name, elem);
 	} catch (IllegalEntry ie) { }
-	
+
 	return result;
 }
 
@@ -58,7 +58,7 @@ bool CfgBase::getBool(const std::string& name, bool def, XMLElement* elem)
 		str = get(name, elem);
 		// make lower case
 		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
-		return (str == "true");
+		return ((str == "true") || (str == "1"));
 	} catch (IllegalEntry ie) { }
 
 	// return default value
@@ -98,7 +98,7 @@ unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit, uint
 		else
 			THROWEXCEPTION("Unkown time unit '%s'", a->getValue().c_str());
 	}
-	
+
 	// we didn't find the element, return default
 	return def;
 }
