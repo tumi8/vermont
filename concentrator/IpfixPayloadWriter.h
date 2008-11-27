@@ -43,11 +43,13 @@ class IpfixPayloadWriter
 
 	protected:
 		virtual void performShutdown();
+		void dumpEntry(Connection* conn);
 
 	private:
 		string path;
 		string filenamePrefix;
 		uint32_t noConnections; // how many connections of a run should be recorded?
+		uint64_t connectionID; // current connection id when storing files
 		list<Connection*> connections; // sorted list of recorded connections
 		bool filewarningIssued;
 		bool ignoreEmptyPayload; // ignores all flows with empty payload when set

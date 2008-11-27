@@ -17,6 +17,8 @@ IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
 {
     if (!elem) return;
 
+    bool noconnseen = false;
+
     XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -29,6 +31,7 @@ IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
 			filenamePrefix = e->getFirstText();
 		} else if (e->matches("connNumber")) {
 			noConnections = getInt("connNumber");
+			noconnseen = true;
 		} else if (e->matches("ignoreEmptyPayload")) {
 			ignoreEmptyPayload = getBool("ignoreEmptyPayload");
 		} else if (e->matches("ignoreIncompleteTCP")) {
@@ -43,7 +46,7 @@ IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
 	}
 	if (path=="") THROWEXCEPTION("IpfixPayloadWriterCfg: destPath not set in configuration!");
 	if (filenamePrefix=="") THROWEXCEPTION("IpfixPayloadWriterCfg: filenamePrefix not set in configuration!");
-	if (noConnections==0) THROWEXCEPTION("IpfixPayloadWriterCfg: connNumber not set in configuration, or value not > 0!");
+	if (!noconnseen) THROWEXCEPTION("IpfixPayloadWriterCfg: connNumber not set in configuration!");
 
 	struct stat s;
 	if (stat(path.c_str(), &s) != 0)
