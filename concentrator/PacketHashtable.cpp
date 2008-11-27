@@ -78,8 +78,8 @@ void PacketHashtable::copyDataNanoseconds(IpfixRecord::Data* bucket, const Ipfix
 	memcpy(bucket+efd->dstIndex, &ntp2, sizeof(ntp2));
 #ifdef DEBUG
 	if (ntohll(*(uint64_t*)(bucket+efd->dstIndex))<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)(bucket+efd->dstIndex))>(1300000000ULL+(2208988800ULL<<32))) {
-		msg(MSG_ERROR, "time before: %ds", reinterpret_cast<const struct timeval*>(src)->tv_sec);
-		msg(MSG_ERROR, "copy invalid end nano seconds: %lld s (%llX)", (ntohll(*(uint64_t*)(bucket+efd->dstIndex))>>32)-2208988800U, *(uint64_t*)(bucket+efd->dstIndex));
+		DPRINTFL(MSG_VDEBUG, "time before: %ds", reinterpret_cast<const struct timeval*>(src)->tv_sec);
+		DPRINTFL(MSG_VDEBUG, "copy invalid end nano seconds: %lld s (%llX)", (ntohll(*(uint64_t*)(bucket+efd->dstIndex))>>32)-2208988800U, *(uint64_t*)(bucket+efd->dstIndex));
 	}
 #endif
 }
@@ -507,8 +507,8 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 			*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, ntp2);
 #ifdef DEBUG
 			if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32))) {
-				msg(MSG_ERROR, "invalid start nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
-				msg(MSG_ERROR, "base: %llX , delta: %llX", *(uint64_t*)baseData, *(uint64_t*)deltaData);
+				DPRINTFL(MSG_VDEBUG, "invalid start nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
+				DPRINTFL(MSG_VDEBUG, "base: %llX , delta: %llX", *(uint64_t*)baseData, *(uint64_t*)deltaData);
 			}
 #endif
 			break;
@@ -527,7 +527,7 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 			*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, ntp2);
 #ifdef DEBUG
 			if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32)))
-				msg(MSG_ERROR, "invalid end nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
+				DPRINTFL(MSG_VDEBUG, "invalid end nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
 #endif
 			break;
 
