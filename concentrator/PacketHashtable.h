@@ -5,6 +5,8 @@
 #include "Rule.hpp"
 #include "sampler/Packet.h"
 #include "BaseHashtable.h"
+#include <iostream>
+#include <fstream>
 
 #include <boost/smart_ptr.hpp>
 
@@ -77,7 +79,10 @@ private:
 	};
 
 	ExpHelperTable expHelperTable;
+	bool snapshotWritten; /**< set to true, if snapshot of hashtable was already written */
+	time_t startTime; /**< if a snapshot of the hashtable should be performed, this variable is used and stores initialization time of this hashtable */
 
+	void snapshotHashtable();
 	void buildExpHelperTable();
 	static void copyDataEqualLengthNoMod(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataGreaterLengthIPNoMod(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);

@@ -35,7 +35,7 @@ private:
 	int aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data* flow, bool reverse);
 	uint32_t getHash(IpfixRecord::Data* data, bool reverse);
 	int equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2, bool reverse);
-	Bucket* lookupBucket(uint32_t hash, IpfixRecord::Data* data, bool reverse, Bucket** prevbucket);
+	HashtableBucket* lookupBucket(uint32_t hash, IpfixRecord::Data* data, bool reverse, HashtableBucket** prevbucket);
 	void bufferDataBlock(boost::shared_array<IpfixRecord::Data> data);
 	int equalRaw(IpfixRecord::FieldInfo::Type* data1Type, IpfixRecord::Data* data1,
 			IpfixRecord::FieldInfo::Type* data2Type, IpfixRecord::Data* data2);
@@ -47,7 +47,7 @@ private:
 	int compare8ByteField(IpfixRecord::Data* baseFlow, IpfixRecord::FieldInfo* baseFi,
 			IpfixRecord::Data* flow, IpfixRecord::FieldInfo* deltaFi);
 	void mapReverseElement(uint32_t tid);
-	void reverseFlowBucket(Bucket* bucket);
+	void reverseFlowBucket(HashtableBucket* bucket);
 };
 
 #endif /*FLOWHASHTABLE_H_*/

@@ -241,7 +241,6 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 			if (usedPartitions.size()>MAX_USEDTABLES) usedPartitions.pop_front();
 		}
 	}
-
 	string indexname = string(partitionname) + "_firstswitched";
 	if (!checkRelationExists(indexname.c_str())) {
 		ostringstream cisql;

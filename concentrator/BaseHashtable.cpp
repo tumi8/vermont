@@ -2,9 +2,9 @@
 
 #include <sstream>
 #include <stdint.h>
+#include <iostream>
 
 using namespace std;
-
 
 /**
  * Creates and initializes a new hashtable buffer for flows matching @c rule
@@ -27,6 +27,7 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  sourceID(new IpfixRecord::SourceID),
 	  dataDataRecordIM("IpfixDataDataRecord", 0),
 	  dataTemplateRecordIM("IpfixDataTemplateRecord", 0),
+	  hbucketIM("BucketListElement", 0),
 	  aggInProgress(false),
 	  resendTemplate(true)
 {
@@ -37,12 +38,11 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 
 	memset(sourceID.get(), 0, sizeof(IpfixRecord::SourceID));
 
-	buckets = new Bucket*[htableSize];
+	buckets = new HashtableBucket*[htableSize];
 	for (uint32_t i = 0; i < htableSize; i++)
 		buckets[i] = NULL;
 
 	createDataTemplate(rule);
-
 }
 
 /**
@@ -52,10 +52,10 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 uint32_t BaseHashtable::getPrivateDataLength(IpfixRecord::FieldInfo::Type type)
 {
 	switch (type.id) {
-		case IPFIX_ETYPEID_frontPayload:		// four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
-		case IPFIX_ETYPEID_revFrontPayload:		// "
-		case IPFIX_ETYPEID_maxPacketGap:		// old flow end time (to calculate packet gap)
-		case IPFIX_ETYPEID_revMaxPacketGap:		// old flow end time (to calculate packet gap)
+		case IPFIX_ETYPEID_frontPayload: // four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
+		case IPFIX_ETYPEID_revFrontPayload: // "
+		case IPFIX_ETYPEID_maxPacketGap: // old flow end time (to calculate packet gap)
+		case IPFIX_ETYPEID_revMaxPacketGap: // old flow end time (to calculate packet gap)
 			return 8;
 
 		default:
@@ -70,8 +70,8 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 	int dataLength = 0; /**< length in bytes of the @c data field */
 
 	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
-	dataTemplate->templateId=rule->id;
-	dataTemplate->preceding=rule->preceding;
+	dataTemplate->templateId = rule->id;
+	dataTemplate->preceding = rule->preceding;
 	dataTemplate->fieldCount = 0;
 	dataTemplate->fieldInfo = NULL;
 	fieldLength = 0;
@@ -81,8 +81,8 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 	dataTemplate->dataLength = 0;
 	dataTemplate->userData = NULL;
 
-	fieldModifier
-			= (Rule::Field::Modifier*)malloc(rule->fieldCount * sizeof(Rule::Field::Modifier));
+	fieldModifier = (Rule::Field::Modifier*) malloc(rule->fieldCount
+			* sizeof(Rule::Field::Modifier));
 
 	for (int32_t i = 0; i < rule->fieldCount; i++) {
 		Rule::Field* rf = rule->field[i];
@@ -90,7 +90,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 		if (rf->pattern != NULL) {
 			/* create new fixed-data field containing pattern */
 			dataTemplate->dataCount++;
-			dataTemplate->dataInfo = (IpfixRecord::FieldInfo*)realloc(dataTemplate->dataInfo,
+			dataTemplate->dataInfo = (IpfixRecord::FieldInfo*) realloc(dataTemplate->dataInfo,
 					sizeof(IpfixRecord::FieldInfo) * dataTemplate->dataCount);
 			IpfixRecord::FieldInfo* fi = &dataTemplate->dataInfo[dataTemplate->dataCount - 1];
 			fi->type = rf->type;
@@ -113,7 +113,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 		else if (rf->modifier != Rule::Field::DISCARD) {
 			/* define new data field with Rule::Field's type */
 			dataTemplate->fieldCount++;
-			dataTemplate->fieldInfo = (IpfixRecord::FieldInfo*)realloc(dataTemplate->fieldInfo,
+			dataTemplate->fieldInfo = (IpfixRecord::FieldInfo*) realloc(dataTemplate->fieldInfo,
 					sizeof(IpfixRecord::FieldInfo) * dataTemplate->fieldCount);
 			IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[dataTemplate->fieldCount - 1];
 			fi->type = rf->type;
@@ -128,11 +128,11 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 	uint32_t fpLengthOffset = 0;
 	uint32_t revfpLengthOffset = 0;
 	privDataLength = 0;
-	for (uint32_t i=0; i<dataTemplate->fieldCount; i++) {
+	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 		uint32_t len = getPrivateDataLength(fi->type);
-		if (len>0) {
-			fi->privDataOffset = fieldLength+privDataLength;
+		if (len > 0) {
+			fi->privDataOffset = fieldLength + privDataLength;
 			privDataLength += len;
 		}
 		if (fi->type.id == IPFIX_ETYPEID_frontPayload)
@@ -143,9 +143,9 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 
 	// update private data offsets for fields which access private data from other fields
 	// example: front payload length accesses data from front payload
-	for (uint32_t i=0; i<dataTemplate->fieldCount; i++) {
+	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
-		if (fi->type.id==IPFIX_ETYPEID_frontPayloadLen) {
+		if (fi->type.id == IPFIX_ETYPEID_frontPayloadLen) {
 			if (!fpLengthOffset) {
 				THROWEXCEPTION("no front payload field specified in template, so front payload length is not available either");
 			}
@@ -160,49 +160,50 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 	}
 }
 
-
 /**
  * De-allocates memory of the given hashtable buffer.
  * All remaining Buckets are exported, then destroyed
  */
 BaseHashtable::~BaseHashtable()
 {
-	for (uint32_t i = 0; i < htableSize; i++) if (buckets[i] != NULL) {
-		Bucket* bucket = buckets[i];
-		while (bucket != 0) {
-			Bucket* nextBucket = (Bucket*)bucket->next;
-			// we don't want to export the buckets, as the exporter thread may already be shut down!
-			//exportBucket(bucket);
-			destroyBucket(bucket);
-			bucket = nextBucket;
+	for (uint32_t i = 0; i < htableSize; i++)
+		if (buckets[i] != NULL) {
+			HashtableBucket* bucket = buckets[i];
+			while (bucket != 0) {
+				HashtableBucket* nextBucket = (HashtableBucket*) bucket->next;
+				// we don't want to export the buckets, as the exporter thread may already be shut down!
+				//exportBucket(bucket);
+				destroyBucket(bucket);
+				bucket = nextBucket;
+			}
 		}
-	}
 
 	delete[] buckets;
 	free(fieldModifier);
-
 }
 
 /**
  * Initializes memory for a new bucket in @c ht containing @c data
  */
-BaseHashtable::Bucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid)
+HashtableBucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Data> data,
+		uint32_t obsdomainid, HashtableBucket* next, HashtableBucket* prev, uint32_t hash)
 {
-	Bucket* bucket = new Bucket();
+	HashtableBucket* bucket = new HashtableBucket();
 	bucket->expireTime = time(0) + minBufferTime;
 	bucket->forceExpireTime = time(0) + maxBufferTime;
 	bucket->data = data;
-	bucket->next = 0;
+	bucket->next = next;
+	bucket->prev = prev;
+	bucket->hash = hash;
 	bucket->observationDomainID = obsdomainid;
 
 	return bucket;
 }
 
-
 /**
  * Exports the given @c bucket
  */
-void BaseHashtable::exportBucket(BaseHashtable::Bucket* bucket)
+void BaseHashtable::exportBucket(HashtableBucket* bucket)
 {
 	/* Pass Data Record to exporter interface */
 	IpfixDataDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
@@ -217,15 +218,13 @@ void BaseHashtable::exportBucket(BaseHashtable::Bucket* bucket)
 	statRecordsSent++;
 }
 
-
 /**
  * De-allocates memory used by the given @c bucket
  */
-void BaseHashtable::destroyBucket(BaseHashtable::Bucket* bucket)
+void BaseHashtable::destroyBucket(HashtableBucket* bucket)
 {
 	delete bucket;
 }
-
 
 /**
  * Exports all expired flows and removes them from the buffer
@@ -241,62 +240,64 @@ void BaseHashtable::expireFlows(bool all)
 	}
 
 	uint32_t now = time(0);
-
-	uint32_t noEntries = 0;
 	uint32_t emptyBuckets = 0;
 	uint32_t exportedBuckets = 0;
 	uint32_t multiEntries = 0;
+	HashtableBucket* bucket = 0;
+	BucketListElement* node = 0;
 
 	if (resendTemplate) {
 		sendDataTemplate();
 		resendTemplate = false;
 	}
 
-
-	/* check each hash bucket's spill chain */
-	for (uint32_t i = 0; i < htableSize; i++) {
-		if (buckets[i] != 0) {
-			Bucket* bucket = buckets[i];
-			Bucket* pred = 0;
-
-			/* iterate over spill chain */
-			bool firstentry = true;
-			while (bucket != 0) {
-				if (firstentry) firstentry = false;
-				else multiEntries++;
-				noEntries++;
-				Bucket* nextBucket = (Bucket*)bucket->next;
-				if ((now > bucket->expireTime) || (now > bucket->forceExpireTime) || all) {
-					if(now > bucket->forceExpireTime)  DPRINTF("expireFlows: forced expiry");
-					else if(now > bucket->expireTime)  DPRINTF("expireFlows: normal expiry");
-
-					exportedBuckets++;
-					exportBucket(bucket);
-					destroyBucket(bucket);
-					if (pred) {
-						pred->next = nextBucket;
-					} else {
-						buckets[i] = nextBucket;
+	if (!exportList.isEmpty) {
+		while (exportList.head) { //check the first entry in the BucketList
+			node = exportList.head;
+			bucket = node->bucket;
+			if ((bucket->expireTime < now) || (bucket->forceExpireTime < now) || all) {
+				if (now > bucket->forceExpireTime)
+					DPRINTF("expireFlows: forced expiry");
+				else if (now > bucket->expireTime)
+					DPRINTF("expireFlows: normal expiry");
+				exportedBuckets++;
+				if (bucket->next || bucket->prev)
+					multiEntries++;
+				if (!bucket->next && !bucket->prev)
+					emptyBuckets++;
+				if (!bucket->prev) {
+					if (bucket->next) {
+						buckets[bucket->hash] = bucket->next;
+						bucket->next->prev = 0;
 					}
-				} else {
-					pred = bucket;
+					else {
+						buckets[bucket->hash] = 0;
+					}
 				}
-
-				bucket = nextBucket;
-			}
-		} else {
-			emptyBuckets++;
-		}
+				if (bucket->prev) {
+					if (!bucket->next)
+						bucket->prev->next = 0;
+					else {
+						bucket->prev->next = bucket->next;
+						bucket->next->prev = bucket->prev;
+					}
+				}
+				exportBucket(bucket);
+				exportList.remove(node);
+				destroyBucket(bucket);
+				node->removeReference();
+			}//end if
+			else
+				break;
+		}//end while
 	}
 
-	statTotalEntries = noEntries;
-	statEmptyBuckets = emptyBuckets;
+	statTotalEntries -= exportedBuckets;
+	statEmptyBuckets += emptyBuckets;
 	statExportedBuckets += exportedBuckets;
-	statMultiEntries = multiEntries;
-
+	statMultiEntries -= multiEntries;
 	atomic_release(&aggInProgress);
 }
-
 
 /**
  * Checks whether the given @c type is one of the types that has to be aggregated
@@ -357,7 +358,6 @@ int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 	}
 }
 
-
 /**
  * sends datatemplate to following modules
  */
@@ -411,7 +411,6 @@ void BaseHashtable::postReconfiguration()
 	dataTemplate.get()->destroyed = false;
 }
 
-
 std::string BaseHashtable::getStatisticsXML(double interval)
 {
 	ostringstream oss;
@@ -420,6 +419,6 @@ std::string BaseHashtable::getStatisticsXML(double interval)
 	oss << "<multientryBuckets>" << statMultiEntries << "</multientryBuckets>";
 	uint32_t diff = statExportedBuckets - statLastExpBuckets;
 	statLastExpBuckets += diff;
-	oss << "<exportedEntries>" << (uint32_t)((double)diff/interval) << "</exportedEntries>";
+	oss << "<exportedEntries>" << (uint32_t) ((double) diff / interval) << "</exportedEntries>";
 	return oss.str();
 }

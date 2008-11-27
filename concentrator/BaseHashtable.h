@@ -26,33 +26,20 @@
 #include <stdint.h>
 
 #include "IpfixRecord.hpp"
+#include "HashtableBuckets.h"
 #include "Rule.hpp"
 #include "reconf/Module.h"
 #include "common/Sensor.h"
-
 #include "common/atomic_lock.h"
 
 
 class BaseHashtable : public Sensor
 {
 public:
-	/**
-	 * Single Bucket containing one buffered flow's variable data.
-	 * Is either a direct entry in @c Hashtable::bucket or a member of another Hashtable::Bucket's spillchain
-	 */
-	class Bucket
-	{
-	public:
-		uint32_t expireTime; /**< timestamp when this bucket will expire if no new flows are added */
-		uint32_t forceExpireTime; /**< timestamp when this bucket is forced to expire */
-		boost::shared_array<IpfixRecord::Data> data; /**< contains variable fields of aggregated flow; format defined in Hashtable::dataInfo::fieldInfo */
-		Bucket* next; /**< next bucket in spill chain */
-		uint32_t observationDomainID;
-	};
-
 
 	BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, uint16_t minBufferTime,
 			uint16_t maxBufferTime, uint8_t hashbits);
+
 	virtual ~BaseHashtable();
 
 	virtual std::string getStatisticsXML(double interval);
@@ -85,7 +72,7 @@ public:
 
 protected:
 	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
-	Bucket** buckets; /**< array of pointers to hash buckets at start of spill chain. Members are NULL where no entry present */
+	HashtableBucket** buckets; /**< array of pointers to hash buckets at start of spill chain. Members are NULL where no entry present */
 
 	uint32_t htableBits;
 	uint32_t htableSize;
@@ -107,17 +94,21 @@ protected:
 	Source<IpfixRecord*>* recordSource; /**< pointer to vermont module which is able to send IpfixRecords */
 	boost::shared_ptr<IpfixRecord::SourceID> sourceID; /**< used for hack: we *must* supply an observationDomainID, so take a static one */
 
+	HashtableBucketList exportList;
+
 	InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
 	InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
+	InstanceManager<BucketListElement> hbucketIM;
 
 	alock_t aggInProgress; /** indicates if currently an element is aggregated in the hashtable, used for atomic lock for preReconfiguration */
 
 	bool resendTemplate; /**< set to true if template needs to be sent again */
 
 	int isToBeAggregated(IpfixRecord::FieldInfo::Type type);
-	Bucket* createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid);
-	void exportBucket(Bucket* bucket);
-	void destroyBucket(Bucket* bucket);
+	HashtableBucket* createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid,
+		HashtableBucket* next, HashtableBucket* prev, uint32_t hash);
+	void exportBucket(HashtableBucket* bucket);
+	void destroyBucket(HashtableBucket* bucket);
 	void createDataTemplate(Rule* rule);
 	void sendDataTemplate();
 	uint32_t getPrivateDataLength(IpfixRecord::FieldInfo::Type);

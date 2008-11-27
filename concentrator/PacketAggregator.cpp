@@ -30,7 +30,8 @@
  */
 PacketAggregator::PacketAggregator(uint32_t pollinterval)
 	: BaseAggregator(pollinterval),
-	  statPacketsReceived(0)
+	  statPacketsReceived(0),
+	  statIgnoredPackets(0)
 {
 }
 

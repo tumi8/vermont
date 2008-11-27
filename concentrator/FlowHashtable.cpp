@@ -442,9 +442,9 @@ int FlowHashtable::equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2,
 }
 
 
-BaseHashtable::Bucket* FlowHashtable::lookupBucket(uint32_t hash, IpfixRecord::Data* data, bool reverse, Bucket** prevBucket)
+HashtableBucket* FlowHashtable::lookupBucket(uint32_t hash, IpfixRecord::Data* data, bool reverse, HashtableBucket** prevBucket)
 {
-	Bucket* bucket = buckets[hash];
+	HashtableBucket* bucket = buckets[hash];
 	*prevBucket = NULL;
 
 	if (bucket != NULL) {
@@ -455,7 +455,7 @@ BaseHashtable::Bucket* FlowHashtable::lookupBucket(uint32_t hash, IpfixRecord::D
 			}
 
 			*prevBucket = bucket;
-			bucket = (Bucket*)bucket->next;
+			bucket = (HashtableBucket*)bucket->next;
 		}
 	}
 
@@ -465,7 +465,7 @@ BaseHashtable::Bucket* FlowHashtable::lookupBucket(uint32_t hash, IpfixRecord::D
 /**
  * turns a whole flow record inside its bucket around for biflow aggregation
  */
-void FlowHashtable::reverseFlowBucket(Bucket* bucket)
+void FlowHashtable::reverseFlowBucket(HashtableBucket* bucket)
 {
 	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
@@ -493,13 +493,17 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 
 	uint32_t nhash = getHash(data.get(), false);
 	DPRINTFL(MSG_VDEBUG, "nhash=%u", nhash);
-	Bucket* prevbucket;
-	Bucket* bucket = lookupBucket(nhash, data.get(), false, &prevbucket);
+	HashtableBucket* prevbucket;
+	HashtableBucket* bucket = lookupBucket(nhash, data.get(), false, &prevbucket);
 
 	if (bucket != NULL) {
 		DPRINTFL(MSG_VDEBUG, "aggregating flow");
 		aggregateFlow(bucket->data.get(), data.get(), false);
 		bucket->expireTime = time(0) + minBufferTime;
+		if (bucket->forceExpireTime>bucket->expireTime) {
+			exportList.remove(bucket->listNode);
+			exportList.push(bucket->listNode);
+		}
 	} else {
 		if (biflowAggregation) {
 			// try reverse flow
@@ -515,23 +519,36 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 					// delete reference from hash table
 					if (prevbucket==NULL)
 						buckets[rhash] = bucket->next;
-					else
+					else {
 						prevbucket->next = bucket->next;
+					}
+					if (bucket->next!=NULL)
+						bucket->next->prev = prevbucket;
 					// insert into hash table again
 					nhash = getHash(bucket->data.get(), false);
 					DPRINTFL(MSG_VDEBUG, "nhash=%u", nhash);
 					bucket->next = buckets[nhash];
 					buckets[nhash] = bucket;
-
+					bucket->prev = 0;
+					if (bucket->next != NULL) bucket->next->prev = bucket;
+					bucket->expireTime = time(0) + minBufferTime;
+					if (bucket->forceExpireTime>bucket->expireTime) {
+						exportList.remove(bucket->listNode);
+						exportList.push(bucket->listNode);
+					}
 				}
-				bucket->expireTime = time(0) + minBufferTime;
 			}
 		}
 		if (bucket == NULL) {
 			DPRINTFL(MSG_VDEBUG, "creating new bucket");
-			Bucket* n = buckets[nhash];
-			buckets[nhash] = createBucket(data, 0); // FIXME: insert observationDomainID!
-			buckets[nhash]->next = n;
+			HashtableBucket* n = buckets[nhash];
+			buckets[nhash] = createBucket(data, 0, n, 0, nhash); // FIXME: insert observationDomainID!
+			if (n != NULL) n->prev = buckets[nhash];
+			BucketListElement* node = hbucketIM.getNewInstance();
+			node->reset();
+			buckets[nhash]->listNode = node;
+			node->bucket = buckets[nhash];
+			exportList.push(node);
 		}
 	}
 

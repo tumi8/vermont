@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -60,7 +60,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, u
 	statPacketsInFlows = 0;
 	currentTemplateId = 0;
 	lastTemplateId = SENDER_TEMPLATE_ID_LOW;
-	
+
 	nextTimeout.tv_sec = 0;
 	nextTimeout.tv_nsec = 0;
 	curTimeStep.tv_sec = 0;
@@ -70,18 +70,18 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, u
 		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
 		goto out;
 	}
-	
+
 	ipfix_set_sctp_lifetime(ipfixExporter, sctpDataLifetime);
 	ipfix_set_sctp_reconnect_timer(ipfixExporter, sctpReconnectInterval);
 	ipfix_set_template_transmission_timer(ipfixExporter, templateRefreshInterval);
-	
-	
+
+
 	msg(MSG_DEBUG, "IpfixSender: running");
 	return;
-	
+
 out:
 	THROWEXCEPTION("IpfixSender creation failed");
-	return;	
+	return;
 }
 
 /**
@@ -90,7 +90,7 @@ out:
 IpfixSender::~IpfixSender()
 {
 	shutdown(false);
-	
+
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	ipfix_deinit_exporter(exporter);
 }
@@ -114,7 +114,7 @@ void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_pr
 	    case SCTP:
 	    	msg(MSG_INFO, "IpfixSender: adding SCTP://%s:%d to exporter", ip, port);
 	    	break;
-#ifdef IPFIXLOLIB_RAWDIR_SUPPORT 
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 	    case RAWDIR:
 	    	msg(MSG_INFO, "IpfixSender: adding RAWDIR://%s to exporter", ip);
 	    	break;
@@ -182,15 +182,15 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 	uint16_t my_template_id;
 	uint16_t my_preceding;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
-	
+
 	if (!exporter) {
 		THROWEXCEPTION("sndIpfix: Exporter not set");
 	}
-	
+
  	if (isTemplateRegistered(dataTemplateInfo.get())) {
  		// TODO: here we should check if both templates are the same, if they are, we do not need
- 		// to inform ipfixlolib about it	
- 		// we just assume that templates using the same id are identical		
+ 		// to inform ipfixlolib about it
+ 		// we just assume that templates using the same id are identical
  	} else {
  		addRegisteredTemplate(dataTemplateInfo);
  	}
@@ -208,7 +208,7 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 		/* FIXME: Does not always work, e.g. if more than 50000 new Templates per minute are created */
 		lastTemplateId = SENDER_TEMPLATE_ID_LOW;
 	}
-	
+
 	int i;
 
 	/* Count number of IPv4 fields with length 5 */
@@ -311,7 +311,7 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 	}
 
 	msg(MSG_INFO, "sndIpfix created template with ID %u", my_template_id);
-	
+
 	sendRecords();
 }
 
@@ -327,7 +327,7 @@ void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* 
 	if (!exporter) {
 		THROWEXCEPTION("exporter not set");
 	}
-	
+
 	removeRegisteredTemplate(record->dataTemplateInfo.get());
 
 	uint16_t my_template_id = record->dataTemplateInfo->templateId;
@@ -343,7 +343,7 @@ void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* 
 	}
 
 	free(record->dataTemplateInfo->userData);
-	
+
 	sendRecords();
 }
 
@@ -354,11 +354,11 @@ void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* 
  * @param templateId of the new Data Set
  * @return returns -1 on error, 0 otherwise
  */
-void IpfixSender::startDataSet(uint16_t templateId) 
+void IpfixSender::startDataSet(uint16_t templateId)
 {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	uint16_t my_n_template_id = htons(templateId);
-	
+
 	/* check if we can use the current Data Set */
 	//TODO: make maximum number of records per Data Set variable
 	if((noCachedRecords < 10) && (templateId == currentTemplateId))
@@ -366,37 +366,37 @@ void IpfixSender::startDataSet(uint16_t templateId)
 
 	if(noCachedRecords > 0)
 		endAndSendDataSet();
-	
+
 	if (ipfix_start_data_set(exporter, my_n_template_id) != 0 ) {
 		THROWEXCEPTION("sndIpfix: ipfix_start_data_set failed!");
 	}
 
 	currentTemplateId = templateId;
 }
-	
+
 
 /**
  * Terminates and sends current Data Set if available.
  * @return returns -1 on error, 0 otherwise
  */
-void IpfixSender::endAndSendDataSet() 
+void IpfixSender::endAndSendDataSet()
 {
 	if(noCachedRecords > 0) {
 		ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
-	
+
 		if (ipfix_end_data_set(exporter, noCachedRecords) != 0) {
 			THROWEXCEPTION("sndIpfix: ipfix_end_data_set failed");
 		}
-		
+
 		// determine if we need to wait (we don't want to exceed the defined packet rate per second)
 		// check in 100ms steps if maximum packet rate is reached - if yes, wait until the 100ms step
 		// is over
 		struct timeval tv;
 		gettimeofday(&tv, 0);
-		if ((tv.tv_sec==curTimeStep.tv_sec) && (tv.tv_usec/100000==curTimeStep.tv_usec/100000)) {			
+		if ((tv.tv_sec==curTimeStep.tv_sec) && (tv.tv_usec/100000==curTimeStep.tv_usec/100000)) {
 			if (recordsSentStep>maxRecordRate/10) {
 				// wait until current timestep is over
-				usleep(100000-(tv.tv_usec%100000));				
+				usleep(100000-(tv.tv_usec%100000));
 			}
 		} else {
 			curTimeStep = tv;
@@ -425,7 +425,7 @@ void IpfixSender::removeRecordReferences()
 	}
 	noCachedRecords = 0;
 }
-	
+
 
 /**
  * Put new Data Record in outbound exporter queue
@@ -469,16 +469,16 @@ void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 			ipfix_put_data_field(exporter, data + fi->offset, fi->type.length);
 		}
 	}
-	 
+
 	registerTimeout();
 
 	statSentDataRecords++;
 	recordsSentStep++;
-	
+
 	recordsToRelease.push(record);
-	
+
 	noCachedRecords++;
-	
+
 	sendRecords();
 }
 
@@ -488,23 +488,23 @@ void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 void IpfixSender::onReconfiguration2()
 {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
-	
+
 	if (!exporter) {
 		THROWEXCEPTION("exporter not set");
 	}
-	
+
 	list<boost::shared_ptr<IpfixRecord::TemplateInfo> >::iterator iter = registeredTemplates.begin();
 	while (iter != registeredTemplates.end()) {
 		if (iter->get()->destroyed) {
 			uint16_t id = iter->get()->templateId;
 
-			// Remove template from ipfixlolib 
+			// Remove template from ipfixlolib
 			if (0 != ipfix_remove_template_set(exporter, id)) {
 				msg(MSG_FATAL, "sndIpfix: ipfix_remove_template_set failed");
 			} else {
 				msg(MSG_INFO, "sndIpfix removed template with ID %u", id);
-			}							
-			
+			}
+
 			iter = registeredTemplates.erase(iter);
 		} else {
 			iter++;
@@ -520,16 +520,16 @@ void IpfixSender::onReconfiguration2()
 void IpfixSender::sendRecords(bool forcesend)
 {
 	if (noCachedRecords == 0) return;
-	
+
 	// TODO: extend ipfixlolib so that as many records as possible may be stored
 	// in one network packet
 	if ((noCachedRecords >= 10) || forcesend) {
 		// send packet
 		endAndSendDataSet();
 		statSentPackets++;
-		// set next timeout
-		addToCurTime(&nextTimeout, recordCacheTimeout);
 	}
+	// set next timeout
+	addToCurTime(&nextTimeout, recordCacheTimeout);
 }
 
 
@@ -549,7 +549,7 @@ void IpfixSender::flushPacket()
 void IpfixSender::onTimeout(void* dataPtr)
 {
 	timeoutRegistered = false;
-	
+
 	if (recordsAlreadySent) {
 		timeval tv;
 		gettimeofday(&tv, 0);
@@ -570,7 +570,7 @@ void IpfixSender::onTimeout(void* dataPtr)
 void IpfixSender::registerTimeout()
 {
 	if (timeoutRegistered) return;
-	
+
 	addToCurTime(&nextTimeout, recordCacheTimeout);
 	timer->addTimeout(this, nextTimeout, NULL);
 	timeoutRegistered = true;
@@ -595,7 +595,7 @@ void IpfixSender::onReconfiguration1()
 string IpfixSender::getStatisticsXML(double interval)
 {
 	char buf[200];
-	snprintf(buf, ARRAY_SIZE(buf), "<totalSentDataRecords>%u</totalSentDataRecords><totalSentUDPDataRecordPackets>%u</totalSentUDPDataRecordPackets><totalPacketsInFlows>%u</totalPacketsInFlows>", 
+	snprintf(buf, ARRAY_SIZE(buf), "<totalSentDataRecords>%u</totalSentDataRecords><totalSentUDPDataRecordPackets>%u</totalSentUDPDataRecordPackets><totalPacketsInFlows>%u</totalPacketsInFlows>",
 			statSentDataRecords, statSentPackets, statPacketsInFlows);
 	return buf;
 }

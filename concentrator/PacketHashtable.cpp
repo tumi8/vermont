@@ -1,15 +1,20 @@
 #include "PacketHashtable.h"
+#include <iostream>
+#include <fstream>
 
 #include "crc.hpp"
 
 #include "ipfix.hpp"
 #include "common/Misc.h"
 #include "common/Time.h"
+#include "HashtableBuckets.h"
+
 
 
 PacketHashtable::PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
-	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits)
+	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits),
+	snapshotWritten(false), startTime(time(0))
 {
 	if (rule->biflowAggregation)
 		THROWEXCEPTION("PacketAggregator can not perform biflow aggregation, but one of its rules is configured to do that");
@@ -716,38 +721,83 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 	uint32_t hash = expCalculateHash(p->netHeader);
 
 	// search bucket inside hashtable
-	Bucket* bucket = buckets[hash];
+	HashtableBucket* bucket = buckets[hash];
 	if (bucket == 0) {
 		// slot is free, place bucket there
 		DPRINTF("creating new bucket");
-		buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID);
-		atomic_release(&aggInProgress);
-		return;
-	}
+		buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID, 0, 0, hash);
+		BucketListElement* node = hbucketIM.getNewInstance();
+		node->reset();
+		node->bucket = buckets[hash];
+		buckets[hash]->listNode = node;
+		exportList.push(node);
+		statTotalEntries++;
+	} else {
+		// This slot is already used, search spill chain for equal flow
+		while(1) {
+			if (expEqualFlow(bucket->data.get(), p)) {
+				DPRINTF("appending to bucket\n");
 
-	// This slot is already used, search spill chain for equal flow
-	while(1) {
-		if (expEqualFlow(bucket->data.get(), p)) {
-			DPRINTF("appending to bucket\n");
+				expAggregateFlow(bucket->data.get(), p);
 
-			expAggregateFlow(bucket->data.get(), p);
+				// TODO: tobi_optimize
+				// replace call of time() with access to a static variable which is updated regularly (such as every 100ms)
+				bucket->expireTime = time(0) + minBufferTime;
 
-			// TODO: tobi_optimize
-			// replace call of time() with access to a static variable which is updated regularly (such as every 100ms)
-			bucket->expireTime = time(0) + minBufferTime;
+				if (bucket->forceExpireTime>bucket->expireTime) {
+					exportList.remove(bucket->listNode);
+					exportList.push(bucket->listNode);
+				}
+				break;
+			}
 
-			break;
+			if (bucket->next == 0) {
+				DPRINTF("creating bucket\n");
+				statTotalEntries++;
+				statMultiEntries++;
+				HashtableBucket* buck = createBucket(buildBucketData(p), p->observationDomainID, 0, bucket, hash);
+				bucket->next = buck;
+				BucketListElement* node = hbucketIM.getNewInstance();
+				node->reset();
+				exportList.push(node);
+				node->bucket = buck;
+				buck->listNode = node;
+				break;
+			}
+			bucket = (HashtableBucket*)bucket->next;
 		}
-
-		if (bucket->next == 0) {
-			DPRINTF("creating bucket\n");
-
-			bucket->next = createBucket(buildBucketData(p), p->observationDomainID);
-			break;
-		}
-		bucket = (Bucket*)bucket->next;
 	}
+	//if (!snapshotWritten && (time(0)- 300 > starttime)) writeHashtable();
+	// FIXME: enable snapshots again by configuration
 	atomic_release(&aggInProgress);
 }
 
+void PacketHashtable::snapshotHashtable()
+{
+	// FIXME: this snapshotting code is not good ...
+	int count = 0;
+	ofstream fout("/home/sistmika/vermont/dos-attack/hashtable.txt");
+	if (fout){
+
+		fout << "bucket\tnumber\n";
+		for(uint32_t i = 0; i < htableSize; i++){
+			HashtableBucket* bucket = buckets[i];
+			if (bucket == 0) count = 0;
+			else{
+				count++;
+				while(bucket->next != 0){
+					count++;
+					bucket = (HashtableBucket*)bucket->next;
+					}
+			}
+			fout << i+1 << "\t" << count  << "\n";
+			count =0;
+		}
+		fout.close();
+		snapshotWritten = true;
+	}
+	else {
+	DPRINTF("unable to open file to write Hashtable\n");
+	}
+}
 
