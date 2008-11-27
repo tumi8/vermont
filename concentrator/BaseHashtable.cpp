@@ -126,6 +126,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 
 	// add private data offsets for fields
 	uint32_t fpLengthOffset = 0;
+	uint32_t revfpLengthOffset = 0;
 	privDataLength = 0;
 	for (uint32_t i=0; i<dataTemplate->fieldCount; i++) {
 		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
@@ -134,7 +135,10 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			fi->privDataOffset = fieldLength+privDataLength;
 			privDataLength += len;
 		}
-		if (fi->type.id==IPFIX_ETYPEID_frontPayload) fpLengthOffset = fi->privDataOffset+4;
+		if (fi->type.id == IPFIX_ETYPEID_frontPayload)
+			fpLengthOffset = fi->privDataOffset + 4;
+		if (fi->type.id == IPFIX_ETYPEID_revFrontPayload)
+			revfpLengthOffset = fi->privDataOffset + 4;
 	}
 
 	// update private data offsets for fields which access private data from other fields
@@ -146,6 +150,12 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 				THROWEXCEPTION("no front payload field specified in template, so front payload length is not available either");
 			}
 			fi->privDataOffset = fpLengthOffset;
+		}
+		if (fi->type.id == IPFIX_ETYPEID_revFrontPayloadLen) {
+			if (!revfpLengthOffset) {
+				THROWEXCEPTION("no reverse front payload field specified in template, so front payload length is not available either");
+			}
+			fi->privDataOffset = revfpLengthOffset;
 		}
 	}
 }

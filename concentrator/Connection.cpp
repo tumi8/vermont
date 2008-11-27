@@ -150,21 +150,14 @@ Connection::Connection(IpfixDataDataRecord* record)
 	if (fi != 0) dstTcpControlBits = *(uint8_t*)(record->data + fi->offset);
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayload, 0);
 	if (fi != 0 && fi->type.length) {
-		IpfixRecord::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadLen, 0);
-		if (filen != 0)
-			srcPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
-		else
-			srcPayloadLen = fi->type.length;
+		srcPayloadLen = fi->type.length;
 		srcPayload = new char[srcPayloadLen];
 		memcpy(srcPayload, record->data + fi->offset, srcPayloadLen);
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayload, 0);
 	if (fi != 0 && fi->type.length) {
 		IpfixRecord::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayloadLen, 0);
-		if (filen != 0)
-			dstPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
-		else
-			dstPayloadLen = fi->type.length;
+		dstPayloadLen = fi->type.length;
 		dstPayload = new char[dstPayloadLen];
 		memcpy(dstPayload, record->data + fi->offset, dstPayloadLen);
 	}

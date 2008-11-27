@@ -9,7 +9,7 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 {
 	if (!elem)
 		return;
-	
+
 	rules = new Rules;
 	htableBits = HT_DEFAULT_BITSIZE;
 
@@ -68,7 +68,7 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 				rule->field[rule->fieldCount++] = ruleField;
 		} else {
 			THROWEXCEPTION("Unknown rule %s in Aggregator found", e->getName().c_str());
-		}		
+		}
 	}
 
 	// we found no rules, so do cleanup
@@ -108,8 +108,8 @@ Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 	if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
 		ruleField->type.length++; // for additional mask field
 	}
-	
-	if (ruleField->type.id==IPFIX_ETYPEID_frontPayload) {
+
+	if (ruleField->type.id==IPFIX_ETYPEID_frontPayload || ruleField->type.id==IPFIX_ETYPEID_revFrontPayload) {
 		if (ruleField->type.length<5)
 			THROWEXCEPTION("type %s must have at least size 5!", typeid2string(ruleField->type.id));
 	}
