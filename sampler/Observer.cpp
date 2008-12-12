@@ -264,44 +264,43 @@ void *Observer::observerThread(void *arg)
       				break;
       			}
 			DPRINTFL(MSG_VDEBUG, "got new packet!");
-
-			if (gettimeofday(&now, NULL) < 0) {
-				msg(MSG_FATAL, "Error gettimeofday: %s", strerror(errno));
-				break;
-			}
-			if(firstPacket)
-			{
-				start = now;
-				first = packetHeader.ts;
-				firstPacket = false;
-      		}
-			else {
-				timersub(&now, &start, &delta_now);
-				timersub(&packetHeader.ts, &first, &delta_file);
-				if(obs->stretchTimeInt != 1) {
-					if(obs->stretchTimeInt == 0)
-						timermulfloat(&delta_file, &delta_to_be, obs->stretchTime);
-					else
-						timermul(&delta_file, &delta_to_be, obs->stretchTimeInt);
+			if (obs->stretchTime > 0) {
+				if (gettimeofday(&now, NULL) < 0) {
+					msg(MSG_FATAL, "Error gettimeofday: %s", strerror(errno));
+					break;
 				}
-				else
-					delta_to_be = delta_file;
-				DPRINTF("delta_now %d.%d delta_to_be %d.%d", delta_now.tv_sec, delta_now.tv_usec,  delta_to_be.tv_sec, delta_to_be.tv_usec);
-				if(timercmp(&delta_now, &delta_to_be, <))
+				if(firstPacket)
 				{
-					timersub(&delta_to_be, &delta_now, &wait_val);
-					wait_spec.tv_sec = wait_val.tv_sec;
-					wait_spec.tv_nsec = wait_val.tv_usec * 1000;
-					if(nanosleep(&wait_spec, NULL) != 0)
-						msg(MSG_INFO, "Observer: nanosleep returned nonzero value");
+					start = now;
+					first = packetHeader.ts;
+					firstPacket = false;
+				} else {
+					timersub(&now, &start, &delta_now);
+					timersub(&packetHeader.ts, &first, &delta_file);
+					if(obs->stretchTimeInt != 1) {
+						if(obs->stretchTimeInt == 0)
+							timermulfloat(&delta_file, &delta_to_be, obs->stretchTime);
+						else
+							timermul(&delta_file, &delta_to_be, obs->stretchTimeInt);
+					}
+					else
+						delta_to_be = delta_file;
+					DPRINTF("delta_now %d.%d delta_to_be %d.%d", delta_now.tv_sec, delta_now.tv_usec,  delta_to_be.tv_sec, delta_to_be.tv_usec);
+					if(timercmp(&delta_now, &delta_to_be, <))
+					{
+						timersub(&delta_to_be, &delta_now, &wait_val);
+						wait_spec.tv_sec = wait_val.tv_sec;
+						wait_spec.tv_nsec = wait_val.tv_usec * 1000;
+						if(nanosleep(&wait_spec, NULL) != 0)
+							msg(MSG_INFO, "Observer: nanosleep returned nonzero value");
+					}
+					else if (delta_now.tv_sec > (delta_to_be.tv_sec + 1) && obs->stretchTime!=INFINITY)
+					    if (!obs->slowMessageShown) {
+					    	obs->slowMessageShown = true;
+					    	msg(MSG_ERROR, "Observer: reading from file is more than 1 second behind schedule!");
+					    }
 				}
-				else if (delta_now.tv_sec > (delta_to_be.tv_sec + 1) && obs->stretchTime!=INFINITY)
-				    if (!obs->slowMessageShown) {
-				    	obs->slowMessageShown = true;
-				    	msg(MSG_ERROR, "Observer: reading from file is more than 1 second behind schedule!");
-				    }
 			}
-
 			// optionally replace the timestamp with current time
 			if (obs->replaceTimestampsFromFile)
 			    timeradd(&start, &delta_to_be, &packetHeader.ts);
