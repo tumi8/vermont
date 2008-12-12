@@ -4,7 +4,7 @@
 
 ConnectionFilter::ConnectionFilter(unsigned Timeout, unsigned bytes, unsigned hashFunctions, unsigned filterSize)
 	:  hashParams(hashFunctions), synFilter(&hashParams, filterSize, false), exportFilter(&hashParams, filterSize, false),
-	  connectionFilter(&hashParams, filterSize, false), timeout(Timeout), exportBytes(bytes)
+	  connectionFilter(&hashParams, filterSize, false), timeout(Timeout), exportBytes(bytes), exportControlPackets(true)
 {
 	msg(MSG_INFO, "Created connectionFilter with parameters:");
 	msg(MSG_INFO, "\t - %i seconds timeout", timeout);
@@ -15,7 +15,7 @@ ConnectionFilter::ConnectionFilter(unsigned Timeout, unsigned bytes, unsigned ha
 
 ConnectionFilter::ConnectionFilter(unsigned Timeout, unsigned bytes, unsigned hashFunctions, unsigned filterSize, unsigned seed)
 	: hashParams(hashFunctions, seed), synFilter(&hashParams, filterSize, false), exportFilter(&hashParams, filterSize, false),
-	connectionFilter(&hashParams, filterSize, false), timeout(Timeout), exportBytes(bytes)
+	connectionFilter(&hashParams, filterSize, false), timeout(Timeout), exportBytes(bytes), exportControlPackets(true)
 {
 	msg(MSG_INFO, "Created connectionFilter with parameters:");
 	msg(MSG_INFO, "\t - %i seconds timeout", timeout);
@@ -48,7 +48,7 @@ bool ConnectionFilter::processPacket(Packet* p)
 		synFilter.set(key.data, key.len, (agetime_t)p->timestamp.tv_sec);
 		DPRINTF("ConnectionFilter: synFilter saved time %u", synFilter.get(key.data, key.len));
 		// do not export SYN packet, or should we?
-		return false;
+		return exportControlPackets;
 	} else if (*((uint8_t*)p->data + flagsOffset) & RST || *((uint8_t*)p->data + flagsOffset) & FIN) {
 		
 		DPRINTF("ConnectionFilter: Got %s packet", *((uint8_t*)p->data + flagsOffset) & RST?"RST":"FIN");
@@ -58,7 +58,7 @@ bool ConnectionFilter::processPacket(Packet* p)
 		DPRINTF("ConnectionFilter: connectionFilter saved time %u", connectionFilter.get(key.data, key.len));
 
 		// do not export FIN/RST packets, or should we?
-		return false;
+		return exportControlPackets;
 	} else {
 		DPRINTF("ConnectionFilter: Got a normal packet");
 		if ((tmp = exportFilter.get(key.data, key.len)) > 0) {

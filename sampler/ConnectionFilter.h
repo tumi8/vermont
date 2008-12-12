@@ -13,8 +13,8 @@ public:
 	ConnectionFilter(unsigned timeout, unsigned bytes, unsigned hashFunctions, unsigned FilterSize);
 	ConnectionFilter(unsigned timeout, unsigned bytes, unsigned hashFunctions, unsigned FilterSize, unsigned seed);
 
-
 	virtual bool processPacket(Packet* p);
+	void setExportControlPackets(bool e) { exportControlPackets = e; }
 protected:
 	HashParams hashParams;
 	AgeBloomFilter synFilter;
@@ -22,6 +22,7 @@ protected:
 	AgeBloomFilter connectionFilter;
 	unsigned timeout;
 	unsigned exportBytes;
+	bool exportControlPackets;
 };
 
 #endif

@@ -3,6 +3,7 @@
 #include <iostream>
 
 StateConnectionFilter::StateConnectionFilter(unsigned timeout, unsigned bytes)
+	: exportControlPackets(true)
 {
 	this->timeout = timeout;
 	this->exportBytes = bytes;
@@ -44,13 +45,13 @@ bool StateConnectionFilter::processPacket(Packet* p, bool connFilterResult)
 		if (exportList.find(key) == exportList.end()) {
 			exportList[key] = 0;
 		}
-		return false;
+		return exportControlPackets;
 	} else if (*((uint8_t*)p->data + flagsOffset) & RST || *((uint8_t*)p->data + flagsOffset) & FIN) {
 		DPRINTF("StateConnectionFilter: Got %s packet", *((uint8_t*)p->data + flagsOffset) & RST?"RST":"FIN");
 		if (exportList.find(key) != exportList.end()) {
 			exportList.erase(exportList.find(key));
 		}
-		return false;
+		return exportControlPackets;
 	} else {
 		DPRINTF("StateConnectionFilter: Got a normal packet");
 		if (exportList.find(key) == exportList.end()) {

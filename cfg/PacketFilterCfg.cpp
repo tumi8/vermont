@@ -244,6 +244,7 @@ Module* PacketStateConnectionFilterCfg::getInstance()
 		instance = new StateConnectionFilter(
 			getInt("timeout", 3),
 			getInt("bytes", 100));
+		instance->setExportControlPackets(getBool("exportControlPackets", true));
 	}
 
 	return (Module*)instance;
@@ -267,6 +268,7 @@ Module* PacketConnectionFilterCfg::getInstance()
 			getInt("bytes", 100),
 			getInt("hashFunctions", 3),
 			getInt("filterSize", 1000));
+		instance->setExportControlPackets(getBool("exportControlPackets", true));
 	}
 
 	return (Module*)instance;

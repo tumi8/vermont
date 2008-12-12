@@ -16,10 +16,13 @@ public:
 
 	bool processPacket(Packet* p, bool connFilterResult);
 	virtual bool processPacket(Packet* p);
+	
+	void setExportControlPackets(bool e) { exportControlPackets = e; }
 protected:
 	unsigned timeout;
 	unsigned exportBytes;
 	std::map<QuintupleKey, int> exportList;
+	bool exportControlPackets;
 };
 
 #endif
