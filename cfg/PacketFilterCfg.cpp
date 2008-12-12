@@ -58,6 +58,7 @@ PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
 			continue;
 		} else {
 			msg(MSG_FATAL, "Unkown packet filter %s\n", e->getName().c_str());
+			THROWEXCEPTION("Unkown packet filter %s\n", e->getName().c_str());
 			continue;
 		}
 
