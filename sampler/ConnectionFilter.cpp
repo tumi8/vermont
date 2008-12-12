@@ -6,12 +6,22 @@ ConnectionFilter::ConnectionFilter(unsigned Timeout, unsigned bytes, unsigned ha
 	:  hashParams(hashFunctions), synFilter(&hashParams, filterSize, false), exportFilter(&hashParams, filterSize, false),
 	  connectionFilter(&hashParams, filterSize, false), timeout(Timeout), exportBytes(bytes)
 {
+	msg(MSG_INFO, "Created connectionFilter with parameters:");
+	msg(MSG_INFO, "\t - %i seconds timeout", timeout);
+	msg(MSG_INFO, "\t - %i bytes filter size", filterSize);
+	msg(MSG_INFO, "\t - %i hash functions", hashFunctions);
+	msg(MSG_INFO, "\t - %i bytes to export", bytes);
 }
 
 ConnectionFilter::ConnectionFilter(unsigned Timeout, unsigned bytes, unsigned hashFunctions, unsigned filterSize, unsigned seed)
 	: hashParams(hashFunctions, seed), synFilter(&hashParams, filterSize, false), exportFilter(&hashParams, filterSize, false),
 	connectionFilter(&hashParams, filterSize, false), timeout(Timeout), exportBytes(bytes)
 {
+	msg(MSG_INFO, "Created connectionFilter with parameters:");
+	msg(MSG_INFO, "\t - %i seconds timeout", timeout);
+	msg(MSG_INFO, "\t - %i bytes filter size", filterSize);
+	msg(MSG_INFO, "\t - %i hash functions", hashFunctions);
+	msg(MSG_INFO, "\t - %i bytes to export", bytes);
 }
 
 bool ConnectionFilter::processPacket(Packet* p)
@@ -54,27 +64,35 @@ bool ConnectionFilter::processPacket(Packet* p)
 		if ((tmp = exportFilter.get(key.data, key.len)) > 0) {
 			DPRINTF("ConnectionFilter: Connection known, exporting packet");
 			static unsigned diffVal;
-			if (tmp > payloadLen)
+			bool ret = false;
+			if (tmp > payloadLen) {
 				diffVal = -payloadLen;
-			else
+				ret = true;
+			}
+			else {
 				diffVal = -tmp;
+				ret = false;
+			}
 			exportFilter.set(key.data, key.len, diffVal);
 			if (exportFilter.get(key.data, key.len) <= 0) {
 				connectionFilter.set(key.data, key.len, p->timestamp.tv_sec);
 			}
 			DPRINTF("ConnectionFilter: We have to export %i bytes after exporting this packet", exportFilter.get(key.data, key.len));
-			return true;
+			return ret;
 		} else {
 			if ((unsigned)(p->timestamp.tv_sec - synFilter.get(key.data, key.len)) < timeout &&
 			    synFilter.get(key.data, key.len) - connectionFilter.get(key.data, key.len) > 0) {
+				bool ret = false;
 			    	DPRINTF("ConnectionFilter: Found new connection, exporting packet");
 				if (payloadLen < exportBytes) {
 					exportFilter.set(key.data, key.len, exportBytes - payloadLen);
+					ret = false;
 				} else {
 					connectionFilter.set(key.data, key.len, p->timestamp.tv_sec);
+					ret = true;
 				}
 				DPRINTF("ConnectionFilter: We have to export %i bytes after exporting this packet", exportFilter.get(key.data, key.len));
-				return true;
+				return ret;
 			}
 			DPRINTF("ConnectionFilter: Paket will not be exported");
 			return false;

@@ -12,6 +12,7 @@ class MemStatistics;
 class StateConnectionFilter : public PacketProcessor {
 public:
 	StateConnectionFilter(unsigned timeout, unsigned bytes);
+	~StateConnectionFilter();
 
 	bool processPacket(Packet* p, bool connFilterResult);
 	virtual bool processPacket(Packet* p);
