@@ -165,7 +165,7 @@ void *Observer::observerThread(void *arg)
 	if (obs->readFromFile) {
 		msg(MSG_INFO, "  - autoExit=%d", obs->autoExit);
 		msg(MSG_INFO, "  - stretchTime=%f", obs->stretchTime);
-		msg(MSG_INFO, "  - replaceTimestampsFromFile=%f", obs->replaceTimestampsFromFile);
+		msg(MSG_INFO, "  - replaceTimestampsFromFile=%s", obs->replaceTimestampsFromFile==true?"true":"false");
 	}
 
 	// start capturing packets
