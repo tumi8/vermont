@@ -7,7 +7,7 @@ StateConnectionFilter::StateConnectionFilter(unsigned timeout, unsigned bytes)
 {
 	this->timeout = timeout;
 	this->exportBytes = bytes;
-	msg(MSG_INFO, "Created connectionFilter with parameters:");
+	msg(MSG_INFO, "Created stateConnectionFilter with parameters:");
 	msg(MSG_INFO, "\t - %i seconds timeout", timeout);
 	msg(MSG_INFO, "\t - %i bytes to export", bytes);
 }
@@ -50,8 +50,9 @@ bool StateConnectionFilter::processPacket(Packet* p, bool connFilterResult)
 		DPRINTF("StateConnectionFilter: Got %s packet", *((uint8_t*)p->data + flagsOffset) & RST?"RST":"FIN");
 		if (exportList.find(key) != exportList.end()) {
 			exportList.erase(exportList.find(key));
+			return exportControlPackets;
 		}
-		return exportControlPackets;
+		return false;
 	} else {
 		DPRINTF("StateConnectionFilter: Got a normal packet");
 		if (exportList.find(key) == exportList.end()) {

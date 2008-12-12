@@ -57,7 +57,6 @@ bool ConnectionFilter::processPacket(Packet* p)
 		connectionFilter.set(key.data, key.len, p->timestamp.tv_sec);
 		DPRINTF("ConnectionFilter: connectionFilter saved time %u", connectionFilter.get(key.data, key.len));
 
-		// do not export FIN/RST packets, or should we?
 		return exportControlPackets;
 	} else {
 		DPRINTF("ConnectionFilter: Got a normal packet");
