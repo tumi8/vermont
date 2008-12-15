@@ -1552,12 +1552,17 @@
 				<tr>
 					<td>anonMethod</td>
 					<td>none</td>
-					<td>Specifies the anonymization method that is used to anonymize a given header field. Belongs to anonField. Possible values are: BytewiseHashHmacSha1, BytewiseHashSha1, ConstOverwrite, ContinuousChar, HashHmacSha1, HashSha1, Randomize, Shuffle, Whitenoise, CryptoPan</td>
+					<td>Specifies the anonymization method that is used to anonymize a given header field. Belongs to anonField. 
+					Possible values are: BytewiseHashHmacSha1, BytewiseHashSha1, ConstOverwrite, ContinuousChar, HashHmacSha1, HashSha1, 
+					Randomize, Shuffle, Whitenoise, CryptoPan</td>
 				</tr>
 				<tr>
 					<td>anonParam</td>
 					<td>none</td>
-					<td>Specifies an optional parameter to the anonymization method. Different methods need different params. ByteWiseHashHmacSha1, HashHmacSha1 need an variable sized key. ConstOverwrite needs one character as parameter. CryptoPan needs an 32 bytes long parameter (16 bytes key, 16 bytes pad)</td>
+					<td>Specifies an optional parameter to the anonymization method. Different methods need different params. 
+                    ByteWiseHashHmacSha1, HashHmacSha1 need an variable sized key. ConstOverwrite needs one character as parameter. 
+                    CryptoPan needs an 32 bytes long parameter (16 bytes key, 16 bytes pad). For CryptoPan and ConstOverwrite, keys 
+                    can be specified as normal text, or as hexadecimal string starting with '0x'. </td>
 				</tr>
 				<tr>
 					<td>copyMode</td>

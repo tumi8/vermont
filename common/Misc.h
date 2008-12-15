@@ -3,7 +3,12 @@
 
 #include "ipfixlolib/encoding.h"
 
+#include "common/defs.h"
+#include "common/msg.h"
+
 #include <sstream>
+#include <string>
+#include <ctype.h>
 
 inline std::string IPToString(uint32_t ip)
 {
@@ -77,5 +82,41 @@ inline uint64_t greaterUint64Nbo(uint64_t i, uint64_t j) {
 #ifndef _GNU_SOURCE
 size_t strnlen(const char* s, size_t maxlen);
 #endif
+
+inline bool isHexString(const std::string& text)
+{
+	return text.length()>1 && text[0]=='0' && text[1]=='x';
+}
+
+inline char convHexToByte(const char ch)
+{
+	char c = toupper(ch);
+	if (c>='0' && c<='9') return c-'0';
+	else if (c>='A' && c<='F') return c-'A';
+
+	THROWEXCEPTION("invalid hexadecimal character: %c", c);
+	return NULL;  // just to please compiler
+}
+
+/**
+ * converts given hex string of format '0xAD2382...' to binary
+ * @returns length of converted char* array
+ */
+inline uint32_t convHexToBinary(const std::string& text, char* buffer, uint32_t buflen)
+{
+	uint32_t len = 0;
+	uint32_t pos = 0;
+
+	if (text[0]=='0' && text[1]=='x') pos = 2;
+
+	while (pos<text.length()-1) {
+		if (len>=buflen) return len;
+		char c1 = convHexToByte(text[pos++]);
+		char c2 = convHexToByte(text[pos++]);
+		buffer[len++] = (c1<<8) + c2;
+	}
+
+	return len;
+}
 
 #endif

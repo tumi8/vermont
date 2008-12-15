@@ -79,8 +79,8 @@ void RecordAnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::
 			const ipfix_identifier* id = ipfix_id_lookup(cfg->getIeId());
 			msg(MSG_INFO, "Added anonymization %s for field %i (%s)", method.c_str(), cfg->getIeId(), id->name);
 			delete cfg;
-		} else if (e->matches("next")) {
-			// ignore next
+		} else if (e->matches("next") || e->matches("copyMode")) {
+			// ignore next and copyMode (see createInstance)
 		} else {
 			msg(MSG_FATAL, "Unkown anonymization field %s\n", e->getName().c_str());
 			continue;

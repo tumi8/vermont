@@ -18,10 +18,15 @@
 
 #include "AnonCryptoPan.h"
 
+#include "common/msg.h"
+
 #include <cstring>
 
-AnonCryptoPan::AnonCryptoPan (std::string _key)
-: key (_key), cryptopan ((const UINT8*)key.c_str ())
+/**
+ * expects a fully filled 32 byte key buffer
+ */
+AnonCryptoPan::AnonCryptoPan (char* _key)
+: cryptopan ((const UINT8*)_key)
 {
 }
 
@@ -31,10 +36,10 @@ AnonCryptoPan::~AnonCryptoPan ()
 
 AnonPrimitive::ANON_RESULT AnonCryptoPan::anonymize(void* buf, unsigned int len)
 {
-	assert (len == sizeof (UINT32));
+	// IPv4 addresses are usually 4 bytes long, but Vermont internally handles 5 bytes with 1 byte ip mask
+	assert ((len=sizeof(UINT32)) || (len == 5));
 	UINT32 orig = 0;
 	memcpy (&orig, buf, sizeof (UINT32));
-
 	orig = cryptopan.anonymize (orig);
 	memcpy (buf, &orig, sizeof (UINT32));
 

@@ -12,7 +12,7 @@ public:
 	friend class ConfigManager;
 
 	virtual RecordAnonymizerCfg* create(XMLElement* e);
-	
+
 	virtual ~RecordAnonymizerCfg();
 
 	virtual RecordAnonymizer* createInstance();
@@ -20,7 +20,7 @@ public:
 	virtual bool deriveFrom(RecordAnonymizerCfg* old);
 
 	static void initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet<XMLElement*> set);
-	
+
 protected:
 	RecordAnonymizerCfg(XMLElement*);
 };

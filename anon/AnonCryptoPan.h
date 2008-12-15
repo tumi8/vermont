@@ -27,7 +27,7 @@
 
 class AnonCryptoPan : public AnonPrimitive {
 public:
-	AnonCryptoPan(std::string _key);
+	AnonCryptoPan(char*  _key);
 	~AnonCryptoPan();
 
 protected:
@@ -36,7 +36,6 @@ protected:
 
 private:
 
-	std::string key;
 	PAnonymizer cryptopan;
 
 };
