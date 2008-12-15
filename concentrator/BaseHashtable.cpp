@@ -255,6 +255,8 @@ void BaseHashtable::expireFlows(bool all)
 		while (exportList.head) { //check the first entry in the BucketList
 			node = exportList.head;
 			bucket = node->bucket;
+			// TODO: change this one list to two lists: one for active, one for passive timeout
+			// problem here: flows with active timeout may be exported passive timeout seconds too late
 			if ((bucket->expireTime < now) || (bucket->forceExpireTime < now) || all) {
 				if (now > bucket->forceExpireTime)
 					DPRINTF("expireFlows: forced expiry");

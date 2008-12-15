@@ -69,6 +69,8 @@ const IpfixDbWriterPg::Column IpfixDbWriterPg::identify [] = {
 	{	"revTcpControlBits", IPFIX_ETYPEID_revTcpControlBits,  "smallint", 0},
 	{	"maxPacketGap", IPFIX_ETYPEID_maxPacketGap,  "bigint", 0},
 	{	"revMaxPacketGap", IPFIX_ETYPEID_revMaxPacketGap,  "bigint", 0},
+	{	"frontPayload", IPFIX_ETYPEID_frontPayload,  "bigint", 0},
+	{	"revFrontPayload", IPFIX_ETYPEID_revFrontPayload,  "bigint", 0},
 	{	"exporterID",EXPORTERID, "integer", 0},
 	{	0} // last entry must be 0
 };
