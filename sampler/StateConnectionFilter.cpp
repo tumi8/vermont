@@ -50,9 +50,8 @@ bool StateConnectionFilter::processPacket(Packet* p, bool connFilterResult)
 		DPRINTF("StateConnectionFilter: Got %s packet", *((uint8_t*)p->data + flagsOffset) & RST?"RST":"FIN");
 		if (exportList.find(key) != exportList.end()) {
 			exportList.erase(exportList.find(key));
-			return exportControlPackets;
 		}
-		return false;
+		return exportControlPackets;
 	} else {
 		DPRINTF("StateConnectionFilter: Got a normal packet");
 		if (exportList.find(key) == exportList.end()) {

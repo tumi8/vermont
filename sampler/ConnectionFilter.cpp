@@ -48,7 +48,6 @@ bool ConnectionFilter::processPacket(Packet* p)
 		DPRINTF("ConnectionFilter: Got SYN packet");
 		synFilter.set(key.data, key.len, (agetime_t)p->timestamp.tv_sec);
 		DPRINTF("ConnectionFilter: synFilter saved time %u", synFilter.get(key.data, key.len));
-		// do not export SYN packet, or should we?
 		return exportControlPackets;
 	} else if (*((uint8_t*)p->data + flagsOffset) & RST || *((uint8_t*)p->data + flagsOffset) & FIN) {
 		
@@ -86,10 +85,10 @@ bool ConnectionFilter::processPacket(Packet* p)
 			    	DPRINTF("ConnectionFilter: Found new connection, exporting packet");
 				if (payloadLen < exportBytes) {
 					exportFilter.set(key.data, key.len, exportBytes - payloadLen);
-					ret = false;
+					ret = true;
 				} else {
 					connectionFilter.set(key.data, key.len, p->timestamp.tv_sec);
-					ret = true;
+					ret = false;
 				}
 				DPRINTF("ConnectionFilter: We have to export %i bytes after exporting this packet", exportFilter.get(key.data, key.len));
 				return ret;
