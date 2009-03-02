@@ -18,6 +18,7 @@ ConnectionFilter::ConnectionFilter(unsigned Timeout, unsigned bytes, unsigned ha
 	connectionFilter(&hashParams, filterSize, false), timeout(Timeout), exportBytes(bytes), exportControlPackets(true)
 {
 	msg(MSG_INFO, "Created connectionFilter with parameters:");
+	msg(MSG_INFO, "\t - %i seed", seed);
 	msg(MSG_INFO, "\t - %i seconds timeout", timeout);
 	msg(MSG_INFO, "\t - %i bytes filter size", filterSize);
 	msg(MSG_INFO, "\t - %i hash functions", hashFunctions);

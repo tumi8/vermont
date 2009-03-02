@@ -263,11 +263,21 @@ bool PacketStateConnectionFilterCfg::deriveFrom(PacketStateConnectionFilterCfg* 
 Module* PacketConnectionFilterCfg::getInstance()
 {
 	if (!instance) {
-		instance = new ConnectionFilter(
-			getInt("timeout", 3),
-			getInt("bytes", 100),
-			getInt("hashFunctions", 3),
-			getInt("filterSize", 1000));
+		unsigned seed = getInt("seed", 0);
+		if (seed == 0) {
+			instance = new ConnectionFilter(
+				getInt("timeout", 3),
+				getInt("bytes", 100),
+				getInt("hashFunctions", 3),
+				getInt("filterSize", 1000));
+		} else {
+			instance = new ConnectionFilter(
+				getInt("timeout", 3),
+				getInt("bytes", 100),
+				getInt("hashFunctions", 3),
+				getInt("filterSize", 1000),
+				seed);
+		}
 		instance->setExportControlPackets(getBool("exportControlPackets", true));
 	}
 
