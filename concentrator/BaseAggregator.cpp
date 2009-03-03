@@ -148,10 +148,20 @@ void BaseAggregator::exporterThread()
 		// restart nanosleep with the remaining sleep time
 		// if we got interrupted by a signal
 		while (nanosleep(&req, &req) == -1 && errno == EINTR);
-		
+	
+		uint32_t now = time(0);
+		msg(MSG_DEBUG,"Starting Export");	
 		for (size_t i = 0; i < rules->count; i++) {
 			rules->rule[i]->hashtable->expireFlows();
 		}
+		uint32_t later = time(0);
+		
+		msg(MSG_DEBUG,"Export took %u secs",later-now);
+
+		// bring forward the next export by the time it took to perform the previous one
+		// TODO: add millisecond accuracy
+		req.tv_sec = ((pollInterval / 1000) - (later-now) < 0) ? 0 : (pollInterval / 1000) - (later-now);
+		
 	}
 	
 	if (getShutdownProperly()) {
