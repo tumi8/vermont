@@ -80,7 +80,7 @@ class Connection
 		void aggregate(Connection* c, uint32_t expireTime, bool to);
 		void swapDataFields();
 		bool swapIfNeeded();
-		uint64_t convertNtp64(uint64_t ntptime);
+		void convertNtp64(uint64_t ntptime, uint64_t& result);
 };
 
 #endif

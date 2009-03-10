@@ -78,7 +78,7 @@ Connection::Connection(IpfixDataDataRecord* record)
 
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0);
 	if (fi != 0) {
-		srcTimeStart = convertNtp64(*(uint64_t*)(record->data + fi->offset));
+		convertNtp64(*(uint64_t*)(record->data + fi->offset), srcTimeStart);
 	} else {
 		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0);
 		if (fi != 0) {
@@ -88,12 +88,14 @@ Connection::Connection(IpfixDataDataRecord* record)
 			if (fi != 0) {
 				srcTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
 				srcTimeStart *= 1000;
+			} else {
+				srcTimeStart = 0;
 			}
 		}
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoSeconds, 0);
 	if (fi != 0) {
-		srcTimeEnd = convertNtp64(*(uint64_t*)(record->data + fi->offset));
+		convertNtp64(*(uint64_t*)(record->data + fi->offset), srcTimeEnd);
 	} else {
 		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
 		if (fi != 0) {
@@ -103,12 +105,14 @@ Connection::Connection(IpfixDataDataRecord* record)
 			if (fi != 0) {
 				srcTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
 				srcTimeEnd *= 1000;
+			} else {
+				srcTimeEnd = 0;
 			}
 		}
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartNanoSeconds, 0);
 	if (fi != 0) {
-		dstTimeStart = convertNtp64(*(uint64_t*)(record->data + fi->offset));
+		convertNtp64(*(uint64_t*)(record->data + fi->offset), dstTimeStart);
 	} else {
 		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartMilliSeconds, 0);
 		if (fi != 0) {
@@ -118,12 +122,14 @@ Connection::Connection(IpfixDataDataRecord* record)
 			if (fi != 0) {
 				dstTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
 				dstTimeStart *= 1000;
+			} else {
+				dstTimeStart = 0;
 			}
 		}
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndNanoSeconds, 0);
 	if (fi != 0) {
-		dstTimeEnd = convertNtp64(*(uint64_t*)(record->data + fi->offset));
+		convertNtp64(*(uint64_t*)(record->data + fi->offset), dstTimeEnd);
 	} else {
 		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndMilliSeconds, 0);
 		if (fi != 0) {
@@ -133,6 +139,8 @@ Connection::Connection(IpfixDataDataRecord* record)
 			if (fi != 0) {
 				dstTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
 				dstTimeEnd *= 1000;
+			} else {
+				dstTimeEnd = 0;
 			}
 		}
 	}
@@ -150,13 +158,21 @@ Connection::Connection(IpfixDataDataRecord* record)
 	if (fi != 0) dstTcpControlBits = *(uint8_t*)(record->data + fi->offset);
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayload, 0);
 	if (fi != 0 && fi->type.length) {
-		srcPayloadLen = fi->type.length;
+		IpfixRecord::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadLen, 0);
+		if (filen != 0)
+			srcPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
+		else
+			srcPayloadLen = fi->type.length;
 		srcPayload = new char[srcPayloadLen];
 		memcpy(srcPayload, record->data + fi->offset, srcPayloadLen);
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayload, 0);
 	if (fi != 0 && fi->type.length) {
-		dstPayloadLen = fi->type.length;
+		IpfixRecord::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayloadLen, 0);
+		if (filen != 0)
+			dstPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
+		else
+			dstPayloadLen = fi->type.length;
 		dstPayload = new char[dstPayloadLen];
 		memcpy(dstPayload, record->data + fi->offset, dstPayloadLen);
 	}
@@ -168,11 +184,15 @@ Connection::~Connection()
 	if (dstPayload) delete[] dstPayload;
 }
 
-uint64_t Connection::convertNtp64(uint64_t ntptime)
+void Connection::convertNtp64(uint64_t ntptime, uint64_t& result)
 {
-	uint64_t ntp2 = ntohll(ntptime);
-	timeval tv = timentp64(*(ntp64*)(&ntp2));
-	return tv.tv_sec*1000+tv.tv_usec/1000;
+	uint64_t hbnum = ntohll(*(uint64_t*)&ntptime);
+	if (hbnum>0) {
+		timeval t = timentp64(*((ntp64*)(&hbnum)));
+		result = (uint64_t)t.tv_sec*1000+(uint64_t)t.tv_usec/1000;
+	} else {
+		result = 0;
+	}
 }
 
 /**
@@ -232,8 +252,8 @@ string Connection::toString()
 	if (srcTimeEnd) oss << "srcTimeEnd: " << srcTimeEnd << endl;
 	if (dstTimeStart) oss << "dstTimeStart: " << dstTimeStart << endl;
 	if (dstTimeEnd) oss << "dstTimeEnd: " << dstTimeEnd << endl;
-	oss << "srcOctets: " << srcOctets << ", dstOctets: " << dstOctets << endl;
-	oss << "srcPackets: " << srcPackets << ", dstPackets: " << dstPackets << endl;
+	oss << "srcOctets: " << htonll(srcOctets) << ", dstOctets: " << htonll(dstOctets) << endl;
+	oss << "srcPackets: " << htonll(srcPackets) << ", dstPackets: " << htonll(dstPackets) << endl;
 	if (srcTcpControlBits || dstTcpControlBits) oss << "srcTcpControlBits: " << printTcpControlBits(srcTcpControlBits)
 													<< ", dstTcpControlBits: " << printTcpControlBits(dstTcpControlBits) << endl;
 	if (protocol) oss << "protocol: " << static_cast<uint32_t>(protocol) << endl;
