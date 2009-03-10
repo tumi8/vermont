@@ -43,6 +43,7 @@ ADD_LIBRARY(concentrator
 	IpfixDbWriter.cpp
 	IpfixDbWriterPg.cpp
 	IpfixRecordDestination.cpp
+	IpfixSampler.cpp
 	AutoFocus.cpp
 	autofocus_report.cpp
         autofocus_attribute.cpp

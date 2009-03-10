@@ -35,6 +35,7 @@ ADD_LIBRARY(cfg
 	IpfixExporterCfg.cpp
 	IpfixPayloadWriterCfg.cpp
 	IpfixPrinterCfg.cpp
+	IpfixSamplerCfg.cpp
 	Node.cpp
 	ObserverCfg.cpp
 	PacketAggregatorCfg.cpp

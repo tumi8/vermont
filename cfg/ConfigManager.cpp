@@ -24,6 +24,7 @@
 #include "cfg/IpfixDbWriterCfg.h"
 #include "cfg/IpfixDbWriterPgCfg.h"
 #include "cfg/IpfixPayloadWriterCfg.h"
+#include "cfg/IpfixSamplerCfg.h"
 #include "cfg/RecordAnonymizerCfg.h"
 
 #include <cassert>
@@ -32,7 +33,7 @@
 
 // we create a static array of all root config entrys so that we don't
 // need to hardcode the config entry name in here. Instead, we just ask the
-// module instances if they handle the specific entry. 
+// module instances if they handle the specific entry.
 Cfg* ConfigManager::configModules[] = {
 	new ObserverCfg(NULL),
 	new PacketFilterCfg(NULL),
@@ -45,6 +46,7 @@ Cfg* ConfigManager::configModules[] = {
 	new IpfixExporterCfg(NULL),
 	new IpfixAggregatorCfg(NULL),
 	new IpfixPrinterCfg(NULL),
+	new IpfixSamplerCfg(NULL),
 	new PacketAggregatorCfg(NULL),
 	new SensorManagerCfg(NULL),
 	new TRWPortscanDetectorCfg(NULL),
@@ -66,7 +68,7 @@ Cfg* ConfigManager::configModules[] = {
 ConfigManager::ConfigManager()
 	: graph(NULL), document(NULL), old_document(NULL), sensorManager(NULL)
 {
-	
+
 }
 
 ConfigManager::~ConfigManager()
@@ -162,12 +164,12 @@ void ConfigManager::parseConfig(std::string fileName)
 	// if there is an old graph, we did a reconfiguration. So now we have to delete the
 	// old graph, but we can't delete the instances immediatly, because there is a small
 	// chance that instances which got reused could still hold a reference to a instance we
-	// want to delete right now. 
+	// want to delete right now.
 	// => we use the deleter to delete the instances after a specific time has passed so we
-	//    are safe that no-one holds a reference on the deleted modules anymore   
+	//    are safe that no-one holds a reference on the deleted modules anymore
 	if (oldGraph)
 		deleter.addGraph(oldGraph);
-	
+
 	unlockGraph();
 }
 
@@ -182,7 +184,7 @@ void ConfigManager::shutdown()
 		msg(MSG_INFO, "shutting down module %s (id=%u)", cfg->getName().c_str(), cfg->getID());
 		cfg->shutdown(true, true);
 	}
-	
+
 	// trigger sensorManager to get the final statistics of this Vermont run
 	if (sensorManager) {
 		sensorManager->retrieveStatistics();
@@ -196,7 +198,7 @@ void ConfigManager::shutdown()
 		// disconnect the module from its sources ..
 		vector<CfgNode*> sources = graph->getSources(n);
 		msg(MSG_INFO, "disconnecting module %s (id=%u)", cfg->getName().c_str(), cfg->getID());
-		for (size_t k = 0; k < sources.size(); k++) {			
+		for (size_t k = 0; k < sources.size(); k++) {
 			sources[k]->getCfg()->disconnectInstances();
 		}
 	}
