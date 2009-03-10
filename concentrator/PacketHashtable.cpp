@@ -119,19 +119,36 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, const Pac
 	if (src->payloadOffset==0 || src->payloadOffset==src->transportHeaderOffset) return;
 
 	uint16_t plen = src->data_length-src->payloadOffset;
-	uint32_t fseq = *reinterpret_cast<const uint32_t*>(bucket+efd->privDataOffset);
-	uint32_t fpos = *reinterpret_cast<const uint32_t*>(bucket+efd->privDataOffset+4);
 
-	DPRINTFL(MSG_VDEBUG, "plen:%u, fseq:%u, seq:%u, dstleng:%u", plen, fseq, seq, efd->dstLength);
+	if (plen>0) {
+		uint32_t* pfplen = reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4);
 
-	if (seq-fseq<efd->dstLength) {
-		uint32_t pos = (seq!=0 ? seq-fseq : fpos);
-		uint32_t len = efd->dstLength-pos;
-		if (plen<len) len = plen;
-		DPRINTFL(MSG_VDEBUG, "inserting payload data at %u with length %u", pos, len);
-		memcpy(dst+pos, src->data+src->payloadOffset, len);
-		*reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4) += len;
+		if (src->ipProtocolType==Packet::TCP) {
+			uint32_t fseq = *reinterpret_cast<const uint32_t*>(bucket+efd->privDataOffset);
+			uint32_t fpos = *reinterpret_cast<const uint32_t*>(bucket+efd->privDataOffset+4);
+
+			DPRINTFL(MSG_VDEBUG, "plen:%u, fseq:%u, seq:%u, dstleng:%u", plen, fseq, seq, efd->dstLength);
+
+			if (seq-fseq<efd->dstLength) {
+				uint32_t pos = (seq!=0 ? seq-fseq : fpos);
+				uint32_t len = efd->dstLength-pos;
+				if (plen<len) len = plen;
+				DPRINTFL(MSG_VDEBUG, "inserting payload data at %u with length %u", pos, len);
+				memcpy(dst+pos, src->data+src->payloadOffset, len);
+				uint32_t maxpos = pos+len;
+				if (*pfplen<maxpos) *pfplen = maxpos;
+			}
+		} else {
+			uint32_t* pfplen = reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4); // current size of front payload within flow
+			if (*pfplen<efd->dstLength) {
+				uint32_t len = efd->dstLength-*pfplen;
+				if (plen<len) len = plen;
+				memcpy(dst+*pfplen, src->data+src->payloadOffset, len);
+				*pfplen += len;
+			}
+		}
 	}
+	DPRINTFL(MSG_VDEBUG, "new fplength: %u", *reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4));
 }
 
 
