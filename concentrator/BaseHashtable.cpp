@@ -275,8 +275,7 @@ void BaseHashtable::expireFlows(bool all)
 					else {
 						buckets[bucket->hash] = 0;
 					}
-				}
-				if (bucket->prev) {
+				} else {
 					if (!bucket->next)
 						bucket->prev->next = 0;
 					else {

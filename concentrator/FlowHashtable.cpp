@@ -525,6 +525,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 					nhash = getHash(bucket->data.get(), false);
 					DPRINTFL(MSG_VDEBUG, "nhash=%u", nhash);
 					bucket->next = buckets[nhash];
+					bucket->hash = nhash;
 					buckets[nhash] = bucket;
 					bucket->prev = 0;
 					if (bucket->next != NULL) bucket->next->prev = bucket;
@@ -667,8 +668,6 @@ void FlowHashtable::copyData(IpfixRecord::FieldInfo* dstFI, IpfixRecord::Data* d
  */
 void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord::Data* data)
 {
-	DPRINTF("called");
-
 	// the following lock should almost never fail (only during reconfiguration)
 	while (atomic_lock(&aggInProgress)) {
 		timespec req;
