@@ -350,11 +350,8 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 			}
 			aggregateField(&dataTemplate->fieldInfo[flowReverseMapper[i]], fi, baseFlow, flow);
 
-
 			// check if flow should be reversed
-			if (nsequality>0) result = 1;
-			else if (secequality>0) result = 1;
-			else if (msequality>0) result = 1;
+			if (nsequality>0 || secequality>0 || msequality>0) result = 1;
 		} else {
 			aggregateField(fi, fi, baseFlow, flow);
 		}
