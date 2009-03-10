@@ -50,12 +50,17 @@ extern "C" {
 	static pthread_mutex_t msg_mutex;
 
 	/**
-	 * initializes the logging function's mutex
+	 * initializes logging system
 	 * must be called at program startup!
 	 */
 	void msg_init()
 	{
+		// init the logging function's mutex
 		pthread_mutex_init(&msg_mutex, 0);
+
+		// set stdout and stderr to non-buffered
+		setvbuf(stdout, NULL, _IONBF, 0);
+		setvbuf(stderr, NULL, _IONBF, 0);
 	}
 
 	/**
