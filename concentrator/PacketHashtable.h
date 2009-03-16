@@ -75,8 +75,6 @@ private:
 
 		uint16_t* varSrcPtrFields; /**< array with indizes to expFieldData elements, which have a srcIndex which varies from packet to packet */
 		uint16_t varSrcPtrFieldsLen; /**< length of varSrcPtrFields */
-	
-		uint32_t* varFieldWeights; /** factors for aggfields to prevent targeted collision attack **/
 
 	};
 
