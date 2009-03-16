@@ -2,7 +2,7 @@
 /*
  * VERMONT 
  * Copyright (C) 2008 David Eckhoff <sidaeckh@informatik.stud.uni-erlangen.de>
- *
+: *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -96,8 +96,11 @@ AutoFocus::~AutoFocus()
 void AutoFocus::onDataDataRecord(IpfixDataDataRecord* record)
 {
 	// convert ipfixrecord to connection struct
-	Connection conn(record);
+	record->removeReference();
+	return;
 
+	Connection conn(record);
+	
 
 	//hardcoded for uni network
 	uint32_t subnet = ntohl(2210136064UL);

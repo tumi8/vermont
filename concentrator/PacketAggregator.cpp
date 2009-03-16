@@ -46,6 +46,7 @@ PacketAggregator::~PacketAggregator()
  */
 void PacketAggregator::receive(Packet* e)
 {
+
 #if defined(DEBUG)
 	if(!rules) {
 		THROWEXCEPTION("Aggregator not started");
