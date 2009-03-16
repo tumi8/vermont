@@ -18,7 +18,7 @@
 
 #include "AgeBloomFilter.h"
 
-void AgeArray::resize(uint32_t size)
+void AgeArray::resize(size_t size)
 {
 	free(array);
 	array_size = size;
