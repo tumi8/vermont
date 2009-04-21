@@ -110,7 +110,7 @@ private:
 	int pckCount;
 	
 	// timer stamp; this value is used to see if wee need to do a flush based on the timeout
-	uint32_t timerFlag;
+	uintptr_t timerFlag;
 };
 
 #endif

@@ -33,7 +33,7 @@ private:
 
 		// following fields are used by aggregation functions for a fast lookup of needed data inside
 		// the raw packet (source) and the hashtable bucket (destination)
-		uint32_t srcIndex; /**< index to raw packet data relative to Packet::netHeader, sometimes unique for each processed packet */
+		uintptr_t srcIndex; /**< index to raw packet data relative to Packet::netHeader, sometimes unique for each processed packet */
 		uint16_t dstIndex; /**< index in ipfix data */
 		uint16_t srcLength; /**< length of source field data */
 		uint16_t dstLength; /**< length of destination field data */

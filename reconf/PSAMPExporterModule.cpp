@@ -214,7 +214,7 @@ void PSAMPExporterModule::onTimeout(void* flag)
 {
 	// only if the timer event wasn't processed yet we need to
 	// flush the packet stream.
-	if ((uint32_t)flag == timerFlag)
+	if ((uintptr_t)flag == timerFlag)
 		flushPacketStream();
 }
 

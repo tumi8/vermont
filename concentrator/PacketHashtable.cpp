@@ -696,13 +696,13 @@ void PacketHashtable::updatePointers(const Packet* p)
 			// note: only IP types to be masked have efd->varSrcIdx set
 			case IPFIX_TYPEID_destinationIPv4Address:
 			case IPFIX_TYPEID_sourceIPv4Address:
-				efd->srcIndex = reinterpret_cast<uint32_t>(&efd->data[0])-reinterpret_cast<uint32_t>(p->netHeader);
+				efd->srcIndex = reinterpret_cast<uintptr_t>(&efd->data[0])-reinterpret_cast<uintptr_t>(p->netHeader);
 				break;
 
 			// aggregation and copy functions for frontPayload need to have source pointer
 			// pointing to packet structure
 			case IPFIX_ETYPEID_frontPayload:
-				efd->srcIndex = reinterpret_cast<uint32_t>(p)-reinterpret_cast<uint32_t>(p->netHeader);
+				efd->srcIndex = reinterpret_cast<uintptr_t>(p)-reinterpret_cast<uintptr_t>(p->netHeader);
 				break;
 
 			default:
