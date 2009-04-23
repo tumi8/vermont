@@ -51,6 +51,7 @@ ADD_LIBRARY(cfg
 	SensorManager.cpp
 	SensorManagerCfg.cpp
 	TRWPortscanDetectorCfg.cpp
+	P2PDetectorCfg.cpp
 	XMLAttribute.cpp
 	XMLElement.cpp
 	XMLDocument.cpp

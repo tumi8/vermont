@@ -51,5 +51,6 @@ ADD_LIBRARY(concentrator
 	TRWPortscanDetector.cpp
 	RBSWormDetector.cpp
 	IpfixPayloadWriter.cpp
+	P2PDetector.cpp
 )
 
