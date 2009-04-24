@@ -57,7 +57,7 @@ void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 	Connection conn(record);
 	conn.swapIfNeeded();
 	
-	cout << IPToString(conn.srcIP) << "->" << IPToString(conn.dstIP) << ": " << (int)conn.protocol << endl;
+	//cout << IPToString(conn.srcIP) << "->" << IPToString(conn.dstIP) << ": " << (int)conn.protocol << endl;
 	
 	if((conn.srcIP & subnetmask) == (subnet & subnetmask)){
 		//UDP biflows
@@ -70,6 +70,10 @@ void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 		//TCP biflows
 		if(conn.protocol == 6){
 			hostList[conn.srcIP].numTCPBiFlows++;
+			if(succConn(conn)){
+				
+			}else{
+			}
 		}
 		
 	}
@@ -83,6 +87,9 @@ void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 		//TCP biflows
 		if(conn.protocol == 6){
 			hostList[conn.dstIP].numTCPBiFlows++;
+			if(succConn(conn)){
+			}else{
+			}
 		}
 
 	}
@@ -139,13 +146,13 @@ void P2PDetector::performShutdown()
 
 bool P2PDetector::succConn(Connection& conn){
 	
-	cout << "***Connection:\n";
-	cout << IPToString(conn.srcIP) << "->" << IPToString(conn.dstIP) << "\n";
-	cout << "start: " << (long long)ntohll(conn.srcTimeStart) << " end: " << (long long)ntohll(conn.srcTimeEnd) << " | " << (long long)ntohll(conn.dstTimeEnd) << "\n";
-	cout << "srcOctets: " << (long long)ntohll(conn.srcOctets) << " dstOctets: " << (long long)ntohll(conn.dstOctets) << "\n";
-	cout << "srcPackets: " << (long long)ntohll(conn.srcPackets) << " dstPackets: " << (long long)ntohll(conn.dstPackets) << "\n";
-	cout << "srcTCP: " << hex << conn.srcTcpControlBits << " dstTCP: " << conn.dstTcpControlBits << dec << endl;
-	
+//	cout << "***Connection:\n";
+//	cout << IPToString(conn.srcIP) << "->" << IPToString(conn.dstIP) << "\n";
+//	cout << "start: " << conn.srcTimeStart << " end: " << conn.srcTimeEnd << " | " << conn.dstTimeEnd << "\n";
+//	cout << "srcOctets: " << (long long)ntohll(conn.srcOctets) << " dstOctets: " << (long long)ntohll(conn.dstOctets) << "\n";
+//	cout << "srcPackets: " << (long long)ntohll(conn.srcPackets) << " dstPackets: " << (long long)ntohll(conn.dstPackets) << "\n";
+//	cout << "srcTCP: " << hex << (int)conn.srcTcpControlBits << " dstTCP: " << (int)conn.dstTcpControlBits << dec << endl;
+//	
 	
 	//packets must be send in both directions
 	if((conn.srcPackets != 0) && (conn.dstPackets != 0)){
@@ -155,25 +162,22 @@ bool P2PDetector::succConn(Connection& conn){
 			if((ntohll(conn.dstPackets) > 1) && (ntohll(conn.srcPackets) > 2) && 
 				((conn.dstTcpControlBits & (Connection::SYN | Connection::ACK)) == (Connection::SYN | Connection::ACK)) && 
 				((conn.srcTcpControlBits & (Connection::SYN | Connection::ACK | Connection::RST)) == (Connection::SYN | Connection::ACK | Connection::RST)))
-					{return true; cout << "a" << endl;}
+					//{cout << "conntype-a" << endl; return true; }
+					return true;
 					
 			//full 3-way-handshake eixts and dst aborted the connection abrupt
 			if((ntohll(conn.dstPackets) > 2) && (ntohll(conn.srcPackets) > 1) && 
 				((conn.dstTcpControlBits & (Connection::SYN | Connection::ACK | Connection::RST)) == (Connection::SYN | Connection::ACK | Connection::RST)) && 
 				((conn.srcTcpControlBits & (Connection::SYN | Connection::ACK)) == (Connection::SYN | Connection::ACK)))
-					{return true; cout << "b" << endl;}
+					//{ cout << "conntype-b" << endl; return true;}
+					return true;
 					
 			//complete established and regularly closed connection from both sides
 			if(((conn.dstTcpControlBits & (Connection::SYN | Connection::ACK | Connection::FIN)) == (Connection::SYN | Connection::ACK | Connection::FIN)) && 
 				((conn.srcTcpControlBits & (Connection::SYN | Connection::ACK | Connection::FIN)) == (Connection::SYN | Connection::ACK | Connection::FIN)) && 
 				(((ntohll(conn.dstPackets) > 2) && (ntohll(conn.srcPackets) > 3)) || ((ntohll(conn.dstPackets) > 3) && (ntohll(conn.srcPackets) > 2))))
-					{return true; cout << "c" << endl;}
-					
-			//complete established and regularly closed connection from both sides
-			if(((conn.dstTcpControlBits & (Connection::SYN | Connection::ACK | Connection::FIN)) == (Connection::SYN | Connection::ACK | Connection::FIN)) && 
-				((conn.srcTcpControlBits & (Connection::SYN | Connection::ACK | Connection::FIN)) == (Connection::SYN | Connection::ACK | Connection::FIN)) && 
-				(((ntohll(conn.dstPackets) > 2) && (ntohll(conn.srcPackets) > 3)) || ((ntohll(conn.dstPackets) > 3) && (ntohll(conn.srcPackets) > 2))))
-					{return true; cout << "d" << endl;}
+					//{ cout << "conntype-c" << endl; return true;}
+					return true;
 			
 			//if creation and clearing of connection is not in the researched interval
 			if(
@@ -187,10 +191,11 @@ bool P2PDetector::succConn(Connection& conn){
 					(conn.dstTimeEnd - conn.srcTimeStart >= 60000) 				
 				)
 			)
-					{return true; cout << "e" << endl;}
+					//{ cout << "conntype-d" << endl; return true;}
+					return true;
 			
 		}
 	}
-	cout << "connection attempt" << endl;
+	//cout << "connection attempt" << endl;
 	return false;
 }

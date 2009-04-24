@@ -8,7 +8,7 @@
 		<filename>/home/spitfire/temp/studienarbeit/dumps/amule-linux-relativ-gut-13.11-2008-12-05.dump</filename>
 		<pcap_filter>ip</pcap_filter>
 		<offlineAutoExit>1</offlineAutoExit>
-		<offlineSpeed>0</offlineSpeed>
+		<offlineSpeed>1</offlineSpeed>
 		<captureLength>128</captureLength>
 		<next>2</next>
 	</observer>
