@@ -167,6 +167,7 @@ void *Observer::observerThread(void *arg)
 		msg(MSG_INFO, "  - stretchTime=%f", obs->stretchTime);
 		msg(MSG_INFO, "  - replaceTimestampsFromFile=%s", obs->replaceTimestampsFromFile==true?"true":"false");
 		msg(MSG_INFO, "  - filterString=%s", (obs->filter_exp ? obs->filter_exp : "none"));
+		msg(MSG_INFO, "  - maxPackets=%u", obs->maxPackets);
 	}
 
 	// start capturing packets
