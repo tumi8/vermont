@@ -30,6 +30,7 @@ protected:
 	uint32_t noConnections; /**< how many connections of a run should be recorded? */
 	bool ignoreEmptyPayload; /**< ignores all flows having empty payload in both directions when set */
 	bool ignoreIncompleteTCP; /**< ignores all TCP flows without set TCP flag in both directions */
+	uint64_t startIdx; 		/**< start index of flows, important if dump needs to be continued */
 
 	IpfixPayloadWriterCfg(XMLElement*);
 };

@@ -13,7 +13,8 @@ IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
     : CfgHelper<IpfixPayloadWriter, IpfixPayloadWriterCfg>(elem, "ipfixPayloadWriter"),
       noConnections(0),
       ignoreEmptyPayload(false),
-      ignoreIncompleteTCP(false)
+      ignoreIncompleteTCP(false),
+      startIdx(0)
 {
     if (!elem) return;
 
@@ -38,6 +39,8 @@ IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
 			ignoreIncompleteTCP = getInt("ignoreIncompleteTCP");
 		} else if (e->matches("ignoreIncompleteTCP")) {
 			ignoreIncompleteTCP = getInt("ignoreIncompleteTCP");
+		} else if (e->matches("startIndex")) {
+			startIdx = getInt64("startIndex");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixPayloadWriter config statement %s\n", e->getName().c_str());
@@ -59,7 +62,7 @@ IpfixPayloadWriterCfg::~IpfixPayloadWriterCfg()
 
 IpfixPayloadWriter* IpfixPayloadWriterCfg::createInstance()
 {
-    instance = new IpfixPayloadWriter(path, filenamePrefix, noConnections, ignoreEmptyPayload, ignoreIncompleteTCP);
+    instance = new IpfixPayloadWriter(path, filenamePrefix, noConnections, ignoreEmptyPayload, ignoreIncompleteTCP, startIdx);
     return instance;
 }
 

@@ -34,15 +34,25 @@
  * attention: parameter idmefexporter must be free'd by the creating instance, TRWPortscanDetector
  * does not dare to delete it, in case it's used
  */
-IpfixPayloadWriter::IpfixPayloadWriter(string path, string prefix, uint32_t noconns, bool ignoreEmptyPayload, bool ignoreIncompleteTCP)
+IpfixPayloadWriter::IpfixPayloadWriter(string path, string prefix, uint32_t noconns,
+		bool ignoreEmptyPayload, bool ignoreIncompleteTCP, uint64_t startidx)
 	: path(path),
 	  filenamePrefix(prefix),
 	  noConnections(noconns),
-	  connectionID(0),
+	  connectionID(startidx),
 	  filewarningIssued(false),
 	  ignoreEmptyPayload(ignoreEmptyPayload),
-	  ignoreIncompleteTCP(ignoreIncompleteTCP)
+	  ignoreIncompleteTCP(ignoreIncompleteTCP),
+	  statEmptyPayloadDropped(0),
+	  statIncompleteTCPDropped(0)
 {
+	msg(MSG_INFO, "IpfixPayloadWriter started with following parameters:");
+	msg(MSG_INFO, "  - path=%s", path.c_str());
+	msg(MSG_INFO, "  - filenamePrefix=%s", filenamePrefix.c_str());
+	msg(MSG_INFO, "  - noConnections=%u", noConnections);
+	msg(MSG_INFO, "  - startIndex=%llu", connectionID);
+	msg(MSG_INFO, "  - ignoreEmptyPayload=%u", ignoreEmptyPayload);
+	msg(MSG_INFO, "  - ignoreIncompleteTCP=%u", ignoreIncompleteTCP);
 }
 
 
@@ -59,31 +69,36 @@ void IpfixPayloadWriter::onDataDataRecord(IpfixDataDataRecord* record)
 
 	bool inserted = false;
 
-	if ((!ignoreEmptyPayload || conn->srcPayloadLen>0 || conn->dstPayloadLen>0) &&
-		(!ignoreIncompleteTCP || conn->protocol!=6 ||
-				((conn->srcTcpControlBits&2)==2 && ((conn->dstTcpControlBits&2)==2)))) { // check if both directions have SYN flag set
-		if (noConnections>0) {
-			// insert entry into sorted list
-			list<Connection*>::iterator iter = connections.begin();
+	if (!ignoreEmptyPayload || conn->srcPayloadLen>0 || conn->dstPayloadLen>0) {
+		if (!ignoreIncompleteTCP || conn->protocol!=6 ||
+				((conn->srcTcpControlBits&2)==2 && ((conn->dstTcpControlBits&2)==2))) { // check if both directions have SYN flag set
+			if (noConnections>0) {
+				// insert entry into sorted list
+				list<Connection*>::iterator iter = connections.begin();
 
-			uint32_t counter = 0;
-			while (iter != connections.end() && counter<noConnections) {
-				if ((*iter)->srcTimeStart>conn->srcTimeStart) {
-					connections.insert(iter, conn);
-					inserted = true;
-					break;
+				uint32_t counter = 0;
+				while (iter != connections.end() && counter<noConnections) {
+					if ((*iter)->srcTimeStart>conn->srcTimeStart) {
+						connections.insert(iter, conn);
+						inserted = true;
+						break;
+					}
+					counter++;
+					iter++;
 				}
-				counter++;
-				iter++;
-			}
-			if ((!inserted) && (counter<noConnections)) {
-				connections.push_back(conn);
-				inserted = true;
+				if ((!inserted) && (counter<noConnections)) {
+					connections.push_back(conn);
+					inserted = true;
+				}
+			} else {
+				// write entry directly to filesystem
+				dumpEntry(conn);
 			}
 		} else {
-			// write entry directly to filesystem
-			dumpEntry(conn);
+			statIncompleteTCPDropped++;
 		}
+	} else {
+		statEmptyPayloadDropped++;
 	}
 
 	if (!inserted) delete conn;
@@ -94,18 +109,33 @@ void IpfixPayloadWriter::onDataDataRecord(IpfixDataDataRecord* record)
 void IpfixPayloadWriter::dumpEntry(Connection* conn)
 {
 	char filename[2][100];
+	char idxpath[2][100];
 	snprintf(filename[0], 100, "%s-%04llu-%s.%d-%s.%d", filenamePrefix.c_str(),
 			connectionID, IPToString(conn->srcIP).c_str(), ntohs(conn->srcPort), IPToString(conn->dstIP).c_str(), ntohs(conn->dstPort));
 	snprintf(filename[1], 100, "%s-%04llu-%s.%d-%s.%d", filenamePrefix.c_str(),
 			connectionID, IPToString(conn->dstIP).c_str(), ntohs(conn->dstPort), IPToString(conn->srcIP).c_str(), ntohs(conn->srcPort));
+	snprintf(idxpath[0], ARRAY_SIZE(idxpath[0]), "/%04llX", connectionID/0xFFFF);
+	snprintf(idxpath[1], ARRAY_SIZE(idxpath[1]), "/%02llX/", connectionID/0xFF);
 	connectionID++;
 
-	string filepayload[2] = { path + "/" + string(filename[0]) + ".payload", path + "/" + string(filename[1]) + ".payload" };
-	string fileinfo = path + "/" + string(filename[0]) + ".info";
-
-	msg(MSG_DEBUG, "writing files for connection %s", filename[0]);
-
+	// create paths, if needed
 	struct stat s;
+	string mkpath = path+string(idxpath[0]);
+	if (stat(mkpath.c_str(), &s) != 0) {
+		if (mkdir(mkpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)!=0)
+			THROWEXCEPTION("error while creating directory '%s': %s", mkpath.c_str(), strerror(errno));
+	}
+	mkpath += string(idxpath[1]);
+	if (stat(mkpath.c_str(), &s) != 0) {
+		if (mkdir(mkpath.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH)!=0)
+			THROWEXCEPTION("error while creating directory '%s': %s", mkpath.c_str(), strerror(errno));
+	}
+
+	string filepayload[2] = { mkpath + string(filename[0]) + ".payload", mkpath + string(filename[1]) + ".payload" };
+	string fileinfo = mkpath + string(filename[0]) + ".info";
+
+	msg(MSG_VDEBUG, "writing files for connection %s", filename[0]);
+
 	if (stat(filepayload[0].c_str(), &s) == 0 && !filewarningIssued) {
 		msg(MSG_DIALOG, "files in IpfixPayloadWriter destination directory already present, overwriting ...");
 		filewarningIssued = true;
@@ -213,5 +243,13 @@ void IpfixPayloadWriter::performShutdown()
 	}
 
 	return;
+}
+
+string IpfixPayloadWriter::getStatisticsXML(double interval)
+{
+	ostringstream oss;
+	oss << "<incompleteTCPDropped>" << statIncompleteTCPDropped << "</incompleteTCPDropped>";
+	oss << "<emptyPayloadDropped>" << statEmptyPayloadDropped << "</emptyPayloadDropped>";
+	return oss.str();
 }
 

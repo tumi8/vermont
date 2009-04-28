@@ -295,6 +295,7 @@ Output type: none
 |ignoreIncompleteTCP |  false  |Set to true if all TCP biflows without SYN flags in both directions should be ignored. |
 |password |  none  |Password for database access. |
 |bufferrecords |  30  |Amount of flow records to buffer until they are written to the database. |
+|startIndex |  0  |Start index of first flow written to disk. Useful if already partially written dump on disk needs to be completed. |
 
 == IpfixQueue ==
 

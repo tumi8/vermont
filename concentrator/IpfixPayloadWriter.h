@@ -36,10 +36,11 @@ class IpfixPayloadWriter
 	  public Source<NullEmitable*>
 {
 	public:
-		IpfixPayloadWriter(string path, string prefix, uint32_t noconns, bool ignoreEmptyPayload, bool ignoreIncompleteTCP);
+		IpfixPayloadWriter(string path, string prefix, uint32_t noconns, bool ignoreEmptyPayload, bool ignoreIncompleteTCP, uint64_t startidx);
 		virtual ~IpfixPayloadWriter();
 
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+		string getStatisticsXML(double interval);
 
 	protected:
 		virtual void performShutdown();
@@ -54,6 +55,8 @@ class IpfixPayloadWriter
 		bool filewarningIssued;
 		bool ignoreEmptyPayload; // ignores all flows with empty payload when set
 		bool ignoreIncompleteTCP; // ignores all flows where TCP SYN packets in both directions are missing
+		uint64_t statEmptyPayloadDropped;
+		uint64_t statIncompleteTCPDropped;
 };
 
 #endif

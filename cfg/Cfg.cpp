@@ -51,6 +51,18 @@ int CfgBase::getInt(const std::string& name, int def, XMLElement* elem)
 	return def;
 }
 
+int64_t CfgBase::getInt64(const std::string& name, int64_t def, XMLElement* elem)
+{
+	std::string str;
+	try {
+		str = get(name, elem);
+		return atoll(str.c_str());
+	} catch (IllegalEntry ie) { }
+
+	// return default value
+	return def;
+}
+
 bool CfgBase::getBool(const std::string& name, bool def, XMLElement* elem)
 {
 	std::string str;
