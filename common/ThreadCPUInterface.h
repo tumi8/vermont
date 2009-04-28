@@ -14,6 +14,8 @@ public:
 		pid_t tid;
 		uint32_t sysJiffies;
 		uint32_t userJiffies;
+		uint64_t volCtxtSwitches;	  /**< voluntary context switches, only available with Linux CFS kernel */
+		uint64_t nonvolCtxtSwitches;  /**< non-voluntary context switches, only available with Linux CFS kernel */
 		time_t lastAccess;
 		bool active;
 	};

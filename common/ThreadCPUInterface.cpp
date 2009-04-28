@@ -1,6 +1,7 @@
 #include "ThreadCPUInterface.h"
 
 #include "common/msg.h"
+#include "common/defs.h"
 
 #ifdef __linux__
 #include "osdep/linux/sysinfo.h"
@@ -50,7 +51,29 @@ ThreadCPUInterface::JiffyTime ThreadCPUInterface::getJiffies(pid_t tid)
 
 	fclose(f);
 
-	JiffyTime jt = { tid, stime, utime, 0, true };
+
+	char schedfile[1024];
+	snprintf(schedfile, ARRAY_SIZE(schedfile), "/proc/%u/task/%u/sched", static_cast<uint32_t>(pid), static_cast<uint32_t>(tid));
+	uint64_t vcswitch = 0;
+	uint64_t nvcswitch = 0;
+	char line[1024];
+	// only report scheduler statistics if new kernel CFS (completely fair scheduler) is used
+	if (stat(schedfile, &buf) == 0) {
+		f = fopen(schedfile, "r");
+		if (f == NULL) {
+			THROWEXCEPTION("failed to open CFS scheduler file '%s' (fopen)", schedfile);
+		}
+
+		while (fgets(line, ARRAY_SIZE(line), f) != NULL) {
+			sscanf(line, "nr_voluntary_switches%*[ :]%llu", &vcswitch);
+			sscanf(line, "nr_involuntary_switches%*[ :]%llu", &nvcswitch);
+		}
+
+		fclose(f);
+	}
+
+
+	JiffyTime jt = { tid, stime, utime, vcswitch, nvcswitch, 0, true };
 	return jt;
 }
 

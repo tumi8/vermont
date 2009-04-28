@@ -94,7 +94,9 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 
 #if defined(__linux__)
 	const char* xmlmodthread = "\t\t\t<thread tid=\"%u\"><util type=\"system\">%.2f</util><util type=\"user\">%.2f</util>"
-		"<totalJiffies type=\"system\">%u</totalJiffies><totalJiffies type=\"user\">%u</totalJiffies></thread>\n";
+		"<totalJiffies type=\"system\">%u</totalJiffies><totalJiffies type=\"user\">%u</totalJiffies>"
+		"<contextSwitches type=\"non-voluntary\">%llu</contextSwitches>"
+		"<contextSwitches type=\"voluntary\">%llu</contextSwitches></thread>\n";
 	list<ThreadCPUInterface::JiffyTime> jtimes;
 	list<ThreadCPUInterface::JiffyTime> jtotal;
 	s->getJiffiesUsed(jtimes, jtotal);
@@ -103,7 +105,8 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 	while (jiter != jtimes.end() && jtiter != jtotal.end()) {
 		double sysutil = jiter->sysJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
 		double userutil = jiter->userJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
-		fprintf(file, xmlmodthread, static_cast<uint32_t>(jiter->tid), sysutil, userutil, jtiter->sysJiffies, jtiter->userJiffies);
+		fprintf(file, xmlmodthread, static_cast<uint32_t>(jiter->tid), sysutil, userutil, jtiter->sysJiffies, jtiter->userJiffies,
+				jtiter->nonvolCtxtSwitches, jtiter->volCtxtSwitches);
 		//DPRINTF(" - thread (tid=%u): jiffies (sys/user): (%u/%u), util. (sys/user): (%.2f%%/%.2f%%)",
 		//		static_cast<uint32_t>(jiter->tid), jiter->sysJiffies, jiter->userJiffies, sysutil, userutil);
 

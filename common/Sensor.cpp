@@ -34,11 +34,15 @@ void Sensor::getJiffiesUsed(std::list<ThreadCPUInterface::JiffyTime>& usedJiffie
 			diffjt.userJiffies -= iter->userJiffies;
 			diffjt.sysJiffies -= iter->sysJiffies;
 			diffjt.lastAccess = iter->lastAccess;
+			diffjt.volCtxtSwitches -= iter->volCtxtSwitches;
+			diffjt.nonvolCtxtSwitches -= iter->nonvolCtxtSwitches;
 			usedJiffies.push_back(diffjt);
 			totalJiffies.push_back(totaljt);
 
 			iter->userJiffies = totaljt.userJiffies;
 			iter->sysJiffies = totaljt.sysJiffies;
+			iter->volCtxtSwitches = totaljt.volCtxtSwitches;
+			iter->nonvolCtxtSwitches = totaljt.nonvolCtxtSwitches;
 			iter->lastAccess = curtime;
 		} else {
 			ThreadCPUInterface::JiffyTime diffjt = *iter;
