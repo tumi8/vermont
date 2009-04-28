@@ -115,13 +115,11 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, const Pac
 		// store sequence number and length of captured payload in private data
 		*reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset) = seq;
 		*reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4) = 0;
-		memset(dst, 0, efd->dstLength);
+		//memset(dst, 0, efd->dstLength);
 
 		// reset packet counter for front payload
 		const uint32_t pktcountoffset = *reinterpret_cast<const uint32_t*>(efd->data);
-		if (pktcountoffset != 0xFFFFFFFF) {
-			memset(bucket+pktcountoffset, 0, IPFIX_ELENGTH_frontPayloadPktCount);
-		}
+		if (pktcountoffset != 0xFFFFFFFF) *reinterpret_cast<uint32_t*>(bucket+pktcountoffset) = 0;
 	}
 
 	// ignore packets that do either contain no payload or were not interpreted correctly
@@ -149,20 +147,20 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, const Pac
 
 				// increase packet counter
 				const uint32_t pktcountoffset = *reinterpret_cast<const uint32_t*>(efd->data);
-				if (pktcountoffset != 0xFFFFFFFF) *reinterpret_cast<uint32_t*>(bucket+pktcountoffset) = *reinterpret_cast<uint32_t*>(bucket+pktcountoffset)+1;
+				if (pktcountoffset != 0xFFFFFFFF) (*reinterpret_cast<uint32_t*>(bucket+pktcountoffset))++;
 				DPRINTFL(MSG_VDEBUG, "pktcountoffset: %u, v: %u", pktcountoffset, *reinterpret_cast<uint32_t*>(bucket+pktcountoffset));
 			}
-		} else {
+		} else if (src->ipProtocolType==Packet::UDP){
 			uint32_t* pfplen = reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4); // current size of front payload within flow
 			if (*pfplen<efd->dstLength) {
 				uint32_t len = efd->dstLength-*pfplen;
 				if (plen<len) len = plen;
 				DPRINTFL(MSG_VDEBUG, "inserting payload data at %u with length %u", *pfplen, len);
-				memcpy(dst+*pfplen, src->data+src->payloadOffset, len);
+				memcpy(dst+(*pfplen), src->data+src->payloadOffset, len);
 				*pfplen += len;
 				// increase packet counter
 				const uint32_t pktcountoffset = *reinterpret_cast<const uint32_t*>(efd->data);
-				if (pktcountoffset != 0xFFFFFFFF) *reinterpret_cast<uint32_t*>(bucket+pktcountoffset) = *reinterpret_cast<uint32_t*>(bucket+pktcountoffset)+1;
+				if (pktcountoffset != 0xFFFFFFFF) (*reinterpret_cast<uint32_t*>(bucket+pktcountoffset))++;
 				DPRINTFL(MSG_VDEBUG, "pktcountoffset: %u, v: %u", pktcountoffset, *reinterpret_cast<uint32_t*>(bucket+pktcountoffset));
 			}
 		}
@@ -416,6 +414,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo
 
 	// set data efd field to the offset of IPFIX_ETYPEID_frontPayloadPktCount for front payload
 	if (efd->typeId==IPFIX_ETYPEID_frontPayload) {
+		*reinterpret_cast<uint32_t*>(efd->data) = 0xFFFFFFFF;
 		for (int i=0; i<dataTemplate->fieldCount; i++) {
 			IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 			if (hfi->type.id==IPFIX_ETYPEID_frontPayloadPktCount) {
@@ -766,6 +765,7 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 		nanosleep(&req, &req);
 	}
 
+
 	DPRINTF("PacketHashtable::aggregatePacket()");
 	updatePointers(p);
 	createMaskedFields(p);
@@ -776,6 +776,7 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 	HashtableBucket* bucket = buckets[hash];
 	if (bucket == 0) {
 		// slot is free, place bucket there
+		statEmptyBuckets--;
 		DPRINTF("creating new bucket");
 		buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID, 0, 0, hash);
 		BucketListElement* node = hbucketIM.getNewInstance();
