@@ -176,7 +176,7 @@ void BaseAggregator::exporterThread()
 		gettimeofday(&endtime, 0);
 		timeval_subtract(&difftime, &endtime, &curtime);
 
-		msg (MSG_DEBUG,"Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000+difftime.tv_sec);
+		msg (MSG_DEBUG,"Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000000+difftime.tv_sec);
 	}
 
 	if (getShutdownProperly()) {
