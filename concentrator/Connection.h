@@ -41,27 +41,27 @@ class Connection
 		// because hash and compare is performed by accessing the memory directly from srcIP on
 		// (see function calcHash and compareTo)
 		// one more notice: additional fields are to be added to function swapDataFields!
-		uint32_t srcIP;
-		uint32_t dstIP;
-		uint16_t srcPort;
-		uint16_t dstPort;
+		uint32_t srcIP; /**< network-byte order! **/
+		uint32_t dstIP; /**< network-byte order! **/
+		uint16_t srcPort; /**< network-byte order! **/
+		uint16_t dstPort; /**< network-byte order! **/
 
 		// fields to be aggregated
-		uint64_t srcTimeStart; /**< milliseconds since 1970 */
-		uint64_t srcTimeEnd; /**< milliseconds since 1970 */
-		uint64_t dstTimeStart; /**< milliseconds since 1970 */
-		uint64_t dstTimeEnd; /**< milliseconds since 1970 */
-		uint64_t srcOctets;
-		uint64_t dstOctets;
-		uint64_t srcPackets;
-		uint64_t dstPackets;
+		uint64_t srcTimeStart; /**< milliseconds since 1970, host-byte order */
+		uint64_t srcTimeEnd; /**< milliseconds since 1970, host-byte order  */
+		uint64_t dstTimeStart; /**< milliseconds since 1970, host-byte order  */
+		uint64_t dstTimeEnd; /**< milliseconds since 1970, host-byte order  */
+		uint64_t srcOctets; /**< network-byte order! **/
+		uint64_t dstOctets; /**< network-byte order! **/
+		uint64_t srcPackets; /**< network-byte order! **/
+		uint64_t dstPackets; /**< network-byte order! **/
 		uint8_t srcTcpControlBits;
 		uint8_t dstTcpControlBits;
 		uint8_t protocol;
 		char* srcPayload;
-		uint32_t srcPayloadLen;
+		uint32_t srcPayloadLen; /**< host-byte order! **/
 		char* dstPayload;
-		uint32_t dstPayloadLen;
+		uint32_t dstPayloadLen; /**< host-byte order! **/
 		uint32_t srcPayloadPktCount;
 
 		/**
