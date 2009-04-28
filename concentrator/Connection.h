@@ -81,6 +81,10 @@ class Connection
 		void swapDataFields();
 		bool swapIfNeeded();
 		void convertNtp64(uint64_t ntptime, uint64_t& result);
+
+	private:
+		string payloadToPlain(const char* payload, uint32_t len);
+		string payloadToHex(const char* payload, uint32_t len);
 };
 
 #endif

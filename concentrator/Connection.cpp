@@ -25,6 +25,8 @@
 #include <sstream>
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
+
 
 /**
  * creates new connection element
@@ -262,6 +264,16 @@ string Connection::toString()
 	oss << "srcPayloadLen: " << srcPayloadLen << endl;
 	oss << "dstPayloadLen: " << dstPayloadLen << endl;
 
+	if (srcPayloadLen>0) {
+		oss << "srcPayload: " << payloadToPlain(srcPayload, srcPayloadLen) << endl;
+		oss << "srcPayload: " << payloadToHex(srcPayload, srcPayloadLen) << endl;
+	}
+ 	oss << "dstPayloadLen: " << dstPayloadLen << endl;
+	if (dstPayloadLen>0) {
+		oss << "dstPayload: " << payloadToPlain(dstPayload, dstPayloadLen) << endl;
+		oss << "dstPayload: " << payloadToHex(dstPayload, dstPayloadLen) << endl;
+	}
+
 	return oss.str();
 }
 
@@ -319,4 +331,25 @@ void Connection::aggregate(Connection* c, uint32_t expireTime, bool to)
 		if (c->dstTimeStart < srcTimeStart) dstTimeStart = c->srcTimeStart;
 		if (c->dstTimeEnd > srcTimeEnd) dstTimeEnd = c->srcTimeEnd;
 	}
+}
+
+string Connection::payloadToPlain(const char* payload, uint32_t len)
+{
+	ostringstream oss;
+	for (uint32_t i=0; i<len; i++) {
+		if (isprint(payload[i])) oss << payload[i];
+		else oss << '.';
+	}
+	return oss.str();
+}
+
+string Connection::payloadToHex(const char* payload, uint32_t len)
+{
+	ostringstream oss;
+	char buf[4];
+	for (uint32_t i=0; i<len; i++) {
+		snprintf(buf, ARRAY_SIZE(buf), "%02hhX ", payload[i]);
+		oss << buf;
+	}
+	return oss.str();
 }
