@@ -175,6 +175,11 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
 			printf("no value (only zeroes in field)");
 		}
 		break;
+	case IPFIX_ETYPEID_frontPayload:
+	case IPFIX_ETYPEID_revFrontPayload:
+		printf("%s: ", typeid2string(type.id));
+		printFrontPayload(type, pattern);
+		break;
 	default:
 		s = typeid2string(type.id);
 		if (s != NULL) {
