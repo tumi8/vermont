@@ -9,20 +9,21 @@ class IpfixPrinterCfg
 {
 public:
 	friend class ConfigManager;
-	
+
 	virtual ~IpfixPrinterCfg();
-	
+
 	virtual IpfixPrinterCfg* create(XMLElement* e);
-	
+
 	virtual IpfixPrinter* createInstance();
 
 	virtual bool deriveFrom(IpfixPrinterCfg* old);
-	
+
 protected:
 	IpfixPrinterCfg(XMLElement*);
-	
+
 private:
-	bool lineOutput;
+	IpfixPrinter::OutputType outputType;
+	string filename;
 
 };
 
