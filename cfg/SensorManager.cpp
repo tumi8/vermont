@@ -17,18 +17,7 @@ SensorManager::SensorManager()
 	  smExitFlag(false),
 	  append(SM_DEFAULT_APPEND)
 {
-#if !defined(__linux__)
-	msg(MSG_DIALOG, "WARNING: this instance of vermont is *not* compiled for linux, support for CPU sensors is disabled");
-	hertzValue = 0;
-#else
-	hertzValue = ThreadCPUInterface::getHertzValue();
-	msg(MSG_INFO, "SensorManager uses value %u as hertz jiffy value", hertzValue);
-	lastSystemInfo = ThreadCPUInterface::getSystemInfo();
-#endif
 	usedBytes += sizeof(SensorManager);
-
-	if (gethostname(hostname, 100) != 0)
-		THROWEXCEPTION("failed to get hostname by gethostname()!");
 }
 
 SensorManager::~SensorManager()
@@ -40,6 +29,17 @@ void SensorManager::setParameters(uint32_t checkInterval = SM_DEFAULT_CHECK_INTE
 							 bool append = SM_DEFAULT_APPEND,
 							 GraphInstanceSupplier* gis = NULL)
 {
+#if !defined(__linux__)
+	msg(MSG_DIALOG, "WARNING: this instance of vermont is *not* compiled for linux, support for CPU sensors is disabled");
+	hertzValue = 0;
+#else
+	hertzValue = ThreadCPUInterface::getHertzValue();
+	lastSystemInfo = ThreadCPUInterface::getSystemInfo();
+#endif
+	if (gethostname(hostname, 100) != 0)
+		THROWEXCEPTION("failed to get hostname by gethostname()!");
+	msg(MSG_INFO, "SensorManager: hertz jiffy value=%u, hostname=%s", hertzValue, hostname);
+
 	msg(MSG_INFO, "SensorManager started with following parameters:");
 	msg(MSG_INFO, "  - outputfilename=%s", outputfilename.c_str());
 	msg(MSG_INFO, "  - checkInterval=%d seconds", checkInterval);
@@ -48,6 +48,7 @@ void SensorManager::setParameters(uint32_t checkInterval = SM_DEFAULT_CHECK_INTE
 	this->outputFilename = outputfilename;
 	this->append = append;
 	this->graphIS = gis;
+
 }
 
 void SensorManager::setGraphIS(GraphInstanceSupplier* gis)
@@ -92,18 +93,22 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 	//DPRINTF("module: %s, id: %u, mem usage: %u", name, id, s->getCurrentMemUsage());
 
 #if defined(__linux__)
-	const char* xmlmodthread = "\t\t\t<thread tid=\"%u\"><util type=\"system\">%.2f</util><util type=\"user\">%.2f</util></thread>\n";
+	const char* xmlmodthread = "\t\t\t<thread tid=\"%u\"><util type=\"system\">%.2f</util><util type=\"user\">%.2f</util>"
+		"<totalJiffies type=\"system\">%u</totalJiffies><totalJiffies type=\"user\">%u</totalJiffies></thread>\n";
 	list<ThreadCPUInterface::JiffyTime> jtimes;
-	s->getJiffiesUsed(jtimes);
+	list<ThreadCPUInterface::JiffyTime> jtotal;
+	s->getJiffiesUsed(jtimes, jtotal);
 	list<ThreadCPUInterface::JiffyTime>::iterator jiter = jtimes.begin();
-	while (jiter != jtimes.end()) {
+	list<ThreadCPUInterface::JiffyTime>::iterator jtiter = jtotal.begin();
+	while (jiter != jtimes.end() && jtiter != jtotal.end()) {
 		double sysutil = jiter->sysJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
 		double userutil = jiter->userJiffies/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
-		fprintf(file, xmlmodthread, static_cast<uint32_t>(jiter->tid), sysutil, userutil);
+		fprintf(file, xmlmodthread, static_cast<uint32_t>(jiter->tid), sysutil, userutil, jtiter->sysJiffies, jtiter->userJiffies);
 		//DPRINTF(" - thread (tid=%u): jiffies (sys/user): (%u/%u), util. (sys/user): (%.2f%%/%.2f%%)",
 		//		static_cast<uint32_t>(jiter->tid), jiter->sysJiffies, jiter->userJiffies, sysutil, userutil);
 
 		jiter++;
+		jtiter++;
 	}
 #endif
 
@@ -164,6 +169,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	const char* xmlglobalsuint = "\t\t<%s>%u</%s>\n";
 	ThreadCPUInterface::SystemInfo si = ThreadCPUInterface::getSystemInfo();
 
+	fprintf(file, "\t\t<jiffyFrequency>%llu</jiffyFrequency>\n", hertzValue);
 	fprintf(file, xmlglobalsuint, "processorAmount", si.noCPUs, "processorAmount");
 	for (uint16_t i=0; i<si.sysJiffies.size(); i++) {
 		double sysutil = (si.sysJiffies[i]-lastSystemInfo.sysJiffies[i])/(static_cast<double>(curtime)-lasttime)/hertzValue*100;

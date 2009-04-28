@@ -15,10 +15,11 @@ public:
 		uint32_t sysJiffies;
 		uint32_t userJiffies;
 		time_t lastAccess;
+		bool active;
 	};
-	
 
-	struct SystemInfo 
+
+	struct SystemInfo
 	{
 		uint16_t noCPUs;
 		std::vector<uint32_t> userJiffies;
@@ -26,17 +27,17 @@ public:
 		uint64_t totalMemory; // in bytes
 		uint64_t freeMemory; // in bytes
 	};
-	
+
 	static JiffyTime getJiffies(pid_t tid);
 	static SystemInfo getSystemInfo();
-	
+
 	static unsigned long long getHertzValue();
 #else
 	struct SystemInfo
 	{
 	};
 #endif // __linux__
-	
+
 private:
 	ThreadCPUInterface();
 	virtual ~ThreadCPUInterface();
