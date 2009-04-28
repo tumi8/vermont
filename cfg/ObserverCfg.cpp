@@ -24,10 +24,11 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 	offline(false),
 	replaceOfflineTimestamps(false),
 	offlineAutoExit(true),
-	offlineSpeed(1.0)
+	offlineSpeed(1.0),
+	maxPackets(0)
 {
 	if (!elem) return;  // needed because of table inside ConfigManager
-	
+
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -48,7 +49,9 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 		} else if (e->matches("offlineAutoExit")) {
 			offlineAutoExit = getBool("offlineAutoExit", offlineAutoExit);
 		} else if (e->matches("captureLength")) {
-			capture_len = getInt("captureLength");	
+			capture_len = getInt("captureLength");
+		} else if (e->matches("maxPackets")) {
+			maxPackets = getInt("maxPackets");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown observer config statement %s\n", e->getName().c_str());
@@ -64,7 +67,7 @@ ObserverCfg::~ObserverCfg()
 
 Observer* ObserverCfg::createInstance()
 {
-	instance = new Observer(interface, offline);
+	instance = new Observer(interface, offline, maxPackets);
 	instance->setOfflineSpeed(offlineSpeed);
 	instance->setOfflineAutoExit(offlineAutoExit);
 	if (replaceOfflineTimestamps) instance->replaceOfflineTimestamps();

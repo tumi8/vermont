@@ -42,7 +42,7 @@
 class Observer : public Module, public Source<Packet*>, public Destination<NullEmitable*>
 {
 public:
-	Observer(const std::string& interface, bool offline);
+	Observer(const std::string& interface, bool offline, uint64_t maxpackets);
 	~Observer();
 
 	virtual void performStart();
@@ -87,6 +87,10 @@ protected:
 
 	// capture packets in promiscous mode or not
 	int pcap_promisc;
+
+	// maximum number of packets to capture, then stop processing
+	// 0 == do not stop
+	uint64_t maxPackets;
 
 	// set to true if prepare() was successful
 	bool ready;

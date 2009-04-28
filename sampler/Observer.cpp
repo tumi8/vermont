@@ -79,9 +79,9 @@ using namespace std;
 
 InstanceManager<Packet> Observer::packetManager("Packet");
 
-Observer::Observer(const std::string& interface, bool offline) : thread(Observer::observerThread), allDevices(NULL),
+Observer::Observer(const std::string& interface, bool offline, uint64_t maxpackets) : thread(Observer::observerThread), allDevices(NULL),
 	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT),
-	pcap_promisc(1), ready(false), filter_exp(0), observationDomainID(0), // FIXME: this must be configured!
+	pcap_promisc(1), maxPackets(maxpackets), ready(false), filter_exp(0), observationDomainID(0), // FIXME: this must be configured!
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0),
 	lastProcessedPackets(0), statLastRecvPackets(0), statLastDroppedPackets(0),
 	captureInterface(NULL), fileName(NULL), replaceTimestampsFromFile(false),
@@ -174,7 +174,7 @@ void *Observer::observerThread(void *arg)
 
 
 	if(!obs->readFromFile) {
-		while(!obs->exitFlag) {
+		while(!obs->exitFlag && (obs->maxPackets==0 || obs->processedPackets<obs->maxPackets)) {
 			// wait until data can be read from pcap file descriptor
 			fd_set fd_wait;
 			FD_ZERO(&fd_wait);
@@ -254,7 +254,7 @@ void *Observer::observerThread(void *arg)
 		struct timespec wait_spec;
 		bool firstPacket = true;
 		// read-from-file loop
-		while(!obs->exitFlag) {
+		while(!obs->exitFlag && (obs->maxPackets==0 || obs->processedPackets<obs->maxPackets)) {
 
 			DPRINTFL(MSG_VDEBUG, "trying to get packet from pcap file");
 			pcapData=pcap_next(obs->captureDevice, &packetHeader);
@@ -335,9 +335,9 @@ void *Observer::observerThread(void *arg)
 		}
 	}
 
-	if (obs->readFromFile && obs->autoExit) {
+	if (obs->autoExit) {
 		// notify Vermont to shut down
-		DPRINTF("notifying Vermont to shut down, as all PCAP file data was read");
+		DPRINTF("notifying Vermont to shut down, as all PCAP file data was read, or maximum packet count was reached");
 		obs->shutdownVermont();
 	}
 

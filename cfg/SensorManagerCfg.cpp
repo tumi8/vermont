@@ -28,7 +28,7 @@ SensorManagerCfg::SensorManagerCfg(XMLElement* elem)
 		} else if (e->matches("outputfile")) {
 			sensorOutput = e->getFirstText().c_str();
 			if (sensorOutput.size() == 0) {
-				THROWEXCEPTION("invalid sensor outut file specified: '%s'", e->getFirstText().c_str());
+				THROWEXCEPTION("invalid sensor output file specified: '%s'", e->getFirstText().c_str());
 			}
 		} else if (e->matches("append")) {
 			append = getInt("append")>0;

@@ -21,13 +21,13 @@ public:
 	friend class ConfigManager;
 
 	virtual ObserverCfg* create(XMLElement* e);
-	
+
 	virtual ~ObserverCfg();
 
 	virtual Observer* createInstance();
 
 	virtual bool deriveFrom(ObserverCfg* old);
-	
+
 protected:
 	ObserverCfg(XMLElement*);
 
@@ -40,6 +40,7 @@ private:
 	bool replaceOfflineTimestamps;
 	bool offlineAutoExit;
 	float offlineSpeed;
+	uint64_t maxPackets;
 };
 
 #endif /*OBSERVERCFG_H_*/
