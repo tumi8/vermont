@@ -184,6 +184,11 @@ ADD_DEFINITIONS(-DIP_HEADER_OFFSET=${IP_HEADER_OFFSET})
 SET(PCAP_MAX_CAPTURE_LENGTH 128 CACHE STRING "Maximum PCAP packet capture length (this amount of bytes is always allocated for each packet, the smaller the better!)")
 ADD_DEFINITIONS(-DPCAP_MAX_CAPTURE_LENGTH=${PCAP_MAX_CAPTURE_LENGTH})
 
+### PCAP_DEFAULT_CAPTURE_LENGTH
+
+SET(PCAP_DEFAULT_CAPTURE_LENGTH 128 CACHE STRING "Default PCAP packet capture length (default value for PCAP snaplen if not defined in configuration)")
+ADD_DEFINITIONS(-DPCAP_DEFAULT_CAPTURE_LENGTH=${PCAP_DEFAULT_CAPTURE_LENGTH})
+
 
 ### SUPPORT_NETFLOWV9
 
