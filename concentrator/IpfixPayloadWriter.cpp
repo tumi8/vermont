@@ -142,7 +142,7 @@ void IpfixPayloadWriter::dumpEntry(Connection* conn)
 	}
 	// save payload in two files
 	FILE* f;
-	char buf[100];
+	char buf[500];
 	if (conn->srcPayload) {
 		f = fopen(filepayload[0].c_str(), "w+");
 		if (f == NULL) THROWEXCEPTION("failed to open file '%s', error: %s", filepayload[0].c_str(), strerror(errno));
