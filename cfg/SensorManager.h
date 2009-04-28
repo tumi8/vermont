@@ -19,7 +19,7 @@ public:
 	void addSensor(Sensor* sensor, const string name, uint32_t id);
 	void removeSensor(Sensor* sensor);
 	void stopSMThread();
-	void retrieveStatistics();
+	void retrieveStatistics(bool ignoreshutdown = false);
 	void setGraphIS(GraphInstanceSupplier* gis);
 	void setParameters(uint32_t checkInterval, string outputfilename, bool append,
 							 GraphInstanceSupplier* gis);

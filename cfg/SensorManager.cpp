@@ -122,7 +122,7 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 	fprintf(file, "%s", xmlmodpost);
 }
 
-void SensorManager::retrieveStatistics()
+void SensorManager::retrieveStatistics(bool ignoreshutdown)
 {
 	const char* xmlpre = "<vermont>\n\t<sensorData time=\"%s\" host=\"%s\">\n";
 	const char* xmlpost = "\t</sensorData>\n</vermont>\n";
@@ -138,7 +138,7 @@ void SensorManager::retrieveStatistics()
 		nanosleep(&timeout, NULL);
 	}
 
-	if (smExitFlag) return;
+	if (!ignoreshutdown && smExitFlag) return;
 
 	const char* openflags = (append ? "a" : "w");
 	FILE* file = fopen(outputFilename.c_str(), openflags);

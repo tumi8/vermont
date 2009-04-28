@@ -187,7 +187,7 @@ void ConfigManager::shutdown()
 
 	// trigger sensorManager to get the final statistics of this Vermont run
 	if (sensorManager) {
-		sensorManager->retrieveStatistics();
+		sensorManager->retrieveStatistics(true);
 	}
 
 	// disconnect the modules
