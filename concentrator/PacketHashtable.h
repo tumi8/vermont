@@ -93,6 +93,7 @@ private:
 	static void copyDataSetOne(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataMaxPacketGap(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataNanoseconds(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void copyDataDummy(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void aggregateFrontPayload(IpfixRecord::Data* bucket, const Packet* src, const ExpFieldData* efd, bool firstpacket = false);
 	void (*getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*);
 	void fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index);

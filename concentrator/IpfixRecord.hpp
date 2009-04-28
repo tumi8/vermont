@@ -154,6 +154,7 @@ class IpfixRecord
 					case IPFIX_ETYPEID_revFlowStartSeconds:
 					case IPFIX_ETYPEID_revFlowEndSeconds:
 					case IPFIX_ETYPEID_revMaxPacketGap:
+					case IPFIX_ETYPEID_frontPayloadPktCount:
 						return 4;
 
 					case IPFIX_TYPEID_flowStartMilliSeconds:
@@ -169,11 +170,11 @@ class IpfixRecord
 						return 8;
 
 					default:
-						THROWEXCEPTION("unknown typeid");
+						THROWEXCEPTION("IpfixRecord: unknown typeid, failed to determine field length");
 						break;
 				}
 
-				THROWEXCEPTION("unknown typeid");
+				THROWEXCEPTION("IpfixRecord: unknown typeid, failed to determine field length");
 				return 0;
 			}
 
@@ -316,6 +317,7 @@ class IpfixRecord
 					case IPFIX_ETYPEID_frontPayloadLen:
 					case IPFIX_ETYPEID_revFrontPayload:
 					case IPFIX_ETYPEID_revFrontPayloadLen:
+					case IPFIX_ETYPEID_frontPayloadPktCount:
 						return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
 
 					case IPFIX_TYPEID_tcpControlBits:

@@ -62,6 +62,7 @@ class Connection
 		uint32_t srcPayloadLen;
 		char* dstPayload;
 		uint32_t dstPayloadLen;
+		uint32_t srcPayloadPktCount;
 
 		/**
 		 * time in seconds from 1970 on when this record will expire
@@ -71,7 +72,6 @@ class Connection
 
 		Connection(IpfixDataDataRecord* record);
 		virtual ~Connection();
-		void init(uint32_t connTimeout);
 		void addFlow(Connection* c);
 		string toString();
 		string printTcpControlBits(uint8_t bits);

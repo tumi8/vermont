@@ -259,6 +259,7 @@
 32896:frontPayload:octetArray:
 32897:frontPayloadLen:unsigned32:
 32898:maxPacketGap:unsigned32:
+32899:frontPayloadPktCount:unsigned32:
 # biflow flows (using enterprise typeids, 0x8400+<typeid>)
 33793:revOctetDeltaCount:unsigned64:
 33794:revPacketDeltaCount:unsigned64:

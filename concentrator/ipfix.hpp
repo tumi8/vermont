@@ -142,6 +142,7 @@ int string2typelength(const char*s);
 #define IPFIX_ETYPEID_frontPayload					(IPFIX_ENTERPRISE_TYPE | 0x80)
 #define IPFIX_ETYPEID_frontPayloadLen				(IPFIX_ENTERPRISE_TYPE | 0x81)
 #define IPFIX_ETYPEID_maxPacketGap					(IPFIX_ENTERPRISE_TYPE | 0x82)
+#define IPFIX_ETYPEID_frontPayloadPktCount			(IPFIX_ENTERPRISE_TYPE | 0x83)
 
 // information elements for biflows
 #define IPFIX_REVERSE_TYPE							0x0400
@@ -271,6 +272,7 @@ int string2typelength(const char*s);
 #define IPFIX_ELENGTH_revFrontPayloadLen			IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_maxPacketGap					IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_revMaxPacketGap				IPFIX_LENGTH_unsigned32
+#define IPFIX_ELENGTH_frontPayloadPktCount			IPFIX_LENGTH_unsigned32
 
 #define MAX_MSG_LEN   65536
 

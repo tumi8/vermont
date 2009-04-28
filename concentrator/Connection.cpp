@@ -176,6 +176,8 @@ Connection::Connection(IpfixDataDataRecord* record)
 		dstPayload = new char[dstPayloadLen];
 		memcpy(dstPayload, record->data + fi->offset, dstPayloadLen);
 	}
+	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadPktCount, 0);
+	if (fi != 0) srcPayloadPktCount= *(uint32_t*)(record->data + fi->offset);
 }
 
 Connection::~Connection()

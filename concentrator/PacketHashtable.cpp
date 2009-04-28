@@ -62,6 +62,9 @@ void PacketHashtable::copyDataFrontPayload(IpfixRecord::Data* bucket, const Ipfi
 {
 	aggregateFrontPayload(bucket, reinterpret_cast<const Packet*>(src), efd, true);
 }
+void PacketHashtable::copyDataDummy(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd)
+{
+}
 void PacketHashtable::copyDataMaxPacketGap(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd)
 {
 	memset(bucket+efd->dstIndex, 0, efd->dstLength);
@@ -113,6 +116,12 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, const Pac
 		*reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset) = seq;
 		*reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4) = 0;
 		memset(dst, 0, efd->dstLength);
+
+		// reset packet counter for front payload
+		const uint32_t pktcountoffset = *reinterpret_cast<const uint32_t*>(efd->data);
+		if (pktcountoffset != 0xFFFFFFFF) {
+			memset(bucket+pktcountoffset, 0, IPFIX_ELENGTH_frontPayloadPktCount);
+		}
 	}
 
 	// ignore packets that do either contain no payload or were not interpreted correctly
@@ -137,14 +146,24 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, const Pac
 				memcpy(dst+pos, src->data+src->payloadOffset, len);
 				uint32_t maxpos = pos+len;
 				if (*pfplen<maxpos) *pfplen = maxpos;
+
+				// increase packet counter
+				const uint32_t pktcountoffset = *reinterpret_cast<const uint32_t*>(efd->data);
+				if (pktcountoffset != 0xFFFFFFFF) *reinterpret_cast<uint32_t*>(bucket+pktcountoffset) = *reinterpret_cast<uint32_t*>(bucket+pktcountoffset)+1;
+				DPRINTFL(MSG_VDEBUG, "pktcountoffset: %u, v: %u", pktcountoffset, *reinterpret_cast<uint32_t*>(bucket+pktcountoffset));
 			}
 		} else {
 			uint32_t* pfplen = reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4); // current size of front payload within flow
 			if (*pfplen<efd->dstLength) {
 				uint32_t len = efd->dstLength-*pfplen;
 				if (plen<len) len = plen;
+				DPRINTFL(MSG_VDEBUG, "inserting payload data at %u with length %u", *pfplen, len);
 				memcpy(dst+*pfplen, src->data+src->payloadOffset, len);
 				*pfplen += len;
+				// increase packet counter
+				const uint32_t pktcountoffset = *reinterpret_cast<const uint32_t*>(efd->data);
+				if (pktcountoffset != 0xFFFFFFFF) *reinterpret_cast<uint32_t*>(bucket+pktcountoffset) = *reinterpret_cast<uint32_t*>(bucket+pktcountoffset)+1;
+				DPRINTFL(MSG_VDEBUG, "pktcountoffset: %u, v: %u", pktcountoffset, *reinterpret_cast<uint32_t*>(bucket+pktcountoffset));
 			}
 		}
 	}
@@ -187,6 +206,7 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecor
 		case IPFIX_TYPEID_flowEndSysUpTime:
 		case IPFIX_TYPEID_flowEndSeconds:
 		case IPFIX_ETYPEID_frontPayloadLen:
+		case IPFIX_ETYPEID_frontPayloadPktCount:
 		case IPFIX_ETYPEID_maxPacketGap:
 			if (efd->dstLength != 4) {
 				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
@@ -230,6 +250,8 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecor
 		return copyDataFrontPayloadLen;
 	} else if (efd->typeId == IPFIX_ETYPEID_maxPacketGap) {
 		return copyDataMaxPacketGap;
+	} else if (efd->typeId == IPFIX_ETYPEID_frontPayloadPktCount) {
+		return copyDataDummy;
 	} else if (efd->typeId == IPFIX_TYPEID_flowStartNanoSeconds || efd->typeId == IPFIX_TYPEID_flowEndNanoSeconds) {
 		return copyDataNanoseconds;
 	} else if (efd->dstLength == efd->srcLength) {
@@ -286,6 +308,7 @@ uint8_t PacketHashtable::getRawPacketFieldLength(IpfixRecord::FieldInfo::Type ty
 		case IPFIX_ETYPEID_revFlowEndSeconds:
 		case IPFIX_ETYPEID_frontPayloadLen:
 		case IPFIX_ETYPEID_maxPacketGap:
+		case IPFIX_ETYPEID_frontPayloadPktCount:
 			return 4;
 
 		case IPFIX_TYPEID_flowStartMilliSeconds:
@@ -302,11 +325,11 @@ uint8_t PacketHashtable::getRawPacketFieldLength(IpfixRecord::FieldInfo::Type ty
 			return type.length;				// length is variable and is set in configuration
 
 		default:
-			THROWEXCEPTION("unknown typeid");
+			THROWEXCEPTION("PacketHashtable: unknown typeid, failed to determine raw packet field length");
 			break;
 	}
 
-	THROWEXCEPTION("unknown typeid");
+	THROWEXCEPTION("PacketHashtable: unknown typeid, failed to determine raw packet field length");
 	return 0;
 }
 
@@ -330,6 +353,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const IpfixRecord::FieldInfo::Type&
 		case IPFIX_TYPEID_sourceIPv4Address:
 		case IPFIX_TYPEID_destinationIPv4Address:
 		case IPFIX_ETYPEID_maxPacketGap:
+		case IPFIX_ETYPEID_frontPayloadPktCount:
 			return false;
 
 		case IPFIX_TYPEID_icmpTypeCode:
@@ -341,7 +365,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const IpfixRecord::FieldInfo::Type&
 			return true;
 	}
 
-	THROWEXCEPTION("invalid type (%d)", type.id);
+	THROWEXCEPTION("PacketHashtable: invalid type (%d), failed to determine variable state of field", type.id);
 	return false;
 }
 
@@ -390,6 +414,16 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo
 		efd->srcLength = 5;
 	}
 
+	// set data efd field to the offset of IPFIX_ETYPEID_frontPayloadPktCount for front payload
+	if (efd->typeId==IPFIX_ETYPEID_frontPayload) {
+		for (int i=0; i<dataTemplate->fieldCount; i++) {
+			IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+			if (hfi->type.id==IPFIX_ETYPEID_frontPayloadPktCount) {
+				*reinterpret_cast<uint32_t*>(efd->data) = hfi->offset;
+			}
+		}
+	}
+
 	efd->copyDataFunc = getCopyDataFunction(efd);
 }
 
@@ -416,6 +450,7 @@ bool PacketHashtable::typeAvailable(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_TYPEID_tcpControlBits:
 		case IPFIX_ETYPEID_frontPayloadLen:
 		case IPFIX_ETYPEID_frontPayload:
+		case IPFIX_ETYPEID_frontPayloadPktCount:
 		case IPFIX_ETYPEID_maxPacketGap:
 			return true;
 	}

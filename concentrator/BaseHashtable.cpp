@@ -157,6 +157,12 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			}
 			fi->privDataOffset = revfpLengthOffset;
 		}
+		// check validity of field
+		if (fi->type.id == IPFIX_ETYPEID_frontPayloadPktCount) {
+			if (!fpLengthOffset) {
+				THROWEXCEPTION("no front payload field specified in template, so front payload packet count is not available either");
+			}
+		}
 	}
 }
 
@@ -326,6 +332,7 @@ int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
 		case IPFIX_TYPEID_tcpControlBits:
 		case IPFIX_ETYPEID_frontPayload:
 		case IPFIX_ETYPEID_frontPayloadLen:
+		case IPFIX_ETYPEID_frontPayloadPktCount:
 		case IPFIX_ETYPEID_revFrontPayload:
 		case IPFIX_ETYPEID_revFrontPayloadLen:
 		case IPFIX_ETYPEID_revFlowStartSeconds:

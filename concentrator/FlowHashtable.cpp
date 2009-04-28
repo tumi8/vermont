@@ -214,6 +214,7 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo* basefi, IpfixRecord::F
 		case IPFIX_TYPEID_droppedPacketDeltaCount:
 		case IPFIX_ETYPEID_revOctetDeltaCount:
 		case IPFIX_ETYPEID_revPacketDeltaCount:
+		case IPFIX_ETYPEID_frontPayloadPktCount:
 			// TODO: tobi_optimize
 			// converting all values to network byte order when sending ipfix packets would be much faster
 			switch (type->length) {
