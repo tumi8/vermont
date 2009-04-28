@@ -24,6 +24,7 @@ ADD_LIBRARY(cfg
 	ConfigManager.cpp
 	Connector.cpp
 	DelayedDeleter.cpp
+	FrontPayloadSigMatcherCfg.cpp
 	Graph.cpp
 	GraphInstanceSupplier.cpp
 	IDMEFExporterCfg.cpp

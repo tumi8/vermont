@@ -26,6 +26,7 @@
 #include "cfg/IpfixPayloadWriterCfg.h"
 #include "cfg/IpfixSamplerCfg.h"
 #include "cfg/RecordAnonymizerCfg.h"
+#include "cfg/FrontPayloadSigMatcherCfg.h"
 
 #include <cassert>
 
@@ -56,6 +57,7 @@ Cfg* ConfigManager::configModules[] = {
 	new PacketIDMEFReporterCfg(NULL),
 	new IpfixPayloadWriterCfg(NULL),
 	new RecordAnonymizerCfg(NULL),
+	new FrontPayloadSigMatcherCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
 	new IpfixDbReaderCfg(NULL),
 	new IpfixDbWriterCfg(NULL),

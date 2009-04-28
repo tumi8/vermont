@@ -1,6 +1,47 @@
 
 = Vermont Module Configuration =
 
+== FrontPayloadSigMatcher ==
+
+Matches flow records that contain payload (IPFIX_ETYPE_frontPayload) to rule files in specified directory, that contain signature tokens with priority and a threshold value that specifies the number of tokens to match until the whole signature matches. The module then reports matches on the command line.
+Attention: this code is alpha. The signature directory *must only* contain signature files. If other files are present, the matcher will break.
+
+Input type: IpfixRecord
+Output type: none
+
+**Example configuration:**
+<code xml>
+<frontPayloadSigMatcher id="9">
+	<signaturedir>./signatures</signaturedir>
+</frontPayloadSigMatcher>
+</code>
+Parameters:
+|  **Element name**  |  **Default value**  |  **Description**  |
+|signaturedir |  none  |Directory that contains signature rule files. |
+
+**Example signature file**
+<code>
+#Signature of the pcap: f5fb928cef4a24a5a18ddb305b1d2127
+#Trainingvalues: FP = 0.00000, TP = 1.00000
+#Bayes minimum Occurrence = 0.7
+
+BAYESSIGNATURE
+SIGNATUREID
+f5fb928cef4a24a5a18ddb305b1d2127
+CLASSMEMBERS
+f5fb928cef4a24a5a18ddb305b1d2127
+TOKEN
+220 ProFTPD 1.2.9 Server (ProFTPD) [1.1.63]%0d%0a331 Password required for asaasa510.%0d%0a230 User asaasa510 logged in.%0d%0a200 Type set to I%0d%0a215 UNIX Type: L8%0d%0a500 Illegal PORT command%0d%0a
+SUPPORT
+0.50000
+TOKEN
+SER asaasa510%0d%0aPASS 3330881%0d%0aTYPE I%0d%0aSYST%0d%0aPORT 10,0,
+SUPPORT
+0.50000
+THRESHOLD
+1.0
+</code>
+
 == IDMEFExporter ==
 
 Exports incoming IDMEF messages to the external perl script idmefsender.pl which sends it over the network to a specified URL.

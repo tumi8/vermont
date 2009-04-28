@@ -46,10 +46,17 @@ ADD_LIBRARY(concentrator
 	IpfixSampler.cpp
 	AutoFocus.cpp
 	autofocus_report.cpp
-        autofocus_attribute.cpp
-        autofocus_iprecord.h
+    autofocus_attribute.cpp
+    autofocus_iprecord.h
 	TRWPortscanDetector.cpp
 	RBSWormDetector.cpp
 	IpfixPayloadWriter.cpp
+	FrontPayloadSigMatcher.cpp
+ 
+    # support files for FrontPayloadSigMatcher
+    fpsigmatcher/KTree.c
+    fpsigmatcher/Matcher.c
+    fpsigmatcher/Signature.c
+    fpsigmatcher/Utils.c
 )
 
