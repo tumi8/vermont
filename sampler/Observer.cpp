@@ -161,13 +161,13 @@ void *Observer::observerThread(void *arg)
 	msg(MSG_INFO, "  - readFromFile=%d", obs->readFromFile);
 	if (obs->fileName) msg(MSG_INFO, "  - fileName=%s", obs->fileName);
 	if (obs->captureInterface) msg(MSG_INFO, "  - captureInterface=%s", obs->captureInterface);
+	msg(MSG_INFO, "  - filterString='%s'", (obs->filter_exp ? obs->filter_exp : "none"));
+	msg(MSG_INFO, "  - maxPackets=%u", obs->maxPackets);
 	msg(MSG_INFO, "  - capturelen=%d", obs->capturelen);
 	if (obs->readFromFile) {
 		msg(MSG_INFO, "  - autoExit=%d", obs->autoExit);
 		msg(MSG_INFO, "  - stretchTime=%f", obs->stretchTime);
 		msg(MSG_INFO, "  - replaceTimestampsFromFile=%s", obs->replaceTimestampsFromFile==true?"true":"false");
-		msg(MSG_INFO, "  - filterString=%s", (obs->filter_exp ? obs->filter_exp : "none"));
-		msg(MSG_INFO, "  - maxPackets=%u", obs->maxPackets);
 	}
 
 	// start capturing packets
