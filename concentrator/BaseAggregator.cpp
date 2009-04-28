@@ -1,6 +1,7 @@
 #include "BaseAggregator.h"
 
 #include "BaseHashtable.h"
+#include "common/Time.h"
 
 #include <time.h>
 #include <sstream>
@@ -12,10 +13,10 @@
  */
 BaseAggregator::BaseAggregator(uint32_t pollinterval)
 	: rules(0),
-	  thread(BaseAggregator::threadWrapper),	  
+	  thread(BaseAggregator::threadWrapper),
 	  pollInterval(pollinterval)
 {
-	
+
 }
 
 /**
@@ -25,7 +26,7 @@ BaseAggregator::BaseAggregator(uint32_t pollinterval)
 BaseAggregator::~BaseAggregator()
 {
 	shutdown(false);
-	
+
 	// for a strange case a 'delete hashtable' in Rule doesn't work, because
 	// it seems we have a cyclic dependency and the compiler complains, so delete it here
 	for (size_t i = 0; i < rules->count; i++) {
@@ -42,12 +43,12 @@ void BaseAggregator::performStart()
 {
 	DPRINTF("called");
 	ASSERT(rules != 0, "aggregator must be initialized using function buildAggregator first!");
-	
+
 	// notify all hashtables that start is in progress
 	for (uint32_t i=0; i<rules->count; i++) {
 		rules->rule[i]->hashtable->performStart();
 	}
-	
+
 	thread.run(this);
 }
 
@@ -60,7 +61,7 @@ void BaseAggregator::performShutdown()
 	for (uint32_t i=0; i<rules->count; i++) {
 		rules->rule[i]->hashtable->performShutdown();
 	}
-	
+
 	connected.shutdown();
 	thread.join();
 }
@@ -82,7 +83,7 @@ void BaseAggregator::onReconfiguration1()
 {
 	for (uint32_t i=0; i<rules->count; i++) {
 		rules->rule[i]->hashtable->onReconfiguration1();
-	}	
+	}
 }
 
 /**
@@ -136,40 +137,54 @@ void BaseAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint1
  * thread which regularly scans hashtable for expired buckets/flows
  */
 void BaseAggregator::exporterThread()
-{	
-	timespec req;
+{
+	struct timeval inttimer;
+	gettimeofday(&inttimer, 0);
+	//struct timeval difftime;
+	//REQUIRE(timeval_subtract(&difftime, &stoptime, &starttime) == 0);
+
+
+	/*timespec req;
 	req.tv_sec = pollInterval / 1000;
-	req.tv_nsec = (pollInterval % 1000) * 1000;
-	
+	req.tv_nsec = (pollInterval % 1000) * 1000;*/
+
+
 	registerCurrentThread();
-	
-	msg(MSG_INFO, "Polling aggregator each %u msec", pollInterval);	
+
+	msg(MSG_INFO, "Polling aggregator each %u msec", pollInterval);
 	while (!exitFlag) {
-		// restart nanosleep with the remaining sleep time
-		// if we got interrupted by a signal
-		while (nanosleep(&req, &req) == -1 && errno == EINTR);
-	
-		uint32_t now = time(0);
-		msg(MSG_DEBUG,"Starting Export");	
+		addToCurTime(&inttimer, pollInterval);
+
+		struct timeval curtime;
+		gettimeofday(&curtime, 0);
+
+		struct timeval difftime;
+		if (timeval_subtract(&difftime, &inttimer, &curtime)!=1) {
+			// restart nanosleep with the remaining sleep time
+			// if we got interrupted by a signal
+			struct timespec ts;
+			TIMEVAL_TO_TIMESPEC(&difftime, &ts);
+			while (nanosleep(&ts, &ts) == -1 && errno == EINTR);
+		}
+
+		gettimeofday(&curtime, 0);
+		msg(MSG_DEBUG,"Aggregator: starting Export");
 		for (size_t i = 0; i < rules->count; i++) {
 			rules->rule[i]->hashtable->expireFlows();
 		}
-		uint32_t later = time(0);
-		
-		msg(MSG_DEBUG,"Export took %u secs",later-now);
+		struct timeval endtime;
+		gettimeofday(&endtime, 0);
+		timeval_subtract(&difftime, &endtime, &curtime);
 
-		// bring forward the next export by the time it took to perform the previous one
-		// TODO: add millisecond accuracy
-		req.tv_sec = ((pollInterval / 1000) - (later-now) < 0) ? 0 : (pollInterval / 1000) - (later-now);
-		
+		msg (MSG_DEBUG,"Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000+difftime.tv_sec);
 	}
-	
+
 	if (getShutdownProperly()) {
 		for (size_t i = 0; i < rules->count; i++) {
 			rules->rule[i]->hashtable->expireFlows(true);
 		}
 	}
-	
+
 	unregisterCurrentThread();
 }
 
@@ -180,7 +195,7 @@ void BaseAggregator::exporterThread()
 void* BaseAggregator::threadWrapper(void* instance)
 {
 	BaseAggregator* agg = reinterpret_cast<BaseAggregator*>(instance);
-	agg->exporterThread();	
+	agg->exporterThread();
 	return 0;
 }
 

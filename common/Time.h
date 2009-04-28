@@ -57,6 +57,17 @@ inline void addToCurTime(struct timespec* ts, long timediff_ms)
 }
 
 /**
+ * wrapper function for addToCurTime(timespec)
+ */
+inline void addToCurTime(struct timeval* tv, long timediff_ms)
+{
+	struct timespec ts;
+	TIMEVAL_TO_TIMESPEC(tv, &ts);
+	addToCurTime(&ts, timediff_ms);
+	TIMESPEC_TO_TIMEVAL(tv, &ts);
+}
+
+/**
  * compares two timespec values
  * @returns -1 if ts1 is smaller, 0 if both are equal, 1 if ts2 is smaller
  */
