@@ -114,8 +114,8 @@ void IpfixPayloadWriter::dumpEntry(Connection* conn)
 			connectionID, IPToString(conn->srcIP).c_str(), ntohs(conn->srcPort), IPToString(conn->dstIP).c_str(), ntohs(conn->dstPort));
 	snprintf(filename[1], 100, "%s-%04llu-%s.%d-%s.%d", filenamePrefix.c_str(),
 			connectionID, IPToString(conn->dstIP).c_str(), ntohs(conn->dstPort), IPToString(conn->srcIP).c_str(), ntohs(conn->srcPort));
-	snprintf(idxpath[0], ARRAY_SIZE(idxpath[0]), "/%04llX", connectionID/0xFFFF);
-	snprintf(idxpath[1], ARRAY_SIZE(idxpath[1]), "/%02llX/", connectionID/0xFF);
+	snprintf(idxpath[0], ARRAY_SIZE(idxpath[0]), "/%04llX", connectionID>>16);
+	snprintf(idxpath[1], ARRAY_SIZE(idxpath[1]), "/%02llX/", connectionID>>8);
 	connectionID++;
 
 	// create paths, if needed
