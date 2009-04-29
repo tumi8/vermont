@@ -25,7 +25,7 @@ public:
 	
 protected:
 	
-	uint32_t intLength;	/**< length of interval in seconds when to check for p2p hosts*/
+	uint32_t intLength;	/** length of interval in seconds when to check for p2p hosts*/
 	uint32_t subnet; // subnet to research
 	uint32_t subnetmask; // corresponding subnetmask
 	string analyzerid;

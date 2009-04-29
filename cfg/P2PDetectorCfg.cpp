@@ -38,7 +38,6 @@ P2PDetectorCfg::P2PDetectorCfg(XMLElement* elem)
 	
 	if (analyzerid=="") THROWEXCEPTION("P2PDetectorCfg: analyzerid not set in configuration!");
 	if (!setSubnet(ip)) THROWEXCEPTION("P2PDetectorCfg: subnet is not a valid!");
-	intLength *= 1000;
 	
 	idmefTemplate = "idmef/templates/p2pdetector_template.xml";
 }

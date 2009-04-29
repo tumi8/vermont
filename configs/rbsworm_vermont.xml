@@ -135,7 +135,7 @@
 
 <idmefExporter id="9">
 	<sendurl>http://localhost</sendurl>
-	<destdir>idmef_work</destdir>
+	<destdir>/tmp/idmef_work</destdir>
 </idmefExporter>	
 
 </ipfixConfig>	

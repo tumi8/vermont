@@ -8,7 +8,7 @@
 		<filename>/home/spitfire/temp/studienarbeit/dumps/amule-linux-relativ-gut-13.11-2008-12-05.dump</filename>
 		<pcap_filter>ip</pcap_filter>
 		<offlineAutoExit>1</offlineAutoExit>
-		<offlineSpeed>1</offlineSpeed>
+		<offlineSpeed>0</offlineSpeed>
 		<captureLength>128</captureLength>
 		<next>2</next>
 	</observer>
@@ -131,5 +131,12 @@
 		<analyzerid>P2PDetector</analyzerid>
 		<interval>300</interval>
 		<subnet>192.168.1.0/24</subnet>
+		<next>6</next>
 	</p2pDetector>
+	
+	<idmefExporter id="6">
+		<sendurl>http://localhost</sendurl>
+		<destdir>/tmp/idmef_work</destdir>
+	</idmefExporter>	
+	
 </ipfixConfig>

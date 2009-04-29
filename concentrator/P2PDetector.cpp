@@ -21,10 +21,22 @@
 #include "common/Time.h"
 #include "reconf/Timer.h"
 
+#include <math.h>
 #include <iostream>
 
 
 InstanceManager<IDMEFMessage> P2PDetector::idmefManager("IDMEFMessage");
+
+//Threasholds for the criteria
+const double udpRateThreshold = 0.1;  // uni-dumps: 4
+const double udpHostRateThreshold = 0.3;
+const double tcpRateThreshold = 0.25;
+const double coexistentTCPConsThreshold = 14; // uni-dumps: 22
+const double rateLongTCPConsThreshold = 0.1; //home: 0.05; uni2: 0.2
+const double tcpVarianceThreshold = 1.3; //home: 1,67; uni2: 1.3
+const double failedConsPercentThreshold = 5; //home: 3
+const double tcpFailedRateThreshold = 0.07; // home: 0.014 uni1: 0.12
+const double tcpFailedVarianceThreshold = 1.22;
 
 /**
  * P2PDetector
@@ -49,7 +61,6 @@ P2PDetector::~P2PDetector()
 
 /**
  * Get new Biflows from the aggregator 
- * 
  */
 void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 {
@@ -57,38 +68,67 @@ void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 	Connection conn(record);
 	conn.swapIfNeeded();
 	
+	if(conn.srcTimeStart == 0)
+		cout << "null" << endl;
 	//cout << IPToString(conn.srcIP) << "->" << IPToString(conn.dstIP) << ": " << (int)conn.protocol << endl;
 	
 	if((conn.srcIP & subnetmask) == (subnet & subnetmask)){
+		P2PEntry& entry = hostList[conn.srcIP];
 		//UDP biflows
 		if(conn.protocol == 17){
-			//number of udp biflows
-			hostList[conn.srcIP].numUDPBiFlows++;
-			//contacted udp hosts
-			hostList[conn.srcIP].contactedUDPHosts[conn.dstIP] = true;
+			//number of UDP biflows
+			entry.numUDPBiFlows++;
+			//contacted UDP hosts
+			entry.contactedUDPHosts[conn.dstIP] = true;
 		}
 		//TCP biflows
 		if(conn.protocol == 6){
-			hostList[conn.srcIP].numTCPBiFlows++;
+			//number of all TCP biflows
+			entry.numTCPBiFlows++;
 			if(succConn(conn)){
-				
+				uint64_t flowLength = (conn.srcTimeEnd < conn.dstTimeEnd ? conn.dstTimeEnd : conn.srcTimeEnd) - conn.srcTimeStart;
+				//sum of all biflow length 
+				entry.sumTCPLength += flowLength;
+				//number of long TCP connections
+				if(flowLength >= 60000)
+					entry.numLongTCPCons++;
+				//list of all starting points of the biflows to calculate the variance of starting points
+				entry.succBiFlowStarts.push_back(conn.srcTimeStart);
 			}else{
+				//number of failed TCP connections
+				entry.numFailedTCPCons++;
+				//list of all starting points of the failed connections to calculate the variance of failed connection attempts
+				entry.failedBiFlowStarts.push_back(conn.srcTimeStart);
 			}
 		}
 		
 	}
 	
 	if((conn.dstIP & subnetmask) == (subnet & subnetmask)){
+		P2PEntry& entry = hostList[conn.dstIP];
 		//UDP biflows
 		if(conn.protocol == 17){
-			//number of udp biflows
-			hostList[conn.dstIP].numUDPBiFlows++;
+			//number of UDP biflows
+			entry.numUDPBiFlows++;
 		}
 		//TCP biflows
 		if(conn.protocol == 6){
-			hostList[conn.dstIP].numTCPBiFlows++;
+			//number of all TCP biflows
+			entry.numTCPBiFlows++;
 			if(succConn(conn)){
+				uint64_t flowLength = (conn.srcTimeEnd < conn.dstTimeEnd ? conn.dstTimeEnd : conn.srcTimeEnd) - conn.srcTimeStart;
+				//sum of all biflow length 
+				entry.sumTCPLength += flowLength;
+				//number of long TCP connections
+				if(flowLength >= 60000)
+					entry.numLongTCPCons++;
+				//list of all starting points of the biflows to calculate the variance of starting points
+				entry.succBiFlowStarts.push_back(conn.srcTimeStart);
 			}else{
+				//number of failed TCP connections
+				entry.numFailedTCPCons++;
+				//list of all starting points of the failed connections to calculate the variance of failed connection attempts
+				entry.failedBiFlowStarts.push_back(conn.srcTimeStart);
 			}
 		}
 
@@ -109,7 +149,7 @@ void P2PDetector::registerTimeout()
 {
 	if (timeoutRegistered) return;
 
-	addToCurTime(&nextTimeout, intLength);
+	addToCurTime(&nextTimeout, intLength*1000);
 	timer->addTimeout(this, nextTimeout, NULL);
 	timeoutRegistered = true;
 }
@@ -121,29 +161,122 @@ void P2PDetector::registerTimeout()
 void P2PDetector::onTimeout(void* dataPtr)
 {
 	timeoutRegistered = false;
-	cout << "bla" << endl;
-	msg(MSG_DEBUG, "P2P client detected:");
-	//msg(MSG_DEBUG, "srcIP: %s, dstSubnet: %s, dstSubMask: %s", IPToString(te->srcIP).c_str(), 
-	//	IPToString(te->dstSubnet).c_str(), IPToString(te->dstSubnetMask).c_str());
-	//msg(MSG_DEBUG, "numFailedConns: %d, numSuccConns: %d", te->numFailedConns, te->numSuccConns);
+	//criterias
+	double udpRate;
+	double udpHostRate;
+	double tcpRate;
+	double coexistentTCPCons;
+	double rateLongTCPCons;
+	double tcpVariance;
+	double failedConsPercent;
+	double tcpFailedRate;
+	double tcpFailedVariance;
+	
+	//loop through all entries
+	for(map<uint32_t, P2PEntry>::iterator iter = hostList.begin(); iter != hostList.end(); iter++){
+		udpRate = ((double)(iter->second.numUDPBiFlows)) / intLength;
+		udpHostRate = ((double)(iter->second.contactedUDPHosts.size())) / intLength;
+		tcpRate = ((double)(iter->second.numTCPBiFlows)) / intLength;
+		coexistentTCPCons = ((double)(iter->second.sumTCPLength)) / intLength;
+		rateLongTCPCons = ((double)(iter->second.numLongTCPCons)) / intLength;
+		//tcpVariance
+		if(iter->second.succBiFlowStarts.size() < 3)
+			tcpVariance = -1;
+		else{
+			uint64_t sum = 0;
+			uint64_t qsum = 0;
+			double variance;
+			list<uint64_t>::iterator ptr1 = iter->second.succBiFlowStarts.begin();
+			list<uint64_t>::iterator ptr2 = ptr1++;
+			
+			iter->second.succBiFlowStarts.sort();
+			for(; ptr1 != iter->second.succBiFlowStarts.end(); ptr1++, ptr2++){
+				sum += *ptr1 - *ptr2;
+				qsum += (*ptr1 - *ptr2) * (*ptr1 - *ptr2);
+			}
+			//sample variance (stichprobenvarianz) /  n = succBiFlowStarts.size()-1: the differences not the starting points itself 
+			variance = (1.0/(iter->second.succBiFlowStarts.size()-2))*(qsum - ((1.0/(iter->second.succBiFlowStarts.size()-1))*(sum*sum)));
+			tcpVariance = sqrt(variance)/(iter->second.succBiFlowStarts.size()-1);	
+		}
+		failedConsPercent = (((double)(iter->second.numFailedTCPCons)) * 100) / iter->second.numTCPBiFlows;
+		tcpFailedRate = ((double)(iter->second.numFailedTCPCons)) / intLength;
+		//variance of failed connections
+		if(iter->second.failedBiFlowStarts.size() < 3)
+			tcpFailedVariance = -1;
+		else{
+			uint64_t sum = 0;
+			uint64_t qsum = 0;
+			double variance;
+			list<uint64_t>::iterator ptr1 = iter->second.failedBiFlowStarts.begin();
+			list<uint64_t>::iterator ptr2 = ptr1++;
+			
+			iter->second.failedBiFlowStarts.sort();
+			for(; ptr1 != iter->second.failedBiFlowStarts.end(); ptr1++, ptr2++){
+				sum += *ptr1 - *ptr2;
+				qsum += (*ptr1 - *ptr2) * (*ptr1 - *ptr2);
+			}
+			//sample variance (stichprobenvarianz) /  n = failedBiFlowStarts.size()-1: the differences not the starting points itself 
+			variance = (1.0/(iter->second.failedBiFlowStarts.size()-2))*(qsum - ((1.0/(iter->second.failedBiFlowStarts.size()-1))*(sum*sum)));
+			tcpFailedVariance = sqrt(variance)/(iter->second.failedBiFlowStarts.size()-1);	
+		}
+		
+		//decide wether researched host is peer-to-peer or not
+		int points = 0;
+		if(udpRate > udpRateThreshold)
+			points++;
+		if(udpHostRate > udpHostRateThreshold)
+			points++;
+		if(tcpRate > tcpRateThreshold)
+			points++;
+		if(coexistentTCPCons > coexistentTCPConsThreshold)
+			points++;
+		if(rateLongTCPCons > rateLongTCPConsThreshold)
+			points++;
+		if(tcpVariance > tcpVarianceThreshold)
+			points++;
+		if(failedConsPercent > failedConsPercentThreshold)
+			points++;
+		if(tcpFailedRate > tcpFailedRateThreshold)
+			points++;
+		if(tcpFailedVariance > tcpFailedVariance)
+			points++;
+		
+		//host is a p2p client	
+		if(points > 6){
+			//send Messag
+			msg(MSG_DEBUG, "P2P client detected:");
+			msg(MSG_DEBUG, "IP: %s, dstSubnet: %s, dstSubMask: %s", IPToString(iter->first).c_str(), 
+				IPToString(subnet).c_str(), IPToString(subnetmask).c_str());
+			//msg(MSG_DEBUG, "numFailedConns: %d, numSuccConns: %d", te->numFailedConns, te->numSuccConns);
+			
+			IDMEFMessage* msg = idmefManager.getNewInstance();
+			msg->init(idmefTemplate, analyzerId);
+			msg->setVariable("SUCC_CONNS", "42");
+			msg->setVariable("FAILED_CONNS", "42");
+			msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, "192.168.1.1");
+			msg->setVariable(IDMEFMessage::PAR_TARGET_ADDRESS, IPToString(subnet)+"/"+IPToString(subnetmask));
+			msg->applyVariables();
+			send(msg);
+		}
+		
+	}
+	
 
-//	IDMEFMessage* msg = idmefManager.getNewInstance();
-//	msg->init(idmefTemplate, analyzerId);
-//	msg->setVariable("SUCC_CONNS", "42");
-//	msg->setVariable("FAILED_CONNS", "42");
-//	msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, "192.168.1.1");
-//	msg->setVariable(IDMEFMessage::PAR_TARGET_ADDRESS, IPToString(subnet)+"/"+IPToString(subnetmask));
-//	msg->applyVariables();
-//	send(msg);
 	
 }
 
+/**
+ * things to be done when the module is shutdown
+ */
 void P2PDetector::performShutdown()
 {
 	onTimeout(NULL);
 	hostList.clear();
 }
 
+/**
+ * decides wether a connection was successfull or only a connection attempt
+ */
 bool P2PDetector::succConn(Connection& conn){
 	
 //	cout << "***Connection:\n";
@@ -185,6 +318,7 @@ bool P2PDetector::succConn(Connection& conn){
 					((conn.srcTcpControlBits & Connection::ACK) == Connection::ACK) ||
 					((conn.srcTcpControlBits & Connection::ACK) == Connection::ACK)
 				) &&
+				(conn.dstTimeEnd != 0) &&
 				(
 					//connection lasts at least 60 seconds 
 					(conn.srcTimeEnd - conn.srcTimeStart >= 60000) ||

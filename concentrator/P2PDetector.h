@@ -27,6 +27,7 @@
 
 #include <map>
 #include <string>
+#include <list>
 
 
 using namespace std;
@@ -57,7 +58,7 @@ class P2PDetector
 		bool timeoutRegistered;
 		timespec nextTimeout;
 		
-		uint32_t intLength; //interval length to be researched
+		uint32_t intLength; //interval length to be researched in seconds
 		uint32_t subnet; //subnet to be researched
 		uint32_t subnetmask; //subnetmask to be researched
 		
@@ -73,10 +74,18 @@ class P2PDetector
 				P2PEntry(){ 
 					numUDPBiFlows = 0;
 					numTCPBiFlows = 0;
+					sumTCPLength = 0;
+					numLongTCPCons = 0;
+					numFailedTCPCons = 0;
 				}
 				uint32_t numUDPBiFlows; //for criteria 1
 				map<uint32_t,bool> contactedUDPHosts; //for criteria 2
 				uint32_t numTCPBiFlows; // for criteria 3
+				uint64_t sumTCPLength; //criteria 4
+				uint32_t numLongTCPCons; //criteria 5
+				list<uint64_t> succBiFlowStarts; //criteria 6
+				uint32_t numFailedTCPCons; // criteria 7 and 8
+				list<uint64_t> failedBiFlowStarts; //criteria 9
 		};
 		
 		//list of all host entries to be researched
