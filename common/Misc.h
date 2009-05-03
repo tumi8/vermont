@@ -95,7 +95,7 @@ inline char convHexToByte(const char ch)
 	else if (c>='A' && c<='F') return c-'A';
 
 	THROWEXCEPTION("invalid hexadecimal character: %c", c);
-	return NULL;  // just to please compiler
+	return 0;  // just to please compiler
 }
 
 /**

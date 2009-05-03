@@ -29,7 +29,7 @@ IpfixSampler::IpfixSampler(double flowrate)
 	  statDropped(0),
 	  statTotalDropped(0)
 {
-	modulo = round(1.0/flowRate);
+	modulo = (uint64_t)round(1.0/flowRate);
 
 	msg(MSG_INFO, "IpfixSampler started with following parameters:");
 	msg(MSG_INFO, "  - flowRate=%f", flowRate);
