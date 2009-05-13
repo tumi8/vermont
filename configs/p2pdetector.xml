@@ -8,7 +8,7 @@
 		<filename>/home/spitfire/temp/studienarbeit/dumps/amule-linux-relativ-gut-13.11-2008-12-05.dump</filename>
 		<pcap_filter>ip</pcap_filter>
 		<offlineAutoExit>1</offlineAutoExit>
-		<offlineSpeed>0</offlineSpeed>
+		<offlineSpeed>1</offlineSpeed>
 		<captureLength>128</captureLength>
 		<next>2</next>
 	</observer>
@@ -131,12 +131,21 @@
 		<analyzerid>P2PDetector</analyzerid>
 		<interval>300</interval>
 		<subnet>192.168.1.0/24</subnet>
+		<udpRateThreshold>0.02</udpRateThreshold>
+		<udpHostRateThreshold>0.01</udpHostRateThreshold>
+		<tcpRateThreshold>0.15</tcpRateThreshold>
+		<coexistentTCPConsThreshold>5.53</coexistentTCPConsThreshold>
+		<rateLongTCPConsThreshold>0.03</rateLongTCPConsThreshold>
+		<tcpVarianceThreshold>0.01</tcpVarianceThreshold>
+		<failedConsPercentThreshold>5,42</failedConsPercentThreshold>
+		<tcpFailedRateThreshold>0.01</tcpFailedRateThreshold>
+		<tcpFailedVarianceThreshold>0.01</tcpFailedVarianceThreshold>
 		<next>6</next>
 	</p2pDetector>
 	
 	<idmefExporter id="6">
 		<sendurl>http://localhost</sendurl>
-		<destdir>/tmp/idmef_work</destdir>
+		<destdir>idmef-msg</destdir>
 	</idmefExporter>	
 	
 </ipfixConfig>

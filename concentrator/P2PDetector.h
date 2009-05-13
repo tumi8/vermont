@@ -39,7 +39,8 @@ class P2PDetector
 	  public Notifiable
 {
 	public:
-		P2PDetector(uint32_t intLength, uint32_t subnet, uint32_t subnetmask, string analyzerid, string tpl);
+		P2PDetector(uint32_t intLength, uint32_t subnet, uint32_t subnetmask, string analyzerid, string tpl, 
+				double, double, double, double, double, double, double, double, double);
 		virtual ~P2PDetector();
 		
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);
@@ -61,6 +62,17 @@ class P2PDetector
 		uint32_t intLength; //interval length to be researched in seconds
 		uint32_t subnet; //subnet to be researched
 		uint32_t subnetmask; //subnetmask to be researched
+		
+		//criterias
+		double udpRateThreshold;
+		double udpHostRateThreshold;
+		double tcpRateThreshold;
+		double coexistentTCPConsThreshold;
+		double rateLongTCPConsThreshold;
+		double tcpVarianceThreshold;
+		double failedConsPercentThreshold;
+		double tcpFailedRateThreshold;
+		double tcpFailedVarianceThreshold;
 		
 		//to send idmef messages
 		string analyzerId;

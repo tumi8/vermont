@@ -31,6 +31,17 @@ protected:
 	string analyzerid;
 	string idmefTemplate;
 	
+	//criterias
+	double udpRateThreshold;
+	double udpHostRateThreshold;
+	double tcpRateThreshold;
+	double coexistentTCPConsThreshold;
+	double rateLongTCPConsThreshold;
+	double tcpVarianceThreshold;
+	double failedConsPercentThreshold;
+	double tcpFailedRateThreshold;
+	double tcpFailedVarianceThreshold;
+	
 	P2PDetectorCfg(XMLElement*);
 	
 	uint32_t stringToIP(string& str);

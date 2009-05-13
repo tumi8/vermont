@@ -10,9 +10,18 @@ P2PDetectorCfg* P2PDetectorCfg::create(XMLElement* e)
 
 P2PDetectorCfg::P2PDetectorCfg(XMLElement* elem)
     : CfgHelper<P2PDetector, P2PDetectorCfg>(elem, "p2pDetector"),
-      intLength(300000),
+      intLength(300),
       subnet(0),
-      subnetmask(0)
+      subnetmask(0),
+      udpRateThreshold(4.2),
+	  udpHostRateThreshold(0.3),
+	  tcpRateThreshold(0.25),
+	  coexistentTCPConsThreshold(14.0),
+	  rateLongTCPConsThreshold(0.1),
+	  tcpVarianceThreshold(1.3),
+	  failedConsPercentThreshold(5.0),
+	  tcpFailedRateThreshold(0.07),
+	  tcpFailedVarianceThreshold(1.22)
 {
 	string ip;
     if (!elem) return;
@@ -29,6 +38,24 @@ P2PDetectorCfg::P2PDetectorCfg(XMLElement* elem)
 			ip = e->getFirstText();
 		} else if (e->matches("analyzerid")) {
 			analyzerid = e->getFirstText();
+		} else if (e->matches("udpRateThreshold")) {
+			udpRateThreshold = getDouble("udpRateThreshold");
+		} else if (e->matches("udpHostRateThreshold")) {
+			udpHostRateThreshold = getDouble("udpHostRateThreshold");
+		} else if (e->matches("tcpRateThreshold")) {
+			tcpRateThreshold = getDouble("tcpRateThreshold");
+		} else if (e->matches("coexistentTCPConsThreshold")) {
+			coexistentTCPConsThreshold = getDouble("coexistentTCPConsThreshold");
+		} else if (e->matches("rateLongTCPConsThreshold")) {
+			rateLongTCPConsThreshold = getDouble("rateLongTCPConsThreshold");
+		} else if (e->matches("tcpVarianceThreshold")) {
+			tcpVarianceThreshold = getDouble("tcpVarianceThreshold");
+		} else if (e->matches("failedConsPercentThreshold")) {
+			failedConsPercentThreshold = getDouble("failedConsPercentThreshold");
+		} else if (e->matches("tcpFailedRateThreshold")) {
+			tcpFailedRateThreshold = getDouble("tcpFailedRateThreshold");
+		} else if (e->matches("tcpFailedVarianceThreshold")) {
+			tcpFailedVarianceThreshold = getDouble("tcpFailedVarianceThreshold");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown P2PDetector config statement %s\n", e->getName().c_str());
@@ -48,7 +75,9 @@ P2PDetectorCfg::~P2PDetectorCfg()
 
 P2PDetector* P2PDetectorCfg::createInstance()
 {
-    instance = new P2PDetector(intLength, subnet, subnetmask, analyzerid, idmefTemplate);
+    instance = new P2PDetector(intLength, subnet, subnetmask, analyzerid, idmefTemplate, udpRateThreshold,
+	  		udpHostRateThreshold, tcpRateThreshold, coexistentTCPConsThreshold, rateLongTCPConsThreshold,
+	  		tcpVarianceThreshold, failedConsPercentThreshold, tcpFailedRateThreshold, tcpFailedVarianceThreshold);
     return instance;
 }
 

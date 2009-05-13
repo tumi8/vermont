@@ -11,20 +11,13 @@
       </Node>
     </Analyzer>
     <CreateTime ntpstamp="%NTP_TIME%">%CREATE_TIME%</CreateTime>
-    <Source>
+    <Peer>
       <Node category="hosts">
         <Address category="ipv4-addr">
-          <address>%SOURCE_ADDRESS%</address>
+          <address>%PEER_ADDRESS%</address>
         </Address>
       </Node>
-    </Source>
-    <Target>
-      <Node category="hosts">
-        <Address category="ipv4-addr">
-          <address>%TARGET_ADDRESS%</address>
-        </Address>
-      </Node>
-    </Target>
-    <Classification text="p2pdetector" ident="%SUCC_CONNS% succ. conns., %FAILED_CONNS% failed conns."/>
+    </Peer>
+    <Classification text="p2pdetector" ident="udpRate: %UDP_RATE%, udpHostRate: %UDP_HOST_RATE%, tcpRate: %TCP_RATE%, coexistentTCPCons: %COEXISTENT_TCP_CONS%, rateLongTCPCons: %RATE_LONG_TCP_CONS%, tcpVariance: %TCP_VARIANCE%, failedConsPercent: %FAILED_CONS_PERCENT%, tcpFailedRate: %TCP_FAILED_RATE%, tcpFailedVariance: %TCP_FAILED_VARIANCE%"/>
   </Alert>
 </IDMEF-Message>
