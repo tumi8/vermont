@@ -18,6 +18,6 @@
         </Address>
       </Node>
     </Peer>
-    <Classification text="p2pdetector" ident="udpRate: %UDP_RATE%, udpHostRate: %UDP_HOST_RATE%, tcpRate: %TCP_RATE%, coexistentTCPCons: %COEXISTENT_TCP_CONS%, rateLongTCPCons: %RATE_LONG_TCP_CONS%, tcpVariance: %TCP_VARIANCE%, failedConsPercent: %FAILED_CONS_PERCENT%, tcpFailedRate: %TCP_FAILED_RATE%, tcpFailedVariance: %TCP_FAILED_VARIANCE%"/>
+    <Classification text="p2pdetector" ident="udpRate: %UDP_RATE% (%TRUE1%), udpHostRate: %UDP_HOST_RATE% (%TRUE2%), tcpRate: %TCP_RATE% (%TRUE3%), coexistentTCPCons: %COEXISTENT_TCP_CONS% (%TRUE4%), rateLongTCPCons: %RATE_LONG_TCP_CONS% (%TRUE5%), tcpVariance: %TCP_VARIANCE% (%TRUE6%), failedConsPercent: %FAILED_CONS_PERCENT% (%TRUE7%), tcpFailedRate: %TCP_FAILED_RATE% (%TRUE8%), tcpFailedVariance: %TCP_FAILED_VARIANCE% (%TRUE9%)"/>
   </Alert>
 </IDMEF-Message>

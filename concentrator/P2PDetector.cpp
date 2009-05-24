@@ -277,23 +277,23 @@ void P2PDetector::onTimeout(void* dataPtr)
 		
 		//decide wether researched host is peer-to-peer or not
 		int points = 0;
-		if(udpRate >= udpRateThreshold)
+		if(udpRate > udpRateThreshold)
 			points++;
-		if(udpHostRate >= udpHostRateThreshold)
+		if(udpHostRate > udpHostRateThreshold)
 			points++;
-		if(tcpRate >= tcpRateThreshold)
+		if(tcpRate > tcpRateThreshold)
 			points++;
-		if(coexistentTCPCons >= coexistentTCPConsThreshold)
+		if(coexistentTCPCons > coexistentTCPConsThreshold)
 			points++;
-		if(rateLongTCPCons >= rateLongTCPConsThreshold)
+		if(rateLongTCPCons > rateLongTCPConsThreshold)
 			points++;
 		if((tcpVariance <= tcpVarianceThreshold) && (tcpVariance >= 0))
 			points++;
-		if(failedConsPercent >= failedConsPercentThreshold)
+		if(failedConsPercent > failedConsPercentThreshold)
 			points++;
-		if(tcpFailedRate >= tcpFailedRateThreshold)
+		if(tcpFailedRate > tcpFailedRateThreshold)
 			points++;
-		if((tcpFailedVariance <= tcpFailedVariance) && (tcpFailedVariance >= 0))
+		if((tcpFailedVariance <= tcpFailedVarianceThreshold) && (tcpFailedVariance >= 0))
 			points++;
 		
 		//host is a p2p client	
@@ -313,15 +313,34 @@ void P2PDetector::onTimeout(void* dataPtr)
 			
 			IDMEFMessage* msg = idmefManager.getNewInstance();
 			msg->init(idmefTemplate, analyzerId);
+			
 			msg->setVariable("UDP_RATE", udpRate);
+			(udpRate > udpRateThreshold) ? msg->setVariable("TRUE1", "1") : msg->setVariable("TRUE1", "0");
+			
 			msg->setVariable("UDP_HOST_RATE", udpHostRate);
+			(udpHostRate > udpHostRateThreshold) ? msg->setVariable("TRUE2", "1") : msg->setVariable("TRUE2", "0");
+			
 			msg->setVariable("TCP_RATE",  tcpRate);
+			(tcpRate > tcpRateThreshold) ? msg->setVariable("TRUE3", "1") : msg->setVariable("TRUE3", "0");
+			
 			msg->setVariable("COEXISTENT_TCP_CONS", coexistentTCPCons);
+			(coexistentTCPCons > coexistentTCPConsThreshold) ? msg->setVariable("TRUE4", "1") : msg->setVariable("TRUE4", "0");
+			
 			msg->setVariable("RATE_LONG_TCP_CONS", rateLongTCPCons);
+			(rateLongTCPCons > rateLongTCPConsThreshold) ? msg->setVariable("TRUE5", "1") : msg->setVariable("TRUE5", "0");
+			
 			msg->setVariable("TCP_VARIANCE", tcpVariance);
+			((tcpVariance <= tcpVarianceThreshold) && (tcpVariance >= 0)) ? msg->setVariable("TRUE6", "1") : msg->setVariable("TRUE6", "0");
+			
 			msg->setVariable("FAILED_CONS_PERCENT", failedConsPercent);
+			(failedConsPercent > failedConsPercentThreshold) ? msg->setVariable("TRUE7", "1") : msg->setVariable("TRUE7", "0");
+			
 			msg->setVariable("TCP_FAILED_RATE", tcpFailedRate);
+			(tcpFailedRate > tcpFailedRateThreshold) ? msg->setVariable("TRUE8","1") : msg->setVariable("TRUE8", "0");
+			
 			msg->setVariable("TCP_FAILED_VARIANCE", tcpFailedVariance);
+			((tcpFailedVariance <= tcpFailedVarianceThreshold) && (tcpFailedVariance >= 0)) ? msg->setVariable("TRUE9","1") : msg->setVariable("TRUE9", "0");
+			
 			msg->setVariable("PEER_ADDRESS", IPToString(iter->first).c_str());
 			msg->applyVariables();
 			send(msg);
