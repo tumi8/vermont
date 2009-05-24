@@ -86,9 +86,6 @@ bool P2PDetectorCfg::deriveFrom(P2PDetectorCfg* old)
     return false;
 }
 
-uint32_t P2PDetectorCfg::stringToIP(string& str){
-	
-}
 /**
  * sets subnet and subnetmask if the string is a valid IP-address with subnetmask
  * in the CIDR format (e.g. 192.168.1.0/24)

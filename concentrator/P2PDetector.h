@@ -54,7 +54,6 @@ class P2PDetector
 	
 		//to calculate criteria after given timeouts
 		void registerTimeout();
-		void onTimeout();
 		void onTimeout(void*);
 		bool timeoutRegistered;
 		timespec nextTimeout;

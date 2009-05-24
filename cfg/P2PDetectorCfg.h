@@ -43,8 +43,7 @@ protected:
 	double tcpFailedVarianceThreshold;
 	
 	P2PDetectorCfg(XMLElement*);
-	
-	uint32_t stringToIP(string& str);
+
 	bool setSubnet(string& str);
 };
 
