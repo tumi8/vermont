@@ -13,15 +13,15 @@ P2PDetectorCfg::P2PDetectorCfg(XMLElement* elem)
       intLength(300),
       subnet(0),
       subnetmask(0),
-      udpRateThreshold(4.2),
-	  udpHostRateThreshold(0.3),
-	  tcpRateThreshold(0.25),
-	  coexistentTCPConsThreshold(14.0),
-	  rateLongTCPConsThreshold(0.1),
-	  tcpVarianceThreshold(1.3),
-	  failedConsPercentThreshold(5.0),
-	  tcpFailedRateThreshold(0.07),
-	  tcpFailedVarianceThreshold(1.22)
+      udpRateThreshold(0),
+	  udpHostRateThreshold(0),
+	  tcpRateThreshold(0),
+	  coexistentTCPConsThreshold(0),
+	  rateLongTCPConsThreshold(0),
+	  tcpVarianceThreshold(0),
+	  failedConsPercentThreshold(0),
+	  tcpFailedRateThreshold(0),
+	  tcpFailedVarianceThreshold(0)
 {
 	string ip;
     if (!elem) return;
@@ -64,7 +64,7 @@ P2PDetectorCfg::P2PDetectorCfg(XMLElement* elem)
 	}
 	
 	if (analyzerid=="") THROWEXCEPTION("P2PDetectorCfg: analyzerid not set in configuration!");
-	if (!setSubnet(ip)) THROWEXCEPTION("P2PDetectorCfg: subnet is not a valid!");
+	if (!setSubnet(ip)) THROWEXCEPTION("P2PDetectorCfg: subnet is not valid!");
 	
 	idmefTemplate = "idmef/templates/p2pdetector_template.xml";
 }
