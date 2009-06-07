@@ -72,6 +72,7 @@ ADD_LIBRARY(modules
 	ipfix/IpfixRecordDestination.cpp
 	ipfix/IpfixSampler.cpp
 	ipfix/IpfixPayloadWriter.cpp
+	ipfix/IpfixRecordAnonymizer.cpp
 	ipfix/aggregator/PacketAggregatorCfg.cpp
 	ipfix/aggregator/AggregatorBaseCfg.cpp
 	ipfix/aggregator/IpfixAggregatorCfg.cpp
