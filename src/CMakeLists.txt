@@ -1,5 +1,4 @@
 SUBDIRS(
-	cfg
 	osdep
 	core
 	common

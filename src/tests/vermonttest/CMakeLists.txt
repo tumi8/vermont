@@ -30,7 +30,6 @@ ADD_EXECUTABLE(vermonttest
 )
 
 TARGET_LINK_LIBRARIES(vermonttest
-        cfg        
 	modules
         ipfixlolib  
 	core

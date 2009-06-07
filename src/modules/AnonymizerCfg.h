@@ -5,24 +5,24 @@
 
 #include <modules/ipfix/IpfixRecordAnonymizer.h>
 
-class RecordAnonymizerCfg
-	: public CfgHelper<IpfixRecordAnonymizer, RecordAnonymizerCfg>
+class AnonymizerCfg
+	: public CfgHelper<IpfixRecordAnonymizer, AnonymizerCfg>
 {
 public:
 	friend class ConfigManager;
 
-	virtual RecordAnonymizerCfg* create(XMLElement* e);
+	virtual AnonymizerCfg* create(XMLElement* e);
 
-	virtual ~RecordAnonymizerCfg();
+	virtual ~AnonymizerCfg();
 
 	virtual IpfixRecordAnonymizer* createInstance();
 
-	virtual bool deriveFrom(RecordAnonymizerCfg* old);
+	virtual bool deriveFrom(AnonymizerCfg* old);
 
 	static void initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet<XMLElement*> set);
 
 protected:
-	RecordAnonymizerCfg(XMLElement*);
+	AnonymizerCfg(XMLElement*);
 };
 
 #endif

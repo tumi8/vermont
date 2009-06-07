@@ -1,6 +1,6 @@
 #include "modules/packet/filter/PacketFilterCfg.h"
+#include "modules//AnonymizerCfg.h"
 #include "core/InfoElementCfg.h"
-#include "cfg/RecordAnonymizerCfg.h"
 
 #include <modules/packet/filter//RegExFilter.h>
 #include <modules/packet/filter//StringFilter.h>
@@ -305,7 +305,7 @@ Module* PacketAnonFilterCfg::getInstance()
 		instance = new AnonFilter();
 	}
 
-	RecordAnonymizerCfg::initInstance(this, instance, _elem->getElementChildren());
+	AnonymizerCfg::initInstance(this, instance, _elem->getElementChildren());
 
 	return (Module*)instance;
 

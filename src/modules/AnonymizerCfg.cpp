@@ -1,26 +1,26 @@
-#include "RecordAnonymizerCfg.h"
+#include "AnonymizerCfg.h"
 #include "core/InfoElementCfg.h"
 
 #include <common/ipfixlolib/ipfix_names.h>
 
-RecordAnonymizerCfg* RecordAnonymizerCfg::create(XMLElement* e)
+AnonymizerCfg* AnonymizerCfg::create(XMLElement* e)
 {
 	assert(e);
 	assert(e->getName() == getName());
-	return new RecordAnonymizerCfg(e);
+	return new AnonymizerCfg(e);
 }
 
-RecordAnonymizerCfg::RecordAnonymizerCfg(XMLElement* elem)
-	: CfgHelper<IpfixRecordAnonymizer, RecordAnonymizerCfg>(elem, "anonRecord")
+AnonymizerCfg::AnonymizerCfg(XMLElement* elem)
+	: CfgHelper<IpfixRecordAnonymizer, AnonymizerCfg>(elem, "anonRecord")
 {
 }
 
-RecordAnonymizerCfg::~RecordAnonymizerCfg()
+AnonymizerCfg::~AnonymizerCfg()
 {
 
 }
 
-IpfixRecordAnonymizer* RecordAnonymizerCfg::createInstance()
+IpfixRecordAnonymizer* AnonymizerCfg::createInstance()
 {
 	if (!instance) {
 		instance = new IpfixRecordAnonymizer();
@@ -32,12 +32,12 @@ IpfixRecordAnonymizer* RecordAnonymizerCfg::createInstance()
 	return instance;
 }
 
-bool RecordAnonymizerCfg::deriveFrom(RecordAnonymizerCfg* old)
+bool AnonymizerCfg::deriveFrom(AnonymizerCfg* old)
 {
 	return true;
 }
 
-void RecordAnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet<XMLElement*> set)
+void AnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet<XMLElement*> set)
 {
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();

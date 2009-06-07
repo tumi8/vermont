@@ -4,6 +4,7 @@
 #include "core/CfgNode.h"
 
 #include "QueueCfg.h"
+#include "AnonymizerCfg.h"
 #include "modules/packet/ObserverCfg.h"
 #include "modules/packet/PSAMPExporterCfg.h"
 #include "modules/packet/PCAPExporterCfg.h"
@@ -25,7 +26,6 @@
 #include "modules/analysis/AutoFocusCfg.h"
 #include "modules/idmef/IDMEFExporterCfg.h"
 #include "modules/idmef//PacketIDMEFReporterCfg.h"
-#include "cfg/RecordAnonymizerCfg.h"
 
 #include <cassert>
 
@@ -54,7 +54,7 @@ Cfg* ConfigManager::configModules[] = {
 	new IDMEFExporterCfg(NULL),
 	new PacketIDMEFReporterCfg(NULL),
 	new IpfixPayloadWriterCfg(NULL),
-	new RecordAnonymizerCfg(NULL),
+	new AnonymizerCfg(NULL),
 	new FrontPayloadSigMatcherCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
 	new IpfixDbReaderCfg(NULL),
