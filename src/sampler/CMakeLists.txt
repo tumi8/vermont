@@ -21,7 +21,6 @@ ADD_LIBRARY(sampler
 	IPHeaderFilter.cpp
 	Observer.cpp
 	Packet.cpp
-	PacketIDMEFReporter.cpp
 	RandomSampler.cpp
 	RegExFilter.cpp
 	StringFilter.cpp

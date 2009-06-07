@@ -19,6 +19,9 @@
 
 ADD_LIBRARY(idmef
 	IDMEFExporter.cpp
+	IDMEFExporterCfg.cpp
 	IDMEFMessage.cpp
+	PacketIDMEFExporter.cpp
+	PacketIDMEFExporterCfg.cpp
 )
 

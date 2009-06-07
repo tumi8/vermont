@@ -5,6 +5,5 @@ SUBDIRS(
 	concentrator
 	sampler
 	reconf
-	idmef
 	tests
 )

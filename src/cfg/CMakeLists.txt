@@ -27,7 +27,6 @@ ADD_LIBRARY(cfg
 	FrontPayloadSigMatcherCfg.cpp
 	Graph.cpp
 	GraphInstanceSupplier.cpp
-	IDMEFExporterCfg.cpp
 	IpfixAggregatorCfg.cpp
 	IpfixCollectorCfg.cpp
 	IpfixDbReaderCfg.cpp
@@ -41,7 +40,6 @@ ADD_LIBRARY(cfg
 	ObserverCfg.cpp
 	PacketAggregatorCfg.cpp
 	PacketFilterCfg.cpp
-	PacketIDMEFReporterCfg.cpp
 	PacketReportingCfg.cpp
 	PSAMPExporterCfg.cpp
 	PCAPExporterCfg.cpp

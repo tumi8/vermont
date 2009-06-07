@@ -20,7 +20,6 @@
 #if !defined(IPFIXSAMPLER_H)
 #define IPFIXSAMPLER_H
 
-#include "idmef/IDMEFExporter.h"
 #include "IpfixRecordDestination.h"
 #include "Connection.h"
 #include "reconf/Source.h"
