@@ -1,6 +1,6 @@
 #include "PacketIDMEFReporterCfg.h"
 
-#include "sampler/PacketIDMEFReporter.h"
+#include "PacketIDMEFReporter.h"
 
 
 PacketIDMEFReporterCfg* PacketIDMEFReporterCfg::create(XMLElement* e)

@@ -11,7 +11,7 @@
 #include "core/DelayedDeleter.h"
 #include "core/Graph.h"
 #include "core/XMLDocument.h"
-#include "GraphInstanceSupplier.h"
+#include "core/GraphInstanceSupplier.h"
 
 #include <string>
 

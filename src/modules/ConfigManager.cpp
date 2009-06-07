@@ -1,4 +1,4 @@
-#include "core/ConfigManager.h"
+#include "modules/ConfigManager.h"
 #include "core/Connector.h"
 #include "core/ReConnector.h"
 #include "core/CfgNode.h"
