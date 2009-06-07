@@ -23,7 +23,7 @@
 
 #include "common/msg.h"
 #include "common/Time.h"
-#include "reconf/Timer.h"
+#include "core/Timer.h"
 
 #include <sstream>
 #include <stdexcept>

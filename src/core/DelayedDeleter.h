@@ -2,9 +2,9 @@
 #define DELAYEDDELETER_H_
 
 #include "Graph.h"
-#include "reconf/ConnectionQueue.h"
-#include "reconf/Emitable.h"
-#include "reconf/Notifiable.h"
+#include "core/ConnectionQueue.h"
+#include "core/Emitable.h"
+#include "core/Notifiable.h"
 
 #include <list>
 

@@ -29,8 +29,8 @@
 #include "common/ConcurrentQueue.h"
 #include "cfg/InstanceManager.h"
 
-#include "reconf/Source.h"
-#include "reconf/Module.h"
+#include "core/Source.h"
+#include "core/Module.h"
 
 #include <vector>
 #include <string>

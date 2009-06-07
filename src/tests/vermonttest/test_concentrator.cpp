@@ -7,7 +7,7 @@
 #include "concentrator/IpfixRawdirWriter.hpp"
 #include "concentrator/IpfixCollector.hpp"
 #include "concentrator/IpfixPrinter.hpp"
-#include "reconf/ConnectionQueue.h"
+#include "core/ConnectionQueue.h"
 #include "TestSuiteBase.h"
 
 #include <boost/filesystem/operations.hpp>

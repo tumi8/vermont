@@ -7,7 +7,7 @@
 
 #include "core/Cfg.h"
 
-#include "reconf/ConnectionQueue.h"
+#include "core/ConnectionQueue.h"
 
 #include <cassert>
 

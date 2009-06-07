@@ -32,7 +32,7 @@
 #include "common/ManagedInstance.h"
 #include "common/ipfixlolib/encoding.h"
 
-#include "reconf/Emitable.h"
+#include "core/Emitable.h"
 
 // the various header types (actually, HEAD_PAYLOAD is not neccessarily a header but it works like one for
 // our purposes)

@@ -2,8 +2,8 @@
 #define RECONFTEST_H_
 
 
-#include "reconf/ConnectionQueue.h"
-#include "reconf/FilterModule.h"
+#include "core/ConnectionQueue.h"
+#include "reconf//FilterModule.h"
 #include "concentrator/IpfixAggregator.hpp"
 #include "cfg/InstanceManager.h"
 

@@ -28,7 +28,7 @@
 #include "IpfixRecord.hpp"
 #include "HashtableBuckets.h"
 #include "Rule.hpp"
-#include "reconf/Module.h"
+#include "core/Module.h"
 #include "common/Sensor.h"
 #include "common/atomic_lock.h"
 

@@ -23,7 +23,7 @@
 
 #include "IpfixPacketProcessor.hpp"
 #include "IpfixRecordSender.h"
-#include "reconf/Module.h"
+#include "core/Module.h"
 #include "IpfixReceiver.hpp"
 
 #include <stdint.h>

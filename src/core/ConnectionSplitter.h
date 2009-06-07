@@ -7,9 +7,9 @@
 
 #include "common/msg.h"
 
-#include "reconf/Adapter.h"
-#include "reconf/Destination.h"
-#include "reconf/Source.h"
+#include "core/Adapter.h"
+#include "core/Destination.h"
+#include "core/Source.h"
 
 #include "sampler/Packet.h"
 

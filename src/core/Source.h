@@ -12,8 +12,8 @@
 #include "common/atomic_lock.h"
 
 
-#include "reconf/Destination.h"
-#include "reconf/Emitable.h"
+#include "core/Destination.h"
+#include "core/Emitable.h"
 
 template <typename T>
 class Source

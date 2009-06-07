@@ -23,10 +23,10 @@
 #include "common/Time.h"
 #include "TestSuiteBase.h"
 #include "TestQueue.h"
-#include "reconf/Module.h"
-#include "reconf/ThreadSafeAdapter.h"
+#include "core/Module.h"
+#include "core/ThreadSafeAdapter.h"
+#include "core/ConnectionQueue.h"
 #include "concentrator/PacketAggregator.h"
-#include "reconf/ConnectionQueue.h"
 #include "CounterDestination.h"
 
 #include <sys/time.h>

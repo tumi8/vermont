@@ -4,7 +4,7 @@
 
 #include "modules/idmef/IDMEFMessage.h"
 
-#include "reconf/Destination.h"
+#include "core/Destination.h"
 #include "sampler/Packet.h"
 
 #include <string>

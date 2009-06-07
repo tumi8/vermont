@@ -1,7 +1,7 @@
 #ifndef _PCAP_EXPORTER_MODULE_H_
 #define _PCAP_EXPORTER_MODULE_H_
 
-#include "reconf/Module.h"
+#include "core/Module.h"
 
 #include <common/msg.h>
 

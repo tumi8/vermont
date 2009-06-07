@@ -22,7 +22,7 @@
 #define PRINTIPFIX_H
 
 
-#include "reconf/Module.h"
+#include "core/Module.h"
 #include "IpfixRecordDestination.h"
 
 /**

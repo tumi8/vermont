@@ -1,7 +1,7 @@
 #ifndef _RECORD_ANONYMIZER_H_
 #define _RECORD_ANONYMIZER_H_
 
-#include "Source.h"
+#include "core/Source.h"
 #include <concentrator/IpfixRecordDestination.h>
 #include <common/anon/AnonModule.h>
 

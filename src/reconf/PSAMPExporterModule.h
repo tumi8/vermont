@@ -21,8 +21,8 @@
 #include "sampler/Template.h"
 #include "sampler/Packet.h"
 
-#include "reconf/Module.h"
-#include "reconf/Notifiable.h"
+#include "core/Module.h"
+#include "core/Notifiable.h"
 
 // the maximum number of packets to be queued
 #define MAX_PACKETS 1024

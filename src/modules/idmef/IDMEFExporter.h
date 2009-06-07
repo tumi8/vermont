@@ -22,7 +22,7 @@
 
 #include "common/Mutex.h"
 #include "IDMEFMessage.h"
-#include "reconf/Module.h"
+#include "core/Module.h"
 
 #include <string>
 

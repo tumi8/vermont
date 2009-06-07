@@ -25,7 +25,7 @@
 #include "Rules.hpp"
 #include "BaseAggregator.h"
 #include "IpfixRecordDestination.h"
-#include "reconf/Module.h"
+#include "core/Module.h"
 
 
 /**

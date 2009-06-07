@@ -24,7 +24,7 @@
 #include "IpfixParser.hpp"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "common/ConcurrentQueue.h"
-#include "reconf/Notifiable.h"
+#include "core/Notifiable.h"
 #include <queue>
 
 

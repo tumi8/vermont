@@ -5,7 +5,7 @@
 	@author Peter Baumann <siprbaum@users.berlios.de>
 */
 
-#include "reconf/Emitable.h"
+#include "core/Emitable.h"
 #include "common/msg.h"
 
 #include <cstdio>

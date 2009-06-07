@@ -22,7 +22,7 @@
 #define TESTQUEUE_H_
 
 
-#include "reconf/Destination.h"
+#include "core/Destination.h"
 #include "common/ConcurrentQueue.h"
 
 

@@ -23,7 +23,7 @@
 #define IPFIXRECORDDESTINATION_H_
 
 
-#include "reconf/Module.h"
+#include "core/Module.h"
 #include "IpfixRecord.hpp"
 
 

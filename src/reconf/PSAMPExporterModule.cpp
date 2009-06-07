@@ -20,7 +20,7 @@
 #include "common/ipfixlolib/ipfixlolib.h"
 
 #include "PSAMPExporterModule.h"
-#include "Timer.h"
+#include "core/Timer.h"
 
 using namespace std;
 

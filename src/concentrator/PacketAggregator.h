@@ -23,9 +23,9 @@
 
 #include "Rules.hpp"
 #include "BaseAggregator.h"
-#include "reconf/Module.h"
-#include "reconf/Source.h"
-#include "reconf/Destination.h"
+#include "core/Module.h"
+#include "core/Source.h"
+#include "core/Destination.h"
 
 
 #include <pthread.h>

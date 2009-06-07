@@ -23,7 +23,7 @@
 #include "modules/idmef/IDMEFExporter.h"
 #include "IpfixRecordDestination.h"
 #include "Connection.h"
-#include "reconf/Source.h"
+#include "core/Source.h"
 
 extern "C" {
 	#include "fpsigmatcher/Matcher.h"

@@ -5,8 +5,8 @@
 	@author Peter Baumann <siprbaum@users.berlios.de>
 */
 
-#include <reconf/Module.h>
-#include <reconf/Source.h>
+#include <core/Module.h>
+#include <core/Source.h>
 #include <sampler/Packet.h>
 
 class PrinterModule

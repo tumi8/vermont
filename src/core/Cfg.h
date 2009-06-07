@@ -2,11 +2,10 @@
 #define CFG_H_
 
 #include "core/XMLElement.h"
-#include "reconf/Module.h"
-
-#include "reconf/ConnectionQueue.h"
-#include "reconf/ConnectionSplitter.h"
-#include "reconf/Timer.h"
+#include "core/Module.h"
+#include "core/ConnectionQueue.h"
+#include "core/ConnectionSplitter.h"
+#include "core//Timer.h"
 
 #include <exception>
 #include <string>

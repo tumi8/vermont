@@ -22,7 +22,7 @@
 
 #include "IpfixRecordDestination.h"
 #include "Connection.h"
-#include "reconf/Source.h"
+#include "core/Source.h"
 
 #include <list>
 #include <string>

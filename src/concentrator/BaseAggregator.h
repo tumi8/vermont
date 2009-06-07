@@ -2,7 +2,7 @@
 #define BASEAGGREGATOR_H_
 
 #include "Rules.hpp"
-#include "reconf/Module.h"
+#include "core/Module.h"
 #include "common/Mutex.h"
 
 #include <stdint.h>

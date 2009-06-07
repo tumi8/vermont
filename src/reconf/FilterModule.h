@@ -6,9 +6,9 @@
 */
 
 
-#include "reconf/Module.h"
-#include "reconf/Destination.h"
-#include "reconf/Source.h"
+#include "core/Module.h"
+#include "core/Destination.h"
+#include "core/Source.h"
 #include "sampler/PacketProcessor.h"
 
 class FilterModule

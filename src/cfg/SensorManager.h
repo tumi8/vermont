@@ -1,7 +1,7 @@
 #ifndef SENSORMANAGER_H_
 #define SENSORMANAGER_H_
 
-#include "reconf/Module.h"
+#include "core/Module.h"
 #include "core/GraphInstanceSupplier.h"
 
 #include "common/Thread.h"

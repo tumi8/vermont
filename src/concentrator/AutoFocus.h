@@ -23,7 +23,7 @@
 #include "modules/idmef/IDMEFExporter.h"
 #include "IpfixRecordDestination.h"
 #include "Connection.h"
-#include "reconf/Source.h"
+#include "core/Source.h"
 #include "autofocus_iprecord.h"
 #include "autofocus_attribute.h"
 #include "autofocus_report.h"

@@ -5,7 +5,7 @@
 #include "common/msg.h"
 #include "CounterDestination.h"
 #include "core/ConfigManager.h"
-#include "reconf/ConnectionSplitter.h"
+#include "core/ConnectionSplitter.h"
 #include "reconf/PrinterModule.h"
 
 #include <unistd.h>

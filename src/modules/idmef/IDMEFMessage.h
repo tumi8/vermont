@@ -2,7 +2,7 @@
 #define IDMEFMESSAGE_H_
 
 #include "common/ManagedInstance.h"
-#include "reconf/Emitable.h"
+#include "core/Emitable.h"
 
 #include <string>
 #include <map>
