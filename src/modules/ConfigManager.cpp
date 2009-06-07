@@ -18,7 +18,7 @@
 #include "modules/ipfix/aggregator/IpfixAggregatorCfg.h"
 #include "modules/ipfix/aggregator/PacketAggregatorCfg.h"
 #include "cfg/QueueCfg.h"
-#include "cfg/SensorManagerCfg.h"
+#include "modules/SensorManagerCfg.h"
 #include "modules/analysis/TRWPortscanDetectorCfg.h"
 #include "modules/analysis/RBSWormDetectorCfg.h"
 #include "modules/analysis/FrontPayloadSigMatcherCfg.h"

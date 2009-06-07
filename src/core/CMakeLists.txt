@@ -6,6 +6,7 @@ ADD_LIBRARY(core
 	Graph.cpp
 	GraphInstanceSupplier.cpp
 	Module.cpp
+	SensorManager.cpp
 	Node.cpp
 	ReConnector.cpp
 	XMLAttribute.cpp

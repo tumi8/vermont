@@ -6,7 +6,7 @@
 #include "CounterDestination.h"
 #include "modules/ConfigManager.h"
 #include "core/ConnectionSplitter.h"
-#include "reconf/PrinterModule.h"
+#include "PrinterModule.h"
 
 #include <unistd.h>
 

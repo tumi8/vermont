@@ -5,7 +5,7 @@
 	@author Peter Baumann <siprbaum@users.berlios.de>
 */
 
-#include "cfg/SensorManager.h"
+#include "core/SensorManager.h"
 
 #include "core/Cfg.h"
 #include "core/DelayedDeleter.h"

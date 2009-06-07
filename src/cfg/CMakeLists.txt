@@ -19,7 +19,5 @@
 
 ADD_LIBRARY(cfg
 	RecordAnonymizerCfg.cpp
-	SensorManager.cpp
-	SensorManagerCfg.cpp
 )
 

@@ -1,7 +1,7 @@
 #ifndef SENSORMANAGERCFG_H_
 #define SENSORMANAGERCFG_H_
 
-#include "SensorManager.h"
+#include "core/SensorManager.h"
 
 #include "core/XMLElement.h"
 #include "core//Cfg.h"

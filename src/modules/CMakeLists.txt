@@ -1,4 +1,5 @@
 ADD_LIBRARY(modules
+	SensorManagerCfg.cpp
 	ConfigManager.cpp
 	idmef/IDMEFExporter.cpp
 	idmef/IDMEFExporterCfg.cpp
