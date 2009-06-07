@@ -4,7 +4,6 @@ SUBDIRS(
 	core
 	common
 	concentrator
-	sampler
 	reconf
 	tests
 	modules

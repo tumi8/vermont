@@ -1,4 +1,4 @@
-#include "reconf/FilterModule.h"
+#include "modules/packet/filter/FilterModule.h"
 
 #include <sstream>
 

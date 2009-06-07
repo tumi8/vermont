@@ -28,12 +28,7 @@ ADD_LIBRARY(cfg
 	IpfixPayloadWriterCfg.cpp
 	IpfixPrinterCfg.cpp
 	IpfixSamplerCfg.cpp
-	ObserverCfg.cpp
 	PacketAggregatorCfg.cpp
-	PacketFilterCfg.cpp
-	PacketReportingCfg.cpp
-	PSAMPExporterCfg.cpp
-	PCAPExporterCfg.cpp
 	RecordAnonymizerCfg.cpp
 	SensorManager.cpp
 	SensorManagerCfg.cpp

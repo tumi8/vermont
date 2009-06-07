@@ -11,7 +11,7 @@
 #include "core/Destination.h"
 #include "core/Source.h"
 
-#include "sampler/Packet.h"
+#include "modules/packet/Packet.h"
 
 #include <vector>
 

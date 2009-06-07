@@ -1,14 +1,14 @@
-#include "PacketFilterCfg.h"
-#include "InfoElementCfg.h"
-#include "RecordAnonymizerCfg.h"
+#include "modules/packet/filter/PacketFilterCfg.h"
+#include "cfg/InfoElementCfg.h"
+#include "cfg/RecordAnonymizerCfg.h"
 
-#include <sampler/RegExFilter.h>
-#include <sampler/StringFilter.h>
-#include <sampler/SystematicSampler.h>
-#include <sampler/StateConnectionFilter.h>
-#include <sampler/ConnectionFilter.h>
-#include <sampler/AnonFilter.h>
-#include <sampler/PayloadFilter.h>
+#include <modules/packet/filter//RegExFilter.h>
+#include <modules/packet/filter//StringFilter.h>
+#include <modules/packet/filter//SystematicSampler.h>
+#include <modules/packet/filter//StateConnectionFilter.h>
+#include <modules/packet/filter//ConnectionFilter.h>
+#include <modules/packet/filter//AnonFilter.h>
+#include <modules/packet/filter//PayloadFilter.h>
 #include "common/msg.h"
 
 

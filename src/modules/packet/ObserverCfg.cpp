@@ -2,7 +2,7 @@
 #include "common/msg.h"
 #include "core/XMLElement.h"
 
-#include "sampler/Observer.h"
+#include "modules/packet//Observer.h"
 
 #include <string>
 #include <vector>

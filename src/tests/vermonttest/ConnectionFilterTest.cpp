@@ -2,8 +2,8 @@
 
 #include "ConnectionFilterTest.h"
 
-#include <sampler/ConnectionFilter.h>
-#include <sampler/Packet.h>
+#include <modules/packet/filter//ConnectionFilter.h>
+#include <modules/packet/Packet.h>
 #include <core/InstanceManager.h>
 #include <common/msg.h>
 

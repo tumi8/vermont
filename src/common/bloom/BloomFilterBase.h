@@ -9,7 +9,7 @@
 #include <cstring>
 #include <ctime>
 
-#include <sampler/Packet.h>
+#include <modules/packet/Packet.h>
 
 /* GenericKey class holding uint8_t* input for BloomFilter hash functions */
 template<unsigned size> class GenericKey

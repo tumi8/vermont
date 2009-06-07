@@ -31,7 +31,6 @@ ADD_EXECUTABLE(vermonttest
 TARGET_LINK_LIBRARIES(vermonttest
         cfg        
         reconf
-        sampler        
         concentrator
         ipfixlolib  
         common        

@@ -1,7 +1,7 @@
 #include "ReconfTest.h"
 
 #include "TestSuiteBase.h"
-#include "sampler/SystematicSampler.h"
+#include "modules/packet/filter//SystematicSampler.h"
 #include "common/msg.h"
 #include "CounterDestination.h"
 #include "modules/ConfigManager.h"

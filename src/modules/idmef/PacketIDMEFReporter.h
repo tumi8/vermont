@@ -5,7 +5,7 @@
 #include "modules/idmef/IDMEFMessage.h"
 
 #include "core/Destination.h"
-#include "sampler/Packet.h"
+#include "modules/packet/Packet.h"
 
 #include <string>
 

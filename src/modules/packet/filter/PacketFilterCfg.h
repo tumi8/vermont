@@ -2,7 +2,7 @@
 #define PACKETFILTERCFG_H_
 
 #include <core/Cfg.h>
-#include "reconf/FilterModule.h"
+#include "modules/packet/filter/FilterModule.h"
 
 #include <vector>
 #include <algorithm>

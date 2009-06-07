@@ -27,7 +27,7 @@
 #include <stdexcept>
 
 #include "ipfix.hpp"
-#include "sampler/Packet.h"
+#include "modules/packet/Packet.h"
 
 #define MAX_ADDRESS_LEN 16
 

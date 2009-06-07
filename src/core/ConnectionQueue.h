@@ -14,7 +14,7 @@
 #include "common/ConcurrentQueue.h"
 #include "common/msg.h"
 #include "common/Thread.h"
-#include "sampler/Packet.h"
+#include "modules/packet/Packet.h"
 
 #include <list>
 

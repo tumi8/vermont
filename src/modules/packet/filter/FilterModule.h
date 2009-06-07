@@ -9,7 +9,7 @@
 #include "core/Module.h"
 #include "core/Destination.h"
 #include "core/Source.h"
-#include "sampler/PacketProcessor.h"
+#include "modules/packet/filter/PacketProcessor.h"
 
 class FilterModule
 	: public Module, public Source<Packet*>, public Destination<Packet*>

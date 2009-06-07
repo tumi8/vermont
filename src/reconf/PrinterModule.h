@@ -7,7 +7,7 @@
 
 #include <core/Module.h>
 #include <core/Source.h>
-#include <sampler/Packet.h>
+#include <modules/packet/Packet.h>
 
 class PrinterModule
 	: public Source<Packet*>, public Destination<Packet*>, public Module

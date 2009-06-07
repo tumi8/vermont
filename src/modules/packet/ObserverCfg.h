@@ -7,7 +7,7 @@
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include <sampler/Observer.h>
+#include <modules/packet//Observer.h>
 
 #include <core/InstanceManager.h>
 #include <map>

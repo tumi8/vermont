@@ -1,5 +1,5 @@
 #include "AnonFilter.h"
-#include "Template.h"
+#include "modules/packet/Template.h"
 
 #include <common/anon/AnonModule.h>
 

@@ -3,7 +3,7 @@
 
 
 #include "Rule.hpp"
-#include "sampler/Packet.h"
+#include "modules/packet/Packet.h"
 #include "BaseHashtable.h"
 #include <iostream>
 #include <fstream>

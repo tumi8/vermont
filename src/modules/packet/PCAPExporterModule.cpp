@@ -1,6 +1,6 @@
 #include "PCAPExporterModule.h"
 
-#include "sampler/Packet.h"
+#include "modules/packet/Packet.h"
 
 PCAPExporterModule::PCAPExporterModule(const std::string& file)
 	: fileName(file), dummy(NULL), dumper(NULL), link_type(0), snaplen(PCAP_MAX_CAPTURE_LENGTH)

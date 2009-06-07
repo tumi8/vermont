@@ -18,8 +18,8 @@
 #include "common/msg.h"
 
 #include "common/Thread.h"
-#include "sampler/Template.h"
-#include "sampler/Packet.h"
+#include "modules/packet/Template.h"
+#include "modules/packet/Packet.h"
 
 #include "core/Module.h"
 #include "core/Notifiable.h"

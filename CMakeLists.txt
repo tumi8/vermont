@@ -55,7 +55,6 @@ ADD_EXECUTABLE(vermont
 INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/src)
 
 TARGET_LINK_LIBRARIES(vermont
-	sampler
 	ipfixlolib
 	concentrator	
 	anon

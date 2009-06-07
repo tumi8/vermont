@@ -3,7 +3,7 @@
 
 
 #include "core/ConnectionQueue.h"
-#include "reconf//FilterModule.h"
+#include "modules/packet/filter/FilterModule.h"
 #include "concentrator/IpfixAggregator.hpp"
 #include "core/InstanceManager.h"
 

@@ -22,5 +22,26 @@ ADD_LIBRARY(modules
 	analysis/AutoFocusCfg.cpp
 	analysis/RBSWormDetectorCfg.cpp
 	analysis/TRWPortscanDetectorCfg.cpp
+
+	packet/Observer.cpp
+	packet/ObserverCfg.cpp
+	packet/Packet.cpp
+	packet/Template.cpp
+	packet/PCAPExporterModule.cpp
+	packet/PSAMPExporterModule.cpp
+	packet/PSAMPExporterCfg.cpp
+	packet/PCAPExporterCfg.cpp
+	packet/PacketReportingCfg.cpp
+	packet/filter/FilterModule.cpp
+	packet/filter/PacketFilterCfg.cpp
+	packet/filter/IPHeaderFilter.cpp
+	packet/filter/RandomSampler.cpp
+	packet/filter/RegExFilter.cpp
+	packet/filter/StringFilter.cpp
+	packet/filter/SystematicSampler.cpp
+	packet/filter/ConnectionFilter.cpp
+	packet/filter/StateConnectionFilter.cpp
+	packet/filter/AnonFilter.cpp
+	packet/filter/PayloadFilter.cpp
 )
 
