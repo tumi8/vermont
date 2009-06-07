@@ -18,7 +18,7 @@
 #include "common/msg.h"
 #include "common/VermontControl.h"
 
-#include "cfg/ConfigManager.h"
+#include "modules/ConfigManager.h"
 
 using namespace std;
 

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "crc.hpp"
+#include "common/crc.hpp"
 
 #include "ipfix.hpp"
 #include "common/Misc.h"

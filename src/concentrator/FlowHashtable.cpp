@@ -1,7 +1,7 @@
 #include "FlowHashtable.h"
 #include "IpfixRecord.hpp"
-#include "crc.hpp"
 
+#include "common/crc.hpp"
 #include "common/Misc.h"
 #include "IpfixPrinter.hpp"
 

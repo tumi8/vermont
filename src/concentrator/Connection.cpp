@@ -18,7 +18,7 @@
  */
 
 #include "Connection.h"
-#include "crc.hpp"
+#include "common/crc.hpp"
 #include "common/Misc.h"
 #include "ipfix.hpp"
 
