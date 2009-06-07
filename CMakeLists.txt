@@ -39,15 +39,7 @@ MARK_AS_ADVANCED(
 ### basic modules
 
 SUBDIRS(
-	osdep
-	cfg
-	common
-	concentrator
-	ipfixlolib
-	sampler
-	reconf
-	idmef
-	anon
+	src
 )
 
 if(COMMAND cmake_policy)
@@ -56,12 +48,11 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 
 
-
 ADD_EXECUTABLE(vermont
-	vermont.cc
+	src/vermont.cc
 )
 
-INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR})
+INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/src)
 
 TARGET_LINK_LIBRARIES(vermont
 	cfg
