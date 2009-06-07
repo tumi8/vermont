@@ -18,13 +18,13 @@
  *
  */
 
-#include "common/ipfixlolib/ipfixlolib.h"
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 
 #ifndef _IPFIX_RAWDIR_WRITER_H_
 #define _IPFIX_RAWDIR_WRITER_H_
 
-#include "concentrator/IpfixSender.hpp"
+#include "common/ipfixlolib/ipfixlolib.h"
+#include "modules/ipfix/IpfixSender.hpp"
 #include <vector>
 
 /**

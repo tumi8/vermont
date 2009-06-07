@@ -3,10 +3,10 @@
 
 #ifdef DB_SUPPORT_ENABLED
 
-#include <cfg/XMLElement.h>
-#include <cfg/Cfg.h>
+#include <core/XMLElement.h>
+#include <core/Cfg.h>
 
-#include "concentrator/IpfixDbReader.hpp"
+#include "modules/ipfix/IpfixDbReader.hpp"
 
 #include <string>
 

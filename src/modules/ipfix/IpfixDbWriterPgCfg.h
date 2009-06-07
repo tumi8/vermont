@@ -3,10 +3,10 @@
 
 #ifdef PG_SUPPORT_ENABLED
 
-#include <cfg/XMLElement.h>
-#include <cfg/Cfg.h>
+#include <core/XMLElement.h>
+#include <core/Cfg.h>
 
-#include "concentrator/IpfixDbWriterPg.hpp"
+#include "IpfixDbWriterPg.hpp"
 
 #include <string>
 

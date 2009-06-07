@@ -26,9 +26,9 @@
 #define IPFIXDBREADER_H
 
 #include "IpfixParser.hpp"
-#include "ipfix.hpp"
-#include "ipfixlolib/ipfixlolib.h"
-#include "reconf/Module.h"
+#include "common/ipfixlolib/ipfix.h"
+#include "common/ipfixlolib/ipfixlolib.h"
+#include "core/Module.h"
 
 #include <netinet/in.h>
 #include <time.h>

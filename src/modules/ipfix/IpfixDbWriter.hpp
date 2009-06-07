@@ -28,8 +28,8 @@
 
 #include "IpfixDbCommon.hpp"
 #include "IpfixParser.hpp"
-#include "ipfix.hpp"
-#include "ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfix.h"
+#include "common/ipfixlolib/ipfixlolib.h"
 #include <mysql.h>
 #include <netinet/in.h>
 #include <time.h>

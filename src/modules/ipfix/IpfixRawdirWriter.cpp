@@ -24,7 +24,7 @@
 #include <stdexcept>
 #include <string.h>
 #include "IpfixRawdirWriter.hpp"
-#include "ipfix.hpp"
+#include "common/ipfixlolib/ipfix.h"
 
 #include "common/msg.h"
 
