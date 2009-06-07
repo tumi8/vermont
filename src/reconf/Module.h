@@ -6,7 +6,6 @@
 */
 
 #include "Source.h"
-#include "common/ThreadCPUInterface.h"
 #include "common/Sensor.h"
 
 using namespace std;

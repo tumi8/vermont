@@ -20,7 +20,6 @@
 ADD_LIBRARY(common
 	CountingSemaphore.cpp
 	msg.cc
-	ThreadCPUInterface.cpp
 	Sensor.cpp
 	VermontControl.cpp
 	Misc.cpp

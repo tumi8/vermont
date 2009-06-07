@@ -1,7 +1,8 @@
 #ifndef SENSOR_H_
 #define SENSOR_H_
 
-#include "ThreadCPUInterface.h"
+//#TODO: plattformunabhaengig machen
+#include "osdep/linux/ThreadCPUInterface.h"
 #include "Mutex.h"
 
 #include <string>

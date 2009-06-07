@@ -19,5 +19,6 @@
 
 ADD_LIBRARY(osdep
 	sysinfo.cpp
+	ThreadCPUInterface.cpp
 )
 
