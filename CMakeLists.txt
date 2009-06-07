@@ -40,6 +40,7 @@ MARK_AS_ADVANCED(
 
 SUBDIRS(
 	src
+	tests
 )
 
 if(COMMAND cmake_policy)
