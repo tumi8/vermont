@@ -8,4 +8,5 @@ SUBDIRS(
 	reconf
 	idmef
 	anon
+	tests
 )
