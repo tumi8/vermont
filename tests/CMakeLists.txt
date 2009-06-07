@@ -1,4 +1,4 @@
 SUBDIRS(
-	vermont
+	vermonttest
 	ipfixlolib
 )
