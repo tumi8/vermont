@@ -3,10 +3,10 @@
 
 #include <core/Cfg.h>
 
-#include <reconf/RecordAnonymizer.h>
+#include <reconf/IpfixRecordAnonymizer.h>
 
 class RecordAnonymizerCfg
-	: public CfgHelper<RecordAnonymizer, RecordAnonymizerCfg>
+	: public CfgHelper<IpfixRecordAnonymizer, RecordAnonymizerCfg>
 {
 public:
 	friend class ConfigManager;
@@ -15,7 +15,7 @@ public:
 
 	virtual ~RecordAnonymizerCfg();
 
-	virtual RecordAnonymizer* createInstance();
+	virtual IpfixRecordAnonymizer* createInstance();
 
 	virtual bool deriveFrom(RecordAnonymizerCfg* old);
 

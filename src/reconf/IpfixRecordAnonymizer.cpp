@@ -1,30 +1,30 @@
-#include "RecordAnonymizer.h"
+#include "IpfixRecordAnonymizer.h"
 
-InstanceManager<IpfixDataRecord> RecordAnonymizer::dataRecordIM("IpfixDataRecord");
-InstanceManager<IpfixDataDataRecord> RecordAnonymizer::dataDataRecordIM("IpfixDataDataRecord");
+InstanceManager<IpfixDataRecord> IpfixRecordAnonymizer::dataRecordIM("IpfixDataRecord");
+InstanceManager<IpfixDataDataRecord> IpfixRecordAnonymizer::dataDataRecordIM("IpfixDataDataRecord");
 
-void RecordAnonymizer::setCopyMode(bool mode)
+void IpfixRecordAnonymizer::setCopyMode(bool mode)
 {
 	copyMode = mode;
 }
 
-void RecordAnonymizer::onTemplate(IpfixTemplateRecord* record)
+void IpfixRecordAnonymizer::onTemplate(IpfixTemplateRecord* record)
 {
 	send(record);
 }
 
-void RecordAnonymizer::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
+void IpfixRecordAnonymizer::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
 {
 	send(record);
 }
 
 
-void RecordAnonymizer::onDataTemplate(IpfixDataTemplateRecord* record)
+void IpfixRecordAnonymizer::onDataTemplate(IpfixDataTemplateRecord* record)
 {
 	send(record);
 }
 
-void RecordAnonymizer::onDataRecord(IpfixDataRecord* record)
+void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 {
 	IpfixDataRecord* myRecord;
 	if(copyMode) {
@@ -49,12 +49,12 @@ void RecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 }
 
 
-void RecordAnonymizer::onOptionsRecord(IpfixOptionsRecord* record)
+void IpfixRecordAnonymizer::onOptionsRecord(IpfixOptionsRecord* record)
 {
 	send(record);
 }
 
-void RecordAnonymizer::onDataDataRecord(IpfixDataDataRecord* record)
+void IpfixRecordAnonymizer::onDataDataRecord(IpfixDataDataRecord* record)
 {
 	IpfixDataDataRecord* myRecord;
 	if(copyMode) {
@@ -89,18 +89,18 @@ void RecordAnonymizer::onDataDataRecord(IpfixDataDataRecord* record)
 	send(myRecord);
 }
 
-void RecordAnonymizer::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
+void IpfixRecordAnonymizer::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
 	send(record);
 }
 
-void RecordAnonymizer::onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record)
+void IpfixRecordAnonymizer::onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record)
 {
 	send(record);
 }
 
 
-void RecordAnonymizer::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record)
+void IpfixRecordAnonymizer::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record)
 {
 	send(record);
 }

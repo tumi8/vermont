@@ -11,7 +11,7 @@ RecordAnonymizerCfg* RecordAnonymizerCfg::create(XMLElement* e)
 }
 
 RecordAnonymizerCfg::RecordAnonymizerCfg(XMLElement* elem)
-	: CfgHelper<RecordAnonymizer, RecordAnonymizerCfg>(elem, "anonRecord")
+	: CfgHelper<IpfixRecordAnonymizer, RecordAnonymizerCfg>(elem, "anonRecord")
 {
 }
 
@@ -20,10 +20,10 @@ RecordAnonymizerCfg::~RecordAnonymizerCfg()
 
 }
 
-RecordAnonymizer* RecordAnonymizerCfg::createInstance()
+IpfixRecordAnonymizer* RecordAnonymizerCfg::createInstance()
 {
 	if (!instance) {
-		instance = new RecordAnonymizer();
+		instance = new IpfixRecordAnonymizer();
 	}
 
 	initInstance(this, instance, _elem->getElementChildren());

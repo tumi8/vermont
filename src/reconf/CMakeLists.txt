@@ -18,7 +18,6 @@
 #
 
 ADD_LIBRARY(reconf
-	PrinterModule.cpp
-	RecordAnonymizer.cpp
+	IpfixRecordAnonymizer.cpp
 )
 

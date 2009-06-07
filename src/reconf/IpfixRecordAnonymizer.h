@@ -5,10 +5,10 @@
 #include <modules/ipfix//IpfixRecordDestination.h>
 #include <common/anon/AnonModule.h>
 
-class RecordAnonymizer : public Source<IpfixRecord*>, public IpfixRecordDestination, public AnonModule, public Module  {
+class IpfixRecordAnonymizer : public Source<IpfixRecord*>, public IpfixRecordDestination, public AnonModule, public Module  {
 public:
-	RecordAnonymizer() : copyMode(false) {}
-	virtual ~RecordAnonymizer() {}
+	IpfixRecordAnonymizer() : copyMode(false) {}
+	virtual ~IpfixRecordAnonymizer() {}
 
 	void setCopyMode(bool mode);
 

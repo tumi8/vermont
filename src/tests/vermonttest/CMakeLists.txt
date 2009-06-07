@@ -26,11 +26,11 @@ ADD_EXECUTABLE(vermonttest
 	BloomFilterTest.cpp 
 	ConnectionFilterTest.cpp
 	ConfigTester.cpp
+	PrinterModule.cpp
 )
 
 TARGET_LINK_LIBRARIES(vermonttest
         cfg        
-        reconf
 	modules
         ipfixlolib  
 	core

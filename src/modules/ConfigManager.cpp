@@ -26,7 +26,6 @@
 #include "modules/idmef/IDMEFExporterCfg.h"
 #include "modules/idmef//PacketIDMEFReporterCfg.h"
 #include "cfg/RecordAnonymizerCfg.h"
-#include "cfg/PacketPrinterCfg.h"
 
 #include <cassert>
 
@@ -39,7 +38,6 @@ Cfg* ConfigManager::configModules[] = {
 	new ObserverCfg(NULL),
 	new PacketFilterCfg(NULL),
 	new PacketQueueCfg(NULL),
-	new PacketPrinterCfg(NULL),
 	new PCAPExporterCfg(NULL),
 	new PSAMPExporterCfg(NULL),
 	new IpfixCollectorCfg(NULL),
