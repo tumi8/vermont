@@ -23,9 +23,9 @@ ADD_LIBRARY(common
 	ThreadCPUInterface.cpp
 	Sensor.cpp
 	VermontControl.cpp
-	BloomFilter.cpp
-	AgeBloomFilter.cpp
-	CountBloomFilter.cpp
 	Misc.cpp
+	bloom/BloomFilter.cpp
+	bloom/AgeBloomFilter.cpp
+	bloom/CountBloomFilter.cpp
 )
 

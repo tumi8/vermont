@@ -3,7 +3,7 @@
 
 #include "BloomFilterBase.h"
 
-#include "msg.h"
+#include <common/msg.h>
 
 #include <climits>
 
