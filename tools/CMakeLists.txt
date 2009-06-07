@@ -22,10 +22,9 @@ ADD_EXECUTABLE(testCollector
 )
 
 TARGET_LINK_LIBRARIES(testCollector	
-	concentrator
+	modules
+	core
 	ipfixlolib
-	reconf
-	cfg
 	common
 	osdep
 	${CMAKE_THREAD_LIBS_INIT}
