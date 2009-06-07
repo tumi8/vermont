@@ -2,7 +2,7 @@
 #define SENSORMANAGER_H_
 
 #include "reconf/Module.h"
-#include "GraphInstanceSupplier.h"
+#include "core/GraphInstanceSupplier.h"
 
 #include "common/Thread.h"
 

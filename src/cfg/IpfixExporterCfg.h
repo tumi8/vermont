@@ -1,7 +1,7 @@
 #ifndef IPFIXEXPORTERCFG_H_
 #define IPFIXEXPORTERCFG_H_
 
-#include "Cfg.h"
+#include "core/Cfg.h"
 #include "CollectorCfg.h"
 #include "concentrator/IpfixSender.hpp"
 

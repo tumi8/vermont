@@ -4,8 +4,8 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#include <cfg/XMLElement.h>
-#include <cfg/Cfg.h>
+#include <core/XMLElement.h>
+#include <core/Cfg.h>
 
 #include <sampler/Observer.h>
 

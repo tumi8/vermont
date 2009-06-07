@@ -22,7 +22,6 @@ ADD_LIBRARY(reconf
 	PrinterModule.cpp
 	PSAMPExporterModule.cpp
 	PCAPExporterModule.cpp
-	Module.cpp
 	RecordAnonymizer.cpp
 )
 

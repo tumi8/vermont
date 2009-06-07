@@ -4,8 +4,8 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#include "cfg/XMLNode.h"
-#include "cfg/XMLAttribute.h"
+#include "core/XMLNode.h"
+#include "core/XMLAttribute.h"
 
 #include <string>
 #include <vector>

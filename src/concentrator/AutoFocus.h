@@ -20,7 +20,7 @@
 #ifndef AUTOFOCUS_H
 #define AUTOFOCUS_H
 
-#include "idmef/IDMEFExporter.h"
+#include "modules/idmef/IDMEFExporter.h"
 #include "IpfixRecordDestination.h"
 #include "Connection.h"
 #include "reconf/Source.h"

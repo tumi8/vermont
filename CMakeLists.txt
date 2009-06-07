@@ -55,14 +55,14 @@ ADD_EXECUTABLE(vermont
 INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/src)
 
 TARGET_LINK_LIBRARIES(vermont
-	cfg
-	reconf
-	ipfixlolib
 	sampler
 	concentrator	
-	idmef
 	anon
+	core
+	cfg
+	reconf
 	common
+	ipfixlolib
 	osdep
 )
 

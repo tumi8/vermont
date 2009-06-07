@@ -1,7 +1,7 @@
 #include "SensorManager.h"
 
-#include "cfg/CfgNode.h"
-#include "cfg/Cfg.h"
+#include "core/CfgNode.h"
+#include "core/Cfg.h"
 #include "common/msg.h"
 
 #include <fcntl.h>

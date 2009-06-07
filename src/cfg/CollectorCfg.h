@@ -1,7 +1,7 @@
 #ifndef COLLECTORCFG_H_
 #define COLLECTORCFG_H_
 
-#include "Cfg.h"
+#include "core/Cfg.h"
 
 #include "common/ipfixlolib/ipfixlolib.h"
 

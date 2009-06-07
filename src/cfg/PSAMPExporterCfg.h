@@ -1,8 +1,8 @@
 #ifndef PSAMPEXPORTERCFG_H_
 #define PSAMPEXPORTERCFG_H_
 
-#include "Cfg.h"
-#include "CollectorCfg.h"
+#include "core/Cfg.h"
+#include "cfg/CollectorCfg.h"
 #include "reconf/PSAMPExporterModule.h"
 
 #include <vector>

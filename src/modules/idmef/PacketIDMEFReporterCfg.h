@@ -1,10 +1,10 @@
 #ifndef PACKETIDMEFREPORTERCFG_H_
 #define PACKETIDMEFREPORTERCFG_H_
 
-#include <cfg/XMLElement.h>
-#include <cfg/Cfg.h>
+#include <core/XMLElement.h>
+#include <core/Cfg.h>
 
-#include "sampler/PacketIDMEFReporter.h"
+#include "modules/idmef/PacketIDMEFReporter.h"
 
 #include <string>
 

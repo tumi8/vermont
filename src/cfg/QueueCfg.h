@@ -5,7 +5,7 @@
 	@author Peter Baumann <siprbaum@users.berlios.de>
 */
 
-#include "Cfg.h"
+#include "core/Cfg.h"
 
 #include "reconf/ConnectionQueue.h"
 

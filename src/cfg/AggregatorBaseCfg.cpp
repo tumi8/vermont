@@ -2,7 +2,7 @@
 #include "InfoElementCfg.h"
 #include "concentrator/Rule.hpp"
 #include "concentrator/Rules.hpp"
-#include  "XMLElement.h"
+#include  "core/XMLElement.h"
 
 AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 	: CfgBase(elem), pollInterval(0)

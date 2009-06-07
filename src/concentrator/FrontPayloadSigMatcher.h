@@ -20,7 +20,7 @@
 #if !defined(FRONTPAYLOADSIGMATCHER_H_)
 #define FRONTPAYLOADSIGMATCHER_H_
 
-#include "idmef/IDMEFExporter.h"
+#include "modules/idmef/IDMEFExporter.h"
 #include "IpfixRecordDestination.h"
 #include "Connection.h"
 #include "reconf/Source.h"

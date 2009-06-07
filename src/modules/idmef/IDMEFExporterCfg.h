@@ -1,10 +1,10 @@
 #ifndef IDMEFEXPORTERCFG_H_
 #define IDMEFEXPORTERCFG_H_
 
-#include <cfg/XMLElement.h>
-#include <cfg/Cfg.h>
+#include <core/XMLElement.h>
+#include <core/Cfg.h>
 
-#include "idmef/IDMEFExporter.h"
+#include "modules/idmef/IDMEFExporter.h"
 
 #include <string>
 

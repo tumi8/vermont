@@ -1,7 +1,7 @@
 #ifndef PACKETFILTERCFG_H_
 #define PACKETFILTERCFG_H_
 
-#include <cfg/Cfg.h>
+#include <core/Cfg.h>
 #include "reconf/FilterModule.h"
 
 #include <vector>

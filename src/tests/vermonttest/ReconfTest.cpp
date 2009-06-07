@@ -4,7 +4,7 @@
 #include "sampler/SystematicSampler.h"
 #include "common/msg.h"
 #include "CounterDestination.h"
-#include "cfg/ConfigManager.h"
+#include "core/ConfigManager.h"
 #include "reconf/ConnectionSplitter.h"
 #include "reconf/PrinterModule.h"
 

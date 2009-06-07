@@ -1,7 +1,7 @@
 #ifndef XMLDOCUMENT_H_
 #define XMLDOCUMENT_H_
 
-#include "cfg/XMLElement.h"
+#include "core/XMLElement.h"
 
 #include <string>
 

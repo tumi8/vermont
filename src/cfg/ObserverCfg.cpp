@@ -1,6 +1,6 @@
 #include "ObserverCfg.h"
 #include "common/msg.h"
-#include "cfg/XMLElement.h"
+#include "core/XMLElement.h"
 
 #include "sampler/Observer.h"
 

@@ -2,7 +2,7 @@
 #define FLOWMETERINGCFG_H_
 
 #include "AggregatorBaseCfg.h"
-#include "Cfg.h"
+#include "core/Cfg.h"
 #include "concentrator/IpfixAggregator.hpp"
 
 class IpfixAggregatorCfg

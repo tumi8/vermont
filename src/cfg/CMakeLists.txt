@@ -19,14 +19,7 @@
 
 ADD_LIBRARY(cfg
 	AggregatorBaseCfg.cpp
-	Cfg.cpp
-	CfgNode.cpp
-	ConfigManager.cpp
-	Connector.cpp
-	DelayedDeleter.cpp
 	FrontPayloadSigMatcherCfg.cpp
-	Graph.cpp
-	GraphInstanceSupplier.cpp
 	IpfixAggregatorCfg.cpp
 	IpfixCollectorCfg.cpp
 	IpfixDbReaderCfg.cpp
@@ -36,24 +29,17 @@ ADD_LIBRARY(cfg
 	IpfixPayloadWriterCfg.cpp
 	IpfixPrinterCfg.cpp
 	IpfixSamplerCfg.cpp
-	Node.cpp
 	ObserverCfg.cpp
 	PacketAggregatorCfg.cpp
 	PacketFilterCfg.cpp
 	PacketReportingCfg.cpp
 	PSAMPExporterCfg.cpp
 	PCAPExporterCfg.cpp
-	ReConnector.cpp
 	RecordAnonymizerCfg.cpp
 	AutoFocusCfg.cpp
 	RBSWormDetectorCfg.cpp
 	SensorManager.cpp
 	SensorManagerCfg.cpp
 	TRWPortscanDetectorCfg.cpp
-	XMLAttribute.cpp
-	XMLElement.cpp
-	XMLDocument.cpp
-	XMLNode.cpp
-	XMLTextNode.cpp
 )
 

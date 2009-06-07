@@ -1,8 +1,8 @@
 #ifndef IPFIXSAMPLERCFG_H_
 #define IPFIXSAMPLERCFG_H_
 
-#include <cfg/XMLElement.h>
-#include <cfg/Cfg.h>
+#include <core/XMLElement.h>
+#include <core/Cfg.h>
 
 #include "concentrator/IpfixSampler.h"
 

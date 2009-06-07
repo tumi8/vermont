@@ -1,7 +1,7 @@
 #ifndef REPORTEDIECFG_H_
 #define REPORTEDIECFG_H_
 
-#include "Cfg.h"
+#include "core/Cfg.h"
 
 #include <string>
 

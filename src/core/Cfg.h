@@ -1,7 +1,7 @@
 #ifndef CFG_H_
 #define CFG_H_
 
-#include "cfg/XMLElement.h"
+#include "core/XMLElement.h"
 #include "reconf/Module.h"
 
 #include "reconf/ConnectionQueue.h"

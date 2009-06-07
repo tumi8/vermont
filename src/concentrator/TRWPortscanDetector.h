@@ -20,7 +20,7 @@
 #if !defined(TRWPORTSCANDETECTOR_H)
 #define TRWPORTSCANDETECTOR_H
 
-#include "idmef/IDMEFExporter.h"
+#include "modules/idmef/IDMEFExporter.h"
 #include "IpfixRecordDestination.h"
 #include "Connection.h"
 #include "reconf/Source.h"

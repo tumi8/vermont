@@ -2,7 +2,7 @@
 #define PACKETIDMEFREPORTER_H_
 
 
-#include "idmef/IDMEFMessage.h"
+#include "modules/idmef/IDMEFMessage.h"
 
 #include "reconf/Destination.h"
 #include "sampler/Packet.h"

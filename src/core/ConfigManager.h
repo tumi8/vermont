@@ -5,12 +5,12 @@
 	@author Peter Baumann <siprbaum@users.berlios.de>
 */
 
-#include "SensorManager.h"
+#include "cfg/SensorManager.h"
 
-#include "cfg/Cfg.h"
-#include "cfg/DelayedDeleter.h"
-#include "cfg/Graph.h"
-#include "cfg/XMLDocument.h"
+#include "core/Cfg.h"
+#include "core/DelayedDeleter.h"
+#include "core/Graph.h"
+#include "core/XMLDocument.h"
 #include "GraphInstanceSupplier.h"
 
 #include <string>

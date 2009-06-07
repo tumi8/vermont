@@ -1,9 +1,11 @@
 SUBDIRS(
-	osdep
 	cfg
+	osdep
+	core
 	common
 	concentrator
 	sampler
 	reconf
 	tests
+	modules
 )

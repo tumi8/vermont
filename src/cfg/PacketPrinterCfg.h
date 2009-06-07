@@ -1,7 +1,7 @@
 #ifndef PACKETPRINTERCFG_H_
 #define PACKETPRINTERCFG_H_
 
-#include "cfg/Cfg.h"
+#include "core/Cfg.h"
 #include "reconf/PrinterModule.h"
 
 #include <cassert>

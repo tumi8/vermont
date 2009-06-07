@@ -3,8 +3,8 @@
 
 #include "SensorManager.h"
 
-#include "cfg/XMLElement.h"
-#include "cfg/Cfg.h"
+#include "core/XMLElement.h"
+#include "core//Cfg.h"
 
 #include <string>
 

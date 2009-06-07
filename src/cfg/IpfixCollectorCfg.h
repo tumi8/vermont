@@ -1,7 +1,7 @@
 #ifndef IPFIXCOLLECTORCFG_H_
 #define IPFIXCOLLECTORCFG_H_
 
-#include "Cfg.h"
+#include "core/Cfg.h"
 #include "CollectorCfg.h"
 #include <concentrator/IpfixCollector.hpp>
 

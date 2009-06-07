@@ -1,7 +1,7 @@
 #ifndef _RECORD_ANONYMIZER_CFG_H_
 #define _RECORD_ANONYMIZER_CFG_H_
 
-#include <cfg/Cfg.h>
+#include <core/Cfg.h>
 
 #include <reconf/RecordAnonymizer.h>
 

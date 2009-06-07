@@ -1,7 +1,7 @@
 #ifndef AGGREGATORBASECFG_H_
 #define AGGREGATORBASECFG_H_
 
-#include "Cfg.h"
+#include "core/Cfg.h"
 #include "concentrator/Rule.hpp"
 
 // forward declarations

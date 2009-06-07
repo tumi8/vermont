@@ -1,8 +1,8 @@
 #ifndef TRWPORTSCANDETECTORCFG_H_
 #define TRWPORTSCANDETECTORCFG_H_
 
-#include <cfg/XMLElement.h>
-#include <cfg/Cfg.h>
+#include <core/XMLElement.h>
+#include <core/Cfg.h>
 
 #include "concentrator/TRWPortscanDetector.h"
 

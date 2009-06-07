@@ -20,7 +20,7 @@
 #if !defined(RBSWORMDETECTOR_H)
 #define RBSWORMDETECTOR_H
 
-#include "idmef/IDMEFExporter.h"
+#include "modules/idmef/IDMEFExporter.h"
 #include "IpfixRecordDestination.h"
 #include "Connection.h"
 #include "reconf/Source.h"

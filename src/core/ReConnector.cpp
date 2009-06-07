@@ -1,5 +1,5 @@
-#include <cfg/ReConnector.h>
-#include <cfg/CfgNode.h>
+#include <core/ReConnector.h>
+#include <core/CfgNode.h>
 
 #include "common/msg.h"
 

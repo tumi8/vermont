@@ -1,7 +1,7 @@
 #ifndef IPFIXPRINTERCFG_H_
 #define IPFIXPRINTERCFG_H_
 
-#include "cfg/Cfg.h"
+#include "core/Cfg.h"
 #include "concentrator/IpfixPrinter.hpp"
 
 class IpfixPrinterCfg
