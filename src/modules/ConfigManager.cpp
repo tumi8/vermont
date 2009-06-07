@@ -3,6 +3,7 @@
 #include "core/ReConnector.h"
 #include "core/CfgNode.h"
 
+#include "QueueCfg.h"
 #include "modules/packet/ObserverCfg.h"
 #include "modules/packet/PSAMPExporterCfg.h"
 #include "modules/packet/PCAPExporterCfg.h"
@@ -17,7 +18,6 @@
 #include "modules/ipfix/IpfixSamplerCfg.h"
 #include "modules/ipfix/aggregator/IpfixAggregatorCfg.h"
 #include "modules/ipfix/aggregator/PacketAggregatorCfg.h"
-#include "cfg/QueueCfg.h"
 #include "modules/SensorManagerCfg.h"
 #include "modules/analysis/TRWPortscanDetectorCfg.h"
 #include "modules/analysis/RBSWormDetectorCfg.h"
