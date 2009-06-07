@@ -1,9 +1,9 @@
 #ifdef HAVE_CONNECTION_FILTER
 
 #include "BloomFilterTest.h"
-#include <common/BloomFilter.h>
-#include <common/AgeBloomFilter.h>
-#include <common/CountBloomFilter.h>
+#include <common/bloom/BloomFilter.h>
+#include <common/bloom/AgeBloomFilter.h>
+#include <common/bloom/CountBloomFilter.h>
 #include <common/msg.h>
 
 #include <iostream>

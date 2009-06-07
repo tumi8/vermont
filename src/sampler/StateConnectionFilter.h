@@ -2,7 +2,7 @@
 #define _STATE_CONNECTION_FILTER_H_
 
 #include <sampler/PacketProcessor.h>
-#include <common/BloomFilter.h>
+#include <common/bloom/BloomFilter.h>
 
 #include <map>
 #include <ostream>

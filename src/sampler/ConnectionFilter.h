@@ -5,8 +5,8 @@
 
 #include "PacketProcessor.h"
 
-#include <common/CountBloomFilter.h>
-#include <common/AgeBloomFilter.h>
+#include <common/bloom/CountBloomFilter.h>
+#include <common/bloom/AgeBloomFilter.h>
 
 class ConnectionFilter : public PacketProcessor {
 public:
