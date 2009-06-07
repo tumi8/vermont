@@ -19,7 +19,6 @@
 
 ADD_LIBRARY(cfg
 	AggregatorBaseCfg.cpp
-	FrontPayloadSigMatcherCfg.cpp
 	IpfixAggregatorCfg.cpp
 	IpfixCollectorCfg.cpp
 	IpfixDbReaderCfg.cpp
@@ -36,10 +35,7 @@ ADD_LIBRARY(cfg
 	PSAMPExporterCfg.cpp
 	PCAPExporterCfg.cpp
 	RecordAnonymizerCfg.cpp
-	AutoFocusCfg.cpp
-	RBSWormDetectorCfg.cpp
 	SensorManager.cpp
 	SensorManagerCfg.cpp
-	TRWPortscanDetectorCfg.cpp
 )
 
