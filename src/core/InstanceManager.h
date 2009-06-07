@@ -22,7 +22,7 @@
 #define INSTANCEMANAGER_H
 
 #include "common/Mutex.h"
-#include "SensorManager.h"
+#include "cfg/SensorManager.h"
 #include "common/Sensor.h"
 #include "common/defs.h"
 

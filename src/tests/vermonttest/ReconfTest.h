@@ -5,7 +5,7 @@
 #include "core/ConnectionQueue.h"
 #include "reconf//FilterModule.h"
 #include "concentrator/IpfixAggregator.hpp"
-#include "cfg/InstanceManager.h"
+#include "core/InstanceManager.h"
 
 #include "TestSuiteBase.h"
 

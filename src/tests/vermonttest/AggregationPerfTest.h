@@ -22,7 +22,7 @@
 #define AGGREGATIONPERFTEST_H
 
 #include "concentrator/IpfixAggregator.hpp"
-#include "cfg/InstanceManager.h"
+#include "core/InstanceManager.h"
 
 #include "TestSuiteBase.h"
 

@@ -4,7 +4,7 @@
 
 #include <sampler/ConnectionFilter.h>
 #include <sampler/Packet.h>
-#include <cfg/InstanceManager.h>
+#include <core/InstanceManager.h>
 #include <common/msg.h>
 
 #include <pcap.h>

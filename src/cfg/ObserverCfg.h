@@ -9,7 +9,7 @@
 
 #include <sampler/Observer.h>
 
-#include <cfg/InstanceManager.h>
+#include <core/InstanceManager.h>
 #include <map>
 
 class Observer;

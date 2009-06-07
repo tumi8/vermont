@@ -21,8 +21,8 @@
 #if !defined(MANAGEDINSTANCE_H)
 #define MANAGEDINSTANCE_H
 
-#include "msg.h"
-#include "cfg/InstanceManager.h"
+#include "common/msg.h"
+#include "core/InstanceManager.h"
 
 /**
  * represents an instance which can be managed by ResourceManager
