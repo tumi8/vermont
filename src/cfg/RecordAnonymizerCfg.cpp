@@ -1,5 +1,5 @@
 #include "RecordAnonymizerCfg.h"
-#include "InfoElementCfg.h"
+#include "core/InfoElementCfg.h"
 
 #include <common/ipfixlolib/ipfix_names.h>
 

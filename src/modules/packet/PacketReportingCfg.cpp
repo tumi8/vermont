@@ -1,4 +1,4 @@
-#include "cfg/InfoElementCfg.h"
+#include "core/InfoElementCfg.h"
 #include "modules/packet/Template.h"
 #include "PacketReportingCfg.h"
 

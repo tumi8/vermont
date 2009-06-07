@@ -1,5 +1,5 @@
 #include "modules/packet/filter/PacketFilterCfg.h"
-#include "cfg/InfoElementCfg.h"
+#include "core/InfoElementCfg.h"
 #include "cfg/RecordAnonymizerCfg.h"
 
 #include <modules/packet/filter//RegExFilter.h>

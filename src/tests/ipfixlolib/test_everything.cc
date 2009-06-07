@@ -6,7 +6,7 @@
  */
 
 #include <stdio.h>
-#include "ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfixlolib.h"
 #include "common/msg.h"
 
 #define MY_SOURCE_ID 70538
