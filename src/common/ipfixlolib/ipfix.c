@@ -31,6 +31,9 @@
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "ipfix.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 int string2typeid(const char *s)
 {
@@ -61,3 +64,8 @@ int string2typelength(const char *s)
 
 	return ix->length;
 }
+
+#ifdef __cplusplus
+}
+#endif
+

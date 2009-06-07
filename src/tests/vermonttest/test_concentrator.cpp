@@ -1,12 +1,12 @@
 #include "test_concentrator.h"
 
-#include "concentrator/IpfixRecord.hpp"
+#include "modules/ipfix/IpfixRecord.hpp"
 #include "common/ipfixlolib/ipfixlolib.h"
-#include "concentrator/IpfixSender.hpp"
-#include "concentrator/IpfixRawdirReader.hpp"
-#include "concentrator/IpfixRawdirWriter.hpp"
-#include "concentrator/IpfixCollector.hpp"
-#include "concentrator/IpfixPrinter.hpp"
+#include "modules/ipfix/IpfixSender.hpp"
+#include "modules/ipfix/IpfixRawdirReader.hpp"
+#include "modules/ipfix/IpfixRawdirWriter.hpp"
+#include "modules/ipfix/IpfixCollector.hpp"
+#include "modules/ipfix/IpfixPrinter.hpp"
 #include "core/ConnectionQueue.h"
 #include "TestSuiteBase.h"
 

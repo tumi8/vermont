@@ -4,7 +4,7 @@
 
 #include "core/ConnectionQueue.h"
 #include "modules/packet/filter/FilterModule.h"
-#include "concentrator/IpfixAggregator.hpp"
+#include "modules/ipfix/aggregator/IpfixAggregator.hpp"
 #include "core/InstanceManager.h"
 
 #include "TestSuiteBase.h"

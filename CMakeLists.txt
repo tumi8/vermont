@@ -35,7 +35,6 @@ MARK_AS_ADVANCED(
 	LIBRARY_OUTPUT_PATH
 )
 
-
 ### basic modules
 
 SUBDIRS(
@@ -55,12 +54,12 @@ ADD_EXECUTABLE(vermont
 INCLUDE_DIRECTORIES(${VERMONT_SOURCE_DIR}/src)
 
 TARGET_LINK_LIBRARIES(vermont
-	ipfixlolib
 	anon
 	reconf
-	modules
 	cfg
+	modules
 	core
+	ipfixlolib
 	common
 	osdep
 )

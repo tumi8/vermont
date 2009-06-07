@@ -31,8 +31,9 @@ ADD_EXECUTABLE(vermonttest
 TARGET_LINK_LIBRARIES(vermonttest
         cfg        
         reconf
-        concentrator
+	modules
         ipfixlolib  
+	core
         common        
         osdep      
 	${CMAKE_THREAD_LIBS_INIT}

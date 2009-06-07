@@ -21,7 +21,7 @@
 #if !defined(AGGREGATIONPERFTEST_H)
 #define AGGREGATIONPERFTEST_H
 
-#include "concentrator/IpfixAggregator.hpp"
+#include "modules/ipfix/aggregator/IpfixAggregator.hpp"
 #include "core/InstanceManager.h"
 
 #include "TestSuiteBase.h"

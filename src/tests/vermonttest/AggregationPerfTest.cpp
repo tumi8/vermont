@@ -26,7 +26,7 @@
 #include "core/Module.h"
 #include "core/ThreadSafeAdapter.h"
 #include "core/ConnectionQueue.h"
-#include "concentrator/PacketAggregator.h"
+#include "modules/ipfix/aggregator/PacketAggregator.h"
 #include "CounterDestination.h"
 
 #include <sys/time.h>

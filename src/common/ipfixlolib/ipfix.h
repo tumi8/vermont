@@ -18,6 +18,10 @@
  *
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef IPFIX_H
 #define IPFIX_H
 
@@ -277,3 +281,8 @@ int string2typelength(const char*s);
 #define MAX_MSG_LEN   65536
 
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
