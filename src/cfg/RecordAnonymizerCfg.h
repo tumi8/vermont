@@ -3,7 +3,7 @@
 
 #include <core/Cfg.h>
 
-#include <reconf/IpfixRecordAnonymizer.h>
+#include <modules/ipfix/IpfixRecordAnonymizer.h>
 
 class RecordAnonymizerCfg
 	: public CfgHelper<IpfixRecordAnonymizer, RecordAnonymizerCfg>
