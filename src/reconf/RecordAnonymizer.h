@@ -3,7 +3,7 @@
 
 #include "Source.h"
 #include <concentrator/IpfixRecordDestination.h>
-#include <anon/AnonModule.h>
+#include <common/anon/AnonModule.h>
 
 class RecordAnonymizer : public Source<IpfixRecord*>, public IpfixRecordDestination, public AnonModule, public Module  {
 public:

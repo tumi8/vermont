@@ -2,7 +2,7 @@
 #define _ANON_FILTER_H_
 
 #include "PacketProcessor.h"
-#include <anon/AnonModule.h>
+#include <common/anon/AnonModule.h>
 
 class AnonFilter : public PacketProcessor, public AnonModule {
 public:

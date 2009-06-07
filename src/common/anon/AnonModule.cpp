@@ -1,15 +1,15 @@
 #include "AnonModule.h"
 
-#include <anon/AnonHashSha1.h>
-#include <anon/AnonBytewiseHashHmacSha1.h>
-#include <anon/AnonBytewiseHashSha1.h>
-#include <anon/AnonConstOverwrite.h>
-#include <anon/AnonContinuousChar.h>
-#include <anon/AnonWhitenoise.h>
-#include <anon/AnonHashHmacSha1.h>
-#include <anon/AnonRandomize.h>
-#include <anon/AnonShuffle.h>
-#include <anon/AnonCryptoPan.h>
+#include <common/anon/AnonHashSha1.h>
+#include <common/anon/AnonBytewiseHashHmacSha1.h>
+#include <common/anon/AnonBytewiseHashSha1.h>
+#include <common/anon/AnonConstOverwrite.h>
+#include <common/anon/AnonContinuousChar.h>
+#include <common/anon/AnonWhitenoise.h>
+#include <common/anon/AnonHashHmacSha1.h>
+#include <common/anon/AnonRandomize.h>
+#include <common/anon/AnonShuffle.h>
+#include <common/anon/AnonCryptoPan.h>
 
 #include "common/Misc.h"
 

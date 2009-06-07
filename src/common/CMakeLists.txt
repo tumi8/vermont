@@ -33,3 +33,5 @@ ADD_LIBRARY(common
 	hmacsha1/sha1_hmac.cpp
 )
 
+SUBDIRS(anon)
+

@@ -7,6 +7,5 @@ SUBDIRS(
 	sampler
 	reconf
 	idmef
-	anon
 	tests
 )

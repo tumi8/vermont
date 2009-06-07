@@ -1,7 +1,7 @@
 #include "AnonFilter.h"
 #include "Template.h"
 
-#include <anon/AnonModule.h>
+#include <common/anon/AnonModule.h>
 
 bool AnonFilter::processPacket(Packet* p)
 {
