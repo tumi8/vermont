@@ -15,18 +15,18 @@
 #include "cfg/PCAPExporterCfg.h"
 #include "cfg/QueueCfg.h"
 #include "cfg/SensorManagerCfg.h"
-#include "cfg/TRWPortscanDetectorCfg.h"
+#include "modules/analysis/TRWPortscanDetectorCfg.h"
+#include "modules/analysis/RBSWormDetectorCfg.h"
+#include "modules/analysis/FrontPayloadSigMatcherCfg.h"
+#include "modules/analysis/AutoFocusCfg.h"
 #include "modules/idmef/IDMEFExporterCfg.h"
 #include "modules/idmef//PacketIDMEFReporterCfg.h"
 #include "cfg/IpfixDbReaderCfg.h"
-#include "cfg/RBSWormDetectorCfg.h"
-#include "cfg/AutoFocusCfg.h"
 #include "cfg/IpfixDbWriterCfg.h"
 #include "cfg/IpfixDbWriterPgCfg.h"
 #include "cfg/IpfixPayloadWriterCfg.h"
 #include "cfg/IpfixSamplerCfg.h"
 #include "cfg/RecordAnonymizerCfg.h"
-#include "cfg/FrontPayloadSigMatcherCfg.h"
 
 #include <cassert>
 

@@ -23,7 +23,7 @@
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "concentrator/FrontPayloadSigMatcher.h"
+#include "modules/analysis/FrontPayloadSigMatcher.h"
 
 #include <string>
 

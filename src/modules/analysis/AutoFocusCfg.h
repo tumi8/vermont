@@ -4,7 +4,7 @@
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "concentrator/AutoFocus.h"
+#include "AutoFocus.h"
 
 #include <string>
 #include <map>

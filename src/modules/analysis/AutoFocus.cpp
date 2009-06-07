@@ -19,7 +19,7 @@
  */
 
 #include "AutoFocus.h"
-#include "crc.hpp"
+#include "concentrator/crc.hpp"
 #include "common/Misc.h"
 
 #include <arpa/inet.h>

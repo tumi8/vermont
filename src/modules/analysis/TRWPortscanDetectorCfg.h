@@ -4,7 +4,7 @@
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "concentrator/TRWPortscanDetector.h"
+#include "modules/analysis/TRWPortscanDetector.h"
 
 #include <string>
 

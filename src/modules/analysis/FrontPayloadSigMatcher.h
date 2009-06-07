@@ -21,8 +21,8 @@
 #define FRONTPAYLOADSIGMATCHER_H_
 
 #include "modules/idmef/IDMEFExporter.h"
-#include "IpfixRecordDestination.h"
-#include "Connection.h"
+#include "concentrator/IpfixRecordDestination.h"
+#include "concentrator/Connection.h"
 #include "core/Source.h"
 
 extern "C" {

@@ -4,7 +4,7 @@
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "concentrator/RBSWormDetector.h"
+#include "modules/analysis/RBSWormDetector.h"
 
 #include <string>
 #include <map>
