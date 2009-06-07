@@ -3,7 +3,6 @@ SUBDIRS(
 	osdep
 	core
 	common
-	reconf
 	tests
 	modules
 )
