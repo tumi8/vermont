@@ -1,7 +1,7 @@
 #ifndef __autofocus_af_attribute_h__ 
 #define __autofocus_af_attribute_h__ 
 
-#include "concentrator/Connection.h"
+#include "modules/ipfix/Connection.h"
 #include "autofocus_iprecord.h"
 #include <list>
 

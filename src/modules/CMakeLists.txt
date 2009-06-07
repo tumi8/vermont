@@ -43,5 +43,43 @@ ADD_LIBRARY(modules
 	packet/filter/StateConnectionFilter.cpp
 	packet/filter/AnonFilter.cpp
 	packet/filter/PayloadFilter.cpp
+
+	ipfix/IpfixCollectorCfg.cpp
+	ipfix/IpfixDbReaderCfg.cpp
+	ipfix/IpfixDbWriterCfg.cpp
+	ipfix/IpfixDbWriterPgCfg.cpp
+	ipfix/IpfixExporterCfg.cpp
+	ipfix/IpfixPayloadWriterCfg.cpp
+	ipfix/IpfixPrinterCfg.cpp
+	ipfix/IpfixSamplerCfg.cpp
+	ipfix/Connection.cpp
+	ipfix/IpfixReceiverUdpIpV4.cpp
+	ipfix/IpfixReceiverSctpIpV4.cpp
+	ipfix/IpfixRawdirReader.cpp
+	ipfix/IpfixReceiver.cpp
+	ipfix/IpfixRecord.cpp
+	ipfix/IpfixPrinter.cpp
+	ipfix/IpfixParser.cpp
+	ipfix/IpfixCollector.cpp
+	ipfix/IpfixSender.cpp
+	ipfix/IpfixRawdirWriter.cpp
+	ipfix/TemplateBuffer.cpp
+	ipfix/IpfixDbReader.cpp
+	ipfix/IpfixDbWriter.cpp
+	ipfix/IpfixDbWriterPg.cpp
+	ipfix/IpfixRecordDestination.cpp
+	ipfix/IpfixSampler.cpp
+	ipfix/IpfixPayloadWriter.cpp
+	ipfix/aggregator/PacketAggregatorCfg.cpp
+	ipfix/aggregator/AggregatorBaseCfg.cpp
+	ipfix/aggregator/IpfixAggregatorCfg.cpp
+	ipfix/aggregator/BaseAggregator.cpp
+	ipfix/aggregator/BaseHashtable.cpp
+	ipfix/aggregator/PacketHashtable.cpp
+	ipfix/aggregator/FlowHashtable.cpp
+	ipfix/aggregator/IpfixAggregator.cpp
+	ipfix/aggregator/PacketAggregator.cpp
+	ipfix/aggregator/Rules.cpp
+	ipfix/aggregator/Rule.cpp
 )
 

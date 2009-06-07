@@ -1,6 +1,6 @@
 #include "AggregatorBaseCfg.h"
-#include "concentrator/Rule.hpp"
-#include "concentrator/Rules.hpp"
+#include "Rule.hpp"
+#include "Rules.hpp"
 #include "core/XMLElement.h"
 #include "core/InfoElementCfg.h"
 

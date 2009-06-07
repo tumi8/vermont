@@ -3,7 +3,7 @@
 
 #include "core/Cfg.h"
 #include "CollectorCfg.h"
-#include <concentrator/IpfixCollector.hpp>
+#include <modules/ipfix/IpfixCollector.hpp>
 
 class IpfixCollectorCfg
 	: public CfgHelper<IpfixCollector, IpfixCollectorCfg>

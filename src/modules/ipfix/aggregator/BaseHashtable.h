@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-#include "IpfixRecord.hpp"
+#include "modules/ipfix/IpfixRecord.hpp"
 #include "HashtableBuckets.h"
 #include "Rule.hpp"
 #include "core/Module.h"

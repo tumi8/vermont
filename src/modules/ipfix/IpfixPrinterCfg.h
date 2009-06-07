@@ -2,7 +2,7 @@
 #define IPFIXPRINTERCFG_H_
 
 #include "core/Cfg.h"
-#include "concentrator/IpfixPrinter.hpp"
+#include "modules/ipfix/IpfixPrinter.hpp"
 
 class IpfixPrinterCfg
 	: public CfgHelper<IpfixPrinter, IpfixPrinterCfg>

@@ -1,6 +1,6 @@
 #include "IpfixCollectorCfg.h"
-#include <concentrator/IpfixReceiverUdpIpV4.hpp>
-#include <concentrator/IpfixReceiverSctpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverUdpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverSctpIpV4.hpp>
 
 IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector, IpfixCollectorCfg>(elem, "ipfixCollector"),

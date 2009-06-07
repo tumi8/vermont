@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "TemplateBuffer.hpp"
-#include "ipfix.hpp"
+#include "common/ipfixlolib/ipfix.h"
 #include "common/msg.h"
 
 /**

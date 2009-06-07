@@ -1,9 +1,9 @@
 #include "FlowHashtable.h"
-#include "IpfixRecord.hpp"
+#include "modules/ipfix/IpfixRecord.hpp"
 
 #include "common/crc.hpp"
 #include "common/Misc.h"
-#include "IpfixPrinter.hpp"
+#include "modules/ipfix/IpfixPrinter.hpp"
 
 
 

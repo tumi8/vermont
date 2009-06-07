@@ -25,7 +25,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "IpfixParser.hpp"
+#include "modules/ipfix/IpfixParser.hpp"
 #include "Rule.hpp"
 
 #define MAX_RULES 255

@@ -2,7 +2,7 @@
 #define _RECORD_ANONYMIZER_H_
 
 #include "core/Source.h"
-#include <concentrator/IpfixRecordDestination.h>
+#include <modules/ipfix//IpfixRecordDestination.h>
 #include <common/anon/AnonModule.h>
 
 class RecordAnonymizer : public Source<IpfixRecord*>, public IpfixRecordDestination, public AnonModule, public Module  {

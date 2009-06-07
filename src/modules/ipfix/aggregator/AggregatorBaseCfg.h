@@ -2,7 +2,7 @@
 #define AGGREGATORBASECFG_H_
 
 #include "core/Cfg.h"
-#include "concentrator/Rule.hpp"
+#include "modules/ipfix/aggregator/Rule.hpp"
 
 // forward declarations
 class Rule;

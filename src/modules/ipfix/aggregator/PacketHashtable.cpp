@@ -4,7 +4,7 @@
 
 #include "common/crc.hpp"
 
-#include "ipfix.hpp"
+#include "common/ipfixlolib/ipfix.h"
 #include "common/Misc.h"
 #include "common/Time.h"
 #include "HashtableBuckets.h"

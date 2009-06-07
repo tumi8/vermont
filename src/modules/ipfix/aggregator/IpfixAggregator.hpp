@@ -18,46 +18,34 @@
  *
  */
 
-/** @file
- * IPFIX protocol constants.
+#ifndef AGGREGATOR_H
+#define AGGREGATOR_H
+
+#include "modules/ipfix/IpfixParser.hpp"
+#include "Rules.hpp"
+#include "BaseAggregator.h"
+#include "modules/ipfix/IpfixRecordDestination.h"
+#include "core/Module.h"
+
+
+/**
+ * Represents an Aggregator.
  *
- * This function provides constants and functions necessary or useful for interpretation of IPFIX messages.
- *
+ * Uses Rules and Hashtable to implement an IPFIX Aggregator.
  */
-
-/* wrapper into ipfixlolib - double data makes no sense */
-
-#include <string.h>
-#include "common/ipfixlolib/ipfixlolib.h"
-#include "ipfix.hpp"
-
-
-int string2typeid(const char *s)
+class IpfixAggregator 
+		: public BaseAggregator, public IpfixRecordDestination
 {
-	return ipfix_name_lookup(s);
-}
+public:
+	IpfixAggregator(uint32_t pollinterval);
+	virtual ~IpfixAggregator();
 
-char* typeid2string(int i)
-{
-        const struct ipfix_identifier *ix;
-	ix=ipfix_id_lookup(i);
+	virtual void onDataRecord(IpfixDataRecord* record);
+	virtual void onDataDataRecord(IpfixDataDataRecord* record);
 
-	if(!ix) {
-		return NULL;
-	}
+protected:
+	BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, 
+			uint16_t maxBufferTime, uint8_t hashbits);
+};
 
-	return ix->name;
-}
-
-int string2typelength(const char *s)
-{
-	const struct ipfix_identifier *ix;
-
-	ix=ipfix_id_lookup(ipfix_name_lookup(s));
-
-	if(!ix) {
-		return 0;
-	}
-
-	return ix->length;
-}
+#endif

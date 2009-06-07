@@ -20,7 +20,7 @@
 #include "Connection.h"
 #include "common/crc.hpp"
 #include "common/Misc.h"
-#include "ipfix.hpp"
+#include "common/ipfixlolib/ipfix.h"
 
 #include <sstream>
 #include <algorithm>

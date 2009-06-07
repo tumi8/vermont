@@ -18,17 +18,6 @@
 #
 
 ADD_LIBRARY(cfg
-	AggregatorBaseCfg.cpp
-	IpfixAggregatorCfg.cpp
-	IpfixCollectorCfg.cpp
-	IpfixDbReaderCfg.cpp
-	IpfixDbWriterCfg.cpp
-	IpfixDbWriterPgCfg.cpp
-	IpfixExporterCfg.cpp
-	IpfixPayloadWriterCfg.cpp
-	IpfixPrinterCfg.cpp
-	IpfixSamplerCfg.cpp
-	PacketAggregatorCfg.cpp
 	RecordAnonymizerCfg.cpp
 	SensorManager.cpp
 	SensorManagerCfg.cpp

@@ -1,6 +1,6 @@
 #include "IpfixAggregatorCfg.h"
-#include "concentrator/Rule.hpp"
-#include "concentrator/Rules.hpp"
+#include "Rule.hpp"
+#include "Rules.hpp"
 
 IpfixAggregatorCfg::IpfixAggregatorCfg(XMLElement* elem)
 	: CfgHelper<IpfixAggregator, IpfixAggregatorCfg>(elem, "ipfixAggregator"),

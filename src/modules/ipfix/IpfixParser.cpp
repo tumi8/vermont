@@ -38,7 +38,7 @@
 #include "IpfixReceiver.hpp"
 #include "IpfixParser.hpp"
 #include "TemplateBuffer.hpp"
-#include "ipfix.hpp"
+#include "common/ipfixlolib/ipfix.h"
 #include "IpfixPrinter.hpp"
 
 #include "common/msg.h"

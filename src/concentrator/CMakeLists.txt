@@ -18,32 +18,6 @@
 #
 
 ADD_LIBRARY(concentrator
-	IpfixAggregator.cpp
-	PacketAggregator.cpp
-	BaseAggregator.cpp
-	BaseHashtable.cpp
-	Connection.cpp
-	PacketHashtable.cpp
-	FlowHashtable.cpp
 	ipfix.cpp
-	IpfixReceiverUdpIpV4.cpp
-	IpfixReceiverSctpIpV4.cpp
-	IpfixRawdirReader.cpp
-	IpfixReceiver.cpp
-	IpfixRecord.cpp
-	IpfixPrinter.cpp
-	IpfixParser.cpp
-	IpfixCollector.cpp
-	Rules.cpp
-	Rule.cpp
-	IpfixSender.cpp
-	IpfixRawdirWriter.cpp
-	TemplateBuffer.cpp
-	IpfixDbReader.cpp
-	IpfixDbWriter.cpp
-	IpfixDbWriterPg.cpp
-	IpfixRecordDestination.cpp
-	IpfixSampler.cpp
-	IpfixPayloadWriter.cpp
 )
 

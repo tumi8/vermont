@@ -2,8 +2,8 @@
 #define IPFIXEXPORTERCFG_H_
 
 #include "core/Cfg.h"
-#include "CollectorCfg.h"
-#include "concentrator/IpfixSender.hpp"
+#include "modules/ipfix/CollectorCfg.h"
+#include "modules/ipfix/IpfixSender.hpp"
 
 class IpfixExporterCfg
 	: public CfgHelper<IpfixSender, IpfixExporterCfg>

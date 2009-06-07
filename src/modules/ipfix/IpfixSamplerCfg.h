@@ -4,7 +4,7 @@
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "concentrator/IpfixSampler.h"
+#include "modules/ipfix/IpfixSampler.h"
 
 #include <string>
 

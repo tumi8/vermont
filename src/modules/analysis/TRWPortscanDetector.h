@@ -21,8 +21,8 @@
 #define TRWPORTSCANDETECTOR_H
 
 #include "modules/idmef/IDMEFExporter.h"
-#include "concentrator/IpfixRecordDestination.h"
-#include "concentrator/Connection.h"
+#include "modules/ipfix/IpfixRecordDestination.h"
+#include "modules/ipfix/Connection.h"
 #include "core/Source.h"
 
 #include <list>

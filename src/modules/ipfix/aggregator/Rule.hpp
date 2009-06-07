@@ -25,7 +25,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "IpfixReceiver.hpp"
+#include "modules/ipfix/IpfixReceiver.hpp"
 
 #define MAX_RULE_FIELDS 255
 

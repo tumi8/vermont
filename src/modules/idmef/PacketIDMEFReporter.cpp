@@ -1,6 +1,6 @@
 #include "PacketIDMEFReporter.h"
 
-#include "concentrator/IpfixRecord.hpp"
+#include "modules/ipfix/IpfixRecord.hpp"
 #include "common/Misc.h"
 
 

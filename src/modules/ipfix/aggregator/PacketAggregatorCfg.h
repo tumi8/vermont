@@ -2,7 +2,7 @@
 #define PACKETAGGREGATORCFG_H_
 
 #include "AggregatorBaseCfg.h"
-#include "concentrator/PacketAggregator.h"
+#include "PacketAggregator.h"
 
 class PacketAggregatorCfg
 	: public CfgHelper<PacketAggregator, PacketAggregatorCfg>, public AggregatorBaseCfg

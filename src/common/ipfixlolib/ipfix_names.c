@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "ipfix_names.h"
-#include "concentrator/ipfix.hpp"
+#include "ipfix.h"
 
 #ifdef __cplusplus
 extern "C" {

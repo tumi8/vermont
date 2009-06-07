@@ -13,7 +13,7 @@
 #define EXPORTER_SINK_H
 
 #include "common/ipfixlolib/ipfixlolib.h"
-#include "concentrator/ipfix.hpp"
+#include "common/ipfixlolib/ipfix.h"
 #include "common/ConcurrentQueue.h"
 #include "common/msg.h"
 

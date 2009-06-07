@@ -2,7 +2,7 @@
 #define PSAMPEXPORTERCFG_H_
 
 #include "core/Cfg.h"
-#include "cfg/CollectorCfg.h"
+#include "modules/ipfix/CollectorCfg.h"
 #include "modules/packet/PSAMPExporterModule.h"
 
 #include <vector>

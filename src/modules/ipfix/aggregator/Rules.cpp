@@ -28,8 +28,8 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "Rules.hpp"
-#include "IpfixParser.hpp"
-#include "ipfix.hpp"
+#include "modules/ipfix/IpfixParser.hpp"
+#include "common/ipfixlolib/ipfix.h"
 
 #include "common/msg.h"
 

@@ -28,8 +28,8 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "Rule.hpp"
-#include "IpfixPrinter.hpp"
-#include "ipfix.hpp"
+#include "modules/ipfix/IpfixPrinter.hpp"
+#include "common/ipfixlolib/ipfix.h"
 
 #include "common/msg.h"
 

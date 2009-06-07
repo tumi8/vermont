@@ -3,7 +3,7 @@
 
 #include "AggregatorBaseCfg.h"
 #include "core/Cfg.h"
-#include "concentrator/IpfixAggregator.hpp"
+#include "modules/ipfix/aggregator/IpfixAggregator.hpp"
 
 class IpfixAggregatorCfg
 	: public CfgHelper<IpfixAggregator, IpfixAggregatorCfg>, public AggregatorBaseCfg

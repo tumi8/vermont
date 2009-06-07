@@ -4,7 +4,7 @@
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "concentrator/IpfixPayloadWriter.h"
+#include "modules/ipfix/IpfixPayloadWriter.h"
 
 #include <string>
 
