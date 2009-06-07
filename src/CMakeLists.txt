@@ -3,7 +3,6 @@ SUBDIRS(
 	cfg
 	common
 	concentrator
-	ipfixlolib
 	sampler
 	reconf
 	idmef

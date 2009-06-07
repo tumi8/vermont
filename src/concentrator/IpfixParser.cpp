@@ -33,7 +33,7 @@
 #include <sstream>
 
 /* for ntohll et al */
-#include "ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfixlolib.h"
 
 #include "IpfixReceiver.hpp"
 #include "IpfixParser.hpp"

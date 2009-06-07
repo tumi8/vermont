@@ -30,7 +30,7 @@
 #include "common/defs.h"
 #include "common/Mutex.h"
 #include "common/ManagedInstance.h"
-#include "ipfixlolib/encoding.h"
+#include "common/ipfixlolib/encoding.h"
 
 #include "reconf/Emitable.h"
 

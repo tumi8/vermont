@@ -18,7 +18,7 @@
  *
  */
 
-#include "ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfixlolib.h"
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 
 #include <stdexcept>

@@ -19,7 +19,7 @@
  */
 
 #ifdef SUPPORT_SCTP
-#include "ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfixlolib.h"
 
 #include "IpfixReceiverSctpIpV4.hpp"
 

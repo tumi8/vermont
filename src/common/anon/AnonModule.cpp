@@ -13,7 +13,7 @@
 
 #include "common/Misc.h"
 
-#include <ipfixlolib/ipfix_names.h>
+#include <common/ipfixlolib/ipfix_names.h>
 
 AnonModule::~AnonModule()
 {

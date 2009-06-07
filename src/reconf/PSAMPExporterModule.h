@@ -12,7 +12,7 @@
 #ifndef EXPORTER_SINK_H
 #define EXPORTER_SINK_H
 
-#include "ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfixlolib.h"
 #include "concentrator/ipfix.hpp"
 #include "common/ConcurrentQueue.h"
 #include "common/msg.h"

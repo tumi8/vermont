@@ -17,7 +17,7 @@
 #include <time.h>
 
 #include "common/msg.h"
-#include "ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfixlolib.h"
 
 #include "PSAMPExporterModule.h"
 #include "Timer.h"

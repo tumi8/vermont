@@ -22,7 +22,7 @@
 #define SNDIPFIX_H
 
 #include "IpfixParser.hpp"
-#include "ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfixlolib.h"
 #include "common/ConcurrentQueue.h"
 #include "reconf/Notifiable.h"
 #include <queue>
