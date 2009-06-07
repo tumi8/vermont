@@ -61,9 +61,9 @@ TARGET_LINK_LIBRARIES(vermont
 	sampler
 	concentrator	
 	idmef
+	anon
 	common
 	osdep
-	anon
 )
 
 INSTALL(TARGETS vermont

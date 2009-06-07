@@ -21,7 +21,7 @@
 
 #include <string>
 #include <cassert>
-#include "cryptopan/panonymizer.h"
+#include <common/cryptopan/panonymizer.h>
 #include "AnonPrimitive.h"
 
 

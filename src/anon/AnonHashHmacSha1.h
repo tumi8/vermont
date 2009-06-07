@@ -20,8 +20,8 @@
 #define __ANON_HASH_HMAC_SHA1_H
 
 #include "AnonPrimitive.h"
-#include "hmacsha1/sha1.h"
-#include "hmacsha1/sha1_hmac.h"
+#include <common/hmacsha1/sha1.h>
+#include <common/hmacsha1/sha1_hmac.h>
 
 class AnonHashHmacSha1 : public AnonPrimitive {
 

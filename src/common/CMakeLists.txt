@@ -27,5 +27,9 @@ ADD_LIBRARY(common
 	bloom/BloomFilter.cpp
 	bloom/AgeBloomFilter.cpp
 	bloom/CountBloomFilter.cpp
+	cryptopan/panonymizer.cpp
+	cryptopan/rijndael.cpp
+	hmacsha1/sha1.cpp
+	hmacsha1/sha1_hmac.cpp
 )
 

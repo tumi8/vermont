@@ -16,9 +16,5 @@ ADD_LIBRARY(anon
 	AnonShorten.cpp
 	AnonShuffle.cpp
 	AnonWhitenoise.cpp
-	cryptopan/panonymizer.cpp
-	cryptopan/rijndael.cpp
-	hmacsha1/sha1.cpp
-	hmacsha1/sha1_hmac.cpp
 )
 
