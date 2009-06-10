@@ -20,11 +20,13 @@
 
 #include "IpfixPrinter.hpp"
 #include "common/Time.h"
+#include "common/Misc.h"
 #include "Connection.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <arpa/inet.h>
 
 /**
  * print functions which have formerly been in IpfixParser.cpp
@@ -705,5 +707,10 @@ void IpfixPrinter::printTableRecord(IpfixDataDataRecord* record)
 {
 	Connection c(record);
 
-	fprintf(fh, "%llu\t%llu\t%u\t%u\t%llu\n", ntohll(c.srcOctets), ntohll(c.srcPackets), c.srcPayloadLen, c.srcPayloadPktCount, c.srcTimeEnd-c.srcTimeStart);
+	//fprintf(fh, "%llu\t%llu\t%u\t%u\t%llu\n", ntohll(c.srcOctets), ntohll(c.srcPackets), c.srcPayloadLen, c.srcPayloadPktCount, c.srcTimeEnd-c.srcTimeStart);
+	fprintf(fh, "%s\t%s\t%hu\t%hu\t%hhu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%hhu\t%hhu\n",
+			IPToString(c.srcIP).c_str(), IPToString(c.dstIP).c_str(), ntohs(c.srcPort), ntohs(c.dstPort), c.protocol,
+			ntohll(c.srcPackets), ntohll(c.dstPackets), ntohll(c.srcOctets), ntohll(c.dstOctets),
+			c.srcTimeStart, c.srcTimeEnd, c.dstTimeStart, c.dstTimeEnd, c.srcTcpControlBits, c.dstTcpControlBits);
+
 }
