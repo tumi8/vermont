@@ -44,6 +44,7 @@ class FrontPayloadSigMatcher
 		virtual ~FrontPayloadSigMatcher();
 
 		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+		virtual void onDataRecord(IpfixDataRecord* record);
 
 	private:
 		string signatureDir;
