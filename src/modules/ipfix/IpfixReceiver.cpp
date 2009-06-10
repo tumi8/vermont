@@ -40,8 +40,8 @@
 
 IpfixReceiver::IpfixReceiver()
 	: exitFlag(true),
-	  thread(threadWrapper)
-	  
+	  thread(threadWrapper),
+	  vmodule(NULL)
 {
 }
 
@@ -162,3 +162,8 @@ void* IpfixReceiver::threadWrapper(void* ipfixReceiver_) {
    return NULL;
 }
 
+
+void IpfixReceiver::setVModule(Module* m)
+{
+	vmodule = m;
+}

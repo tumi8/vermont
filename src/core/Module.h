@@ -69,6 +69,11 @@ public:
 	 * that means the module programmer MUST pay attention to deadlocks
 	 */
 	virtual void preReconfiguration() { /* override this in the modules you need */ }
+
+	/**
+	 * notifies Vermont to be shut down immediately
+	 */
+	void shutdownVermont();
 	
 
 protected:
@@ -97,11 +102,6 @@ protected:
 	 */
 	virtual bool getShutdownProperly() const;
 	
-	/**
-	 * notifies Vermont to be shut down immediately
-	 */
-	void shutdownVermont();
-
 	
 	bool exitFlag;		/**< notifies module that shutdown is imminent */
 	bool running;		/**< true if module is running, false if it is shut down */

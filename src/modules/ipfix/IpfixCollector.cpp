@@ -39,6 +39,7 @@ IpfixCollector::IpfixCollector(IpfixReceiver* receiver)
 	  statRecvdRecords(0)
 {
 	ipfixPacketProcessor = new IpfixParser(this);
+	receiver->setVModule(this);
 	
 	// wire ipfixReceiver with ipfixPacketProcessor
 	list<IpfixPacketProcessor*> pplist;

@@ -50,6 +50,7 @@ class IpfixReceiver
 		int isHostAuthorized(struct in_addr* inaddr, int addrlen);
 		int setPacketProcessors(std::list<IpfixPacketProcessor*> packetProcessors);
 		bool hasPacketProcessor();
+		void setVModule(Module* m);
 		
 		virtual void run() = 0;
 
@@ -59,6 +60,7 @@ class IpfixReceiver
 	
 		Mutex mutex;
 		uint16_t receiverPort;
+		Module* vmodule;
 
 	private:
 		std::vector<in_addr> authHosts; /**< List of authorized hosts. Only packets from hosts in this list, will be forwarded to the PacketProcessors */
