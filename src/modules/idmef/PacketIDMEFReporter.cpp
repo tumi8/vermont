@@ -32,9 +32,11 @@ void PacketIDMEFReporter::analyzePacket(Packet* p, IDMEFMessage* msg)
 	uint16_t i = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(IPFIX_TYPEID_sourceIPv4Address, p);
 	uint32_t srcip = *(uint32_t*)(p->netHeader+i);
 	msg->setVariable(PAR_SRCIP, IPToString(srcip).c_str());
+	msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(srcip).c_str());
 	i = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(IPFIX_TYPEID_destinationIPv4Address, p);
 	uint32_t dstip = *(uint32_t*)(p->netHeader+i);
 	msg->setVariable(PAR_DSTIP, IPToString(dstip).c_str());
+	msg->setVariable(IDMEFMessage::PAR_TARGET_ADDRESS, IPToString(dstip).c_str());
 	i = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(IPFIX_TYPEID_protocolIdentifier, p);
 	uint8_t protocol = *(uint8_t*)(p->netHeader+i);
 	snprintf(buffer, 20, "%hhu", protocol);
