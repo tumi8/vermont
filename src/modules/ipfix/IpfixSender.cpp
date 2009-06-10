@@ -121,6 +121,9 @@ void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_pr
 #endif
 	    case TCP:
 	        msg(MSG_INFO, "IpfixSender: adding TCP://%s:%d to exporter", ip, port);
+	   case DATAFILE:
+	    	msg(MSG_INFO, "IpfixSender: adding DATAFILE://%s to exporter", ip);
+	    	break;
 	    default:
 	    	THROWEXCEPTION("invalid protocol (%d) given!", proto);
 	    	break;

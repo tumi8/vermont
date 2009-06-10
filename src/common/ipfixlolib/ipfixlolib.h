@@ -37,7 +37,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#ifdef SUPPORT_SCTP 
+#ifdef SUPPORT_SCTP
 #include <netinet/sctp.h>
 #endif
 
@@ -77,8 +77,8 @@ extern "C" {
  * can be specified by user
  */
 #define IPFIX_DEFAULT_TEMPLATE_TIMER 20
-/* 
- * Default time, until a new SCTP retransmission attempt 
+/*
+ * Default time, until a new SCTP retransmission attempt
  * takes place
  * 5 minutes = 400 seconds
  * can be specified by user
@@ -197,13 +197,13 @@ typedef struct {
 } ipfix_header;
 
 /*  Set Header:
-    
-      0                   1                   2                   3 
-      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
-     |          Set ID               |          Length               | 
-     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ 
- 
+
+      0                   1                   2                   3
+      0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     |          Set ID               |          Length               |
+     +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 */
 
 typedef struct {
@@ -213,16 +213,16 @@ typedef struct {
 
 
 enum ipfix_transport_protocol {
-#ifdef IPFIXLOLIB_RAWDIR_SUPPORT 
-	RAWDIR, 
-#endif 
-	SCTP, UDP, TCP
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+	RAWDIR,
+#endif
+	DATAFILE, SCTP, UDP, TCP
 	};
 
 /*
  * These indicate, if a field is commited (i.e. can be used)
  * unused or unclean (i.e. data is not complete yet)
- * T_SENT (Template was sent) and T_WiTHDRAWN (Template destroyed) 
+ * T_SENT (Template was sent) and T_WiTHDRAWN (Template destroyed)
  * are used with SCTP, since Templates are sent only once
  * T_TOBEDELETED templates will be deleted the next time when the buffer is updated
  */
@@ -248,7 +248,7 @@ typedef struct{
 	unsigned set_counter;
 
 	/* variable that stores the position of the current set header
-	   in ipfix_sendbuffer->entries */ 
+	   in ipfix_sendbuffer->entries */
 	struct iovec *header_iovec;
 
 	/* buffer to store set headers */
@@ -289,8 +289,10 @@ typedef struct {
 	enum ipfix_transport_protocol protocol;
 	int data_socket; // socket data and templates are sent to
 	struct sockaddr_in addr;
-	uint32_t last_reconnect_attempt_time; 
+	uint32_t last_reconnect_attempt_time;
 	enum collector_state state;
+	char* file; /**< for protocol==FILE, this variable contains the destination file name */
+	int fh; /**< for protocol==FILE, this variable contains the file handle */
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 	char* packet_directory_path; /**< if protocol==RAWDIR: path to a directory to store packets in. Ignored otherwise. */
 	int packets_written; /**< if protcol==RAWDIR: number of packets written to packet_directory_path. Ignored otherwise. */
@@ -314,7 +316,7 @@ typedef struct{
  * The exporting process keeps track of the sequence number.
  */
 typedef struct {
-	uint32_t sequence_number; // total number of data records 
+	uint32_t sequence_number; // total number of data records
 	uint32_t sn_increment; // to be added to sequence number before sending data records
 	uint32_t source_id;
 	ipfix_sendbuffer *template_sendbuffer;
@@ -327,10 +329,10 @@ typedef struct {
 	// we also need some timer / counter to indicate,
 	// if we should send the templates too.
 	uint32_t last_template_transmission_time;
-	
+
 	// force template send next time packets are sent (to include new template ids)
 	uint32_t force_template_send;
-	
+
 	// time, after templates are transmitted again
 	uint32_t template_transmission_timer;
 	// lifetime of an SCTP data packet
@@ -372,10 +374,10 @@ int ipfix_remove_template_set(ipfix_exporter *exporter, uint16_t template_id);
 int ipfix_send(ipfix_exporter *exporter);
 int ipfix_enterprise_flag_set(uint16_t id);
 // Set up time after that Templates are going to be resent
-int ipfix_set_template_transmission_timer(ipfix_exporter *exporter, uint32_t timer); 	 
-// Sets a packet lifetime for SCTP data packets (lifetime > 0 : unreliable packets) 	 
+int ipfix_set_template_transmission_timer(ipfix_exporter *exporter, uint32_t timer);
+// Sets a packet lifetime for SCTP data packets (lifetime > 0 : unreliable packets)
 int ipfix_set_sctp_lifetime(ipfix_exporter *exporter, uint32_t lifetime);
-// Set up SCTP reconnect timer, time after that a reconnection attempt is made, 
+// Set up SCTP reconnect timer, time after that a reconnection attempt is made,
 // if connection to the collector was lost.
 int ipfix_set_sctp_reconnect_timer(ipfix_exporter *exporter, uint32_t timer);
 

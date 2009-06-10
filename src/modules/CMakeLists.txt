@@ -51,12 +51,14 @@ ADD_LIBRARY(modules
 	ipfix/IpfixDbWriterCfg.cpp
 	ipfix/IpfixDbWriterPgCfg.cpp
 	ipfix/IpfixExporterCfg.cpp
+	ipfix/IpfixFileWriter.cpp
 	ipfix/IpfixPayloadWriterCfg.cpp
 	ipfix/IpfixPrinterCfg.cpp
 	ipfix/IpfixSamplerCfg.cpp
 	ipfix/Connection.cpp
 	ipfix/IpfixReceiverUdpIpV4.cpp
 	ipfix/IpfixReceiverSctpIpV4.cpp
+	ipfix/IpfixReceiverFile.cpp
 	ipfix/IpfixRawdirReader.cpp
 	ipfix/IpfixReceiver.cpp
 	ipfix/IpfixRecord.cpp

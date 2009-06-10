@@ -15,7 +15,7 @@ class CollectorCfg
 {
 public:
 	std::string getName() { return "collector"; }
-	
+
 	CollectorCfg(XMLElement* elem)
 		: CfgBase(elem)
 	{
@@ -26,10 +26,12 @@ public:
 				protocolType = UDP;
 			else if (prot=="132" || prot=="SCTP")
 				protocolType = SCTP;
-			else 
+			else if (prot=="DATAFILE")
+				protocolType = DATAFILE;
+			else
 				THROWEXCEPTION("Invalid configuration parameter for transportProtocol (%s)", prot.c_str());
-			port = (uint16_t)getInt("port", 4739);			
-			
+			port = (uint16_t)getInt("port", 4739);
+
 		} catch(IllegalEntry ie) {
 			THROWEXCEPTION("Illegal Collector entry in config file, transport protocol required");
 		}
@@ -39,18 +41,18 @@ public:
 	//unsigned getIpAddressType() { return ipAddressType; }
 	ipfix_transport_protocol getProtocolType() { return protocolType; }
 	uint16_t getPort() { return port; }
-	
+
 	bool equalTo(CollectorCfg* other)
 	{
 		if ((ipAddress == other->ipAddress) &&
 			//(ipAddressType == other->ipAddressType) &&
 			(protocolType == other->protocolType) &&
 			(port == other->port)) return true;
-		
+
 		return false;
 	}
-	
-private:	
+
+private:
 	std::string ipAddress;
 	//unsigned ipAddressType;
 	ipfix_transport_protocol protocolType;

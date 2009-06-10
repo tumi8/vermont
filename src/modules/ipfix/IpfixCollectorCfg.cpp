@@ -1,6 +1,8 @@
 #include "IpfixCollectorCfg.h"
+
 #include <modules/ipfix/IpfixReceiverUdpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverSctpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverFile.hpp>
 
 IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector, IpfixCollectorCfg>(elem, "ipfixCollector"),
@@ -11,7 +13,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 
 	if (!elem)
 		return;
-	
+
 	msg(MSG_INFO, "CollectorConfiguration: Start reading packetReporting section");
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
@@ -31,12 +33,12 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	}
 
 	observationDomainId = getInt("observationDomainId", 0);
-	
+
 	if (listener == NULL)
 		THROWEXCEPTION("collectingProcess has to listen on one address!");
-	if (listener->getProtocolType() != UDP && listener->getProtocolType() != SCTP)
-		THROWEXCEPTION("collectingProcess can handle only UDP or SCTP!");
-	
+	if (listener->getProtocolType() != UDP && listener->getProtocolType() != SCTP && listener->getProtocolType() != DATAFILE)
+		THROWEXCEPTION("collectingProcess can handle only UDP, SCTP or DATAFILE!");
+
 	msg(MSG_INFO, "CollectorConfiguration: Successfully parsed collectingProcess section");
 }
 
@@ -55,9 +57,11 @@ IpfixCollector* IpfixCollectorCfg::createInstance()
 {
 	IpfixReceiver* ipfixReceiver;
 	if (listener->getProtocolType() == SCTP)
-		ipfixReceiver = new IpfixReceiverSctpIpV4(listener->getPort(), listener->getIpAddress());	
-	else 
-		ipfixReceiver = new IpfixReceiverUdpIpV4(listener->getPort(), listener->getIpAddress());	
+		ipfixReceiver = new IpfixReceiverSctpIpV4(listener->getPort(), listener->getIpAddress());
+	else if (listener->getProtocolType() == DATAFILE)
+		ipfixReceiver = new IpfixReceiverFile(listener->getIpAddress());
+	else
+		ipfixReceiver = new IpfixReceiverUdpIpV4(listener->getPort(), listener->getIpAddress());
 
 	if (!ipfixReceiver) {
 		THROWEXCEPTION("Could not create IpfixReceiver");

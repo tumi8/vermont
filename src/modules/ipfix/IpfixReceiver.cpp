@@ -40,8 +40,8 @@
 
 IpfixReceiver::IpfixReceiver()
 	: exitFlag(true),
-	  thread(threadWrapper),
-	  vmodule(NULL)
+	  vmodule(NULL),
+	  thread(threadWrapper)
 {
 }
 
@@ -156,8 +156,12 @@ int IpfixReceiver::isHostAuthorized(struct in_addr* inaddr, int addrlen)
  */
 void* IpfixReceiver::threadWrapper(void* ipfixReceiver_) {
    IpfixReceiver* ipfixReceiver = (IpfixReceiver*)ipfixReceiver_;
+
+   ipfixReceiver->vmodule->registerCurrentThread();
    
    ipfixReceiver->run();
+
+   ipfixReceiver->vmodule->unregisterCurrentThread();
 
    return NULL;
 }
