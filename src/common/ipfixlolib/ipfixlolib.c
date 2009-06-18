@@ -1239,16 +1239,8 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 				if (fh < 0)
 					msg(MSG_ERROR, "IPFIX: invalid file handle for DATAFILE file (==0!)");
 				else {
-					packet_size = 0;
-					for (i = 0; i < exporter->template_sendbuffer->current; i++) {
-						packet_size += exporter->template_sendbuffer->entries[i].iov_len;
-					}
-					if (packet_size == 0)
+					if ((exporter->template_sendbuffer)->packet_header.length == 0)
 						THROWEXCEPTION("IPFIX: packet size == 0!");
-					packet_size = htonl(packet_size);
-					if (write(fh, &packet_size, sizeof(packet_size)) != 4)
-						msg(MSG_ERROR, "IPFIX: could not write to DATAFILE file (%s)", strerror(
-								errno));
 					if ((n = writev(fh, exporter->template_sendbuffer->entries,
 							exporter->template_sendbuffer->current)) < 0)
 						msg(MSG_ERROR, "IPFIX: could not write to DATAFILE file");
@@ -1404,16 +1396,8 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 					fh = exporter->collector_arr[i].fh;
 					if (fh < 0)
 						msg(MSG_ERROR, "IPFIX: invalid file handle for DATAFILE file (==0!)");
-					packet_size = 0;
-					for (j = 0; j < exporter->data_sendbuffer->committed; j++) {
-						packet_size += exporter->data_sendbuffer->entries[j].iov_len;
-					}
-					if (packet_size == 0)
+					if ((exporter->data_sendbuffer)->packet_header.length == 0)
 						THROWEXCEPTION("IPFIX: packet size == 0!");
-					packet_size = htonl(packet_size);
-					if (write(fh, &packet_size, sizeof(packet_size)) != 4)
-						msg(MSG_ERROR, "IPFIX: could not write to DATAFILE file (%s)", strerror(
-								errno));
 					else if ((bytes_sent = writev(fh, exporter->data_sendbuffer->entries,
 							exporter->data_sendbuffer->committed)) < 0)
 						msg(MSG_ERROR, "IPFIX: could not write to DATAFILE file");

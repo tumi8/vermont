@@ -67,13 +67,13 @@ void IpfixReceiverFile::run()
 	uint32_t end = packetFile.tellg();
 	packetFile.seekg(0, std::ios::beg);
 
-
 	uint32_t idx = 0;
 	while (idx<end) {
-		uint32_t n;
-		packetFile.read(reinterpret_cast<char*>(&n), sizeof(uint32_t));
-		idx += sizeof(uint32_t);
-		n = ntohl(n);
+		uint16_t n;
+		packetFile.seekg(sizeof(uint16_t), std::ios::cur); /*version numebr offset*/
+		packetFile.read(reinterpret_cast<char*>(&n), sizeof(uint16_t));
+		n = ntohs(n);
+		packetFile.seekg( -(int)sizeof(uint32_t), std::ios::cur); /*reset the filepointer to the begin of the message*/
 
 		//msg(MSG_DIALOG, "n=%u", n);
 

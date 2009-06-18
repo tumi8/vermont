@@ -1,0 +1,14 @@
+<ipfixConfig>
+	<sensorManager id="99">
+		<checkinterval>1</checkinterval>
+	</sensorManager>
+	
+	<ipfixReceiverFile id="1">
+		<packetFilePath>/home/sithhaue/ipfixdump0</packetFilePath>
+		<next>5</next>
+	</ipfixReceiverFile>
+
+	<ipfixPrinter id="5">
+	</ipfixPrinter>
+	
+</ipfixConfig>

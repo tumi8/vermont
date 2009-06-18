@@ -14,6 +14,8 @@
 #include "modules/ipfix/IpfixPrinterCfg.h"
 #include "modules/ipfix/IpfixDbReaderCfg.h"
 #include "modules/ipfix/IpfixDbWriterCfg.h"
+#include "modules/ipfix/IpfixFileWriterCfg.hpp"
+#include "modules/ipfix/IpfixReceiverFileCfg.h"
 #include "modules/ipfix/IpfixDbWriterPgCfg.h"
 #include "modules/ipfix/IpfixPayloadWriterCfg.h"
 #include "modules/ipfix/IpfixSamplerCfg.h"
@@ -53,7 +55,9 @@ Cfg* ConfigManager::configModules[] = {
 	new AutoFocusCfg(NULL),
 	new IDMEFExporterCfg(NULL),
 	new PacketIDMEFReporterCfg(NULL),
+	new IpfixReceiverFileCfg(NULL),
 	new IpfixPayloadWriterCfg(NULL),
+	new IpfixFileWriterCfg(NULL),
 	new AnonymizerCfg(NULL),
 	new FrontPayloadSigMatcherCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
@@ -133,7 +137,7 @@ void ConfigManager::parseConfig(std::string fileName)
 
 		if (!found) {
 			unlockGraph();
-			msg(MSG_INFO, "Unkown cfg entry %s found", (*it)->getName().c_str());
+			msg(MSG_INFO, "Unknown cfg entry %s found", (*it)->getName().c_str());
 		}
 	}
 

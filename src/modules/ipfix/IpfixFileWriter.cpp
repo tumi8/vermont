@@ -39,12 +39,12 @@
  * @param port destination collector's port
  * @return handle to use when calling @c destroyIpfixFileWriter()
  */
-IpfixFileWriter::IpfixFileWriter(uint16_t observationDomainId, std::string packetDirectoryName)
+IpfixFileWriter::IpfixFileWriter(uint16_t observationDomainId, std::string filenamePrefix, std::string destinationPath, uint64_t maximumFilesize)
 	: IpfixSender(observationDomainId, IS_DEFAULT_MAXRECORDRATE, IS_DEFAULT_SCTP_DATALIFETIME, IS_DEFAULT_SCTP_RECONNECTINTERVAL,
 			IS_DEFAULT_TEMPLATE_TIMEINTERVAL, IS_DEFAULT_TEMPLATE_RECORDINTERVAL) {
 
-	if (packetDirectoryName != "") {
-		if(addCollector(packetDirectoryName) != 0) {
+	if (filenamePrefix != "") {
+		if(addCollector(observationDomainId, filenamePrefix, destinationPath, maximumFilesize) != 0) {
 			THROWEXCEPTION("IpfixFileWriter's Collector addition failed");
 			return;
 		}
@@ -61,15 +61,18 @@ IpfixFileWriter::~IpfixFileWriter() {
  * the lowlevel stuff in handled by underlying ipfixlolib
  * @param packetDirectoryName path to create raw packet files in
  */
-int IpfixFileWriter::addCollector(std::string packetDirectoryName) {
+int IpfixFileWriter::addCollector(uint16_t observationDomainId, std::string filenamePrefix, std::string destinationPath, uint64_t maximumFilesize) {
 	ipfix_exporter *ex = (ipfix_exporter *)ipfixExporter;
-
-	if(ipfix_add_collector(ex, packetDirectoryName.c_str(), 0, DATAFILE) != 0) {
-		msg(MSG_FATAL, "IpfixFileWriter: ipfix_add_collector of %s failed", packetDirectoryName.c_str());
+	
+	if(destinationPath.at(destinationPath.length()-1) != '/') 
+		destinationPath += "/";
+	std::string my_filename = destinationPath + filenamePrefix + "0";	
+	if(ipfix_add_collector(ex, my_filename.c_str(), 0, DATAFILE) != 0) {
+		msg(MSG_FATAL, "IpfixFileWriter: ipfix_add_collector of %s failed", my_filename.c_str());
 		return -1;
 	}
 
-	msg(MSG_INFO, "IpfixFileWriter: adding %s to exporter", packetDirectoryName.c_str());
+	msg(MSG_INFO, "IpfixFileWriter: adding %s to exporter", my_filename.c_str());
 
 	return 0;
 }
