@@ -4,7 +4,9 @@
 	</sensorManager>
 	
 	<ipfixReceiverFile id="1">
-		<packetFilePath>/home/sithhaue/ipfixdump0</packetFilePath>
+		<packetFileDirectory>/home/sithhaue/filewriterfiles/</packetFileDirectory>
+		<packetFileBasename>ipfix.dump</packetFileBasename>
+		<from>0</from>
 		<next>5</next>
 	</ipfixReceiverFile>
 

@@ -36,27 +36,22 @@
 #include <fstream>
 
 #define EXPORTERID 0
-#define DEFAULTFILESIZE 2147483647
+#define DEFAULTFILESIZE 2097152
 
 class IpfixFileWriter :  public IpfixSender
 {
 	public:
-		std::string filenamePrefix;
-		std::string destinationPath;
-		uint64_t maximumFilesize;
 		IpfixFileWriter(uint16_t observationDomainId, std::string filenamePrefix, 
-			std::string destinationPath, uint64_t maximumFilesize);
+			std::string destinationPath, int maximumFilesize);
 
 		~IpfixFileWriter();
 		int addCollector(uint16_t observationDomainId, std::string filenamePrefix, 
-					std::string destinationPath, uint64_t maximumFilesize);
-
+					std::string destinationPath, int maximumFilesize);
 
 	private:
-		std::string filename;
-		uint32_t filenum;
-		uint64_t byteswritten;
-
+		std::string filenamePrefix;
+		std::string destinationPath;
+		int maximumFilesize; //maximum filesize in  KiB, i.e. maximumFilesize * 1024 == maximum filesize in bytes
 };
 
 

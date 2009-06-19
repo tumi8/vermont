@@ -5,7 +5,11 @@
 IpfixReceiverFileCfg::IpfixReceiverFileCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector,IpfixReceiverFileCfg>(elem, "ipfixReceiverFile"),
 	ipfixCollector(NULL),
-        observationDomainId(0)
+        observationDomainId(0),
+		packetFileBasename("ipfix.dump"),
+		packetFileDirectory("./"),
+		c_from(0),
+		c_to(-1)
 {
 
 	if (!elem)
@@ -17,9 +21,19 @@ IpfixReceiverFileCfg::IpfixReceiverFileCfg(XMLElement* elem)
 	     it++) {
 		XMLElement* e = *it;
 
-		if (e->matches("packetFilePath")) {
-			packetFilePath = e->getFirstText();
-		} else {
+		if (e->matches("packetFileBasename")) {
+			packetFileBasename = e->getFirstText();
+		} 
+		else if (e->matches("packetFileDirectory")) {
+			packetFileDirectory  =e->getFirstText();
+		}
+		else if (e->matches("from")) {
+			c_from = getInt("from");
+		}
+		else if (e->matches("to")) {
+			c_to = getInt("to");
+		}
+		else {
 			msg(MSG_FATAL, "Unkown ReceiverFile config statement %s\n", e->getName().c_str());
 			continue;
 		}
@@ -43,7 +57,7 @@ IpfixReceiverFileCfg* IpfixReceiverFileCfg::create(XMLElement* elem)
 IpfixCollector* IpfixReceiverFileCfg::createInstance()
 {
 	IpfixReceiverFile* ipfixReceiver;
-	ipfixReceiver = new IpfixReceiverFile(packetFilePath);
+	ipfixReceiver = new IpfixReceiverFile(packetFileBasename, packetFileDirectory, c_from, c_to);
 
 	if (!ipfixReceiver) {
 		THROWEXCEPTION("Could not create IpfixReceiver");

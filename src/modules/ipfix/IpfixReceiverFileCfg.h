@@ -21,7 +21,10 @@ public:
 private:
         IpfixCollector* ipfixCollector;
         uint16_t observationDomainId;
-		std::string packetFilePath;
+		std::string packetFileBasename;
+		std::string packetFileDirectory;
+		int c_from;
+		int c_to;
 };
 
 #endif /*IPFIXRECEIVERFILECFG_H_*/

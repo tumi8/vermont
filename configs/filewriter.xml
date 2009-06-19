@@ -46,8 +46,8 @@
 			</nonFlowKey>
 		<!--	<nonFlowKey>
 				<ieName>tcpControlBits</ieName>
-			</nonFlowKey>-->
-		<!--	<nonFlowKey>
+			</nonFlowKey>
+			<nonFlowKey>
 					<ieName>frontPayload</ieName>
 					<ieLength>256</ieLength>
 			</nonFlowKey>
@@ -95,7 +95,7 @@
 			<nonFlowKey>
 				<ieName>packetDeltaCount</ieName>
 			</nonFlowKey>
-			<!--<nonFlowKey>
+		<!--	<nonFlowKey>
 				<ieName>tcpControlBits</ieName>
 			</nonFlowKey>-->
 			<nonFlowKey>
@@ -113,7 +113,7 @@
 			<nonFlowKey>
 				<ieName>revtcpControlBits</ieName>
 			</nonFlowKey>
-			<!--<nonFlowKey>
+		<!--	<nonFlowKey>
 				<ieName>frontPayload</ieName>
 				<ieLength>256</ieLength>
 			</nonFlowKey>
@@ -127,7 +127,7 @@
 			<nonFlowKey>
 				<ieName>revFrontPayloadLen</ieName>
 			</nonFlowKey>-->
-		</rule>
+					</rule>
 		<expiration>
 			<inactiveTimeout unit="sec">2</inactiveTimeout>
 			<!--<inactiveTimeout unit="sec">40</inactiveTimeout>-->
@@ -141,16 +141,18 @@
 	<ipfixQueue id="10">
 		<maxSize>10000</maxSize>
 		<next>11</next>
-		<next>15</next>
+		<!--<next>15</next>-->
 	</ipfixQueue>
+	
+<!--
 	<ipfixPrinter id="15">
 		</ipfixPrinter>
-	
+-->	
 	<ipfixFileWriter id="11">
 		<observationDomainId>99</observationDomainId>
-		<!--<maximumFilesize>20000 </maximumFilesize>-->
-		<destinationPath>/home/sithhaue</destinationPath> 
-		<filenamePrefix>ipfixdump</filenamePrefix> 
+		<maximumFilesize>16 </maximumFilesize>
+		<destinationPath>/home/sithhaue/filewriterfiles/</destinationPath> 
+		<!--<filenamePrefix>ipfixdump</filenamePrefix> -->
 	</ipfixFileWriter> 
 
 </ipfixConfig>

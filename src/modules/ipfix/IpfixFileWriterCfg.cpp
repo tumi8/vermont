@@ -16,7 +16,9 @@ IpfixFileWriterCfg* IpfixFileWriterCfg::create(XMLElement* e)
 
 IpfixFileWriterCfg::IpfixFileWriterCfg(XMLElement* elem)
 	: CfgHelper<IpfixFileWriter, IpfixFileWriterCfg>(elem, "ipfixFileWriter"),
-	maximumFilesize(DEFAULTFILESIZE)
+	maximumFilesize(DEFAULTFILESIZE),
+	filenamePrefix("ipfix.dump"),
+	destinationPath("./")
 {
 	if (!elem) return;  // needed because of table inside ConfigManager
 
@@ -27,7 +29,7 @@ IpfixFileWriterCfg::IpfixFileWriterCfg(XMLElement* elem)
 		XMLElement* e = *it;
 
 		if (e->matches("maximumFilesize")) {
-			maximumFilesize = getInt64("maximumFilesize");
+			maximumFilesize = getInt("maximumFilesize"); 
 		}else if (e->matches("destinationPath")){
 			destinationPath = e->getFirstText();
 		}else if (e->matches("filenamePrefix")){

@@ -25,6 +25,9 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <list>
+#include "boost/filesystem/operations.hpp"
+#include "boost/filesystem/path.hpp"
+#include <boost/lexical_cast.hpp>
 
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
@@ -34,12 +37,15 @@
  */
 class IpfixReceiverFile : public IpfixReceiver {
 public:
-	IpfixReceiverFile(std::string packet_file_path);
+	IpfixReceiverFile(std::string, std::string, int, int );
 	virtual ~IpfixReceiverFile();
 
 	virtual void run();
 private:
-	std::string packet_file_path;
+	std::string packet_file_directory;
+	std::string packet_file_basename;
+	int from;
+	int to;
 	int fh;
 };
 

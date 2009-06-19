@@ -26,8 +26,6 @@ public:
 				protocolType = UDP;
 			else if (prot=="132" || prot=="SCTP")
 				protocolType = SCTP;
-		//	else if (prot=="DATAFILE")
-		//		protocolType = DATAFILE;
 			else
 				THROWEXCEPTION("Invalid configuration parameter for transportProtocol (%s)", prot.c_str());
 			port = (uint16_t)getInt("port", 4739);

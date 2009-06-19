@@ -285,14 +285,17 @@ typedef struct {
  */
 typedef struct {
 	char ipv4address[16];
-	int port_number;
+	uint32_t port_number;
 	enum ipfix_transport_protocol protocol;
 	int data_socket; // socket data and templates are sent to
 	struct sockaddr_in addr;
 	uint32_t last_reconnect_attempt_time;
 	enum collector_state state;
-	char* file; /**< for protocol==FILE, this variable contains the destination file name */
+	char *basename;  /**< for protocol==FILE, this variable contains the basename for the filename */
 	int fh; /**< for protocol==FILE, this variable contains the file handle */
+	int filenum; /**< for protocol==FILE, this variable contains the current filenumber: 'filename = basename + filenum'*/
+	uint64_t bytes_written; /**< for protocol==FILE, this variable contains the current filesize */
+	int maxfilesize; /**< for protocol==FILE, this variable contains the maximum filesize given in KiB*/
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 	char* packet_directory_path; /**< if protocol==RAWDIR: path to a directory to store packets in. Ignored otherwise. */
 	int packets_written; /**< if protcol==RAWDIR: number of packets written to packet_directory_path. Ignored otherwise. */
