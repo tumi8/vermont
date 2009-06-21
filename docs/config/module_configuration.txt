@@ -689,3 +689,43 @@ Output type: IdmefMessage
 |timeexpirescanner |  1800  |Seconds, until as portscanner classified IP addresses are purged from table. |
 |timeexpirebenign |  1800  |Seconds, until as benign classified IP addresses are purged from table. |
 |timecleanupinterval |  10  |Interval length in seconds, when IP address table is scanned for entries to be purged. |
+
+== P2PDetector ==
+
+Detects Peer-to-Peer Clients in a subnet. Attention: IPFIX flows must be aggregated to biflows.
+
+Input type: IpfixRecord
+Output type: IdmefMessage
+
+**Example configuration:**
+<code xml>
+<p2pDetector id="5">
+	<analyzerid>P2PDetector</analyzerid>
+	<interval>300</interval>
+	<subnet>192.168.1.0/24</subnet>
+	<udpRateThreshold>0.013</udpRateThreshold>
+	<udpHostRateThreshold>0.0007</udpHostRateThreshold>
+	<tcpRateThreshold>0.082</tcpRateThreshold>
+	<coexistentTCPConsThreshold>2.9</coexistentTCPConsThreshold>
+	<rateLongTCPConsThreshold>0.018</rateLongTCPConsThreshold>
+	<tcpVarianceThreshold>0.068</tcpVarianceThreshold>
+	<failedConsPercentThreshold>4.8</failedConsPercentThreshold>
+	<tcpFailedRateThreshold>0.01</tcpFailedRateThreshold>
+	<tcpFailedVarianceThreshold>0.3</tcpFailedVarianceThreshold>
+	<next>6</next>
+</p2pDetector>	
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|analyzerid |  none  |Analyzer ID which is inserted into the generated IDMEF message. |
+|interval |  300  |Interval in seconds for repeated computing of the criteria |
+|subnet |  0.0.0.0  |Subnet to be researched |
+|udpRateThreshold |  0.013  |Threshold for udp rate. Calculated criteria must be above this value to be detected as a peer |
+|udpHostRateThreshold |  0.0007  |Threshold for udp host rate. Calculated criteria must be above this value to be detected as a peer |
+|tcpRateThreshold |  0.082  |Threshold for tcp rate. Calculated criteria must be above this value to be detected as a peer |
+|coexistentTCPConsThreshold |  2.9  |Threshold for coexistent TCP connections. Calculated criteria must be above this value to be detected as a peer |
+|rateLongTCPConsThreshold |  0.018  |Threshold for rate of long TCP conncetions. Calculated criteria must be above this value to be detected as a peer |
+|tcpVarianceThreshold |  0.068  |Threshold for variance of new TCP connections. Calculated criteria must be below this value to be detected as a peer |
+|failedConsPercentThreshold |  4.8  |Threshold for percentage of failed TCP connections. Calculated criteria must be above this value to be detected as a peer |
+|tcpFailedRateThreshold |  0.01  |Threshold for rate of failed TCP connections. Calculated criteria must be above this value to be detected as a peer |
+|tcpFailedVarianceThreshold |  0.3  |Threshold for variance of failed TCP connections. Calculated criteria must be below this value to be detected as a peer |

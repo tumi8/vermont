@@ -28,8 +28,8 @@ protected:
 	uint32_t intLength;	/** length of interval in seconds when to check for p2p hosts*/
 	uint32_t subnet; // subnet to research
 	uint32_t subnetmask; // corresponding subnetmask
-	string analyzerid;
-	string idmefTemplate;
+	string analyzerid; // Analyzer ID which is inserted into the generated IDMEF message
+	string idmefTemplate; // Path to IDMEF template which is used to generate the IDMEF message.
 	
 	//criterias
 	double udpRateThreshold;

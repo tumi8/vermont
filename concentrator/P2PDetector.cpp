@@ -29,7 +29,7 @@ InstanceManager<IDMEFMessage> P2PDetector::idmefManager("IDMEFMessage");
 
 
 /**
- * P2PDetector
+ * P2PDetector stes the values given by the corresponding configuration class
  */
 P2PDetector::P2PDetector(uint32_t intLength, uint32_t subnet, uint32_t subnetmask, string analyzerid, string tpl, 
 				double udpRateThreshold, double udpHostRateThreshold, double tcpRateThreshold, double coexistentTCPConsThreshold,
@@ -55,43 +55,16 @@ P2PDetector::P2PDetector(uint32_t intLength, uint32_t subnet, uint32_t subnetmas
 
 P2PDetector::~P2PDetector()
 {
-	//cout << "intLength: " << intLength << " subnet: " << IPToString(subnet) << " subnetmask: " << IPToString(subnetmask) << endl;
-	//for(map<uint32_t, P2PEntry>::iterator iter = hostList.begin(); iter != hostList.end(); iter++){
-	//	cout << IPToString(iter->first) << ": " << iter->second.numPkt << endl;
-	//}
-//	cout << "Criterias:" << endl;
-//	cout << udpRateThreshold << endl;
-//	cout << udpHostRateThreshold << endl;
-//	cout << tcpRateThreshold << endl;
-//	cout << coexistentTCPConsThreshold << endl;
-//	cout << rateLongTCPConsThreshold << endl;
-//	cout << tcpVarianceThreshold << endl;
-//	cout << failedConsPercentThreshold << endl;
-//	cout << tcpFailedRateThreshold << endl;
-//	cout << tcpFailedVarianceThreshold << endl; 
 }
 
 /**
- * Get new Biflows from the aggregator 
+ * Gets new Biflows from the aggregator 
  */
 void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 {	
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
-	conn.swapIfNeeded();
-	
-//	if(conn.srcTimeStart == 0)
-//		cout << "null" << endl;
-	//cout << IPToString(conn.srcIP) << "->" << IPToString(conn.dstIP) << ": " << (int)conn.protocol << endl;
-
-//	cout << "***Connection:\n";
-//	cout << IPToString(conn.srcIP) << "->" << IPToString(conn.dstIP) << " proto: " << (int)conn.protocol << "\n";
-//	cout << "start: " << conn.srcTimeStart << " end: " << conn.srcTimeEnd << " | " << conn.dstTimeEnd;
-//	cout << " src - src: " << conn.srcTimeEnd-conn.srcTimeStart << " dst - src: " << conn.dstTimeEnd-conn.srcTimeStart << "\n";
-//	cout << "srcOctets: " << (long long)ntohll(conn.srcOctets) << " dstOctets: " << (long long)ntohll(conn.dstOctets) << "\n";
-//	cout << "srcPackets: " << (long long)ntohll(conn.srcPackets) << " dstPackets: " << (long long)ntohll(conn.dstPackets) << "\n";
-//	cout << "srcTCP: " << hex << (int)conn.srcTcpControlBits << " dstTCP: " << (int)conn.dstTcpControlBits << dec << endl;
-	
+	conn.swapIfNeeded();	
 	
 	if((conn.srcIP & subnetmask) == (subnet & subnetmask)){
 		P2PEntry& entry = hostList[conn.srcIP];
@@ -107,7 +80,6 @@ void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 			//number of all TCP biflows
 			entry.numTCPBiFlows++;
 			if(succConn(conn)){
-//				cout << "successfull TCP connection\n";
 				uint64_t flowLength = (conn.srcTimeEnd < conn.dstTimeEnd ? conn.dstTimeEnd : conn.srcTimeEnd) - conn.srcTimeStart;
 				//sum of all biflow length 
 				entry.sumTCPLength += flowLength;
@@ -117,7 +89,6 @@ void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 				//list of all starting points of the biflows to calculate the variance of starting points
 				entry.succBiFlowStarts.push_back(conn.srcTimeStart);
 			}else{
-//				cout << "failed TCP connection\n";
 				//number of failed TCP connections
 				entry.numFailedTCPCons++;
 				//list of all starting points of the failed connections to calculate the variance of failed connection attempts
@@ -139,7 +110,6 @@ void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 			//number of all TCP biflows
 			entry.numTCPBiFlows++;
 			if(succConn(conn)){
-//				cout << "successfull TCP connection\n";
 				uint64_t flowLength = (conn.srcTimeEnd < conn.dstTimeEnd ? conn.dstTimeEnd : conn.srcTimeEnd) - conn.srcTimeStart;
 				//sum of all biflow length 
 				entry.sumTCPLength += flowLength;
@@ -149,7 +119,6 @@ void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 				//list of all starting points of the biflows to calculate the variance of starting points
 				entry.succBiFlowStarts.push_back(conn.srcTimeStart);
 			}else{
-//				cout << "failed TCP connection\n";
 				//number of failed TCP connections
 				entry.numFailedTCPCons++;
 				//list of all starting points of the failed connections to calculate the variance of failed connection attempts
@@ -158,31 +127,6 @@ void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 		}
 
 	}
-//	cout << "***Connection end" << endl;
-	
-	
-//	for(map<uint32_t, P2PEntry>::iterator iter = hostList.begin(); iter != hostList.end(); iter++){
-//		cout << IPToString(iter->first) << ":\n";
-//		cout << "numUDPBiFlows: " << iter->second.numUDPBiFlows;
-//		cout << " - contactedUDPHosts: " << iter->second.contactedUDPHosts.size();
-//		cout <<	" - numTCPBiFlows: " << iter->second.numTCPBiFlows;
-//		cout << " - sumTCPLength: " << iter->second.sumTCPLength;
-//		cout << " - numLongTCPCons: " << iter->second.numLongTCPCons;
-//		
-//		cout << " - ( ";
-//		for(list<uint64_t>::iterator iter2=iter->second.succBiFlowStarts.begin(); iter2 != iter->second.succBiFlowStarts.end(); iter2++){
-//			cout << *iter2 << ",";
-//		}
-//		cout << ") ";
-//		
-//		cout << " - numFailedTCPCons: " << iter->second.numFailedTCPCons;
-//		
-//		cout << " - ( ";
-//		for(list<uint64_t>::iterator iter2=iter->second.failedBiFlowStarts.begin(); iter2 != iter->second.failedBiFlowStarts.end(); iter2++){
-//			cout << *iter2 << ",";
-//		}
-//		cout << ")\n";
-//	}
 	
 	record->removeReference();
 	
@@ -190,7 +134,7 @@ void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 }
 
 /**
- * registers timeout for function onTimeout in Timer
+ * Registers timeout for function onTimeout in Timer
  * to compute the criterias for every interval
  */
 void P2PDetector::registerTimeout()
@@ -203,14 +147,10 @@ void P2PDetector::registerTimeout()
 }
 
 /**
- * 
- * 
+ * Calculates criterias for every host which were active during the ongoing interval
  */
 void P2PDetector::onTimeout(void* dataPtr)
-{
-	
-	//cout << "###Timeout:\n";
-	
+{	
 	timeoutRegistered = false;
 	//criterias
 	double udpRate;
@@ -245,10 +185,8 @@ void P2PDetector::onTimeout(void* dataPtr)
 				sum += *ptr1 - *ptr2;
 				qsum += (*ptr1 - *ptr2) * (*ptr1 - *ptr2);
 			}
-//			cout << "succ sum: " << sum << " qsum: " << qsum << endl;
 			//sample variance (stichprobenvarianz) /  n = succBiFlowStarts.size()-1: the differences not the starting points itself 
 			variance = (1.0/(iter->second.succBiFlowStarts.size()-2))*(qsum - ((1.0/(iter->second.succBiFlowStarts.size()-1))*(sum*sum)));
-//			cout << "succ variance: " << variance << endl;
 			tcpVariance = sqrt(variance)/(iter->second.succBiFlowStarts.size()-1);	
 		}
 		failedConsPercent = (((double)(iter->second.numFailedTCPCons)) * 100) / iter->second.numTCPBiFlows;
@@ -268,14 +206,12 @@ void P2PDetector::onTimeout(void* dataPtr)
 				sum += *ptr1 - *ptr2;
 				qsum += (*ptr1 - *ptr2) * (*ptr1 - *ptr2);
 			}
-//			cout << "failed sum: " << sum << " qsum: " << qsum << endl;
 			//sample variance (stichprobenvarianz) /  n = failedBiFlowStarts.size()-1: the differences not the starting points itself 
 			variance = (1.0/(iter->second.failedBiFlowStarts.size()-2))*(qsum - ((1.0/(iter->second.failedBiFlowStarts.size()-1))*(sum*sum)));
-//			cout << "failed variance: " << variance << endl;
 			tcpFailedVariance = sqrt(variance)/(iter->second.failedBiFlowStarts.size()-1);	
 		}
 		
-		//decide wether researched host is peer-to-peer or not
+		//decide whether researched host is peer-to-peer or not
 		int points = 0;
 		if(udpRate > udpRateThreshold)
 			points++;
@@ -298,18 +234,10 @@ void P2PDetector::onTimeout(void* dataPtr)
 		
 		//host is a p2p client	
 		if(points > 6){
-			//send Messag
+			//send Message 
 			msg(MSG_INFO, "P2P client detected:");
 			msg(MSG_INFO, "IP: %s, dstSubnet: %s, dstSubMask: %s", IPToString(iter->first).c_str(), 
 				IPToString(subnet).c_str(), IPToString(subnetmask).c_str());
-			//msg(MSG_DEBUG, "numFailedConns: %d, numSuccConns: %d", te->numFailedConns, te->numSuccConns);
-			
-//			cout << "put out an idmef message for " << IPToString(iter->first) << " with " << points << " points:\n";
-//			cout << "udpRate: " << udpRate << " udpHostRate: " << udpHostRate << " tcpRate: " << tcpRate;
-//			cout << " coexistentTCPCons: " << coexistentTCPCons << " rateLongTCPCons: " << rateLongTCPCons;
-//			cout << " tcpVariance: " << tcpVariance << " failedConsPercent: " << failedConsPercent;
-//			cout << " tcpFailedRate: " << tcpFailedRate << " tcpFailedVariance: " << tcpFailedVariance << endl; 
-			
 			
 			IDMEFMessage* msg = idmefManager.getNewInstance();
 			msg->init(idmefTemplate, analyzerId);
@@ -353,7 +281,7 @@ void P2PDetector::onTimeout(void* dataPtr)
 }
 
 /**
- * things to be done when the module is shutdown
+ * Things to be done when the module is shutdown
  */
 void P2PDetector::performShutdown()
 {
@@ -361,7 +289,7 @@ void P2PDetector::performShutdown()
 }
 
 /**
- * decides wether a connection was successfull or only a connection attempt
+ * Decides whether a connection was successfull or only a connection attempt
  */
 bool P2PDetector::succConn(Connection& conn){
 	
@@ -373,21 +301,18 @@ bool P2PDetector::succConn(Connection& conn){
 			if((ntohll(conn.dstPackets) > 1) && (ntohll(conn.srcPackets) > 2) && 
 				((conn.dstTcpControlBits & (Connection::SYN | Connection::ACK)) == (Connection::SYN | Connection::ACK)) && 
 				((conn.srcTcpControlBits & (Connection::SYN | Connection::ACK | Connection::RST)) == (Connection::SYN | Connection::ACK | Connection::RST)))
-					//{cout << "conntype-a" << endl; return true; }
 					return true;
 					
 			//full 3-way-handshake eixts and dst aborted the connection abrupt
 			if((ntohll(conn.dstPackets) > 2) && (ntohll(conn.srcPackets) > 1) && 
 				((conn.dstTcpControlBits & (Connection::SYN | Connection::ACK | Connection::RST)) == (Connection::SYN | Connection::ACK | Connection::RST)) && 
 				((conn.srcTcpControlBits & (Connection::SYN | Connection::ACK)) == (Connection::SYN | Connection::ACK)))
-					//{ cout << "conntype-b" << endl; return true;}
 					return true;
 					
 			//complete established and regularly closed connection from both sides
 			if(((conn.dstTcpControlBits & (Connection::SYN | Connection::ACK | Connection::FIN)) == (Connection::SYN | Connection::ACK | Connection::FIN)) && 
 				((conn.srcTcpControlBits & (Connection::SYN | Connection::ACK | Connection::FIN)) == (Connection::SYN | Connection::ACK | Connection::FIN)) && 
 				(((ntohll(conn.dstPackets) > 2) && (ntohll(conn.srcPackets) > 3)) || ((ntohll(conn.dstPackets) > 3) && (ntohll(conn.srcPackets) > 2))))
-					//{ cout << "conntype-c" << endl; return true;}
 					return true;
 			
 			//if creation and clearing of connection is not in the researched interval
@@ -403,11 +328,9 @@ bool P2PDetector::succConn(Connection& conn){
 					(conn.dstTimeEnd - conn.srcTimeStart >= 60000) 				
 				)
 			)
-					//{ cout << "conntype-d" << endl; return true;}
 					return true;
 			
 		}
 	}
-	//cout << "connection attempt" << endl;
 	return false;
 }

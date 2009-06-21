@@ -8,20 +8,23 @@ P2PDetectorCfg* P2PDetectorCfg::create(XMLElement* e)
     return new P2PDetectorCfg(e);
 }
 
+/**
+ * Sets values of the criteria thresholds given in the XML-Config.
+ */
 P2PDetectorCfg::P2PDetectorCfg(XMLElement* elem)
     : CfgHelper<P2PDetector, P2PDetectorCfg>(elem, "p2pDetector"),
       intLength(300),
       subnet(0),
       subnetmask(0),
-      udpRateThreshold(0),
-	  udpHostRateThreshold(0),
-	  tcpRateThreshold(0),
-	  coexistentTCPConsThreshold(0),
-	  rateLongTCPConsThreshold(0),
-	  tcpVarianceThreshold(0),
-	  failedConsPercentThreshold(0),
-	  tcpFailedRateThreshold(0),
-	  tcpFailedVarianceThreshold(0)
+      udpRateThreshold(0.013),
+	  udpHostRateThreshold(0.0007),
+	  tcpRateThreshold(0.082),
+	  coexistentTCPConsThreshold(2.9),
+	  rateLongTCPConsThreshold(0.018),
+	  tcpVarianceThreshold(0.068),
+	  failedConsPercentThreshold(4.8),
+	  tcpFailedRateThreshold(0.01),
+	  tcpFailedVarianceThreshold(0.3)
 {
 	string ip;
     if (!elem) return;
@@ -88,7 +91,7 @@ bool P2PDetectorCfg::deriveFrom(P2PDetectorCfg* old)
 
 /**
  * sets subnet and subnetmask if the string is a valid IP-address with subnetmask
- * in the CIDR format (e.g. 192.168.1.0/24)
+ * in the CIDR format (e.g. 192.168.1.0/24). Otherwise it returns false
  */
 bool P2PDetectorCfg::setSubnet(string& str){
 	int parts[4] = {0,0,0,0};
