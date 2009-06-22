@@ -72,10 +72,16 @@ P2PDetectorCfg::P2PDetectorCfg(XMLElement* elem)
 	idmefTemplate = "idmef/templates/p2pdetector_template.xml";
 }
 
+/**
+ * Does nothing additional
+ */
 P2PDetectorCfg::~P2PDetectorCfg()
 {
 }
 
+/**
+ * Returns a new instance of the P2PDetector class and sets its values setted by P2PDetectorCfg  
+ */
 P2PDetector* P2PDetectorCfg::createInstance()
 {
     instance = new P2PDetector(intLength, subnet, subnetmask, analyzerid, idmefTemplate, udpRateThreshold,
@@ -84,6 +90,9 @@ P2PDetector* P2PDetectorCfg::createInstance()
     return instance;
 }
 
+/**
+ * Returns false
+ */
 bool P2PDetectorCfg::deriveFrom(P2PDetectorCfg* old)
 {
     return false;

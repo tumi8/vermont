@@ -58,7 +58,7 @@ P2PDetector::~P2PDetector()
 }
 
 /**
- * Gets new Biflows from the aggregator 
+ * Gets new Biflows from the aggregator and collects these data
  */
 void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
 {	
