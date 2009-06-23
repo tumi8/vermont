@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE IDMEF-Message PUBLIC "-//IETF//DTD RFC XXXX IDMEF v1.0//EN" "idmef-message.dtd">
+<IDMEF-Message>
+  <Alert messageid="%MESSAGE_ID%">
+    <Analyzer model="vermont P2P detector" analyzerid="%ANALYZER_ID%">
+      <Node category="hosts">
+        <name>%ANALYZER_HOST%</name>
+        <Address category="ipv4-addr">
+          <address>%ANALYZER_IP%</address>
+        </Address>
+      </Node>
+    </Analyzer>
+    <CreateTime ntpstamp="%NTP_TIME%">%CREATE_TIME%</CreateTime>
+    <Peer>
+      <Node category="hosts">
+        <Address category="ipv4-addr">
+          <address>%PEER_ADDRESS%</address>
+        </Address>
+      </Node>
+    </Peer>
+    <Classification text="p2pdetector" ident="udpRate: %UDP_RATE% (%TRUE1%), udpHostRate: %UDP_HOST_RATE% (%TRUE2%), tcpRate: %TCP_RATE% (%TRUE3%), coexistentTCPCons: %COEXISTENT_TCP_CONS% (%TRUE4%), rateLongTCPCons: %RATE_LONG_TCP_CONS% (%TRUE5%), tcpVariance: %TCP_VARIANCE% (%TRUE6%), failedConsPercent: %FAILED_CONS_PERCENT% (%TRUE7%), tcpFailedRate: %TCP_FAILED_RATE% (%TRUE8%), tcpFailedVariance: %TCP_FAILED_VARIANCE% (%TRUE9%)"/>
+  </Alert>
+</IDMEF-Message>

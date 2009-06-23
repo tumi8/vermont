@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE IDMEF-Message PUBLIC "-//IETF//DTD RFC XXXX IDMEF v1.0//EN" "idmef-message.dtd">
+<IDMEF-Message>
+  <Alert messageid="%MESSAGE_ID%">
+    <Analyzer model="vermont data filter" analyzerid="%ANALYZER_ID%">
+      <Node category="hosts">
+        <name>%ANALYZER_HOST%</name>
+        <Address category="ipv4-addr">
+          <address>%ANALYZER_IP%</address>
+        </Address>
+      </Node>
+    </Analyzer>
+    <CreateTime ntpstamp="%NTP_TIME%">%CREATE_TIME%</CreateTime>
+    <Source>
+      <Node category="hosts">
+        <Address category="ipv4-addr">
+          <address>%SOURCE_ADDRESS%</address>
+        </Address>
+      </Node>
+    </Source>
+    <Target>
+      <Node category="hosts">
+        <Address category="ipv4-addr">
+          <address>%TARGET_ADDRESS%</address>
+        </Address>
+      </Node>
+    </Target>
+    <Classification text="%FILTER_TYPE% match" ident="%FILTER_ID%"/>
+  </Alert>
+</IDMEF-Message>

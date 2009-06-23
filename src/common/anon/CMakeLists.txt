@@ -1,0 +1,20 @@
+ADD_LIBRARY(anon
+	AnonModule.cpp
+	RandomNumberGenerator.cpp
+	AnonBroadcastHandler.cpp
+	AnonBytewise.cpp
+	AnonBytewiseHashHmacSha1.cpp
+	AnonBytewiseHashSha1.cpp
+	AnonConstOverwrite.cpp
+	AnonContinuousChar.cpp
+	AnonCryptoPan.cpp
+	AnonHashHmacSha1.cpp
+	AnonHashSha1.cpp
+	AnonIdentity.cpp
+	AnonPrimitive.cpp
+	AnonRandomize.cpp
+	AnonShorten.cpp
+	AnonShuffle.cpp
+	AnonWhitenoise.cpp
+)
+

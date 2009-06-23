@@ -1,0 +1,142 @@
+<ipfixConfig>
+       <sensorManager id="99">
+                <checkinterval>1</checkinterval>
+        </sensorManager>
+
+	        <observer id="1">
+               <!--<interface>lo</interface>-->
+                <filename>/dumps/aussenanbindung.dump</filename>
+                <pcap_filter>ip</pcap_filter>
+                <offlineAutoExit>1</offlineAutoExit>
+               <offlineSpeed>1</offlineSpeed>
+                <captureLength>128</captureLength>
+                <next>3</next>
+        </observer>
+
+<packetQueue id="3">
+	<maxSize>1000</maxSize>
+	<next>6</next>
+</packetQueue>	
+
+<packetAggregator id="6">
+	<rule>
+		<templateId>998</templateId>
+		<flowKey>
+			<ieName>sourceIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>protocolIdentifier</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>sourceTransportPort</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationTransportPort</ieName>
+		</flowKey>
+		<nonFlowKey>
+			<ieName>flowStartMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>flowEndMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>octetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>packetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>tcpControlBits</ieName>
+		</nonFlowKey>
+	</rule>
+	<expiration>
+		<inactiveTimeout unit="sec">10</inactiveTimeout>
+		<activeTimeout unit="sec">10</activeTimeout>
+	</expiration>
+	<pollInterval unit="msec">1000</pollInterval>
+	<next>7</next>
+</packetAggregator>		
+
+<ipfixAggregator id="7">
+	<rule>
+		<templateId>998</templateId>
+		<biflowAggregation>1</biflowAggregation>				
+		<flowKey>
+			<ieName>sourceIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>protocolIdentifier</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>sourceTransportPort</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationTransportPort</ieName>
+		</flowKey>
+		<nonFlowKey>
+			<ieName>flowStartMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>flowEndMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>octetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>packetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>tcpControlBits</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>revflowStartMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>revflowEndMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>revoctetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>revpacketDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>revtcpControlBits</ieName>
+		</nonFlowKey>			
+	</rule>
+	<expiration>
+		<inactiveTimeout unit="sec">10</inactiveTimeout>
+		<activeTimeout unit="sec">10</activeTimeout>
+	</expiration>
+	<pollInterval unit="msec">1000</pollInterval>
+	<next>2</next>
+</ipfixAggregator>
+
+<ipfixQueue id="2">
+	<maxSize>1000</maxSize>
+	<next>8</next>
+</ipfixQueue>	
+
+<AutoFocus id="8">
+	<analyzerid>AutoFocus</analyzerid>
+	<idmeftemplate>idmef/templates/AutoFocus_template.xml</idmeftemplate>
+	<hashbits>20</hashbits>
+	<timetreeinterval>600</timetreeinterval>
+	<nummaxresults>20</nummaxresults>
+	<minSubbits>25</minSubbits>
+	<numtrees>2</numtrees>
+	<next>9</next>
+</AutoFocus>	
+
+<idmefExporter id="9">
+	<sendurl>http://localhost</sendurl>
+	<destdir>idmef_work</destdir>
+</idmefExporter>	
+
+</ipfixConfig>	
