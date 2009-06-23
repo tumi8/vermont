@@ -1,0 +1,773 @@
+
+= Vermont Module Configuration =
+
+== FrontPayloadSigMatcher ==
+
+Matches flow records that contain payload (IPFIX_ETYPE_frontPayload) to rule files in specified directory, that contain signature tokens with priority and a threshold value that specifies the number of tokens to match until the whole signature matches. The module then reports matches on the command line.
+Attention: this code is alpha. The signature directory *must only* contain signature files. If other files are present, the matcher will break.
+
+Input type: IpfixRecord
+Output type: none
+
+**Example configuration:**
+<code xml>
+<frontPayloadSigMatcher id="9">
+	<signaturedir>./signatures</signaturedir>
+</frontPayloadSigMatcher>
+</code>
+Parameters:
+|  **Element name**  |  **Default value**  |  **Description**  |
+|signaturedir |  none  |Directory that contains signature rule files. |
+
+**Example signature file**
+<code>
+#Signature of the pcap: f5fb928cef4a24a5a18ddb305b1d2127
+#Trainingvalues: FP = 0.00000, TP = 1.00000
+#Bayes minimum Occurrence = 0.7
+
+BAYESSIGNATURE
+SIGNATUREID
+f5fb928cef4a24a5a18ddb305b1d2127
+CLASSMEMBERS
+f5fb928cef4a24a5a18ddb305b1d2127
+TOKEN
+220 ProFTPD 1.2.9 Server (ProFTPD) [1.1.63]%0d%0a331 Password required for asaasa510.%0d%0a230 User asaasa510 logged in.%0d%0a200 Type set to I%0d%0a215 UNIX Type: L8%0d%0a500 Illegal PORT command%0d%0a
+SUPPORT
+0.50000
+TOKEN
+SER asaasa510%0d%0aPASS 3330881%0d%0aTYPE I%0d%0aSYST%0d%0aPORT 10,0,
+SUPPORT
+0.50000
+THRESHOLD
+1.0
+</code>
+
+== IDMEFExporter ==
+
+Exports incoming IDMEF messages to the external perl script idmefsender.pl which sends it over the network to a specified URL.
+
+Input type: IdmefMessage
+Output type: none
+
+**Example configuration:**
+<code xml>
+<idmefExporter id="9">
+	<sendurl>http://localhost</sendurl>
+	<destdir>idmef_work</destdir>
+</idmefExporter>
+</code>
+Parameters:
+|  **Element name**  |  **Default value**  |  **Description**  |
+|sendurl |  none  |Destination URL where IDMEF messages must sent to. |
+|destdir |  idmef_work  |Directory, where IDMEF messages are temporary stored. There they are picked up by the external perl script ''idmefsender.pl'' in directory ''/tools''. |
+
+== IpfixAggregator ==
+
+Aggregates incoming IPFIX flows according to specified parameters. Configuration is similar to module PacketAggregator.
+
+Input type: IpfixRecord
+Output type: IpfixRecord
+
+**Example configuration:**
+<code xml>
+<ipfixAggregator id="6">
+	<rule>
+		<templateId>998</templateId>
+		<biflowAggregation>1</biflowAggregation>				
+		<flowKey>
+			<ieName>sourceIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>protocolIdentifier</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>sourceTransportPort</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationTransportPort</ieName>
+		</flowKey>
+		<nonFlowKey>
+			<ieName>flowStartMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>flowEndMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>octetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>packetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>tcpControlBits</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>revflowStartMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>revflowEndMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>revoctetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>revpacketDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>revtcpControlBits</ieName>
+		</nonFlowKey>			
+	</rule>
+	<expiration>
+		<inactiveTimeout unit="sec">1</inactiveTimeout>
+		<activeTimeout unit="sec">1</activeTimeout>
+	</expiration>
+	<pollInterval unit="msec">1000</pollInterval>
+	<next>4</next>
+</packetAggregator>				
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|rule |  none  |Specifies a rule according to which is aggregated. More than one rule may be specified per aggregator. |
+|biflowAggregation |  0  |Specifies if biflow aggregation is to be performed (0=no biflow, 1=biflow). Only valid in IpfixAggregator. To accomodate biflow information elements, Vermont-specific enterprise type ids were specified: revFlowStartMilliSeconds, revFlowEndMilliSeconds, revFlowStartSeconds, revFlowEndSeconds, revOctetDeltaCount, revPacketDeltaCount and revTcpControlBits. |
+|templateId |  none  |Template ID (mandadory!). |
+|flowKey |    |Flow key information element - flows are aggregated according to those keys. |
+|nonFlowKey |  none  |Non-flow key information element - those IEs are aggregated. |
+|ieName |  none  |name of the IE. |
+|modifier |  none  |Optional field modifier for flow key IEs ("discard", "mask/X"). |
+|match |  0  |Optional flow key filter for protocol identifier ("TCP", "UDP", "ICMP", or IANA number), IP addresses ("A.B.C.D/M"), port numbers (separated by ",", port range "A:B"), TCP control bits ("FIN", "SYN", "RST", "PSH", "ACK", "URG", separated by ","). |
+|inactiveTimeout |  0  |Expiration timeout for idle/inactive flows. |
+|activeTimeout |  0  |Periodic expiration timeout for long-lasting flows (typically larger than inactiveTimeout). |
+|pollInterval |  0  |Length of interval when flows should be exported to next module. |
+|hashtableBits |  17  |Length of hashtable used for aggregation in bits. The resulting hashtable will have a size of ''2^hashtableBits''. |
+
+== IpfixCollector ==
+
+Receives IPFIX records from the network and imports them into Vermont. Protocols UDP and SCTP are supported at the moment.
+
+
+Input type: IdmefMessage
+Output type: none
+
+**Example configuration:**
+<code xml>
+<ipfixCollector>
+	<listener>
+		<ipAddress>0.0.0.0</ipAddress>
+		<transportProtocol>UDP</transportProtocol>
+		<port>4739</port>
+	</listener>
+</ipfixCollector>
+</code>
+Parameters: 
+|  **Element name**  |  **Default value**  |  **Description**  |
+|listener |  none  |Specifies a port where to listen for IPFIX flows. |
+|ipAddress |  none  |IP address of interface on which collector receives IPFIX packets. If not given, collector receives at all interfaces. |
+|transportProtocol |  none  |Must be set to `UDP' or `SCTP'. |
+|port |  4739  |Port where Vermont listenes for incoming IPFIX flows. |
+
+== IpfixExporter ==
+
+Exports internal IPFIX records to the network using protocol UDP or SCTP.
+
+
+Input type: IpfixRecord
+Output type: none
+
+**Example configuration:**
+<code xml>
+<ipfixExporter id="7">
+	<templateRefreshInterval>10</templateRefreshInterval>
+	<maxRecordRate>5000</maxRecordRate>
+	<sctpDataLifetime unit="msec">10000</sctpDataLifetime>
+	<sctpReconnectInterval unit="sec">30</sctpReconnectInterval>
+	<collector>
+		<ipAddressType>4</ipAddressType>
+		<ipAddress>127.0.0.1</ipAddress>
+		<transportProtocol>17</transportProtocol>
+		<port>1500</port>
+	</collector>
+</ipfixExporter>
+</code>
+Parameters: 
+|  **Element name**  |  **Default value**  |  **Description**  |
+|observationDomainId |  0  |Observation Domain ID of the exporter. |
+|templateRefreshInteval |  20s  |Interval for periodic sending of templates. |
+|templateRefreshRate |  10000  |Interval for periodic sending of templates in records. |
+|ipAddressType |  4  |Currently, only IPv4 is supported. |
+|ipAddress |  none  |IP address of the collector the packets are sent to. |
+|transportProtocol |  none  |Currently, only UDP (17) is supported. |
+|port |  4739  |Port number of the collector. |
+|maxRecordRate |  5000  |Maximum number of flow records per second sent to collector. |
+|sctpDataLifetime |  10000ms  |Time how long SCTP considers a packet valid and tries to retransmit it. |
+|sctpReconnectInterval |  30s  |Time that Exporter waits to reestablish a lost connection. |
+
+== IpfixPrinter ==
+
+Prints incoming Ipfix flows to stdout for debugging purposes.
+
+Input type: IpfixRecord
+Output type: none
+
+**Example configuration:**
+<code xml>
+<ipfixPrinter id="8">
+	<lineOutput>1</lineOutput>
+</ipfixPrinter>
+</code>
+Parameters: 
+|  **Element name**  |  **Default value**  |  **Description**  |
+|lineOutput |  0  |Specifies if a special one-line-per-flow output should be used if value equals 1. |
+
+== IpfixDbReader ==
+
+Imports IPFIX flows from a MYSQL database table.
+
+Input type: none
+Output type: IpfixRecord
+
+**Example configuration:**
+<code xml>
+<ipfixDbReader id="10">
+    <host>127.0.0.1</host>
+    <port>3306</port>
+    <dbname>flows</dbname>
+    <username>vermont</username>
+    <password>v_password</password>
+    <timeshift>true</timeshift>
+    <next>12</next>
+</ipfixDbReader>
+</code>
+Parameters: 
+|  **Element name**  |  **Default value**  |  **Description**  |
+|host |  none  |Host of MySQL database. |
+|port |  3306  |Port number of database. |
+|dbname |  none  |Database name. |
+|username |  none  |Username for database access. |
+|password |  none  |Password for database access. |
+|timeshift |  false  |Shift time stamps to current time. |
+|fullspeed |  false  |If true, tables are read at full speed. Timeshifts are disabled. Otherwise, records are read from table approximately at the same speed as they were originally exported. |
+|observationDomainId |  0  |Observation Domain Id assigned to the records. |
+
+== IpfixDbWriter ==
+
+Exports IPFIX flows to a database table in a MySQL database.
+
+Input type: IpfixRecord
+Output type: none
+
+**Example configuration:**
+<code xml>
+<ipfixDbWriter id="10">
+    <host>127.0.0.1</host>
+    <port>3306</port>
+    <dbname>flows</dbname>
+    <username>vermont</username>
+    <password>v_password</password>
+    <bufferrecords>30</bufferrecords>
+    <columns>
+        <name>firstSwitched</name>
+        <name>bytes</name>
+    </columns>
+</ipfixDbWriter>
+</code>
+Parameters: 
+|  **Element name**  |  **Default value**  |  **Description**  |
+|host |  none  |Host of MySQL database. |
+|port |  3306  |Port number of database. |
+|dbname |  none  |Database name. |
+|username |  none  |Username for database access. |
+|password |  none  |Password for database access. |
+|bufferrecords |  30  |Amount of flow records to buffer until they are written to the database. |
+|observationDomainId |  none  |Observation Domain Id overriding the value to the records. |
+|name |  none  |Column name (see IpfixDbCommon.hpp, currently one of "srcIP", "dstIP", "srcPort", "dstPort", "proto", "dstTos", "bytes", "pkts", "firstSwitched", "lastSwitched", "firstSwitchedMillis", "lastSwitchedMillis", "exporterID", "tcpControlBits", "revbytes", "revpkts", "revFirstSwitched", "revLastSwitched", "revFirstSwitchedMillis", "revLastSwitchedMillis", "revTcpControlBits", "maxPacketGap") |
+
+== IpfixDbWriterPg ==
+
+Exports IPFIX flows to a database table in a PostgreSQL database.
+
+Input type: IpfixRecord
+Output type: none
+
+**Example configuration:**
+<code xml>
+<ipfixDbWriter id="10">
+    <host>127.0.0.1</host>
+    <port>3306</port>
+    <dbname>flows</dbname>
+    <username>vermont</username>
+    <password>v_password</password>
+    <bufferrecords>30</bufferrecords>
+</ipfixDbWriter>
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|host |  none  |Host of MySQL database. |
+|port |  3306  |Port number of database. |
+|dbname |  none  |Database name. |
+|username |  none  |Username for database access. |
+|password |  none  |Password for database access. |
+|bufferrecords |  30  |Amount of flow records to buffer until they are written to the database. To achieve high performance, a value from 1000 to 10000 is recommended. |
+
+== IpfixPayloadWriter ==
+
+Writes IPFIX records including front payload into files. Only the first N (to be set in parameters) flows in chronological order are regarded. It is expected, that incoming flows are biflows and include front payload. For each biflow, three files are generated: .info contains header information of the flow, two .payload files contain front payload in both directions. 
+
+Input type: IpfixRecord
+Output type: none
+
+**Example configuration:**
+<code xml>
+<ipfixPayloadWriter id="5">
+	 <destPath>payload_work</destPath>
+	 <filenamePrefix>vfp</filenamePrefix>
+	 <connNumber>10</connNumber>
+	 <ignoreEmptyPayload>1</ignoreEmptyPayload>
+</ipfixPayloadWriter>
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|destPath |  none  |Relative path where output files are stored. |
+|filenamePrefix |  none  |Prefix for generated filenames. |
+|connNumber |  none  |Amount of connections that are recorded. If this parameter is set to 0, no sorting will be performed and all incoming flows will be directly written to filesystem. |
+|ignoreEmptyPayload |  false  |Set to true if all connections/biflows with empty payload shoud be ignored. |
+|ignoreIncompleteTCP |  false  |Set to true if all TCP biflows without SYN flags in both directions should be ignored. |
+|password |  none  |Password for database access. |
+|bufferrecords |  30  |Amount of flow records to buffer until they are written to the database. |
+|startIndex |  0  |Start index of first flow written to disk. Useful if already partially written dump on disk needs to be completed. |
+
+== IpfixQueue ==
+
+Caches IPFIX records in a queue until next module is ready to process them.
+
+Input type: IpfixRecord
+Output type: IpfixRecord
+
+**Example configuration:**
+<code xml>
+<ipfixQueue id="3">
+	<maxSize>10</maxSize>
+	<next>6</next>
+</ipfixQueue>			
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|  maxSize |  	1  |	Maximum number of items in queue. If queue is full, no new packets are accepted and preceding modules are paused. |
+
+== IpfixSampler ==
+
+Samples IPFIX records using a simple sampler based on modulo.
+
+Input type: IpfixRecord
+Output type: IpfixRecord
+
+**Example configuration:**
+<code xml>
+<ipfixSampler id="3">
+	<flowRate>0.1</flowRate>
+	<next>6</next>
+</ipfixSampler>			
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+| flowRate | 1 | Ratio of flows that should pass sampler. When set to 0.1, 10% of all flows pass the module. Attention: internally, after calculating the inverse, this value is converted to an integer for the modulo operation. So values close to 1 may not be reflected properly by the sampler. Values above 1 are not allowed.  |
+
+== Observer ==
+
+Captures raw packets using the PCAP interface.
+
+Input type: none
+Output type: Packet
+
+**Example configuration:**
+<code xml>
+<observer id="1">
+	<interface>eth1</interface>
+	<pcap_filter>ip</pcap_filter>
+	<next>2</next>
+</observer>
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|	interface |  none  |Interface PCAP listens to. Do not use in combination with parameter filename. |
+|	captureLength |  128  |Sets the capture length of each packet. Packets bigger than that size are truncated. ATTENTION: if payload is analyzed in later modules, this parameter needs to be large enough! |
+|	filename |  none  |Must be specified if Vermont needs to read from file and contains its filename. Do not use in combination with parameter interface. |
+|	pcap_filter |  none  |Filter specification which is passed to PCAP (usually `ip' to only capture IP packets). |
+|	replaceTimestamps |  false  |If true, PCAP packet timestamps are replaced with current time. This parameter only applies to PCAP file reading. |
+|	offlineSpeed |  1.0  |Only applies to PCAP file reading. Sets the speed multiplier for offline PCAP file reading. A negative value means read as fast as you can. |
+|	offlineAutoExit |  true  |Only applies to PCAP file reading. Sets if Vermont should be shut down automatically after reading all PCAP file data. |
+|       maxPackets | 0 | Specifies a maximum number of packets to be processed by the Observer. After this number is reached, the Observer stops reading packets and may trigger the shutdown, if parameter 'offlineAutoExit' was specified. If this parameter is set to 0, the Observer may read an infinite amount of packets.
+
+== PacketFilter ==
+
+Forwards packets which match specified filter configuration and drops non-matching packets.
+
+Input type: Packet
+Output type: Packet
+
+**Example configuration:**
+<code xml>
+<filter id="2">
+	<countBased>
+		<interval>4</interval>
+		<spacing>2</spacing>
+	<countBased>
+	<timeBased>
+		<interval>100</interval>
+		<spacing>50</spacing>
+	</timeBased>
+	<stringBased>
+		<is>bla</is>
+		<isnot>blub</isnot>
+		<is type="HEX">0xFF024F</is>
+	</stringBased>
+	<regexBased>
+		<matchPattern>is\s*not</matchPattern>
+	</regexBased>
+	<next>3</next>
+</filter>
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|	countBased |  none  |Creates a count-based filter. Spacing defines the number of packets accepted at the beginning of the period, interval specifies the length of the period |
+|	timeBased |  none  |Creates a time-based filter. Spacing defines the number of milliseconds during which time all incoming packets are accepted at the beginning of the period, interval specifies the length of the period in milliseconds. |
+|	interval |  none  |Belongs to either countBased or timeBased filter. Specifies length of period. |
+|	spacing |  none  |Belongs to either countBased or timeBased filter. Specifies amount of time or number of packets accepted. |
+|	stringBased |  none  |Creates a string-based filter which scans for specified strings inside the packet payload. If more than one search element is specified, only packets will be forwarded which match *all* specifications. |
+|	is |  none  |Accepts packets which contain included ASCII string. If attribute "type" is set to "HEX", the tag's content MUST include a hexstring which specifies the binary data to be searched for. |
+|	isnot |  none  |Drops packets which contain included ASCII string. If attribute "type" is set to "HEX", the tag's content MUST include a hexstring which specifies the binary data to be searched for. |
+|	regexBased |  none  |Creates a regex-based filter which scans for specified regexes inside the packet payload. If more than one regex is specified, only packets will be forwarded which match *all* specifications. |
+|	matchPattern |  none  |Specifies a regular expression used by the regex-based filter. |
+|	stateConnectionBased |  none  |Creates a filter which searches for TCP connections and matches all packets that contain the first N payload bytes. It uses a determinstic algorithm that will consume all the memory necessary to store all seen TCP connections. |
+|	connectionBased |  none  |Same as stateConnectionBased filter, but uses a different algorithm for TCP connection tracking. The algorithm is probabilistic and uses a fixed amount of memory to store the TCP connections. |
+|	timeout |  3  |Belongs to either stateConnectionBased or connectionBased filter. Specifies the time in seconds a seen TCP connection request is valid, before it will time out. |
+|	bytes |  100  |Belongs to either stateConnectionBased or connectionBased filter. Specifies how much Payload should be exported in bytes. |
+|	hashFunctions |  3  |Belongs to connectionBased filter. Specifies the number of hash functions that are used to index the bloom filters. |
+|	filterSize |  1000  |Belongs to connectionBased filter. Specifies the size of the bloom filters that are used by the connection based filter. |
+|	exportControlPackets |  true  |Controls wether TCP control packets (SYN/FIN/RST) are exported by stateConnectionBased and connectionBased filter. |
+|	anonFilter |  none  |Specifies a filter that performs anonymization on captured network packets. Contains one or more anonFields. This tag can have several subtags. The subtags are the same ones that can be used in the RecordAnonymizer module |
+|	payloadFilter |  none  |Payload is dropped, when this filter is specified. |
+
+== PacketQueue ==
+
+Caches packets in a queue until next module is ready to process them.
+
+Input type: Packet
+Output type: Packet
+
+**Example configuration:**
+<code xml>
+<packetQueue id="3">
+	<maxSize>10</maxSize>
+	<next>6</next>
+</packetQueue>	
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|maxSize |  0  |Maximum number of items in queue. If queue is full, no new packets are accepted and preceding modules are paused. |
+
+== PacketAggregator ==
+
+Aggregates incoming raw packets to flows according to specified parameters.
+
+Input type: Packet
+Output type: IpfixRecord
+
+**Example configuration:**
+<code xml>
+<packetAggregator id="6">
+	<rule>
+		<templateId>998</templateId>
+		<flowKey>
+			<ieName>sourceIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>protocolIdentifier</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>sourceTransportPort</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationTransportPort</ieName>
+		</flowKey>
+		<nonFlowKey>
+			<ieName>flowStartMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>flowEndMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>octetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>packetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>tcpControlBits</ieName>
+		</nonFlowKey>
+	</rule>
+	<expiration>
+		<inactiveTimeout unit="sec">1</inactiveTimeout>
+		<activeTimeout unit="sec">1</activeTimeout>
+	</expiration>
+	<pollInterval unit="msec">1000</pollInterval>
+	<next>4</next>
+</packetAggregator>	
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|templateId |  none  |Template ID (mandadory!). |
+|flowKey |    |Flow key information element - flows are aggregated according to those keys. |
+|nonFlowKey |  none  |Non-flow key information element - those IEs are aggregated. |
+|ieName |  none  |name of the IE. |
+|modifier |  none  |Optional field modifier for flow key IEs ("discard", "mask/X"). |
+|match |  0  |Optional flow key filter for protocol identifier ("TCP", "UDP", "ICMP", or IANA number), IP addresses ("A.B.C.D/M"), port numbers (separated by ",", port range "A:B"), TCP control bits ("FIN", "SYN", "RST", "PSH", "ACK", "URG", separated by ","). |
+|inactiveTimeout |  0  |Expiration timeout for idle/inactive flows. |
+|activeTimeout |  0  |Periodic expiration timeout for long-lasting flows (typically larger than inactiveTimeout). |
+|pollInterval |  0  |Length of interval when flows should be exported to next module. |
+|hashtableBits |  17  |Length of hashtable used for aggregation in bits. The resulting hashtable will have a size of 2^{hashtableBits}. |
+
+== PacketIDMEFReporter ==
+
+For each incoming packet an IDMEF message is generated. An extract of the packet payload called snapshot may be included in the IDMEF message.
+
+Input type: Packet
+Output type: IdmefMessage
+
+**Example configuration:**
+<code xml>
+<packetIDMEFReporter>
+	<snapshotoffset>12</snapshotoffset>
+	<snapshotlength>20</snapshotlength>
+	<analyzerid>idmefreporter</analyzerid>
+	<idmeftemplate>idmef/templates/idmefreporter_template.xml</idmeftemplate>
+</packetIDMEFReporter>				
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|snapshotoffset |  0  |Byte offset from start of packet payload. |
+|snapshotlength |  0  |Byte length of snapshot. If it exceeds packet length, snapshot will be truncated. |
+|analyzerid |  none  |Analyzer ID that will be included in IDMEF message. |
+|idmeftemplate |  none  |Path to template file for IDMEF message. |
+
+== PCAPExporter ==
+
+Exports incoming packets into a file in PCAP format.
+
+Input type: Packet
+Output type: none
+
+**Example configuration:**
+<code xml>
+<pcapExporter>
+	<filename>output.pcap</filename>
+</psampExporter>
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|filename |  none  |Name of the output pcap file. |
+|linkType |  EN10MB  |Data link type of the output file. Names are DLT_ names form the pcap man page with the DLT_ removed (see `man pcap') |
+|snaplen |  PCAP_MAX_  |Snaplen for the pcap file |
+| |  CAPTURE_LENGTH  | |
+
+== PSAMPExporter ==
+
+Exports incoming packets as PSAMP records over the network.
+
+Input type: Packet
+Output type: none
+
+**Example configuration:**
+<code xml>
+<psampExporter id="1">
+	<observationDomainId>123</observationDomainId>
+	<ipfixPacketRestrictions>
+		<maxPacketSize>200</maxPacketSize>
+		<maxExportDelay unit="msec">500</maxExportDelay>
+	</ipfixPacketRestrictions>
+	<packetReporting>
+		<templateId>888</templateId>
+		<reportedIE>
+			<ieName>sourceIPv4Address</ieName>
+		</reportedIE>
+		<reportedIE>
+			<ieName>destinationIPv4Address</ieName>
+		</reportedIE>
+		<reportedIE>
+			<ieName>ipPayloadPacketSection</ieName>
+			<ieLength>65535</ieLength>
+		</reportedIE>
+	</packetReporting>
+	<collector>
+		<ipAddress>127.0.0.1</ipAddress>
+		<transportProtocol>UDP</transportProtocol>
+		<port>4739</port>
+	</collector>
+</psampExporter>			
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|observationDomainId |  0  |Observation Domain ID of the exporter. |
+|ipfixPacketRestrictions |  none  |Restrictions for IPFIX packets. |
+|maxPacketSize |  none  |Maximum size of IPFIX packets. |
+|maxExportDelay |  none  |Maximum delay until IPFIX packet is sent to destination. |
+|packetReporting |  none  |Specifies elements to be exported for one template. |
+|templateId |  0  |Specifies template ID. |
+|reportedIE |  none  |Specifies one information element to be reported. |
+|ieName |  none  |IPFIX type id of element to be exported. |
+|ieLength |  none  |Optional specification of element length (usually only used by "ipPayloadPacketSection". |
+|collector |  none  |Contains specification of one destination for PSAMP records. |
+|idAddress |  none  |IP address of destination. |
+|transportProtocol |  none  |Transport protocol to be used. Currently only "UDP" is supported. |
+|port |  4739  |Port of destination. |
+|templateRefreshRate |  5000  |Number of records, until template is resent. |
+|templateRefreshInterval |  30s  |Time, until template is resent. |
+
+== RecordAnonymizer ==
+
+This module is capable of anonymizing arbitary fields within IPFIX-Records using different anonymization methods.
+
+Input type: IpfixRecord
+Output type: IpfixRecord
+
+**Example configuration:**
+<code xml>
+<anonRecord id="3">
+	<anonField>
+		<anonIE>
+			<ieName>sourceIPv4Address</ieName>
+		</anonIE>
+		<anonMethod>CryptoPan</anonMethod>
+		<anonParam>insert key here</anonParam>
+	</anonField>
+	<anonField>
+		<anonIE>
+			<ieName>destinationIPv4Address</ieName>
+			<ieLength>4</ieLength>
+		</anonIE>
+	<anonMethod>CryptoPan</anonMethod>
+		<anonParam>insert key here</anonParam>
+	</anonField>
+	<copyMode>false</copyMode>
+	<next>6</next>
+</anonRecord>
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|anonField |  none  |Specifies one field and an anonymization method for that field. Contains one anonIE, one anonMethod and an optional anonParam tag. |
+|anonIE |  none  |Specifies the information element that needs to be anonymized. Belongs to anonField. |
+|ieName |  none  |Specifies the name of the field that needs to be anonymized. Belongs to anonIE. |
+|anonMethod |  none  |Specifies the anonymization method that is used to anonymize a given header field. Belongs to anonField. Possible values are: BytewiseHashHmacSha1, BytewiseHashSha1, ConstOverwrite, ContinuousChar, HashHmacSha1, HashSha1, Randomize, Shuffle, Whitenoise, CryptoPan |
+|anonParam |  none  |Specifies an optional parameter to the anonymization method. Different methods need different params. ByteWiseHashHmacSha1, HashHmacSha1 need an variable sized key. ConstOverwrite needs one character as parameter. CryptoPan needs an 32 bytes long parameter (16 bytes key, 16 bytes pad). For CryptoPan and ConstOverwrite, keys can be specified as normal text, or as hexadecimal string starting with '0x'. |
+|copyMode |  false  |If true, the Record Anonymizer creates a copy of the incoming record and leaves the original record unchanged. Copy mode should be turned on if the original records are processed by other moduls as well. |
+
+== SensorManager ==
+
+Module which controls all sensors ("`Messfühler"') inside Vermont. It does not have any in- or output types and must not be connected to any other module. It is recommended to set its ID to 99 to express its special role. If this module is specified in the configuration, available sensors are activated and polled regularly. It may only be specified once.
+
+Input type: none
+Output type: none
+
+**Example configuration:**
+<code xml>
+<sensorManager id="99">
+	<checkinterval>2</checkinterval>
+	<outputfile>sensor_output.xml</outputfile>
+</sensorManager>	
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|checkinterval |  2  |Interval in seconds, when all sensors are polled and the output file is written to. |
+|outputfile |  ''sensor_output.xml''  |Path to file, where sensor data is stored. |
+|append |  0  |Set to 1 if output file should be appended to, and not overwritten. |
+
+== TRWPortscanDetector ==
+
+Detects horizontal portscans in incoming IPFIX flows. Attention: IPFIX flows must be aggregated to biflows. To achieve best results, flows should contain the following IEs:
+* sourceIPv4Address
+* destinationIPv4Address
+* sourceTransportPort
+* destinationTransportPort
+* protocolIdentifier
+* flowStartMilliSeconds
+* flowEndMilliSeconds
+* revFlowStartMilliSeconds
+* revFlowEndMilliSeconds
+* octetDeltaCount
+* revOctetDeltaCount
+* packetDeltaCount
+* revPacketDeltaCount
+* tcpControlBits
+* revTcpControlBits
+
+
+Input type: IpfixRecord
+Output type: IdmefMessage
+
+**Example configuration:**
+<code xml>
+<trwPortscanDetector id="8">
+	<analyzerid>trwportscandetector</analyzerid>
+	<idmeftemplate>idmef/templates/trwportscan_template.xml</idmeftemplate>
+	<hashbits>20</hashbits>
+	<timeexpirepending>86400</timeexpirepending>
+	<timeexpirescanner>1800</timeexpirescanner>
+	<timeexpirebenign>1800</timeexpirebenign>
+	<timecleanupinterval>10</timecleanupinterval>
+	<next>9</next>
+</trwPortscanDetector>	
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|analyzerid |  none  |Analyzer ID which is inserted into the generated IDMEF message. |
+|idmeftemplate |  none  |Path to IDMEF template which is used to generate the IDMEF message. |
+|hashbits |  20  |Amount of bits used for hashtable to contain watched IP addresses. |
+|timeexpirepending |  86400  |Seconds, until non-classified inactive IP addresses are purged from table. |
+|timeexpirescanner |  1800  |Seconds, until as portscanner classified IP addresses are purged from table. |
+|timeexpirebenign |  1800  |Seconds, until as benign classified IP addresses are purged from table. |
+|timecleanupinterval |  10  |Interval length in seconds, when IP address table is scanned for entries to be purged. |
+
+== P2PDetector ==
+
+Detects Peer-to-Peer Clients in a subnet. Attention: IPFIX flows must be aggregated to biflows.
+
+Input type: IpfixRecord
+Output type: IdmefMessage
+
+**Example configuration:**
+<code xml>
+<p2pDetector id="5">
+	<analyzerid>P2PDetector</analyzerid>
+	<interval>300</interval>
+	<subnet>192.168.1.0/24</subnet>
+	<udpRateThreshold>0.013</udpRateThreshold>
+	<udpHostRateThreshold>0.0007</udpHostRateThreshold>
+	<tcpRateThreshold>0.082</tcpRateThreshold>
+	<coexistentTCPConsThreshold>2.9</coexistentTCPConsThreshold>
+	<rateLongTCPConsThreshold>0.018</rateLongTCPConsThreshold>
+	<tcpVarianceThreshold>0.068</tcpVarianceThreshold>
+	<failedConsPercentThreshold>4.8</failedConsPercentThreshold>
+	<tcpFailedRateThreshold>0.01</tcpFailedRateThreshold>
+	<tcpFailedVarianceThreshold>0.3</tcpFailedVarianceThreshold>
+	<next>6</next>
+</p2pDetector>	
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|analyzerid |  none  |Analyzer ID which is inserted into the generated IDMEF message. |
+|interval |  300  |Interval in seconds for repeated computing of the criteria |
+|subnet |  0.0.0.0  |Subnet to be researched |
+|udpRateThreshold |  0.013  |Threshold for udp rate. Calculated criteria must be above this value to be detected as a peer |
+|udpHostRateThreshold |  0.0007  |Threshold for udp host rate. Calculated criteria must be above this value to be detected as a peer |
+|tcpRateThreshold |  0.082  |Threshold for tcp rate. Calculated criteria must be above this value to be detected as a peer |
+|coexistentTCPConsThreshold |  2.9  |Threshold for coexistent TCP connections. Calculated criteria must be above this value to be detected as a peer |
+|rateLongTCPConsThreshold |  0.018  |Threshold for rate of long TCP conncetions. Calculated criteria must be above this value to be detected as a peer |
+|tcpVarianceThreshold |  0.068  |Threshold for variance of new TCP connections. Calculated criteria must be below this value to be detected as a peer |
+|failedConsPercentThreshold |  4.8  |Threshold for percentage of failed TCP connections. Calculated criteria must be above this value to be detected as a peer |
+|tcpFailedRateThreshold |  0.01  |Threshold for rate of failed TCP connections. Calculated criteria must be above this value to be detected as a peer |
+|tcpFailedVarianceThreshold |  0.3  |Threshold for variance of failed TCP connections. Calculated criteria must be below this value to be detected as a peer |

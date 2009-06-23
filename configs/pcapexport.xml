@@ -1,0 +1,18 @@
+<ipfixConfig>
+	<observer id="1">
+		<interface>nfe0</interface>
+		<pcap_filter>ip</pcap_filter>
+		<captureLength>128</captureLength>
+		<next>2</next>
+	</observer>
+	
+	<packetQueue id="2">
+		<maxSize>10</maxSize>
+		<next>3</next>
+	</packetQueue>
+
+	<pcapExporter id="3">
+		<filename>vermont.pcap</filename>
+		<snaplen>128</snaplen>
+	</pcapExporter>
+</ipfixConfig>

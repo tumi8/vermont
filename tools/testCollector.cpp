@@ -24,12 +24,13 @@
  */
 
 
-#include "IpfixCollector.hpp"
-#include "IpfixParser.hpp"
-#include "IpfixPacketProcessor.hpp"
-#include "IpfixReceiverUdpIpV4.hpp"
-#include "IpfixReceiverSctpIpV4.hpp"
-#include "IpfixPrinter.hpp"
+#include "modules/ipfix/IpfixCollector.hpp"
+#include "modules/ipfix/IpfixParser.hpp"
+#include "modules/ipfix/IpfixPacketProcessor.hpp"
+#include "modules/ipfix/IpfixReceiverUdpIpV4.hpp"
+#include "modules/ipfix/IpfixReceiverSctpIpV4.hpp"
+#include "modules/ipfix/IpfixPrinter.hpp"
+#include "core/ConnectionQueue.h"
 
 #include "common/msg.h"
 
@@ -40,6 +41,11 @@
 #include <string.h>
 
 #define DEFAULT_LISTEN_PORT 1500
+
+void usage()
+{
+	msg(MSG_FATAL, "Usage: testCollector [{udp|sctp} <port>]");
+}
 
 void sigint(int) {
     static bool shutdownInitiated = false;
@@ -55,58 +61,57 @@ void sigint(int) {
 int main(int argc, char *argv[]) {
 
 	int lport = DEFAULT_LISTEN_PORT;
+	std::string proto = "udp";
 
 	msg_setlevel(MSG_DEBUG);
 	
 	signal(SIGINT, sigint);
 
-	if(argv[1]) {
-		lport=atoi(argv[1]);
+	if (!(argc == 1 || argc == 2 || argc == 3)) {
+		usage();
+		return -1;
+	}
+	
+	if (argc == 2)
+		proto = argv[1];
+	if (argc == 3)
+		lport = atoi(argv[2]);
+
+	IpfixReceiver* ipfixReceiver = 0;
+	if (proto == "udp") {
+		msg(MSG_INFO, "Creating UDP listener on port %i", lport);
+		ipfixReceiver = new IpfixReceiverUdpIpV4(lport);
+	} else if (proto == "sctp") {
+#ifdef SUPPORT_SCTP
+		ipfixReceiver = new IpfixReceiverSctpIpV4(lport, "127.0.0.1");
+#else
+		msg(MSG_FATAL, "testcollector has been compiled without sctp support");
+		return -1;
+#endif
+	} else {
+		msg(MSG_FATAL, "Protocol %s is not supported as a transport protocol for IPFIX data", proto.c_str()); 
+		return -1;
 	}
 
-	IpfixPrinter ipfixPrinter;
-	ipfixPrinter.start();
-	ipfixPrinter.runSink();
+	IpfixCollector collector(ipfixReceiver);
+	ConnectionQueue<IpfixRecord*> queue(100);
+	IpfixPrinter printer;
 
-#ifdef SUPPORT_SCTP
-	// If you want to create a SCTP testCollector 	
-   	IpfixReceiverSctpIpV4 ipfixReceiver(lport, "127.0.0.1");
-#endif
-	// If you want to create a UDP testCollector
-    	IpfixReceiverUdpIpV4 ipfixReceiver2(lport);
-	
-	
-	/* (not in this branch of rcvIpfix)
-	if (argc > 2) {
-		msg(MSG_DIALOG, "Adding %s to list of authorized hosts", argv[2]);
-		ipfixReceiver.addAuthorizedHost(argv[2]);
-	}
-	*/
+	collector.connectTo(&queue);
+	queue.connectTo(&printer);
 
-	IpfixParser ipfixParser;
-	ipfixParser.setTemplateLivetime(0);
-	ipfixParser.addFlowSink(&ipfixPrinter);
-
-	IpfixCollector ipfixCollector;
-#ifdef SUPPORT_SCTP
-	ipfixCollector.addIpfixReceiver(&ipfixReceiver);
-#endif
-	ipfixCollector.addIpfixReceiver(&ipfixReceiver2);
-	ipfixCollector.addIpfixPacketProcessor(&ipfixParser);
-	ipfixCollector.start();
+	printer.start();
+	queue.start();
+	collector.start();
 
 	msg(MSG_DIALOG, "Hit Ctrl+C to quit");
 	pause();
 	msg(MSG_DIALOG, "Stopping threads and tidying up.\n");
 
 	msg(MSG_DIALOG, "stopping collector\n");
-#ifdef SUPPORT_SCTP
-	ipfixReceiver.stop();
-#endif
-	ipfixReceiver2.stop();
-
-	msg(MSG_DIALOG, "stopping printer\n");
-	ipfixPrinter.stop();
+	collector.shutdown();
+	queue.shutdown();
+	printer.shutdown();
 
 	return 0;
 }

@@ -1,0 +1,9 @@
+Update instructions ipfixlolib/ipfix_names.c
+
+1) Update IPFIX-NR-Mapping.dat
+   This file contains all IPFIX/PSAMP field types (Information Elements)
+   with their id and data types.
+
+2) Edit ipfix_names.center and ipfix_names.footer
+
+3) Call 'bash -x applymapping.sh'

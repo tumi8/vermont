@@ -1,0 +1,55 @@
+<ipfixConfig>
+	<observer id="1">
+		<interface>nfe0</interface>
+		<pcap_filter>ip</pcap_filter>
+		<captureLength>128</captureLength>
+		<next>2</next>
+	</observer>
+	
+	<packetQueue id="2">
+		<maxSize>10</maxSize>
+		<next>3</next>
+	</packetQueue>
+	
+	<filter id="3">
+		<anonFilter>
+			<anonField>
+				<anonIE>
+					<ieName>sourceIPv4Address</ieName>
+				</anonIE>
+				<anonMethod>CryptoPan</anonMethod>
+				<anonParam>insert key here</anonParam>
+			</anonField>
+			<anonField>
+				<anonIE>
+					<ieName>destinationIPv4Address</ieName>
+					<ieLength>4</ieLength>
+				</anonIE>
+				<anonMethod>CryptoPan</anonMethod>
+				<anonParam>insert key here</anonParam>
+			</anonField>
+		</anonFilter>
+		<next>6</next>
+	</filter>
+	
+	<psampExporter id="6">
+		<ipfixPacketRestrictions>
+			<maxPacketSize>200</maxPacketSize>
+			<maxExportDelay unit="msec">500</maxExportDelay>
+		</ipfixPacketRestrictions>
+		<packetReporting>
+			<templateId>888</templateId>
+			<reportedIE>
+				<ieName>sourceIPv4Address</ieName>
+			</reportedIE>
+			<reportedIE>
+				<ieName>destinationIPv4Address</ieName>
+			</reportedIE>
+		</packetReporting>
+		<collector>
+			<ipAddress>127.0.0.1</ipAddress>
+			<transportProtocol>17</transportProtocol>
+			<port>1500</port>
+		</collector>
+	</psampExporter>	
+</ipfixConfig>

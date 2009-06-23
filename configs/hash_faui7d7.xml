@@ -1,0 +1,72 @@
+<ipfixConfig>
+       <sensorManager id="99">
+                <checkinterval>1</checkinterval>
+		<append>1</append>
+        </sensorManager>
+
+<observer id="1">
+	<interface>eth1</interface>
+	<pcap_filter>ip</pcap_filter>
+	<next>3</next>
+</observer>
+
+<packetQueue id="3">
+	<maxSize>1000</maxSize>
+	<next>6</next>
+</packetQueue>	
+
+<packetAggregator id="6">
+	<rule>
+		<templateId>998</templateId>
+		<flowKey>
+			<ieName>sourceIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationIPv4Address</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>protocolIdentifier</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>sourceTransportPort</ieName>
+		</flowKey>
+		<flowKey>
+			<ieName>destinationTransportPort</ieName>
+		</flowKey>
+		<nonFlowKey>
+			<ieName>flowStartMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>flowEndMilliSeconds</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>octetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>packetDeltaCount</ieName>
+		</nonFlowKey>
+		<nonFlowKey>
+			<ieName>tcpControlBits</ieName>
+		</nonFlowKey>
+	</rule>
+	<expiration>
+		<inactiveTimeout unit="sec">30</inactiveTimeout>
+		<activeTimeout unit="sec">600</activeTimeout>
+	</expiration>
+<hashtableBits>16</hashtableBits>
+	<pollInterval unit="sec">30</pollInterval>
+	<next>7</next>
+</packetAggregator>		
+
+
+<AutoFocus id="7">
+	<analyzerid>AutoFocus</analyzerid>
+	<reportfile>af_reports.txt</reportfile>
+	<hashbits>20</hashbits>
+	<timetreeinterval>600</timetreeinterval>
+	<nummaxresults>20</nummaxresults>
+	<minSubbits>25</minSubbits>
+	<numtrees>2</numtrees>
+</AutoFocus>	
+
+</ipfixConfig>	

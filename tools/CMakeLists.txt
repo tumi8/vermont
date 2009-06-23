@@ -21,11 +21,20 @@ ADD_EXECUTABLE(testCollector
 	testCollector.cpp
 )
 
-TARGET_LINK_LIBRARIES(testCollector
-	concentrator
+TARGET_LINK_LIBRARIES(testCollector	
+	modules
+	core
 	ipfixlolib
 	common
+	osdep
 	${CMAKE_THREAD_LIBS_INIT}
 	${PCAP_LIBRARY}
 )
 
+IF (LIBXML2_INCLUDE_DIR AND LIBXML2_LIBRARIES)
+	MESSAGE(STATUS "Found libxml2 libraries")
+	INCLUDE_DIRECTORIES(${LIBXML2_INCLUDE_DIR})
+	TARGET_LINK_LIBRARIES(testCollector
+		${LIBXML2_LIBRARIES}
+	)
+ENDIF (LIBXML2_INCLUDE_DIR AND LIBXML2_LIBRARIES)

@@ -1,0 +1,62 @@
+<ipfixConfig>
+	<ipfixDbReader id="1">
+		<host>10.159.5.10</host>
+		<port>3306</port>
+		<dbname>test</dbname>
+		<username>netadmin</username>
+		<password>nastyAdm1n</password>
+		<fullspeed>true</fullspeed>
+		<timeshift>false</timeshift>
+		<next>2</next>
+	</ipfixDbReader>
+
+	<ipfixQueue id="2">
+		<maxSize>1000</maxSize>
+		<next>6</next>
+	</ipfixQueue>
+
+	<anonRecord id="3">
+		<anonField>
+			<anonIE>
+				<ieName>sourceIPv4Address</ieName>
+			</anonIE>
+			<anonMethod>CryptoPan</anonMethod>
+			<anonParam>insert key here</anonParam>
+		</anonField>
+		<anonField>
+			<anonIE>
+				<ieName>destinationIPv4Address</ieName>
+				<ieLength>4</ieLength>
+			</anonIE>
+			<anonMethod>CryptoPan</anonMethod>
+			<anonParam>insert key here</anonParam>
+		</anonField>
+		<next>6</next>
+	</anonRecord>
+	
+	<ipfixPrinter id="7">
+	</ipfixPrinter>	
+
+	<ipfixDbWriter id="6">
+		<host>10.159.5.10</host>
+		<port>3306</port>
+		<dbname>test2</dbname>
+		<username>netadmin</username>
+		<password>nastyAdm1n</password>
+		<columns>
+			<name>dstIP</name>
+			<name>srcIP</name>
+			<name>srcPort</name>
+			<name>dstPort</name>
+			<name>proto</name>
+			<name>dstTos</name>
+			<name>bytes</name>
+			<name>pkts</name>
+			<name>firstSwitched</name>
+			<name>lastSwitched</name>
+			<name>firstSwitchedMillis</name>
+			<name>lastSwitchedMillis</name>
+			<name>exporterID</name>
+		</columns>
+	</ipfixDbWriter>
+</ipfixConfig>
