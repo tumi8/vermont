@@ -10,3 +10,6 @@ Compile Procedure:
  - if any adjustment to compilation settings are needed, 'ccmake .' is suggested
  - call 'make'
  - call './vermont'
+ - look in /configs for example configuration files
+ - module documentation can be found at 
+   http://vermont.berlios.de/vermont_module_configuration

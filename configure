@@ -1,0 +1,92 @@
+#!/bin/sh
+
+#
+# VERMONT build scripts for CMake
+# Copyright (C) 2007 Christoph Sommer <christoph.sommer@informatik.uni-erlangen.de>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+
+echo
+echo !!!!! Warning: This project uses CMake, not Automake.
+echo !!!!! Warning: You are executing a wrapper script with limited functionality.
+echo !!!!! Warning: Run \"ccmake .\" to see the full set of options offered.
+echo
+
+rm -f CMakeCache.txt
+
+CMAKE_PARAMETERS=
+while [ $# -gt 0 ]
+do
+case "$1" in
+	--help)
+		echo
+		echo "Supported Parameters:"
+		echo " --with-debug"
+		echo " --with-ip-header-offset X"
+		echo " --without-mysql"
+		echo " --without-sctp"
+		echo " --without-netflowv9"
+		echo " --without-tests"
+		echo
+		exit 0
+		shift
+	;;
+	--with-debug)
+		CMAKE_PARAMETERS="$CMAKE_PARAMETERS -DDEBUG=ON"
+		shift
+	;;
+	--with-ip-header-offset)
+		shift
+		if [ $# -eq 0 ]
+		then
+			echo "no offset given."
+			exit 1
+		fi
+		CMAKE_PARAMETERS="$CMAKE_PARAMETERS -DIP_HEADER_OFFSET=$1"
+		shift
+	;;
+	--without-mysql)
+		CMAKE_PARAMETERS="$CMAKE_PARAMETERS -DSUPPORT_MYSQL=OFF"
+		shift
+	;;
+	--without-netflowv9)
+		CMAKE_PARAMETERS="$CMAKE_PARAMETERS -DSUPPORT_NETFLOWV9=OFF"
+		shift
+	;;
+	--without-tests)
+		CMAKE_PARAMETERS="$CMAKE_PARAMETERS -DWITH_TESTS=OFF"
+		shift
+	;;
+	--without-sctp)
+		CMAKE_PARAMETERS="$CMAKE_PARAMETERS -DSUPPORT_SCTP=OFF"
+		shift
+	;;
+	*)
+		echo "Unknown parameter: $1"
+		exit 1
+		shift
+	;;
+esac
+done
+
+cmake $CMAKE_PARAMETERS . || exit 1
+
+echo
+echo !!!!! Warning: This project uses CMake, not Automake
+echo !!!!! Warning: You are executing a wrapper script with limited functionality.
+echo !!!!! Warning: Run \"ccmake .\" to see the full set of options offered.
+echo
+
