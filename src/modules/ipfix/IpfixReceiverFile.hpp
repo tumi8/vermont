@@ -37,15 +37,17 @@
  */
 class IpfixReceiverFile : public IpfixReceiver {
 public:
-	IpfixReceiverFile(std::string, std::string, int, int );
+	IpfixReceiverFile(std::string, std::string, int, int, bool);
 	virtual ~IpfixReceiverFile();
 
 	virtual void run();
 private:
+	bool checkint(const char*);
 	std::string packet_file_directory;
 	std::string packet_file_basename;
 	int from;
 	int to;
+	bool ignore_timestamps;
 	int fh;
 };
 

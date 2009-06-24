@@ -141,16 +141,14 @@
 	<ipfixQueue id="10">
 		<maxSize>10000</maxSize>
 		<next>11</next>
-		<!--<next>15</next>-->
+		<next>15</next>
 	</ipfixQueue>
 	
-<!--
 	<ipfixPrinter id="15">
 		</ipfixPrinter>
--->	
 	<ipfixFileWriter id="11">
 		<observationDomainId>99</observationDomainId>
-		<maximumFilesize>16 </maximumFilesize>
+		<maximumFilesize>64 </maximumFilesize>
 		<destinationPath>/home/sithhaue/filewriterfiles/</destinationPath> 
 		<!--<filenamePrefix>ipfixdump</filenamePrefix> -->
 	</ipfixFileWriter> 

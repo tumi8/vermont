@@ -9,7 +9,8 @@ IpfixReceiverFileCfg::IpfixReceiverFileCfg(XMLElement* elem)
 		packetFileBasename("ipfix.dump"),
 		packetFileDirectory("./"),
 		c_from(0),
-		c_to(-1)
+		c_to(-1),
+		ignore(true)
 {
 
 	if (!elem)
@@ -32,6 +33,9 @@ IpfixReceiverFileCfg::IpfixReceiverFileCfg(XMLElement* elem)
 		}
 		else if (e->matches("to")) {
 			c_to = getInt("to");
+		}
+		else if (e->matches("ignoreTimestamps")){
+			ignore = getBool("ignoreTimestamps", ignore);
 		}
 		else {
 			msg(MSG_FATAL, "Unkown ReceiverFile config statement %s\n", e->getName().c_str());
@@ -57,7 +61,7 @@ IpfixReceiverFileCfg* IpfixReceiverFileCfg::create(XMLElement* elem)
 IpfixCollector* IpfixReceiverFileCfg::createInstance()
 {
 	IpfixReceiverFile* ipfixReceiver;
-	ipfixReceiver = new IpfixReceiverFile(packetFileBasename, packetFileDirectory, c_from, c_to);
+	ipfixReceiver = new IpfixReceiverFile(packetFileBasename, packetFileDirectory, c_from, c_to, ignore);
 
 	if (!ipfixReceiver) {
 		THROWEXCEPTION("Could not create IpfixReceiver");

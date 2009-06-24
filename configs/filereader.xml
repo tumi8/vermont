@@ -6,6 +6,7 @@
 	<ipfixReceiverFile id="1">
 		<packetFileDirectory>/home/sithhaue/filewriterfiles/</packetFileDirectory>
 		<packetFileBasename>ipfix.dump</packetFileBasename>
+		<ignoreTimestamps>false</ignoreTimestamps>
 		<from>0</from>
 		<next>5</next>
 	</ipfixReceiverFile>

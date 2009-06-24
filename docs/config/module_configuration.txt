@@ -311,6 +311,56 @@ Output type: none
 |password |  none  |Password for database access. |
 |bufferrecords |  30  |Amount of flow records to buffer until they are written to the database. To achieve high performance, a value from 1000 to 10000 is recommended. |
 
+== IpfiFileWriter ==
+
+Dumps ipfix messages into data files. 
+
+Input type: IpfixRecord
+Output type: none
+
+**Example configuration:**
+<code xml>
+	<ipfixFileWriter id="11">
+		<observationDomainId>99</observationDomainId>
+		<maximumFilesize>64 </maximumFilesize>
+		<destinationPath>/home/test</destinationPath> 
+		<filenamePrefix>my_dump</filenamePrefix> 
+	</ipfixFileWriter> 
+
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+| observationDomainId |  none  | Observation Domain Id assigned to the records.  |
+| maximumFilesize |  2097152  | maximum size for the date files in KiB (maximumFilesize*1024 == maxmimum filesize in bytes)|
+| destinationPath | ./ | Output directory for the data files. | 
+| filenamePrefix | ipfix.dump | Basename for the filename. Please note that every filename will be suffixed with a consecutive 10-digit number starting with 0 | 
+
+== IpfiReceiverFile==
+
+Reads ipfix message from data files.
+
+Input type: none
+Output type: IpfixRecord
+
+**Example configuration:**
+<code xml>
+<ipfixReceiverFile id="1">
+		<packetFileDirectory>/home/test/</packetFileDirectory>
+		<packetFileBasename>my_dump</packetFileBasename>
+		<ignoreTimestamps>false</ignoreTimestamps>
+		<from>0</from>
+		<to>5</to>
+		<next>5</next>
+	</ipfixReceiverFile>
+
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+| packetFileDirectory |  ./  | Standard directory to read fles from |
+| packetFileBasename | ipfix.dump | Basename for the filename. | 
+| form | 0 | Prefix of the first file to read from | 
+| to | end | Prefix of the last file to read from. If not specified, the suffix of the last file available will be used. |
+
 == IpfixPayloadWriter ==
 
 Writes IPFIX records including front payload into files. Only the first N (to be set in parameters) flows in chronological order are regarded. It is expected, that incoming flows are biflows and include front payload. For each biflow, three files are generated: .info contains header information of the flow, two .payload files contain front payload in both directions. 

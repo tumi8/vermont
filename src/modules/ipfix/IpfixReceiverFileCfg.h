@@ -25,6 +25,7 @@ private:
 		std::string packetFileDirectory;
 		int c_from;
 		int c_to;
+		bool ignore;
 };
 
 #endif /*IPFIXRECEIVERFILECFG_H_*/
