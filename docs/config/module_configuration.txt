@@ -330,14 +330,14 @@ Output type: none
 </code>
 **Parameters:**
 |  **Element name**  |  **Default value**  |  **Description**  |
-| observationDomainId |  none  | Observation Domain Id assigned to the records.  |
-| maximumFilesize |  2097152  | maximum size for the date files in KiB (maximumFilesize*1024 == maxmimum filesize in bytes)|
+| observationDomainId | 0 | Observation Domain Id assigned to the records. |
+| maximumFilesize |  2097152  | maximum size for the date files in KiB (maximumFilesize*1024 == maxmimum filesize in bytes) |
 | destinationPath | ./ | Output directory for the data files. | 
-| filenamePrefix | ipfix.dump | Basename for the filename. Please note that every filename will be suffixed with a consecutive 10-digit number starting with 0 | 
+| filenamePrefix | ipfix.dump | Basename for the generated filenames. Please note that every filename will be suffixed with a consecutive 10-digit number starting at 0. | 
 
-== IpfiReceiverFile==
+== IpfiReceiverFile ==
 
-Reads ipfix message from data files.
+Reads ipfix message from data files generated with .
 
 Input type: none
 Output type: IpfixRecord
@@ -348,6 +348,7 @@ Output type: IpfixRecord
 		<packetFileDirectory>/home/test/</packetFileDirectory>
 		<packetFileBasename>my_dump</packetFileBasename>
 		<ignoreTimestamps>false</ignoreTimestamps>
+		<offlineSpeed>2.0</offlineSpeed>
 		<from>0</from>
 		<to>5</to>
 		<next>5</next>
@@ -356,10 +357,13 @@ Output type: IpfixRecord
 </code>
 **Parameters:**
 |  **Element name**  |  **Default value**  |  **Description**  |
-| packetFileDirectory |  ./  | Standard directory to read fles from |
-| packetFileBasename | ipfix.dump | Basename for the filename. | 
-| form | 0 | Prefix of the first file to read from | 
-| to | end | Prefix of the last file to read from. If not specified, the suffix of the last file available will be used. |
+| packetFileDirectory |  ./  | Standard directory to read files from |
+| packetFileBasename | ipfix.dump | Basename of the filenames, i.e. the filename without the suffixed number. | 
+| form | 0 | Suffix of the first file to read from. | 
+| to | end | Suffix of the last file to read from. If not specified, the suffix of the last file available will be used. |
+| ignoreTimestamps | true | If set to false, the ipfix messages will be processed with the same delay as they were originally recorded by IpfixFileWriter |
+| offlineSpeed | 1.0 | Sets the speed multiplier for file reading. A value <= 0 is equivalent to ignoreTimestamp=true. This value has no effect unless ignoreTimestamps is set to false. |
+
 
 == IpfixPayloadWriter ==
 

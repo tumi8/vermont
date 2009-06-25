@@ -5,12 +5,12 @@
 IpfixReceiverFileCfg::IpfixReceiverFileCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector,IpfixReceiverFileCfg>(elem, "ipfixReceiverFile"),
 	ipfixCollector(NULL),
-        observationDomainId(0),
 		packetFileBasename("ipfix.dump"),
 		packetFileDirectory("./"),
 		c_from(0),
 		c_to(-1),
-		ignore(true)
+		ignore(true),
+		offlinespeed(1.0)
 {
 
 	if (!elem)
@@ -37,13 +37,18 @@ IpfixReceiverFileCfg::IpfixReceiverFileCfg(XMLElement* elem)
 		else if (e->matches("ignoreTimestamps")){
 			ignore = getBool("ignoreTimestamps", ignore);
 		}
+		else if (e->matches("offlineSpeed")){
+			offlinespeed = getDouble("offlineSpeed");
+		}
+		else if (e->matches("next")) {
+			//ignore <next>
+		}	
 		else {
 			msg(MSG_FATAL, "Unkown ReceiverFile config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
 
-	observationDomainId = getInt("observationDomainId", 0);
 	msg(MSG_INFO, "CollectorConfiguration: Successfully parsed collectingProcess section");
 }
 
@@ -61,7 +66,7 @@ IpfixReceiverFileCfg* IpfixReceiverFileCfg::create(XMLElement* elem)
 IpfixCollector* IpfixReceiverFileCfg::createInstance()
 {
 	IpfixReceiverFile* ipfixReceiver;
-	ipfixReceiver = new IpfixReceiverFile(packetFileBasename, packetFileDirectory, c_from, c_to, ignore);
+	ipfixReceiver = new IpfixReceiverFile(packetFileBasename, packetFileDirectory, c_from, c_to, ignore, offlinespeed);
 
 	if (!ipfixReceiver) {
 		THROWEXCEPTION("Could not create IpfixReceiver");

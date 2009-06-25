@@ -6,12 +6,24 @@
 	<ipfixReceiverFile id="1">
 		<packetFileDirectory>/home/sithhaue/filewriterfiles/</packetFileDirectory>
 		<packetFileBasename>ipfix.dump</packetFileBasename>
-		<ignoreTimestamps>false</ignoreTimestamps>
+		<ignoreTimestamps>true</ignoreTimestamps>
+		<offlineSpeed>10</offlineSpeed>
 		<from>0</from>
-		<next>5</next>
+		<!--<to>5</to>-->
+		<next>8</next>
 	</ipfixReceiverFile>
 
 	<ipfixPrinter id="5">
 	</ipfixPrinter>
+		<trwPortscanDetector id="8">
+		<analyzerid>trwportscandetector</analyzerid>
+		<idmeftemplate>idmef/templates/trwportscan_template.xml</idmeftemplate>
+		<next>9</next>
+	</trwPortscanDetector>
+	
+	<idmefExporter id="9">
+		<sendurl>http://localhost</sendurl>
+	</idmefExporter>
+
 	
 </ipfixConfig>

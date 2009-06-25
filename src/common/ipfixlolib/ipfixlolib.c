@@ -649,9 +649,11 @@ static int ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length,
  * to their new values
  * returns the newly created filehandle*/
 static int ipfix_new_file(ipfix_receiving_collector* recvcoll){
+	int f = 0;
 	if (recvcoll->fh > 0) close(recvcoll->fh);
 	recvcoll->filenum++;
 	recvcoll->bytes_written = 0;
+
 	/*11 == maximum length of uint32_t including terminating \0*/
 	char *filename = malloc(sizeof(char)*(strlen(recvcoll->basename)+11)); 
 	if(! filename){
@@ -659,13 +661,23 @@ static int ipfix_new_file(ipfix_receiving_collector* recvcoll){
 		exit(1);
 	}
 	sprintf(filename, "%s%010d", recvcoll->basename, recvcoll->filenum);
-	msg(MSG_INFO, "Creating new file: %s", filename);
 	/*int f = creat(filename, S_IRWXU | S_IRWXG | O_TRUNC);*/
-	int f = creat(filename, S_IRUSR | S_IWUSR | S_IWGRP | S_IRGRP | O_TRUNC);
-	if (f<0) {
-		msg(MSG_ERROR, "IPFIX: could not open DATAFILE file %s", filename);
-		exit(1);
+	while(1){
+		f = open(filename, O_WRONLY | O_CREAT | O_EXCL,
+					 S_IRUSR | S_IWUSR | S_IWGRP | S_IRGRP);
+		if (f<0) { 
+			if (errno == EEXIST){ //increase the filenumber and try again
+				recvcoll->filenum++; //if the current file alreadz exists
+				msg(MSG_DEBUG, "Skipping %s\n", filename);
+				sprintf(filename, "%s%010d", recvcoll->basename, recvcoll->filenum);
+				continue;
+			}
+			msg(MSG_ERROR, "IPFIX: could not open DATAFILE file %s", filename);
+			exit(1);
+		}
+		break;
 	}
+	msg(MSG_INFO, "Created new file: %s", filename);
 	free(filename);
 	recvcoll->fh = f;
 	return f;
@@ -1115,8 +1127,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 	int i;
 	int bytes_sent;
 	int expired;
-	uint32_t packet_size;
-	uint32_t n;
+	uint32_t n = 0;
 	// determine, if we need to send the template data:
 	time_t time_now = time(NULL);
 
@@ -1258,6 +1269,10 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 					msg(MSG_ERROR, "IPFIX: prepending header failed");
 					return -1;
 				}
+				if((exporter->template_sendbuffer)->packet_header.length > 
+						exporter->collector_arr[i].maxfilesize * 1024)
+							THROWEXCEPTION("Fatal: message length exceeds maximum filesize!");
+
 				fh = exporter->collector_arr[i].fh;
 				if(exporter->collector_arr[i].bytes_written + 
 						ntohs((exporter->template_sendbuffer)->packet_header.length)
@@ -1304,11 +1319,10 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
  */
 static int ipfix_send_data(ipfix_exporter* exporter)
 {
-	int i, j;
+	int i;
 	int bytes_sent;
 	// send the current data_sendbuffer:
 	int data_length = 0;
-	uint32_t packet_size;
 
 #ifdef SUPPORT_SCTP
 	//time_t time_now = time(NULL);
@@ -1428,6 +1442,10 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 					break;
 #endif
 				case DATAFILE:
+					if((exporter->data_sendbuffer)->packet_header.length > 
+						exporter->collector_arr[i].maxfilesize * 1024)
+							THROWEXCEPTION("Fatal: message length exceeds maximum filesize!");
+					
 					fh = exporter->collector_arr[i].fh;
 					if(exporter->collector_arr[i].bytes_written +
 							 ntohs((exporter->data_sendbuffer)->packet_header.length)

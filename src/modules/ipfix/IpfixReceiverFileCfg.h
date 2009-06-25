@@ -26,6 +26,7 @@ private:
 		int c_from;
 		int c_to;
 		bool ignore;
+		float offlinespeed;
 };
 
 #endif /*IPFIXRECEIVERFILECFG_H_*/

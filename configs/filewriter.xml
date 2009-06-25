@@ -44,16 +44,16 @@
 			<nonFlowKey>
 				<ieName>packetDeltaCount</ieName>
 			</nonFlowKey>
-		<!--	<nonFlowKey>
+			<nonFlowKey>
 				<ieName>tcpControlBits</ieName>
 			</nonFlowKey>
 			<nonFlowKey>
 					<ieName>frontPayload</ieName>
-					<ieLength>256</ieLength>
+					<ieLength>1024</ieLength>
 			</nonFlowKey>
 			<nonFlowKey>
 					<ieName>frontPayloadLen</ieName>
-			</nonFlowKey>-->
+			</nonFlowKey>
 		</rule>
 		<expiration>
 			<inactiveTimeout unit="sec">2</inactiveTimeout>
@@ -95,9 +95,9 @@
 			<nonFlowKey>
 				<ieName>packetDeltaCount</ieName>
 			</nonFlowKey>
-		<!--	<nonFlowKey>
+		<nonFlowKey>
 				<ieName>tcpControlBits</ieName>
-			</nonFlowKey>-->
+			</nonFlowKey>
 			<nonFlowKey>
 				<ieName>revflowStartNanoSeconds</ieName>
 			</nonFlowKey>
@@ -113,24 +113,23 @@
 			<nonFlowKey>
 				<ieName>revtcpControlBits</ieName>
 			</nonFlowKey>
-		<!--	<nonFlowKey>
+		<nonFlowKey>
 				<ieName>frontPayload</ieName>
-				<ieLength>256</ieLength>
+				<ieLength>1024</ieLength>
 			</nonFlowKey>
 			<nonFlowKey>
 				<ieName>frontPayloadLen</ieName>
 			</nonFlowKey>
 			<nonFlowKey>
 				<ieName>revFrontPayload</ieName>
-				<ieLength>256</ieLength>
+				<ieLength>1024</ieLength>
 			</nonFlowKey>
 			<nonFlowKey>
 				<ieName>revFrontPayloadLen</ieName>
-			</nonFlowKey>-->
+			</nonFlowKey>
 					</rule>
 		<expiration>
 			<inactiveTimeout unit="sec">2</inactiveTimeout>
-			<!--<inactiveTimeout unit="sec">40</inactiveTimeout>-->
 			<activeTimeout unit="sec">5</activeTimeout>
 		</expiration>
 		<hashtableBits>18</hashtableBits>
@@ -141,16 +140,16 @@
 	<ipfixQueue id="10">
 		<maxSize>10000</maxSize>
 		<next>11</next>
-		<next>15</next>
+		<!--<next>15</next>-->
 	</ipfixQueue>
 	
-	<ipfixPrinter id="15">
-		</ipfixPrinter>
+<!--	<ipfixPrinter id="15">
+		</ipfixPrinter>-->
 	<ipfixFileWriter id="11">
 		<observationDomainId>99</observationDomainId>
-		<maximumFilesize>64 </maximumFilesize>
+		<maximumFilesize>64</maximumFilesize>
 		<destinationPath>/home/sithhaue/filewriterfiles/</destinationPath> 
-		<!--<filenamePrefix>ipfixdump</filenamePrefix> -->
+		<filenamePrefix>ipfixdump</filenamePrefix> 
 	</ipfixFileWriter> 
 
 </ipfixConfig>

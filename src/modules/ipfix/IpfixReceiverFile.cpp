@@ -35,11 +35,12 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <fstream>
+#define MAXMISSINGFILES 10
 
 
 bool IpfixReceiverFile::checkint(const char *my_string){
-	uint32_t stringlength = strlen(my_string);
-	for (int j=0; j<stringlength; j++)
+	size_t stringlength = strlen(my_string);
+	for (size_t j=0; j<stringlength; j++)
 		if((int)my_string[j] < 0x30 || (int)my_string[j] > 0x39) 
 				return false;
 
@@ -47,14 +48,33 @@ bool IpfixReceiverFile::checkint(const char *my_string){
 }
 
 IpfixReceiverFile::IpfixReceiverFile(std::string packetFileBasename, std::string packetFileDirectory,
-		int c_from, int c_to, bool ignore)	: 
-		packet_file_basename(packetFileBasename),
+		int c_from, int c_to, bool ignore, float offlinespeed)	: 
 		packet_file_directory(packetFileDirectory),
-		from(c_from), to(c_to), ignore_timestamps(ignore)
+		packet_file_basename(packetFileBasename),
+		from(c_from), to(c_to), ignore_timestamps(ignore),
+		stretchTime(offlinespeed), stretchTimeInt(1)
 {
 	if (packet_file_directory.at(packet_file_directory.length()-1) != '/')
 				packet_file_directory += "/";
-	
+
+	if(stretchTime <=0.0 ) ignore_timestamps = true;
+
+	//adopted from Observer
+	if (stretchTime == 1.0) ; // do nothing
+	else {
+		float m = stretchTime;
+		stretchTime = 1.0/m;
+		if(m < 1.0){
+			stretchTimeInt = (uint16_t)(1/m);
+			if((1-stretchTimeInt*m) > 0.1)
+				stretchTimeInt = 0; //use float
+			else
+				msg(MSG_INFO, "IpfixReceiverFile: speed multiplier set to %f in order to allow integer multiplication",
+						1.0/stretchTimeInt);
+		}
+		else 
+			stretchTimeInt = 0;
+	}
 	//get the last filenumber, if not specified by the user
 	if (to<0){
 		int maxnum = 0;
@@ -84,6 +104,8 @@ IpfixReceiverFile::IpfixReceiverFile(std::string packetFileBasename, std::string
 	msg(MSG_INFO, "  - packet_file_basename = %s", packet_file_basename.c_str());
 	msg(MSG_INFO, "  - Start (from) = %d" , from);
 	msg(MSG_INFO, "  - End (to) = %d" , to);
+	msg(MSG_INFO, "  - ignoreTimestamps = %s" , (ignore_timestamps) ? "true" : "false");
+	msg(MSG_INFO, "  - stretchTime = %f", stretchTime);
 }
 
 
@@ -100,9 +122,18 @@ void IpfixReceiverFile::run()
 {
 	boost::shared_array<uint8_t> data;
 	boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
-	struct timeval msg_first, real_start, msg_now, real_now, msg_delta, real_delta, sleep_time;
+	struct timeval msg_first, real_start, msg_now, real_now, msg_delta, real_delta, sleep_time, tmp_delta;
 	struct timespec wait_spec;
 	bool first = true;
+	int missing = 0; 
+
+	settimezero(&msg_first);
+	settimezero(&real_delta);
+	settimezero(&real_start);
+	settimezero(&msg_delta);
+	settimezero(&msg_now);
+	settimezero(&tmp_delta);
+	
 	for(int filecount=from; filecount<=to; filecount++){
 		ostringstream numberformat (ostringstream::out);
 		numberformat.width(10);
@@ -113,9 +144,14 @@ void IpfixReceiverFile::run()
 		msg(MSG_DEBUG, "IpfixReceiverFile: Trying to read message from file \"%s\"", packet_file_path.c_str());
 		std::ifstream packetFile(packet_file_path.c_str(), std::ios::in | std::ios::binary);
 		if (packetFile.fail()){
-			msg(MSG_FATAL, "Couldn't open inputfile %s\n", packet_file_path.c_str());
+			msg(MSG_FATAL, "Couldn't open inputfile %s", packet_file_path.c_str());
+			if (++missing > MAXMISSINGFILES){
+				msg(MSG_FATAL, "Couldn't open %d files in a row...terminating", MAXMISSINGFILES);
+				break;
+			}
 			continue;
 		}
+		missing = 0;
 
 		packetFile.seekg(0, std::ios::end);
 		uint32_t end = packetFile.tellg();
@@ -163,13 +199,8 @@ void IpfixReceiverFile::run()
 				if (first){
 					first = false;
 					msg_first.tv_sec = (time_t)exporttime;
-					msg_first.tv_usec = 0;
 					real_start.tv_sec = real_now.tv_sec;
 					real_start.tv_usec = real_now.tv_usec;
-					real_delta.tv_sec = 0;
-					real_delta.tv_usec = 0;
-					msg_delta.tv_sec = 0;
-					msg_delta.tv_usec = 0;
 				}
 				else{
 					msg_now.tv_sec = (time_t)exporttime;
@@ -178,22 +209,36 @@ void IpfixReceiverFile::run()
 					timersub(&msg_now, &msg_first, &msg_delta);
 					//real_delta.tv_sec = real_now.tv_sec - real_start.tv_sec;
 					timersub(&real_now, &real_start, &real_delta);
-					//sleep_time.tv_sec = msg_delta.tv_sec - real_delta.tv_sec;
-					timersub(&msg_delta, &real_delta, &sleep_time);
-
-					msg(MSG_INFO, "\nmsg_delta: %06u %06u\nreal_delta: %06u %06u\nsleep_time: %06u %06u\n",(uint32_t)
-						msg_delta.tv_sec,(uint32_t) msg_delta.tv_usec,(uint32_t) real_delta.tv_sec,
-						(uint32_t) real_delta.tv_usec,(uint32_t) sleep_time.tv_sec,(uint32_t) sleep_time.tv_usec);
+					
+					if(stretchTimeInt != 1){
+						if(stretchTimeInt == 0)
+							timermulfloat(&msg_delta, &tmp_delta, stretchTime);
+						else
+							timermul(&msg_delta, &tmp_delta, stretchTimeInt);
+					}
+					else{
+						tmp_delta.tv_sec = msg_delta.tv_sec;
+						tmp_delta.tv_usec = msg_delta.tv_usec;
+					}
 
 					//if(real_delta.tv_sec < msg_delta.tv_sec) sleep(sleep_time.tv_sec);
-					if(timercmp(&real_delta, &msg_delta, <)){
+					if(timercmp(&real_delta, &tmp_delta, <)){
+						//sleep_time.tv_sec = msg_delta.tv_sec - real_delta.tv_sec;
+						timersub(&tmp_delta, &real_delta, &sleep_time);
+
+						msg(MSG_DEBUG, "\nmsg_delta: %06u %06u\ntmp_delta: %06u %06u\nreal_delta: %06u %06u\nsleep_time: %06u %06u\n",
+						  (uint32_t) msg_delta.tv_sec, (uint32_t) msg_delta.tv_usec,
+						  (uint32_t) tmp_delta.tv_sec, (uint32_t) tmp_delta.tv_usec,(uint32_t) real_delta.tv_sec,
+						  (uint32_t) real_delta.tv_usec, (uint32_t) sleep_time.tv_sec,(uint32_t) sleep_time.tv_usec);
+
 						wait_spec.tv_sec = sleep_time.tv_sec;
 						wait_spec.tv_nsec = sleep_time.tv_usec*1000;
-						msg(MSG_INFO, "\nsleeping for: %06u %06u\n", (uint32_t)sleep_time.tv_sec, (uint32_t)sleep_time.tv_usec);
+						msg(MSG_DEBUG, "\nsleeping for: %06u %06u\n",
+							 (uint32_t)sleep_time.tv_sec, (uint32_t)sleep_time.tv_usec);
 						nanosleep(&wait_spec, NULL);
 					}
 					else{
-						msg(MSG_INFO, "\nNot sleeping\n");
+						msg(MSG_DEBUG, "\nNot sleeping\n");
 					}
 				}
 			}
