@@ -667,7 +667,7 @@ static int ipfix_new_file(ipfix_receiving_collector* recvcoll){
 					 S_IRUSR | S_IWUSR | S_IWGRP | S_IRGRP);
 		if (f<0) { 
 			if (errno == EEXIST){ //increase the filenumber and try again
-				recvcoll->filenum++; //if the current file alreadz exists
+				recvcoll->filenum++; //if the current file already exists
 				msg(MSG_DEBUG, "Skipping %s\n", filename);
 				sprintf(filename, "%s%010d", recvcoll->basename, recvcoll->filenum);
 				continue;
@@ -1276,7 +1276,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 				fh = exporter->collector_arr[i].fh;
 				if(exporter->collector_arr[i].bytes_written + 
 						ntohs((exporter->template_sendbuffer)->packet_header.length)
-						  >	  (exporter->collector_arr[i].maxfilesize * 1024))
+						  >	  (uint64_t)(exporter->collector_arr[i].maxfilesize) * 1024)
 									fh = ipfix_new_file(&exporter->collector_arr[i]);
 
 				exporter->collector_arr[i].bytes_written += 
@@ -1291,7 +1291,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 							exporter->template_sendbuffer->current)) < 0)
 						msg(MSG_ERROR, "IPFIX: could not write to DATAFILE file");
 				}
-				msg(MSG_DEBUG, "=====> packet_header.length: %d \t bytes_written: %d \t Total: %llu",
+				msg(MSG_DEBUG, "packet_header.length: %d \t bytes_written: %d \t Total: %llu",
 					 ntohs((exporter->template_sendbuffer)->packet_header.length), n,
 					 	exporter->collector_arr[i].bytes_written );
 
@@ -1449,7 +1449,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 					fh = exporter->collector_arr[i].fh;
 					if(exporter->collector_arr[i].bytes_written +
 							 ntohs((exporter->data_sendbuffer)->packet_header.length)
-							 	> (exporter->collector_arr[i].maxfilesize * 1024))
+							 	> (uint64_t)(exporter->collector_arr[i].maxfilesize) * 1024)
 									fh = ipfix_new_file(&exporter->collector_arr[i]);
 
 					exporter->collector_arr[i].bytes_written += 
@@ -1463,7 +1463,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 							exporter->data_sendbuffer->committed)) < 0)
 						msg(MSG_ERROR, "IPFIX: could not write to DATAFILE file");
 
-					msg(MSG_DEBUG, "=====> packet_header.length: %d \t bytes_written: %d \t Total: %llu",
+					msg(MSG_DEBUG, "packet_header.length: %d \t bytes_written: %d \t Total: %llu",
 					 ntohs((exporter->data_sendbuffer)->packet_header.length), bytes_sent,
 					 	exporter->collector_arr[i].bytes_written);
 					break;

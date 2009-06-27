@@ -295,7 +295,7 @@ typedef struct {
 	int fh; /**< for protocol==FILE, this variable contains the file handle */
 	int filenum; /**< for protocol==FILE, this variable contains the current filenumber: 'filename = basename + filenum'*/
 	uint64_t bytes_written; /**< for protocol==FILE, this variable contains the current filesize */
-	int maxfilesize; /**< for protocol==FILE, this variable contains the maximum filesize given in KiB*/
+	uint32_t maxfilesize; /**< for protocol==FILE, this variable contains the maximum filesize given in KiB*/
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 	char* packet_directory_path; /**< if protocol==RAWDIR: path to a directory to store packets in. Ignored otherwise. */
 	int packets_written; /**< if protcol==RAWDIR: number of packets written to packet_directory_path. Ignored otherwise. */

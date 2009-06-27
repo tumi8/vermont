@@ -33,14 +33,10 @@
 #define SENDER_TEMPLATE_ID_HI 60000
 
 /**
- * Creates a new IPFIX Exporter. Do not forget to call @c startIpfixFileWriter() to begin sending
- * @param sourceID Source ID this exporter will report
- * @param ip destination collector's address
- * @param port destination collector's port
- * @return handle to use when calling @c destroyIpfixFileWriter()
+ * Creates a new IPFIXFileWriter. Do not forget to call @c startIpfixFileWriter() to begin sending
  */
 IpfixFileWriter::IpfixFileWriter(uint16_t observationDomainId, std::string filenamePrefix, 
-	std::string destinationPath, int maximumFilesize)
+	std::string destinationPath, uint32_t maximumFilesize)
 			: IpfixSender(observationDomainId)
 {
 	if (filenamePrefix != "") {
@@ -50,7 +46,6 @@ IpfixFileWriter::IpfixFileWriter(uint16_t observationDomainId, std::string filen
 		}
 	}
 	
-
 	msg(MSG_DEBUG, "IpfixFileWriter: running");
 }
 
@@ -60,10 +55,9 @@ IpfixFileWriter::~IpfixFileWriter() {
 /**
  * Add another IPFIX collector to export the stream to
  * the lowlevel stuff in handled by underlying ipfixlolib
- * @param packetDirectoryName path to create raw packet files in
  */
 int IpfixFileWriter::addCollector(uint16_t observationDomainId, std::string filenamePrefix, 
-			std::string destinationPath, int maximumFilesize) 
+			std::string destinationPath, uint32_t maximumFilesize) 
 {
 	ipfix_exporter *ex = (ipfix_exporter *)ipfixExporter;
 	
@@ -73,7 +67,7 @@ int IpfixFileWriter::addCollector(uint16_t observationDomainId, std::string file
 	if (maximumFilesize < 0) maximumFilesize = DEFAULTFILESIZE;
 	if(maximumFilesize < 64)
 		 msg(MSG_ERROR, 
-		   "Warning: maximum filsize < maximum message length - this could lead to serious problems");
+		   "maximum filsize < maximum message length - this could lead to serious problems");
 
 	if(ipfix_add_collector(ex, my_filename.c_str(), maximumFilesize, DATAFILE) != 0) {
 		msg(MSG_FATAL, "IpfixFileWriter: ipfix_add_collector of %s failed", my_filename.c_str());

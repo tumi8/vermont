@@ -333,7 +333,7 @@ Output type: none
 | observationDomainId | 0 | Observation Domain Id assigned to the records. |
 | maximumFilesize |  2097152  | maximum size for the date files in KiB (maximumFilesize*1024 == maxmimum filesize in bytes) |
 | destinationPath | ./ | Output directory for the data files. | 
-| filenamePrefix | ipfix.dump | Basename for the generated filenames. Please note that every filename will be suffixed with a consecutive 10-digit number starting at 0. | 
+| filenamePrefix | ipfix.dump | Basename of the generated filenames. Please note that every filename will be suffixed with a consecutive 10-digit number starting at 0. | 
 
 == IpfiReceiverFile ==
 
@@ -357,7 +357,7 @@ Output type: IpfixRecord
 </code>
 **Parameters:**
 |  **Element name**  |  **Default value**  |  **Description**  |
-| packetFileDirectory |  ./  | Standard directory to read files from |
+| packetFileDirectory |  ./  | Standard directory to read files from. |
 | packetFileBasename | ipfix.dump | Basename of the filenames, i.e. the filename without the suffixed number. | 
 | form | 0 | Suffix of the first file to read from. | 
 | to | end | Suffix of the last file to read from. If not specified, the suffix of the last file available will be used. |

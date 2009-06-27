@@ -42,16 +42,17 @@ class IpfixFileWriter :  public IpfixSender
 {
 	public:
 		IpfixFileWriter(uint16_t observationDomainId, std::string filenamePrefix, 
-			std::string destinationPath, int maximumFilesize);
+			std::string destinationPath, uint32_t maximumFilesize);
 
 		~IpfixFileWriter();
 		int addCollector(uint16_t observationDomainId, std::string filenamePrefix, 
-					std::string destinationPath, int maximumFilesize);
+					std::string destinationPath, uint32_t maximumFilesize);
 
 	private:
 		std::string filenamePrefix;
 		std::string destinationPath;
-		int maximumFilesize; //maximum filesize in  KiB, i.e. maximumFilesize * 1024 == maximum filesize in bytes
+		//maximum filesize in  KiB, i.e. maximumFilesize * 1024 == maximum filesize in bytes
+		uint32_t maximumFilesize; 
 };
 
 

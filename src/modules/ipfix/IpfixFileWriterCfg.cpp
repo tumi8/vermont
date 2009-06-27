@@ -39,7 +39,8 @@ IpfixFileWriterCfg::IpfixFileWriterCfg(XMLElement* elem)
 			observationDomainId = getInt("observationDomainId");
 		}
 		 else {
-			msg(MSG_FATAL, "Unknown ipfixFileWriter config statement %s\n", e->getName().c_str());
+			msg(MSG_FATAL, "Unknown ipfixFileWriter config statement %s\n",
+				 e->getName().c_str());
 			continue;
 		}
 	}

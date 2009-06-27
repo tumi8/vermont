@@ -66,7 +66,8 @@ IpfixReceiverFileCfg* IpfixReceiverFileCfg::create(XMLElement* elem)
 IpfixCollector* IpfixReceiverFileCfg::createInstance()
 {
 	IpfixReceiverFile* ipfixReceiver;
-	ipfixReceiver = new IpfixReceiverFile(packetFileBasename, packetFileDirectory, c_from, c_to, ignore, offlinespeed);
+	ipfixReceiver = new IpfixReceiverFile(packetFileBasename, packetFileDirectory, 
+		c_from, c_to, ignore, offlinespeed);
 
 	if (!ipfixReceiver) {
 		THROWEXCEPTION("Could not create IpfixReceiver");

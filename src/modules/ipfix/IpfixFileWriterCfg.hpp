@@ -32,7 +32,7 @@ private:
 	// config variables
 	std::string destinationPath;
 	std::string filenamePrefix;
-	uint64_t maximumFilesize;
+	uint32_t maximumFilesize;
 	uint16_t observationDomainId;
 };
 

@@ -5,11 +5,11 @@
 	
 	<ipfixReceiverFile id="1">
 		<packetFileDirectory>/home/sithhaue/filewriterfiles/</packetFileDirectory>
-		<packetFileBasename>ipfix.dump</packetFileBasename>
-		<ignoreTimestamps>true</ignoreTimestamps>
-		<offlineSpeed>10</offlineSpeed>
+		<packetFileBasename>my_ipfixdump</packetFileBasename>
+		<ignoreTimestamps>false</ignoreTimestamps>
+		<offlineSpeed>15</offlineSpeed>
 		<from>0</from>
-		<!--<to>5</to>-->
+		<to>10</to>
 		<next>8</next>
 	</ipfixReceiverFile>
 

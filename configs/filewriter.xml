@@ -147,9 +147,9 @@
 		</ipfixPrinter>-->
 	<ipfixFileWriter id="11">
 		<observationDomainId>99</observationDomainId>
-		<maximumFilesize>64</maximumFilesize>
+		<maximumFilesize>4195000</maximumFilesize>
 		<destinationPath>/home/sithhaue/filewriterfiles/</destinationPath> 
-		<filenamePrefix>ipfixdump</filenamePrefix> 
+		<filenamePrefix>my_ipfixdump</filenamePrefix>
 	</ipfixFileWriter> 
 
 </ipfixConfig>

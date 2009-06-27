@@ -31,6 +31,7 @@
 
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
+#include <fstream>
 /* Code adopted from Observer.cpp: */
 /* subtract uvp from tvp and store in vvp */
 #ifndef timersub
@@ -97,6 +98,7 @@ private:
 	float stretchTime;
 	uint16_t stretchTimeInt;
 	int fh;
+	std::ifstream packetFile;
 };
 
 #endif
