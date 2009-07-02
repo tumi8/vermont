@@ -486,6 +486,19 @@ class IpfixRecord
 					(memcmp(exporterAddress.ip, x.exporterAddress.ip, exporterAddress.len) == 0 );
 
 			}
+			// compare two SourceIDs without considering Observation Domain ID
+			bool equalIgnoringODID(const struct SourceID & x) const {
+				if(protocol == 132) /* compare file descriptors instead of IP addresses because of possible multihoming */
+					return (fileDescriptor == x.fileDescriptor);
+				else /* UDP: fileDescriptor only specifies the Collector endpoint*/
+					return (exporterPort == x.exporterPort) &&
+					//(receiverPort == x.receiverPort) &&
+					(fileDescriptor == x.fileDescriptor) &&
+					//(protocol == x.protocol) &&
+					(exporterAddress.len == x.exporterAddress.len) &&
+					(memcmp(exporterAddress.ip, x.exporterAddress.ip, exporterAddress.len) == 0 );
+			}
+
 		};
 
 		boost::shared_ptr<IpfixRecord::SourceID> sourceID;

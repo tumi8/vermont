@@ -73,14 +73,16 @@ void TemplateBuffer::bufferTemplate(TemplateBuffer::BufferedTemplate* bt) {
 /**
  * Frees memory, marks Template unused.
  */
-void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId) 
+void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId, bool all) 
 {
 	TemplateBuffer::BufferedTemplate* predecessor = 0;
 	TemplateBuffer::BufferedTemplate* bt = head;
 	bool found = false;
 	while (bt != 0) {
-		/* templateId == setID means that all templates of this set type shall be removed */
-		if ((*(bt->sourceID.get()) == *(sourceId.get())) && ((bt->templateID == templateId) || (bt->setID == templateId))) {
+		/* templateId == setID means that all templates of this set type shall be removed for given sourceID */
+		/* all == true means that all templates of given sourceID shall be removed */
+		if (((*(bt->sourceID.get()) == *(sourceId.get())) && ((bt->templateID == templateId) || (bt->setID == templateId)) 
+				|| (all && sourceId->equalIgnoringODID(*(bt->sourceID.get()))))) {
 			found = true;
 			if (predecessor != 0) {
 				predecessor->next = bt->next;
@@ -90,7 +92,7 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 			if (bt->setID == IPFIX_SetId_Template) {
 				/* Invoke all registered callback functions */
 				IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
-				ipfixRecord->sourceID = sourceId;
+				ipfixRecord->sourceID = bt->sourceID;
 				ipfixRecord->templateInfo = bt->templateInfo;
 				ipfixParser->ipfixRecordSender->send(ipfixRecord);
 			} else
@@ -98,7 +100,7 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 			if (bt->setID == NetflowV9_SetId_Template) {
 				/* Invoke all registered callback functions */
 				IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
-				ipfixRecord->sourceID = sourceId;
+				ipfixRecord->sourceID = bt->sourceID;
 				ipfixRecord->templateInfo = bt->templateInfo;
 				ipfixParser->ipfixRecordSender->send(ipfixRecord);
 			} else
@@ -106,13 +108,13 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 			if (bt->setID == IPFIX_SetId_OptionsTemplate) {
 				/* Invoke all registered callback functions */
 				IpfixOptionsTemplateDestructionRecord* ipfixRecord = ipfixParser->optionsTemplateDestructionRecordIM.getNewInstance();
-				ipfixRecord->sourceID = sourceId;
+				ipfixRecord->sourceID = bt->sourceID;
 				ipfixRecord->optionsTemplateInfo = bt->optionsTemplateInfo;
 				ipfixParser->ipfixRecordSender->send(ipfixRecord);
 			} else if (bt->setID == IPFIX_SetId_DataTemplate) {
 				/* Invoke all registered callback functions */
 				IpfixDataTemplateDestructionRecord* ipfixRecord = ipfixParser->dataTemplateDestructionRecordIM.getNewInstance();
-				ipfixRecord->sourceID = sourceId;
+				ipfixRecord->sourceID = bt->sourceID;
 				ipfixRecord->dataTemplateInfo = bt->dataTemplateInfo;
 				ipfixParser->ipfixRecordSender->send(ipfixRecord);
 
