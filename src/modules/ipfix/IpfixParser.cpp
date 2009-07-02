@@ -749,7 +749,13 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
  * Process a NetflowV9 Packet
  * @return 0 on success
  */
-int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId) {
+int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId) 
+{
+	if (length < sizeof(NetflowV9Header)) {
+		msg(MSG_ERROR, "IpfixParser: Invalide NetFlowV9 message - message too short to contain header!");
+		return -1;
+	}
+	
 	NetflowV9Header* header = (NetflowV9Header*)message.get();
 
 	/* pointer to first set */
@@ -792,9 +798,14 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
  * Process an IPFIX Packet
  * @return 0 on success
  */
-int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId) {
+int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId)
+{
+	if (length < sizeof(IpfixHeader)) {
+		msg(MSG_ERROR, "IpfixParser: Invalide IPFIX message - message too short to contain header!");
+		return -1;
+	}
 	IpfixHeader* header = (IpfixHeader*)message.get();
-    sourceId->observationDomainId = ntohl(header->observationDomainId);
+	sourceId->observationDomainId = ntohl(header->observationDomainId);
 
 	if (ntohs(header->length) != length) {
 		msg(MSG_ERROR, "IpfixParser: Bad message length - packet length is  %#06x, header length field is %#06x\n", length, ntohs(header->length));
@@ -853,6 +864,11 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId)
 {
 	pthread_mutex_lock(&mutex);
+	if (length == 0) {
+		templateBuffer->destroyBufferedTemplate(sourceId, 0, true);
+		pthread_mutex_unlock(&mutex);
+		return 0;
+	}
 	IpfixHeader* header = (IpfixHeader*)message.get();
 	if (ntohs(header->version) == 0x000a) {
 		int r = processIpfixPacket(message, length, sourceId);
@@ -875,7 +891,6 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
 #endif
 }
 	
-
 /**
  * Creates a new  @c IpfixParser.
  * @return handle to created instance

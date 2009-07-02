@@ -132,10 +132,15 @@ void IpfixReceiverSctpIpV4::run() {
 			rfd = accept(listen_socket, (struct sockaddr*)&clientAddress, &clientAddressLen);
 			
 			if (rfd >= 0){
-				FD_SET(rfd, &fd_array); // add new client to fd_array
-				msg(MSG_DEBUG, "IpfixReceiverSctpIpV4: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
-				if (rfd > maxfd){
-					maxfd = rfd;
+				if (isHostAuthorized(&clientAddress.sin_addr, sizeof(clientAddress.sin_addr))) {
+					FD_SET(rfd, &fd_array); // add new client to fd_array
+					msg(MSG_DEBUG, "IpfixReceiverSctpIpV4: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
+					if (rfd > maxfd){
+						maxfd = rfd;
+					}
+				} else {
+					msg(MSG_DEBUG, "IpfixReceiverSctpIpV4: Connection from unwanted client %s:%d, FD=%d rejected.", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
+					close(rfd);
 				}
 			}else{
 				msg(MSG_ERROR ,"accept() in ipfixReceiver failed");
@@ -146,31 +151,30 @@ void IpfixReceiverSctpIpV4::run() {
 		for (rfd = listen_socket + 1; rfd <= maxfd; ++rfd) {
       			if (FD_ISSET(rfd, &readfds)) {
 				boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
-      				ret = recvfrom(rfd, data.get(), MAX_MSG_LEN, 0, 
-      					(struct sockaddr*)&clientAddress, &clientAddressLen);
-				if (ret == 0) { // shut down initiated
+      				ret = recvfrom(rfd, data.get(), MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
+				if (ret < 0) { // error
+					msg(MSG_ERROR, "IpfixReceiverSctpIpV4: Client error (%s), close connection.", inet_ntoa(clientAddress.sin_addr));
+					close(rfd);
+					// we treat an error like a shut down, so overwrite return value to zero
+					ret = 0;
+				}
+				// create sourceId
+				boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
+				memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
+				sourceID->exporterAddress.len = 4;
+				sourceID->exporterPort = ntohs(clientAddress.sin_port);
+				sourceID->protocol = IPFIX_protocolIdentifier_SCTP;
+				sourceID->receiverPort = receiverPort;
+				sourceID->fileDescriptor = rfd;
+				// send packet to all packet processors
+				mutex.lock();
+				for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
+					(*i)->processPacket(data, ret, sourceID);
+				}
+				mutex.unlock();
+				if (ret == 0) { // this was a shut down (or error)
 					FD_CLR(rfd, &fd_array); // delete dead client
-					msg(MSG_DEBUG, "IpfixReceiverSctpIpV4: Client disconnected");
-				}else{
-					if (isHostAuthorized(&clientAddress.sin_addr,
-					    sizeof(clientAddress.sin_addr))) {
-						boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
-		
-						memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
-						sourceID->exporterAddress.len = 4;
-						sourceID->exporterPort = ntohs(clientAddress.sin_port);
-						sourceID->protocol = IPFIX_protocolIdentifier_SCTP;
-						sourceID->receiverPort = receiverPort;
-						sourceID->fileDescriptor = rfd;
-						mutex.lock();
-						for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
-							(*i)->processPacket(data, ret, sourceID);
-						}
-						mutex.unlock();
-					}
-					else{
-						msg(MSG_DEBUG, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
-					}
+					msg(MSG_DEBUG, "IpfixReceiverSctpIpV4: Client %s disconnected", inet_ntoa(clientAddress.sin_addr));
 				}
       			}
       		}
