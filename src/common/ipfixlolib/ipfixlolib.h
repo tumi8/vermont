@@ -41,7 +41,7 @@
 #include <netinet/sctp.h>
 #endif
 
-#include "encoding.h"
+//#include "encoding.h"
 #include "ipfix_names.h"
 
 #ifdef __cplusplus
