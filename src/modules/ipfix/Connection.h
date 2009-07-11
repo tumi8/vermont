@@ -33,6 +33,7 @@ using namespace std;
 class Connection
 {
 	public:
+		static const uint8_t FIN = 0x01;
 		static const uint8_t SYN = 0x02;
 		static const uint8_t RST = 0x04;
 		static const uint8_t ACK = 0x10;

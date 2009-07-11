@@ -55,7 +55,9 @@ class TemplateBuffer {
 		~TemplateBuffer();
 
 		TemplateBuffer::BufferedTemplate* getBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId);
-		void destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID id);
+		void destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId, bool all = false); 
+			// templateId=2,3,4 means that all Templates, Option Templates, or Data Templates of given sourceID are destroyed
+			// all=true overrides templateId parameter, so all Templates of given sourceID will be deleted		
 		void bufferTemplate(TemplateBuffer::BufferedTemplate* bt);
 		TemplateBuffer::BufferedTemplate* getFirstBufferedTemplate();
 

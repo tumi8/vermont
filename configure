@@ -20,9 +20,9 @@
 #
 
 echo
-echo Warning: This project uses CMake, not Automake.
-echo Warning: You are executing a wrapper script with limited functionality.
-echo Warning: Run \"ccmake .\" to see the full set of options offered.
+echo !!!!! Warning: This project uses CMake, not Automake.
+echo !!!!! Warning: You are executing a wrapper script with limited functionality.
+echo !!!!! Warning: Run \"ccmake .\" to see the full set of options offered.
 echo
 
 rm -f CMakeCache.txt
@@ -85,8 +85,8 @@ done
 cmake $CMAKE_PARAMETERS . || exit 1
 
 echo
-echo Warning: This project uses CMake, not Automake
-echo Warning: You are executing a wrapper script with limited functionality.
-echo Warning: Run \"ccmake .\" to see the full set of options offered.
+echo !!!!! Warning: This project uses CMake, not Automake
+echo !!!!! Warning: You are executing a wrapper script with limited functionality.
+echo !!!!! Warning: Run \"ccmake .\" to see the full set of options offered.
 echo
 

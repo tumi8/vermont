@@ -1,20 +1,24 @@
 <ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
 	<sensorManager id="99">
-		<append>0</append>
 		<outputfile>sensor_output.xml</outputfile>
-		<checkinterval>1</checkinterval>
+		<checkinterval>5</checkinterval>
 	</sensorManager>
-
+	
 	<observer id="1">
-		<interface>eth0</interface>
+		<filename>DUMP</filename>
 		<pcap_filter>ip</pcap_filter>
-		<captureLength>128</captureLength>
 		<offlineAutoExit>1</offlineAutoExit>
-		<offlineSpeed>0</offlineSpeed>
+		<offlineSpeed>1</offlineSpeed>
+		<captureLength>128</captureLength>
 		<next>2</next>
 	</observer>
 
-	<packetAggregator id="2">
+	<packetQueue id="2">
+		<maxSize>1000</maxSize>
+		<next>3</next>
+	</packetQueue>
+	
+	<packetAggregator id="3">
 		<rule>
 			<templateId>998</templateId>
 			<flowKey>
@@ -48,18 +52,13 @@
 				<ieName>tcpControlBits</ieName>
 			</nonFlowKey>
 			<nonFlowKey>
-					<ieName>frontPayload</ieName>
-					<ieLength>1024</ieLength>
-			</nonFlowKey>
-			<nonFlowKey>
-					<ieName>frontPayloadLen</ieName>
+				<ieName>maxPacketGap</ieName>
 			</nonFlowKey>
 		</rule>
 		<expiration>
-			<inactiveTimeout unit="sec">2</inactiveTimeout>
-			<activeTimeout unit="sec">5</activeTimeout>
+			<inactiveTimeout unit="sec">5</inactiveTimeout>
+			<activeTimeout unit="sec">10</activeTimeout>
 		</expiration>
-		<hashtableBits>18</hashtableBits>
 		<pollInterval unit="msec">1000</pollInterval>
 		<next>4</next>
 	</packetAggregator>
@@ -95,8 +94,11 @@
 			<nonFlowKey>
 				<ieName>packetDeltaCount</ieName>
 			</nonFlowKey>
-		<nonFlowKey>
+			<nonFlowKey>
 				<ieName>tcpControlBits</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>maxPacketGap</ieName>
 			</nonFlowKey>
 			<nonFlowKey>
 				<ieName>revflowStartNanoSeconds</ieName>
@@ -113,44 +115,37 @@
 			<nonFlowKey>
 				<ieName>revtcpControlBits</ieName>
 			</nonFlowKey>
-		<nonFlowKey>
-				<ieName>frontPayload</ieName>
-				<ieLength>1024</ieLength>
-			</nonFlowKey>
 			<nonFlowKey>
-				<ieName>frontPayloadLen</ieName>
+				<ieName>revMaxPacketGap</ieName>
 			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>revFrontPayload</ieName>
-				<ieLength>1024</ieLength>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>revFrontPayloadLen</ieName>
-			</nonFlowKey>
-					</rule>
+		</rule>
 		<expiration>
-			<inactiveTimeout unit="sec">2</inactiveTimeout>
-			<activeTimeout unit="sec">5</activeTimeout>
+			<inactiveTimeout unit="sec">70</inactiveTimeout>
+			<activeTimeout unit="sec">310</activeTimeout>
 		</expiration>
-		<hashtableBits>18</hashtableBits>
 		<pollInterval unit="msec">1000</pollInterval>
-		<next>10</next>
+		<next>5</next>
 	</ipfixAggregator>
 
-	<ipfixQueue id="10">
-		<maxSize>10000</maxSize>
-		<next>11</next>
-		<!--<next>15</next>-->
-	</ipfixQueue>
+	<p2pDetector id="5">
+		<analyzerid>P2PDetector</analyzerid>
+		<interval>300</interval>
+		<subnet>192.168.1.0/24</subnet>
+		<udpRateThreshold>0.013</udpRateThreshold>
+		<udpHostRateThreshold>0.0007</udpHostRateThreshold>
+		<tcpRateThreshold>0.082</tcpRateThreshold>
+		<coexistentTCPConsThreshold>2.9</coexistentTCPConsThreshold>
+		<rateLongTCPConsThreshold>0.018</rateLongTCPConsThreshold>
+		<tcpVarianceThreshold>0.068</tcpVarianceThreshold>
+		<failedConsPercentThreshold>4.8</failedConsPercentThreshold>
+		<tcpFailedRateThreshold>0.01</tcpFailedRateThreshold>
+		<tcpFailedVarianceThreshold>0.3</tcpFailedVarianceThreshold>
+		<next>6</next>
+	</p2pDetector>
 	
-<!--	<ipfixPrinter id="15">
-		</ipfixPrinter>-->
-	<ipfixFileWriter id="11">
-		<observationDomainId>99</observationDomainId>
-		<maximumFilesize>4195000</maximumFilesize>
-		<destinationPath>/home/sithhaue/filewriterfiles/</destinationPath> 
-		<filenamePrefix>my_ipfixdump</filenamePrefix>
-	</ipfixFileWriter> 
-
+	<idmefExporter id="6">
+		<sendurl>http://localhost</sendurl>
+		<destdir>idmef-msg</destdir>
+	</idmefExporter>	
+	
 </ipfixConfig>
-
