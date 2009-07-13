@@ -42,6 +42,32 @@ THRESHOLD
 1.0
 </code>
 
+
+== HostStatistics ==
+
+Receives flow records and counts all bytes that were transferred by all hosts in the specified subnet. On reconfiguration, the byte sums and corresponding IP addresses are written to the file specified in element 'logPath'.
+Attention: This code is alpha status and may be quite slow.
+
+Input type: IpfixRecord
+Output type: none
+
+**Example configuration:**
+<code xml>
+<hostStatistics id="9">
+	<subnet>192.168.0.0/16</subnet>
+	<addrFilter>src</addrFilter>
+	<logPath>hoststats.log</logPath>
+	<logInterval>10</logInterval>
+</frontPayloadSigMatcher>
+</code>
+Parameters:
+|  **Element name**  |  **Default value**  |  **Description**  |
+|subnet |  none  |IP subnet with all hosts that need to be analyzed. IP 4-tuple notation with subnet mask specified in bits. |
+|addrFilter |  none  |Specifies which IP address fields are used for the IP filter (specified in element 'subnet'). 'src' for the source IP, 'dst' for the destination IP, 'both' for both IP addresses. |
+|logPath |  none  |File, where statistics are saved. |
+|logInterval |  10  |Interval in seconds, when statistics are exported. ATTENTION: currently not in use. |
+
+
 == IDMEFExporter ==
 
 Exports incoming IDMEF messages to the external perl script idmefsender.pl which sends it over the network to a specified URL.
@@ -398,7 +424,47 @@ Output type: Packet
 |	replaceTimestamps |  false  |If true, PCAP packet timestamps are replaced with current time. This parameter only applies to PCAP file reading. |
 |	offlineSpeed |  1.0  |Only applies to PCAP file reading. Sets the speed multiplier for offline PCAP file reading. A negative value means read as fast as you can. |
 |	offlineAutoExit |  true  |Only applies to PCAP file reading. Sets if Vermont should be shut down automatically after reading all PCAP file data. |
-|       maxPackets | 0 | Specifies a maximum number of packets to be processed by the Observer. After this number is reached, the Observer stops reading packets and may trigger the shutdown, if parameter 'offlineAutoExit' was specified. If this parameter is set to 0, the Observer may read an infinite amount of packets.
+|	maxPackets | 0 | Specifies a maximum number of packets to be processed by the Observer. After this number is reached, the Observer stops reading packets and may trigger the shutdown, if parameter 'offlineAutoExit' was specified. If this parameter is set to 0, the Observer may read an infinite amount of packets. |
+
+== P2PDetector ==
+
+Detects Peer-to-Peer Clients in a subnet. Attention: IPFIX flows must be aggregated to biflows.
+
+Input type: IpfixRecord
+Output type: IdmefMessage
+
+**Example configuration:**
+<code xml>
+<p2pDetector id="5">
+	<analyzerid>P2PDetector</analyzerid>
+	<interval>300</interval>
+	<subnet>192.168.1.0/24</subnet>
+	<udpRateThreshold>0.013</udpRateThreshold>
+	<udpHostRateThreshold>0.0007</udpHostRateThreshold>
+	<tcpRateThreshold>0.082</tcpRateThreshold>
+	<coexistentTCPConsThreshold>2.9</coexistentTCPConsThreshold>
+	<rateLongTCPConsThreshold>0.018</rateLongTCPConsThreshold>
+	<tcpVarianceThreshold>0.068</tcpVarianceThreshold>
+	<failedConsPercentThreshold>4.8</failedConsPercentThreshold>
+	<tcpFailedRateThreshold>0.01</tcpFailedRateThreshold>
+	<tcpFailedVarianceThreshold>0.3</tcpFailedVarianceThreshold>
+	<next>6</next>
+</p2pDetector>	
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|analyzerid |  none  |Analyzer ID which is inserted into the generated IDMEF message. |
+|interval |  300  |Interval in seconds for repeated computing of the criteria |
+|subnet |  0.0.0.0  |Subnet to be researched |
+|udpRateThreshold |  0.013  |Threshold for udp rate. Calculated criteria must be above this value to be detected as a peer |
+|udpHostRateThreshold |  0.0007  |Threshold for udp host rate. Calculated criteria must be above this value to be detected as a peer |
+|tcpRateThreshold |  0.082  |Threshold for tcp rate. Calculated criteria must be above this value to be detected as a peer |
+|coexistentTCPConsThreshold |  2.9  |Threshold for coexistent TCP connections. Calculated criteria must be above this value to be detected as a peer |
+|rateLongTCPConsThreshold |  0.018  |Threshold for rate of long TCP conncetions. Calculated criteria must be above this value to be detected as a peer |
+|tcpVarianceThreshold |  0.068  |Threshold for variance of new TCP connections. Calculated criteria must be below this value to be detected as a peer |
+|failedConsPercentThreshold |  4.8  |Threshold for percentage of failed TCP connections. Calculated criteria must be above this value to be detected as a peer |
+|tcpFailedRateThreshold |  0.01  |Threshold for rate of failed TCP connections. Calculated criteria must be above this value to be detected as a peer |
+|tcpFailedVarianceThreshold |  0.3  |Threshold for variance of failed TCP connections. Calculated criteria must be below this value to be detected as a peer |
 
 == PacketFilter ==
 
@@ -426,6 +492,11 @@ Output type: Packet
 	<regexBased>
 		<matchPattern>is\s*not</matchPattern>
 	</regexBased>
+	<hostBased>
+		<addrFilter>src</addrFilter>
+		<ip>1.2.3.4</ip>
+		<ip>1.2.3.6</ip>
+	</hostBased>
 	<next>3</next>
 </filter>
 </code>
@@ -449,6 +520,9 @@ Output type: Packet
 |	exportControlPackets |  true  |Controls wether TCP control packets (SYN/FIN/RST) are exported by stateConnectionBased and connectionBased filter. |
 |	anonFilter |  none  |Specifies a filter that performs anonymization on captured network packets. Contains one or more anonFields. This tag can have several subtags. The subtags are the same ones that can be used in the RecordAnonymizer module |
 |	payloadFilter |  none  |Payload is dropped, when this filter is specified. |
+|	hostBased |  none  |Hostbased filter, which filters packets not belonging to any IPs listed in configuration. |
+|	addrFilter |  none  |Specifies if source IP address ('src'), destination IP address ('dst') or both IP addresses ('both') are used in the filter. |
+|	ip |  none  |IP address that is accepted by the filter. May appear multiple times. |
 
 == PacketQueue ==
 
@@ -731,43 +805,3 @@ Output type: IdmefMessage
 |timeexpirescanner |  1800  |Seconds, until as portscanner classified IP addresses are purged from table. |
 |timeexpirebenign |  1800  |Seconds, until as benign classified IP addresses are purged from table. |
 |timecleanupinterval |  10  |Interval length in seconds, when IP address table is scanned for entries to be purged. |
-
-== P2PDetector ==
-
-Detects Peer-to-Peer Clients in a subnet. Attention: IPFIX flows must be aggregated to biflows.
-
-Input type: IpfixRecord
-Output type: IdmefMessage
-
-**Example configuration:**
-<code xml>
-<p2pDetector id="5">
-	<analyzerid>P2PDetector</analyzerid>
-	<interval>300</interval>
-	<subnet>192.168.1.0/24</subnet>
-	<udpRateThreshold>0.013</udpRateThreshold>
-	<udpHostRateThreshold>0.0007</udpHostRateThreshold>
-	<tcpRateThreshold>0.082</tcpRateThreshold>
-	<coexistentTCPConsThreshold>2.9</coexistentTCPConsThreshold>
-	<rateLongTCPConsThreshold>0.018</rateLongTCPConsThreshold>
-	<tcpVarianceThreshold>0.068</tcpVarianceThreshold>
-	<failedConsPercentThreshold>4.8</failedConsPercentThreshold>
-	<tcpFailedRateThreshold>0.01</tcpFailedRateThreshold>
-	<tcpFailedVarianceThreshold>0.3</tcpFailedVarianceThreshold>
-	<next>6</next>
-</p2pDetector>	
-</code>
-**Parameters:**
-|  **Element name**  |  **Default value**  |  **Description**  |
-|analyzerid |  none  |Analyzer ID which is inserted into the generated IDMEF message. |
-|interval |  300  |Interval in seconds for repeated computing of the criteria |
-|subnet |  0.0.0.0  |Subnet to be researched |
-|udpRateThreshold |  0.013  |Threshold for udp rate. Calculated criteria must be above this value to be detected as a peer |
-|udpHostRateThreshold |  0.0007  |Threshold for udp host rate. Calculated criteria must be above this value to be detected as a peer |
-|tcpRateThreshold |  0.082  |Threshold for tcp rate. Calculated criteria must be above this value to be detected as a peer |
-|coexistentTCPConsThreshold |  2.9  |Threshold for coexistent TCP connections. Calculated criteria must be above this value to be detected as a peer |
-|rateLongTCPConsThreshold |  0.018  |Threshold for rate of long TCP conncetions. Calculated criteria must be above this value to be detected as a peer |
-|tcpVarianceThreshold |  0.068  |Threshold for variance of new TCP connections. Calculated criteria must be below this value to be detected as a peer |
-|failedConsPercentThreshold |  4.8  |Threshold for percentage of failed TCP connections. Calculated criteria must be above this value to be detected as a peer |
-|tcpFailedRateThreshold |  0.01  |Threshold for rate of failed TCP connections. Calculated criteria must be above this value to be detected as a peer |
-|tcpFailedVarianceThreshold |  0.3  |Threshold for variance of failed TCP connections. Calculated criteria must be below this value to be detected as a peer |
