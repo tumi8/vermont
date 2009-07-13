@@ -59,7 +59,7 @@ int <a href=#ipfix_start_data_set>ipfix_start_data_set</a>(ipfix_exporter* expor
 void <a href=#ipfix_put_data_field>ipfix_put_data_field</a>(ipfix_exporter *exporter, char *data, uint16_t length)
 int <a href=#ipfix_set_data_field_marker>ipfix_set_data_field_marker</a>(ipfix_exporter *exporter);
 int <a href=#ipfix_delete_data_fields_upto_marker>ipfix_delete_data_fields_upto_marker</a>(ipfix_exporter *exporter);
-int <a href=#ipfix_end_data_set>ipfix_end_data_set</a>(ipfix_exporter *exporter)
+int <a href=#ipfix_end_data_set>ipfix_end_data_set</a>(ipfix_exporter *exporter, uint16_t number_of_records)
 int <a href=#ipfix_cancel_data_set>ipfix_cancel_data_set</a>(ipfix_exporter *exporter);
 
 
@@ -290,10 +290,11 @@ NOTE: Only fields within an "unended" set can be deleted, i.e. before calling <a
 
 
 <a name=ipfix_end_data_set>
-<code>int ipfix_end_data_set(ipfix_exporter *exporter)</code></a><p>
+<code>int ipfix_end_data_set(ipfix_exporter *exporter, uint16_t number_of_records)</code></a><p>
 End a previously started data set.<br>
 <br>
 exporter: pointer to exporter struct<br>
+number_of_records: number of records included in the terminated set (used to update the sequence number of the next IPFIX message)<br>
 <hr width="94%" noshade="noshade" align="left" size="1">
 
 
