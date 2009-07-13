@@ -1,0 +1,80 @@
+<ipfixConfig>
+	<sensorManager id="99">
+		<checkinterval>1</checkinterval>
+	</sensorManager>
+
+	<observer id="1">
+		<interface>eth0</interface>
+		<pcap_filter>ip</pcap_filter>
+		<captureLength>1500</captureLength>
+		<next>2</next>
+		<next>6</next>
+	</observer>
+
+	<packetQueue id="2">
+		<maxSize>10</maxSize>
+		<next>3</next>
+	</packetQueue>
+
+	<filter id="3">
+		<hostBased>
+			<addrFilter>both</addrFilter>
+			<ip>192.168.0.1</ip>
+			<ip>192.168.0.2</ip>
+		</hostBased>
+		<next>4</next>
+	</filter>
+
+	<packetQueue id="4">
+		<maxSize>10</maxSize>
+		<next>5</next>
+	</packetQueue>
+	<psampExporter id="5">
+		<observationDomainId>0</observationDomainId>
+		<ipfixPacketRestrictions>
+			<maxExportDelay unit="msec">500</maxExportDelay>
+		</ipfixPacketRestrictions>
+		<packetReporting>
+			<templateId>888</templateId>
+			<reportedIE><ieName>sourceIPv4Address</ieName></reportedIE>
+			<reportedIE><ieName>destinationIPv4Address</ieName></reportedIE>
+			<reportedIE><ieName>sourceTransportPort</ieName></reportedIE>
+			<reportedIE><ieName>destinationTransportPort</ieName></reportedIE>
+			<reportedIE><ieName>protocolIdentifier</ieName></reportedIE>
+			<reportedIE><ieName>ipPayloadPacketSection</ieName><ieLength>65535</ieLength></reportedIE>
+		</packetReporting>
+		<collector>
+			<ipAddress>192.168.0.10</ipAddress>
+			<transportProtocol>UDP</transportProtocol>
+			<port>4711</port>
+		</collector>
+	</psampExporter>
+
+	<packetQueue id="6">
+		<maxSize>10</maxSize>
+		<next>7</next>
+	</packetQueue>
+
+	<packetAggregator id="7">
+		<rule>
+			<templateId>998</templateId>
+			<flowKey><ieName>sourceIPv4Address</ieName></flowKey>
+			<flowKey><ieName>destinationIPv4Address</ieName></flowKey>
+			<nonFlowKey><ieName>octetDeltaCount</ieName></nonFlowKey>
+		</rule>
+		<expiration>
+			<inactiveTimeout unit="sec">1</inactiveTimeout>
+			<activeTimeout unit="sec">1</activeTimeout>
+		</expiration>
+		<pollInterval unit="msec">1000</pollInterval>
+		<next>8</next>
+	</packetAggregator>
+
+	<hostStatistics id="8">
+		<subnet>192.168.0.0/16</subnet>
+		<addrFilter>both</addrFilter>
+		<logIntervall>10</logIntervall>
+		<logPath>host_data.log</logPath>
+	</hostStatistics>
+
+</ipfixConfig>
