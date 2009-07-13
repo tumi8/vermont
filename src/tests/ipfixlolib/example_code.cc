@@ -11,7 +11,9 @@
  */
 
 #include <stdio.h>
-#include "ipfixlolib.h"
+#include "common/ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/encoding.h" // because we need htonll()
+#include "common/msg.h"
 
 #define MY_SOURCE_ID 70538
 
@@ -260,8 +262,11 @@ int main(int argc, char **argv)
 				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
 
 				/* finish the data-set 
-				   remark: the main task of ipfix_end_data_set is to calculate the length of the data set */
-				ret=ipfix_end_data_set(my_exporter);
+				   remarks: 
+					- the main task of ipfix_end_data_set is to calculate the length of the data set 
+					- the numbers of records must be given to enable the calculation of the next sequence number
+				*/
+				ret=ipfix_end_data_set(my_exporter, 2);
 //				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
 
 				if (ret != 0)
@@ -342,7 +347,7 @@ int main(int argc, char **argv)
 
 		    /* finish the data-set 
 remark: the main task of ipfix_end_data_set is to calculate the length of the data set */
-		    ret=ipfix_end_data_set(my_exporter);
+		    ret=ipfix_end_data_set(my_exporter, 1);
 
 		    if (ret != 0)
 			fprintf(stderr, "ipfix_end_data_set failed!\n");
