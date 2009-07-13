@@ -4,11 +4,13 @@
 #include <core/Cfg.h>
 #include "modules/packet/filter/FilterModule.h"
 
+#include <set>
 #include <vector>
 #include <algorithm>
 
 // forward declaration of instances
 class RegExFilter;
+class HostFilter;
 class StringFilter;
 class SystematicSampler;
 class StateConnectionFilter;
@@ -56,6 +58,49 @@ class PacketFilterHelperCfg
 	virtual Module* getQueueInstance()  { THROWEXCEPTION("Not supported"); return NULL; }
 protected:
 	PacketFilterHelperCfg(XMLElement *e);
+};
+
+class HostFilterCfg
+	: public PacketFilterHelperCfg
+{
+public:
+	friend class PacketFilterCfg;
+
+	virtual PacketFilterCfg* create(XMLElement* e) {return NULL; };
+
+	virtual ~HostFilterCfg();
+
+	virtual std::string getName() { return "hostBased"; }
+
+	virtual std::string getAddrFilter() { return addrFilter; }
+	virtual std::set<uint32_t> getIpList();
+
+	virtual Module* getInstance();
+
+	virtual bool deriveFrom(Cfg* old)
+	{
+		HostFilterCfg* cfg = dynamic_cast<HostFilterCfg*>(old);
+		if (cfg)
+			return deriveFrom(cfg);
+
+		THROWEXCEPTION("Can't derive from HostFilter");
+		return false;
+	}
+
+	virtual bool deriveFrom(HostFilterCfg* old)
+	{
+		if ((getIpList() != old->getIpList()) || (getAddrFilter() != old->getAddrFilter()))
+			return false;
+
+		return true;
+	}
+protected:
+	HostFilterCfg(XMLElement *e);
+
+private:
+	HostFilter* instance;
+	std::string addrFilter;
+	std::set<uint32_t> ipList;
 };
 
 class PacketCountFilterCfg

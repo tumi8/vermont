@@ -21,6 +21,8 @@ ADD_LIBRARY(modules
 	analysis/P2PDetectorCfg.cpp
 	analysis/RBSWormDetectorCfg.cpp
 	analysis/TRWPortscanDetectorCfg.cpp
+	analysis/HostStatistics.cpp
+	analysis/HostStatisticsCfg.cpp
 	# support files for FrontPayloadSigMatcher
 	analysis/fpsigmatcher/KTree.c
 	analysis/fpsigmatcher/Matcher.c
@@ -47,6 +49,7 @@ ADD_LIBRARY(modules
 	packet/filter/StateConnectionFilter.cpp
 	packet/filter/AnonFilter.cpp
 	packet/filter/PayloadFilter.cpp
+	packet/filter/HostFilter.cpp
 
 	ipfix/IpfixCollectorCfg.cpp
 	ipfix/IpfixDbReaderCfg.cpp
