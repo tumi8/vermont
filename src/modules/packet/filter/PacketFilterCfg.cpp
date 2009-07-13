@@ -9,8 +9,13 @@
 #include <modules/packet/filter//ConnectionFilter.h>
 #include <modules/packet/filter//AnonFilter.h>
 #include <modules/packet/filter//PayloadFilter.h>
-#include "common/msg.h"
+#include <modules/packet/filter//HostFilter.h>
 
+#include "common/msg.h"
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <cassert>
 
@@ -20,7 +25,7 @@ PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
 {
 	if (!elem)
 		return;
-	
+
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -31,6 +36,9 @@ PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
 		if (e->matches("countBased")) {
 			msg(MSG_INFO, "Filter: Creating count based sampler");
 			c = new PacketCountFilterCfg(e);
+		} else if (e->matches("hostBased")) {
+			msg(MSG_INFO, "Filter: Creating host based sampler");
+			c = new HostFilterCfg(e);
 		} else if (e->matches("stringBased")) {
 			msg(MSG_INFO, "Filter: Creating string based sampler");
 			c = new PacketStringFilterCfg(e);
@@ -113,6 +121,46 @@ PacketFilterHelperCfg::PacketFilterHelperCfg(XMLElement *e)
 {
 
 }
+
+HostFilterCfg::HostFilterCfg(XMLElement *e)
+	: PacketFilterHelperCfg(e), instance(NULL)
+{
+	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
+	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
+	     it != set.end();
+	     it++) {
+		XMLElement* e = *it;
+
+		if (e->matches("addrFilter")) {
+			addrFilter = e->getFirstText();
+		} else if (e->matches("ip")) {
+			std::string ip_str = e->getFirstText();
+			in_addr_t addr = inet_addr(ip_str.c_str());
+			ipList.insert(addr);
+		} else {
+			msg(MSG_FATAL, "Unknown observer config statement %s\n", e->getName().c_str());
+			continue;
+		}
+	}
+}
+
+HostFilterCfg::~HostFilterCfg()
+{
+}
+
+Module* HostFilterCfg::getInstance()
+{
+	if (!instance) {
+		instance = new HostFilter(addrFilter, ipList);
+	}
+	return (Module*)instance;
+}
+
+std::set<uint32_t> HostFilterCfg::getIpList()
+{
+	return ipList;
+}
+
 
 PacketCountFilterCfg::PacketCountFilterCfg(XMLElement *e)
 	: PacketFilterHelperCfg(e), instance(NULL)
