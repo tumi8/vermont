@@ -1,6 +1,9 @@
 /*
- * IPFIX Concentrator Module Library
- * Copyright (C) 2009 Tobias Limmer <http://www7.informatik.uni-erlangen.de/~limmer>
+ * IPFIX Database Reader/Writer
+ * Copyright (C) 2006 Jürgen Abberger
+ * Copyright (C) 2006 Lothar Braun <braunl@informatik.uni-tuebingen.de>
+ * Copyright (C) 2007 Gerhard Muenz
+ * Copyright (C) 2008 Tobias Limmer
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,23 +21,39 @@
  *
  */
 
-#ifndef _IPFIX_FILE_WRITER_H_
-#define _IPFIX_FILE_WRITER_H_
 
+#ifndef IPFIXFILEWRITER_H
+#define IPFIXFILEWRITER_H
+
+#include "IpfixParser.hpp"
+#include "IpfixRecord.hpp"
+#include "common/ipfixlolib/ipfix.h"
+#include "common/ipfixlolib/ipfixlolib.h"
 #include "modules/ipfix/IpfixSender.hpp"
+#include <netinet/in.h>
+#include <time.h>
+#include <iostream>
+#include <fstream>
 
-#include <vector>
+#define EXPORTERID 0
+#define DEFAULTFILESIZE 2097152
 
-/**
- * IPFIX Exporter interface that exports raw packets as a series of files in a directory
- */
-class IpfixFileWriter : public IpfixSender
+class IpfixFileWriter :  public IpfixSender
 {
-public:
-	IpfixFileWriter(uint16_t observationDomainId, std::string packetDirectoryName = "");
-	~IpfixFileWriter();
+	public:
+		IpfixFileWriter(uint16_t observationDomainId, std::string filenamePrefix, 
+			std::string destinationPath, uint32_t maximumFilesize);
 
-	int addCollector(std::string packetDirectoryName);
+		~IpfixFileWriter();
+		int addCollector(uint16_t observationDomainId, std::string filenamePrefix, 
+					std::string destinationPath, uint32_t maximumFilesize);
+
+	private:
+		std::string filenamePrefix;
+		std::string destinationPath;
+		//maximum filesize in  KiB, i.e. maximumFilesize * 1024 == maximum filesize in bytes
+		uint32_t maximumFilesize; 
 };
+
 
 #endif

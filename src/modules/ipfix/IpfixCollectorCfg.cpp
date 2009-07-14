@@ -36,8 +36,8 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 
 	if (listener == NULL)
 		THROWEXCEPTION("collectingProcess has to listen on one address!");
-	if (listener->getProtocolType() != UDP && listener->getProtocolType() != SCTP && listener->getProtocolType() != DATAFILE)
-		THROWEXCEPTION("collectingProcess can handle only UDP, SCTP or DATAFILE!");
+	if (listener->getProtocolType() != UDP && listener->getProtocolType() != SCTP )
+		THROWEXCEPTION("collectingProcess can handle only UDP or SCTP!");
 
 	msg(MSG_INFO, "CollectorConfiguration: Successfully parsed collectingProcess section");
 }
@@ -58,8 +58,6 @@ IpfixCollector* IpfixCollectorCfg::createInstance()
 	IpfixReceiver* ipfixReceiver;
 	if (listener->getProtocolType() == SCTP)
 		ipfixReceiver = new IpfixReceiverSctpIpV4(listener->getPort(), listener->getIpAddress());
-	else if (listener->getProtocolType() == DATAFILE)
-		ipfixReceiver = new IpfixReceiverFile(listener->getIpAddress());
 	else
 		ipfixReceiver = new IpfixReceiverUdpIpV4(listener->getPort(), listener->getIpAddress());
 

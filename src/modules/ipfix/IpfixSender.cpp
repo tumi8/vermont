@@ -83,6 +83,40 @@ out:
 	THROWEXCEPTION("IpfixSender creation failed");
 	return;
 }
+IpfixSender::IpfixSender(uint32_t observationDomainId)
+	: statSentPackets(0),
+	  noCachedRecords(0),
+	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
+	  timeoutRegistered(false),
+	  recordsAlreadySent(false),
+	  maxRecordRate(IS_DEFAULT_MAXRECORDRATE)
+{
+	ipfix_exporter** exporterP = &this->ipfixExporter;
+	statSentDataRecords = 0;
+	statPacketsInFlows = 0;
+	currentTemplateId = 0;
+	lastTemplateId = SENDER_TEMPLATE_ID_LOW;
+
+	nextTimeout.tv_sec = 0;
+	nextTimeout.tv_nsec = 0;
+	curTimeStep.tv_sec = 0;
+	curTimeStep.tv_usec = 0;
+
+	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
+		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
+		goto out;
+	}
+
+	ipfix_set_template_transmission_timer(ipfixExporter, IS_DEFAULT_TEMPLATE_TIMEINTERVAL);
+
+
+	msg(MSG_DEBUG, "IpfixSender: running");
+	return;
+
+out:
+	THROWEXCEPTION("IpfixSender creation failed");
+	return;
+}
 
 /**
  * Removes a collector from the list of Collectors to send Records to
@@ -121,9 +155,6 @@ void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_pr
 #endif
 	    case TCP:
 	        msg(MSG_INFO, "IpfixSender: adding TCP://%s:%d to exporter", ip, port);
-	   case DATAFILE:
-	    	msg(MSG_INFO, "IpfixSender: adding DATAFILE://%s to exporter", ip);
-	    	break;
 	    default:
 	    	THROWEXCEPTION("invalid protocol (%d) given!", proto);
 	    	break;

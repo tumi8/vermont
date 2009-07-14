@@ -33,23 +33,19 @@
 #define SENDER_TEMPLATE_ID_HI 60000
 
 /**
- * Creates a new IPFIX Exporter. Do not forget to call @c startIpfixFileWriter() to begin sending
- * @param sourceID Source ID this exporter will report
- * @param ip destination collector's address
- * @param port destination collector's port
- * @return handle to use when calling @c destroyIpfixFileWriter()
+ * Creates a new IPFIXFileWriter. Do not forget to call @c startIpfixFileWriter() to begin sending
  */
-IpfixFileWriter::IpfixFileWriter(uint16_t observationDomainId, std::string packetDirectoryName)
-	: IpfixSender(observationDomainId, IS_DEFAULT_MAXRECORDRATE, IS_DEFAULT_SCTP_DATALIFETIME, IS_DEFAULT_SCTP_RECONNECTINTERVAL,
-			IS_DEFAULT_TEMPLATE_TIMEINTERVAL, IS_DEFAULT_TEMPLATE_RECORDINTERVAL) {
-
-	if (packetDirectoryName != "") {
-		if(addCollector(packetDirectoryName) != 0) {
+IpfixFileWriter::IpfixFileWriter(uint16_t observationDomainId, std::string filenamePrefix, 
+	std::string destinationPath, uint32_t maximumFilesize)
+			: IpfixSender(observationDomainId)
+{
+	if (filenamePrefix != "") {
+		if(addCollector(observationDomainId, filenamePrefix, destinationPath, maximumFilesize) != 0) {
 			THROWEXCEPTION("IpfixFileWriter's Collector addition failed");
 			return;
 		}
 	}
-
+	
 	msg(MSG_DEBUG, "IpfixFileWriter: running");
 }
 
@@ -59,17 +55,29 @@ IpfixFileWriter::~IpfixFileWriter() {
 /**
  * Add another IPFIX collector to export the stream to
  * the lowlevel stuff in handled by underlying ipfixlolib
- * @param packetDirectoryName path to create raw packet files in
  */
-int IpfixFileWriter::addCollector(std::string packetDirectoryName) {
+int IpfixFileWriter::addCollector(uint16_t observationDomainId, std::string filenamePrefix, 
+			std::string destinationPath, uint32_t maximumFilesize) 
+{
 	ipfix_exporter *ex = (ipfix_exporter *)ipfixExporter;
+	
+	if(destinationPath.at(destinationPath.length()-1) != '/') 
+		destinationPath += "/";
+	std::string my_filename = destinationPath + filenamePrefix; 
+	if (maximumFilesize < 0) maximumFilesize = DEFAULTFILESIZE;
+	if(maximumFilesize < 64)
+		 msg(MSG_ERROR, 
+		   "maximum filsize < maximum message length - this could lead to serious problems");
 
-	if(ipfix_add_collector(ex, packetDirectoryName.c_str(), 0, DATAFILE) != 0) {
-		msg(MSG_FATAL, "IpfixFileWriter: ipfix_add_collector of %s failed", packetDirectoryName.c_str());
+	if(ipfix_add_collector(ex, my_filename.c_str(), maximumFilesize, DATAFILE) != 0) {
+		msg(MSG_FATAL, "IpfixFileWriter: ipfix_add_collector of %s failed", my_filename.c_str());
 		return -1;
 	}
 
-	msg(MSG_INFO, "IpfixFileWriter: adding %s to exporter", packetDirectoryName.c_str());
+	msg(MSG_INFO, "IpfixFileWriter: adding %s to exporter", my_filename.c_str());
+	msg(MSG_INFO, "IpfixFileWriter initialized with the following parameters");
+	msg(MSG_INFO, "  - Basename = %s", my_filename.c_str());
+	msg(MSG_INFO, "  - maximumFilesize = %d KiB" , maximumFilesize);
 
 	return 0;
 }
