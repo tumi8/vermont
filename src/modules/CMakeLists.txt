@@ -57,6 +57,7 @@ ADD_LIBRARY(modules
 	ipfix/IpfixDbWriterPgCfg.cpp
 	ipfix/IpfixExporterCfg.cpp
 	ipfix/IpfixFileWriter.cpp
+	ipfix/IpfixFileWriterCfg.cpp
 	ipfix/IpfixPayloadWriterCfg.cpp
 	ipfix/IpfixPrinterCfg.cpp
 	ipfix/IpfixSamplerCfg.cpp
@@ -64,6 +65,7 @@ ADD_LIBRARY(modules
 	ipfix/IpfixReceiverUdpIpV4.cpp
 	ipfix/IpfixReceiverSctpIpV4.cpp
 	ipfix/IpfixReceiverFile.cpp
+	ipfix/IpfixReceiverFileCfg.cpp
 	ipfix/IpfixRawdirReader.cpp
 	ipfix/IpfixReceiver.cpp
 	ipfix/IpfixRecord.cpp
