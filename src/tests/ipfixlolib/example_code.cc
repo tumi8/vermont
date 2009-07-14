@@ -248,18 +248,10 @@ int main(int argc, char **argv)
 				   has to remain valid till ipfix_send() is called */
 				meter_process_gimme_data2(&my_meter_data[i*2+1]);
 
-				ipfix_put_data_field(my_exporter, &(my_meter_data[i*2+1].ip_src_addr), 4);
-				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
-				ipfix_put_data_field(my_exporter, &(my_meter_data[i*2+1].ip_dst_addr), 4);
-				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
-				ipfix_put_data_field(my_exporter, &(my_meter_data[i*2+1].src_port), 2);
-				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
-				ipfix_put_data_field(my_exporter, &(my_meter_data[i*2+1].dst_port), 2);
-				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
-				ipfix_put_data_field(my_exporter, &(my_meter_data[i*2+1].byte_count), 8);
-				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
-				ipfix_put_data_field(my_exporter, &(my_meter_data[i*2+1].packet_count), 8);
-				printf("main:   (*(*my_exporter).data_sendbuffer).current %i\n", my_exporter->data_sendbuffer->current);
+				/* We can write a complete record in one go because the meter_data struct corresponds to the template.
+				 * This possibility is handy and increases performance.
+				 */
+				ipfix_put_data_field(my_exporter, &my_meter_data[i*2+1], sizeof(meter_data));
 
 				/* finish the data-set 
 				   remarks: 
