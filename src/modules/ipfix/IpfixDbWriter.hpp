@@ -52,7 +52,6 @@ class IpfixDbWriter
 		~IpfixDbWriter();
 
 		void onDataRecord(IpfixDataRecord* record);
-		void onDataDataRecord(IpfixDataDataRecord* record);
 
 		/**
 		 * Struct to identify the relationship between columns names and 
@@ -114,7 +113,7 @@ class IpfixDbWriter
 		int writeToDb();
 		int getExporterID(const IpfixRecord::SourceID& sourceID);
 		int connectToDB();
-		void processDataDataRecord(const IpfixRecord::SourceID& sourceID, 
+		void processDataRecord(const IpfixRecord::SourceID& sourceID, 
 				IpfixRecord::DataTemplateInfo& dataTemplateInfo, uint16_t length, 
 				IpfixRecord::Data* data);
 

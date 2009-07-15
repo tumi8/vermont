@@ -210,9 +210,9 @@ void IpfixSender::addRegisteredTemplate(boost::shared_ptr<IpfixRecord::TemplateI
  * @param sourceID ignored
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
+void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 {
-	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo = record->dataTemplateInfo;
+	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo = record->templateInfo;
 	uint16_t my_template_id;
 	uint16_t my_preceding;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
@@ -354,7 +354,7 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
  * @param sourceID ignored
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record)
+void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 
@@ -362,9 +362,9 @@ void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* 
 		THROWEXCEPTION("exporter not set");
 	}
 
-	removeRegisteredTemplate(record->dataTemplateInfo.get());
+	removeRegisteredTemplate(record->templateInfo.get());
 
-	uint16_t my_template_id = record->dataTemplateInfo->templateId;
+	uint16_t my_template_id = record->templateInfo->templateId;
 
 
 	/* Remove template from ipfixlolib */
@@ -376,7 +376,7 @@ void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* 
 		msg(MSG_INFO, "sndIpfix removed template with ID %u", my_template_id);
 	}
 
-	free(record->dataTemplateInfo->userData);
+	free(record->templateInfo->userData);
 
 	sendRecords();
 }
@@ -465,9 +465,9 @@ void IpfixSender::removeRecordReferences()
  * Put new Data Record in outbound exporter queue
  * @param rec Data Data Record
  */
-void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
+void IpfixSender::onDataRecord(IpfixDataRecord* record)
 {
-	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo = record->dataTemplateInfo;
+	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo = record->templateInfo;
 	IpfixRecord::Data* data = record->data;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 

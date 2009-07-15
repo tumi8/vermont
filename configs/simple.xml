@@ -116,7 +116,9 @@
 	<ipfixQueue id="7">
 		<entries>1000</entries>
 		<next>8</next>
+		<next>9</next>
 	</ipfixQueue>
+	<ipfixPrinter id="9"> </ipfixPrinter>
 	
 	<ipfixExporter id="8">
 		<collector>

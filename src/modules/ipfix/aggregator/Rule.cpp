@@ -524,7 +524,7 @@ int Rule::dataTemplateDataMatches(IpfixRecord::DataTemplateInfo* info, IpfixReco
 			// FIXME: if a non-discarding rule field specifies no pattern check at least if the data field exists?
 
 			/* no corresponding data field or fixed data field found, this flow cannot match */
-			msg(MSG_VDEBUG, "No corresponding DataDataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
+			msg(MSG_VDEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;
 		}
 	}

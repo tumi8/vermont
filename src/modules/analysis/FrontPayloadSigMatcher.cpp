@@ -56,7 +56,7 @@ void FrontPayloadSigMatcher::matchConnection(Connection* conn)
 	free(results);
 }
 
-void FrontPayloadSigMatcher::onDataDataRecord(IpfixDataDataRecord* record)
+void FrontPayloadSigMatcher::onDataRecord(IpfixDataRecord* record)
 {
 	Connection conn(record);
 	conn.swapIfNeeded();
@@ -65,18 +65,6 @@ void FrontPayloadSigMatcher::onDataDataRecord(IpfixDataDataRecord* record)
 
 	record->removeReference();
 }
-
-void FrontPayloadSigMatcher::onDataRecord(IpfixDataRecord* record)
-{
-	Connection conn(reinterpret_cast<IpfixDataDataRecord*>(record));
-	conn.swapIfNeeded();
-
-	matchConnection(&conn);
-
-	record->removeReference();
-}
-
-
 
 string FrontPayloadSigMatcher::getStatisticsXML(double interval)
 {

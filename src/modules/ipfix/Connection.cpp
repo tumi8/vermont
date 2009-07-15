@@ -34,43 +34,43 @@
  * NOTE: all values are *copied*, no reference will be kept to original IPFIX record
  * @param connTimeout time in seconds when connection element times out
  */
-Connection::Connection(IpfixDataDataRecord* record)
+Connection::Connection(IpfixDataRecord* record)
 	: srcOctets(0), dstOctets(0),
 	  srcPackets(0), dstPackets(0),
 	  srcTcpControlBits(0), dstTcpControlBits(0),
 	  srcPayload(0), srcPayloadLen(0),
 	  dstPayload(0), dstPayloadLen(0)
 {
-	// convert IpfixDataDataRecord to Connection
-	IpfixRecord::FieldInfo* fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
+	// convert IpfixDataRecord to Connection
+	IpfixRecord::FieldInfo* fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
 	if (fi != 0) {
 		srcIP = *(uint32_t*)(record->data + fi->offset);
 	} else {
 		msg(MSG_INFO, "failed to determine source ip for record, assuming 0.0.0.0");
 		srcIP = 0;
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
 	if (fi != 0) {
 		dstIP = *(uint32_t*)(record->data + fi->offset);
 	} else {
 		msg(MSG_INFO, "failed to determine destination ip for record, assuming 0.0.0.0");
 		dstIP = 0;
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
 	if (fi != 0) {
 		srcPort = *(uint16_t*)(record->data + fi->offset);
 	} else {
 		msg(MSG_INFO, "failed to determine source port for record, assuming 0");
 		srcPort = 0;
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
 	if (fi != 0) {
 		dstPort = *(uint16_t*)(record->data + fi->offset);
 	} else {
 		msg(MSG_INFO, "failed to determine destination port for record, assuming 0");
 		srcPort = 0;
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_protocolIdentifier, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_protocolIdentifier, 0);
 	if (fi != 0) {
 		protocol = *(uint8_t*)(record->data + fi->offset);
 	} else {
@@ -78,15 +78,15 @@ Connection::Connection(IpfixDataDataRecord* record)
 		protocol = 0;
 	}
 
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0);
 	if (fi != 0) {
 		convertNtp64(*(uint64_t*)(record->data + fi->offset), srcTimeStart);
 	} else {
-		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0);
+		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0);
 		if (fi != 0) {
 			srcTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
 		} else {
-			fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSeconds, 0);
+			fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSeconds, 0);
 			if (fi != 0) {
 				srcTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
 				srcTimeStart *= 1000;
@@ -95,15 +95,15 @@ Connection::Connection(IpfixDataDataRecord* record)
 			}
 		}
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoSeconds, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoSeconds, 0);
 	if (fi != 0) {
 		convertNtp64(*(uint64_t*)(record->data + fi->offset), srcTimeEnd);
 	} else {
-		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
+		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
 		if (fi != 0) {
 			srcTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
 		} else {
-			fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndSeconds, 0);
+			fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndSeconds, 0);
 			if (fi != 0) {
 				srcTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
 				srcTimeEnd *= 1000;
@@ -112,15 +112,15 @@ Connection::Connection(IpfixDataDataRecord* record)
 			}
 		}
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartNanoSeconds, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartNanoSeconds, 0);
 	if (fi != 0) {
 		convertNtp64(*(uint64_t*)(record->data + fi->offset), dstTimeStart);
 	} else {
-		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartMilliSeconds, 0);
+		fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartMilliSeconds, 0);
 		if (fi != 0) {
 			dstTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
 		} else {
-			fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartSeconds, 0);
+			fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartSeconds, 0);
 			if (fi != 0) {
 				dstTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
 				dstTimeStart *= 1000;
@@ -129,15 +129,15 @@ Connection::Connection(IpfixDataDataRecord* record)
 			}
 		}
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndNanoSeconds, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndNanoSeconds, 0);
 	if (fi != 0) {
 		convertNtp64(*(uint64_t*)(record->data + fi->offset), dstTimeEnd);
 	} else {
-		fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndMilliSeconds, 0);
+		fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndMilliSeconds, 0);
 		if (fi != 0) {
 			dstTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
 		} else {
-			fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndSeconds, 0);
+			fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowEndSeconds, 0);
 			if (fi != 0) {
 				dstTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
 				dstTimeEnd *= 1000;
@@ -146,21 +146,21 @@ Connection::Connection(IpfixDataDataRecord* record)
 			}
 		}
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_octetDeltaCount, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_octetDeltaCount, 0);
 	if (fi != 0) srcOctets = *(uint64_t*)(record->data + fi->offset);
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revOctetDeltaCount, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revOctetDeltaCount, 0);
 	if (fi != 0) dstOctets = *(uint64_t*)(record->data + fi->offset);
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_packetDeltaCount, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_packetDeltaCount, 0);
 	if (fi != 0) srcPackets = *(uint64_t*)(record->data + fi->offset);
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revPacketDeltaCount, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revPacketDeltaCount, 0);
 	if (fi != 0) dstPackets = *(uint64_t*)(record->data + fi->offset);
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, 0);
 	if (fi != 0) srcTcpControlBits = *(uint8_t*)(record->data + fi->offset);
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revTcpControlBits, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revTcpControlBits, 0);
 	if (fi != 0) dstTcpControlBits = *(uint8_t*)(record->data + fi->offset);
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayload, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayload, 0);
 	if (fi != 0 && fi->type.length) {
-		IpfixRecord::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadLen, 0);
+		IpfixRecord::FieldInfo* filen = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadLen, 0);
 		if (filen != 0)
 			srcPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
 		else
@@ -168,9 +168,9 @@ Connection::Connection(IpfixDataDataRecord* record)
 		srcPayload = new char[srcPayloadLen];
 		memcpy(srcPayload, record->data + fi->offset, srcPayloadLen);
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayload, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayload, 0);
 	if (fi != 0 && fi->type.length) {
-		IpfixRecord::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayloadLen, 0);
+		IpfixRecord::FieldInfo* filen = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayloadLen, 0);
 		if (filen != 0)
 			dstPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
 		else
@@ -178,7 +178,7 @@ Connection::Connection(IpfixDataDataRecord* record)
 		dstPayload = new char[dstPayloadLen];
 		memcpy(dstPayload, record->data + fi->offset, dstPayloadLen);
 	}
-	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadPktCount, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadPktCount, 0);
 	if (fi != 0) srcPayloadPktCount= *(uint32_t*)(record->data + fi->offset);
 }
 

@@ -40,7 +40,7 @@ IpfixSampler::~IpfixSampler()
 {
 }
 
-void IpfixSampler::onDataDataRecord(IpfixDataDataRecord* record)
+void IpfixSampler::onDataRecord(IpfixDataRecord* record)
 {
 	counter++;
 	if ((counter%modulo)==0) {

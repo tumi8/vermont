@@ -96,8 +96,8 @@ protected:
 
 	HashtableBucketList exportList;
 
-	InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
-	InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
+	InstanceManager<IpfixDataRecord> dataRecordIM;
+	InstanceManager<IpfixTemplateRecord> templateRecordIM;
 	InstanceManager<BucketListElement> hbucketIM;
 
 	alock_t aggInProgress; /** indicates if currently an element is aggregated in the hashtable, used for atomic lock for preReconfiguration */

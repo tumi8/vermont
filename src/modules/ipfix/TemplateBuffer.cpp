@@ -93,7 +93,8 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 				/* Invoke all registered callback functions */
 				IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
 				ipfixRecord->sourceID = bt->sourceID;
-				ipfixRecord->templateInfo = bt->templateInfo;
+
+				ipfixRecord->templateInfo =  boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*bt->templateInfo.get()));
 				ipfixParser->ipfixRecordSender->send(ipfixRecord);
 			} else
 #ifdef SUPPORT_NETFLOWV9
@@ -101,7 +102,7 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 				/* Invoke all registered callback functions */
 				IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
 				ipfixRecord->sourceID = bt->sourceID;
-				ipfixRecord->templateInfo = bt->templateInfo;
+				ipfixRecord->templateInfo =  boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*bt->templateInfo.get()));
 				ipfixParser->ipfixRecordSender->send(ipfixRecord);
 			} else
 #endif
@@ -113,9 +114,9 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 				ipfixParser->ipfixRecordSender->send(ipfixRecord);
 			} else if (bt->setID == IPFIX_SetId_DataTemplate) {
 				/* Invoke all registered callback functions */
-				IpfixDataTemplateDestructionRecord* ipfixRecord = ipfixParser->dataTemplateDestructionRecordIM.getNewInstance();
+				IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
 				ipfixRecord->sourceID = bt->sourceID;
-				ipfixRecord->dataTemplateInfo = bt->dataTemplateInfo;
+				ipfixRecord->templateInfo = bt->dataTemplateInfo;
 				ipfixParser->ipfixRecordSender->send(ipfixRecord);
 
 			} else {

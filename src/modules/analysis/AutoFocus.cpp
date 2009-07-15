@@ -93,7 +93,7 @@ AutoFocus::~AutoFocus()
 	msg(MSG_FATAL,"Autofocus is done");
 }
 
-void AutoFocus::onDataDataRecord(IpfixDataDataRecord* record)
+void AutoFocus::onDataRecord(IpfixDataRecord* record)
 {
 	// convert ipfixrecord to connection struct
 	Connection conn(record);

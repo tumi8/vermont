@@ -252,50 +252,6 @@ IpfixPrinter::~IpfixPrinter()
 }
 
 
-/**
- * Prints a Template
- * @param sourceID SourceID of the exporting process
- * @param templateInfo Pointer to a structure defining the Template used
- */
-void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
-{
-	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
-	printf("\n-+--- Template (id=%u) from ", record->templateInfo->templateId);
-	if(record->sourceID->exporterAddress.len == 4)
-		printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
-	else
-		printf("non-IPv4 address");
-	printf(":%d (", record->sourceID->exporterPort);
-	tmpInfo.length = 1; // length=1 for protocol identifier
-	printProtocol(tmpInfo, &record->sourceID->protocol);
-	printf(")\n");
-	printf(" `---\n\n");
-	record->removeReference();
-}
-
-/**
- * Prints a Template that was announced to be destroyed
- * @param sourceID SourceID of the exporting process
- * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
- */
-void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
-{
-	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
-	printf("Destroyed a Template (id=%u) from ", record->templateInfo->templateId);
-	if(record->sourceID->exporterAddress.len == 4)
-		printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
-	else
-		printf("non-IPv4 address");
-	printf(":%d (", record->sourceID->exporterPort);
-	tmpInfo.length = 1; // length=1 for protocol identifier
-	printProtocol(tmpInfo, &record->sourceID->protocol);
-	printf(")\n");
-	record->removeReference();
-}
-
-
 void IpfixPrinter::printUint(char* buf, IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
 	switch (type.length) {
 	case 1:
@@ -469,53 +425,6 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 }
 
 /**
- * Prints a DataRecord
- * @param sourceID SourceID of the exporting process
- * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
- * @param length Length of the data block supplied
- * @param data Pointer to a data block containing all variable fields
- */
-void IpfixPrinter::onDataRecord(IpfixDataRecord* record)
-{
-	int i;
-	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
-
-	switch (outputType) {
-		case LINE:
-			printOneLineRecord(record);
-			break;
-		case TREE:
-			printf("\n-+--- DataRecord (Template id=%u from ", record->templateInfo->templateId);
-			if(record->sourceID->exporterAddress.len == 4)
-				printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
-			else
-				printf("non-IPv4 address");
-			printf(":%d (", record->sourceID->exporterPort);
-			tmpInfo.length = 1; // length=1 for protocol identifier
-			printProtocol(tmpInfo, &record->sourceID->protocol);
-			printf(") )\n");
-
-			printf(" `- variable data\n");
-			for (i = 0; i < record->templateInfo->fieldCount; i++) {
-				printf(" '   `- ");
-				printFieldData(record->templateInfo->fieldInfo[i].type, (record->data + record->templateInfo->fieldInfo[i].offset));
-				printf("\n");
-			}
-			break;
-
-		case TABLE:
-			printf("ERROR: table record not implemented for IpfixDataRecords\n");
-			//printTableRecord(record);
-			break;
-		case NONE:
-			break;
-	}
-
-	record->removeReference();
-}
-
-/**
  * Prints a OptionsTemplate
  * @param sourceID SourceID of the exporting process
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
@@ -588,13 +497,13 @@ void IpfixPrinter::onOptionsRecord(IpfixOptionsRecord* record)
  * @param sourceID SourceID of the exporting process
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-void IpfixPrinter::onDataTemplate(IpfixDataTemplateRecord* record)
+void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 {
 	int i;
 
 	/* we need a FieldInfo for printIPv4 */
 	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
-	printf("\n-+--- DataTemplate (id=%u) from ", record->dataTemplateInfo->templateId);
+	printf("\n-+--- Template (id=%u) from ", record->templateInfo->templateId);
 	if (record->sourceID) {
 		if (record->sourceID->exporterAddress.len == 4)
 			printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
@@ -609,10 +518,10 @@ void IpfixPrinter::onDataTemplate(IpfixDataTemplateRecord* record)
 	}
 
 	printf(" `- fixed data\n");
-	for (i = 0; i < record->dataTemplateInfo->dataCount; i++) {
+	for (i = 0; i < record->templateInfo->dataCount; i++) {
 		printf(" '   `- ");
-		printFieldData(record->dataTemplateInfo->dataInfo[i].type,
-				(record->dataTemplateInfo->data + record->dataTemplateInfo->dataInfo[i].offset));
+		printFieldData(record->templateInfo->dataInfo[i].type,
+				(record->templateInfo->data + record->templateInfo->dataInfo[i].offset));
 		printf("\n");
 	}
 	printf(" `---\n\n");
@@ -624,11 +533,11 @@ void IpfixPrinter::onDataTemplate(IpfixDataTemplateRecord* record)
  * @param sourceID SourceID of the exporting process
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  */
-void IpfixPrinter::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record)
+void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
 	/* we need a FieldInfo for printIPv4 */
 	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
-	printf("Destroyed a DataTemplate (id=%u) from ", record->dataTemplateInfo->templateId);
+	printf("Destroyed a Template (id=%u) from ", record->templateInfo->templateId);
 	if(record->sourceID->exporterAddress.len == 4)
 		printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
 	else
@@ -641,13 +550,13 @@ void IpfixPrinter::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord*
 }
 
 /**
- * Prints a DataDataRecord
+ * Prints a DataRecord
  * @param sourceID SourceID of the exporting process
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
  * @param length Length of the data block supplied
  * @param data Pointer to a data block containing all variable fields
  */
-void IpfixPrinter::onDataDataRecord(IpfixDataDataRecord* record)
+void IpfixPrinter::onDataRecord(IpfixDataRecord* record)
 {
 	int i;
 	/* we need a FieldInfo for printIPv4 */
@@ -661,8 +570,8 @@ void IpfixPrinter::onDataDataRecord(IpfixDataDataRecord* record)
 			break;
 
 		case TREE:
-			dataTemplateInfo = record->dataTemplateInfo;
-			printf("\n-+--- DataDataRecord (Template id=%u from ", dataTemplateInfo->templateId);
+			dataTemplateInfo = record->templateInfo;
+			printf("\n-+--- DataRecord (Template id=%u from ", dataTemplateInfo->templateId);
 			if(record->sourceID->exporterAddress.len == 4)
 				printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
 			else
@@ -703,7 +612,7 @@ void IpfixPrinter::onDataDataRecord(IpfixDataDataRecord* record)
 /**
  * prints tab-seperated data from flows, these may be specified in configuration (TODO!)
  */
-void IpfixPrinter::printTableRecord(IpfixDataDataRecord* record)
+void IpfixPrinter::printTableRecord(IpfixDataRecord* record)
 {
 	Connection c(record);
 

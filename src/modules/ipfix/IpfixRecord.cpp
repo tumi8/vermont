@@ -38,11 +38,6 @@ IpfixTemplateRecord::IpfixTemplateRecord(InstanceManager<IpfixTemplateRecord>* i
 {
 }
 
-IpfixDataTemplateRecord::IpfixDataTemplateRecord(InstanceManager<IpfixDataTemplateRecord>* im)
-	: ManagedInstance<IpfixDataTemplateRecord>(im)
-{
-}
-
 IpfixDataRecord::IpfixDataRecord(InstanceManager<IpfixDataRecord>* im)
 	: ManagedInstance<IpfixDataRecord>(im)
 {
@@ -53,11 +48,6 @@ IpfixOptionsRecord::IpfixOptionsRecord(InstanceManager<IpfixOptionsRecord>* im)
 {
 }
 
-IpfixDataDataRecord::IpfixDataDataRecord(InstanceManager<IpfixDataDataRecord>* im)
-	: ManagedInstance<IpfixDataDataRecord>(im)
-{
-}
-
 IpfixTemplateDestructionRecord::IpfixTemplateDestructionRecord(InstanceManager<IpfixTemplateDestructionRecord>* im)
 	: ManagedInstance<IpfixTemplateDestructionRecord>(im)
 {
@@ -65,11 +55,6 @@ IpfixTemplateDestructionRecord::IpfixTemplateDestructionRecord(InstanceManager<I
 
 IpfixOptionsTemplateDestructionRecord::IpfixOptionsTemplateDestructionRecord(InstanceManager<IpfixOptionsTemplateDestructionRecord>* im)
 	: ManagedInstance<IpfixOptionsTemplateDestructionRecord>(im)
-{
-}
-
-IpfixDataTemplateDestructionRecord::IpfixDataTemplateDestructionRecord(InstanceManager<IpfixDataTemplateDestructionRecord>* im)
-	: ManagedInstance<IpfixDataTemplateDestructionRecord>(im)
 {
 }
 

@@ -71,7 +71,7 @@ TRWPortscanDetector::~TRWPortscanDetector()
 	delete[] trwEntries;
 }
 
-void TRWPortscanDetector::onDataDataRecord(IpfixDataDataRecord* record)
+void TRWPortscanDetector::onDataRecord(IpfixDataRecord* record)
 {
 	// convert ipfixrecord to connection struct
 	Connection conn(record);

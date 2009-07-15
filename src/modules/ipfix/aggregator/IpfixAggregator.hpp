@@ -41,7 +41,6 @@ public:
 	virtual ~IpfixAggregator();
 
 	virtual void onDataRecord(IpfixDataRecord* record);
-	virtual void onDataDataRecord(IpfixDataDataRecord* record);
 
 protected:
 	BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, 

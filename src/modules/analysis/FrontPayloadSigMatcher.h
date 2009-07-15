@@ -43,7 +43,6 @@ class FrontPayloadSigMatcher
 		FrontPayloadSigMatcher(string sigdir);
 		virtual ~FrontPayloadSigMatcher();
 
-		virtual void onDataDataRecord(IpfixDataDataRecord* record);
 		virtual void onDataRecord(IpfixDataRecord* record);
 
 	private:

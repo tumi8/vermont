@@ -25,8 +25,8 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  fieldModifier(0),
 	  recordSource(recordsource),
 	  sourceID(new IpfixRecord::SourceID),
-	  dataDataRecordIM("IpfixDataDataRecord", 0),
-	  dataTemplateRecordIM("IpfixDataTemplateRecord", 0),
+	  dataRecordIM("IpfixDataRecord", 0),
+	  templateRecordIM("IpfixTemplateRecord", 0),
 	  hbucketIM("BucketListElement", 0),
 	  aggInProgress(false),
 	  resendTemplate(true)
@@ -212,9 +212,9 @@ HashtableBucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Da
 void BaseHashtable::exportBucket(HashtableBucket* bucket)
 {
 	/* Pass Data Record to exporter interface */
-	IpfixDataDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
+	IpfixDataRecord* ipfixRecord = dataRecordIM.getNewInstance();
 	ipfixRecord->sourceID = sourceID;
-	ipfixRecord->dataTemplateInfo = dataTemplate;
+	ipfixRecord->templateInfo = dataTemplate;
 	ipfixRecord->dataLength = fieldLength;
 	ipfixRecord->message = bucket->data;
 	ipfixRecord->data = bucket->data.get();
@@ -371,9 +371,9 @@ int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
  */
 void BaseHashtable::sendDataTemplate()
 {
-	IpfixDataTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
+	IpfixTemplateRecord* ipfixRecord = templateRecordIM.getNewInstance();
 	ipfixRecord->sourceID.reset();
-	ipfixRecord->dataTemplateInfo = dataTemplate;
+	ipfixRecord->templateInfo = dataTemplate;
 	recordSource->send(ipfixRecord);
 }
 

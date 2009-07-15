@@ -52,7 +52,6 @@ class IpfixDbWriterPg
 		~IpfixDbWriterPg();
 
 		void onDataRecord(IpfixDataRecord* record);
-		void onDataDataRecord(IpfixDataDataRecord* record);
 
 		IpfixRecord::SourceID srcId;              /**Exporter default SourceID */
 
@@ -123,7 +122,7 @@ class IpfixDbWriterPg
 		bool checkRelationExists(const char* relname);
 	private:
 		void connectToDB();
-		void processDataDataRecord(IpfixRecord::SourceID* sourceID,
+		void processDataRecord(IpfixRecord::SourceID* sourceID,
 				IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length,
 				IpfixRecord::Data* data);
 

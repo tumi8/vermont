@@ -262,11 +262,11 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 }
 
 /**
- *	function receive the DataRecord or DataDataRecord when callback is started
+ *	function receive the DataRecord or DataRecord when callback is started
  */
-void IpfixDbWriterPg::onDataDataRecord(IpfixDataDataRecord* record)
+void IpfixDbWriterPg::onDataRecord(IpfixDataRecord* record)
 {
-	processDataDataRecord(record->sourceID.get(), record->dataTemplateInfo.get(),
+	processDataRecord(record->sourceID.get(), record->templateInfo.get(),
 			record->dataLength, record->data);
 
 	record->removeReference();
@@ -275,7 +275,7 @@ void IpfixDbWriterPg::onDataDataRecord(IpfixDataDataRecord* record)
 /**
  * save given elements of record to database
  */
-void IpfixDbWriterPg::processDataDataRecord(IpfixRecord::SourceID* sourceID,
+void IpfixDbWriterPg::processDataRecord(IpfixRecord::SourceID* sourceID,
 		IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length,
 		IpfixRecord::Data* data)
 {
@@ -311,28 +311,6 @@ void IpfixDbWriterPg::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 	}
 }
 
-
-/**
- *	function receive the  when callback is started
- */
-void IpfixDbWriterPg::onDataRecord(IpfixDataRecord* record)
-{
-	// convert templateInfo to dataTemplateInfo
-	IpfixRecord::DataTemplateInfo dataTemplateInfo;
-	dataTemplateInfo.templateId = 0;
-	dataTemplateInfo.preceding = 0;
-	dataTemplateInfo.freePointers = false; // don't free the given pointers, as they are taken from a different structure
-	dataTemplateInfo.fieldCount = record->templateInfo->fieldCount; /**< number of regular fields */
-	dataTemplateInfo.fieldInfo = record->templateInfo->fieldInfo; /**< array of FieldInfos describing each of these fields */
-	dataTemplateInfo.dataCount = 0; /**< number of fixed-value fields */
-	dataTemplateInfo.dataInfo = NULL; /**< array of FieldInfos describing each of these fields */
-	dataTemplateInfo.data = NULL; /**< data start pointer for fixed-value fields */
-	dataTemplateInfo.userData = record->templateInfo->userData; /**< pointer to a field that can be used by higher-level modules */
-
-	processDataDataRecord(record->sourceID.get(), &dataTemplateInfo, record->dataLength, record->data);
-
-	record->removeReference();
-}
 
 bool IpfixDbWriterPg::checkCurrentTable(uint64_t flowStart)
 {

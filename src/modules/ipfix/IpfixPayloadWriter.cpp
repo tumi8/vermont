@@ -61,7 +61,7 @@ IpfixPayloadWriter::~IpfixPayloadWriter()
 }
 
 
-void IpfixPayloadWriter::onDataDataRecord(IpfixDataDataRecord* record)
+void IpfixPayloadWriter::onDataRecord(IpfixDataRecord* record)
 {
 	// convert ipfixrecord to connection struct
 	Connection* conn = new Connection(record);

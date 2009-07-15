@@ -56,39 +56,7 @@ IpfixAggregator::~IpfixAggregator()
  */
 void IpfixAggregator::onDataRecord(IpfixDataRecord* record)
 {
-	DPRINTF("Got a Data Record\n");
-
-#if defined(DEBUG)
-	if(!rules) {
-		THROWEXCEPTION("Aggregator not started");
-	}
-#endif
-	
-	IpfixRecord::TemplateInfo* ti = record->templateInfo.get();
-
-	
-	for (size_t i = 0; i < rules->count; i++) {
-		if (rules->rule[i]->templateDataMatches(ti, record->data)) {
-			DPRINTF("rule %d matches", i);
-
-			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateTemplateData(ti, record->data);
-		}
-	}
-
-	record->removeReference();
-}
-
-
-/**
- * Injects new DataRecords into the Aggregator.
- * @param sourceID ignored
- * @param ti structure describing @c data
- * @param length length (in bytes) of @c data
- * @param data raw data block containing the Record
- */
-void IpfixAggregator::onDataDataRecord(IpfixDataDataRecord* record)
-{
-	DPRINTF("onDataDataRecord: Got a DataData Record\n");
+	DPRINTF("onDataRecord: Got a Data Record\n");
 
 #if defined(DEBUG)
 	if(!rules) {
@@ -98,10 +66,10 @@ void IpfixAggregator::onDataDataRecord(IpfixDataDataRecord* record)
 
 	mutex.lock();
 	for (size_t i = 0; i < rules->count; i++) {
-		if (rules->rule[i]->dataTemplateDataMatches(record->dataTemplateInfo.get(), record->data)) {
+		if (rules->rule[i]->dataTemplateDataMatches(record->templateInfo.get(), record->data)) {
 			DPRINTF("rule %d matches\n", i);
 			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateDataTemplateData(
-					record->dataTemplateInfo.get(), record->data);
+					record->templateInfo.get(), record->data);
 		}
 	}
 	mutex.unlock();

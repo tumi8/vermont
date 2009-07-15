@@ -95,7 +95,7 @@ RBSWormDetector::~RBSWormDetector()
 	delete[] rbsEntries;
 }
 
-void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
+void RBSWormDetector::onDataRecord(IpfixDataRecord* record)
 {
 	// convert ipfixrecord to connection struct
 	Connection conn(record);

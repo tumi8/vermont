@@ -141,7 +141,6 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 
 		uint32_t processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		void processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
-		void processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		void processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		int processNetflowV9Packet(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 		int processIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
@@ -156,13 +155,10 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		
 		static InstanceManager<IpfixTemplateRecord> templateRecordIM;
 		static InstanceManager<IpfixOptionsTemplateRecord> optionsTemplateRecordIM;
-		static InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;		
 		static InstanceManager<IpfixDataRecord> dataRecordIM;
 		static InstanceManager<IpfixOptionsRecord> optionsRecordIM;
-		static InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
 		static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
 		static InstanceManager<IpfixOptionsTemplateDestructionRecord> optionsTemplateDestructionRecordIM;
-		static InstanceManager<IpfixDataTemplateDestructionRecord> dataTemplateDestructionRecordIM;
 		
 		void resendBufferedTemplates();
 		void setTemplateDestroyed(bool destroyed);

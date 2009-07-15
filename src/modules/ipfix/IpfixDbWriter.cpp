@@ -145,7 +145,7 @@ int IpfixDbWriter::connectToDB()
 /**
  * save record to database
  */
-void IpfixDbWriter::processDataDataRecord(const IpfixRecord::SourceID& sourceID, 
+void IpfixDbWriter::processDataRecord(const IpfixRecord::SourceID& sourceID, 
 		IpfixRecord::DataTemplateInfo& dataTemplateInfo, uint16_t length, 
 		IpfixRecord::Data* data)
 {
@@ -541,33 +541,11 @@ uint64_t IpfixDbWriter::getData(IpfixRecord::FieldInfo::Type type, IpfixRecord::
 /***** Public Methods ****************************************************/
 
 /**
- * called on Data Record arrival
+ * called on Data Data Record arrival
  */
 void IpfixDbWriter::onDataRecord(IpfixDataRecord* record)
 {
-	// convert templateInfo to dataTemplateInfo
-	IpfixRecord::DataTemplateInfo dataTemplateInfo;
-	dataTemplateInfo.templateId = 0;
-	dataTemplateInfo.preceding = 0;
-	dataTemplateInfo.freePointers = false; // don't free the given pointers, as they are taken from a different structure
-	dataTemplateInfo.fieldCount = record->templateInfo->fieldCount; /**< number of regular fields */
-	dataTemplateInfo.fieldInfo = record->templateInfo->fieldInfo; /**< array of FieldInfos describing each of these fields */
-	dataTemplateInfo.dataCount = 0; /**< number of fixed-value fields */
-	dataTemplateInfo.dataInfo = NULL; /**< array of FieldInfos describing each of these fields */
-	dataTemplateInfo.data = NULL; /**< data start pointer for fixed-value fields */
-	dataTemplateInfo.userData = record->templateInfo->userData; /**< pointer to a field that can be used by higher-level modules */
-
-	processDataDataRecord(*record->sourceID.get(), dataTemplateInfo, record->dataLength, record->data);
-	
-	record->removeReference();
-}
-
-/**
- * called on Data Data Record arrival
- */
-void IpfixDbWriter::onDataDataRecord(IpfixDataDataRecord* record)
-{
-	processDataDataRecord(*record->sourceID.get(), *record->dataTemplateInfo.get(), 
+	processDataRecord(*record->sourceID.get(), *record->templateInfo.get(), 
 			record->dataLength, record->data);
 	
 	record->removeReference();
