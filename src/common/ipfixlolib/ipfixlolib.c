@@ -1319,7 +1319,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
  */
 static int ipfix_send_data(ipfix_exporter* exporter)
 {
-	int i;
+	int i, j;
 	int bytes_sent;
 	// send the current data_sendbuffer:
 	int data_length = 0;
