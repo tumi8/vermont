@@ -605,21 +605,6 @@ std::string Observer::getStatisticsXML(double interval)
 {
 	ostringstream oss;
     pcap_stat pstats;
-    if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
-    	unsigned int recv = pstats.ps_recv-statLastRecvPackets;
-    	unsigned int dropped = pstats.ps_drop-statLastDroppedPackets;
-    	statLastDroppedPackets = pstats.ps_drop;
-    	statLastRecvPackets = pstats.ps_recv;
-
-    	statTotalLostPackets += dropped;
-    	statTotalRecvPackets += recv;
-    	oss << "<pcap>";
-    	oss << "<received type=\"packets\">" << (uint32_t)((double)recv/interval) << "</received>";
-    	oss << "<dropped type=\"packets\">" << (uint32_t)((double)dropped/interval) << "</dropped>";
-    	oss << "<totalReceived type=\"packets\">" << statTotalRecvPackets << "</totalReceived>";
-    	oss << "<totalDropped type=\"packets\">" << statTotalLostPackets << "</totalDropped>";
-    	oss << "</pcap>";
-	}
 	uint64_t diff = receivedBytes-lastReceivedBytes;
 	lastReceivedBytes += diff;
 	oss << "<observer>";
