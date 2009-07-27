@@ -9,7 +9,8 @@
 #include "modules/packet/PSAMPExporterCfg.h"
 #include "modules/packet/PCAPExporterCfg.h"
 #include "modules/packet/filter/PacketFilterCfg.h"
-#include "modules/ipfix//IpfixCollectorCfg.h"
+#include "modules/ipfix/FpaPcapExporterCfg.h"
+#include "modules/ipfix/IpfixCollectorCfg.h"
 #include "modules/ipfix/IpfixExporterCfg.h"
 #include "modules/ipfix/IpfixPrinterCfg.h"
 #include "modules/ipfix/IpfixDbReaderCfg.h"
@@ -44,6 +45,7 @@ Cfg* ConfigManager::configModules[] = {
 	new PacketQueueCfg(NULL),
 	new PCAPExporterCfg(NULL),
 	new PSAMPExporterCfg(NULL),
+	new FpaPcapExporterCfg(NULL),
 	new IpfixCollectorCfg(NULL),
 	new IpfixQueueCfg(NULL),
 	new IpfixExporterCfg(NULL),
