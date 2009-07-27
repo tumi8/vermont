@@ -1,6 +1,26 @@
 
 = Vermont Module Configuration =
 
+== PacketIDMEFReporter ==
+
+Expects IPFIX data records with FPA (Front Payload Aggregation) data elements. This module then creates one/two packet per flow (unidirectional/bidirectional flow) and writes the packets into a PCAP file.
+
+Input type: IpfixRecord
+Output type: none
+
+**Example configuration:**
+<code xml>
+<fpaPcapExporter id="5">
+	<filename>pcap.dump</filename>
+	<snaplen>2048</snaplen>
+</fpaPcapExporter>
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|filename |  none  |Filename of PCAP file that is to be created. |
+|snaplen |  PCAP_MAX_CAPTURE_LENGTH  |Maximum packet size in PCAP file. Default value is specified at compile time. |
+
+
 == FrontPayloadSigMatcher ==
 
 Matches flow records that contain payload (IPFIX_ETYPE_frontPayload) to rule files in specified directory, that contain signature tokens with priority and a threshold value that specifies the number of tokens to match until the whole signature matches. The module then reports matches on the command line.
