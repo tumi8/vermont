@@ -117,7 +117,7 @@ IpfixDataRecord* createTestDataRecord(uint8_t magic_number, boost::shared_ptr<Ip
 		return testRecord;
 }
 
-//IpfixTemplateDestructionRecord* createTestTemplateDestructionRecord(uint8_t magic_number, boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo) {
+//IpfixTemplateDestructionRecord* createTestTemplateDestructionRecord(uint8_t magic_number, boost::shared_ptr<IpfixRecord::DataTemplateInfo> templateInfo) {
 //		static InstanceManager<IpfixTemplateDestructionRecord> im("IpfixTemplateDestructionRecord");
 //		IpfixTemplateDestructionRecord* testRecord = im.getNewInstance();
 //		testRecord->templateInfo =boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*templateInfo.get()));

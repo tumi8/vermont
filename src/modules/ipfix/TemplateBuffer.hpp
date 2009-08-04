@@ -45,7 +45,7 @@ class TemplateBuffer {
 			uint16_t	recordLength; /**< length of one Data Record that will be transferred in Data Sets. Variable-length carry -1 */
 			TemplateID	setID; /**< should be 2,3,4 and determines the type of pointer used in the unions */
 			time_t		expires; /**< Timestamp when this Template will expire or 0 if it will never expire */
-			boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
+			boost::shared_ptr<IpfixRecord::DataTemplateInfo> templateInfo;
 			boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
 			boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
 			TemplateBuffer::BufferedTemplate*	next; /**< Pointer to next buffered Template */

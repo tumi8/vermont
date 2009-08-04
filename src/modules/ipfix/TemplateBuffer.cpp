@@ -27,7 +27,7 @@
 #include "common/msg.h"
 
 /**
- * Returns a IpfixRecord::TemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo or NULL
+ * Returns a IpfixRecord::DataTemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo or NULL
  */
 TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId) {
 	time_t now = time(0);
@@ -61,7 +61,7 @@ TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::sha
 }
 
 /**
- * Saves a IpfixRecord::TemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo overwriting existing Templates
+ * Saves a IpfixRecord::DataTemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo overwriting existing Templates
  */
 void TemplateBuffer::bufferTemplate(TemplateBuffer::BufferedTemplate* bt) {
 	destroyBufferedTemplate(bt->sourceID, bt->templateID);
@@ -89,12 +89,13 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 			} else {
 				head = (TemplateBuffer::BufferedTemplate*)bt->next;
 			}
-			if (bt->setID == IPFIX_SetId_Template) {
+			if (bt->setID == IPFIX_SetId_Template || bt->setID == IPFIX_SetId_DataTemplate) {
 				/* Invoke all registered callback functions */
 				IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
 				ipfixRecord->sourceID = bt->sourceID;
 
-				ipfixRecord->templateInfo =  boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*bt->templateInfo.get()));
+				//ipfixRecord->templateInfo =  boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*bt->dataTemplateInfo.get()));
+				ipfixRecord->templateInfo = bt->dataTemplateInfo;
 				ipfixParser->ipfixRecordSender->send(ipfixRecord);
 			} else
 #ifdef SUPPORT_NETFLOWV9
@@ -112,13 +113,6 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 				ipfixRecord->sourceID = bt->sourceID;
 				ipfixRecord->optionsTemplateInfo = bt->optionsTemplateInfo;
 				ipfixParser->ipfixRecordSender->send(ipfixRecord);
-			} else if (bt->setID == IPFIX_SetId_DataTemplate) {
-				/* Invoke all registered callback functions */
-				IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
-				ipfixRecord->sourceID = bt->sourceID;
-				ipfixRecord->templateInfo = bt->dataTemplateInfo;
-				ipfixParser->ipfixRecordSender->send(ipfixRecord);
-
 			} else {
 				msg(MSG_FATAL, "Unknown template type requested to be freed: %d", bt->setID);
 			}

@@ -278,7 +278,7 @@ void IpfixPrinter::printUint(char* buf, IpfixRecord::FieldInfo::Type type, Ipfix
  */
 void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 {
-	boost::shared_ptr<IpfixRecord::TemplateInfo> dataTemplateInfo = record->templateInfo;
+	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo = record->templateInfo;
 		char buf[100], buf2[100];
 
 		if (linesPrinted==0 || linesPrinted>50) {

@@ -385,7 +385,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo
 	// initialize static source index, if current field does not have a variable pointer
 	if (!efd->varSrcIdx) {
 		Packet p; // not good: create temporary packet just for initializing our optimization structure
-		efd->srcIndex = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(hfi->type.id, &p);
+		efd->srcIndex = IpfixRecord::DataTemplateInfo::getRawPacketFieldIndex(hfi->type.id, &p);
 	}
 
 	// special case for masked IPs: those contain variable pointers, if they are masked
@@ -741,7 +741,7 @@ void PacketHashtable::updatePointers(const Packet* p)
 
 			default:
 				// standard procedure for transport header fields
-				efd->srcIndex = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(efd->typeId, p);
+				efd->srcIndex = IpfixRecord::DataTemplateInfo::getRawPacketFieldIndex(efd->typeId, p);
 				break;
 		}
 	}

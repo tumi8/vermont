@@ -31,6 +31,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <sstream>
+#include <cassert>
 
 /* for ntohll et al */
 #include "common/ipfixlolib/ipfixlolib.h"
@@ -77,12 +78,12 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 			continue;
 		}
 		TemplateBuffer::BufferedTemplate* bt = new TemplateBuffer::BufferedTemplate;
-		boost::shared_ptr<IpfixRecord::TemplateInfo> ti(new IpfixRecord::TemplateInfo);
+		boost::shared_ptr<IpfixRecord::DataTemplateInfo> ti(new IpfixRecord::DataTemplateInfo);
 		bt->sourceID = sourceId;
 		bt->templateID = ntohs(th->templateId);
 		bt->recordLength = 0;
 		bt->setID = ntohs(set->id);
-		bt->templateInfo = ti;
+		bt->dataTemplateInfo = ti;
 		ti->userData = 0;
 		ti->templateId = ntohs(th->templateId);
 		ti->fieldCount = ntohs(th->fieldCount);
@@ -125,6 +126,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 			}
 		}
         
+		assert(bt != NULL);
 		templateBuffer->bufferTemplate(bt); 
 		if((sourceId->protocol == IPFIX_protocolIdentifier_UDP) && (templateLivetime > 0))
 			bt->expires = time(0) + templateLivetime;
@@ -133,8 +135,8 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 
 		IpfixTemplateRecord* ipfixRecord = templateRecordIM.getNewInstance();
 		ipfixRecord->sourceID = sourceId;
-		//ipfixRecord->templateInfo = ti;
-		ipfixRecord->templateInfo =boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*ti.get()));
+		ipfixRecord->templateInfo = ti;
+		//CHANGE ipfixRecord->templateInfo =boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*ti.get()));
 		push(ipfixRecord);
 	}
 }
@@ -304,7 +306,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 	if (bt->setID == IPFIX_SetId_Template) {
 #endif
 
-		boost::shared_ptr<IpfixRecord::TemplateInfo> ti = bt->templateInfo;
+		boost::shared_ptr<IpfixRecord::DataTemplateInfo> ti = bt->dataTemplateInfo;
         
 		if (bt->recordLength < 65535) {
 			if (record + bt->recordLength > endOfSet) {
@@ -315,7 +317,8 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 			while (record + bt->recordLength <= endOfSet) {
 				IpfixDataRecord* ipfixRecord = dataRecordIM.getNewInstance();
 				ipfixRecord->sourceID = sourceId;
-				ipfixRecord->templateInfo =  boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*ti.get()));
+				//CHANGE ipfixRecord->templateInfo =  boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*ti.get()));
+				ipfixRecord->templateInfo = ti;
 				ipfixRecord->dataLength = bt->recordLength;
 				ipfixRecord->message = message;
 				ipfixRecord->data = record;
@@ -335,7 +338,8 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				int fieldLength;
 				int i;
 				bool incomplete = false;
-				ti = boost::shared_ptr<IpfixRecord::TemplateInfo>(new IpfixRecord::TemplateInfo(*bt->templateInfo.get()));
+				ti = boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*bt->dataTemplateInfo.get()));
+				//ti = bt->dataTemplateInfo;
 				for (i = 0; i < ti->fieldCount; i++) {
 					if (!ti->fieldInfo[i].type.isVariableLength) {
 						fieldLength = ti->fieldInfo[i].type.length;
@@ -370,7 +374,8 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				} 
 				IpfixDataRecord* ipfixRecord = dataRecordIM.getNewInstance();
 				ipfixRecord->sourceID = sourceId;
-				ipfixRecord->templateInfo = boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*ti));
+				//CHANGE ipfixRecord->templateInfo = boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*ti));
+				ipfixRecord->templateInfo = ti;
 				ipfixRecord->dataLength = recordLength;
 				ipfixRecord->message = message;
 				ipfixRecord->data = record;
@@ -807,7 +812,7 @@ void IpfixParser::resendBufferedTemplates()
 	while (bt) {	
 		IpfixTemplateRecord* ipfixRecord = templateRecordIM.getNewInstance();
 		ipfixRecord->sourceID = bt->sourceID;
-		ipfixRecord->templateInfo = boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*bt->templateInfo.get()));
+		ipfixRecord->templateInfo = boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*bt->dataTemplateInfo.get()));
 		push(ipfixRecord);
 		
 		bt = bt->next;
@@ -823,7 +828,7 @@ void IpfixParser::setTemplateDestroyed(bool destroyed)
 	TemplateBuffer::BufferedTemplate* bt = templateBuffer->getFirstBufferedTemplate();
 			
 	while (bt) {
-		bt->templateInfo.get()->destroyed = destroyed;
+		bt->dataTemplateInfo.get()->destroyed = destroyed;
 	
 		bt = bt->next;
 	}

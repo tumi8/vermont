@@ -79,9 +79,9 @@ protected:
 	void endAndSendDataSet();
 
 	void startDataSet(uint16_t templateId);
-	bool isTemplateRegistered(IpfixRecord::TemplateInfo* ti);
-	void removeRegisteredTemplate(IpfixRecord::TemplateInfo* ti);
-	void addRegisteredTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> ti);
+	bool isTemplateRegistered(IpfixRecord::DataTemplateInfo* ti);
+	void removeRegisteredTemplate(IpfixRecord::DataTemplateInfo* ti);
+	void addRegisteredTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> ti);
 	void sendRecords(bool forcesend = false);
 	void registerTimeout();
 
@@ -92,7 +92,7 @@ private:
 	uint8_t conversionRingbuffer[65536]; /**< Ringbuffer used to store converted imasks between @c ipfix_put_data_field() and @c ipfix_send() */
 	uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
 	uint16_t noCachedRecords; /**< number of records already passed to ipfixlob, should be equal to recordsToRelease.size() */
-	list<boost::shared_ptr<IpfixRecord::TemplateInfo> > registeredTemplates; /**< contains all templates which were already registered in ipfixlolib */
+	list<boost::shared_ptr<IpfixRecord::DataTemplateInfo> > registeredTemplates; /**< contains all templates which were already registered in ipfixlolib */
 	
 	uint16_t recordCacheTimeout; /**< how long may records be cached until sent, milliseconds */
 	bool timeoutRegistered; /**< true if next timeout was already registered in timer */

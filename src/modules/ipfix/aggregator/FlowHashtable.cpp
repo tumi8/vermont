@@ -667,7 +667,7 @@ void FlowHashtable::copyData(IpfixRecord::FieldInfo* dstFI, IpfixRecord::Data* d
 /**
  * Buffer passed flow in Hashtable @c ht
  */
-void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord::Data* data)
+void FlowHashtable::aggregateTemplateData(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::Data* data)
 {
 	// the following lock should almost never fail (only during reconfiguration)
 	while (atomic_lock(&aggInProgress)) {

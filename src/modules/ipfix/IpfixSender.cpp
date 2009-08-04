@@ -171,9 +171,9 @@ void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_pr
  * looks in cached templates if given template is already registered there
  * @returns true if it was found
  */
-bool IpfixSender::isTemplateRegistered(IpfixRecord::TemplateInfo* ti)
+bool IpfixSender::isTemplateRegistered(IpfixRecord::DataTemplateInfo* ti)
 {
-	list<boost::shared_ptr<IpfixRecord::TemplateInfo> >::iterator iter = registeredTemplates.begin();
+	list<boost::shared_ptr<IpfixRecord::DataTemplateInfo> >::iterator iter = registeredTemplates.begin();
 	while (iter != registeredTemplates.end()) {
 		if (iter->get()->templateId == ti->templateId) return true;
 		iter++;
@@ -184,9 +184,9 @@ bool IpfixSender::isTemplateRegistered(IpfixRecord::TemplateInfo* ti)
 /**
  * removes given template from cached templates
  */
-void IpfixSender::removeRegisteredTemplate(IpfixRecord::TemplateInfo* ti)
+void IpfixSender::removeRegisteredTemplate(IpfixRecord::DataTemplateInfo* ti)
 {
-	list<boost::shared_ptr<IpfixRecord::TemplateInfo> >::iterator iter = registeredTemplates.begin();
+	list<boost::shared_ptr<IpfixRecord::DataTemplateInfo> >::iterator iter = registeredTemplates.begin();
 	while (iter != registeredTemplates.end()) {
 		if (iter->get()->templateId == ti->templateId) {
 			registeredTemplates.erase(iter);
@@ -200,7 +200,7 @@ void IpfixSender::removeRegisteredTemplate(IpfixRecord::TemplateInfo* ti)
 /**
  * adds given template to the list of cached templates
  */
-void IpfixSender::addRegisteredTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> ti)
+void IpfixSender::addRegisteredTemplate(boost::shared_ptr<IpfixRecord::DataTemplateInfo> ti)
 {
 	registeredTemplates.push_back(ti);
 }
@@ -527,7 +527,7 @@ void IpfixSender::onReconfiguration2()
 		THROWEXCEPTION("exporter not set");
 	}
 
-	list<boost::shared_ptr<IpfixRecord::TemplateInfo> >::iterator iter = registeredTemplates.begin();
+	list<boost::shared_ptr<IpfixRecord::DataTemplateInfo> >::iterator iter = registeredTemplates.begin();
 	while (iter != registeredTemplates.end()) {
 		if (iter->get()->destroyed) {
 			uint16_t id = iter->get()->templateId;
