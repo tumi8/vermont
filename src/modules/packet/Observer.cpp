@@ -604,7 +604,6 @@ int Observer::getPcapStats(struct pcap_stat *out)
 std::string Observer::getStatisticsXML(double interval)
 {
 	ostringstream oss;
-    pcap_stat pstats;
 	uint64_t diff = receivedBytes-lastReceivedBytes;
 	lastReceivedBytes += diff;
 	oss << "<observer>";

@@ -181,7 +181,7 @@ void IDMEFMessage::applyVariables()
 		string key = string("%") + iter->first + "%";
 		string val = iter->second;
 
-		uint32_t pos;
+		size_t pos;
 		while ((pos = message.find(key)) != string::npos) {
 			message.replace(pos, key.size(), val);
 		}

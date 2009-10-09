@@ -30,7 +30,7 @@ AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::stri
 	char buffer[32];
 	char c;
 
-	bool b = isHexString(parameter);
+	bool isHex = isHexString(parameter);
 
 	switch (m) {
 	case AnonMethod::HashSha1:
@@ -58,11 +58,11 @@ AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::stri
 		ret = new AnonBytewiseHashHmacSha1(parameter);
 		break;
 	case AnonMethod::ConstOverwrite:
-		if (parameter.size() != 1 || (isHexString(parameter) && parameter.size() != 4)) {
+		if (parameter.size() != 1 || (isHex && parameter.size() != 4)) {
 			THROWEXCEPTION("AnonConstOverwrite only uses one character as key");
 		}
 		c = parameter.c_str()[0];
-		if (isHexString(parameter)) {
+		if (isHex) {
 			if (convHexToBinary(parameter, &c, 1)!=1) {
 				THROWEXCEPTION("Failed to convert hexadecimal key parameter '%s' to binary (one byte required)!", parameter.c_str());
 			}
@@ -71,10 +71,10 @@ AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::stri
 		break;
 	case AnonMethod::CryptoPan:
 		if (parameter.length()!=32)
-			if (isHexString(parameter) && parameter.length() != 66)
+			if (isHex && parameter.length() != 66)
 				THROWEXCEPTION("CryptoPAN key *MUST* have exactly 32 characters!");
 
-		if (isHexString(parameter)) {
+		if (isHex) {
 			if (convHexToBinary(parameter, buffer, 32)!=32) {
 				THROWEXCEPTION("Failed to convert hexadecimal key parameter '%s' to binary (32 bytes required)!", parameter.c_str());
 			}
