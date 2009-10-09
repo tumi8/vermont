@@ -5,6 +5,7 @@
 #include <common/msg.h>
 #include <map>
 #include <vector>
+#include <stdint.h>
 
 class AnonMethod 
 {

@@ -29,6 +29,7 @@
  jan@petranek.de
  */
 #include "ipfixlolib.h"
+#include "encoding.h"
 #include "common/msg.h"
 #include <netinet/in.h>
 
