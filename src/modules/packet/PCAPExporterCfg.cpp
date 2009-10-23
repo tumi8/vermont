@@ -6,7 +6,7 @@
 #include <pcap.h>
 
 PCAPExporterCfg::PCAPExporterCfg(XMLElement* elem) 
-	: CfgHelper<PCAPExporterModule, PCAPExporterCfg>(elem, "pcapExporter"), link_type(DLT_EN10MB)
+	: CfgHelper<PCAPExporterModule, PCAPExporterCfg>(elem, "pcapExporter"), link_type(DLT_EN10MB), snaplen(PCAP_MAX_CAPTURE_LENGTH)
 { 
 	if (!elem) return;
 
