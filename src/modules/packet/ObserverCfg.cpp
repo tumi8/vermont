@@ -79,11 +79,9 @@ Observer* ObserverCfg::createInstance()
 		}
 	}
 
-	if (!pcap_filter.empty()) {
-		if (!instance->prepare(pcap_filter.c_str())) {
-			msg(MSG_FATAL, "Observer: preparing failed");
-			THROWEXCEPTION("Observer setup failed!");
-		}
+	if (!instance->prepare(pcap_filter.c_str())) {
+		msg(MSG_FATAL, "Observer: preparing failed");
+		THROWEXCEPTION("Observer setup failed!");
 	}
 
 	return instance;
