@@ -15,6 +15,9 @@ bool AnonFilter::processPacket(Packet* p)
 			continue;
 		}
 
+		if((p->classification & packetClass) == 0)
+			continue; 
+
 		switch (header) {
 		case HEAD_NETWORK:
 			anonField(i->first, p->netHeader + offset);
