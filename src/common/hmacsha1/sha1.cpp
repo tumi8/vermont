@@ -50,12 +50,15 @@
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
-void Sha1::SHA1Transform(unsigned long state[5], unsigned char buffer[64])
+void Sha1::SHA1Transform(uint32_t state[5], unsigned char buffer[64])
 {
-unsigned long a, b, c, d, e;
+uint32_t a, b, c, d, e;
 typedef union {
     unsigned char c[64];
-    unsigned long l[16];
+    // gerhard: in this union, unsigned long does not work on 64bit
+    // => replaced all occurences of unsigned long by uint32_t in sha1.cpp and sha1.h
+    //unsigned long l[16];
+    uint32_t l[16];
 } CHAR64LONG16;
 CHAR64LONG16* block;
 #ifdef SHA1HANDSOFF
@@ -114,6 +117,7 @@ void Sha1::SHA1_Init(SHA1_CTX* context)
     context->state[3] = 0x10325476;
     context->state[4] = 0xC3D2E1F0;
     context->count[0] = context->count[1] = 0;
+    memset(context->buffer, 0, 64);
 }
 
 
@@ -143,7 +147,7 @@ unsigned int i, j;
 
 void Sha1::SHA1_Final(unsigned char digest[20], SHA1_CTX* context)
 {
-unsigned long i, j;
+uint32_t i, j;
 unsigned char finalcount[8];
 
     for (i = 0; i < 8; i++) {
