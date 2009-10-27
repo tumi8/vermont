@@ -77,7 +77,7 @@ void AnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet
 			}
 			module->addAnonymization(cfg->getIeId(), cfg->getIeLength(), AnonMethod::stringToMethod(method), method_parameter);
 			const ipfix_identifier* id = ipfix_id_lookup(cfg->getIeId());
-			msg(MSG_INFO, "Added anonymization %s for field %i (%s)", method.c_str(), cfg->getIeId(), id->name);
+			msg(MSG_INFO, "Added anonymization %s for field %i (%s) with length %i", method.c_str(), cfg->getIeId(), id->name, cfg->getIeLength());
 			delete cfg;
 		} else if (e->matches("next") || e->matches("copyMode")) {
 			// ignore next and copyMode (see createInstance)
