@@ -7,6 +7,7 @@
 class AnonFilter : public PacketProcessor, public AnonModule {
 public:
 	virtual bool processPacket(Packet* p);
+	void setIEHeaderOffsets();
 };
 
 #endif
