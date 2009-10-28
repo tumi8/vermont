@@ -18,7 +18,7 @@
 AnonModule::~AnonModule()
 {
 	for (MethodMap::iterator i = methods.begin(); i != methods.end(); ++i) {
-		for (std::vector<AnonPrimitive*>::iterator j = i->second.method.begin(); j != i->second.method.end(); ++j) {
+		for (std::vector<AnonPrimitive*>::iterator j = i->second.primitive.begin(); j != i->second.primitive.end(); ++j) {
 			delete *j;
 		}
 	}
@@ -91,12 +91,12 @@ AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::stri
 	return ret;
 }
 
-void AnonModule::addAnonymization(uint16_t id, int len,  AnonMethod::Method  methodName, const std::string& parameter)
+void AnonModule::addAnonymization(uint16_t id, int len, AnonMethod::Method methodName, const std::string& parameter)
 {
 	static const struct ipfix_identifier* ident;
 	AnonPrimitive* a = createPrimitive(methodName, parameter);
 	if (methods.find(id) != methods.end()) {
-		methods[id].method.push_back(a);
+		methods[id].primitive.push_back(a);
 	} else {
 		AnonIE ie;
 		if (len == -1) {
@@ -106,8 +106,9 @@ void AnonModule::addAnonymization(uint16_t id, int len,  AnonMethod::Method  met
 			}
 			len = ident->length;
 		}
+		ie.offset = ie.header = ie.packetClass = 0;
 		ie.len = len;
-		ie.method.push_back(a);
+		ie.primitive.push_back(a);
 		methods[id] = ie;
 	}
 }
@@ -118,7 +119,7 @@ void AnonModule::anonField(uint16_t id, void* data, int len)
 		return;
 	}
 	int l = len==-1?methods[id].len:len;
-	for (std::vector<AnonPrimitive*>::iterator i = methods[id].method.begin(); i != methods[id].method.end(); ++i) {
+	for (std::vector<AnonPrimitive*>::iterator i = methods[id].primitive.begin(); i != methods[id].primitive.end(); ++i) {
 		(*i)->anonimizeBuffer(data, l);
 	}
 }

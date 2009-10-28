@@ -354,6 +354,8 @@ Module* PacketAnonFilterCfg::getInstance()
 	}
 
 	AnonymizerCfg::initInstance(this, instance, _elem->getElementChildren());
+	// determine offsets of fields to be analyzed and save them in the AnonFilter
+	instance->setIEHeaderOffsets();
 
 	return (Module*)instance;
 

@@ -3,30 +3,34 @@
 
 #include <common/anon/AnonModule.h>
 
-bool AnonFilter::processPacket(Packet* p)
+void AnonFilter::setIEHeaderOffsets()
 {
-	static uint16_t offset;
-	static unsigned short header;
-	static unsigned long packetClass;
-
+	// Lookup offset, header, and packet class of anonymized packet fields
 	for (MethodMap::iterator i = methods.begin(); i != methods.end(); ++i) {
-		if (!Template::getFieldOffsetAndHeader(i->first, &offset, &header, &packetClass)) {
+		if (!Template::getFieldOffsetAndHeader(i->first, &(i->second.offset), &(i->second.header), &(i->second.packetClass))) {
 			msg(MSG_ERROR, "Unkown or unsupported type id %i detected.", i->first);
 			continue;
 		}
+		DPRINTF("Save the following packet field for anonymization: setIEHeaderOffset id=%i, offset=%u, header=%u, packetClass=%u", i->first, i->second.offset, i->second.header, i->second.packetClass);
+	}
+}
 
-		if((p->classification & packetClass) == 0)
+
+bool AnonFilter::processPacket(Packet* p)
+{
+	for (MethodMap::iterator i = methods.begin(); i != methods.end(); ++i) {
+		if((p->classification & i->second.packetClass) == 0)
 			continue; 
 
-		switch (header) {
-		case HEAD_NETWORK:
-			anonField(i->first, p->netHeader + offset);
-			break;
-		case HEAD_TRANSPORT:
-			anonField(i->first, p->transportHeader + offset);
-			break;
-		default:
-			msg(MSG_ERROR, "Cannot deal with header type %i", header);
+		switch (i->second.header) {
+			case HEAD_NETWORK:
+				anonField(i->first, p->netHeader + i->second.offset);
+				break;
+			case HEAD_TRANSPORT:
+				anonField(i->first, p->transportHeader + i->second.offset);
+				break;
+			default:
+				msg(MSG_ERROR, "Cannot deal with header type %i", i->second.header);
 		}
 	}
 	return true;

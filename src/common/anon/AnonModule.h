@@ -54,20 +54,23 @@ public:
 };
 
 struct AnonIE {
+	uint16_t offset; // used by AnonFilter
+	unsigned short header; // used by AnonFilter
+	unsigned long packetClass; // used by AnonFilter
 	int len;
-	std::vector<AnonPrimitive*> method;
+	std::vector<AnonPrimitive*> primitive;
 };
 
 class AnonModule {
 public:
 	~AnonModule();
-	void addAnonymization(uint16_t id, int len, AnonMethod::Method m, const std::string& parameter = "");
+	void addAnonymization(uint16_t id, int len, AnonMethod::Method methodName, const std::string& parameter="");
 	void anonField(uint16_t id, void* data, int len = -1);
 protected:
 	typedef std::map<uint16_t, AnonIE> MethodMap;
 	MethodMap methods;
 private:
-	AnonPrimitive* createPrimitive(AnonMethod::Method m, const std::string& paramter);
+	AnonPrimitive* createPrimitive(AnonMethod::Method m, const std::string& parameter);
 };
 
 
