@@ -260,12 +260,14 @@ Output type: none
 **Example configuration:**
 <code xml>
 <ipfixPrinter id="8">
-	<lineOutput>1</lineOutput>
+	<outputType>tree</outputType>
+	<filename>output.log</filename>
 </ipfixPrinter>
 </code>
 Parameters: 
 |  **Element name**  |  **Default value**  |  **Description**  |
-|lineOutput |  0  |Specifies if a special one-line-per-flow output should be used if value equals 1. |
+|outputType |  tree  |Determines the output format of IpfixPrinter. 'tree' constructs a tree of each incoming DataRecord with all values, 'table' constructs a table-like output format, 'line' produces one line of output per DataRecord, and 'none' does not output anything. |
+|fileName |  ''  |Sets the name of the output file. If nothing is specified (which is the default), data is printed on STDOUT. |
 
 == IpfixDbReader ==
 
@@ -678,7 +680,7 @@ Output type: IpfixRecord
 |inactiveTimeout |  0  |Expiration timeout for idle/inactive flows. |
 |activeTimeout |  0  |Periodic expiration timeout for long-lasting flows (typically larger than inactiveTimeout). |
 |pollInterval |  0  |Length of interval when flows should be exported to next module. |
-|hashtableBits |  17  |Length of hashtable used for aggregation in bits. The resulting hashtable will have a size of 2^{hashtableBits}. |
+|hashtableBits |  17  |Length of hashtable used for aggregation in bits. The resulting hashtable will have a size of 2^hashtableBits. |
 
 == PacketIDMEFReporter ==
 
