@@ -113,9 +113,6 @@ protected:
 	volatile uint64_t processedPackets;
 	volatile uint64_t lastProcessedPackets;
 
-	volatile uint32_t statLastRecvPackets;
-	volatile uint32_t statLastDroppedPackets;
-
 	// interface we capture traffic on - string
 	char *captureInterface;
 

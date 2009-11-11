@@ -25,7 +25,7 @@ using namespace std;
 /**
  * used to manage timeout entries inside ConnectionQueue
  */
-struct TimeoutEntry 
+struct TimeoutEntry
 {
 	Notifiable* n;
 	struct timespec timeout;
@@ -39,7 +39,7 @@ class ConnectionQueue : public Adapter<T>, public Timer
 public:
 	ConnectionQueue(uint32_t maxEntries = 1)
 		: queue(maxEntries), thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
-	{ 
+	{
 		this->Sensor::usedBytes = sizeof(ConnectionQueue);
 	}
 
@@ -54,13 +54,13 @@ public:
 		statTotalReceived++;
 		queue.push(packet);
 	}
-	
+
 	virtual void performStart()
 	{
 		queue.restart();
 		thread.run(this);
 	}
-	
+
 	/**
 	 * attention: this function assumes, that *no* elements will be inserted into the queue any more!
 	 */
@@ -75,13 +75,13 @@ public:
 				queue.notifyShutdown();
 			}
 		}
-		
+
 		thread.join();
-		
+
 		if (Module::getShutdownProperly()) {
 			Adapter<T>::connected.shutdown();
 		}
-		
+
 		// remove all the dangling TimoutEntry's
 		// we can't process them anyway without a thread running
 		list<TimeoutEntry*>::iterator iter = timeouts.begin();
@@ -92,11 +92,11 @@ public:
 		}
 	}
 
-	inline int getCount() 
+	inline int getCount()
 	{
 		return queue.getCount();
 	}
-	
+
 	/**
 	 * -> see Timer::addTimeout for nonspecific description
 	 * ATTENTION: this function assumes, that it is usually called by this class's own
@@ -109,7 +109,7 @@ public:
 		// allocate our memory which is never freed
 		if (!Adapter<T>::running)
 			THROWEXCEPTION("addTimeout called on a non running Queue");
-		
+
 		mutex.lock();
 		TimeoutEntry* e = new TimeoutEntry();
 		e->n = n;
@@ -119,7 +119,7 @@ public:
 		mutex.unlock();
 	}
 
-	
+
 private:
 	ConcurrentQueue<T> queue;  /**< contains all elements which were received from previous modules */
 	Thread thread;
@@ -127,7 +127,7 @@ private:
 	Mutex mutex;	/**< controls access to class variable timeouts */
 	uint32_t statQueueEntries;
 	uint32_t statTotalReceived;
-	
+
 	/**
 	 * processes all timeouts in queue which have already timed out
 	 * @param time when next timeout will occur
@@ -138,15 +138,15 @@ private:
 		struct timespec now;
 		addToCurTime(&now, 0);
 		bool nexttoset = false;
-		
+
 		mutex.lock();
 		list<TimeoutEntry*>::iterator iter = timeouts.begin();
 		while (iter != timeouts.end()) {
 			if (compareTime((*iter)->timeout, now) <= 0) {
 				// this entry has already timed out, call it now!
 				TimeoutEntry* te = *iter;
-				
-				// wait if successing module is already called by another thread through this queue
+
+				// wait when this module is being reconnected by ConnectionManager
 				bool locked = true;
 				while (Source<T>::atomicLock()) {
 					if (Source<T>::disconnectInProgress) {
@@ -162,14 +162,14 @@ private:
 					if (locked) Source<T>::atomicRelease();
 					break;
 				}
-				
+
 				te->n->onTimeout(te->dataPtr);
-				
+
 				Source<T>::atomicRelease();
-				
+
 				iter = timeouts.erase(iter);
 				delete te;
-				
+
 			} else {
 				if (!nexttoset || compareTime(nexttimeout, (*iter)->timeout) > 0) {
 					nexttoset = true;
@@ -179,10 +179,10 @@ private:
 			}
 		}
 		mutex.unlock();
-		
+
 		return nexttoset;
 	}
-	
+
 	/**
 	 * processes all incoming elements and forwards them to following modules
 	 * all timeouts of the following module are controlled here
@@ -190,9 +190,9 @@ private:
 	void processLoop()
 	{
 		T element;
-		
+
 		Module::registerCurrentThread();
-		
+
 		while (true) {
 			if (Module::getExitFlag()) {
 				if (!Module::getShutdownProperly()) break;
@@ -203,20 +203,20 @@ private:
 				if (!queue.pop(&element)) {
 					DPRINTF("queue.pop failed - timeout?");
 					continue;
-				}				
-			} else {				
+				}
+			} else {
 				if (!queue.popAbs(nexttimeout, &element)) {
 					DPRINTF("queue.pop failed - timeout?");
 					continue;
 				}
 			}
-				
+
 			if (!Source<T>::send(element)) break;
-		}	
-		
+		}
+
 		Module::unregisterCurrentThread();
 	}
-	
+
 	/**
 	 * small wrapper for thread
 	 */
@@ -226,11 +226,11 @@ private:
 		DPRINTF("starting thread");
 
 		self->processLoop();
-		
+
 		DPRINTF("terminating thread");
 		return NULL;
 	}
-	
+
 	/**
 	 * inherited from Sensor
 	 */
