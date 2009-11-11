@@ -83,7 +83,7 @@ Observer::Observer(const std::string& interface, bool offline, uint64_t maxpacke
 	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT),
 	pcap_promisc(1), maxPackets(maxpackets), ready(false), filter_exp(0), observationDomainID(0), // FIXME: this must be configured!
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0),
-	lastProcessedPackets(0), statLastRecvPackets(0), statLastDroppedPackets(0),
+	lastProcessedPackets(0),
 	captureInterface(NULL), fileName(NULL), replaceTimestampsFromFile(false),
 	stretchTimeInt(1), stretchTime(1.0), autoExit(true), slowMessageShown(false),
 	statTotalLostPackets(0), statTotalRecvPackets(0)
@@ -153,9 +153,7 @@ void *Observer::observerThread(void *arg)
 	bool have_send = false;
 	obs->registerCurrentThread();
 
-	if (!obs->isConnected()) {
-		THROWEXCEPTION("Observer does not have any receiving modules to send packets to");
-	}
+
 
 	msg(MSG_INFO, "Observer started with following parameters:");
 	msg(MSG_INFO, "  - readFromFile=%d", obs->readFromFile);
@@ -604,6 +602,20 @@ int Observer::getPcapStats(struct pcap_stat *out)
 std::string Observer::getStatisticsXML(double interval)
 {
 	ostringstream oss;
+    pcap_stat pstats;
+	if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
+		unsigned int recv = pstats.ps_recv;
+		unsigned int dropped = pstats.ps_drop;
+
+		oss << "<pcap>";
+		oss << "<received type=\"packets\">" << (uint32_t)((double)(recv-statTotalRecvPackets)/interval) << "</received>";
+		oss << "<dropped type=\"packets\">" << (uint32_t)((double)(dropped-statTotalLostPackets)/interval) << "</dropped>";
+		oss << "<totalReceived type=\"packets\">" << statTotalRecvPackets << "</totalReceived>";
+		oss << "<totalDropped type=\"packets\">" << statTotalLostPackets << "</totalDropped>";
+		oss << "</pcap>";
+		statTotalLostPackets = dropped;
+		statTotalRecvPackets = recv;
+	}
 	uint64_t diff = receivedBytes-lastReceivedBytes;
 	lastReceivedBytes += diff;
 	oss << "<observer>";
