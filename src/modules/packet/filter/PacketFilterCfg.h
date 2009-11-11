@@ -54,6 +54,7 @@ class PacketFilterHelperCfg
 	virtual void onReconfiguration2() { THROWEXCEPTION("Not supported"); }
 	virtual void freeInstance() { THROWEXCEPTION("Not supported"); }
 	virtual void connectInstances(Cfg* other) { THROWEXCEPTION("Not supported"); }
+	virtual void setupWithoutSuccessors() { THROWEXCEPTION("Not supported"); }
 	virtual void disconnectInstances()  { THROWEXCEPTION("Not supported"); }
 	virtual Module* getQueueInstance()  { THROWEXCEPTION("Not supported"); return NULL; }
 protected:

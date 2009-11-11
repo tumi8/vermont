@@ -33,23 +33,27 @@ Graph* Connector::connect(Graph* g)
 
 		std::vector<unsigned int> nexts = cfg->getNext();
 
-		for (unsigned int j = 0; j < nexts.size(); j++) {
-			CfgNode* toNode = id2node[nexts[j]];
+		if (nexts.size()==0) {
+			cfg->setupWithoutSuccessors();
+		} else {
+			for (unsigned int j = 0; j < nexts.size(); j++) {
+				CfgNode* toNode = id2node[nexts[j]];
 
-			if (toNode == NULL)
-				THROWEXCEPTION("next statement is illegal; there is no node with id=%d", nexts[j]);
+				if (toNode == NULL)
+					THROWEXCEPTION("next statement is illegal; there is no node with id=%d", nexts[j]);
 
-			if (connectNodes) // insert the connection in the graph
-				g->addEdge(fromNode, toNode);
+				if (connectNodes) // insert the connection in the graph
+					g->addEdge(fromNode, toNode);
 
-			msg(MSG_INFO,  "Connecting module %s[Id = %d] -> %s[Id = %d]",
-					cfg->getName().c_str(), cfg->getID(),
-					id2node[nexts[j]]->getCfg()->getName().c_str(),
-					id2node[nexts[j]]->getCfg()->getID());
+				msg(MSG_INFO,  "Connecting module %s[Id = %d] -> %s[Id = %d]",
+						cfg->getName().c_str(), cfg->getID(),
+						id2node[nexts[j]]->getCfg()->getName().c_str(),
+						id2node[nexts[j]]->getCfg()->getID());
 
-			if (connectModules) {// connect the modules
-				DPRINTF("connecting instances");
-				cfg->connectInstances(toNode->getCfg());
+				if (connectModules) {// connect the modules
+					DPRINTF("connecting instances");
+					cfg->connectInstances(toNode->getCfg());
+				}
 			}
 		}
 	}

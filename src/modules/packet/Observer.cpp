@@ -602,7 +602,7 @@ int Observer::getPcapStats(struct pcap_stat *out)
 std::string Observer::getStatisticsXML(double interval)
 {
 	ostringstream oss;
-    pcap_stat pstats;
+	pcap_stat pstats;
 	if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
 		unsigned int recv = pstats.ps_recv;
 		unsigned int dropped = pstats.ps_drop;
