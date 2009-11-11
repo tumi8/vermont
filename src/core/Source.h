@@ -20,8 +20,8 @@ class Source
 {
 public:
 	typedef T src_value_type;
-	
-	Source() : mutex(), connected(1), disconnectInProgress(false), syncLock(1), dest(NULL) { }
+
+	Source() : mutex(), connected(1), disconnectInProgress(false), syncLock(1), hasSuccessor(true), dest(NULL) { }
 	virtual ~Source() { }
 
 	virtual void connectTo(Destination<T>* destination)
@@ -30,6 +30,18 @@ public:
 		if (dest)
 			THROWEXCEPTION("ERROR: already connected\n");
 		dest = destination;
+		connected.inc(1);
+		atomic_release(&syncLock);
+		mutex.unlock();
+	}
+
+	void connectToNothing()
+	{
+		mutex.lock();
+		if (dest)
+			THROWEXCEPTION("ERROR: already connected\n");
+		hasSuccessor = false;
+		dest = NULL;
 		connected.inc(1);
 		atomic_release(&syncLock);
 		mutex.unlock();
@@ -49,7 +61,7 @@ public:
 	virtual void disconnect()
 	{
 		disconnectInProgress = true;
-		mutex.lock();		
+		mutex.lock();
 		if (isConnected()) {
 			// wait until function send has returned
 			while (atomic_lock(&syncLock)) {
@@ -61,7 +73,7 @@ public:
 			dest = NULL;
 			connected.dec(1);
 		}
-		
+
 		mutex.unlock();
 		disconnectInProgress = false;
 	}
@@ -75,38 +87,43 @@ public:
 			connected.inc(2);
 		return retval;
 	}
-	
+
 	inline bool send(T t)
-	{		
+	{
 		while (atomic_lock(&syncLock)) {
 			if (!sleepUntilConnected()) {
 				DPRINTF("Can't wait for connection, perhaps the program is shutting down?");
 				return false;
 			}
 		}
-		dest->receive(t);
+		if (hasSuccessor) dest->receive(t);
+		else {
+			// we don't have a succeeding module, so clean up this data element
+			t->removeReference();
+		}
 		atomic_release(&syncLock);
-		
+
 		return true;
 	}
-	
+
 	inline uint32_t atomicLock()
 	{
 		return atomic_lock(&syncLock);
 	}
-	
+
 	inline void atomicRelease()
 	{
 		atomic_release(&syncLock);
-	}	
+	}
 
 protected:
 	Mutex mutex;
-	CountingSemaphore connected;		
+	CountingSemaphore connected;
 	bool disconnectInProgress;
 
 private:
 	alock_t syncLock; /**< is locked when an element is sent to next module or no next module is available */
+	bool hasSuccessor; /**< set to true if this module has a succeeding module */
 	Destination<T>* dest;
 };
 

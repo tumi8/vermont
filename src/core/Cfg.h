@@ -9,6 +9,7 @@
 
 #include <exception>
 #include <string>
+#include <typeinfo>
 
 /**
  * This excecption is thrown if someone try's to get an element which
@@ -112,10 +113,12 @@ public:
 
 	virtual void transferInstance(Cfg* other) = 0;
 
-	/** connectes this module with the module from \other
+	/** connects this module with the module from \other
 	 *  @param other the other Cfg
 	 */
 	virtual void connectInstances(Cfg* other) = 0;
+
+	virtual void setupWithoutSuccessors() = 0;
 	virtual void disconnectInstances() = 0;
 
 	/* start/stop the instance */
@@ -290,6 +293,18 @@ public:
 		instance = NULL;
 	}
 
+	/**
+	 * tells this module that there aren't any succeeding modules during module connection
+	 * we need to insert a DevnullModule if this module wants to send data elements
+	 */
+	virtual void setupWithoutSuccessors()
+	{
+		if (typeid(typename InstanceType::src_value_type)!=typeid(NullEmitable*)) {
+			msg(MSG_INFO, "module %s (id=%u) is source for data elements, but has no successor", getName().c_str(), getID());
+			getInstance()->connectToNothing();
+		}
+	}
+
 	/** connects the instances hold in the to configurations
 	 *  This method takes care to also create the neccessary adapters/wrappers
 	 */
@@ -329,7 +344,7 @@ public:
 						other->getName().c_str());
 		}
 
-		// call preConnect(), e.g. to tell the module to resend its template
+		// call postReconfiguration(), e.g. to tell the module to resend its template
 		this->postReconfiguration();
 
 		// check if we need a splitter
