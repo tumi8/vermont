@@ -1,0 +1,15 @@
+Required Ubuntu/Debian packages for compilation:
+ - cmake libboost-dev libxml2-dev libpcap-dev libsctp-dev
+
+Note: for high efficiency the PCAP-MMAP modification is suggested.
+See <http://public.lanl.gov/cpw/>
+
+
+Compile Procedure:
+ - call 'cmake .'
+ - if any adjustment to compilation settings are needed, 'ccmake .' is suggested
+ - call 'make'
+ - call './vermont'
+ - look in /configs for example configuration files
+ - module documentation can be found at 
+   http://vermont.berlios.de/vermont_module_configuration

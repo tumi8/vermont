@@ -1,0 +1,38 @@
+
+static const struct ipfix_identifier FRONTPAYLOAD[] = { {"frontpayload", 32896, 0}, {"frontpayloadlen", 32897, 4}};
+
+static const struct ipfix_identifier BIFLOWTAB1[] = { { "revoctetdeltacount", 33793, 8 }, {
+		"revpacketdeltacount", 33794, 8 }, { "reserved", 33795, 0 }, { "reserved", 33796, 0 }, {
+		"reserved", 33797, 0 }, { "revtcpcontrolbits", 33798, 1 }, 
+};
+static const struct ipfix_identifier REVFRONTPAYLOAD[] = { {"revfrontpayload", 33920, 0}, {"revfrontpayloadlen", 33921, 4} };
+static const struct ipfix_identifier BIFLOWTAB2[] = {
+
+{ "revflowstartseconds", 33942, 4 }, { "revflowendseconds", 33943, 4 }, {
+		"revflowstartmilliseconds", 33944, 8 }, { "revflowendmilliseconds", 33945, 8 }, 
+};
+
+static const struct ipfix_identifier SWITCHFLOWTAB[] = {
+    { "revflowstartnanoseconds", 33948, 8 }, 
+    { "revflowendnanoseconds", 33949, 8 },
+    { "revmaxpacketgap", 33922, 4 },
+    { "maxpacketgap", 32898, 4},
+    { "frontpayloadpktcount", 32899, 4}
+};
+
+#define PSAMP_STARTING_ID 300
+
+static const struct ipfix_identifier PSAMPTAB[] = { { "selectorid", 300, 2 }, {
+		"selectorinputsequencenumber", 301, 4 }, { "selectoralgorithm", 302, 1 }, { "reserved",
+		303, 0 }, { "samplingpacketinterval", 304, 4 }, { "samplingpacketspace", 305, 4 }, {
+		"samplingtimeinterval", 306, 4 }, { "samplingtimespace", 307, 4 }, { "samplingpopulation",
+		308, 4 }, { "samplingsize", 309, 4 }, { "samplingprobabilityn", 310, 4 }, {
+		"samplingprobabilitym", 311, 4 }, { "reserved", 312, 0 },
+		{ "ipheaderpacketsection", 313, 0 }, { "ippayloadpacketsection", 314, 0 }, {
+				"l2headerpacketsection", 315, 0 }, { "l2payloadpacketsection", 316, 0 }, {
+				"mplslabelstacksection", 317, 0 }, { "mplspayloadpacketsection", 318, 0 }, {
+				"meteringprocesssid", 319, 1 }, { "observationpointid", 320, 1 }, {
+				"associationsid", 321, 1 }, { "reserved", 322, 0 }, { "selectortype", 323, 1 }, {
+				"packetsobserved", 324, 1 }, { "packetsselected", 325, 1 }, { "accuracy", 326, 1 },
+		{ "reserved", 327, 0 }, { "reserved", 328, 0 }, { "reserved", 329, 0 }, 
+};

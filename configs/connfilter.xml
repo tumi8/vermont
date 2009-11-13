@@ -1,0 +1,29 @@
+<ipfixConfig>
+	<observer id="1">
+		<filename>sourcefile.pcap</filename>
+		<pcap_filter>ip</pcap_filter>
+		<captureLength>65535</captureLength>
+		<next>2</next>
+	</observer>
+	
+	<packetQueue id="2">
+		<maxSize>100</maxSize>
+		<next>3</next>
+	</packetQueue>
+	
+	<filter id="3">
+		<connectionBased>
+			<timeout>3</timeout>
+			<bytes>1000</bytes>
+			<filterSize>1000</filterSize>
+			<hashFunctions>3</hashFunctions>
+			<exportControlPackets>false</exportStateControlPackets>
+		</connectionBased>
+		<next>4</next>
+	</filter>
+
+	<pcapExporter id="4">
+		<filename>connfilter.pcap</filename>
+		<snaplen>65535</snaplen>
+	</pcapExporter>
+</ipfixConfig>

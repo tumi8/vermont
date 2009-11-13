@@ -1,0 +1,37 @@
+<ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
+	<sensorManager id="99">
+		<checkinterval>2</checkinterval>
+	</sensorManager>
+	<observer id="1">
+		<!--<interface>lo</interface>-->
+		<filename>data/connectionfiltertest.pcap</filename>
+		<pcap_filter>ip</pcap_filter>
+		<offlineAutoExit>1</offlineAutoExit>
+		<offlineSpeed>0</offlineSpeed>
+		<captureLength>65535</captureLength>
+		<next>2</next>
+	</observer>
+	
+	<packetQueue id="2">
+		<maxSize>10</maxSize>
+		<next>3</next>
+	</packetQueue>
+
+	<filter id="3">
+		<stateConnectionBased>
+			<timeout>5</timeout>
+			<bytes>100</bytes>
+		</stateConnectionBased>
+		<next>4</next>
+	</filter>
+	
+	<packetQueue id="4">
+		<maxSize>10</maxSize>
+		<next>5</next>
+	</packetQueue>
+	
+	<pcapExporter id="5">
+		<filename>gen_output/state_connectionfilter</filename>
+	</pcapExporter>
+
+</ipfixConfig>

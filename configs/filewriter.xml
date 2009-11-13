@@ -1,0 +1,156 @@
+<ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
+	<sensorManager id="99">
+		<append>0</append>
+		<outputfile>sensor_output.xml</outputfile>
+		<checkinterval>1</checkinterval>
+	</sensorManager>
+
+	<observer id="1">
+		<interface>eth0</interface>
+		<pcap_filter>ip</pcap_filter>
+		<captureLength>128</captureLength>
+		<offlineAutoExit>1</offlineAutoExit>
+		<offlineSpeed>0</offlineSpeed>
+		<next>2</next>
+	</observer>
+
+	<packetAggregator id="2">
+		<rule>
+			<templateId>998</templateId>
+			<flowKey>
+				<ieName>sourceIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>protocolIdentifier</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>sourceTransportPort</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationTransportPort</ieName>
+			</flowKey>
+			<nonFlowKey>
+				<ieName>flowStartNanoSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>flowEndNanoSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>octetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>packetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>tcpControlBits</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+					<ieName>frontPayload</ieName>
+					<ieLength>1024</ieLength>
+			</nonFlowKey>
+			<nonFlowKey>
+					<ieName>frontPayloadLen</ieName>
+			</nonFlowKey>
+		</rule>
+		<expiration>
+			<inactiveTimeout unit="sec">2</inactiveTimeout>
+			<activeTimeout unit="sec">5</activeTimeout>
+		</expiration>
+		<hashtableBits>18</hashtableBits>
+		<pollInterval unit="msec">1000</pollInterval>
+		<next>4</next>
+	</packetAggregator>
+
+	<ipfixAggregator id="4">
+		<rule>
+			<templateId>999</templateId>
+			<biflowAggregation>1</biflowAggregation>
+			<flowKey>
+				<ieName>sourceIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>protocolIdentifier</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>sourceTransportPort</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationTransportPort</ieName>
+			</flowKey>
+			<nonFlowKey>
+				<ieName>flowStartNanoSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>flowEndNanoSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>octetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>packetDeltaCount</ieName>
+			</nonFlowKey>
+		<nonFlowKey>
+				<ieName>tcpControlBits</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revflowStartNanoSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revflowEndNanoSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revoctetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revpacketDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revtcpControlBits</ieName>
+			</nonFlowKey>
+		<nonFlowKey>
+				<ieName>frontPayload</ieName>
+				<ieLength>1024</ieLength>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>frontPayloadLen</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revFrontPayload</ieName>
+				<ieLength>1024</ieLength>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revFrontPayloadLen</ieName>
+			</nonFlowKey>
+					</rule>
+		<expiration>
+			<inactiveTimeout unit="sec">2</inactiveTimeout>
+			<activeTimeout unit="sec">5</activeTimeout>
+		</expiration>
+		<hashtableBits>18</hashtableBits>
+		<pollInterval unit="msec">1000</pollInterval>
+		<next>10</next>
+	</ipfixAggregator>
+
+	<ipfixQueue id="10">
+		<maxSize>10000</maxSize>
+		<next>11</next>
+		<!--<next>15</next>-->
+	</ipfixQueue>
+	
+<!--	<ipfixPrinter id="15">
+		</ipfixPrinter>-->
+	<ipfixFileWriter id="11">
+		<observationDomainId>99</observationDomainId>
+		<maximumFilesize>4195000</maximumFilesize>
+		<destinationPath>/home/sithhaue/filewriterfiles/</destinationPath> 
+		<filenamePrefix>my_ipfixdump</filenamePrefix>
+	</ipfixFileWriter> 
+
+</ipfixConfig>
+

@@ -1,0 +1,1608 @@
+<html>
+<head>
+<title>IPFIXLOLIB API Description</title>
+</head>
+<body>
+
+<h3>Overview</h3>
+The IPFIX protocol is used to send monitoring data from an IPFIX exporter to an IPFIX collector. <b>IPFIXLOLIB</b> is a library that implements the IPFIX protocol functionality of an IPFIX exporter.<br>
+The usage of IPFIXLOLIB is straight forward:
+
+<ul>
+<li>Initialize an exporter</li>
+<li>Add one or more collectors that receive the monitoring data</li>
+<li>Define one or more templates</li>
+
+<li>Loop 1</li>
+<ul>
+<li>Loop 2</li>
+<ul>
+<li>Start a data set for a given template</li>
+<li>Assemble one or more data records according to the template (convert to network byte order first, if necessary)</li>
+<li>End data set</li>
+</ul>
+<li>Call ipfix_send to trigger the export of the monitoring data to the collector</li>
+</ul>
+
+<li>Deinit the exporter to terminate
+</ul>
+
+<p>For a detailed and commented example, see <a href="example_code.c">example_code.c</a> in the doc/ directory.</p>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+<h3>Synopsis</h3>
+<pre>
+#include "ipfixlolib.h"
+
+</pre>
+
+External library functions and types:
+
+<pre>
+typedef <a href=#struct_ipfix_exporter>struct ipfix_exporter</a>
+
+int <a href=#ipfix_init_exporter>ipfix_init_exporter</a>(uint32_t source_id, ipfix_exporter **exporter)
+int <a href=#ipfix_deinit_exporter>ipfix_deinit_exporter</a>(ipfix_exporter *exporter)
+int <a href=#ipfix_add_collector>ipfix_add_collector</a>(ipfix_exporter* exporter, char* coll_ip4_addr, int coll_port, ipfix_transport_protocol proto)
+int <a href=#ipfix_remove_collector>ipfix_remove_collector</a>(ipfix_exporter* exporter, char *coll_ip4_addr, int coll_port)
+
+int <a href=#ipfix_start_template_set>ipfix_start_template_set</a>(ipfix_exporter* exporter, uint16_t template_id, uint16_t field_count)
+int <a href=#ipfix_start_optionstemplate_set>ipfix_start_optionstemplate_set</a>(ipfix_exporter* exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length)
+int <a href=#ipfix_start_datatemplate_set>ipfix_start_datatemplate_set</a>(ipfix_exporter* exporter, uint16_t template_id, uint16_t field_count, uint16_t fixedfield_count)
+int <a href=#ipfix_put_template_field>ipfix_put_template_field</a>(ipfix_exporter* exporter, uint16_t template_id, uint16_t length, uint16_t type, uint32_t enterprise)
+int <a href=#ipfix_put_template_fixedfield>ipfix_put_template_fixedfield</a>(ipfix_exporter *exporter, uint16_t template_id, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id)
+int <a href=#ipfix_put_template_data>ipfix_put_template_data</a>(ipfix_exporter *exporter, uint16_t template_id, void* data, uint16_t data_length)
+int <a href=#ipfix_end_template_set>ipfix_end_template_set</a>(ipfix_exporter *exporter, uint16_t template_id)
+int <a href=#ipfix_remove_template_set>ipfix_remove_template_set</a>(ipfix_exporter* exporter, uint16_t template_id)
+
+int <a href=#ipfix_start_data_set>ipfix_start_data_set</a>(ipfix_exporter* exporter, uint16_t template_id)
+void <a href=#ipfix_put_data_field>ipfix_put_data_field</a>(ipfix_exporter *exporter, char *data, uint16_t length)
+int <a href=#ipfix_set_data_field_marker>ipfix_set_data_field_marker</a>(ipfix_exporter *exporter);
+int <a href=#ipfix_delete_data_fields_upto_marker>ipfix_delete_data_fields_upto_marker</a>(ipfix_exporter *exporter);
+int <a href=#ipfix_end_data_set>ipfix_end_data_set</a>(ipfix_exporter *exporter, uint16_t number_of_records)
+int <a href=#ipfix_cancel_data_set>ipfix_cancel_data_set</a>(ipfix_exporter *exporter);
+
+
+int <a href=#ipfix_send>ipfix_send</a>(ipfix_exporter *exporter)
+
+int <a href=#ipfix_id_rangecheck>ipfix_id_rangecheck</a>(int id)
+
+int <a href=#ipfix_name_lookup>ipfix_name_lookup</a>(char *name)
+struct ipfix_identifier * <a href=#ipfix_id_lookup>ipfix_id_lookup</a>(int n)
+
+struct ipfix_identifier {
+        char *name;
+        uint16_t id;
+        uint8_t length;
+};
+
+
+<a href=#template_fields>List of valid field identifiers</a>
+</pre>
+
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+<h3>Remark:</h3>
+
+<p>IPFIXLOLIB does not provide any conversion of monitoring data into network byte order.
+This has to be done by the user. On the contrary, template IDs, field IDs etc. have to be provided in host byte order (there is one exception in ipfix_start_data_set).
+</p>
+<p>
+In the following, parameters that have to be provided in network byte order are marked with NBO in the description.
+</p>
+
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<h3>Detailed description</h3>
+
+<pre><a name=struct_ipfix_exporter>typedef struct ipfix_exporter;</a></pre>
+Opaque struct that represents an exporter.<br>
+Its members are not accessed by the user, but via ipfix_* functions.<br>
+<br>
+For the curious, currently (v0.2) contains the following fields:<br>
+<pre>
+typedef struct {
+	uint32_t sequence_number;
+	uint32_t source_id;
+	ipfix_sendbuffer *template_sendbuffer;
+	ipfix_sendbuffer *data_sendbuffer;
+	int collector_num;
+	int collector_max_num;
+	ipfix_receiving_collector *collector_arr;
+
+	uint32_t last_template_transmission_time;
+	uint32_t template_transmission_timer;
+
+	int ipfix_lo_template_maxsize;
+	int ipfix_lo_template_current_count;
+	ipfix_lo_template *template_arr;
+
+} ipfix_exporter;
+</pre>
+<br>
+For more information and the other structs, please see <a href="../ipfixlolib.h">ipfixlolib.h</a>.<br>
+
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_init_exporter><code>int ipfix_init_exporter (uint32_t source_id, ipfix_exporter **exporter)</code></a><p>
+Initialize a new exporter.<br>
+<br>
+source_id: denotes the exporter's source ID <br>
+exporter: a pointer to a pointer to the exporter struct<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_deinit_exporter><code>int ipfix_deinit_exporter (ipfix_exporter *exporter)</code></a><p>
+Cleanup previously initialized exporter and free memory.<br>
+<br>
+exporter: pointer to exporter struct
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_add_collector><code>int ipfix_add_collector(ipfix_exporter* exporter, char* coll_ip4_addr, int coll_port, ipfix_transport_protocol proto)</code></a><p>
+Add a collector to the given exporter and open connection.<br>
+<br>
+exporter: pointer to the previously initialized exporter struct<br>
+coll_ip4_addr: IP address of receiving collector in dotted notation (eg 1.2.3.4)<br>
+coll_port: port number of receiving collector<br>
+proto: transport protocol to use (check for current implementation state)<br>
+enum ipfix_transport_protocol { UDP, TCP, SCTP }<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_remove_collector><code>int ipfix_remove_collector(ipfix_exporter* exporter, char *coll_ip4_addr, int coll_port)</code></a><p>
+Remove collector from the exporter and close connection<br>
+<br>
+exporter: pointer to exporter struct<br>
+coll_ip4_addr: IP address of receiving collector in dotted notation<br>
+coll_port: port number of receiving collector
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_start_template_set><code>int ipfix_start_template_set(ipfix_exporter* exporter, uint16_t template_id, uint16_t field_count)</code></a><p>
+Start defining a new template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID for this template <br>
+field_count: number of fields to add <br>
+<br>
+NOTE: It is not possible to start and define multiple templates in parallel.<br>
+ipfix_end_template_set() has to be called first before a new template can be defined.
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_start_optionstemplate_set><code>int ipfix_start_optionstemplate_set(ipfix_exporter* exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length)</code></a><p>
+Start defining a new option template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID for this template <br>
+scope_length: length of the scope, in bytes <br>
+option_length: length of options <br>
+<br>
+NOTE: It is not possible to start and define multiple templates in parallel.<br>
+ipfix_end_template_set() has to be called first before a new template can be defined.
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_start_datatemplate_set><code>int ipfix_start_datatemplate_set(ipfix_exporter* exporter, uint16_t template_id, uint16_t field_count)</code></a><p>
+Start defining a new data template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: an ID for this template <br>
+field_count: number of fields to add <br>
+fixedfield_count: number of fixed-value fields to add <br>
+<br>
+NOTE: It is not possible to start and define multiple templates in parallel.<br>
+ipfix_end_template_set() has to be called first before a new template can be defined.
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_put_template_field><code>int ipfix_put_template_field(ipfix_exporter* exporter, uint16_t template_id, uint16_t length, uint16_t type, uint32_t enterprise)</code></a><p>
+Add a field to the previously started template, options template, or data template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID of the template <br>
+length: length of field, in bytes <br>
+type: type of field; see <a href=#template_fields>template fields</a><br>
+enterprise: enterprise number (set to 0 if not used)
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_put_template_fixedfield><code>int ipfix_put_template_fixedfield(ipfix_exporter* exporter, uint16_t template_id, uint16_t length, uint16_t type, uint32_t enterprise)</code></a><p>
+Add a fixed-value data type field to the previously started data template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID of the template<br>
+length: length of field, in bytes <br>
+type: type of field; see <a href=#template_fields>template fields</a><br>
+enterprise: enterprise number (set to 0 if not used)
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_put_template_data><code>int ipfix_put_template_data(ipfix_exporter* exporter, uint16_t template_id, void* data, uint16_t data_length)</code></a><p>
+Add fixed-value data to the previously started data template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID of the template<br>
+data: pointer to the data (NBO)<br>
+data_length: length of data to be added, in bytes <br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_end_template_set><code>int ipfix_end_template_set(ipfix_exporter *exporter, uint16_t template_id)</code></a><p>
+End a previously started and defined template, options template, or data template.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID of the template <br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_remove_template_set><code>int ipfix_remove_template_set(ipfix_exporter* exporter, uint16_t template_id)</code></a><p>
+Remove a template, options template, or data template from the exporter and free resources.<br>
+<br>
+exporter: the exporter<br>
+template_id: ID of the template to be removed 
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_start_data_set><code>int ipfix_start_data_set(ipfix_exporter* exporter, uint16_t template_id)</code></a><p>
+Start a new data set.<br>
+<br>
+exporter: pointer to exporter struct<br>
+template_id: ID of a previously defined template (NBO here, because we want to avoid frequent conversions)<br>
+<br>
+NOTE: It is not possible to start multiple data sets in parallel.<br>
+ipfix_end_data_set() has to be called first.<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_put_data_field>
+<code>void ipfix_put_data_field(ipfix_exporter *exporter, char *data, uint16_t length)</code></a><p>
+Add data to a previously started data set. This function is realized as a macro.<br>
+<br>
+exporter: pointer to exporter struct<br>
+data: pointer to the data (NBO)<br>
+length: length of data, in bytes <br>
+<br>
+NOTE: The data pointed to by *data has to be valid until <a href=#ipfix_send><code>ipfix_send()</code></a> has been called, since the data is not copied.<br>
+The data must be in network byte order for compatibility; no conversion is done.
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_set_data_field_marker>
+<code>int ipfix_set_data_field_marker(ipfix_exporter *exporter)</code></a><p>
+Sets a marker to the current position in order to be able to undo the following fields with <a href=#ipfix_delete_data_fields_upto_marker><code>ipfix_delete_data_fields_upto_marker</code></a>.<br>
+<br>
+exporter: pointer to exporter struct<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_delete_data_fields_upto_marker>
+<code>int ipfix_delete_data_fields_upto_marker(ipfix_exporter *exporter)</code></a><p>
+Undos (deletes) previously added fields up to the marker set with <a href=#ipfix_set_data_field_marker><code>ipfix_set_data_field_marker</code></a>.<br>
+<br>
+exporter: pointer to exporter struct<br>
+<br>
+NOTE: Only fields within an "unended" set can be deleted, i.e. before calling <a href=#ipfix_end_data_set><code>ipfix_end_data_set</code></a>.<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_end_data_set>
+<code>int ipfix_end_data_set(ipfix_exporter *exporter, uint16_t number_of_records)</code></a><p>
+End a previously started data set.<br>
+<br>
+exporter: pointer to exporter struct<br>
+number_of_records: number of records included in the terminated set (used to update the sequence number of the next IPFIX message)<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_cancel_data_set>
+<code>int ipfix_cancel_data_set(ipfix_exporter *exporter)</code></a><p>
+Cancel a previously started data set. Can be used instead of <a href=#ipfix_end_data_set><code>ipfix_end_data_set</code></a>.<br>
+<br>
+exporter: pointer to exporter struct<br>
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_send><code>int ipfix_send(ipfix_exporter *exporter)</code></a><p>
+Send an IPFIX packet with the added data sets. If necessary, an IPFIX packet including the templates is (re)sent before.<br>
+(The sending of templates is handled transparently by this function: If a template has changed or a timeout for periodic sending has occured, the all templates are resent.)<br>
+<br>
+exporter: pointer to exporter struct<br>
+<br>
+NOTE: The *data off all data fields in the data sets have to remain valid until this function returns.
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_name_lookup><code>int ipfix_name_lookup(char *name)</code></a><p>
+Retrieve the IPFIX / PSAMP ID of a given string. -1 indicates "not found".
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_id_lookup><code>struct ipfix_identifier * ipfix_id_lookup(int n)</code></a><p>
+Retrieve full info about an IPFIX / PSAMP ID, including name, ID and length (in bytes).<br>
+FIXME: HOW TO DISTINGUISH MULTI-OCTET (OCTET-STRING) FIELDS?
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+
+<a name=ipfix_id_rangecheck><code>int ipfix_id_rangecheck(int id)</code></a><p>
+Check if a given ID is within valid IPFIX/PSAMP ranges.<br>
+Return 0 on error (because we think boolean).
+
+<hr width="94%" noshade="noshade" align="left" size="1">
+
+<h3>Appendix</h3>
+<a name=template_fields>1. List of all valid field types:</a>
+<p>
+
+<table border="1" cellspacing="0" cellpadding="2">
+<tr>
+	<td>Range</td>
+	<td>Description</td>
+</tr>
+<tr>
+	<td>0</td>
+	<td>reserved</td>
+</tr>
+<tr>
+	<td>1 - 127</td>
+	<td>standardized field IDs, compatible to NetFlow version 9</td>
+</tr>
+<tr>
+	<td>128 - 32767</td>
+	<td>standardized field IDs, assigned by IANA</td>
+</tr>
+<tr>
+	<td>32768 - 65535</td>
+	<td> vendor-defined field IDs</td>
+</tr>
+</table>
+
+<p>
+<b>IPFIX</b>
+
+<table border="1" cellspacing="0" cellpadding="2">
+<tr>
+	<td>ID</td>
+	<td>Name</td>
+</tr>
+
+<tr>
+	<td>0</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>1</td>
+	<td>octetDeltaCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>2</td>
+	<td>packetDeltaCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>3</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>4</td>
+	<td>protocolIdentifier</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>5</td>
+	<td>classOfServiceIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>6</td>
+	<td>tcpControlBits</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>7</td>
+	<td>sourceTransportPort</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>8</td>
+	<td>sourceIPv4Address</td>
+	<td>ipv4Address</td>
+</tr>
+<tr>
+	<td>9</td>
+	<td>sourceIPv4Mask</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>10</td>
+	<td>ingressInterface</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>11</td>
+	<td>destinationTransportPort</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>12</td>
+	<td>destinationIPv4Address</td>
+	<td>ipv4Address</td>
+</tr>
+<tr>
+	<td>13</td>
+	<td>destinationIPv4Mask</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>14</td>
+	<td>egressInterface</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>15</td>
+	<td>ipNextHopIPv4Address</td>
+	<td>ipv4Address</td>
+</tr>
+<tr>
+	<td>16</td>
+	<td>bgpSourceAsNumber</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>17</td>
+	<td>bgpDestinationAsNumber</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>18</td>
+	<td>bgpNextHopIPv4Address</td>
+	<td>ipv4Address</td>
+</tr>
+<tr>
+	<td>19</td>
+	<td>postMCastPacketDeltaCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>20</td>
+	<td>postMCastOctetDeltaCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>21</td>
+	<td>flowEndSysUpTime</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>22</td>
+	<td>flowStartSysUpTime</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>23</td>
+	<td>postOctetDeltaCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>24</td>
+	<td>postPacketDeltaCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>25</td>
+	<td>minimumPacketLength</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>26</td>
+	<td>maximumPacketLength</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>27</td>
+	<td>sourceIPv6Address</td>
+	<td>ipv6Address</td>
+</tr>
+<tr>
+	<td>28</td>
+	<td>destinationIPv6Address</td>
+	<td>ipv6Address</td>
+</tr>
+<tr>
+	<td>29</td>
+	<td>sourceIPv6Mask</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>30</td>
+	<td>destinationIPv6Mask</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>31</td>
+	<td>flowLabelIPv6</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>32</td>
+	<td>icmpTypeCodeIPv4</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>33</td>
+	<td>igmpType</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>34</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>35</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>36</td>
+	<td>flowActiveTimeOut</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>37</td>
+	<td>flowInactiveTimeout</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>38</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>39</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>40</td>
+	<td>exportedOctetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>41</td>
+	<td>exportedMessageTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>42</td>
+	<td>exportedFlowTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>43</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>44</td>
+	<td>sourceIPv4Prefix</td>
+	<td>ipv4Address</td>
+</tr>
+<tr>
+	<td>45</td>
+	<td>destinationIPv4Prefix</td>
+	<td>ipv4Address</td>
+</tr>
+<tr>
+	<td>46</td>
+	<td>mplsTopLabelType</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>47</td>
+	<td>mplsTopLabelIPv4Address</td>
+	<td>ipv4Address</td>
+</tr>
+<tr>
+	<td>48</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>49</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>50</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>51</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>52</td>
+	<td>minimumTTL</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>53</td>
+	<td>maximumTTL</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>54</td>
+	<td>identificationIPv4</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>55</td>
+	<td>postClassOfServiceIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>56</td>
+	<td>sourceMacAddress</td>
+	<td>macAddress</td>
+</tr>
+<tr>
+	<td>57</td>
+	<td>postDestinationMacAddress</td>
+	<td>macAddress</td>
+</tr>
+<tr>
+	<td>58</td>
+	<td>vlanId</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>59</td>
+	<td>postVlanId</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>60</td>
+	<td>ipVersion</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>61</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>62</td>
+	<td>ipNextHopIPv6Address</td>
+	<td>ipv6Address</td>
+</tr>
+<tr>
+	<td>63</td>
+	<td>bgpNextHopIPv6Address</td>
+	<td>ipv6Address</td>
+</tr>
+<tr>
+	<td>64</td>
+	<td>ipv6ExtensionHeaders</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>65</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>66</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>67</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>68</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>69</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>70</td>
+	<td>mplsTopLabelStackEntry</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>71</td>
+	<td>mplsLabelStackEntry2</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>72</td>
+	<td>mplsLabelStackEntry3</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>73</td>
+	<td>mplsLabelStackEntry4</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>74</td>
+	<td>mplsLabelStackEntry5</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>75</td>
+	<td>mplsLabelStackEntry6</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>76</td>
+	<td>mplsLabelStackEntry7</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>77</td>
+	<td>mplsLabelStackEntry8</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>78</td>
+	<td>mplsLabelStackEntry9</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>79</td>
+	<td>mplsLabelStackEntry10</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>80</td>
+	<td>destinationMacAddress</td>
+	<td>macAddress</td>
+</tr>
+<tr>
+	<td>81</td>
+	<td>postSourceMacAddress</td>
+	<td>macAddress</td>
+</tr>
+<tr>
+	<td>82</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>83</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>84</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>85</td>
+	<td>octetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>86</td>
+	<td>packetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>87</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>88</td>
+	<td>fragmentOffsetIPv4</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>89</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>90</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>91</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>92</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>93</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>94</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>95</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>96</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>97</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>98</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>99</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>100</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>101</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>102</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>103</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>104</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>105</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>106</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>107</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>108</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>109</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>110</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>111</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>112</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>113</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>114</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>115</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>116</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>117</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>118</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>119</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>120</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>121</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>122</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>123</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>124</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>125</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>126</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>127</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>128</td>
+	<td>bgpNextAdjacentAsNumber</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>129</td>
+	<td>bgpPrevAdjacentAsNumber</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>130</td>
+	<td>exporterIPv4Address</td>
+	<td>ipv4Address</td>
+</tr>
+<tr>
+	<td>131</td>
+	<td>exporterIPv6Address</td>
+	<td>ipv6Address</td>
+</tr>
+<tr>
+	<td>132</td>
+	<td>droppedOctetDeltaCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>133</td>
+	<td>droppedPacketDeltaCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>134</td>
+	<td>droppedOctetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>135</td>
+	<td>droppedPacketTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>136</td>
+	<td>flowEndReason</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>137</td>
+	<td>classOfServiceIPv6</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>138</td>
+	<td>postClassOfServiceIPv6</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>139</td>
+	<td>icmpTypeCodeIPv6</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>140</td>
+	<td>mplsTopLabelIPv6Address</td>
+	<td>ipv6Address</td>
+</tr>
+<tr>
+	<td>141</td>
+	<td>lineCardId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>142</td>
+	<td>portId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>143</td>
+	<td>meteringProcessId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>144</td>
+	<td>exportingProcessId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>145</td>
+	<td>templateId</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>146</td>
+	<td>wlanChannelId</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>147</td>
+	<td>wlanSsid</td>
+	<td>string</td>
+</tr>
+<tr>
+	<td>148</td>
+	<td>flowId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>149</td>
+	<td>sourceId</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>150</td>
+	<td>flowStartSeconds</td>
+	<td>dateTimeSeconds</td>
+</tr>
+<tr>
+	<td>151</td>
+	<td>flowEndSeconds</td>
+	<td>dateTimeSeconds</td>
+</tr>
+<tr>
+	<td>152</td>
+	<td>flowStartMilliSeconds</td>
+	<td>dateTimeMilliSeconds</td>
+</tr>
+<tr>
+	<td>153</td>
+	<td>flowEndMilliSeconds</td>
+	<td>dateTimeMilliSeconds</td>
+</tr>
+<tr>
+	<td>154</td>
+	<td>flowStartMicroSeconds</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>155</td>
+	<td>flowEndMicroSeconds</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>156</td>
+	<td>flowStartNanoSeconds</td>
+	<td>dateTimeNanoSeconds</td>
+</tr>
+<tr>
+	<td>157</td>
+	<td>flowEndNanoSeconds</td>
+	<td>dateTimeNanoSeconds</td>
+</tr>
+<tr>
+	<td>158</td>
+	<td>flowStartDeltaMicroSeconds</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>159</td>
+	<td>flowEndDeltaMicroSeconds</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>160</td>
+	<td>systemInitTimeMilliSeconds</td>
+	<td>dateTimeMilliSeconds</td>
+</tr>
+<tr>
+	<td>161</td>
+	<td>flowDurationMilliSeconds</td>
+	<td>dateTimeMilliSeconds</td>
+</tr>
+<tr>
+	<td>162</td>
+	<td>flowDurationMicroSeconds</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>163</td>
+	<td>observedFlowTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>164</td>
+	<td>ignoredPacketTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>165</td>
+	<td>ignoredOctetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>166</td>
+	<td>notSentFlowTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>167</td>
+	<td>notSentPacketTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>168</td>
+	<td>notSentOctetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>169</td>
+	<td>destinationIPv6Prefix</td>
+	<td>ipv6Address</td>
+</tr>
+<tr>
+	<td>170</td>
+	<td>sourceIPv6Prefix</td>
+	<td>ipv6Address</td>
+</tr>
+<tr>
+	<td>171</td>
+	<td>postOctetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>172</td>
+	<td>postPacketTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>173</td>
+	<td>flowKeyIndicator</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>174</td>
+	<td>postMCastPacketTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>175</td>
+	<td>postMCastOctetTotalCount</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>176</td>
+	<td>icmpTypeIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>177</td>
+	<td>icmpCodeIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>178</td>
+	<td>icmpTypeIPv6</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>179</td>
+	<td>icmpCodeIPv6</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>180</td>
+	<td>udpSourcePort</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>181</td>
+	<td>udpDestinationPort</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>182</td>
+	<td>tcpSourcePort</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>183</td>
+	<td>tcpDestinationPort</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>184</td>
+	<td>tcpSequenceNumber</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>185</td>
+	<td>tcpAcknowledgementNumber</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>186</td>
+	<td>tcpWindowSize</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>187</td>
+	<td>tcpUrgentPointer</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>188</td>
+	<td>tcpHeaderLength</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>189</td>
+	<td>ipHeaderLength</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>190</td>
+	<td>totalLengthIPv4</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>191</td>
+	<td>payloadLengthIPv6</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>192</td>
+	<td>ipTimeToLive</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>193</td>
+	<td>nextHeaderIPv6</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>194</td>
+	<td>ipClassOfService</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>195</td>
+	<td>ipDiffServCodePoint</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>196</td>
+	<td>ipPrecedence</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>197</td>
+	<td>fragmentFlagsIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>198</td>
+	<td>octetDeltaSumOfSquares</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>199</td>
+	<td>octetTotalSumOfSquares</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>200</td>
+	<td>mplsTopLabelTtl</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>201</td>
+	<td>mplsLabelStackLength</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>202</td>
+	<td>mplsLabelStackDepth</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>203</td>
+	<td>mplsTopLabelExp</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>204</td>
+	<td>ipPayloadLength</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>205</td>
+	<td>udpMessageLength</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>206</td>
+	<td>isMulticast</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>207</td>
+	<td>internetHeaderLengthIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>208</td>
+	<td>ipv4Options</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>209</td>
+	<td>tcpOptions</td>
+	<td>unsigned64</td>
+</tr>
+<tr>
+	<td>210</td>
+	<td>paddingOctets</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>211</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>212</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>213</td>
+	<td>headerLengthIPv4</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>214</td>
+	<td>mplsPayloadLength</td>
+	<td>unsigned32</td>
+</tr>
+
+</table>
+<p>
+
+<b>PSAMP</b>
+<table border="1" cellspacing="0" cellpadding="2">
+<tr>
+	<td>ID</td>
+	<td>Name</td>
+</tr>
+<tr>
+	<td>300</td>
+	<td>selectorId</td>
+	<td>unsigned16</td>
+</tr>
+<tr>
+	<td>301</td>
+	<td>selectorInputSequenceNumber</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>302</td>
+	<td>selectorAlgorithm</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>303</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>304</td>
+	<td>samplingPacketInterval</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>305</td>
+	<td>samplingPacketSpace</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>306</td>
+	<td>samplingTimeInterval</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>307</td>
+	<td>samplingTimeSpace</td>
+	<td>dateTimeMicroSeconds</td>
+</tr>
+<tr>
+	<td>308</td>
+	<td>samplingPopulation</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>309</td>
+	<td>samplingSize</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>310</td>
+	<td>samplingProbabilityN</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>311</td>
+	<td>samplingProbabilityM</td>
+	<td>unsigned32</td>
+</tr>
+<tr>
+	<td>312</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>313</td>
+	<td>ipHeaderPacketSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>314</td>
+	<td>ipPayloadPacketSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>315</td>
+	<td>l2HeaderPacketSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>316</td>
+	<td>l2PayloadPacketSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>317</td>
+	<td>mplsLabelStackSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>318</td>
+	<td>mplsPayloadPacketSection</td>
+	<td>octetArray</td>
+</tr>
+<tr>
+	<td>319</td>
+	<td>meteringProcesssId</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>320</td>
+	<td>ObservationPointID</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>321</td>
+	<td>associationsId</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>322</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>323</td>
+	<td>selectorType</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>324</td>
+	<td>packetsObserved</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>325</td>
+	<td>packetsSelected</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>326</td>
+	<td>accuracy</td>
+	<td>octet</td>
+</tr>
+<tr>
+	<td>327</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>328</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+<tr>
+	<td>329</td>
+	<td>RESERVED</td>
+	<td></td>
+</tr>
+
+</table>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE IDMEF-Message PUBLIC "-//IETF//DTD RFC XXXX IDMEF v1.0//EN" "idmef-message.dtd">
+<IDMEF-Message>
+  <Alert messageid="000046D2BAFF342469200003A040001">
+    <Analyzer model="Vermont portscan detector" analyzerid="vermont@vermont.rrze">
+      <Node category="hosts">
+        <name>vermont.rrze.uni-erlangen.de</name>
+        <Address category="ipv4-addr">
+          <address>131.188.2.46</address>
+        </Address>
+      </Node>
+    </Analyzer>
+    <CreateTime ntpstamp="0xca7d397f.0x0">2007-08-27-T11:52:31Z</CreateTime>
+    <Source>
+      <Node category="hosts">
+        <Address category="ipv4-addr">
+          <address>1.2.3.4</address>
+        </Address>
+      </Node>
+    </Source>
+    <Target>
+      <Node category="hosts">
+        <Address category="ipv4-addr">
+          <address>255.255.255.0</address>
+        </Address>
+      </Node>
+    </Target>
+    <Classification text="portscan" ident="23 succ. conns., 25 failed conns., destination: 255.255.255.0/2.3.4.5"/>
+  </Alert>
+</IDMEF-Message>
