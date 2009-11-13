@@ -295,7 +295,6 @@ public:
 
 	/**
 	 * tells this module that there aren't any succeeding modules during module connection
-	 * we need to insert a DevnullModule if this module wants to send data elements
 	 */
 	virtual void setupWithoutSuccessors()
 	{
