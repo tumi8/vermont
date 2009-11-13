@@ -1,0 +1,21 @@
+<ipfixConfig>
+	<sensorManager id="99">
+		<checkinterval>2</checkinterval>
+		<outputfile>send.xml</outputfile>		
+	</sensorManager>
+
+	<observer id="1">
+		<interface>eth0</interface>
+		<pcap_filter>ip</pcap_filter>
+		<captureLength>1522</captureLength>
+	<next>2</next>
+	</observer>
+
+        <packetQueue id="2">
+                <maxSize>1000</maxSize>
+                <next>6</next>
+        </packetQueue>
+
+	<fastpsampExporter id="6">	
+	</fastpsampExporter>	
+</ipfixConfig>

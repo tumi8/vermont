@@ -100,7 +100,7 @@ public:
 	ATTENTION: this array *MUST* be allocated inside the packet structure, so that it has a constant position
 	relative to other members of Packet. This is needed for optimization purposes inside the express aggregator
 	*/
-	unsigned char data[PCAP_MAX_CAPTURE_LENGTH];
+	unsigned char packet[PCAP_MAX_CAPTURE_LENGTH];
 	uint64_t zeroBytes;		/**< needed for reference in fields which are not available in PacketHashtable */
 	unsigned char *netHeader;
 	unsigned char *transportHeader;
@@ -132,18 +132,19 @@ public:
 	uint8_t varlength[12];
 	uint8_t varlength_index;
 
+	//data pointer, because we have to switch between memcpy and mmapped*/
+	unsigned char *data;
+	unsigned char *mmappeddata;/*points to mmapped memory if possible*/
 
 	Packet(InstanceManager<Packet>* im)
 		: ManagedInstance<Packet>(im),
 		  zeroBytes(0),
-		  netHeader(data + IPHeaderOffset), // netHeader must not be changed afterwards
 		  netHeaderOffset(IPHeaderOffset)
 	{
 	}
 
 	Packet()
 		: ManagedInstance<Packet>(0),
-		  netHeader(data + IPHeaderOffset),
 		  netHeaderOffset(IPHeaderOffset)
 	{
 	}
@@ -176,14 +177,14 @@ public:
 		time_msec_nbo = other->time_msec_nbo;
 
 		memcpy(&varlength, &other->varlength, sizeof(varlength));
-		varlength_index = other->varlength_index; 
+		varlength_index = other->varlength_index;
 	}
 */
 
 	/**
 	 * @param origplen original packet length
 	 */
-	inline void init(char* packetData, int len, struct timeval time, uint32_t obsdomainid, uint32_t origplen)
+	inline void init(char* packetData, int len, struct timeval time, uint32_t obsdomainid, uint32_t origplen, bool memcopy=true,bool mmapped=false)
 	{
 		transportHeader = NULL;
 		payload = NULL;
@@ -202,7 +203,23 @@ public:
 					"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH to compensate!", len, PCAP_MAX_CAPTURE_LENGTH);
 		}
 
-		memcpy(data, packetData, len);
+		if (memcopy){
+			memcpy(packet, packetData, len);
+			data=packet;
+			if (mmapped){
+				mmappeddata=(unsigned char*)packetData;
+			}else{
+				mmappeddata=packet;
+			}
+		}else{
+			if (!mmapped){
+				msg(MSG_FATAL, "packet: init");
+				THROWEXCEPTION("no memcopy and no mmapped!");
+			}
+			data=(unsigned char*)packetData;
+			mmappeddata=(unsigned char*)packetData;
+		}
+		netHeader=data + IPHeaderOffset;
 
 		// timestamps in network byte order (needed for export or concentrator)
 		time_sec_nbo = htonl(timestamp.tv_sec);

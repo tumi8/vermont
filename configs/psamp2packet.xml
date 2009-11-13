@@ -1,0 +1,35 @@
+<ipfixConfig>
+	<sensorManager id="99">
+		<checkinterval>2</checkinterval>
+		<outputfile>coll.xml</outputfile>
+	</sensorManager>
+
+	<ipfixCollector id="1">
+		<listener>
+			<ipAddress>0.0.0.0</ipAddress>
+			<transportProtocol>SCTP</transportProtocol>
+			<port>4739</port>
+		</listener>
+		<next>2</next>
+	</ipfixCollector>
+
+	<ipfixQueue id="2">
+		<entries>10</entries>
+		<next>4</next>
+	</ipfixQueue>
+	
+	<psamp2packet id="4">
+		<next>6</next>
+	</psamp2packet>
+
+	<packetQueue id="6">
+		<maxSize>10</maxSize>
+		<next>8</next>
+	</packetQueue>
+
+	<pcapExporter id="8">
+		<filename>vermont.pcap</filename>
+		<snaplen>128</snaplen>
+	</pcapExporter>
+
+</ipfixConfig>

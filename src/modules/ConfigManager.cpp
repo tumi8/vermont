@@ -31,6 +31,8 @@
 #include "modules/idmef//PacketIDMEFReporterCfg.h"
 #include "modules/analysis/P2PDetectorCfg.h"
 #include "modules/analysis/HostStatisticsCfg.h"
+#include "modules/packet/PSAMP2PacketCfg.h"
+#include "modules/packet/FastPSAMPExporterCfg.h"
 
 #include <cassert>
 
@@ -66,6 +68,8 @@ Cfg* ConfigManager::configModules[] = {
 	new FrontPayloadSigMatcherCfg(NULL),
 	new P2PDetectorCfg(NULL),
 	new HostStatisticsCfg(NULL),
+	new PSAMP2PacketCfg(NULL),
+	new FastPSAMPExporterCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
 	new IpfixDbReaderCfg(NULL),
 	new IpfixDbWriterCfg(NULL),

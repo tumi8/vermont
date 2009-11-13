@@ -33,6 +33,11 @@ ADD_LIBRARY(modules
     packet/ObserverCfg.cpp
     packet/Packet.cpp
     packet/Template.cpp
+    packet/FastPSAMPExporterModule.cpp
+    packet/FastPSAMPExporterCfg.cpp
+    packet/FastPSAMPSender.cpp
+    packet/PSAMP2Packet.cpp
+    packet/PSAMP2PacketCfg.cpp
     packet/PCAPExporterModule.cpp
     packet/PSAMPExporterModule.cpp
     packet/PSAMPExporterCfg.cpp
