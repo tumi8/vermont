@@ -107,6 +107,7 @@ void AnonModule::addAnonymization(uint16_t id, int len, AnonMethod::Method metho
 			len = ident->length;
 		}
 		ie.offset = ie.header = ie.packetClass = 0;
+		// attention: if ie.len==0, anonField() assumes that it is a variable length field and the whole information element will be processed
 		ie.len = len;
 		ie.primitive.push_back(a);
 		methods[id] = ie;
@@ -118,7 +119,12 @@ void AnonModule::anonField(uint16_t id, void* data, int len)
 	if (methods.find(id) == methods.end()) {
 		return;
 	}
-	int l = len==-1?methods[id].len:len;
+
+	int l = methods[id].len;
+	if (methods[id].len==0) {
+		// this is a variable-length field, process everything
+		l = len;
+	}
 	for (std::vector<AnonPrimitive*>::iterator i = methods[id].primitive.begin(); i != methods[id].primitive.end(); ++i) {
 		(*i)->anonimizeBuffer(data, l);
 	}
