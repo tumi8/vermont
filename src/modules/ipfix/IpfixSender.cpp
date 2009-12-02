@@ -213,9 +213,16 @@ void IpfixSender::addRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti)
 void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
+	// TODO: Implement Options Template handling
+	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
+	{
+	    msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", dataTemplateInfo->setId);
+	}
+
 	TemplateInfo::TemplateId my_template_id;
 	uint16_t my_preceding;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
+
 
 	if (!exporter) {
 		THROWEXCEPTION("sndIpfix: Exporter not set");
@@ -355,6 +362,12 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
  */
 void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
+	// TODO: Implement Options Template handling
+	if ((record->templateInfo->setId != TemplateInfo::IpfixTemplate) && (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate))
+	{
+	    msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", record->templateInfo->setId);
+	}
+
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 
 	if (!exporter) {

@@ -279,6 +279,8 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 		case TemplateInfo::IpfixDataTemplate:
 			printf("\n-+--- Ipfix Data Template (id=%u) from ", record->templateInfo->templateId);
 			break;
+		default:
+			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%d", record->templateInfo->setId);
 
 	}
 	if (record->sourceID) {

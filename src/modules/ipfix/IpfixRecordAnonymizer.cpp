@@ -41,6 +41,7 @@ void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 
 void IpfixRecordAnonymizer::onOptionsRecord(IpfixOptionsRecord* record)
 {
+	//FIXME: anonymize Options Data Records
 	send(record);
 }
 

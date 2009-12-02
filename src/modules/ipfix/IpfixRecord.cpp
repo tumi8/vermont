@@ -72,7 +72,7 @@ namespace InformationElement {
 	/**
 	 * Checks whether the given Field carries reverse flow information in a bi-flow record
 	 * TODO: According to the standard, reversef low IEs should use enterprise number 29305
-	 * @param field Data Record field
+	 * @param type Data Record field
 	 * @returns true if this IE carries reverse flow information
 	 */
 	bool isBiflowField(const IeInfo& type)
@@ -95,6 +95,23 @@ namespace InformationElement {
 		return false;
 	}
 
+	/**
+	 * Returns IeInfo of reverse type.
+	 * TODO: According to the standard, reverse low IEs should use enterprise number 29305
+	 * @param type Data Record field
+	 * @returns IeInfo of reverse type
+	 */
+	IeInfo reverseType(const IeInfo& type)
+	{
+	    IeInfo revType = type;
+	    if(type.id & 0x8000) {// TODO: and (type.enterprise == 29305)  
+		    revType.enterprise = 0;
+		    revType.id &= 0x7FFF;
+	    } else { // TODO: if (type.enterprise == 0)
+		    // revType.enterprise = 20305;
+		    revType.id |= 0x8000;
+	    }
+	}
 
 	/**
 	 * Returns valid protocols for given field
@@ -279,13 +296,6 @@ TemplateInfo::FieldInfo* TemplateInfo::getDataInfo(InformationElement::IeId fiel
 	return NULL;
 }
 
-
-IpfixRecord::IpfixRecord()
-{
-}
-
-IpfixRecord::~IpfixRecord() {
-}
 
 IpfixTemplateRecord::IpfixTemplateRecord(InstanceManager<IpfixTemplateRecord>* im)
 	: ManagedInstance<IpfixTemplateRecord>(im)
