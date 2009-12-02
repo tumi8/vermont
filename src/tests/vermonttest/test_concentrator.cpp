@@ -95,7 +95,7 @@ boost::shared_ptr<IpfixRecord::TemplateInfo> createTestTemplate(uint8_t magic_nu
 		testTemplate->fieldInfo = (IpfixRecord::FieldInfo*)malloc(testTemplate->fieldCount * sizeof(IpfixRecord::FieldInfo));
 		testTemplate->fieldInfo[0].type.id = magic_number;
 		testTemplate->fieldInfo[0].type.length = 1;
-		testTemplate->fieldInfo[0].type.eid = 0;
+		testTemplate->fieldInfo[0].type.enterprise = 0;
 		testTemplate->fieldInfo[0].offset = 0;
 		testTemplate->userData = 0;
 
@@ -113,11 +113,11 @@ boost::shared_ptr<IpfixRecord::DataTemplateInfo> createTestDataTemplate(uint8_t 
 		testTemplate->data = (uint8_t*)malloc(1); testTemplate->data[0] = magic_number;
 		testTemplate->fieldInfo[0].type.id = magic_number;
 		testTemplate->fieldInfo[0].type.length = 1;
-		testTemplate->fieldInfo[0].type.eid = 0;
+		testTemplate->fieldInfo[0].type.enterprise = 0;
 		testTemplate->fieldInfo[0].offset = 0;
 		testTemplate->dataInfo[0].type.id = magic_number;
 		testTemplate->dataInfo[0].type.length = 1;
-		testTemplate->dataInfo[0].type.eid = 0;
+		testTemplate->dataInfo[0].type.enterprise = 0;
 		testTemplate->dataInfo[0].offset = 0;
 		testTemplate->userData = 0;
 

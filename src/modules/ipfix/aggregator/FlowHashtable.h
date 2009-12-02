@@ -37,8 +37,8 @@ private:
 	int equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2, bool reverse);
 	HashtableBucket* lookupBucket(uint32_t hash, IpfixRecord::Data* data, bool reverse, HashtableBucket** prevbucket);
 	void bufferDataBlock(boost::shared_array<IpfixRecord::Data> data);
-	int equalRaw(IpfixRecord::FieldInfo::Type* data1Type, IpfixRecord::Data* data1,
-			IpfixRecord::FieldInfo::Type* data2Type, IpfixRecord::Data* data2);
+	int equalRaw(InformationElement::IeInfo* data1Type, IpfixRecord::Data* data1,
+			InformationElement::IeInfo* data2Type, IpfixRecord::Data* data2);
 	void copyData(IpfixRecord::FieldInfo* dstFI, IpfixRecord::Data* dst,
 			IpfixRecord::FieldInfo* srcFI, IpfixRecord::Data* src, Rule::Field::Modifier modifier);
 	void genBiflowStructs();

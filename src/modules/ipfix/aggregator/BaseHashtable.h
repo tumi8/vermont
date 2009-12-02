@@ -104,14 +104,14 @@ protected:
 
 	bool resendTemplate; /**< set to true if template needs to be sent again */
 
-	int isToBeAggregated(IpfixRecord::FieldInfo::Type type);
+	int isToBeAggregated(const InformationElement::IeInfo& type);
 	HashtableBucket* createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid,
 		HashtableBucket* next, HashtableBucket* prev, uint32_t hash);
 	void exportBucket(HashtableBucket* bucket);
 	void destroyBucket(HashtableBucket* bucket);
 	void createDataTemplate(Rule* rule);
 	void sendDataTemplate();
-	uint32_t getPrivateDataLength(IpfixRecord::FieldInfo::Type);
+	uint32_t getPrivateDataLength(const InformationElement::IeInfo& type);
 
 };
 

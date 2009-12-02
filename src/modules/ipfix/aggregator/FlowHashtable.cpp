@@ -133,7 +133,7 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo* basefi, IpfixRecord::F
 								  IpfixRecord::Data* delta) {
 	IpfixRecord::Data* baseData = base+basefi->offset;
 	IpfixRecord::Data* deltaData = delta+deltafi->offset;
-	IpfixRecord::FieldInfo::Type* type = &basefi->type;
+	InformationElement::IeInfo* type = &basefi->type;
 	uint32_t* plen;
 
 	switch (type->id) {
@@ -388,13 +388,13 @@ uint32_t FlowHashtable::getHash(IpfixRecord::Data* data, bool reverse) {
  * Checks if two data fields are binary equal
  * @return 1 if fields are equal
  */
-int FlowHashtable::equalRaw(IpfixRecord::FieldInfo::Type* data1Type, IpfixRecord::Data* data1, IpfixRecord::FieldInfo::Type* data2Type, IpfixRecord::Data* data2)
+int FlowHashtable::equalRaw(InformationElement::IeInfo* data1Type, IpfixRecord::Data* data1, InformationElement::IeInfo* data2Type, IpfixRecord::Data* data2)
 {
 	int i;
 
 	if(data1Type->id != data2Type->id) return 0;
 	if(data1Type->length != data2Type->length) return 0;
-	if(data1Type->eid != data2Type->eid) return 0;
+	if(data1Type->enterprise != data2Type->enterprise) return 0;
 
 	for(i = 0; i < data1Type->length; i++) {
 		if(data1[i] != data2[i]) {
@@ -561,11 +561,11 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
  */
 void FlowHashtable::copyData(IpfixRecord::FieldInfo* dstFI, IpfixRecord::Data* dst, IpfixRecord::FieldInfo* srcFI, IpfixRecord::Data* src, Rule::Field::Modifier modifier)
 {
-	IpfixRecord::FieldInfo::Type* dstType = &dstFI->type;
-	IpfixRecord::FieldInfo::Type* srcType = &srcFI->type;
+	InformationElement::IeInfo* dstType = &dstFI->type;
+	InformationElement::IeInfo* srcType = &srcFI->type;
 	IpfixRecord::Data* dstData = dst+dstFI->offset;
 	IpfixRecord::Data* srcData = src+srcFI->offset;
-	if((dstType->id != srcType->id) || (dstType->eid != srcType->eid)) {
+	if((dstType->id != srcType->id) || (dstType->enterprise != srcType->enterprise)) {
 		DPRINTF("copyData: Tried to copy field to destination of different type\n");
 		return;
 	}

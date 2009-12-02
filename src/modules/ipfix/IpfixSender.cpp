@@ -286,7 +286,7 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 			ipfix_put_template_field(exporter, my_template_id, IPFIX_TYPEID_destinationIPv4Mask, 1, 0);
 		}
 		else {
-			ipfix_put_template_field(exporter, my_template_id, fi->type.id, fi->type.length, fi->type.eid);
+			ipfix_put_template_field(exporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
 		}
 	}
 
@@ -308,7 +308,7 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 			ipfix_put_template_fixedfield(exporter, my_template_id, IPFIX_TYPEID_destinationIPv4Mask, 1, 0);
 		}
 		else {
-			ipfix_put_template_fixedfield(exporter, my_template_id, fi->type.id, fi->type.length, fi->type.eid);
+			ipfix_put_template_fixedfield(exporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
 		}
 	}
 
