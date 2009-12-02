@@ -244,9 +244,11 @@ int matchesRawPattern(const InformationElement::IeInfo* dataType, const IpfixRec
 	/* Byte-wise comparison, so lengths must be equal */
 	if (dataType->length != patternType->length) return 0;
 
-	for (i = 0; i < dataType->length; i++) if (data[i] != pattern[i]) return 0;
+	//for (i = 0; i < dataType->length; i++) if (data[i] != pattern[i]) return 0;
+	//return 1;
+	
+	return (memcmp(data, pattern, dataType->length) == 0);
 
-	return 1;
 }
 
 /**
@@ -340,7 +342,7 @@ int Rule::templateDataMatches(TemplateInfo* info, IpfixRecord::Data* data) {
 		Rule::Field* ruleField = field[i];
 
 		/* for all patterns of this rule, check if they are matched */
-		if (field[i]->pattern) {
+		if (ruleField->pattern) {
 			fieldInfo = info->getFieldInfo(ruleField->type);
 			if (fieldInfo) {
 				/* corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched */
@@ -349,7 +351,16 @@ int Rule::templateDataMatches(TemplateInfo* info, IpfixRecord::Data* data) {
 				continue;
 			}
 			
-			if (biflowAggregation && InformationElement::isBiflowField(ruleField->type)) return 1;
+			/* in the case of biflow, we also check the reverse direction */
+			if (biflowAggregation) {
+				fieldInfo = info->getFieldInfo(InformationElement::reverseType(ruleField->type));
+				if (fieldInfo) {
+					/* corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched */
+					if (!matchesPattern(&fieldInfo->type, (data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
+					if (!checkAssociatedMask(info, data, ruleField)) return 0;
+					continue;
+				}
+			}
 			
 			/* no corresponding data field found, this flow cannot match */
 			msg(MSG_VDEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
@@ -360,7 +371,11 @@ int Rule::templateDataMatches(TemplateInfo* info, IpfixRecord::Data* data) {
 			fieldInfo = info->getFieldInfo(ruleField->type);
 			if (fieldInfo) continue;
 			
-			if (biflowAggregation && InformationElement::isBiflowField(ruleField->type)) return 1;
+			/* in the case of biflow, we also check the reverse direction */
+			if (biflowAggregation) {
+				fieldInfo = info->getFieldInfo(InformationElement::reverseType(ruleField->type));
+				if (fieldInfo)	continue;
+			}
 			
 			msg(MSG_VDEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;

@@ -46,6 +46,7 @@ namespace InformationElement {
 
 	IeLength getFieldLength(IeId id);
 	bool isBiflowField(const IeInfo& type);
+	IeInfo reverseType(const IeInfo& type);
 	const Packet::IPProtocolType getValidProtocols(const IeInfo& type);
 }
 
@@ -110,8 +111,8 @@ class IpfixRecord
 
 		boost::shared_ptr<IpfixRecord::SourceID> sourceID;
 
-		IpfixRecord();
-		virtual ~IpfixRecord();
+		IpfixRecord() {}
+		virtual ~IpfixRecord() {}
 
 		/**
 		 * all subclasses *MUST* inherit ManagedInstance, which implements these methods
