@@ -114,7 +114,7 @@ class IpfixDbWriterPg
 		void addColumnEntry(const char* insert, bool quoted, bool lastcolumn);
 		void addColumnEntry(const uint64_t insert, bool quoted, bool lastcolumn);
 		void fillInsertRow(IpfixRecord::SourceID* sourceID,
-				IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
+				TemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
 		bool writeToDb();
 		int getExporterID(IpfixRecord::SourceID* sourceID);
         bool checkCurrentTable(uint64_t flowStart);
@@ -124,18 +124,18 @@ class IpfixDbWriterPg
 	private:
 		void connectToDB();
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID,
-				IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length,
+				TemplateInfo* dataTemplateInfo, uint16_t length,
 				IpfixRecord::Data* data);
 
 		/***** Internal Functions ****************************************************/
 
 		char* getTableNamDependTime(char* tablename,uint64_t flowstartsec);
 
-		uint64_t getdata(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
-		uint64_t getIPFIXValue(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
+		uint64_t getdata(InformationElement::IeInfo type, IpfixRecord::Data* data);
+		uint64_t getIPFIXValue(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		uint32_t getdefaultIPFIXdata(int ipfixtype);
 
-		uint32_t getipv4address(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
+		uint32_t getipv4address(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void extractNtp64(uint64_t& intdata, uint32_t& micros);
 
 

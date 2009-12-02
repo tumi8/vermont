@@ -64,7 +64,7 @@ void IpfixAggregator::onDataRecord(IpfixDataRecord* record)
 	}
 #endif
 	
-	IpfixRecord::TemplateInfo* ti = record->templateInfo.get();
+	TemplateInfo* ti = record->templateInfo.get();
 
 	
 	for (size_t i = 0; i < rules->count; i++) {
@@ -96,12 +96,13 @@ void IpfixAggregator::onDataDataRecord(IpfixDataDataRecord* record)
 	}
 #endif
 
+	TemplateInfo* ti = record->dataTemplateInfo.get();
+
 	mutex.lock();
 	for (size_t i = 0; i < rules->count; i++) {
-		if (rules->rule[i]->dataTemplateDataMatches(record->dataTemplateInfo.get(), record->data)) {
+		if (rules->rule[i]->dataTemplateDataMatches(ti, record->data)) {
 			DPRINTF("rule %d matches\n", i);
-			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateDataTemplateData(
-					record->dataTemplateInfo.get(), record->data);
+			static_cast<FlowHashtable*>(rules->rule[i]->hashtable)->aggregateDataTemplateData(ti, record->data);
 		}
 	}
 	mutex.unlock();

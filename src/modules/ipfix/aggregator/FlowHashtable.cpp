@@ -55,7 +55,7 @@ void FlowHashtable::genBiflowStructs()
 	DPRINTF("fieldCount=%d", dataTemplate->fieldCount);
 	for (int32_t i=0; i<dataTemplate->fieldCount; i++) {
 		DPRINTF("fieldCount=%d", i);
-		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 		if (fi->type.length>maxFieldSize) maxFieldSize = fi->type.length;
 		switch (fi->type.id) {
 			case IPFIX_TYPEID_protocolIdentifier:
@@ -102,7 +102,7 @@ void FlowHashtable::genBiflowStructs()
 	}
 
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 		switch (fi->type.id) {
 			case IPFIX_TYPEID_sourceIPv4Address:
 				revDataTemplateMapper[i] = dstIPIdx;
@@ -129,7 +129,7 @@ void FlowHashtable::genBiflowStructs()
 /**
  * Adds (or otherwise aggregates) @c deltaData to @c baseData
  */
-int FlowHashtable::aggregateField(IpfixRecord::FieldInfo* basefi, IpfixRecord::FieldInfo* deltafi, IpfixRecord::Data* base,
+int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo::FieldInfo* deltafi, IpfixRecord::Data* base,
 								  IpfixRecord::Data* delta) {
 	IpfixRecord::Data* baseData = base+basefi->offset;
 	IpfixRecord::Data* deltaData = delta+deltafi->offset;
@@ -284,7 +284,7 @@ int FlowHashtable::aggregateField(IpfixRecord::FieldInfo* basefi, IpfixRecord::F
  * @returns 1 if second is bigger than first argument
  * @returns -1 if first is bigger than second argument
  */
-int FlowHashtable::compare4ByteField(IpfixRecord::Data* baseFlow, IpfixRecord::FieldInfo* baseFi, IpfixRecord::Data* flow, IpfixRecord::FieldInfo* deltaFi)
+int FlowHashtable::compare4ByteField(IpfixRecord::Data* baseFlow, TemplateInfo::FieldInfo* baseFi, IpfixRecord::Data* flow, TemplateInfo::FieldInfo* deltaFi)
 {
 	IpfixRecord::Data* baseData = baseFlow+baseFi->offset;
 	IpfixRecord::Data* deltaData = flow+deltaFi->offset;
@@ -302,7 +302,7 @@ int FlowHashtable::compare4ByteField(IpfixRecord::Data* baseFlow, IpfixRecord::F
  * @returns 1 if second is bigger than first argument
  * @returns -1 if first is bigger than second argument
  */
-int FlowHashtable::compare8ByteField(IpfixRecord::Data* baseFlow, IpfixRecord::FieldInfo* baseFi, IpfixRecord::Data* flow, IpfixRecord::FieldInfo* deltaFi)
+int FlowHashtable::compare8ByteField(IpfixRecord::Data* baseFlow, TemplateInfo::FieldInfo* baseFi, IpfixRecord::Data* flow, TemplateInfo::FieldInfo* deltaFi)
 {
 	IpfixRecord::Data* baseData = baseFlow+baseFi->offset;
 	IpfixRecord::Data* deltaData = flow+deltaFi->offset;
@@ -326,7 +326,7 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 	int result = 0;
 
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 
 		if(!isToBeAggregated(fi->type)) {
 			continue;
@@ -416,14 +416,14 @@ int FlowHashtable::equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2,
 	if(flow1 == flow2) return 1;
 
 	for(i = 0; i < dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 
 		if(isToBeAggregated(fi->type)) {
 			continue;
 		}
 
 		if (reverse) {
-			IpfixRecord::FieldInfo* rfi = &dataTemplate->fieldInfo[revDataTemplateMapper[i]];
+			TemplateInfo::FieldInfo* rfi = &dataTemplate->fieldInfo[revDataTemplateMapper[i]];
 			if(!equalRaw(&fi->type, flow1 + fi->offset,
 						 &fi->type /* both types *must* be equal, although they may not */,
 						 flow2 + rfi->offset)) {
@@ -466,8 +466,8 @@ HashtableBucket* FlowHashtable::lookupBucket(uint32_t hash, IpfixRecord::Data* d
 void FlowHashtable::reverseFlowBucket(HashtableBucket* bucket)
 {
 	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
-		IpfixRecord::FieldInfo* fi2 = &dataTemplate->fieldInfo[flowReverseMapper[i]];
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi2 = &dataTemplate->fieldInfo[flowReverseMapper[i]];
 
 		if (fi != fi2) {
 			//msg(MSG_ERROR, "mapping idx %d to idx %d", i, flowReverseMapper[i]);
@@ -559,7 +559,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
  * Copies \c srcData to \c dstData applying \c modifier.
  * Takes care to pad \c srcData with zero-bytes in case it is shorter than \c dstData.
  */
-void FlowHashtable::copyData(IpfixRecord::FieldInfo* dstFI, IpfixRecord::Data* dst, IpfixRecord::FieldInfo* srcFI, IpfixRecord::Data* src, Rule::Field::Modifier modifier)
+void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* dst, TemplateInfo::FieldInfo* srcFI, IpfixRecord::Data* src, Rule::Field::Modifier modifier)
 {
 	InformationElement::IeInfo* dstType = &dstFI->type;
 	InformationElement::IeInfo* srcType = &srcFI->type;
@@ -667,7 +667,7 @@ void FlowHashtable::copyData(IpfixRecord::FieldInfo* dstFI, IpfixRecord::Data* d
 /**
  * Buffer passed flow in Hashtable @c ht
  */
-void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRecord::Data* data)
+void FlowHashtable::aggregateTemplateData(TemplateInfo* ti, IpfixRecord::Data* data)
 {
 	// the following lock should almost never fail (only during reconfiguration)
 	while (atomic_lock(&aggInProgress)) {
@@ -685,8 +685,8 @@ void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRe
 	memset(htdata.get()+fieldLength, 0, privDataLength);
 
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
-		IpfixRecord::FieldInfo* tfi = ti->getFieldInfo(&hfi->type);
+		TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* tfi = ti->getFieldInfo(hfi->type);
 
 		if (!tfi) {
 			DPRINTF("Flow to be buffered did not contain %s field\n", typeid2string(hfi->type.id));
@@ -749,7 +749,7 @@ void FlowHashtable::aggregateTemplateData(IpfixRecord::TemplateInfo* ti, IpfixRe
 /**
  * Buffer passed flow (containing fixed-value fields) in Hashtable @c ht
  */
-void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti, IpfixRecord::Data* data)
+void FlowHashtable::aggregateDataTemplateData(TemplateInfo* ti, IpfixRecord::Data* data)
 {
 	DPRINTF("called");
 
@@ -770,12 +770,12 @@ void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti,
 	memset(htdata.get()+fieldLength, 0, privDataLength);
 
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 
 		bool fieldFilled = false;
 
 		/* Copy from matching variable field, should it exist */
-		IpfixRecord::FieldInfo* tfi = ti->getFieldInfo(&hfi->type);
+		TemplateInfo::FieldInfo* tfi = ti->getFieldInfo(hfi->type);
 		if (tfi) {
 			// this path is normal for normal flow data records!
 			fieldFilled = true;
@@ -822,7 +822,7 @@ void FlowHashtable::aggregateDataTemplateData(IpfixRecord::DataTemplateInfo* ti,
 		}
 
 		/* No matching variable field. Copy from matching fixed field, should it exist */
-		tfi = ti->getDataInfo(&hfi->type);
+		tfi = ti->getDataInfo(hfi->type);
 		if (tfi) {
 			fieldFilled = true;
 			copyData(hfi, htdata.get(), tfi, ti->data, fieldModifier[i]);

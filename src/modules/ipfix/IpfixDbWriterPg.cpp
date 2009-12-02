@@ -276,7 +276,7 @@ void IpfixDbWriterPg::onDataDataRecord(IpfixDataDataRecord* record)
  * save given elements of record to database
  */
 void IpfixDbWriterPg::processDataDataRecord(IpfixRecord::SourceID* sourceID,
-		IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length,
+		TemplateInfo* dataTemplateInfo, uint16_t length,
 		IpfixRecord::Data* data)
 {
 	DPRINTF("Processing data record");
@@ -318,7 +318,7 @@ void IpfixDbWriterPg::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 void IpfixDbWriterPg::onDataRecord(IpfixDataRecord* record)
 {
 	// convert templateInfo to dataTemplateInfo
-	IpfixRecord::DataTemplateInfo dataTemplateInfo;
+	TemplateInfo dataTemplateInfo;
 	dataTemplateInfo.templateId = 0;
 	dataTemplateInfo.preceding = 0;
 	dataTemplateInfo.freePointers = false; // don't free the given pointers, as they are taken from a different structure
@@ -400,11 +400,11 @@ void IpfixDbWriterPg::extractNtp64(uint64_t& intdata, uint32_t& micros)
 
 
 /**
- *	loop over the IpfixRecord::DataTemplateInfo (fieldinfo,datainfo) to get the IPFIX values to store in database
+ *	loop over the TemplateInfo (fieldinfo,datainfo) to get the IPFIX values to store in database
  *  results are stored in insertBuffer.sql
  */
 void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
-		IpfixRecord::DataTemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data)
+		TemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data)
 {
 	uint32_t j, k;
 	uint64_t intdata = 0;
@@ -718,7 +718,7 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 /**
  *	Get data of the record is given by the IPFIX_TYPEID
  */
-uint64_t IpfixDbWriterPg::getdata(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data)
+uint64_t IpfixDbWriterPg::getdata(InformationElement::IeInfo type, IpfixRecord::Data* data)
 {
 	if(type.id == IPFIX_TYPEID_sourceIPv4Address || type.id == IPFIX_TYPEID_destinationIPv4Address)
 	return getipv4address(type, data);
@@ -728,7 +728,7 @@ uint64_t IpfixDbWriterPg::getdata(IpfixRecord::FieldInfo::Type type, IpfixRecord
 /**
  *	determine the ipv4address of the data record
  */
-uint32_t IpfixDbWriterPg::getipv4address( IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data)
+uint32_t IpfixDbWriterPg::getipv4address( InformationElement::IeInfo type, IpfixRecord::Data* data)
 {
 
 	if (type.length > 5) {
@@ -751,7 +751,7 @@ uint32_t IpfixDbWriterPg::getipv4address( IpfixRecord::FieldInfo::Type type, Ipf
 /**
  *	get the IPFIX value
  */
-uint64_t IpfixDbWriterPg::getIPFIXValue(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data)
+uint64_t IpfixDbWriterPg::getIPFIXValue(InformationElement::IeInfo type, IpfixRecord::Data* data)
 {
 	switch (type.length) {
 		case 1:

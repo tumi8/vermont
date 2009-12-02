@@ -83,6 +83,7 @@ out:
 	THROWEXCEPTION("IpfixSender creation failed");
 	return;
 }
+
 IpfixSender::IpfixSender(uint32_t observationDomainId)
 	: statSentPackets(0),
 	  noCachedRecords(0),
@@ -171,9 +172,9 @@ void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_pr
  * looks in cached templates if given template is already registered there
  * @returns true if it was found
  */
-bool IpfixSender::isTemplateRegistered(IpfixRecord::TemplateInfo* ti)
+bool IpfixSender::isTemplateRegistered(TemplateInfo* ti)
 {
-	list<boost::shared_ptr<IpfixRecord::TemplateInfo> >::iterator iter = registeredTemplates.begin();
+	list<boost::shared_ptr<TemplateInfo> >::iterator iter = registeredTemplates.begin();
 	while (iter != registeredTemplates.end()) {
 		if (iter->get()->templateId == ti->templateId) return true;
 		iter++;
@@ -184,9 +185,9 @@ bool IpfixSender::isTemplateRegistered(IpfixRecord::TemplateInfo* ti)
 /**
  * removes given template from cached templates
  */
-void IpfixSender::removeRegisteredTemplate(IpfixRecord::TemplateInfo* ti)
+void IpfixSender::removeRegisteredTemplate(TemplateInfo* ti)
 {
-	list<boost::shared_ptr<IpfixRecord::TemplateInfo> >::iterator iter = registeredTemplates.begin();
+	list<boost::shared_ptr<TemplateInfo> >::iterator iter = registeredTemplates.begin();
 	while (iter != registeredTemplates.end()) {
 		if (iter->get()->templateId == ti->templateId) {
 			registeredTemplates.erase(iter);
@@ -200,20 +201,19 @@ void IpfixSender::removeRegisteredTemplate(IpfixRecord::TemplateInfo* ti)
 /**
  * adds given template to the list of cached templates
  */
-void IpfixSender::addRegisteredTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> ti)
+void IpfixSender::addRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti)
 {
 	registeredTemplates.push_back(ti);
 }
 
 /**
  * Announces a new Template
- * @param sourceID ignored
- * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
+ * @param record Pointer to a structure defining the Template used
  */
-void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
+void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 {
-	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo = record->dataTemplateInfo;
-	uint16_t my_template_id;
+	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
+	TemplateInfo::TemplateId my_template_id;
 	uint16_t my_preceding;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 
@@ -248,7 +248,7 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 	/* Count number of IPv4 fields with length 5 */
 	int splitFields = 0;
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
 		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
 			splitFields++;
 		}
@@ -260,7 +260,7 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 	/* Count number of IPv4 fields with length 5 */
 	int splitFixedfields = 0;
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
 		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
 			splitFixedfields++;
 		}
@@ -274,7 +274,7 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 	}
 
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
 
 		/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
 		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
@@ -294,7 +294,7 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 
 	int dataLength = 0;
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
 
 		dataLength += fi->type.length;
 
@@ -318,7 +318,7 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 	memcpy(data, dataTemplateInfo->data, dataLength);
 
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
 
 		/* Invert imask of IPv4 fields with length 5, i.e. fields with network mask attached */
 		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
@@ -351,10 +351,9 @@ void IpfixSender::onDataTemplate(IpfixDataTemplateRecord* record)
 
 /**
  * Invalidates a template; Does NOT free dataTemplateInfo
- * @param sourceID ignored
- * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
+ * @param record Pointer to a structure defining the Template used
  */
-void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record)
+void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 
@@ -362,9 +361,9 @@ void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* 
 		THROWEXCEPTION("exporter not set");
 	}
 
-	removeRegisteredTemplate(record->dataTemplateInfo.get());
+	removeRegisteredTemplate(record->templateInfo.get());
 
-	uint16_t my_template_id = record->dataTemplateInfo->templateId;
+	TemplateInfo::TemplateId my_template_id = record->templateInfo->templateId;
 
 
 	/* Remove template from ipfixlolib */
@@ -376,7 +375,7 @@ void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* 
 		msg(MSG_INFO, "sndIpfix removed template with ID %u", my_template_id);
 	}
 
-	free(record->dataTemplateInfo->userData);
+	free(record->templateInfo->userData);
 
 	sendRecords();
 }
@@ -388,7 +387,7 @@ void IpfixSender::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* 
  * @param templateId of the new Data Set
  * @return returns -1 on error, 0 otherwise
  */
-void IpfixSender::startDataSet(uint16_t templateId)
+void IpfixSender::startDataSet(TemplateInfo::TemplateId templateId)
 {
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	uint16_t my_n_template_id = htons(templateId);
@@ -467,7 +466,7 @@ void IpfixSender::removeRecordReferences()
  */
 void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 {
-	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo = record->dataTemplateInfo;
+	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->dataTemplateInfo;
 	IpfixRecord::Data* data = record->data;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 
@@ -479,7 +478,7 @@ void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
 
 	int i;
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
 
 		/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
 		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
@@ -527,10 +526,10 @@ void IpfixSender::onReconfiguration2()
 		THROWEXCEPTION("exporter not set");
 	}
 
-	list<boost::shared_ptr<IpfixRecord::TemplateInfo> >::iterator iter = registeredTemplates.begin();
+	list<boost::shared_ptr<TemplateInfo> >::iterator iter = registeredTemplates.begin();
 	while (iter != registeredTemplates.end()) {
 		if (iter->get()->destroyed) {
-			uint16_t id = iter->get()->templateId;
+			TemplateInfo::TemplateId id = iter->get()->templateId;
 
 			// Remove template from ipfixlolib
 			if (0 != ipfix_remove_template_set(exporter, id)) {

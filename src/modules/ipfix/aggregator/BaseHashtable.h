@@ -71,7 +71,7 @@ public:
 	void postReconfiguration();
 
 protected:
-	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
+	boost::shared_ptr<TemplateInfo> dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
 	HashtableBucket** buckets; /**< array of pointers to hash buckets at start of spill chain. Members are NULL where no entry present */
 
 	uint32_t htableBits;
@@ -97,7 +97,7 @@ protected:
 	HashtableBucketList exportList;
 
 	InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
-	InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;
+	InstanceManager<IpfixTemplateRecord> dataTemplateRecordIM;
 	InstanceManager<BucketListElement> hbucketIM;
 
 	alock_t aggInProgress; /** indicates if currently an element is aggregated in the hashtable, used for atomic lock for preReconfiguration */

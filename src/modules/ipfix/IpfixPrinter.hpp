@@ -40,14 +40,10 @@ class IpfixPrinter : public Module, public IpfixRecordDestination, public Source
 		IpfixPrinter(OutputType outputtype = TREE, string filename = "");
 		~IpfixPrinter();
 
-		virtual void onDataTemplate(IpfixDataTemplateRecord* record);
-		virtual void onDataDataRecord(IpfixDataDataRecord* record);
-		virtual void onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record);
-		virtual void onOptionsTemplate(IpfixOptionsTemplateRecord* record);
-		virtual void onOptionsRecord(IpfixOptionsRecord* record);
-		virtual void onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record);
-		virtual void onTemplate(IpfixTemplateRecord* record);
 		virtual void onDataRecord(IpfixDataRecord* record);
+		virtual void onOptionsRecord(IpfixOptionsRecord* record);
+		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+		virtual void onTemplate(IpfixTemplateRecord* record);
 		virtual void onTemplateDestruction(IpfixTemplateDestructionRecord* record);
 
 	protected:

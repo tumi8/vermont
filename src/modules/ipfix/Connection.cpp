@@ -42,7 +42,7 @@ Connection::Connection(IpfixDataDataRecord* record)
 	  dstPayload(0), dstPayloadLen(0)
 {
 	// convert IpfixDataDataRecord to Connection
-	IpfixRecord::FieldInfo* fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
+	TemplateInfo::FieldInfo* fi = record->dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
 	if (fi != 0) {
 		srcIP = *(uint32_t*)(record->data + fi->offset);
 	} else {
@@ -160,7 +160,7 @@ Connection::Connection(IpfixDataDataRecord* record)
 	if (fi != 0) dstTcpControlBits = *(uint8_t*)(record->data + fi->offset);
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayload, 0);
 	if (fi != 0 && fi->type.length) {
-		IpfixRecord::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadLen, 0);
+		TemplateInfo::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadLen, 0);
 		if (filen != 0)
 			srcPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
 		else
@@ -170,7 +170,7 @@ Connection::Connection(IpfixDataDataRecord* record)
 	}
 	fi = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayload, 0);
 	if (fi != 0 && fi->type.length) {
-		IpfixRecord::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayloadLen, 0);
+		TemplateInfo::FieldInfo* filen = record->dataTemplateInfo->getFieldInfo(IPFIX_ETYPEID_revFrontPayloadLen, 0);
 		if (filen != 0)
 			dstPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
 		else

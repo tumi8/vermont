@@ -47,17 +47,13 @@ public:
 	void flushPacket();
 
 	// inherited from IpfixRecordDestination
-	virtual void onTemplate(IpfixTemplateRecord* record) {
-		// FIXME: not sure how to deal with this
-		msg(MSG_DEBUG, "%s:%u Ignoring Template", __FILE__, __LINE__);
-	};
 	virtual void onDataRecord(IpfixDataRecord* record) {
 		// FIXME: not sure how to deal with this
 		msg(MSG_DEBUG, "%s:%u Ignoring Template", __FILE__, __LINE__);
 	}
 	
-	virtual void onDataTemplate(IpfixDataTemplateRecord* record);
-	virtual void onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record);
+	virtual void onTemplate(IpfixTemplateRecord* record);
+	virtual void onTemplateDestruction(IpfixTemplateDestructionRecord* record);
 	virtual void onDataDataRecord(IpfixDataDataRecord* record);
 
 	virtual void onReconfiguration1();
@@ -89,9 +85,9 @@ protected:
 	void endAndSendDataSet();
 
 	void startDataSet(uint16_t templateId);
-	bool isTemplateRegistered(IpfixRecord::TemplateInfo* ti);
-	void removeRegisteredTemplate(IpfixRecord::TemplateInfo* ti);
-	void addRegisteredTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> ti);
+	bool isTemplateRegistered(TemplateInfo* ti);
+	void removeRegisteredTemplate(TemplateInfo* ti);
+	void addRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti);
 	void sendRecords(bool forcesend = false);
 	void registerTimeout();
 
@@ -102,7 +98,7 @@ private:
 	uint8_t conversionRingbuffer[65536]; /**< Ringbuffer used to store converted imasks between @c ipfix_put_data_field() and @c ipfix_send() */
 	uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
 	uint16_t noCachedRecords; /**< number of records already passed to ipfixlob, should be equal to recordsToRelease.size() */
-	list<boost::shared_ptr<IpfixRecord::TemplateInfo> > registeredTemplates; /**< contains all templates which were already registered in ipfixlolib */
+	list<boost::shared_ptr<TemplateInfo> > registeredTemplates; /**< contains all templates which were already registered in ipfixlolib */
 	
 	uint16_t recordCacheTimeout; /**< how long may records be cached until sent, milliseconds */
 	bool timeoutRegistered; /**< true if next timeout was already registered in timer */

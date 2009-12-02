@@ -21,8 +21,6 @@
 #ifndef INCLUDED_IpfixParser_hpp
 #define INCLUDED_IpfixParser_hpp
 
-#define NetflowV9_SetId_Template  0
-
 #include "IpfixReceiver.hpp"
 #include "IpfixRecordSender.h"
 
@@ -43,7 +41,7 @@ class TemplateBuffer;
  * (see the @c setTemplateCallback() and @c setDataRecordCallback() function groups).
  *
  * The Collector module supports higher-level modules by providing field types and offsets along 
- * with the raw data block of individual messages passed via the callback functions (see @c IpfixRecord::TemplateInfo)
+ * with the raw data block of individual messages passed via the callback functions (see @c TemplateInfo)
  */
 class IpfixParser : public IpfixPacketProcessor, public Sensor 
 {
@@ -140,9 +138,9 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		pthread_mutex_t mutex; /**< Used to give only one IpfixReceiver access to the IpfixPacketProcessor */
 
 		uint32_t processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
-		void processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
+		void processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		void processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
-		void processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
+		void processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		int processNetflowV9Packet(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 		int processIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 		
@@ -155,14 +153,10 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		IpfixRecordSender* ipfixRecordSender;
 		
 		static InstanceManager<IpfixTemplateRecord> templateRecordIM;
-		static InstanceManager<IpfixOptionsTemplateRecord> optionsTemplateRecordIM;
-		static InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;		
 		static InstanceManager<IpfixDataRecord> dataRecordIM;
 		static InstanceManager<IpfixOptionsRecord> optionsRecordIM;
 		static InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
 		static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
-		static InstanceManager<IpfixOptionsTemplateDestructionRecord> optionsTemplateDestructionRecordIM;
-		static InstanceManager<IpfixDataTemplateDestructionRecord> dataTemplateDestructionRecordIM;
 		
 		void resendBufferedTemplates();
 		void setTemplateDestroyed(bool destroyed);
