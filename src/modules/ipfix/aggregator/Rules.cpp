@@ -111,7 +111,7 @@ int parseModifier(const char* s, Rule::Field::Modifier* modifier) {
  * parses the given string
  * @return 0 if successful
  */
-int parseProtoPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length) {
+int parseProtoPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
 	int proto = -1;
 	if (strcmp(s, "ICMP") == 0) proto = IPFIX_protocolIdentifier_ICMP;
 	if (strcmp(s, "TCP") == 0) proto = IPFIX_protocolIdentifier_TCP;
@@ -137,7 +137,7 @@ int parseProtoPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo
  * parses the given string
  * @return 0 if successful
  */
-int parseIPv4Pattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length) {
+int parseIPv4Pattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
 	char* p = s;
 	char* octet1 = get_next_token(&p, ".");
 	char* octet2 = get_next_token(&p, ".");
@@ -169,7 +169,7 @@ int parseIPv4Pattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo:
  * parses the given string
  * @return 0 if successful
  */
-int parsePortPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length) {
+int parsePortPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
 	char buf[256];
 
 	char* p = s;
@@ -201,7 +201,7 @@ int parsePortPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo:
  * parses the given string
  * @return 0 if successful
  */
-int parseTcpFlags(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length) {
+int parseTcpFlags(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
 	uint8_t flags = 0;
     
 	char* p = s;

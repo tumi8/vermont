@@ -59,12 +59,12 @@ class IpfixPrinter : public Module, public IpfixRecordDestination, public Source
 		string filename;
 		FILE* fh;
 
-		void printUint(char* buf, IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
+		void printUint(char* buf, InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void printOneLineRecord(IpfixDataRecord* record);
 		void printTableRecord(IpfixDataDataRecord* record);
 };
-void printProtocol(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
-void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* pattern);
-void printFrontPayload(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
+void printProtocol(InformationElement::IeInfo type, IpfixRecord::Data* data);
+void printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern);
+void printFrontPayload(InformationElement::IeInfo type, IpfixRecord::Data* data);
 
 #endif

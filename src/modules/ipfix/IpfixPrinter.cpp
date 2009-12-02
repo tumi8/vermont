@@ -32,7 +32,7 @@
  * print functions which have formerly been in IpfixParser.cpp
  */
 
-static void printIPv4(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
+static void printIPv4(InformationElement::IeInfo type, IpfixRecord::Data* data) {
 	int octet1 = 0;
 	int octet2 = 0;
 	int octet3 = 0;
@@ -55,7 +55,7 @@ static void printIPv4(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data
 	}
 }
 
-static void printPort(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
+static void printPort(InformationElement::IeInfo type, IpfixRecord::Data* data) {
 	if (type.length == 0) {
 		printf("zero-length Port");
 		return;
@@ -83,7 +83,7 @@ static void printPort(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data
 	printf("Port with length %d unparseable", type.length);
 }
 
-void printProtocol(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
+void printProtocol(InformationElement::IeInfo type, IpfixRecord::Data* data) {
 	if (type.length != 1) {
 		printf("Protocol with length %d unparseable", type.length);
 		return;
@@ -110,7 +110,7 @@ void printProtocol(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
 	}
 }
 
-static void printUint(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
+static void printUint(InformationElement::IeInfo type, IpfixRecord::Data* data) {
 	switch (type.length) {
 	case 1:
 		printf("%hhu",*(uint8_t*)data);
@@ -138,7 +138,7 @@ static void printUint(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data
 /**
  * Prints a string representation of IpfixRecord::Data to stdout.
  */
-void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* pattern) {
+void printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern) {
 	char* s;
 	timeval t;
 	uint64_t hbnum;
@@ -195,7 +195,7 @@ void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* patter
 }
 
 
-void printFrontPayload(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data)
+void printFrontPayload(InformationElement::IeInfo type, IpfixRecord::Data* data)
 {
 	for (uint32_t i=0; i<type.length; i++) {
 		char c = data[i];
@@ -260,7 +260,7 @@ IpfixPrinter::~IpfixPrinter()
 void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 {
 	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
+	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
 	printf("\n-+--- Template (id=%u) from ", record->templateInfo->templateId);
 	if(record->sourceID->exporterAddress.len == 4)
 		printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
@@ -282,7 +282,7 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
 	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
+	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
 	printf("Destroyed a Template (id=%u) from ", record->templateInfo->templateId);
 	if(record->sourceID->exporterAddress.len == 4)
 		printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
@@ -296,7 +296,7 @@ void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 }
 
 
-void IpfixPrinter::printUint(char* buf, IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data) {
+void IpfixPrinter::printUint(char* buf, InformationElement::IeInfo type, IpfixRecord::Data* data) {
 	switch (type.length) {
 	case 1:
 		sprintf(buf, "%hhu",*(uint8_t*)data);
@@ -479,7 +479,7 @@ void IpfixPrinter::onDataRecord(IpfixDataRecord* record)
 {
 	int i;
 	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
+	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
 
 	switch (outputType) {
 		case LINE:
@@ -523,7 +523,7 @@ void IpfixPrinter::onDataRecord(IpfixDataRecord* record)
 void IpfixPrinter::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
 {
 	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
+	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
 	printf("\n-+--- OptionsTemplate (id=%u) from ", record->optionsTemplateInfo->templateId);
 	if(record->sourceID->exporterAddress.len == 4)
 		printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
@@ -545,7 +545,7 @@ void IpfixPrinter::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
 void IpfixPrinter::onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record)
 {
 	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
+	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
 	printf("Destroyed an OptionsTemplate (id=%u) from ", record->optionsTemplateInfo->templateId);
 	if(record->sourceID->exporterAddress.len == 4)
 		printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
@@ -568,7 +568,7 @@ void IpfixPrinter::onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionR
 void IpfixPrinter::onOptionsRecord(IpfixOptionsRecord* record)
 {
 	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
+	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
 	printf("\n-+--- OptionsDataRecord (Template id=%u from ", record->optionsTemplateInfo->templateId);
 	if (record->sourceID->exporterAddress.len == 4)
 		printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
@@ -593,7 +593,7 @@ void IpfixPrinter::onDataTemplate(IpfixDataTemplateRecord* record)
 	int i;
 
 	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
+	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
 	printf("\n-+--- DataTemplate (id=%u) from ", record->dataTemplateInfo->templateId);
 	if (record->sourceID) {
 		if (record->sourceID->exporterAddress.len == 4)
@@ -627,7 +627,7 @@ void IpfixPrinter::onDataTemplate(IpfixDataTemplateRecord* record)
 void IpfixPrinter::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record)
 {
 	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
+	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
 	printf("Destroyed a DataTemplate (id=%u) from ", record->dataTemplateInfo->templateId);
 	if(record->sourceID->exporterAddress.len == 4)
 		printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
@@ -651,7 +651,7 @@ void IpfixPrinter::onDataDataRecord(IpfixDataDataRecord* record)
 {
 	int i;
 	/* we need a FieldInfo for printIPv4 */
-	IpfixRecord::FieldInfo::Type tmpInfo = {0, 4, false, 0}; // length=4 for IPv4 address
+	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
 	boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
 
 	switch (outputType) {

@@ -280,8 +280,11 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecor
 /**
  * @returns field length in bytes of corresponding entry in raw packet
  **/
-uint8_t PacketHashtable::getRawPacketFieldLength(IpfixRecord::FieldInfo::Type type)
+uint8_t PacketHashtable::getRawPacketFieldLength(const InformationElement::IeInfo& type)
 {
+	if(type.enterprise != 0) {
+		THROWEXCEPTION("don't know how to handle field id=%u, enterprise=%lu", type.id, type.enterprise);
+	}
 
 	switch (type.id) {
 		case IPFIX_TYPEID_protocolIdentifier:
@@ -332,11 +335,111 @@ uint8_t PacketHashtable::getRawPacketFieldLength(IpfixRecord::FieldInfo::Type ty
 }
 
 
+/**
+ * Returns offset to the given standard Information Element Id in the raw packet (relative to packet's netheader)
+ * @param id standard Information Element Id
+ * @param p pointer to raw packet
+ * @returns offset (in bytes) at which the data for the given field is located in the raw packet
+ */
+uint16_t PacketHashtable::getRawPacketFieldOffset(InformationElement::IeId id, const Packet* p)
+{
+	switch (id) {
+		case IPFIX_TYPEID_packetDeltaCount:
+			return 10;
+			break;
+
+		case IPFIX_TYPEID_flowStartSeconds:
+		case IPFIX_TYPEID_flowEndSeconds:
+			return reinterpret_cast<const unsigned char*>(&p->time_sec_nbo) - p->netHeader;
+			break;
+
+		case IPFIX_TYPEID_flowStartMilliSeconds:
+		case IPFIX_TYPEID_flowEndMilliSeconds:
+		case IPFIX_ETYPEID_maxPacketGap:
+			return reinterpret_cast<const unsigned char*>(&p->time_msec_nbo) - p->netHeader;
+			break;
+
+		case IPFIX_TYPEID_flowStartNanoSeconds:
+		case IPFIX_TYPEID_flowEndNanoSeconds:
+			return reinterpret_cast<const unsigned char*>(&p->timestamp) - p->netHeader;
+			break;
+
+		case IPFIX_TYPEID_octetDeltaCount:
+			return 2;
+			break;
+
+		case IPFIX_TYPEID_protocolIdentifier:
+			return 9;
+			break;
+
+		case IPFIX_TYPEID_sourceIPv4Address:
+			return 12;
+			break;
+
+		case IPFIX_TYPEID_destinationIPv4Address:
+			return 16;
+			break;
+
+		case IPFIX_TYPEID_icmpTypeCode:
+			if(p->ipProtocolType == Packet::ICMP) {
+				return p->transportHeader + 0 - p->netHeader;
+			} else {
+				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", field.id, p->ipProtocolType, Packet::UDP, Packet::TCP);
+
+			}
+			break;
+
+		case IPFIX_TYPEID_sourceTransportPort:
+			if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
+				return p->transportHeader + 0 - p->netHeader;
+			} else {
+				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", field.id, p->ipProtocolType, Packet::UDP, Packet::TCP);
+			}
+			break;
+
+		case IPFIX_TYPEID_destinationTransportPort:
+			if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
+				return p->transportHeader + 2 - p->netHeader;
+			} else {
+				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", field.id, p->ipProtocolType, Packet::UDP, Packet::TCP);
+			}
+			break;
+
+		case IPFIX_TYPEID_tcpControlBits:
+			if(p->ipProtocolType == Packet::TCP) {
+				return p->transportHeader + 13 - p->netHeader;
+			} else {
+				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d", field.id, p->ipProtocolType, Packet::TCP);
+			}
+			break;
+		default:
+			THROWEXCEPTION("don't know how to handle field id=%u", id);
+	}
+
+	// return just pointer to zero bytes as result
+	return reinterpret_cast<const unsigned char*>(&p->zeroBytes) - p->netHeader;
+}
+
+/**
+ * Returns offset to the given field data in the raw packet (relative to packet's netheader)
+ * @param field Data Record field
+ * @param p pointer to raw packet
+ * @returns offset (in bytes) at which the data for the given field is located in the raw packet
+ */
+uint16_t PacketHashtable::getRawPacketFieldOffset(const InformationElement::IeInfo& type, const Packet* p)
+{
+	if(type.enterprise == 0) {
+		return getRawPacketFieldOffset(type.id, p);
+	} else {
+		THROWEXCEPTION("don't know how to handle field id=%u, enterprise=%lu", type.id, type.enterprise);
+	}
+}
+
 
 /**
  * @returns if given field type is in varying positions inside a raw packet and inside the Packet structure
  */
-bool PacketHashtable::isRawPacketPtrVariable(const IpfixRecord::FieldInfo::Type& type)
+bool PacketHashtable::isRawPacketPtrVariable(const InformationElement::IeInfo& type)
 {
 	switch (type.id) {
 		case IPFIX_TYPEID_packetDeltaCount:
@@ -385,7 +488,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo
 	// initialize static source index, if current field does not have a variable pointer
 	if (!efd->varSrcIdx) {
 		Packet p; // not good: create temporary packet just for initializing our optimization structure
-		efd->srcIndex = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(hfi->type.id, &p);
+		efd->srcIndex = getRawPacketFieldOffset(hfi->type.id, &p);
 	}
 
 	// special case for masked IPs: those contain variable pointers, if they are masked
@@ -429,7 +532,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo
 /**
  * @returns if given field is available in a raw ip packet
  */
-bool PacketHashtable::typeAvailable(IpfixRecord::FieldInfo::Type type)
+bool PacketHashtable::typeAvailable(const InformationElement::IeInfo& type)
 {
 	switch (type.id) {
 		case IPFIX_TYPEID_packetDeltaCount:
@@ -741,7 +844,7 @@ void PacketHashtable::updatePointers(const Packet* p)
 
 			default:
 				// standard procedure for transport header fields
-				efd->srcIndex = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(efd->typeId, p);
+				efd->srcIndex = getRawPacketFieldOffset(efd->typeId, p);
 				break;
 		}
 	}

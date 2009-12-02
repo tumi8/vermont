@@ -105,7 +105,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 			}
 			ti->fieldInfo[fieldNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
 			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
-			ti->fieldInfo[fieldNo].type.isVariableLength = (ti->fieldInfo[fieldNo].type.length == 65535);
+			ti->fieldInfo[fieldNo].isVariableLength = (ti->fieldInfo[fieldNo].type.length == 65535);
 			ti->fieldInfo[fieldNo].offset = bt->recordLength; 
 			bt->recordLength+=ti->fieldInfo[fieldNo].type.length;
 			if (ti->fieldInfo[fieldNo].type.length == 65535) {
@@ -118,10 +118,10 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 					delete bt;
 					return;
 				}
-				ti->fieldInfo[fieldNo].type.eid = ntohl(*(uint32_t*)((uint8_t*)record+4));
+				ti->fieldInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
 				record = (uint8_t*)((uint8_t*)record+8);
 			} else {
-				ti->fieldInfo[fieldNo].type.eid = 0;
+				ti->fieldInfo[fieldNo].type.enterprise = 0;
 				record = (uint8_t*)((uint8_t*)record+4);
 			}
 		}
@@ -203,7 +203,7 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 			}
 			ti->scopeInfo[scopeNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
 			ti->scopeInfo[scopeNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
-			ti->scopeInfo[scopeNo].type.isVariableLength = (ti->scopeInfo[scopeNo].type.length == 65535);
+			ti->scopeInfo[scopeNo].isVariableLength = (ti->scopeInfo[scopeNo].type.length == 65535);
 			ti->scopeInfo[scopeNo].offset = bt->recordLength; 
 			bt->recordLength+=ti->scopeInfo[scopeNo].type.length;
 			if (ti->scopeInfo[scopeNo].type.length == 65535) {
@@ -216,10 +216,10 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 					delete bt;
 					return;
 				}
-				ti->scopeInfo[scopeNo].type.eid = ntohl(*(uint32_t*)((uint8_t*)record+4));
+				ti->scopeInfo[scopeNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
 				record = (uint8_t*)((uint8_t*)record+8);
 			} else {
-				ti->fieldInfo[scopeNo].type.eid = 0;
+				ti->fieldInfo[scopeNo].type.enterprise = 0;
 				record = (uint8_t*)((uint8_t*)record+4);
 			}
 		}
@@ -233,7 +233,7 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 			}
 			ti->fieldInfo[fieldNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
 			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
-			ti->fieldInfo[fieldNo].type.isVariableLength = (ti->fieldInfo[fieldNo].type.length == 65535);
+			ti->fieldInfo[fieldNo].isVariableLength = (ti->fieldInfo[fieldNo].type.length == 65535);
 			ti->fieldInfo[fieldNo].offset = bt->recordLength; 
 			bt->recordLength+=ti->fieldInfo[fieldNo].type.length;
 			if (ti->fieldInfo[fieldNo].type.length == 65535) {
@@ -246,10 +246,10 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 					delete bt;
 					return;
 				}
-				ti->fieldInfo[fieldNo].type.eid = ntohl(*(uint32_t*)((uint8_t*)record+4));
+				ti->fieldInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
 				record = (uint8_t*)((uint8_t*)record+8);
 			} else {
-				ti->fieldInfo[fieldNo].type.eid = 0;
+				ti->fieldInfo[fieldNo].type.enterprise = 0;
 				record = (uint8_t*)((uint8_t*)record+4);
 			}
 		}
@@ -333,7 +333,7 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 			}
 			ti->fieldInfo[fieldNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
 			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
-			ti->fieldInfo[fieldNo].type.isVariableLength = (ti->fieldInfo[fieldNo].type.length == 65535);
+			ti->fieldInfo[fieldNo].isVariableLength = (ti->fieldInfo[fieldNo].type.length == 65535);
 			ti->fieldInfo[fieldNo].offset = bt->recordLength; 
 			bt->recordLength+=ti->fieldInfo[fieldNo].type.length;
 			if (ti->fieldInfo[fieldNo].type.length == 65535) {
@@ -346,10 +346,10 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 					delete bt;
 					return;
 				}
-				ti->fieldInfo[fieldNo].type.eid = ntohl(*(uint32_t*)((uint8_t*)record+4));
+				ti->fieldInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
 				record = (uint8_t*)((uint8_t*)record+8);
 			} else {
-				ti->fieldInfo[fieldNo].type.eid = 0;
+				ti->fieldInfo[fieldNo].type.enterprise = 0;
 				record = (uint8_t*)((uint8_t*)record+4);
 			}
 		}
@@ -377,10 +377,10 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 					delete bt;
 					return;
 				}
-				ti->dataInfo[fieldNo].type.eid = ntohl(*(uint32_t*)((uint8_t*)record+4));
+				ti->dataInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
 				record = (uint8_t*)((uint8_t*)record+8);
 			} else {
-				ti->dataInfo[fieldNo].type.eid = 0;
+				ti->dataInfo[fieldNo].type.enterprise = 0;
 				record = (uint8_t*)((uint8_t*)record+4);
 			}
 		}
@@ -509,7 +509,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				bool incomplete = false;
 				ti = boost::shared_ptr<IpfixRecord::TemplateInfo>(new IpfixRecord::TemplateInfo(*bt->templateInfo.get()));
 				for (i = 0; i < ti->fieldCount; i++) {
-					if (!ti->fieldInfo[i].type.isVariableLength) {
+					if (!ti->fieldInfo[i].isVariableLength) {
 						fieldLength = ti->fieldInfo[i].type.length;
 					} else {
 						/* check if 1 byte for the length lies within set boundary */
@@ -586,7 +586,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				bool incomplete = false;
 				ti = boost::shared_ptr<IpfixRecord::OptionsTemplateInfo>(new IpfixRecord::OptionsTemplateInfo(*bt->optionsTemplateInfo.get()));
 				for (i = 0; i < ti->scopeCount; i++) {
-					if (!ti->scopeInfo[i].type.isVariableLength) {
+					if (!ti->scopeInfo[i].isVariableLength) {
 						fieldLength = ti->scopeInfo[i].type.length;
 					} else {
 						/* check if 1 byte for the length lies within set boundary */
@@ -618,7 +618,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				} 
 
 				for (i = 0; i < ti->fieldCount; i++) {
-					if (!ti->fieldInfo[i].type.isVariableLength) {
+					if (!ti->fieldInfo[i].isVariableLength) {
 						fieldLength = ti->fieldInfo[i].type.length;
 					} else {
 						/* check if 1 byte for the length lies within set boundary */
@@ -695,7 +695,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				bool incomplete = false;
 				ti =  boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*bt->dataTemplateInfo.get()));
 				for (i = 0; i < ti->fieldCount; i++) {
-					if (!ti->fieldInfo[i].type.isVariableLength) {
+					if (!ti->fieldInfo[i].isVariableLength) {
 						fieldLength = ti->fieldInfo[i].type.length;
 					} else {
 						/* check if 1 byte for the length lies within set boundary */

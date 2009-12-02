@@ -49,7 +49,7 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
  * returns value > 0  if given type needs additional private data for aggregation
  * this is included in dataRecords after the "normal" fields
  */
-uint32_t BaseHashtable::getPrivateDataLength(IpfixRecord::FieldInfo::Type type)
+uint32_t BaseHashtable::getPrivateDataLength(const InformationElement::IeInfo& type)
 {
 	switch (type.id) {
 		case IPFIX_ETYPEID_frontPayload: // four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
@@ -310,7 +310,7 @@ void BaseHashtable::expireFlows(bool all)
  * Checks whether the given @c type is one of the types that has to be aggregated
  * @return 1 if flow is to be aggregated
  */
-int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
+int BaseHashtable::isToBeAggregated(const InformationElement::IeInfo& type)
 {
 	switch (type.id) {
 		case IPFIX_TYPEID_flowStartSysUpTime:

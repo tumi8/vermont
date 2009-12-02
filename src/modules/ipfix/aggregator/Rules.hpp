@@ -44,9 +44,9 @@ class Rules {
 };
 
 int parseModifier(const char* s, Rule::Field::Modifier* modifier);
-int parseProtoPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length);
-int parseIPv4Pattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length);
-int parsePortPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length);
-int parseTcpFlags(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length);
+int parseProtoPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length);
+int parseIPv4Pattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length);
+int parsePortPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length);
+int parseTcpFlags(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length);
 
 #endif

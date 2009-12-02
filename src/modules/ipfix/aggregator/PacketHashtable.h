@@ -21,6 +21,9 @@ public:
 
 	void aggregatePacket(const Packet* p);
 
+	static uint8_t getRawPacketFieldLength(const InformationElement::IeInfo& type);
+	static uint16_t getRawPacketFieldOffset(InformationElement::IeId id, const Packet* p);
+	static uint16_t getRawPacketFieldOffset(const InformationElement::IeInfo& type, const Packet* p);
 
 private:
 	/**
@@ -29,6 +32,7 @@ private:
 	 */
 	struct ExpFieldData
 	{
+		//TODO: replace by InformationElement::IeInfo struct which also includes enterprise number (Gerhard, 12/2009)
 		uint16_t typeId; /**< type of corresponding ipfix field */
 
 		// following fields are used by aggregation functions for a fast lookup of needed data inside
@@ -106,10 +110,8 @@ private:
 	void createMaskedField(IpfixRecord::Data* address, uint8_t imask);
 	void createMaskedFields(const Packet* p);
 	void updatePointers(const Packet* p);
-	bool typeAvailable(IpfixRecord::FieldInfo::Type type);
-	uint8_t getRawPacketFieldLength(IpfixRecord::FieldInfo::Type type);
-	uint16_t getRawPacketFieldIndex(uint16_t typeId, const Packet* p);
-	bool isRawPacketPtrVariable(const IpfixRecord::FieldInfo::Type& type);
+	bool typeAvailable(const InformationElement::IeInfo& type);
+	bool isRawPacketPtrVariable(const InformationElement::IeInfo& type);
 
 };
 

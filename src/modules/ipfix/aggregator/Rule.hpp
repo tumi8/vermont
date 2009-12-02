@@ -45,7 +45,7 @@ class Rule {
 				Field() {
 					type.id = 0;
 					type.length = 0;
-					type.eid = 0;
+					type.enterprise = 0;
 					pattern = NULL;
 					modifier = Rule::Field::DISCARD;
 				}
@@ -59,7 +59,7 @@ class Rule {
 				 */
 				enum Modifier {DISCARD = 0, KEEP = 1, AGGREGATE = 2, MASK_START = 126, MASK_END = 254};
 
-				IpfixRecord::FieldInfo::Type type; /**< field type this Rule::Field refers to */
+				InformationElement::IeInfo type; /**< field type this Rule::Field refers to */
 				IpfixRecord::Data* pattern; /**< pattern to match fields against to determine applicability of a rule. A pattern of NULL means no pattern needs to be matched for this field */
 				Rule::Field::Modifier modifier; /**< modifier to apply to the corresponding field if this rule is matched */
 		};

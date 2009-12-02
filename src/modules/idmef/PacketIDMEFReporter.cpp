@@ -1,6 +1,6 @@
 #include "PacketIDMEFReporter.h"
 
-#include "modules/ipfix/IpfixRecord.hpp"
+#include "modules/ipfix/aggregator/PacketHashtable.h"
 #include "common/Misc.h"
 
 
@@ -29,28 +29,28 @@ PacketIDMEFReporter::~PacketIDMEFReporter()
 void PacketIDMEFReporter::analyzePacket(Packet* p, IDMEFMessage* msg)
 {
 	char buffer[20];
-	uint16_t i = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(IPFIX_TYPEID_sourceIPv4Address, p);
+	uint16_t i = PacketHashtable::getRawPacketFieldOffset(IPFIX_TYPEID_sourceIPv4Address, p);
 	uint32_t srcip = *(uint32_t*)(p->netHeader+i);
 	msg->setVariable(PAR_SRCIP, IPToString(srcip).c_str());
 	msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(srcip).c_str());
-	i = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(IPFIX_TYPEID_destinationIPv4Address, p);
+	i = PacketHashtable::getRawPacketFieldOffset(IPFIX_TYPEID_destinationIPv4Address, p);
 	uint32_t dstip = *(uint32_t*)(p->netHeader+i);
 	msg->setVariable(PAR_DSTIP, IPToString(dstip).c_str());
 	msg->setVariable(IDMEFMessage::PAR_TARGET_ADDRESS, IPToString(dstip).c_str());
-	i = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(IPFIX_TYPEID_protocolIdentifier, p);
+	i = PacketHashtable::getRawPacketFieldOffset(IPFIX_TYPEID_protocolIdentifier, p);
 	uint8_t protocol = *(uint8_t*)(p->netHeader+i);
 	snprintf(buffer, 20, "%hhu", protocol);
 	msg->setVariable(PAR_PROTOCOL, buffer);
-	i = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(IPFIX_TYPEID_octetDeltaCount, p);
+	i = PacketHashtable::getRawPacketFieldOffset(IPFIX_TYPEID_octetDeltaCount, p);
 	uint16_t packetlen = *(uint16_t*)(p->netHeader+i);
 	snprintf(buffer, 20, "%hu", packetlen);
 	msg->setVariable(PAR_LENGTH, buffer);
 	if ((protocol & (Packet::TCP|Packet::UDP))>0) {
-		i = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(IPFIX_TYPEID_sourceTransportPort, p);
+		i = PacketHashtable::getRawPacketFieldOffset(IPFIX_TYPEID_sourceTransportPort, p);
 		uint16_t srcport = *(uint16_t*)(p->netHeader+i);
 		snprintf(buffer, 20, "%hu", srcport);
 		msg->setVariable(PAR_SRCPORT, srcport);
-		i = IpfixRecord::TemplateInfo::getRawPacketFieldIndex(IPFIX_TYPEID_destinationTransportPort, p);
+		i = PacketHashtable::getRawPacketFieldOffset(IPFIX_TYPEID_destinationTransportPort, p);
 		uint16_t dstport = *(uint16_t*)(p->netHeader+i);
 		snprintf(buffer, 20, "%hu", dstport);
 		msg->setVariable(PAR_DSTPORT, buffer);
