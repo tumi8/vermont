@@ -61,8 +61,9 @@ class IpfixDbWriter
 		struct Column {
 			const char* columnName; 	/** column name */
 			const char* columnType;		/** column data type in database */
-			uint64_t defaultValue;       /** default value */
-			uint16_t ipfixId; 		/** IPFIX_TYPEID */
+			uint64_t defaultValue;       	/** default value */
+			InformationElement::IeId ipfixId; /** IPFIX_TYPEID */
+			InformationElement::IeEnterpriseNumber enterprise; /** enterprise number */
 		};
 
 	private:

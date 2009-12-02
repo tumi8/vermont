@@ -36,7 +36,7 @@ InstanceManager<IpfixTemplateDestructionRecord> IpfixDbReader::templateDestructi
 
 /***** Internal Functions ****************************************************/
 
-void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, IpfixRecord::FieldInfo::Type type);
+void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, TemplateInfo::FieldInfo::Type type);
 
 /**
  * First send a a new template, then send the dataTemplates for all stored
@@ -50,7 +50,8 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
 
 	msg(MSG_DIALOG, "IpfixDbReader: Start sending tables");
 	for(vector<string>::iterator i = ipfixDbReader->tables.begin(); i != ipfixDbReader->tables.end() && !ipfixDbReader->exitFlag; i++) {
-		boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo(new IpfixRecord::TemplateInfo);
+		boost::shared_ptr<TemplateInfo> templateInfo(new TemplateInfo);
+		templateInfo->setId = TemplateInfo::IpfixTemplate;
 		if(ipfixDbReader->dbReaderSendNewTemplate(templateInfo, *i) != 0)
 		{
 		    msg(MSG_ERROR, "IpfixDbReader: Template error, skip table");
@@ -70,16 +71,11 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
  * Constructs a template from the table data and sends it to all connected
  * modules.
  */
-int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo, const string& tableName)
+int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName)
 {
 	// reset record length 
 	recordLength  = 0;
 
-	templateInfo->templateId =0;
-	templateInfo->fieldCount = 0;
-	templateInfo->fieldInfo = NULL;
-	templateInfo->userData = NULL;
-		
 	/**get columnsname of the table*/
 	if(getColumns(tableName) != 0) {
 		msg(MSG_ERROR,"IpfixDbReader: Could not get columns for template");
@@ -88,12 +84,12 @@ int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<IpfixRecord::Templa
 
 	for(vector<columnDB>::iterator i = columns.begin(); i != columns.end(); i++) {			
 		templateInfo->fieldCount++;
-		templateInfo->fieldInfo = (IpfixRecord::FieldInfo*)realloc(templateInfo->fieldInfo,
-						      sizeof(IpfixRecord::FieldInfo)*templateInfo->fieldCount);
-		IpfixRecord::FieldInfo* fi = &templateInfo->fieldInfo[templateInfo->fieldCount - 1];	
+		templateInfo->fieldInfo = (TemplateInfo::FieldInfo*)realloc(templateInfo->fieldInfo,
+						      sizeof(TemplateInfo::FieldInfo)*templateInfo->fieldCount);
+		TemplateInfo::FieldInfo* fi = &templateInfo->fieldInfo[templateInfo->fieldCount - 1];	
 		fi->type.id = i->ipfixId;
 		fi->type.length = i->length;
-		fi->type.eid = 0;
+		fi->type.enterprise = 0;
 		fi->offset = recordLength;
 		recordLength = recordLength + fi->type.length; 
 	}
@@ -108,7 +104,7 @@ int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<IpfixRecord::Templa
 }
 
 
-void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, IpfixRecord::FieldInfo::Type type) {
+void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, TemplateInfo::FieldInfo::Type type) {
         switch (type.length) {
         case 1:
 		*(uint8_t*)dest = *(uint8_t*)src;
@@ -135,7 +131,7 @@ void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, IpfixRecord::Field
  * strings, therefore they must change into IPFIX format 
 */
 
-int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo, const string& tableName)
+int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName)
 {
 	MYSQL_RES* dbResult = NULL;
 	MYSQL_ROW dbRow = NULL;
@@ -271,7 +267,7 @@ int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<IpfixRecord::TemplateInfo
 }
 
 
-int IpfixDbReader::dbReaderDestroyTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo)
+int IpfixDbReader::dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templateInfo)
 {
 	IpfixTemplateDestructionRecord* ipfixRecord = templateDestructionRecordIM.getNewInstance();
 	ipfixRecord->sourceID = srcId;

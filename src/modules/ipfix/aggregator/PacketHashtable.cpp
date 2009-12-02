@@ -474,7 +474,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const InformationElement::IeInfo& t
 /**
  * helper function for buildExpHelperTable
  */
-void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index)
+void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index)
 {
 	efd->typeId = hfi->type.id;
 	efd->dstIndex = hfi->offset;
@@ -519,7 +519,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, IpfixRecord::FieldInfo
 	if (efd->typeId==IPFIX_ETYPEID_frontPayload) {
 		*reinterpret_cast<uint32_t*>(efd->data) = 0xFFFFFFFF;
 		for (int i=0; i<dataTemplate->fieldCount; i++) {
-			IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+			TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 			if (hfi->type.id==IPFIX_ETYPEID_frontPayloadPktCount) {
 				*reinterpret_cast<uint32_t*>(efd->data) = hfi->offset;
 			}
@@ -576,7 +576,7 @@ void PacketHashtable::buildExpHelperTable()
 	// at first, fill data structure with aggregatable fields
 	uint16_t efdIdx = 0;
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 		if (!typeAvailable(hfi->type)) {
 			THROWEXCEPTION("Type '%s' is not contained in raw packet. Please remove it from PacketAggregator rule.", typeid2string(hfi->type.id));
 		}
@@ -588,7 +588,7 @@ void PacketHashtable::buildExpHelperTable()
 
 	// now the remaining fields
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 		if (isToBeAggregated(hfi->type)) continue;
 		ExpFieldData* efd = &expHelperTable.expFieldData[efdIdx++];
 		fillExpFieldData(efd, hfi, fieldModifier[i], efdIdx-1);

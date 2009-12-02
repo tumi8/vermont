@@ -39,6 +39,8 @@ extern "C" {
 #define IPFIX_protocolIdentifier_SCTP       132
 #define IPFIX_protocolIdentifier_RAW        255
 
+#define NetflowV9_SetId_Template  				0
+#define NetflowV9_SetId_OptionsTemplate  			1
 #define IPFIX_SetId_Template                                    2
 #define IPFIX_SetId_OptionsTemplate                             3
 #define IPFIX_SetId_DataTemplate                                4

@@ -51,17 +51,19 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
  */
 uint32_t BaseHashtable::getPrivateDataLength(const InformationElement::IeInfo& type)
 {
-	switch (type.id) {
-		case IPFIX_ETYPEID_frontPayload: // four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
-		case IPFIX_ETYPEID_revFrontPayload: // "
-		case IPFIX_ETYPEID_maxPacketGap: // old flow end time (to calculate packet gap)
-		case IPFIX_ETYPEID_revMaxPacketGap: // old flow end time (to calculate packet gap)
-			return 8;
+	//TODO: if(type.enterprise=29305)... (Gerhard, 12/2009)
+	if(type.enterprise == 0) {
+		switch (type.id) {
+			case IPFIX_ETYPEID_frontPayload: // four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
+			case IPFIX_ETYPEID_revFrontPayload: // "
+			case IPFIX_ETYPEID_maxPacketGap: // old flow end time (to calculate packet gap)
+			case IPFIX_ETYPEID_revMaxPacketGap: // old flow end time (to calculate packet gap)
+				return 8;
 
-		default:
-			return 0;
+			default:
+				return 0;
+		}
 	}
-
 	return 0;
 }
 
@@ -69,8 +71,9 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 {
 	int dataLength = 0; /**< length in bytes of the @c data field */
 
-	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
+	dataTemplate.reset(new TemplateInfo);
 	dataTemplate->templateId = rule->id;
+	dataTemplate->setId = TemplateInfo::IpfixDataTemplate;
 	dataTemplate->preceding = rule->preceding;
 	dataTemplate->fieldCount = 0;
 	dataTemplate->fieldInfo = NULL;
@@ -90,9 +93,9 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 		if (rf->pattern != NULL) {
 			/* create new fixed-data field containing pattern */
 			dataTemplate->dataCount++;
-			dataTemplate->dataInfo = (IpfixRecord::FieldInfo*) realloc(dataTemplate->dataInfo,
-					sizeof(IpfixRecord::FieldInfo) * dataTemplate->dataCount);
-			IpfixRecord::FieldInfo* fi = &dataTemplate->dataInfo[dataTemplate->dataCount - 1];
+			dataTemplate->dataInfo = (TemplateInfo::FieldInfo*) realloc(dataTemplate->dataInfo,
+					sizeof(TemplateInfo::FieldInfo) * dataTemplate->dataCount);
+			TemplateInfo::FieldInfo* fi = &dataTemplate->dataInfo[dataTemplate->dataCount - 1];
 			fi->type = rf->type;
 			fi->offset = dataLength;
 			fi->privDataOffset = 0;
@@ -113,9 +116,9 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 		else if (rf->modifier != Rule::Field::DISCARD) {
 			/* define new data field with Rule::Field's type */
 			dataTemplate->fieldCount++;
-			dataTemplate->fieldInfo = (IpfixRecord::FieldInfo*) realloc(dataTemplate->fieldInfo,
-					sizeof(IpfixRecord::FieldInfo) * dataTemplate->fieldCount);
-			IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[dataTemplate->fieldCount - 1];
+			dataTemplate->fieldInfo = (TemplateInfo::FieldInfo*) realloc(dataTemplate->fieldInfo,
+					sizeof(TemplateInfo::FieldInfo) * dataTemplate->fieldCount);
+			TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[dataTemplate->fieldCount - 1];
 			fi->type = rf->type;
 			fi->offset = fieldLength;
 			fi->privDataOffset = 0;
@@ -129,7 +132,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 	uint32_t revfpLengthOffset = 0;
 	privDataLength = 0;
 	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 		uint32_t len = getPrivateDataLength(fi->type);
 		if (len > 0) {
 			fi->privDataOffset = fieldLength + privDataLength;
@@ -144,7 +147,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 	// update private data offsets for fields which access private data from other fields
 	// example: front payload length accesses data from front payload
 	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 		if (fi->type.id == IPFIX_ETYPEID_frontPayloadLen) {
 			if (!fpLengthOffset) {
 				THROWEXCEPTION("no front payload field specified in template, so front payload length is not available either");
@@ -312,58 +315,62 @@ void BaseHashtable::expireFlows(bool all)
  */
 int BaseHashtable::isToBeAggregated(const InformationElement::IeInfo& type)
 {
-	switch (type.id) {
-		case IPFIX_TYPEID_flowStartSysUpTime:
-		case IPFIX_TYPEID_flowStartSeconds:
-		case IPFIX_TYPEID_flowStartMilliSeconds:
-		case IPFIX_TYPEID_flowStartMicroSeconds:
-		case IPFIX_TYPEID_flowStartNanoSeconds:
-		case IPFIX_TYPEID_flowEndSysUpTime:
-		case IPFIX_TYPEID_flowEndSeconds:
-		case IPFIX_TYPEID_flowEndMilliSeconds:
-		case IPFIX_TYPEID_flowEndMicroSeconds:
-		case IPFIX_TYPEID_flowEndNanoSeconds:
-		case IPFIX_TYPEID_octetDeltaCount:
-		case IPFIX_TYPEID_postOctetDeltaCount:
-		case IPFIX_TYPEID_packetDeltaCount:
-		case IPFIX_TYPEID_postPacketDeltaCount:
-		case IPFIX_TYPEID_droppedOctetDeltaCount:
-		case IPFIX_TYPEID_droppedPacketDeltaCount:
-		case IPFIX_TYPEID_tcpControlBits:
-		case IPFIX_ETYPEID_frontPayload:
-		case IPFIX_ETYPEID_frontPayloadLen:
-		case IPFIX_ETYPEID_frontPayloadPktCount:
-		case IPFIX_ETYPEID_revFrontPayload:
-		case IPFIX_ETYPEID_revFrontPayloadLen:
-		case IPFIX_ETYPEID_revFlowStartSeconds:
-		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-		case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-		case IPFIX_ETYPEID_revFlowEndSeconds:
-		case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-		case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-		case IPFIX_ETYPEID_revOctetDeltaCount:
-		case IPFIX_ETYPEID_revPacketDeltaCount:
-		case IPFIX_ETYPEID_revTcpControlBits:
-		case IPFIX_ETYPEID_maxPacketGap:
-		case IPFIX_ETYPEID_revMaxPacketGap:
-			return 1;
+	if(type.enterprise == 0) {
+		switch (type.id) {
+			case IPFIX_TYPEID_flowStartSysUpTime:
+			case IPFIX_TYPEID_flowStartSeconds:
+			case IPFIX_TYPEID_flowStartMilliSeconds:
+			case IPFIX_TYPEID_flowStartMicroSeconds:
+			case IPFIX_TYPEID_flowStartNanoSeconds:
+			case IPFIX_TYPEID_flowEndSysUpTime:
+			case IPFIX_TYPEID_flowEndSeconds:
+			case IPFIX_TYPEID_flowEndMilliSeconds:
+			case IPFIX_TYPEID_flowEndMicroSeconds:
+			case IPFIX_TYPEID_flowEndNanoSeconds:
+			case IPFIX_TYPEID_octetDeltaCount:
+			case IPFIX_TYPEID_postOctetDeltaCount:
+			case IPFIX_TYPEID_packetDeltaCount:
+			case IPFIX_TYPEID_postPacketDeltaCount:
+			case IPFIX_TYPEID_droppedOctetDeltaCount:
+			case IPFIX_TYPEID_droppedPacketDeltaCount:
+			case IPFIX_TYPEID_tcpControlBits:
+			//TODO: replace by enterprise number (Gerhard, 12/2009)
+			case IPFIX_ETYPEID_frontPayload:
+			case IPFIX_ETYPEID_frontPayloadLen:
+			case IPFIX_ETYPEID_frontPayloadPktCount:
+			case IPFIX_ETYPEID_revFrontPayload:
+			case IPFIX_ETYPEID_revFrontPayloadLen:
+			case IPFIX_ETYPEID_revFlowStartSeconds:
+			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+			case IPFIX_ETYPEID_revFlowStartNanoSeconds:
+			case IPFIX_ETYPEID_revFlowEndSeconds:
+			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+			case IPFIX_ETYPEID_revFlowEndNanoSeconds:
+			case IPFIX_ETYPEID_revOctetDeltaCount:
+			case IPFIX_ETYPEID_revPacketDeltaCount:
+			case IPFIX_ETYPEID_revTcpControlBits:
+			case IPFIX_ETYPEID_maxPacketGap:
+			case IPFIX_ETYPEID_revMaxPacketGap:
+				return 1;
 
-		case IPFIX_TYPEID_octetTotalCount:
-		case IPFIX_TYPEID_packetTotalCount:
-		case IPFIX_TYPEID_droppedOctetTotalCount:
-		case IPFIX_TYPEID_droppedPacketTotalCount:
-		case IPFIX_TYPEID_postMCastPacketDeltaCount:
-		case IPFIX_TYPEID_postMCastOctetDeltaCount:
-		case IPFIX_TYPEID_observedFlowTotalCount:
-		case IPFIX_TYPEID_exportedOctetTotalCount:
-		case IPFIX_TYPEID_exportedMessageTotalCount:
-		case IPFIX_TYPEID_exportedFlowTotalCount:
-			DPRINTF("isToBeAggregated: Will not aggregate %s field", typeid2string(type.id));
-			return 0;
+			case IPFIX_TYPEID_octetTotalCount:
+			case IPFIX_TYPEID_packetTotalCount:
+			case IPFIX_TYPEID_droppedOctetTotalCount:
+			case IPFIX_TYPEID_droppedPacketTotalCount:
+			case IPFIX_TYPEID_postMCastPacketDeltaCount:
+			case IPFIX_TYPEID_postMCastOctetDeltaCount:
+			case IPFIX_TYPEID_observedFlowTotalCount:
+			case IPFIX_TYPEID_exportedOctetTotalCount:
+			case IPFIX_TYPEID_exportedMessageTotalCount:
+			case IPFIX_TYPEID_exportedFlowTotalCount:
+				DPRINTF("isToBeAggregated: Will not aggregate %s field", typeid2string(type.id));
+				return 0;
 
-		default:
-			return 0;
+			default:
+				return 0;
+		}
 	}
+	return 0;
 }
 
 /**
@@ -371,9 +378,9 @@ int BaseHashtable::isToBeAggregated(const InformationElement::IeInfo& type)
  */
 void BaseHashtable::sendDataTemplate()
 {
-	IpfixDataTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
+	IpfixTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
 	ipfixRecord->sourceID.reset();
-	ipfixRecord->dataTemplateInfo = dataTemplate;
+	ipfixRecord->templateInfo = dataTemplate;
 	recordSource->send(ipfixRecord);
 }
 

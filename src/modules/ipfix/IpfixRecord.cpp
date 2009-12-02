@@ -153,6 +153,132 @@ namespace InformationElement {
 }
 
 
+/* Methods  of TemplateInfo class */
+
+TemplateInfo::TemplateInfo() : templateId(0), setId(UnknownSetId), fieldCount(0), fieldInfo(NULL), 
+	userData(NULL), destroyed(false), freePointers(true), 
+	scopeCount(0), scopeInfo(NULL), dataCount(0), dataInfo(NULL), preceding(0), dataLength(0), data(NULL), 
+	anonymized(false) 
+	{}
+
+TemplateInfo::TemplateInfo(const TemplateInfo& t)
+{
+	templateId = t.templateId;
+	setId = t.setId;
+
+	// copy fields
+	fieldCount = t.fieldCount; /**< number of regular fields */
+	fieldInfo = (FieldInfo*)malloc(fieldCount*sizeof(FieldInfo));
+	memcpy(fieldInfo, t.fieldInfo, fieldCount*sizeof(FieldInfo));
+
+	userData = t.userData;
+	destroyed = t.destroyed;
+	freePointers = t.freePointers;
+
+	// copy Options Template scope fields
+	scopeCount = t.scopeCount;
+	scopeInfo = (FieldInfo*)malloc(scopeCount*sizeof(FieldInfo));
+	memcpy(scopeInfo, t.scopeInfo, scopeCount*sizeof(FieldInfo));
+
+	// copy Data Template data fields and further attributes
+	dataCount = t.dataCount;
+	dataInfo = (FieldInfo*)malloc(dataCount*sizeof(FieldInfo));
+	memcpy(dataInfo, t.dataInfo, dataCount*sizeof(FieldInfo));
+	preceding = t.preceding;
+	dataLength = t.dataLength;
+	data = (IpfixRecord::Data*)malloc(dataLength*sizeof(IpfixRecord::Data));
+	memcpy(data, t.data, dataLength*sizeof(IpfixRecord::Data));
+	anonymized = t.anonymized;
+}
+
+TemplateInfo::~TemplateInfo() {
+	if (freePointers)
+	{
+		free(fieldInfo);
+		free(scopeInfo);
+		free(dataInfo);
+		free(data);
+		freePointers = false;
+	}
+}
+
+/**
+ * Gets a Template's FieldInfo by Information Element id. Length is ignored.
+ * @param type Information Element to look for. Length is ignored.
+ * @return NULL if not found
+ */
+TemplateInfo::FieldInfo* TemplateInfo::getFieldInfo(const InformationElement::IeInfo& type) {
+	return getFieldInfo(type.id, type.enterprise);
+}
+
+//			IpfixRecord::Data* TemplateInfo::getFieldPointer(InformationElement::IeInfo* type, IpfixRecord::Data* pdata) {
+//				return getFieldPointer(type->id, &pdata);
+//			}
+//
+
+/**
+ * Gets a Template's FieldInfo by IE Id and enterprise number.
+ * @param fieldTypeId Information element Id to look for
+ * @param fieldTypeEid Enterprise number to look for
+ * @return NULL if not found
+ */
+TemplateInfo::FieldInfo* TemplateInfo::getFieldInfo(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid) {
+	int i;
+
+	for (i = 0; i < fieldCount; i++) {
+		if ((fieldInfo[i].type.id == fieldTypeId) && (fieldInfo[i].type.enterprise == fieldTypeEid)) {
+			return &fieldInfo[i];
+		}
+	}
+
+	return NULL;
+}
+
+/**
+ * Gets position of a field in the Template.
+ * @param fieldTypeId Information element Id to look for
+ * @param fieldTypeEid Enterprise number to look for
+ * @return NULL if not found
+ */
+int TemplateInfo::getFieldIndex(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid) {
+	int i;
+
+	for (i = 0; i < fieldCount; i++) {
+		if ((fieldInfo[i].type.id == fieldTypeId) && (fieldInfo[i].type.enterprise == fieldTypeEid)) {
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+/**
+ * Gets data of Data Templates for a given Information Element.
+ * @param type Information Element to get data for
+ * @return NULL if not found
+ */
+TemplateInfo::FieldInfo* TemplateInfo::getDataInfo(const InformationElement::IeInfo& type) {
+	return getDataInfo(type.id, type.enterprise);
+}
+
+/**
+ * Gets data of Data Templates for a given Information Element Id and enterprise number.
+ * @param fieldTypeId Information Element id to look for
+ * @param fieldTypeEid enterprise number to look for
+ * @return NULL if not found
+ */
+TemplateInfo::FieldInfo* TemplateInfo::getDataInfo(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid) {
+	int i;
+
+	for (i = 0; i < dataCount; i++) {
+		if ((dataInfo[i].type.id == fieldTypeId) && (dataInfo[i].type.enterprise == fieldTypeEid)) {
+			return &dataInfo[i];
+		}
+	}
+
+	return NULL;
+}
+
 
 IpfixRecord::IpfixRecord()
 {
@@ -161,18 +287,8 @@ IpfixRecord::IpfixRecord()
 IpfixRecord::~IpfixRecord() {
 }
 
-IpfixOptionsTemplateRecord::IpfixOptionsTemplateRecord(InstanceManager<IpfixOptionsTemplateRecord>* im)
-	: ManagedInstance<IpfixOptionsTemplateRecord>(im)
-{
-}
-
 IpfixTemplateRecord::IpfixTemplateRecord(InstanceManager<IpfixTemplateRecord>* im)
 	: ManagedInstance<IpfixTemplateRecord>(im)
-{
-}
-
-IpfixDataTemplateRecord::IpfixDataTemplateRecord(InstanceManager<IpfixDataTemplateRecord>* im)
-	: ManagedInstance<IpfixDataTemplateRecord>(im)
 {
 }
 
@@ -193,16 +309,6 @@ IpfixDataDataRecord::IpfixDataDataRecord(InstanceManager<IpfixDataDataRecord>* i
 
 IpfixTemplateDestructionRecord::IpfixTemplateDestructionRecord(InstanceManager<IpfixTemplateDestructionRecord>* im)
 	: ManagedInstance<IpfixTemplateDestructionRecord>(im)
-{
-}
-
-IpfixOptionsTemplateDestructionRecord::IpfixOptionsTemplateDestructionRecord(InstanceManager<IpfixOptionsTemplateDestructionRecord>* im)
-	: ManagedInstance<IpfixOptionsTemplateDestructionRecord>(im)
-{
-}
-
-IpfixDataTemplateDestructionRecord::IpfixDataTemplateDestructionRecord(InstanceManager<IpfixDataTemplateDestructionRecord>* im)
-	: ManagedInstance<IpfixDataTemplateDestructionRecord>(im)
 {
 }
 
