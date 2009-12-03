@@ -41,8 +41,6 @@ class IpfixPrinter : public Module, public IpfixRecordDestination, public Source
 		~IpfixPrinter();
 
 		virtual void onDataRecord(IpfixDataRecord* record);
-		virtual void onOptionsRecord(IpfixOptionsRecord* record);
-		virtual void onDataDataRecord(IpfixDataDataRecord* record);
 		virtual void onTemplate(IpfixTemplateRecord* record);
 		virtual void onTemplateDestruction(IpfixTemplateDestructionRecord* record);
 
@@ -57,7 +55,8 @@ class IpfixPrinter : public Module, public IpfixRecordDestination, public Source
 
 		void printUint(char* buf, InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void printOneLineRecord(IpfixDataRecord* record);
-		void printTableRecord(IpfixDataDataRecord* record);
+		void printTreeRecord(IpfixDataRecord* record);
+		void printTableRecord(IpfixDataRecord* record);
 };
 void printProtocol(InformationElement::IeInfo type, IpfixRecord::Data* data);
 void printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern);

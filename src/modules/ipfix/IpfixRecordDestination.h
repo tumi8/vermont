@@ -43,8 +43,6 @@ protected:
 	// virtual handler functions for child classes 
 	virtual void onTemplate(IpfixTemplateRecord* record);
 	virtual void onDataRecord(IpfixDataRecord* record);
-	virtual void onOptionsRecord(IpfixOptionsRecord* record);
-	virtual void onDataDataRecord(IpfixDataDataRecord* record);
 	virtual void onTemplateDestruction(IpfixTemplateDestructionRecord* record);
 };
 

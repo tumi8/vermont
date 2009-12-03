@@ -1,7 +1,6 @@
 #include "IpfixRecordAnonymizer.h"
 
 InstanceManager<IpfixDataRecord> IpfixRecordAnonymizer::dataRecordIM("IpfixDataRecord");
-InstanceManager<IpfixDataDataRecord> IpfixRecordAnonymizer::dataDataRecordIM("IpfixDataDataRecord");
 
 void IpfixRecordAnonymizer::setCopyMode(bool mode)
 {
@@ -10,7 +9,9 @@ void IpfixRecordAnonymizer::setCopyMode(bool mode)
 
 void IpfixRecordAnonymizer::onTemplate(IpfixTemplateRecord* record)
 {
-	//FIXME: anonymize Data Templates
+	//TODO: anonymize Data Templates
+	if((record->templateInfo->setId == TemplateInfo::IpfixDataRecord) && (record->templateInfo->dataCount != 0))
+		msg(MSG_DEBUG, "IpfixRecordAnonymizer: Received Data Template, but anonymization of fixed value fields is not supported!");
 	send(record);
 }
 
@@ -31,6 +32,26 @@ void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 	} else
 		myRecord = record;
 
+	/* TODO (Gerhard 12/2009): Anonymization of Data Template does not make sense if implemented at this place (only). 
+	 * For example, the IpfixSender uses the Templates received by onTemplate(...), not the ones linked to the
+	 * Data Records. Therefore, anonymization should take place in IpfixRecordAnonymizer::onTemplate().
+	 * The anonymized Data Template should then be linked to all the corresponding Data Records.
+	 *
+	// anonymize data template fixed value fields if necessary
+	if((myRecord->templateInfo->setId==TemplateInfo::IpfixDataRecord) && (!myRecord->templateInfo->anonymized)) {
+		// copy Data Template Info in copy mode
+		if(copyMode)
+			myRecord->templateInfo = boost::shared_ptr<TemplateInfo>(new TemplateInfo(*record->templateInfo.get()));
+
+		for (int i = 0; i != myRecord->templateInfo->dataCount; ++i) {
+			TemplateInfo::FieldInfo* field = myRecord->templateInfo->dataInfo + i;
+			anonField(field->type.id, myRecord->templateInfo->data + field->offset, field->type.length);
+		}
+		myRecord->templateInfo->anonymized = true; 
+	}
+	*/
+
+	// anonymize Data Record fields
 	for (int i = 0; i != myRecord->templateInfo->fieldCount; ++i) {
 		TemplateInfo::FieldInfo* field = myRecord->templateInfo->fieldInfo + i;
 		anonField(field->type.id, myRecord->data + field->offset, field->type.length);
@@ -38,47 +59,6 @@ void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 	send(myRecord);
 }
 
-
-void IpfixRecordAnonymizer::onOptionsRecord(IpfixOptionsRecord* record)
-{
-	//FIXME: anonymize Options Data Records
-	send(record);
-}
-
-void IpfixRecordAnonymizer::onDataDataRecord(IpfixDataDataRecord* record)
-{
-	IpfixDataDataRecord* myRecord;
-	if(copyMode) {
-		// generate copy of the current record
-		myRecord = dataDataRecordIM.getNewInstance();
-		myRecord->sourceID = record->sourceID;
-		// we also need to copy the Data Template Info
-		myRecord->dataTemplateInfo = boost::shared_ptr<TemplateInfo>(new TemplateInfo(*record->dataTemplateInfo.get()));
-		//myRecord->dataTemplateInfo = record->dataTemplateInfo;
-		myRecord->dataLength = record->dataLength; // = recordLength
-		myRecord->message = boost::shared_array<IpfixRecord::Data>(new IpfixRecord::Data[record->dataLength]);
-		memcpy(myRecord->message.get(), record->data, record->dataLength);
-		myRecord->data = myRecord->message.get();
-		// release record
-		record->removeReference();
-	} else
-		myRecord = record;
-
-	// anonymize data template fixed value fields if necessary
-	if(!myRecord->dataTemplateInfo->anonymized) {
-		for (int i = 0; i != myRecord->dataTemplateInfo->dataCount; ++i) {
-			TemplateInfo::FieldInfo* field = myRecord->dataTemplateInfo->dataInfo + i;
-			anonField(field->type.id, myRecord->dataTemplateInfo->data + field->offset, field->type.length);
-		}
-		myRecord->dataTemplateInfo->anonymized = true; 
-	}
-	// anonymize variable value fields
-	for (int i = 0; i != myRecord->dataTemplateInfo->fieldCount; ++i) {
-		TemplateInfo::FieldInfo* field = myRecord->dataTemplateInfo->fieldInfo + i;
-		anonField(field->type.id, myRecord->data + field->offset, field->type.length);
-	}
-	send(myRecord);
-}
 
 void IpfixRecordAnonymizer::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {

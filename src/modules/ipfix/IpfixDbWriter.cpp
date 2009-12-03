@@ -553,20 +553,15 @@ uint64_t IpfixDbWriter::getData(InformationElement::IeInfo type, IpfixRecord::Da
  */
 void IpfixDbWriter::onDataRecord(IpfixDataRecord* record)
 {
+	// do not treat Options Data Records
+	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
 	processDataDataRecord(*record->sourceID.get(), *record->templateInfo.get(), 
 			record->dataLength, record->data);
 
-	record->removeReference();
-}
-
-/**
- * called on Data Data Record arrival
- */
-void IpfixDbWriter::onDataDataRecord(IpfixDataDataRecord* record)
-{
-	processDataDataRecord(*record->sourceID.get(), *record->dataTemplateInfo.get(), 
-			record->dataLength, record->data);
-	
 	record->removeReference();
 }
 

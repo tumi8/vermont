@@ -43,7 +43,7 @@ class P2PDetector
 				double, double, double, double, double, double, double, double, double);
 		virtual ~P2PDetector();
 
-		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+		virtual void onDataRecord(IpfixDataRecord* record);
 
 	private:
 		//shutdown when module is not needed anymore

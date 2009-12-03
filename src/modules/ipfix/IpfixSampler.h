@@ -38,7 +38,7 @@ class IpfixSampler
 		IpfixSampler(double flowrate);
 		virtual ~IpfixSampler();
 
-		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+		virtual void onDataRecord(IpfixDataRecord* record);
 
 	private:
 		double flowRate;

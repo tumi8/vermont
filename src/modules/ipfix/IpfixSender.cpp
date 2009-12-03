@@ -216,7 +216,9 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	// TODO: Implement Options Template handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
 	{
-	    msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", dataTemplateInfo->setId);
+	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", dataTemplateInfo->setId);
+		record->removeReference();
+		return;
 	}
 
 	TemplateInfo::TemplateId my_template_id;
@@ -354,6 +356,8 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	msg(MSG_INFO, "sndIpfix created template with ID %u", my_template_id);
 
 	sendRecords();
+
+	record->removeReference();
 }
 
 /**
@@ -365,7 +369,9 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	// TODO: Implement Options Template handling
 	if ((record->templateInfo->setId != TemplateInfo::IpfixTemplate) && (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate))
 	{
-	    msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", record->templateInfo->setId);
+		msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", record->templateInfo->setId);
+		record->removeReference();
+		return;
 	}
 
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
@@ -391,6 +397,8 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	free(record->templateInfo->userData);
 
 	sendRecords();
+
+	record->removeReference();
 }
 
 
@@ -475,11 +483,19 @@ void IpfixSender::removeRecordReferences()
 
 /**
  * Put new Data Record in outbound exporter queue
- * @param rec Data Data Record
+ * @param rec Data Record
  */
-void IpfixSender::onDataDataRecord(IpfixDataDataRecord* record)
+void IpfixSender::onDataRecord(IpfixDataRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->dataTemplateInfo;
+	// TODO: Implement Options Data Record handling
+	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
+	{
+	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", dataTemplateInfo->setId);
+		record->removeReference();
+		return;
+	}
+
 	IpfixRecord::Data* data = record->data;
 	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 

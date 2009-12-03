@@ -526,6 +526,88 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 }
 
 /**
+ * prints record as a tree
+ */
+void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
+{
+	/* we need a FieldInfo for printIPv4 */
+	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
+	switch(record->templateInfo->setId) {
+		case TemplateInfo::NetflowTemplate:
+			printf("\n-+--- Netflow Data Record (id=%u) from ", record->templateInfo->templateId);
+			break;
+		case TemplateInfo::NetflowOptionsTemplate:
+			printf("\n-+--- Netflow Options Data Record (id=%u) from ", record->templateInfo->templateId);
+			break;
+		case TemplateInfo::IpfixTemplate:
+			printf("\n-+--- Ipfix Data Record (id=%u) from ", record->templateInfo->templateId);
+			break;
+		case TemplateInfo::IpfixOptionsTemplate:
+			printf("\n-+--- Ipfix Options Data Record (id=%u) from ", record->templateInfo->templateId);
+			break;
+		case TemplateInfo::IpfixDataTemplate:
+			printf("\n-+--- Ipfix Data Data Record (id=%u) from ", record->templateInfo->templateId);
+			break;
+		default:
+			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%d", record->templateInfo->setId);
+
+	}
+	if (record->sourceID) {
+		if (record->sourceID->exporterAddress.len == 4)
+			printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
+		else
+			printf("non-IPv4 address");
+		printf(":%d (", record->sourceID->exporterPort);
+		tmpInfo.length = 1; // length=1 for protocol identifier
+		printProtocol(tmpInfo, &record->sourceID->protocol);
+		printf(")\n");
+	} else {
+		printf("no sourceID given");
+	}
+
+	if(record->templateInfo->setId == TemplateInfo::IpfixDataTemplate) {
+		printf(" `- fixed data\n");
+		for (i = 0; i < record->templateInfo->dataCount; i++) {
+			printf(" '   `- ");
+			printFieldData(record->templateInfo->dataInfo[i].type,
+					(record->templateInfo->data + record->templateInfo->dataInfo[i].offset));
+			printf("\n");
+		}
+	}
+
+	if(record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate) {
+		printf(" `- variable scope data\n");
+		for(i = 0; i < record->templateInfo->scopeCount; i++) {
+			printf(" '   `- ");
+			printFieldData(record->templateInfo->scopeInfo[i].type, (record->data + record->templateInfo->scopeInfo[i].offset));
+			printf("\n");
+		}
+	}
+	printf(" `- variable data\n");
+	for (i = 0; i < record->templateInfo->fieldCount; i++) {
+		printf(" '   `- ");
+		printFieldData(record->templateInfo->fieldInfo[i].type, (record->data + record->templateInfo->fieldInfo[i].offset));
+		printf("\n");
+	}
+	printf(" `---\n\n");
+}
+
+/**
+ * prints tab-seperated data from flows, these may be specified in configuration (TODO!)
+ */
+void IpfixPrinter::printTableRecord(IpfixDataRecord* record)
+{
+	Connection c(record);
+
+	//fprintf(fh, "%llu\t%llu\t%u\t%u\t%llu\n", ntohll(c.srcOctets), ntohll(c.srcPackets), c.srcPayloadLen, c.srcPayloadPktCount, c.srcTimeEnd-c.srcTimeStart);
+	fprintf(fh, "%s\t%s\t%hu\t%hu\t%hhu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%hhu\t%hhu\n",
+			IPToString(c.srcIP).c_str(), IPToString(c.dstIP).c_str(), ntohs(c.srcPort), ntohs(c.dstPort), c.protocol,
+			ntohll(c.srcPackets), ntohll(c.dstPackets), ntohll(c.srcOctets), ntohll(c.dstOctets),
+			c.srcTimeStart, c.srcTimeEnd, c.dstTimeStart, c.dstTimeEnd, c.srcTcpControlBits, c.dstTcpControlBits);
+
+}
+
+/**
  * Prints a DataRecord
  * @param sourceID SourceID of the exporting process
  * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
@@ -543,113 +625,12 @@ void IpfixPrinter::onDataRecord(IpfixDataRecord* record)
 			printOneLineRecord(record);
 			break;
 		case TREE:
-			printf("\n-+--- DataRecord (Template id=%u from ", record->templateInfo->templateId);
-			if(record->sourceID->exporterAddress.len == 4)
-				printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
-			else
-				printf("non-IPv4 address");
-			printf(":%d (", record->sourceID->exporterPort);
-			tmpInfo.length = 1; // length=1 for protocol identifier
-			printProtocol(tmpInfo, &record->sourceID->protocol);
-			printf("))\n");
-
-			printf(" `- variable data\n");
-			for (i = 0; i < record->templateInfo->fieldCount; i++) {
-				printf(" '   `- ");
-				printFieldData(record->templateInfo->fieldInfo[i].type, (record->data + record->templateInfo->fieldInfo[i].offset));
-				printf("\n");
-			}
-			break;
-
-		case TABLE:
-			printf("ERROR: table record not implemented for IpfixDataRecords\n");
-			//printTableRecord(record);
-			break;
-		case NONE:
-			break;
-	}
-
-	record->removeReference();
-}
-
-/**
- * Prints an OptionsRecord
- * @param sourceID SourceID of the exporting process
- * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
- * @param length Length of the data block supplied
- * @param data Pointer to a data block containing all variable fields
- */
-void IpfixPrinter::onOptionsRecord(IpfixOptionsRecord* record)
-{
-	/* we need a FieldInfo for printIPv4 */
-	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
-	printf("\n-+--- OptionsDataRecord (Template id=%u from ", record->optionsTemplateInfo->templateId);
-	if (record->sourceID->exporterAddress.len == 4)
-		printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
-	else
-		printf("non-IPv4 address");
-	printf(":%d (", record->sourceID->exporterPort);
-	tmpInfo.length = 1; // length=1 for protocol identifier
-	printProtocol(tmpInfo, &record->sourceID->protocol);
-	printf("))\n");
-
-	printf(" `---\n\n");
-	record->removeReference();
-}
-
-/**
- * Prints a DataDataRecord
- * @param sourceID SourceID of the exporting process
- * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
- * @param length Length of the data block supplied
- * @param data Pointer to a data block containing all variable fields
- */
-void IpfixPrinter::onDataDataRecord(IpfixDataDataRecord* record)
-{
-	int i;
-	/* we need a FieldInfo for printIPv4 */
-	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
-	boost::shared_ptr<TemplateInfo> dataTemplateInfo;
-
-	switch (outputType) {
-		case LINE:
-			printf("ERROR: one line record not implemented for IpfixDataRecords\n");
-			//printOneLineRecord(record);
-			break;
-
-		case TREE:
-			dataTemplateInfo = record->dataTemplateInfo;
-			printf("\n-+--- DataDataRecord (Template id=%u from ", dataTemplateInfo->templateId);
-			if(record->sourceID->exporterAddress.len == 4)
-				printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
-			else
-				printf("non-IPv4 address");
-			printf(":%d (", record->sourceID->exporterPort);
-			tmpInfo.length = 1; // length=1 for protocol identifier
-			printProtocol(tmpInfo, &record->sourceID->protocol);
-			printf("))\n");
-
-			printf(" `- fixed data\n");
-			for (i = 0; i < dataTemplateInfo->dataCount; i++) {
-				printf(" '   `- ");
-				printFieldData(dataTemplateInfo->dataInfo[i].type,
-						(dataTemplateInfo->data + dataTemplateInfo->dataInfo[i].offset));
-				printf("\n");
-			}
-			printf(" `- variable data\n");
-			for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
-				printf(" '   `- ");
-				printFieldData(dataTemplateInfo->fieldInfo[i].type,
-						(record->data + dataTemplateInfo->fieldInfo[i].offset));
-				printf("\n");
-			}
-			printf(" `---\n\n");
+			printTreeRecord(record);
 			break;
 
 		case TABLE:
 			printTableRecord(record);
 			break;
-
 		case NONE:
 			break;
 	}
@@ -657,17 +638,4 @@ void IpfixPrinter::onDataDataRecord(IpfixDataDataRecord* record)
 	record->removeReference();
 }
 
-/**
- * prints tab-seperated data from flows, these may be specified in configuration (TODO!)
- */
-void IpfixPrinter::printTableRecord(IpfixDataDataRecord* record)
-{
-	Connection c(record);
 
-	//fprintf(fh, "%llu\t%llu\t%u\t%u\t%llu\n", ntohll(c.srcOctets), ntohll(c.srcPackets), c.srcPayloadLen, c.srcPayloadPktCount, c.srcTimeEnd-c.srcTimeStart);
-	fprintf(fh, "%s\t%s\t%hu\t%hu\t%hhu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%hhu\t%hhu\n",
-			IPToString(c.srcIP).c_str(), IPToString(c.dstIP).c_str(), ntohs(c.srcPort), ntohs(c.dstPort), c.protocol,
-			ntohll(c.srcPackets), ntohll(c.dstPackets), ntohll(c.srcOctets), ntohll(c.dstOctets),
-			c.srcTimeStart, c.srcTimeEnd, c.dstTimeStart, c.dstTimeEnd, c.srcTcpControlBits, c.dstTcpControlBits);
-
-}

@@ -71,8 +71,14 @@ TRWPortscanDetector::~TRWPortscanDetector()
 	delete[] trwEntries;
 }
 
-void TRWPortscanDetector::onDataDataRecord(IpfixDataDataRecord* record)
+void TRWPortscanDetector::onDataRecord(IpfixDataRecord* record)
 {
+	// do not treat Options Data Records
+	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 	

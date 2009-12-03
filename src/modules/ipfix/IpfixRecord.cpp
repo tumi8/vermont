@@ -296,29 +296,3 @@ TemplateInfo::FieldInfo* TemplateInfo::getDataInfo(InformationElement::IeId fiel
 	return NULL;
 }
 
-
-IpfixTemplateRecord::IpfixTemplateRecord(InstanceManager<IpfixTemplateRecord>* im)
-	: ManagedInstance<IpfixTemplateRecord>(im)
-{
-}
-
-IpfixDataRecord::IpfixDataRecord(InstanceManager<IpfixDataRecord>* im)
-	: ManagedInstance<IpfixDataRecord>(im)
-{
-}
-
-IpfixOptionsRecord::IpfixOptionsRecord(InstanceManager<IpfixOptionsRecord>* im)
-	: ManagedInstance<IpfixOptionsRecord>(im)
-{
-}
-
-IpfixDataDataRecord::IpfixDataDataRecord(InstanceManager<IpfixDataDataRecord>* im)
-	: ManagedInstance<IpfixDataDataRecord>(im)
-{
-}
-
-IpfixTemplateDestructionRecord::IpfixTemplateDestructionRecord(InstanceManager<IpfixTemplateDestructionRecord>* im)
-	: ManagedInstance<IpfixTemplateDestructionRecord>(im)
-{
-}
-

@@ -39,7 +39,7 @@ class IpfixPayloadWriter
 		IpfixPayloadWriter(string path, string prefix, uint32_t noconns, bool ignoreEmptyPayload, bool ignoreIncompleteTCP, uint64_t startidx);
 		virtual ~IpfixPayloadWriter();
 
-		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+		virtual void onDataRecord(IpfixDataRecord* record);
 		string getStatisticsXML(double interval);
 
 	protected:

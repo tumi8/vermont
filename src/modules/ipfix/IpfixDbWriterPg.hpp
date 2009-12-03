@@ -52,7 +52,6 @@ class IpfixDbWriterPg
 		~IpfixDbWriterPg();
 
 		void onDataRecord(IpfixDataRecord* record);
-		void onDataDataRecord(IpfixDataDataRecord* record);
 
 		IpfixRecord::SourceID srcId;              /**Exporter default SourceID */
 

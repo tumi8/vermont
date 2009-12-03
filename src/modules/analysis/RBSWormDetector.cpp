@@ -95,8 +95,14 @@ RBSWormDetector::~RBSWormDetector()
 	delete[] rbsEntries;
 }
 
-void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
+void RBSWormDetector::onDataRecord(IpfixDataRecord* record)
 {
+	// do not treat Options Data Records
+	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 
