@@ -60,8 +60,14 @@ P2PDetector::~P2PDetector()
 /**
  * Gets new Biflows from the aggregator and collects these data
  */
-void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
+void P2PDetector::onDataRecord(IpfixDataRecord* record)
 {
+	// do not treat Options Data Records
+	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 	conn.swapIfNeeded();

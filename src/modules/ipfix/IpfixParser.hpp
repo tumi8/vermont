@@ -154,8 +154,6 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		
 		static InstanceManager<IpfixTemplateRecord> templateRecordIM;
 		static InstanceManager<IpfixDataRecord> dataRecordIM;
-		static InstanceManager<IpfixOptionsRecord> optionsRecordIM;
-		static InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
 		static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
 		
 		void resendBufferedTemplates();

@@ -93,8 +93,14 @@ AutoFocus::~AutoFocus()
 	msg(MSG_FATAL,"Autofocus is done");
 }
 
-void AutoFocus::onDataDataRecord(IpfixDataDataRecord* record)
+void AutoFocus::onDataRecord(IpfixDataRecord* record)
 {
+	// do not treat Options Data Records
+	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 

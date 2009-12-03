@@ -61,8 +61,14 @@ IpfixPayloadWriter::~IpfixPayloadWriter()
 }
 
 
-void IpfixPayloadWriter::onDataDataRecord(IpfixDataDataRecord* record)
+void IpfixPayloadWriter::onDataRecord(IpfixDataRecord* record)
 {
+	// do not treat Options Data Records
+	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
 	// convert ipfixrecord to connection struct
 	Connection* conn = new Connection(record);
 	conn->swapIfNeeded();

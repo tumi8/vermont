@@ -22,6 +22,7 @@
 #define SNDIPFIX_H
 
 #include "IpfixParser.hpp"
+#include "IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "common/ConcurrentQueue.h"
 #include "core/Notifiable.h"
@@ -54,7 +55,7 @@ public:
 	
 	virtual void onTemplate(IpfixTemplateRecord* record);
 	virtual void onTemplateDestruction(IpfixTemplateDestructionRecord* record);
-	virtual void onDataDataRecord(IpfixDataDataRecord* record);
+	virtual void onDataRecord(IpfixDataRecord* record);
 
 	virtual void onReconfiguration1();
 	

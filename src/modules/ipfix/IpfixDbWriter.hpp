@@ -52,7 +52,6 @@ class IpfixDbWriter
 		~IpfixDbWriter();
 
 		void onDataRecord(IpfixDataRecord* record);
-		void onDataDataRecord(IpfixDataDataRecord* record);
 
 		/**
 		 * Struct to identify the relationship between columns names and 

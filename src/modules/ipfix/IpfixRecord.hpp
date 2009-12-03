@@ -190,7 +190,8 @@ class TemplateInfo {
 
 class IpfixTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixTemplateRecord> {
 	public:
-		IpfixTemplateRecord(InstanceManager<IpfixTemplateRecord>* im);
+		IpfixTemplateRecord(InstanceManager<IpfixTemplateRecord>* im) : ManagedInstance<IpfixTemplateRecord>(im) { }
+
 		boost::shared_ptr<TemplateInfo> templateInfo;
 
 		// redirector to reference remover of ManagedInstance
@@ -200,7 +201,8 @@ class IpfixTemplateRecord : public IpfixRecord, public ManagedInstance<IpfixTemp
 
 class IpfixDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataRecord> {
 	public:
-		IpfixDataRecord(InstanceManager<IpfixDataRecord>* im);
+		IpfixDataRecord(InstanceManager<IpfixDataRecord>* im) : ManagedInstance<IpfixDataRecord>(im) {}
+
 		boost::shared_ptr<TemplateInfo> templateInfo;
 		int dataLength;
 		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
@@ -211,42 +213,17 @@ class IpfixDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataReco
 		virtual void addReference(int count = 1) { ManagedInstance<IpfixDataRecord>::addReference(count); }
 };
 
-class IpfixOptionsRecord : public IpfixRecord, public ManagedInstance<IpfixOptionsRecord> {
-	public:
-		IpfixOptionsRecord(InstanceManager<IpfixOptionsRecord>* im);
-		boost::shared_ptr<TemplateInfo> optionsTemplateInfo;
-		int dataLength;
-		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
-		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
-
-		// redirector to reference remover of ManagedInstance
-		virtual void removeReference() { ManagedInstance<IpfixOptionsRecord>::removeReference(); }
-		virtual void addReference(int count = 1) { ManagedInstance<IpfixOptionsRecord>::addReference(count); }
-};
-
-class IpfixDataDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataDataRecord>
-{
-	public:
-		IpfixDataDataRecord(InstanceManager<IpfixDataDataRecord>* im);
-		boost::shared_ptr<TemplateInfo> dataTemplateInfo;
-		int dataLength;
-		boost::shared_array<IpfixRecord::Data> message; /**< data block that contains @c data */
-		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
-
-		// redirector to reference remover of ManagedInstance
-		virtual void removeReference() { ManagedInstance<IpfixDataDataRecord>::removeReference(); }
-		virtual void addReference(int count = 1) { ManagedInstance<IpfixDataDataRecord>::addReference(count); }
-};
-
 class IpfixTemplateDestructionRecord : public IpfixRecord, public ManagedInstance<IpfixTemplateDestructionRecord> {
 	public:
-		IpfixTemplateDestructionRecord(InstanceManager<IpfixTemplateDestructionRecord>* im);
+		IpfixTemplateDestructionRecord(InstanceManager<IpfixTemplateDestructionRecord>* im) : ManagedInstance<IpfixTemplateDestructionRecord>(im) {}
 		boost::shared_ptr<TemplateInfo> templateInfo;
 
 		// redirector to reference remover of ManagedInstance
 		virtual void removeReference() { ManagedInstance<IpfixTemplateDestructionRecord>::removeReference(); }
 		virtual void addReference(int count = 1) { ManagedInstance<IpfixTemplateDestructionRecord>::addReference(count); }
 };
+
+
 
 
 #endif

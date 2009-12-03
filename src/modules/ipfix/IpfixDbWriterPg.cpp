@@ -261,16 +261,6 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 	return true;
 }
 
-/**
- *	function receive the DataRecord or DataDataRecord when callback is started
- */
-void IpfixDbWriterPg::onDataDataRecord(IpfixDataDataRecord* record)
-{
-	processDataDataRecord(record->sourceID.get(), record->dataTemplateInfo.get(),
-			record->dataLength, record->data);
-
-	record->removeReference();
-}
 
 /**
  * save given elements of record to database
@@ -317,19 +307,14 @@ void IpfixDbWriterPg::processDataDataRecord(IpfixRecord::SourceID* sourceID,
  */
 void IpfixDbWriterPg::onDataRecord(IpfixDataRecord* record)
 {
-	// convert templateInfo to dataTemplateInfo
-	TemplateInfo dataTemplateInfo;
-	dataTemplateInfo.templateId = 0;
-	dataTemplateInfo.preceding = 0;
-	dataTemplateInfo.freePointers = false; // don't free the given pointers, as they are taken from a different structure
-	dataTemplateInfo.fieldCount = record->templateInfo->fieldCount; /**< number of regular fields */
-	dataTemplateInfo.fieldInfo = record->templateInfo->fieldInfo; /**< array of FieldInfos describing each of these fields */
-	dataTemplateInfo.dataCount = 0; /**< number of fixed-value fields */
-	dataTemplateInfo.dataInfo = NULL; /**< array of FieldInfos describing each of these fields */
-	dataTemplateInfo.data = NULL; /**< data start pointer for fixed-value fields */
-	dataTemplateInfo.userData = record->templateInfo->userData; /**< pointer to a field that can be used by higher-level modules */
+	// do not treat Options Data Records
+	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
+		record->removeReference();
+		return;
+	}
 
-	processDataDataRecord(record->sourceID.get(), &dataTemplateInfo, record->dataLength, record->data);
+	processDataDataRecord(record->sourceID.get(), record->dataTemplateInfo.get(),
+			record->dataLength, record->data);
 
 	record->removeReference();
 }

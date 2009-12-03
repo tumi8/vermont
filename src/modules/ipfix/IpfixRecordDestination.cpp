@@ -40,14 +40,6 @@ void IpfixRecordDestination::receive(IpfixRecord* ipfixRecord)
 		if (rec) onDataRecord(rec);
 	}
 	{
-		IpfixDataDataRecord* rec = dynamic_cast<IpfixDataDataRecord*>(ipfixRecord);
-		if (rec) onDataDataRecord(rec);
-	}
-	{
-		IpfixOptionsRecord* rec = dynamic_cast<IpfixOptionsRecord*>(ipfixRecord);
-		if (rec) onOptionsRecord(rec);
-	}
-	{
 		IpfixTemplateRecord* rec = dynamic_cast<IpfixTemplateRecord*>(ipfixRecord);
 		if (rec) onTemplate(rec);
 	}
@@ -75,32 +67,6 @@ void IpfixRecordDestination::onTemplate(IpfixTemplateRecord* record)
  * @param data Pointer to a data block containing all fields
  */
 void IpfixRecordDestination::onDataRecord(IpfixDataRecord* record)
-{
-	record->removeReference();
-}
-
-
-/**
- * Callback function invoked when a new Options Record arrives.
- * @param sourceID SourceID of the exporter that sent this Record
- * @param optionsTemplateInfo Pointer to a structure defining the OptionsTemplate used
- * @param length Length of the data block supplied
- * @param data Pointer to a data block containing all fields
- * @return 0 if packet handled successfully
- */
-void IpfixRecordDestination::onOptionsRecord(IpfixOptionsRecord* record)
-{
-	record->removeReference();
-}
-
-/**
- * Callback function invoked when a new Data Record with associated Fixed Values arrives.
- * @param sourceID SourceID of the exporter that sent this Record
- * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
- * @param length Length of the data block supplied
- * @param data Pointer to a data block containing all variable fields
- */
-void IpfixRecordDestination::onDataDataRecord(IpfixDataDataRecord* record)
 {
 	record->removeReference();
 }

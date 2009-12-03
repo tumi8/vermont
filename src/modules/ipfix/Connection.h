@@ -71,7 +71,7 @@ class Connection
 		 */
 		uint32_t timeExpire;
 
-		Connection(IpfixDataDataRecord* record);
+		Connection(IpfixDataRecord* record);
 		virtual ~Connection();
 		void addFlow(Connection* c);
 		string toString();

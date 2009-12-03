@@ -56,19 +56,15 @@ void FrontPayloadSigMatcher::matchConnection(Connection* conn)
 	free(results);
 }
 
-void FrontPayloadSigMatcher::onDataDataRecord(IpfixDataDataRecord* record)
-{
-	Connection conn(record);
-	conn.swapIfNeeded();
-
-	matchConnection(&conn);
-
-	record->removeReference();
-}
-
 void FrontPayloadSigMatcher::onDataRecord(IpfixDataRecord* record)
 {
-	Connection conn(reinterpret_cast<IpfixDataDataRecord*>(record));
+	// do not treat Options Data Records
+	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
+	Connection conn(record);
 	conn.swapIfNeeded();
 
 	matchConnection(&conn);

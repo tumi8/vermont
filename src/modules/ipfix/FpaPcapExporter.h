@@ -56,7 +56,7 @@ public:
 	FpaPcapExporter(const std::string& file);
 	~FpaPcapExporter();
 
-	virtual void onDataDataRecord(IpfixDataDataRecord* record);
+	virtual void onDataRecord(IpfixDataRecord* record);
 	virtual void performStart();
 	virtual void performShutdown();
 

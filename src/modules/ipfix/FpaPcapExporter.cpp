@@ -101,8 +101,14 @@ void FpaPcapExporter::performShutdown()
  * This is done by using two prepared buffers that contain a UDP and TCP header stack (tcpHeader and udpHeader)
  * ATTENTION: checksums are not calculated at all, as well as other TCP header fields that are connection specific
  */
-void FpaPcapExporter::onDataDataRecord(IpfixDataDataRecord* record)
+void FpaPcapExporter::onDataRecord(IpfixDataRecord* record)
 {
+	// do not treat Options Data Records
+	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
 	Connection c(record);
 
 	pcaprec_hdr_t pcaphdr;

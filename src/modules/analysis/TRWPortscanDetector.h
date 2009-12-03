@@ -40,7 +40,7 @@ class TRWPortscanDetector
 				uint32_t texpben, uint32_t tcleanint, string analyzerid, string idmeftemplate);
 		virtual ~TRWPortscanDetector();
 		
-		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+		virtual void onDataRecord(IpfixDataRecord* record);
 
 	private:
 		enum TRWDecision { PENDING, SCANNER, BENIGN };

@@ -41,7 +41,7 @@ class RBSWormDetector
 				uint32_t texpben, uint32_t tadaptint,uint32_t tcleanupint, float lambda_ratio, string analyzerid, string idmeftemplate,map<uint32_t,uint32_t> subNets);
 		virtual ~RBSWormDetector();
 		
-		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+		virtual void onDataRecord(IpfixDataRecord* record);
 
 	private:
 		enum RBSDecision { PENDING, WORM, BENIGN };

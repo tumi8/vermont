@@ -44,8 +44,14 @@ HostStatistics::HostStatistics(std::string ipSubnet, std::string addrFilter, std
 	fclose(logFile);
 }
 
-void HostStatistics::onDataDataRecord(IpfixDataDataRecord* record)
+void HostStatistics::onDataRecord(IpfixDataRecord* record)
 {
+	// do not treat Options Data Records
+	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
 	Connection conn(record);
 	std::map<uint32_t, uint64_t>::iterator it;
 
