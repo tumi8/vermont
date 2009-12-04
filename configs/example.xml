@@ -10,10 +10,10 @@
 	
 	<packetQueue id="2">
 		<maxSize>10</maxSize>
-		<next>6</next>
+		<next>3</next>
 	</packetQueue>
 	
-	<packetAggregator id="6">
+	<packetAggregator id="3">
 		<rule>
 			<templateId>998</templateId>
 			<flowKey>
