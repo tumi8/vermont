@@ -47,7 +47,7 @@ TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::sha
 #endif
 	
 	while (bt != 0) {
-		if ((*(bt->sourceID.get()) == *(sourceId.get())) && (bt->templateID == templateId)){
+		if ((*(bt->sourceID.get()) == *(sourceId.get())) && (bt->templateInfo->templateId == templateId)){
 			if ((bt->expires) && (bt->expires < now)) {
 				destroyBufferedTemplate(sourceId, templateId);
 				return 0;
@@ -64,7 +64,7 @@ TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::sha
  * Saves a TemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo overwriting existing Templates
  */
 void TemplateBuffer::bufferTemplate(TemplateBuffer::BufferedTemplate* bt) {
-	destroyBufferedTemplate(bt->sourceID, bt->templateID);
+	destroyBufferedTemplate(bt->sourceID, bt->templateInfo->templateId);
 	bt->next = head;
 	bt->expires = 0;
 	head = bt;
@@ -81,8 +81,8 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 	while (bt != 0) {
 		/* templateId == setID means that all templates of this set type shall be removed for given sourceID */
 		/* all == true means that all templates of given sourceID shall be removed */
-		if (((*(bt->sourceID.get()) == *(sourceId.get())) && ((bt->templateID == templateId) || (bt->setID == templateId)) 
-				|| (all && sourceId->equalIgnoringODID(*(bt->sourceID.get()))))) {
+		if (((*(bt->sourceID.get()) == *(sourceId.get())) && ((bt->templateInfo->templateId == templateId) || (bt->templateInfo->setId == templateId)))
+				|| (all && sourceId->equalIgnoringODID(*(bt->sourceID.get())))) {
 			found = true;
 			if (predecessor != 0) {
 				predecessor->next = bt->next;
@@ -123,7 +123,7 @@ TemplateBuffer::~TemplateBuffer() {
 	while (head != 0) {
 		TemplateBuffer::BufferedTemplate* bt = head;
 		TemplateBuffer::BufferedTemplate* bt2 = (TemplateBuffer::BufferedTemplate*)bt->next;
-		destroyBufferedTemplate(bt->sourceID, bt->templateID);
+		destroyBufferedTemplate(bt->sourceID, bt->templateInfo->templateId);
 		head = bt2;
 	}
 }
