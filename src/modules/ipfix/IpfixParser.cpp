@@ -81,9 +81,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		TemplateBuffer::BufferedTemplate* bt = new TemplateBuffer::BufferedTemplate;
 		boost::shared_ptr<TemplateInfo> ti(new TemplateInfo);
 		bt->sourceID = sourceId;
-		bt->templateID = ntohs(th->templateId);
 		bt->recordLength = 0;
-		bt->setID = ntohs(set->id);
 		bt->templateInfo = ti;
 		ti->userData = 0;
 		ti->templateId = ntohs(th->templateId);
@@ -95,7 +93,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
 			/* check if there are at least 4 bytes for this field */
 			if (record+4 > endOfSet) {
-				msg(MSG_ERROR, "IpfixParser: Template record (id=%u) exceeds set boundary!", bt->templateID);
+				msg(MSG_ERROR, "IpfixParser: Template record (id=%u) exceeds set boundary!", bt->templateInfo->templateId);
 				delete bt;
 				return;
 			}
@@ -110,7 +108,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 			if (ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) {
 				/* check if there are 8 bytes for this field */
 				if (record+8 > endOfSet) {
-					msg(MSG_ERROR, "IpfixParser: Template record (id=%u) exceeds set boundary!", bt->templateID);
+					msg(MSG_ERROR, "IpfixParser: Template record (id=%u) exceeds set boundary!", bt->templateInfo->templateId);
 					delete bt;
 					return;
 				}
@@ -179,9 +177,7 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 		TemplateBuffer::BufferedTemplate* bt = new TemplateBuffer::BufferedTemplate;
 		boost::shared_ptr<TemplateInfo> ti(new TemplateInfo);
 		bt->sourceID = sourceId;
-		bt->templateID = ntohs(oth->templateId);
 		bt->recordLength = 0;
-		bt->setID = ntohs(set->id);
 		bt->templateInfo = ti;
 		ti->userData = 0;
 		ti->templateId = ntohs(oth->templateId);
@@ -310,9 +306,7 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		TemplateBuffer::BufferedTemplate* bt = new TemplateBuffer::BufferedTemplate;
 		boost::shared_ptr<TemplateInfo> ti(new TemplateInfo);
 		bt->sourceID = sourceId;
-		bt->templateID = ntohs(dth->templateId);
 		bt->recordLength = 0;
-		bt->setID = ntohs(set->id);
 		bt->templateInfo = ti;
 		ti->userData = 0;
 		ti->templateId = ntohs(dth->templateId);
@@ -470,9 +464,9 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 	}
 
 #ifdef SUPPORT_NETFLOWV9
-	if ((bt->setID == IPFIX_SetId_Template) || (bt->setID == IPFIX_SetId_OptionsTemplate) || (bt->setID == IPFIX_SetId_DataTemplate) || (bt->setID == NetflowV9_SetId_Template)) {
+	if ((bt->templateInfo->setId == TemplateInfo::IpfixTemplate) || (bt->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate) || (bt->templateInfo->setId == TemplateInfo::IpfixDataTemplate) || (bt->templateInfo->setId == TemplateInfo::NetflowTemplate)) {
 #else
-	if ((bt->setID == IPFIX_SetId_Template) || (bt->setID == IPFIX_SetId_OptionsTemplate) || (bt->setID == IPFIX_SetId_DataTemplate)) {
+	if ((bt->templateInfo->setId == TemplateInfo::IpfixTemplate) || (bt->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate) || (bt->templateInfo->setId == TemplateInfo::IpfixDataTemplate)) {
 #endif
 
 		boost::shared_ptr<TemplateInfo> ti = bt->templateInfo;
@@ -590,7 +584,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 			}
 		}
 	} else {
-	    msg(MSG_FATAL, "Data Set based on known but unhandled template type %d", bt->setID);
+	    msg(MSG_FATAL, "Data Set based on known but unhandled template type %d", bt->templateInfo->setId);
 	}
 	return numberOfRecords;
 }

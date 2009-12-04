@@ -41,11 +41,9 @@ class TemplateBuffer {
 		 */
 		struct BufferedTemplate {
 			boost::shared_ptr<IpfixRecord::SourceID>	sourceID; /**< source identifier of exporter that sent this template */
-			TemplateInfo::TemplateId	templateID; /**< template# this template defines */
-			uint16_t	recordLength; /**< length of one Data Record that will be transferred in Data Sets. Variable-length carry -1 */
-			TemplateInfo::TemplateId	setID; /**< should be 2,3,4 and determines the type of pointer used in the unions */
-			time_t		expires; /**< Timestamp when this Template will expire or 0 if it will never expire */
 			boost::shared_ptr<TemplateInfo> templateInfo;
+			uint16_t	recordLength; /**< length of one Data Record that will be transferred in Data Sets. Variable-length carry -1 */
+			time_t		expires; /**< Timestamp when this Template will expire or 0 if it will never expire */
 			TemplateBuffer::BufferedTemplate*	next; /**< Pointer to next buffered Template */
 		};
 
