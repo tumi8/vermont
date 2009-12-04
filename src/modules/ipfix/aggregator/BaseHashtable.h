@@ -96,7 +96,7 @@ protected:
 
 	HashtableBucketList exportList;
 
-	InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
+	InstanceManager<IpfixDataRecord> dataDataRecordIM;
 	InstanceManager<IpfixTemplateRecord> dataTemplateRecordIM;
 	InstanceManager<BucketListElement> hbucketIM;
 

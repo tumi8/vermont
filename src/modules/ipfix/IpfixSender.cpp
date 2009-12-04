@@ -487,7 +487,7 @@ void IpfixSender::removeRecordReferences()
  */
 void IpfixSender::onDataRecord(IpfixDataRecord* record)
 {
-	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->dataTemplateInfo;
+	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 	// TODO: Implement Options Data Record handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
 	{

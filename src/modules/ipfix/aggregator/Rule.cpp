@@ -252,6 +252,17 @@ int matchesRawPattern(const InformationElement::IeInfo* dataType, const IpfixRec
 }
 
 /**
+ * Checks if the IPv4Prefix fits the IP mask of the rule
+ * @return true if the IPv4Prefix does not exists or if it is larger than 32-mask 
+ */
+bool checkMask(TemplateInfo::FieldInfo* prefixInfo, IpfixRecord::Data* prefixData, Rule::Field* ruleField) {
+	if (!prefixInfo) return true;
+	uint8_t rulePrefix = 32 - getIPv4IMask(&ruleField->type, ruleField->pattern);
+	uint8_t recordPrefix = *(prefixData + prefixInfo->offset);
+	return (recordPrefix >= rulePrefix);
+}
+
+/**
  * Checks if a data block matches a given pattern
  * @return 1 if pattern is matched
  */
@@ -275,115 +286,6 @@ int matchesPattern(const InformationElement::IeInfo* dataType, const IpfixRecord
 		return matchesRawPattern(dataType, data, patternType, pattern);
 		break;
 	}
-}
-
-/**
- * templateDataMatchesRule helper.
- * If a flow's IP matched a ruleField's IP address + mask, 
- * we will also have to check if the flow's mask is no broader than the ruleField's
- * @return 0 if the field had an associated mask that did not match
- */
-int checkAssociatedMask(TemplateInfo* info, IpfixRecord::Data* data, Rule::Field* ruleField) {
-	if ((ruleField->type.enterprise == 0) && (ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) && (ruleField->pattern) && (ruleField->type.length == 5)) {
-		TemplateInfo::FieldInfo* maskInfo = info->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
-		if (!maskInfo) return 1;
-
-		uint8_t pmask = 32 - getIPv4IMask(&ruleField->type, ruleField->pattern);
-		uint8_t dmask = *(data + maskInfo->offset);
-		return (dmask >= pmask);
-	}
-	if ((ruleField->type.enterprise == 0) && (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) && (ruleField->pattern) && (ruleField->type.length == 5)) {
-		TemplateInfo::FieldInfo* maskInfo = info->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
-		if (!maskInfo) return 1;
-
-		uint8_t pmask = 32 - getIPv4IMask(&ruleField->type, ruleField->pattern);
-		uint8_t dmask = *(data + maskInfo->offset);
-		return (dmask >= pmask);
-	}
-	return 1;
-}
-
-
-/**
- * templateDataMatchesRule helper.
- * If a flow's IP matched a ruleField's IP address + mask, 
- * we will also have to check if the flow's mask is no broader than the ruleField's
- * @return 0 if the field had an associated mask that did not match
- */
-int checkAssociatedMask3(TemplateInfo* info, IpfixRecord::Data* data, Rule::Field* ruleField) {
-	if ((ruleField->type.enterprise == 0) && (ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) && (ruleField->pattern) && (ruleField->type.length == 5)) {
-		TemplateInfo::FieldInfo* maskInfo = info->getDataInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
-		if (!maskInfo) return 1;
-
-		uint8_t pmask = 32 - getIPv4IMask(&ruleField->type, ruleField->pattern);
-		uint8_t dmask = *(data + maskInfo->offset);
-		return (dmask >= pmask);
-	}
-	if ((ruleField->type.enterprise == 0) && (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) && (ruleField->pattern) && (ruleField->type.length == 5)) {
-		TemplateInfo::FieldInfo* maskInfo = info->getDataInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
-		if (!maskInfo) return 1;
-
-		uint8_t pmask = 32 - getIPv4IMask(&ruleField->type, ruleField->pattern);
-		uint8_t dmask = *(data + maskInfo->offset);
-		return (dmask >= pmask);
-	}
-	return 1;
-}
-
-/**
- * Checks if a given flow matches a rule
- * @return 1 if rule is matched, 0 otherwise
- */
-int Rule::templateDataMatches(TemplateInfo* info, IpfixRecord::Data* data) {
-	int i;
-	TemplateInfo::FieldInfo* fieldInfo;
-
-	for (i = 0; i < fieldCount; i++) {
-		Rule::Field* ruleField = field[i];
-
-		/* for all patterns of this rule, check if they are matched */
-		if (ruleField->pattern) {
-			fieldInfo = info->getFieldInfo(ruleField->type);
-			if (fieldInfo) {
-				/* corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched */
-				if (!matchesPattern(&fieldInfo->type, (data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
-				if (!checkAssociatedMask(info, data, ruleField)) return 0;
-				continue;
-			}
-			
-			/* in the case of biflow, we also check the reverse direction */
-			if (biflowAggregation) {
-				fieldInfo = info->getFieldInfo(InformationElement::reverseType(ruleField->type));
-				if (fieldInfo) {
-					/* corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched */
-					if (!matchesPattern(&fieldInfo->type, (data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
-					if (!checkAssociatedMask(info, data, ruleField)) return 0;
-					continue;
-				}
-			}
-			
-			/* no corresponding data field found, this flow cannot match */
-			msg(MSG_VDEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
-			return 0;
-		}
-		/* if a non-discarding rule field specifies no pattern, check at least if the data field exists */
-		else if (field[i]->modifier != Rule::Field::DISCARD) {
-			fieldInfo = info->getFieldInfo(ruleField->type);
-			if (fieldInfo) continue;
-			
-			/* in the case of biflow, we also check the reverse direction */
-			if (biflowAggregation) {
-				fieldInfo = info->getFieldInfo(InformationElement::reverseType(ruleField->type));
-				if (fieldInfo)	continue;
-			}
-			
-			msg(MSG_VDEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
-			return 0;
-		}
-	}
-
-	/* all rule fields were matched */
-	return 1;
 }
 
 /**
@@ -482,41 +384,133 @@ bool Rule::ExptemplateDataMatches(const Packet* p)
  * Checks if a given flow matches a rule
  * @return 1 if rule is matched, 0 otherwise
  */
-int Rule::dataTemplateDataMatches(TemplateInfo* info, IpfixRecord::Data* data) {
+int Rule::dataRecordMatches(IpfixDataRecord* record) {
 	int i;
-	TemplateInfo::FieldInfo* fieldInfo;
+	TemplateInfo::FieldInfo* recordField;
+	IpfixRecord::Data* recordData = record->data;
+	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 
 	/* for all patterns of this rule, check if they are matched */
         for(i = 0; i < fieldCount; i++) {
+		Rule::Field* ruleField = field[i];
+		
+		/* no check for biflow fields */
+		if(InformationElement::isBiflowField(ruleField->type))
+			continue;
 
-		if(field[i]->pattern) {
-			Rule::Field* ruleField = field[i];
+		if(ruleField->pattern) {
 
-			fieldInfo = info->getFieldInfo(ruleField->type);
-			if (fieldInfo) {
+			recordField = dataTemplateInfo->getFieldInfo(ruleField->type);
+			if (recordField) {
 				/* corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched */
-				if (!matchesPattern(&fieldInfo->type, (data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
-				if (!checkAssociatedMask(info, data, ruleField)) return 0;
+				if (!matchesPattern(&recordField->type, (recordData + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
+				if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
+					if (ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) {
+						if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0), recordData, ruleField)) return 0;
+					} else if (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) {
+						if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0), recordData, ruleField)) return 0;
+					}
+				}
 				continue;
 			}
 
-			/*
-			  no corresponding data field found
-			  see if we find a corresponding fixed data field
+			/* Probably, this does not lead to the desired result:
+			if (biflowAggregation) {
+				// check if the rule field as a corresponding type in opposite direction
+				InformationElement::IeId oppDirIeId = InformationElement::oppositeDirectionIeId(ruleField->type);
+				if(oppDirIeId) {
+					recordField = dataTemplateInfo->getFieldInfo(oppDirIeId, ruleField->type.enterprise);
+					if (recordField) {
+						// corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched 
+						if (!matchesPattern(&recordField->type, (recordData + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
+						if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
+							if (oppDirIeId == IPFIX_TYPEID_sourceIPv4Address) {
+								if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0), recordData, ruleField)) return 0;
+							} else if (oppDirIeId == IPFIX_TYPEID_destinationIPv4Address) {
+								if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0), recordData, ruleField)) return 0;
+							}
+						}
+						continue;
+					}
+				}
+			}
 			*/
 
-			fieldInfo = info->getDataInfo(ruleField->type);
-			if (fieldInfo) {
-				/* corresponding fixed data field found, check if it matches. If it doesn't the whole rule cannot be matched */
-				if (!matchesPattern(&fieldInfo->type, (info->data + fieldInfo->offset), &ruleField->type, ruleField->pattern)) return 0;
-				if (!checkAssociatedMask3(info, info->data, ruleField)) return 0;
-				continue;
+			/*
+			  in the case of Data Template, see if we find a corresponding fixed data field
+			*/
+			if ((dataTemplateInfo->setId == TemplateInfo::IpfixDataTemplate) && (dataTemplateInfo->dataCount > 0)) {
+				recordField = dataTemplateInfo->getDataInfo(ruleField->type);
+				if (recordField) {
+					/* corresponding fixed data field found, check if it matches. If it doesn't the whole rule cannot be matched */
+					if (!matchesPattern(&recordField->type, (dataTemplateInfo->data + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
+					if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
+						if (ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) {
+							if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_sourceIPv4Mask, 0), dataTemplateInfo->data, ruleField)) return 0;
+						} else if (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) {
+							if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_destinationIPv4Mask, 0), dataTemplateInfo->data, ruleField)) return 0;
+						}
+					}
+					continue;
+				}
+				/* Probably, this does not lead to the desired result:
+				if (biflowAggregation) {
+					// check if the rule field as a corresponding type in opposite direction
+					InformationElement::IeId oppDirIeId = InformationElement::oppositeDirectionIeId(ruleField->type);
+					if(oppDirIeId) {
+						recordField = dataTemplateInfo->getDataInfo(oppDirIeId, ruleField->type.enterprise);
+						if (recordField) {
+							// corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched
+							if (!matchesPattern(&recordField->type, (dataTemplateInfo->data + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
+							if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
+								if (oppDirIeId == IPFIX_TYPEID_sourceIPv4Address) {
+									if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_sourceIPv4Mask, 0), dataTemplateInfo->data, ruleField)) return 0;
+								} else if (oppDirIeId == IPFIX_TYPEID_destinationIPv4Address) {
+									if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_destinationIPv4Mask, 0), dataTemplateInfo->data, ruleField)) return 0;
+								}
+							}
+							continue;
+						}
+					}
+				} */
 			}
-
-			// FIXME: if a non-discarding rule field specifies no pattern check at least if the data field exists?
 
 			/* no corresponding data field or fixed data field found, this flow cannot match */
 			msg(MSG_VDEBUG, "No corresponding DataDataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
+			return 0;
+		}
+		/* if a non-discarding rule field specifies no pattern, check at least if the data field exists */
+		else if (ruleField->modifier != Rule::Field::DISCARD) {
+			recordField = dataTemplateInfo->getFieldInfo(ruleField->type);
+			if (recordField) continue;
+			
+			/* in the case of biflow, we also check the reverse direction */
+			if (biflowAggregation) {
+				InformationElement::IeId oppDirIeId = InformationElement::oppositeDirectionIeId(ruleField->type);
+				if(oppDirIeId) {
+					recordField = dataTemplateInfo->getFieldInfo(oppDirIeId, ruleField->type.enterprise);
+					if (recordField) continue;
+				}
+			}
+
+			/*
+			  in the case of Data Template, see if we find a corresponding fixed data field
+			*/
+			if ((dataTemplateInfo->setId == TemplateInfo::IpfixDataTemplate) && (dataTemplateInfo->dataCount > 0)) {
+				recordField = dataTemplateInfo->getDataInfo(ruleField->type);
+				if (recordField) continue;
+
+				/* in the case of biflow, we also check the reverse direction */
+				if (biflowAggregation) {
+					InformationElement::IeId oppDirIeId = InformationElement::oppositeDirectionIeId(ruleField->type);
+					if(oppDirIeId) {
+						recordField = dataTemplateInfo->getDataInfo(oppDirIeId, ruleField->type.enterprise);
+						if (recordField) continue;
+					}
+				}
+			}
+			
+			msg(MSG_VDEBUG, "No corresponding DataRecord field for RuleField of type %s", typeid2string(ruleField->type.id));
 			return 0;
 		}
 	}

@@ -168,7 +168,7 @@ void BaseAggregator::exporterThread()
 		}
 
 		gettimeofday(&curtime, 0);
-		msg(MSG_DEBUG,"Aggregator: starting Export");
+		msg(MSG_VDEBUG,"Aggregator: starting Export");
 		for (size_t i = 0; i < rules->count; i++) {
 			rules->rule[i]->hashtable->expireFlows();
 		}
@@ -176,7 +176,7 @@ void BaseAggregator::exporterThread()
 		gettimeofday(&endtime, 0);
 		timeval_subtract(&difftime, &endtime, &curtime);
 
-		msg (MSG_DEBUG,"Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000000+difftime.tv_sec);
+		msg (MSG_VDEBUG,"Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000000+difftime.tv_sec);
 	}
 
 	if (getShutdownProperly()) {

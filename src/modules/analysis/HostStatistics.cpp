@@ -46,8 +46,10 @@ HostStatistics::HostStatistics(std::string ipSubnet, std::string addrFilter, std
 
 void HostStatistics::onDataRecord(IpfixDataRecord* record)
 {
-	// do not treat Options Data Records
-	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
+	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
+	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
 		record->removeReference();
 		return;
 	}

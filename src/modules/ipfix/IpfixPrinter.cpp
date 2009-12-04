@@ -277,7 +277,7 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 			printf("\n-+--- Ipfix Options Template (id=%u) from ", record->templateInfo->templateId);
 			break;
 		case TemplateInfo::IpfixDataTemplate:
-			printf("\n-+--- Ipfix Data Template (id=%u) from ", record->templateInfo->templateId);
+			printf("\n-+--- Ipfix Data Template (id=%u, preceding=%u) from ", record->templateInfo->templateId, record->templateInfo->preceding);
 			break;
 		default:
 			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%d", record->templateInfo->setId);
@@ -530,6 +530,8 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
  */
 void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 {
+	int i;
+
 	/* we need a FieldInfo for printIPv4 */
 	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
 	switch(record->templateInfo->setId) {

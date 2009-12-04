@@ -664,94 +664,16 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
 }
 
 
-/**
- * Buffer passed flow in Hashtable @c ht
- */
-void FlowHashtable::aggregateTemplateData(TemplateInfo* ti, IpfixRecord::Data* data)
-{
-	// the following lock should almost never fail (only during reconfiguration)
-	while (atomic_lock(&aggInProgress)) {
-		timespec req;
-		req.tv_sec = 0;
-		req.tv_nsec = 50000000;
-		nanosleep(&req, &req);
-	}
-	int i;
-
-	/* Create data block to be inserted into buffer... */
-	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength+privDataLength]);
-
-	// set private data fields to zero
-	memset(htdata.get()+fieldLength, 0, privDataLength);
-
-	for (i = 0; i < dataTemplate->fieldCount; i++) {
-		TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
-		TemplateInfo::FieldInfo* tfi = ti->getFieldInfo(hfi->type);
-
-		if (!tfi) {
-			DPRINTF("Flow to be buffered did not contain %s field\n", typeid2string(hfi->type.id));
-
-			// if field was not copied, fill it with 0
-			memset(htdata.get() + hfi->offset, 0, hfi->type.length);
-
-			continue;
-		}
-
-		DPRINTFL(MSG_VDEBUG, "copyData for type %d, offset %x, starting from pointer %X", tfi->type.id, tfi->offset, data+tfi->offset);
-		DPRINTFL(MSG_VDEBUG, "copyData to offset %X", hfi->offset);
-		copyData(hfi, htdata.get(), tfi, data, fieldModifier[i]);
-
-		/* copy associated mask, should there be one */
-		switch (hfi->type.id) {
-			case IPFIX_TYPEID_sourceIPv4Address:
-				tfi = ti->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
-
-				if(tfi) {
-					if(hfi->type.length != 5) {
-						DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
-					} else {
-						if(tfi->type.length == 1) {
-							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
-						} else {
-							DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
-						}
-					}
-				}
-				break;
-
-			case IPFIX_TYPEID_destinationIPv4Address:
-				tfi = ti->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
-
-				if(tfi) {
-					if(hfi->type.length != 5) {
-						DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
-					} else {
-						if(tfi->type.length == 1) {
-							*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
-						} else {
-							DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
-						}
-					}
-				}
-				break;
-
-			default:
-				break;
-		}
-	}
-
-	/* ...then buffer it */
-	bufferDataBlock(htdata);
-	atomic_release(&aggInProgress);
-}
-
 
 /**
  * Buffer passed flow (containing fixed-value fields) in Hashtable @c ht
  */
-void FlowHashtable::aggregateDataTemplateData(TemplateInfo* ti, IpfixRecord::Data* data)
+void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 {
 	DPRINTF("called");
+	
+	boost::shared_ptr<TemplateInfo> ti = record->templateInfo;
+	IpfixRecord::Data* data = record->data;
 
 	// the following lock should almost never fail (only during reconfiguration)
 	while (atomic_lock(&aggInProgress)) {
@@ -821,52 +743,56 @@ void FlowHashtable::aggregateDataTemplateData(TemplateInfo* ti, IpfixRecord::Dat
 			continue;
 		}
 
-		/* No matching variable field. Copy from matching fixed field, should it exist */
-		tfi = ti->getDataInfo(hfi->type);
-		if (tfi) {
-			fieldFilled = true;
-			copyData(hfi, htdata.get(), tfi, ti->data, fieldModifier[i]);
+		// If this is a Data Record, search in fixed value fields
+		if((ti->setId==TemplateInfo::IpfixDataTemplate) && (ti->dataCount > 0)) {
+			/* No matching variable field. Copy from matching fixed field, should it exist */
+			tfi = ti->getDataInfo(hfi->type);
+			if (tfi) {
+				fieldFilled = true;
+				copyData(hfi, htdata.get(), tfi, ti->data, fieldModifier[i]);
 
-			/* copy associated mask, should there be one */
-			switch (hfi->type.id) {
+				/* copy associated mask, should there be one */
+				switch (hfi->type.id) {
 
-				case IPFIX_TYPEID_sourceIPv4Address:
-					tfi = ti->getDataInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
-					if(tfi) {
-						if(hfi->type.length != 5) {
-							DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
-						} else {
-							if(tfi->type.length == 1) {
-								*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
+					case IPFIX_TYPEID_sourceIPv4Address:
+						tfi = ti->getDataInfo(IPFIX_TYPEID_sourceIPv4Mask, 0);
+						if(tfi) {
+							if(hfi->type.length != 5) {
+								DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 							} else {
-								DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+								if(tfi->type.length == 1) {
+									*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
+								} else {
+									DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+								}
 							}
 						}
-					}
-					break;
+						break;
 
-				case IPFIX_TYPEID_destinationIPv4Address:
-					tfi = ti->getDataInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
-					if(tfi) {
-						if(hfi->type.length != 5) {
-							DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
-						} else {
-							if (tfi->type.length == 1) {
-								*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
+					case IPFIX_TYPEID_destinationIPv4Address:
+						tfi = ti->getDataInfo(IPFIX_TYPEID_destinationIPv4Mask, 0);
+						if(tfi) {
+							if(hfi->type.length != 5) {
+								DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
 							} else {
-								DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+								if (tfi->type.length == 1) {
+									*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
+								} else {
+									DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+								}
 							}
 						}
-					}
-					break;
+						break;
 
-				default:
-					break;
+					default:
+						break;
+				}
+				continue;
 			}
-			continue;
 		}
 
 		if (!fieldFilled) {
+			DPRINTF("Flow to be buffered did not contain %s field\n", typeid2string(hfi->type.id));
 			// if field was not copied, fill it with 0
 			memset(htdata.get() + hfi->offset, 0, hfi->type.length);
 		}

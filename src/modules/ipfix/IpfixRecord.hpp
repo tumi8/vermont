@@ -46,7 +46,7 @@ namespace InformationElement {
 
 	IeLength getFieldLength(IeId id);
 	bool isBiflowField(const IeInfo& type);
-	IeInfo reverseType(const IeInfo& type);
+	IeId oppositeDirectionIeId(const IeInfo& type);
 	const Packet::IPProtocolType getValidProtocols(const IeInfo& type);
 }
 

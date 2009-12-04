@@ -96,21 +96,52 @@ namespace InformationElement {
 	}
 
 	/**
-	 * Returns IeInfo of reverse type.
-	 * TODO: According to the standard, reverse low IEs should use enterprise number 29305
+	 * Returns IE ID of opposite direction.
 	 * @param type Data Record field
-	 * @returns IeInfo of reverse type
+	 * @returns IeId of IE in opposite direction, or zero if does not exist
 	 */
-	IeInfo reverseType(const IeInfo& type)
+	IeId oppositeDirectionIeId(const IeInfo& type)
 	{
-	    IeInfo revType = type;
-	    if(type.id & 0x8000) {// TODO: and (type.enterprise == 29305)  
-		    revType.enterprise = 0;
-		    revType.id &= 0x7FFF;
-	    } else { // TODO: if (type.enterprise == 0)
-		    // revType.enterprise = 20305;
-		    revType.id |= 0x8000;
-	    }
+		if (type.enterprise == 0)
+			switch(type.id) {
+				case IPFIX_TYPEID_sourceIPv4Address:
+					return IPFIX_TYPEID_destinationIPv4Address;
+				case IPFIX_TYPEID_destinationIPv4Address:
+					return IPFIX_TYPEID_sourceIPv4Address;
+				case IPFIX_TYPEID_sourceIPv6Address:
+					return IPFIX_TYPEID_destinationIPv6Address;
+				case IPFIX_TYPEID_destinationIPv6Address:
+					return IPFIX_TYPEID_sourceIPv6Address;
+				case IPFIX_TYPEID_sourceIPv4Mask:
+					return IPFIX_TYPEID_destinationIPv4Mask;
+				case IPFIX_TYPEID_destinationIPv4Mask:
+					return IPFIX_TYPEID_sourceIPv4Mask;
+				case IPFIX_TYPEID_sourceIPv6Mask:
+					return IPFIX_TYPEID_destinationIPv6Mask;
+				case IPFIX_TYPEID_destinationIPv6Mask:
+					return IPFIX_TYPEID_sourceIPv6Mask;
+				case IPFIX_TYPEID_sourceIPv4Prefix:
+					return IPFIX_TYPEID_destinationIPv4Prefix;
+				case IPFIX_TYPEID_destinationIPv4Prefix:
+					return IPFIX_TYPEID_sourceIPv4Prefix;
+				//case IPFIX_TYPEID_sourceIPv6Prefix:
+				//	return IPFIX_TYPEID_destinationIPv6Prefix;
+				//case IPFIX_TYPEID_destinationIPv6Prefix:
+				//	return IPFIX_TYPEID_sourceIPv6Prefix;
+				case IPFIX_TYPEID_sourceTransportPort:
+					return IPFIX_TYPEID_destinationTransportPort;
+				case IPFIX_TYPEID_destinationTransportPort:
+					return IPFIX_TYPEID_sourceTransportPort;
+				case IPFIX_TYPEID_udpSourcePort:
+					return IPFIX_TYPEID_udpDestinationPort;
+				case IPFIX_TYPEID_udpDestinationPort:
+					return IPFIX_TYPEID_udpSourcePort;
+				case IPFIX_TYPEID_tcpSourcePort:
+					return IPFIX_TYPEID_tcpDestinationPort;
+				case IPFIX_TYPEID_tcpDestinationPort:
+					return IPFIX_TYPEID_tcpSourcePort;
+		}
+		return 0;
 	}
 
 	/**
