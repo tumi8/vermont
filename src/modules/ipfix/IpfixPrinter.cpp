@@ -548,7 +548,7 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 			printf("\n-+--- Ipfix Options Data Record (id=%u) from ", record->templateInfo->templateId);
 			break;
 		case TemplateInfo::IpfixDataTemplate:
-			printf("\n-+--- Ipfix Data Data Record (id=%u) from ", record->templateInfo->templateId);
+			printf("\n-+--- Ipfix Data Data Record (id=%u, preceding=%u) from ", record->templateInfo->templateId, record->templateInfo->preceding);
 			break;
 		default:
 			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%d", record->templateInfo->setId);
