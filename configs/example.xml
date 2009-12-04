@@ -57,6 +57,55 @@
 	
 	<ipfixAggregator id="4">
 		<rule>
+			<templateId>888</templateId>
+			<flowKey>
+				<ieName>sourceIPv4Address</ieName>
+				<match>131.159.20.0/24</match>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>protocolIdentifier</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>sourceTransportPort</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationTransportPort</ieName>
+			</flowKey>
+			<nonFlowKey>
+				<ieName>flowStartMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>flowEndMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>octetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>packetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>tcpControlBits</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revflowStartMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revflowEndMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revoctetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revpacketDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revtcpControlBits</ieName>
+			</nonFlowKey>
+		</rule>
+		<rule>
 			<templateId>999</templateId>
 			<biflowAggregation>1</biflowAggregation>
 			<flowKey>

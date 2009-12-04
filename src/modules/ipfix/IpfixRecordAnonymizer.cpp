@@ -10,7 +10,7 @@ void IpfixRecordAnonymizer::setCopyMode(bool mode)
 void IpfixRecordAnonymizer::onTemplate(IpfixTemplateRecord* record)
 {
 	//TODO: anonymize Data Templates
-	if((record->templateInfo->setId == TemplateInfo::IpfixDataRecord) && (record->templateInfo->dataCount != 0))
+	if((record->templateInfo->setId == TemplateInfo::IpfixDataTemplate) && (record->templateInfo->dataCount != 0))
 		msg(MSG_DEBUG, "IpfixRecordAnonymizer: Received Data Template, but anonymization of fixed value fields is not supported!");
 	send(record);
 }

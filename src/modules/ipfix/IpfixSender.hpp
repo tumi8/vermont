@@ -47,12 +47,6 @@ public:
 	void addCollector(const char *ip, uint16_t port, ipfix_transport_protocol proto);
 	void flushPacket();
 
-	// inherited from IpfixRecordDestination
-	virtual void onDataRecord(IpfixDataRecord* record) {
-		// FIXME: not sure how to deal with this
-		msg(MSG_DEBUG, "%s:%u Ignoring Template", __FILE__, __LINE__);
-	}
-	
 	virtual void onTemplate(IpfixTemplateRecord* record);
 	virtual void onTemplateDestruction(IpfixTemplateDestructionRecord* record);
 	virtual void onDataRecord(IpfixDataRecord* record);

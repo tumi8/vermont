@@ -73,16 +73,14 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 
 	dataTemplate.reset(new TemplateInfo);
 	dataTemplate->templateId = rule->id;
-	dataTemplate->setId = TemplateInfo::IpfixDataTemplate;
-	dataTemplate->preceding = rule->preceding;
-	dataTemplate->fieldCount = 0;
-	dataTemplate->fieldInfo = NULL;
+	// Let's first assume that this is a normal Template
+	if(rule->preceding != 0) {
+		dataTemplate->preceding = rule->preceding;
+		dataTemplate->setId = TemplateInfo::IpfixDataTemplate;
+	} else {
+		dataTemplate->setId = TemplateInfo::IpfixTemplate;
+	}
 	fieldLength = 0;
-	dataTemplate->dataCount = 0;
-	dataTemplate->dataInfo = NULL;
-	dataTemplate->data = NULL;
-	dataTemplate->dataLength = 0;
-	dataTemplate->userData = NULL;
 
 	fieldModifier = (Rule::Field::Modifier*) malloc(rule->fieldCount
 			* sizeof(Rule::Field::Modifier));
@@ -91,6 +89,8 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 		Rule::Field* rf = rule->field[i];
 
 		if (rf->pattern != NULL) {
+			// This is a Data Template
+			dataTemplate->setId = TemplateInfo::IpfixDataTemplate;
 			/* create new fixed-data field containing pattern */
 			dataTemplate->dataCount++;
 			dataTemplate->dataInfo = (TemplateInfo::FieldInfo*) realloc(dataTemplate->dataInfo,
@@ -215,9 +215,9 @@ HashtableBucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Da
 void BaseHashtable::exportBucket(HashtableBucket* bucket)
 {
 	/* Pass Data Record to exporter interface */
-	IpfixDataDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
+	IpfixDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
 	ipfixRecord->sourceID = sourceID;
-	ipfixRecord->dataTemplateInfo = dataTemplate;
+	ipfixRecord->templateInfo = dataTemplate;
 	ipfixRecord->dataLength = fieldLength;
 	ipfixRecord->message = bucket->data;
 	ipfixRecord->data = bucket->data.get();

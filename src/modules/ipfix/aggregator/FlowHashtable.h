@@ -14,8 +14,7 @@ public:
 			uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits);
 	virtual ~FlowHashtable();
 
-	void aggregateTemplateData(TemplateInfo* ti, IpfixRecord::Data* data);
-	void aggregateDataTemplateData(TemplateInfo* ti, IpfixRecord::Data* data);
+	void aggregateDataRecord(IpfixDataRecord* record);
 
 
 private:

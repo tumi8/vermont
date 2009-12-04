@@ -69,9 +69,8 @@ class Rule {
 		~Rule();
 		void initialize();
 		void print();
-		int templateDataMatches(TemplateInfo* info, IpfixRecord::Data* data);
 		bool ExptemplateDataMatches(const Packet* p);
-		int dataTemplateDataMatches(TemplateInfo* info, IpfixRecord::Data* data);
+		int dataRecordMatches(IpfixDataRecord* record);
 
 		uint16_t id;
 		uint16_t preceding;
