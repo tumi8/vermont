@@ -126,8 +126,10 @@ class IpfixRecord
  * Template description passed to the callback function when a new Template arrives.
  */
 class TemplateInfo {
+        friend class IpfixSender;
 	public:
 		typedef uint16_t TemplateId;
+
 		enum SetId {
 			UnknownSetId = -1,
 			NetflowTemplate = 0,
@@ -151,6 +153,8 @@ class TemplateInfo {
 		TemplateInfo(const TemplateInfo& t);
 		~TemplateInfo();
 
+		void setUniqueId();
+
 		FieldInfo* getFieldInfo(const InformationElement::IeInfo& type);
 		FieldInfo* getFieldInfo(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid);
 		int getFieldIndex(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid);
@@ -162,14 +166,12 @@ class TemplateInfo {
 		uint16_t fieldCount; 		/**< number of regular fields */
 		FieldInfo* fieldInfo; 		/**< array of FieldInfos describing each of these fields */
 		
-		void* userData; /**< pointer to a field that can be used by higher-level modules */
-
-		/**
-		 * if this template is to be destroyed because of module reconfiguration, this flag is set to true
-		 * it should be checked in every module which caches this structure and be destroyed in method
-		 * Module::preRegistration2()
-		 **/
-		bool destroyed;
+ 		/**
+ 		 * if this template is to be destroyed because of module reconfiguration, this flag is set to true
+ 		 * it should be checked in every module which caches this structure and be destroyed in method
+ 		 * Module::preRegistration2()
+ 		 **/
+ 		bool destroyed;
 		bool freePointers;  /** small helper variable to indicate if pointers should be freed on destruction */
 
 		// only used by Options Templates:
@@ -184,6 +186,24 @@ class TemplateInfo {
 		IpfixRecord::Data* data; /**< data start pointer for fixed-value fields */
 		bool anonymized; 		/** flag that indicates if fixed-value fields have been anonymized */
 
+	private:
+		Mutex mutex; /**< protect access to uniqueIdUseCount */
+
+		/* uniqueId:
+		 * - uniqueId>0 is a Vermont-wide unique identifier for a Template
+		 * - uniqueId==0 means that no uniqueId has been assigned to this TemplateInfo object, yet
+		 * - uniqueId is used by IpfixSender to recognize different Templates quickly (Template ID is
+		 *   not sufficient as it is not Vermont-wide unique)
+		 * - uniqueId remains unchanged if a TemplateInfo object is copied to change 
+		 *   field lengths in the case of variable length fields (for IpfixSender, it still is the same Template)
+		 */ 
+		uint16_t uniqueId;
+		/* uniqueIdUseCount:
+		 * - at position i of the vector, we store the number of TemplateInfo objects with uniqueId==(i+1)
+		 * - if a new uniqueId is to be assigned, we look for the smallest index i with uniqueIdUseCount[i]==0
+		 *   and assigne (i+1) as new uniqueId
+		 */ 
+		static std::vector<uint16_t> uniqueIdUseCount;
 };
 
 

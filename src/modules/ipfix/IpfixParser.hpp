@@ -54,6 +54,7 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		
 		virtual void performStart();
 		virtual void performShutdown();
+		virtual void preReconfiguration();
 		virtual void onReconfiguration1();
 		virtual void postReconfiguration();
 
@@ -157,6 +158,7 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
 		
 		void resendBufferedTemplates();
+		void withdrawBufferedTemplates();
 		void setTemplateDestroyed(bool destroyed);
 
 };

@@ -32,12 +32,10 @@
 using namespace std;
 
 /*
- we start OUR template IDs at <this>
- we need our own template IDs and they should be unique
+ * Valid Template Id range
  */
-#define SENDER_TEMPLATE_ID_LOW 10000
-/* go back to SENDER_TEMPLATE_ID_LOW if _HI is reached */
-#define SENDER_TEMPLATE_ID_HI 60000
+#define SENDER_TEMPLATE_ID_LOW 256
+#define SENDER_TEMPLATE_ID_HI 65535
 
 /**
  * Creates a new IPFIX Exporter. Do not forget to call @c startIpfixSender() to begin sending
@@ -59,7 +57,6 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, u
 	statSentDataRecords = 0;
 	statPacketsInFlows = 0;
 	currentTemplateId = 0;
-	lastTemplateId = SENDER_TEMPLATE_ID_LOW;
 
 	nextTimeout.tv_sec = 0;
 	nextTimeout.tv_nsec = 0;
@@ -67,7 +64,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, u
 	curTimeStep.tv_usec = 0;
 
 	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
+		msg(MSG_FATAL, "IpfixSender: ipfix_init_exporter failed");
 		goto out;
 	}
 
@@ -96,7 +93,6 @@ IpfixSender::IpfixSender(uint32_t observationDomainId)
 	statSentDataRecords = 0;
 	statPacketsInFlows = 0;
 	currentTemplateId = 0;
-	lastTemplateId = SENDER_TEMPLATE_ID_LOW;
 
 	nextTimeout.tv_sec = 0;
 	nextTimeout.tv_nsec = 0;
@@ -104,7 +100,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId)
 	curTimeStep.tv_usec = 0;
 
 	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_init_exporter failed");
+		msg(MSG_FATAL, "IpfixSender: ipfix_init_exporter failed");
 		goto out;
 	}
 
@@ -126,8 +122,7 @@ IpfixSender::~IpfixSender()
 {
 	shutdown(false);
 
-	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
-	ipfix_deinit_exporter(exporter);
+	ipfix_deinit_exporter(ipfixExporter);
 }
 
 /**
@@ -140,8 +135,6 @@ IpfixSender::~IpfixSender()
  */
 void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_protocol proto)
 {
-	ipfix_exporter *ex = (ipfix_exporter *)ipfixExporter;
-
 	switch(proto) {
 	    case UDP:
 	    	msg(MSG_INFO, "IpfixSender: adding UDP://%s:%d to exporter", ip, port);
@@ -161,7 +154,7 @@ void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_pr
 	    	break;
 	}
 
-	if(ipfix_add_collector(ex, ip, port, proto) != 0) {
+	if(ipfix_add_collector(ipfixExporter, ip, port, proto) != 0) {
 		msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%d failed", ip, port);
 		return;
 	}
@@ -169,41 +162,43 @@ void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_pr
 
 
 /**
- * looks in cached templates if given template is already registered there
- * @returns true if it was found
- */
-bool IpfixSender::isTemplateRegistered(TemplateInfo* ti)
-{
-	list<boost::shared_ptr<TemplateInfo> >::iterator iter = registeredTemplates.begin();
-	while (iter != registeredTemplates.end()) {
-		if (iter->get()->templateId == ti->templateId) return true;
-		iter++;
-	}
-	return false;
-}
-
-/**
  * removes given template from cached templates
- */
-void IpfixSender::removeRegisteredTemplate(TemplateInfo* ti)
+  */
+void IpfixSender::removeRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti)
 {
-	list<boost::shared_ptr<TemplateInfo> >::iterator iter = registeredTemplates.begin();
-	while (iter != registeredTemplates.end()) {
-		if (iter->get()->templateId == ti->templateId) {
-			registeredTemplates.erase(iter);
-			return;
-		}
-		iter++;
-	}
-	THROWEXCEPTION("template with ID %d not found", ti->templateId);
+       list<boost::shared_ptr<TemplateInfo> >::iterator iter = registeredTemplates.begin();
+       while (iter != registeredTemplates.end()) {
+               if (iter->get()->uniqueId == ti->uniqueId) {
+                       registeredTemplates.erase(iter);
+                       return;
+               }
+               iter++;
+       }
+       THROWEXCEPTION("template with ID %d not found", ti->templateId);
 }
-
+ 
 /**
  * adds given template to the list of cached templates
  */
 void IpfixSender::addRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti)
 {
-	registeredTemplates.push_back(ti);
+       registeredTemplates.push_back(ti);
+}
+
+
+/**
+ * Get a small, unused Template Id
+ * @returns unused Template Id or 0 if not available
+ */
+TemplateInfo::TemplateId IpfixSender::getUnusedTemplateId()
+{
+	TemplateInfo::TemplateId templateId = SENDER_TEMPLATE_ID_LOW;
+	while(templateIdToUniqueId.find(templateId) != templateIdToUniqueId.end()) {
+	    	templateId ++;
+		if (templateId > SENDER_TEMPLATE_ID_HI)
+			THROWEXCEPTION("IpfixSender: No unused Template Id available.");
+	}
+	return templateId;
 }
 
 /**
@@ -221,35 +216,50 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		return;
 	}
 
-	TemplateInfo::TemplateId my_template_id;
-	uint16_t my_preceding;
-	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
-
-
-	if (!exporter) {
-		THROWEXCEPTION("sndIpfix: Exporter not set");
+	if (!ipfixExporter) {
+		THROWEXCEPTION("IpfixSender: Exporter not set");
 	}
 
- 	if (isTemplateRegistered(dataTemplateInfo.get())) {
- 		// TODO: here we should check if both templates are the same, if they are, we do not need
- 		// to inform ipfixlolib about it
- 		// we just assume that templates using the same id are identical
- 	} else {
- 		addRegisteredTemplate(dataTemplateInfo);
- 	}
+	// check if this is a known template
+	if(uniqueIdToTemplateId.find(dataTemplateInfo->uniqueId) != uniqueIdToTemplateId.end()) {
+		msg(MSG_ERROR, "IpfixSender: Received known Template (id=%d) again, which should not happen.", dataTemplateInfo->templateId);
+		record->removeReference();
+		return;
+	}
 
-	/* get or assign template ID */
-	// FIXME: Move the dynamic template ID assignement to the Aggregator!
-	// As it is now, the dynamic template ID assignement does not work with copy mode Record Anonymization.
-	if(dataTemplateInfo->templateId)
-	    my_template_id = dataTemplateInfo->templateId;
-	else
-	    my_template_id = dataTemplateInfo->templateId = ++lastTemplateId;
+	/* get or assign Template ID */
+	TemplateInfo::TemplateId my_template_id = 0;
 
-	my_preceding = dataTemplateInfo->preceding;
-	if (lastTemplateId >= SENDER_TEMPLATE_ID_HI) {
-		/* FIXME: Does not always work, e.g. if more than 50000 new Templates per minute are created */
-		lastTemplateId = SENDER_TEMPLATE_ID_LOW;
+	// if the Template ID included in the Template is available, we adopt it
+	if(dataTemplateInfo->templateId) {
+		if(templateIdToUniqueId.find(dataTemplateInfo->templateId) == templateIdToUniqueId.end()) {
+			my_template_id = dataTemplateInfo->templateId;
+		} else {
+			msg(MSG_INFO, "IpfixSender: Template ID conflict, %d is already in use.", dataTemplateInfo->templateId);
+		}
+	}
+
+	// generate new Template ID if necessary
+	if(my_template_id == 0) {
+		my_template_id = getUnusedTemplateId();
+		msg(MSG_INFO, "IpfixSender: Use Template ID %d instead of %d.", my_template_id, dataTemplateInfo->templateId);
+	}
+
+	// Update maps
+	templateIdToUniqueId[my_template_id] = dataTemplateInfo->uniqueId; 
+	uniqueIdToTemplateId[dataTemplateInfo->uniqueId] = my_template_id;
+
+	//for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) msg(MSG_FATAL, "template id %d -> unique id %d", iter->first, iter->second);
+	//for(map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.begin(); iter != uniqueIdToTemplateId.end(); iter++) msg(MSG_FATAL, "unique id %d -> template id %d", iter->first, iter->second);
+
+	uint16_t my_preceding = 0;
+	// Translate preceding template id if possible
+	if(dataTemplateInfo->preceding) {
+		map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.find(dataTemplateInfo->preceding);
+		if(iter == templateIdToUniqueId.end())
+			msg(MSG_ERROR, "IpfixSender: Preceding Template (id=%d) not available, use zero instead", dataTemplateInfo->preceding);
+		else
+			my_preceding = uniqueIdToTemplateId[iter->second];
 	}
 
 	int i;
@@ -278,8 +288,8 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		}
 	}
 
-	if (0 != ipfix_start_datatemplate_set(exporter, my_template_id, my_preceding, dataTemplateInfo->fieldCount + splitFields, dataTemplateInfo->dataCount + splitFixedfields)) {
-		THROWEXCEPTION("sndIpfix: ipfix_start_datatemplate_set failed");
+	if (0 != ipfix_start_datatemplate_set(ipfixExporter, my_template_id, my_preceding, dataTemplateInfo->fieldCount + splitFields, dataTemplateInfo->dataCount + splitFixedfields)) {
+		THROWEXCEPTION("IpfixSender: ipfix_start_datatemplate_set failed");
 	}
 
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
@@ -287,15 +297,15 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 		/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
 		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
-			ipfix_put_template_field(exporter, my_template_id, IPFIX_TYPEID_sourceIPv4Address, 4, 0);
-			ipfix_put_template_field(exporter, my_template_id, IPFIX_TYPEID_sourceIPv4Mask, 1, 0);
+			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_sourceIPv4Address, 4, 0);
+			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_sourceIPv4Mask, 1, 0);
 		}
 		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
-			ipfix_put_template_field(exporter, my_template_id, IPFIX_TYPEID_destinationIPv4Address, 4, 0);
-			ipfix_put_template_field(exporter, my_template_id, IPFIX_TYPEID_destinationIPv4Mask, 1, 0);
+			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4Address, 4, 0);
+			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4Mask, 1, 0);
 		}
 		else {
-			ipfix_put_template_field(exporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
+			ipfix_put_template_field(ipfixExporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
 		}
 	}
 
@@ -309,15 +319,15 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 		/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
 		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
-			ipfix_put_template_fixedfield(exporter, my_template_id, IPFIX_TYPEID_sourceIPv4Address, 4, 0);
-			ipfix_put_template_fixedfield(exporter, my_template_id, IPFIX_TYPEID_sourceIPv4Mask, 1, 0);
+			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_sourceIPv4Address, 4, 0);
+			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_sourceIPv4Mask, 1, 0);
 		}
 		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
-			ipfix_put_template_fixedfield(exporter, my_template_id, IPFIX_TYPEID_destinationIPv4Address, 4, 0);
-			ipfix_put_template_fixedfield(exporter, my_template_id, IPFIX_TYPEID_destinationIPv4Mask, 1, 0);
+			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4Address, 4, 0);
+			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4Mask, 1, 0);
 		}
 		else {
-			ipfix_put_template_fixedfield(exporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
+			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
 		}
 	}
 
@@ -343,19 +353,22 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 	}
 
-	if (0 != ipfix_put_template_data(exporter, my_template_id, data, dataLength)) {
+	if (0 != ipfix_put_template_data(ipfixExporter, my_template_id, data, dataLength)) {
 		free(data);
-		THROWEXCEPTION("sndIpfix: ipfix_put_template_data failed");
+		THROWEXCEPTION("IpfixSender: ipfix_put_template_data failed");
 	}
 	free(data);
 
-	if (0 != ipfix_end_template_set(exporter, my_template_id)) {
-		THROWEXCEPTION("sndIpfix: ipfix_end_template_set failed");
+	if (0 != ipfix_end_template_set(ipfixExporter, my_template_id)) {
+		THROWEXCEPTION("IpfixSender: ipfix_end_template_set failed");
 	}
 
-	msg(MSG_INFO, "sndIpfix created template with ID %u", my_template_id);
+	msg(MSG_INFO, "IpfixSender: created template with ID %u", my_template_id);
 
 	sendRecords();
+
+	// register Template 
+	addRegisteredTemplate(dataTemplateInfo);
 
 	record->removeReference();
 }
@@ -366,37 +379,51 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
  */
 void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
+	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 	// TODO: Implement Options Template handling
-	if ((record->templateInfo->setId != TemplateInfo::IpfixTemplate) && (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate))
+	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
 	{
-		msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", record->templateInfo->setId);
+		msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", dataTemplateInfo->setId);
 		record->removeReference();
 		return;
 	}
 
-	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
-
-	if (!exporter) {
-		THROWEXCEPTION("exporter not set");
+	if (!ipfixExporter) {
+		THROWEXCEPTION("ipfixExporter not set");
 	}
 
-	removeRegisteredTemplate(record->templateInfo.get());
+	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->uniqueId);
+	if(iter == templateIdToUniqueId.end()) {
+		msg(MSG_ERROR, "IpfixSender: Template (id=%d) to be destroyed does not exist.", dataTemplateInfo->templateId);
+		record->removeReference();
+		return;
+	}
 
-	TemplateInfo::TemplateId my_template_id = record->templateInfo->templateId;
+	TemplateInfo::TemplateId my_template_id = iter->second;
 
+	// remove from maps
+	uniqueIdToTemplateId.erase(iter);
+	templateIdToUniqueId.erase(my_template_id);
+
+	// send remaining records first
+	sendRecords();
 
 	/* Remove template from ipfixlolib */
-	if (0 != ipfix_remove_template_set(exporter, my_template_id)) {
-		msg(MSG_FATAL, "sndIpfix: ipfix_remove_template_set failed");
+	if (0 != ipfix_remove_template_set(ipfixExporter, my_template_id)) {
+		msg(MSG_FATAL, "IpfixSender: ipfix_remove_template_set failed");
 	}
 	else
 	{
-		msg(MSG_INFO, "sndIpfix removed template with ID %u", my_template_id);
+		msg(MSG_INFO, "IpfixSender: removed template with ID %u", my_template_id);
 	}
 
-	free(record->templateInfo->userData);
+	// enforce sending the withdrawal message
+	if (ipfix_send(ipfixExporter) != 0) {
+		THROWEXCEPTION("IpfixSender: ipfix_send failed");
+	}
 
-	sendRecords();
+	// unregister Template 
+	removeRegisteredTemplate(dataTemplateInfo);
 
 	record->removeReference();
 }
@@ -410,7 +437,6 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
  */
 void IpfixSender::startDataSet(TemplateInfo::TemplateId templateId)
 {
-	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	uint16_t my_n_template_id = htons(templateId);
 
 	/* check if we can use the current Data Set */
@@ -421,8 +447,8 @@ void IpfixSender::startDataSet(TemplateInfo::TemplateId templateId)
 	if(noCachedRecords > 0)
 		endAndSendDataSet();
 
-	if (ipfix_start_data_set(exporter, my_n_template_id) != 0 ) {
-		THROWEXCEPTION("sndIpfix: ipfix_start_data_set failed!");
+	if (ipfix_start_data_set(ipfixExporter, my_n_template_id) != 0 ) {
+		THROWEXCEPTION("IpfixSender: ipfix_start_data_set failed!");
 	}
 
 	currentTemplateId = templateId;
@@ -436,10 +462,8 @@ void IpfixSender::startDataSet(TemplateInfo::TemplateId templateId)
 void IpfixSender::endAndSendDataSet()
 {
 	if(noCachedRecords > 0) {
-		ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
-
-		if (ipfix_end_data_set(exporter, noCachedRecords) != 0) {
-			THROWEXCEPTION("sndIpfix: ipfix_end_data_set failed");
+		if (ipfix_end_data_set(ipfixExporter, noCachedRecords) != 0) {
+			THROWEXCEPTION("IpfixSender: ipfix_end_data_set failed");
 		}
 
 		// determine if we need to wait (we don't want to exceed the defined packet rate per second)
@@ -457,8 +481,8 @@ void IpfixSender::endAndSendDataSet()
 			recordsSentStep = 0;
 		}
 
-		if (ipfix_send(exporter) != 0) {
-			THROWEXCEPTION("sndIpfix: ipfix_send failed");
+		if (ipfix_send(ipfixExporter) != 0) {
+			THROWEXCEPTION("IpfixSender: ipfix_send failed");
 		}
 
 		removeRecordReferences();
@@ -497,10 +521,9 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 	}
 
 	IpfixRecord::Data* data = record->data;
-	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 
-	if (!exporter) {
-		THROWEXCEPTION("exporter not set");
+	if (!ipfixExporter) {
+		THROWEXCEPTION("ipfixExporter not set");
 	}
 
 	startDataSet(dataTemplateInfo->templateId);
@@ -513,14 +536,14 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
 			uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
 			*mask = 32 - *(uint8_t*)(data + fi->offset + 4);
-			ipfix_put_data_field(exporter, data + fi->offset, 4);
-			ipfix_put_data_field(exporter, mask, 1);
+			ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
+			ipfix_put_data_field(ipfixExporter, mask, 1);
 		}
 		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
 			uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
 			*mask = 32 - *(uint8_t*)(data + fi->offset + 4);
-			ipfix_put_data_field(exporter, data + fi->offset, 4);
-			ipfix_put_data_field(exporter, mask, 1);
+			ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
+			ipfix_put_data_field(ipfixExporter, mask, 1);
 		}
 		else {
 			if (fi->type.id == IPFIX_TYPEID_packetDeltaCount && fi->type.length<=8) {
@@ -528,7 +551,7 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 				memcpy(&p, data+fi->offset, fi->type.length);
 				statPacketsInFlows += ntohll(p);
 			}
-			ipfix_put_data_field(exporter, data + fi->offset, fi->type.length);
+			ipfix_put_data_field(ipfixExporter, data + fi->offset, fi->type.length);
 		}
 	}
 
@@ -549,29 +572,37 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
  */
 void IpfixSender::onReconfiguration2()
 {
-	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
+       if (!ipfixExporter) {
+               THROWEXCEPTION("ipfixExporter not set");
+       }
 
-	if (!exporter) {
-		THROWEXCEPTION("exporter not set");
-	}
-
-	list<boost::shared_ptr<TemplateInfo> >::iterator iter = registeredTemplates.begin();
-	while (iter != registeredTemplates.end()) {
+       list<boost::shared_ptr<TemplateInfo> >::iterator iter = registeredTemplates.begin();
+       while (iter != registeredTemplates.end()) {
 		if (iter->get()->destroyed) {
-			TemplateInfo::TemplateId id = iter->get()->templateId;
+			
+			map<uint16_t, TemplateInfo::TemplateId>::iterator iter2 = uniqueIdToTemplateId.find(iter->get()->uniqueId);
+			if(iter2 == uniqueIdToTemplateId.end()) {
+				THROWEXCEPTION("IpfixSender: corrupt uniqueIdToTemplate");
+			}
+
+			TemplateInfo::TemplateId id = iter2->second;
 
 			// Remove template from ipfixlolib
-			if (0 != ipfix_remove_template_set(exporter, id)) {
-				msg(MSG_FATAL, "sndIpfix: ipfix_remove_template_set failed");
+			if (0 != ipfix_remove_template_set(ipfixExporter, id)) {
+				msg(MSG_FATAL, "IpfixSender: ipfix_remove_template_set failed");
 			} else {
-				msg(MSG_INFO, "sndIpfix removed template with ID %u", id);
+				msg(MSG_INFO, "IpfixSender: removed template with ID %u", id);
 			}
+
+			// remove from maps
+			uniqueIdToTemplateId.erase(iter2);
+			templateIdToUniqueId.erase(id);
 
 			iter = registeredTemplates.erase(iter);
 		} else {
 			iter++;
 		}
-	}
+       }
 }
 
 
@@ -643,7 +674,25 @@ void IpfixSender::registerTimeout()
  */
 void IpfixSender::performShutdown()
 {
+	// send remaining records first
 	sendRecords(true);
+
+	// Destroy Templates
+	for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) {
+		/* Remove template from ipfixlolib */
+		if (0 != ipfix_remove_template_set(ipfixExporter, iter->first)) {
+			msg(MSG_FATAL, "IpfixSender: ipfix_remove_template_set failed");
+		}
+		else
+		{
+			msg(MSG_INFO, "IpfixSender: removed template with ID %u", iter->first);
+		}
+	}
+	
+	// enforce sending the withdrawal message
+	if (ipfix_send(ipfixExporter) != 0) {
+		THROWEXCEPTION("IpfixSender: ipfix_send failed");
+	}
 }
 
 /**
@@ -661,3 +710,4 @@ string IpfixSender::getStatisticsXML(double interval)
 			statSentDataRecords, statSentPackets, statPacketsInFlows);
 	return buf;
 }
+

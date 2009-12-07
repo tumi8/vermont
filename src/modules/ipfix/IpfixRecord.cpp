@@ -202,12 +202,15 @@ namespace InformationElement {
 
 
 /* Methods  of TemplateInfo class */
+std::vector<uint16_t> TemplateInfo::uniqueIdUseCount(64,0);   // initialize with 64 Ids
 
 TemplateInfo::TemplateInfo() : templateId(0), setId(UnknownSetId), fieldCount(0), fieldInfo(NULL), 
-	userData(NULL), destroyed(false), freePointers(true), 
+        destroyed(false), freePointers(true),
 	scopeCount(0), scopeInfo(NULL), dataCount(0), dataInfo(NULL), preceding(0), dataLength(0), data(NULL), 
-	anonymized(false) 
-	{}
+	anonymized(false), uniqueId(0)
+{
+        setUniqueId();
+}
 
 TemplateInfo::TemplateInfo(const TemplateInfo& t)
 {
@@ -219,7 +222,6 @@ TemplateInfo::TemplateInfo(const TemplateInfo& t)
 	fieldInfo = (FieldInfo*)malloc(fieldCount*sizeof(FieldInfo));
 	memcpy(fieldInfo, t.fieldInfo, fieldCount*sizeof(FieldInfo));
 
-	userData = t.userData;
 	destroyed = t.destroyed;
 	freePointers = t.freePointers;
 
@@ -237,6 +239,17 @@ TemplateInfo::TemplateInfo(const TemplateInfo& t)
 	data = (IpfixRecord::Data*)malloc(dataLength*sizeof(IpfixRecord::Data));
 	memcpy(data, t.data, dataLength*sizeof(IpfixRecord::Data));
 	anonymized = t.anonymized;
+
+	// copy uniqueId (a new uniqueId can be assigned with setUniqueId() if needed)
+	uniqueId = t.uniqueId;
+	// increase reference count in uniqueIdUseCount
+	mutex.lock();
+	if((uniqueId == 0) || (uniqueId>uniqueIdUseCount.size()) || (uniqueIdUseCount[uniqueId-1]==0))
+		THROWEXCEPTION("TemplateInfo copy constructor: uniqueIdUseCount is corrupt, this should never happen!");
+	if(uniqueIdUseCount[uniqueId-1]==65535)
+		THROWEXCEPTION("TemplateInfo: uniqueIdUseCount uint16_t overflow!");
+	uniqueIdUseCount[uniqueId-1]++;
+	mutex.unlock();
 }
 
 TemplateInfo::~TemplateInfo() {
@@ -248,6 +261,43 @@ TemplateInfo::~TemplateInfo() {
 		free(data);
 		freePointers = false;
 	}
+	// decrease reference count in uniqueIdUseCount
+	mutex.lock();
+	if((uniqueId == 0) || (uniqueId>uniqueIdUseCount.size()) || (uniqueIdUseCount[uniqueId-1]==0))
+		THROWEXCEPTION("TemplateInfo destructor: uniqueIdUseCount is corrupt, this should never happen!");
+	uniqueIdUseCount[uniqueId-1]--;
+	mutex.unlock();
+}
+
+void TemplateInfo::setUniqueId() {
+	mutex.lock();
+	uint16_t oldId = uniqueId;
+	uint16_t oldSize = uniqueIdUseCount.size();
+
+	uniqueId = 0;
+	for(int i=0; i < oldSize; i++) {
+		if(uniqueIdUseCount[i] == 0) {
+			uniqueIdUseCount[i] = 1;
+			uniqueId = i+1; // the id is i+1
+			break;
+		}
+	}
+	// if new element was zero, we need to add a new element to uniqueIdUseCount
+	if(uniqueId == 0) {
+		if(oldSize == 65535)
+			THROWEXCEPTION("TemplateInfo: more than 65353 uniqueIds needed");
+		msg(MSG_VDEBUG, "TemplateInfo: need to increase number of uniqueIds");
+		uniqueIdUseCount.push_back(1);
+		uniqueId = oldSize + 1;
+	}
+
+	// release old uniqueId if set
+	if(oldId != 0) {
+		if((oldId >= oldSize) || (uniqueIdUseCount[oldId-1]==0))
+			THROWEXCEPTION("TemplateInfo setUniqueId: uniqueIdUseCount is corrupt, this should never happen!");
+		uniqueIdUseCount[oldId-1]--;
+	}
+	mutex.unlock();
 }
 
 /**

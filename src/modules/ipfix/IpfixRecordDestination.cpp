@@ -73,7 +73,6 @@ void IpfixRecordDestination::onDataRecord(IpfixDataRecord* record)
 
 /**
  * Callback function invoked when a Template is being destroyed.
- * Particularly useful for cleaning up userData associated with this Template
  * @param sourceID SourceID of the exporter that sent this Template
  * @param templateInfo Pointer to a structure defining this Template
  */

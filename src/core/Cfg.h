@@ -344,7 +344,8 @@ public:
 		}
 
 		// call postReconfiguration(), e.g. to tell the module to resend its template
-		this->postReconfiguration();
+		//Gerhard: postReconfiguration() is now called in ReConnect::connect()
+		//this->postReconfiguration(); 
 
 		// check if we need a splitter
 		if (this->getNext().size() > 1) {

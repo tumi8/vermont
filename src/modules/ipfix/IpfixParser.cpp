@@ -83,7 +83,6 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		bt->sourceID = sourceId;
 		bt->recordLength = 0;
 		bt->templateInfo = ti;
-		ti->userData = 0;
 		ti->templateId = ntohs(th->templateId);
 		ti->setId = setId;
 		ti->fieldCount = ntohs(th->fieldCount);
@@ -179,7 +178,6 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 		bt->sourceID = sourceId;
 		bt->recordLength = 0;
 		bt->templateInfo = ti;
-		ti->userData = 0;
 		ti->templateId = ntohs(oth->templateId);
 		ti->setId = setId;
 		ti->scopeCount = ntohs(oth->scopeCount);
@@ -308,7 +306,6 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		bt->sourceID = sourceId;
 		bt->recordLength = 0;
 		bt->templateInfo = ti;
-		ti->userData = 0;
 		ti->templateId = ntohs(dth->templateId);
 		ti->setId = TemplateInfo::IpfixDataTemplate;
 		ti->preceding = ntohs(dth->precedingRule);
@@ -813,8 +810,14 @@ void IpfixParser::performShutdown()
 {
 }
 
+void IpfixParser::preReconfiguration()
+{
+	withdrawBufferedTemplates();
+}
+
 void IpfixParser::onReconfiguration1()
 {
+	// this tells modules which do not receive destruction record that the template should not be used any more
 	setTemplateDestroyed(true);
 }
 
@@ -836,6 +839,23 @@ void IpfixParser::resendBufferedTemplates()
 		
 	while (bt) {	
 		IpfixTemplateRecord* ipfixRecord = templateRecordIM.getNewInstance();
+		ipfixRecord->sourceID = bt->sourceID;
+		ipfixRecord->templateInfo = bt->templateInfo;
+		push(ipfixRecord);
+		
+		bt = bt->next;
+	}
+}
+
+/**
+ * withdraws all buffered templates
+ */
+void IpfixParser::withdrawBufferedTemplates()
+{
+	TemplateBuffer::BufferedTemplate* bt = templateBuffer->getFirstBufferedTemplate();
+		
+	while (bt) {	
+		IpfixTemplateDestructionRecord* ipfixRecord = templateDestructionRecordIM.getNewInstance();
 		ipfixRecord->sourceID = bt->sourceID;
 		ipfixRecord->templateInfo = bt->templateInfo;
 		push(ipfixRecord);
