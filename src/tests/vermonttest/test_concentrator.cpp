@@ -79,7 +79,6 @@ boost::shared_ptr<TemplateInfo> createTestTemplate(uint8_t magic_number) {
 		testTemplate->fieldInfo[0].type.length = 1;
 		testTemplate->fieldInfo[0].type.enterprise = 0;
 		testTemplate->fieldInfo[0].offset = 0;
-		testTemplate->userData = 0;
 
 		return testTemplate;
 }
@@ -102,7 +101,6 @@ boost::shared_ptr<TemplateInfo> createTestDataTemplate(uint8_t magic_number) {
 		testTemplate->dataInfo[0].type.length = 1;
 		testTemplate->dataInfo[0].type.enterprise = 0;
 		testTemplate->dataInfo[0].offset = 0;
-		testTemplate->userData = 0;
 
 		return testTemplate;
 }

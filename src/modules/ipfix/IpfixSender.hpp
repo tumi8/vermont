@@ -27,6 +27,8 @@
 #include "common/ConcurrentQueue.h"
 #include "core/Notifiable.h"
 #include <queue>
+#include <map>
+
 
 
 using namespace std;
@@ -52,17 +54,16 @@ public:
 	virtual void onDataRecord(IpfixDataRecord* record);
 
 	virtual void onReconfiguration1();
+	virtual void onReconfiguration2();
 	
 	// inherited from Notifiable
 	virtual void onTimeout(void* dataPtr);
 
 
-	virtual void onReconfiguration2();
 	virtual string getStatisticsXML(double interval);
 	
 protected:
 	ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */
-	uint16_t lastTemplateId; /**< Template ID of last created Template */
 	uint32_t statSentDataRecords; /**< Statistics: Total number of data records sent since last statistics were polled */
 	uint32_t statSentPackets; /**< Statistics: total number of packets sent over the network */
 	uint32_t statPacketsInFlows; /**< Statistics: total number of packets within flows */
@@ -80,19 +81,29 @@ protected:
 	void endAndSendDataSet();
 
 	void startDataSet(uint16_t templateId);
-	bool isTemplateRegistered(TemplateInfo* ti);
-	void removeRegisteredTemplate(TemplateInfo* ti);
-	void addRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti);
 	void sendRecords(bool forcesend = false);
 	void registerTimeout();
 
 
 private:
 
+        void removeRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti);
+        void addRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti);
+
+	// Set up time after that Templates are going to be resent
+	bool setTemplateTransmissionTimer(uint32_t timer){
+		ipfix_set_template_transmission_timer(ipfixExporter, timer);
+		
+		return true;
+	}
+
+	TemplateInfo::TemplateId getUnusedTemplateId();
+
 	uint16_t ringbufferPos; /**< Pointer to next free slot in @c conversionRingbuffer. */
 	uint8_t conversionRingbuffer[65536]; /**< Ringbuffer used to store converted imasks between @c ipfix_put_data_field() and @c ipfix_send() */
 	uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
 	uint16_t noCachedRecords; /**< number of records already passed to ipfixlob, should be equal to recordsToRelease.size() */
+
 	list<boost::shared_ptr<TemplateInfo> > registeredTemplates; /**< contains all templates which were already registered in ipfixlolib */
 	
 	uint16_t recordCacheTimeout; /**< how long may records be cached until sent, milliseconds */
@@ -102,12 +113,8 @@ private:
 	uint32_t recordsSentStep; /**< number of records sent in timestep (usually 100ms)*/
 	uint32_t maxRecordRate;  /** maximum number of records per seconds to be sent over the wire */
 
-	// Set up time after that Templates are going to be resent
-	bool setTemplateTransmissionTimer(uint32_t timer){
-		ipfix_set_template_transmission_timer(ipfixExporter, timer);
-		
-		return true;
-	}
+	std::map<TemplateInfo::TemplateId, uint16_t> templateIdToUniqueId; /**< stores uniqueId for a give Template ID */
+	std::map<uint16_t, TemplateInfo::TemplateId> uniqueIdToTemplateId; /**< stores Template ID for a give unique ID */
 
 };
 

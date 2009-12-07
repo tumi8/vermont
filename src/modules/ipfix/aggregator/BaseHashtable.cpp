@@ -27,9 +27,9 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  sourceID(new IpfixRecord::SourceID),
 	  dataDataRecordIM("IpfixDataDataRecord", 0),
 	  dataTemplateRecordIM("IpfixDataTemplateRecord", 0),
+	  templateDestructionRecordIM("IpfixTemplateDestructionRecord", 0),
 	  hbucketIM("BucketListElement", 0),
-	  aggInProgress(false),
-	  resendTemplate(true)
+	  aggInProgress(false)
 {
 	msg(MSG_INFO, "Hashtable initialized with following parameters:");
 	msg(MSG_INFO, "  - minBufferTime=%d", minBufferTime);
@@ -255,11 +255,6 @@ void BaseHashtable::expireFlows(bool all)
 	HashtableBucket* bucket = 0;
 	BucketListElement* node = 0;
 
-	if (resendTemplate) {
-		sendDataTemplate();
-		resendTemplate = false;
-	}
-
 	if (!exportList.isEmpty) {
 		while (exportList.head) { //check the first entry in the BucketList
 			node = exportList.head;
@@ -385,6 +380,17 @@ void BaseHashtable::sendDataTemplate()
 }
 
 /**
+ * sends template withdrawal
+ */
+void BaseHashtable::sendTemplateDestructionRecord()
+{
+	IpfixTemplateDestructionRecord* ipfixRecord = templateDestructionRecordIM.getNewInstance();
+	ipfixRecord->sourceID.reset();
+	ipfixRecord->templateInfo = dataTemplate;
+	recordSource->send(ipfixRecord);
+}
+
+/**
  * sends the generated template to all following modules
  */
 void BaseHashtable::performStart()
@@ -397,14 +403,16 @@ void BaseHashtable::performStart()
  */
 void BaseHashtable::performShutdown()
 {
-	// this tells all modules that the template should not be used any more
+	sendTemplateDestructionRecord();
+	// this tells modules which do not receive destruction record that the template should not be used any more
 	dataTemplate.get()->destroyed = true;
 }
 
 void BaseHashtable::preReconfiguration()
 {
-	msg(MSG_INFO, "forcing export for flows");
+	msg(MSG_INFO, "BaseHashtable: Forcing export for flows, then destroy Template.");
 	expireFlows(true);
+	//sendTemplateDestructionRecord();
 }
 
 /**
@@ -412,7 +420,7 @@ void BaseHashtable::preReconfiguration()
  */
 void BaseHashtable::onReconfiguration1()
 {
-	// this tells all modules that the template should not be used any more
+	// this tells modules which do not receive destruction record that the template should not be used any more
 	dataTemplate.get()->destroyed = true;
 }
 
@@ -424,6 +432,7 @@ void BaseHashtable::postReconfiguration()
 	// "de-invalidates" the template again, as this module is still working with the same template
 	// after reconfiguration (else this function would not be called)
 	dataTemplate.get()->destroyed = false;
+	sendDataTemplate();
 }
 
 std::string BaseHashtable::getStatisticsXML(double interval)

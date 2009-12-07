@@ -98,11 +98,10 @@ protected:
 
 	InstanceManager<IpfixDataRecord> dataDataRecordIM;
 	InstanceManager<IpfixTemplateRecord> dataTemplateRecordIM;
+	InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
 	InstanceManager<BucketListElement> hbucketIM;
 
 	alock_t aggInProgress; /** indicates if currently an element is aggregated in the hashtable, used for atomic lock for preReconfiguration */
-
-	bool resendTemplate; /**< set to true if template needs to be sent again */
 
 	int isToBeAggregated(const InformationElement::IeInfo& type);
 	HashtableBucket* createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid,
@@ -111,6 +110,7 @@ protected:
 	void destroyBucket(HashtableBucket* bucket);
 	void createDataTemplate(Rule* rule);
 	void sendDataTemplate();
+	void sendTemplateDestructionRecord();
 	uint32_t getPrivateDataLength(const InformationElement::IeInfo& type);
 
 };

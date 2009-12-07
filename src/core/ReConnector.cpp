@@ -59,5 +59,11 @@ Graph* ReConnector::connect(Graph* g)
 	Connector con(false, true);
 	newGraph->accept(&con);
 
+	// Gerhard: call postReconfiguration here and not in Cfg::connectInstances
+	/* call postConfiguration on all modules */
+	for (size_t i = 0; i < topoNew.size(); i++) {
+		topoNew[i]->getCfg()->postReconfiguration();
+	}
+
 	return newGraph;
 }
