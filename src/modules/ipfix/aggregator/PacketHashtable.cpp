@@ -384,7 +384,7 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(InformationElement::IeId id, c
 			if(p->ipProtocolType == Packet::ICMP) {
 				return p->transportHeader + 0 - p->netHeader;
 			} else {
-				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", field.id, p->ipProtocolType, Packet::UDP, Packet::TCP);
+				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", id, p->ipProtocolType, Packet::UDP, Packet::TCP);
 
 			}
 			break;
@@ -393,7 +393,7 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(InformationElement::IeId id, c
 			if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
 				return p->transportHeader + 0 - p->netHeader;
 			} else {
-				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", field.id, p->ipProtocolType, Packet::UDP, Packet::TCP);
+				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", id, p->ipProtocolType, Packet::UDP, Packet::TCP);
 			}
 			break;
 
@@ -401,7 +401,7 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(InformationElement::IeId id, c
 			if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
 				return p->transportHeader + 2 - p->netHeader;
 			} else {
-				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", field.id, p->ipProtocolType, Packet::UDP, Packet::TCP);
+				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", id, p->ipProtocolType, Packet::UDP, Packet::TCP);
 			}
 			break;
 
@@ -409,7 +409,7 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(InformationElement::IeId id, c
 			if(p->ipProtocolType == Packet::TCP) {
 				return p->transportHeader + 13 - p->netHeader;
 			} else {
-				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d", field.id, p->ipProtocolType, Packet::TCP);
+				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d", id, p->ipProtocolType, Packet::TCP);
 			}
 			break;
 		default:

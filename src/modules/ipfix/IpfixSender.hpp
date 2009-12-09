@@ -25,6 +25,7 @@
 #include "IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "common/ConcurrentQueue.h"
+#include "common/Mutex.h"
 #include "core/Notifiable.h"
 #include <queue>
 #include <map>
@@ -64,31 +65,24 @@ public:
 	
 protected:
 	ipfix_exporter* ipfixExporter; /**< underlying ipfix_exporter structure. */
-	uint32_t statSentDataRecords; /**< Statistics: Total number of data records sent since last statistics were polled */
-	uint32_t statSentPackets; /**< Statistics: total number of packets sent over the network */
-	uint32_t statPacketsInFlows; /**< Statistics: total number of packets within flows */
-		
-	void performShutdown(); 
-	uint32_t sentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
-
-	timespec nextTimeout;
-
-	queue<IpfixRecord*> recordsToRelease;
-
-	static void* threadWrapper(void* instance);
-	void processLoop();
-	void removeRecordReferences();
-	void endAndSendDataSet();
-
-	void startDataSet(uint16_t templateId);
-	void sendRecords(bool forcesend = false);
-	void registerTimeout();
 
 
 private:
+	enum SendPolicy {
+		IfFull,
+		IfNotEmpty,
+		Always
+	};
+	void performShutdown(); 
+	static void* threadWrapper(void* instance);
+	void processLoop();
+	void startDataSet(uint16_t templateId);
+	void endAndSendDataSet();
+	void sendRecords(SendPolicy policy = IfFull);
+	void removeRecordReferences();
+	void registerTimeout();
 
-        void removeRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti);
-        void addRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti);
+	TemplateInfo::TemplateId getUnusedTemplateId();
 
 	// Set up time after that Templates are going to be resent
 	bool setTemplateTransmissionTimer(uint32_t timer){
@@ -97,22 +91,32 @@ private:
 		return true;
 	}
 
-	TemplateInfo::TemplateId getUnusedTemplateId();
+	uint32_t statSentDataRecords; /**< Statistics: Total number of data records sent since last statistics were polled */
+	uint32_t statSentPackets; /**< Statistics: total number of packets sent over the network */
+	uint32_t statPacketsInFlows; /**< Statistics: total number of packets within flows */
+		
+	uint32_t sentRecords; /**< Statistics: Total number of records sent since last statistics were polled */
+
+	timespec nextTimeout;
+
+	Mutex ipfixMessageLock;
+
+	// send after timeout parameters
+	queue<IpfixRecord*> recordsToRelease;
+	uint16_t noCachedRecords; /**< number of records already passed to ipfixlob, should be equal to recordsToRelease.size() */
+	uint16_t recordCacheTimeout; /**< how long may records be cached until sent, milliseconds */
+	bool timeoutRegistered; /**< true if next timeout was already registered in timer */
+	uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
 
 	uint16_t ringbufferPos; /**< Pointer to next free slot in @c conversionRingbuffer. */
 	uint8_t conversionRingbuffer[65536]; /**< Ringbuffer used to store converted imasks between @c ipfix_put_data_field() and @c ipfix_send() */
-	uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
-	uint16_t noCachedRecords; /**< number of records already passed to ipfixlob, should be equal to recordsToRelease.size() */
 
-	list<boost::shared_ptr<TemplateInfo> > registeredTemplates; /**< contains all templates which were already registered in ipfixlolib */
-	
-	uint16_t recordCacheTimeout; /**< how long may records be cached until sent, milliseconds */
-	bool timeoutRegistered; /**< true if next timeout was already registered in timer */
-	bool recordsAlreadySent; /**< true if records were sent to the network as the packet was full */
+	// rate limiting paramemters 
 	struct timeval curTimeStep; /**< current time used for determining packet rate */
 	uint32_t recordsSentStep; /**< number of records sent in timestep (usually 100ms)*/
 	uint32_t maxRecordRate;  /** maximum number of records per seconds to be sent over the wire */
 
+	// mapping of uniqueId to templateId and vice versa
 	std::map<TemplateInfo::TemplateId, uint16_t> templateIdToUniqueId; /**< stores uniqueId for a give Template ID */
 	std::map<uint16_t, TemplateInfo::TemplateId> uniqueIdToTemplateId; /**< stores Template ID for a give unique ID */
 

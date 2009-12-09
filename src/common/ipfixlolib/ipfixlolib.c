@@ -1188,10 +1188,11 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 #ifdef SUPPORT_SCTP
 				switch (exporter->collector_arr[i].state) {
 
-					case C_NEW: // try to connect to the new collector once per second
-					if (time_now > exporter->collector_arr[i].last_reconnect_attempt_time) {
+					case C_NEW: // try to connect to the new collector 
+					// once per second is not useful here, new collectors must be connected quickly
+					//if (time_now > exporter->collector_arr[i].last_reconnect_attempt_time) {
 						ipfix_sctp_reconnect(exporter, i);
-					}
+					//}
 					break;
 					case C_DISCONNECTED: //reconnect attempt if reconnection time reached
 					if(exporter->sctp_reconnect_timer == 0) { // 0 = no more reconnection attempts
@@ -1232,7 +1233,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 							msg(MSG_VDEBUG, "ipfix_send_templates(): %d template bytes sent to SCTP collector %s:%d",
 									bytes_sent, exporter->collector_arr[i].ipv4address, exporter->collector_arr[i].port_number);
 						}
-					}
+					} else DPRINTF("No Template to send to SCTP collector");
 					break;
 					default:
 					msg(MSG_FATAL, "IPFIX: Unknown collector socket state");

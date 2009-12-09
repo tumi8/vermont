@@ -32,7 +32,7 @@
 #define MAX_PACKET_LIFETIME 400
 
 class PSAMPExporterModule
-	: public Module, public Source<Packet*>, public Destination<Packet*>, public Notifiable
+	: public Module, public Source<NullEmitable*>, public Destination<Packet*>, public Notifiable
 {
 public:
         PSAMPExporterModule(Template *tmpl, uint32_t observationDomainId);

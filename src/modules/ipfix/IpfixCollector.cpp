@@ -52,6 +52,7 @@ IpfixCollector::IpfixCollector(IpfixReceiver* receiver)
  */
 IpfixCollector::~IpfixCollector() 
 {
+	// to make sure that exitFlag is set and performShutdown() is called
 	this->shutdown(false);
 	delete ipfixReceiver;
 	delete ipfixPacketProcessor;
@@ -71,6 +72,7 @@ void IpfixCollector::performStart()
  */
 void IpfixCollector::performShutdown() 
 {
+	connected.shutdown();
 	ipfixReceiver->performShutdown();
 }
 

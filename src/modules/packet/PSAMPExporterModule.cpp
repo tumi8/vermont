@@ -55,7 +55,6 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 
 PSAMPExporterModule::~PSAMPExporterModule()
 {
-	shutdown(false); // try to shutdown; no error if not running
         ipfix_deinit_exporter(exporter);
 
         // free the remaining packets
@@ -225,5 +224,5 @@ void PSAMPExporterModule::performStart()
 
 void PSAMPExporterModule::performShutdown()
 {
-        connected.shutdown();
+	// we could destroy the template here
 }

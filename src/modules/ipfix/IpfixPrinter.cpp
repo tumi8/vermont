@@ -44,14 +44,14 @@ static void printIPv4(InformationElement::IeInfo type, IpfixRecord::Data* data) 
 	if (type.length >= 4) octet4 = data[3];
 	if (type.length >= 5) imask = data[4];
 	if (type.length > 5) {
-		DPRINTF("IPv4 Address with length %d unparseable\n", type.length);
+		DPRINTF("IPv4 Address with length %u unparseable\n", type.length);
 		return;
 	}
 
 	if ((type.length == 5) /*&& (imask != 0)*/) {
-		printf("%d.%d.%d.%d/%d", octet1, octet2, octet3, octet4, 32-imask);
+		printf("%u.%u.%u.%u/%u", octet1, octet2, octet3, octet4, 32-imask);
 	} else {
-		printf("%d.%d.%d.%d", octet1, octet2, octet3, octet4);
+		printf("%u.%u.%u.%u", octet1, octet2, octet3, octet4);
 	}
 }
 
@@ -62,7 +62,7 @@ static void printPort(InformationElement::IeInfo type, IpfixRecord::Data* data) 
 	}
 	if (type.length == 2) {
 		int port = ((uint16_t)data[0] << 8)+data[1];
-		printf("%d", port);
+		printf("%u", port);
 		return;
 	}
 	if ((type.length >= 4) && ((type.length % 4) == 0)) {
@@ -72,20 +72,20 @@ static void printPort(InformationElement::IeInfo type, IpfixRecord::Data* data) 
 			int endi = ((uint16_t)data[i+2] << 8)+data[i+3];
 			if (i > 0) printf(",");
 			if (starti != endi) {
-				printf("%d:%d", starti, endi);
+				printf("%u:%u", starti, endi);
 			} else {
-				printf("%d", starti);
+				printf("%u", starti);
 			}
 		}
 		return;
 	}
 
-	printf("Port with length %d unparseable", type.length);
+	printf("Port with length %u unparseable", type.length);
 }
 
 void printProtocol(InformationElement::IeInfo type, IpfixRecord::Data* data) {
 	if (type.length != 1) {
-		printf("Protocol with length %d unparseable", type.length);
+		printf("Protocol with length %u unparseable", type.length);
 		return;
 	}
 	switch (data[0]) {
@@ -129,7 +129,7 @@ static void printUint(InformationElement::IeInfo type, IpfixRecord::Data* data) 
 		    printf("%02hhX",*(uint8_t*)(data+i));
 		}
 		printf(" (%u bytes)", type.length);
-		//msg(MSG_ERROR, "Uint with length %d unparseable", type.length);
+		//msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
 		return;
 	}
 }
@@ -174,7 +174,7 @@ void printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern)
 			hbnum = ntohll(*(uint64_t*)pattern);
 			if (hbnum>0) {
 				t = timentp64(*((ntp64*)(&hbnum)));
-				printf("%d.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
+				printf("%u.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
 			} else {
 				printf("no value (only zeroes in field)");
 			}
@@ -192,7 +192,7 @@ void printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern)
 		printf("%s: ", s);
 		printUint(type, pattern);
 	} else {
-		DPRINTF("Field with ID %d unparseable\n", type.id);
+		DPRINTF("Field with ID %u unparseable\n", type.id);
 	}
 }
 
@@ -234,7 +234,7 @@ IpfixPrinter::IpfixPrinter(OutputType outputtype, string filename)
 	if (filename != "") {
 		fh = fopen(filename.c_str(), "w");
 		if (!fh)
-			THROWEXCEPTION("IpfixPrinter: error opening file '%s': %s (%d)", filename.c_str(), strerror(errno), errno);
+			THROWEXCEPTION("IpfixPrinter: error opening file '%s': %s (%u)", filename.c_str(), strerror(errno), errno);
 	}
 
 	if (outputtype==TABLE)
@@ -249,7 +249,7 @@ IpfixPrinter::~IpfixPrinter()
 	if (filename != "") {
 		int ret = fclose(fh);
 		if (ret)
-			THROWEXCEPTION("IpfixPrinter: error closing file '%s': %s (%d)", filename.c_str(), strerror(errno), errno);
+			THROWEXCEPTION("IpfixPrinter: error closing file '%s': %s (%u)", filename.c_str(), strerror(errno), errno);
 	}
 }
 
@@ -280,7 +280,7 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 			printf("\n-+--- Ipfix Data Template (id=%u, preceding=%u) from ", record->templateInfo->templateId, record->templateInfo->preceding);
 			break;
 		default:
-			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%d", record->templateInfo->setId);
+			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%u", record->templateInfo->setId);
 
 	}
 	if (record->sourceID) {
@@ -288,7 +288,7 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 			printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
 		else
 			printf("non-IPv4 address");
-		printf(":%d (", record->sourceID->exporterPort);
+		printf(":%u (", record->sourceID->exporterPort);
 		tmpInfo.length = 1; // length=1 for protocol identifier
 		printProtocol(tmpInfo, &record->sourceID->protocol);
 		printf(")\n");
@@ -342,7 +342,7 @@ void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 			printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
 		else
 			printf("non-IPv4 address");
-		printf(":%d (", record->sourceID->exporterPort);
+		printf(":%u (", record->sourceID->exporterPort);
 		tmpInfo.length = 1; // length=1 for protocol identifier
 		printProtocol(tmpInfo, &record->sourceID->protocol);
 		printf(")\n");
@@ -368,7 +368,7 @@ void IpfixPrinter::printUint(char* buf, InformationElement::IeInfo type, IpfixRe
 		sprintf(buf, "%Lu",ntohll(*(uint64_t*)data));
 		return;
 	default:
-		msg(MSG_ERROR, "Uint with length %d unparseable", type.length);
+		msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
 		return;
 	}
 }
@@ -551,7 +551,7 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 			printf("\n-+--- Ipfix Data Data Record (id=%u, preceding=%u) from ", record->templateInfo->templateId, record->templateInfo->preceding);
 			break;
 		default:
-			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%d", record->templateInfo->setId);
+			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%u", record->templateInfo->setId);
 
 	}
 	if (record->sourceID) {
@@ -559,7 +559,7 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 			printIPv4(tmpInfo, &record->sourceID->exporterAddress.ip[0]);
 		else
 			printf("non-IPv4 address");
-		printf(":%d (", record->sourceID->exporterPort);
+		printf(":%u (", record->sourceID->exporterPort);
 		tmpInfo.length = 1; // length=1 for protocol identifier
 		printProtocol(tmpInfo, &record->sourceID->protocol);
 		printf(")\n");
