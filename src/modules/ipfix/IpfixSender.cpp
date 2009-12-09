@@ -179,7 +179,6 @@ TemplateInfo::TemplateId IpfixSender::getUnusedTemplateId()
  */
 void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 {
-msg(MSG_FATAL, "TEMPLATE RECEIVED");
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 	// TODO: Implement Options Template handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
@@ -204,7 +203,6 @@ msg(MSG_FATAL, "TEMPLATE RECEIVED");
 		return;
 	}
 
-msg(MSG_FATAL, "onTemplate after lock");
 
 	// check if this is a known template
 	if(uniqueIdToTemplateId.find(dataTemplateInfo->uniqueId) != uniqueIdToTemplateId.end()) {
@@ -353,7 +351,6 @@ msg(MSG_FATAL, "onTemplate after lock");
 
 	// release message lock
 	ipfixMessageLock.unlock();
-msg(MSG_FATAL, "onTemplate after unlock");
 
 	// we want the templates to be sent to the collector
 	sendRecords(Always);
@@ -522,7 +519,6 @@ void IpfixSender::removeRecordReferences()
  */
 void IpfixSender::onDataRecord(IpfixDataRecord* record)
 {
-msg(MSG_FATAL, "RECORD RECEIVED");
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 	// TODO: Implement Options Data Record handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
@@ -532,6 +528,13 @@ msg(MSG_FATAL, "RECORD RECEIVED");
 		return;
 	}
 
+	if (!ipfixExporter) {
+		THROWEXCEPTION("ipfixExporter not set");
+	}
+
+	// get the message lock
+	ipfixMessageLock.lock();
+
 	// check if we know the Template
 	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->uniqueId);
 	if(iter == templateIdToUniqueId.end()) {
@@ -540,16 +543,9 @@ msg(MSG_FATAL, "RECORD RECEIVED");
 		return;
 	}
 
-	if (!ipfixExporter) {
-		THROWEXCEPTION("ipfixExporter not set");
-	}
-
-
 	IpfixRecord::Data* data = record->data;
+	TemplateInfo::TemplateId my_template_id = iter->second;
 
-	// get the message lock
-	ipfixMessageLock.lock();
-msg(MSG_FATAL, "onDataRecord after lock");
 	// return if exitFlag has ben set in the meanwhile
 	if (exitFlag) {
 		record->removeReference();
@@ -557,7 +553,7 @@ msg(MSG_FATAL, "onDataRecord after lock");
 		return;
 	}
 
-	startDataSet(dataTemplateInfo->templateId);
+	startDataSet(my_template_id);
 
 	int i;
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
@@ -595,7 +591,6 @@ msg(MSG_FATAL, "onDataRecord after lock");
 
 	// release the message lock
 	ipfixMessageLock.unlock();
-msg(MSG_FATAL, "onDataRecord after unlock");
 
 	sendRecords();
 }
@@ -612,6 +607,9 @@ void IpfixSender::onReconfiguration2()
 	// send cached records
 	sendRecords(IfNotEmpty);
 
+	// get message lock
+	ipfixMessageLock.lock();
+
 	// Destroy all templates (they will be resent after reconfiguration if necessary)
 	for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) {
 		/* Remove template from ipfixlolib */
@@ -623,11 +621,15 @@ void IpfixSender::onReconfiguration2()
 			msg(MSG_INFO, "IpfixSender: removed template with ID %u", iter->first);
 		}
 	}
-	sendRecords(Always);
-
 	// clear maps
 	uniqueIdToTemplateId.clear();
 	templateIdToUniqueId.clear();
+
+	// release message lock
+	ipfixMessageLock.unlock();
+
+	sendRecords(Always);
+
 }
 
 
@@ -637,13 +639,11 @@ void IpfixSender::onReconfiguration2()
  */
 void IpfixSender::sendRecords(SendPolicy policy)
 {
-msg(MSG_FATAL, "sendRecords called with %u", policy);
 	if ((noCachedRecords == 0) && (policy != Always)) return;
 
 	// get the message lock
 	ipfixMessageLock.lock();
 
-msg(MSG_FATAL, "sendRecords after lock");
 	// check again
 	if ((noCachedRecords == 0) && (policy != Always)) {
 		ipfixMessageLock.unlock();
@@ -664,7 +664,6 @@ msg(MSG_FATAL, "sendRecords after lock");
 
 	// get the message lock
 	ipfixMessageLock.unlock();
-msg(MSG_FATAL, "sendRecords after unlock");
 
 }
 
@@ -674,7 +673,6 @@ msg(MSG_FATAL, "sendRecords after unlock");
  */
 void IpfixSender::onTimeout(void* dataPtr)
 {
-msg(MSG_FATAL, "TIMEOUT RECEIVED");
 	timeoutRegistered = false;
 
 	timeval tv;
@@ -686,7 +684,6 @@ msg(MSG_FATAL, "TIMEOUT RECEIVED");
 	else
 		// timeout corresponds to nextTimeout, so force sending the message
 		sendRecords(IfNotEmpty);
-msg(MSG_FATAL, "TIMEOUT END");
 }
 
 /**
@@ -695,7 +692,6 @@ msg(MSG_FATAL, "TIMEOUT END");
  */
 void IpfixSender::registerTimeout()
 {
-msg(MSG_FATAL, "REGISTER TIMEOUT");
 	// check if there is already a timeout
 	if (timeoutRegistered) return;
 	timer->addTimeout(this, nextTimeout, NULL);

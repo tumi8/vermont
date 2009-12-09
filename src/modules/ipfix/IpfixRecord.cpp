@@ -205,7 +205,7 @@ namespace InformationElement {
 std::vector<uint16_t> TemplateInfo::uniqueIdUseCount(64,0);   // initialize with 64 Ids
 
 TemplateInfo::TemplateInfo() : templateId(0), setId(UnknownSetId), fieldCount(0), fieldInfo(NULL), 
-        destroyed(false), freePointers(true),
+        freePointers(true),
 	scopeCount(0), scopeInfo(NULL), dataCount(0), dataInfo(NULL), preceding(0), dataLength(0), data(NULL), 
 	anonymized(false), uniqueId(0)
 {
@@ -222,7 +222,6 @@ TemplateInfo::TemplateInfo(const TemplateInfo& t)
 	fieldInfo = (FieldInfo*)malloc(fieldCount*sizeof(FieldInfo));
 	memcpy(fieldInfo, t.fieldInfo, fieldCount*sizeof(FieldInfo));
 
-	destroyed = t.destroyed;
 	freePointers = t.freePointers;
 
 	// copy Options Template scope fields

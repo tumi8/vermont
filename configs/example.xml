@@ -106,7 +106,7 @@
 			</nonFlowKey>
 		</rule>
 		<rule>
-			<templateId>999</templateId>
+			<templateId>0</templateId>
 			<biflowAggregation>1</biflowAggregation>
 			<flowKey>
 				<ieName>sourceIPv4Address</ieName>

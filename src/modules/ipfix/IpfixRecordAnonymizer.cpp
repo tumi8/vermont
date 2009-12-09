@@ -10,8 +10,15 @@ void IpfixRecordAnonymizer::setCopyMode(bool mode)
 void IpfixRecordAnonymizer::onTemplate(IpfixTemplateRecord* record)
 {
 	//TODO: anonymize Data Templates
-	if((record->templateInfo->setId == TemplateInfo::IpfixDataTemplate) && (record->templateInfo->dataCount != 0))
-		msg(MSG_DEBUG, "IpfixRecordAnonymizer: Received Data Template, but anonymization of fixed value fields is not supported!");
+	if((record->templateInfo->setId == TemplateInfo::IpfixDataTemplate) && (record->templateInfo->dataCount != 0)) {
+		for (int i = 0; i != record->templateInfo->dataCount; ++i) {
+			TemplateInfo::FieldInfo* field = record->templateInfo->dataInfo + i;
+			// check if this fixed value field should be anonymized
+			if (methods.find(field->type.id) != methods.end())
+				msg(MSG_ERROR, "IpfixRecordAnonymizer: Anonymization not supported for fixed value field (ie=%u, enterprise=%u) in Data Template (id=%u)", field->type.id, field->type.enterprise, record->templateInfo->templateId);
+				
+		}
+	}
 	send(record);
 }
 
@@ -51,11 +58,24 @@ void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 	}
 	*/
 
+	boost::shared_ptr<TemplateInfo> templateInfo = myRecord->templateInfo;
+
+	//TODO: enterprise number should be considered (Gerhard 12/2009)
+	
 	// anonymize Data Record fields
-	for (int i = 0; i != myRecord->templateInfo->fieldCount; ++i) {
-		TemplateInfo::FieldInfo* field = myRecord->templateInfo->fieldInfo + i;
+	for (int i = 0; i != templateInfo->fieldCount; ++i) {
+		TemplateInfo::FieldInfo* field = templateInfo->fieldInfo + i;
 		anonField(field->type.id, myRecord->data + field->offset, field->type.length);
 	}
+
+	// anonymize scope fields
+	if((record->templateInfo->scopeCount != 0) && ((record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate))) {
+		for (int i = 0; i != templateInfo->scopeCount; ++i) {
+			TemplateInfo::FieldInfo* field = templateInfo->scopeInfo + i;
+			anonField(field->type.id, myRecord->data + field->offset, field->type.length);
+		}
+	}
+
 	send(myRecord);
 }
 

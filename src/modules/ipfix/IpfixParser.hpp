@@ -159,7 +159,6 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		
 		void resendBufferedTemplates();
 		void withdrawBufferedTemplates();
-		void setTemplateDestroyed(bool destroyed);
 
 };
 

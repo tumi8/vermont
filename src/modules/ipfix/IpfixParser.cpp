@@ -808,17 +808,18 @@ void IpfixParser::performStart()
 
 void IpfixParser::performShutdown()
 {
+	// we do not need to withdraw template since every module should delete stored templates during reconfiguration and shutdown
+	// withdrawBufferedTemplates();
 }
 
 void IpfixParser::preReconfiguration()
 {
-	withdrawBufferedTemplates();
+	// we do not need to withdraw templates because every module should delete stored templates during reconfiguration anyway
+	// withdrawBufferedTemplates();
 }
 
 void IpfixParser::onReconfiguration1()
 {
-	// this tells modules which do not receive destruction record that the template should not be used any more
-	setTemplateDestroyed(true);
 }
 
 /**
@@ -826,7 +827,7 @@ void IpfixParser::onReconfiguration1()
  */
 void IpfixParser::postReconfiguration()
 {
-	setTemplateDestroyed(false);
+	// we must resend all buffered templates
 	resendBufferedTemplates();
 }
 
@@ -864,17 +865,3 @@ void IpfixParser::withdrawBufferedTemplates()
 	}
 }
 
-/**
- * sets 'destroyed' flag of buffered templates
- * @param destroyed flag of buffered templates
- */
-void IpfixParser::setTemplateDestroyed(bool destroyed)
-{
-	TemplateBuffer::BufferedTemplate* bt = templateBuffer->getFirstBufferedTemplate();
-			
-	while (bt) {
-		bt->templateInfo.get()->destroyed = destroyed;
-	
-		bt = bt->next;
-	}
-}

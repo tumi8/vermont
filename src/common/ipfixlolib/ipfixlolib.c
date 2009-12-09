@@ -2052,8 +2052,11 @@ int ipfix_end_template_set(ipfix_exporter *exporter, uint16_t template_id)
 
 	// write the lenght field
 	write_unsigned16(&p_pos, p_end, templ->fields_length);
+
 	// call the template valid
 	templ->state = T_COMMITED;
+	// force resending templates to UDP collectors by resetting transmission time
+	exporter->last_template_transmission_time = 0;
 
 	return 0;
 }

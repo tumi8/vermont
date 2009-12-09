@@ -166,12 +166,6 @@ class TemplateInfo {
 		uint16_t fieldCount; 		/**< number of regular fields */
 		FieldInfo* fieldInfo; 		/**< array of FieldInfos describing each of these fields */
 		
- 		/**
- 		 * if this template is to be destroyed because of module reconfiguration, this flag is set to true
- 		 * it should be checked in every module which caches this structure and be destroyed in method
- 		 * Module::preRegistration2()
- 		 **/
- 		bool destroyed;
 		bool freePointers;  /** small helper variable to indicate if pointers should be freed on destruction */
 
 		// only used by Options Templates:
