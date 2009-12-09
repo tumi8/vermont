@@ -64,6 +64,7 @@ struct AnonIE {
 class AnonModule {
 public:
 	~AnonModule();
+	//TODO: enterprise number should be considered (Gerhard 12/2009)
 	void addAnonymization(uint16_t id, int len, AnonMethod::Method methodName, const std::string& parameter="");
 	void anonField(uint16_t id, void* data, int len = -1);
 protected:

@@ -403,16 +403,16 @@ void BaseHashtable::performStart()
  */
 void BaseHashtable::performShutdown()
 {
-	sendTemplateDestructionRecord();
-	// this tells modules which do not receive destruction record that the template should not be used any more
-	dataTemplate.get()->destroyed = true;
+	// we do not need to destroy the template since every module should delete stored templates during reconfiguration and shutdown
+	// sendTemplateDestructionRecord();
 }
 
 void BaseHashtable::preReconfiguration()
 {
 	msg(MSG_INFO, "BaseHashtable: Forcing export for flows, then destroy Template.");
 	expireFlows(true);
-	//sendTemplateDestructionRecord();
+	// we do not need to destroy the template since every module should delete stored templates during reconfiguration
+	// sendTemplateDestructionRecord();
 }
 
 /**
@@ -420,8 +420,6 @@ void BaseHashtable::preReconfiguration()
  */
 void BaseHashtable::onReconfiguration1()
 {
-	// this tells modules which do not receive destruction record that the template should not be used any more
-	dataTemplate.get()->destroyed = true;
 }
 
 /**
@@ -429,9 +427,8 @@ void BaseHashtable::onReconfiguration1()
  */
 void BaseHashtable::postReconfiguration()
 {
-	// "de-invalidates" the template again, as this module is still working with the same template
+	// send the template again, as this module is still working with the same template
 	// after reconfiguration (else this function would not be called)
-	dataTemplate.get()->destroyed = false;
 	sendDataTemplate();
 }
 
