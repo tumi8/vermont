@@ -25,6 +25,7 @@ BaseAggregator::BaseAggregator(uint32_t pollinterval)
  */
 BaseAggregator::~BaseAggregator()
 {
+	// to make sure that exitFlag is set and performShutdown() is called
 	shutdown(false);
 
 	// for a strange case a 'delete hashtable' in Rule doesn't work, because

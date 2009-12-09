@@ -126,7 +126,7 @@ public:
 	virtual void shutdown(bool fail_if_not_running = true, bool finishProperly = false) = 0;
 
 	/* see in Module for the documentation for these functions */
-	virtual void postReconfiguration() = 0;
+	//virtual void postReconfiguration() = 0;
 	virtual void onReconfiguration1() = 0;
 	virtual void onReconfiguration2() = 0;
 
@@ -230,10 +230,10 @@ public:
 		return createInstance();
 	}
 
-	void postReconfiguration() {
-		instance = getInstance();
-		instance->postReconfiguration();
-	}
+	//void postReconfiguration() {
+	//	instance = getInstance();
+	//	instance->postReconfiguration();
+	//}
 
 	void onReconfiguration1() {
 		if (instance == NULL)
@@ -344,7 +344,7 @@ public:
 		}
 
 		// call postReconfiguration(), e.g. to tell the module to resend its template
-		//Gerhard: postReconfiguration() is now called in ReConnect::connect()
+		//Gerhard: postReconfiguration() is now called in Module::start()
 		//this->postReconfiguration(); 
 
 		// check if we need a splitter

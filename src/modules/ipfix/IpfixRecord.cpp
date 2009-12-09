@@ -245,7 +245,7 @@ TemplateInfo::TemplateInfo(const TemplateInfo& t)
 	// increase reference count in uniqueIdUseCount
 	mutex.lock();
 	if((uniqueId == 0) || (uniqueId>uniqueIdUseCount.size()) || (uniqueIdUseCount[uniqueId-1]==0))
-		THROWEXCEPTION("TemplateInfo copy constructor: uniqueIdUseCount is corrupt, this should never happen!");
+		THROWEXCEPTION("TemplateInfo copy constructor: uniqueIdUseCount is corrupt, this should never happen (Template ID=%u)!", templateId);
 	if(uniqueIdUseCount[uniqueId-1]==65535)
 		THROWEXCEPTION("TemplateInfo: uniqueIdUseCount uint16_t overflow!");
 	uniqueIdUseCount[uniqueId-1]++;

@@ -46,17 +46,16 @@ using namespace std;
  */
 IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, uint32_t sctpDataLifetime, uint32_t sctpReconnectInterval,
 		uint32_t templateRefreshInterval, uint32_t templateRefreshRate)
-	: statSentPackets(0),
+	: statSentDataRecords(0),
+	  statSentPackets(0),	  
+	  statPacketsInFlows(0),
 	  noCachedRecords(0),
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
 	  timeoutRegistered(false),
-	  recordsAlreadySent(false),
+	  currentTemplateId(0),
 	  maxRecordRate(maxRecordRate)
 {
 	ipfix_exporter** exporterP = &this->ipfixExporter;
-	statSentDataRecords = 0;
-	statPacketsInFlows = 0;
-	currentTemplateId = 0;
 
 	nextTimeout.tv_sec = 0;
 	nextTimeout.tv_nsec = 0;
@@ -82,17 +81,16 @@ out:
 }
 
 IpfixSender::IpfixSender(uint32_t observationDomainId)
-	: statSentPackets(0),
+	: statSentDataRecords(0),
+	  statSentPackets(0),	  
+	  statPacketsInFlows(0),
 	  noCachedRecords(0),
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
 	  timeoutRegistered(false),
-	  recordsAlreadySent(false),
+	  currentTemplateId(0),
 	  maxRecordRate(IS_DEFAULT_MAXRECORDRATE)
 {
 	ipfix_exporter** exporterP = &this->ipfixExporter;
-	statSentDataRecords = 0;
-	statPacketsInFlows = 0;
-	currentTemplateId = 0;
 
 	nextTimeout.tv_sec = 0;
 	nextTimeout.tv_nsec = 0;
@@ -120,8 +118,7 @@ out:
  */
 IpfixSender::~IpfixSender()
 {
-	shutdown(false);
-
+	this->shutdown(false);
 	ipfix_deinit_exporter(ipfixExporter);
 }
 
@@ -137,10 +134,10 @@ void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_pr
 {
 	switch(proto) {
 	    case UDP:
-	    	msg(MSG_INFO, "IpfixSender: adding UDP://%s:%d to exporter", ip, port);
+	    	msg(MSG_INFO, "IpfixSender: adding UDP://%s:%u to exporter", ip, port);
 	    	break;
 	    case SCTP:
-	    	msg(MSG_INFO, "IpfixSender: adding SCTP://%s:%d to exporter", ip, port);
+	    	msg(MSG_INFO, "IpfixSender: adding SCTP://%s:%u to exporter", ip, port);
 	    	break;
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 	    case RAWDIR:
@@ -148,41 +145,16 @@ void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_pr
 	    	break;
 #endif
 	    case TCP:
-	        msg(MSG_INFO, "IpfixSender: adding TCP://%s:%d to exporter", ip, port);
+	        msg(MSG_INFO, "IpfixSender: adding TCP://%s:%u to exporter", ip, port);
 	    default:
-	    	THROWEXCEPTION("invalid protocol (%d) given!", proto);
+	    	THROWEXCEPTION("invalid protocol (%u) given!", proto);
 	    	break;
 	}
 
 	if(ipfix_add_collector(ipfixExporter, ip, port, proto) != 0) {
-		msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%d failed", ip, port);
+		msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%u failed", ip, port);
 		return;
 	}
-}
-
-
-/**
- * removes given template from cached templates
-  */
-void IpfixSender::removeRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti)
-{
-       list<boost::shared_ptr<TemplateInfo> >::iterator iter = registeredTemplates.begin();
-       while (iter != registeredTemplates.end()) {
-               if (iter->get()->uniqueId == ti->uniqueId) {
-                       registeredTemplates.erase(iter);
-                       return;
-               }
-               iter++;
-       }
-       THROWEXCEPTION("template with ID %d not found", ti->templateId);
-}
- 
-/**
- * adds given template to the list of cached templates
- */
-void IpfixSender::addRegisteredTemplate(boost::shared_ptr<TemplateInfo> ti)
-{
-       registeredTemplates.push_back(ti);
 }
 
 
@@ -195,7 +167,7 @@ TemplateInfo::TemplateId IpfixSender::getUnusedTemplateId()
 	TemplateInfo::TemplateId templateId = SENDER_TEMPLATE_ID_LOW;
 	while(templateIdToUniqueId.find(templateId) != templateIdToUniqueId.end()) {
 	    	templateId ++;
-		if (templateId > SENDER_TEMPLATE_ID_HI)
+		if (templateId == SENDER_TEMPLATE_ID_HI)
 			THROWEXCEPTION("IpfixSender: No unused Template Id available.");
 	}
 	return templateId;
@@ -207,11 +179,12 @@ TemplateInfo::TemplateId IpfixSender::getUnusedTemplateId()
  */
 void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 {
+msg(MSG_FATAL, "TEMPLATE RECEIVED");
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 	// TODO: Implement Options Template handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
 	{
-	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", dataTemplateInfo->setId);
+	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();
 		return;
 	}
@@ -220,10 +193,24 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		THROWEXCEPTION("IpfixSender: Exporter not set");
 	}
 
+	msg(MSG_DEBUG, "IpfixSender: Template received (setid=%u, id=%u)", (uint16_t)(dataTemplateInfo->setId), dataTemplateInfo->templateId);
+
+	// get message lock
+	ipfixMessageLock.lock();
+	// return if exitFlag has ben set in the meanwhile
+	if (exitFlag) {
+		record->removeReference();
+		ipfixMessageLock.unlock();
+		return;
+	}
+
+msg(MSG_FATAL, "onTemplate after lock");
+
 	// check if this is a known template
 	if(uniqueIdToTemplateId.find(dataTemplateInfo->uniqueId) != uniqueIdToTemplateId.end()) {
-		msg(MSG_ERROR, "IpfixSender: Received known Template (id=%d) again, which should not happen.", dataTemplateInfo->templateId);
+		msg(MSG_ERROR, "IpfixSender: Received known Template (id=%u) again, which should not happen.", dataTemplateInfo->templateId);
 		record->removeReference();
+		ipfixMessageLock.unlock();
 		return;
 	}
 
@@ -235,29 +222,29 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		if(templateIdToUniqueId.find(dataTemplateInfo->templateId) == templateIdToUniqueId.end()) {
 			my_template_id = dataTemplateInfo->templateId;
 		} else {
-			msg(MSG_INFO, "IpfixSender: Template ID conflict, %d is already in use.", dataTemplateInfo->templateId);
+			msg(MSG_INFO, "IpfixSender: Template ID conflict, %u is already in use.", dataTemplateInfo->templateId);
 		}
 	}
 
 	// generate new Template ID if necessary
 	if(my_template_id == 0) {
 		my_template_id = getUnusedTemplateId();
-		msg(MSG_INFO, "IpfixSender: Use Template ID %d instead of %d.", my_template_id, dataTemplateInfo->templateId);
+		msg(MSG_INFO, "IpfixSender: Use Template ID %u instead of %u.", my_template_id, dataTemplateInfo->templateId);
 	}
 
 	// Update maps
 	templateIdToUniqueId[my_template_id] = dataTemplateInfo->uniqueId; 
 	uniqueIdToTemplateId[dataTemplateInfo->uniqueId] = my_template_id;
 
-	//for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) msg(MSG_FATAL, "template id %d -> unique id %d", iter->first, iter->second);
-	//for(map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.begin(); iter != uniqueIdToTemplateId.end(); iter++) msg(MSG_FATAL, "unique id %d -> template id %d", iter->first, iter->second);
+	//for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) msg(MSG_FATAL, "template id %u -> unique id %u", iter->first, iter->second);
+	//for(map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.begin(); iter != uniqueIdToTemplateId.end(); iter++) msg(MSG_FATAL, "unique id %u -> template id %u", iter->first, iter->second);
 
 	uint16_t my_preceding = 0;
 	// Translate preceding template id if possible
 	if(dataTemplateInfo->preceding) {
 		map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.find(dataTemplateInfo->preceding);
 		if(iter == templateIdToUniqueId.end())
-			msg(MSG_ERROR, "IpfixSender: Preceding Template (id=%d) not available, use zero instead", dataTemplateInfo->preceding);
+			msg(MSG_ERROR, "IpfixSender: Preceding Template (id=%u) not available, use zero instead", dataTemplateInfo->preceding);
 		else
 			my_preceding = uniqueIdToTemplateId[iter->second];
 	}
@@ -309,7 +296,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		}
 	}
 
-	DPRINTF("%d data fields", dataTemplateInfo->dataCount);
+	DPRINTF("%u data fields", dataTemplateInfo->dataCount);
 
 	int dataLength = 0;
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
@@ -331,7 +318,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		}
 	}
 
-	DPRINTF("%d data length", dataLength);
+	DPRINTF("%u data length", dataLength);
 
 	char* data = (char*)dataLength?(char*)malloc(dataLength):0; // electric fence does not like 0-byte mallocs
 	memcpy(data, dataTemplateInfo->data, dataLength);
@@ -354,7 +341,6 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	}
 
 	if (0 != ipfix_put_template_data(ipfixExporter, my_template_id, data, dataLength)) {
-		free(data);
 		THROWEXCEPTION("IpfixSender: ipfix_put_template_data failed");
 	}
 	free(data);
@@ -365,10 +351,12 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 	msg(MSG_INFO, "IpfixSender: created template with ID %u", my_template_id);
 
-	sendRecords();
+	// release message lock
+	ipfixMessageLock.unlock();
+msg(MSG_FATAL, "onTemplate after unlock");
 
-	// register Template 
-	addRegisteredTemplate(dataTemplateInfo);
+	// we want the templates to be sent to the collector
+	sendRecords(Always);
 
 	record->removeReference();
 }
@@ -383,7 +371,7 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	// TODO: Implement Options Template handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
 	{
-		msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", dataTemplateInfo->setId);
+		msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();
 		return;
 	}
@@ -392,10 +380,25 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 		THROWEXCEPTION("ipfixExporter not set");
 	}
 
+	// send remaining records first
+	sendRecords(IfNotEmpty);
+
+	msg(MSG_DEBUG, "IpfixSender: Template destruction received (setid=%u, id=%u)", (uint16_t)(dataTemplateInfo->setId), dataTemplateInfo->templateId);
+
+	// get message lock
+	ipfixMessageLock.lock();
+	// return if exitFlag has ben set in the meanwhile
+	if (exitFlag) {
+		record->removeReference();
+		ipfixMessageLock.unlock();
+		return;
+	}
+
 	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->uniqueId);
 	if(iter == templateIdToUniqueId.end()) {
-		msg(MSG_ERROR, "IpfixSender: Template (id=%d) to be destroyed does not exist.", dataTemplateInfo->templateId);
+		msg(MSG_ERROR, "IpfixSender: Template (id=%u) to be destroyed does not exist.", dataTemplateInfo->templateId);
 		record->removeReference();
+		ipfixMessageLock.unlock();
 		return;
 	}
 
@@ -404,9 +407,6 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	// remove from maps
 	uniqueIdToTemplateId.erase(iter);
 	templateIdToUniqueId.erase(my_template_id);
-
-	// send remaining records first
-	sendRecords();
 
 	/* Remove template from ipfixlolib */
 	if (0 != ipfix_remove_template_set(ipfixExporter, my_template_id)) {
@@ -421,9 +421,13 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	if (ipfix_send(ipfixExporter) != 0) {
 		THROWEXCEPTION("IpfixSender: ipfix_send failed");
 	}
+	msg(MSG_INFO, "IpfixSender: destroyed template with ID %u", my_template_id);
 
-	// unregister Template 
-	removeRegisteredTemplate(dataTemplateInfo);
+	// release message lock
+	ipfixMessageLock.unlock();
+
+	// we want the templates to be sent to the collector
+	sendRecords(Always);
 
 	record->removeReference();
 }
@@ -485,9 +489,16 @@ void IpfixSender::endAndSendDataSet()
 			THROWEXCEPTION("IpfixSender: ipfix_send failed");
 		}
 
+		statSentPackets++;
+
 		removeRecordReferences();
 
 		currentTemplateId = 0;
+	} else { // only send Templates
+		DPRINTF("IpfixSender::endAndSendDataSet: Send Templates only");
+		if (ipfix_send(ipfixExporter) != 0) {
+			THROWEXCEPTION("IpfixSender: ipfix_send failed");
+		}
 	}
 }
 
@@ -511,19 +522,39 @@ void IpfixSender::removeRecordReferences()
  */
 void IpfixSender::onDataRecord(IpfixDataRecord* record)
 {
+msg(MSG_FATAL, "RECORD RECEIVED");
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 	// TODO: Implement Options Data Record handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
 	{
-	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%d)", dataTemplateInfo->setId);
+	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();
 		return;
 	}
 
-	IpfixRecord::Data* data = record->data;
+	// check if we know the Template
+	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->uniqueId);
+	if(iter == templateIdToUniqueId.end()) {
+		msg(MSG_ERROR, "IpfixSender: Discard Data Record because Template (id=%u) does not exist (this may happen during reconfiguration).", dataTemplateInfo->templateId);
+		record->removeReference();
+		return;
+	}
 
 	if (!ipfixExporter) {
 		THROWEXCEPTION("ipfixExporter not set");
+	}
+
+
+	IpfixRecord::Data* data = record->data;
+
+	// get the message lock
+	ipfixMessageLock.lock();
+msg(MSG_FATAL, "onDataRecord after lock");
+	// return if exitFlag has ben set in the meanwhile
+	if (exitFlag) {
+		record->removeReference();
+		ipfixMessageLock.unlock();
+		return;
 	}
 
 	startDataSet(dataTemplateInfo->templateId);
@@ -555,14 +586,16 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 		}
 	}
 
-	registerTimeout();
-
 	statSentDataRecords++;
 	recordsSentStep++;
 
 	recordsToRelease.push(record);
 
 	noCachedRecords++;
+
+	// release the message lock
+	ipfixMessageLock.unlock();
+msg(MSG_FATAL, "onDataRecord after unlock");
 
 	sendRecords();
 }
@@ -572,112 +605,14 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
  */
 void IpfixSender::onReconfiguration2()
 {
-       if (!ipfixExporter) {
-               THROWEXCEPTION("ipfixExporter not set");
-       }
-
-       list<boost::shared_ptr<TemplateInfo> >::iterator iter = registeredTemplates.begin();
-       while (iter != registeredTemplates.end()) {
-		if (iter->get()->destroyed) {
-			
-			map<uint16_t, TemplateInfo::TemplateId>::iterator iter2 = uniqueIdToTemplateId.find(iter->get()->uniqueId);
-			if(iter2 == uniqueIdToTemplateId.end()) {
-				THROWEXCEPTION("IpfixSender: corrupt uniqueIdToTemplate");
-			}
-
-			TemplateInfo::TemplateId id = iter2->second;
-
-			// Remove template from ipfixlolib
-			if (0 != ipfix_remove_template_set(ipfixExporter, id)) {
-				msg(MSG_FATAL, "IpfixSender: ipfix_remove_template_set failed");
-			} else {
-				msg(MSG_INFO, "IpfixSender: removed template with ID %u", id);
-			}
-
-			// remove from maps
-			uniqueIdToTemplateId.erase(iter2);
-			templateIdToUniqueId.erase(id);
-
-			iter = registeredTemplates.erase(iter);
-		} else {
-			iter++;
-		}
-       }
-}
-
-
-/**
- * sends records to the network
- * @param forcesend to send all records regardless how many were cached
- */
-void IpfixSender::sendRecords(bool forcesend)
-{
-	if (noCachedRecords == 0) return;
-
-	// TODO: extend ipfixlolib so that as many records as possible may be stored
-	// in one network packet
-	if ((noCachedRecords >= 10) || forcesend) {
-		// send packet
-		endAndSendDataSet();
-		statSentPackets++;
+	if (!ipfixExporter) {
+		THROWEXCEPTION("ipfixExporter not set");
 	}
-	// set next timeout
-	addToCurTime(&nextTimeout, recordCacheTimeout);
-}
 
+	// send cached records
+	sendRecords(IfNotEmpty);
 
-/**
- * if flows are cached at the moment, this function sends them to the network
- * immediately
- */
-void IpfixSender::flushPacket()
-{
-	sendRecords(true);
-}
-
-
-/**
- * gets called regularly to send data over the network
- */
-void IpfixSender::onTimeout(void* dataPtr)
-{
-	timeoutRegistered = false;
-
-	if (recordsAlreadySent) {
-		timeval tv;
-		gettimeofday(&tv, 0);
-		if (nextTimeout.tv_sec>tv.tv_sec || (nextTimeout.tv_sec==tv.tv_sec && nextTimeout.tv_nsec>tv.tv_usec*1000)) {
-			// next timeout is in the future, reregister it
-			timer->addTimeout(this, nextTimeout, NULL);
-			// as the next timeout is not over yet, we don't need to send the records
-			return;
-		}
-	}
-	sendRecords(true);
-}
-
-/**
- * registers timeout for function onTimeout in Timer
- * (used to send records which are cached)
- */
-void IpfixSender::registerTimeout()
-{
-	if (timeoutRegistered) return;
-
-	addToCurTime(&nextTimeout, recordCacheTimeout);
-	timer->addTimeout(this, nextTimeout, NULL);
-	timeoutRegistered = true;
-}
-
-/**
- * sends all cached records
- */
-void IpfixSender::performShutdown()
-{
-	// send remaining records first
-	sendRecords(true);
-
-	// Destroy Templates
+	// Destroy all templates (they will be resent after reconfiguration if necessary)
 	for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) {
 		/* Remove template from ipfixlolib */
 		if (0 != ipfix_remove_template_set(ipfixExporter, iter->first)) {
@@ -688,19 +623,99 @@ void IpfixSender::performShutdown()
 			msg(MSG_INFO, "IpfixSender: removed template with ID %u", iter->first);
 		}
 	}
-	
-	// enforce sending the withdrawal message
-	if (ipfix_send(ipfixExporter) != 0) {
-		THROWEXCEPTION("IpfixSender: ipfix_send failed");
+	sendRecords(Always);
+
+	// clear maps
+	uniqueIdToTemplateId.clear();
+	templateIdToUniqueId.clear();
+}
+
+
+/**
+ * sends records to the network
+ * @param policy controls when to send (IfFull: only if Data Set is full, IfNotEmpty: only if Data Set is not empty, Always: send always (useful for sending Templates))
+ */
+void IpfixSender::sendRecords(SendPolicy policy)
+{
+msg(MSG_FATAL, "sendRecords called with %u", policy);
+	if ((noCachedRecords == 0) && (policy != Always)) return;
+
+	// get the message lock
+	ipfixMessageLock.lock();
+
+msg(MSG_FATAL, "sendRecords after lock");
+	// check again
+	if ((noCachedRecords == 0) && (policy != Always)) {
+		ipfixMessageLock.unlock();
+		return;
 	}
+
+	// send if packet is full or if sending is forced
+	// TODO: extend ipfixlolib so that as many records as possible may be stored
+	// in one network packet
+	if ((noCachedRecords >= 10) || (policy != IfFull)) {
+		// send packet now
+		endAndSendDataSet();
+	} else { // don't send now but after timeout
+		// set next timeout
+		addToCurTime(&nextTimeout, recordCacheTimeout);
+		registerTimeout();
+	}
+
+	// get the message lock
+	ipfixMessageLock.unlock();
+msg(MSG_FATAL, "sendRecords after unlock");
+
+}
+
+
+/**
+ * gets called regularly to send data over the network
+ */
+void IpfixSender::onTimeout(void* dataPtr)
+{
+msg(MSG_FATAL, "TIMEOUT RECEIVED");
+	timeoutRegistered = false;
+
+	timeval tv;
+	gettimeofday(&tv, 0);
+	// check if this timeout corresponds to nextTimeout
+	if (nextTimeout.tv_sec>tv.tv_sec || (nextTimeout.tv_sec==tv.tv_sec && nextTimeout.tv_nsec>tv.tv_usec*1000))
+		// next timeout is in the future, reregister it
+		registerTimeout();
+	else
+		// timeout corresponds to nextTimeout, so force sending the message
+		sendRecords(IfNotEmpty);
+msg(MSG_FATAL, "TIMEOUT END");
 }
 
 /**
- * during reconfiguration ensure, that all cached flows are exported
+ * registers timeout for function onTimeout in Timer
+ * (used to send records which are cached)
+ */
+void IpfixSender::registerTimeout()
+{
+msg(MSG_FATAL, "REGISTER TIMEOUT");
+	// check if there is already a timeout
+	if (timeoutRegistered) return;
+	timer->addTimeout(this, nextTimeout, NULL);
+	timeoutRegistered = true;
+}
+
+/**
+ * sends all cached records
+ */
+void IpfixSender::performShutdown()
+{
+	// send remaining records first
+	sendRecords(IfNotEmpty);
+}
+
+/**
+ * during reconfiguration
  */
 void IpfixSender::onReconfiguration1()
 {
-	sendRecords(true);
 }
 
 string IpfixSender::getStatisticsXML(double interval)

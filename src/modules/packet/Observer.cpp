@@ -111,8 +111,8 @@ Observer::~Observer()
 {
 	msg(MSG_DEBUG, "Observer: destructor called");
 
+	// to make sure that exitFlag is set and performShutdown() is called
 	shutdown(false);
-
 
 	/* collect and output statistics */
 	pcap_stat pstats;
