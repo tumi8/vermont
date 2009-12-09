@@ -163,7 +163,10 @@ private:
 					break;
 				}
 
+				// allow onTimeout to call addTimeout(...)
+				mutex.unlock();
 				te->n->onTimeout(te->dataPtr);
+				mutex.lock();
 
 				Source<T>::atomicRelease();
 
