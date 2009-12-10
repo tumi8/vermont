@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
 	pause();
 	msg(MSG_DIALOG, "Stopping threads and tidying up.\n");
 
-	msg(MSG_DIALOG, "stopping collector\n");
+	msg(MSG_DIALOG, "Stopping collector\n");
 	collector.shutdown();
 	queue.shutdown();
 	printer.shutdown();

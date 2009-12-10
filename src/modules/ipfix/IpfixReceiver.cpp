@@ -76,14 +76,16 @@ void IpfixReceiver::performStart()
  */
 void IpfixReceiver::performShutdown() 
 {
+	// stop receiver thread
+	exitFlag = true;
+	thread.join();
+
+	// shutdown packet processors
 	std::list<IpfixPacketProcessor*>::iterator iter = packetProcessors.begin();
 	while (iter != packetProcessors.end()) {
 		(*iter)->performShutdown();
 		iter++;
 	}
-	
-	exitFlag = true;
-	thread.join();
 }
 
 /**
