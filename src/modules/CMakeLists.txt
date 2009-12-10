@@ -63,6 +63,7 @@ ADD_LIBRARY(modules
     ipfix/IpfixPayloadWriterCfg.cpp
     ipfix/IpfixPrinterCfg.cpp
     ipfix/IpfixSamplerCfg.cpp
+    ipfix/NetflowV9ConverterCfg.cpp
     ipfix/Connection.cpp
     ipfix/IpfixReceiverUdpIpV4.cpp
     ipfix/IpfixReceiverSctpIpV4.cpp
@@ -84,6 +85,7 @@ ADD_LIBRARY(modules
     ipfix/IpfixSampler.cpp
     ipfix/IpfixPayloadWriter.cpp
     ipfix/IpfixRecordAnonymizer.cpp
+    ipfix/NetflowV9Converter.cpp
     ipfix/aggregator/PacketAggregatorCfg.cpp
     ipfix/aggregator/AggregatorBaseCfg.cpp
     ipfix/aggregator/IpfixAggregatorCfg.cpp

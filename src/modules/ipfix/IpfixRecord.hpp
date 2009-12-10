@@ -126,7 +126,6 @@ class IpfixRecord
  * Template description passed to the callback function when a new Template arrives.
  */
 class TemplateInfo {
-        friend class IpfixSender;
 	public:
 		typedef uint16_t TemplateId;
 
@@ -154,6 +153,9 @@ class TemplateInfo {
 		~TemplateInfo();
 
 		void setUniqueId();
+		inline uint16_t getUniqueId() {
+			return uniqueId;
+		}
 
 		FieldInfo* getFieldInfo(const InformationElement::IeInfo& type);
 		FieldInfo* getFieldInfo(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid);
@@ -178,7 +180,6 @@ class TemplateInfo {
 		uint16_t preceding; /**< the preceding rule field as defined in the draft */
 		uint16_t dataLength;
 		IpfixRecord::Data* data; /**< data start pointer for fixed-value fields */
-		bool anonymized; 		/** flag that indicates if fixed-value fields have been anonymized */
 
 	private:
 		/* uniqueId:
