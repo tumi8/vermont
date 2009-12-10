@@ -72,8 +72,8 @@ void IpfixCollector::performStart()
  */
 void IpfixCollector::performShutdown() 
 {
-	connected.shutdown();
 	ipfixReceiver->performShutdown();
+	connected.shutdown();
 }
 
 void IpfixCollector::postReconfigration()

@@ -122,9 +122,8 @@ TemplateBuffer::TemplateBuffer(IpfixParser* parentIpfixParser) {
 TemplateBuffer::~TemplateBuffer() {
 	while (head != 0) {
 		TemplateBuffer::BufferedTemplate* bt = head;
-		TemplateBuffer::BufferedTemplate* bt2 = (TemplateBuffer::BufferedTemplate*)bt->next;
-		destroyBufferedTemplate(bt->sourceID, bt->templateInfo->templateId);
-		head = bt2;
+		head = (TemplateBuffer::BufferedTemplate*)bt->next;
+		delete bt;
 	}
 }
 

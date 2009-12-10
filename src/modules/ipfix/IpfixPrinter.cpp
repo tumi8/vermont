@@ -365,7 +365,7 @@ void IpfixPrinter::printUint(char* buf, InformationElement::IeInfo type, IpfixRe
 		sprintf(buf, "%u",ntohl(*(uint32_t*)data));
 		return;
 	case 8:
-		sprintf(buf, "%Lu",ntohll(*(uint64_t*)data));
+		sprintf(buf, "%llu",ntohll(*(uint64_t*)data));
 		return;
 	default:
 		msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
@@ -618,10 +618,6 @@ void IpfixPrinter::printTableRecord(IpfixDataRecord* record)
  */
 void IpfixPrinter::onDataRecord(IpfixDataRecord* record)
 {
-	int i;
-	/* we need a FieldInfo for printIPv4 */
-	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
-
 	switch (outputType) {
 		case LINE:
 			printOneLineRecord(record);

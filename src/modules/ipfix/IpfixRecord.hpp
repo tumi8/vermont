@@ -181,8 +181,6 @@ class TemplateInfo {
 		bool anonymized; 		/** flag that indicates if fixed-value fields have been anonymized */
 
 	private:
-		Mutex mutex; /**< protect access to uniqueIdUseCount */
-
 		/* uniqueId:
 		 * - uniqueId>0 is a Vermont-wide unique identifier for a Template
 		 * - uniqueId==0 means that no uniqueId has been assigned to this TemplateInfo object, yet
@@ -196,8 +194,23 @@ class TemplateInfo {
 		 * - at position i of the vector, we store the number of TemplateInfo objects with uniqueId==(i+1)
 		 * - if a new uniqueId is to be assigned, we look for the smallest index i with uniqueIdUseCount[i]==0
 		 *   and assigne (i+1) as new uniqueId
+		 * - requires long lifetime as it is used in the destructor of TemplateInfo (singleton without destruction)
+		 *   see: http://groups.google.com/group/comp.lang.c++/browse_thread/thread/8c6c8d00ec467068/fd8778f91ef7397e?lnk=raot
 		 */ 
-		static std::vector<uint16_t> uniqueIdUseCount;
+		std::vector<uint16_t>& uniqueIdUseCount() {
+			static std::vector<uint16_t>* theOnlyUniqueIdUseCoune = new std::vector<uint16_t>;
+			return *theOnlyUniqueIdUseCoune;
+		}
+
+		/* mutex:
+		 * - controls access to uniqueIdUseCoune
+		 * - requires long lifetime as it is used in the destructor of TemplateInfo (singleton without destruction)
+		 */ 
+		Mutex& mutex() {
+			static Mutex* theOnlyMutex = new Mutex;
+			return *theOnlyMutex;
+		}
+
 };
 
 
