@@ -206,7 +206,7 @@ namespace InformationElement {
 TemplateInfo::TemplateInfo() : templateId(0), setId(UnknownSetId), fieldCount(0), fieldInfo(NULL), 
         freePointers(true),
 	scopeCount(0), scopeInfo(NULL), dataCount(0), dataInfo(NULL), preceding(0), dataLength(0), data(NULL), 
-	anonymized(false), uniqueId(0)
+	uniqueId(0)
 {
         setUniqueId();
 }
@@ -236,7 +236,6 @@ TemplateInfo::TemplateInfo(const TemplateInfo& t)
 	dataLength = t.dataLength;
 	data = (IpfixRecord::Data*)malloc(dataLength*sizeof(IpfixRecord::Data));
 	memcpy(data, t.data, dataLength*sizeof(IpfixRecord::Data));
-	anonymized = t.anonymized;
 
 	// copy uniqueId (a new uniqueId can be assigned with setUniqueId() if needed)
 	uniqueId = t.uniqueId;
@@ -267,7 +266,8 @@ TemplateInfo::~TemplateInfo() {
 	mutex().unlock();
 }
 
-void TemplateInfo::setUniqueId() {
+void TemplateInfo::setUniqueId() 
+{
 	mutex().lock();
 	uint16_t oldId = uniqueId;
 	uint16_t oldSize = uniqueIdUseCount().size();

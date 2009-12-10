@@ -205,7 +205,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 
 	// check if this is a known template
-	if(uniqueIdToTemplateId.find(dataTemplateInfo->uniqueId) != uniqueIdToTemplateId.end()) {
+	if(uniqueIdToTemplateId.find(dataTemplateInfo->getUniqueId()) != uniqueIdToTemplateId.end()) {
 		msg(MSG_ERROR, "IpfixSender: Received known Template (id=%u) again, which should not happen.", dataTemplateInfo->templateId);
 		record->removeReference();
 		ipfixMessageLock.unlock();
@@ -231,8 +231,8 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	}
 
 	// Update maps
-	templateIdToUniqueId[my_template_id] = dataTemplateInfo->uniqueId; 
-	uniqueIdToTemplateId[dataTemplateInfo->uniqueId] = my_template_id;
+	templateIdToUniqueId[my_template_id] = dataTemplateInfo->getUniqueId(); 
+	uniqueIdToTemplateId[dataTemplateInfo->getUniqueId()] = my_template_id;
 
 	//for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) msg(MSG_FATAL, "template id %u -> unique id %u", iter->first, iter->second);
 	//for(map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.begin(); iter != uniqueIdToTemplateId.end(); iter++) msg(MSG_FATAL, "unique id %u -> template id %u", iter->first, iter->second);
@@ -391,8 +391,8 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 		return;
 	}
 
-	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->uniqueId);
-	if(iter == templateIdToUniqueId.end()) {
+	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->getUniqueId());
+	if(iter == uniqueIdToTemplateId.end()) {
 		msg(MSG_ERROR, "IpfixSender: Template (id=%u) to be destroyed does not exist.", dataTemplateInfo->templateId);
 		record->removeReference();
 		ipfixMessageLock.unlock();
@@ -536,10 +536,11 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 	ipfixMessageLock.lock();
 
 	// check if we know the Template
-	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->uniqueId);
-	if(iter == templateIdToUniqueId.end()) {
+	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->getUniqueId());
+	if(iter == uniqueIdToTemplateId.end()) {
 		msg(MSG_ERROR, "IpfixSender: Discard Data Record because Template (id=%u) does not exist (this may happen during reconfiguration).", dataTemplateInfo->templateId);
 		record->removeReference();
+		ipfixMessageLock.unlock();
 		return;
 	}
 
