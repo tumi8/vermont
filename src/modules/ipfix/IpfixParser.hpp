@@ -81,7 +81,7 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		typedef struct {
 			uint16_t version; /**< Expected to be 0x0009 */
 			uint16_t setCount;
-			uint32_t uptime;
+			uint32_t upTime;
 			uint32_t exportTime;
 			uint32_t sequenceNo;
 			uint32_t observationDomainId;

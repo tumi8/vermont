@@ -185,8 +185,10 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 		ti->fieldCount = ntohs(oth->fieldCount)-ntohs(oth->scopeCount);
 		ti->fieldInfo = (TemplateInfo::FieldInfo*)malloc(ti->fieldCount * sizeof(TemplateInfo::FieldInfo));
 		int isLengthVarying = 0;
-		uint16_t scopeNo;
-		for (scopeNo = 0; scopeNo < ti->scopeCount; scopeNo++) {
+		uint16_t scopeNo = 0;
+		//for loop works for IPFIX, but in the case of NetflowV9, scopeCount is the length of all fields in bytes
+		//for (scopeNo = 0; scopeNo < ti->scopeCount; scopeNo++) {
+		while (scopeNo < ti->scopeCount) {
 			/* check if there are at least 4 bytes for this field */
 			if (record+4 > endOfSet) {
 				msg(MSG_ERROR, "IpfixParser: Option template record exceeds set boundary!");
@@ -214,8 +216,19 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 				ti->fieldInfo[scopeNo].type.enterprise = 0;
 				record = (uint8_t*)((uint8_t*)record+4);
 			}
+			if (setId == TemplateInfo::NetflowOptionsTemplate) {
+				scopeNo += ti->scopeInfo[scopeNo].type.length;
+				if (scopeNo > scopeCount) {
+					msg(MSG_ERROR, "IpfixParser: Scope fields in Netflow option template exceeds scope boundary!");
+					delete bt;
+					return;
+				}
+			} else
+				scopeNo++;
 		}
 		uint16_t fieldNo;
+		//for loop works for IPFIX, but in the case of NetflowV9, fieldCount is the length of all fields in bytes
+		// TODO
 		for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
 			/* check if there are at least 4 bytes for this field */
 			if (record+4 > endOfSet) {
@@ -600,6 +613,8 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 	
 	NetflowV9Header* header = (NetflowV9Header*)message.get();
 	sourceId->observationDomainId = ntohl(header->observationDomainId);
+	sourceId->sysUpTime = ntohl(header->upTime);
+	sourceId->exportTime = ntohl(header->exportTime);
 
 	/* pointer to first set */
 	IpfixSetHeader* set = (IpfixSetHeader*)&header->data;
@@ -661,6 +676,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 	}
 	IpfixHeader* header = (IpfixHeader*)message.get();
 	sourceId->observationDomainId = ntohl(header->observationDomainId);
+	sourceId->exportTime = ntohl(header->exportTime);
 
 	if (ntohs(header->length) != length) {
 		msg(MSG_ERROR, "IpfixParser: Bad message length - packet length is  %#06x, header length field is %#06x\n", length, ntohs(header->length));
