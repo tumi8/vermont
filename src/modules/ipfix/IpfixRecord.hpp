@@ -64,13 +64,23 @@ class IpfixRecord
 		 * A better name would be something like TemplateScope (TransportSession + ObservationDomainId)
 		 */
 		struct SourceID {
+			SourceID() : observationDomainId(0), sysUpTime(0), exportTime(0), 
+			    exporterPort(0), receiverPort(0), protocol(0), fileDescriptor(0) 
+			{ 
+				exporterAddress.len = 0; 
+			}
 
 			struct ExporterAddress {
 				uint8_t ip[MAX_ADDRESS_LEN];
 				uint8_t len;
 			};
 
+			// fields from IPFIX/Netflow header:
 			uint32_t observationDomainId;
+			uint32_t sysUpTime; // only available in Netflow header
+			uint32_t exportTime;
+
+			// information from collector:
 			SourceID::ExporterAddress exporterAddress;
 			uint16_t exporterPort;
 			uint16_t receiverPort;
