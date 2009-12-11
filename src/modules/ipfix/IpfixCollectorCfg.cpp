@@ -10,7 +10,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	if (!elem)
 		return;
 
-	msg(MSG_INFO, "CollectorConfiguration: Start reading packetReporting section");
+	msg(MSG_INFO, "IpfixCollectorCfg: Start reading ipfixCollector section");
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -33,7 +33,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	if (listener == NULL)
 		THROWEXCEPTION("collectingProcess has to listen on one address!");
 
-	msg(MSG_INFO, "CollectorConfiguration: Successfully parsed collectingProcess section");
+	msg(MSG_INFO, "IpfixCollectorCfg: Successfully parsed collectingProcess section");
 }
 
 IpfixCollectorCfg::~IpfixCollectorCfg()

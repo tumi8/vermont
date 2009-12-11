@@ -7,6 +7,7 @@ IpfixPrinterCfg::IpfixPrinterCfg(XMLElement* elem)
 	if (!elem)
 		return;
 
+	msg(MSG_INFO, "ParserCfg: Start reading ipfixPrinter section");
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin(); it != set.end(); it++) {
 		XMLElement* e = *it;

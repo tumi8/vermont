@@ -1,135 +1,22 @@
 <ipfixConfig>
-	<sensorManager id="99">
-		<checkinterval>2</checkinterval>
-	</sensorManager>
-	<observer id="1">
-		<interface>eth0</interface>
-		<pcap_filter>ip</pcap_filter>
+	<ipfixCollector id="1">
+		<listener>
+			<transportProtocol>SCTP</transportProtocol>
+			<port>1500</port>
+		</listener>
 		<next>2</next>
-	</observer>
-	
-	<packetQueue id="2">
-		<maxSize>10</maxSize>
-		<next>6</next>
-	</packetQueue>
-	
-	<packetAggregator id="6">
-		<rule>
-			<templateId>999</templateId>
-			<flowKey>
-				<ieName>sourceIPv4Address</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>destinationIPv4Address</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>icmpTypeCodeIPv4</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>protocolIdentifier</ieName>
-				<match>ICMP</match>
-			</flowKey>
-			<nonFlowKey>
-				<ieName>flowStartMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>flowEndMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>octetDeltaCount</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>packetDeltaCount</ieName>
-			</nonFlowKey>
-		</rule>
-		<rule>
-			<templateId>998</templateId>
-			<flowKey>
-				<ieName>sourceIPv4Address</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>destinationIPv4Address</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>protocolIdentifier</ieName>
-				<match>TCP</match>
-			</flowKey>
-			<flowKey>
-				<ieName>sourceTransportPort</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>destinationTransportPort</ieName>
-			</flowKey>
-			<nonFlowKey>
-				<ieName>flowStartMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>flowEndMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>octetDeltaCount</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>packetDeltaCount</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>tcpControlBits</ieName>
-			</nonFlowKey>
-		</rule>
-		<rule>
-			<templateId>997</templateId>
-			<flowKey>
-				<ieName>sourceIPv4Address</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>destinationIPv4Address</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>protocolIdentifier</ieName>
-				<match>UDP</match>
-			</flowKey>
-			<flowKey>
-				<ieName>sourceTransportPort</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>destinationTransportPort</ieName>
-			</flowKey>
-			<nonFlowKey>
-				<ieName>flowStartMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>flowEndMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>octetDeltaCount</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>packetDeltaCount</ieName>
-			</nonFlowKey>
-		</rule>
-		<expiration>
-			<inactiveTimeout unit="sec">10</inactiveTimeout>
-			<activeTimeout unit="sec">10</activeTimeout>
-		</expiration>
-		<pollInterval unit="msec">1000</pollInterval>
-		<next>20</next>
-	</packetAggregator>
-	
-	<netflowV9Converter id="20">
-		<next>4</next>
+	</ipfixCollector>
+
+	<netflowV9Converter id="2">
+		<next>3</next>
 	</netflowV9Converter>
 
-	<ipfixQueue id="4">
+	<ipfixQueue id="3">
 		<entries>1000</entries>
 		<next>8</next>
 	</ipfixQueue>
 	
-	<ipfixExporter id="8">
-		<observationDomainId>99</observationDomainId>
-		<collector>
-			<ipAddress>127.0.0.1</ipAddress>
-			<transportProtocol>132</transportProtocol>
-			<port>1500</port>
-		</collector>
-	</ipfixExporter>
+	<ipfixPrinter id="8">
+		<outputType>tree</outputType>
+	</ipfixPrinter>
 </ipfixConfig>

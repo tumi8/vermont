@@ -284,7 +284,7 @@ void TemplateInfo::setUniqueId()
 	if(uniqueId == 0) {
 		if(oldSize == 65535)
 			THROWEXCEPTION("TemplateInfo: more than 65353 uniqueIds needed");
-		msg(MSG_VDEBUG, "TemplateInfo: need to increase number of uniqueIds");
+		msg(MSG_VDEBUG, "TemplateInfo: need to increase number of uniqueIds, oldSize=%u", oldSize);
 		uniqueIdUseCount().push_back(1);
 		uniqueId = oldSize + 1;
 	}
