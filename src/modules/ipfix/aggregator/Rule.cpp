@@ -239,7 +239,7 @@ int matchesIPv4Pattern(const InformationElement::IeInfo* dataType, const IpfixRe
  * @c return 1 if field matches
  */
 int matchesRawPattern(const InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, const InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
-	int i;
+	//int i;
 
 	/* Byte-wise comparison, so lengths must be equal */
 	if (dataType->length != patternType->length) return 0;

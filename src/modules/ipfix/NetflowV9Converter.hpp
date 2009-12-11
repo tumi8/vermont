@@ -10,6 +10,8 @@ public:
 	NetflowV9Converter(bool mode = true) : copyMode(mode) {}
 	virtual ~NetflowV9Converter() {}
 
+	virtual void onReconfiguration2();
+
 	void setCopyMode(bool mode);
 
 protected:

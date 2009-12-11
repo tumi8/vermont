@@ -261,26 +261,27 @@ IpfixPrinter::~IpfixPrinter()
  */
 void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 {
+	boost::shared_ptr<TemplateInfo> templateInfo = record->templateInfo;
 	/* we need a FieldInfo for printIPv4 */
 	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
-	switch(record->templateInfo->setId) {
+	switch(templateInfo->setId) {
 		case TemplateInfo::NetflowTemplate:
-			printf("\n-+--- Netflow Template (id=%u) from ", record->templateInfo->templateId);
+			printf("\n-+--- Netflow Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
 		case TemplateInfo::NetflowOptionsTemplate:
-			printf("\n-+--- Netflow Options Template (id=%u) from ", record->templateInfo->templateId);
+			printf("\n-+--- Netflow Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
 		case TemplateInfo::IpfixTemplate:
-			printf("\n-+--- Ipfix Template (id=%u) from ", record->templateInfo->templateId);
+			printf("\n-+--- Ipfix Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
 		case TemplateInfo::IpfixOptionsTemplate:
-			printf("\n-+--- Ipfix Options Template (id=%u) from ", record->templateInfo->templateId);
+			printf("\n-+--- Ipfix Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
 		case TemplateInfo::IpfixDataTemplate:
-			printf("\n-+--- Ipfix Data Template (id=%u, preceding=%u) from ", record->templateInfo->templateId, record->templateInfo->preceding);
+			printf("\n-+--- Ipfix Data Template (id=%u, preceding=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->preceding, templateInfo->getUniqueId());
 			break;
 		default:
-			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%u", record->templateInfo->setId);
+			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
 
 	}
 	if (record->sourceID) {
@@ -297,12 +298,12 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 	}
 
 	// print fixed data in the case of a data template
-	if(record->templateInfo->setId == TemplateInfo::IpfixDataTemplate) {
+	if(templateInfo->setId == TemplateInfo::IpfixDataTemplate) {
 		printf(" `- fixed data\n");
-		for (int i = 0; i < record->templateInfo->dataCount; i++) {
+		for (int i = 0; i < templateInfo->dataCount; i++) {
 			printf(" '   `- ");
-			printFieldData(record->templateInfo->dataInfo[i].type,
-					(record->templateInfo->data + record->templateInfo->dataInfo[i].offset));
+			printFieldData(templateInfo->dataInfo[i].type,
+					(templateInfo->data + templateInfo->dataInfo[i].offset));
 			printf("\n");
 		}
 	}
@@ -317,24 +318,27 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
  */
 void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
+	boost::shared_ptr<TemplateInfo> templateInfo = record->templateInfo;
 	/* we need a FieldInfo for printIPv4 */
 	InformationElement::IeInfo tmpInfo = {0, 4, 0}; // length=4 for IPv4 address
-	switch(record->templateInfo->setId) {
+	switch(templateInfo->setId) {
 		case TemplateInfo::NetflowTemplate:
-			printf("\n-+--- Destroyed Netflow Template (id=%u) from ", record->templateInfo->templateId);
+			printf("\n-+--- Destroyed Netflow Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
 		case TemplateInfo::NetflowOptionsTemplate:
-			printf("\n-+--- Destroyed Netflow Options Template (id=%u) from ", record->templateInfo->templateId);
+			printf("\n-+--- Destroyed Netflow Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
 		case TemplateInfo::IpfixTemplate:
-			printf("\n-+--- Destroyed Ipfix Template (id=%u) from ", record->templateInfo->templateId);
+			printf("\n-+--- Destroyed Ipfix Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
 		case TemplateInfo::IpfixOptionsTemplate:
-			printf("\n-+--- Destroyed Ipfix Options Template (id=%u) from ", record->templateInfo->templateId);
+			printf("\n-+--- Destroyed Ipfix Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
 		case TemplateInfo::IpfixDataTemplate:
-			printf("\n-+--- Destroyed Ipfix Data Template (id=%u) from ", record->templateInfo->templateId);
+			printf("\n-+--- Destroyed Ipfix Data Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
+		default:
+			msg(MSG_ERROR, "IpfixPrinter: Template destruction recordwith unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
 
 	}
 	if (record->sourceID) {

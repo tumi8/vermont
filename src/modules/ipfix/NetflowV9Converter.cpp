@@ -164,3 +164,9 @@ void NetflowV9Converter::onDataRecord(IpfixDataRecord* record)
 	}
 }
 
+void NetflowV9Converter::onReconfiguration2()
+{
+	// we do not need to destroy templates during reconfiguration
+	// forget all conversion info
+	uniqueIdToConvInfo.clear();
+}

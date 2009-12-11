@@ -19,7 +19,7 @@ public:
 	std::string getName() { return "collector"; }
 
 	CollectorCfg(XMLElement* elem)
-		: port(4739), protocol(0)
+		: protocol(0), port(4739)
 	{
 		if (!elem)
 			return;
@@ -66,7 +66,7 @@ public:
 			if (ipfixReceiver->addAuthorizedHost((*i).c_str()) != 0) 
 				msg(MSG_ERROR, "CollectorCfg: Invalid authorized host %s", (*i).c_str());
 		}
-
+		return ipfixReceiver;
 	}
 
 	bool equalTo(CollectorCfg* other)
@@ -76,7 +76,7 @@ public:
 			(protocol == other->protocol) &&
 			(port == other->port) &&
 			(authorizedHosts.size() == other->authorizedHosts.size())) {
-			for (int i = 0; i < authorizedHosts.size(); i++)
+			for (uint16_t i = 0; i < authorizedHosts.size(); i++)
 				if (authorizedHosts[i] != other->authorizedHosts[i])
 					return false;	
 			return true;

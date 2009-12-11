@@ -209,8 +209,8 @@ class TemplateInfo {
 		 *   see: http://groups.google.com/group/comp.lang.c++/browse_thread/thread/8c6c8d00ec467068/fd8778f91ef7397e?lnk=raot
 		 */ 
 		std::vector<uint16_t>& uniqueIdUseCount() {
-			static std::vector<uint16_t>* theOnlyUniqueIdUseCoune = new std::vector<uint16_t>;
-			return *theOnlyUniqueIdUseCoune;
+			static std::vector<uint16_t>* theOnlyUniqueIdUseCount = new std::vector<uint16_t>;
+			return *theOnlyUniqueIdUseCount;
 		}
 
 		/* mutex:
