@@ -12,8 +12,8 @@ void NetflowV9Converter::setCopyMode(bool mode)
 void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> templateInfo = record->templateInfo;
-	//if (templateInfo->setId == TemplateInfo::NetflowTemplate) {
-	if (true) {
+	if (templateInfo->setId == TemplateInfo::NetflowTemplate) {
+	//if (true) {
 		// This should be a new Template for us
 		if(uniqueIdToConvInfo.find(templateInfo->getUniqueId()) != uniqueIdToConvInfo.end()) {
 			msg(MSG_ERROR, "NetflowV9Converter: Received known Template (id=%u) again, which should not happen.", templateInfo->templateId);
@@ -60,13 +60,15 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 					} else
 						msg(MSG_ERROR, "NetflowV9Converter: flowStartSysUpTime has expected length 4, got %u", fi->type.length);
 				}
-				// TODO: remove this:	
+				/*
+				// TODO: remove this test code:	
 				else if (fi->type.id == IPFIX_TYPEID_flowStartMilliSeconds)
 				{
 					fi->type.id = IPFIX_TYPEID_flowStartSeconds;
 					fi->type.length = 4;
 				        myConvInfo.fieldIndexes.push_back(i);
 				}
+				*/
 			} else {
 				msg(MSG_ERROR, "NetflowV9Converter: Got enterprise specific IE (id=%u, enterprise=%lu, length=%u) in Netflow Template, which should not happen", fi->type.id, fi->type.enterprise, fi->type.length);
 			}
@@ -91,8 +93,8 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 void NetflowV9Converter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> templateInfo = record->templateInfo;
-	//if (templateInfo->setId == TemplateInfo::NetflowTemplate) {
-	if (true) {
+	if (templateInfo->setId == TemplateInfo::NetflowTemplate) {
+	//if (true) {
 		// This should be a known Template for us
 		map<uint16_t, ConvInfo>::iterator iter = uniqueIdToConvInfo.find(templateInfo->getUniqueId());
 		if(iter == uniqueIdToConvInfo.end()) {
@@ -120,8 +122,8 @@ void NetflowV9Converter::onTemplateDestruction(IpfixTemplateDestructionRecord* r
 void NetflowV9Converter::onDataRecord(IpfixDataRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> templateInfo = record->templateInfo;
-	//if (templateInfo->setId == TemplateInfo::NetflowTemplate) {
-	if (true) {
+	if (templateInfo->setId == TemplateInfo::NetflowTemplate) {
+	//if (true) {
 		// This should be a known Template for us
 		map<uint16_t, ConvInfo>::iterator iter = uniqueIdToConvInfo.find(templateInfo->getUniqueId());
 		if(iter == uniqueIdToConvInfo.end()) {
@@ -152,9 +154,7 @@ void NetflowV9Converter::onDataRecord(IpfixDataRecord* record)
 		for (std::list<uint16_t>::iterator i = iter->second.fieldIndexes.begin(); i != iter->second.fieldIndexes.end(); i++) {
 			assert(*i < templateInfo->fieldCount);
 			uint32_t* timestamp = (uint32_t*) (myRecord->data + templateInfo->fieldInfo[*i].offset);
-			// TODO
-			// *timestamp = (*timestamp/1000) + iter->second.sysUpUnixSeconds;
-			*timestamp = 0;
+			*timestamp = (*timestamp/1000) + iter->second.sysUpUnixSeconds;
 		}
 
 		// send converted record
