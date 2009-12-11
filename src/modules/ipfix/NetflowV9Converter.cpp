@@ -154,7 +154,7 @@ void NetflowV9Converter::onDataRecord(IpfixDataRecord* record)
 		for (std::list<uint16_t>::iterator i = iter->second.fieldIndexes.begin(); i != iter->second.fieldIndexes.end(); i++) {
 			assert(*i < templateInfo->fieldCount);
 			uint32_t* timestamp = (uint32_t*) (myRecord->data + templateInfo->fieldInfo[*i].offset);
-			*timestamp = (*timestamp/1000) + iter->second.sysUpUnixSeconds;
+			*timestamp = htonl(ntohl(*timestamp)/1000 + iter->second.sysUpUnixSeconds);
 		}
 
 		// send converted record

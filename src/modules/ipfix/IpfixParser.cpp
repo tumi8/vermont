@@ -58,14 +58,15 @@ InstanceManager<IpfixTemplateDestructionRecord> IpfixParser::templateDestruction
  * Called by processMessage
  * ATTENTION: setId needs to be TemplateInfo::IpfixTemplate or TemplateInfo::NetflowTemplate
  */
-void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
+uint32_t IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
+	uint32_t numberOfRecords = 0;
 	uint8_t* endOfSet = (uint8_t*)set + ntohs(set->length);
 	uint8_t* record = (uint8_t*)&set->data;
 
 	/* check if set length lies within message boundaries */
 	if (endOfSet > endOfMessage) {
 		msg(MSG_ERROR, "IpfixParser: Template set exceeds message boundary!");
-		return;
+		return 0;
 	}
 
 	/* Template records are >= 4 byte, so we stop processing when fewer bytes are left */
@@ -75,6 +76,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		if (th->fieldCount == 0) {
 			/* This is a Template withdrawal message */
 			templateBuffer->destroyBufferedTemplate(sourceId, ntohs(th->templateId));
+			numberOfRecords++;
 			continue;
 		}
 		TemplateBuffer::BufferedTemplate* bt = new TemplateBuffer::BufferedTemplate;
@@ -93,7 +95,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 			if (record+4 > endOfSet) {
 				msg(MSG_ERROR, "IpfixParser: Template record (id=%u) exceeds set boundary!", bt->templateInfo->templateId);
 				delete bt;
-				return;
+				return numberOfRecords;
 			}
 			ti->fieldInfo[fieldNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
 			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
@@ -109,7 +111,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				if (record+8 > endOfSet) {
 					msg(MSG_ERROR, "IpfixParser: Template record (id=%u) exceeds set boundary!", bt->templateInfo->templateId);
 					delete bt;
-					return;
+					return numberOfRecords;
 				}
 				ti->fieldInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
 				record = (uint8_t*)((uint8_t*)record+8);
@@ -135,7 +137,9 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		ipfixRecord->sourceID = sourceId;
 		ipfixRecord->templateInfo = ti;
 		push(ipfixRecord);
+		numberOfRecords++;
 	}
+	return numberOfRecords;
 }
 
 /**
@@ -143,14 +147,15 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
  * Called by processMessage
  * ATTENTION: setId needs to be TemplateInfo::IpfixOptionsTemplate or TemplateInfo::NetflowOptionsTemplate
  */
-void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
+uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
+	uint32_t numberOfRecords = 0;
 	uint8_t* endOfSet = (uint8_t*)set + ntohs(set->length);
 	uint8_t* record = (uint8_t*)&set->data;
 
 	/* check if set length lies within message boundaries */
 	if (endOfSet > endOfMessage) {
-		msg(MSG_ERROR, "IpfixParser: Option template set exceeds message boundary!");
-		return;
+		msg(MSG_ERROR, "IpfixParser: Options Template set exceeds message boundary!");
+		return 0;
 	}
 
 	/* Options template records are >= 4 byte, so we stop processing when fewer are left */
@@ -161,6 +166,7 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 		if (th->fieldCount == 0) {
 			/* This is a Template withdrawal message */
 			templateBuffer->destroyBufferedTemplate(sourceId, ntohs(th->templateId));
+			numberOfRecords++;
 			continue;
 		}
 
@@ -169,8 +175,8 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 
 		/* Non-withdrawal options template records are >= 6 byte */
 		if (record > endOfSet) {
-			DPRINTF("Strange long padding in option template");
-			return; 
+			msg(MSG_ERROR, "IpfixParser: Strange long padding in Options Template");
+			return numberOfRecords;
 		}
 
 		TemplateBuffer::BufferedTemplate* bt = new TemplateBuffer::BufferedTemplate;
@@ -191,9 +197,9 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 		while (scopeNo < ti->scopeCount) {
 			/* check if there are at least 4 bytes for this field */
 			if (record+4 > endOfSet) {
-				msg(MSG_ERROR, "IpfixParser: Option template record exceeds set boundary!");
+				msg(MSG_ERROR, "IpfixParser: Options Template record exceeds set boundary!");
 				delete bt;
-				return;
+				return numberOfRecords;
 			}
 			ti->scopeInfo[scopeNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
 			ti->scopeInfo[scopeNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
@@ -207,9 +213,9 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 			if ((ti->scopeInfo[scopeNo].type.id & IPFIX_ENTERPRISE_TYPE) && setId == TemplateInfo::IpfixOptionsTemplate) {
 				/* check if there are 8 bytes for this field */
 				if (record+8 > endOfSet) {
-					msg(MSG_ERROR, "IpfixParser: Option template record exceeds set boundary!");
+					msg(MSG_ERROR, "IpfixParser: Options Template record exceeds set boundary!");
 					delete bt;
-					return;
+					return numberOfRecords;
 				}
 				ti->scopeInfo[scopeNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
 				record = (uint8_t*)((uint8_t*)record+8);
@@ -220,9 +226,9 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 			if (setId == TemplateInfo::NetflowOptionsTemplate) {
 				scopeNo += ti->scopeInfo[scopeNo].type.length;
 				if (scopeNo > ti->scopeCount) {
-					msg(MSG_ERROR, "IpfixParser: Scope fields in Netflow option template exceed scope boundary!");
+					msg(MSG_ERROR, "IpfixParser: Scope fields in Netflow Options Template exceed scope boundary!");
 					delete bt;
-					return;
+					return numberOfRecords;
 				}
 			} else
 				scopeNo++;
@@ -235,7 +241,7 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 			if (record+4 > endOfSet) {
 				msg(MSG_ERROR, "IpfixParser: Template record exceeds set boundary!");
 				delete bt;
-				return;
+				return numberOfRecords;
 			}
 			ti->fieldInfo[fieldNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
 			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
@@ -251,7 +257,7 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 				if (record+8 > endOfSet) {
 					msg(MSG_ERROR, "IpfixParser: Template record exceeds set boundary!");
 					delete bt;
-					return;
+					return numberOfRecords;
 				}
 				ti->fieldInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
 				record = (uint8_t*)((uint8_t*)record+8);
@@ -262,9 +268,9 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 			if (setId == TemplateInfo::NetflowOptionsTemplate) {
 				fieldNo += ti->fieldInfo[fieldNo].type.length;
 				if (fieldNo > ti->fieldCount) {
-					msg(MSG_ERROR, "IpfixParser: Fields in Netflow option template exceed field boundary!");
+					msg(MSG_ERROR, "IpfixParser: Fields in Netflow Options Template exceed field boundary!");
 					delete bt;
-					return;
+					return numberOfRecords;
 				}
 			} else
 				fieldNo++;
@@ -289,21 +295,24 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 		ipfixRecord->templateInfo = ti;
 		statTotalDataRecords++;
 		push(ipfixRecord);
+		numberOfRecords++;
 	}
+	return numberOfRecords;
 }
 
 /**
  * Processes an IPFIX DataTemplate set.
  * Called by processMessage
  */
-void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
+uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
+	uint32_t numberOfRecords = 0;
 	uint8_t* endOfSet = (uint8_t*)set + ntohs(set->length);
 	uint8_t* record = (uint8_t*)&set->data;
 
 	/* check if set length lies within message boundaries */
 	if (endOfSet > endOfMessage) {
-		msg(MSG_ERROR, "IpfixParser: Data template set exceeds message boundary!");
-		return;
+		msg(MSG_ERROR, "IpfixParser: Data Template set exceeds message boundary!");
+		return 0;
 	}
 
 	/* Data template record are >= 4 byte, so we stop processing when fewer bytes are left */
@@ -314,6 +323,7 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		if (th->fieldCount == 0) {
 			/* This is a Template withdrawal message */
 			templateBuffer->destroyBufferedTemplate(sourceId, ntohs(th->templateId));
+			numberOfRecords++;
 			continue;
 		}
 
@@ -321,8 +331,8 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		record = (uint8_t*)&dth->data;
 		/* Non-withdrawal data template records are >= 8 byte */
 		if (record > endOfSet) {
-			DPRINTF("Strange long padding in data template");
-			return; 
+			msg(MSG_ERROR, "IpfixParser: Strange long padding in Data Template");
+			return numberOfRecords;
 		}
 
 		TemplateBuffer::BufferedTemplate* bt = new TemplateBuffer::BufferedTemplate;
@@ -341,9 +351,9 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
 			/* check if there are at least 4 bytes for this field */
 			if (record+4 > endOfSet) {
-				msg(MSG_ERROR, "IpfixParser: Data template record exceeds set boundary!");
+				msg(MSG_ERROR, "IpfixParser: Data Template record exceeds set boundary!");
 				delete bt;
-				return;
+				return numberOfRecords;
 			}
 			ti->fieldInfo[fieldNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
 			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
@@ -356,9 +366,9 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 			if (ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) {
 				/* check if there are 8 bytes for this field */
 				if (record+8 > endOfSet) {
-					msg(MSG_ERROR, "IpfixParser: Data template record exceeds set boundary!");
+					msg(MSG_ERROR, "IpfixParser: Data Template record exceeds set boundary!");
 					delete bt;
-					return;
+					return numberOfRecords;
 				}
 				ti->fieldInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
 				record = (uint8_t*)((uint8_t*)record+8);
@@ -378,18 +388,18 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		for (fieldNo = 0; fieldNo < ti->dataCount; fieldNo++) {
 			/* check if there are at least 4 bytes for this field */
 			if (record+4 > endOfSet) {
-				msg(MSG_ERROR, "IpfixParser: Data template record exceeds set boundary!");
+				msg(MSG_ERROR, "IpfixParser: Data Template record exceeds set boundary!");
 				delete bt;
-				return;
+				return numberOfRecords;
 			}
 			ti->dataInfo[fieldNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
 			ti->dataInfo[fieldNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
 			if (ti->dataInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) {
 				/* check if there are 8 bytes for this field */
 				if (record+8 >= endOfSet) {
-					msg(MSG_ERROR, "IpfixParser: Data template record exceeds set boundary!");
+					msg(MSG_ERROR, "IpfixParser: Data Template record exceeds set boundary!");
 					delete bt;
-					return;
+					return numberOfRecords;
 				}
 				ti->dataInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
 				record = (uint8_t*)((uint8_t*)record+8);
@@ -406,7 +416,7 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 				if (record + dataLength + 1 > endOfSet) {
 					msg(MSG_ERROR, "IpfixParser: Template record exceeds set boundary!");
 					delete bt;
-					return;
+					return numberOfRecords;
 				}
 				/* This is a variable-length field, get length from first byte and advance offset */
 				ti->dataInfo[fieldNo].type.length = *(uint8_t*)(record + dataLength);
@@ -416,7 +426,7 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 					if (record + dataLength + 2 > endOfSet) {
 						msg(MSG_ERROR, "IpfixParser: Template record exceeds set boundary!");
 						delete bt;
-						return;
+						return numberOfRecords;
 					}
 					/* First byte did not suffice, length is stored in next two bytes. Advance offset */
 					ti->dataInfo[fieldNo].type.length = *(uint16_t*)(record + dataLength);
@@ -431,7 +441,7 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		if (record + dataLength > endOfSet) {
 			msg(MSG_ERROR, "IpfixParser: Template record exceeds set boundary!");
 			delete bt;
-			return;
+			return numberOfRecords;
 		}
 
 		/* Copy fixed data block */
@@ -452,7 +462,9 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		ipfixRecord->sourceID = sourceId;
 		ipfixRecord->templateInfo = ti;
 		push(ipfixRecord);
+		numberOfRecords++;
 	}
+	return numberOfRecords;
 }
 
 /**
@@ -460,8 +472,8 @@ void IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
  * Called by processMessage
  */
 uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
-	TemplateBuffer::BufferedTemplate* bt = templateBuffer->getBufferedTemplate(sourceId, ntohs(set->id));
 	uint32_t numberOfRecords = 0;
+	TemplateBuffer::BufferedTemplate* bt = templateBuffer->getBufferedTemplate(sourceId, ntohs(set->id));
 
 	if (bt == 0) {
 		/* this error may come in rapid succession; I hope I don't regret it */
@@ -494,7 +506,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
         
 		if (bt->recordLength < 65535) {
 			if (record + bt->recordLength > endOfSet) {
-				DPRINTF("Got a Data Set that contained not a single full record\n");
+				msg(MSG_ERROR, "IpfixParser: Got a Data Set that contained not a single full record");
 			}
 			else
 			/* We stop processing when no full record is left */
@@ -515,7 +527,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 			/* We assume that each field is at least 1 byte */
 			/* scopeCount is zero for all Templates except Options Templates */
 			if (record + ti->fieldCount + ti->scopeCount > endOfSet) {
-				DPRINTF("Got a Data Set that contained not a single full record");
+				msg(MSG_ERROR, "IpfixParser: Got a Data Set that contained not a single full record");
 			}
 			else while (record < endOfSet) {
 				int recordLength=0;
@@ -605,7 +617,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 			}
 		}
 	} else {
-	    msg(MSG_FATAL, "Data Set based on known but unhandled template type %d", bt->templateInfo->setId);
+	    msg(MSG_FATAL, "Data Set based on known but unhandled Template type %d", bt->templateInfo->setId);
 	}
 	return numberOfRecords;
 }
@@ -633,16 +645,12 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 	/* pointer beyond message */
 	uint8_t* endOfMessage = (uint8_t*)((uint8_t*)message.get() + length); 
 
-	int i;
 	uint16_t tmpid;
+	uint16_t expectedNumberOfRecords = ntohs(header->setCount);
 	uint32_t numberOfDataRecords = 0;
+	uint32_t numberOfTemplateRecords = 0;
 
-	for (i = 0; i < ntohs(header->setCount); i++) {
-		/* check if there is space for a set header */
-		if ((uint8_t*)(set) + 4 > endOfMessage) {
-		        msg(MSG_ERROR, "IpfixParser: Invalide NetFlowV9 message - set header exceeds message boundary!");
-			return -1;
-		}
+	while (((numberOfDataRecords + numberOfTemplateRecords) <= expectedNumberOfRecords) && (((uint8_t*)(set) + 4) <= endOfMessage)) {
 		/* check set length */
 		if (ntohs(set->length) < 3) {
 			msg(MSG_ERROR, "IpfixParser: Invalid set length %u, must be >= 4", ntohs(set->length));
@@ -653,10 +661,10 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 
 		switch(tmpid) {
 			case NetflowV9_SetId_Template:
-				processTemplateSet(sourceId, TemplateInfo::NetflowTemplate, message, set, endOfMessage);
+				numberOfTemplateRecords += processTemplateSet(sourceId, TemplateInfo::NetflowTemplate, message, set, endOfMessage);
 				break;
 			case NetflowV9_SetId_OptionsTemplate:
-				processOptionsTemplateSet(sourceId, TemplateInfo::IpfixOptionsTemplate, message, set, endOfMessage);
+				numberOfTemplateRecords += processOptionsTemplateSet(sourceId, TemplateInfo::IpfixOptionsTemplate, message, set, endOfMessage);
 				break;
 			default:
 				if(tmpid >= IPFIX_SetId_Data_Start) {
@@ -668,9 +676,17 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 		}
 		set = (IpfixSetHeader*)((uint8_t*)set + ntohs(set->length));
 	}
+	/* check if there are trailing bytes */
+	if ((uint8_t*)(set) != endOfMessage) {
+		msg(MSG_ERROR, "IpfixParser: NetFlowV9 message contains %u trailing bytes!", endOfMessage - (uint8_t*)(set));
+	}
+	/* check if we got all records */
+	if ((numberOfDataRecords + numberOfTemplateRecords) != expectedNumberOfRecords) {
+		msg(MSG_INFO, "IpfixParser: NetFlowV9 message header indicates %u records, but there were only %u records! Maybe the Template is unknown.", expectedNumberOfRecords, numberOfDataRecords+numberOfTemplateRecords);
+	}
 	
 	//FIXME: check for out-of-order messages and lost records
-	msg(MSG_VDEBUG, "Message contained %u bytes, sequence number was %u", numberOfDataRecords, ntohl(header->sequenceNo));
+	msg(MSG_VDEBUG, "NetflowV9 message contained %u Data Records and %u Template Records. Sequence number was %lu.", numberOfDataRecords, numberOfTemplateRecords, ntohl(header->sequenceNo));
 
 	return 0;
 }
@@ -701,7 +717,8 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 	uint8_t* endOfMessage = (uint8_t*)((uint8_t*)message.get() + length); 
 
 	uint16_t tmpid;
-	uint32_t numberOfDataRecords;
+	uint32_t numberOfDataRecords = 0;
+	uint32_t numberOfTemplateRecords = 0;
 	/* while there is space for a set header... */
 	while((uint8_t*)(set) + 4 <= endOfMessage) {
 		/* check set length */
@@ -714,13 +731,13 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 
 		switch(tmpid) {
 			case IPFIX_SetId_DataTemplate:
-				processDataTemplateSet(sourceId, message, set, endOfMessage);
+				numberOfTemplateRecords += processDataTemplateSet(sourceId, message, set, endOfMessage);
 				break;
 			case IPFIX_SetId_Template:
-				processTemplateSet(sourceId, TemplateInfo::IpfixTemplate, message, set, endOfMessage);
+				numberOfTemplateRecords += processTemplateSet(sourceId, TemplateInfo::IpfixTemplate, message, set, endOfMessage);
 				break;
 			case IPFIX_SetId_OptionsTemplate:
-				processOptionsTemplateSet(sourceId, TemplateInfo::IpfixOptionsTemplate, message, set, endOfMessage);
+				numberOfTemplateRecords += processOptionsTemplateSet(sourceId, TemplateInfo::IpfixOptionsTemplate, message, set, endOfMessage);
 				break;
 			default:
 				if(tmpid >= IPFIX_SetId_Data_Start) {
@@ -734,7 +751,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 	}
 	
 	//FIXME: check for out-of-order messages and lost records
-	msg(MSG_VDEBUG, "Message contained %u bytes, sequence number was %u", numberOfDataRecords, ntohl(header->sequenceNo));
+	msg(MSG_VDEBUG, "IPFIX message contained %u Data Records and %u Template Records. Sequence number was %lu.", numberOfDataRecords, numberOfTemplateRecords, ntohl(header->sequenceNo));
 
 	return 0;
 }

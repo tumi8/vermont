@@ -127,7 +127,6 @@ void IpfixReceiverUdpIpV4::run() {
 		}
 
 		boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
-		boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
 
 		ret = recvfrom(listen_socket, data.get(), MAX_MSG_LEN,
 			     0, (struct sockaddr*)&clientAddress, &clientAddressLen);
@@ -139,6 +138,7 @@ void IpfixReceiverUdpIpV4::run() {
 		if (isHostAuthorized(&clientAddress.sin_addr, sizeof(clientAddress.sin_addr))) {
 			statReceivedPackets++;
 // 			uint32_t ip = clientAddress.sin_addr.s_addr;
+			boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
 			memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
 			sourceID->exporterAddress.len = 4;
 			sourceID->exporterPort = ntohs(clientAddress.sin_port);
@@ -151,7 +151,7 @@ void IpfixReceiverUdpIpV4::run() {
 			}
 			mutex.unlock();
 		} else {
-			msg(MSG_FATAL, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
+			msg(MSG_VDEBUG, "IpfixReceiverUdpIpv4: packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
 		}
 	}
 	msg(MSG_DEBUG, "IpfixReceiverUdpIpV4: Exiting");

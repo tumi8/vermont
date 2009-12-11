@@ -26,6 +26,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "modules/ipfix/IpfixReceiver.hpp"
+#include "modules/ipfix/IpfixPrinter.hpp"
 
 #define MAX_RULE_FIELDS 255
 
@@ -34,7 +35,7 @@ class BaseHashtable;
 /**
  * Single aggregation rule
  */
-class Rule {
+class Rule : private PrintHelpers {
 	public:
 
 		/**
