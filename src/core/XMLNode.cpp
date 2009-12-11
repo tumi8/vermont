@@ -20,6 +20,11 @@ std::string XMLNode::getName() const
 	return  std::string((const char*)xmlNode->name);
 }
 
+std::string XMLNode::getContent() const
+{
+	return std::string((const char*)xmlNodeGetContent(xmlNode));
+}
+
 XMLNode::XMLNodeSet XMLNode::findChildren(const std::string& name)
 {
 	XMLNode::XMLNodeSet children;

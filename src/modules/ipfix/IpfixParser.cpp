@@ -18,7 +18,6 @@
  *
  */
 
-// FIXME: Basic support for NetflowV9 packets, templates and flow records is provided. Will break when fed field types with type ID >= 0x8000.
 
 #include <netinet/in.h>
 #include <stdio.h>
@@ -57,7 +56,7 @@ InstanceManager<IpfixTemplateDestructionRecord> IpfixParser::templateDestruction
 /**
  * Processes an IPFIX template set.
  * Called by processMessage
- * setId needs to be TemplateInfo::IpfixTemplate or TemplateInfo::NetflowTemplate
+ * ATTENTION: setId needs to be TemplateInfo::IpfixTemplate or TemplateInfo::NetflowTemplate
  */
 void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
 	uint8_t* endOfSet = (uint8_t*)set + ntohs(set->length);
@@ -104,7 +103,8 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 			if (ti->fieldInfo[fieldNo].type.length == 65535) {
 				isLengthVarying=1;
 			}
-			if (ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) {
+			// IPFIX only: If hightest bit of field id is set (0x8000), we must look for an enterprise number.
+			if ((ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) && setId == TemplateInfo::IpfixTemplate) {
 				/* check if there are 8 bytes for this field */
 				if (record+8 > endOfSet) {
 					msg(MSG_ERROR, "IpfixParser: Template record (id=%u) exceeds set boundary!", bt->templateInfo->templateId);
@@ -141,7 +141,7 @@ void IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> so
 /**
  * Processes an IPFIX Options Template Set.
  * Called by processMessage
- * setId needs to be TemplateInfo::IpfixOptionsTemplate or TemplateInfo::NetflowOptionsTemplate
+ * ATTENTION: setId needs to be TemplateInfo::IpfixOptionsTemplate or TemplateInfo::NetflowOptionsTemplate
  */
 void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
 	uint8_t* endOfSet = (uint8_t*)set + ntohs(set->length);
@@ -203,7 +203,8 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 			if (ti->scopeInfo[scopeNo].type.length == 65535) {
 				isLengthVarying=1;
 			}
-			if (ti->scopeInfo[scopeNo].type.id & IPFIX_ENTERPRISE_TYPE) {
+			// IPFIX only: If hightest bit of field id is set (0x8000), we must look for an enterprise number.
+			if ((ti->scopeInfo[scopeNo].type.id & IPFIX_ENTERPRISE_TYPE) && setId == TemplateInfo::IpfixOptionsTemplate) {
 				/* check if there are 8 bytes for this field */
 				if (record+8 > endOfSet) {
 					msg(MSG_ERROR, "IpfixParser: Option template record exceeds set boundary!");
@@ -218,18 +219,18 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 			}
 			if (setId == TemplateInfo::NetflowOptionsTemplate) {
 				scopeNo += ti->scopeInfo[scopeNo].type.length;
-				if (scopeNo > scopeCount) {
-					msg(MSG_ERROR, "IpfixParser: Scope fields in Netflow option template exceeds scope boundary!");
+				if (scopeNo > ti->scopeCount) {
+					msg(MSG_ERROR, "IpfixParser: Scope fields in Netflow option template exceed scope boundary!");
 					delete bt;
 					return;
 				}
 			} else
 				scopeNo++;
 		}
-		uint16_t fieldNo;
+		uint16_t fieldNo = 0;
 		//for loop works for IPFIX, but in the case of NetflowV9, fieldCount is the length of all fields in bytes
-		// TODO
-		for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
+		//for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
+		while (fieldNo < ti->fieldCount) {
 			/* check if there are at least 4 bytes for this field */
 			if (record+4 > endOfSet) {
 				msg(MSG_ERROR, "IpfixParser: Template record exceeds set boundary!");
@@ -244,7 +245,8 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 			if (ti->fieldInfo[fieldNo].type.length == 65535) {
 				isLengthVarying=1;
 			}
-			if (ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) {
+			// IPFIX only: If hightest bit of field id is set (0x8000), we must look for an enterprise number.
+			if ((ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) && setId == TemplateInfo::IpfixOptionsTemplate) {
 				/* check if there are 8 bytes for this field */
 				if (record+8 > endOfSet) {
 					msg(MSG_ERROR, "IpfixParser: Template record exceeds set boundary!");
@@ -257,6 +259,15 @@ void IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::Sourc
 				ti->fieldInfo[fieldNo].type.enterprise = 0;
 				record = (uint8_t*)((uint8_t*)record+4);
 			}
+			if (setId == TemplateInfo::NetflowOptionsTemplate) {
+				fieldNo += ti->fieldInfo[fieldNo].type.length;
+				if (fieldNo > ti->fieldCount) {
+					msg(MSG_ERROR, "IpfixParser: Fields in Netflow option template exceed field boundary!");
+					delete bt;
+					return;
+				}
+			} else
+				fieldNo++;
 		}
 		if (isLengthVarying) {
 			bt->recordLength = 65535;

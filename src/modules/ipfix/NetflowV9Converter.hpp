@@ -24,7 +24,13 @@ protected:
 	static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
 
 	struct ConvInfo {
+		// IPFIX Template
 		boost::shared_ptr<TemplateInfo> templateInfo;
+		// System up time in unix seconds calculated from the header of the NetflowV9 message which contains the Netflow Template 
+		// Note: We can assume that the absolut system up time remains the same for the upcoming Data Records 
+		// and that Templates are resent at system restart.
+		uint32_t sysUpUnixSeconds; 
+		// Indexes of Template fields which contain timestamps to be converted
 		std::list<uint16_t> fieldIndexes;
 	};
 

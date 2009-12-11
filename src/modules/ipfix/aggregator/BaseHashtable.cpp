@@ -36,8 +36,6 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	msg(MSG_INFO, "  - maxBufferTime=%d", maxBufferTime);
 	msg(MSG_INFO, "  - htableBits=%d", hashbits);
 
-	memset(sourceID.get(), 0, sizeof(IpfixRecord::SourceID));
-
 	buckets = new HashtableBucket*[htableSize];
 	for (uint32_t i = 0; i < htableSize; i++)
 		buckets[i] = NULL;
@@ -374,7 +372,7 @@ int BaseHashtable::isToBeAggregated(const InformationElement::IeInfo& type)
 void BaseHashtable::sendDataTemplate()
 {
 	IpfixTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
-	ipfixRecord->sourceID.reset();
+	ipfixRecord->sourceID = sourceID;
 	ipfixRecord->templateInfo = dataTemplate;
 	recordSource->send(ipfixRecord);
 }
@@ -385,7 +383,7 @@ void BaseHashtable::sendDataTemplate()
 void BaseHashtable::sendTemplateDestructionRecord()
 {
 	IpfixTemplateDestructionRecord* ipfixRecord = templateDestructionRecordIM.getNewInstance();
-	ipfixRecord->sourceID.reset();
+	ipfixRecord->sourceID = sourceID;
 	ipfixRecord->templateInfo = dataTemplate;
 	recordSource->send(ipfixRecord);
 }
