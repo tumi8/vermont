@@ -29,7 +29,6 @@
 #include <stdlib.h>
 #include "Rule.hpp"
 #include "PacketHashtable.h"
-#include "modules/ipfix/IpfixPrinter.hpp"
 #include "common/ipfixlolib/ipfix.h"
 
 #include "common/msg.h"

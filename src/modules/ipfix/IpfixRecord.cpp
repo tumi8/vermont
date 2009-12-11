@@ -284,15 +284,15 @@ void TemplateInfo::setUniqueId()
 	if(uniqueId == 0) {
 		if(oldSize == 65535)
 			THROWEXCEPTION("TemplateInfo: more than 65353 uniqueIds needed");
-		msg(MSG_VDEBUG, "TemplateInfo: need to increase number of uniqueIds, oldSize=%u", oldSize);
+		DPRINTF("TemplateInfo: need to increase number of uniqueIds, oldSize=%u", oldSize);
 		uniqueIdUseCount().push_back(1);
 		uniqueId = oldSize + 1;
 	}
 
 	// release old uniqueId if set
 	if(oldId != 0) {
-		if((oldId >= oldSize) || (uniqueIdUseCount()[oldId-1]==0))
-			THROWEXCEPTION("TemplateInfo setUniqueId: uniqueIdUseCount is corrupt, this should never happen!");
+		if((oldId > oldSize) || (uniqueIdUseCount()[oldId-1]==0))
+			THROWEXCEPTION("TemplateInfo setUniqueId: uniqueIdUseCount is corrupt (oldId=%u, oldSize=%u), this should never happen!", oldId, oldSize);
 		uniqueIdUseCount()[oldId-1]--;
 	}
 	mutex().unlock();
