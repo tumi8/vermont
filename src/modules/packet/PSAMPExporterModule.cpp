@@ -176,10 +176,20 @@ void PSAMPExporterModule::flushPacketStream() {
 	pckCount = 0;
 }
 
-bool PSAMPExporterModule::addCollector(const char *address, unsigned short port, ipfix_transport_protocol protocol)
+bool PSAMPExporterModule::addCollector(const char *address, uint16_t port, uint16_t protocol)
 {
 	DPRINTF("Adding %i://%s:%d", protocol, address, port);
-	return(ipfix_add_collector(exporter, address, port, protocol) == 0);
+	switch(protocol) {
+		case 132:
+			return(ipfix_add_collector(exporter, address, port, SCTP) == 0);
+			break;
+		case 17:
+			return(ipfix_add_collector(exporter, address, port, UDP) == 0);
+			break;
+		default:
+			msg(MSG_ERROR, "PSAMPExporter: Transport protocol %u not supported", protocol);
+			return false;
+	}
 }
 
 void PSAMPExporterModule::receive(Packet* p)

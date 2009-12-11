@@ -77,7 +77,7 @@ class IpfixRecord
 
 			// fields from IPFIX/Netflow header:
 			uint32_t observationDomainId;
-			uint32_t sysUpTime; // only available in Netflow header
+			uint32_t sysUpTime; // time in milliseconds elapsed since system started (only available in Netflow header)
 			uint32_t exportTime;
 
 			// information from collector:

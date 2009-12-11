@@ -47,7 +47,7 @@ public:
 	IpfixSender(uint32_t observationDomainId);
 	virtual ~IpfixSender();
 
-	void addCollector(const char *ip, uint16_t port, ipfix_transport_protocol proto);
+	void addCollector(const char *ip, uint16_t port, uint16_t proto);
 	void flushPacket();
 
 	virtual void onTemplate(IpfixTemplateRecord* record);

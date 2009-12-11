@@ -1,9 +1,5 @@
 #include "IpfixCollectorCfg.h"
 
-#include <modules/ipfix/IpfixReceiverUdpIpV4.hpp>
-#include <modules/ipfix/IpfixReceiverSctpIpV4.hpp>
-#include <modules/ipfix/IpfixReceiverFile.hpp>
-
 IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector, IpfixCollectorCfg>(elem, "ipfixCollector"),
 	listener(NULL),
@@ -36,8 +32,6 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 
 	if (listener == NULL)
 		THROWEXCEPTION("collectingProcess has to listen on one address!");
-	if (listener->getProtocolType() != UDP && listener->getProtocolType() != SCTP )
-		THROWEXCEPTION("collectingProcess can handle only UDP or SCTP!");
 
 	msg(MSG_INFO, "CollectorConfiguration: Successfully parsed collectingProcess section");
 }
@@ -55,17 +49,7 @@ IpfixCollectorCfg* IpfixCollectorCfg::create(XMLElement* elem)
 
 IpfixCollector* IpfixCollectorCfg::createInstance()
 {
-	IpfixReceiver* ipfixReceiver;
-	if (listener->getProtocolType() == SCTP)
-		ipfixReceiver = new IpfixReceiverSctpIpV4(listener->getPort(), listener->getIpAddress());
-	else
-		ipfixReceiver = new IpfixReceiverUdpIpV4(listener->getPort(), listener->getIpAddress());
-
-	if (!ipfixReceiver) {
-		THROWEXCEPTION("Could not create IpfixReceiver");
-	}
-
-	instance = new IpfixCollector(ipfixReceiver);
+	instance = new IpfixCollector(listener->createIpfixReceiver());
 	return instance;
 }
 

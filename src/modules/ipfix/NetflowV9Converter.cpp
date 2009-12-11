@@ -31,6 +31,10 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 		// Generate conversion info
 		ConvInfo myConvInfo;
 		myConvInfo.templateInfo = newTemplateInfo;
+		// sysUpTime: Time in milliseconds since this device was first booted.
+		// UNIX Secs (=exportTime): Time in seconds since 0000 UTC 1970, at which the Export Packet leaves the Exporter.
+		// ==> Unix seconds when system went up = exportTime - sysUpTime/1000 
+		myConvInfo.sysUpUnixSeconds = record->sourceID->exportTime - (record->sourceID->sysUpTime / 1000);
 		
 		// Look for time stamps which to be converted
 		TemplateInfo::FieldInfo* fi;
@@ -148,7 +152,8 @@ void NetflowV9Converter::onDataRecord(IpfixDataRecord* record)
 		for (std::list<uint16_t>::iterator i = iter->second.fieldIndexes.begin(); i != iter->second.fieldIndexes.end(); i++) {
 			assert(*i < templateInfo->fieldCount);
 			uint32_t* timestamp = (uint32_t*) (myRecord->data + templateInfo->fieldInfo[*i].offset);
-			// TODO 
+			// TODO
+			// *timestamp = (*timestamp/1000) + iter->second.sysUpUnixSeconds;
 			*timestamp = 0;
 		}
 

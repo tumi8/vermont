@@ -130,30 +130,37 @@ IpfixSender::~IpfixSender()
  * @param port port number
  * FIXME: support for other than UDP
  */
-void IpfixSender::addCollector(const char *ip, uint16_t port, ipfix_transport_protocol proto)
+void IpfixSender::addCollector(const char *ip, uint16_t port, uint16_t proto)
 {
 	switch(proto) {
-	    case UDP:
+	    case 17:
 	    	msg(MSG_INFO, "IpfixSender: adding UDP://%s:%u to exporter", ip, port);
+		if(ipfix_add_collector(ipfixExporter, ip, port, UDP) != 0) {
+			msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%u failed", ip, port);
+		}
 	    	break;
-	    case SCTP:
+	    case 132:
 	    	msg(MSG_INFO, "IpfixSender: adding SCTP://%s:%u to exporter", ip, port);
+		if(ipfix_add_collector(ipfixExporter, ip, port, SCTP) != 0) {
+			msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%u failed", ip, port);
+		}
 	    	break;
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
-	    case RAWDIR:
+	    case 0:
 	    	msg(MSG_INFO, "IpfixSender: adding RAWDIR://%s to exporter", ip);
+		if(ipfix_add_collector(ipfixExporter, ip, port, RAWDIR) != 0) {
+			msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%u failed", ip, port);
+		}
 	    	break;
 #endif
-	    case TCP:
+	    case 6:
 	        msg(MSG_INFO, "IpfixSender: adding TCP://%s:%u to exporter", ip, port);
+		if(ipfix_add_collector(ipfixExporter, ip, port, TCP) != 0) {
+			msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%u failed", ip, port);
+		}
 	    default:
-	    	THROWEXCEPTION("invalid protocol (%u) given!", proto);
+	    	THROWEXCEPTION("IpfixSender: Invalid protocol (%u) given!", proto);
 	    	break;
-	}
-
-	if(ipfix_add_collector(ipfixExporter, ip, port, proto) != 0) {
-		msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%u failed", ip, port);
-		return;
 	}
 }
 
