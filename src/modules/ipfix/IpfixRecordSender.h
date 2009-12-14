@@ -1,6 +1,3 @@
-#ifndef IPFIXRECORDSOURCE_H
-#define IPFIXRECORDSOURCE_H
-
 /*
  * IPFIX Concentrator Module Library
  * Copyright (C) 2007 Tobias Limmer <http://www7.informatik.uni-erlangen.de/~limmer>
@@ -21,6 +18,9 @@
  *
  */
 
+
+#ifndef IPFIXRECORDSOURCE_H
+#define IPFIXRECORDSOURCE_H
 
 /**
  * used by IpfixCollector to pass ability to send IpfixRecords to IpfixParser
