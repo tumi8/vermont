@@ -18,8 +18,6 @@
  *
  */
 
-// FIXME: Basic support for NetflowV9 packets, templates and flow records is provided. Will break when fed field types with type ID >= 0x8000.
-
 
 
 #include "IpfixCollector.hpp"
