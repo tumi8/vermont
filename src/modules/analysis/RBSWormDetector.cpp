@@ -34,7 +34,7 @@ const char* RBSWormDetector::PAR_TOTALTIME = "TOTALTIME";
 const char* RBSWormDetector::PAR_HOSTS = "HOSTS"; 
 
 
-InstanceManager<IDMEFMessage> RBSWormDetector::idmefManager("IDMEFMessage");
+InstanceManager<IDMEFMessage> RBSWormDetector::idmefManager("RBSWormIDMEFMessage", 0);
 
 /**
  * attention: parameter idmefexporter must be free'd by the creating instance, TRWPortWormDetector

@@ -30,7 +30,7 @@ const char* TRWPortscanDetector::PAR_SUCC_CONNS = "SUCC_CONNS";
 const char* TRWPortscanDetector::PAR_FAILED_CONNS = "FAILED_CONNS";
 
 
-InstanceManager<IDMEFMessage> TRWPortscanDetector::idmefManager("IDMEFMessage");
+InstanceManager<IDMEFMessage> TRWPortscanDetector::idmefManager("TRWPortscanIDMEFMessage", 0);
 
 /**
  * attention: parameter idmefexporter must be free'd by the creating instance, TRWPortscanDetector

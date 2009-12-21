@@ -1,7 +1,11 @@
 <ipfixConfig>
+        <sensorManager id="99">
+                <checkinterval>2</checkinterval>
+        </sensorManager>
+
 	<ipfixCollector id="1">
 		<listener>
-			<transportProtocol>SCTP</transportProtocol>
+			<transportProtocol>UDP</transportProtocol>
 			<port>1500</port>
 		</listener>
 		<next>2</next>
@@ -18,5 +22,6 @@
 	
 	<ipfixPrinter id="8">
 		<outputType>tree</outputType>
+		<!--<filename>output.txt</filename>-->
 	</ipfixPrinter>
 </ipfixConfig>

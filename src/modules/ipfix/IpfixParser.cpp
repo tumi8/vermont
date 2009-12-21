@@ -25,8 +25,6 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 #include <netdb.h>
 #include <unistd.h>
 #include <sstream>
@@ -48,9 +46,9 @@ using namespace std;
 #define MAX_MSG_LEN 65536
 
 //static variables
-InstanceManager<IpfixTemplateRecord> IpfixParser::templateRecordIM("IpfixTemplateRecord", 0);
-InstanceManager<IpfixDataRecord> IpfixParser::dataRecordIM("IpfixDataRecord", 0);
-InstanceManager<IpfixTemplateDestructionRecord> IpfixParser::templateDestructionRecordIM("IpfixTemplateDestructionRecord", 0);
+InstanceManager<IpfixTemplateRecord> IpfixParser::templateRecordIM("ParserIpfixTemplateRecord", 0);
+InstanceManager<IpfixDataRecord> IpfixParser::dataRecordIM("ParserIpfixDataRecord", 0);
+InstanceManager<IpfixTemplateDestructionRecord> IpfixParser::templateDestructionRecordIM("ParserIpfixTemplateDestructionRecord", 0);
 
 
 /**
@@ -145,6 +143,7 @@ uint32_t IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 /**
  * Processes an IPFIX Options Template Set.
  * Called by processMessage
+ * returns number of processed records
  * ATTENTION: setId needs to be TemplateInfo::IpfixOptionsTemplate or TemplateInfo::NetflowOptionsTemplate
  */
 uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
@@ -293,7 +292,6 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 		IpfixTemplateRecord* ipfixRecord = templateRecordIM.getNewInstance();
 		ipfixRecord->sourceID = sourceId;
 		ipfixRecord->templateInfo = ti;
-		statTotalDataRecords++;
 		push(ipfixRecord);
 		numberOfRecords++;
 	}
@@ -303,6 +301,7 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 /**
  * Processes an IPFIX DataTemplate set.
  * Called by processMessage
+ * returns number of processed records
  */
 uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
 	uint32_t numberOfRecords = 0;
@@ -470,6 +469,7 @@ uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::Sour
 /**
  * Processes an IPFIX data set.
  * Called by processMessage
+ * returns number of processed records
  */
 uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
 	uint32_t numberOfRecords = 0;
@@ -479,7 +479,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		/* this error may come in rapid succession; I hope I don't regret it */
 		if(sourceId->exporterAddress.len == 4) {
 			msg(MSG_INFO, "Template %d from %s unknown to collecting process", 
-				ntohs(set->id), IPToString(*reinterpret_cast<uint32_t*>(&sourceId->exporterAddress)).c_str());
+				ntohs(set->id), (sourceId->toString()).c_str());
 		} else {
 			msg(MSG_INFO, "Template %d from non-IPv4 unknown to collecting process", ntohs(set->id));
 		}
@@ -517,7 +517,6 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				ipfixRecord->dataLength = bt->recordLength;
 				ipfixRecord->message = message;
 				ipfixRecord->data = record;
-				statTotalDataRecords++;
 				push(ipfixRecord);
 				record = record + bt->recordLength;
 				numberOfRecords++;
@@ -610,7 +609,6 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				ipfixRecord->dataLength = recordLength;
 				ipfixRecord->message = message;
 				ipfixRecord->data = record;
-				statTotalDataRecords++;
 				push(ipfixRecord);
 				record = record + recordLength;
 				numberOfRecords++;
@@ -647,8 +645,9 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 
 	uint16_t tmpid;
 	uint16_t expectedNumberOfRecords = ntohs(header->setCount);
-	uint32_t numberOfDataRecords = 0;
-	uint32_t numberOfTemplateRecords = 0;
+	uint16_t numberOfDataRecords = 0;
+	uint16_t numberOfTemplateRecords = 0;
+	uint32_t sequenceNumber = ntohl(header->sequenceNo);
 
 	while (((numberOfDataRecords + numberOfTemplateRecords) <= expectedNumberOfRecords) && (((uint8_t*)(set) + 4) <= endOfMessage)) {
 		/* check set length */
@@ -668,7 +667,6 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 				break;
 			default:
 				if(tmpid >= IPFIX_SetId_Data_Start) {
-					statTotalDRPackets++;
 					numberOfDataRecords += processDataSet(sourceId, message, set, endOfMessage);
 				} else {
 					msg(MSG_ERROR, "processNetflowV9Packet: Unsupported Set ID - expected 0/1/256+, got %d", tmpid);
@@ -676,6 +674,7 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 		}
 		set = (IpfixSetHeader*)((uint8_t*)set + ntohs(set->length));
 	}
+
 	/* check if there are trailing bytes */
 	if ((uint8_t*)(set) != endOfMessage) {
 		msg(MSG_ERROR, "IpfixParser: NetFlowV9 message contains %u trailing bytes!", endOfMessage - (uint8_t*)(set));
@@ -685,8 +684,42 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 		msg(MSG_INFO, "IpfixParser: NetFlowV9 message header indicates %u records, but there were only %u records! Maybe the Template is unknown.", expectedNumberOfRecords, numberOfDataRecords+numberOfTemplateRecords);
 	}
 	
-	//FIXME: check for out-of-order messages and lost records
-	msg(MSG_VDEBUG, "NetflowV9 message contained %u Data Records and %u Template Records. Sequence number was %lu.", numberOfDataRecords, numberOfTemplateRecords, ntohl(header->sequenceNo));
+	// detect and count data record losses
+	//FIXME: detect lost records in the case of PR-SCTP (considering SCTP stream id)
+	if(sourceId->protocol == 17) {
+		std::map<IpfixRecord::SourceID, SNInfo>::iterator iter = snInfoMap.find(*sourceId.get());
+		if(iter != snInfoMap.end()) {
+			int32_t difference = sequenceNumber - iter->second.expectedSN; 
+			if(difference > 0) {
+				msg(MSG_INFO, "IpfixParser: Loss of %d NetflowV9 messages from %s detected (SN=%u, expected=%u).",
+					difference, (sourceId->toString()).c_str(), sequenceNumber, iter->second.expectedSN);
+				iter->second.lostMessages += difference;
+			} else if (difference < 0) {
+				msg(MSG_INFO, "IpfixParser: Out-of-order or repeated NetflowV9 message detected from %s (SN=%u, expected=%u).",
+					(sourceId->toString()).c_str(), sequenceNumber, iter->second.expectedSN);
+				iter->second.outOfOrderMessages++;
+			}
+			iter->second.expectedSN = sequenceNumber + 1;
+			iter->second.receivedMessages++;
+			iter->second.receivedDataRecords += numberOfDataRecords;
+			iter->second.receivedTemplateRecords += numberOfTemplateRecords;
+		} else {
+			SNInfo newSnInfo;
+			newSnInfo.expectedSN = sequenceNumber + 1;
+			newSnInfo.receivedMessages = 1;
+			newSnInfo.receivedDataRecords = numberOfDataRecords;
+			newSnInfo.receivedTemplateRecords = numberOfTemplateRecords;
+			snInfoMap[*sourceId.get()] = newSnInfo;
+		}
+	}
+
+	msg(MSG_VDEBUG, "NetflowV9 message from %s contained %u Data Records and %u Template Records. Sequence number was %lu.", 
+		(sourceId->toString()).c_str(), numberOfDataRecords, numberOfTemplateRecords, sequenceNumber);
+
+	// Update statistics
+	statTotalMessages++;
+	statTotalDataRecords += numberOfDataRecords;
+	statTotalTemplateRecords += numberOfTemplateRecords;
 
 	return 0;
 }
@@ -717,8 +750,10 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 	uint8_t* endOfMessage = (uint8_t*)((uint8_t*)message.get() + length); 
 
 	uint16_t tmpid;
-	uint32_t numberOfDataRecords = 0;
-	uint32_t numberOfTemplateRecords = 0;
+	uint16_t numberOfDataRecords = 0;
+	uint16_t numberOfTemplateRecords = 0;
+	uint32_t sequenceNumber = ntohl(header->sequenceNo);
+
 	/* while there is space for a set header... */
 	while((uint8_t*)(set) + 4 <= endOfMessage) {
 		/* check set length */
@@ -741,7 +776,6 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 				break;
 			default:
 				if(tmpid >= IPFIX_SetId_Data_Start) {
-					statTotalDRPackets++;
 					numberOfDataRecords += processDataSet(sourceId, message, set, endOfMessage);
 				} else {
 					msg(MSG_ERROR, "processIpfixPacket: Unsupported Set ID - expected 2/3/4/256+, got %d", tmpid);
@@ -750,8 +784,42 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 		set = (IpfixSetHeader*)((uint8_t*)set + ntohs(set->length));
 	}
 	
-	//FIXME: check for out-of-order messages and lost records
-	msg(MSG_VDEBUG, "IPFIX message contained %u Data Records and %u Template Records. Sequence number was %lu.", numberOfDataRecords, numberOfTemplateRecords, ntohl(header->sequenceNo));
+	// detect and count data record losses
+	//FIXME: detect lost records in the case of PR-SCTP (considering SCTP stream id)
+	if(sourceId->protocol == 17) {
+		std::map<IpfixRecord::SourceID, SNInfo>::iterator iter = snInfoMap.find(*sourceId.get());
+		if(iter != snInfoMap.end()) {
+			int32_t difference = sequenceNumber - iter->second.expectedSN; 
+			if(difference > 0) {
+				msg(MSG_INFO, "IpfixParser: Loss of %d IPFIX Data Records from %s detected (SN=%u, expected=%u).",
+					difference, (sourceId->toString()).c_str(), sequenceNumber, iter->second.expectedSN);
+				iter->second.lostDataRecords += difference;
+			} else if (difference < 0) {
+				msg(MSG_INFO, "IpfixParser: Out-of-order or repeated IPFIX message detected from %s (SN=%u, expected=%u).",
+					(sourceId->toString()).c_str(), sequenceNumber, iter->second.expectedSN);
+				iter->second.outOfOrderMessages ++;
+			}
+			iter->second.expectedSN = sequenceNumber + numberOfDataRecords;
+			iter->second.receivedMessages++;
+			iter->second.receivedDataRecords += numberOfDataRecords;
+			iter->second.receivedTemplateRecords += numberOfTemplateRecords;
+		} else {
+			SNInfo newSnInfo;
+			newSnInfo.expectedSN = sequenceNumber + numberOfDataRecords;
+			newSnInfo.receivedMessages = 1;
+			newSnInfo.receivedDataRecords = numberOfDataRecords;
+			newSnInfo.receivedTemplateRecords = numberOfTemplateRecords;
+			snInfoMap[*sourceId.get()] = newSnInfo;
+		}
+	}
+
+	msg(MSG_VDEBUG, "IPFIX message from %s contained %u Data Records and %u Template Records. Sequence number was %lu.", 
+		(sourceId->toString()).c_str(), numberOfDataRecords, numberOfTemplateRecords, sequenceNumber);
+
+	// Update statistics
+	statTotalMessages++;
+	statTotalDataRecords += numberOfDataRecords;
+	statTotalTemplateRecords += numberOfTemplateRecords;
 
 	return 0;
 }
@@ -797,7 +865,8 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
 IpfixParser::IpfixParser(IpfixRecordSender* sender) 
 	: templateLivetime(DEFAULT_TEMPLATE_EXPIRE_SECS),
 	  statTotalDataRecords(0),
-  	  statTotalDRPackets(0),
+	  statTotalTemplateRecords(0),
+  	  statTotalMessages(0),
   	  ipfixRecordSender(sender)
 {
 
@@ -832,9 +901,23 @@ std::string IpfixParser::getStatisticsXML(double interval)
 	ostringstream oss;
 	
 	oss << "<totalDataRecords>" << statTotalDataRecords << "</totalDataRecords>";
-	oss << "<totalDataRecordUDPPackets>" << statTotalDRPackets << "</totalDataRecordUDPPackets>";
+	oss << "<totalTemplateRecords>" << statTotalTemplateRecords << "</totalTemplateRecords>";
+	oss << "<totalMessages>" << statTotalMessages << "</totalMessages>";
 
-	return oss.str();
+	for(std::map<IpfixRecord::SourceID, SNInfo>::iterator iter = snInfoMap.begin(); iter != snInfoMap.end(); iter++) {
+		oss << "<exporter><sourceId>" << iter->first.toString() << "</sourceId>";
+		oss << "<receivedMessages>" << iter->second.receivedMessages << "</receivedMessages>";   
+		oss << "<receivedDataRecords>" << iter->second.receivedDataRecords << "</receivedDataRecords>";   
+		oss << "<receivedTemplateRecords>" << iter->second.receivedTemplateRecords << "</receivedTemplateRecords>";   
+		if(iter->second.lostMessages > 0)
+			oss << "<lostMessages>" << iter->second.lostMessages << "</lostMessages>";   
+		if(iter->second.outOfOrderMessages > 0)
+			oss << "<outOfOrderMessages>" << iter->second.outOfOrderMessages << "</outOfOrderMessages>";   
+		if(iter->second.lostDataRecords > 0)
+			oss << "<lostDataRecords>" << iter->second.lostDataRecords << "</lostDataRecords>";   
+		oss << "</exporter>";
+	}
+        return oss.str();
 }
 
 /**

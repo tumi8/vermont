@@ -20,9 +20,9 @@
 
 #include "NetflowV9Converter.hpp"
 
-InstanceManager<IpfixDataRecord> NetflowV9Converter::dataRecordIM("nfConvIpfixDataRecord");
-InstanceManager<IpfixTemplateRecord> NetflowV9Converter::templateRecordIM("nvConvIpfixTemplateRecord");
-InstanceManager<IpfixTemplateDestructionRecord> NetflowV9Converter::templateDestructionRecordIM("nvConvIpfixTemplateDestructionRecord");
+InstanceManager<IpfixDataRecord> NetflowV9Converter::dataRecordIM("NetflowConverterIpfixDataRecord", 0);
+InstanceManager<IpfixTemplateRecord> NetflowV9Converter::templateRecordIM("NetflowConverterIpfixTemplateRecord", 0);
+InstanceManager<IpfixTemplateDestructionRecord> NetflowV9Converter::templateDestructionRecordIM("NetflowConverterIpfixTemplateDestructionRecord", 0);
 
 void NetflowV9Converter::setCopyMode(bool mode)
 {

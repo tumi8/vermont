@@ -28,6 +28,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <boost/smart_ptr.hpp>
+#include <map>
 
 
 class TemplateBuffer;
@@ -149,8 +150,9 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 
 
 	private:
-		uint32_t statTotalDataRecords; /**< amount of data records processed by parser */
-		uint32_t statTotalDRPackets; /**< amount of UDP packets containing data records processed by parser */
+		uint64_t statTotalDataRecords; /**< number of data records processed by parser */
+		uint64_t statTotalTemplateRecords; /**< number of template records processed by parser */
+		uint64_t statTotalMessages; /**< number of IPFIX/Netflow messages successfully processed by parser */
 		IpfixRecordSender* ipfixRecordSender;
 		
 		static InstanceManager<IpfixTemplateRecord> templateRecordIM;
@@ -160,6 +162,28 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		void resendBufferedTemplates();
 		void withdrawBufferedTemplates();
 
+		// TODO: extend Sequence Number check for 
+		//       - reorder out-of-order packets
+		//       - SCTP (therefore, we need to consider the SCTP stream id)
+		//       - expire this information? 
+		//         at the moment, it is stored forever, even if exporter has died (which we cannot detect)
+		struct SNInfo {
+			SNInfo() : expectedSN(0), 
+				receivedMessages(0), receivedDataRecords(0), receivedTemplateRecords(0),
+				outOfOrderMessages(0), lostMessages(0), lostDataRecords(0) {}
+
+			uint32_t expectedSN;
+			uint32_t receivedMessages;
+			uint32_t receivedDataRecords;
+			uint32_t receivedTemplateRecords;
+			uint32_t outOfOrderMessages;
+			// Used in case of NetflowV9:
+			uint32_t lostMessages;
+			// Used in case of IPFIX:
+			uint32_t lostDataRecords;
+		};
+		
+		std::map<IpfixRecord::SourceID, SNInfo> snInfoMap;
 };
 
 #endif

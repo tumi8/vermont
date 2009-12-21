@@ -12,7 +12,7 @@ const char* PacketIDMEFReporter::PAR_SRCPORT = "PacketSourcePort";
 const char* PacketIDMEFReporter::PAR_DSTPORT = "PacketDestinationPort";
 const char* PacketIDMEFReporter::PAR_SNAPSHOT = "PacketSnapshot";
 
-InstanceManager<IDMEFMessage> PacketIDMEFReporter::idmefManager("IDMEFMessage");
+InstanceManager<IDMEFMessage> PacketIDMEFReporter::idmefManager("ReporterIDMEFMessage",0);
 
 
 

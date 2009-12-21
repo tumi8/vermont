@@ -20,7 +20,7 @@
 
 #include "IpfixRecordAnonymizer.h"
 
-InstanceManager<IpfixDataRecord> IpfixRecordAnonymizer::dataRecordIM("IpfixDataRecord");
+InstanceManager<IpfixDataRecord> IpfixRecordAnonymizer::dataRecordIM("RecordAnonymizerIpfixDataRecord", 0);
 
 void IpfixRecordAnonymizer::setCopyMode(bool mode)
 {
