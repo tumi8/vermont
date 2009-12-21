@@ -25,6 +25,7 @@
 #include <memory>
 #include <boost/smart_ptr.hpp>
 #include <stdexcept>
+#include "common/Misc.h"
 
 #include "common/ipfixlolib/ipfix.h"
 #include "modules/packet/Packet.h"
@@ -98,12 +99,28 @@ class IpfixRecord
 					return (observationDomainId == x.observationDomainId) &&
 					(exporterPort == x.exporterPort) &&
 					//(receiverPort == x.receiverPort) &&
-					(fileDescriptor == x.fileDescriptor) &&
+					(fileDescriptor == x.fileDescriptor) && // this check includes receiverPort and protocol
 					//(protocol == x.protocol) &&
 					(exporterAddress.len == x.exporterAddress.len) &&
 					(memcmp(exporterAddress.ip, x.exporterAddress.ip, exporterAddress.len) == 0 );
 
 			}
+
+			// operator < is needed for using SourceID as key in maps
+			bool operator<(const struct SourceID & x) const {
+				if(fileDescriptor < x.fileDescriptor) // this check includes receiverPort and protocol
+					return true;
+				if(exporterAddress.len < x.exporterAddress.len)
+					return true;
+			        if(memcmp(exporterAddress.ip, x.exporterAddress.ip, exporterAddress.len) < 0 )
+					return true;
+				if(exporterPort < x.exporterPort)
+					return true;
+				if(observationDomainId < x.observationDomainId)
+					return true;
+				return false;
+			}
+
 			// compare two SourceIDs without considering Observation Domain ID
 			bool equalIgnoringODID(const struct SourceID & x) const {
 				if(protocol == 132) /* compare file descriptors instead of IP addresses because of possible multihoming */
@@ -117,6 +134,27 @@ class IpfixRecord
 					(memcmp(exporterAddress.ip, x.exporterAddress.ip, exporterAddress.len) == 0 );
 			}
 
+			std::string toString() const {
+				ostringstream oss;
+				if(exporterAddress.len == 4) {
+					oss << IPToString(*(uint32_t*)(&exporterAddress)).c_str();
+				} else {
+					oss << "non-IPv4 address";
+				}
+				oss << ":" << exporterPort;
+				switch(protocol) {
+					case 17:
+						oss << " (UDP)";
+						break;
+					case 132:
+						oss << " (SCTP)";
+						break;
+					default:
+						oss << " (" << protocol <<")";
+				}
+				oss << " ODID=" << observationDomainId;
+				return oss.str();
+			}
 		};
 
 		boost::shared_ptr<IpfixRecord::SourceID> sourceID;

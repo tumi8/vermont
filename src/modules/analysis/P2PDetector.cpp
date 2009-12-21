@@ -25,7 +25,7 @@
 #include <iostream>
 
 
-InstanceManager<IDMEFMessage> P2PDetector::idmefManager("IDMEFMessage");
+InstanceManager<IDMEFMessage> P2PDetector::idmefManager("P2PIDMEFMessage", 0);
 
 
 /**

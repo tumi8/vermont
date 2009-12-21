@@ -45,7 +45,7 @@ IpfixPrinterCfg::IpfixPrinterCfg(XMLElement* elem)
 			} else {
 				THROWEXCEPTION("Unknown IpfixPrinter output type %s", type.c_str());
 			}
-		} else if (e->matches("fileName")) {
+		} else if (e->matches("filename")) {
 			filename = e->getFirstText();
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixPrinter config statement %s\n", e->getName().c_str());

@@ -30,9 +30,9 @@
 #include "common/msg.h"
 
 
-InstanceManager<IpfixTemplateRecord> IpfixDbReader::templateRecordIM("IpfixTemplateRecord", 1);
-InstanceManager<IpfixDataRecord> IpfixDbReader::dataRecordIM("IpfixDataRecord");
-InstanceManager<IpfixTemplateDestructionRecord> IpfixDbReader::templateDestructionRecordIM("IpfixTemplateDestructionRecord", 1);
+InstanceManager<IpfixTemplateRecord> IpfixDbReader::templateRecordIM("DbReaderIpfixTemplateRecord", 1);
+InstanceManager<IpfixDataRecord> IpfixDbReader::dataRecordIM("DbReaderIpfixDataRecord");
+InstanceManager<IpfixTemplateDestructionRecord> IpfixDbReader::templateDestructionRecordIM("DbReaderIpfixTemplateDestructionRecord", 1);
 
 /***** Internal Functions ****************************************************/
 
