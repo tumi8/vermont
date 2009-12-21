@@ -27,9 +27,17 @@
 
 #include <string>
 #include <pcap.h>
+
+#ifdef __FreeBSD__
+// FreeBSD does not have a struct iphdr. Furthermore, the struct members in 
+// struct udphdr and tcphdr differ from the linux version. We therefore need
+// to define them
+#include <osdep/freebsd/iphdrs.h>
+#elif
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <netinet/udp.h>
+#endif
 
 
 typedef struct pcap_hdr_s {
