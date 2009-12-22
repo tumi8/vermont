@@ -1,9 +1,21 @@
+This is VERMONT - VERsatile MONitoring Tool.
+Released under GPL2
+
+
+REQUIREMENTS
+
 Required Ubuntu/Debian packages for compilation:
  - cmake libboost-dev libxml2-dev libpcap-dev libsctp-dev
+Optional:
+ - libpq-dev (for PostGreSQL support)
+ - libmysqlclient-dev (for MySQL support)
+ - libgsl-dev (for connection-based sampling with Bloom filters)
 
 Note: for high efficiency the PCAP-MMAP modification is suggested.
 See <http://public.lanl.gov/cpw/>
 
+
+INSTALLATION
 
 Compile Procedure:
  - call 'cmake .'
@@ -13,3 +25,25 @@ Compile Procedure:
  - look in /configs for example configuration files
  - module documentation can be found at 
    http://vermont.berlios.de/vermont_module_configuration
+
+
+NOTES ON MONITORING PORTS
+
+Some switches add an additional field VLAN with size 4Bytes to the layer
+2 header. So you have to adjust the <pcap_filter> setting to "vlan and ip".
+Futhermore, the Packet::IPHeaderOffset has to adjusted to 18. This can be
+done via ccmake . (IP_HEADER_OFFSET).
+
+
+NOTES ON SOCKET RECEIVE BUFFER
+If incoming IPFIX traffic is bursty, increasing the socket receive buffer
+reduces packet losses.
+System calls for Linux with proc file system:
+$ cat /proc/sys/net/core/rmem_default
+$ cat /proc/sys/net/core/rmem_max
+Write new value X (in bytes):
+$ sysctl -w net/core/rmem_default=X
+$ sysctl -w net/core/rmem_max=X
+
+
+
