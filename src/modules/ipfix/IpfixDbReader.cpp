@@ -31,7 +31,7 @@
 
 
 InstanceManager<IpfixTemplateRecord> IpfixDbReader::templateRecordIM("DbReaderIpfixTemplateRecord", 1);
-InstanceManager<IpfixDataRecord> IpfixDbReader::dataRecordIM("DbReaderIpfixDataRecord");
+InstanceManager<IpfixDataRecord> IpfixDbReader::dataRecordIM("DbReaderIpfixDataRecord", 50);
 InstanceManager<IpfixTemplateDestructionRecord> IpfixDbReader::templateDestructionRecordIM("DbReaderIpfixTemplateDestructionRecord", 1);
 
 /***** Internal Functions ****************************************************/

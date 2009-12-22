@@ -34,7 +34,7 @@
  */
 IpfixCollector::IpfixCollector(IpfixReceiver* receiver)
 	: ipfixReceiver(receiver),
-	  statRecvdRecords(0)
+	  statSentRecords(0)
 {
 	ipfixPacketProcessor = new IpfixParser(this);
 	receiver->setVModule(this);
@@ -98,13 +98,13 @@ bool IpfixCollector::send(IpfixRecord* ipfixRecord)
 	// do not send anything any more, if module is to be stopped
 	if (exitFlag) return false;
 	
-	statRecvdRecords++;
+	statSentRecords++;
 	return Source<IpfixRecord*>::send(ipfixRecord);	
 }
 
 string IpfixCollector::getStatisticsXML(double interval)
 {
 	char buf[50];
-	snprintf(buf, ARRAY_SIZE(buf), "<receivedRecords>%u</receivedRecords>", statRecvdRecords);
+	snprintf(buf, ARRAY_SIZE(buf), "<sentRecords>%llu</sentRecords>", statSentRecords);
 	return buf;
 }

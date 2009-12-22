@@ -441,7 +441,7 @@ int IpfixDbWriter::setCurrentTable(time_t flowstartsec)
 		dbError = true;
 		return 1;
 	}
-	msg(MSG_INFO, "IpfixDbWriter: Table %s created ", currentTable.name.c_str());
+	msg(MSG_DEBUG, "IpfixDbWriter: Table %s created ", currentTable.name.c_str());
 
 	return 0;
 }

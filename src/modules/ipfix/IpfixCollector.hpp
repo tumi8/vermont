@@ -57,7 +57,7 @@ class IpfixCollector
 	private:
 		IpfixReceiver* ipfixReceiver;
 		IpfixPacketProcessor* ipfixPacketProcessor;
-		uint32_t statRecvdRecords;
+		uint64_t statSentRecords;
 
 };
 
