@@ -1,6 +1,7 @@
 /*
  * IPFIX Concentrator Module Library
  * Copyright (C) 2004 Christoph Sommer <http://www.deltadevelopment.de/users/christoph/ipfix/>
+ *               2009 Gerhard Muenz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,27 +20,17 @@
  */
 
 
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <unistd.h>
 #include <sstream>
 
 /* for ntohll et al */
 #include "common/ipfixlolib/ipfixlolib.h"
 
-#include "IpfixReceiver.hpp"
 #include "IpfixParser.hpp"
 #include "TemplateBuffer.hpp"
 #include "common/ipfixlolib/ipfix.h"
-#include "IpfixPrinter.hpp"
+//#include "IpfixPrinter.hpp"
 
 #include "common/msg.h"
-#include "common/Misc.h"
 
 using namespace std;
 

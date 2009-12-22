@@ -27,7 +27,7 @@
 #define IPFIXDBWRITER_H
 
 #include "IpfixDbCommon.hpp"
-#include "IpfixParser.hpp"
+#include "IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include <mysql.h>
@@ -110,16 +110,16 @@ class IpfixDbWriter
 		int createDB();
 		int setCurrentTable(time_t flowstartsec);
 		string& getInsertString(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
-				IpfixRecord::DataTemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data);
+				TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data);
 		int writeToDb();
 		int getExporterID(const IpfixRecord::SourceID& sourceID);
 		int connectToDB();
 		void processDataDataRecord(const IpfixRecord::SourceID& sourceID, 
-				IpfixRecord::DataTemplateInfo& dataTemplateInfo, uint16_t length, 
+				TemplateInfo& dataTemplateInfo, uint16_t length, 
 				IpfixRecord::Data* data);
 
 
-		uint64_t getData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
+		uint64_t getData(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		bool equalExporter(const IpfixRecord::SourceID& a, const IpfixRecord::SourceID& b);
 };
 

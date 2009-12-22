@@ -21,7 +21,7 @@
 #ifndef SNDIPFIX_H
 #define SNDIPFIX_H
 
-#include "IpfixParser.hpp"
+#include "IpfixRecord.hpp"
 #include "IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "common/ConcurrentQueue.h"
