@@ -18,10 +18,6 @@
  *
  */
 
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "TemplateBuffer.hpp"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/msg.h"

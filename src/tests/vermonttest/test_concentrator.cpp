@@ -1,6 +1,6 @@
 #include "test_concentrator.h"
 
-#include "modules/ipfix/IpfixRecord.hpp"
+#include "modules/ipfix/IpfixParser.hpp"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "modules/ipfix/IpfixSender.hpp"
 #include "modules/ipfix/IpfixRawdirReader.hpp"

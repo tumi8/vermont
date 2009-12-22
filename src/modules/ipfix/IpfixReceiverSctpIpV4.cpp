@@ -24,7 +24,6 @@
 #include "IpfixReceiverSctpIpV4.hpp"
 
 #include "IpfixPacketProcessor.hpp"
-#include "IpfixParser.hpp"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/msg.h"
 

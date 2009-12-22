@@ -28,7 +28,7 @@
 #define IPFIXDBWRITERPG_H
 
 #include "IpfixDbCommon.hpp"
-#include "IpfixParser.hpp"
+#include "IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include <libpq-fe.h>

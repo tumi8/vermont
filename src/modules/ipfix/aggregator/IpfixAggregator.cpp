@@ -22,8 +22,6 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include "IpfixAggregator.hpp"
-#include "modules/ipfix/IpfixParser.hpp"
-#include "modules/ipfix/IpfixSender.hpp"
 #include "FlowHashtable.h"
 
 #include "common/msg.h"

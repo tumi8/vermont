@@ -1,6 +1,7 @@
 /*
  * IPFIX Concentrator Module Library
  * Copyright (C) 2004 Christoph Sommer <http://www.deltadevelopment.de/users/christoph/ipfix/>
+ *               2009 Gerhard Muenz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -24,7 +25,6 @@
 #include "IpfixReceiver.hpp"
 #include "IpfixRecordSender.h"
 
-#include <list>
 #include <pthread.h>
 #include <stdint.h>
 #include <boost/smart_ptr.hpp>
