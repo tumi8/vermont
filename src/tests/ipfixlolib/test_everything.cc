@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 	
 	
 	
-	int c;
+	int c, n;
 	
 	while ((c = getchar()) != 'q') {
 		uint16_t my_template_id = 0;
