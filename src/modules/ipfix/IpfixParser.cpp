@@ -627,6 +627,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
  */
 int IpfixParser::processCompressedIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId)
 {
+#ifdef SUPPORT_COMPRESSED_IPFIX
 	if (length < sizeof(CompressedIpfixHeader)) {
 		msg(MSG_ERROR, "IpfixParser: Invalid CompressedIpfix message - message too short to contain header!");
 		return -1;
@@ -759,7 +760,12 @@ int IpfixParser::processCompressedIpfixPacket(boost::shared_array<uint8_t> messa
 	
 	header->length = htons(newLength);
 	return processIpfixPacket(ipfix_message, newLength, sourceId);
+#else 
+	msg(MSG_FATAL, "IpfixParser was compiled without support for compressed IPFIX");
+	return -1;
+#endif
 }
+
         
 /**
  * Process a NetflowV9 Packet

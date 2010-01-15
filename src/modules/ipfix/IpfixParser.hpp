@@ -92,6 +92,7 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 			uint8_t data;
 		} NetflowV9Header;
 
+#ifdef SUPPORT_COMPRESSED_IPFIX
 		/**
 		 * Compressed IPFIX header helper.
 		 * Constitues the first bytes of every Compressed IPFIX Message
@@ -114,15 +115,6 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		// we cannot specify these fields in this struct
 		} CompressedIpfixHeader;
 
-		/**
-		 * IPFIX "Set" helper.
-		 * Constitutes the first bytes of every IPFIX Template Set, Options Template Set or Data Set
-		 */
-		typedef struct {
-			uint16_t id;
-			uint16_t length;
-			uint8_t data; 
-		} IpfixSetHeader;
 
 		/**
 		 * Compressed IPFIX "Set" helper.
@@ -132,6 +124,17 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 			uint8_t id;
 			uint8_t length;
 		} IpfixCompressedSetHeader;
+#endif
+
+		/**
+		 * IPFIX "Set" helper.
+		 * Constitutes the first bytes of every IPFIX Template Set, Options Template Set or Data Set
+		 */
+		typedef struct {
+			uint16_t id;
+			uint16_t length;
+			uint8_t data; 
+		} IpfixSetHeader;
 
 		/**
 		 * IPFIX "Template Set" helper.
