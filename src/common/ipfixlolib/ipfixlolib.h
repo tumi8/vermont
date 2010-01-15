@@ -336,7 +336,7 @@ typedef struct {
 #error "Adjust your <bits/endian.h> defines"
 #endif
 	uint8_t length;
-	uint8_t compressed_part[8];// allocate enough memory for uncompressed export tiem and 
+	char compressed_part[8];// allocate enough memory for uncompressed export tiem and 
 			// sequence number 
 } ipfix_compressed_header;
 

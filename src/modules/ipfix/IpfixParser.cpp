@@ -641,26 +641,23 @@ int IpfixParser::processCompressedIpfixPacket(boost::shared_array<uint8_t> messa
 
 	boost::shared_array<uint8_t> ipfix_message(new uint8_t[MAX_MSG_LEN]);
 	IpfixHeader* header = (IpfixHeader*)ipfix_message.get();
-	uint8_t* messagePtr = (uint8_t*)header + sizeof(IpfixHeader);
 
 	// calculate expanded message length
 	uint16_t newLength = length - 2; // substract pre-header length, and compressed length field length
 	header->version = htons(0x000a);
-	newLength += 2;
+	newLength += 4; // length of the version field and the length field
 
-	//header->length = htons(compressedHeader->length); // host based expansion from uint_8 to uint16_t -> use htons for conversion
-	newLength += 4; // version + length - pre_Header - pre_header_length
-
-
+	// parse the variable compressed fields in the header
 	uint8_t* compressedMessagePtr = &compressedHeader->data;
-	uint8_t* compressedMessageEnd = (uint8_t*)compressedHeader + length;
 	switch (compressedHeader->pre_exportTime) {
 	case 0:
+		DPRINTF("Export time compressed to 0 bytes");
 		header->exportTime = 0;
 		newLength += 4;
 		break;
 	case 1: {
 		uint8_t exportTime = *(uint8_t*)compressedMessagePtr;
+		DPRINTF("Export time compressed to 1 bytes");
 		header->exportTime = htonl(exportTime);
 		compressedMessagePtr++;
 		newLength += 3;
@@ -668,12 +665,14 @@ int IpfixParser::processCompressedIpfixPacket(boost::shared_array<uint8_t> messa
 		break;
 	case 2: {
 		uint16_t exportTime = ntohs(*(uint16_t*)compressedMessagePtr);
+		DPRINTF("Export time compressed to 2 bytes");
 		header->exportTime = htonl(exportTime);
 		compressedMessagePtr += 2;
 		newLength += 2;
 		}
 		break;
 	case 3: {
+		DPRINTF("Export time compressed to 4 bytes");
 		header-> exportTime = *(uint32_t*)compressedMessagePtr; 
 		compressedMessagePtr += 4;
 		}
@@ -683,11 +682,13 @@ int IpfixParser::processCompressedIpfixPacket(boost::shared_array<uint8_t> messa
 	}
 	switch (compressedHeader->pre_sequenceNo) {
 	case 0: {
+		DPRINTF("Sequence number compressed to 0 bytes");
 		header->sequenceNo = 0;
 		newLength += 4;
 		}
 		break;
 	case 1: {
+		DPRINTF("Sequence number compressed to 1 bytes");
 		uint8_t sequenceNo = *(uint8_t*)compressedMessagePtr;
 		header->sequenceNo = htonl(sequenceNo);
 		compressedMessagePtr += 1;
@@ -695,6 +696,7 @@ int IpfixParser::processCompressedIpfixPacket(boost::shared_array<uint8_t> messa
 		}
 		break;
 	case 2: {
+		DPRINTF("Sequence number compressed to 2 bytes");
 		uint16_t sequenceNo = ntohs(*(uint16_t*)compressedMessagePtr);
 		header->sequenceNo = htonl(sequenceNo);
 		compressedMessagePtr += 2;
@@ -702,6 +704,7 @@ int IpfixParser::processCompressedIpfixPacket(boost::shared_array<uint8_t> messa
 		}
 		break;
 	case 3: {
+		DPRINTF("Sequence number compressed to 4 bytes");
 		header->exportTime = ntohl(*(uint32_t*)compressedMessagePtr);
 		compressedMessagePtr += 4;
 		}
@@ -711,10 +714,12 @@ int IpfixParser::processCompressedIpfixPacket(boost::shared_array<uint8_t> messa
 	}
 
 	header->observationDomainId = 0;
-	newLength += 4;
+	newLength += 4; // observation domain id length
 
+	uint8_t* compressedMessageEnd = (uint8_t*)compressedHeader + length;
+	uint8_t* messagePtr = &header->data;
 	while (compressedMessagePtr < compressedMessageEnd) {
-		if (compressedMessageEnd - compressedMessagePtr < 2) {
+		if ((unsigned)(compressedMessageEnd - compressedMessagePtr) < sizeof(IpfixCompressedSetHeader)) {
 			msg(MSG_ERROR, "IpfixParser: Invalid compressed IPFIX set header. Should be at least 2 bytes!");
 			return -1;
 		}
@@ -725,18 +730,35 @@ int IpfixParser::processCompressedIpfixPacket(boost::shared_array<uint8_t> messa
 			msg(MSG_ERROR, "IpfixParser: compressed set length is bigger than compressed IPFIX message!");
 			return -1;
 		}
-
+		
 		IpfixSetHeader* set = (IpfixSetHeader*)messagePtr;
-		set->id = htons((uint16_t)compSet->id);
-		set->length = htons((uint16_t)compSet->length + 2); // uncopressed set header is two bytes bigger
-		memcpy(messagePtr + 4, compressedMessagePtr + 2, set->length - 4);
+		// complete set header fields
+		set->id = htons((compSet->id < 128)?((uint16_t)compSet->id):((uint16_t)compSet->id + 128));
+		set->length = htons((uint16_t)compSet->length + 2); // uncompressed set header is two bytes bigger
+		newLength += 2; // overall length also gained 2 bytes
 
-		messagePtr += set->length;
+		// copy set content
+		memcpy(messagePtr + 4, compressedMessagePtr + 2, compSet->length - 2);
+
+		// fix template ids
+		if (ntohs(set->id) == IPFIX_SetId_Template) {
+			IpfixTemplateHeader* tset = (IpfixTemplateHeader*)&set->data;
+			if (ntohs(tset->templateId) >= 128) {
+				tset->templateId = htons(ntohs(tset->templateId) + 128);
+			}
+		}
+
+		messagePtr += ntohs(set->length);
 		compressedMessagePtr += compSet->length;
 	}
+
+	if (compressedMessagePtr != ((uint8_t*)compressedHeader + compressedHeader->length)) {
+		msg(MSG_FATAL, "Unknown error parsing compressed IPFIX message!");
+		return -1;
+	}
 	
-	header->length = newLength;
-	processIpfixPacket(ipfix_message, newLength, sourceId);
+	header->length = htons(newLength);
+	return processIpfixPacket(ipfix_message, newLength, sourceId);
 }
         
 /**
@@ -964,6 +986,7 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
 	if (ntohs(header->version) & 0x8000) {
 		int r = processCompressedIpfixPacket(message, length, sourceId);
 		pthread_mutex_unlock(&mutex);
+		return r;
 	}
 #endif
 	if (ntohs(header->version) == 0x000a) {

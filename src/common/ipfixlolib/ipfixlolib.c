@@ -1077,16 +1077,15 @@ static void update_exporter_max_message_size(ipfix_exporter *exporter) {
 int ipfix_init_compressed_exporter(ipfix_exporter **exporter, uint8_t compress_sequence_no, uint8_t compress_export_time)
 {
 #ifdef SUPPORT_COMPRESSED_IPFIX
-	ipfix_exporter* tmp;
-	if (!ipfix_init_exporter(0, &tmp)) 
+	if (ipfix_init_exporter(0, exporter)) 
 		return -1;
-	tmp->compressed_ipfix = 1;
-	tmp->compress_sequence_no = compress_sequence_no;
-	tmp->compress_export_time = compress_export_time;
+	(*exporter)->compressed_ipfix = 1;
+	(*exporter)->compress_sequence_no = compress_sequence_no;
+	(*exporter)->compress_export_time = compress_export_time;
 
-	ipfix_set_compressed_sendbuffer(tmp, tmp->sctp_template_sendbuffer);
-	ipfix_set_compressed_sendbuffer(tmp, tmp->data_sendbuffer);
-	ipfix_set_compressed_sendbuffer(tmp, tmp->template_sendbuffer);
+	ipfix_set_compressed_sendbuffer((*exporter), (*exporter)->sctp_template_sendbuffer);
+	ipfix_set_compressed_sendbuffer((*exporter), (*exporter)->data_sendbuffer);
+	ipfix_set_compressed_sendbuffer((*exporter), (*exporter)->template_sendbuffer);
 	return 0;
 #else
 	msg(MSG_FATAL, "ipfixlolib has been compiled without support for compressed IPFIX!");
@@ -1617,12 +1616,11 @@ static int ipfix_prepend_compressed_header(ipfix_exporter *p_exporter, int data_
 	}
 	// did the user set the data_length field?
 	if (data_length != 0) {
-		if (255 <= data_length + header_len) {
-			total_length = data_length + header_len;
-		} else {
+		if ((data_length + header_len) > 255) {
 			msg(MSG_ERROR, "ipfix_prepend_compressed_header: Message size %d is too big for compressed IPFIX", data_length + header_len);
 			return -1;
 		}
+		total_length = data_length + header_len;
 	} else {
 		// compute it on our own:
 		// sum up all lengths in the iovecs:
@@ -1801,7 +1799,6 @@ out:
 static int ipfix_calc_compressed_header_length(ipfix_exporter* exporter)
 {
 #ifdef SUPPORT_COMPRESSED_IPFIX
-	uint8_t total_length = 0;
 	uint8_t compressed_header_length = 2;
 	switch (exporter->compress_sequence_no) {
 	case C_EMPTY:
@@ -3312,7 +3309,7 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
         // write the field count):
         write_octet(&p_pos, p_end, field_count);
         // note compressed header size
-        exporter->template_arr[found_index].fields_length = 4;
+        exporter->template_arr[found_index].fields_length = 6;
     } else {
 #endif
         // ++ Start of Set Header
@@ -3596,9 +3593,14 @@ int ipfix_end_template(ipfix_exporter *exporter, uint16_t template_id)
     p_end = p_pos + exporter->template_arr[found_index].max_fields_length;
 #ifdef SUPPORT_COMPRESSED_IPFIX
     if (exporter->compressed_ipfix) {
-        // add offset of 1 bytes to the buffer's beginning: this is, where we will write to.
+        // check if the length fits into the compressed length field
+        if (templ->fields_length > 255) {
+            msg(MSG_ERROR, "Cannot fit template with size %d into a compressed template!", templ->fields_length);
+            return -1;
+        }
+	// add offset of 1 bytes to the buffer's beginning: this is, where we will write to.
         p_pos += 1;
-        write_octet(&p_pos, p_end, templ->fields_length);	
+        write_octet(&p_pos, p_end, (uint8_t)templ->fields_length);	
     } else {
 #endif
         // add offset of 2 bytes to the buffer's beginning: this is, where we will write to.
