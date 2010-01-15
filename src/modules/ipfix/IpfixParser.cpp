@@ -1,7 +1,7 @@
 /*
  * IPFIX Concentrator Module Library
  * Copyright (C) 2004 Christoph Sommer <http://www.deltadevelopment.de/users/christoph/ipfix/>
- *               2009 Gerhard Muenz
+ *               2009 Gerhard Muenz, Lothar Braun
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -621,6 +621,123 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 	return numberOfRecords;
 }
 
+/**
+ * Process a NetflowV9 Packet
+ * @return 0 on success
+ */
+int IpfixParser::processCompressedIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId)
+{
+	if (length < sizeof(CompressedIpfixHeader)) {
+		msg(MSG_ERROR, "IpfixParser: Invalid CompressedIpfix message - message too short to contain header!");
+		return -1;
+	}
+
+	CompressedIpfixHeader* compressedHeader = (CompressedIpfixHeader*)message.get();
+
+	if (compressedHeader->length != length) {
+		msg(MSG_ERROR, "IpfixParser: Received message length does not match header length field.");
+		return -1;
+	}
+
+	boost::shared_array<uint8_t> ipfix_message(new uint8_t[MAX_MSG_LEN]);
+	IpfixHeader* header = (IpfixHeader*)ipfix_message.get();
+	uint8_t* messagePtr = (uint8_t*)header + sizeof(IpfixHeader);
+
+	// calculate expanded message length
+	uint16_t newLength = length - 2; // substract pre-header length, and compressed length field length
+	header->version = htons(0x000a);
+	newLength += 2;
+
+	//header->length = htons(compressedHeader->length); // host based expansion from uint_8 to uint16_t -> use htons for conversion
+	newLength += 4; // version + length - pre_Header - pre_header_length
+
+
+	uint8_t* compressedMessagePtr = &compressedHeader->data;
+	uint8_t* compressedMessageEnd = (uint8_t*)compressedHeader + length;
+	switch (compressedHeader->pre_exportTime) {
+	case 0:
+		header->exportTime = 0;
+		newLength += 4;
+		break;
+	case 1: {
+		uint8_t exportTime = *(uint8_t*)compressedMessagePtr;
+		header->exportTime = htonl(exportTime);
+		compressedMessagePtr++;
+		newLength += 3;
+		}
+		break;
+	case 2: {
+		uint16_t exportTime = ntohs(*(uint16_t*)compressedMessagePtr);
+		header->exportTime = htonl(exportTime);
+		compressedMessagePtr += 2;
+		newLength += 2;
+		}
+		break;
+	case 3: {
+		header-> exportTime = *(uint32_t*)compressedMessagePtr; 
+		compressedMessagePtr += 4;
+		}
+		break;
+	default:
+		THROWEXCEPTION("Internal programming error! pre_exportTime should only have two bits!");
+	}
+	switch (compressedHeader->pre_sequenceNo) {
+	case 0: {
+		header->sequenceNo = 0;
+		newLength += 4;
+		}
+		break;
+	case 1: {
+		uint8_t sequenceNo = *(uint8_t*)compressedMessagePtr;
+		header->sequenceNo = htonl(sequenceNo);
+		compressedMessagePtr += 1;
+		newLength += 3;
+		}
+		break;
+	case 2: {
+		uint16_t sequenceNo = ntohs(*(uint16_t*)compressedMessagePtr);
+		header->sequenceNo = htonl(sequenceNo);
+		compressedMessagePtr += 2;
+		newLength += 2;
+		}
+		break;
+	case 3: {
+		header->exportTime = ntohl(*(uint32_t*)compressedMessagePtr);
+		compressedMessagePtr += 4;
+		}
+		break;
+	default:
+		THROWEXCEPTION("Internal programming error! pre_sequenceNo should only have two bits!");
+	}
+
+	header->observationDomainId = 0;
+	newLength += 4;
+
+	while (compressedMessagePtr < compressedMessageEnd) {
+		if (compressedMessageEnd - compressedMessagePtr < 2) {
+			msg(MSG_ERROR, "IpfixParser: Invalid compressed IPFIX set header. Should be at least 2 bytes!");
+			return -1;
+		}
+
+		IpfixCompressedSetHeader* compSet = (IpfixCompressedSetHeader*)compressedMessagePtr;
+
+		if ((compressedMessagePtr + compSet->length) > compressedMessageEnd) {
+			msg(MSG_ERROR, "IpfixParser: compressed set length is bigger than compressed IPFIX message!");
+			return -1;
+		}
+
+		IpfixSetHeader* set = (IpfixSetHeader*)messagePtr;
+		set->id = htons((uint16_t)compSet->id);
+		set->length = htons((uint16_t)compSet->length + 2); // uncopressed set header is two bytes bigger
+		memcpy(messagePtr + 4, compressedMessagePtr + 2, set->length - 4);
+
+		messagePtr += set->length;
+		compressedMessagePtr += compSet->length;
+	}
+	
+	header->length = newLength;
+	processIpfixPacket(ipfix_message, newLength, sourceId);
+}
         
 /**
  * Process a NetflowV9 Packet
@@ -837,7 +954,18 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
 		pthread_mutex_unlock(&mutex);
 		return 0;
 	}
+	if (length < 2) {
+		msg(MSG_ERROR, "IpfixParser: Message too short to read version field!");
+		pthread_mutex_unlock(&mutex);
+		return -1;
+	}
 	IpfixHeader* header = (IpfixHeader*)message.get();
+#ifdef SUPPORT_COMPRESSED_IPFIX
+	if (ntohs(header->version) & 0x8000) {
+		int r = processCompressedIpfixPacket(message, length, sourceId);
+		pthread_mutex_unlock(&mutex);
+	}
+#endif
 	if (ntohs(header->version) == 0x000a) {
 		int r = processIpfixPacket(message, length, sourceId);
 		pthread_mutex_unlock(&mutex);

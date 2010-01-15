@@ -1,7 +1,7 @@
 /*
  * IPFIX Concentrator Module Library
  * Copyright (C) 2004 Christoph Sommer <http://www.deltadevelopment.de/users/christoph/ipfix/>
- *               2009 Gerhard Muenz
+ *               2009 Gerhard Muenz, Lothar Braun
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -93,6 +93,28 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		} NetflowV9Header;
 
 		/**
+		 * Compressed IPFIX header helper.
+		 * Constitues the first bytes of every Compressed IPFIX Message
+		 */
+		typedef struct {
+		#if __BYTE_ORDER == __LITTLE_ENDIAN
+		uint8_t pre_sequenceNo:2;
+		uint8_t pre_exportTime:2;
+		uint8_t pre_version:4;
+		#elif __BYTE_ORDER == __BIG_ENDIAN
+		uint8_t pre_version:4;
+		uint8_t pre_exportTime:2;
+		uint8_t pre_sequenceNo:2;
+		#else
+		#error "Adjust your <bits/endian.h> defines"
+		#endif
+		uint8_t length;
+		uint8_t data; // data starts with export time, and sequence number
+		// however, as the length of these both fields are defined by the pre_header fields
+		// we cannot specify these fields in this struct
+		} CompressedIpfixHeader;
+
+		/**
 		 * IPFIX "Set" helper.
 		 * Constitutes the first bytes of every IPFIX Template Set, Options Template Set or Data Set
 		 */
@@ -101,6 +123,15 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 			uint16_t length;
 			uint8_t data; 
 		} IpfixSetHeader;
+
+		/**
+		 * Compressed IPFIX "Set" helper.
+		 * Constitutes the first two bytes of every compressed IPFIX set
+		 */
+		typedef struct {
+			uint8_t id;
+			uint8_t length;
+		} IpfixCompressedSetHeader;
 
 		/**
 		 * IPFIX "Template Set" helper.
@@ -148,6 +179,7 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		uint32_t processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		int processNetflowV9Packet(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 		int processIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
+		int processCompressedIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 		
 		virtual void push(IpfixRecord* ipfixRecord);
 
