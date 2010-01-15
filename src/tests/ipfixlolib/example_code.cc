@@ -57,6 +57,12 @@ int meter_process_gimme_data2(meter_data *mdat)
 	return 0;
 }
 
+int usage(const char* progname)
+{
+	fprintf(stderr, "Usage: %s <server_ip_address> <server_port> [compressed]\n%s will use UDP for transmitting data.\n", progname, progname);
+	exit(1);
+}
+
 
 int main(int argc, char **argv)
 {
@@ -64,14 +70,22 @@ int main(int argc, char **argv)
 
 	char *collector_ip;
 	int collector_port;
+	int compressed = 0;
 
-	if (argc != 3) {
-		fprintf(stderr, "Usage: %s <server_ip_address> <server_port>\nWill use UDP.\n", argv[0]);
-		exit(1);
+	if (argc != 3 && argc != 4) {
+		usage(argv[0]);
 	}
 
 	collector_ip=argv[1];
         collector_port=atoi(argv[2]);
+	
+	if (argc == 4) {
+		if (!strcmp(argv[3], "compressed")) 
+			compressed = 1;
+		else {
+			usage(argv[0]);
+		}
+	}
 
         /*
 	 Initialize an exporter
@@ -80,7 +94,11 @@ int main(int argc, char **argv)
 	 exporter: an ipfix_exporter * to be initialized
 	 */
 	ipfix_exporter *my_exporter;
-	ret=ipfix_init_exporter(MY_SOURCE_ID, &my_exporter);
+	if (compressed) {
+		ret = ipfix_init_compressed_exporter(&my_exporter, 0, 0);
+	} else {
+		ret=ipfix_init_exporter(MY_SOURCE_ID, &my_exporter);
+	}
 
 	if (ret != 0) {
 		fprintf(stderr, "ipfix_init_exporter failed!\n");
@@ -120,8 +138,15 @@ int main(int argc, char **argv)
 	 As none of these fields is vendor specific, the length of the template fields is 6*4 bytes.
          FIXME
 	 */  
-	uint16_t my_template_id = 12345;
-	uint16_t my_n_template_id = htons(my_template_id);
+	uint16_t my_template_id;
+	uint16_t my_n_template_id;
+	if (compressed) {
+		my_template_id = 130;
+		my_n_template_id = 130;
+	} else {
+		my_template_id = 12345;
+		my_n_template_id = htons(my_template_id);
+	}
 
 	/*
 	 Now start the adding of fields.
@@ -153,9 +178,16 @@ int main(int argc, char **argv)
 
 
 	/* Add another template */
-	uint16_t my_template_id2 = 6789;
-	uint16_t my_n_template_id2 = htons(my_template_id2);
+	uint16_t my_template_id2;
+	uint16_t my_n_template_id2;
 
+	if (compressed) {
+		my_template_id2 = 129;
+		my_n_template_id2 = 129;
+	} else {
+		my_template_id2 = 6789;
+		my_n_template_id2 = htons(my_template_id2);
+	}
 	/*
 	 Now start the adding of fields.
 
