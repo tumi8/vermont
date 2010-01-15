@@ -2897,6 +2897,7 @@ int ipfix_start_data_set(ipfix_exporter *exporter, uint16_t template_id)
 				= sizeof(ipfix_compressed_set_header);
 	} else {
 #endif
+		manager->set_header_store[current].set_id = template_id;
 		// link current set header in entries
 		exporter->data_sendbuffer->entries[exporter->data_sendbuffer->current].iov_base
 				= &(manager->set_header_store[current]);
@@ -3049,7 +3050,7 @@ int ipfix_end_data_set(ipfix_exporter *exporter, uint16_t number_of_records)
 			return -1;
 		}
 		manager->compressed_set_header_store[current].length = (uint8_t)record_length;
-	};
+	}
 #endif
 	// update the sendbuffer
 	exporter->data_sendbuffer->committed_data_length += record_length;
@@ -3571,14 +3572,14 @@ int ipfix_end_template(ipfix_exporter *exporter, uint16_t template_id)
     found_index = ipfix_find_template(exporter, template_id);
     // test for a valid slot:
     if (found_index < 0) {
-	msg(MSG_ERROR, "template %u not found", template_id);
-	return -1;
+        msg(MSG_ERROR, "template %u not found", template_id);
+        return -1;
     }
     ipfix_lo_template *templ=(&exporter->template_arr[found_index]);
     if (templ->fields_added != templ->field_count + templ->fixedfield_count) {
-	msg(MSG_ERROR, "Number of added template fields does not match number passed to ipfix_start_template");
-	ipfix_deinit_template(exporter, templ);
-	return -1;
+        msg(MSG_ERROR, "Number of added template fields does not match number passed to ipfix_start_template");
+        ipfix_deinit_template(exporter, templ);
+        return -1;
     }
     // reallocate the memory , i.e. free superfluous memory, as we allocated enough memory to hold
     // all possible vendor specific IDs.
@@ -3586,10 +3587,10 @@ int ipfix_end_template(ipfix_exporter *exporter, uint16_t template_id)
     templ->max_fields_length=templ->fields_length;
 
     /*
-       write the real length field:
-       set pointers:
-       beginning of the buffer
-       */
+    write the real length field:
+    set pointers:
+    beginning of the buffer
+    */
     p_pos = exporter->template_arr[found_index].template_fields;
     // end of the buffer
     p_end = p_pos + exporter->template_arr[found_index].max_fields_length;
