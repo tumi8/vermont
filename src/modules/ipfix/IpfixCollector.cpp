@@ -108,3 +108,13 @@ string IpfixCollector::getStatisticsXML(double interval)
 	snprintf(buf, ARRAY_SIZE(buf), "<sentRecords>%llu</sentRecords>", statSentRecords);
 	return buf;
 }
+
+/* Set template lifetime of IpfixParser
+ */
+void IpfixCollector::setTemplateLifetime(uint16_t time)
+{
+	if(ipfixPacketProcessor && dynamic_cast<IpfixParser*>(ipfixPacketProcessor))
+		dynamic_cast<IpfixParser*>(ipfixPacketProcessor)->setTemplateLifetime(time);
+	else
+		msg(MSG_ERROR, "IpfixCollector: Cannot set template lifetime, ipfixPacketProcessor is NULL");
+}

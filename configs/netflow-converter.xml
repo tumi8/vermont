@@ -8,6 +8,7 @@
 			<transportProtocol>UDP</transportProtocol>
 			<port>1500</port>
 		</listener>
+		<udpTemplateLifetime>3600</udpTemplateLifetime>
 		<next>2</next>
 	</ipfixCollector>
 

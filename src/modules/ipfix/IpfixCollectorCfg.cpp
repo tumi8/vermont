@@ -23,8 +23,7 @@
 IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector, IpfixCollectorCfg>(elem, "ipfixCollector"),
 	listener(NULL),
-	ipfixCollector(NULL),
-        observationDomainId(0)
+	ipfixCollector(NULL)
 {
 
 	if (!elem)
@@ -39,8 +38,6 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 
 		if (e->matches("listener")) {
 			listener = new CollectorCfg(e);
-		} else if (e->matches("udpTemplateLifetime")) {
-			msg(MSG_DEBUG, "Don't know how to handle udpTemplateLifetime! Ignored.");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unkown observer config statement %s\n", e->getName().c_str());
@@ -48,7 +45,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 		}
 	}
 
-	observationDomainId = getInt("observationDomainId", 0);
+	udpTemplateLifetime = getInt("udpTemplateLifetime", -1);
 
 	if (listener == NULL)
 		THROWEXCEPTION("collectingProcess has to listen on one address!");
@@ -70,6 +67,8 @@ IpfixCollectorCfg* IpfixCollectorCfg::create(XMLElement* elem)
 IpfixCollector* IpfixCollectorCfg::createInstance()
 {
 	instance = new IpfixCollector(listener->createIpfixReceiver());
+	if(udpTemplateLifetime>=0)
+		instance->setTemplateLifetime((uint16_t)udpTemplateLifetime);
 	return instance;
 }
 

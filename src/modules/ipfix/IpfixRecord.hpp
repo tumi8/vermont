@@ -75,6 +75,15 @@ class IpfixRecord
 			struct ExporterAddress {
 				uint8_t ip[MAX_ADDRESS_LEN];
 				uint8_t len;
+				
+				// conversion of IPv4 addresses to uint32_t
+				uint32_t toUInt32() const
+				{
+					if (len == 4)
+						return (((uint32_t)ip[0])<<24) + (((uint32_t)ip[1])<<16) + (((uint32_t)ip[2])<<8) + (uint32_t)ip[3];
+					else
+						return 0;
+				}
 			};
 
 			// fields from IPFIX/Netflow header:

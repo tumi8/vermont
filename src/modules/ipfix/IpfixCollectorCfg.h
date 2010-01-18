@@ -43,7 +43,7 @@ private:
 	
         IpfixCollector* ipfixCollector;
 
-        uint16_t observationDomainId;
+        int32_t udpTemplateLifetime;
 };
 
 #endif /*IPFIXCOLLECTORCFG_H_*/
