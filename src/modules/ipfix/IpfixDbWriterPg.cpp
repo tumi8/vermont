@@ -637,8 +637,8 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 	char statementStr[EXPORTER_WIDTH];
 	uint32_t expIp = 0;
 
-	if(sourceID->exporterAddress.len == 4)
-		expIp = *(uint32_t*)(sourceID->exporterAddress.ip);
+	// convert IP address (correct host byte order since 07/2010)
+	expIp = sourceID->exporterAddress.toUInt32();
 
 	/** Is the exporterID already in exporterBuffer? */
 	for(i = 0; i < curExporterEntries; i++) {

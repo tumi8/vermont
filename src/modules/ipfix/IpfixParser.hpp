@@ -59,7 +59,10 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		virtual void onReconfiguration1();
 		virtual void postReconfiguration();
 
-		void setTemplateLivetime(uint16_t time);
+		void setTemplateLifetime(uint16_t time)
+		{
+			templateLifetime = time;
+		}
 
 	protected:
 		/**
@@ -135,7 +138,7 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		friend class TemplateBuffer;
 		TemplateBuffer* templateBuffer; /**< TemplateBuffer* structure */
 
-		uint16_t templateLivetime;
+		uint16_t templateLifetime;
 
 		pthread_mutex_t mutex; /**< Used to give only one IpfixReceiver access to the IpfixPacketProcessor */
 

@@ -117,8 +117,8 @@ uint32_t IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		}
         
 		templateBuffer->bufferTemplate(bt); 
-		if((sourceId->protocol == IPFIX_protocolIdentifier_UDP) && (templateLivetime > 0))
-			bt->expires = time(0) + templateLivetime;
+		if((sourceId->protocol == IPFIX_protocolIdentifier_UDP) && (templateLifetime > 0))
+			bt->expires = time(0) + templateLifetime;
 		else
 			bt->expires = 0;
 
@@ -275,8 +275,8 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 			}
 		}
 		templateBuffer->bufferTemplate(bt); 
-		if((sourceId->protocol == IPFIX_protocolIdentifier_UDP) && (templateLivetime > 0))
-			bt->expires = time(0) + templateLivetime;
+		if((sourceId->protocol == IPFIX_protocolIdentifier_UDP) && (templateLifetime > 0))
+			bt->expires = time(0) + templateLifetime;
 		else
 			bt->expires = 0;
 
@@ -443,8 +443,8 @@ uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::Sour
 		record += dataLength;
 
 		templateBuffer->bufferTemplate(bt); 
-		if((sourceId->protocol == IPFIX_protocolIdentifier_UDP) && (templateLivetime > 0))
-			bt->expires = time(0) + templateLivetime;
+		if((sourceId->protocol == IPFIX_protocolIdentifier_UDP) && (templateLifetime > 0))
+			bt->expires = time(0) + templateLifetime;
 		else
 			bt->expires = 0;
 		
@@ -854,7 +854,7 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
  * @return handle to created instance
  */
 IpfixParser::IpfixParser(IpfixRecordSender* sender) 
-	: templateLivetime(DEFAULT_TEMPLATE_EXPIRE_SECS),
+	: templateLifetime(DEFAULT_TEMPLATE_EXPIRE_SECS),
 	  statTotalDataRecords(0),
 	  statTotalTemplateRecords(0),
   	  statTotalMessages(0),

@@ -472,9 +472,8 @@ int IpfixDbWriter::getExporterID(const IpfixRecord::SourceID& sourceID)
 		iter++;
 	}
 
-	// convert IP address
-	if(sourceID.exporterAddress.len == 4) 
-		expIp = *(uint32_t*)(sourceID.exporterAddress.ip);
+	// convert IP address (correct host byte order since 07/2010)
+	expIp = sourceID.exporterAddress.toUInt32();
 
 	// search exporter table 
 	statement << "SELECT id FROM exporter WHERE sourceID=" << sourceID.observationDomainId << " AND srcIp=" << expIp;
