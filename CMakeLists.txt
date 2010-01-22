@@ -82,7 +82,7 @@ INSTALL(DIRECTORY configs/
 
 ### doxygen
 
-FIND_PACKAGE(Doxygen REQUIRED)
+#FIND_PACKAGE(Doxygen REQUIRED)
 
 
 ### threads

@@ -151,7 +151,7 @@ void PrintHelpers::printUint(InformationElement::IeInfo type, IpfixRecord::Data*
 		fprintf(fh, "%u",ntohl(*(uint32_t*)data));
 		return;
 	case 8:
-		fprintf(fh, "%Lu",ntohll(*(uint64_t*)data));
+		fprintf(fh, "%Lu",(long long unsigned)ntohll(*(uint64_t*)data));
 		return;
 	default:
 		for(uint16_t i = 0; i < type.length; i++) {
@@ -176,7 +176,7 @@ void PrintHelpers::printUint(char* buf, InformationElement::IeInfo type, IpfixRe
 		sprintf(buf, "%u",ntohl(*(uint32_t*)data));
 		return;
 	case 8:
-		sprintf(buf, "%llu",ntohll(*(uint64_t*)data));
+		sprintf(buf, "%llu",(long long unsigned)ntohll(*(uint64_t*)data));
 		return;
 	default:
 		msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
@@ -196,23 +196,23 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 	if(type.enterprise == 0) {
 		switch (type.id) {
 		case IPFIX_TYPEID_protocolIdentifier:
-			fprintf(fh, "protocolIdentifier: ");
+			fprintf(fh, "protocolIdentifier (id=%u): ", type.id);
 			printProtocol(type, pattern);
 			return;
 		case IPFIX_TYPEID_sourceIPv4Address:
-			fprintf(fh, "sourceIPv4Address: ");
+			fprintf(fh, "sourceIPv4Address (id=%u): ", type.id);
 			printIPv4(type, pattern);
 			return;
 		case IPFIX_TYPEID_destinationIPv4Address:
-			fprintf(fh, "destinationIPv4Address: ");
+			fprintf(fh, "destinationIPv4Address (id=%u): ", type.id);
 			printIPv4(type, pattern);
 			return;
 		case IPFIX_TYPEID_sourceTransportPort:
-			fprintf(fh, "sourceTransportPort: ");
+			fprintf(fh, "sourceTransportPort (id=%u): ", type.id);
 			printPort(type, pattern);
 			return;
 		case IPFIX_TYPEID_destinationTransportPort:
-			fprintf(fh, "destinationTransportPort: ");
+			fprintf(fh, "destinationTransportPort (id=%u): ", type.id);
 			printPort(type, pattern);
 			return;
 		case IPFIX_TYPEID_flowStartNanoSeconds:
@@ -220,7 +220,7 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 		// TODO: replace by enterprise number (Gerhard, 12/2009)
 		case IPFIX_ETYPEID_revFlowStartNanoSeconds:
 		case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-			fprintf(fh, "%s: ", typeid2string(type.id));
+			fprintf(fh, "%s (id=%u): ", typeid2string(type.id), type.id);
 			hbnum = ntohll(*(uint64_t*)pattern);
 			if (hbnum>0) {
 				t = timentp64(*((ntp64*)(&hbnum)));
@@ -231,18 +231,22 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 			return;
 		case IPFIX_ETYPEID_frontPayload:
 		case IPFIX_ETYPEID_revFrontPayload:
-			fprintf(fh, "%s: ", typeid2string(type.id));
+			fprintf(fh, "%s (id=%u): ", typeid2string(type.id), type.id);
 			printFrontPayload(type, pattern);
 			return;
+		default:
+			s = typeid2string(type.id);
+			if (s != NULL) {
+				fprintf(fh, "%s (id=%u): ", s, type.id);
+			} else {
+				fprintf(fh, "unknown (id=%u): ", type.id);
+			}
+			printUint(type, pattern);
+			return;
 		}
-	}
-	// default treatment
-	s = typeid2string(type.id);
-	if (s != NULL) {
-		fprintf(fh, "%s: ", s);
+	} else { // enterprise-specific fields
+		fprintf(fh, "unknown (enterprise=%lu, id=%u): ", (long unsigned)type.enterprise, type.id);
 		printUint(type, pattern);
-	} else {
-		DPRINTF("Field with ID %u unparseable\n", type.id);
 	}
 }
 
@@ -629,8 +633,8 @@ void IpfixPrinter::printTableRecord(IpfixDataRecord* record)
 	//fprintf(fh, "%llu\t%llu\t%u\t%u\t%llu\n", ntohll(c.srcOctets), ntohll(c.srcPackets), c.srcPayloadLen, c.srcPayloadPktCount, c.srcTimeEnd-c.srcTimeStart);
 	fprintf(fh, "%s\t%s\t%hu\t%hu\t%hhu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%hhu\t%hhu\n",
 			IPToString(c.srcIP).c_str(), IPToString(c.dstIP).c_str(), ntohs(c.srcPort), ntohs(c.dstPort), c.protocol,
-			ntohll(c.srcPackets), ntohll(c.dstPackets), ntohll(c.srcOctets), ntohll(c.dstOctets),
-			c.srcTimeStart, c.srcTimeEnd, c.dstTimeStart, c.dstTimeEnd, c.srcTcpControlBits, c.dstTcpControlBits);
+			(long long unsigned)ntohll(c.srcPackets), (long long unsigned)ntohll(c.dstPackets), (long long unsigned)ntohll(c.srcOctets), (long long unsigned)ntohll(c.dstOctets),
+			(long long unsigned)c.srcTimeStart, (long long unsigned)c.srcTimeEnd, (long long unsigned)c.dstTimeStart, (long long unsigned)c.dstTimeEnd, c.srcTcpControlBits, c.dstTcpControlBits);
 
 }
 

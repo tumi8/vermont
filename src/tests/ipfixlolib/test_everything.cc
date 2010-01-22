@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <assert.h>
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "common/msg.h"
 
@@ -69,7 +70,7 @@ int main(int argc, char *argv[])
 			create_id = 0;
 			//Test custom templates
 			printf("Start testing Template creation!\n");
-			scanf("%u",&create_id);
+			assert(scanf("%u",&create_id)==1);
 			
 			ret=0;
 		
@@ -131,7 +132,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'd':
 			//delete template
-			scanf("%d",&delete_id);
+			assert(scanf("%d",&delete_id)==1);
 			printf("Start testing Template destruction ID : %d!\n", delete_id);
 			
 			ret=ipfix_remove_template_set(my_exporter, delete_id);
@@ -144,7 +145,7 @@ int main(int argc, char *argv[])
 			//Send an empty datarecord 
 			// implemented only for testing if data is assighned to the corresponding templates correctly
 			create_id = 0;
-			scanf("%u",&create_id);
+			assert(scanf("%u",&create_id)==1);
 			//create and send datarecord
 			my_n_template_id = htons(create_id);
 			ret = ipfix_start_data_set(my_exporter, my_n_template_id);
