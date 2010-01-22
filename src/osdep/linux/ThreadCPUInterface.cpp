@@ -65,8 +65,11 @@ ThreadCPUInterface::JiffyTime ThreadCPUInterface::getJiffies(pid_t tid)
 		}
 
 		while (fgets(line, ARRAY_SIZE(line), f) != NULL) {
-			sscanf(line, "nr_voluntary_switches%*[ :]%llu", &vcswitch);
-			sscanf(line, "nr_involuntary_switches%*[ :]%llu", &nvcswitch);
+			long long unsigned tmp;
+			sscanf(line, "nr_voluntary_switches%*[ :]%llu", &tmp);
+			vcswitch = (uint64_t)tmp;
+			sscanf(line, "nr_involuntary_switches%*[ :]%llu", &tmp);
+			nvcswitch = (uint64_t)tmp;
 		}
 
 		fclose(f);

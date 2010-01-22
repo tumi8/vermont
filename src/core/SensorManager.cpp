@@ -172,7 +172,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	const char* xmlglobalsuint = "\t\t<%s>%u</%s>\n";
 	ThreadCPUInterface::SystemInfo si = ThreadCPUInterface::getSystemInfo();
 
-	fprintf(file, "\t\t<jiffyFrequency>%llu</jiffyFrequency>\n", hertzValue);
+	fprintf(file, "\t\t<jiffyFrequency>%llu</jiffyFrequency>\n", (long long unsigned)hertzValue);
 	fprintf(file, xmlglobalsuint, "processorAmount", si.noCPUs, "processorAmount");
 	for (uint16_t i=0; i<si.sysJiffies.size(); i++) {
 		double sysutil = (si.sysJiffies[i]-lastSystemInfo.sysJiffies[i])/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
@@ -181,7 +181,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 				i, sysutil, userutil);
 	}
 	fprintf(file, "\t\t<memory><free type=\"bytes\">%llu</free><total type=\"bytes\">%llu</total></memory>\n",
-			si.freeMemory, si.totalMemory);
+			(long long unsigned)si.freeMemory, (long long unsigned)si.totalMemory);
 	lastSystemInfo = si;
 #endif
 

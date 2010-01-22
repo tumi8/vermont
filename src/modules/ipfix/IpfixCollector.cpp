@@ -105,7 +105,7 @@ bool IpfixCollector::send(IpfixRecord* ipfixRecord)
 string IpfixCollector::getStatisticsXML(double interval)
 {
 	char buf[50];
-	snprintf(buf, ARRAY_SIZE(buf), "<sentRecords>%llu</sentRecords>", statSentRecords);
+	snprintf(buf, ARRAY_SIZE(buf), "<sentRecords>%llu</sentRecords>", (long long unsigned)statSentRecords);
 	return buf;
 }
 
