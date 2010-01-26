@@ -28,7 +28,7 @@
 /* wrapper into ipfixlolib - double data makes no sense */
 
 #include <string.h>
-#include "common/ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfix_names.h"
 #include "ipfix.h"
 
 #ifdef __cplusplus

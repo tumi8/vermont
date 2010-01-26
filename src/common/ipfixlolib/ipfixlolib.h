@@ -42,7 +42,7 @@
 #endif
 
 //#include "encoding.h"
-#include "ipfix_names.h"
+//#include "ipfix_names.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,6 +52,11 @@ extern "C" {
  * version number of the ipfix-protocol
  */
 #define IPFIX_VERSION_NUMBER 0x000a
+
+/*
+ * enterprise flag in IE ID field
+ */
+#define IPFIX_ENTERPRISE_BIT (1 << 15)
 
 /*
  * amount of iovec, the header consumes

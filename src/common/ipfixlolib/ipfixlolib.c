@@ -1877,9 +1877,9 @@ int ipfix_start_optionstemplate_set(ipfix_exporter *exporter, uint16_t template_
  * Parameters:
  *  template_id: the id specified at ipfix_start_template_set()
  *  type: field or scope type (in host byte order)
- *        Note: The enterprise id will only be used, if type has the enterprise bit set.
  *  length: length of the field or scope (in host byte order)
  *  enterprise: enterprise type (in host byte order)
+ * Note: An enterprise-specific field will be encoded if enterprise!=0 or if enterprise bit of type is 1.
  * Note: This function is called after ipfix_start_data_template_set or ipfix_start_option_template_set.
  * Note: This function MAY be replaced by a macro in future versions.
  */
@@ -1891,7 +1891,14 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
 	int ret;
 	char *p_pos;
 	char *p_end;
-	int enterprise_bit_set = ipfix_enterprise_flag_set(type);
+	int enterprise_specific = FALSE;
+	
+	/* test if this is an enterprise-specific field */
+	if ((enterprise_id != 0) || ipfix_enterprise_flag_set(type)) {
+		enterprise_specific = TRUE;
+		/* make sure that enterprise bit is set */
+		type |= IPFIX_ENTERPRISE_BIT;
+	}
 
 	found_index = ipfix_find_template(exporter, template_id, T_UNCLEAN);
 
@@ -1918,7 +1925,7 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
 
 	DPRINTFL(MSG_VDEBUG, "ipfix_put_template_field: B p_pos %p, p_end %p", p_pos, p_end);
 
-	if (enterprise_bit_set) {
+	if (enterprise_specific) {
 		DPRINTFL(MSG_VDEBUG, "Notice: using enterprise ID %d with data %d", template_id,
 				enterprise_id);
 	}
@@ -1932,7 +1939,7 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uin
 	exporter->template_arr[found_index].fields_length += 4;
 
 	// write the vendor specific id
-	if (enterprise_bit_set) {
+	if (enterprise_specific) {
 		ret = write_unsigned32(&p_pos, p_end, enterprise_id);
 		exporter->template_arr[found_index].fields_length += 4;
 	}
@@ -2144,7 +2151,7 @@ int ipfix_set_sctp_reconnect_timer(ipfix_exporter *exporter, uint32_t timer)
 /* check if the enterprise bit in an ID is set */
 int ipfix_enterprise_flag_set(uint16_t id)
 {
-	return bit_set(id, IPFIX_ENTERPRISE_FLAG);
+	return bit_set(id, IPFIX_ENTERPRISE_BIT);
 }
 
 #ifdef __cplusplus
