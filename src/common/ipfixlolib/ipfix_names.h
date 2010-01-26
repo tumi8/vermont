@@ -7,8 +7,6 @@
 extern "C" {
 #endif
 
-#define IPFIX_ENTERPRISE_FLAG (1 << 15)
-
 struct ipfix_identifier {
 	char *name;
 	uint16_t id;
