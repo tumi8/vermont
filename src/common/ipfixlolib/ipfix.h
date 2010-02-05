@@ -47,6 +47,8 @@ extern "C" {
 #define IPFIX_SetId_Data_Start                                  256
 #define IPFIX_ENTERPRISE_TYPE   0x8000
 
+#define IPFIX_VERMONT_SPECIFIC_TYPE 0x4000 // bit to be set for Vermont specific types exported without enterprise number (may cause conflicts!)
+
 int string2typeid(const char*s);
 char* typeid2string(int i);
 int string2typelength(const char*s);
@@ -145,26 +147,25 @@ int string2typelength(const char*s);
 #define IPFIX_TYPEID_tcpUrgentPointer               187
 #define IPFIX_TYPEID_totalLengthIPv4                190
 
-#define IPFIX_ETYPEID_frontPayload					(IPFIX_ENTERPRISE_TYPE | 0x80)
-#define IPFIX_ETYPEID_frontPayloadLen				(IPFIX_ENTERPRISE_TYPE | 0x81)
-#define IPFIX_ETYPEID_maxPacketGap					(IPFIX_ENTERPRISE_TYPE | 0x82)
-#define IPFIX_ETYPEID_frontPayloadPktCount			(IPFIX_ENTERPRISE_TYPE | 0x83)
+#define IPFIX_ETYPEID_frontPayload					(IPFIX_VERMONT_SPECIFIC_TYPE | 0x80)
+#define IPFIX_ETYPEID_frontPayloadLen				(IPFIX_VERMONT_SPECIFIC_TYPE | 0x81)
+#define IPFIX_ETYPEID_maxPacketGap					(IPFIX_VERMONT_SPECIFIC_TYPE | 0x82)
+#define IPFIX_ETYPEID_frontPayloadPktCount			(IPFIX_VERMONT_SPECIFIC_TYPE | 0x83)
 
 // information elements for biflows
-#define IPFIX_REVERSE_TYPE							0x0400
-#define IPFIX_REVERSE_ETYPE							(IPFIX_ENTERPRISE_TYPE | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revFlowStartSeconds			(IPFIX_TYPEID_flowStartSeconds | IPFIX_REVERSE_ETYPE)
-#define IPFIX_ETYPEID_revFlowStartMilliSeconds		(IPFIX_TYPEID_flowStartMilliSeconds | IPFIX_REVERSE_ETYPE)
-#define IPFIX_ETYPEID_revFlowStartNanoSeconds		(IPFIX_TYPEID_flowStartNanoSeconds | IPFIX_REVERSE_ETYPE)
-#define IPFIX_ETYPEID_revFlowEndSeconds				(IPFIX_TYPEID_flowEndSeconds | IPFIX_REVERSE_ETYPE)
-#define IPFIX_ETYPEID_revFlowEndMilliSeconds		(IPFIX_TYPEID_flowEndMilliSeconds | IPFIX_REVERSE_ETYPE)
-#define IPFIX_ETYPEID_revFlowEndNanoSeconds			(IPFIX_TYPEID_flowEndNanoSeconds | IPFIX_REVERSE_ETYPE)
-#define IPFIX_ETYPEID_revOctetDeltaCount			(IPFIX_TYPEID_octetDeltaCount | IPFIX_REVERSE_ETYPE)
-#define IPFIX_ETYPEID_revPacketDeltaCount			(IPFIX_TYPEID_packetDeltaCount | IPFIX_REVERSE_ETYPE)
-#define IPFIX_ETYPEID_revTcpControlBits				(IPFIX_TYPEID_tcpControlBits | IPFIX_REVERSE_ETYPE)
-#define IPFIX_ETYPEID_revFrontPayload				(IPFIX_ETYPEID_frontPayload | IPFIX_REVERSE_ETYPE)
-#define IPFIX_ETYPEID_revFrontPayloadLen			(IPFIX_ETYPEID_frontPayloadLen | IPFIX_REVERSE_ETYPE)
-#define IPFIX_ETYPEID_revMaxPacketGap				(IPFIX_ETYPEID_maxPacketGap | IPFIX_REVERSE_ETYPE)
+#define IPFIX_REVERSE_TYPE							0x0400 // temporary solution until enterprise number 29305 is used
+#define IPFIX_ETYPEID_revFlowStartSeconds			(IPFIX_TYPEID_flowStartSeconds | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revFlowStartMilliSeconds		(IPFIX_TYPEID_flowStartMilliSeconds | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revFlowStartNanoSeconds		(IPFIX_TYPEID_flowStartNanoSeconds | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revFlowEndSeconds				(IPFIX_TYPEID_flowEndSeconds | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revFlowEndMilliSeconds		(IPFIX_TYPEID_flowEndMilliSeconds | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revFlowEndNanoSeconds			(IPFIX_TYPEID_flowEndNanoSeconds | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revOctetDeltaCount			(IPFIX_TYPEID_octetDeltaCount | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revPacketDeltaCount			(IPFIX_TYPEID_packetDeltaCount | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revTcpControlBits				(IPFIX_TYPEID_tcpControlBits | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revFrontPayload				(IPFIX_ETYPEID_frontPayload | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revFrontPayloadLen			(IPFIX_ETYPEID_frontPayloadLen | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revMaxPacketGap				(IPFIX_ETYPEID_maxPacketGap | IPFIX_REVERSE_TYPE)
 
 
 #define IPFIX_LENGTH_ipVersion                      IPFIX_LENGTH_octet

@@ -103,8 +103,9 @@ void FlowHashtable::genBiflowStructs()
 				// but mapReverseElement will detect those and throw an exception
 				DPRINTF("field %s", typeid2string(fi->type.id));
 				if ((fi->type.id&IPFIX_REVERSE_TYPE)==0) {
-					mapReverseElement(fi->type.id|IPFIX_ENTERPRISE_TYPE|IPFIX_REVERSE_ETYPE);
-					DPRINTF("FlowHashtable: mapping field %s to field %s", typeid2string(fi->type.id), typeid2string(fi->type.id|IPFIX_ENTERPRISE_TYPE|IPFIX_REVERSE_ETYPE));
+					//TODO: set type.enterprise=29305 instead (Gerhard, 12/2009)
+					mapReverseElement(fi->type.id|IPFIX_REVERSE_TYPE);
+					DPRINTF("FlowHashtable: mapping field %s to field %s", typeid2string(fi->type.id), typeid2string(fi->type.id|IPFIX_REVERSE_TYPE));
 				} else {
 					// do not reverse element
 					mapReverseElement(fi->type.id);
@@ -156,141 +157,144 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 	InformationElement::IeInfo* type = &basefi->type;
 	uint32_t* plen;
 
-	switch (type->id) {
-		case IPFIX_TYPEID_flowStartSysUpTime:
-		case IPFIX_TYPEID_flowStartSeconds:
-		case IPFIX_TYPEID_flowStartMicroSeconds:
-			if (type->length != 4) {
-				DPRINTF("unsupported length %d for type %d", type->length, type->id);
-				goto out;
-			}
-
-			*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-			break;
-
-		case IPFIX_ETYPEID_revFlowStartSeconds:
-			if (type->length != 4) {
-				DPRINTF("unsupported length %d for type %d", type->length, type->id);
-				goto out;
-			}
-			if (*(uint32_t*)baseData == 0)
-				*((uint32_t*)baseData) = *((uint32_t*)deltaData);
-			else if (*(uint32_t*)deltaData > 0)		// be certain that deltaData is not 0!
-				*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-			break;
-
-		case IPFIX_TYPEID_flowStartMilliSeconds:
-		case IPFIX_TYPEID_flowStartNanoSeconds:
-			if (type->length != 8) {
-				DPRINTF("unsupported length %d for type %d", type->length, type->id);
-				goto out;
-			}
-
-			*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-			break;
-
-		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-		case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-			if (type->length != 8) {
-				DPRINTF("unsupported length %d for type %d", type->length, type->id);
-				goto out;
-			}
-
-			if (*(uint64_t*)baseData == 0)
-				*((uint64_t*)baseData) = *((uint64_t*)deltaData);
-			else if (*(uint64_t*)deltaData > 0)		// be certain that deltaData is not 0!
-				*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-			break;
-
-		case IPFIX_TYPEID_flowEndSysUpTime:
-		case IPFIX_TYPEID_flowEndSeconds:
-		case IPFIX_TYPEID_flowEndMicroSeconds:
-		case IPFIX_ETYPEID_revFlowEndSeconds:
-			if (type->length != 4) {
-				DPRINTF("unsupported length %d for type %d", type->length, type->id);
-				goto out;
-			}
-
-			*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-			break;
-
-		case IPFIX_TYPEID_flowEndMilliSeconds:
-		case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-		case IPFIX_TYPEID_flowEndNanoSeconds:
-		case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-			if (type->length != 8) {
-				DPRINTF("unsupported length %d for type %d", type->length, type->id);
-				goto out;
-			}
-
-			*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-			break;
-
-		case IPFIX_TYPEID_octetDeltaCount:
-		case IPFIX_TYPEID_postOctetDeltaCount:
-		case IPFIX_TYPEID_packetDeltaCount:
-		case IPFIX_TYPEID_postPacketDeltaCount:
-		case IPFIX_TYPEID_droppedOctetDeltaCount:
-		case IPFIX_TYPEID_droppedPacketDeltaCount:
-		case IPFIX_ETYPEID_revOctetDeltaCount:
-		case IPFIX_ETYPEID_revPacketDeltaCount:
-		case IPFIX_ETYPEID_frontPayloadPktCount:
-			// TODO: tobi_optimize
-			// converting all values to network byte order when sending ipfix packets would be much faster
-			switch (type->length) {
-				case 1:
-					*(uint8_t*)baseData = addUint8Nbo(*(uint8_t*)baseData, *(uint8_t*)deltaData);
-					return 0;
-				case 2:
-					*(uint16_t*)baseData = addUint16Nbo(*(uint16_t*)baseData, *(uint16_t*)deltaData);
-					return 0;
-				case 4:
-					*(uint32_t*)baseData = addUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-					return 0;
-				case 8:
-					*(uint64_t*)baseData = addUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-					return 0;
-				default:
+	//TODO: else if(type.enterprise=29305) for reverse types (Gerhard, 12/2009)
+	if(type->enterprise == 0) {
+		switch (type->id) {
+			case IPFIX_TYPEID_flowStartSysUpTime:
+			case IPFIX_TYPEID_flowStartSeconds:
+			case IPFIX_TYPEID_flowStartMicroSeconds:
+				if (type->length != 4) {
 					DPRINTF("unsupported length %d for type %d", type->length, type->id);
 					goto out;
-			}
-			break;
+				}
 
-		case IPFIX_TYPEID_tcpControlBits:
-		case IPFIX_ETYPEID_revTcpControlBits:
-			ASSERT(type->length==1, "unsupported length for type");
-			*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
-			break;
+				*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+				break;
 
-		case IPFIX_ETYPEID_frontPayload:
-		case IPFIX_ETYPEID_revFrontPayload:
-			plen = reinterpret_cast<uint32_t*>(base+basefi->privDataOffset+4);
-			// only copy payload if it was not inserted into the field yet
-			if (*plen == 0) {
-				memcpy(baseData, deltaData, type->length);
-				*plen = *reinterpret_cast<uint32_t*>(delta+deltafi->privDataOffset+4);
-			}
-			break;
+			case IPFIX_ETYPEID_revFlowStartSeconds:
+				if (type->length != 4) {
+					DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					goto out;
+				}
+				if (*(uint32_t*)baseData == 0)
+					*((uint32_t*)baseData) = *((uint32_t*)deltaData);
+				else if (*(uint32_t*)deltaData > 0)		// be certain that deltaData is not 0!
+					*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+				break;
 
-		case IPFIX_ETYPEID_frontPayloadLen:
-		case IPFIX_ETYPEID_revFrontPayloadLen:
-			// ensure that this field is only written once with data (same behavior as for frontpayload)
-			if (*((uint32_t*)baseData)==0) {
-				*((uint32_t*)baseData) = *((uint32_t*)deltaData);
-			}
-			break;
+			case IPFIX_TYPEID_flowStartMilliSeconds:
+			case IPFIX_TYPEID_flowStartNanoSeconds:
+				if (type->length != 8) {
+					DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					goto out;
+				}
 
-		case IPFIX_ETYPEID_maxPacketGap:
-		case IPFIX_ETYPEID_revMaxPacketGap:
-			*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-			// FIXME: additionally, start and end times of both flows should be compared
-			// - this one could be the greatest gap!
-			break;
+				*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+				break;
 
-		default:
-			DPRINTF("non-aggregatable type: %d", type->id);
-			goto out;
-			break;
+			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+			case IPFIX_ETYPEID_revFlowStartNanoSeconds:
+				if (type->length != 8) {
+					DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					goto out;
+				}
+
+				if (*(uint64_t*)baseData == 0)
+					*((uint64_t*)baseData) = *((uint64_t*)deltaData);
+				else if (*(uint64_t*)deltaData > 0)		// be certain that deltaData is not 0!
+					*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+				break;
+
+			case IPFIX_TYPEID_flowEndSysUpTime:
+			case IPFIX_TYPEID_flowEndSeconds:
+			case IPFIX_TYPEID_flowEndMicroSeconds:
+			case IPFIX_ETYPEID_revFlowEndSeconds:
+				if (type->length != 4) {
+					DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					goto out;
+				}
+
+				*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+				break;
+
+			case IPFIX_TYPEID_flowEndMilliSeconds:
+			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+			case IPFIX_TYPEID_flowEndNanoSeconds:
+			case IPFIX_ETYPEID_revFlowEndNanoSeconds:
+				if (type->length != 8) {
+					DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					goto out;
+				}
+
+				*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+				break;
+
+			case IPFIX_TYPEID_octetDeltaCount:
+			case IPFIX_TYPEID_postOctetDeltaCount:
+			case IPFIX_TYPEID_packetDeltaCount:
+			case IPFIX_TYPEID_postPacketDeltaCount:
+			case IPFIX_TYPEID_droppedOctetDeltaCount:
+			case IPFIX_TYPEID_droppedPacketDeltaCount:
+			case IPFIX_ETYPEID_revOctetDeltaCount:
+			case IPFIX_ETYPEID_revPacketDeltaCount:
+			case IPFIX_ETYPEID_frontPayloadPktCount:
+				// TODO: tobi_optimize
+				// converting all values to network byte order when sending ipfix packets would be much faster
+				switch (type->length) {
+					case 1:
+						*(uint8_t*)baseData = addUint8Nbo(*(uint8_t*)baseData, *(uint8_t*)deltaData);
+						return 0;
+					case 2:
+						*(uint16_t*)baseData = addUint16Nbo(*(uint16_t*)baseData, *(uint16_t*)deltaData);
+						return 0;
+					case 4:
+						*(uint32_t*)baseData = addUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+						return 0;
+					case 8:
+						*(uint64_t*)baseData = addUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+						return 0;
+					default:
+						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+						goto out;
+				}
+				break;
+
+			case IPFIX_TYPEID_tcpControlBits:
+			case IPFIX_ETYPEID_revTcpControlBits:
+				ASSERT(type->length==1, "unsupported length for type");
+				*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
+				break;
+
+			case IPFIX_ETYPEID_frontPayload:
+			case IPFIX_ETYPEID_revFrontPayload:
+				plen = reinterpret_cast<uint32_t*>(base+basefi->privDataOffset+4);
+				// only copy payload if it was not inserted into the field yet
+				if (*plen == 0) {
+					memcpy(baseData, deltaData, type->length);
+					*plen = *reinterpret_cast<uint32_t*>(delta+deltafi->privDataOffset+4);
+				}
+				break;
+
+			case IPFIX_ETYPEID_frontPayloadLen:
+			case IPFIX_ETYPEID_revFrontPayloadLen:
+				// ensure that this field is only written once with data (same behavior as for frontpayload)
+				if (*((uint32_t*)baseData)==0) {
+					*((uint32_t*)baseData) = *((uint32_t*)deltaData);
+				}
+				break;
+
+			case IPFIX_ETYPEID_maxPacketGap:
+			case IPFIX_ETYPEID_revMaxPacketGap:
+				*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+				// FIXME: additionally, start and end times of both flows should be compared
+				// - this one could be the greatest gap!
+				break;
+
+			default:
+				DPRINTF("non-aggregatable type: %d", type->id);
+				goto out;
+				break;
+		}
 	}
 
 	return 0;
@@ -601,6 +605,7 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
 		/* TODO: We simply pad with zeroes - will this always be correct? */
 		switch (dstType->id) {
 			/* Fields of type IPv4Address-type and payload are padded on the right */
+			//TODO: enterprise number for reverse type (Gerhard, 12/2009)
 			case IPFIX_TYPEID_sourceIPv4Address:
 			case IPFIX_TYPEID_destinationIPv4Address:
 			case IPFIX_ETYPEID_frontPayload:
@@ -616,6 +621,7 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
 		}
 
 	} else {
+		//TODO: enterprise number for reverse type (Gerhard, 12/2009)
 		if (dstType->id == IPFIX_ETYPEID_frontPayload || dstType->id == IPFIX_ETYPEID_revFrontPayload) {
 			copylen = dstType->length;
 			memcpy(dstData, srcData, copylen);
@@ -626,6 +632,7 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
 	}
 
 	// save used length of payload field
+	//TODO: enterprise number for reverse type (Gerhard, 12/2009)
 	if (dstType->id == IPFIX_ETYPEID_frontPayload || dstType->id == IPFIX_ETYPEID_revFrontPayload) {
 		*reinterpret_cast<uint32_t*>(&dst[dstFI->privDataOffset+4]) = copylen;
 	}
