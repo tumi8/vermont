@@ -103,6 +103,8 @@ uint32_t IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 					return numberOfRecords;
 				}
 				ti->fieldInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
+				// remove highest bit
+				ti->fieldInfo[fieldNo].type.id &= ~IPFIX_ENTERPRISE_TYPE;
 				record = (uint8_t*)((uint8_t*)record+8);
 			} else {
 				ti->fieldInfo[fieldNo].type.enterprise = 0;
@@ -208,6 +210,8 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 					return numberOfRecords;
 				}
 				ti->scopeInfo[scopeNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
+				// remove highest bit
+				ti->scopeInfo[scopeNo].type.id &= ~IPFIX_ENTERPRISE_TYPE;
 				record = (uint8_t*)((uint8_t*)record+8);
 			} else {
 				ti->fieldInfo[scopeNo].type.enterprise = 0;
@@ -250,6 +254,8 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 					return numberOfRecords;
 				}
 				ti->fieldInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
+				// remove highest bit
+				ti->fieldInfo[fieldNo].type.id &= ~IPFIX_ENTERPRISE_TYPE;
 				record = (uint8_t*)((uint8_t*)record+8);
 			} else {
 				ti->fieldInfo[fieldNo].type.enterprise = 0;
@@ -361,6 +367,8 @@ uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::Sour
 					return numberOfRecords;
 				}
 				ti->fieldInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
+				// remove highest bit
+				ti->fieldInfo[fieldNo].type.id &= ~IPFIX_ENTERPRISE_TYPE;
 				record = (uint8_t*)((uint8_t*)record+8);
 			} else {
 				ti->fieldInfo[fieldNo].type.enterprise = 0;
@@ -392,6 +400,8 @@ uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::Sour
 					return numberOfRecords;
 				}
 				ti->dataInfo[fieldNo].type.enterprise = ntohl(*(uint32_t*)((uint8_t*)record+4));
+				// remove highest bit
+				ti->dataInfo[fieldNo].type.id &= ~IPFIX_ENTERPRISE_TYPE;
 				record = (uint8_t*)((uint8_t*)record+8);
 			} else {
 				ti->dataInfo[fieldNo].type.enterprise = 0;
