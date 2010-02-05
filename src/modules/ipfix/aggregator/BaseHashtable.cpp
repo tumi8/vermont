@@ -158,6 +158,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 		}
 		if (fi->type.id == IPFIX_ETYPEID_frontPayload)
 			fpLengthOffset = fi->privDataOffset + 4;
+		//TODO: check (type.enterprise==29305) for reverse type (Gerhard, 12/2009)
 		if (fi->type.id == IPFIX_ETYPEID_revFrontPayload)
 			revfpLengthOffset = fi->privDataOffset + 4;
 	}
@@ -172,6 +173,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			}
 			fi->privDataOffset = fpLengthOffset;
 		}
+		//TODO: check (type.enterprise==29305) for reverse type (Gerhard, 12/2009)
 		if (fi->type.id == IPFIX_ETYPEID_revFrontPayloadLen) {
 			if (!revfpLengthOffset) {
 				THROWEXCEPTION("no reverse front payload field specified in template, so front payload length is not available either");

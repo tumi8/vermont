@@ -306,48 +306,49 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const InformationElement::IeInf
 		THROWEXCEPTION("don't know how to handle field id=%u, enterprise=%lu", type.id, type.enterprise);
 	}
 
-	switch (type.id) {
-		case IPFIX_TYPEID_protocolIdentifier:
-		case IPFIX_TYPEID_tcpControlBits:
-		case IPFIX_ETYPEID_revTcpControlBits:
-		case IPFIX_TYPEID_packetDeltaCount:
-		case IPFIX_ETYPEID_revPacketDeltaCount:
-			return 1;
+	if(type.enterprise == 0) {
+		switch (type.id) {
+			case IPFIX_TYPEID_protocolIdentifier:
+			case IPFIX_TYPEID_tcpControlBits:
+			case IPFIX_TYPEID_packetDeltaCount:
+			//case IPFIX_ETYPEID_revPacketDeltaCount:
+				return 1;
 
-		case IPFIX_TYPEID_icmpTypeCode:
-		case IPFIX_TYPEID_sourceTransportPort:
-		case IPFIX_TYPEID_destinationTransportPort:
-		case IPFIX_TYPEID_octetDeltaCount:
-		case IPFIX_ETYPEID_revOctetDeltaCount:
-			return 2;
+			case IPFIX_TYPEID_icmpTypeCode:
+			case IPFIX_TYPEID_sourceTransportPort:
+			case IPFIX_TYPEID_destinationTransportPort:
+			case IPFIX_TYPEID_octetDeltaCount:
+			//case IPFIX_ETYPEID_revOctetDeltaCount:
+				return 2;
 
-		case IPFIX_TYPEID_flowStartSeconds:
-		case IPFIX_TYPEID_flowEndSeconds:
-		case IPFIX_TYPEID_sourceIPv4Address:
-		case IPFIX_TYPEID_destinationIPv4Address:
-		case IPFIX_ETYPEID_revFlowStartSeconds:
-		case IPFIX_ETYPEID_revFlowEndSeconds:
-		case IPFIX_ETYPEID_frontPayloadLen:
-		case IPFIX_ETYPEID_maxPacketGap:
-		case IPFIX_ETYPEID_frontPayloadPktCount:
-			return 4;
+			case IPFIX_TYPEID_flowStartSeconds:
+			case IPFIX_TYPEID_flowEndSeconds:
+			case IPFIX_TYPEID_sourceIPv4Address:
+			case IPFIX_TYPEID_destinationIPv4Address:
+			//case IPFIX_ETYPEID_revFlowStartSeconds:
+			//case IPFIX_ETYPEID_revFlowEndSeconds:
+			case IPFIX_ETYPEID_frontPayloadLen:
+			case IPFIX_ETYPEID_maxPacketGap:
+			case IPFIX_ETYPEID_frontPayloadPktCount:
+				return 4;
 
-		case IPFIX_TYPEID_flowStartMilliSeconds:
-		case IPFIX_TYPEID_flowEndMilliSeconds:
-		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-		case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-		case IPFIX_TYPEID_flowStartNanoSeconds:
-		case IPFIX_TYPEID_flowEndNanoSeconds:
-		case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-		case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-			return 8;
+			case IPFIX_TYPEID_flowStartMilliSeconds:
+			case IPFIX_TYPEID_flowEndMilliSeconds:
+			//case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+			//case IPFIX_ETYPEID_revFlowEndMilliSeconds:
+			case IPFIX_TYPEID_flowStartNanoSeconds:
+			case IPFIX_TYPEID_flowEndNanoSeconds:
+			//case IPFIX_ETYPEID_revFlowStartNanoSeconds:
+			//case IPFIX_ETYPEID_revFlowEndNanoSeconds:
+				return 8;
 
-		case IPFIX_ETYPEID_frontPayload:
-			return type.length;				// length is variable and is set in configuration
+			case IPFIX_ETYPEID_frontPayload:
+				return type.length;				// length is variable and is set in configuration
 
-		default:
-			THROWEXCEPTION("PacketHashtable: unknown typeid, failed to determine raw packet field length");
-			break;
+			default:
+				THROWEXCEPTION("PacketHashtable: unknown typeid, failed to determine raw packet field length");
+				break;
+		}
 	}
 
 	THROWEXCEPTION("PacketHashtable: unknown typeid, failed to determine raw packet field length");
