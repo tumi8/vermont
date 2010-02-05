@@ -258,43 +258,44 @@ static const struct ipfix_identifier IPFIXTAB[] = {
 	{ "reserved", 327, 0 },
 	{ "reserved", 328, 0 },
 	{ "reserved", 329, 0 },
-	{ "frontpayload", 32896, 0 },
-	{ "frontpayloadlen", 32897, 4 },
-	{ "maxpacketgap", 32898, 4 },
-	{ "frontpayloadpktcount", 32899, 4 },
-	{ "revoctetdeltacount", 33793, 8 },
-	{ "revpacketdeltacount", 33794, 8 },
-	{ "revtcpcontrolbits", 33798, 1 },
-	{ "revfrontpayload", 33920, 0 },
-	{ "revfrontpayloadlen", 33921, 4 },
-	{ "revmaxpacketgap", 33922, 4 },
-	{ "revflowstartseconds", 33942, 4 },
-	{ "revflowendseconds", 33943, 4 },
-	{ "revflowstartmilliseconds", 33944, 8 },
-	{ "revflowendmilliseconds", 33945, 8 },
-	{ "revflowstartnanoseconds", 33948, 8 },
-	{ "revflowendnanoseconds", 33949, 8 },
+	{ "frontpayload", IPFIX_ETYPEID_frontPayload, 0 },
+	{ "frontpayloadlen", IPFIX_ETYPEID_frontPayloadLen, 4 },
+	{ "maxpacketgap", IPFIX_ETYPEID_maxPacketGap, 4 },
+	{ "frontpayloadpktcount", IPFIX_ETYPEID_frontPayloadPktCount, 4 },
+	{ "revoctetdeltacount", IPFIX_ETYPEID_revOctetDeltaCount, 8 },
+	{ "revpacketdeltacount", IPFIX_ETYPEID_revPacketDeltaCount, 8 },
+	{ "revtcpcontrolbits", IPFIX_ETYPEID_revTcpControlBits, 1 },
+	{ "revfrontpayload", IPFIX_ETYPEID_revFrontPayload, 0 },
+	{ "revfrontpayloadlen", IPFIX_ETYPEID_revFrontPayloadLen, 4 },
+	{ "revmaxpacketgap", IPFIX_ETYPEID_revMaxPacketGap, 4 },
+	{ "revflowstartseconds", IPFIX_ETYPEID_revFlowStartSeconds, 4 },
+	{ "revflowendseconds", IPFIX_ETYPEID_revFlowEndSeconds, 4 },
+	{ "revflowstartmilliseconds", IPFIX_ETYPEID_revFlowStartMilliSeconds, 8 },
+	{ "revflowendmilliseconds", IPFIX_ETYPEID_revFlowEndMilliSeconds, 8 },
+	{ "revflowstartnanoseconds", IPFIX_ETYPEID_revFlowStartNanoSeconds, 8 },
+	{ "revflowendnanoseconds", IPFIX_ETYPEID_revFlowEndNanoSeconds, 8 },
 };
 /* written 261 entries */
-static const struct ipfix_identifier FRONTPAYLOAD[] = { {"frontpayload", 32896, 0}, {"frontpayloadlen", 32897, 4}};
+static const struct ipfix_identifier FRONTPAYLOAD[] = { {"frontpayload", IPFIX_ETYPEID_frontPayload, 0}, {"frontpayloadlen", IPFIX_ETYPEID_frontPayloadLen, 4}};
 
-static const struct ipfix_identifier BIFLOWTAB1[] = { { "revoctetdeltacount", 33793, 8 }, {
-		"revpacketdeltacount", 33794, 8 }, { "reserved", 33795, 0 }, { "reserved", 33796, 0 }, {
-		"reserved", 33797, 0 }, { "revtcpcontrolbits", 33798, 1 }, 
+static const struct ipfix_identifier BIFLOWTAB1[] = { { "revoctetdeltacount", IPFIX_ETYPEID_revOctetDeltaCount, 8 }, {
+		"revpacketdeltacount", IPFIX_ETYPEID_revPacketDeltaCount, 8 }, 
+		{ "dummy", 0, 0 }, { "dummy", 0, 0 }, {"dummy", 0, 0 }, 
+	       { "revtcpcontrolbits", IPFIX_ETYPEID_revTcpControlBits, 1 }, 
 };
-static const struct ipfix_identifier REVFRONTPAYLOAD[] = { {"revfrontpayload", 33920, 0}, {"revfrontpayloadlen", 33921, 4} };
+static const struct ipfix_identifier REVFRONTPAYLOAD[] = { {"revfrontpayload", IPFIX_ETYPEID_revFrontPayload, 0}, {"revfrontpayloadlen", IPFIX_ETYPEID_revFrontPayloadLen, 4} };
 static const struct ipfix_identifier BIFLOWTAB2[] = {
 
-{ "revflowstartseconds", 33942, 4 }, { "revflowendseconds", 33943, 4 }, {
-		"revflowstartmilliseconds", 33944, 8 }, { "revflowendmilliseconds", 33945, 8 }, 
+{ "revflowstartseconds", IPFIX_ETYPEID_revFlowStartSeconds, 4 }, { "revflowendseconds", IPFIX_ETYPEID_revFlowEndSeconds, 4 }, {
+		"revflowstartmilliseconds", IPFIX_ETYPEID_revFlowStartMilliSeconds, 8 }, { "revflowendmilliseconds", IPFIX_ETYPEID_revFlowEndMilliSeconds, 8 }, 
 };
 
 static const struct ipfix_identifier SWITCHFLOWTAB[] = {
-    { "revflowstartnanoseconds", 33948, 8 }, 
-    { "revflowendnanoseconds", 33949, 8 },
-    { "revmaxpacketgap", 33922, 4 },
-    { "maxpacketgap", 32898, 4},
-    { "frontpayloadpktcount", 32899, 4}
+    { "revflowstartnanoseconds", IPFIX_ETYPEID_revFlowStartNanoSeconds, 8 }, 
+    { "revflowendnanoseconds", IPFIX_ETYPEID_revFlowEndNanoSeconds, 8 },
+    { "revmaxpacketgap", IPFIX_ETYPEID_revMaxPacketGap, 4 },
+    { "maxpacketgap", IPFIX_ETYPEID_maxPacketGap, 4},
+    { "frontpayloadpktcount", IPFIX_ETYPEID_frontPayloadPktCount, 4}
 };
 
 #define PSAMP_STARTING_ID 300
@@ -621,7 +622,7 @@ in_word_set (register const char *str, register unsigned int len)
 #line 211 "gperf"
       {"ipv4options", 208},
 #line 248 "gperf"
-      {"frontpayload", 32896},
+      {"frontpayload", IPFIX_ETYPEID_frontPayload},
 #line 198 "gperf"
       {"ipdiffservcodepoint", 195},
 #line 199 "gperf"
@@ -669,7 +670,7 @@ in_word_set (register const char *str, register unsigned int len)
 #line 238 "gperf"
       {"observationpointid", 320},
 #line 255 "gperf"
-      {"revfrontpayload", 33920},
+      {"revfrontpayload", IPFIX_ETYPEID_revFrontPayload},
 #line 136 "gperf"
       {"droppedpacketdeltacount", 133},
 #line 40 "gperf"
@@ -699,7 +700,7 @@ in_word_set (register const char *str, register unsigned int len)
 #line 190 "gperf"
       {"tcpurgentpointer", 187},
 #line 254 "gperf"
-      {"revtcpcontrolbits", 33798},
+      {"revtcpcontrolbits", IPFIX_ETYPEID_revTcpControlBits},
 #line 7 "gperf"
       {"protocolidentifier", 4},
 #line 60 "gperf"
@@ -713,7 +714,7 @@ in_word_set (register const char *str, register unsigned int len)
 #line 237 "gperf"
       {"meteringprocesssid", 319},
 #line 249 "gperf"
-      {"frontpayloadlen", 32897},
+      {"frontpayloadlen", IPFIX_ETYPEID_frontPayloadLen},
 #line 147 "gperf"
       {"exportingprocessid", 144},
 #line 159 "gperf"
@@ -727,7 +728,7 @@ in_word_set (register const char *str, register unsigned int len)
 #line 177 "gperf"
       {"postmcastpackettotalcount", 174},
 #line 256 "gperf"
-      {"revfrontpayloadlen", 33921},
+      {"revfrontpayloadlen", IPFIX_ETYPEID_revFrontPayloadLen},
 #line 223 "gperf"
       {"samplingpacketspace", 305},
 #line 22 "gperf"
@@ -747,7 +748,7 @@ in_word_set (register const char *str, register unsigned int len)
 #line 58 "gperf"
       {"postclassofserviceipv4", 55},
 #line 252 "gperf"
-      {"revoctetdeltacount", 33793},
+      {"revoctetdeltacount", IPFIX_ETYPEID_revOctetDeltaCount},
 #line 89 "gperf"
       {"packettotalcount", 86},
 #line 220 "gperf"
@@ -755,9 +756,9 @@ in_word_set (register const char *str, register unsigned int len)
 #line 183 "gperf"
       {"udpsourceport", 180},
 #line 253 "gperf"
-      {"revpacketdeltacount", 33794},
+      {"revpacketdeltacount", IPFIX_ETYPEID_revPacketDeltaCount},
 #line 251 "gperf"
-      {"frontpayloadpktcount", 32899},
+      {"frontpayloadpktcount", IPFIX_ETYPEID_frontPayloadPktCount},
 #line 5 "gperf"
       {"packetdeltacount", 2},
 #line 168 "gperf"
@@ -865,7 +866,7 @@ in_word_set (register const char *str, register unsigned int len)
 #line 50 "gperf"
       {"mplstoplabelipv4address", 47},
 #line 258 "gperf"
-      {"revflowstartseconds", 33942},
+      {"revflowstartseconds", IPFIX_ETYPEID_revFlowStartSeconds},
 #line 44 "gperf"
       {"exportedmessagetotalcount", 41},
 #line 35 "gperf"
@@ -881,7 +882,7 @@ in_word_set (register const char *str, register unsigned int len)
 #line 65 "gperf"
       {"ipnexthopipv6address", 62},
 #line 263 "gperf"
-      {"revflowendnanoseconds", 33949},
+      {"revflowendnanoseconds", IPFIX_ETYPEID_revFlowEndNanoSeconds},
 #line 132 "gperf"
       {"bgpprevadjacentasnumber", 129},
 #line 12 "gperf"
@@ -889,13 +890,13 @@ in_word_set (register const char *str, register unsigned int len)
 #line 172 "gperf"
       {"destinationipv6prefix", 169},
 #line 259 "gperf"
-      {"revflowendseconds", 33943},
+      {"revflowendseconds", IPFIX_ETYPEID_revFlowEndSeconds},
 #line 262 "gperf"
-      {"revflowstartnanoseconds", 33948},
+      {"revflowstartnanoseconds", IPFIX_ETYPEID_revFlowStartNanoSeconds},
 #line 204 "gperf"
       {"mplslabelstacklength", 201},
 #line 250 "gperf"
-      {"maxpacketgap", 32898},
+      {"maxpacketgap", IPFIX_ETYPEID_maxPacketGap},
 #line 194 "gperf"
       {"payloadlengthipv6", 191},
 #line 140 "gperf"
@@ -905,11 +906,11 @@ in_word_set (register const char *str, register unsigned int len)
 #line 188 "gperf"
       {"tcpacknowledgementnumber", 185},
 #line 257 "gperf"
-      {"revmaxpacketgap", 33922},
+      {"revmaxpacketgap", IPFIX_ETYPEID_maxPacketGap},
 #line 47 "gperf"
       {"sourceipv4prefix", 44},
 #line 261 "gperf"
-      {"revflowendmilliseconds", 33945},
+      {"revflowendmilliseconds", IPFIX_ETYPEID_revFlowEndMilliSeconds},
 #line 192 "gperf"
       {"ipheaderlength", 189},
 #line 45 "gperf"
@@ -921,7 +922,7 @@ in_word_set (register const char *str, register unsigned int len)
 #line 76 "gperf"
       {"mplslabelstackentry4", 73},
 #line 260 "gperf"
-      {"revflowstartmilliseconds", 33944},
+      {"revflowstartmilliseconds", IPFIX_ETYPEID_revFlowStartMilliSeconds},
 #line 21 "gperf"
       {"bgpnexthopipv4address", 18},
 #line 163 "gperf"
@@ -1119,18 +1120,18 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
 		return &PSAMPTAB[n];
 	}
 
-	if (n>=32896 && n<=32897) {
-		return &FRONTPAYLOAD[n-32896];
+	if (n>=IPFIX_ETYPEID_frontPayload && n<=IPFIX_ETYPEID_frontPayloadLen) {
+		return &FRONTPAYLOAD[n-IPFIX_ETYPEID_frontPayload];
 	}
 
-	// stuff for biflow types
-	if (n>=33793 && n<=33798) {
-		return &BIFLOWTAB1[n-33793];
+	// stuff for biflow types TODO: use enterprise number!!! (Gerhard 12/2009)
+	if (n>=IPFIX_ETYPEID_revOctetDeltaCount && n<=IPFIX_ETYPEID_revTcpControlBits) {
+		return &BIFLOWTAB1[n-IPFIX_ETYPEID_revOctetDeltaCount];
 	}
-	if (n>=33920 && n<=33921)
-		return &REVFRONTPAYLOAD[n-33920];
-	if (n>=33942 && n<=33945) {
-		return &BIFLOWTAB2[n-33942];
+	if (n>=IPFIX_ETYPEID_revFrontPayload && n<=IPFIX_ETYPEID_revFrontPayloadLen)
+		return &REVFRONTPAYLOAD[n-IPFIX_ETYPEID_revFrontPayload];
+	if (n>=IPFIX_ETYPEID_revFlowStartSeconds && n<=IPFIX_ETYPEID_revFlowEndMilliSeconds) {
+		return &BIFLOWTAB2[n-IPFIX_ETYPEID_revFlowStartSeconds];
 	}
 	
 	switch (n) {
