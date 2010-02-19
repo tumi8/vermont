@@ -118,16 +118,30 @@ class IpfixRecord
 
 			// operator < is needed for using SourceID as key in maps
 			bool operator<(const struct SourceID & x) const {
+				int tmp;
 				if(fileDescriptor < x.fileDescriptor) // this check includes receiverPort and protocol
 					return true;
+				if(fileDescriptor > x.fileDescriptor)
+					return false;
+
 				if(exporterAddress.len < x.exporterAddress.len)
 					return true;
-			        if(memcmp(exporterAddress.ip, x.exporterAddress.ip, exporterAddress.len) < 0 )
+				if(exporterAddress.len > x.exporterAddress.len)
+					return false;
+
+			        if((tmp = memcmp(exporterAddress.ip, x.exporterAddress.ip, exporterAddress.len)) < 0)
 					return true;
+			        if(tmp > 0)
+					return false;
+
 				if(exporterPort < x.exporterPort)
 					return true;
+				if(exporterPort > x.exporterPort)
+					return false;
+
 				if(observationDomainId < x.observationDomainId)
 					return true;
+
 				return false;
 			}
 
