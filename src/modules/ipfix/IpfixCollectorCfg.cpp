@@ -25,11 +25,11 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	listener(NULL),
 	ipfixCollector(NULL)
 {
-
 	if (!elem)
 		return;
 
 	msg(MSG_INFO, "IpfixCollectorCfg: Start reading ipfixCollector section");
+	udpTemplateLifetime = getInt("udpTemplateLifetime", -1);
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -38,14 +38,13 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 
 		if (e->matches("listener")) {
 			listener = new CollectorCfg(e);
+		} else if (e->matches("udpTemplateLifetime")) { // already done
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unkown observer config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
-
-	udpTemplateLifetime = getInt("udpTemplateLifetime", -1);
 
 	if (listener == NULL)
 		THROWEXCEPTION("collectingProcess has to listen on one address!");
