@@ -88,6 +88,17 @@
  */
 #define HT_DEFAULT_BITSIZE 17
 
+/**
+ * defines in milliseconds, how long flow records may be cached in IpfixNetflowExporter
+ * until they are sent to the network
+ */
+#define INE_DEFAULT_RECORDCACHETIMEOUT 5000
+
+/**
+ * defines in packets per seconds, how many udp records are to be sent over
+ * the wire by IpfixNetflowExporter
+ */
+#define INE_DEFAULT_MAXRECORDRATE 5000
 
 
 /**

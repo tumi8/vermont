@@ -60,6 +60,8 @@ ADD_LIBRARY(modules
     ipfix/IpfixExporterCfg.cpp
     ipfix/IpfixFileWriter.cpp
     ipfix/IpfixFileWriterCfg.cpp
+    ipfix/IpfixNetflowExporter.cpp
+    ipfix/IpfixNetflowExporterCfg.cpp
     ipfix/IpfixPayloadWriterCfg.cpp
     ipfix/IpfixPrinterCfg.cpp
     ipfix/IpfixSamplerCfg.cpp
