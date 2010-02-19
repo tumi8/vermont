@@ -16,6 +16,7 @@
 #include "modules/ipfix/IpfixDbReaderCfg.h"
 #include "modules/ipfix/IpfixDbWriterCfg.h"
 #include "modules/ipfix/IpfixFileWriterCfg.hpp"
+#include "modules/ipfix/IpfixNetflowExporterCfg.h"
 #include "modules/ipfix/IpfixReceiverFileCfg.h"
 #include "modules/ipfix/IpfixDbWriterPgCfg.h"
 #include "modules/ipfix/IpfixPayloadWriterCfg.h"
@@ -60,6 +61,7 @@ Cfg* ConfigManager::configModules[] = {
 	new IDMEFExporterCfg(NULL),
 	new PacketIDMEFReporterCfg(NULL),
 	new IpfixReceiverFileCfg(NULL),
+	new IpfixNetflowExporterCfg(NULL),
 	new IpfixPayloadWriterCfg(NULL),
 	new IpfixFileWriterCfg(NULL),
 	new AnonymizerCfg(NULL),
