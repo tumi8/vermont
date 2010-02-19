@@ -50,6 +50,7 @@ IpfixNetflowExporter::IpfixNetflowExporter(string hostname, uint16_t port, uint3
 		THROWEXCEPTION("IpfixNetflowExporter: failed to resolve host '%s' (%s)", hostname.c_str(), strerror(errno));
 	}
 	siDest.sin_addr = *reinterpret_cast<struct in_addr*>(host->h_addr_list[0]);
+	gettimeofday(&sysUptime, 0);
 }
 
 IpfixNetflowExporter::~IpfixNetflowExporter()
@@ -148,8 +149,16 @@ void IpfixNetflowExporter::sendPacket()
 			r->dstaddr = c.dstIP;
 			r->dPkts = htonl(ntohll(c.srcPackets) & 0xFFFFFFFF);
 			r->dOctets = htonl(ntohll(c.srcOctets) & 0xFFFFFFFF);
-			r->first = htonl((c.srcTimeStart/1000) & 0xFFFFFFFF);
-			r->last = htonl((c.srcTimeEnd/1000) & 0xFFFFFFFF);
+			struct timeval flowtime;
+			struct timeval timediff;
+			flowtime.tv_sec = c.srcTimeStart/1000 & 0xFFFFFFFF;
+			flowtime.tv_usec = (c.srcTimeStart%1000)*1000;
+			timeval_subtract(&timediff, &flowtime, &sysUptime);
+			r->first = htonl(timediff.tv_sec*1000+timediff.tv_usec/1000);
+			flowtime.tv_sec = c.srcTimeEnd/1000 & 0xFFFFFFFF;
+			flowtime.tv_usec = (c.srcTimeEnd%1000)*1000;
+			timeval_subtract(&timediff, &flowtime, &sysUptime);
+			r->last = htonl(timediff.tv_sec*1000+timediff.tv_usec/1000);
 			r->srcport = htons(c.srcPort);
 			r->dstport = htons(c.dstPort);
 			r->tcp_flags = c.srcTcpControlBits;
@@ -163,12 +172,9 @@ void IpfixNetflowExporter::sendPacket()
 		packet.header.unixNanoSec = htonl(tv.tv_usec*1000);
 		packet.header.flowSeqNr = htonl(flowSeqNr);
 		flowSeqNr += count;
-		struct sysinfo info;
-		if (sysinfo(&info)!=0) {
-			msg(MSG_ERROR, "IpfixNetflowExporter: WARNING, failed to call sysinfo (%s)", strerror(errno));
-		} else {
-			packet.header.sysUptime = info.uptime;
-		}
+		struct timeval difftime;
+		timeval_subtract(&difftime, &tv, &sysUptime);
+		packet.header.sysUptime = htonl(difftime.tv_sec*1000+difftime.tv_usec/1000);
 
 		uint16_t packetsize = sizeof(NetflowV5Header)+count*sizeof(NetflowV5DataRecord);
 		if (sendto(sockfd, &packet, packetsize, 0, (struct sockaddr*)(&siDest), sizeof(siDest))==-1) {

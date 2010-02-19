@@ -127,6 +127,7 @@ private:
 	timespec nextTimeout;
 	bool timeoutRegistered; /**< true if next timeout was already registered in timer */
 	bool recordsAlreadySent; /**< true if records were sent to the network as the packet was full */
+	struct timeval sysUptime; /**< time when system was started */
 	struct timeval curTimeStep; /**< current time used for determining packet rate */
 	uint32_t recordsSentStep; /**< number of records sent in timestep (usually 100ms)*/
 	uint32_t maxRecordRate;  /** maximum number of records per seconds to be sent over the wire */
