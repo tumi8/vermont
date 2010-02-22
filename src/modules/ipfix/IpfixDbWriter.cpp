@@ -414,8 +414,8 @@ int IpfixDbWriter::setCurrentTable(time_t flowstartsec)
 
 	tableStream << "h_" << (flowStartTime->tm_year+1900) 
 		<< setfill('0') << setw(2) << (flowStartTime->tm_mon+1)
-		<< (flowStartTime->tm_mday) << "_"
-		<< (flowStartTime->tm_hour) << "_"
+		<< setfill('0') << setw(2) << (flowStartTime->tm_mday) << "_"
+		<< setfill('0') << setw(2) << (flowStartTime->tm_hour) << "_"
 		<< setw(1) << (flowStartTime->tm_min<30?0:1);
 
 	currentTable.name = tableStream.str();
