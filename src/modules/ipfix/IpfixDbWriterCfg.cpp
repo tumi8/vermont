@@ -69,7 +69,6 @@ IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
 	if (port==0) THROWEXCEPTION("IpfixDbWriterCfg: port not set in configuration!");
 	if (dbname=="") THROWEXCEPTION("IpfixDbWriterCfg: dbname not set in configuration!");
 	if (user=="") THROWEXCEPTION("IpfixDbWriterCfg: username not set in configuration!");
-	if (password=="") THROWEXCEPTION("IpfixDbWriterCfg: password not set in configuration!");
 }
 
 void IpfixDbWriterCfg::readColumns(XMLElement* elem) {
