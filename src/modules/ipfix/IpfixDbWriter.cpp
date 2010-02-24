@@ -423,9 +423,11 @@ int IpfixDbWriter::setCurrentTable(time_t flowstartsec)
 	// calculate table boundaries
 	if(flowStartTime->tm_min < 30) {
 		flowStartTime->tm_min = 0;
+		flowStartTime->tm_sec = 0;
 		currentTable.startTime = timegm(flowStartTime);
 	} else {
 		flowStartTime->tm_min = 30;
+		flowStartTime->tm_sec = 0;
 		currentTable.startTime = timegm(flowStartTime);
 	}
 	currentTable.endTime = currentTable.startTime + 1799;
