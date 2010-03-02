@@ -159,8 +159,8 @@ void IpfixNetflowExporter::sendPacket()
 			flowtime.tv_usec = (c.srcTimeEnd%1000)*1000;
 			timeval_subtract(&timediff, &flowtime, &sysUptime);
 			r->last = htonl(timediff.tv_sec*1000+timediff.tv_usec/1000);
-			r->srcport = htons(c.srcPort);
-			r->dstport = htons(c.dstPort);
+			r->srcport = c.srcPort;
+			r->dstport = c.dstPort;
 			r->tcp_flags = c.srcTcpControlBits;
 			r->prot = c.protocol;
 			record->removeReference();
