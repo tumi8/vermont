@@ -1,5 +1,6 @@
 /*
  * VERMONT 
+ * Copyright (C) 2009 Simon Regnet <sisiregn@informatik.stud.uni-erlangen.de>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
