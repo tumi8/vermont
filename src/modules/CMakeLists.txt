@@ -33,10 +33,13 @@ ADD_LIBRARY(modules
     packet/ObserverCfg.cpp
     packet/Packet.cpp
     packet/Template.cpp
-    packet/PCAPExporterModule.cpp
+    packet/PCAPExporterBase.cpp
+    packet/PCAPExporterFile.cpp
+    packet/PCAPExporterFifo.cpp
     packet/PSAMPExporterModule.cpp
     packet/PSAMPExporterCfg.cpp
-    packet/PCAPExporterCfg.cpp
+    packet/PCAPExporterFifoCfg.cpp
+    packet/PCAPExporterFileCfg.cpp
     packet/PacketReportingCfg.cpp
     packet/filter/FilterModule.cpp
     packet/filter/PacketFilterCfg.cpp
@@ -98,4 +101,5 @@ ADD_LIBRARY(modules
     ipfix/aggregator/Rules.cpp
     ipfix/aggregator/Rule.cpp
 )
+
 

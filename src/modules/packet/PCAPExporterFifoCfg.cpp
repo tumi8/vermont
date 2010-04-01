@@ -18,15 +18,17 @@
  *
  */
 
-#include "PCAPExporterCfg.h"
+#include "PCAPExporterFifoCfg.h"
 
 #include "common/defs.h"
 
 #include <cassert>
 #include <pcap.h>
 
-PCAPExporterCfg::PCAPExporterCfg(XMLElement* elem) 
-	: CfgHelper<PCAPExporterModule, PCAPExporterCfg>(elem, "pcapExporter"), link_type(DLT_EN10MB), snaplen(PCAP_MAX_CAPTURE_LENGTH)
+PCAPExporterFifoCfg::PCAPExporterFifoCfg(XMLElement* elem) 
+	: CfgHelper<PCAPExporterFifo, PCAPExporterFifoCfg>(elem, "pcapExporterFifo"), 
+        link_type(DLT_EN10MB), snaplen(PCAP_MAX_CAPTURE_LENGTH), sigkilltimeout(1),
+        logFileName(""), fifoReaderCmd("")
 { 
 	if (!elem) return;
 
@@ -36,8 +38,8 @@ PCAPExporterCfg::PCAPExporterCfg(XMLElement* elem)
 	     it++) {
 		XMLElement* e = *it;
 
-		if (e->matches("filename")) {
-			fileName = e->getFirstText();
+		if (e->matches("logfilebasename")) {
+			logFileName = e->getFirstText();
 		} else if (e->matches("linkType")) {
 			int tmp =  pcap_datalink_name_to_val(e->getFirstText().c_str());
 			if (tmp == -1) {
@@ -47,30 +49,42 @@ PCAPExporterCfg::PCAPExporterCfg(XMLElement* elem)
 			}
 		} else if (e->matches("snaplen")) {
 			snaplen = getInt("snaplen", PCAP_MAX_CAPTURE_LENGTH, e);
-		}
+		} else if (e->matches("sigkilltimeout")){
+            sigkilltimeout = getInt("sigkilltimeout", 1, e);
+        } else if(e->matches("fiforeadercmd")){
+            fifoReaderCmd = e->getFirstText();
+        }
 	}
 } 
 
-PCAPExporterCfg* PCAPExporterCfg::create(XMLElement* elem)
+PCAPExporterFifoCfg* PCAPExporterFifoCfg::create(XMLElement* elem)
 {
 	assert(elem);
 	assert(elem->getName() == getName());
-	return new PCAPExporterCfg(elem);
+	return new PCAPExporterFifoCfg(elem);
 }
 
-PCAPExporterCfg::~PCAPExporterCfg()
+PCAPExporterFifoCfg::~PCAPExporterFifoCfg()
 {
 }
 
-PCAPExporterModule* PCAPExporterCfg::createInstance()
+PCAPExporterFifo* PCAPExporterFifoCfg::createInstance()
 {
-	instance = new PCAPExporterModule(fileName);
+	instance = new PCAPExporterFifo(logFileName);
 	instance->setDataLinkType(link_type);
 	instance->setSnaplen(snaplen);
+    instance->setSigKillTimeout(sigkilltimeout);
+    instance->setFifoReaderCmd(fifoReaderCmd);
 	return instance;
 }
 
-bool PCAPExporterCfg::deriveFrom(PCAPExporterCfg* old)
+bool PCAPExporterFifoCfg::deriveFrom(PCAPExporterFifoCfg* old)
 {
-	return false; // FIXME: implement
+    if (logFileName != old->logFileName ||
+        link_type != old->link_type ||
+        snaplen != old->snaplen ||
+        fifoReaderCmd != old->fifoReaderCmd || 
+        sigkilltimeout != old->sigkilltimeout 
+        ) return false;
+	return true; // FIXME: implement
 }

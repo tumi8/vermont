@@ -1,5 +1,5 @@
 /*
- * Vermont Configuration Subsystem
+ * Vermont PCAP Exporter
  * Copyright (C) 2009 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
@@ -18,36 +18,34 @@
  *
  */
 
-#ifndef PCAPEXPORTERCFG_H_
-#define PCAPEXPORTERCFG_H_
+#ifndef _PCAP_EXPORTER_MODULE_H_
+#define _PCAP_EXPORTER_MODULE_H_
 
-#include "core/Cfg.h"
-#include "modules/packet/PCAPExporterModule.h"
+#include "core/Module.h"
 
-#include <vector>
+#include <common/msg.h>
 
+#include <string>
+#include <pcap.h>
+#include "PCAPExporterBase.h"
 
-class PCAPExporterCfg
-	: public CfgHelper<PCAPExporterModule, PCAPExporterCfg>
+class Packet;
+
+class PCAPExporterFile : public Module, public Destination<Packet *>, public Source<Packet *>, public PCAPExporterBase
 {
-	friend class ConfigManager;
 public:
-	virtual ~PCAPExporterCfg();
+	PCAPExporterFile(const std::string& file);
+	~PCAPExporterFile();
 
-	virtual PCAPExporterCfg* create(XMLElement* elem);
-	
-	virtual PCAPExporterModule* createInstance();
-	
-	bool deriveFrom(PCAPExporterCfg* old);
-
-protected:
-	PCAPExporterCfg(XMLElement* elem); 
+	virtual void receive(Packet* packet);
+	virtual void performStart();
+	virtual void performShutdown();
 
 private:
+	static void* pcapExporterSink(void* data);
+
 	std::string fileName;
-	int link_type;
-	int snaplen;
+	pcap_t* dummy;
 };
 
-
-#endif /*PCAP_EXPORTERCFG_H_*/
+#endif
