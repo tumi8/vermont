@@ -27,7 +27,8 @@
 #include "AnonymizerCfg.h"
 #include "modules/packet/ObserverCfg.h"
 #include "modules/packet/PSAMPExporterCfg.h"
-#include "modules/packet/PCAPExporterCfg.h"
+#include "modules/packet/PCAPExporterFileCfg.h"
+#include "modules/packet/PCAPExporterFifoCfg.h"
 #include "modules/packet/filter/PacketFilterCfg.h"
 #include "modules/ipfix/FpaPcapExporterCfg.h"
 #include "modules/ipfix/IpfixCollectorCfg.h"
@@ -64,7 +65,8 @@ Cfg* ConfigManager::configModules[] = {
 	new ObserverCfg(NULL),
 	new PacketFilterCfg(NULL),
 	new PacketQueueCfg(NULL),
-	new PCAPExporterCfg(NULL),
+	new PCAPExporterFileCfg(NULL),
+	new PCAPExporterFifoCfg(NULL),
 	new PSAMPExporterCfg(NULL),
 	new FpaPcapExporterCfg(NULL),
 	new IpfixCollectorCfg(NULL),

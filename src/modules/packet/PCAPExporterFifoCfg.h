@@ -1,5 +1,5 @@
 /*
- * Vermont PCAP Exporter
+ * Vermont Configuration Subsystem
  * Copyright (C) 2009 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
@@ -18,39 +18,39 @@
  *
  */
 
-#ifndef _PCAP_EXPORTER_MODULE_H_
-#define _PCAP_EXPORTER_MODULE_H_
+#ifndef PCAPEXPORTERFIFOCFG_H_
+#define PCAPEXPORTERFIFOCFG_H_
 
-#include "core/Module.h"
+#include "core/Cfg.h"
+#include "modules/packet/PCAPExporterFifo.h"
+#include "modules/packet/PCAPExporterBase.h"
 
-#include <common/msg.h>
+#include <vector>
 
-#include <string>
-#include <pcap.h>
 
-class Packet;
-
-class PCAPExporterModule : public Module, public Destination<Packet*>, public Source<Packet*>
+class PCAPExporterFifoCfg
+	: public CfgHelper<PCAPExporterFifo, PCAPExporterFifoCfg>
 {
+	friend class ConfigManager;
 public:
-	PCAPExporterModule(const std::string& file);
-	~PCAPExporterModule();
+	virtual ~PCAPExporterFifoCfg();
 
-	virtual void receive(Packet* packet);
-	virtual void performStart();
-	virtual void performShutdown();
+	virtual PCAPExporterFifoCfg* create(XMLElement* elem);
+	
+	virtual PCAPExporterFifo* createInstance();
+	
+	bool deriveFrom(PCAPExporterFifoCfg* old);
 
-	void setDataLinkType(int type);
-	void setSnaplen(int len);
+protected:
+	PCAPExporterFifoCfg(XMLElement* elem); 
 
 private:
-	static void* pcapExporterSink(void* data);
-
-	std::string fileName;
-	pcap_t* dummy;
-	pcap_dumper_t* dumper;
+	std::string logFileName;
+    std::string fifoReaderCmd;
+    int sigkilltimeout;
 	int link_type;
 	int snaplen;
 };
 
-#endif
+
+#endif /*PCAP_EXPORTERFILECFG_H_*/
