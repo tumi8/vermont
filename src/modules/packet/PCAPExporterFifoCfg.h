@@ -45,11 +45,11 @@ protected:
 	PCAPExporterFifoCfg(XMLElement* elem); 
 
 private:
-	std::string logFileName;
-    std::string fifoReaderCmd;
-    int sigkilltimeout;
 	int link_type;
 	int snaplen;
+    int sigkilltimeout;
+	std::string logFileName;
+    std::string fifoReaderCmd;
 };
 
 

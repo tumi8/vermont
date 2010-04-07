@@ -57,11 +57,9 @@ private:
 	std::string logFileName;
 	std::string fifoReaderCmd;
     int fifoReaderPid;
-    int sigKillTimeout;
 	pcap_t* dummy;
+    int sigKillTimeout;
     int fd[2];
-    FILE *child_stdout;
-    FILE *child_stderr;
 };
 
 #endif
