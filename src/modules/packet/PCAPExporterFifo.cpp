@@ -79,23 +79,36 @@ int PCAPExporterFifo::execCmd(std::string& cmd)
 
     int pid = fork();
     if (pid == 0) {
-        close(0); //close stdin 
+        close(STDIN_FILENO); //close stdin 
         if (dup(fd[0]) == -1) { 
             THROWEXCEPTION("dup(fd[0]) failed");
         }
-        if(logFileName != ""){
+        if (logFileName != "") {
             time_t rawtime;
             struct tm * timeinfo;
             char buffer [20];
             time (&rawtime);
             timeinfo = localtime (&rawtime);
-            strftime (buffer,20,"%Y-%m-%d_%H:%M:%S",timeinfo);
+            if (strftime(buffer, 20, "%Y-%m-%d_%H:%M:%S", timeinfo) == 0) {
+                THROWEXCEPTION("strftime failed!");
+            }
 
             std::string logfile = logFileName + "_" + buffer + ".log";
-            if (freopen (logfile.c_str(),"w",stdout) == NULL)
-                THROWEXCEPTION("freopen for stdout failed");
-            if (freopen (logfile.c_str(),"w",stderr) == NULL)
-                THROWEXCEPTION("freopen for stderr failed");
+            if (freopen (logfile.c_str(),"w",stdout) == NULL) {
+                THROWEXCEPTION("Could not reopen stdout!");
+            }
+            close(STDERR_FILENO); //redirect stderr to stdout
+            if (dup(STDOUT_FILENO) == -1) {
+                THROWEXCEPTION("Could no redirect stderr!");
+            }
+            /*
+            if (setvbuf(stderr, NULL, _IONBF, 0)) {
+                THROWEXCEPTION("setvbuf failed");
+            }
+            if (setvbuf(stdout, NULL, _IONBF, 0)) {
+                THROWEXCEPTION("setvbuf failed");
+            }
+            */
         }
         if (execvp(command[0], command)<0) {
             THROWEXCEPTION("Failed to execute command: %s", cmd.c_str());
@@ -151,6 +164,7 @@ void PCAPExporterFifo::performStart()
 void PCAPExporterFifo::performShutdown()
 {
     msg(MSG_DEBUG, "Performing shutdown for PID %d", fifoReaderPid);
+    sleep(1);
     if (dumper) {
          if (-1 == pcap_dump_flush(dumper)) {
             msg(MSG_FATAL, "PCAPExporterFifo: Could not flush dump file");
@@ -176,7 +190,7 @@ void PCAPExporterFifo::kill_pid(int pid)
     kill(pid, 15);
     while(i--){
         msg(MSG_INFO, "waiting for pid %d, but no longer than %d seconds...", pid, i+1);
-        if(!bfs::exists(path) ) return;
+        if(!bfs::exists(path) ) return; //process no longer exists
         std::string filename = path + "/stat";
         std::ifstream myfile(filename.c_str());
         std::string line;
