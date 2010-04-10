@@ -34,7 +34,7 @@ Graph::Graph() : reserved(30)
 Graph::~Graph()
 {
 	std::vector<CfgNode*> ts = topoSort();
-	
+
 	for (size_t i = 0; i < reserved; i++) {
 		for (size_t j = 0; j < nodes.size(); j++) {
 			if (matrix[i][j] != NULL) // free all edges
@@ -43,7 +43,7 @@ Graph::~Graph()
 		delete [] matrix[i];
 	}
 	delete [] matrix;
-	
+
 	// we delete in topological order so that we never get into a race
 	// where a module (which is deleted by the Cfg) is still running and wants to
 	// send data to an module which got already freed. We rely on the d'tors to do
@@ -221,12 +221,14 @@ std::vector<CfgNode*> Graph::getSources(Node* n) {
 
 void Graph::depthSearch(Node* v)
 {
+	DPRINTFL(MSG_VDEBUG, "called (%u)", v->getID());
 	preOrder[v->getID()] = cnt++;
 
 	std::vector<CfgNode*> outNodes = getDestinations(v);
 	for (std::vector<CfgNode*>::const_iterator it = outNodes.begin();
 	     it != outNodes.end();
 	     it++) {
+		DPRINTFL(MSG_VDEBUG, "module %u -> module %u", v->getID(), (*it)->getID());
 		Node* other = *it;
 		if (preOrder[other->getID()] == -1)
 			depthSearch(other);
@@ -234,6 +236,7 @@ void Graph::depthSearch(Node* v)
 	}
 
 	postOrder[v->getID()] = topoCnt;
+	msg(MSG_VDEBUG, "postI[%u] = %u", topoCnt, v->getID());
 	postI[topoCnt++] = v->getID();
 }
 
@@ -250,6 +253,7 @@ std::vector<CfgNode*> Graph::topoSort()
 	}
 
 	for (size_t i = 0; i < nodes.size(); i++) {
+		DPRINTFL(MSG_VDEBUG, "NodeID=%u, Modulename=%s", nodes[i]->getID(), nodes[i]->getCfg()->getName().c_str());
 		if (preOrder[i] == -1)
 			depthSearch(nodes[i]);
 	}
@@ -257,8 +261,12 @@ std::vector<CfgNode*> Graph::topoSort()
 	size_t nz = nodes.size();
 	std::vector<CfgNode*> result(nz);
 	for (size_t i = 0; i < nz; i++) {
-		result[nz -1 - postI[i]] = nodes[i];
+		result[nz-1-i] = nodes[postI[i]];
 	}
+	for (size_t i = 0; i < nz; i++) {
+		msg(MSG_DEBUG, "topological sort #%u: %s[%u]", i, result[i]->getCfg()->getName().c_str(), result[i]->getCfg()->getID());
+	}
+
 	return result;
 }
 

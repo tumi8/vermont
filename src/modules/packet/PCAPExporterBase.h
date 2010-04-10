@@ -18,8 +18,8 @@
  *
  */
 
-#ifndef _PCAP_EXPORTER_MODULE_H_
-#define _PCAP_EXPORTER_MODULE_H_
+#ifndef _PCAP_EXPORTER_LIB_H_
+#define _PCAP_EXPORTER_LIB_H_
 
 #include "core/Module.h"
 
@@ -30,27 +30,26 @@
 
 class Packet;
 
-class PCAPExporterModule : public Module, public Destination<Packet*>, public Source<Packet*>
+class PCAPExporterBase 
 {
-public:
-	PCAPExporterModule(const std::string& file);
-	~PCAPExporterModule();
+    //friend class PCAPCExporterFile;
+    //friend class PCAPCExporterFifo;
 
-	virtual void receive(Packet* packet);
-	virtual void performStart();
-	virtual void performShutdown();
+public:
+	PCAPExporterBase();
+	~PCAPExporterBase();
+
+	void writePCAP(Packet* packet);
 
 	void setDataLinkType(int type);
 	void setSnaplen(int len);
-
-private:
+protected:
 	static void* pcapExporterSink(void* data);
-
-	std::string fileName;
-	pcap_t* dummy;
-	pcap_dumper_t* dumper;
 	int link_type;
 	int snaplen;
+	pcap_dumper_t* dumper;
+
+
 };
 
 #endif
