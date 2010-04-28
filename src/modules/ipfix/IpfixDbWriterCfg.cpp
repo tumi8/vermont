@@ -33,7 +33,7 @@ IpfixDbWriterCfg* IpfixDbWriterCfg::create(XMLElement* e)
 
 IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
     : CfgHelper<IpfixDbWriter, IpfixDbWriterCfg>(elem, "ipfixDbWriter"),
-      port(0), bufferRecords(30), observationDomainId(0)
+      port(0), bufferRecords(30), observationDomainId(0), tableTimeout(0)
 {
     if (!elem) return;
 
@@ -59,6 +59,10 @@ IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
 			readColumns(e);
 		} else if (e->matches("observationDomainId")) {
 			observationDomainId = getInt("observationDomainId");
+		} else if (e->matches("tableTimeout")) {
+			tableTimeout = getInt("tableTimeout");			
+		} else if (e->matches("timeoutScript")) {
+			timeoutScript = e->getFirstText();
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
@@ -96,8 +100,12 @@ IpfixDbWriterCfg::~IpfixDbWriterCfg()
 
 IpfixDbWriter* IpfixDbWriterCfg::createInstance()
 {
-    instance = new IpfixDbWriter(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
-    return instance;
+	instance = new IpfixDbWriter(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
+	msg(MSG_FATAL, "tableTimeout: %d", tableTimeout);
+	instance->setTableTimeout(tableTimeout);
+	msg(MSG_FATAL, "tableScript: %s", timeoutScript.c_str());
+	instance->setTimeoutScript(timeoutScript);
+	return instance;
 }
 
 

@@ -52,6 +52,8 @@ class IpfixDbWriter
 		~IpfixDbWriter();
 
 		void onDataRecord(IpfixDataRecord* record);
+		void setTableTimeout(time_t timeout) { tableTimeout = timeout; }
+		void setTimeoutScript(string script) { timeoutScript = script; }
 
 		/**
 		 * Struct to identify the relationship between columns names and 
@@ -75,6 +77,11 @@ class IpfixDbWriter
 			time_t startTime; // smallest flow start second timestamp in the table
 			time_t endTime;   // largest flow start second timestamp in the table
 			string name;   // name of the table
+			bool operator==(const struct TableCacheEntry& a){
+				if (a.startTime == this->startTime && a.endTime == this->endTime)
+					return true;
+				return false;
+			}
 		};
 
 		/**
@@ -86,7 +93,10 @@ class IpfixDbWriter
 		};
 
 
+		list<TableCacheEntry> tableCache;
 		TableCacheEntry currentTable;				// current table in tableCache
+		time_t oldestTableStartTime;
+		time_t oldestTableEndTime;
 
 		list<ExporterCacheEntry> exporterCache;		// cached tables names, key=observationDomainId
 		ExporterCacheEntry* currentExporter;			// pointer to current exporter in exporterCache
@@ -96,6 +106,9 @@ class IpfixDbWriter
 		ostringstream insertStatement;			// insert statement string
 		int numberOfInserts;					// number of inserts in statement
 		int maxInserts;						// maximum number of inserts per statement
+		time_t tableTimeout;				// no new flows will be inserted into a table if it timed out 
+		string timeoutScript;				// script name that is executed on table timeout
+		time_t maxFlowStartSeconds;
 
 		vector<Column> tableColumns;			// table columns
 		string tableColumnsString;     			// table columns as string for INSERT statements
@@ -121,6 +134,7 @@ class IpfixDbWriter
 
 		uint64_t getData(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		bool equalExporter(const IpfixRecord::SourceID& a, const IpfixRecord::SourceID& b);
+		void timeoutTables();
 };
 
 

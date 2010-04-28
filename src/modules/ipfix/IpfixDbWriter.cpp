@@ -168,6 +168,13 @@ void IpfixDbWriter::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
 		rowString = getInsertString(rowString, flowStartSeconds, sourceID, dataTemplateInfo, length, data);
 	}
 
+	if (flowStartSeconds < oldestTableStartTime) {
+		// do not store the flow as the table has already been timed out
+		// TODO: turn this into DPRINTF and extend debug message
+		msg(MSG_DEBUG, "Table already timed out, dropping flow");
+		return;
+	}
+
 	// if current table is not ok, write to db and get new table name
 	if(!(flowStartSeconds >= currentTable.startTime && flowStartSeconds <= currentTable.endTime)) {
 		if(numberOfInserts > 0) {
@@ -177,9 +184,8 @@ void IpfixDbWriter::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
 		}
 		if (setCurrentTable(flowStartSeconds) != 0) {
 			return;	
-		}	
+		}
 	}
-
 
 	// start new insert statement if necessary
 	if (numberOfInserts == 0) {
@@ -200,6 +206,18 @@ void IpfixDbWriter::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
 		writeToDb();
 		numberOfInserts = 0;
 	}
+
+	// update important flow time markers and timeout tables
+	if (maxFlowStartSeconds < flowStartSeconds) {
+		// TODO: what to do in this case???
+		if (maxFlowStartSeconds < (flowStartSeconds - 3600)) {
+			// TODO: this can be a problem with time synchronisation on the devices, but could be also not a problem (e.g. if netflow/ipfix export was stopped for a longer time period. what to do with this??? if timeoutTable > 0 and bad time synchronisation -> many flows will be unnecessarily dropped.
+			msg(MSG_FATAL, "Probably detected big fat problem in time synchronisation. MaxFlowStartSeconds: %d, flowStartSeconds: %d", maxFlowStartSeconds, flowStartSeconds);	
+		}
+		maxFlowStartSeconds = flowStartSeconds;
+		timeoutTables();
+	}
+
 }
 
 
@@ -443,7 +461,15 @@ int IpfixDbWriter::setCurrentTable(time_t flowstartsec)
 		dbError = true;
 		return 1;
 	}
-	msg(MSG_DEBUG, "IpfixDbWriter: Table %s created ", currentTable.name.c_str());
+
+	if (!oldestTableEndTime) {
+		// we do not have a oldest table now, so this one will be the oldest
+		oldestTableStartTime = currentTable.startTime;
+		oldestTableEndTime = currentTable.endTime;
+	}
+	if (find(tableCache.begin(), tableCache.end(), currentTable) == tableCache.end()) {
+		tableCache.push_back(currentTable);
+	}
 
 	return 0;
 }
@@ -576,8 +602,9 @@ IpfixDbWriter::IpfixDbWriter(const string& hostname, const string& dbname,
 				const string& username, const string& password,
 				unsigned port, uint32_t observationDomainId, unsigned maxStatements,
 				const vector<string>& columns)
-	: currentExporter(NULL), numberOfInserts(0), maxInserts(maxStatements),
-	dbHost(hostname), dbName(dbname), dbUser(username), dbPassword(password), dbPort(port), conn(0)
+	: currentExporter(NULL), numberOfInserts(0), maxInserts(maxStatements), oldestTableStartTime(0),  oldestTableEndTime(0), tableTimeout(0), 
+	maxFlowStartSeconds(0),	dbHost(hostname), dbName(dbname), dbUser(username), dbPassword(password), dbPort(port),
+	conn(0)
 {
 	int i;
 
@@ -633,6 +660,54 @@ IpfixDbWriter::~IpfixDbWriter()
 {
 	writeToDb();
 	mysql_close(conn);
+}
+
+void IpfixDbWriter::timeoutTables()
+{
+	time_t timeoutSeconds = maxFlowStartSeconds - tableTimeout;
+	time_t oldestStartTmp, oldestEndTmp;
+
+	if (!tableTimeout || !tableTimeout) {
+		// do not time out tables if timeoutTables is not set
+		return;
+	}
+	if (oldestTableEndTime < (maxFlowStartSeconds - tableTimeout)) {
+		msg(MSG_FATAL, "Timeing out tables...");
+		// check which table(s) need a time out and perform it
+		list<TableCacheEntry>::iterator i = tableCache.begin();
+		oldestStartTmp = i->startTime;
+		oldestEndTmp = i->endTime;
+		while (i != tableCache.end()) {
+			if (i->endTime < timeoutSeconds) {
+				// run script
+				// TODO: error checking
+				msg(MSG_FATAL, "Timeout of table %s. Start time: %d, End Time: %d", i->name.c_str(), i->startTime, i->endTime);
+				msg(MSG_FATAL, "maxFlowStartSeconds: %d, oldestTableStartTime: %d, oldestTableEndTime: %d, timeoutSeconds: %d", maxFlowStartSeconds, oldestTableStartTime, oldestTableEndTime, timeoutSeconds);
+				if (timeoutScript.length()) {
+					if (fork() == 0) {
+						if (-1 == execl(timeoutScript.c_str(), timeoutScript.c_str(), i->name.c_str(), NULL)) {
+							THROWEXCEPTION("exec returned: %s", strerror(errno));
+						}
+					}
+				}
+				i = tableCache.erase(i);
+				if (i != tableCache.end()) {
+					oldestStartTmp = i->startTime;
+					oldestEndTmp = i->endTime;
+				} else {
+					// TODO: think about this
+					THROWEXCEPTION("This crap should never happen!");
+				}
+			} else {
+				i++;
+			}
+		}
+		if (tableCache.size()) {
+			oldestTableEndTime = oldestEndTmp;
+			oldestTableStartTime = oldestStartTmp;
+		}
+		msg(MSG_FATAL, "Timed out tables!");
+	}
 }
 
 #endif
