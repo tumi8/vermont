@@ -57,6 +57,8 @@ ADD_LIBRARY(modules
     ipfix/FpaPcapExporter.cpp
     ipfix/FpaPcapExporterCfg.cpp
     ipfix/IpfixCollectorCfg.cpp
+    ipfix/IpfixCsExporter.cpp
+    ipfix/IpfixCsExporterCfg.cpp
     ipfix/IpfixDbReaderCfg.cpp
     ipfix/IpfixDbWriterCfg.cpp
     ipfix/IpfixDbWriterPgCfg.cpp

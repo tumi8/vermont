@@ -1,0 +1,97 @@
+/*
+ * Vermont Configuration Subsystem
+ * Copyright (C) 2009 Vermont Project
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
+
+#include "common/msg.h"
+#include "core/XMLElement.h"
+
+#include "IpfixCsExporterCfg.hpp"
+
+#include <string>
+#include <vector>
+#include <cassert>
+
+IpfixCsExporterCfg* IpfixCsExporterCfg::create(XMLElement* e)
+{
+	assert(e);
+	assert(e->getName() == getName());
+	return new IpfixCsExporterCfg(e);
+}
+
+//TODO: check default values
+IpfixCsExporterCfg::IpfixCsExporterCfg(XMLElement* elem)
+	: CfgHelper<IpfixCsExporter, IpfixCsExporterCfg>(elem, "ipfixCsExporter"),
+	destinationPath("./"),
+	filenamePrefix("ipfix.dump"),
+	maxFileSize(DEFAULTFILESIZE),
+	observationDomainId(0)
+{
+	if (!elem) 
+	return;  // needed because of table inside ConfigManager
+	/*
+	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
+	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
+	     it != set.end();
+	     it++) {
+		XMLElement* e = *it;
+
+		if (e->matches("maximumFilesize")) {
+			maximumFilesize = getInt("maximumFilesize"); 
+		}else if (e->matches("destinationPath")){
+			destinationPath = e->getFirstText();
+		}else if (e->matches("filenamePrefix")){
+			filenamePrefix = e->getFirstText();
+		} else if (e->matches("observationDomainId")) {
+			observationDomainId = getInt("observationDomainId");
+		}
+		 else {
+			msg(MSG_FATAL, "Unknown ipfixFileWriter config statement %s\n",
+				 e->getName().c_str());
+			continue;
+		}
+	}
+	*/
+}
+
+IpfixCsExporterCfg::~IpfixCsExporterCfg()
+{
+
+}
+
+IpfixCsExporter* IpfixCsExporterCfg::createInstance()
+{
+	instance = new IpfixCsExporter(observationDomainId, 
+			filenamePrefix, destinationPath, maxFileSize, maxChunkBufferTime, maxChunkBufferRecords, maxFileCreationInterval);
+	return instance;
+}
+
+bool IpfixCsExporterCfg::deriveFrom(IpfixCsExporterCfg* old)
+{
+	
+	if (maxFileSize != old->maxFileSize ||
+	    destinationPath != old->destinationPath ||
+	    filenamePrefix != old->filenamePrefix ||
+	    maxChunkBufferTime != old-> maxChunkBufferTime ||
+            maxChunkBufferRecords != old-> maxChunkBufferRecords ||
+            maxFileCreationInterval != old-> maxFileCreationInterval 
+      	    ) return false;
+		
+	return true;
+}
+
