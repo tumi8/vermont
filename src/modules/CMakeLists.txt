@@ -35,10 +35,10 @@ ADD_LIBRARY(modules
     packet/Template.cpp
     packet/PCAPExporterBase.cpp
     packet/PCAPExporterFile.cpp
-    packet/PCAPExporterFifo.cpp
+    packet/PCAPExporterPipe.cpp
     packet/PSAMPExporterModule.cpp
     packet/PSAMPExporterCfg.cpp
-    packet/PCAPExporterFifoCfg.cpp
+    packet/PCAPExporterPipeCfg.cpp
     packet/PCAPExporterFileCfg.cpp
     packet/PacketReportingCfg.cpp
     packet/filter/FilterModule.cpp

@@ -84,6 +84,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
  */
 IpfixReceiverUdpIpV4::~IpfixReceiverUdpIpV4() {
 	close(listen_socket);
+	SensorManager::getInstance().removeSensor(this);
 }
 
 

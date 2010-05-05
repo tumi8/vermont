@@ -203,6 +203,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	mutex.lock();
 	list<SensorEntry>::const_iterator siter = sensors.begin();
 	while (siter != sensors.end()) {
+        //DPRINTFL(MSG_ERROR, "non-module cfg->getName()=%s, s=%u", siter->name.c_str(), siter->sensor);
 		writeSensorXML(file, siter->sensor, siter->name.c_str(), siter->id, false, curtime, lasttime, NULL);
 		siter++;
 	}

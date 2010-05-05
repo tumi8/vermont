@@ -725,7 +725,7 @@ Output type: none
 |snaplen |  PCAP_MAX_  |Snaplen for the pcap file |
 | |  CAPTURE_LENGTH  | |
 
-== PCAPExporterFifo ==
+== PCAPExporterPipe ==
 
 Writes packets in PCAP format into a pipe, allowing another process to read these packets via STDIN.
 
@@ -734,18 +734,18 @@ Output type: none
 
 **Example configuration:**
 <code xml>
-<pcapExporterFifo>
+<pcapExporterPipe>
 	<logfilebasename>/tmp/pcap_exporter_fifo</logfilebasename>
 	<snaplen>1512</snaplen>
 	<sigkilltimeout>4</sigkilltimeout>
 	<fiforeadercmd>tcpdump -nr -</fiforeadercmd>
-</pcapExporterFifo>
+</pcapExporterPipe>
 </code>
 **Parameters:**
 |  **Element name**  |  **Default value**  |  **Description**  |
 |logfilebasename |  none  |If specified, STDOUT and STDERR of fiforeadercmd will be redircted into this file. The given parameter will be suffixed with the current time and date |
 |fiforeadercmd|  none  |A single (i.e. no shell) command, which must read PCAP files via STDIN. |
-|sigkilltimeout|  1  |Maximum waiting time in seconds, until a SIGKILL is sent to the reader process on module shutdown. |
+|sigkilltimeout|  1  |Maximum additional waiting time in seconds, until a SIGKILL is sent to the reader process on module shutdown. |
 |linkType |  EN10MB  |Data link type of the output file. Names are DLT_ names form the pcap man page with the DLT_ removed (see `man pcap') |
 |snaplen |  PCAP_MAX_  |Snaplen for the pcap file |
 | |  CAPTURE_LENGTH  | |

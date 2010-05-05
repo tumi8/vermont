@@ -6,6 +6,7 @@ bool run_program = true;
 bool reload_config = false;
 
 sem_t mainSemaphore;
+TimeoutSemaphore timeoutsem;
 
 
 /**
@@ -21,4 +22,5 @@ void initiateShutdown()
 void wakeupMainThread()
 {
 	if (sem_post(&mainSemaphore) == -1) THROWEXCEPTION("failed to execute sem_post");
+    timeoutsem.post();
 }

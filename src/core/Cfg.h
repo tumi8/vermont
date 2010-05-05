@@ -363,8 +363,9 @@ public:
 	{
 		// reset the timer to NULL so that the object could be deleted
 		Timer* timer = dynamic_cast<Timer*>(instance);
-		if (timer && notifiable) {
-			notifiable->useTimer(NULL);
+		Notifiable* n = dynamic_cast<Notifiable*>(instance);
+		if (timer && n) {
+			n->useTimer(NULL);
 		}
 
 		/* dont disconnect/delete the queue, we could be still connected to a source
