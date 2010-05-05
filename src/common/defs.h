@@ -89,6 +89,22 @@
 #define HT_DEFAULT_BITSIZE 17
 
 
+/**
+ * defines interval in milliseconds, how often DelayedDeleter is called
+ * 10 * 1000ms = 10s
+ */
+
+#define DELETER_PERIOD 10000
+
+
+/**
+ * After a module is put on the deleter list, we will wait at least
+ * 20 seconds, before we destroy it
+ */
+
+#define DELETER_DELAY 20
+
+
 
 /**
  * convenient way to determine size of a C array

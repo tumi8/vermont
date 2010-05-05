@@ -22,27 +22,27 @@
 #define PCAPEXPORTERFIFOCFG_H_
 
 #include "core/Cfg.h"
-#include "modules/packet/PCAPExporterFifo.h"
+#include "modules/packet/PCAPExporterPipe.h"
 #include "modules/packet/PCAPExporterBase.h"
 
 #include <vector>
 
 
-class PCAPExporterFifoCfg
-	: public CfgHelper<PCAPExporterFifo, PCAPExporterFifoCfg>
+class PCAPExporterPipeCfg
+	: public CfgHelper<PCAPExporterPipe, PCAPExporterPipeCfg>
 {
 	friend class ConfigManager;
 public:
-	virtual ~PCAPExporterFifoCfg();
+	virtual ~PCAPExporterPipeCfg();
 
-	virtual PCAPExporterFifoCfg* create(XMLElement* elem);
+	virtual PCAPExporterPipeCfg* create(XMLElement* elem);
 	
-	virtual PCAPExporterFifo* createInstance();
+	virtual PCAPExporterPipe* createInstance();
 	
-	bool deriveFrom(PCAPExporterFifoCfg* old);
+	bool deriveFrom(PCAPExporterPipeCfg* old);
 
 protected:
-	PCAPExporterFifoCfg(XMLElement* elem); 
+	PCAPExporterPipeCfg(XMLElement* elem); 
 
 private:
 	int link_type;

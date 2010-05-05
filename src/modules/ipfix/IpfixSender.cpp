@@ -702,8 +702,13 @@ void IpfixSender::registerTimeout()
 {
 	// check if there is already a timeout
 	if (timeoutRegistered) return;
-	timer->addTimeout(this, nextTimeout, NULL);
-	timeoutRegistered = true;
+    if(timer){
+        timer->addTimeout(this, nextTimeout, NULL);
+        timeoutRegistered = true;
+    }
+    else {
+        msg(MSG_DEBUG, "timer == NULL, this = %p", this);
+    }
 }
 
 /**

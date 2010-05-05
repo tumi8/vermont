@@ -669,7 +669,7 @@ static int ipfix_new_file(ipfix_receiving_collector* recvcoll){
 		if (f<0) { 
 			if (errno == EEXIST){ //increase the filenumber and try again
 				recvcoll->filenum++; //if the current file already exists
-				msg(MSG_DEBUG, "Skipping %s\n", filename);
+				msg(MSG_VDEBUG, "Skipping %s", filename);
 				sprintf(filename, "%s%010d", recvcoll->basename, recvcoll->filenum);
 				continue;
 			}

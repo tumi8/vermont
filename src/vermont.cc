@@ -34,9 +34,9 @@
 #include <string.h>
 
 /* own systems */
-#include "common/TimeoutSemaphore.h"
 #include "common/msg.h"
 #include "common/VermontControl.h"
+#include "common/defs.h"
 
 #include "modules/ConfigManager.h"
 
@@ -112,8 +112,14 @@ int main(int ac, char **dc)
 	while (run_program) {		
 		// sleep until we get a signal
 		int s;
-		while ((s = sem_wait(&mainSemaphore)) == -1 && errno == EINTR) {} // restart when interrupted by handler
+        bool b;
+		while (((b=timeoutsem.wait(DELETER_PERIOD)) == true) && errno == EINTR) {}// restart when interrupted by handler
+            
 		if (s == -1) THROWEXCEPTION("failed to execute sem_wait");
+		if (b == false){
+            manager.onTimeout2();
+        }
+
 
 		if (reload_config) {
 			msg(MSG_INFO, "reconfiguring vermont");

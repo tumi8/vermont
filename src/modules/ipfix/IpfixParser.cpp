@@ -890,6 +890,7 @@ IpfixParser::~IpfixParser() {
 	delete(templateBuffer);
 
 	pthread_mutex_destroy(&mutex);
+	SensorManager::getInstance().removeSensor(this);
 
 }
 

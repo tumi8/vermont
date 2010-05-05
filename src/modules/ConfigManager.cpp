@@ -20,15 +20,16 @@
 
 #include "modules/ConfigManager.h"
 #include "core/Connector.h"
-#include "core/ReConnector.h"
 #include "core/CfgNode.h"
+#include "common/defs.h"
 
+#include "core/Source.h"
 #include "QueueCfg.h"
 #include "AnonymizerCfg.h"
 #include "modules/packet/ObserverCfg.h"
 #include "modules/packet/PSAMPExporterCfg.h"
 #include "modules/packet/PCAPExporterFileCfg.h"
-#include "modules/packet/PCAPExporterFifoCfg.h"
+#include "modules/packet/PCAPExporterPipeCfg.h"
 #include "modules/packet/filter/PacketFilterCfg.h"
 #include "modules/ipfix/FpaPcapExporterCfg.h"
 #include "modules/ipfix/IpfixCollectorCfg.h"
@@ -66,7 +67,7 @@ Cfg* ConfigManager::configModules[] = {
 	new PacketFilterCfg(NULL),
 	new PacketQueueCfg(NULL),
 	new PCAPExporterFileCfg(NULL),
-	new PCAPExporterFifoCfg(NULL),
+	new PCAPExporterPipeCfg(NULL),
 	new PSAMPExporterCfg(NULL),
 	new FpaPcapExporterCfg(NULL),
 	new IpfixCollectorCfg(NULL),
@@ -179,8 +180,7 @@ void ConfigManager::parseConfig(std::string fileName)
 		Connector connector(true, false);
 		graph->accept(&connector);
 		// now connect the modules reusing those from the old graph
-		ReConnector reconnector(oldGraph);
-		graph->accept(&reconnector);
+        graph = reconnect(graph, oldGraph);
 	}
 
 	// start the instances if not already running
@@ -195,16 +195,8 @@ void ConfigManager::parseConfig(std::string fileName)
 	if (old_document)
 		delete old_document;
 
-	// if there is an old graph, we did a reconfiguration. So now we have to delete the
-	// old graph, but we can't delete the instances immediatly, because there is a small
-	// chance that instances which got reused could still hold a reference to a instance we
-	// want to delete right now.
-	// => we use the deleter to delete the instances after a specific time has passed so we
-	//    are safe that no-one holds a reference on the deleted modules anymore
-	if (oldGraph)
-		deleter.addGraph(oldGraph);
-
 	unlockGraph();
+
 }
 
 void ConfigManager::shutdown()
@@ -244,3 +236,90 @@ Graph* ConfigManager::getGraph()
 {
 	return graph;
 }
+
+void ConfigManager::onTimeout2()
+{
+    msg(MSG_VDEBUG, "Called deleter");
+
+	for (std::list<deleter_list_item>::iterator it = deleter_list.begin(); it != deleter_list.end(); it++) {
+        if (time(NULL) > it->delete_after) {
+            msg(MSG_DEBUG, "Removing node: %s", (it->c)->getName().c_str());
+            (it->c)->shutdown(true, true);
+            it->c->disconnectInstances();
+            delete ((it->c));
+            it = deleter_list.erase(it);
+            it--;
+        } else {
+            msg(MSG_DEBUG, "Timeout for node %s not yet reached.", (it->c)->getName().c_str());
+        }
+	}
+}
+
+Graph* ConfigManager::reconnect(Graph* g, Graph *old)
+{
+    Graph *newGraph;
+    Graph *oldGraph;
+	newGraph = g;
+    oldGraph = old;
+
+	vector<CfgNode*> topoOld = oldGraph->topoSort();
+	vector<CfgNode*> topoNew = newGraph->topoSort();
+
+	/* disconnect all modules */
+	for (size_t i = 0; i < topoOld.size(); i++) {
+		topoOld[i]->getCfg()->getInstance()->preReconfiguration();
+		topoOld[i]->getCfg()->disconnectInstances();
+        msg(MSG_INFO, "Disconnecting instance: %s", topoOld[i]->getCfg()->getName().c_str());
+	}
+
+	/* call onReconfiguration1 on all modules */
+	for (size_t i = 0; i < topoOld.size(); i++) {
+		topoOld[i]->getCfg()->onReconfiguration1();
+	}
+
+	/* call preConfiguration2 on all modules */
+	for (size_t i = 0; i < topoOld.size(); i++) {
+		topoOld[i]->getCfg()->onReconfiguration2();
+	}
+
+
+	// compare the nodes in the old and new graph and search for
+	// (nearly) identical modules which could be reused
+	for (size_t i = 0; i < topoOld.size(); i++) {
+		Cfg* oldCfg = topoOld[i]->getCfg();
+		for (size_t j = 0; j < topoNew.size(); j++) {
+			Cfg* newCfg = topoNew[j]->getCfg();
+			if (oldCfg->getID() == newCfg->getID()) { // possible match
+				msg(MSG_INFO, "found a match between %s(id=%d) -> %s(id=%d)",
+						oldCfg->getName().c_str(), oldCfg->getID(),
+						newCfg->getName().c_str(), newCfg->getID());
+
+				// check if we could use the same module instance in the new config
+				if (newCfg->deriveFrom(oldCfg)) {
+					msg(MSG_INFO, "reusing %s(id=%d)",
+							oldCfg->getName().c_str(), oldCfg->getID());
+					newCfg->transferInstance(oldCfg);
+				} else {
+                    deleter_list_item delme;
+                    delme.c = oldCfg;
+                    delme.delete_after = time(NULL) + DELETER_DELAY; // current time + 20 seconds
+                    deleter_list.push_back(delme);
+                    msg(MSG_INFO, "can't reuse %s(id=%d)",
+							oldCfg->getName().c_str(), oldCfg->getID());
+				}
+			}
+		}
+	}
+
+
+	/* Now that we transfered all module instances which could be reused
+	 * into the new graph, we have to build up the new connections
+	 *
+	 * The Connector will take care to call preConnect for us!!!
+	 */
+	Connector con(false, true);
+	newGraph->accept(&con);
+
+	return newGraph;
+}
+
