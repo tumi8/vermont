@@ -113,8 +113,10 @@ extern "C" {
 			// Gerhard: message level is more important than Milliseconds (at least to me)
 			printf("%02d/%02d %02d:%02d:%02d %6s", tform->tm_mday, tform->tm_mon +1, tform->tm_hour, tform->tm_min, tform->tm_sec, MSG_TAB[level]);
 #endif
-
-			vprintf(fmt, *args);
+			// need helper variable here because va_list parameter of vprintf is undefined after function call
+			va_list my_args;
+			va_copy(my_args, *args);
+			vprintf(fmt, my_args);
 			printf("\n");
 
 			if (logtext != NULL) {
