@@ -28,42 +28,106 @@
 #include "IpfixRecord.hpp"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
-#include "modules/ipfix/IpfixSender.hpp"
+#include "core/Source.h"
+#include "core/Notifiable.h"
+#include "modules/ipfix/Connection.h"
+#include "modules/ipfix/IpfixRecordDestination.h"
 #include <netinet/in.h>
 #include <time.h>
 #include <iostream>
 #include <fstream>
+#include <list>
 
 #define EXPORTERID 0
 #define DEFAULTFILESIZE 2097152
 
-class IpfixCsExporter :  public IpfixSender
+class IpfixCsExporter : public Module,
+Source<NullEmitable*>,
+public IpfixRecordDestination,
+public Notifiable
 {
+	//Some predefined structs
+	#define CS_IPFIX_MAGIC {0xCA, 'C', 'S', 'I', 'P', 'F', 'I', 'X'}
+	#define CS_IPFIX_CHUNK_TYPE 0x08
+
 	public:
-		IpfixCsExporter(uint16_t observationDomainId, std::string filenamePrefix, 
+		IpfixCsExporter(std::string filenamePrefix, 
 			std::string destinationPath, uint32_t maxFileSize, 
 			uint32_t maxChunkBufferTime, uint32_t maxChunkBufferRecords,
-			uint32_t maxFileCreationInterval);
+			uint32_t maxFileCreationInterval, uint8_t exportMode);
 
-		~IpfixCsExporter();
-		int addCollector(uint16_t observationDomainId, std::string filenamePrefix, 
-					std::string destinationPath, uint32_t maxFileSize,
-					uint32_t maxChunkBufferTime, uint32_t maxChunkBufferRecords,
-					uint32_t maxFileCreationInterval);
+		virtual ~IpfixCsExporter();
+
+        	virtual void onDataRecord(IpfixDataRecord* record);
+	        virtual void onTimeout(void* dataPtr);
 
 	private:
-		//prefix to each file
-		std::string filenamePrefix;
-		//path where to store files
-		std::string destinationPath;
-		//maximum filesize in  KiB, i.e. maximumFilesize * 1024 == maximum filesize in bytes
-		uint32_t maxFileSize; 
-		//maximum Chunk Buffer Time in seconds
-		uint32_t maxChunkBufferTime;
-		//maximum Chunk Buffer Records in records
-		uint32_t maxChunkBufferRecords;
-		//time in seconds between creation of a new output file
-		uint32_t maxFileCreationInterval;
+		std::string filenamePrefix; /**< prefix to each file */
+		std::string destinationPath; /**< storage path of output files */
+		std::string currentFile;
+		uint32_t maxFileSize; /**< maximum filesize in  KiB, i.e. maximumFilesize * 1024 == maximum filesize in bytes */
+		uint32_t maxChunkBufferTime; /**< maximum Chunk Buffer Time (in seconds) */
+		uint32_t maxChunkBufferRecords; /**< maximum Chunk Buffer Records (in records) */
+		uint32_t maxFileCreationInterval; /**< time in seconds between creation of a new output file */
+		uint8_t exportMode; /**< export Mode */
+
+                //to calculate criteria after given timeouts
+                void registerTimeout();
+                bool timeoutRegistered;
+                timespec nextChunkTimeout;
+		timespec nextFileTimeout;
+		uint64_t convertNtp64(uint64_t ntptime);
+
+		//file write operations
+		void writeFileHeader();
+		void writeChunkList();
+
+	        enum cs_export_mode {
+        	        CS_E_PLAIN      = 0,
+                	CS_E_ANON       = 1,
+	                CS_E_PSEUDO     = 2,
+        	};
+
+	        struct CS_Ipfix_file_header {
+        	        uint8_t magic[8]; //expected: CS_IPFIX_MAGIC
+	        };
+
+		/**
+		 * class representing the start of a chunk in the CS format
+	         */
+        	struct Ipfix_basic_flow_sequence_chunk_header {
+                	uint16_t ipfix_type; //-> CS_IPFIX_CHUNK_TYPE -> 0x08
+			//TODO: check if comment is correct. currently implemented as
+			// number of bytes in chunk from chunk header onwards
+	                uint32_t chunk_length; //number of bytes in chunk from magic onwards
+        	        uint32_t flow_count; //number of Ipfix_basic_flow records to follow
+	        };	
+
+	        struct Ipfix_basic_flow {
+        	        uint16_t record_length;                 // total length of this record in bytes
+                	uint8_t  src_export_mode;               // expected to match enum cs_export_mode
+	                uint8_t  dst_export_mode;               // expected to match enum cs_export_mode
+        	        uint8_t  ipversion;                     // expected 4 (for now)
+                	uint32_t source_ipv4_address;
+	                uint32_t destination_ipv4_address;
+        	        uint8_t  protocol_identifier;
+                	uint16_t source_transport_port;         // encode udp/tcp ports here
+	                uint16_t destination_transport_port;    // encode udp/tcp ports here
+        	        uint8_t  icmp_type_ipv4;
+                	uint8_t  icmp_code_ipv4;
+	                uint8_t  tcp_control_bits;
+        	        uint64_t flow_start_milliseconds;       // encode flowStart(Micro|Nano|)Seconds here
+                	uint64_t flow_end_milliseconds;         // encode flowEnd(Micro|Nano|)Seconds here
+	                uint64_t octet_total_count;
+        	        uint64_t packet_total_count;
+                	uint8_t  biflow_direction;
+	                uint64_t rev_octet_total_count;
+        	        uint64_t rev_packet_total_count;
+                	uint64_t rev_tcp_control_bits;
+	        };
+
+        	list<Ipfix_basic_flow*> chunkList;
+
 };
 
 

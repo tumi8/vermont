@@ -26,7 +26,6 @@
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-//#include "IpfixFileWriter.hpp"
 #include "IpfixCsExporter.hpp"
 
 #include <map>
@@ -50,9 +49,6 @@ protected:
 	IpfixCsExporterCfg(XMLElement*);
 
 private:
-	// config variables
-	uint16_t observationDomainId;
-
         //prefix to each file
         std::string filenamePrefix;
         //path where to store files

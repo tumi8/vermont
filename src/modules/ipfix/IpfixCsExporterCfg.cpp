@@ -39,8 +39,7 @@ IpfixCsExporterCfg::IpfixCsExporterCfg(XMLElement* elem)
 	: CfgHelper<IpfixCsExporter, IpfixCsExporterCfg>(elem, "ipfixCsExporter"),
 	destinationPath("./"),
 	filenamePrefix("ipfix.dump"),
-	maxFileSize(DEFAULTFILESIZE),
-	observationDomainId(0)
+	maxFileSize(DEFAULTFILESIZE)
 {
 	if (!elem) 
 	return;  // needed because of table inside ConfigManager
@@ -76,14 +75,14 @@ IpfixCsExporterCfg::~IpfixCsExporterCfg()
 
 IpfixCsExporter* IpfixCsExporterCfg::createInstance()
 {
-	instance = new IpfixCsExporter(observationDomainId, 
-			filenamePrefix, destinationPath, maxFileSize, maxChunkBufferTime, maxChunkBufferRecords, maxFileCreationInterval);
+	instance = new IpfixCsExporter(filenamePrefix, destinationPath, maxFileSize,
+					maxChunkBufferTime, maxChunkBufferRecords,
+					maxFileCreationInterval);
 	return instance;
 }
 
 bool IpfixCsExporterCfg::deriveFrom(IpfixCsExporterCfg* old)
 {
-	
 	if (maxFileSize != old->maxFileSize ||
 	    destinationPath != old->destinationPath ||
 	    filenamePrefix != old->filenamePrefix ||
@@ -94,4 +93,3 @@ bool IpfixCsExporterCfg::deriveFrom(IpfixCsExporterCfg* old)
 		
 	return true;
 }
-
