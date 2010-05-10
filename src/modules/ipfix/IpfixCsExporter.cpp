@@ -237,8 +237,10 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 void IpfixCsExporter::onTimeout(void* dataPtr)
 {
 	timeoutRegistered = false;
+	struct timeval now;
+	gettimeofday(&now, 0);
 	//check if this is one of the desired timeouts
-	if (nextFileTimeout.tv_sec <= 1) { // FIXME!
+	if (nextFileTimeout.tv_sec <= now.tv_sec) {
 		//close File, add new one
                 writeChunkList();
                 //TODO: change currentFile
@@ -247,7 +249,7 @@ void IpfixCsExporter::onTimeout(void* dataPtr)
                 writeFileHeader();
 		addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
 	        addToCurTime(&nextFileTimeout, maxFileCreationInterval*1000);
-	} else if (nextChunkTimeout.tv_sec <= 1) { // FIXME!
+	} else if (nextChunkTimeout.tv_sec <= now.tv_sec) {
                 writeChunkList();
                 addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
 	}
