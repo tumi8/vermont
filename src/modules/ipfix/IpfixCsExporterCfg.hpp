@@ -61,6 +61,7 @@ private:
         uint32_t maxChunkBufferRecords;
         //time in seconds between creation of a new output file
         uint32_t maxFileCreationInterval;
+	uint8_t exportMode;
 };
 
 #endif /*IPFIXCSEXPORTERCFG_H_*/

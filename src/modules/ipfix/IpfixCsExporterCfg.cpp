@@ -37,13 +37,16 @@ IpfixCsExporterCfg* IpfixCsExporterCfg::create(XMLElement* e)
 //TODO: check default values
 IpfixCsExporterCfg::IpfixCsExporterCfg(XMLElement* elem)
 	: CfgHelper<IpfixCsExporter, IpfixCsExporterCfg>(elem, "ipfixCsExporter"),
+	filenamePrefix("carmentis_"),
 	destinationPath("./"),
-	filenamePrefix("ipfix.dump"),
-	maxFileSize(DEFAULTFILESIZE)
+	maxFileSize(DEFAULTFILESIZE),
+	maxChunkBufferTime(300),
+	maxChunkBufferRecords(50000),
+	maxFileCreationInterval(1500),
+	exportMode(1)
 {
-	if (!elem) 
-	return;  // needed because of table inside ConfigManager
-	/*
+	if (!elem) return;  // needed because of table inside ConfigManager
+
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -51,21 +54,17 @@ IpfixCsExporterCfg::IpfixCsExporterCfg(XMLElement* elem)
 		XMLElement* e = *it;
 
 		if (e->matches("maximumFilesize")) {
-			maximumFilesize = getInt("maximumFilesize"); 
-		}else if (e->matches("destinationPath")){
+			maxFileSize = getInt("maximumFilesize"); 
+		} else if (e->matches("destinationPath")){
 			destinationPath = e->getFirstText();
-		}else if (e->matches("filenamePrefix")){
+		} else if (e->matches("filenamePrefix")){
 			filenamePrefix = e->getFirstText();
-		} else if (e->matches("observationDomainId")) {
-			observationDomainId = getInt("observationDomainId");
-		}
-		 else {
+		} else {
 			msg(MSG_FATAL, "Unknown ipfixFileWriter config statement %s\n",
 				 e->getName().c_str());
 			continue;
 		}
 	}
-	*/
 }
 
 IpfixCsExporterCfg::~IpfixCsExporterCfg()
@@ -77,7 +76,7 @@ IpfixCsExporter* IpfixCsExporterCfg::createInstance()
 {
 	instance = new IpfixCsExporter(filenamePrefix, destinationPath, maxFileSize,
 					maxChunkBufferTime, maxChunkBufferRecords,
-					maxFileCreationInterval);
+					maxFileCreationInterval, exportMode);
 	return instance;
 }
 

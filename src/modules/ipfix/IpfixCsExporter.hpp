@@ -41,14 +41,11 @@
 #define EXPORTERID 0
 #define DEFAULTFILESIZE 2097152
 
-class IpfixCsExporter : public Module,
-Source<NullEmitable*>,
-public IpfixRecordDestination,
-public Notifiable
+class IpfixCsExporter : public Module, public Source<NullEmitable*>, public IpfixRecordDestination, public Notifiable
 {
 	//Some predefined structs
-	#define CS_IPFIX_MAGIC {0xCA, 'C', 'S', 'I', 'P', 'F', 'I', 'X'}
-	#define CS_IPFIX_CHUNK_TYPE 0x08
+	const static uint8_t CS_IPFIX_CHUNK_TYPE = 0x08;
+	char CS_IPFIX_MAGIC[8];
 
 	public:
 		IpfixCsExporter(std::string filenamePrefix, 

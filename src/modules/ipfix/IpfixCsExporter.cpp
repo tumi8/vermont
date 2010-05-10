@@ -26,6 +26,7 @@
 #include <stdexcept>
 #include <string.h>
 
+
 /**
  * Creates a new IPFIXCsExporter.
  */
@@ -49,6 +50,8 @@ IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 	//TODO: change currentFile
         currentFile=destinationPath+filenamePrefix+"filename";
 	writeFileHeader();
+	CS_IPFIX_MAGIC[0] = 0xCA;
+	memcpy(&CS_IPFIX_MAGIC[1], "CSIPFIX", 7);
 
         msg(MSG_INFO, "IpfixCsExporter initialized with the following parameters");
         //msg(MSG_INFO, "  - Basename = %s", currentFile);
@@ -98,7 +101,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 
 	// IPFIX_TYPEID_icmpTypeCode   (ICMP type * 256) + ICMP code (network-byte order!)
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_icmpTypeCode, 0);
-        csRecord->icmp_type_ipv4 		= ntohll(*(uint8_t*)(record->data + fi->offset));
+        csRecord->icmp_type_ipv4 		= *(uint8_t*)(record->data + fi->offset);
 	//TODO
         csRecord->icmp_code_ipv4		= 0;
 	
@@ -159,30 +162,25 @@ void IpfixCsExporter::onTimeout(void* dataPtr)
 {
 	timeoutRegistered = false;
 	//check if this is one of the desired timeouts
-	if(nextFileTimeout.tv_sec <= 1){
+	if (nextFileTimeout.tv_sec <= 1) { // FIXME!
 		//close File, add new one
                 writeChunkList();
                 //TODO: change currentFile
+		// prefix_20100505-1515_001
                 currentFile=destinationPath+filenamePrefix+"filename";
                 writeFileHeader();
 		addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
 	        addToCurTime(&nextFileTimeout, maxFileCreationInterval*1000);
-		registerTimeout();
-		return;
-	}
-
-        if(nextChunkTimeout.tv_sec <= 1){
+	} else if (nextChunkTimeout.tv_sec <= 1) { // FIXME!
                 writeChunkList();
                 addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
-                registerTimeout();
-                return;
-        }
+	}
 
-	//wrong timeout call, add new timeout
 	registerTimeout();
 }
 
 
+//FIXME: in Time.h verlagern, dann auch aus Connection.cpp entfernen!
 uint64_t IpfixCsExporter::convertNtp64(uint64_t ntptime)
 {
         uint64_t hbnum = ntohll(*(uint64_t*)&ntptime);
@@ -203,12 +201,8 @@ void IpfixCsExporter::writeFileHeader()
 	addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
         addToCurTime(&nextFileTimeout, maxFileCreationInterval*1000);
 
-	//writing new File
-	CS_Ipfix_file_header* fileHeader = new CS_Ipfix_file_header();
-        fileHeader->magic = CS_IPFIX_MAGIC;
-
 	std::ofstream out("filename");
-	out.write(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
+	out.write(CS_IPFIX_MAGIC, sizeof(CS_IPFIX_MAGIC));
 }
 
 /**
