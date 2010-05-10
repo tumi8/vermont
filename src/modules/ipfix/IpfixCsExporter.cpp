@@ -85,53 +85,129 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
         csRecord->ipversion			= 4;					/* expected 4 (for now) */
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
-        csRecord->source_ipv4_address		= *(uint32_t*)(record->data + fi->offset);
+	if (fi != 0) {
+	        csRecord->source_ipv4_address		= *(uint32_t*)(record->data + fi->offset);
+	} else {
+                msg(MSG_INFO, "failed to determine source ip for record, assuming 0.0.0.0");
+                csRecord->source_ipv4_address		= 0;
+        }
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
-        csRecord->destination_ipv4_address	= *(uint32_t*)(record->data + fi->offset);
+        if (fi != 0) {
+		csRecord->destination_ipv4_address	= *(uint32_t*)(record->data + fi->offset);
+        } else {
+                msg(MSG_INFO, "failed to determine destination ip for record, assuming 0.0.0.0");
+                csRecord->destination_ipv4_address	= 0;
+        }
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_protocolIdentifier, 0);
-        csRecord->protocol_identifier 		= *(uint8_t*)(record->data + fi->offset);
+	if (fi != 0) {
+	        csRecord->protocol_identifier 		= *(uint8_t*)(record->data + fi->offset);
+	} else {
+                msg(MSG_INFO, "failed to determine protocol for record, using 0");
+                csRecord->protocol_identifier		= 0;
+        }
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
-        csRecord->source_transport_port		= *(uint16_t*)(record->data + fi->offset);/* encode udp/tcp ports here */
+        if (fi != 0) {
+		csRecord->source_transport_port		= *(uint16_t*)(record->data + fi->offset);/* encode udp/tcp ports here */
+	} else {
+                msg(MSG_INFO, "failed to determine source port for record, assuming 0");
+                csRecord->source_transport_port		= 0;
+        }
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
-        csRecord->destination_transport_port	= *(uint16_t*)(record->data + fi->offset);/* encode udp/tcp ports here */
+	if (fi != 0) {
+	        csRecord->destination_transport_port	= *(uint16_t*)(record->data + fi->offset);/* encode udp/tcp ports here */
+	} else {
+                msg(MSG_INFO, "failed to determine destination port for record, assuming 0");
+                csRecord->destination_transport_port	= 0;
+        }
 
 	// IPFIX_TYPEID_icmpTypeCode   (ICMP type * 256) + ICMP code (network-byte order!)
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_icmpTypeCode, 0);
-        csRecord->icmp_type_ipv4 		= *(uint8_t*)(record->data + fi->offset);
-	//TODO
-        csRecord->icmp_code_ipv4		= 0;
+	if (fi != 0) {
+	        csRecord->icmp_type_ipv4 		= *(uint8_t*)(record->data + fi->offset);
+        	csRecord->icmp_code_ipv4		= *(uint8_t*)(record->data + fi->offset + 8);
+        } else {
+                msg(MSG_INFO, "failed to determine icmp type and code for record, assuming 0");
+                csRecord->icmp_type_ipv4                = 0;
+                csRecord->icmp_code_ipv4                = 0;
+        }
 	
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, 0);
-        csRecord->tcp_control_bits = *(uint8_t*)(record->data + fi->offset);
+        if (fi != 0) {
+		csRecord->tcp_control_bits = *(uint8_t*)(record->data + fi->offset);
+	}
 
 	uint64_t srcTimeStart;
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0);
-        csRecord->flow_start_milliseconds = convertNtp64(*(uint64_t*)(record->data + fi->offset));
+		//csRecord->flow_start_milliseconds = convertNtp64(*(uint64_t*)(record->data + fi->offset));
+		//convertNtp64(*(uint64_t*)(record->data + fi->offset), &csRecord->flow_start_milliseconds);
+	if (fi != 0) {
+                convertNtp64(*(uint64_t*)(record->data + fi->offset), srcTimeStart);
+        } else {
+                fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0);
+                if (fi != 0) {
+                        srcTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
+                } else {
+                        fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSeconds, 0);
+                        if (fi != 0) {
+                                srcTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
+                                srcTimeStart *= 1000;
+                        } else {
+                                srcTimeStart = 0;
+                        }
+                }
+        }
+	csRecord->flow_start_milliseconds = srcTimeStart;
 
-	uint64_t dstTimeStart;
+	uint64_t srcTimeEnd;
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartNanoSeconds, 0);
-        csRecord->flow_end_milliseconds = convertNtp64(*(uint64_t*)(record->data + fi->offset));;
+	if (fi != 0) {
+                convertNtp64(*(uint64_t*)(record->data + fi->offset), srcTimeEnd);
+        } else {
+                fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
+                if (fi != 0) {
+                        srcTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
+                } else {
+                        fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndSeconds, 0);
+                        if (fi != 0) {
+                                srcTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
+                                srcTimeEnd *= 1000;
+                        } else {
+                                srcTimeEnd = 0;
+                        }
+                }
+        }
+        csRecord->flow_end_milliseconds = srcTimeEnd;
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_octetDeltaCount, 0);
-        csRecord->octet_total_count = *(uint64_t*)(record->data + fi->offset);
+        if (fi != 0) {
+		csRecord->octet_total_count = *(uint64_t*)(record->data + fi->offset);
+	}
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_packetDeltaCount, 0);
-        csRecord->packet_total_count = *(uint64_t*)(record->data + fi->offset);
+	if (fi != 0) {
+	        csRecord->packet_total_count = *(uint64_t*)(record->data + fi->offset);
+	}
 
         csRecord->biflow_direction = 0;
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revOctetDeltaCount, 0);
-        csRecord->rev_octet_total_count = *(uint64_t*)(record->data + fi->offset);
+	if (fi != 0) {
+        	csRecord->rev_octet_total_count = *(uint64_t*)(record->data + fi->offset);
+	}
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revPacketDeltaCount, 0);
-        csRecord->rev_packet_total_count = *(uint64_t*)(record->data + fi->offset);
+	if (fi != 0) {
+	        csRecord->rev_packet_total_count = *(uint64_t*)(record->data + fi->offset);
+	}
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revTcpControlBits, 0);
-        csRecord->rev_tcp_control_bits = *(uint8_t*)(record->data + fi->offset);
+	if (fi != 0) {
+        	csRecord->rev_tcp_control_bits = *(uint8_t*)(record->data + fi->offset);
+	}
 
 	//add data to linked list
 	chunkList.push_back(csRecord);
@@ -141,7 +217,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 		writeChunkList();
 
         //check if maxFileSize is reached
-	FILE * stream = fopen("filename", "r");
+	FILE* stream = fopen("filename", "r");
 	fseek(stream, 0L, SEEK_END);
 	long fileSize = ftell(stream);
 	fclose(stream);
@@ -177,19 +253,6 @@ void IpfixCsExporter::onTimeout(void* dataPtr)
 	}
 
 	registerTimeout();
-}
-
-
-//FIXME: in Time.h verlagern, dann auch aus Connection.cpp entfernen!
-uint64_t IpfixCsExporter::convertNtp64(uint64_t ntptime)
-{
-        uint64_t hbnum = ntohll(*(uint64_t*)&ntptime);
-        if (hbnum>0) {
-                timeval t = timentp64(*((ntp64*)(&hbnum)));
-                return htonll((uint64_t)t.tv_sec*1000+(uint64_t)t.tv_usec/1000);
-        } else {
-                return 0;
-        }
 }
 
 /**

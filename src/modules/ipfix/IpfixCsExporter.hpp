@@ -73,7 +73,6 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
                 bool timeoutRegistered;
                 timespec nextChunkTimeout;
 		timespec nextFileTimeout;
-		uint64_t convertNtp64(uint64_t ntptime);
 
 		//file write operations
 		void writeFileHeader();

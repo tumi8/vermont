@@ -188,17 +188,6 @@ Connection::~Connection()
 	if (dstPayload) delete[] dstPayload;
 }
 
-void Connection::convertNtp64(uint64_t ntptime, uint64_t& result)
-{
-	uint64_t hbnum = ntohll(*(uint64_t*)&ntptime);
-	if (hbnum>0) {
-		timeval t = timentp64(*((ntp64*)(&hbnum)));
-		result = (uint64_t)t.tv_sec*1000+(uint64_t)t.tv_usec/1000;
-	} else {
-		result = 0;
-	}
-}
-
 /**
  * swaps all data fields inside the connection
  */
