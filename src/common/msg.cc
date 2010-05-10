@@ -24,6 +24,11 @@
 extern "C" {
 #endif
 
+	/* the maximum number of functions that will be called by the message logger thread */
+	const int MAX_LOG_FUNCTIONS = 256;
+
+	/** Maximum length of exception strings */
+	const int EXCEPTION_MAXLEN = 1024;
 
 	static int msg_level=MSG_ERROR;
 	static const char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "INFO   ", "DEBUG  ", "VDEBUG ", 0};
