@@ -43,7 +43,7 @@ IpfixCsExporterCfg::IpfixCsExporterCfg(XMLElement* elem)
 	maxChunkBufferTime(300),
 	maxChunkBufferRecords(50000),
 	maxFileCreationInterval(1500),
-	exportMode(1)
+	exportMode(0)
 {
 	if (!elem) return;  // needed because of table inside ConfigManager
 
@@ -53,14 +53,26 @@ IpfixCsExporterCfg::IpfixCsExporterCfg(XMLElement* elem)
 	     it++) {
 		XMLElement* e = *it;
 
-		if (e->matches("maximumFilesize")) {
-			maxFileSize = getInt("maximumFilesize"); 
+		if (e->matches("maxFileSize")) {
+			maxFileSize = getInt("maxFileSize"); 
 		} else if (e->matches("destinationPath")){
 			destinationPath = e->getFirstText();
 		} else if (e->matches("filenamePrefix")){
 			filenamePrefix = e->getFirstText();
+		} else if (e->matches("maxChunkBufferTime")){
+			maxChunkBufferTime = atoi(e->getFirstText().c_str());
+		} else if (e->matches("maxChunkBufferRecords")){
+			maxChunkBufferRecords = atoi(e->getFirstText().c_str());
+		} else if (e->matches("maxFileCreationInterval")){
+			maxFileCreationInterval = atoi(e->getFirstText().c_str());
+		} else if (e->matches("exportMode")){
+			exportMode = atoi(e->getFirstText().c_str());
+			if(exportMode != 0 && exportMode != 1 && exportMode != 2) {
+				msg(MSG_FATAL, "Unknown ipfixCsExporter-exportMode config value %i\n",exportMode);
+	                        continue;
+			}
 		} else {
-			msg(MSG_FATAL, "Unknown ipfixFileWriter config statement %s\n",
+			msg(MSG_FATAL, "Unknown ipfixCsExporter config statement %s\n",
 				 e->getName().c_str());
 			continue;
 		}
@@ -87,7 +99,8 @@ bool IpfixCsExporterCfg::deriveFrom(IpfixCsExporterCfg* old)
 	    filenamePrefix != old->filenamePrefix ||
 	    maxChunkBufferTime != old-> maxChunkBufferTime ||
             maxChunkBufferRecords != old-> maxChunkBufferRecords ||
-            maxFileCreationInterval != old-> maxFileCreationInterval 
+            maxFileCreationInterval != old-> maxFileCreationInterval ||
+            exportMode != old->exportMode
       	    ) return false;
 		
 	return true;

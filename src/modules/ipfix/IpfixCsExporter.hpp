@@ -61,7 +61,8 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 	private:
 		std::string filenamePrefix; /**< prefix to each file */
 		std::string destinationPath; /**< storage path of output files */
-		std::string currentFile;
+		FILE *currentFile;
+		uint16_t globalIterator;
 		uint32_t maxFileSize; /**< maximum filesize in  KiB, i.e. maximumFilesize * 1024 == maximum filesize in bytes */
 		uint32_t maxChunkBufferTime; /**< maximum Chunk Buffer Time (in seconds) */
 		uint32_t maxChunkBufferRecords; /**< maximum Chunk Buffer Records (in records) */

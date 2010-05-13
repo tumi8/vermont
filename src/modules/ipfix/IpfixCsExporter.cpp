@@ -26,7 +26,6 @@
 #include <stdexcept>
 #include <string.h>
 
-
 /**
  * Creates a new IPFIXCsExporter.
  */
@@ -42,20 +41,20 @@ IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 	this->maxChunkBufferRecords = maxChunkBufferRecords;
 	this->maxFileCreationInterval = maxFileCreationInterval;
 	this->exportMode = exportMode;
+	currentFile = NULL;
 
 	//Register first timeouts
 	addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
 	addToCurTime(&nextFileTimeout, maxFileCreationInterval*1000);
 	registerTimeout();
-	//TODO: change currentFile
-        currentFile=destinationPath+filenamePrefix+"filename";
 	writeFileHeader();
 	CS_IPFIX_MAGIC[0] = 0xCA;
 	memcpy(&CS_IPFIX_MAGIC[1], "CSIPFIX", 7);
 
         msg(MSG_INFO, "IpfixCsExporter initialized with the following parameters");
-        //msg(MSG_INFO, "  - Basename = %s", currentFile);
-        msg(MSG_INFO, "  - maximumFilesize = %d KiB" , maxFileSize);
+        msg(MSG_INFO, "  - filenamePrefix = %s" , filenamePrefix.c_str());
+        msg(MSG_INFO, "  - destinationPath = %s", destinationPath.c_str());
+        msg(MSG_INFO, "  - maxFileSize = %d KiB" , maxFileSize);
         msg(MSG_INFO, "  - maxChunkBufferTime = %d seconds" , maxChunkBufferTime);
         msg(MSG_INFO, "  - maxChunkBufferRecords = %d seconds" , maxChunkBufferRecords);
         msg(MSG_INFO, "  - maxFileCreationInterval = %d seconds" , maxFileCreationInterval);
@@ -64,6 +63,10 @@ IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 }
 
 IpfixCsExporter::~IpfixCsExporter() {
+	if(currentFile != NULL) {
+	        writeChunkList();
+                fclose(currentFile);
+        }
 }
 
 void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
@@ -226,8 +229,6 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 	if(fileSize > maxFileSize*1024){
 		//close File, add new one
 		writeChunkList();
-		//TODO: change currentFile
-		currentFile=destinationPath+filenamePrefix+"filename";
 		writeFileHeader();
 	}
 	record->removeReference();
@@ -243,9 +244,6 @@ void IpfixCsExporter::onTimeout(void* dataPtr)
 	if (nextFileTimeout.tv_sec <= now.tv_sec) {
 		//close File, add new one
                 writeChunkList();
-                //TODO: change currentFile
-		// prefix_20100505-1515_001
-                currentFile=destinationPath+filenamePrefix+"filename";
                 writeFileHeader();
 		addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
 	        addToCurTime(&nextFileTimeout, maxFileCreationInterval*1000);
@@ -262,12 +260,40 @@ void IpfixCsExporter::onTimeout(void* dataPtr)
  */
 void IpfixCsExporter::writeFileHeader()
 {
+	if(currentFile != NULL) {
+		fclose(currentFile);
+	}
+	
+	// prefix_20100505-1515_1
+	char* filename;
+	time_t timestamp = time(0);
+	tm *st = localtime(&timestamp);
+
+	ifstream in;
+	char* time;
+	sprintf(time, "%s%s_%d%d%d-%d%d_",destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year,st->tm_mon,st->tm_mday,st->tm_hour,st->tm_min); 
+	int i = 1;
+	while(i<1000){
+		//sprintf("%d%d_%i%i%i-%i%i_%i",destinationPath.c_str(),filenamePrefix.c_str(),st->tm_year,st->tm_mon,st->tm_mday,st->tm_hour,st->tm_min,time, n);	
+		sprintf(filename, "%s_%d",time,i);
+		in.open(filename, ifstream::in);
+        	in.close();
+	        if(in.fail()) {
+			break;
+		}
+		i++;
+	}
+
+	currentFile = fopen(filename, "rw");
+	if(currentFile == NULL) {
+		//TODO: error-handling
+	}
+
+	fwrite(CS_IPFIX_MAGIC, sizeof(CS_IPFIX_MAGIC), 1, currentFile);
+
 	//new Timeouts:
 	addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
         addToCurTime(&nextFileTimeout, maxFileCreationInterval*1000);
-
-	std::ofstream out("filename");
-	out.write(CS_IPFIX_MAGIC, sizeof(CS_IPFIX_MAGIC));
 }
 
 /**
@@ -281,12 +307,11 @@ void IpfixCsExporter::writeChunkList()
         csChunkHeader->chunk_length=chunkList.size()*sizeof(struct Ipfix_basic_flow);
         csChunkHeader->flow_count=chunkList.size();
 
-	std::ofstream out("filename");
-        out.write(reinterpret_cast<char*>(&csChunkHeader), sizeof(csChunkHeader));
+        fwrite(csChunkHeader, sizeof(csChunkHeader), 1, currentFile);
 
 	int i;
 	for(i=0; i<chunkList.size(); i++){
-		out.write(reinterpret_cast<char*>(&chunkList.front()), sizeof(Ipfix_basic_flow));
+		fwrite(chunkList.front(), sizeof(Ipfix_basic_flow), 1, currentFile);
 		chunkList.pop_front();
 	}
         addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
