@@ -69,6 +69,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 		uint32_t maxChunkBufferRecords; /**< maximum Chunk Buffer Records (in records) */
 		uint32_t maxFileCreationInterval; /**< time in seconds between creation of a new output file */
 		uint8_t exportMode; /**< export Mode */
+		uint32_t currentFileSize;
 
                 //to calculate criteria after given timeouts
                 void registerTimeout();

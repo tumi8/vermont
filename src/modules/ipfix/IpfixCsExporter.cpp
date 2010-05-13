@@ -42,7 +42,8 @@ IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 	this->maxFileCreationInterval = maxFileCreationInterval;
 	this->exportMode = exportMode;
 	currentFile = NULL;
-
+	currentFileSize = 0;
+	printf("%i - %i", sizeof(CS_IPFIX_MAGIC), sizeof(Ipfix_basic_flow));
 	//Register first timeouts
 	nextChunkTimeout.tv_sec = 0;
         nextChunkTimeout.tv_nsec = 0;
@@ -226,13 +227,8 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 		writeChunkList();
 
         //check if maxFileSize is reached
-	FILE* sizeFilePtr = fopen (currentFilename,"r");
-	fseek(sizeFilePtr, 0L, SEEK_END);
-	long fileSize =ftell(sizeFilePtr);
-	fclose(sizeFilePtr);
-
-	fileSize += sizeof(Ipfix_basic_flow_sequence_chunk_header)+(chunkList.size()+1)*sizeof(Ipfix_basic_flow);
-	if(fileSize > maxFileSize*1024){
+        currentFileSize += sizeof(Ipfix_basic_flow);
+	if(currentFileSize > maxFileSize*1024){
 		//close File, add new one
 		writeChunkList();
 		writeFileHeader();
@@ -269,14 +265,15 @@ void IpfixCsExporter::writeFileHeader()
 	if(currentFile != NULL) {
 		fclose(currentFile);
 	}
-	
+        currentFileSize = sizeof(CS_IPFIX_MAGIC)+sizeof(Ipfix_basic_flow_sequence_chunk_header);
+
 	// prefix_20100505-1515_1
 	time_t timestamp = time(0);
 	tm *st = localtime(&timestamp);
 
 	ifstream in;
 	char time[512];
-	sprintf(time, "%s%s%d%d%d-%d%d",destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year,st->tm_mon,st->tm_mday,st->tm_hour,st->tm_min); 
+	sprintf(time, "%s%s%02d%02d%02d-%02d%02d",destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year+1900,st->tm_mon+1,st->tm_mday,st->tm_hour,st->tm_min); 
 	int i = 1;
 	while(i<1000){
 		sprintf(currentFilename, "%s_%d",time,i);
@@ -287,7 +284,7 @@ void IpfixCsExporter::writeFileHeader()
 		}
 		i++;
 	}
-	currentFile = fopen(currentFilename, "w+");
+	currentFile = fopen(currentFilename, "wb");
 	if(currentFile == NULL) {
 		//TODO: error-handling
 		//return;
@@ -313,8 +310,7 @@ void IpfixCsExporter::writeChunkList()
 
         fwrite(csChunkHeader, sizeof(csChunkHeader), 1, currentFile);
 
-	int i;
-	for(i=0; i<chunkList.size(); i++){
+	while(chunkList.size() > 0){
 		fwrite(chunkList.front(), sizeof(Ipfix_basic_flow), 1, currentFile);
 		chunkList.pop_front();
 	}
@@ -331,7 +327,7 @@ void IpfixCsExporter::registerTimeout()
         if (timeoutRegistered) return;
         if(nextChunkTimeout.tv_sec <= nextFileTimeout.tv_sec){
                 //Register a chunk timeout
-		timer->addTimeout(this, nextChunkTimeout, NULL);
+		//timer->addTimeout(this, nextChunkTimeout, NULL);
         }
         else{
                 //register a file timeout
