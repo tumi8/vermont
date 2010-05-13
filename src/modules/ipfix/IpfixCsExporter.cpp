@@ -44,6 +44,12 @@ IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 	currentFile = NULL;
 
 	//Register first timeouts
+	nextChunkTimeout.tv_sec = 0;
+        nextChunkTimeout.tv_nsec = 0;
+        nextFileTimeout.tv_sec = 0;
+        nextFileTimeout.tv_nsec = 0;
+	timeoutRegistered=false;
+
 	addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
 	addToCurTime(&nextFileTimeout, maxFileCreationInterval*1000);
 	registerTimeout();
@@ -220,10 +226,10 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 		writeChunkList();
 
         //check if maxFileSize is reached
-	FILE* stream = fopen("filename", "r");
-	fseek(stream, 0L, SEEK_END);
-	long fileSize = ftell(stream);
-	fclose(stream);
+	FILE* sizeFilePtr = fopen (currentFilename,"r");
+	fseek(sizeFilePtr, 0L, SEEK_END);
+	long fileSize =ftell(sizeFilePtr);
+	fclose(sizeFilePtr);
 
 	fileSize += sizeof(Ipfix_basic_flow_sequence_chunk_header)+(chunkList.size()+1)*sizeof(Ipfix_basic_flow);
 	if(fileSize > maxFileSize*1024){
@@ -265,28 +271,26 @@ void IpfixCsExporter::writeFileHeader()
 	}
 	
 	// prefix_20100505-1515_1
-	char* filename;
 	time_t timestamp = time(0);
 	tm *st = localtime(&timestamp);
 
 	ifstream in;
-	char* time;
-	sprintf(time, "%s%s_%d%d%d-%d%d_",destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year,st->tm_mon,st->tm_mday,st->tm_hour,st->tm_min); 
+	char time[512];
+	sprintf(time, "%s%s%d%d%d-%d%d",destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year,st->tm_mon,st->tm_mday,st->tm_hour,st->tm_min); 
 	int i = 1;
 	while(i<1000){
-		//sprintf("%d%d_%i%i%i-%i%i_%i",destinationPath.c_str(),filenamePrefix.c_str(),st->tm_year,st->tm_mon,st->tm_mday,st->tm_hour,st->tm_min,time, n);	
-		sprintf(filename, "%s_%d",time,i);
-		in.open(filename, ifstream::in);
+		sprintf(currentFilename, "%s_%d",time,i);
+		in.open(currentFilename, ifstream::in);
         	in.close();
 	        if(in.fail()) {
 			break;
 		}
 		i++;
 	}
-
-	currentFile = fopen(filename, "rw");
+	currentFile = fopen(currentFilename, "w+");
 	if(currentFile == NULL) {
 		//TODO: error-handling
+		//return;
 	}
 
 	fwrite(CS_IPFIX_MAGIC, sizeof(CS_IPFIX_MAGIC), 1, currentFile);

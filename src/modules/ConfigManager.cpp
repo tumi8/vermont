@@ -41,6 +41,7 @@
 #include "modules/ipfix/IpfixDbWriterPgCfg.h"
 #include "modules/ipfix/IpfixPayloadWriterCfg.h"
 #include "modules/ipfix/IpfixSamplerCfg.h"
+#include "modules/ipfix/IpfixCsExporterCfg.hpp"
 #include "modules/ipfix/NetflowV9ConverterCfg.hpp"
 #include "modules/ipfix/aggregator/IpfixAggregatorCfg.h"
 #include "modules/ipfix/aggregator/PacketAggregatorCfg.h"
@@ -90,6 +91,7 @@ Cfg* ConfigManager::configModules[] = {
 	new FrontPayloadSigMatcherCfg(NULL),
 	new P2PDetectorCfg(NULL),
 	new HostStatisticsCfg(NULL),
+	new IpfixCsExporterCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
 	new IpfixDbReaderCfg(NULL),
 	new IpfixDbWriterCfg(NULL),
