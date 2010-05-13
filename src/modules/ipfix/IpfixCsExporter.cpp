@@ -331,7 +331,7 @@ void IpfixCsExporter::registerTimeout()
         }
         else{
                 //register a file timeout
-                timer->addTimeout(this, nextFileTimeout, NULL);
+                //timer->addTimeout(this, nextFileTimeout, NULL);
         }
 
         timeoutRegistered = true;
