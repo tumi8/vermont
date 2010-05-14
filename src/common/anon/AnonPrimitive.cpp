@@ -28,15 +28,16 @@ AnonPrimitive* AnonPrimitive::getNext ()
 	return next;
 }
 
-void AnonPrimitive::setNext (AnonPrimitive* nextprim)
-{
-	next = nextprim;
-}
-
-unsigned int AnonPrimitive::anonimizeBuffer (void* buf, unsigned int len)
+unsigned int AnonPrimitive::anonimizeBuffer (void* buf, unsigned int len, int *cont)
 {
 	ANON_RESULT myres	= anonymize (buf, len);
 	ANON_RESULT nextres = myres;
+    if (cont != NULL) {
+        if (myres.cont)
+            *cont = 1;
+        else 
+            *cont = 0;
+    }
 
 	if (myres.cont && next != NULL) 
 		nextres = next->anonimizeBuffer (buf, myres.newlength);

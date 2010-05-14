@@ -30,6 +30,7 @@
 #include <common/anon/AnonRandomize.h>
 #include <common/anon/AnonShuffle.h>
 #include <common/anon/AnonCryptoPan.h>
+#include <common/anon/AnonCryptoPanPrefix.h>
 
 #include "common/Misc.h"
 
@@ -44,7 +45,7 @@ AnonModule::~AnonModule()
 	}
 }
 
-AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::string& parameter)
+AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::string& parameter, std::vector<map_info> mapping)
 {
 	AnonPrimitive* ret = 0;
 	char buffer[32];
@@ -103,6 +104,20 @@ AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::stri
 		}
 		ret = new AnonCryptoPan(buffer);
 		break;
+    case AnonMethod::CryptoPanPrefix:
+        if (parameter.length()!=32)
+            if (isHex && parameter.length() != 66)
+                THROWEXCEPTION("CryptoPAN key *MUST* have exactly 32 characters!");
+
+        if (isHex) {
+            if (convHexToBinary(parameter, buffer, 32)!=32) {
+                THROWEXCEPTION("Failed to convert hexadecimal key parameter '%s' to binary (32 bytes required)!", parameter.c_str());
+            }
+        } else {
+            memcpy(buffer, parameter.c_str(), 32);
+        }
+        ret = new AnonCryptoPanPrefix(buffer, mapping);
+        break;
 	default:
 		msg(MSG_FATAL, "AnonPrimitive number %i is unknown", m);
 		THROWEXCEPTION("AnonPrimitive number %i is unknown", m);
@@ -111,10 +126,10 @@ AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::stri
 	return ret;
 }
 
-void AnonModule::addAnonymization(uint16_t id, int len, AnonMethod::Method methodName, const std::string& parameter)
+void AnonModule::addAnonymization(uint16_t id, int len, AnonMethod::Method methodName, std::vector<map_info> mapping, const std::string& parameter)
 {
 	static const struct ipfix_identifier* ident;
-	AnonPrimitive* a = createPrimitive(methodName, parameter);
+	AnonPrimitive* a = createPrimitive(methodName, parameter, mapping);
 	if (methods.find(id) != methods.end()) {
 		methods[id].primitive.push_back(a);
 	} else {
@@ -146,7 +161,9 @@ void AnonModule::anonField(uint16_t id, void* data, int len)
 		l = len;
 	}
 	for (std::vector<AnonPrimitive*>::iterator i = methods[id].primitive.begin(); i != methods[id].primitive.end(); ++i) {
-		(*i)->anonimizeBuffer(data, l);
+        int cont = 1;
+		(*i)->anonimizeBuffer(data, l, &cont);
+        if (! cont) break;
 	}
 }
 

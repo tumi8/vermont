@@ -26,6 +26,7 @@
 #include <map>
 #include <vector>
 #include <stdint.h>
+#include <common/anon/CrpytoPanInfoElements.h>
 
 class AnonMethod 
 {
@@ -40,7 +41,8 @@ public:
 		Randomize,
 		Shuffle,
 		Whitenoise,
-		CryptoPan
+		CryptoPan,
+		CryptoPanPrefix
 	} Method;
 
 	static Method stringToMethod(const std::string& m)
@@ -63,6 +65,8 @@ public:
                         return Shuffle;
                 }else if (m == "Whitenoise") {
                         return Whitenoise;
+                }else if (m== "CryptoPanPrefix"){
+                    return CryptoPanPrefix;
                 }else if (m == "CryptoPan") {
 			return CryptoPan;
 		}
@@ -85,13 +89,13 @@ class AnonModule {
 public:
 	~AnonModule();
 	//TODO: enterprise number should be considered (Gerhard 12/2009)
-	void addAnonymization(uint16_t id, int len, AnonMethod::Method methodName, const std::string& parameter="");
+	void addAnonymization(uint16_t id, int len, AnonMethod::Method methodName,  std::vector<map_info> mapping, const std::string& parameter="");
 	void anonField(uint16_t id, void* data, int len = -1);
 protected:
 	typedef std::map<uint16_t, AnonIE> MethodMap;
 	MethodMap methods;
 private:
-	AnonPrimitive* createPrimitive(AnonMethod::Method m, const std::string& parameter);
+	AnonPrimitive* createPrimitive(AnonMethod::Method m, const std::string& parameter, std::vector<map_info> mapping);
 };
 
 

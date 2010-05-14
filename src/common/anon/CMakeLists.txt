@@ -8,6 +8,7 @@ ADD_LIBRARY(anon
 	AnonConstOverwrite.cpp
 	AnonContinuousChar.cpp
 	AnonCryptoPan.cpp
+	AnonCryptoPanPrefix.cpp
 	AnonHashHmacSha1.cpp
 	AnonHashSha1.cpp
 	AnonIdentity.cpp
