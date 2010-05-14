@@ -33,8 +33,6 @@ int compare_cidrs(const void *d1, const void *d2){
     const int *da = (const int*) d1;
     const int *db = (const int*) d2;
     return (*da < *db) - (*da > *db);
-
-
 }
 
     AnonCryptoPanPrefix::AnonCryptoPanPrefix (char* _key, std::vector<map_info> mapping)
@@ -77,8 +75,10 @@ int compare_cidrs(const void *d1, const void *d2){
         if(addMe)
             avail_cidrs[number_of_cidrs++] = info.cidr;
 
-        info.fromNet = info.fromNet & ((1<<info.cidr)-1);
-        info.toNet = info.toNet & ((1<<info.cidr)-1);
+        //info.fromNet = (info.fromNet) & ((1<<info.cidr)-1);
+       // info.toNet = (info.toNet) & ((1<<info.cidr)-1);
+        info.fromNet = ntohl(info.fromNet) & ~((1<<(32-info.cidr))-1);
+        info.toNet = ntohl(info.toNet) & ~((1<<(32-info.cidr))-1);
 
         net_mapping[info.fromNet] = info;
     }
@@ -95,13 +95,14 @@ uint32_t AnonCryptoPanPrefix::pseudomize(uint32_t orig_addr) {
     uint32_t a_addr, cs_id, tmp;
     
     for(int i = 0; i<number_of_cidrs; i++){
-        tmp = orig_addr & ((1<<(avail_cidrs[i])) -1);
+        //tmp = orig_addr & ((1<<(avail_cidrs[i])) -1);
+        tmp = ntohl(orig_addr) & ~((1<<(32-avail_cidrs[i])) -1);
         it = net_mapping.find(tmp);
         if(it == net_mapping.end())
             continue;
 
-
-        cs_id = ntohl((it->second).toNet); //csp->net_ctx[index].cs_net_id;
+        //cs_id = ntohl((it->second).toNet); //csp->net_ctx[index].cs_net_id;
+        cs_id = (it->second).toNet; //csp->net_ctx[index].cs_net_id;
         cidr = (it->second).cidr; //csp->net_ctx[index].cidr;
         a_addr = cryptopan.anonymize(orig_addr);
         a_addr = ((a_addr << (cidr)) >> (cidr));
