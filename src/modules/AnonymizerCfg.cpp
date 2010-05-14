@@ -22,6 +22,7 @@
 #include "core/InfoElementCfg.h"
 
 #include <common/ipfixlolib/ipfix_names.h>
+#include <common/anon/CrpytoPanInfoElements.h>
 
 AnonymizerCfg* AnonymizerCfg::create(XMLElement* e)
 {
@@ -68,6 +69,8 @@ void AnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet
 			InfoElementCfg* cfg = NULL;
 			std::string method;
 			std::string method_parameter;
+            std::vector<map_info> mapping;
+
 			XMLNode::XMLSet<XMLElement*> set = e->getElementChildren();
 			for (XMLNode::XMLSet<XMLElement*>::iterator jt = set.begin();
 			     jt != set.end();
@@ -82,7 +85,34 @@ void AnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet
 					method = c->get("anonMethod", e);
 				} else if (e->matches("anonParam")) {
 					method_parameter = c->get("anonParam", e);
-				} else {
+				} else if (e->matches("cryptoPanMapping")) {
+                    XMLNode::XMLSet<XMLElement*> set = e->getElementChildren();
+                    std::vector<std::string> from;
+                    std::vector<std::string> to;
+                    std::vector<std::string> cidr;
+                    for (XMLNode::XMLSet<XMLElement*>::iterator kt = set.begin();
+                            kt != set.end();
+                            ++kt) {
+                        XMLElement* e = *kt;
+                        if(e->matches("fromNet")){
+                            from.push_back(c->get("fromNet", e));
+                        }else if(e->matches("toNet")){
+                            to.push_back(c->get("toNet", e));
+                        }else if(e->matches("cidr")){
+                            cidr.push_back(c->get("cidr", e));
+                        }
+                    }
+                    if (from.size() != to.size() || to.size() != cidr.size())
+                        THROWEXCEPTION("Invalid Configuration for cryptoPanMapping");
+                    for(int i=0; i<to.size(); i++){
+                        map_info tmp;
+                        tmp.fromNet = from[i];
+                        tmp.toNet = to[i];
+                        tmp.cidr = cidr[i];
+                        mapping.push_back(tmp);
+                    }
+
+                } else {
 					msg(MSG_ERROR, "Unknown field in anonField");
 					continue;
 				}
@@ -96,7 +126,7 @@ void AnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet
 				THROWEXCEPTION("Missing anonymization method in anonField");
 			}
 			if (cfg->getIeLength()==0) THROWEXCEPTION("Information element specified in anonField, but length==0");
-			module->addAnonymization(cfg->getIeId(), cfg->getIeLength(), AnonMethod::stringToMethod(method), method_parameter);
+			module->addAnonymization(cfg->getIeId(), cfg->getIeLength(), AnonMethod::stringToMethod(method), mapping, method_parameter);
 			const ipfix_identifier* id = ipfix_id_lookup(cfg->getIeId());
 			msg(MSG_INFO, "Added anonymization %s for field %i (%s) with length %i", method.c_str(), cfg->getIeId(), id->name, cfg->getIeLength());
 			delete cfg;
