@@ -29,7 +29,7 @@
 /**
  * Creates a new IPFIXCsExporter.
  */
-IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix, 
+IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 		std::string destinationPath, uint32_t maximumFilesize, uint32_t maxChunkBufferTime,
 		uint32_t maxChunkBufferRecords, uint32_t maxFileCreationInterval, uint8_t exportMode)
 {
@@ -54,9 +54,10 @@ IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 	addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
 	addToCurTime(&nextFileTimeout, maxFileCreationInterval*1000);
 	registerTimeout();
-	writeFileHeader();
+
 	CS_IPFIX_MAGIC[0] = 0xCA;
 	memcpy(&CS_IPFIX_MAGIC[1], "CSIPFIX", 7);
+	writeFileHeader();
 
         msg(MSG_INFO, "IpfixCsExporter initialized with the following parameters");
         msg(MSG_INFO, "  - filenamePrefix = %s" , filenamePrefix.c_str());
@@ -144,7 +145,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
                 csRecord->icmp_type_ipv4                = 0;
                 csRecord->icmp_code_ipv4                = 0;
         }
-	
+
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, 0);
         if (fi != 0) {
 		csRecord->tcp_control_bits = *(uint8_t*)(record->data + fi->offset);
@@ -221,7 +222,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 
 	//add data to linked list
 	chunkList.push_back(csRecord);
-	
+
 	//check if maxChunkBufferRecords is reached
 	if(chunkList.size() == maxChunkBufferRecords)
 		writeChunkList();
@@ -265,7 +266,7 @@ void IpfixCsExporter::writeFileHeader()
 	if(currentFile != NULL) {
 		fclose(currentFile);
 	}
-        currentFileSize = sizeof(CS_IPFIX_MAGIC)+sizeof(Ipfix_basic_flow_sequence_chunk_header);
+    currentFileSize = sizeof(CS_IPFIX_MAGIC)+sizeof(Ipfix_basic_flow_sequence_chunk_header);
 
 	// prefix_20100505-1515_1
 	time_t timestamp = time(0);
@@ -273,7 +274,7 @@ void IpfixCsExporter::writeFileHeader()
 
 	ifstream in;
 	char time[512];
-	sprintf(time, "%s%s%02d%02d%02d-%02d%02d",destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year+1900,st->tm_mon+1,st->tm_mday,st->tm_hour,st->tm_min); 
+	sprintf(time, "%s%s%02d%02d%02d-%02d%02d",destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year+1900,st->tm_mon+1,st->tm_mday,st->tm_hour,st->tm_min);
 	int i = 1;
 	while(i<1000){
 		sprintf(currentFilename, "%s_%d",time,i);
@@ -302,7 +303,7 @@ void IpfixCsExporter::writeFileHeader()
  */
 void IpfixCsExporter::writeChunkList()
 {
-        Ipfix_basic_flow_sequence_chunk_header* csChunkHeader = new Ipfix_basic_flow_sequence_chunk_header();	
+        Ipfix_basic_flow_sequence_chunk_header* csChunkHeader = new Ipfix_basic_flow_sequence_chunk_header();
 
 	csChunkHeader->ipfix_type=0x08;
         csChunkHeader->chunk_length=chunkList.size()*sizeof(struct Ipfix_basic_flow);
