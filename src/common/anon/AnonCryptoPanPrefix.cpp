@@ -25,11 +25,8 @@
 #include <vector>
 #include <algorithm>
 #include <arpa/inet.h>
-/**
- * expects a fully filled 32 byte key buffer
- */
 
-int compare_cidrs(const void *d1, const void *d2){
+static int compare_cidrs(const void *d1, const void *d2){
     const int *da = (const int*) d1;
     const int *db = (const int*) d2;
     return (*da < *db) - (*da > *db);
@@ -104,7 +101,7 @@ uint32_t AnonCryptoPanPrefix::pseudomize(uint32_t orig_addr) {
         //cs_id = ntohl((it->second).toNet); //csp->net_ctx[index].cs_net_id;
         cs_id = (it->second).toNet; //csp->net_ctx[index].cs_net_id;
         cidr = (it->second).cidr; //csp->net_ctx[index].cidr;
-        a_addr = cryptopan.anonymize(orig_addr);
+        a_addr = cryptopan.anonymize(ntohl(orig_addr));
         a_addr = ((a_addr << (cidr)) >> (cidr));
         cs_id = (cs_id >> (32 - cidr)) << (32 - cidr);
         return htonl(cs_id ^ a_addr);
