@@ -48,8 +48,8 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 	char CS_IPFIX_MAGIC[8];
 
 	public:
-		IpfixCsExporter(std::string filenamePrefix, 
-			std::string destinationPath, uint32_t maxFileSize, 
+		IpfixCsExporter(std::string filenamePrefix,
+			std::string destinationPath, uint32_t maxFileSize,
 			uint32_t maxChunkBufferTime, uint32_t maxChunkBufferRecords,
 			uint32_t maxFileCreationInterval, uint8_t exportMode);
 
@@ -57,6 +57,10 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 
         	virtual void onDataRecord(IpfixDataRecord* record);
 	        virtual void onTimeout(void* dataPtr);
+
+	protected:
+		virtual void performStart();
+		virtual void performShutdown();
 
 	private:
 		std::string filenamePrefix; /**< prefix to each file */
@@ -100,7 +104,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 			// number of bytes in chunk from chunk header onwards
 	                uint32_t chunk_length; //number of bytes in chunk from magic onwards
         	        uint32_t flow_count; //number of Ipfix_basic_flow records to follow
-	        };	
+	        };
 
 	        struct Ipfix_basic_flow {
         	        uint16_t record_length;                 // total length of this record in bytes
