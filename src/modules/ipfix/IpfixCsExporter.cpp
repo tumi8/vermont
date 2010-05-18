@@ -19,12 +19,8 @@
  */
 
 #include "IpfixCsExporter.hpp"
-#include "common/ipfixlolib/ipfixlolib.h"
-#include "common/ipfixlolib/ipfix.h"
-#include "common/msg.h"
 #include "core/Timer.h"
-#include <stdexcept>
-#include <string.h>
+#include <sys/stat.h>
 
 /**
  * Creates a new IPFIXCsExporter.
@@ -43,14 +39,13 @@ IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 	this->exportMode = exportMode;
 	currentFile = NULL;
 	currentFileSize = 0;
-	printf("%i - %i", sizeof(CS_IPFIX_MAGIC), sizeof(Ipfix_basic_flow));
+
 	//Register first timeouts
 	nextChunkTimeout.tv_sec = 0;
 	nextChunkTimeout.tv_nsec = 0;
 	nextFileTimeout.tv_sec = 0;
 	nextFileTimeout.tv_nsec = 0;
 	timeoutRegistered=false;
-
 
 	CS_IPFIX_MAGIC[0] = 0xCA;
 	memcpy(&CS_IPFIX_MAGIC[1], "CSIPFIX", 7);
@@ -234,7 +229,6 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 
 void IpfixCsExporter::onTimeout(void* dataPtr)
 {
-	msg(MSG_INFO, "onTimeout");
 	timeoutRegistered = false;
 	struct timeval now;
 	gettimeofday(&now, 0);
@@ -261,39 +255,41 @@ void IpfixCsExporter::writeFileHeader()
 	if(currentFile != NULL) {
 		fclose(currentFile);
 	}
-    currentFileSize = sizeof(CS_IPFIX_MAGIC)+sizeof(Ipfix_basic_flow_sequence_chunk_header);
+	currentFileSize = sizeof(CS_IPFIX_MAGIC)+sizeof(Ipfix_basic_flow_sequence_chunk_header);
 
-	// prefix_20100505-1515_1
 	time_t timestamp = time(0);
 	tm *st = localtime(&timestamp);
 
-	ifstream in;
+	struct stat sta;
+
 	char time[512];
 	sprintf(time, "%s%s%02d%02d%02d-%02d%02d",destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year+1900,st->tm_mon+1,st->tm_mday,st->tm_hour,st->tm_min);
 	uint32_t i = 1;
 	while (i<0xFFFFFFFE) {
 		sprintf(currentFilename, "%s_%03d",time,i);
-		in.open(currentFilename, ifstream::in);
-		in.close();
-		if (in.fail()) {
+		if(stat(currentFilename,&sta) != 0) {
+			//check error code
 			break;
 		}
 		i++;
 	}
+
 	if (i==0xFFFFFFFF) {
 		THROWEXCEPTION("failed to determine index for filename postfix (i==0xFFFFFFFF). Something went terribly wrong ....");
 	}
+
 	currentFile = fopen(currentFilename, "wb");
 	if (currentFile == NULL) {
-		//TODO: error-handling
-		//return;
+		THROWEXCEPTION("Could not open file for writing. Check permissions.");
 	}
 
-	fwrite(CS_IPFIX_MAGIC, sizeof(CS_IPFIX_MAGIC), 1, currentFile);
+	if(fwrite(CS_IPFIX_MAGIC, sizeof(CS_IPFIX_MAGIC), 1, currentFile)==0){
+		THROWEXCEPTION("Could not write file header. Check disk space.");
+	}
 
 	//new Timeouts:
 	addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
-    addToCurTime(&nextFileTimeout, maxFileCreationInterval*1000);
+	addToCurTime(&nextFileTimeout, maxFileCreationInterval*1000);
 }
 
 /**
@@ -307,11 +303,17 @@ void IpfixCsExporter::writeChunkList()
         csChunkHeader.chunk_length=chunkList.size()*sizeof(struct Ipfix_basic_flow);
         csChunkHeader.flow_count=chunkList.size();
 
-        fwrite(&csChunkHeader, sizeof(csChunkHeader), 1, currentFile);
-    msg(MSG_INFO, "IpfixCsExporter: writing %u records to disk", chunkList.size());
+	if(fwrite(&csChunkHeader, sizeof(csChunkHeader), 1, currentFile)==0){
+                THROWEXCEPTION("Could not chunk header. Check disk space.");
+        }
+
+	msg(MSG_DEBUG, "IpfixCsExporter: writing %u records to disk", chunkList.size());
 
 	while(chunkList.size() > 0){
-		fwrite(chunkList.front(), sizeof(Ipfix_basic_flow), 1, currentFile);
+		if(fwrite(chunkList.front(), sizeof(Ipfix_basic_flow), 1, currentFile)==0){
+        	        THROWEXCEPTION("Could not write basic flow data. Check disk space.");
+	        }
+
 		chunkList.pop_front();
 	}
         addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
@@ -328,18 +330,20 @@ void IpfixCsExporter::registerTimeout()
         if(nextChunkTimeout.tv_sec <= nextFileTimeout.tv_sec){
                 //Register a chunk timeout
         	timer->addTimeout(this, nextChunkTimeout, NULL);
-        	msg(MSG_INFO, "next timeout: %u", nextChunkTimeout.tv_sec);
+        	msg(MSG_DEBUG, "next timeout: %u", nextChunkTimeout.tv_sec);
         }
         else{
             // register a file timeout
             timer->addTimeout(this, nextFileTimeout, NULL);
-            msg(MSG_INFO, "next timeout: %u", nextFileTimeout.tv_sec);
+            msg(MSG_DEBUG, "next timeout: %u", nextFileTimeout.tv_sec);
         }
 
         timeoutRegistered = true;
 }
 
-
+/**
+ * Start function 
+ */
 void IpfixCsExporter::performStart()
 {
 	writeFileHeader();
