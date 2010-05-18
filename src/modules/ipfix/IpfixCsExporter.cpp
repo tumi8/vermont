@@ -267,9 +267,15 @@ void IpfixCsExporter::writeFileHeader()
 	uint32_t i = 1;
 	while (i<0xFFFFFFFE) {
 		sprintf(currentFilename, "%s_%03d",time,i);
-		if(stat(currentFilename,&sta) != 0) {
-			//check error code
-			break;
+		errno = 0;
+		if (stat(currentFilename,&sta) != 0) {
+			if (errno != 0) {
+				//check error code
+				msg(MSG_DEBUG, "Stat on Filename %s returned with error number %i", currentFilename, errno);
+			}
+			else {
+				break;
+			}
 		}
 		i++;
 	}
