@@ -153,6 +153,7 @@ int string2typelength(const char*s);
 #define IPFIX_ETYPEID_frontPayloadPktCount			(IPFIX_VERMONT_SPECIFIC_TYPE | 0x83)
 #define IPFIX_ETYPEID_dpaFlowCount					(IPFIX_VERMONT_SPECIFIC_TYPE | 0x84)
 #define IPFIX_ETYPEID_dpaForcedExport				(IPFIX_VERMONT_SPECIFIC_TYPE | 0x85)
+#define IPFIX_ETYPEID_dpaReverseStart				(IPFIX_VERMONT_SPECIFIC_TYPE | 0x86)
 
 // information elements for biflows
 #define IPFIX_REVERSE_TYPE							0x0400 // temporary solution until enterprise number 29305 is used
@@ -270,6 +271,7 @@ int string2typelength(const char*s);
 #define IPFIX_ELENGTH_frontPayloadLen				IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_dpaFlowCount					IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_dpaForcedExport				IPFIX_LENGTH_octet
+#define IPFIX_ELENGTH_dpaReverseStart				IPFIX_LENGTH_octet
 
 
 // lengths for biflows elements

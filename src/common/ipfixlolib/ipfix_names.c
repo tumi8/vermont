@@ -115,6 +115,7 @@ struct ipfix_identifier ipfixids[] = {
  { IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_ELENGTH_frontPayloadPktCount, "frontPayloadPktCount" },
  { IPFIX_ETYPEID_dpaFlowCount, IPFIX_ELENGTH_dpaFlowCount, "dpaFlowCount" },
  { IPFIX_ETYPEID_dpaForcedExport, IPFIX_ELENGTH_dpaForcedExport, "dpaForcedExport" },
+ { IPFIX_ETYPEID_dpaReverseStart, IPFIX_ELENGTH_dpaReverseStart, "dpaReverseStart" },
  { IPFIX_ETYPEID_revFlowStartSeconds, IPFIX_ELENGTH_revFlowStartSeconds, "revFlowStartSeconds" },
  { IPFIX_ETYPEID_revFlowStartMilliSeconds, IPFIX_ELENGTH_revFlowStartMilliSeconds, "revFlowStartMilliSeconds" },
  { IPFIX_ETYPEID_revFlowStartNanoSeconds, IPFIX_ELENGTH_revFlowStartNanoSeconds, "revFlowStartNanoSeconds" },
