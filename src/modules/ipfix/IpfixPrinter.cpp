@@ -293,7 +293,7 @@ IpfixPrinter::IpfixPrinter(OutputType outputtype, string filename)
 	}
 
 	if (outputtype==TABLE)
-		fprintf(fh, "c.srcOctets\tc.srcPackets\tc.srcPayloadLen\tc.srcPayloadPktCount\tc.srcTimeEnd-c.srcTimeStart\n");
+		fprintf(fh, "srcip\tdstip\tsrcport\tdstport\tprot\tsrcpkts\tdstpkts\tsrcoct\tdstoct\tsrcstart\tsrcend\tdststart\tdstend\tsrcplen\tdstplen\tforcedexp\trevstart\tflowcnt\n");
 }
 
 /**
@@ -316,50 +316,55 @@ IpfixPrinter::~IpfixPrinter()
  */
 void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 {
-	boost::shared_ptr<TemplateInfo> templateInfo = record->templateInfo;
-	switch(templateInfo->setId) {
-		case TemplateInfo::NetflowTemplate:
-			fprintf(fh, "\n-+--- Netflow Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
-			break;
-		case TemplateInfo::NetflowOptionsTemplate:
-			fprintf(fh, "\n-+--- Netflow Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
-			break;
-		case TemplateInfo::IpfixTemplate:
-			fprintf(fh, "\n-+--- Ipfix Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
-			break;
-		case TemplateInfo::IpfixOptionsTemplate:
-			fprintf(fh, "\n-+--- Ipfix Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
-			break;
-		case TemplateInfo::IpfixDataTemplate:
-			fprintf(fh, "\n-+--- Ipfix Data Template (id=%u, preceding=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->preceding, templateInfo->getUniqueId());
-			break;
-		default:
-			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
+	switch (outputType) {
+		case LINE:
+		case TREE:
+			boost::shared_ptr<TemplateInfo> templateInfo = record->templateInfo;
+			switch(templateInfo->setId) {
+				case TemplateInfo::NetflowTemplate:
+					fprintf(fh, "\n-+--- Netflow Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
+					break;
+				case TemplateInfo::NetflowOptionsTemplate:
+					fprintf(fh, "\n-+--- Netflow Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
+					break;
+				case TemplateInfo::IpfixTemplate:
+					fprintf(fh, "\n-+--- Ipfix Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
+					break;
+				case TemplateInfo::IpfixOptionsTemplate:
+					fprintf(fh, "\n-+--- Ipfix Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
+					break;
+				case TemplateInfo::IpfixDataTemplate:
+					fprintf(fh, "\n-+--- Ipfix Data Template (id=%u, preceding=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->preceding, templateInfo->getUniqueId());
+					break;
+				default:
+					msg(MSG_ERROR, "IpfixPrinter: Template with unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
 
-	}
-	if (record->sourceID) {
-		if (record->sourceID->exporterAddress.len == 4)
-			printIPv4(*(uint32_t*)(&record->sourceID->exporterAddress.ip[0]));
-		else
-			fprintf(fh, "non-IPv4 address");
-		fprintf(fh, ":%u (", record->sourceID->exporterPort);
-		printProtocol(record->sourceID->protocol);
-		fprintf(fh, ")\n");
-	} else {
-		fprintf(fh, "no sourceID given in template");
-	}
+			}
+			if (record->sourceID) {
+				if (record->sourceID->exporterAddress.len == 4)
+					printIPv4(*(uint32_t*)(&record->sourceID->exporterAddress.ip[0]));
+				else
+					fprintf(fh, "non-IPv4 address");
+				fprintf(fh, ":%u (", record->sourceID->exporterPort);
+				printProtocol(record->sourceID->protocol);
+				fprintf(fh, ")\n");
+			} else {
+				fprintf(fh, "no sourceID given in template");
+			}
 
-	// print fixed data in the case of a data template
-	if(templateInfo->setId == TemplateInfo::IpfixDataTemplate) {
-		fprintf(fh, " `- fixed data\n");
-		for (int i = 0; i < templateInfo->dataCount; i++) {
-			fprintf(fh, " '   `- ");
-			printFieldData(templateInfo->dataInfo[i].type,
-					(templateInfo->data + templateInfo->dataInfo[i].offset));
-			fprintf(fh, "\n");
-		}
+			// print fixed data in the case of a data template
+			if(templateInfo->setId == TemplateInfo::IpfixDataTemplate) {
+				fprintf(fh, " `- fixed data\n");
+				for (int i = 0; i < templateInfo->dataCount; i++) {
+					fprintf(fh, " '   `- ");
+					printFieldData(templateInfo->dataInfo[i].type,
+							(templateInfo->data + templateInfo->dataInfo[i].offset));
+					fprintf(fh, "\n");
+				}
+			}
+			fprintf(fh, " `---\n\n");
+			break;
 	}
-	fprintf(fh, " `---\n\n");
 	record->removeReference();
 }
 
@@ -632,10 +637,11 @@ void IpfixPrinter::printTableRecord(IpfixDataRecord* record)
 	Connection c(record);
 
 	//fprintf(fh, "%llu\t%llu\t%u\t%u\t%llu\n", ntohll(c.srcOctets), ntohll(c.srcPackets), c.srcPayloadLen, c.srcPayloadPktCount, c.srcTimeEnd-c.srcTimeStart);
-	fprintf(fh, "%s\t%s\t%hu\t%hu\t%hhu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%hhu\t%hhu\n",
+	fprintf(fh, "%s\t%s\t%hu\t%hu\t%hhu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%llu\t%u\t%u\t%hhu\t%hhu\t%u\n",
 			IPToString(c.srcIP).c_str(), IPToString(c.dstIP).c_str(), ntohs(c.srcPort), ntohs(c.dstPort), c.protocol,
 			(long long unsigned)ntohll(c.srcPackets), (long long unsigned)ntohll(c.dstPackets), (long long unsigned)ntohll(c.srcOctets), (long long unsigned)ntohll(c.dstOctets),
-			(long long unsigned)c.srcTimeStart, (long long unsigned)c.srcTimeEnd, (long long unsigned)c.dstTimeStart, (long long unsigned)c.dstTimeEnd, c.srcTcpControlBits, c.dstTcpControlBits);
+			(long long unsigned)c.srcTimeStart, (long long unsigned)c.srcTimeEnd, (long long unsigned)c.dstTimeStart, (long long unsigned)c.dstTimeEnd,
+			c.srcPayloadLen, c.dstPayloadLen, c.dpaForcedExport, c.dpaReverseStart, c.dpaFlowCount);
 
 }
 
