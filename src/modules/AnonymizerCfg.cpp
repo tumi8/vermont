@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -104,7 +104,7 @@ void AnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet
                     }
                     if (from.size() != to.size() || to.size() != cidr.size())
                         THROWEXCEPTION("Invalid Configuration for cryptoPanMapping");
-                    for(int i=0; i<to.size(); i++){
+                    for (uint32_t i=0; i<to.size(); i++){
                         map_info tmp;
                         tmp.fromNet = from[i];
                         tmp.toNet = to[i];
@@ -127,7 +127,7 @@ void AnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet
 			}
 			if (cfg->getIeLength()==0) THROWEXCEPTION("Information element specified in anonField, but length==0");
 			module->addAnonymization(cfg->getIeId(), cfg->getIeLength(), AnonMethod::stringToMethod(method), mapping, method_parameter);
-			const ipfix_identifier* id = ipfix_id_lookup(cfg->getIeId());
+			const ipfix_identifier* id = ipfix_id_lookup(cfg->getIeId(), cfg->getEnterpriseNumber());
 			msg(MSG_INFO, "Added anonymization %s for field %i (%s) with length %i", method.c_str(), cfg->getIeId(), id->name, cfg->getIeLength());
 			delete cfg;
 		} else if (e->matches("next") || e->matches("copyMode")) {

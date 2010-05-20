@@ -77,19 +77,16 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 uint32_t BaseHashtable::getPrivateDataLength(const InformationElement::IeInfo& type)
 {
 	//TODO: if(type.enterprise=29305)... (Gerhard, 12/2009)
-	if(type.enterprise == 0) {
+	if(type.enterprise & IPFIX_PEN_vermont) {
 		switch (type.id) {
 			case IPFIX_ETYPEID_frontPayload:
-			case IPFIX_ETYPEID_revFrontPayload:
 			case IPFIX_ETYPEID_transportOctetDeltaCount:
-			case IPFIX_ETYPEID_revTransportOctetDeltaCount:
 				return sizeof(PayloadPrivateData);
 
 			case IPFIX_ETYPEID_dpaForcedExport:
 				return sizeof(DpaPrivateData);
 
 			case IPFIX_ETYPEID_maxPacketGap: // old flow end time (to calculate packet gap)
-			case IPFIX_ETYPEID_revMaxPacketGap: // old flow end time (to calculate packet gap)
 				return 8;
 
 			default:
@@ -170,10 +167,9 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			fi->privDataOffset = fieldLength + privDataLength;
 			privDataLength += len;
 		}
-		if (fi->type.id == IPFIX_ETYPEID_frontPayload)
+		if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont))
 			fpLengthOffset = fi->privDataOffset;
-		//TODO: check (type.enterprise==29305) for reverse type (Gerhard, 12/2009)
-		if (fi->type.id == IPFIX_ETYPEID_revFrontPayload)
+		if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse))
 			revfpLengthOffset = fi->privDataOffset;
 	}
 
@@ -181,22 +177,21 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 	// example: front payload length accesses data from front payload
 	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
 		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
-		if (fi->type.id == IPFIX_ETYPEID_frontPayloadLen) {
+		if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayloadLen, IPFIX_PEN_vermont)) {
 			if (!fpLengthOffset) {
 				THROWEXCEPTION("no front payload field specified in template, so front payload length is not available either");
 			}
 			fi->privDataOffset = fpLengthOffset;
 		}
-		//TODO: check (type.enterprise==29305) for reverse type (Gerhard, 12/2009)
 		// we want to access the same private data within these fields as in frontPayload
-		if (fi->type.id == IPFIX_ETYPEID_revFrontPayloadLen) {
+		if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayloadLen, IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
 			if (!revfpLengthOffset) {
 				THROWEXCEPTION("no reverse front payload field specified in template, so front payload length is not available either");
 			}
 			fi->privDataOffset = revfpLengthOffset;
 		}
 		// check validity of field
-		if (fi->type.id == IPFIX_ETYPEID_frontPayloadPktCount) {
+		if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont)) {
 			if (!fpLengthOffset) {
 				THROWEXCEPTION("no front payload field specified in template, so front payload packet count is not available either");
 			}
@@ -342,67 +337,74 @@ void BaseHashtable::expireFlows(bool all)
  * Checks whether the given @c type is one of the types that has to be aggregated
  * @return 1 if flow is to be aggregated
  */
-int BaseHashtable::isToBeAggregated(const InformationElement::IeInfo& type)
+int BaseHashtable::isToBeAggregated(InformationElement::IeInfo& type)
 {
-	if(type.enterprise == 0) {
-		switch (type.id) {
-			case IPFIX_TYPEID_flowStartSysUpTime:
-			case IPFIX_TYPEID_flowStartSeconds:
-			case IPFIX_TYPEID_flowStartMilliSeconds:
-			case IPFIX_TYPEID_flowStartMicroSeconds:
-			case IPFIX_TYPEID_flowStartNanoSeconds:
-			case IPFIX_TYPEID_flowEndSysUpTime:
-			case IPFIX_TYPEID_flowEndSeconds:
-			case IPFIX_TYPEID_flowEndMilliSeconds:
-			case IPFIX_TYPEID_flowEndMicroSeconds:
-			case IPFIX_TYPEID_flowEndNanoSeconds:
-			case IPFIX_TYPEID_octetDeltaCount:
-			case IPFIX_TYPEID_postOctetDeltaCount:
-			case IPFIX_TYPEID_packetDeltaCount:
-			case IPFIX_TYPEID_postPacketDeltaCount:
-			case IPFIX_TYPEID_droppedOctetDeltaCount:
-			case IPFIX_TYPEID_droppedPacketDeltaCount:
-			case IPFIX_TYPEID_tcpControlBits:
-			//TODO: replace by enterprise number (Gerhard, 12/2009)
-			case IPFIX_ETYPEID_frontPayload:
-			case IPFIX_ETYPEID_frontPayloadLen:
-			case IPFIX_ETYPEID_frontPayloadPktCount:
-			case IPFIX_ETYPEID_revFrontPayload:
-			case IPFIX_ETYPEID_revFrontPayloadLen:
-			case IPFIX_ETYPEID_revFlowStartSeconds:
-			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-			case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-			case IPFIX_ETYPEID_revFlowEndSeconds:
-			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-			case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-			case IPFIX_ETYPEID_revOctetDeltaCount:
-			case IPFIX_ETYPEID_revPacketDeltaCount:
-			case IPFIX_ETYPEID_revTcpControlBits:
-			case IPFIX_ETYPEID_maxPacketGap:
-			case IPFIX_ETYPEID_revMaxPacketGap:
-			case IPFIX_ETYPEID_dpaForcedExport:
-			case IPFIX_ETYPEID_dpaFlowCount:
-			case IPFIX_ETYPEID_dpaReverseStart:
-			case IPFIX_ETYPEID_transportOctetDeltaCount:
-			case IPFIX_ETYPEID_revTransportOctetDeltaCount:
-				return 1;
+	switch (type.enterprise) {
+		case 0:
+			switch (type.id) {
+				case IPFIX_TYPEID_flowStartSysUpTime:
+				case IPFIX_TYPEID_flowStartSeconds:
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+				case IPFIX_TYPEID_flowStartMicroSeconds:
+				case IPFIX_TYPEID_flowStartNanoSeconds:
+				case IPFIX_TYPEID_flowEndSysUpTime:
+				case IPFIX_TYPEID_flowEndSeconds:
+				case IPFIX_TYPEID_flowEndMilliSeconds:
+				case IPFIX_TYPEID_flowEndMicroSeconds:
+				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_octetDeltaCount:
+				case IPFIX_TYPEID_postOctetDeltaCount:
+				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_postPacketDeltaCount:
+				case IPFIX_TYPEID_droppedOctetDeltaCount:
+				case IPFIX_TYPEID_droppedPacketDeltaCount:
+				case IPFIX_TYPEID_tcpControlBits:
+					return 1;
+			}
+			break;
 
-			case IPFIX_TYPEID_octetTotalCount:
-			case IPFIX_TYPEID_packetTotalCount:
-			case IPFIX_TYPEID_droppedOctetTotalCount:
-			case IPFIX_TYPEID_droppedPacketTotalCount:
-			case IPFIX_TYPEID_postMCastPacketDeltaCount:
-			case IPFIX_TYPEID_postMCastOctetDeltaCount:
-			case IPFIX_TYPEID_observedFlowTotalCount:
-			case IPFIX_TYPEID_exportedOctetTotalCount:
-			case IPFIX_TYPEID_exportedMessageTotalCount:
-			case IPFIX_TYPEID_exportedFlowTotalCount:
-				DPRINTF("isToBeAggregated: Will not aggregate %s field", typeid2string(type.id));
-				return 0;
+		case IPFIX_PEN_reverse:
+			switch (type.id) {
+				case IPFIX_TYPEID_flowStartSeconds:
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+				case IPFIX_TYPEID_flowStartNanoSeconds:
+				case IPFIX_TYPEID_flowEndSeconds:
+				case IPFIX_TYPEID_flowEndMilliSeconds:
+				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_octetDeltaCount:
+				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_tcpControlBits:
+					return 1;
+			}
+			break;
 
-			default:
-				return 0;
-		}
+		case IPFIX_PEN_vermont:
+			switch (type.id) {
+				case IPFIX_ETYPEID_frontPayload:
+				case IPFIX_ETYPEID_frontPayloadLen:
+				case IPFIX_ETYPEID_frontPayloadPktCount:
+				case IPFIX_ETYPEID_maxPacketGap:
+				case IPFIX_ETYPEID_dpaForcedExport:
+				case IPFIX_ETYPEID_dpaFlowCount:
+				case IPFIX_ETYPEID_dpaReverseStart:
+				case IPFIX_ETYPEID_transportOctetDeltaCount:
+					return 1;
+			}
+			break;
+
+		case IPFIX_PEN_vermont|IPFIX_PEN_reverse:
+			switch (type.id) {
+				case IPFIX_ETYPEID_frontPayload:
+				case IPFIX_ETYPEID_frontPayloadLen:
+				case IPFIX_ETYPEID_frontPayloadPktCount:
+				case IPFIX_ETYPEID_maxPacketGap:
+				case IPFIX_ETYPEID_dpaForcedExport:
+				case IPFIX_ETYPEID_dpaFlowCount:
+				case IPFIX_ETYPEID_dpaReverseStart:
+				case IPFIX_ETYPEID_transportOctetDeltaCount:
+					return 1;
+			}
+			break;
 	}
 	return 0;
 }
@@ -483,17 +485,12 @@ std::string BaseHashtable::getStatisticsXML(double interval)
 	return oss.str();
 }
 
-void BaseHashtable::mapReverseElement(uint32_t tid)
+void BaseHashtable::mapReverseElement(const InformationElement::IeInfo& ieinfo)
 {
-	int i = dataTemplate->getFieldIndex(tid, 0);
+	int i = dataTemplate->getFieldIndex(ieinfo);
 	if (i<0)
-		THROWEXCEPTION("failed to retrieve IPFIX field id %d/%s (derived as reverse field). Maybe this element is not contained in flow definition?",
-				tid, typeid2string(tid));
-	if (dataTemplate->getFieldInfo(tid, 0)->type.length!=dataTemplate->fieldInfo[flowReverseMapper.size()].type.length)
-		THROWEXCEPTION("failed to map IPFIX field id %d/%s to its reverse element %d/%s. Elements do not share same size (%d/%d)! ",
-				dataTemplate->fieldInfo[flowReverseMapper.size()].type.id,
-				typeid2string(dataTemplate->fieldInfo[flowReverseMapper.size()].type.id), tid, typeid2string(tid),
-				dataTemplate->fieldInfo[flowReverseMapper.size()].type.length, dataTemplate->getFieldInfo(tid, 0)->type.length);
+		THROWEXCEPTION("failed to retrieve IPFIX field id %s (derived as reverse field). Maybe this element is not contained in flow definition?",
+				ieinfo.toString().c_str());
 	flowReverseMapper.push_back(i);
 }
 
@@ -514,46 +511,65 @@ void BaseHashtable::genBiflowStructs()
 		DPRINTF("fieldCount=%d", i);
 		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 		if (fi->type.length>maxFieldSize) maxFieldSize = fi->type.length;
-		switch (fi->type.id) {
-			case IPFIX_TYPEID_protocolIdentifier:
-				mapReverseElement(fi->type.id);
+		bool defaultassign = false;
+		switch (fi->type.enterprise) {
+			case 0:
+				switch (fi->type.id) {
+					case IPFIX_TYPEID_protocolIdentifier:
+						mapReverseElement(fi->type);
+						break;
+					case IPFIX_TYPEID_sourceIPv4Address:
+						srcIPIdx = i;
+						mapReverseElement(InformationElement::IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0));
+						break;
+					case IPFIX_TYPEID_destinationIPv4Address:
+						dstIPIdx = i;
+						mapReverseElement(fi->type);
+						break;
+					case IPFIX_TYPEID_sourceTransportPort:
+						srcPortIdx = i;
+						mapReverseElement(InformationElement::IeInfo(IPFIX_TYPEID_destinationTransportPort, 0));
+						break;
+					case IPFIX_TYPEID_destinationTransportPort:
+						dstPortIdx = i;
+						mapReverseElement(fi->type);
+						break;
+					default:
+						defaultassign = true;
+						break;
+				}
 				break;
-			case IPFIX_TYPEID_sourceIPv4Address:
-				srcIPIdx = i;
-				mapReverseElement(IPFIX_TYPEID_destinationIPv4Address);
-				break;
-			case IPFIX_TYPEID_destinationIPv4Address:
-				dstIPIdx = i;
-				mapReverseElement(fi->type.id);
-				break;
-			case IPFIX_TYPEID_sourceTransportPort:
-				srcPortIdx = i;
-				mapReverseElement(IPFIX_TYPEID_destinationTransportPort);
-				break;
-			case IPFIX_TYPEID_destinationTransportPort:
-				dstPortIdx = i;
-				mapReverseElement(fi->type.id);
-				break;
-			// do not reverse these fields
-			case IPFIX_ETYPEID_dpaForcedExport:
-			case IPFIX_ETYPEID_dpaFlowCount:
-			case IPFIX_ETYPEID_dpaReverseStart:
-				mapReverseElement(fi->type.id);
+			case IPFIX_PEN_vermont:
+				switch (fi->type.id) {
+					// do not reverse these fields
+					case IPFIX_ETYPEID_dpaForcedExport:
+					case IPFIX_ETYPEID_dpaFlowCount:
+					case IPFIX_ETYPEID_dpaReverseStart:
+						mapReverseElement(fi->type);
+						break;
+					default:
+						defaultassign = true;
+						break;
+				}
 				break;
 			default:
-				// this call is dangerous, as calculated type ids may not exist at all
-				// but mapReverseElement will detect those and throw an exception
-				DPRINTF("field %s", typeid2string(fi->type.id));
-				if ((fi->type.id&IPFIX_REVERSE_TYPE)==0) {
-					//TODO: set type.enterprise=29305 instead (Gerhard, 12/2009)
-					mapReverseElement(fi->type.id|IPFIX_REVERSE_TYPE);
-					DPRINTF("mapping field %s to field %s", typeid2string(fi->type.id), typeid2string(fi->type.id|IPFIX_REVERSE_TYPE));
-				} else {
-					// do not reverse element
-					mapReverseElement(fi->type.id);
-					DPRINTF("not mapping field %s", typeid2string(fi->type.id));
-				}
+				defaultassign = true;
+				break;
+		}
 
+		if (defaultassign) {
+			// this call is dangerous, as calculated type ids may not exist at all
+			// but mapReverseElement will detect those and throw an exception
+			DPRINTF("field %s", fi->type.toString().c_str());
+			if ((fi->type.enterprise&IPFIX_PEN_reverse)==0) {
+				InformationElement::IeInfo rev = fi->type.getReverseDirection();
+				mapReverseElement(rev);
+				DPRINTF("mapping field %s to field %s", fi->type.toString().c_str(), rev.toString().c_str());
+			} else {
+				// do not reverse element
+				mapReverseElement(fi->type);
+				DPRINTF("not mapping field %s to its reverse element", fi->type.toString().c_str());
+			}
 		}
 	}
 

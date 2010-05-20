@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -56,9 +56,10 @@ Rule::Field* AggregationPerfTest::createRuleField(const std::string& typeId)
 {
 	Rule::Field* ruleField = new Rule::Field();
 	ruleField->modifier = Rule::Field::KEEP;
-	ruleField->type.id = string2typeid(typeId.c_str());
+	const ipfix_identifier* ipfixid = ipfix_name_lookup(typeId.c_str());
+	ruleField->type.id = ipfixid->id;
 	REQUIRE(ruleField->type.id != 0);
-	ruleField->type.length = string2typelength(typeId.c_str());
+	ruleField->type.length = ipfixid->length;
 	REQUIRE(ruleField->type.length != 0);
 	if ((ruleField->type.id==IPFIX_TYPEID_sourceIPv4Address)
 			|| (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
@@ -111,7 +112,7 @@ Test::TestResult AggregationPerfTest::execTest()
 	REQUIRE(gettimeofday(&starttime, 0) == 0);
 
 	sendPacketsTo(&queue1, numPackets);
-	
+
 	// check that at least one record was received
 	IpfixRecord* rec;
 	ASSERT(tqueue.pop(1000, &rec), "received timeout when should have received flow!");

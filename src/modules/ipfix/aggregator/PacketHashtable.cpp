@@ -29,6 +29,7 @@
 #include "common/Time.h"
 #include "HashtableBuckets.h"
 
+using namespace InformationElement;
 
 const uint32_t PacketHashtable::ExpHelperTable::UNUSED = 0xFFFFFFFF;
 
@@ -142,7 +143,7 @@ void PacketHashtable::copyDataTransportOctets(CopyFuncParameters* cfp)
 		default:
 			break;
 	}
-	DPRINTFL(MSG_VDEBUG, "%s=%llu, ppd->seq=%u", typeid2string(cfp->efd->typeId), ntohll(*reinterpret_cast<uint64_t*>(cfp->dst+cfp->efd->dstIndex)), ntohl(ppd->seq));
+	DPRINTFL(MSG_VDEBUG, "%s=%llu, ppd->seq=%u", cfp->efd->typeId.toString().c_str(), ntohll(*reinterpret_cast<uint64_t*>(cfp->dst+cfp->efd->dstIndex)), ntohl(ppd->seq));
 }
 
 
@@ -155,7 +156,7 @@ void PacketHashtable::copyDataTransportOctets(CopyFuncParameters* cfp)
 void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, HashtableBucket* hbucket, const Packet* src,
 		const ExpFieldData* efd, bool firstpacket, bool onlyinit)
 {
-	DPRINTFL(MSG_VDEBUG, "called (%u, %hhu, %hhu)", efd->typeId, firstpacket, onlyinit);
+	DPRINTFL(MSG_VDEBUG, "called (%s, %hhu, %hhu)", efd->typeId.toString().c_str(), firstpacket, onlyinit);
 	PayloadPrivateData* ppd = reinterpret_cast<PayloadPrivateData*>(bucket+efd->privDataOffset);
 
 	if (onlyinit) {
@@ -170,7 +171,7 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, Hashtable
 	// DPA logic
 	if (efd->typeSpecData.frontPayload.dpa && plen>0) {
 		DpaPrivateData* dpd = reinterpret_cast<DpaPrivateData*>(bucket+efd->typeSpecData.frontPayload.dpaPrivDataOffset);
-		bool revdir = ((efd->typeId & IPFIX_REVERSE_TYPE) > 0);
+		bool revdir = efd->typeId.isReverseField();
 		DPRINTFL(MSG_VDEBUG, "pkt revdir=%hhu, plen=%u, datarecv=%hhu, dpd=%u, buckdata=%X, dparevstartoffset=%u\n", revdir, plen, dpd->datarecv, dpd, bucket, efd->typeSpecData.frontPayload.dpaRevStartOffset);
 		if (!dpd->datarecv) {
 			// first time we receive data!
@@ -276,93 +277,129 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 			(efd->modifier < Rule::Field::MASK_START) && (efd->modifier > Rule::Field::MASK_END)) {
 		THROWEXCEPTION("unknown modifier %d", efd->modifier);
 	}
-	switch (efd->typeId & ~IPFIX_REVERSE_TYPE) {
-		case IPFIX_TYPEID_protocolIdentifier:
-		case IPFIX_TYPEID_tcpControlBits:
-		case IPFIX_ETYPEID_dpaForcedExport:
-		case IPFIX_ETYPEID_dpaReverseStart:
-			if (efd->dstLength != 1) {
-				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
+	switch (efd->typeId.enterprise) {
+		case 0:
+		case IPFIX_PEN_reverse:
+			switch (efd->typeId.id) {
+				case IPFIX_TYPEID_protocolIdentifier:
+				case IPFIX_TYPEID_tcpControlBits:
+					if (efd->dstLength != 1) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
+
+				case IPFIX_TYPEID_sourceTransportPort:
+				case IPFIX_TYPEID_destinationTransportPort:
+				case IPFIX_TYPEID_icmpTypeCode:
+					if (efd->dstLength != 2) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
+
+				case IPFIX_TYPEID_flowStartSysUpTime:
+				case IPFIX_TYPEID_flowStartSeconds:
+				case IPFIX_TYPEID_flowEndSysUpTime:
+				case IPFIX_TYPEID_flowEndSeconds:
+					if (efd->dstLength != 4) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
+
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+				case IPFIX_TYPEID_flowStartMicroSeconds:
+				case IPFIX_TYPEID_flowStartNanoSeconds:
+				case IPFIX_TYPEID_flowEndMilliSeconds:
+				case IPFIX_TYPEID_flowEndMicroSeconds:
+				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_octetDeltaCount:
+				case IPFIX_TYPEID_packetDeltaCount:
+					if (efd->dstLength != 8) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
+
+				case IPFIX_TYPEID_sourceIPv4Address:
+				case IPFIX_TYPEID_destinationIPv4Address:
+					if (efd->dstLength != 5) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
+
+				default:
+					THROWEXCEPTION("type unhandled by Packet Aggregator: %s", efd->typeId.toString().c_str());
+					break;
 			}
 			break;
 
-		case IPFIX_TYPEID_sourceTransportPort:
-		case IPFIX_TYPEID_destinationTransportPort:
-		case IPFIX_TYPEID_icmpTypeCode:
-			if (efd->dstLength != 2) {
-				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
-			}
-			break;
+		case IPFIX_PEN_vermont:
+		case IPFIX_PEN_vermont|IPFIX_PEN_reverse:
+			switch (efd->typeId.id) {
+				case IPFIX_ETYPEID_dpaForcedExport:
+				case IPFIX_ETYPEID_dpaReverseStart:
+					if (efd->dstLength != 1) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
 
-		case IPFIX_TYPEID_flowStartSysUpTime:
-		case IPFIX_TYPEID_flowStartSeconds:
-		case IPFIX_TYPEID_flowEndSysUpTime:
-		case IPFIX_TYPEID_flowEndSeconds:
-		case IPFIX_ETYPEID_frontPayloadLen:
-		case IPFIX_ETYPEID_frontPayloadPktCount:
-		case IPFIX_ETYPEID_maxPacketGap:
-		case IPFIX_ETYPEID_dpaFlowCount:
-			if (efd->dstLength != 4) {
-				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
-			}
-			break;
+				case IPFIX_ETYPEID_frontPayloadLen:
+				case IPFIX_ETYPEID_frontPayloadPktCount:
+				case IPFIX_ETYPEID_maxPacketGap:
+				case IPFIX_ETYPEID_dpaFlowCount:
+					if (efd->dstLength != 4) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
 
-		case IPFIX_TYPEID_flowStartMilliSeconds:
-		case IPFIX_TYPEID_flowStartMicroSeconds:
-		case IPFIX_TYPEID_flowStartNanoSeconds:
-		case IPFIX_TYPEID_flowEndMilliSeconds:
-		case IPFIX_TYPEID_flowEndMicroSeconds:
-		case IPFIX_TYPEID_flowEndNanoSeconds:
-		case IPFIX_TYPEID_octetDeltaCount:
-		case IPFIX_TYPEID_packetDeltaCount:
-		case IPFIX_ETYPEID_transportOctetDeltaCount:
-			if (efd->dstLength != 8) {
-				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
-			}
-			break;
+				case IPFIX_ETYPEID_transportOctetDeltaCount:
+					if (efd->dstLength != 8) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
 
-		case IPFIX_TYPEID_sourceIPv4Address:
-		case IPFIX_TYPEID_destinationIPv4Address:
-			if (efd->dstLength != 5) {
-				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
-			}
-			break;
-		case IPFIX_ETYPEID_frontPayload:
-			if (efd->dstLength < 5) {
-				THROWEXCEPTION("unsupported length %d for type %d (\"%s\")", efd->dstLength, efd->typeId, typeid2string(efd->typeId));
+				case IPFIX_ETYPEID_frontPayload:
+					if (efd->dstLength < 5) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
+
+				default:
+					THROWEXCEPTION("type unhandled by Packet Aggregator: %s", efd->typeId.toString().c_str());
+					break;
 			}
 			break;
 
 		default:
-			THROWEXCEPTION("type unhandled by Packet Aggregator: %d (\"%s\")", efd->typeId, typeid2string(efd->typeId));
+			THROWEXCEPTION("type unhandled by Packet Aggregator: %s", efd->typeId.toString().c_str());
 			break;
 	}
 
 	// now decide on the correct copy function
-	if (efd->typeId == IPFIX_ETYPEID_frontPayload) {
+	if (efd->typeId == IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont)) {
 		return copyDataFrontPayload;
-	} else if (efd->typeId == IPFIX_ETYPEID_revFrontPayload) {
+	} else if (efd->typeId == IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
 		return copyDataFrontPayloadNoInit;
-	} else if (efd->typeId == IPFIX_ETYPEID_frontPayloadLen) {
+	} else if (efd->typeId == IeInfo(IPFIX_ETYPEID_frontPayloadLen, IPFIX_PEN_vermont)) {
 		return copyDataDummy;
-	} else if (efd->typeId == IPFIX_ETYPEID_transportOctetDeltaCount) {
+	} else if (efd->typeId == IeInfo(IPFIX_ETYPEID_transportOctetDeltaCount, IPFIX_PEN_vermont)) {
 		return copyDataTransportOctets;
-	} else if (efd->typeId == IPFIX_ETYPEID_maxPacketGap) {
+	} else if (efd->typeId == IeInfo(IPFIX_ETYPEID_maxPacketGap, IPFIX_PEN_vermont)) {
 		return copyDataMaxPacketGap;
-	} else if (efd->typeId == IPFIX_ETYPEID_frontPayloadPktCount ||
-			   efd->typeId == IPFIX_ETYPEID_dpaFlowCount ||
-			   efd->typeId == IPFIX_ETYPEID_dpaReverseStart ||
-			   efd->typeId == IPFIX_ETYPEID_dpaForcedExport) {
+	} else if (efd->typeId == IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont) ||
+			   efd->typeId == IeInfo(IPFIX_ETYPEID_dpaFlowCount, IPFIX_PEN_vermont) ||
+			   efd->typeId == IeInfo(IPFIX_ETYPEID_dpaReverseStart, IPFIX_PEN_vermont) ||
+			   efd->typeId == IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont)) {
 		return copyDataDummy;
-	} else if (efd->typeId == IPFIX_TYPEID_flowStartNanoSeconds || efd->typeId == IPFIX_TYPEID_flowEndNanoSeconds) {
+	} else if (efd->typeId == IeInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0) ||
+			efd->typeId == IeInfo(IPFIX_TYPEID_flowEndNanoSeconds, 0)) {
 		return copyDataNanoseconds;
-	} else if (efd->typeId & IPFIX_REVERSE_TYPE) {
+	} else if (efd->typeId.enterprise & IPFIX_PEN_reverse) {
 		// ATTENTION: we treat all reverse elements the same: we set them to zero
 		return copyDataSetZero;
 	} else if (efd->dstLength == efd->srcLength) {
 		return copyDataEqualLengthNoMod;
 	} else if (efd->dstLength > efd->srcLength) {
-		if (efd->typeId == IPFIX_TYPEID_sourceIPv4Address || efd->typeId == IPFIX_TYPEID_destinationIPv4Address) {
+		if (efd->typeId == IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0) ||
+				efd->typeId == IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0)) {
 			if ((efd->modifier >= Rule::Field::MASK_START) && (efd->modifier <= Rule::Field::MASK_END)) {
 				if (efd->dstLength != 5 && efd->srcLength != 5) {
 					THROWEXCEPTION("destination and source data size must be 5, but is %d/%d - mask needs to be stored in both of them", efd->dstLength, efd->srcLength);
@@ -371,13 +408,13 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 			} else {
 				return copyDataGreaterLengthIPNoMod;
 			}
-		} else if (efd->typeId == IPFIX_TYPEID_packetDeltaCount) {
+		} else if (efd->typeId == IeInfo(IPFIX_TYPEID_packetDeltaCount, 0)) {
 			return copyDataSetOne;
 		} else {
 			return copyDataGreaterLengthNoMod;
 		}
 	} else {
-		THROWEXCEPTION("target buffer too small. Expected buffer %s of length %d, got one with length %d", typeid2string(efd->typeId), efd->srcLength, efd->dstLength);
+		THROWEXCEPTION("target buffer too small. Expected buffer %s of length %d", efd->typeId.toString().c_str(), efd->srcLength);
 	}
 
 	THROWEXCEPTION("this line should never be reached");
@@ -387,49 +424,49 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 /**
  * @returns field length in bytes of corresponding entry in raw packet
  **/
-uint8_t PacketHashtable::getRawPacketFieldLength(const InformationElement::IeInfo& type)
+uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 {
-	if(type.enterprise != 0) {
-		THROWEXCEPTION("don't know how to handle field id=%u, enterprise=%lu", type.id, type.enterprise);
-	}
-
-	if(type.enterprise == 0) {
-		switch (type.id & ~IPFIX_REVERSE_TYPE) {
+	if (type.enterprise == 0 || type.enterprise == IPFIX_PEN_reverse) {
+		switch (type.id) {
 			case IPFIX_TYPEID_protocolIdentifier:
 			case IPFIX_TYPEID_tcpControlBits:
 			case IPFIX_TYPEID_packetDeltaCount:
-			case IPFIX_ETYPEID_dpaForcedExport:
-			case IPFIX_ETYPEID_dpaReverseStart:
-			//case IPFIX_ETYPEID_revPacketDeltaCount:
 				return 1;
 
 			case IPFIX_TYPEID_icmpTypeCode:
 			case IPFIX_TYPEID_sourceTransportPort:
 			case IPFIX_TYPEID_destinationTransportPort:
 			case IPFIX_TYPEID_octetDeltaCount:
-			//case IPFIX_ETYPEID_revOctetDeltaCount:
 				return 2;
 
 			case IPFIX_TYPEID_flowStartSeconds:
 			case IPFIX_TYPEID_flowEndSeconds:
 			case IPFIX_TYPEID_sourceIPv4Address:
 			case IPFIX_TYPEID_destinationIPv4Address:
-			//case IPFIX_ETYPEID_revFlowStartSeconds:
-			//case IPFIX_ETYPEID_revFlowEndSeconds:
+				return 4;
+
+			case IPFIX_TYPEID_flowStartMilliSeconds:
+			case IPFIX_TYPEID_flowEndMilliSeconds:
+			case IPFIX_TYPEID_flowStartNanoSeconds:
+			case IPFIX_TYPEID_flowEndNanoSeconds:
+				return 8;
+
+			default:
+				THROWEXCEPTION("PacketHashtable: unknown typeid %s, failed to determine raw packet field length", type.toString().c_str());
+				break;
+		}
+	} else if (type.enterprise == IPFIX_PEN_vermont || type.enterprise == (IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
+		switch (type.id) {
+			case IPFIX_ETYPEID_dpaForcedExport:
+			case IPFIX_ETYPEID_dpaReverseStart:
+				return 1;
+
 			case IPFIX_ETYPEID_frontPayloadLen:
 			case IPFIX_ETYPEID_maxPacketGap:
 			case IPFIX_ETYPEID_frontPayloadPktCount:
 			case IPFIX_ETYPEID_dpaFlowCount:
 				return 4;
 
-			case IPFIX_TYPEID_flowStartMilliSeconds:
-			case IPFIX_TYPEID_flowEndMilliSeconds:
-			//case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-			//case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-			case IPFIX_TYPEID_flowStartNanoSeconds:
-			case IPFIX_TYPEID_flowEndNanoSeconds:
-			//case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-			//case IPFIX_ETYPEID_revFlowEndNanoSeconds:
 			case IPFIX_ETYPEID_transportOctetDeltaCount:
 				return 8;
 
@@ -437,12 +474,13 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const InformationElement::IeInf
 				return type.length;				// length is variable and is set in configuration
 
 			default:
-				THROWEXCEPTION("PacketHashtable: unknown typeid, failed to determine raw packet field length");
+				THROWEXCEPTION("PacketHashtable: unknown typeid %s, failed to determine raw packet field length", type.toString().c_str());
 				break;
 		}
+
 	}
 
-	THROWEXCEPTION("PacketHashtable: unknown typeid, failed to determine raw packet field length");
+	THROWEXCEPTION("PacketHashtable: unknown typeid %s, failed to determine raw packet field length", type.toString().c_str());
 	return 0;
 }
 
@@ -453,132 +491,138 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const InformationElement::IeInf
  * @param p pointer to raw packet
  * @returns offset (in bytes) at which the data for the given field is located in the raw packet
  */
-uint16_t PacketHashtable::getRawPacketFieldOffset(InformationElement::IeId id, const Packet* p)
+uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packet* p)
 {
-	switch (id & ~IPFIX_REVERSE_TYPE) {
-		case IPFIX_TYPEID_packetDeltaCount:
-			return 10;
-			break;
+	if (type.enterprise==0 || type.enterprise==IPFIX_PEN_reverse) {
+		switch (type.id) {
+			case IPFIX_TYPEID_packetDeltaCount:
+				return 10;
+				break;
 
-		case IPFIX_TYPEID_flowStartSeconds:
-		case IPFIX_TYPEID_flowEndSeconds:
-			return reinterpret_cast<const unsigned char*>(&p->time_sec_nbo) - p->netHeader;
-			break;
+			case IPFIX_TYPEID_flowStartSeconds:
+			case IPFIX_TYPEID_flowEndSeconds:
+				return reinterpret_cast<const unsigned char*>(&p->time_sec_nbo) - p->netHeader;
+				break;
 
-		case IPFIX_TYPEID_flowStartMilliSeconds:
-		case IPFIX_TYPEID_flowEndMilliSeconds:
-		case IPFIX_ETYPEID_maxPacketGap:
-			return reinterpret_cast<const unsigned char*>(&p->time_msec_nbo) - p->netHeader;
-			break;
+			case IPFIX_TYPEID_flowStartMilliSeconds:
+			case IPFIX_TYPEID_flowEndMilliSeconds:
+				return reinterpret_cast<const unsigned char*>(&p->time_msec_nbo) - p->netHeader;
+				break;
 
-		case IPFIX_TYPEID_flowStartNanoSeconds:
-		case IPFIX_TYPEID_flowEndNanoSeconds:
-			return reinterpret_cast<const unsigned char*>(&p->timestamp) - p->netHeader;
-			break;
+			case IPFIX_TYPEID_flowStartNanoSeconds:
+			case IPFIX_TYPEID_flowEndNanoSeconds:
+				return reinterpret_cast<const unsigned char*>(&p->timestamp) - p->netHeader;
+				break;
 
-		case IPFIX_TYPEID_octetDeltaCount:
-			return 2;
-			break;
+			case IPFIX_TYPEID_octetDeltaCount:
+				return 2;
+				break;
 
-		case IPFIX_TYPEID_protocolIdentifier:
-			return 9;
-			break;
+			case IPFIX_TYPEID_protocolIdentifier:
+				return 9;
+				break;
 
-		case IPFIX_TYPEID_sourceIPv4Address:
-			return 12;
-			break;
+			case IPFIX_TYPEID_sourceIPv4Address:
+				return 12;
+				break;
 
-		case IPFIX_TYPEID_destinationIPv4Address:
-			return 16;
-			break;
+			case IPFIX_TYPEID_destinationIPv4Address:
+				return 16;
+				break;
 
-		case IPFIX_TYPEID_icmpTypeCode:
-			if(p->ipProtocolType == Packet::ICMP) {
-				return p->transportHeader + 0 - p->netHeader;
-			} else {
-				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", id, p->ipProtocolType, Packet::UDP, Packet::TCP);
+			case IPFIX_TYPEID_icmpTypeCode:
+				if(p->ipProtocolType == Packet::ICMP) {
+					return p->transportHeader + 0 - p->netHeader;
+				} else {
+					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d", type.toString().c_str(), p->ipProtocolType, Packet::ICMP);
+				}
+				break;
 
-			}
-			break;
+			case IPFIX_TYPEID_sourceTransportPort:
+				if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
+					return p->transportHeader + 0 - p->netHeader;
+				} else {
+					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d or %d", type.toString().c_str(), p->ipProtocolType, Packet::UDP, Packet::TCP);
+				}
+				break;
 
-		case IPFIX_TYPEID_sourceTransportPort:
-			if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
-				return p->transportHeader + 0 - p->netHeader;
-			} else {
-				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", id, p->ipProtocolType, Packet::UDP, Packet::TCP);
-			}
-			break;
+			case IPFIX_TYPEID_destinationTransportPort:
+				if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
+					return p->transportHeader + 2 - p->netHeader;
+				} else {
+					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d or %d", type.toString().c_str(), p->ipProtocolType, Packet::UDP, Packet::TCP);
+				}
+				break;
 
-		case IPFIX_TYPEID_destinationTransportPort:
-			if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
-				return p->transportHeader + 2 - p->netHeader;
-			} else {
-				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d or %d", id, p->ipProtocolType, Packet::UDP, Packet::TCP);
-			}
-			break;
-
-		case IPFIX_TYPEID_tcpControlBits:
-			if(p->ipProtocolType == Packet::TCP) {
-				return p->transportHeader + 13 - p->netHeader;
-			} else {
-				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d", id, p->ipProtocolType, Packet::TCP);
-			}
-			break;
+			case IPFIX_TYPEID_tcpControlBits:
+				if(p->ipProtocolType == Packet::TCP) {
+					return p->transportHeader + 13 - p->netHeader;
+				} else {
+					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d", type.toString().c_str(), p->ipProtocolType, Packet::TCP);
+				}
+				break;
+		}
+	} else if (type.enterprise==IPFIX_PEN_vermont || type.enterprise==(IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
+		switch (type.id) {
+			case IPFIX_ETYPEID_maxPacketGap:
+				return reinterpret_cast<const unsigned char*>(&p->time_msec_nbo) - p->netHeader;
+				break;
+		}
 	}
 
 	// return just pointer to zero bytes as result
 	return reinterpret_cast<const unsigned char*>(&p->zeroBytes) - p->netHeader;
 }
 
-/**
- * Returns offset to the given field data in the raw packet (relative to packet's netheader)
- * @param field Data Record field
- * @param p pointer to raw packet
- * @returns offset (in bytes) at which the data for the given field is located in the raw packet
- */
-uint16_t PacketHashtable::getRawPacketFieldOffset(const InformationElement::IeInfo& type, const Packet* p)
-{
-	if(type.enterprise == 0) {
-		return getRawPacketFieldOffset(type.id, p);
-	}
-	THROWEXCEPTION("don't know how to handle field id=%u, enterprise=%lu", type.id, type.enterprise);
-	return 0; // should never be reached
-}
-
 
 /**
  * @returns if given field type is in varying positions inside a raw packet and inside the Packet structure
  */
-bool PacketHashtable::isRawPacketPtrVariable(const InformationElement::IeInfo& type)
+bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
 {
-	switch (type.id & ~IPFIX_REVERSE_TYPE) {
-		case IPFIX_TYPEID_packetDeltaCount:
-		case IPFIX_TYPEID_flowStartSeconds:
-		case IPFIX_TYPEID_flowEndSeconds:
-		case IPFIX_TYPEID_flowStartMilliSeconds: // those elements are inside the Packet structure, not in the raw packet.
-		case IPFIX_TYPEID_flowEndMilliSeconds:   // nevertheless, we may access it relative to the start of the packet data
-		case IPFIX_TYPEID_flowStartNanoSeconds: //  ^
-		case IPFIX_TYPEID_flowEndNanoSeconds:   //  ^
-		case IPFIX_TYPEID_octetDeltaCount:
-		case IPFIX_TYPEID_protocolIdentifier:
-		case IPFIX_TYPEID_sourceIPv4Address:
-		case IPFIX_TYPEID_destinationIPv4Address:
-		case IPFIX_ETYPEID_maxPacketGap:
-		case IPFIX_ETYPEID_frontPayloadPktCount:
-		case IPFIX_ETYPEID_dpaForcedExport:
-		case IPFIX_ETYPEID_dpaFlowCount:
-		case IPFIX_ETYPEID_dpaReverseStart:
-			return false;
+	switch (type.enterprise) {
+		case 0:
+		case IPFIX_PEN_reverse:
+			switch (type.id) {
+				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_flowStartSeconds:
+				case IPFIX_TYPEID_flowEndSeconds:
+				case IPFIX_TYPEID_flowStartMilliSeconds: // those elements are inside the Packet structure, not in the raw packet.
+				case IPFIX_TYPEID_flowEndMilliSeconds:   // nevertheless, we may access it relative to the start of the packet data
+				case IPFIX_TYPEID_flowStartNanoSeconds: //  ^
+				case IPFIX_TYPEID_flowEndNanoSeconds:   //  ^
+				case IPFIX_TYPEID_octetDeltaCount:
+				case IPFIX_TYPEID_protocolIdentifier:
+				case IPFIX_TYPEID_sourceIPv4Address:
+				case IPFIX_TYPEID_destinationIPv4Address:
+					return false;
 
-		case IPFIX_TYPEID_icmpTypeCode:
-		case IPFIX_TYPEID_sourceTransportPort:
-		case IPFIX_TYPEID_destinationTransportPort:
-		case IPFIX_TYPEID_tcpControlBits:
-		case IPFIX_ETYPEID_frontPayload:
-		case IPFIX_ETYPEID_frontPayloadLen:
-		case IPFIX_ETYPEID_transportOctetDeltaCount:
-			return true;
+				case IPFIX_TYPEID_icmpTypeCode:
+				case IPFIX_TYPEID_sourceTransportPort:
+				case IPFIX_TYPEID_destinationTransportPort:
+				case IPFIX_TYPEID_tcpControlBits:
+					return true;
+			}
+			break;
+
+		case IPFIX_PEN_vermont:
+		case IPFIX_PEN_vermont|IPFIX_PEN_reverse:
+			switch (type.id) {
+				case IPFIX_ETYPEID_maxPacketGap:
+				case IPFIX_ETYPEID_frontPayloadPktCount:
+				case IPFIX_ETYPEID_dpaForcedExport:
+				case IPFIX_ETYPEID_dpaFlowCount:
+				case IPFIX_ETYPEID_dpaReverseStart:
+					return false;
+
+				case IPFIX_ETYPEID_frontPayload:
+				case IPFIX_ETYPEID_frontPayloadLen:
+				case IPFIX_ETYPEID_transportOctetDeltaCount:
+					return true;
+			}
+			break;
 	}
+
 
 	THROWEXCEPTION("PacketHashtable: invalid type (%d), failed to determine variable state of field", type.id);
 	return false;
@@ -590,8 +634,8 @@ bool PacketHashtable::isRawPacketPtrVariable(const InformationElement::IeInfo& t
  */
 void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index)
 {
-	DPRINTFL(MSG_VDEBUG, "called for type id %u (%s)", hfi->type.id, typeid2string(hfi->type.id));
-	efd->typeId = hfi->type.id;
+	DPRINTFL(MSG_VDEBUG, "called for type id %s", hfi->type.toString().c_str());
+	efd->typeId = hfi->type;
 	efd->dstIndex = hfi->offset;
 	efd->dstLength = hfi->type.length;
 	efd->srcLength = getRawPacketFieldLength(hfi->type);
@@ -602,11 +646,11 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 	// initialize static source index, if current field does not have a variable pointer
 	if (!efd->varSrcIdx) {
 		Packet p; // not good: create temporary packet just for initializing our optimization structure
-		efd->srcIndex = getRawPacketFieldOffset(hfi->type.id, &p);
+		efd->srcIndex = getRawPacketFieldOffset(hfi->type, &p);
 	}
 
 	// special case for masked IPs: those contain variable pointers, if they are masked
-	if ((efd->typeId==IPFIX_TYPEID_sourceIPv4Address || efd->typeId==IPFIX_TYPEID_destinationIPv4Address) &&
+	if ((efd->typeId==IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0) || efd->typeId==IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0)) &&
 			(efd->modifier >= Rule::Field::MASK_START) && (efd->modifier <= Rule::Field::MASK_END)) {
 
 		// ok, our dst/src ip has to be masked, so this is a variable pointer
@@ -616,13 +660,15 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 		// save index of srcIndex, as this variable is overwritten by updatePointers for each packet
 		efd->origSrcIndex = efd->srcIndex;
 
-		switch (efd->typeId) {
-			case IPFIX_TYPEID_sourceIPv4Address:
-				expHelperTable.srcIpEFieldIndex = index;
-				break;
-			case IPFIX_TYPEID_destinationIPv4Address:
-				expHelperTable.dstIpEFieldIndex = index;
-				break;
+		if (efd->typeId.enterprise==0) {
+			switch (efd->typeId.id) {
+				case IPFIX_TYPEID_sourceIPv4Address:
+					expHelperTable.srcIpEFieldIndex = index;
+					break;
+				case IPFIX_TYPEID_destinationIPv4Address:
+					expHelperTable.dstIpEFieldIndex = index;
+					break;
+			}
 		}
 
 		// adjust srcLength, as our source length is 5 bytes including the appended mask!
@@ -630,7 +676,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 	}
 
 	// set data efd field to the offset of IPFIX_ETYPEID_frontPayloadPktCount for front payload
-	if (efd->typeId==IPFIX_ETYPEID_frontPayload) {
+	if (efd->typeId==IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont)) {
 		*reinterpret_cast<uint32_t*>(efd->data) = 0xFFFFFFFF;
 		for (int i=0; i<dataTemplate->fieldCount; i++) {
 			TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
@@ -642,7 +688,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 
 	// mark field as variable, if needed
 	if (efd->varSrcIdx)	{
-		DPRINTF("marking type id %u as variable source pointer", efd->typeId);
+		DPRINTF("marking type id %s as variable source pointer", efd->typeId.toString().c_str());
 		expHelperTable.varSrcPtrFields[expHelperTable.noVarSrcPtrFields++] = efd;
 	}
 
@@ -652,33 +698,42 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 /**
  * @returns if given field is available in a raw ip packet
  */
-bool PacketHashtable::typeAvailable(const InformationElement::IeInfo& type)
+bool PacketHashtable::typeAvailable(const IeInfo& type)
 {
-	switch (type.id) {
-		case IPFIX_TYPEID_packetDeltaCount:
-		case IPFIX_TYPEID_flowStartSeconds:
-		case IPFIX_TYPEID_flowEndSeconds:
-		case IPFIX_TYPEID_flowStartMilliSeconds:
-		case IPFIX_TYPEID_flowEndMilliSeconds:
-		case IPFIX_TYPEID_flowStartNanoSeconds:
-		case IPFIX_TYPEID_flowEndNanoSeconds:
-		case IPFIX_TYPEID_octetDeltaCount:
-		case IPFIX_TYPEID_protocolIdentifier:
-		case IPFIX_TYPEID_sourceIPv4Address:
-		case IPFIX_TYPEID_destinationIPv4Address:
-		case IPFIX_TYPEID_icmpTypeCode:
-		case IPFIX_TYPEID_sourceTransportPort:
-		case IPFIX_TYPEID_destinationTransportPort:
-		case IPFIX_TYPEID_tcpControlBits:
-		case IPFIX_ETYPEID_frontPayloadLen:
-		case IPFIX_ETYPEID_frontPayload:
-		case IPFIX_ETYPEID_frontPayloadPktCount:
-		case IPFIX_ETYPEID_maxPacketGap:
-		case IPFIX_ETYPEID_dpaForcedExport:
-		case IPFIX_ETYPEID_dpaFlowCount:
-		case IPFIX_ETYPEID_dpaReverseStart:
-		case IPFIX_ETYPEID_transportOctetDeltaCount:
-			return true;
+	switch (type.enterprise) {
+		case 0:
+			switch (type.id) {
+				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_flowStartSeconds:
+				case IPFIX_TYPEID_flowEndSeconds:
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+				case IPFIX_TYPEID_flowEndMilliSeconds:
+				case IPFIX_TYPEID_flowStartNanoSeconds:
+				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_octetDeltaCount:
+				case IPFIX_TYPEID_protocolIdentifier:
+				case IPFIX_TYPEID_sourceIPv4Address:
+				case IPFIX_TYPEID_destinationIPv4Address:
+				case IPFIX_TYPEID_icmpTypeCode:
+				case IPFIX_TYPEID_sourceTransportPort:
+				case IPFIX_TYPEID_destinationTransportPort:
+				case IPFIX_TYPEID_tcpControlBits:
+					return true;
+			}
+			break;
+		case IPFIX_PEN_vermont:
+			switch (type.id) {
+				case IPFIX_ETYPEID_frontPayloadLen:
+				case IPFIX_ETYPEID_frontPayload:
+				case IPFIX_ETYPEID_frontPayloadPktCount:
+				case IPFIX_ETYPEID_maxPacketGap:
+				case IPFIX_ETYPEID_dpaForcedExport:
+				case IPFIX_ETYPEID_dpaFlowCount:
+				case IPFIX_ETYPEID_dpaReverseStart:
+				case IPFIX_ETYPEID_transportOctetDeltaCount:
+					return true;
+			}
+			break;
 	}
 
 	return false;
@@ -689,18 +744,18 @@ bool PacketHashtable::typeAvailable(const InformationElement::IeInfo& type)
  * @returns offset of information element in destination template with start index at start of record data,
  *          returns ExpHelperTable::UNUSED if element was not found
  */
-uint32_t PacketHashtable::getDstOffset(InformationElement::IeInfo ietype)
+uint32_t PacketHashtable::getDstOffset(const IeInfo& ietype)
 {
 	uint32_t fcnt = 0;
 	uint32_t offset = ExpHelperTable::UNUSED;
 	for (vector<ExpFieldData*>::const_iterator iter=expHelperTable.allFields.begin(); iter!=expHelperTable.allFields.end(); iter++) {
 		ExpFieldData* efd = *iter;
-		if (efd->typeId==ietype.id) {
+		if (efd->typeId==ietype) {
 			fcnt++;
 			offset = efd->dstIndex;
 		}
 	}
-	if (fcnt>1) THROWEXCEPTION("Information element of type %s(%u) found more than once in template. This is not supported!", ietype.id, typeid2string(ietype.id));
+	if (fcnt>1) THROWEXCEPTION("Information element of type %s found more than once in template. This is not supported!", ietype.toString().c_str());
 	return offset;
 }
 
@@ -722,8 +777,8 @@ void PacketHashtable::buildExpHelperTable()
 
 	struct OffsetData {
 		uint32_t* ehtPointer;
-		InformationElement::IeId ieid;
-		InformationElement::IeEnterpriseNumber ieen;
+		IeId ieid;
+		IeEnterpriseNumber ieen;
 	};
 
 	vector<uint16_t> expkey2field; // maps entries from expHelperTable to original fields in template
@@ -749,12 +804,14 @@ void PacketHashtable::buildExpHelperTable()
 	// now all other fields
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
 		TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
-		if (hfi->type.id & IPFIX_REVERSE_TYPE || hfi->type.id==IPFIX_ETYPEID_frontPayload) continue;
+		if (hfi->type.enterprise & IPFIX_PEN_reverse
+				|| hfi->type==IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont))
+			continue;
 		if (!typeAvailable(hfi->type)) {
-			THROWEXCEPTION("Type '%s' is not contained in raw packet. Please remove it from PacketAggregator rule.", typeid2string(hfi->type.id));
+			THROWEXCEPTION("Type %s is not contained in raw packet. Please remove it from PacketAggregator rule.", hfi->type.toString().c_str());
 		}
 		if (!isToBeAggregated(hfi->type)) continue;
-		DPRINTF("including type %s.", typeid2string(hfi->type.id));
+		DPRINTF("including type %s.", hfi->type.toString().c_str());
 		ExpFieldData* efd = &expHelperTable.aggFields[expHelperTable.noAggFields++];
 		fillExpFieldData(efd, hfi, fieldModifier[i], expHelperTable.noAggFields-1);
 		expagg2field.push_back(i);
@@ -780,14 +837,15 @@ void PacketHashtable::buildExpHelperTable()
 	expHelperTable.noRevAggFields = 0;
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
 		TemplateInfo::FieldInfo hfi = dataTemplate->fieldInfo[i];
-		if ((hfi.type.id & IPFIX_REVERSE_TYPE) == 0) continue;
-		hfi.type.id &= ~IPFIX_REVERSE_TYPE;
+		if ((hfi.type.enterprise & IPFIX_PEN_reverse) == 0) continue;
+		hfi.type.enterprise &= ~IPFIX_PEN_reverse;
 		if (!typeAvailable(hfi.type)) {
-			THROWEXCEPTION("Type '%s' is not contained in raw packet. Please remove it from PacketAggregator rule.", typeid2string(hfi.type.id));
+			THROWEXCEPTION("Type %s is not contained in raw packet. Please remove it from PacketAggregator rule.", hfi.type.toString().c_str());
 		}
 		if (!isToBeAggregated(hfi.type)) continue;
 		ExpFieldData* efd = &expHelperTable.revAggFields[expHelperTable.noRevAggFields++];
 		fillExpFieldData(efd, &dataTemplate->fieldInfo[i], fieldModifier[i], expHelperTable.noRevAggFields-1);
+		hfi.type.enterprise |= IPFIX_PEN_reverse;
 	}
 	DPRINTF("got %u reverse aggregated fields", expHelperTable.noRevAggFields);
 
@@ -813,53 +871,49 @@ void PacketHashtable::buildExpHelperTable()
 	for (uint32_t i=0; i<expHelperTable.noKeyFields; i++) {
 		expHelperTable.allFields.push_back(&expHelperTable.keyFields[i]);
 	}
-	expHelperTable.dpaFlowCountOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_dpaFlowCount));
+	expHelperTable.dpaFlowCountOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaFlowCount, IPFIX_PEN_vermont));
 
 	// search for offsets of fields that are linked with each other
-	InformationElement::IeInfo ieinfo;
+	IeInfo ieinfo;
 	ieinfo.enterprise = 0;
 	for (uint32_t i=0; i<expHelperTable.noAggFields; i++) {
 		ExpFieldData* efd = &expHelperTable.aggFields[i];
-		switch (efd->typeId) {
-			case IPFIX_ETYPEID_frontPayload:
-				efd->typeSpecData.frontPayload.fpaLenOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_frontPayloadLen));
-				efd->typeSpecData.frontPayload.pktCountOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_frontPayloadPktCount));
-				efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_dpaForcedExport));
-				efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_dpaReverseStart));
-				efd->typeSpecData.frontPayload.dpa = expHelperTable.useDPA;
-				efd->typeSpecData.frontPayload.dpaPrivDataOffset = ExpHelperTable::UNUSED;
-				if (expHelperTable.useDPA) {
-					for (uint32_t i=0; i<expHelperTable.noAggFields; i++) {
-						ExpFieldData* efd2 = &expHelperTable.aggFields[i];
-						if (efd2->typeId==IPFIX_ETYPEID_dpaForcedExport) {
-							efd->typeSpecData.frontPayload.dpaPrivDataOffset = efd2->privDataOffset;
-							break;
-						}
+		if (efd->typeId==IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont)) {
+			efd->typeSpecData.frontPayload.fpaLenOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_frontPayloadLen, IPFIX_PEN_vermont));
+			efd->typeSpecData.frontPayload.pktCountOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont));
+			efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont));
+			efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaReverseStart, IPFIX_PEN_vermont));
+			efd->typeSpecData.frontPayload.dpa = expHelperTable.useDPA;
+			efd->typeSpecData.frontPayload.dpaPrivDataOffset = ExpHelperTable::UNUSED;
+			if (expHelperTable.useDPA) {
+				for (uint32_t i=0; i<expHelperTable.noAggFields; i++) {
+					ExpFieldData* efd2 = &expHelperTable.aggFields[i];
+					if (efd2->typeId==IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont)) {
+						efd->typeSpecData.frontPayload.dpaPrivDataOffset = efd2->privDataOffset;
+						break;
 					}
 				}
-				break;
+			}
 		}
 	}
 	for (uint32_t i=0; i<expHelperTable.noRevAggFields; i++) {
 		ExpFieldData* efd = &expHelperTable.revAggFields[i];
-		switch (efd->typeId) {
-			case IPFIX_ETYPEID_revFrontPayload:
-				efd->typeSpecData.frontPayload.fpaLenOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_revFrontPayloadLen));
-				efd->typeSpecData.frontPayload.pktCountOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_revFrontPayloadPktCount));
-				efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_dpaForcedExport));
-				efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_dpaReverseStart));
-				efd->typeSpecData.frontPayload.dpa = expHelperTable.useDPA;
-				efd->typeSpecData.frontPayload.dpaPrivDataOffset = ExpHelperTable::UNUSED;
-				if (expHelperTable.useDPA) {
-					for (uint32_t i=0; i<expHelperTable.noAggFields; i++) {
-						ExpFieldData* efd2 = &expHelperTable.aggFields[i];
-						if (efd2->typeId==IPFIX_ETYPEID_dpaForcedExport) {
-							efd->typeSpecData.frontPayload.dpaPrivDataOffset = efd2->privDataOffset;
-							break;
-						}
+		if (efd->typeId == IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
+			efd->typeSpecData.frontPayload.fpaLenOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_frontPayloadLen, IPFIX_PEN_vermont|IPFIX_PEN_reverse));
+			efd->typeSpecData.frontPayload.pktCountOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont|IPFIX_PEN_reverse));
+			efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont|IPFIX_PEN_reverse));
+			efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaReverseStart, IPFIX_PEN_vermont|IPFIX_PEN_reverse));
+			efd->typeSpecData.frontPayload.dpa = expHelperTable.useDPA;
+			efd->typeSpecData.frontPayload.dpaPrivDataOffset = ExpHelperTable::UNUSED;
+			if (expHelperTable.useDPA) {
+				for (uint32_t i=0; i<expHelperTable.noAggFields; i++) {
+					ExpFieldData* efd2 = &expHelperTable.aggFields[i];
+					if (efd2->typeId==IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont)) {
+						efd->typeSpecData.frontPayload.dpaPrivDataOffset = efd2->privDataOffset;
+						break;
 					}
 				}
-				break;
+			}
 		}
 	}
 }
@@ -873,7 +927,8 @@ uint32_t PacketHashtable::calculateHash(const IpfixRecord::Data* data)
 	uint32_t hash = 0xAAAAAAAA;
 	for (int i=0; i<expHelperTable.noKeyFields; i++) {
 		ExpFieldData* efd = &expHelperTable.keyFields[i];
-		DPRINTFL(MSG_VDEBUG, "hash for i=%u, typeid=%u, length=%u, srcpointer=%X", i, efd->typeId, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
+		DPRINTFL(MSG_VDEBUG, "hash for i=%u, typeid=%s, srcpointer=%X", i, efd->typeId.toString().c_str(),
+				efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 		hash = crc32(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 	}
 	return hash & (htableSize-1);
@@ -887,7 +942,8 @@ uint32_t PacketHashtable::calculateHashRev(const IpfixRecord::Data* data)
 	uint32_t hash = 0xAAAAAAAA;
 	for (int i=0; i<expHelperTable.noKeyFields; i++) {
 		ExpFieldData* efd = expHelperTable.revKeyFieldMapper[i];
-		DPRINTFL(MSG_VDEBUG, "hashrev for i=%u, typeid=%u, length=%u, srcpointer=%X", i, efd->typeId, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
+		DPRINTFL(MSG_VDEBUG, "hashrev for i=%u, typeid=%s, length=%u, srcpointer=%X", i,
+				efd->typeId.toString().c_str(), efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 		hash = crc32(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 	}
 	return hash & (htableSize-1);
@@ -935,159 +991,223 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 	const Packet* p;
 	uint16_t plen;
 
-	switch (efd->typeId) {
-		case IPFIX_TYPEID_flowStartSeconds:
-			*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-			break;
+	if (efd->typeId.id==IPFIX_ETYPEID_transportOctetDeltaCount && (efd->typeId.enterprise&IPFIX_PEN_vermont)) {
+		p = reinterpret_cast<const Packet*>(deltaData);
+		plen = p->data_length-p->payloadOffset;
+		if ((p->ipProtocolType==Packet::TCP || p->ipProtocolType==Packet::UDP) &&
+			p->payloadOffset>0 && p->payloadOffset!=p->transportHeaderOffset && plen>0) {
+			uint64_t seq;
+			switch (p->ipProtocolType) {
+				case Packet::TCP:
+					ppd = reinterpret_cast<PayloadPrivateData*>(data+efd->privDataOffset);
+					seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data+p->transportHeaderOffset+4));
 
-		case IPFIX_ETYPEID_revFlowStartSeconds:
-			if (*(uint32_t*)baseData==0)
-				*(uint32_t*)baseData = *(uint32_t*)deltaData;
-			else
-				*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-			break;
+					if (!ppd->initialized) {
+						ppd->seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data+p->transportHeaderOffset+4))+plen+(p->data[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
 
-		case IPFIX_TYPEID_flowStartMilliSeconds:
-			*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-			break;
+						*reinterpret_cast<uint64_t*>(baseData) = htonll(plen);
+						ppd->initialized = true;
+						break;
+					}
 
-		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-			if (*(uint64_t*)baseData==0)
-				*(uint64_t*)baseData = *(uint64_t*)deltaData;
-			else
-				*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-			break;
+					if (seq+plen>ppd->seq && seq+plen<ppd->seq+HT_MAX_TCP_WINDOW_SIZE) {
+						*reinterpret_cast<uint64_t*>(baseData) = htonll(seq-ppd->seq+plen+ntohll(*reinterpret_cast<uint64_t*>(baseData)));
+						 ppd->seq = seq+plen;
+					} else if (0x100000000LL+seq+plen>ppd->seq && 0x100000000LL+seq+plen<ppd->seq+HT_MAX_TCP_WINDOW_SIZE) { // wrap-around
+						*reinterpret_cast<uint64_t*>(baseData) = htonll(0x100000000LL+seq-ppd->seq+plen+ntohll(*reinterpret_cast<uint64_t*>(baseData)));
+						 ppd->seq = seq+plen;
+					}
+					DPRINTFL(MSG_VDEBUG, "%s=%llu, ppd->seq=%u", efd->typeId.toString().c_str(), ntohll(*reinterpret_cast<uint64_t*>(baseData)), ntohl(ppd->seq));
+					break;
 
-		case IPFIX_TYPEID_flowStartNanoSeconds:
-			ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
-			ntp2 = htonll(ntptime);
-			DPRINTFL(MSG_VDEBUG, "base: %lu s, delta: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U, ntohll(ntp2));
-			DPRINTFL(MSG_VDEBUG, "base: %llX , delta: %llX", ntohll(*(uint64_t*)baseData), ntohll(ntp2));
-			*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, ntp2);
-#ifdef DEBUG
-			if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32))) {
-				DPRINTFL(MSG_VDEBUG, "invalid start nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
-				DPRINTFL(MSG_VDEBUG, "base: %llX , delta: %llX", *(uint64_t*)baseData, *(uint64_t*)deltaData);
+				case Packet::UDP:
+					DPRINTF("blub udp");
+					*reinterpret_cast<uint64_t*>(baseData) = htonll(plen+ntohll(*reinterpret_cast<uint64_t*>(baseData)));
+					break;
+
+				default:
+					DPRINTF("blub default");
+					break;
 			}
-#endif
-			break;
-
-
-		case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-			if (*(uint64_t*)baseData==0)
-				*(uint64_t*)baseData = *(uint64_t*)deltaData;
-			else {
-				ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
-				ntp2 = htonll(ntptime);
-				*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, ntp2);
-			}
-			break;
-
-		case IPFIX_TYPEID_flowEndSeconds:
-		case IPFIX_ETYPEID_revFlowEndSeconds:
-			*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
-			break;
-
-		case IPFIX_TYPEID_flowEndMilliSeconds:
-		case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-			*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
-			break;
-
-		case IPFIX_TYPEID_flowEndNanoSeconds:
-		case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-			ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
-			ntp2 = htonll(ntptime);
-			*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, ntp2);
-#ifdef DEBUG
-			if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32)))
-				DPRINTFL(MSG_VDEBUG, "invalid end nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
-#endif
-			break;
-
-		case IPFIX_TYPEID_octetDeltaCount: // 8 byte dst, 2 byte src
-		case IPFIX_ETYPEID_revOctetDeltaCount:
-			*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData) + ntohs(*(uint16_t*)deltaData));
-			break;
-
-		case IPFIX_TYPEID_packetDeltaCount: // 8 byte dst, no src
-		case IPFIX_ETYPEID_revPacketDeltaCount:
-			*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData)+1);
-			break;
-
-		case IPFIX_TYPEID_tcpControlBits:  // 1 byte src and dst, bitwise-or flows
-		case IPFIX_ETYPEID_revTcpControlBits:
-			*(uint8_t*)baseData |= *(uint8_t*)deltaData;
-			break;
-
-		case IPFIX_ETYPEID_frontPayload:
-		case IPFIX_ETYPEID_revFrontPayload:
-			aggregateFrontPayload(data, hbucket, reinterpret_cast<const Packet*>(deltaData), efd, false, false);
-			break;
-
-		case IPFIX_ETYPEID_maxPacketGap:
-		case IPFIX_ETYPEID_revMaxPacketGap:
-			gap = (int64_t)ntohll(*(int64_t*)deltaData)-(int64_t)ntohll(*reinterpret_cast<const uint64_t*>(data+efd->privDataOffset));
-			if (gap<0) gap = -gap;
-			DPRINTFL(MSG_VDEBUG, "gap: %u, oldgap: %u", gap, ntohl(*(uint32_t*)baseData));
-
-			if ((uint32_t)gap > ntohl(*(uint32_t*)baseData)) *(uint32_t*)baseData = htonl(gap);
-			*reinterpret_cast<uint64_t*>(data+efd->privDataOffset) = *(uint64_t*)deltaData;
-			break;
-
-		case IPFIX_ETYPEID_frontPayloadLen:
-		case IPFIX_ETYPEID_revFrontPayloadLen:
-			// ignore these fields, as FPA aggregation does everything needed
-			break;
-
-		case IPFIX_ETYPEID_transportOctetDeltaCount:
-		case IPFIX_ETYPEID_revTransportOctetDeltaCount:
-		{
-				p = reinterpret_cast<const Packet*>(deltaData);
-				if (!(p->ipProtocolType==Packet::TCP || p->ipProtocolType==Packet::UDP)) break;
-
-				plen = p->data_length-p->payloadOffset;
-				if (p->payloadOffset==0 || p->payloadOffset==p->transportHeaderOffset || plen==0) break;
-
-				uint64_t seq;
-				switch (p->ipProtocolType) {
-					case Packet::TCP:
-						ppd = reinterpret_cast<PayloadPrivateData*>(data+efd->privDataOffset);
-						seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data+p->transportHeaderOffset+4));
-
-						if (!ppd->initialized) {
-							ppd->seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data+p->transportHeaderOffset+4))+plen+(p->data[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
-
-							*reinterpret_cast<uint64_t*>(baseData) = htonll(plen);
-							ppd->initialized = true;
-							break;
-						}
-
-						if (seq+plen>ppd->seq && seq+plen<ppd->seq+HT_MAX_TCP_WINDOW_SIZE) {
-						    *reinterpret_cast<uint64_t*>(baseData) = htonll(seq-ppd->seq+plen+ntohll(*reinterpret_cast<uint64_t*>(baseData)));
-							 ppd->seq = seq+plen;
-						} else if (0x100000000LL+seq+plen>ppd->seq && 0x100000000LL+seq+plen<ppd->seq+HT_MAX_TCP_WINDOW_SIZE) { // wrap-around
-							*reinterpret_cast<uint64_t*>(baseData) = htonll(0x100000000LL+seq-ppd->seq+plen+ntohll(*reinterpret_cast<uint64_t*>(baseData)));
-							 ppd->seq = seq+plen;
-						}
-						DPRINTFL(MSG_VDEBUG, "%s=%llu, ppd->seq=%u", typeid2string(efd->typeId), ntohll(*reinterpret_cast<uint64_t*>(baseData)), ntohl(ppd->seq));
+		}
+	} else {
+		switch (efd->typeId.enterprise) {
+			case 0:
+				switch (efd->typeId.id) {
+					case IPFIX_TYPEID_flowStartSeconds:
+						*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 						break;
 
-					case Packet::UDP:
-						DPRINTF("blub udp");
-						*reinterpret_cast<uint64_t*>(baseData) = htonll(plen+ntohll(*reinterpret_cast<uint64_t*>(baseData)));
+					case IPFIX_TYPEID_flowStartMilliSeconds:
+						*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+						break;
+
+					case IPFIX_TYPEID_flowStartNanoSeconds:
+						ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
+						ntp2 = htonll(ntptime);
+						DPRINTFL(MSG_VDEBUG, "base: %lu s, delta: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U, ntohll(ntp2));
+						DPRINTFL(MSG_VDEBUG, "base: %llX , delta: %llX", ntohll(*(uint64_t*)baseData), ntohll(ntp2));
+						*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, ntp2);
+			#ifdef DEBUG
+						if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32))) {
+							DPRINTFL(MSG_VDEBUG, "invalid start nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
+							DPRINTFL(MSG_VDEBUG, "base: %llX , delta: %llX", *(uint64_t*)baseData, *(uint64_t*)deltaData);
+						}
+			#endif
+						break;
+
+					case IPFIX_TYPEID_flowEndSeconds:
+						*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+						break;
+
+					case IPFIX_TYPEID_flowEndMilliSeconds:
+						*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+						break;
+
+					case IPFIX_TYPEID_flowEndNanoSeconds:
+						ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
+						ntp2 = htonll(ntptime);
+						*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, ntp2);
+			#ifdef DEBUG
+						if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32)))
+							DPRINTFL(MSG_VDEBUG, "invalid end nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
+			#endif
+						break;
+
+					case IPFIX_TYPEID_octetDeltaCount: // 8 byte dst, 2 byte src
+						*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData) + ntohs(*(uint16_t*)deltaData));
+						break;
+
+					case IPFIX_TYPEID_packetDeltaCount: // 8 byte dst, no src
+						*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData)+1);
+						break;
+
+					case IPFIX_TYPEID_tcpControlBits:  // 1 byte src and dst, bitwise-or flows
+						*(uint8_t*)baseData |= *(uint8_t*)deltaData;
+						break;
+
+						// no other types needed, as this is only for raw field input
+					default:
+						DPRINTF("non-aggregatable type: %s", efd->typeId.toString().c_str());
+						break;
+				}
+				break;
+
+			case IPFIX_PEN_reverse:
+				switch (efd->typeId.id) {
+					case IPFIX_TYPEID_flowStartSeconds:
+						if (*(uint32_t*)baseData==0)
+							*(uint32_t*)baseData = *(uint32_t*)deltaData;
+						else
+							*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+						break;
+
+					case IPFIX_TYPEID_flowStartMilliSeconds:
+						if (*(uint64_t*)baseData==0)
+							*(uint64_t*)baseData = *(uint64_t*)deltaData;
+						else
+							*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+						break;
+
+					case IPFIX_TYPEID_flowStartNanoSeconds:
+						if (*(uint64_t*)baseData==0)
+							*(uint64_t*)baseData = *(uint64_t*)deltaData;
+						else {
+							ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
+							ntp2 = htonll(ntptime);
+							*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, ntp2);
+						}
+						break;
+
+					case IPFIX_TYPEID_flowEndSeconds:
+						*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+						break;
+
+					case IPFIX_TYPEID_flowEndMilliSeconds:
+						*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+						break;
+
+					case IPFIX_TYPEID_flowEndNanoSeconds:
+						ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
+						ntp2 = htonll(ntptime);
+						*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, ntp2);
+			#ifdef DEBUG
+						if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32)))
+							DPRINTFL(MSG_VDEBUG, "invalid end nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
+			#endif
+						break;
+
+					case IPFIX_TYPEID_octetDeltaCount: // 8 byte dst, 2 byte src
+						*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData) + ntohs(*(uint16_t*)deltaData));
+						break;
+
+					case IPFIX_TYPEID_packetDeltaCount: // 8 byte dst, no src
+						*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData)+1);
+						break;
+
+					case IPFIX_TYPEID_tcpControlBits: // 1 byte src and dst, bitwise-or flows
+						*(uint8_t*)baseData |= *(uint8_t*)deltaData;
 						break;
 
 					default:
-						DPRINTF("blub default");
+						DPRINTF("non-aggregatable type: %s", efd->typeId.toString().c_str());
 						break;
 				}
-			break;
-		}
+				break;
 
-			// no other types needed, as this is only for raw field input
-		default:
-			DPRINTF("non-aggregatable type: %d", efd->typeId);
-			break;
+			case IPFIX_PEN_vermont:
+				switch (efd->typeId.id) {
+					case IPFIX_ETYPEID_frontPayload:
+						aggregateFrontPayload(data, hbucket, reinterpret_cast<const Packet*>(deltaData), efd, false, false);
+						break;
+
+					case IPFIX_ETYPEID_maxPacketGap:
+						gap = (int64_t)ntohll(*(int64_t*)deltaData)-(int64_t)ntohll(*reinterpret_cast<const uint64_t*>(data+efd->privDataOffset));
+						if (gap<0) gap = -gap;
+						DPRINTFL(MSG_VDEBUG, "gap: %u, oldgap: %u", gap, ntohl(*(uint32_t*)baseData));
+
+						if ((uint32_t)gap > ntohl(*(uint32_t*)baseData)) *(uint32_t*)baseData = htonl(gap);
+						*reinterpret_cast<uint64_t*>(data+efd->privDataOffset) = *(uint64_t*)deltaData;
+						break;
+
+					case IPFIX_ETYPEID_frontPayloadLen:
+						// ignore these fields, as FPA aggregation does everything needed
+						break;
+
+					default:
+						DPRINTF("non-aggregatable type: %s", efd->typeId.toString().c_str());
+						break;
+				}
+				break;
+
+			case IPFIX_PEN_vermont|IPFIX_PEN_reverse:
+				switch (efd->typeId.id) {
+					case IPFIX_ETYPEID_frontPayload:
+						aggregateFrontPayload(data, hbucket, reinterpret_cast<const Packet*>(deltaData), efd, false, false);
+						break;
+
+					case IPFIX_ETYPEID_maxPacketGap:
+						gap = (int64_t)ntohll(*(int64_t*)deltaData)-(int64_t)ntohll(*reinterpret_cast<const uint64_t*>(data+efd->privDataOffset));
+						if (gap<0) gap = -gap;
+						DPRINTFL(MSG_VDEBUG, "gap: %u, oldgap: %u", gap, ntohl(*(uint32_t*)baseData));
+
+						if ((uint32_t)gap > ntohl(*(uint32_t*)baseData)) *(uint32_t*)baseData = htonl(gap);
+						*reinterpret_cast<uint64_t*>(data+efd->privDataOffset) = *(uint64_t*)deltaData;
+						break;
+
+					case IPFIX_ETYPEID_frontPayloadLen:
+						// ignore these fields, as FPA aggregation does everything needed
+						break;
+
+					default:
+						DPRINTF("non-aggregatable type: %s", efd->typeId.toString().c_str());
+						break;
+				}
+				break;
+			default:
+				DPRINTF("non-aggregatable type: %s", efd->typeId.toString().c_str());
+				break;
+		}
 	}
 }
 
@@ -1129,7 +1249,7 @@ bool PacketHashtable::equalFlow(IpfixRecord::Data* bucket, const Packet* p)
 	for (int i=0; i<expHelperTable.noKeyFields; i++) {
 		ExpFieldData* efd = &expHelperTable.keyFields[i];
 
-		DPRINTFL(MSG_VDEBUG, "equal for i=%u, typeid=%u, length=%u, srcpointer=%X", i, efd->typeId, efd->srcLength, p->netHeader+efd->srcIndex);
+		DPRINTFL(MSG_VDEBUG, "equal for i=%u, typeid=%s, length=%u, srcpointer=%X", i, efd->typeId.toString().c_str(), efd->srcLength, p->netHeader+efd->srcIndex);
 		// just compare srcLength bytes, as we still have our original packet data
 		if (memcmp(bucket+efd->dstIndex, p->netHeader+efd->srcIndex, efd->srcLength)!=0)
 			return false;
@@ -1148,7 +1268,7 @@ bool PacketHashtable::equalFlowRev(IpfixRecord::Data* bucket, const Packet* p)
 		ExpFieldData* efdsrc = &expHelperTable.keyFields[i];
 		ExpFieldData* efddst = expHelperTable.revKeyFieldMapper[i];
 
-		DPRINTFL(MSG_VDEBUG, "equalrev for i=%u, typeid=%u, length=%u, srcpointer=%X", i, efdsrc->typeId, efdsrc->srcLength, p->netHeader+efdsrc->srcIndex);
+		DPRINTFL(MSG_VDEBUG, "equalrev for i=%u, typeid=%s, length=%u, srcpointer=%X", i, efdsrc->typeId.toString().c_str(), efdsrc->srcLength, p->netHeader+efdsrc->srcIndex);
 		// just compare srcLength bytes, as we still have our original packet data
 		if (memcmp(bucket+efddst->dstIndex, p->netHeader+efdsrc->srcIndex, efdsrc->srcLength)!=0)
 			return false;
@@ -1224,29 +1344,29 @@ void PacketHashtable::updatePointers(const Packet* p)
 	for (int i=0; i<expHelperTable.noVarSrcPtrFields; i++) {
 		ExpFieldData* efd = expHelperTable.varSrcPtrFields[i];
 
-		switch (efd->typeId) {
+		bool dodefault = true;
+		if (efd->typeId.enterprise==0 &&
+				(efd->typeId.id==IPFIX_TYPEID_destinationIPv4Address || efd->typeId.id==IPFIX_TYPEID_sourceIPv4Address)) {
 			// perform a hack for masked IPs:
 			// IP addresses which are to be masked are copied to efd->data[0-3] and masked there
 			// now we need to do some pointer arithmetic to be able to access those transparently afterwards
 			// note: only IP types to be masked have efd->varSrcIdx set
-			case IPFIX_TYPEID_destinationIPv4Address:
-			case IPFIX_TYPEID_sourceIPv4Address:
-				efd->srcIndex = reinterpret_cast<uintptr_t>(&efd->data[0])-reinterpret_cast<uintptr_t>(p->netHeader);
+			efd->srcIndex = reinterpret_cast<uintptr_t>(&efd->data[0])-reinterpret_cast<uintptr_t>(p->netHeader);
+			dodefault = false;
+		} else if ((efd->typeId.enterprise&IPFIX_PEN_vermont)) {
+			switch (efd->typeId.id) {
+				// aggregation and copy functions for frontPayload need to have source pointer
+				// pointing to packet structure
+				case IPFIX_ETYPEID_frontPayload:
+				case IPFIX_ETYPEID_transportOctetDeltaCount:
+					efd->srcIndex = reinterpret_cast<uintptr_t>(p)-reinterpret_cast<uintptr_t>(p->netHeader);
+					dodefault = false;
 				break;
-
-			// aggregation and copy functions for frontPayload need to have source pointer
-			// pointing to packet structure
-			case IPFIX_ETYPEID_frontPayload:
-			case IPFIX_ETYPEID_revFrontPayload:
-			case IPFIX_ETYPEID_transportOctetDeltaCount:
-			case IPFIX_ETYPEID_revTransportOctetDeltaCount:
-				efd->srcIndex = reinterpret_cast<uintptr_t>(p)-reinterpret_cast<uintptr_t>(p->netHeader);
-				break;
-
-			default:
-				// standard procedure for transport header fields
-				efd->srcIndex = getRawPacketFieldOffset(efd->typeId, p);
-				break;
+			}
+		}
+		if (dodefault) {
+			// standard procedure for transport header fields
+			efd->srcIndex = getRawPacketFieldOffset(efd->typeId, p);
 		}
 	}
 }

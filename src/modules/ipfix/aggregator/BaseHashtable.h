@@ -152,7 +152,7 @@ protected:
 
 	alock_t aggInProgress; /** indicates if currently an element is aggregated in the hashtable, used for atomic lock for preReconfiguration */
 
-	int isToBeAggregated(const InformationElement::IeInfo& type);
+	int isToBeAggregated(InformationElement::IeInfo& type);
 	HashtableBucket* createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid,
 		HashtableBucket* next, HashtableBucket* prev, uint32_t hash);
 	void exportBucket(HashtableBucket* bucket);
@@ -161,7 +161,7 @@ protected:
 	void sendDataTemplate();
 	void sendTemplateDestructionRecord();
 	uint32_t getPrivateDataLength(const InformationElement::IeInfo& type);
-	void mapReverseElement(uint32_t tid);
+	void mapReverseElement(const InformationElement::IeInfo& ieinfo);
 	void genBiflowStructs();
 	void reverseFlowBucket(HashtableBucket* bucket);
 	void removeBucket(HashtableBucket* bucket);
