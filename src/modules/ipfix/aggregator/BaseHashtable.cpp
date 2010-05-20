@@ -81,6 +81,8 @@ uint32_t BaseHashtable::getPrivateDataLength(const InformationElement::IeInfo& t
 		switch (type.id) {
 			case IPFIX_ETYPEID_frontPayload:
 			case IPFIX_ETYPEID_revFrontPayload:
+			case IPFIX_ETYPEID_transportOctetDeltaCount:
+			case IPFIX_ETYPEID_revTransportOctetDeltaCount:
 				return sizeof(PayloadPrivateData);
 
 			case IPFIX_ETYPEID_dpaForcedExport:
@@ -381,6 +383,8 @@ int BaseHashtable::isToBeAggregated(const InformationElement::IeInfo& type)
 			case IPFIX_ETYPEID_dpaForcedExport:
 			case IPFIX_ETYPEID_dpaFlowCount:
 			case IPFIX_ETYPEID_dpaReverseStart:
+			case IPFIX_ETYPEID_transportOctetDeltaCount:
+			case IPFIX_ETYPEID_revTransportOctetDeltaCount:
 				return 1;
 
 			case IPFIX_TYPEID_octetTotalCount:

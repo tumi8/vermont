@@ -88,6 +88,12 @@
  */
 #define HT_DEFAULT_BITSIZE 17
 
+/**
+ * defines maximum window size of TCP connections (used in PacketHashtable for tracking
+ * number of transferred bytes)
+ */
+#define HT_MAX_TCP_WINDOW_SIZE (1<<26)
+
 
 /**
  * defines interval in milliseconds, how often DelayedDeleter is called
