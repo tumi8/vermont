@@ -69,6 +69,12 @@ namespace InformationElement {
 			return (id==other.id) && (enterprise==other.enterprise);
 		}
 
+		bool operator<(const IeInfo &other) const {
+			if (enterprise<other.enterprise) return true;
+			if (id<other.id) return true;
+			return false;
+		}
+
 
 		IeId id; 			/**< Information Element Id */
 		IeEnterpriseNumber enterprise;/**< Enterprise Number for enterprise-specific IEs (i.e., id >= 0x8000) */

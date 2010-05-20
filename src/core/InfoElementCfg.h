@@ -38,6 +38,11 @@ public:
 			}
 		}
 
+		if (ieId==0 && ieName.size()>0) {
+			const ipfix_identifier* ipfixid = ipfix_name_lookup(ieName.c_str());
+			if (ipfixid) ieId = ipfixid->id;
+		}
+
 		if (ieLength==0) {
 			if (ieId>0) {
 				const ipfix_identifier* ipfixid = ipfix_id_lookup(ieId, enterpriseNumber);

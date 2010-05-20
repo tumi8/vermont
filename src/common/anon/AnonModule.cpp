@@ -126,7 +126,7 @@ AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::stri
 	return ret;
 }
 
-void AnonModule::addAnonymization(uint16_t id, int len, AnonMethod::Method methodName, std::vector<map_info> mapping, const std::string& parameter)
+void AnonModule::addAnonymization(InformationElement::IeInfo id, int len, AnonMethod::Method methodName, std::vector<map_info> mapping, const std::string& parameter)
 {
 	static const struct ipfix_identifier* ident;
 	AnonPrimitive* a = createPrimitive(methodName, parameter, mapping);
@@ -135,8 +135,8 @@ void AnonModule::addAnonymization(uint16_t id, int len, AnonMethod::Method metho
 	} else {
 		AnonIE ie;
 		if (len == -1) {
-			if (!(ident = ipfix_id_lookup(id, 0))) {
-				msg(MSG_ERROR, "Unknown or unsupported id %i detected.", id);
+			if (!(ident = ipfix_id_lookup(id.id, id.enterprise))) {
+				msg(MSG_ERROR, "Unknown or unsupported id %s detected.", id.toString().c_str());
 				return;
 			}
 			len = ident->length;
@@ -149,7 +149,7 @@ void AnonModule::addAnonymization(uint16_t id, int len, AnonMethod::Method metho
 	}
 }
 
-void AnonModule::anonField(uint16_t id, void* data, int len)
+void AnonModule::anonField(InformationElement::IeInfo id, void* data, int len)
 {
 	if (methods.find(id) == methods.end()) {
 		return;

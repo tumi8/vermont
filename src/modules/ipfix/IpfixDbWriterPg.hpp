@@ -146,8 +146,9 @@ class IpfixDbWriterPg
 		 */
 		struct Column {
 			const char* cname; /** column name */
-			int ipfixId; /** IPFIX_TYPEID */
+			uint16_t ipfixId; /** IPFIX_TYPEID */
 			const char* dataType; /** which datatype to store in database */
+			uint32_t enterprise;
 			/**
 			 *  when no IPFIX_TYPEID is stored in the record,
 			 *  use defaultvalue to store in database
