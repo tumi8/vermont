@@ -51,6 +51,7 @@ private:
 	 */
 	struct ExpFieldData;
 	struct CopyFuncParameters {
+		const Packet* packet;
 		IpfixRecord::Data* dst;
 		IpfixRecord::Data* src;
 		ExpFieldData* efd;
@@ -151,6 +152,7 @@ private:
 	static void copyDataMaxPacketGap(CopyFuncParameters* cfp);
 	static void copyDataNanoseconds(CopyFuncParameters* cfp);
 	static void copyDataDummy(CopyFuncParameters* cfp);
+	static void copyDataTransportOctets(CopyFuncParameters* cfp);
 	static void aggregateFrontPayload(IpfixRecord::Data* bucket, HashtableBucket* hbucket, const Packet* src,
 									  const ExpFieldData* efd, bool firstpacket, bool onlyinit);
 	void (*getCopyDataFunction(const ExpFieldData* efd))(CopyFuncParameters*);

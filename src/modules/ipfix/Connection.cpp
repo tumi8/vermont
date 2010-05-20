@@ -188,6 +188,10 @@ Connection::Connection(IpfixDataRecord* record)
 	if (fi != 0) dpaReverseStart = *(uint8_t*)(record->data + fi->offset);
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_dpaFlowCount, 0);
 	if (fi != 0) dpaFlowCount = ntohl(*(uint32_t*)(record->data + fi->offset));
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_transportOctetDeltaCount, 0);
+	if (fi != 0) srcTransOctets = ntohll(*(uint64_t*)(record->data + fi->offset));
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revTransportOctetDeltaCount, 0);
+	if (fi != 0) dstTransOctets = ntohll(*(uint64_t*)(record->data + fi->offset));
 }
 
 Connection::~Connection()

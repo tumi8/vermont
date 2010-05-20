@@ -154,6 +154,7 @@ int string2typelength(const char*s);
 #define IPFIX_ETYPEID_dpaFlowCount					(IPFIX_VERMONT_SPECIFIC_TYPE | 0x84)
 #define IPFIX_ETYPEID_dpaForcedExport				(IPFIX_VERMONT_SPECIFIC_TYPE | 0x85)
 #define IPFIX_ETYPEID_dpaReverseStart				(IPFIX_VERMONT_SPECIFIC_TYPE | 0x86)
+#define IPFIX_ETYPEID_transportOctetDeltaCount		(IPFIX_VERMONT_SPECIFIC_TYPE | 0x87)
 
 // information elements for biflows
 #define IPFIX_REVERSE_TYPE							0x0400 // temporary solution until enterprise number 29305 is used
@@ -170,6 +171,7 @@ int string2typelength(const char*s);
 #define IPFIX_ETYPEID_revFrontPayloadLen			(IPFIX_ETYPEID_frontPayloadLen | IPFIX_REVERSE_TYPE)
 #define IPFIX_ETYPEID_revFrontPayloadPktCount		(IPFIX_ETYPEID_frontPayloadPktCount | IPFIX_REVERSE_TYPE)
 #define IPFIX_ETYPEID_revMaxPacketGap				(IPFIX_ETYPEID_maxPacketGap | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_revTransportOctetDeltaCount	(IPFIX_ETYPEID_transportOctetDeltaCount | IPFIX_REVERSE_TYPE)
 
 
 #define IPFIX_LENGTH_ipVersion                      IPFIX_LENGTH_octet
@@ -272,6 +274,7 @@ int string2typelength(const char*s);
 #define IPFIX_ELENGTH_dpaFlowCount					IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_dpaForcedExport				IPFIX_LENGTH_octet
 #define IPFIX_ELENGTH_dpaReverseStart				IPFIX_LENGTH_octet
+#define IPFIX_ELENGTH_transportOctetDeltaCount		IPFIX_LENGTH_unsigned64
 
 
 // lengths for biflows elements
@@ -289,6 +292,7 @@ int string2typelength(const char*s);
 #define IPFIX_ELENGTH_revMaxPacketGap				IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_frontPayloadPktCount			IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_revFrontPayloadPktCount		IPFIX_LENGTH_unsigned32
+#define IPFIX_ELENGTH_revTransportOctetDeltaCount		IPFIX_LENGTH_unsigned64
 
 #define MAX_MSG_LEN   65536
 

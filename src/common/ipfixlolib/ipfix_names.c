@@ -128,7 +128,9 @@ struct ipfix_identifier ipfixids[] = {
  { IPFIX_ETYPEID_revFrontPayload, 0, "revFrontPayload" },
  { IPFIX_ETYPEID_revFrontPayloadLen, IPFIX_ELENGTH_revFrontPayloadLen, "revFrontPayloadLen" },
  { IPFIX_ETYPEID_revFrontPayloadPktCount, IPFIX_ELENGTH_revFrontPayloadPktCount, "revFrontPayloadPktCount" },
- { IPFIX_ETYPEID_revMaxPacketGap, IPFIX_ELENGTH_revMaxPacketGap, "revMaxPacketGap" }
+ { IPFIX_ETYPEID_revMaxPacketGap, IPFIX_ELENGTH_revMaxPacketGap, "revMaxPacketGap" },
+ { IPFIX_ETYPEID_transportOctetDeltaCount, IPFIX_ELENGTH_transportOctetDeltaCount, "transportOctetDeltaCount" },
+ { IPFIX_ETYPEID_revTransportOctetDeltaCount, IPFIX_ELENGTH_revTransportOctetDeltaCount, "revTransportOctetDeltaCount" }
 };
 
 

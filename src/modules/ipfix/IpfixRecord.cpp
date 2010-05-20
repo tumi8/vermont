@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -190,6 +190,8 @@ namespace InformationElement {
 				case IPFIX_ETYPEID_dpaForcedExport:
 				case IPFIX_ETYPEID_dpaFlowCount:
 				case IPFIX_ETYPEID_dpaReverseStart:
+				case IPFIX_ETYPEID_transportOctetDeltaCount:
+				case IPFIX_ETYPEID_revTransportOctetDeltaCount:
 					return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
 
 				case IPFIX_TYPEID_tcpControlBits:
@@ -206,9 +208,9 @@ namespace InformationElement {
 
 /* Methods  of TemplateInfo class */
 
-TemplateInfo::TemplateInfo() : templateId(0), setId(UnknownSetId), fieldCount(0), fieldInfo(NULL), 
+TemplateInfo::TemplateInfo() : templateId(0), setId(UnknownSetId), fieldCount(0), fieldInfo(NULL),
         freePointers(true),
-	scopeCount(0), scopeInfo(NULL), dataCount(0), dataInfo(NULL), preceding(0), dataLength(0), data(NULL), 
+	scopeCount(0), scopeInfo(NULL), dataCount(0), dataInfo(NULL), preceding(0), dataLength(0), data(NULL),
 	uniqueId(0)
 {
         setUniqueId();
@@ -269,7 +271,7 @@ TemplateInfo::~TemplateInfo() {
 	mutex().unlock();
 }
 
-void TemplateInfo::setUniqueId() 
+void TemplateInfo::setUniqueId()
 {
 	mutex().lock();
 	uint16_t oldId = uniqueId;

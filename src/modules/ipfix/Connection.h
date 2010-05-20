@@ -54,6 +54,8 @@ class Connection
 		uint64_t dstTimeEnd; /**< milliseconds since 1970, host-byte order  */
 		uint64_t srcOctets; /**< network-byte order! **/
 		uint64_t dstOctets; /**< network-byte order! **/
+		uint64_t srcTransOctets; /**< host-byte order! **/
+		uint64_t dstTransOctets; /**< host-byte order! **/
 		uint64_t srcPackets; /**< network-byte order! **/
 		uint64_t dstPackets; /**< network-byte order! **/
 		uint8_t srcTcpControlBits;
