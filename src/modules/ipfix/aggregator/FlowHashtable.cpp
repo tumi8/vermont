@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -29,122 +29,19 @@
 
 FlowHashtable::FlowHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
-	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits),
-		revDataTemplateMapper(NULL),
-		biflowAggregation(rule->biflowAggregation),
-		switchArray(NULL)
+	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits)
 {
-	if (biflowAggregation) {
-		genBiflowStructs();
-	}
 }
 
 
 FlowHashtable::~FlowHashtable()
 {
-	if (revDataTemplateMapper) delete[] revDataTemplateMapper;
+	if (revKeyMapper) delete[] revKeyMapper;
 	if (switchArray) delete[] switchArray;
 }
 
 
-void FlowHashtable::mapReverseElement(uint32_t tid)
-{
-	int i = dataTemplate->getFieldIndex(tid, 0);
-	if (i<0)
-		THROWEXCEPTION("failed to retrieve IPFIX field id %d/%s (derived as reverse field). Maybe this element is not contained in flow definition?",
-				tid, typeid2string(tid));
-	if (dataTemplate->getFieldInfo(tid, 0)->type.length!=dataTemplate->fieldInfo[flowReverseMapper.size()].type.length)
-		THROWEXCEPTION("failed to map IPFIX field id %d/%s to its reverse element %d/%s. Elements do not share same size (%d/%d)! ",
-				dataTemplate->fieldInfo[flowReverseMapper.size()].type.id,
-				typeid2string(dataTemplate->fieldInfo[flowReverseMapper.size()].type.id), tid, typeid2string(tid),
-				dataTemplate->fieldInfo[flowReverseMapper.size()].type.length, dataTemplate->getFieldInfo(tid, 0)->type.length);
-	flowReverseMapper.push_back(i);
-}
 
-
-void FlowHashtable::genBiflowStructs()
-{
-	int32_t srcIPIdx = -1;
-	int32_t dstIPIdx = -1;
-	int32_t srcPortIdx = -1;
-	int32_t dstPortIdx = -1;
-	uint32_t maxFieldSize = 0;
-
-	// search for offsets in dataTemplate
-	revDataTemplateMapper = new uint32_t[dataTemplate->fieldCount];
-	DPRINTF("fieldCount=%d", dataTemplate->fieldCount);
-	for (int32_t i=0; i<dataTemplate->fieldCount; i++) {
-		DPRINTF("fieldCount=%d", i);
-		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
-		if (fi->type.length>maxFieldSize) maxFieldSize = fi->type.length;
-		switch (fi->type.id) {
-			case IPFIX_TYPEID_protocolIdentifier:
-				mapReverseElement(fi->type.id);
-				break;
-			case IPFIX_TYPEID_sourceIPv4Address:
-				srcIPIdx = i;
-				mapReverseElement(IPFIX_TYPEID_destinationIPv4Address);
-				break;
-			case IPFIX_TYPEID_destinationIPv4Address:
-				dstIPIdx = i;
-				mapReverseElement(fi->type.id);
-				break;
-			case IPFIX_TYPEID_sourceTransportPort:
-				srcPortIdx = i;
-				mapReverseElement(IPFIX_TYPEID_destinationTransportPort);
-				break;
-			case IPFIX_TYPEID_destinationTransportPort:
-				dstPortIdx = i;
-				mapReverseElement(fi->type.id);
-				break;
-
-			default:
-				// this call is dangerous, as calculated type ids may not exist at all
-				// but mapReverseElement will detect those and throw an exception
-				DPRINTF("field %s", typeid2string(fi->type.id));
-				if ((fi->type.id&IPFIX_REVERSE_TYPE)==0) {
-					//TODO: set type.enterprise=29305 instead (Gerhard, 12/2009)
-					mapReverseElement(fi->type.id|IPFIX_REVERSE_TYPE);
-					DPRINTF("FlowHashtable: mapping field %s to field %s", typeid2string(fi->type.id), typeid2string(fi->type.id|IPFIX_REVERSE_TYPE));
-				} else {
-					// do not reverse element
-					mapReverseElement(fi->type.id);
-					DPRINTF("FlowHashtable: not mapping field %s", typeid2string(fi->type.id));
-				}
-
-		}
-	}
-
-	switchArray = new char[maxFieldSize];
-
-	// check if it's possible to obtain the reverse flow
-	if ((srcIPIdx<0) || (dstIPIdx<0) || (srcPortIdx<0) || (dstPortIdx<0)) {
-		THROWEXCEPTION("no biflow aggregation possible for current template, but was activated in configuration!");
-	}
-
-	for (int i=0; i<dataTemplate->fieldCount; i++) {
-		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
-		switch (fi->type.id) {
-			case IPFIX_TYPEID_sourceIPv4Address:
-				revDataTemplateMapper[i] = dstIPIdx;
-				break;
-			case IPFIX_TYPEID_destinationIPv4Address:
-				revDataTemplateMapper[i] = srcIPIdx;
-				break;
-			case IPFIX_TYPEID_sourceTransportPort:
-				revDataTemplateMapper[i] = dstPortIdx;
-				break;
-			case IPFIX_TYPEID_destinationTransportPort:
-				revDataTemplateMapper[i] = srcPortIdx;
-				break;
-			default:
-				revDataTemplateMapper[i] = i;
-				break;
-		}
-	}
-
-
-}
 
 
 /**
@@ -399,7 +296,7 @@ uint32_t FlowHashtable::getHash(IpfixRecord::Data* data, bool reverse) {
 		if(isToBeAggregated(dataTemplate->fieldInfo[i].type)) {
 			continue;
 		}
-		uint32_t idx = (reverse ? revDataTemplateMapper[i] : i);
+		uint32_t idx = (reverse ? revKeyMapper[i] : i);
 		hash = crc32(hash,
 				dataTemplate->fieldInfo[idx].type.length,
 				(char*)data + dataTemplate->fieldInfo[idx].offset);
@@ -447,7 +344,7 @@ int FlowHashtable::equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2,
 		}
 
 		if (reverse) {
-			TemplateInfo::FieldInfo* rfi = &dataTemplate->fieldInfo[revDataTemplateMapper[i]];
+			TemplateInfo::FieldInfo* rfi = &dataTemplate->fieldInfo[revKeyMapper[i]];
 			if(!equalRaw(&fi->type, flow1 + fi->offset,
 						 &fi->type /* both types *must* be equal, although they may not */,
 						 flow2 + rfi->offset)) {
@@ -484,26 +381,6 @@ HashtableBucket* FlowHashtable::lookupBucket(uint32_t hash, IpfixRecord::Data* d
 	return NULL;
 }
 
-/**
- * turns a whole flow record inside its bucket around for biflow aggregation
- */
-void FlowHashtable::reverseFlowBucket(HashtableBucket* bucket)
-{
-	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
-		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
-		TemplateInfo::FieldInfo* fi2 = &dataTemplate->fieldInfo[flowReverseMapper[i]];
-
-		if (fi != fi2) {
-			//msg(MSG_ERROR, "mapping idx %d to idx %d", i, flowReverseMapper[i]);
-			IpfixRecord::Data* src = bucket->data.get()+fi->offset;
-			IpfixRecord::Data* dst = bucket->data.get()+fi2->offset;
-			uint32_t len = fi->type.length;
-			memcpy(switchArray, src, len);
-			memcpy(src, dst, len);
-			memcpy(dst, switchArray, len);
-		}
-	}
-}
 
 
 /**
@@ -698,7 +575,7 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
 void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 {
 	DPRINTF("called");
-	
+
 	boost::shared_ptr<TemplateInfo> ti = record->templateInfo;
 	IpfixRecord::Data* data = record->data;
 

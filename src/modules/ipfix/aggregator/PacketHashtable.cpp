@@ -36,17 +36,17 @@ PacketHashtable::PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits),
 	snapshotWritten(false), startTime(time(0))
 {
-	if (rule->biflowAggregation)
-		THROWEXCEPTION("PacketAggregator can not perform biflow aggregation, but one of its rules is configured to do that");
 	buildExpHelperTable();
 }
 
 
 PacketHashtable::~PacketHashtable()
 {
-	// free express aggregator helper structures
-	delete[] expHelperTable.expFieldData;
+	delete[] expHelperTable.keyFields;
+	delete[] expHelperTable.aggFields;
+	delete[] expHelperTable.revAggFields;
 	delete[] expHelperTable.varSrcPtrFields;
+	delete[] expHelperTable.revKeyFieldMapper;
 }
 
 /**
@@ -77,6 +77,11 @@ void PacketHashtable::copyDataSetOne(IpfixRecord::Data* bucket, const IpfixRecor
 	memset(dst, 0, efd->dstLength);
 	// set last byte of array to one (network byte order!)
 	dst[efd->dstLength-1] = 1;
+}
+void PacketHashtable::copyDataSetZero(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd)
+{
+	IpfixRecord::Data* dst = bucket+efd->dstIndex;
+	memset(dst, 0, efd->dstLength);
 }
 void PacketHashtable::copyDataFrontPayload(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd)
 {
@@ -203,7 +208,7 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecor
 			(efd->modifier < Rule::Field::MASK_START) && (efd->modifier > Rule::Field::MASK_END)) {
 		THROWEXCEPTION("unknown modifier %d", efd->modifier);
 	}
-	switch (efd->typeId) {
+	switch (efd->typeId & ~IPFIX_REVERSE_TYPE) {
 		case IPFIX_TYPEID_protocolIdentifier:
 		case IPFIX_TYPEID_tcpControlBits:
 			if (efd->dstLength != 1) {
@@ -272,6 +277,9 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(IpfixRecor
 		return copyDataDummy;
 	} else if (efd->typeId == IPFIX_TYPEID_flowStartNanoSeconds || efd->typeId == IPFIX_TYPEID_flowEndNanoSeconds) {
 		return copyDataNanoseconds;
+	} else if (efd->typeId & IPFIX_REVERSE_TYPE) {
+		// ATTENTION: we treat all reverse elements the same: we set them to zero
+		return copyDataSetZero;
 	} else if (efd->dstLength == efd->srcLength) {
 		return copyDataEqualLengthNoMod;
 	} else if (efd->dstLength > efd->srcLength) {
@@ -307,7 +315,7 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const InformationElement::IeInf
 	}
 
 	if(type.enterprise == 0) {
-		switch (type.id) {
+		switch (type.id & ~IPFIX_REVERSE_TYPE) {
 			case IPFIX_TYPEID_protocolIdentifier:
 			case IPFIX_TYPEID_tcpControlBits:
 			case IPFIX_TYPEID_packetDeltaCount:
@@ -364,7 +372,7 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const InformationElement::IeInf
  */
 uint16_t PacketHashtable::getRawPacketFieldOffset(InformationElement::IeId id, const Packet* p)
 {
-	switch (id) {
+	switch (id & ~IPFIX_REVERSE_TYPE) {
 		case IPFIX_TYPEID_packetDeltaCount:
 			return 10;
 			break;
@@ -433,6 +441,8 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(InformationElement::IeId id, c
 				DPRINTFL(MSG_VDEBUG, "given id is %d, protocol is %d, but expected was %d", id, p->ipProtocolType, Packet::TCP);
 			}
 			break;
+		default:
+			THROWEXCEPTION("don't know how to handle field id=%u(%s)", id, typeid2string(id));
 	}
 
 	// return just pointer to zero bytes as result
@@ -449,9 +459,9 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const InformationElement::IeIn
 {
 	if(type.enterprise == 0) {
 		return getRawPacketFieldOffset(type.id, p);
-	} else {
-		THROWEXCEPTION("don't know how to handle field id=%u, enterprise=%lu", type.id, type.enterprise);
 	}
+	THROWEXCEPTION("don't know how to handle field id=%u, enterprise=%lu", type.id, type.enterprise);
+	return 0; // should never be reached
 }
 
 
@@ -460,7 +470,7 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const InformationElement::IeIn
  */
 bool PacketHashtable::isRawPacketPtrVariable(const InformationElement::IeInfo& type)
 {
-	switch (type.id) {
+	switch (type.id & ~IPFIX_REVERSE_TYPE) {
 		case IPFIX_TYPEID_packetDeltaCount:
 		case IPFIX_TYPEID_flowStartSeconds:
 		case IPFIX_TYPEID_flowEndSeconds:
@@ -495,6 +505,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const InformationElement::IeInfo& t
  */
 void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index)
 {
+	DPRINTFL(MSG_VDEBUG, "called for type id %u (%s)", hfi->type.id, typeid2string(hfi->type.id));
 	efd->typeId = hfi->type.id;
 	efd->dstIndex = hfi->offset;
 	efd->dstLength = hfi->type.length;
@@ -545,6 +556,12 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 		}
 	}
 
+	// mark field as variable, if needed
+	if (efd->varSrcIdx)	{
+		DPRINTF("marking type id %u as variable source pointer", efd->typeId);
+		expHelperTable.varSrcPtrFields[expHelperTable.noVarSrcPtrFields++] = efd;
+	}
+
 	efd->copyDataFunc = getCopyDataFunction(efd);
 }
 
@@ -585,55 +602,107 @@ bool PacketHashtable::typeAvailable(const InformationElement::IeInfo& type)
  */
 void PacketHashtable::buildExpHelperTable()
 {
-	expHelperTable.expFieldData = new ExpFieldData[dataTemplate->fieldCount];
-	expHelperTable.varSrcPtrFields = new uint16_t[dataTemplate->fieldCount];
+	expHelperTable.keyFields = new ExpFieldData[dataTemplate->fieldCount];
+	expHelperTable.aggFields = new ExpFieldData[dataTemplate->fieldCount];
+	expHelperTable.revAggFields = new ExpFieldData[dataTemplate->fieldCount];
+	expHelperTable.varSrcPtrFields = new ExpFieldData *[dataTemplate->fieldCount];
+	expHelperTable.revKeyFieldMapper = new ExpFieldData *[dataTemplate->fieldCount];
+	expHelperTable.noVarSrcPtrFields = 0;
+
+	vector<uint16_t> expkey2field; // maps entries from expHelperTable to original fields in template
+	vector<uint16_t> expagg2field;
 
 	// TODO: fill with correct value!
 	expHelperTable.dstIpEFieldIndex = false;
 	expHelperTable.srcIpEFieldIndex = false;
 
-	// at first, fill data structure with aggregatable fields
-	uint16_t efdIdx = 0;
+	// at first, fill data structure with non-reversed aggregatable fields
+	expHelperTable.noAggFields = 0;
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
 		TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+		if (hfi->type.id & IPFIX_REVERSE_TYPE) continue;
 		if (!typeAvailable(hfi->type)) {
 			THROWEXCEPTION("Type '%s' is not contained in raw packet. Please remove it from PacketAggregator rule.", typeid2string(hfi->type.id));
 		}
 		if (!isToBeAggregated(hfi->type)) continue;
-		ExpFieldData* efd = &expHelperTable.expFieldData[efdIdx++];
-		fillExpFieldData(efd, hfi, fieldModifier[i], efdIdx-1);
+		ExpFieldData* efd = &expHelperTable.aggFields[expHelperTable.noAggFields++];
+		fillExpFieldData(efd, hfi, fieldModifier[i], expHelperTable.noAggFields-1);
+		expagg2field.push_back(i);
 	}
-	expHelperTable.noAggFields = efdIdx;
+	DPRINTF("got %u aggregated fields", expHelperTable.noAggFields);
 
-	// now the remaining fields
+	// now the key fields
+	expHelperTable.noKeyFields = 0;
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
 		TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 		if (isToBeAggregated(hfi->type)) continue;
-		ExpFieldData* efd = &expHelperTable.expFieldData[efdIdx++];
-		fillExpFieldData(efd, hfi, fieldModifier[i], efdIdx-1);
+		ExpFieldData* efd = &expHelperTable.keyFields[expHelperTable.noKeyFields++];
+		fillExpFieldData(efd, hfi, fieldModifier[i], expHelperTable.noKeyFields-1);
+		expkey2field.push_back(i);
 	}
-	expHelperTable.efdLength = efdIdx;
+	DPRINTF("got %u key fields", expHelperTable.noKeyFields);
 
-	// fill structure which contains field with variable pointers
-	int noVarFields = 0;
-	for (int i=0; i<expHelperTable.efdLength; i++) {
-		if (expHelperTable.expFieldData[i].varSrcIdx) expHelperTable.varSrcPtrFields[noVarFields++] = i;
+	// reversed aggregatable fields
+	expHelperTable.noRevAggFields = 0;
+	for (int i=0; i<dataTemplate->fieldCount; i++) {
+		TemplateInfo::FieldInfo hfi = dataTemplate->fieldInfo[i];
+		if ((hfi.type.id & IPFIX_REVERSE_TYPE) == 0) continue;
+		hfi.type.id &= ~IPFIX_REVERSE_TYPE;
+		if (!typeAvailable(hfi.type)) {
+			THROWEXCEPTION("Type '%s' is not contained in raw packet. Please remove it from PacketAggregator rule.", typeid2string(hfi.type.id));
+		}
+		if (!isToBeAggregated(hfi.type)) continue;
+		ExpFieldData* efd = &expHelperTable.revAggFields[expHelperTable.noRevAggFields++];
+		fillExpFieldData(efd, &dataTemplate->fieldInfo[i], fieldModifier[i], expHelperTable.noRevAggFields-1);
 	}
-	expHelperTable.varSrcPtrFieldsLen = noVarFields;
+	DPRINTF("got %u reverse aggregated fields", expHelperTable.noRevAggFields);
+
+	// build helper structure for mapping key fields to their reversed elements
+	if (biflowAggregation) {
+		for (uint32_t i=0; i<expHelperTable.noKeyFields; i++) {
+			uint32_t fid = revKeyMapper[expkey2field[i]];
+			vector<uint16_t>::iterator fit = find(expkey2field.begin(), expkey2field.end(), fid);
+			if (fit==expkey2field.end()) THROWEXCEPTION("Error when calculating biflow table. This should not happen. (DOH!)");
+			expHelperTable.revKeyFieldMapper[i] = &expHelperTable.keyFields[fit-expkey2field.begin()];
+			DPRINTF("mapping key exph id %hu to id %hu", fit-expkey2field.begin(), i);
+		}
+	}
+	DPRINTF("got %u fields with variable source pointers", expHelperTable.noVarSrcPtrFields);
+	/*for (uint32_t i=0; i<expHelperTable.noAggFields; i++) {
+		uint32_t fid = flowReverseMapper[expagg2field[i]];
+		vector<uint16_t>::iterator fit = find(expagg2field.begin(), expagg2field.end(), fid);
+		if (fit==expagg2field.end()) THROWEXCEPTION("Error when calculating biflow table. This should not happen. (DOH!)");
+		expHelperTable.revAggFieldMapper[i] = expHelperTable.aggFields[fit-expagg2field.begin()];
+		msg(MSG_ERROR, "mapping agg exph id %hu to id %hu", fit-expagg2field.begin(), i);
+	}*/
 }
 
 
 /**
  * calculates hash for given raw packet data in express aggregator
  */
-uint32_t PacketHashtable::expCalculateHash(const IpfixRecord::Data* data)
+uint32_t PacketHashtable::calculateHash(const IpfixRecord::Data* data)
 {
 	uint32_t hash = 0xAAAAAAAA;
-	for (int i=expHelperTable.noAggFields; i<expHelperTable.efdLength; i++) {
-		ExpFieldData* efd = &expHelperTable.expFieldData[i];
+	for (int i=0; i<expHelperTable.noKeyFields; i++) {
+		ExpFieldData* efd = &expHelperTable.keyFields[i];
+		DPRINTFL(MSG_VDEBUG, "hash for i=%u, typeid=%u, length=%u, srcpointer=%X", i, efd->typeId, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 		hash = crc32(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 	}
-	//return (hash>>(32-HTABLE_BITS)) & (HTABLE_SIZE-1);
+	return hash & (htableSize-1);
+}
+
+/**
+ * calculates hash for given raw packet data in express aggregator for reverse flows
+ */
+uint32_t PacketHashtable::calculateHashRev(const IpfixRecord::Data* data)
+{
+	uint32_t hash = 0xAAAAAAAA;
+	for (int i=0; i<expHelperTable.noKeyFields; i++) {
+		ExpFieldData* efd = expHelperTable.revKeyFieldMapper[i];
+		DPRINTFL(MSG_VDEBUG, "hashrev for i=%u, typeid=%u, length=%u, srcpointer=%X", i, efd->typeId, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
+		hash = crc32(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
+	}
 	return hash & (htableSize-1);
 }
 
@@ -648,8 +717,16 @@ boost::shared_array<IpfixRecord::Data> PacketHashtable::buildBucketData(const Pa
 	IpfixRecord::Data* data = htdata.get();
 
 	// copy all data ...
-	for (int i=0; i<expHelperTable.efdLength; i++) {
-		ExpFieldData* efd = &expHelperTable.expFieldData[i];
+	for (int i=0; i<expHelperTable.noKeyFields; i++) {
+		ExpFieldData* efd = &expHelperTable.keyFields[i];
+		efd->copyDataFunc(data, reinterpret_cast<const uint8_t*>(p->netHeader)+efd->srcIndex, efd);
+	}
+	for (int i=0; i<expHelperTable.noAggFields; i++) {
+		ExpFieldData* efd = &expHelperTable.aggFields[i];
+		efd->copyDataFunc(data, reinterpret_cast<const uint8_t*>(p->netHeader)+efd->srcIndex, efd);
+	}
+	for (int i=0; i<expHelperTable.noRevAggFields; i++) {
+		ExpFieldData* efd = &expHelperTable.revAggFields[i];
 		efd->copyDataFunc(data, reinterpret_cast<const uint8_t*>(p->netHeader)+efd->srcIndex, efd);
 	}
 
@@ -660,7 +737,7 @@ boost::shared_array<IpfixRecord::Data> PacketHashtable::buildBucketData(const Pa
  * aggregates the given field of the raw packet data into a hashtable bucket
  * (part of express aggregator)
  */
-void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Data* bucket, const IpfixRecord::Data* deltaData)
+void PacketHashtable::aggregateField(const ExpFieldData* efd, IpfixRecord::Data* bucket, const IpfixRecord::Data* deltaData)
 {
 	IpfixRecord::Data* baseData = bucket+efd->dstIndex;
 	int64_t gap;
@@ -673,8 +750,22 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 			*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 			break;
 
+		case IPFIX_ETYPEID_revFlowStartSeconds:
+			if (*(uint32_t*)baseData==0)
+				*(uint32_t*)baseData = *(uint32_t*)deltaData;
+			else
+				*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
+			break;
+
 		case IPFIX_TYPEID_flowStartMilliSeconds:
 			*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
+			break;
+
+		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
+			if (*(uint64_t*)baseData==0)
+				*(uint64_t*)baseData = *(uint64_t*)deltaData;
+			else
+				*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
 			break;
 
 		case IPFIX_TYPEID_flowStartNanoSeconds:
@@ -691,15 +782,28 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 #endif
 			break;
 
+		case IPFIX_ETYPEID_revFlowStartNanoSeconds:
+			if (*(uint64_t*)baseData==0)
+				*(uint64_t*)baseData = *(uint64_t*)deltaData;
+			else {
+				ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
+				ntp2 = htonll(ntptime);
+				*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, ntp2);
+			}
+			break;
+
 		case IPFIX_TYPEID_flowEndSeconds:
+		case IPFIX_ETYPEID_revFlowEndSeconds:
 			*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 			break;
 
 		case IPFIX_TYPEID_flowEndMilliSeconds:
+		case IPFIX_ETYPEID_revFlowEndMilliSeconds:
 			*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
 			break;
 
 		case IPFIX_TYPEID_flowEndNanoSeconds:
+		case IPFIX_ETYPEID_revFlowEndNanoSeconds:
 			ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
 			ntp2 = htonll(ntptime);
 			*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, ntp2);
@@ -710,26 +814,32 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 			break;
 
 		case IPFIX_TYPEID_octetDeltaCount: // 8 byte dst, 2 byte src
+		case IPFIX_ETYPEID_revOctetDeltaCount:
 			*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData) + ntohs(*(uint16_t*)deltaData));
 			break;
 
 		case IPFIX_TYPEID_packetDeltaCount: // 8 byte dst, no src
+		case IPFIX_ETYPEID_revPacketDeltaCount:
 			*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData)+1);
 			break;
 
 		case IPFIX_TYPEID_tcpControlBits:  // 1 byte src and dst, bitwise-or flows
+		case IPFIX_ETYPEID_revTcpControlBits:
 			*(uint8_t*)baseData |= *(uint8_t*)deltaData;
 			break;
 
 		case IPFIX_ETYPEID_frontPayload:
+		case IPFIX_ETYPEID_revFrontPayload:
 			aggregateFrontPayload(bucket, reinterpret_cast<const Packet*>(deltaData), efd);
 			break;
 
 		case IPFIX_ETYPEID_frontPayloadLen:
+		case IPFIX_ETYPEID_revFrontPayloadLen:
 			*(uint32_t*)baseData = htonl(*reinterpret_cast<const uint32_t*>(bucket+efd->privDataOffset));
 			break;
 
 		case IPFIX_ETYPEID_maxPacketGap:
+		case IPFIX_ETYPEID_revMaxPacketGap:
 			gap = (int64_t)ntohll(*(int64_t*)deltaData)-(int64_t)ntohll(*reinterpret_cast<const uint64_t*>(bucket+efd->privDataOffset));
 			if (gap<0) gap = -gap;
 			DPRINTFL(MSG_VDEBUG, "gap: %u, oldgap: %u", gap, ntohl(*(uint32_t*)baseData));
@@ -748,29 +858,62 @@ void PacketHashtable::expAggregateField(const ExpFieldData* efd, IpfixRecord::Da
 
 /**
  * aggregates the given raw packet data into the hashtable bucket
- * (part of express aggregator)
  */
-void PacketHashtable::expAggregateFlow(IpfixRecord::Data* bucket, const Packet* p)
+void PacketHashtable::aggregateFlow(HashtableBucket* bucket, const Packet* p, bool reverse)
 {
-	for (int i=0; i<expHelperTable.noAggFields; i++) {
-		ExpFieldData* efd = &expHelperTable.expFieldData[i];
+	IpfixRecord::Data* data = bucket->data.get();
+	if (!reverse) {
+		for (int i=0; i<expHelperTable.noAggFields; i++) {
+			ExpFieldData* efd = &expHelperTable.aggFields[i];
+			aggregateField(efd, data, p->netHeader+efd->srcIndex);
+		}
+	} else {
+		for (int i=0; i<expHelperTable.noRevAggFields; i++) {
+			ExpFieldData* efd = &expHelperTable.revAggFields[i];
+			aggregateField(efd, data, p->netHeader+efd->srcIndex);
+		}
+	}
+	// TODO: tobi_optimize
+	// replace call of time() with access to a static variable which is updated regularly (such as every 100ms)
+	bucket->expireTime = time(0) + minBufferTime;
 
-		expAggregateField(efd, bucket, p->netHeader+efd->srcIndex);
+	if (bucket->forceExpireTime>bucket->expireTime) {
+		exportList.remove(bucket->listNode);
+		exportList.push(bucket->listNode);
 	}
 }
 
 /**
  * compares if given hashtable bucket data is equal with raw packet data
- * (part of express aggregator)
  * @returns true if equal, false if not equal
  */
-bool PacketHashtable::expEqualFlow(IpfixRecord::Data* bucket, const Packet* p)
+bool PacketHashtable::equalFlow(IpfixRecord::Data* bucket, const Packet* p)
 {
-	for (int i=expHelperTable.noAggFields; i<expHelperTable.efdLength; i++) {
-		ExpFieldData* efd = &expHelperTable.expFieldData[i];
+	for (int i=0; i<expHelperTable.noKeyFields; i++) {
+		ExpFieldData* efd = &expHelperTable.keyFields[i];
 
+		DPRINTFL(MSG_VDEBUG, "equal for i=%u, typeid=%u, length=%u, srcpointer=%X", i, efd->typeId, efd->srcLength, p->netHeader+efd->srcIndex);
 		// just compare srcLength bytes, as we still have our original packet data
 		if (memcmp(bucket+efd->dstIndex, p->netHeader+efd->srcIndex, efd->srcLength)!=0)
+			return false;
+	}
+	return true;
+}
+
+/**
+ * compares if given hashtable bucket data is equal with raw packet data, reverse version
+ * (for biflow aggregation)
+ * @returns true if equal, false if not equal
+ */
+bool PacketHashtable::equalFlowRev(IpfixRecord::Data* bucket, const Packet* p)
+{
+	for (int i=0; i<expHelperTable.noKeyFields; i++) {
+		ExpFieldData* efdsrc = &expHelperTable.keyFields[i];
+		ExpFieldData* efddst = expHelperTable.revKeyFieldMapper[i];
+
+		DPRINTFL(MSG_VDEBUG, "equalrev for i=%u, typeid=%u, length=%u, srcpointer=%X", i, efdsrc->typeId, efdsrc->srcLength, p->netHeader+efdsrc->srcIndex);
+		// just compare srcLength bytes, as we still have our original packet data
+		if (memcmp(bucket+efddst->dstIndex, p->netHeader+efdsrc->srcIndex, efdsrc->srcLength)!=0)
 			return false;
 	}
 	return true;
@@ -820,14 +963,14 @@ void PacketHashtable::createMaskedField(IpfixRecord::Data* address, uint8_t imas
 void PacketHashtable::createMaskedFields(const Packet* p)
 {
 	if (expHelperTable.dstIpEFieldIndex > 0) {
-		ExpFieldData* efd = &expHelperTable.expFieldData[expHelperTable.dstIpEFieldIndex];
+		ExpFieldData* efd = &expHelperTable.keyFields[expHelperTable.dstIpEFieldIndex];
 		// copy *original* ip address in *raw packet* to our temporary structure
 		*reinterpret_cast<uint32_t*>(&efd->data[0]) = *reinterpret_cast<uint32_t*>(p->netHeader+efd->origSrcIndex);
 		// then mask it
 		createMaskedField(&efd->data[0], efd->data[4]);
 	}
 	if (expHelperTable.srcIpEFieldIndex > 0) {
-		ExpFieldData* efd = &expHelperTable.expFieldData[expHelperTable.srcIpEFieldIndex];
+		ExpFieldData* efd = &expHelperTable.keyFields[expHelperTable.srcIpEFieldIndex];
 		// copy *original* ip address in *raw packet* to our temporary structure
 		*reinterpret_cast<uint32_t*>(&efd->data[0]) = *reinterpret_cast<uint32_t*>(p->netHeader+efd->origSrcIndex);
 		// then mask it
@@ -841,9 +984,8 @@ void PacketHashtable::createMaskedFields(const Packet* p)
  */
 void PacketHashtable::updatePointers(const Packet* p)
 {
-	for (int i=0; i<expHelperTable.varSrcPtrFieldsLen; i++) {
-		ExpFieldData* efd = &expHelperTable.expFieldData[expHelperTable.varSrcPtrFields[i]];
-
+	for (int i=0; i<expHelperTable.noVarSrcPtrFields; i++) {
+		ExpFieldData* efd = expHelperTable.varSrcPtrFields[i];
 
 		switch (efd->typeId) {
 			// perform a hack for masked IPs:
@@ -869,8 +1011,17 @@ void PacketHashtable::updatePointers(const Packet* p)
 	}
 }
 
+void PacketHashtable::updateBucketData(HashtableBucket* bucket)
+{
+	statTotalEntries++;
+	BucketListElement* node = hbucketIM.getNewInstance();
+	node->reset();
+	node->bucket = bucket;
+	bucket->listNode = node;
+	exportList.push(node);
+}
+
 /**
- * Replacement for ExpAggregateTemplateData
  * inserts the given raw packet into the hashtable
  * ATTENTION:
  *  - this function expects not to be called in parallel, as it uses internal buffers which are
@@ -892,54 +1043,61 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 	updatePointers(p);
 	createMaskedFields(p);
 
-	uint32_t hash = expCalculateHash(p->netHeader);
+	uint32_t hash = calculateHash(p->netHeader);
+	DPRINTFL(MSG_VDEBUG, "packet hash=%u", hash);
 
 	// search bucket inside hashtable
 	HashtableBucket* bucket = buckets[hash];
-	if (bucket == 0) {
-		// slot is free, place bucket there
-		statEmptyBuckets--;
-		DPRINTF("creating new bucket");
-		buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID, 0, 0, hash);
-		BucketListElement* node = hbucketIM.getNewInstance();
-		node->reset();
-		node->bucket = buckets[hash];
-		buckets[hash]->listNode = node;
-		exportList.push(node);
-		statTotalEntries++;
-	} else {
+	HashtableBucket* appendbucket = NULL;
+	bool flowfound = false;
+	if (bucket != 0) {
 		// This slot is already used, search spill chain for equal flow
-		while(1) {
-			if (expEqualFlow(bucket->data.get(), p)) {
-				DPRINTF("appending to bucket\n");
-
-				expAggregateFlow(bucket->data.get(), p);
-
-				// TODO: tobi_optimize
-				// replace call of time() with access to a static variable which is updated regularly (such as every 100ms)
-				bucket->expireTime = time(0) + minBufferTime;
-
-				if (bucket->forceExpireTime>bucket->expireTime) {
-					exportList.remove(bucket->listNode);
-					exportList.push(bucket->listNode);
-				}
+		while (1) {
+			if (equalFlow(bucket->data.get(), p)) {
+				DPRINTF("aggregate flow in normal direction");
+				aggregateFlow(bucket, p, 0);
+				flowfound = true;
 				break;
 			}
 
-			if (bucket->next == 0) {
-				DPRINTF("creating bucket\n");
-				statTotalEntries++;
-				statMultiEntries++;
-				HashtableBucket* buck = createBucket(buildBucketData(p), p->observationDomainID, 0, bucket, hash);
-				bucket->next = buck;
-				BucketListElement* node = hbucketIM.getNewInstance();
-				node->reset();
-				exportList.push(node);
-				node->bucket = buck;
-				buck->listNode = node;
+			if (bucket->next==NULL) {
+				appendbucket = bucket;
 				break;
 			}
 			bucket = (HashtableBucket*)bucket->next;
+		}
+	}
+	if (biflowAggregation && !flowfound) {
+		// search for reverse direction
+		uint32_t rhash = calculateHashRev(p->netHeader);
+		DPRINTFL(MSG_VDEBUG, "rev packet hash=%u", rhash);
+		HashtableBucket* bucket = buckets[rhash];
+
+		while (bucket!=0) {
+			if (equalFlowRev(bucket->data.get(), p)) {
+				DPRINTF("aggregate flow in reverse direction");
+				aggregateFlow(bucket, p, 1);
+				flowfound = true;
+				break;
+			}
+			bucket = (HashtableBucket*)bucket->next;
+		}
+	}
+
+	if (!flowfound) {
+		// create new flow
+		if (appendbucket==NULL) {
+			// create new bucket in empty hashtable entry
+			statEmptyBuckets--;
+			DPRINTF("creating new bucket");
+			buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID, 0, 0, hash);
+			updateBucketData(buckets[hash]);
+		} else {
+			DPRINTF("creating bucket\n");
+			statMultiEntries++;
+			HashtableBucket* buck = createBucket(buildBucketData(p), p->observationDomainID, 0, appendbucket, hash);
+			bucket->next = buck;
+			updateBucketData(buck);
 		}
 	}
 	//if (!snapshotWritten && (time(0)- 300 > starttime)) writeHashtable();

@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -31,7 +31,10 @@ using namespace std;
  */
 BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
-	: htableBits(hashbits),
+	: biflowAggregation(rule->biflowAggregation),
+	  revKeyMapper(NULL),
+	  switchArray(NULL),
+	  htableBits(hashbits),
 	  htableSize(1<<hashbits),
 	  minBufferTime(minBufferTime),
 	  maxBufferTime(maxBufferTime),
@@ -61,6 +64,10 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 		buckets[i] = NULL;
 
 	createDataTemplate(rule);
+
+	if (biflowAggregation) {
+		genBiflowStructs();
+	}
 }
 
 /**
@@ -462,4 +469,124 @@ std::string BaseHashtable::getStatisticsXML(double interval)
 	statLastExpBuckets += diff;
 	oss << "<exportedEntries>" << (uint32_t) ((double) diff / interval) << "</exportedEntries>";
 	return oss.str();
+}
+
+void BaseHashtable::mapReverseElement(uint32_t tid)
+{
+	int i = dataTemplate->getFieldIndex(tid, 0);
+	if (i<0)
+		THROWEXCEPTION("failed to retrieve IPFIX field id %d/%s (derived as reverse field). Maybe this element is not contained in flow definition?",
+				tid, typeid2string(tid));
+	if (dataTemplate->getFieldInfo(tid, 0)->type.length!=dataTemplate->fieldInfo[flowReverseMapper.size()].type.length)
+		THROWEXCEPTION("failed to map IPFIX field id %d/%s to its reverse element %d/%s. Elements do not share same size (%d/%d)! ",
+				dataTemplate->fieldInfo[flowReverseMapper.size()].type.id,
+				typeid2string(dataTemplate->fieldInfo[flowReverseMapper.size()].type.id), tid, typeid2string(tid),
+				dataTemplate->fieldInfo[flowReverseMapper.size()].type.length, dataTemplate->getFieldInfo(tid, 0)->type.length);
+	flowReverseMapper.push_back(i);
+}
+
+
+void BaseHashtable::genBiflowStructs()
+{
+	int32_t srcIPIdx = -1;
+	int32_t dstIPIdx = -1;
+	int32_t srcPortIdx = -1;
+	int32_t dstPortIdx = -1;
+	uint32_t maxFieldSize = 0;
+
+
+	// search for offsets in dataTemplate
+	revKeyMapper = new uint32_t[dataTemplate->fieldCount];
+	DPRINTF("fieldCount=%d", dataTemplate->fieldCount);
+	for (int32_t i=0; i<dataTemplate->fieldCount; i++) {
+		DPRINTF("fieldCount=%d", i);
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		if (fi->type.length>maxFieldSize) maxFieldSize = fi->type.length;
+		switch (fi->type.id) {
+			case IPFIX_TYPEID_protocolIdentifier:
+				mapReverseElement(fi->type.id);
+				break;
+			case IPFIX_TYPEID_sourceIPv4Address:
+				srcIPIdx = i;
+				mapReverseElement(IPFIX_TYPEID_destinationIPv4Address);
+				break;
+			case IPFIX_TYPEID_destinationIPv4Address:
+				dstIPIdx = i;
+				mapReverseElement(fi->type.id);
+				break;
+			case IPFIX_TYPEID_sourceTransportPort:
+				srcPortIdx = i;
+				mapReverseElement(IPFIX_TYPEID_destinationTransportPort);
+				break;
+			case IPFIX_TYPEID_destinationTransportPort:
+				dstPortIdx = i;
+				mapReverseElement(fi->type.id);
+				break;
+
+			default:
+				// this call is dangerous, as calculated type ids may not exist at all
+				// but mapReverseElement will detect those and throw an exception
+				DPRINTF("field %s", typeid2string(fi->type.id));
+				if ((fi->type.id&IPFIX_REVERSE_TYPE)==0) {
+					//TODO: set type.enterprise=29305 instead (Gerhard, 12/2009)
+					mapReverseElement(fi->type.id|IPFIX_REVERSE_TYPE);
+					DPRINTF("mapping field %s to field %s", typeid2string(fi->type.id), typeid2string(fi->type.id|IPFIX_REVERSE_TYPE));
+				} else {
+					// do not reverse element
+					mapReverseElement(fi->type.id);
+					DPRINTF("not mapping field %s", typeid2string(fi->type.id));
+				}
+
+		}
+	}
+
+	switchArray = new char[maxFieldSize];
+
+	// check if it's possible to obtain the reverse flow
+	if ((srcIPIdx<0) || (dstIPIdx<0) || (srcPortIdx<0) || (dstPortIdx<0)) {
+		THROWEXCEPTION("no biflow aggregation possible for current template, but was activated in configuration!");
+	}
+
+	for (int i=0; i<dataTemplate->fieldCount; i++) {
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		switch (fi->type.id) {
+			case IPFIX_TYPEID_sourceIPv4Address:
+				revKeyMapper[i] = dstIPIdx;
+				break;
+			case IPFIX_TYPEID_destinationIPv4Address:
+				revKeyMapper[i] = srcIPIdx;
+				break;
+			case IPFIX_TYPEID_sourceTransportPort:
+				revKeyMapper[i] = dstPortIdx;
+				break;
+			case IPFIX_TYPEID_destinationTransportPort:
+				revKeyMapper[i] = srcPortIdx;
+				break;
+			default:
+				revKeyMapper[i] = i;
+				break;
+		}
+	}
+}
+
+
+/**
+ * turns a whole flow record inside its bucket around for biflow aggregation
+ */
+void BaseHashtable::reverseFlowBucket(HashtableBucket* bucket)
+{
+	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi2 = &dataTemplate->fieldInfo[flowReverseMapper[i]];
+
+		if (fi != fi2) {
+			//msg(MSG_ERROR, "mapping idx %d to idx %d", i, flowReverseMapper[i]);
+			IpfixRecord::Data* src = bucket->data.get()+fi->offset;
+			IpfixRecord::Data* dst = bucket->data.get()+fi2->offset;
+			uint32_t len = fi->type.length;
+			memcpy(switchArray, src, len);
+			memcpy(src, dst, len);
+			memcpy(dst, switchArray, len);
+		}
+	}
 }
