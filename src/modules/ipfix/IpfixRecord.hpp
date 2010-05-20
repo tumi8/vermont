@@ -41,6 +41,9 @@ namespace InformationElement {
 
 	/* Field in a Data Record */
 	struct IeInfo {
+		IeInfo(IeId id = 0, IeEnterpriseNumber enterprise = 0, IeLength length = 0)
+			: id(id), enterprise(enterprise), length(length)
+		{}
 		IeId id; 			/**< Information Element Id */
 		IeEnterpriseNumber enterprise;/**< Enterprise Number for enterprise-specific IEs (i.e., id >= 0x8000) */
 		IeLength length; 		/**< Field length in bytes (65535 in the case of variable lengh field) */
