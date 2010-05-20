@@ -316,10 +316,11 @@ IpfixPrinter::~IpfixPrinter()
  */
 void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 {
+	boost::shared_ptr<TemplateInfo> templateInfo;
 	switch (outputType) {
 		case LINE:
 		case TREE:
-			boost::shared_ptr<TemplateInfo> templateInfo = record->templateInfo;
+			templateInfo = record->templateInfo;
 			switch(templateInfo->setId) {
 				case TemplateInfo::NetflowTemplate:
 					fprintf(fh, "\n-+--- Netflow Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
@@ -363,6 +364,10 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 				}
 			}
 			fprintf(fh, " `---\n\n");
+			break;
+
+		case TABLE:
+		case NONE:
 			break;
 	}
 	record->removeReference();

@@ -187,7 +187,7 @@ Connection::Connection(IpfixDataRecord* record)
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_dpaReverseStart, 0);
 	if (fi != 0) dpaReverseStart = *(uint8_t*)(record->data + fi->offset);
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_dpaFlowCount, 0);
-	if (fi != 0) dpaFlowCount = *(uint8_t*)(record->data + fi->offset);
+	if (fi != 0) dpaFlowCount = ntohl(*(uint32_t*)(record->data + fi->offset));
 }
 
 Connection::~Connection()

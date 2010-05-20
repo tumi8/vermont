@@ -146,32 +146,32 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, Hashtable
 	uint16_t plen = src->data_length-src->payloadOffset;
 	if (src->payloadOffset==0 || src->payloadOffset==src->transportHeaderOffset) plen = 0;
 
-
 	// DPA logic
 	if (efd->typeSpecData.frontPayload.dpa && plen>0) {
 		DpaPrivateData* dpd = reinterpret_cast<DpaPrivateData*>(bucket+efd->typeSpecData.frontPayload.dpaPrivDataOffset);
 		bool revdir = ((efd->typeId & IPFIX_REVERSE_TYPE) > 0);
-		DPRINTFL(MSG_INFO, "pkt revdir=%hhu, plen=%u, datarecv=%hhu, dpd=%u, buckdata=%X, dparevstartoffset=%u\n", revdir, plen, dpd->datarecv, dpd, bucket, efd->typeSpecData.frontPayload.dpaRevStartOffset);
+		DPRINTFL(MSG_VDEBUG, "pkt revdir=%hhu, plen=%u, datarecv=%hhu, dpd=%u, buckdata=%X, dparevstartoffset=%u\n", revdir, plen, dpd->datarecv, dpd, bucket, efd->typeSpecData.frontPayload.dpaRevStartOffset);
 		if (!dpd->datarecv) {
 			// first time we receive data!
 			dpd->revstart = revdir;
 			if (efd->typeSpecData.frontPayload.dpaRevStartOffset != ExpHelperTable::UNUSED)
 				*reinterpret_cast<uint8_t*>(bucket+efd->typeSpecData.frontPayload.dpaRevStartOffset) = revdir;
 			dpd->datarecv = true;
-			DPRINTFL(MSG_INFO, "1. revstart=%hhu\n", revdir);
+			DPRINTFL(MSG_DEBUG, "1. revstart=%hhu\n", revdir);
 		} else if ((revdir && !dpd->revstart) || (!revdir && dpd->revstart)) {
 			// we are now in other direction
 			dpd->revdata = true;
-			DPRINTFL(MSG_INFO, "2. revdata=%hhu\n", dpd->revdata);
+			DPRINTFL(MSG_DEBUG, "2. revdata=%hhu\n", dpd->revdata);
 		} else if (dpd->revdata && ((dpd->revstart && revdir) || (!dpd->revstart && !revdir))) {
 			// this flow *must* be exported!
-			DPRINTFL(MSG_INFO, "3. export");
-			*reinterpret_cast<uint8_t*>(bucket+efd->typeSpecData.frontPayload.dpaForcedExportOffset) = 1;
+			DPRINTFL(MSG_DEBUG, "3. export");
+			if (efd->typeSpecData.frontPayload.dpaForcedExportOffset != ExpHelperTable::UNUSED)
+				*reinterpret_cast<uint8_t*>(bucket+efd->typeSpecData.frontPayload.dpaForcedExportOffset) = 1;
 			assert(hbucket!=NULL);
 			hbucket->forceExpiry = true;
 			return;
 		} else {
-			DPRINTFL(MSG_INFO, "4. okdata");
+			DPRINTFL(MSG_DEBUG, "4. okdata");
 		}
 	}
 
@@ -874,7 +874,7 @@ boost::shared_array<IpfixRecord::Data> PacketHashtable::buildBucketData(const Pa
 	// new field for insertion into hashtable
 	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength+privDataLength]);
 	IpfixRecord::Data* data = htdata.get();
-	msg(MSG_INFO, "fieldLength=%u, privDataLength=%u, bucketdata=%X\n", fieldLength, privDataLength, data);
+	//msg(MSG_INFO, "fieldLength=%u, privDataLength=%u, bucketdata=%X\n", fieldLength, privDataLength, data);
 	bzero(data, fieldLength+privDataLength);
 	CopyFuncParameters cfp;
 
@@ -1227,7 +1227,7 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 					DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
 					removeBucket(bucket);
 					expiryforced = true;
-					if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED) 
+					if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
 						oldflowcount = reinterpret_cast<uint32_t*>(bucket->data.get()+expHelperTable.dpaFlowCountOffset);
 					bucket = NULL;
 				}
@@ -1257,7 +1257,7 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 					DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
 					removeBucket(bucket);
 					expiryforced = true;
-					if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED) 
+					if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
 						oldflowcount = reinterpret_cast<uint32_t*>(bucket->data.get()+expHelperTable.dpaFlowCountOffset);
 					bucket = NULL;
 				}
@@ -1267,29 +1267,24 @@ void PacketHashtable::aggregatePacket(const Packet* p)
 		}
 	}
 
-	if (!flowfound) {
+	if (!flowfound || expiryforced) {
 		// create new flow
-		if (appendbucket==NULL) {
-			// create new bucket in empty hashtable entry
-			statEmptyBuckets--;
-			DPRINTF("creating new bucket");
-			HashtableBucket* firstbucket = buckets[hash];
-			buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID, 0, 0, hash);
-			buckets[hash]->inTable = true;
-			buckets[hash]->next = firstbucket;
-			if (oldflowcount) 
-				*reinterpret_cast<uint32_t*>(buckets[hash]->data.get()+expHelperTable.dpaFlowCountOffset) = htonl(ntohl(*oldflowcount)+1);
-			updateBucketData(buckets[hash]);
-		} else {
-			DPRINTF("creating bucket\n");
+		DPRINTF("creating new bucket");
+		HashtableBucket* firstbucket = buckets[hash];
+		buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID, firstbucket, 0, hash);
+		if (firstbucket) {
+			firstbucket->prev = buckets[hash];
 			statMultiEntries++;
-			HashtableBucket* buck = createBucket(buildBucketData(p), p->observationDomainID, 0, appendbucket, hash);
-			bucket->next = buck;
-			buck->inTable = true;
-			if (oldflowcount) 
-				*reinterpret_cast<uint32_t*>(buck->data.get()+expHelperTable.dpaFlowCountOffset) = htonl(ntohl(*oldflowcount)+1);
-			updateBucketData(buck);
+		} else {
+			statEmptyBuckets--;
 		}
+		buckets[hash]->inTable = true;
+
+		if (oldflowcount) {
+			DPRINTFL(MSG_VDEBUG, "oldflowcount: %u", ntohl(*oldflowcount));
+			*reinterpret_cast<uint32_t*>(buckets[hash]->data.get()+expHelperTable.dpaFlowCountOffset) = htonl(ntohl(*oldflowcount)+1);
+		}
+		updateBucketData(buckets[hash]);
 	}
 	//if (!snapshotWritten && (time(0)- 300 > starttime)) writeHashtable();
 	// FIXME: enable snapshots again by configuration

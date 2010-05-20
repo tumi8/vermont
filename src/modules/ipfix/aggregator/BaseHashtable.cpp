@@ -279,22 +279,17 @@ void BaseHashtable::removeBucket(HashtableBucket* bucket)
 		statMultiEntries--;
 	if (!bucket->next && !bucket->prev)
 		statEmptyBuckets++;
-	if (!bucket->prev) {
-		if (bucket->next) {
-			buckets[bucket->hash] = bucket->next;
-			bucket->next->prev = 0;
-		}
-		else {
-			buckets[bucket->hash] = 0;
-		}
+	if (bucket->prev) {
+		bucket->prev->next = bucket->next;
 	} else {
-		if (!bucket->next)
-			bucket->prev->next = 0;
-		else {
-			bucket->prev->next = bucket->next;
-			bucket->next->prev = bucket->prev;
-		}
+		buckets[bucket->hash] = bucket->next;
 	}
+	if (bucket->next) {
+		bucket->next->prev = bucket->prev;
+	}
+	bucket->next = NULL;
+	bucket->prev = NULL;
+	bucket->hash = 0;
 	bucket->inTable = false;
 }
 
