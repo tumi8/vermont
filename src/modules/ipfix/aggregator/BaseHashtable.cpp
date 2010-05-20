@@ -238,6 +238,7 @@ HashtableBucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Da
 	bucket->prev = prev;
 	bucket->hash = hash;
 	bucket->observationDomainID = obsdomainid;
+	bucket->forceExpiry = false;
 
 	return bucket;
 }
@@ -268,6 +269,35 @@ void BaseHashtable::destroyBucket(HashtableBucket* bucket)
 	delete bucket;
 }
 
+
+/**
+ * removes given bucket from the hashtable
+ */
+void BaseHashtable::removeBucket(HashtableBucket* bucket)
+{
+	if (bucket->next || bucket->prev)
+		statMultiEntries--;
+	if (!bucket->next && !bucket->prev)
+		statEmptyBuckets++;
+	if (!bucket->prev) {
+		if (bucket->next) {
+			buckets[bucket->hash] = bucket->next;
+			bucket->next->prev = 0;
+		}
+		else {
+			buckets[bucket->hash] = 0;
+		}
+	} else {
+		if (!bucket->next)
+			bucket->prev->next = 0;
+		else {
+			bucket->prev->next = bucket->next;
+			bucket->next->prev = bucket->prev;
+		}
+	}
+	bucket->inTable = false;
+}
+
 /**
  * Exports all expired flows and removes them from the buffer
  */
@@ -282,9 +312,6 @@ void BaseHashtable::expireFlows(bool all)
 	}
 
 	uint32_t now = time(0);
-	uint32_t emptyBuckets = 0;
-	uint32_t exportedBuckets = 0;
-	uint32_t multiEntries = 0;
 	HashtableBucket* bucket = 0;
 	BucketListElement* node = 0;
 
@@ -299,27 +326,8 @@ void BaseHashtable::expireFlows(bool all)
 					DPRINTF("expireFlows: forced expiry");
 				else if (now > bucket->expireTime)
 					DPRINTF("expireFlows: normal expiry");
-				exportedBuckets++;
-				if (bucket->next || bucket->prev)
-					multiEntries++;
-				if (!bucket->next && !bucket->prev)
-					emptyBuckets++;
-				if (!bucket->prev) {
-					if (bucket->next) {
-						buckets[bucket->hash] = bucket->next;
-						bucket->next->prev = 0;
-					}
-					else {
-						buckets[bucket->hash] = 0;
-					}
-				} else {
-					if (!bucket->next)
-						bucket->prev->next = 0;
-					else {
-						bucket->prev->next = bucket->next;
-						bucket->next->prev = bucket->prev;
-					}
-				}
+				if (bucket->inTable) removeBucket(bucket);
+				statExportedBuckets++;
 				exportBucket(bucket);
 				exportList.remove(node);
 				destroyBucket(bucket);
@@ -330,10 +338,6 @@ void BaseHashtable::expireFlows(bool all)
 		}//end while
 	}
 
-	statTotalEntries -= exportedBuckets;
-	statEmptyBuckets += emptyBuckets;
-	statExportedBuckets += exportedBuckets;
-	statMultiEntries -= multiEntries;
 	atomic_release(&aggInProgress);
 }
 
@@ -379,6 +383,9 @@ int BaseHashtable::isToBeAggregated(const InformationElement::IeInfo& type)
 			case IPFIX_ETYPEID_revTcpControlBits:
 			case IPFIX_ETYPEID_maxPacketGap:
 			case IPFIX_ETYPEID_revMaxPacketGap:
+			case IPFIX_ETYPEID_dpaForcedExport:
+			case IPFIX_ETYPEID_dpaFlowCount:
+			case IPFIX_ETYPEID_dpaReverseStart:
 				return 1;
 
 			case IPFIX_TYPEID_octetTotalCount:
@@ -528,7 +535,12 @@ void BaseHashtable::genBiflowStructs()
 				dstPortIdx = i;
 				mapReverseElement(fi->type.id);
 				break;
-
+			// do not reverse these fields
+			case IPFIX_ETYPEID_dpaForcedExport:
+			case IPFIX_ETYPEID_dpaFlowCount:
+			case IPFIX_ETYPEID_dpaReverseStart:
+				mapReverseElement(fi->type.id);
+				break;
 			default:
 				// this call is dangerous, as calculated type ids may not exist at all
 				// but mapReverseElement will detect those and throw an exception

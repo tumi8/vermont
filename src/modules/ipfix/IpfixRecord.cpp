@@ -187,6 +187,9 @@ namespace InformationElement {
 				case IPFIX_ETYPEID_revFrontPayload:
 				case IPFIX_ETYPEID_revFrontPayloadLen:
 				case IPFIX_ETYPEID_frontPayloadPktCount:
+				case IPFIX_ETYPEID_dpaForcedExport:
+				case IPFIX_ETYPEID_dpaFlowCount:
+				case IPFIX_ETYPEID_dpaReverseStart:
 					return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
 
 				case IPFIX_TYPEID_tcpControlBits:
@@ -194,7 +197,7 @@ namespace InformationElement {
 					return Packet::TCP;
 			}
 		}
-		THROWEXCEPTION("received unknown field type id (%d)", type.id);
+		THROWEXCEPTION("received unknown field type id %d (%s)", type.id, typeid2string(type.id));
 		return Packet::NONE;
 	}
 

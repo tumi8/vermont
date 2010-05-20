@@ -106,7 +106,9 @@ protected:
 	// attached to IPFIX_ETYPE_dpaForcedExport
 	struct DpaPrivateData
 	{
-		bool revdata; /**< DPA: set to true when data is transferred in reverse direction */
+		bool datarecv; /**< DPA: set to true when data was observed */
+		bool revdata; /**< DPA: set to true when data is transferred in reverse direction now */
+		bool revstart; /**< DPA: set to true when data transfer started in reverse direction */
 	};
 
 	boost::shared_ptr<TemplateInfo> dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
@@ -162,6 +164,8 @@ protected:
 	void mapReverseElement(uint32_t tid);
 	void genBiflowStructs();
 	void reverseFlowBucket(HashtableBucket* bucket);
+	void removeBucket(HashtableBucket* bucket);
+
 };
 
 #endif /*BASEHASHTABLE_H_*/

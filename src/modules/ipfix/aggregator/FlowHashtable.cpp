@@ -443,6 +443,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 			DPRINTFL(MSG_VDEBUG, "creating new bucket");
 			HashtableBucket* n = buckets[nhash];
 			buckets[nhash] = createBucket(data, 0, n, 0, nhash); // FIXME: insert observationDomainID!
+			buckets[nhash]->inTable = true;
 			if (n != NULL) n->prev = buckets[nhash];
 			BucketListElement* node = hbucketIM.getNewInstance();
 			node->reset();
