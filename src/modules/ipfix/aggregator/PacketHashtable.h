@@ -81,9 +81,21 @@ private:
 
 		uint32_t privDataOffset; /**< offset for private data inside flow, if available */
 
-		uint32_t fpLenOffset; /**< relative offset for front payload length, 0 if field is not available in template/flow */
-
 		void (*copyDataFunc)(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*); /**< function which is able to copy data from raw packet to ipfix field */
+
+		/**
+		 * contains type specific data that is needed for aggregation
+		 */
+		union TypeSpecificData {
+			struct FrontPayloadData {
+				uint32_t pktCountOffset; /**< offset from start of record data to IPFIX_ETYPE_FRONTPAYLOADPKTCOUNT, 0xFFFFFFFF if not used */
+				uint32_t dpaFlowCountOffset; /**< for DPA: offset from start of record data to IPFIX_ETYPE_DPAFLOWCOUNT (number of switched dialogues), ::UNUSED if not used */
+				uint32_t dpaForcedExportOffset; /**< for DPA: offset from start of record data to IPFIX_ETYPE_DPAFORCEDEXPORT, ::UNUSED if not used */
+				uint32_t dpaRevDataOffset; /**< for DPA: offset from start of record data to private data of IPFIX_ETYPE_DPAFORCEDEXPORT, ::UNUSED if not used */
+				uint32_t fpaLenOffset; /**< offset from start of record data to IPFIX_ETYPE_FRONTPAYLOADLEN, 0xFFFFFFFF if not used */
+				bool dpa; /**< set to true, if DPA was activated */
+			} frontPayload;
+		} typeSpecData;
 
 	};
 	struct ExpHelperTable
@@ -100,9 +112,10 @@ private:
 
 		ExpFieldData** varSrcPtrFields; /**< array with indizes to expFieldData elements, which have a srcIndex which varies from packet to packet */
 		uint16_t noVarSrcPtrFields;
-		//ExpFieldData** revAggFieldMapper; /**< maps field indizes to their reverse indizes */
 		ExpFieldData** revKeyFieldMapper; /**< maps field indizes to their reverse indizes */
+		bool useDPA; /**< set to true when DPA is used for FPA fields */
 
+		static const uint32_t UNUSED;
 	};
 
 	ExpHelperTable expHelperTable;
@@ -118,13 +131,13 @@ private:
 	static void copyDataGreaterLengthIPMask(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataGreaterLengthNoMod(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataFrontPayload(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
-	static void copyDataFrontPayloadLen(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void copyDataFrontPayloadNoInit(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataSetOne(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataSetZero(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataMaxPacketGap(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataNanoseconds(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataDummy(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
-	static void aggregateFrontPayload(IpfixRecord::Data* bucket, const Packet* src, const ExpFieldData* efd, bool firstpacket = false);
+	static void aggregateFrontPayload(IpfixRecord::Data* bucket, const Packet* src, const ExpFieldData* efd, bool firstpacket, bool onlyinit);
 	void (*getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*);
 	void fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index);
 	uint32_t calculateHash(const IpfixRecord::Data* data);
@@ -140,6 +153,8 @@ private:
 	bool typeAvailable(const InformationElement::IeInfo& type);
 	bool isRawPacketPtrVariable(const InformationElement::IeInfo& type);
 	void updateBucketData(HashtableBucket* bucket);
+	uint32_t getDstOffset(InformationElement::IeInfo ietype);
+
 };
 
 #endif /*PACKETHASHTABLE_H_*/

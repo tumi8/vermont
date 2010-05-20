@@ -92,6 +92,23 @@ public:
 	void postReconfiguration();
 
 protected:
+	/**
+	 * contains needed data elements when FPA or DPA is performed for PacketHashtable
+	 * data structure accompanies corresponding data records (one for each information element)
+	 * attached to IPFIX_ETYPE_frontPayload and IPFIX_ETYPE_revFrontPayload
+	 */
+	struct PayloadPrivateData
+	{
+		uint32_t seq; /**< sequence number of start */
+		uint32_t byteCount; /**< number of recorded bytes */
+		uint8_t initialized; /**< 0 when not initialized, >0 when initialized */
+	};
+	// attached to IPFIX_ETYPE_dpaForcedExport
+	struct DpaPrivateData
+	{
+		bool revdata; /**< DPA: set to true when data is transferred in reverse direction */
+	};
+
 	boost::shared_ptr<TemplateInfo> dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
 	HashtableBucket** buckets; /**< array of pointers to hash buckets at start of spill chain. Members are NULL where no entry present */
 
