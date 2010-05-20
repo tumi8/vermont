@@ -118,15 +118,13 @@ void AnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet
 				}
 			}
 			if (!cfg) {
-				msg(MSG_FATAL, "Missing information element in anonField");
 				THROWEXCEPTION("Missing information element in anonField");
 			}
 			if (method.empty()) {
-				msg(MSG_FATAL, "Missing anonymization method in anonField");
 				THROWEXCEPTION("Missing anonymization method in anonField");
 			}
 			if (cfg->getIeLength()==0) THROWEXCEPTION("Information element specified in anonField, but length==0");
-			module->addAnonymization(cfg->getIeId(), cfg->getIeLength(), AnonMethod::stringToMethod(method), mapping, method_parameter);
+			module->addAnonymization(InformationElement::IeInfo(cfg->getIeId(), cfg->getEnterpriseNumber()), cfg->getIeLength(), AnonMethod::stringToMethod(method), mapping, method_parameter);
 			const ipfix_identifier* id = ipfix_id_lookup(cfg->getIeId(), cfg->getEnterpriseNumber());
 			msg(MSG_INFO, "Added anonymization %s for field %i (%s) with length %i", method.c_str(), cfg->getIeId(), id->name, cfg->getIeLength());
 			delete cfg;

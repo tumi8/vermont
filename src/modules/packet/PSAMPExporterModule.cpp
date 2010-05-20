@@ -32,7 +32,8 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 		  exportTimeout(MAX_PACKET_LIFETIME), pckCount(0), timerFlag(0)
 {
 	int ret, i, tmplid;
-	unsigned short ttype, tlength, toffset, theader;
+	unsigned short tlength, toffset, theader;
+	InformationElement::IeInfo ttype;
 
 	// generate the exporter
 	ret = ipfix_init_exporter(sourceID, &exporter);
@@ -47,7 +48,7 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 
         for(i = 0; i < templ->getFieldCount(); i++) {
 		templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
-		ipfix_put_template_field(exporter, tmplid, ttype, tlength, 0);
+		ipfix_put_template_field(exporter, tmplid, ttype.id, tlength, ttype.enterprise);
         }
 
         ipfix_end_template_set(exporter, tmplid);
@@ -75,9 +76,10 @@ void PSAMPExporterModule::startNewPacketStream()
 // returns true, if the Packet was successfully added
 bool PSAMPExporterModule::addPacket(Packet *pck)
 {
-	unsigned short ttype, tlength, toffset, theader;
+	unsigned short tlength, toffset, theader;
+	InformationElement::IeInfo ttype;
 	unsigned short enc_length = 0;
-	void *data, *metadata;
+	void *data;
 	uint8_t *enc_value = 0;
 
 	// first check, if we can buffer this packet
@@ -99,16 +101,14 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 
 	for (int i = 0; i < templ->getFieldCount(); i++) {
 		templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
-		if (ttype >= 0x8000) {
-			// it is a meta-field --> get the metadata
-			metadata = templ->getMetaFieldData(i);
-			ipfix_put_data_field(exporter, metadata, tlength);
-			metaFieldsToRelease[numMetaFieldsToRelease++] = metadata;
-		} else if (ttype == IPFIX_TYPEID_flowStartSeconds) {
+		if (ttype.enterprise!=0) {
+			ipfix_put_data_field(exporter, 0, tlength);
+			metaFieldsToRelease[numMetaFieldsToRelease++] = 0;
+		} else if (ttype.id == IPFIX_TYPEID_flowStartSeconds) {
 			ipfix_put_data_field(exporter, &(pck->time_sec_nbo), tlength);
-		} else if (ttype == IPFIX_TYPEID_flowStartMilliSeconds) {
+		} else if (ttype.id == IPFIX_TYPEID_flowStartMilliSeconds) {
 			ipfix_put_data_field(exporter, &(pck->time_msec_nbo), tlength);
-		} else if (ttype == IPFIX_TYPEID_flowStartMicroSeconds) {
+		} else if (ttype.id == IPFIX_TYPEID_flowStartMicroSeconds) {
 			ipfix_put_data_field(exporter, &(pck->time_usec_nbo), tlength);
 		} else if (tlength == 65535) {
 			// variable length field
@@ -199,7 +199,7 @@ void PSAMPExporterModule::receive(Packet* p)
 
 		if (!addPacket(p))
 			return;
-		
+
 		pckCount = 1;
 
 		// now calculate the deadline by which the packet has to leave the exporter
@@ -215,7 +215,7 @@ void PSAMPExporterModule::receive(Packet* p)
 		pckCount++;
 	}
 
-	if (pckCount == ipfix_maxrecords) 
+	if (pckCount == ipfix_maxrecords)
 		flushPacketStream();
 }
 

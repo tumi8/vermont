@@ -85,7 +85,7 @@ Template* PacketReportingCfg::getTemplate()
                 msg(MSG_FATAL, "Template: adding %s -> ID %d with size %d",
                 		exportedFields[i]->getName().c_str(), id->id, fieldLength);
 
-                t->addField((uint16_t)id->id, fieldLength);
+                t->addField(id, fieldLength);
         }
         msg(MSG_DEBUG, "Template: got %d fields, record length is %u +%u * capture_len",
         		t->getFieldCount(), recordLength,recordVLFields);

@@ -8,12 +8,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -50,14 +50,14 @@ IpfixDbWriter::Column identify [] = {
 	{CN_lastSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_flowEndMilliSeconds, 0},
 	{CN_tcpControlBits,  	"SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_tcpControlBits, 0},
 	//TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
-	{CN_revbytes, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_ETYPEID_revOctetDeltaCount, 0},
-	{CN_revpkts, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_ETYPEID_revPacketDeltaCount, 0},
-	{CN_revFirstSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_ETYPEID_revFlowStartSeconds, 0}, // default value is invalid/not used for this entry
-	{CN_revLastSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_ETYPEID_revFlowEndSeconds, 0}, // default value is invalid/not used for this entry
-	{CN_revFirstSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_ETYPEID_revFlowStartMilliSeconds, 0},
-	{CN_revLastSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_ETYPEID_revFlowEndMilliSeconds, 0},
-	{CN_revTcpControlBits,  "SMALLINT(5) UNSIGNED", 	0, IPFIX_ETYPEID_revTcpControlBits, 0},
-	{CN_maxPacketGap,  	"BIGINT(20) UNSIGNED", 		0, IPFIX_ETYPEID_maxPacketGap, 0},
+	{CN_revbytes, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_TYPEID_octetDeltaCount, IPFIX_PEN_reverse},
+	{CN_revpkts, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_TYPEID_packetDeltaCount, IPFIX_PEN_reverse},
+	{CN_revFirstSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
+	{CN_revLastSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
+	{CN_revFirstSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse},
+	{CN_revLastSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse},
+	{CN_revTcpControlBits,  "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse},
+	{CN_maxPacketGap,  	"BIGINT(20) UNSIGNED", 		0, IPFIX_ETYPEID_maxPacketGap, IPFIX_PEN_vermont|IPFIX_PEN_reverse},
 	{CN_exporterID, 	"SMALLINT(5) UNSIGNED", 	0, EXPORTERID, 0},
 	{0} // last entry must be 0
 };
@@ -146,8 +146,8 @@ int IpfixDbWriter::connectToDB()
 /**
  * save record to database
  */
-void IpfixDbWriter::processDataDataRecord(const IpfixRecord::SourceID& sourceID, 
-		TemplateInfo& dataTemplateInfo, uint16_t length, 
+void IpfixDbWriter::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
+		TemplateInfo& dataTemplateInfo, uint16_t length,
 		IpfixRecord::Data* data)
 {
 	string rowString;
@@ -176,8 +176,8 @@ void IpfixDbWriter::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
 			numberOfInserts = 0;
 		}
 		if (setCurrentTable(flowStartSeconds) != 0) {
-			return;	
-		}	
+			return;
+		}
 	}
 
 
@@ -283,19 +283,6 @@ string& IpfixDbWriter::getInsertString(string& row, time_t& flowstartsec, const 
 								}
 							}
 							break;
-						//TODO: replace by enterprise number (Gerhard 12/2009)
-						case IPFIX_ETYPEID_revFlowStartSeconds:
-							// look for alternative (revFlowStartMilliSeconds/1000)
-							if(dataTemplateInfo.fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-									if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowStartMilliSeconds) {
-										intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-								}
-							}
-							break;
 						case IPFIX_TYPEID_flowEndSeconds:
 							if(dataTemplateInfo.fieldCount > 0) {
 								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
@@ -318,12 +305,14 @@ string& IpfixDbWriter::getInsertString(string& row, time_t& flowstartsec, const 
 								}
 							}
 							break;
-						//TODO: replace by enterprise number (Gerhard 12/2009)
-						case IPFIX_ETYPEID_revFlowEndSeconds:
-							// look for alternative (revFlowEndMilliSeconds/1000)
+					}
+				} else if (col->enterprise==IPFIX_PEN_reverse) {
+					switch (col->ipfixId) {
+						case IPFIX_TYPEID_flowStartSeconds:
+							// look for alternative (revFlowStartMilliSeconds/1000)
 							if(dataTemplateInfo.fieldCount > 0) {
 								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-									if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowEndMilliSeconds) {
+									if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse)) {
 										intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
 										notfound = false;
 										break;
@@ -331,6 +320,19 @@ string& IpfixDbWriter::getInsertString(string& row, time_t& flowstartsec, const 
 								}
 							}
 							break;
+						case IPFIX_TYPEID_flowEndSeconds:
+							// look for alternative (revFlowEndMilliSeconds/1000)
+							if(dataTemplateInfo.fieldCount > 0) {
+								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
+									if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse)) {
+										intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
+										notfound = false;
+										break;
+									}
+								}
+							}
+							break;
+
 					}
 				}
 				// if still not found, get default value
@@ -345,7 +347,7 @@ string& IpfixDbWriter::getInsertString(string& row, time_t& flowstartsec, const 
 						// save time for table access
 						if (flowstartsec==0) flowstartsec = intdata;
 						break;
-						
+
 					case IPFIX_TYPEID_flowEndSeconds:
 						break;
 
@@ -357,16 +359,20 @@ string& IpfixDbWriter::getInsertString(string& row, time_t& flowstartsec, const 
 						if (flowstartsec==0)
 							flowstartsec = intdata/1000;
 					case IPFIX_TYPEID_flowEndMilliSeconds:
-					//TODO: replace by enterprise number (Gerhard 12/2009)
-					case IPFIX_ETYPEID_revFlowStartMilliSeconds:				
-					case IPFIX_ETYPEID_revFlowEndMilliSeconds:
 						// in the database the millisecond entry is counted from last second
 						intdata %= 1000;
 						break;
 				}
-			}
+			} else if (col->enterprise==IPFIX_PEN_reverse)
+				switch (col->ipfixId) {
+					case IPFIX_TYPEID_flowStartMilliSeconds:
+					case IPFIX_TYPEID_flowEndMilliSeconds:
+						// in the database the millisecond entry is counted from last second
+						intdata %= 1000;
+						break;
+				}
 		}
-		
+
 		DPRINTF("saw ipfix id %d in packet with intdata %llX", col->ipfixId, intdata);
 
 		if(first)
@@ -375,7 +381,7 @@ string& IpfixDbWriter::getInsertString(string& row, time_t& flowstartsec, const 
 			rowStream << "," << intdata;
 		first = false;
 	}
-	
+
 	rowStream << ")";
 
 	if (flowstartsec == 0) {
@@ -403,7 +409,7 @@ int IpfixDbWriter::writeToDb()
 }
 
 
-/* 
+/*
  * Sets the current table information and creates the table in the database if necessary
  */
 int IpfixDbWriter::setCurrentTable(time_t flowstartsec)
@@ -412,7 +418,7 @@ int IpfixDbWriter::setCurrentTable(time_t flowstartsec)
 	ostringstream tableStream;
 	struct tm* flowStartTime = gmtime(&flowstartsec);
 
-	tableStream << "h_" << (flowStartTime->tm_year+1900) 
+	tableStream << "h_" << (flowStartTime->tm_year+1900)
 		<< setfill('0') << setw(2) << (flowStartTime->tm_mon+1)
 		<< setfill('0') << setw(2) << (flowStartTime->tm_mday) << "_"
 		<< setfill('0') << setw(2) << (flowStartTime->tm_hour) << "_"
@@ -459,7 +465,7 @@ int IpfixDbWriter::getExporterID(const IpfixRecord::SourceID& sourceID)
 	int id = 0;
 	uint32_t expIp = 0;
 	ostringstream statement;
-	
+
 	iter = exporterCache.begin();
 	while(iter != exporterCache.end()) {
 		if (equalExporter(iter->sourceID, sourceID)) {
@@ -477,7 +483,7 @@ int IpfixDbWriter::getExporterID(const IpfixRecord::SourceID& sourceID)
 	// convert IP address (correct host byte order since 07/2010)
 	expIp = sourceID.exporterAddress.toUInt32();
 
-	// search exporter table 
+	// search exporter table
 	statement << "SELECT id FROM exporter WHERE sourceID=" << sourceID.observationDomainId << " AND srcIp=" << expIp;
 	DPRINTF("SQL Query: %s", statement.str().c_str());
 
@@ -555,14 +561,14 @@ uint64_t IpfixDbWriter::getData(InformationElement::IeInfo type, IpfixRecord::Da
 void IpfixDbWriter::onDataRecord(IpfixDataRecord* record)
 {
 	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
-	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate) 
-		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate) 
+	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate)
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)
 		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
 		record->removeReference();
 		return;
 	}
-	
-	processDataDataRecord(*record->sourceID.get(), *record->templateInfo.get(), 
+
+	processDataDataRecord(*record->sourceID.get(), *record->templateInfo.get(),
 			record->dataLength, record->data);
 
 	record->removeReference();
@@ -618,11 +624,11 @@ IpfixDbWriter::IpfixDbWriter(const string& hostname, const string& dbname,
 				break;
 			}
 			i++;
-		} 
+		}
 	}
 	msg(MSG_INFO, "IpfixDbWriter: columns are %s", tableColumnsString.c_str());
 
-	if(connectToDB() != 0) 
+	if(connectToDB() != 0)
 		THROWEXCEPTION("IpfixDbWriter creation failed");
 }
 

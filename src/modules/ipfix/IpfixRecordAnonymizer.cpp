@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -34,9 +34,9 @@ void IpfixRecordAnonymizer::onTemplate(IpfixTemplateRecord* record)
 		for (int i = 0; i != record->templateInfo->dataCount; ++i) {
 			TemplateInfo::FieldInfo* field = record->templateInfo->dataInfo + i;
 			// check if this fixed value field should be anonymized
-			if (methods.find(field->type.id) != methods.end())
+			if (methods.find(field->type) != methods.end())
 				msg(MSG_ERROR, "IpfixRecordAnonymizer: Anonymization not supported for fixed value field (ie=%u, enterprise=%u) in Data Template (id=%u)", field->type.id, field->type.enterprise, record->templateInfo->templateId);
-				
+
 		}
 	}
 	send(record);
@@ -59,7 +59,7 @@ void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 	} else
 		myRecord = record;
 
-	/* TODO (Gerhard 12/2009): Anonymization of Data Template does not make sense if implemented at this place (only). 
+	/* TODO (Gerhard 12/2009): Anonymization of Data Template does not make sense if implemented at this place (only).
 	 * For example, the IpfixSender uses the Templates received by onTemplate(...), not the ones linked to the
 	 * Data Records. Therefore, anonymization should take place in IpfixRecordAnonymizer::onTemplate().
 	 * The anonymized Data Template should then be linked to all the corresponding Data Records.
@@ -74,25 +74,25 @@ void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 			TemplateInfo::FieldInfo* field = myRecord->templateInfo->dataInfo + i;
 			anonField(field->type.id, myRecord->templateInfo->data + field->offset, field->type.length);
 		}
-		myRecord->templateInfo->anonymized = true; 
+		myRecord->templateInfo->anonymized = true;
 	}
 	*/
 
 	boost::shared_ptr<TemplateInfo> templateInfo = myRecord->templateInfo;
 
 	//TODO: enterprise number should be considered (Gerhard 12/2009)
-	
+
 	// anonymize Data Record fields
 	for (int i = 0; i != templateInfo->fieldCount; ++i) {
 		TemplateInfo::FieldInfo* field = templateInfo->fieldInfo + i;
-		anonField(field->type.id, myRecord->data + field->offset, field->type.length);
+		anonField(field->type, myRecord->data + field->offset, field->type.length);
 	}
 
 	// anonymize scope fields
 	if((record->templateInfo->scopeCount != 0) && ((record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate))) {
 		for (int i = 0; i != templateInfo->scopeCount; ++i) {
 			TemplateInfo::FieldInfo* field = templateInfo->scopeInfo + i;
-			anonField(field->type.id, myRecord->data + field->offset, field->type.length);
+			anonField(field->type, myRecord->data + field->offset, field->type.length);
 		}
 	}
 
