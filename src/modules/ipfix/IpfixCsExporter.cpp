@@ -269,11 +269,11 @@ void IpfixCsExporter::writeFileHeader()
 		sprintf(currentFilename, "%s_%03d",time,i);
 		errno = 0;
 		if (stat(currentFilename,&sta) != 0) {
-			if (errno != 0) {
+			if (errno != 2) {
 				//check error code
-				msg(MSG_DEBUG, "Stat on Filename %s returned with error number %i", currentFilename, errno);
-			}
-			else {
+				msg(MSG_ERROR, "IpfixCsExporter: stat() on filename %s returned with error %i (%s)", currentFilename, errno, strerror(errno));
+			} else {
+				// errno==2 means there is no file present
 				break;
 			}
 		}
@@ -334,7 +334,7 @@ void IpfixCsExporter::registerTimeout()
 {
         if (timeoutRegistered) return;
         if(nextChunkTimeout.tv_sec <= nextFileTimeout.tv_sec){
-                //Register a chunk timeout
+            // Register a chunk timeout
         	timer->addTimeout(this, nextChunkTimeout, NULL);
         	msg(MSG_DEBUG, "next timeout: %u", nextChunkTimeout.tv_sec);
         }
@@ -348,7 +348,7 @@ void IpfixCsExporter::registerTimeout()
 }
 
 /**
- * Start function 
+ * Start function
  */
 void IpfixCsExporter::performStart()
 {
