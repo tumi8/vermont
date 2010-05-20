@@ -64,6 +64,9 @@ class Connection
 		char* dstPayload;
 		uint32_t dstPayloadLen; /**< host-byte order! **/
 		uint32_t srcPayloadPktCount;
+		uint8_t dpaForcedExport;
+		uint32_t dpaFlowCount; /**<host-byte order **/
+		uint8_t dpaReverseStart;
 
 		/**
 		 * time in seconds from 1970 on when this record will expire

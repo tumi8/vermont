@@ -39,7 +39,9 @@ Connection::Connection(IpfixDataRecord* record)
 	  srcPackets(0), dstPackets(0),
 	  srcTcpControlBits(0), dstTcpControlBits(0),
 	  srcPayload(0), srcPayloadLen(0),
-	  dstPayload(0), dstPayloadLen(0)
+	  dstPayload(0), dstPayloadLen(0),
+	  dpaForcedExport(0), dpaFlowCount(0),
+	  dpaReverseStart(0)
 {
 	// convert IpfixDataRecord to Connection
 	TemplateInfo::FieldInfo* fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
@@ -180,6 +182,12 @@ Connection::Connection(IpfixDataRecord* record)
 	}
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadPktCount, 0);
 	if (fi != 0) srcPayloadPktCount= *(uint32_t*)(record->data + fi->offset);
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_dpaForcedExport, 0);
+	if (fi != 0) dpaForcedExport = *(uint8_t*)(record->data + fi->offset);
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_dpaReverseStart, 0);
+	if (fi != 0) dpaReverseStart = *(uint8_t*)(record->data + fi->offset);
+	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_dpaFlowCount, 0);
+	if (fi != 0) dpaFlowCount = *(uint8_t*)(record->data + fi->offset);
 }
 
 Connection::~Connection()
