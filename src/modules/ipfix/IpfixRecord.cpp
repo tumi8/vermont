@@ -21,139 +21,56 @@
 #include "common/msg.h"
 #include "IpfixRecord.hpp"
 
+#include <string>
+
+using namespace std;
+
 
 namespace InformationElement {
 
 	/**
-	 * Gets standard length for a standard information element id
-	 * TODO: tidy up, this function is equivalent to ipfix_names.c:ipfix_id_lookup(int)
-	 * @param id Standard Information Element ID (registered by IANA)
-	 * @returns Standard length of the Information Element (65535 = variable length by default)
-	 */
-	IeLength getFieldLength(IeId id) {
-		switch (id) {
-			case IPFIX_TYPEID_protocolIdentifier:
-			case IPFIX_TYPEID_tcpControlBits:
-			case IPFIX_ETYPEID_revTcpControlBits:
-				return 1;
-
-			case IPFIX_TYPEID_icmpTypeCode:
-			case IPFIX_TYPEID_sourceTransportPort:
-			case IPFIX_TYPEID_destinationTransportPort:
-				return 2;
-
-			case IPFIX_TYPEID_flowStartSeconds:
-			case IPFIX_TYPEID_flowEndSeconds:
-			case IPFIX_TYPEID_sourceIPv4Address:
-			case IPFIX_TYPEID_destinationIPv4Address:
-			case IPFIX_ETYPEID_maxPacketGap:
-			case IPFIX_ETYPEID_revFlowStartSeconds:
-			case IPFIX_ETYPEID_revFlowEndSeconds:
-			case IPFIX_ETYPEID_revMaxPacketGap:
-			case IPFIX_ETYPEID_frontPayloadPktCount:
-				return 4;
-
-			case IPFIX_TYPEID_flowStartMilliSeconds:
-			case IPFIX_TYPEID_flowEndMilliSeconds:
-			case IPFIX_TYPEID_octetDeltaCount:
-			case IPFIX_TYPEID_packetDeltaCount:
-			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-			case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-			case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-			case IPFIX_ETYPEID_revOctetDeltaCount:
-			case IPFIX_ETYPEID_revPacketDeltaCount:
-				return 8;
-		}
-		THROWEXCEPTION("IpfixRecord: unknown typeid, failed to determine field length");
-		return 0;
-	}
-
-	/**
 	 * Checks whether the given Field carries reverse flow information in a bi-flow record
-	 * TODO: According to the standard, reversef low IEs should use enterprise number 29305
-	 * @param type Data Record field
 	 * @returns true if this IE carries reverse flow information
 	 */
-	bool isBiflowField(const IeInfo& type)
+	bool IeInfo::isReverseField() const
 	{
-		// TODO: Bi-flow standard: if(field.type ==29305) return true;
-		switch (type.id) {
-			case IPFIX_ETYPEID_revTcpControlBits:
-			case IPFIX_ETYPEID_revFlowStartSeconds:
-			case IPFIX_ETYPEID_revFlowEndSeconds:
-			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-			case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-			case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-			case IPFIX_ETYPEID_revOctetDeltaCount:
-			case IPFIX_ETYPEID_revPacketDeltaCount:
-			case IPFIX_ETYPEID_revMaxPacketGap:
-				return true;
-		}
-
-		return false;
+		return enterprise & IPFIX_PEN_reverse;
 	}
 
 	/**
-	 * Returns IE ID of opposite direction.
-	 * @param type Data Record field
-	 * @returns IeId of IE in opposite direction, or zero if does not exist
+	 * @returns true if given ie exists in the reverse direction
 	 */
-	IeId oppositeDirectionIeId(const IeInfo& type)
+	bool IeInfo::existsReverseDirection()
 	{
-		if (type.enterprise == 0)
-			switch(type.id) {
-				case IPFIX_TYPEID_sourceIPv4Address:
-					return IPFIX_TYPEID_destinationIPv4Address;
-				case IPFIX_TYPEID_destinationIPv4Address:
-					return IPFIX_TYPEID_sourceIPv4Address;
-				case IPFIX_TYPEID_sourceIPv6Address:
-					return IPFIX_TYPEID_destinationIPv6Address;
-				case IPFIX_TYPEID_destinationIPv6Address:
-					return IPFIX_TYPEID_sourceIPv6Address;
-				case IPFIX_TYPEID_sourceIPv4Mask:
-					return IPFIX_TYPEID_destinationIPv4Mask;
-				case IPFIX_TYPEID_destinationIPv4Mask:
-					return IPFIX_TYPEID_sourceIPv4Mask;
-				case IPFIX_TYPEID_sourceIPv6Mask:
-					return IPFIX_TYPEID_destinationIPv6Mask;
-				case IPFIX_TYPEID_destinationIPv6Mask:
-					return IPFIX_TYPEID_sourceIPv6Mask;
-				case IPFIX_TYPEID_sourceIPv4Prefix:
-					return IPFIX_TYPEID_destinationIPv4Prefix;
-				case IPFIX_TYPEID_destinationIPv4Prefix:
-					return IPFIX_TYPEID_sourceIPv4Prefix;
-				//case IPFIX_TYPEID_sourceIPv6Prefix:
-				//	return IPFIX_TYPEID_destinationIPv6Prefix;
-				//case IPFIX_TYPEID_destinationIPv6Prefix:
-				//	return IPFIX_TYPEID_sourceIPv6Prefix;
-				case IPFIX_TYPEID_sourceTransportPort:
-					return IPFIX_TYPEID_destinationTransportPort;
-				case IPFIX_TYPEID_destinationTransportPort:
-					return IPFIX_TYPEID_sourceTransportPort;
-				case IPFIX_TYPEID_udpSourcePort:
-					return IPFIX_TYPEID_udpDestinationPort;
-				case IPFIX_TYPEID_udpDestinationPort:
-					return IPFIX_TYPEID_udpSourcePort;
-				case IPFIX_TYPEID_tcpSourcePort:
-					return IPFIX_TYPEID_tcpDestinationPort;
-				case IPFIX_TYPEID_tcpDestinationPort:
-					return IPFIX_TYPEID_tcpSourcePort;
-		}
-		return 0;
+		// check if type was declared in ipfix.h
+		if (ipfix_id_lookup(id, enterprise | IPFIX_PEN_reverse)==0) return false;
+
+		return true;
 	}
 
 	/**
-	 * Returns valid protocols for given field
-	 * @param field Data Record field
-	 * @param p pointer to raw packet
-	 * @returns offset (in bytes) at which the data for the given field is located in the raw packet
+	 * Returns IE ID of reverse direction (ATTENTION: direction change from reverse -> normal is NOT possible).
+	 * ATTENTION: this method stops Vermont if no field was found in the opposite direction
+	 * @returns IeId of IE in opposite direction
 	 */
-	const Packet::IPProtocolType getValidProtocols(const IeInfo& type)
+	IeInfo IeInfo::getReverseDirection()
 	{
-		if(type.enterprise == 0) {
-			switch (type.id) {
+		if (enterprise & IPFIX_PEN_reverse) THROWEXCEPTION("requested reverse direction of enterprise type id %s", toString().c_str());
+
+		// check if type was declared in ipfix.h
+		if (ipfix_id_lookup(id, enterprise | IPFIX_PEN_reverse)==0)
+			THROWEXCEPTION("did not find reverse element for %s", toString().c_str());
+
+		return IeInfo(id, enterprise | IPFIX_PEN_reverse, length);
+	}
+
+	/**
+	 * @returns valid protocols for given field, binary ORed if multiple protocols are possible
+	 */
+	const Packet::IPProtocolType IeInfo::getValidProtocols()
+	{
+		if (enterprise==0 || enterprise==IPFIX_PEN_reverse) {
+			switch (id) {
 				case IPFIX_TYPEID_packetDeltaCount:
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
@@ -165,16 +82,7 @@ namespace InformationElement {
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
-				case IPFIX_ETYPEID_revPacketDeltaCount:
-				case IPFIX_ETYPEID_revFlowStartSeconds:
-				case IPFIX_ETYPEID_revFlowEndSeconds:
-				case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-				case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-				case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-				case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-				case IPFIX_ETYPEID_revOctetDeltaCount:
 				case IPFIX_ETYPEID_maxPacketGap:
-				case IPFIX_ETYPEID_revMaxPacketGap:
 					return Packet::IPProtocolType(Packet::TCP|Packet::UDP|Packet::ICMP);
 
 				case IPFIX_TYPEID_icmpTypeCode:
@@ -182,25 +90,39 @@ namespace InformationElement {
 
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:
+					return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
+
+				case IPFIX_TYPEID_tcpControlBits:
+					return Packet::TCP;
+			}
+		} else if (enterprise==IPFIX_PEN_vermont || enterprise==(IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
+			// Vermont-specific type-ids
+			switch (id) {
+				case IPFIX_ETYPEID_maxPacketGap:
+					return Packet::IPProtocolType(Packet::TCP|Packet::UDP|Packet::ICMP);
+
 				case IPFIX_ETYPEID_frontPayload:
 				case IPFIX_ETYPEID_frontPayloadLen:
-				case IPFIX_ETYPEID_revFrontPayload:
-				case IPFIX_ETYPEID_revFrontPayloadLen:
 				case IPFIX_ETYPEID_frontPayloadPktCount:
 				case IPFIX_ETYPEID_dpaForcedExport:
 				case IPFIX_ETYPEID_dpaFlowCount:
 				case IPFIX_ETYPEID_dpaReverseStart:
 				case IPFIX_ETYPEID_transportOctetDeltaCount:
-				case IPFIX_ETYPEID_revTransportOctetDeltaCount:
 					return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
 
-				case IPFIX_TYPEID_tcpControlBits:
-				case IPFIX_ETYPEID_revTcpControlBits:
-					return Packet::TCP;
 			}
 		}
-		THROWEXCEPTION("received unknown field type id %d (%s)", type.id, typeid2string(type.id));
+		THROWEXCEPTION("received unknown field type %s", toString().c_str());
 		return Packet::NONE;
+	}
+
+	string IeInfo::toString() const
+	{
+		char buffer[100];
+		const ipfix_identifier* ipfixid = ipfix_id_lookup(id, enterprise);
+		snprintf(buffer, ARRAY_SIZE(buffer), "IeInfo(typeid=%hu,pen=%u,length=%hu, name='%s')",
+				id, enterprise, length, ipfixid ? ipfixid->name : "");
+		return buffer;
 	}
 
 }
@@ -312,10 +234,6 @@ TemplateInfo::FieldInfo* TemplateInfo::getFieldInfo(const InformationElement::Ie
 	return getFieldInfo(type.id, type.enterprise);
 }
 
-//			IpfixRecord::Data* TemplateInfo::getFieldPointer(InformationElement::IeInfo* type, IpfixRecord::Data* pdata) {
-//				return getFieldPointer(type->id, &pdata);
-//			}
-//
 
 /**
  * Gets a Template's FieldInfo by IE Id and enterprise number.
@@ -337,9 +255,18 @@ TemplateInfo::FieldInfo* TemplateInfo::getFieldInfo(InformationElement::IeId fie
 
 /**
  * Gets position of a field in the Template.
+ * @param type Information element Id to look for
+ * @return -1 if not found
+ */
+int TemplateInfo::getFieldIndex(const InformationElement::IeInfo& type) {
+	return getFieldIndex(type.id, type.enterprise);
+}
+
+/**
+ * Gets position of a field in the Template.
  * @param fieldTypeId Information element Id to look for
  * @param fieldTypeEid Enterprise number to look for
- * @return NULL if not found
+ * @return -1 if not found
  */
 int TemplateInfo::getFieldIndex(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid) {
 	int i;

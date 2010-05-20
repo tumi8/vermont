@@ -33,25 +33,21 @@ extern "C" {
 #define IPFIX_LENGTH_ipv6Address 8
 #define IPFIX_LENGTH_dateTimeSeconds 4
 
-#define IPFIX_protocolIdentifier_ICMP         1
-#define IPFIX_protocolIdentifier_TCP          6
-#define IPFIX_protocolIdentifier_UDP         17
-#define IPFIX_protocolIdentifier_SCTP       132
-#define IPFIX_protocolIdentifier_RAW        255
+#define IPFIX_protocolIdentifier_ICMP                 1
+#define IPFIX_protocolIdentifier_TCP                  6
+#define IPFIX_protocolIdentifier_UDP                 17
+#define IPFIX_protocolIdentifier_SCTP               132
+#define IPFIX_protocolIdentifier_RAW                255
 
-#define NetflowV9_SetId_Template  				0
-#define NetflowV9_SetId_OptionsTemplate  			1
-#define IPFIX_SetId_Template                                    2
-#define IPFIX_SetId_OptionsTemplate                             3
-#define IPFIX_SetId_DataTemplate                                4
-#define IPFIX_SetId_Data_Start                                  256
+#define NetflowV9_SetId_Template  				      0
+#define NetflowV9_SetId_OptionsTemplate  			  1
+#define IPFIX_SetId_Template                          2
+#define IPFIX_SetId_OptionsTemplate                   3
+#define IPFIX_SetId_DataTemplate                      4
+#define IPFIX_SetId_Data_Start                      256
 #define IPFIX_ENTERPRISE_TYPE   0x8000
 
 #define IPFIX_VERMONT_SPECIFIC_TYPE 0x4000 // bit to be set for Vermont specific types exported without enterprise number (may cause conflicts!)
-
-int string2typeid(const char*s);
-char* typeid2string(int i);
-int string2typelength(const char*s);
 
 #define IPFIX_TYPEID_ipVersion                       60
 #define IPFIX_TYPEID_sourceIPv4Address                8
@@ -147,31 +143,22 @@ int string2typelength(const char*s);
 #define IPFIX_TYPEID_tcpUrgentPointer               187
 #define IPFIX_TYPEID_totalLengthIPv4                190
 
-#define IPFIX_ETYPEID_frontPayload					(IPFIX_VERMONT_SPECIFIC_TYPE | 0x80)
-#define IPFIX_ETYPEID_frontPayloadLen				(IPFIX_VERMONT_SPECIFIC_TYPE | 0x81)
-#define IPFIX_ETYPEID_maxPacketGap					(IPFIX_VERMONT_SPECIFIC_TYPE | 0x82)
-#define IPFIX_ETYPEID_frontPayloadPktCount			(IPFIX_VERMONT_SPECIFIC_TYPE | 0x83)
-#define IPFIX_ETYPEID_dpaFlowCount					(IPFIX_VERMONT_SPECIFIC_TYPE | 0x84)
-#define IPFIX_ETYPEID_dpaForcedExport				(IPFIX_VERMONT_SPECIFIC_TYPE | 0x85)
-#define IPFIX_ETYPEID_dpaReverseStart				(IPFIX_VERMONT_SPECIFIC_TYPE | 0x86)
-#define IPFIX_ETYPEID_transportOctetDeltaCount		(IPFIX_VERMONT_SPECIFIC_TYPE | 0x87)
+#define IPFIX_PEN_reverse							29305
+// not registered at IANA
+#define IPFIX_PEN_vermont							0x77700000
+// not registered at IANA, we need to have this additional PEN,
+// as we cannot combine vermont-specific numbers with the reverse PEN
+#define IPFIX_PEN_reverseVermont					0x77770000
 
-// information elements for biflows
-#define IPFIX_REVERSE_TYPE							0x0400 // temporary solution until enterprise number 29305 is used
-#define IPFIX_ETYPEID_revFlowStartSeconds			(IPFIX_TYPEID_flowStartSeconds | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revFlowStartMilliSeconds		(IPFIX_TYPEID_flowStartMilliSeconds | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revFlowStartNanoSeconds		(IPFIX_TYPEID_flowStartNanoSeconds | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revFlowEndSeconds				(IPFIX_TYPEID_flowEndSeconds | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revFlowEndMilliSeconds		(IPFIX_TYPEID_flowEndMilliSeconds | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revFlowEndNanoSeconds			(IPFIX_TYPEID_flowEndNanoSeconds | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revOctetDeltaCount			(IPFIX_TYPEID_octetDeltaCount | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revPacketDeltaCount			(IPFIX_TYPEID_packetDeltaCount | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revTcpControlBits				(IPFIX_TYPEID_tcpControlBits | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revFrontPayload				(IPFIX_ETYPEID_frontPayload | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revFrontPayloadLen			(IPFIX_ETYPEID_frontPayloadLen | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revFrontPayloadPktCount		(IPFIX_ETYPEID_frontPayloadPktCount | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revMaxPacketGap				(IPFIX_ETYPEID_maxPacketGap | IPFIX_REVERSE_TYPE)
-#define IPFIX_ETYPEID_revTransportOctetDeltaCount	(IPFIX_ETYPEID_transportOctetDeltaCount | IPFIX_REVERSE_TYPE)
+#define IPFIX_ETYPEID_frontPayload					1
+#define IPFIX_ETYPEID_frontPayloadLen				2
+#define IPFIX_ETYPEID_maxPacketGap					3
+#define IPFIX_ETYPEID_frontPayloadPktCount			4
+#define IPFIX_ETYPEID_dpaFlowCount					5
+#define IPFIX_ETYPEID_dpaForcedExport				6
+#define IPFIX_ETYPEID_dpaReverseStart				7
+#define IPFIX_ETYPEID_transportOctetDeltaCount		8
+
 
 
 #define IPFIX_LENGTH_ipVersion                      IPFIX_LENGTH_octet
@@ -275,24 +262,8 @@ int string2typelength(const char*s);
 #define IPFIX_ELENGTH_dpaForcedExport				IPFIX_LENGTH_octet
 #define IPFIX_ELENGTH_dpaReverseStart				IPFIX_LENGTH_octet
 #define IPFIX_ELENGTH_transportOctetDeltaCount		IPFIX_LENGTH_unsigned64
-
-
-// lengths for biflows elements
-#define IPFIX_ELENGTH_revFlowStartSeconds			IPFIX_LENGTH_flowStartSeconds
-#define IPFIX_ELENGTH_revFlowStartMilliSeconds		IPFIX_LENGTH_flowStartMilliSeconds
-#define IPFIX_ELENGTH_revFlowStartNanoSeconds		IPFIX_LENGTH_flowStartNanoSeconds
-#define IPFIX_ELENGTH_revFlowEndSeconds				IPFIX_LENGTH_flowEndSeconds
-#define IPFIX_ELENGTH_revFlowEndMilliSeconds		IPFIX_LENGTH_flowEndMilliSeconds
-#define IPFIX_ELENGTH_revFlowEndNanoSeconds			IPFIX_LENGTH_flowEndNanoSeconds
-#define IPFIX_ELENGTH_revOctetDeltaCount			IPFIX_LENGTH_octetDeltaCount
-#define IPFIX_ELENGTH_revPacketDeltaCount			IPFIX_LENGTH_packetDeltaCount
-#define IPFIX_ELENGTH_revTcpControlBits				IPFIX_LENGTH_tcpControlBits
-#define IPFIX_ELENGTH_revFrontPayloadLen			IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_maxPacketGap					IPFIX_LENGTH_unsigned32
-#define IPFIX_ELENGTH_revMaxPacketGap				IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_frontPayloadPktCount			IPFIX_LENGTH_unsigned32
-#define IPFIX_ELENGTH_revFrontPayloadPktCount		IPFIX_LENGTH_unsigned32
-#define IPFIX_ELENGTH_revTransportOctetDeltaCount		IPFIX_LENGTH_unsigned64
 
 #define MAX_MSG_LEN   65536
 

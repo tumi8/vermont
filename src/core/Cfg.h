@@ -57,6 +57,12 @@ public:
 	 */
 	int getInt(const std::string& name, int def = 0, XMLElement* elem = NULL);
 
+	/** returns the unsigned integer value with 32bit of an XML config entry
+	 * @param name the name of the element
+	 * If there is no such element in the XML file, it returns def
+	 */
+	uint32_t getUInt32(const std::string& name, uint32_t def = 0, XMLElement* elem = NULL);
+
 	/** returns the 64-bit integer value of an XML config entry
 	 * @param name the name of the element
 	 * If there is no such element in the XML file, it returns def
@@ -345,7 +351,7 @@ public:
 
 		// call postReconfiguration(), e.g. to tell the module to resend its template
 		//Gerhard: postReconfiguration() is now called in Module::start()
-		//this->postReconfiguration(); 
+		//this->postReconfiguration();
 
 		// check if we need a splitter
 		if (this->getNext().size() > 1) {

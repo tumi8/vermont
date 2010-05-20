@@ -42,7 +42,6 @@ public:
 	void aggregatePacket(const Packet* p);
 
 	static uint8_t getRawPacketFieldLength(const InformationElement::IeInfo& type);
-	static uint16_t getRawPacketFieldOffset(InformationElement::IeId id, const Packet* p);
 	static uint16_t getRawPacketFieldOffset(const InformationElement::IeInfo& type, const Packet* p);
 
 private:
@@ -63,8 +62,7 @@ private:
 	 */
 	struct ExpFieldData
 	{
-		//TODO: replace by InformationElement::IeInfo struct which also includes enterprise number (Gerhard, 12/2009)
-		uint16_t typeId; /**< type of corresponding ipfix field */
+		InformationElement::IeInfo typeId; /**< type of corresponding ipfix field */
 
 		// following fields are used by aggregation functions for a fast lookup of needed data inside
 		// the raw packet (source) and the hashtable bucket (destination)
@@ -171,7 +169,7 @@ private:
 	bool typeAvailable(const InformationElement::IeInfo& type);
 	bool isRawPacketPtrVariable(const InformationElement::IeInfo& type);
 	void updateBucketData(HashtableBucket* bucket);
-	uint32_t getDstOffset(InformationElement::IeInfo ietype);
+	uint32_t getDstOffset(const InformationElement::IeInfo& ietype);
 
 };
 

@@ -189,65 +189,75 @@ void PrintHelpers::printUint(char* buf, InformationElement::IeInfo type, IpfixRe
  * Prints a string representation of IpfixRecord::Data to stdout.
  */
 void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern) {
-	char* s;
 	timeval t;
 	uint64_t hbnum;
 
-	if(type.enterprise == 0) {
-		switch (type.id) {
-		case IPFIX_TYPEID_protocolIdentifier:
-			fprintf(fh, "protocolIdentifier (id=%u): ", type.id);
-			printProtocol(type, pattern);
-			return;
-		case IPFIX_TYPEID_sourceIPv4Address:
-			fprintf(fh, "sourceIPv4Address (id=%u): ", type.id);
-			printIPv4(type, pattern);
-			return;
-		case IPFIX_TYPEID_destinationIPv4Address:
-			fprintf(fh, "destinationIPv4Address (id=%u): ", type.id);
-			printIPv4(type, pattern);
-			return;
-		case IPFIX_TYPEID_sourceTransportPort:
-			fprintf(fh, "sourceTransportPort (id=%u): ", type.id);
-			printPort(type, pattern);
-			return;
-		case IPFIX_TYPEID_destinationTransportPort:
-			fprintf(fh, "destinationTransportPort (id=%u): ", type.id);
-			printPort(type, pattern);
-			return;
-		case IPFIX_TYPEID_flowStartNanoSeconds:
-		case IPFIX_TYPEID_flowEndNanoSeconds:
-		// TODO: replace by enterprise number (Gerhard, 12/2009)
-		case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-		case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-			fprintf(fh, "%s (id=%u): ", typeid2string(type.id), type.id);
-			hbnum = ntohll(*(uint64_t*)pattern);
-			if (hbnum>0) {
-				t = timentp64(*((ntp64*)(&hbnum)));
-				fprintf(fh, "%u.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
-			} else {
-				fprintf(fh, "no value (only zeroes in field)");
+	switch (type.enterprise) {
+		case 0:
+			switch (type.id) {
+				case IPFIX_TYPEID_protocolIdentifier:
+					fprintf(fh, "protocolIdentifier (id=%u): ", type.id);
+					printProtocol(type, pattern);
+					return;
+				case IPFIX_TYPEID_sourceIPv4Address:
+					fprintf(fh, "sourceIPv4Address (id=%u): ", type.id);
+					printIPv4(type, pattern);
+					return;
+				case IPFIX_TYPEID_destinationIPv4Address:
+					fprintf(fh, "destinationIPv4Address (id=%u): ", type.id);
+					printIPv4(type, pattern);
+					return;
+				case IPFIX_TYPEID_sourceTransportPort:
+					fprintf(fh, "sourceTransportPort (id=%u): ", type.id);
+					printPort(type, pattern);
+					return;
+				case IPFIX_TYPEID_destinationTransportPort:
+					fprintf(fh, "destinationTransportPort (id=%u): ", type.id);
+					printPort(type, pattern);
+					return;
+				case IPFIX_TYPEID_flowStartNanoSeconds:
+				case IPFIX_TYPEID_flowEndNanoSeconds:
+					fprintf(fh, "%s: ", type.toString().c_str());
+					hbnum = ntohll(*(uint64_t*)pattern);
+					if (hbnum>0) {
+						t = timentp64(*((ntp64*)(&hbnum)));
+						fprintf(fh, "%u.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
+					} else {
+						fprintf(fh, "no value (only zeroes in field)");
+					}
+					return;
 			}
-			return;
-		case IPFIX_ETYPEID_frontPayload:
-		case IPFIX_ETYPEID_revFrontPayload:
-			fprintf(fh, "%s (id=%u): ", typeid2string(type.id), type.id);
-			printFrontPayload(type, pattern);
-			return;
+			break;
+
+		case IPFIX_PEN_reverse:
+			switch (type.id) {
+				case IPFIX_TYPEID_flowStartNanoSeconds:
+				case IPFIX_TYPEID_flowEndNanoSeconds:
+					fprintf(fh, "%s: ", type.toString().c_str());
+					hbnum = ntohll(*(uint64_t*)pattern);
+					if (hbnum>0) {
+						t = timentp64(*((ntp64*)(&hbnum)));
+						fprintf(fh, "%u.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
+					} else {
+						fprintf(fh, "no value (only zeroes in field)");
+					}
+					return;
+			}
+			break;
+
 		default:
-			s = typeid2string(type.id);
-			if (s != NULL) {
-				fprintf(fh, "%s (id=%u): ", s, type.id);
-			} else {
-				fprintf(fh, "unknown (id=%u): ", type.id);
+		{
+			if (type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont) ||
+				type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
+				fprintf(fh, "%s: ", type.toString().c_str());
+				printFrontPayload(type, pattern);
+				return;
 			}
-			printUint(type, pattern);
-			return;
 		}
-	} else { // enterprise-specific fields
-		fprintf(fh, "unknown (enterprise=%lu, id=%u): ", (long unsigned)type.enterprise, type.id);
-		printUint(type, pattern);
 	}
+
+	fprintf(fh, "%s: ", type.toString().c_str());
+	printUint(type, pattern);
 }
 
 

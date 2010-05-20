@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -119,32 +119,40 @@ Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 
 	// parse name
 	if (ie.getIeName() != "") {
-		if (0 == (ruleField->type.id = string2typeid(ie.getIeName().c_str()))) {
+		const ipfix_identifier* ipfixid = ipfix_name_lookup(ie.getIeName().c_str());
+		if (ipfixid==NULL) {
 			msg(MSG_ERROR, "Bad field type \"%s\"", ie.getIeName().c_str());
 			throw std::exception();
 		}
-	} else
+		ruleField->type.id = ipfixid->id;
+		ruleField->type.enterprise = ipfixid->pen;
+	} else {
 		ruleField->type.id = ie.getIeId();
+		ruleField->type.enterprise = ie.getEnterpriseNumber();
+	}
 
 	// parse length
 	if (ie.hasOptionalLength()) {
 		ruleField->type.length = ie.getIeLength();
 	} else {
-		if (0 == (ruleField->type.length = string2typelength(ie.getIeName().c_str()))) {
+		const ipfix_identifier* ipfixid = ipfix_id_lookup(ie.getIeId(), ie.getEnterpriseNumber());
+		if (ipfixid==NULL) {
 			msg(MSG_ERROR, "Bad field type \"%s\", or length of field must be specified!", ie.getIeName().c_str());
 			throw std::exception();
 		}
+		ruleField->type.length = ipfixid->length;
 	}
 
-	if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
+	if ((ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0)) ||
+			(ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0))) {
 		ruleField->type.length++; // for additional mask field
 	}
 
-	if (ruleField->type.id==IPFIX_ETYPEID_frontPayload || ruleField->type.id==IPFIX_ETYPEID_revFrontPayload) {
+	if (ruleField->type == InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont) ||
+			ruleField->type == InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
 		if (ruleField->type.length<5)
-			THROWEXCEPTION("type %s must have at least size 5!", typeid2string(ruleField->type.id));
+			THROWEXCEPTION("type %s must have at least size 5!", ipfix_id_lookup(ruleField->type.id, ruleField->type.enterprise)->name);
 	}
-
 
 	return ruleField;
 }
@@ -167,21 +175,28 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 
 		// parse name
 		if (ie.getIeName() != "") {
-			if (0 == (ruleField->type.id = string2typeid(ie.getIeName().c_str()))) {
+			const ipfix_identifier* ipfixid = ipfix_name_lookup(ie.getIeName().c_str());
+			if (0 == ipfixid) {
 				msg(MSG_ERROR, "Bad field type \"%s\"", ie.getIeName().c_str());
 				throw std::exception();
 			}
-		} else
+			ruleField->type.id = ipfixid->id;
+			ruleField->type.enterprise = ipfixid->pen;
+		} else {
 			ruleField->type.id = ie.getIeId();
+			ruleField->type.enterprise = ie.getEnterpriseNumber();
+		}
 
 		// parse length
 		if (ie.hasOptionalLength()) {
 			ruleField->type.length = ie.getIeLength();
 		} else {
-			if (0 == (ruleField->type.length = string2typelength(ie.getIeName().c_str()))) {
+			const ipfix_identifier* ipfixid = ipfix_id_lookup(ie.getIeId(), ie.getEnterpriseNumber());
+			if (0 == ipfixid) {
 				msg(MSG_ERROR, "Bad field type \"%s\", no length was specified!", ie.getIeName().c_str());
 				throw std::exception();
 			}
+			ruleField->type.length = ipfixid->length;
 		}
 
 		if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {

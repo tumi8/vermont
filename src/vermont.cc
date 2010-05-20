@@ -1,17 +1,17 @@
 /*
- * Vermont 
+ * Vermont
  * Copyright (C) 2009 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -90,7 +90,7 @@ int main(int ac, char **dc)
 		usage();
 		return -1;
 	}
-	
+
 	if (sem_init(&mainSemaphore, 0, 0) == -1) {
 		THROWEXCEPTION("failed to setup semaphore");
 	}
@@ -106,16 +106,14 @@ int main(int ac, char **dc)
 
 	sigset_t sigmask;
 	sigemptyset(&sigmask);
-	
+
 	msg(MSG_DIALOG, "vermont is up and running");
 
-	while (run_program) {		
+	while (run_program) {
 		// sleep until we get a signal
-		int s;
         bool b;
 		while (((b=timeoutsem.wait(DELETER_PERIOD)) == true) && errno == EINTR) {}// restart when interrupted by handler
-            
-		if (s == -1) THROWEXCEPTION("failed to execute sem_wait");
+
 		if (b == false){
             manager.onTimeout2();
         }
@@ -164,7 +162,7 @@ static void sig_USR1_handler(int x)
 
 	DPRINTF("SIGUSR called");
 	reload_config = true;
-	
+
 	errno = errno_save;
 	wakeupMainThread();
 }
@@ -173,14 +171,14 @@ static void sig_USR1_handler(int x)
 static void sig_INT_handler(int x)
 {
 	int errno_save = errno;
-	
+
 	static bool shutdownInitiated = false;
 
 	if (shutdownInitiated) {
 		printf("second signal received, shutting down the hard way!");
 		exit(2);
 	}
-	
+
 	shutdownInitiated = true;
 
 	msg(MSG_FATAL, "got signal %d - exiting", x);
