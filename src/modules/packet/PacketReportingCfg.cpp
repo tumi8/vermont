@@ -57,11 +57,6 @@ Template* PacketReportingCfg::getTemplate()
         t = new Template(templateId);
         for (size_t i = 0; i != exportedFields.size(); ++i) {
                 int tmpId = exportedFields[i]->getIeId();
-                if (!ipfix_id_rangecheck(tmpId)) {
-                        msg(MSG_DIALOG, "Template: ignoring template field %s -> %d - rangecheck not ok",
-                        		exportedFields[i]->getName().c_str(), tmpId);
-                        continue;
-                }
 
                 const ipfix_identifier *id = ipfix_id_lookup(tmpId);
                 if ((tmpId == -1) || (id == NULL)) {

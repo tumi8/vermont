@@ -269,7 +269,7 @@ int string2typelength(const char*s);
 // enterprise TYPEIDs
 #define IPFIX_ELENGTH_frontPayloadLen				IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_dpaFlowCount					IPFIX_LENGTH_unsigned32
-#define IPFIX_ELENGTH_dpaForcedExport				IPFIX_LENGTH_unsigned8
+#define IPFIX_ELENGTH_dpaForcedExport				IPFIX_LENGTH_octet
 
 
 // lengths for biflows elements
@@ -278,7 +278,7 @@ int string2typelength(const char*s);
 #define IPFIX_ELENGTH_revFlowStartNanoSeconds		IPFIX_LENGTH_flowStartNanoSeconds
 #define IPFIX_ELENGTH_revFlowEndSeconds				IPFIX_LENGTH_flowEndSeconds
 #define IPFIX_ELENGTH_revFlowEndMilliSeconds		IPFIX_LENGTH_flowEndMilliSeconds
-#define IPFIX_ELENGTH_revFlowEndNanoSeconds		I	IPFIX_LENGTH_flowEndNanoSeconds
+#define IPFIX_ELENGTH_revFlowEndNanoSeconds			IPFIX_LENGTH_flowEndNanoSeconds
 #define IPFIX_ELENGTH_revOctetDeltaCount			IPFIX_LENGTH_octetDeltaCount
 #define IPFIX_ELENGTH_revPacketDeltaCount			IPFIX_LENGTH_packetDeltaCount
 #define IPFIX_ELENGTH_revTcpControlBits				IPFIX_LENGTH_tcpControlBits

@@ -17,7 +17,9 @@ static const struct ipfix_identifier SWITCHFLOWTAB[] = {
     { "revflowendnanoseconds", 33949, 8 },
     { "revmaxpacketgap", 33922, 4 },
     { "maxpacketgap", 32898, 4},
-    { "frontpayloadpktcount", 32899, 4}
+    { "frontpayloadpktcount", 32899, 4},
+    { "dpaflowcount", 32900, 4},
+    { "dpaforcedexport", 32901, 1}
 };
 
 #define PSAMP_STARTING_ID 300
