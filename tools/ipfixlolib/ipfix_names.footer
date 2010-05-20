@@ -56,6 +56,10 @@ const struct ipfix_identifier * ipfix_id_lookup(int n)
            return &SWITCHFLOWTAB[3];
        case IPFIX_ETYPEID_frontPayloadPktCount:
            return &SWITCHFLOWTAB[4];
+       case IPFIX_ETYPEID_dpaFlowCount:
+           return &SWITCHFLOWTAB[5];
+       case IPFIX_ETYPEID_dpaForcedExport:
+           return &SWITCHFLOWTAB[6];
     };
 
 	return NULL;

@@ -249,6 +249,8 @@ frontpayload, 32896
 frontpayloadlen, 32897
 maxpacketgap, 32898
 frontpayloadpktcount, 32899
+dpaflowcount, 32900
+dpaforcedexport, 32901
 revoctetdeltacount, 33793
 revpacketdeltacount, 33794
 revtcpcontrolbits, 33798
