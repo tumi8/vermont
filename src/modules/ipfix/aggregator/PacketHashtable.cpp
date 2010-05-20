@@ -785,7 +785,7 @@ void PacketHashtable::buildExpHelperTable()
 	for (uint32_t i=0; i<expHelperTable.noKeyFields; i++) {
 		expHelperTable.allFields.push_back(&expHelperTable.keyFields[i]);
 	}
-	expHelperTable.dpaFlowCountOffset = getDstOffset({ IPFIX_ETYPEID_dpaFlowCount, 0, 0 });
+	expHelperTable.dpaFlowCountOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_dpaFlowCount));
 
 	// search for offsets of fields that are linked with each other
 	InformationElement::IeInfo ieinfo;
@@ -794,10 +794,10 @@ void PacketHashtable::buildExpHelperTable()
 		ExpFieldData* efd = &expHelperTable.aggFields[i];
 		switch (efd->typeId) {
 			case IPFIX_ETYPEID_frontPayload:
-				efd->typeSpecData.frontPayload.fpaLenOffset = getDstOffset({ IPFIX_ETYPEID_frontPayloadLen, 0, 0 });
-				efd->typeSpecData.frontPayload.pktCountOffset = getDstOffset({ IPFIX_ETYPEID_frontPayloadPktCount, 0, 0 });
-				efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset({ IPFIX_ETYPEID_dpaForcedExport, 0, 0 });
-				efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset({ IPFIX_ETYPEID_dpaReverseStart, 0, 0 });
+				efd->typeSpecData.frontPayload.fpaLenOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_frontPayloadLen));
+				efd->typeSpecData.frontPayload.pktCountOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_frontPayloadPktCount));
+				efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_dpaForcedExport));
+				efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_dpaReverseStart));
 				efd->typeSpecData.frontPayload.dpa = expHelperTable.useDPA;
 				efd->typeSpecData.frontPayload.dpaPrivDataOffset = ExpHelperTable::UNUSED;
 				if (expHelperTable.useDPA) {
@@ -816,10 +816,10 @@ void PacketHashtable::buildExpHelperTable()
 		ExpFieldData* efd = &expHelperTable.revAggFields[i];
 		switch (efd->typeId) {
 			case IPFIX_ETYPEID_revFrontPayload:
-				efd->typeSpecData.frontPayload.fpaLenOffset = getDstOffset({ IPFIX_ETYPEID_revFrontPayloadLen, 0, 0 });
-				efd->typeSpecData.frontPayload.pktCountOffset = getDstOffset({ IPFIX_ETYPEID_revFrontPayloadPktCount, 0, 0 });
-				efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset({ IPFIX_ETYPEID_dpaForcedExport, 0, 0 });
-				efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset({ IPFIX_ETYPEID_dpaReverseStart, 0, 0 });
+				efd->typeSpecData.frontPayload.fpaLenOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_revFrontPayloadLen));
+				efd->typeSpecData.frontPayload.pktCountOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_revFrontPayloadPktCount));
+				efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_dpaForcedExport));
+				efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset(InformationElement::IeInfo(IPFIX_ETYPEID_dpaReverseStart));
 				efd->typeSpecData.frontPayload.dpa = expHelperTable.useDPA;
 				efd->typeSpecData.frontPayload.dpaPrivDataOffset = ExpHelperTable::UNUSED;
 				if (expHelperTable.useDPA) {
