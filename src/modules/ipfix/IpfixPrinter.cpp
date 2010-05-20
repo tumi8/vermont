@@ -253,6 +253,7 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 
 void PrintHelpers::printFrontPayload(InformationElement::IeInfo type, IpfixRecord::Data* data)
 {
+	fprintf(fh, "'");
 	for (uint32_t i=0; i<type.length; i++) {
 		char c = data[i];
 		if (isprint(c)) fprintf(fh, "%c", c);

@@ -79,8 +79,13 @@ uint32_t BaseHashtable::getPrivateDataLength(const InformationElement::IeInfo& t
 	//TODO: if(type.enterprise=29305)... (Gerhard, 12/2009)
 	if(type.enterprise == 0) {
 		switch (type.id) {
-			case IPFIX_ETYPEID_frontPayload: // four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
-			case IPFIX_ETYPEID_revFrontPayload: // "
+			case IPFIX_ETYPEID_frontPayload:
+			case IPFIX_ETYPEID_revFrontPayload:
+				return sizeof(PayloadPrivateData);
+
+			case IPFIX_ETYPEID_dpaForcedExport:
+				return sizeof(DpaPrivateData);
+
 			case IPFIX_ETYPEID_maxPacketGap: // old flow end time (to calculate packet gap)
 			case IPFIX_ETYPEID_revMaxPacketGap: // old flow end time (to calculate packet gap)
 				return 8;
@@ -164,10 +169,10 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			privDataLength += len;
 		}
 		if (fi->type.id == IPFIX_ETYPEID_frontPayload)
-			fpLengthOffset = fi->privDataOffset + 4;
+			fpLengthOffset = fi->privDataOffset;
 		//TODO: check (type.enterprise==29305) for reverse type (Gerhard, 12/2009)
 		if (fi->type.id == IPFIX_ETYPEID_revFrontPayload)
-			revfpLengthOffset = fi->privDataOffset + 4;
+			revfpLengthOffset = fi->privDataOffset;
 	}
 
 	// update private data offsets for fields which access private data from other fields
@@ -181,6 +186,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			fi->privDataOffset = fpLengthOffset;
 		}
 		//TODO: check (type.enterprise==29305) for reverse type (Gerhard, 12/2009)
+		// we want to access the same private data within these fields as in frontPayload
 		if (fi->type.id == IPFIX_ETYPEID_revFrontPayloadLen) {
 			if (!revfpLengthOffset) {
 				THROWEXCEPTION("no reverse front payload field specified in template, so front payload length is not available either");
