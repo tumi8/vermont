@@ -79,14 +79,14 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 	Ipfix_basic_flow* csRecord = new Ipfix_basic_flow();
 	TemplateInfo::FieldInfo* fi;
 
-	csRecord->record_length			= sizeof(Ipfix_basic_flow);		/* total length of this record in bytes */
+	csRecord->record_length			= htons(sizeof(Ipfix_basic_flow));		/* total length of this record in bytes */
         csRecord->src_export_mode		= exportMode;				/* expected to match enum cs_export_mode */
         csRecord->dst_export_mode		= exportMode;				/* expected to match enum cs_export_mode */
         csRecord->ipversion			= 4;					/* expected 4 (for now) */
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
 	if (fi != 0) {
-	        csRecord->source_ipv4_address		= *(uint32_t*)(record->data + fi->offset);
+	        csRecord->source_ipv4_address		= htonl(*(uint32_t*)(record->data + fi->offset));
 	} else {
                 msg(MSG_DEBUG, "failed to determine source ip for record, assuming 0.0.0.0");
                 csRecord->source_ipv4_address		= 0;
@@ -94,7 +94,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
         if (fi != 0) {
-		csRecord->destination_ipv4_address	= *(uint32_t*)(record->data + fi->offset);
+		csRecord->destination_ipv4_address	= htonl(*(uint32_t*)(record->data + fi->offset));
         } else {
                 msg(MSG_DEBUG, "failed to determine destination ip for record, assuming 0.0.0.0");
                 csRecord->destination_ipv4_address	= 0;
@@ -110,7 +110,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
         if (fi != 0) {
-		csRecord->source_transport_port		= *(uint16_t*)(record->data + fi->offset);/* encode udp/tcp ports here */
+		csRecord->source_transport_port		= htons(*(uint16_t*)(record->data + fi->offset));/* encode udp/tcp ports here */
 	} else {
                 msg(MSG_DEBUG, "failed to determine source port for record, assuming 0");
                 csRecord->source_transport_port		= 0;
@@ -118,7 +118,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
 	if (fi != 0) {
-	        csRecord->destination_transport_port	= *(uint16_t*)(record->data + fi->offset);/* encode udp/tcp ports here */
+	        csRecord->destination_transport_port	= htons(*(uint16_t*)(record->data + fi->offset));/* encode udp/tcp ports here */
 	} else {
                 msg(MSG_DEBUG, "failed to determine destination port for record, assuming 0");
                 csRecord->destination_transport_port	= 0;
@@ -160,7 +160,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
                         }
                 }
         }
-	csRecord->flow_start_milliseconds = srcTimeStart;
+	csRecord->flow_start_milliseconds = htonll(srcTimeStart);
 
 	uint64_t srcTimeEnd;
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_revFlowStartNanoSeconds, 0);
@@ -180,7 +180,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record){
                         }
                 }
         }
-        csRecord->flow_end_milliseconds = srcTimeEnd;
+        csRecord->flow_end_milliseconds = htonll(srcTimeEnd);
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_octetDeltaCount, 0);
         if (fi != 0) {
