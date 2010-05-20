@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -88,21 +88,25 @@ private:
 	};
 	struct ExpHelperTable
 	{
-		/**< contains number of aggregatable fields in expFieldData */
-		uint16_t noAggFields;
-
 		uint16_t dstIpEFieldIndex; /**< 0 if destination ip should not be masked, == index dstip, if to be masked */
 		uint16_t srcIpEFieldIndex; /**< 0 if source ip should not be masked, == index srcip, if to be masked */
 
-		ExpFieldData* expFieldData;
-		uint16_t efdLength;
+		ExpFieldData* aggFields;
+		uint16_t noAggFields; /**< contains number of aggregatable fields in expFieldData (excluded reverse fields) */
+		ExpFieldData* revAggFields;
+		uint16_t noRevAggFields; /**< contains number of reverse aggregatable fields in expFieldData */
+		ExpFieldData* keyFields;
+		uint16_t noKeyFields; /**< contains number of key fields in expFieldData */
 
-		uint16_t* varSrcPtrFields; /**< array with indizes to expFieldData elements, which have a srcIndex which varies from packet to packet */
-		uint16_t varSrcPtrFieldsLen; /**< length of varSrcPtrFields */
+		ExpFieldData** varSrcPtrFields; /**< array with indizes to expFieldData elements, which have a srcIndex which varies from packet to packet */
+		uint16_t noVarSrcPtrFields;
+		//ExpFieldData** revAggFieldMapper; /**< maps field indizes to their reverse indizes */
+		ExpFieldData** revKeyFieldMapper; /**< maps field indizes to their reverse indizes */
 
 	};
 
 	ExpHelperTable expHelperTable;
+
 	bool snapshotWritten; /**< set to true, if snapshot of hashtable was already written */
 	time_t startTime; /**< if a snapshot of the hashtable should be performed, this variable is used and stores initialization time of this hashtable */
 
@@ -116,23 +120,26 @@ private:
 	static void copyDataFrontPayload(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataFrontPayloadLen(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataSetOne(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
+	static void copyDataSetZero(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataMaxPacketGap(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataNanoseconds(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void copyDataDummy(IpfixRecord::Data* bucket, const IpfixRecord::Data* src, ExpFieldData* efd);
 	static void aggregateFrontPayload(IpfixRecord::Data* bucket, const Packet* src, const ExpFieldData* efd, bool firstpacket = false);
 	void (*getCopyDataFunction(const ExpFieldData* efd))(IpfixRecord::Data*, const IpfixRecord::Data*, ExpFieldData*);
 	void fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index);
-	uint32_t expCalculateHash(const IpfixRecord::Data* data);
+	uint32_t calculateHash(const IpfixRecord::Data* data);
+	uint32_t calculateHashRev(const IpfixRecord::Data* data);
 	boost::shared_array<IpfixRecord::Data> buildBucketData(const Packet* p);
-	void expAggregateField(const ExpFieldData* efd, IpfixRecord::Data* baseData, const IpfixRecord::Data* deltaData);
-	void expAggregateFlow(IpfixRecord::Data* bucket, const Packet* p);
-	bool expEqualFlow(IpfixRecord::Data* bucket, const Packet* p);
+	void aggregateField(const ExpFieldData* efd, IpfixRecord::Data* baseData, const IpfixRecord::Data* deltaData);
+	void aggregateFlow(HashtableBucket* bucket, const Packet* p, bool reverse);
+	bool equalFlow(IpfixRecord::Data* bucket, const Packet* p);
+	bool equalFlowRev(IpfixRecord::Data* bucket, const Packet* p);
 	void createMaskedField(IpfixRecord::Data* address, uint8_t imask);
 	void createMaskedFields(const Packet* p);
 	void updatePointers(const Packet* p);
 	bool typeAvailable(const InformationElement::IeInfo& type);
 	bool isRawPacketPtrVariable(const InformationElement::IeInfo& type);
-
+	void updateBucketData(HashtableBucket* bucket);
 };
 
 #endif /*PACKETHASHTABLE_H_*/

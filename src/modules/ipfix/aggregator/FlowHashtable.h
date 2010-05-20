@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -38,17 +38,6 @@ public:
 
 
 private:
-	uint32_t* revDataTemplateMapper; /**< contains indizes to dataTemplate for a reverse flow*/
-	bool biflowAggregation; /**< set to true if biflow aggregation is to be done*/
-
-
-	/**
-	 * contains indizes to reversed flow fields
-	 * e.g. srcIP index points to dstIP index, and dstIP index points to srcIP index
-	 */
-	vector<uint32_t> flowReverseMapper;
-	char* switchArray; /**< used by function reverseFlowBucket as temporary storage */
-
 	int aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo::FieldInfo* deltafi, IpfixRecord::Data* base,
 		  IpfixRecord::Data* delta);
 	int aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data* flow, bool reverse);
@@ -60,13 +49,10 @@ private:
 			InformationElement::IeInfo* data2Type, IpfixRecord::Data* data2);
 	void copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* dst,
 			TemplateInfo::FieldInfo* srcFI, IpfixRecord::Data* src, Rule::Field::Modifier modifier);
-	void genBiflowStructs();
 	int compare4ByteField(IpfixRecord::Data* baseFlow, TemplateInfo::FieldInfo* baseFi,
 			IpfixRecord::Data* flow, TemplateInfo::FieldInfo* deltaFi);
 	int compare8ByteField(IpfixRecord::Data* baseFlow, TemplateInfo::FieldInfo* baseFi,
 			IpfixRecord::Data* flow, TemplateInfo::FieldInfo* deltaFi);
-	void mapReverseElement(uint32_t tid);
-	void reverseFlowBucket(HashtableBucket* bucket);
 };
 
 #endif /*FLOWHASHTABLE_H_*/
