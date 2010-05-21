@@ -8,6 +8,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdint.h>
+#include "common/ipfixlolib/encoding.h"
 
 /* Subtract the `struct timeval' values X and Y,
    storing the result in RESULT.
@@ -225,6 +226,16 @@ inline uint32_t ntp32_substract (uint32_t x, uint32_t y)
 	return ((x) > (y)) ? ((x) - (y)) : (((x) - (y)) + 0x7fffffff);
 }
 
+inline void convertNtp64(uint64_t ntptime, uint64_t& result)
+{
+        uint64_t hbnum = ntohll(*(uint64_t*)&ntptime);
+        if (hbnum>0) {
+                timeval t = timentp64(*((ntp64*)(&hbnum)));
+                result = (uint64_t)t.tv_sec*1000+(uint64_t)t.tv_usec/1000;
+        } else {
+                result = 0;
+        }
+}
 
 
 #endif
