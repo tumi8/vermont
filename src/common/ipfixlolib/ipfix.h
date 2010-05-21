@@ -145,10 +145,11 @@ extern "C" {
 
 #define IPFIX_PEN_reverse							29305
 // not registered at IANA
+// within Vermont, we combine this PEN with IPFIX_PEN_reverse
+// to declare reverse Vermont-specific IEs. That's why this
+// PEN is rather large
+// FIXME: maybe there is a better way?
 #define IPFIX_PEN_vermont							0x77700000
-// not registered at IANA, we need to have this additional PEN,
-// as we cannot combine vermont-specific numbers with the reverse PEN
-#define IPFIX_PEN_reverseVermont					0x77770000
 
 #define IPFIX_ETYPEID_frontPayload					1
 #define IPFIX_ETYPEID_frontPayloadLen				2
