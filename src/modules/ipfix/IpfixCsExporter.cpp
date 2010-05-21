@@ -84,11 +84,11 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 	csRecord->record_length			= htons(sizeof(Ipfix_basic_flow));		/* total length of this record in bytes */
 	csRecord->src_export_mode		= exportMode;				/* expected to match enum cs_export_mode */
 	csRecord->dst_export_mode		= exportMode;				/* expected to match enum cs_export_mode */
-	csRecord->ipversion			= 4;					/* expected 4 (for now) */
+	csRecord->ipversion				= 4;						/* expected 4 (for now) */
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
 	if (fi != 0) {
-		csRecord->source_ipv4_address		= htonl(*(uint32_t*)(record->data + fi->offset));
+		csRecord->source_ipv4_address		= *(uint32_t*)(record->data + fi->offset);
 	} else {
 		msg(MSG_DEBUG, "failed to determine source ip for record, assuming 0.0.0.0");
 		csRecord->source_ipv4_address		= 0;
@@ -96,7 +96,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
 	if (fi != 0) {
-		csRecord->destination_ipv4_address	= htonl(*(uint32_t*)(record->data + fi->offset));
+		csRecord->destination_ipv4_address	= *(uint32_t*)(record->data + fi->offset);
 	} else {
 		msg(MSG_DEBUG, "failed to determine destination ip for record, assuming 0.0.0.0");
 		csRecord->destination_ipv4_address	= 0;
@@ -112,7 +112,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
         if (fi != 0) {
-		csRecord->source_transport_port		= htons(*(uint16_t*)(record->data + fi->offset));/* encode udp/tcp ports here */
+		csRecord->source_transport_port		= *(uint16_t*)(record->data + fi->offset);/* encode udp/tcp ports here */
 	} else {
 		msg(MSG_DEBUG, "failed to determine source port for record, assuming 0");
 		csRecord->source_transport_port		= 0;
@@ -120,7 +120,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
 	if (fi != 0) {
-		csRecord->destination_transport_port	= htons(*(uint16_t*)(record->data + fi->offset));/* encode udp/tcp ports here */
+		csRecord->destination_transport_port	= *(uint16_t*)(record->data + fi->offset);/* encode udp/tcp ports here */
 	} else {
 		msg(MSG_DEBUG, "failed to determine destination port for record, assuming 0");
 		csRecord->destination_transport_port	= 0;
@@ -132,9 +132,9 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 		csRecord->icmp_type_ipv4 		= *(uint8_t*)(record->data + fi->offset);
 		csRecord->icmp_code_ipv4		= *(uint8_t*)(record->data + fi->offset + 8);
 	} else {
-			msg(MSG_DEBUG, "failed to determine icmp type and code for record, assuming 0");
-			csRecord->icmp_type_ipv4                = 0;
-			csRecord->icmp_code_ipv4                = 0;
+		msg(MSG_DEBUG, "failed to determine icmp type and code for record, assuming 0");
+		csRecord->icmp_type_ipv4                = 0;
+		csRecord->icmp_code_ipv4                = 0;
 	}
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, 0);
@@ -144,8 +144,6 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 
 	uint64_t srcTimeStart;
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0);
-		//csRecord->flow_start_milliseconds = convertNtp64(*(uint64_t*)(record->data + fi->offset));
-		//convertNtp64(*(uint64_t*)(record->data + fi->offset), &csRecord->flow_start_milliseconds);
 	if (fi != 0) {
 		convertNtp64(*(uint64_t*)(record->data + fi->offset), srcTimeStart);
 	} else {
@@ -307,9 +305,10 @@ void IpfixCsExporter::writeChunkList()
 {
 	Ipfix_basic_flow_sequence_chunk_header csChunkHeader;
 
-	csChunkHeader.ipfix_type=0x08;
-	csChunkHeader.chunk_length=chunkList.size()*sizeof(struct Ipfix_basic_flow);
-	csChunkHeader.flow_count=chunkList.size();
+	csChunkHeader.ipfix_type = htons(0x0008);
+	csChunkHeader.chunk_length = htonl(chunkList.size()*sizeof(Ipfix_basic_flow));
+	msg(MSG_INFO, "chunk_length: %u, %X", chunkList.size()*sizeof(Ipfix_basic_flow), csChunkHeader.chunk_length);
+	csChunkHeader.flow_count = htonl(chunkList.size());
 
 	if (fwrite(&csChunkHeader, sizeof(csChunkHeader), 1, currentFile)==0){
 		THROWEXCEPTION("Could not chunk header. Check disk space.");
