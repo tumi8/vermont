@@ -99,7 +99,6 @@
  * defines interval in milliseconds, how often DelayedDeleter is called
  * 10 * 1000ms = 10s
  */
-
 #define DELETER_PERIOD 10000
 
 
@@ -107,8 +106,15 @@
  * After a module is put on the deleter list, we will wait at least
  * 20 seconds, before we destroy it
  */
-
 #define DELETER_DELAY 20
+
+
+/**
+ * Defines in milliseconds, how often a connection queue polls the status of vermont
+ * this is the maximum time a queue needs to be shut down
+ */
+#define CQ_POLL_INTERVAL 1000
+
 
 
 

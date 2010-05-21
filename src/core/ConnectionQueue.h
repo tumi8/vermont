@@ -179,7 +179,12 @@ private:
 			} else {
 				if (!nexttoset || compareTime(nexttimeout, (*iter)->timeout) > 0) {
 					nexttoset = true;
-					nexttimeout = (*iter)->timeout;
+					struct timespec intvtime;
+					addToCurTime(&intvtime, CQ_POLL_INTERVAL);
+					if (compareTime(intvtime, (*iter)->timeout) > 0)
+						nexttimeout = (*iter)->timeout;
+					else
+						nexttimeout = intvtime;
 				}
 				iter++;
 			}
