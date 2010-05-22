@@ -906,3 +906,32 @@ Output type: IdmefMessage
 |timeexpirescanner |  1800  |Seconds, until as portscanner classified IP addresses are purged from table. |
 |timeexpirebenign |  1800  |Seconds, until as benign classified IP addresses are purged from table. |
 |timecleanupinterval |  10  |Interval length in seconds, when IP address table is scanned for entries to be purged. |
+
+== IpfixCsExporter ==
+
+Writes IPFIX data records to a local disk using the CarmentiS file format. The module recieves Ipfix packets, caches them and writes them as a chunk to disk.
+
+Input type: IpfixRecord
+Output type: File on local drive
+
+**Example configuration:**
+<code xml>
+<ipfixCsExporter id="27">
+   <filenamePrefix>carmentis_</filenamePrefix>
+   <destinationPath>/tmp/carmentis</destinationPath>
+   <maxFileSize>20480</maxFileSize>
+   <maxChunkBufferTime>300</maxChunkBufferTime>
+   <maxChunkBufferRecords>50000</maxChunkBufferRecords>
+   <maxFileCreationInterval>1500</maxFileCreationInterval>
+   <exportMode>1</exportMode>
+</ipfixCsExporter>
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|filenamePrefix |  none  |Prefix to each file. |
+|destinationPath |  none  |Output directory for data files. |
+|maxFileSize |  none  |Maximum size of one exported file. |
+|maxChunkBufferTime |  none  |Maximum time in seconds until a chunk will be written. |
+|maxChunkBufferRecords |  none  |Maximum records per chunk. |
+|maxFileCreationInterval |  none  |Maximum time in seconds until the currently opened file will be written and a new one opened. |
+|exportMode |  none  |Sets a flag inside the exported data which privacy level the packets have. 0=plain; 1=anonymized; 2=pseudonymized |
