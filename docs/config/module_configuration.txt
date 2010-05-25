@@ -841,6 +841,38 @@ Output type: IpfixRecord
 |anonParam |  none  |Specifies an optional parameter to the anonymization method. Different methods need different params. ByteWiseHashHmacSha1, HashHmacSha1 need an variable sized key. ConstOverwrite needs one character as parameter. CryptoPan needs an 32 bytes long parameter (16 bytes key, 16 bytes pad). For CryptoPan and ConstOverwrite, keys can be specified as normal text, or as hexadecimal string starting with '0x'. |
 |copyMode |  false  |If true, the Record Anonymizer creates a copy of the incoming record and leaves the original record unchanged. Copy mode should be turned on if the original records are processed by other moduls as well. |
 
+
+== CryptoPanPrefix ==
+This module is a submodule for the RecordAnonymizer mentioned above. It requires some additional configuration elements.
+
+**Example configuration**
+<anonRecord id="3">
+    <anonField>
+        <anonMethod>CryptoPanPrefix</anonMethod>
+        <anonIE>
+            <ieName>destinationIPv4Address</ieName>
+        </anonIE>
+       <anonParam>12345678901234567890123456789013</anonParam>
+       <mappingList>
+           <subnet cidr="24">
+                <from>192.44.88.0</from>
+                <to>222.222.222.0</to>
+           </subnet>
+           <subnet cidr="16">
+                <from>119.152.0.0</from>
+                <to>111.111.0.0</to>
+           </subnet>
+       </mappingList>
+    </anonField>
+    <copyMode>false</copyMode>
+    <next>5</next>
+</anonRecord>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+| subnet | none | The element subnet must include the attribute cidr | 
+| from | none  | Subnet to be anonymized | 
+| to |  none  | Assigned Subnet ID | 
+
 == SensorManager ==
 
 Module which controls all sensors ("`Messfühler"') inside Vermont. It does not have any in- or output types and must not be connected to any other module. It is recommended to set its ID to 99 to express its special role. If this module is specified in the configuration, available sensors are activated and polled regularly. It may only be specified once.
