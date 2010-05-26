@@ -126,8 +126,8 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 		csRecord->destination_transport_port	= 0;
 	}
 
-	// IPFIX_TYPEID_icmpTypeCode   (ICMP type * 256) + ICMP code (network-byte order!)
-	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_icmpTypeCode, 0);
+	// IPFIX_TYPEID_icmpTypeCodeIPv4   (ICMP type * 256) + ICMP code (network-byte order!)
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_icmpTypeCodeIPv4, 0);
 	if (fi != 0) {
 		csRecord->icmp_type_ipv4 		= *(uint8_t*)(record->data + fi->offset);
 		csRecord->icmp_code_ipv4		= *(uint8_t*)(record->data + fi->offset + 8);

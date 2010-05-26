@@ -25,6 +25,7 @@ extern "C" {
 #ifndef IPFIX_H
 #define IPFIX_H
 
+// data types
 #define IPFIX_LENGTH_octet 1
 #define IPFIX_LENGTH_unsigned16 2
 #define IPFIX_LENGTH_unsigned32 4
@@ -32,23 +33,27 @@ extern "C" {
 #define IPFIX_LENGTH_ipv4Address 4
 #define IPFIX_LENGTH_ipv6Address 8
 #define IPFIX_LENGTH_dateTimeSeconds 4
+#define IPFIX_LENGTH_variable 65535 
 
+// transport protocol numbers
 #define IPFIX_protocolIdentifier_ICMP                 1
 #define IPFIX_protocolIdentifier_TCP                  6
 #define IPFIX_protocolIdentifier_UDP                 17
 #define IPFIX_protocolIdentifier_SCTP               132
 #define IPFIX_protocolIdentifier_RAW                255
 
+// reserved Set IDs
 #define NetflowV9_SetId_Template  				      0
 #define NetflowV9_SetId_OptionsTemplate  			  1
 #define IPFIX_SetId_Template                          2
 #define IPFIX_SetId_OptionsTemplate                   3
 #define IPFIX_SetId_DataTemplate                      4
 #define IPFIX_SetId_Data_Start                      256
+
+// enterprise bit
 #define IPFIX_ENTERPRISE_TYPE   0x8000
 
-#define IPFIX_VERMONT_SPECIFIC_TYPE 0x4000 // bit to be set for Vermont specific types exported without enterprise number (may cause conflicts!)
-
+// standard IDs
 #define IPFIX_TYPEID_ipVersion                       60
 #define IPFIX_TYPEID_sourceIPv4Address                8
 #define IPFIX_TYPEID_sourceIPv6Address               27
@@ -67,7 +72,7 @@ extern "C" {
 #define IPFIX_TYPEID_protocolIdentifier               4
 #define IPFIX_TYPEID_sourceTransportPort              7
 #define IPFIX_TYPEID_destinationTransportPort        11
-#define IPFIX_TYPEID_icmpTypeCode                    32
+#define IPFIX_TYPEID_icmpTypeCodeIPv4                32
 #define IPFIX_TYPEID_igmpType                        33
 #define IPFIX_TYPEID_sourceMacAddress                56
 #define IPFIX_TYPEID_mplsLabelStackEntry1            70
@@ -143,7 +148,14 @@ extern "C" {
 #define IPFIX_TYPEID_tcpUrgentPointer               187
 #define IPFIX_TYPEID_totalLengthIPv4                190
 
-#define IPFIX_PEN_reverse							29305
+#define PSAMP_TYPEID_ipHeaderPacketSection          313
+#define PSAMP_TYPEID_ipPayloadPacketSection         314
+#define PSAMP_TYPEID_observationTimeSeconds         322
+#define PSAMP_TYPEID_observationTimeMilliSeconds    323
+#define PSAMP_TYPEID_observationTimeMicroSeconds    324
+
+
+#define IPFIX_PEN_reverse                           29305
 // not registered at IANA
 // within Vermont, we combine this PEN with IPFIX_PEN_reverse
 // to declare reverse Vermont-specific IEs. That's why this
@@ -180,7 +192,7 @@ extern "C" {
 #define IPFIX_LENGTH_protocolIdentifier             IPFIX_LENGTH_octet
 #define IPFIX_LENGTH_sourceTransportPort            IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_destinationTransportPort       IPFIX_LENGTH_unsigned16
-#define IPFIX_LENGTH_icmpTypeCode                   IPFIX_LENGTH_unsigned16
+#define IPFIX_LENGTH_icmpTypeCodeIPv4               IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_igmpType                       IPFIX_LENGTH_octet
 #define IPFIX_LENGTH_sourceMacAddress               IPFIX_LENGTH_octet
 #define IPFIX_LENGTH_mplsLabelStackEntry1           IPFIX_LENGTH_unsigned32
@@ -256,6 +268,12 @@ extern "C" {
 #define IPFIX_LENGTH_tcpWindowSize                  IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_tcpUrgentPointer               IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_totalLengthIPv4                IPFIX_LENGTH_unsigned16
+
+#define PSAMP_LENGTH_ipHeaderPacketSection          IPFIX_LENGTH_variable
+#define PSAMP_LENGTH_ipPayloadPacketSection         IPFIX_LENGTH_variable
+#define PSAMP_LENGTH_observationTimeSeconds         IPFIX_LENGTH_dateTimeSeconds
+#define PSAMP_LENGTH_observationTimeMilliSeconds    IPFIX_LENGTH_unsigned64
+#define PSAMP_LENGTH_observationTimeMicroSeconds    IPFIX_LENGTH_unsigned64
 
 // enterprise TYPEIDs
 #define IPFIX_ELENGTH_frontPayloadLen				IPFIX_LENGTH_unsigned32

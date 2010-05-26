@@ -97,9 +97,6 @@ private:
         int numPacketsToRelease;
         Packet *packetsToRelease[MAX_PACKETS];
 
-	int numMetaFieldsToRelease;
-	void *metaFieldsToRelease[MAX_PACKETS*10];
-
         // put this many packets into one big IPFIX packet
 	int ipfix_maxrecords;
 

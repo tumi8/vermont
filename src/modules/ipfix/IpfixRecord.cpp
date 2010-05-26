@@ -85,7 +85,7 @@ namespace InformationElement {
 				case IPFIX_ETYPEID_maxPacketGap:
 					return Packet::IPProtocolType(Packet::TCP|Packet::UDP|Packet::ICMP);
 
-				case IPFIX_TYPEID_icmpTypeCode:
+				case IPFIX_TYPEID_icmpTypeCodeIPv4:
 					return Packet::ICMP;
 
 				case IPFIX_TYPEID_sourceTransportPort:
@@ -120,8 +120,18 @@ namespace InformationElement {
 	{
 		char buffer[100];
 		const ipfix_identifier* ipfixid = ipfix_id_lookup(id, enterprise);
-		snprintf(buffer, ARRAY_SIZE(buffer), "IeInfo(typeid=%hu,pen=%u,length=%hu, name='%s')",
-				id, enterprise, length, ipfixid ? ipfixid->name : "");
+		if (enterprise == 0)
+			snprintf(buffer, ARRAY_SIZE(buffer), "%s (id=%hu, length=%hu)",
+				ipfixid ? ipfixid->name : "unknown", id, length);
+		else if (enterprise == IPFIX_PEN_reverse)
+			snprintf(buffer, ARRAY_SIZE(buffer), "%s (id=%hu, pen=%u [reverse], length=%hu)",
+				ipfixid ? ipfixid->name : "unknown", id, enterprise, length);
+		else if (enterprise == IPFIX_PEN_vermont)
+			snprintf(buffer, ARRAY_SIZE(buffer), "%s (id=%hu, pen=%u [vermont], length=%hu)",
+				ipfixid ? ipfixid->name : "unknown", id, enterprise, length);
+		else
+			snprintf(buffer, ARRAY_SIZE(buffer), "%s (id=%hu, pen=%u, length=%hu)",
+				ipfixid ? ipfixid->name : "unknown", id, enterprise, length);
 		return buffer;
 	}
 

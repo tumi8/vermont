@@ -55,37 +55,28 @@ Template* PacketReportingCfg::getTemplate()
         if (t)
         	return t;
         t = new Template(templateId);
+
+	InformationElement::IeInfo ie; 
+
         for (size_t i = 0; i != exportedFields.size(); ++i) {
-                uint16_t tmpId = exportedFields[i]->getIeId();
-                uint32_t tmpPen = exportedFields[i]->getEnterpriseNumber();
-
-
-                const ipfix_identifier *id = ipfix_id_lookup(tmpId, tmpPen);
-                if ((tmpId == -1) || (id == NULL)) {
-                        msg(MSG_DIALOG, "Template: ignoring unknown template field %s",
-                        		exportedFields[i]->getName().c_str());
+                if (!exportedFields[i]->isKnownIE()) {
+                        msg(MSG_DIALOG, "Template: ignoring unknown template field %s (%u)",
+                        		exportedFields[i]->getName().c_str(), (unsigned) exportedFields[i]->getIeId());
                         continue;
                 }
 
-                uint16_t fieldLength = id->length;
-                if (exportedFields[i]->hasOptionalLength()) {
-                        // field length 65535 indicates variable length encoding
-                        // we allow configuring a fixed length for IEs with variabel length (and length=0)
-                        if ((fieldLength == 0) || (fieldLength == 65535)) {
-                                fieldLength = exportedFields[i]->getIeLength();
-                        } else {
-                                msg(MSG_DIALOG, "Template: this is not a variable length field, ignoring optional length");
-                        }
-                }
-                if (fieldLength == 65535)
+                ie.id = exportedFields[i]->getIeId();
+                ie.enterprise = exportedFields[i]->getEnterpriseNumber();
+                ie.length = exportedFields[i]->getIeLength();
+
+                if (ie.length == 65535)
                 	recordVLFields++;
                 else
-                	recordLength += fieldLength;
+                	recordLength += ie.length;
 
-                msg(MSG_FATAL, "Template: adding %s -> ID %d with size %d",
-                		exportedFields[i]->getName().c_str(), id->id, fieldLength);
+                msg(MSG_INFO, "Template: Add field %s", ie.toString().c_str());
 
-                t->addField(id, fieldLength);
+                t->addField(ie);
         }
         msg(MSG_DEBUG, "Template: got %d fields, record length is %u +%u * capture_len",
         		t->getFieldCount(), recordLength,recordVLFields);

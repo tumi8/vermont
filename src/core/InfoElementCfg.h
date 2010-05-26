@@ -9,7 +9,7 @@ class InfoElementCfg
 	: public CfgBase {
 public:
 	InfoElementCfg(XMLElement* _elem)
-		: CfgBase(_elem), ieLength(0), ieId(0)
+		: CfgBase(_elem), ieLength(0), ieId(0), knownIE(false)
 
 	{
 		if (!_elem)
@@ -27,36 +27,46 @@ public:
 		modifier         = getOptional("modifier");
 		match            = getOptional("match");
 
-		if (ieId>0 && ieName.size()>0) {
-			// check given ieID with name
-			const ipfix_identifier* ipfixid = ipfix_name_lookup(ieName.c_str());
-			if (ipfixid) {
-				if (ipfixid->id!=ieId || ipfixid->pen!=enterpriseNumber)
-					THROWEXCEPTION("InfoElementCfg: given information element type id does not fit to given name (%hu, %s)", ieId, ieName.c_str());
-			} else {
-				msg(MSG_INFO, "InfoElementCfg: unknown information element %s", ieName.c_str());
-			}
+		if (ieId>0) {
+			// check given ieID 
+			const ipfix_identifier* ipfixid = ipfix_id_lookup(ieId, enterpriseNumber);
+			if (ipfixid)
+				knownIE = true;
+			else
+				msg(MSG_DIALOG, "InfoElementCfg: unknown information element id %u, try to continue anyway.", (unsigned) ieId);
 		}
 
 		if (ieId==0 && ieName.size()>0) {
+			// get ieId and enterpriseNumber from name
 			const ipfix_identifier* ipfixid = ipfix_name_lookup(ieName.c_str());
-			if (ipfixid) ieId = ipfixid->id;
+			if (ipfixid) {
+				if (enterpriseNumber == 0 && ipfixid->pen != 0) {
+					enterpriseNumber = ipfixid->pen; 
+					msg(MSG_DIALOG, "InfoElementCfg: %s configured without enterprise number, assume enterprise number %lu.", ieName.c_str(), (unsigned long) enterpriseNumber);
+				} else if (enterpriseNumber != ipfixid->pen) {
+					THROWEXCEPTION("InfoElementCfg: given information element %s is configured with enterprise number %lu, but %lu is expected.", ieName.c_str(), (unsigned long) enterpriseNumber, (unsigned long) ipfixid->pen);
+				}
+				knownIE = true;
+				ieId = ipfixid->id;
+			}
+			else
+				THROWEXCEPTION("InfoElementCfg: unknown information element name %s", ieName.c_str());
 		}
 
-		if (ieLength==0) {
-			if (ieId>0) {
-				const ipfix_identifier* ipfixid = ipfix_id_lookup(ieId, enterpriseNumber);
-				if (ipfixid) ieLength = ipfixid->length;
-			} else if (ieName.size()>0) {
-				const ipfix_identifier* ipfixid = ipfix_name_lookup(ieName.c_str());
-				if (ipfixid) ieLength = ipfixid->length;
-			}
+		if (ieId>0 && ieName.size()>0) {
+			// compare given ieID with name
+			const ipfix_identifier* ipfixid = ipfix_name_lookup(ieName.c_str());
+			if (ipfixid->id!=ieId || ipfixid->pen!=enterpriseNumber)
+				THROWEXCEPTION("InfoElementCfg: given information element type id does not fit to given name (%u, %s)", (unsigned) ieId, ieName.c_str());
+		}
+
+		if (ieLength==0 && knownIE) {
+			const ipfix_identifier* ipfixid = ipfix_id_lookup(ieId, enterpriseNumber);
+			if (ipfixid) ieLength = ipfixid->length;
 		}
 	}
 
-	std::string getName() { return "reportedIE"; }
-
-	bool hasOptionalLength() const { return ieLength != -1; }
+	std::string getName() { return "IE"; }
 
 	std::string getIeName() {
 		if (ieName.size()==0 && ieId>=0) {
@@ -75,6 +85,9 @@ public:
 	std::string getMatch() { return match; }
 
 	std::string getModifier() { return modifier; }
+
+	bool isKnownIE() { return knownIE; }
+
 private:
 	std::string ieName;
 	uint16_t ieLength;
@@ -83,6 +96,8 @@ private:
 	uint32_t enterpriseNumber;
 	std::string match;
 	std::string modifier;
+
+	bool knownIE;
 };
 
 #endif /*INFOELEMENTCFG_H_*/
