@@ -29,6 +29,7 @@
 #include "common/Misc.h"
 
 #include "common/ipfixlolib/ipfix.h"
+#include "common/ipfixlolib/ipfix_names.h"
 #include "modules/packet/Packet.h"
 
 #define MAX_ADDRESS_LEN 16
@@ -40,16 +41,55 @@ namespace InformationElement {
 	typedef uint32_t IeEnterpriseNumber;
 
 	/* Field in a Data Record */
-	struct IeInfo {
+	class IeInfo {
+	public:
+		IeInfo(IeId id, IeEnterpriseNumber enterprise, IeLength length = 0)
+			: id(id), enterprise(enterprise), length(length)
+		{
+			if (length==0) {
+				const ipfix_identifier* ipfixid = ipfix_id_lookup(id, enterprise);
+				if (ipfixid)
+					length = ipfixid->length;
+				else {
+					msg(MSG_INFO, "WARNING: received unknown IE type id: %s", toString().c_str());
+				}
+			}
+		}
+
+		IeInfo()
+			: id(0), enterprise(0), length(0)
+		{}
+
+		IeInfo(const ipfix_identifier* ipfixid)
+			: id(ipfixid->id), enterprise(ipfixid->pen), length(ipfixid->length)
+		{
+		}
+
+		bool operator==(const IeInfo &other) const {
+			return (id==other.id) && (enterprise==other.enterprise);
+		}
+
+		bool operator<(const IeInfo &other) const {
+			if (enterprise<other.enterprise) return true;
+			if (id<other.id) return true;
+			return false;
+		}
+
+
 		IeId id; 			/**< Information Element Id */
 		IeEnterpriseNumber enterprise;/**< Enterprise Number for enterprise-specific IEs (i.e., id >= 0x8000) */
 		IeLength length; 		/**< Field length in bytes (65535 in the case of variable lengh field) */
+
+		bool isReverseField() const;
+		IeInfo getReverseDirection();
+		const Packet::IPProtocolType getValidProtocols();
+		string toString() const;
+		bool existsReverseDirection();
 	};
 
-	IeLength getFieldLength(IeId id);
-	bool isBiflowField(const IeInfo& type);
-	IeId oppositeDirectionIeId(const IeInfo& type);
-	const Packet::IPProtocolType getValidProtocols(const IeInfo& type);
+
+
+
 }
 
 
@@ -66,16 +106,16 @@ class IpfixRecord
 		 * A better name would be something like TemplateScope (TransportSession + ObservationDomainId)
 		 */
 		struct SourceID {
-			SourceID() : observationDomainId(0), sysUpTime(0), exportTime(0), 
-			    exporterPort(0), receiverPort(0), protocol(0), fileDescriptor(0) 
-			{ 
-				exporterAddress.len = 0; 
+			SourceID() : observationDomainId(0), sysUpTime(0), exportTime(0),
+			    exporterPort(0), receiverPort(0), protocol(0), fileDescriptor(0)
+			{
+				exporterAddress.len = 0;
 			}
 
 			struct ExporterAddress {
 				uint8_t ip[MAX_ADDRESS_LEN];
 				uint8_t len;
-				
+
 				// conversion of IPv4 addresses to uint32_t
 				uint32_t toUInt32() const
 				{
@@ -207,7 +247,7 @@ class TemplateInfo {
 			NetflowOptionsTemplate = 1,
 			IpfixTemplate = 2,
 			IpfixOptionsTemplate = 3,
-			IpfixDataTemplate = 4		
+			IpfixDataTemplate = 4
 		};
 
 		/**
@@ -231,6 +271,7 @@ class TemplateInfo {
 
 		FieldInfo* getFieldInfo(const InformationElement::IeInfo& type);
 		FieldInfo* getFieldInfo(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid);
+		int getFieldIndex(const InformationElement::IeInfo& type);
 		int getFieldIndex(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid);
 		FieldInfo* getDataInfo(const InformationElement::IeInfo& type);
 		FieldInfo* getDataInfo(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid);
@@ -239,7 +280,7 @@ class TemplateInfo {
 		SetId  setId; 		/**< set Id */
 		uint16_t fieldCount; 		/**< number of regular fields */
 		FieldInfo* fieldInfo; 		/**< array of FieldInfos describing each of these fields */
-		
+
 		bool freePointers;  /** small helper variable to indicate if pointers should be freed on destruction */
 
 		// only used by Options Templates:
@@ -259,9 +300,9 @@ class TemplateInfo {
 		 * - uniqueId==0 means that no uniqueId has been assigned to this TemplateInfo object, yet
 		 * - uniqueId is used by IpfixSender to recognize different Templates quickly (Template ID is
 		 *   not sufficient as it is not Vermont-wide unique)
-		 * - uniqueId remains unchanged if a TemplateInfo object is copied to change 
+		 * - uniqueId remains unchanged if a TemplateInfo object is copied to change
 		 *   field lengths in the case of variable length fields (for IpfixSender, it still is the same Template)
-		 */ 
+		 */
 		uint16_t uniqueId;
 		/* uniqueIdUseCount:
 		 * - at position i of the vector, we store the number of TemplateInfo objects with uniqueId==(i+1)
@@ -269,7 +310,7 @@ class TemplateInfo {
 		 *   and assigne (i+1) as new uniqueId
 		 * - requires long lifetime as it is used in the destructor of TemplateInfo (singleton without destruction)
 		 *   see: http://groups.google.com/group/comp.lang.c++/browse_thread/thread/8c6c8d00ec467068/fd8778f91ef7397e?lnk=raot
-		 */ 
+		 */
 		std::vector<uint16_t>& uniqueIdUseCount() {
 			static std::vector<uint16_t>* theOnlyUniqueIdUseCount = new std::vector<uint16_t>;
 			return *theOnlyUniqueIdUseCount;
@@ -278,7 +319,7 @@ class TemplateInfo {
 		/* mutex:
 		 * - controls access to uniqueIdUseCoune
 		 * - requires long lifetime as it is used in the destructor of TemplateInfo (singleton without destruction)
-		 */ 
+		 */
 		Mutex& mutex() {
 			static Mutex* theOnlyMutex = new Mutex;
 			return *theOnlyMutex;

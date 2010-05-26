@@ -152,6 +152,7 @@ void *Observer::observerThread(void *arg)
 	struct pcap_pkthdr packetHeader;
 	bool have_send = false;
 	obs->registerCurrentThread();
+    bool file_eof = false;
 
 
 
@@ -261,6 +262,7 @@ void *Observer::observerThread(void *arg)
 				/* no packet data was available */
 				if(feof(fh))
 				        msg(MSG_DIALOG, "Observer: reached end of file (%llu packets)", obs->processedPackets);
+                        file_eof = true;
       				break;
       			}
 			DPRINTFL(MSG_VDEBUG, "got new packet!");
@@ -334,7 +336,7 @@ void *Observer::observerThread(void *arg)
 		}
 	}
 
-	if (obs->autoExit) {
+	if (obs->autoExit && (file_eof || (obs->maxPackets && obs->processedPackets>=obs->maxPackets)) ) {
 		// notify Vermont to shut down
 		DPRINTF("notifying Vermont to shut down, as all PCAP file data was read, or maximum packet count was reached");
 		obs->shutdownVermont();

@@ -28,16 +28,21 @@
 #include "core/SensorManager.h"
 
 #include "core/Cfg.h"
-#include "core/DelayedDeleter.h"
 #include "core/Graph.h"
 #include "core/XMLDocument.h"
 #include "core/GraphInstanceSupplier.h"
 
 #include <string>
+#include <ctime>
+typedef struct deleter_list_item {
+    Cfg* c;
+    time_t delete_after;
+} deleter_list_item;
 
 class ConfigManager
 	: GraphInstanceSupplier
 {
+    friend class Reconnector;
 public:
 	ConfigManager();
 
@@ -45,8 +50,10 @@ public:
 	
 	void parseConfig(std::string fileName);
 
+    void onTimeout2();	
 	void shutdown();
 	Graph* getGraph();
+	Graph* reconnect(Graph *g, Graph *o);
 
 private:
 	Graph* graph;
@@ -55,11 +62,10 @@ private:
 
 	static Cfg* configModules[];
 	
-	DelayedDeleter deleter;
 	SensorManager* sensorManager;
 	
-	
 	void readGlobalConfig(XMLElement* e);
+    std::list<deleter_list_item> deleter_list;
 };
 
 #endif /*CONFIGMANAGER_H_*/

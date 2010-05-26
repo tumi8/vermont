@@ -63,6 +63,7 @@ class InstanceManager : public Sensor
 
 		virtual ~InstanceManager()
 		{
+            SensorManager::getInstance().removeSensor(this);
 #if defined(DEBUG)
 			if (!usedInstances.empty()) {
 				DPRINTF("freeing instance manager, although there are still %d used instances", usedInstances.size());

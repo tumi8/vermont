@@ -31,12 +31,12 @@
 
 class Packet;
 
-class PCAPExporterFifo : public Module, public Destination<Packet *>, public Source<Packet *>, public PCAPExporterBase
+class PCAPExporterPipe : public Module, public Destination<Packet *>, public Source<Packet *>, public PCAPExporterBase
 {
 public:
-	PCAPExporterFifo(const std::string& file);
-	~PCAPExporterFifo();
-    void setFifoReaderCmd(const std::string& cmd);
+	PCAPExporterPipe(const std::string& file);
+	~PCAPExporterPipe();
+    void setPipeReaderCmd(const std::string& cmd);
     void setSigKillTimeout(int s);
     int execCmd(std::string& cmd);
     void kill_all(int ppid);

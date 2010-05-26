@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -30,6 +30,7 @@
 #include <common/anon/AnonRandomize.h>
 #include <common/anon/AnonShuffle.h>
 #include <common/anon/AnonCryptoPan.h>
+#include <common/anon/AnonCryptoPanPrefix.h>
 
 #include "common/Misc.h"
 
@@ -44,7 +45,7 @@ AnonModule::~AnonModule()
 	}
 }
 
-AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::string& parameter)
+AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::string& parameter, std::vector<map_info> mapping)
 {
 	AnonPrimitive* ret = 0;
 	char buffer[32];
@@ -103,6 +104,20 @@ AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::stri
 		}
 		ret = new AnonCryptoPan(buffer);
 		break;
+    case AnonMethod::CryptoPanPrefix:
+        if (parameter.length()!=32)
+            if (isHex && parameter.length() != 66)
+                THROWEXCEPTION("CryptoPAN key *MUST* have exactly 32 characters!");
+
+        if (isHex) {
+            if (convHexToBinary(parameter, buffer, 32)!=32) {
+                THROWEXCEPTION("Failed to convert hexadecimal key parameter '%s' to binary (32 bytes required)!", parameter.c_str());
+            }
+        } else {
+            memcpy(buffer, parameter.c_str(), 32);
+        }
+        ret = new AnonCryptoPanPrefix(buffer, mapping);
+        break;
 	default:
 		msg(MSG_FATAL, "AnonPrimitive number %i is unknown", m);
 		THROWEXCEPTION("AnonPrimitive number %i is unknown", m);
@@ -111,17 +126,17 @@ AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::stri
 	return ret;
 }
 
-void AnonModule::addAnonymization(uint16_t id, int len, AnonMethod::Method methodName, const std::string& parameter)
+void AnonModule::addAnonymization(InformationElement::IeInfo id, int len, AnonMethod::Method methodName, std::vector<map_info> mapping, const std::string& parameter)
 {
 	static const struct ipfix_identifier* ident;
-	AnonPrimitive* a = createPrimitive(methodName, parameter);
+	AnonPrimitive* a = createPrimitive(methodName, parameter, mapping);
 	if (methods.find(id) != methods.end()) {
 		methods[id].primitive.push_back(a);
 	} else {
 		AnonIE ie;
 		if (len == -1) {
-			if (!(ident = ipfix_id_lookup(id))) {
-				msg(MSG_ERROR, "Unknown or unsupported id %i detected.", id);
+			if (!(ident = ipfix_id_lookup(id.id, id.enterprise))) {
+				msg(MSG_ERROR, "Unknown or unsupported id %s detected.", id.toString().c_str());
 				return;
 			}
 			len = ident->length;
@@ -134,7 +149,7 @@ void AnonModule::addAnonymization(uint16_t id, int len, AnonMethod::Method metho
 	}
 }
 
-void AnonModule::anonField(uint16_t id, void* data, int len)
+void AnonModule::anonField(InformationElement::IeInfo id, void* data, int len)
 {
 	if (methods.find(id) == methods.end()) {
 		return;
@@ -146,7 +161,9 @@ void AnonModule::anonField(uint16_t id, void* data, int len)
 		l = len;
 	}
 	for (std::vector<AnonPrimitive*>::iterator i = methods[id].primitive.begin(); i != methods[id].primitive.end(); ++i) {
-		(*i)->anonimizeBuffer(data, l);
+        int cont = 1;
+		(*i)->anonimizeBuffer(data, l, &cont);
+        if (! cont) break;
 	}
 }
 

@@ -35,10 +35,10 @@ ADD_LIBRARY(modules
     packet/Template.cpp
     packet/PCAPExporterBase.cpp
     packet/PCAPExporterFile.cpp
-    packet/PCAPExporterFifo.cpp
+    packet/PCAPExporterPipe.cpp
     packet/PSAMPExporterModule.cpp
     packet/PSAMPExporterCfg.cpp
-    packet/PCAPExporterFifoCfg.cpp
+    packet/PCAPExporterPipeCfg.cpp
     packet/PCAPExporterFileCfg.cpp
     packet/PacketReportingCfg.cpp
     packet/filter/FilterModule.cpp
@@ -57,6 +57,8 @@ ADD_LIBRARY(modules
     ipfix/FpaPcapExporter.cpp
     ipfix/FpaPcapExporterCfg.cpp
     ipfix/IpfixCollectorCfg.cpp
+    ipfix/IpfixCsExporter.cpp
+    ipfix/IpfixCsExporterCfg.cpp
     ipfix/IpfixDbReaderCfg.cpp
     ipfix/IpfixDbWriterCfg.cpp
     ipfix/IpfixDbWriterPgCfg.cpp

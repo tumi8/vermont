@@ -18,15 +18,15 @@
  *
  */
 
-#include "PCAPExporterFifoCfg.h"
+#include "PCAPExporterPipeCfg.h"
 
 #include "common/defs.h"
 
 #include <cassert>
 #include <pcap.h>
 
-PCAPExporterFifoCfg::PCAPExporterFifoCfg(XMLElement* elem) 
-	: CfgHelper<PCAPExporterFifo, PCAPExporterFifoCfg>(elem, "pcapExporterFifo"), 
+PCAPExporterPipeCfg::PCAPExporterPipeCfg(XMLElement* elem) 
+	: CfgHelper<PCAPExporterPipe, PCAPExporterPipeCfg>(elem, "pcapExporterPipe"), 
         link_type(DLT_EN10MB), snaplen(PCAP_MAX_CAPTURE_LENGTH), sigkilltimeout(1),
         logFileName(""), fifoReaderCmd("")
 { 
@@ -57,28 +57,28 @@ PCAPExporterFifoCfg::PCAPExporterFifoCfg(XMLElement* elem)
 	}
 } 
 
-PCAPExporterFifoCfg* PCAPExporterFifoCfg::create(XMLElement* elem)
+PCAPExporterPipeCfg* PCAPExporterPipeCfg::create(XMLElement* elem)
 {
 	assert(elem);
 	assert(elem->getName() == getName());
-	return new PCAPExporterFifoCfg(elem);
+	return new PCAPExporterPipeCfg(elem);
 }
 
-PCAPExporterFifoCfg::~PCAPExporterFifoCfg()
+PCAPExporterPipeCfg::~PCAPExporterPipeCfg()
 {
 }
 
-PCAPExporterFifo* PCAPExporterFifoCfg::createInstance()
+PCAPExporterPipe* PCAPExporterPipeCfg::createInstance()
 {
-	instance = new PCAPExporterFifo(logFileName);
+	instance = new PCAPExporterPipe(logFileName);
 	instance->setDataLinkType(link_type);
 	instance->setSnaplen(snaplen);
     instance->setSigKillTimeout(sigkilltimeout);
-    instance->setFifoReaderCmd(fifoReaderCmd);
+    instance->setPipeReaderCmd(fifoReaderCmd);
 	return instance;
 }
 
-bool PCAPExporterFifoCfg::deriveFrom(PCAPExporterFifoCfg* old)
+bool PCAPExporterPipeCfg::deriveFrom(PCAPExporterPipeCfg* old)
 {
     if (logFileName != old->logFileName ||
         link_type != old->link_type ||

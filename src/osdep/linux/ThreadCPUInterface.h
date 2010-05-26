@@ -17,6 +17,11 @@ public:
 		uint64_t volCtxtSwitches;	  /**< voluntary context switches, only available with Linux CFS kernel */
 		uint64_t nonvolCtxtSwitches;  /**< non-voluntary context switches, only available with Linux CFS kernel */
 		time_t lastAccess;
+		/**
+		 * threads are marked as active when they are registered. Inactive
+		 * threads are not polled for new sensor data. This variable purely exists to
+		 * retain thread data during Vermont shutdown.
+		 */
 		bool active;
 	};
 

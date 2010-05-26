@@ -1,9 +1,0 @@
-#include <string.h>
-#include <stdio.h>
-#include "ipfix_names.h"
-#include "concentrator/ipfix.hpp"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-

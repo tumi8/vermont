@@ -94,9 +94,6 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 	if (recordLength || maxPacketSize) {
 		int recordsPerPacket = 1;
 		
-		printf ("create recordLen = %d\n\n", recordLength);
-		printf ("create maxPaSize = %d\n\n", maxPacketSize);
-		
 		if (recordLength) { 
 			// IPFIX packet header: 16 bytes, set header: 4 bytes
 			recordsPerPacket = (maxPacketSize - 16 - 4) / recordLength;

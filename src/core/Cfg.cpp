@@ -1,6 +1,7 @@
 #include "Cfg.h"
 
 #include <cassert>
+#include <stdlib.h>
 
 std::string CfgBase::get(const std::string& name, XMLElement* elem) throw(IllegalEntry)
 {
@@ -45,6 +46,18 @@ int CfgBase::getInt(const std::string& name, int def, XMLElement* elem)
 	try {
 		str = get(name, elem);
 		return atoi(str.c_str());
+	} catch (IllegalEntry ie) { }
+
+	// return default value
+	return def;
+}
+
+uint32_t CfgBase::getUInt32(const std::string& name, uint32_t def, XMLElement* elem)
+{
+	std::string str;
+	try {
+		str = get(name, elem);
+		return strtoul(str.c_str(), NULL, 10);
 	} catch (IllegalEntry ie) { }
 
 	// return default value

@@ -68,9 +68,14 @@ void Sensor::registerThreadID(pid_t tid)
 				wThreadsMutex.unlock();
 				THROWEXCEPTION("thread id %u is already registered in this module", tid);
 			}
+
+			// reactivate thread
 			iter->active = true;
 			iter->sysJiffies = 0;
 			iter->userJiffies = 0;
+
+			wThreadsMutex.unlock();
+			return;
 		}
 		iter++;
 	}

@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -115,36 +115,25 @@ Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 {
 	Rule::Field* ruleField = new Rule::Field();
 	InfoElementCfg ie(e);
+
+	if (!ie.isKnownIE())
+		THROWEXCEPTION("Unknown field %s (id=%u, enterprise=%lu).", (ie.getIeName()).c_str(), ie.getIeId(), ie.getEnterpriseNumber());
+
 	ruleField->modifier = Rule::Field::AGGREGATE;
+	ruleField->type.id = ie.getIeId();
+	ruleField->type.enterprise = ie.getEnterpriseNumber();
+	ruleField->type.length = ie.getIeLength();
 
-	// parse name
-	if (ie.getIeName() != "") {
-		if (0 == (ruleField->type.id = string2typeid(ie.getIeName().c_str()))) {
-			msg(MSG_ERROR, "Bad field type \"%s\"", ie.getIeName().c_str());
-			throw std::exception();
-		}
-	} else
-		ruleField->type.id = ie.getIeId();
-
-	// parse length
-	if (ie.hasOptionalLength()) {
-		ruleField->type.length = ie.getIeLength();
-	} else {
-		if (0 == (ruleField->type.length = string2typelength(ie.getIeName().c_str()))) {
-			msg(MSG_ERROR, "Bad field type \"%s\", or length of field must be specified!", ie.getIeName().c_str());
-			throw std::exception();
-		}
-	}
-
-	if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
+	if ((ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0)) ||
+			(ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0))) {
 		ruleField->type.length++; // for additional mask field
 	}
 
-	if (ruleField->type.id==IPFIX_ETYPEID_frontPayload || ruleField->type.id==IPFIX_ETYPEID_revFrontPayload) {
+	if (ruleField->type == InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont) ||
+			ruleField->type == InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
 		if (ruleField->type.length<5)
-			THROWEXCEPTION("type %s must have at least size 5!", typeid2string(ruleField->type.id));
+			THROWEXCEPTION("type %s must have at least size 5!", ipfix_id_lookup(ruleField->type.id, ruleField->type.enterprise)->name);
 	}
-
 
 	return ruleField;
 }
@@ -156,6 +145,9 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 
 		InfoElementCfg ie(e);
 
+		if (!ie.isKnownIE())
+			THROWEXCEPTION("Unknown field %s (id=%u, enterprise=%lu).", (ie.getIeName()).c_str(), ie.getIeId(), ie.getEnterpriseNumber());
+
 		// parse modifier
 		if (ie.getModifier().empty() || (ie.getModifier() == "keep")) {
 			ruleField->modifier = Rule::Field::KEEP;
@@ -165,24 +157,9 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 			ruleField->modifier = (Rule::Field::Modifier)((int)Rule::Field::MASK_START + atoi(ie.getModifier().c_str() + 5));
 		}
 
-		// parse name
-		if (ie.getIeName() != "") {
-			if (0 == (ruleField->type.id = string2typeid(ie.getIeName().c_str()))) {
-				msg(MSG_ERROR, "Bad field type \"%s\"", ie.getIeName().c_str());
-				throw std::exception();
-			}
-		} else
-			ruleField->type.id = ie.getIeId();
-
-		// parse length
-		if (ie.hasOptionalLength()) {
-			ruleField->type.length = ie.getIeLength();
-		} else {
-			if (0 == (ruleField->type.length = string2typelength(ie.getIeName().c_str()))) {
-				msg(MSG_ERROR, "Bad field type \"%s\", no length was specified!", ie.getIeName().c_str());
-				throw std::exception();
-			}
-		}
+		ruleField->type.id = ie.getIeId();
+		ruleField->type.enterprise = ie.getEnterpriseNumber();
+		ruleField->type.length = ie.getIeLength();
 
 		if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
 			ruleField->type.length++; // for additional mask field

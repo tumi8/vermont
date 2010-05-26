@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -22,12 +22,16 @@
 #define _ANON_MODULE_H_
 
 #include "AnonPrimitive.h"
-#include <common/msg.h>
+#include "common/msg.h"
+#include "common/anon/CrpytoPanInfoElements.h"
+#include "modules/ipfix/IpfixRecord.hpp"
+
 #include <map>
 #include <vector>
 #include <stdint.h>
 
-class AnonMethod 
+
+class AnonMethod
 {
 public:
 	typedef enum {
@@ -40,7 +44,8 @@ public:
 		Randomize,
 		Shuffle,
 		Whitenoise,
-		CryptoPan
+		CryptoPan,
+		CryptoPanPrefix
 	} Method;
 
 	static Method stringToMethod(const std::string& m)
@@ -63,6 +68,8 @@ public:
                         return Shuffle;
                 }else if (m == "Whitenoise") {
                         return Whitenoise;
+                }else if (m== "CryptoPanPrefix"){
+                    return CryptoPanPrefix;
                 }else if (m == "CryptoPan") {
 			return CryptoPan;
 		}
@@ -75,23 +82,22 @@ public:
 
 struct AnonIE {
 	uint16_t offset; // used by AnonFilter
-	unsigned short header; // used by AnonFilter
-	unsigned long packetClass; // used by AnonFilter
-	int len;
+	uint16_t header; // used by AnonFilter
+	uint32_t packetClass; // used by AnonFilter
+	int32_t len;
 	std::vector<AnonPrimitive*> primitive;
 };
 
 class AnonModule {
 public:
 	~AnonModule();
-	//TODO: enterprise number should be considered (Gerhard 12/2009)
-	void addAnonymization(uint16_t id, int len, AnonMethod::Method methodName, const std::string& parameter="");
-	void anonField(uint16_t id, void* data, int len = -1);
+	void addAnonymization(InformationElement::IeInfo id, int len, AnonMethod::Method methodName,  std::vector<map_info> mapping, const std::string& parameter="");
+	void anonField(InformationElement::IeInfo id, void* data, int len = -1);
 protected:
-	typedef std::map<uint16_t, AnonIE> MethodMap;
+	typedef std::map<InformationElement::IeInfo, AnonIE> MethodMap;
 	MethodMap methods;
 private:
-	AnonPrimitive* createPrimitive(AnonMethod::Method m, const std::string& parameter);
+	AnonPrimitive* createPrimitive(AnonMethod::Method m, const std::string& parameter, std::vector<map_info> mapping);
 };
 
 

@@ -54,6 +54,8 @@ class Connection
 		uint64_t dstTimeEnd; /**< milliseconds since 1970, host-byte order  */
 		uint64_t srcOctets; /**< network-byte order! **/
 		uint64_t dstOctets; /**< network-byte order! **/
+		uint64_t srcTransOctets; /**< host-byte order! **/
+		uint64_t dstTransOctets; /**< host-byte order! **/
 		uint64_t srcPackets; /**< network-byte order! **/
 		uint64_t dstPackets; /**< network-byte order! **/
 		uint8_t srcTcpControlBits;
@@ -64,6 +66,9 @@ class Connection
 		char* dstPayload;
 		uint32_t dstPayloadLen; /**< host-byte order! **/
 		uint32_t srcPayloadPktCount;
+		uint8_t dpaForcedExport;
+		uint32_t dpaFlowCount; /**<host-byte order **/
+		uint8_t dpaReverseStart;
 
 		/**
 		 * time in seconds from 1970 on when this record will expire
@@ -81,7 +86,6 @@ class Connection
 		void aggregate(Connection* c, uint32_t expireTime, bool to);
 		void swapDataFields();
 		bool swapIfNeeded();
-		void convertNtp64(uint64_t ntptime, uint64_t& result);
 
 	private:
 		string payloadToPlain(const char* payload, uint32_t len);

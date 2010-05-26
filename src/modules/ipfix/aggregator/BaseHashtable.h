@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -43,14 +43,15 @@
  * @c Hashtable.fieldInfo array.
  */
 
-#include <stdint.h>
-
 #include "modules/ipfix/IpfixRecord.hpp"
 #include "HashtableBuckets.h"
 #include "Rule.hpp"
 #include "core/Module.h"
 #include "common/Sensor.h"
 #include "common/atomic_lock.h"
+
+#include <vector>
+#include <stdint.h>
 
 
 class BaseHashtable : public Sensor
@@ -91,8 +92,36 @@ public:
 	void postReconfiguration();
 
 protected:
+	/**
+	 * contains needed data elements when FPA or DPA is performed for PacketHashtable
+	 * data structure accompanies corresponding data records (one for each information element)
+	 * attached to IPFIX_ETYPE_frontPayload and IPFIX_ETYPE_revFrontPayload
+	 */
+	struct PayloadPrivateData
+	{
+		uint32_t seq; /**< sequence number of start */
+		uint32_t byteCount; /**< number of recorded bytes */
+		uint8_t initialized; /**< 0 when not initialized, >0 when initialized */
+	};
+	// attached to IPFIX_ETYPE_dpaForcedExport
+	struct DpaPrivateData
+	{
+		bool datarecv; /**< DPA: set to true when data was observed */
+		bool revdata; /**< DPA: set to true when data is transferred in reverse direction now */
+		bool revstart; /**< DPA: set to true when data transfer started in reverse direction */
+	};
+
 	boost::shared_ptr<TemplateInfo> dataTemplate; /**< structure describing both variable and fixed fields and containing fixed data */
 	HashtableBucket** buckets; /**< array of pointers to hash buckets at start of spill chain. Members are NULL where no entry present */
+
+	bool biflowAggregation; /**< set to true if biflow aggregation is to be done*/
+	uint32_t* revKeyMapper; /**< contains indizes to dataTemplate for a reverse flow*/
+	/**
+	 * contains indizes to reversed flow key fields
+	 * e.g. srcIP index points to dstIP index, and dstIP index points to srcIP index
+	 */
+	vector<uint32_t> flowReverseMapper;
+	char* switchArray; /**< used by function reverseFlowBucket as temporary storage */
 
 	uint32_t htableBits;
 	uint32_t htableSize;
@@ -123,7 +152,7 @@ protected:
 
 	alock_t aggInProgress; /** indicates if currently an element is aggregated in the hashtable, used for atomic lock for preReconfiguration */
 
-	int isToBeAggregated(const InformationElement::IeInfo& type);
+	int isToBeAggregated(InformationElement::IeInfo& type);
 	HashtableBucket* createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid,
 		HashtableBucket* next, HashtableBucket* prev, uint32_t hash);
 	void exportBucket(HashtableBucket* bucket);
@@ -132,6 +161,10 @@ protected:
 	void sendDataTemplate();
 	void sendTemplateDestructionRecord();
 	uint32_t getPrivateDataLength(const InformationElement::IeInfo& type);
+	void mapReverseElement(const InformationElement::IeInfo& ieinfo);
+	void genBiflowStructs();
+	void reverseFlowBucket(HashtableBucket* bucket);
+	void removeBucket(HashtableBucket* bucket);
 
 };
 

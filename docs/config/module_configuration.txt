@@ -725,7 +725,7 @@ Output type: none
 |snaplen |  PCAP_MAX_  |Snaplen for the pcap file |
 | |  CAPTURE_LENGTH  | |
 
-== PCAPExporterFifo ==
+== PCAPExporterPipe ==
 
 Writes packets in PCAP format into a pipe, allowing another process to read these packets via STDIN.
 
@@ -734,18 +734,18 @@ Output type: none
 
 **Example configuration:**
 <code xml>
-<pcapExporterFifo>
+<pcapExporterPipe>
 	<logfilebasename>/tmp/pcap_exporter_fifo</logfilebasename>
 	<snaplen>1512</snaplen>
 	<sigkilltimeout>4</sigkilltimeout>
 	<fiforeadercmd>tcpdump -nr -</fiforeadercmd>
-</pcapExporterFifo>
+</pcapExporterPipe>
 </code>
 **Parameters:**
 |  **Element name**  |  **Default value**  |  **Description**  |
 |logfilebasename |  none  |If specified, STDOUT and STDERR of fiforeadercmd will be redircted into this file. The given parameter will be suffixed with the current time and date |
 |fiforeadercmd|  none  |A single (i.e. no shell) command, which must read PCAP files via STDIN. |
-|sigkilltimeout|  1  |Maximum waiting time in seconds, until a SIGKILL is sent to the reader process on module shutdown. |
+|sigkilltimeout|  1  |Maximum additional waiting time in seconds, until a SIGKILL is sent to the reader process on module shutdown. |
 |linkType |  EN10MB  |Data link type of the output file. Names are DLT_ names form the pcap man page with the DLT_ removed (see `man pcap') |
 |snaplen |  PCAP_MAX_  |Snaplen for the pcap file |
 | |  CAPTURE_LENGTH  | |
@@ -841,6 +841,38 @@ Output type: IpfixRecord
 |anonParam |  none  |Specifies an optional parameter to the anonymization method. Different methods need different params. ByteWiseHashHmacSha1, HashHmacSha1 need an variable sized key. ConstOverwrite needs one character as parameter. CryptoPan needs an 32 bytes long parameter (16 bytes key, 16 bytes pad). For CryptoPan and ConstOverwrite, keys can be specified as normal text, or as hexadecimal string starting with '0x'. |
 |copyMode |  false  |If true, the Record Anonymizer creates a copy of the incoming record and leaves the original record unchanged. Copy mode should be turned on if the original records are processed by other moduls as well. |
 
+
+== CryptoPanPrefix ==
+This module is a submodule for the RecordAnonymizer mentioned above. It requires some additional configuration elements.
+
+**Example configuration**
+<anonRecord id="3">
+    <anonField>
+        <anonMethod>CryptoPanPrefix</anonMethod>
+        <anonIE>
+            <ieName>destinationIPv4Address</ieName>
+        </anonIE>
+       <anonParam>12345678901234567890123456789013</anonParam>
+       <mappingList>
+           <subnet cidr="24">
+                <from>192.44.88.0</from>
+                <to>222.222.222.0</to>
+           </subnet>
+           <subnet cidr="16">
+                <from>119.152.0.0</from>
+                <to>111.111.0.0</to>
+           </subnet>
+       </mappingList>
+    </anonField>
+    <copyMode>false</copyMode>
+    <next>5</next>
+</anonRecord>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+| subnet | none | The element subnet must include the attribute cidr | 
+| from | none  | Subnet to be anonymized | 
+| to |  none  | Assigned Subnet ID | 
+
 == SensorManager ==
 
 Module which controls all sensors ("`Messfühler"') inside Vermont. It does not have any in- or output types and must not be connected to any other module. It is recommended to set its ID to 99 to express its special role. If this module is specified in the configuration, available sensors are activated and polled regularly. It may only be specified once.
@@ -906,3 +938,32 @@ Output type: IdmefMessage
 |timeexpirescanner |  1800  |Seconds, until as portscanner classified IP addresses are purged from table. |
 |timeexpirebenign |  1800  |Seconds, until as benign classified IP addresses are purged from table. |
 |timecleanupinterval |  10  |Interval length in seconds, when IP address table is scanned for entries to be purged. |
+
+== IpfixCsExporter ==
+
+Writes IPFIX data records to a local disk using the CarmentiS file format. The module recieves Ipfix packets, caches them and writes them as a chunk to disk.
+
+Input type: IpfixRecord
+Output type: File on local drive
+
+**Example configuration:**
+<code xml>
+<ipfixCsExporter id="27">
+   <filenamePrefix>carmentis_</filenamePrefix>
+   <destinationPath>/tmp/carmentis</destinationPath>
+   <maxFileSize>20480</maxFileSize>
+   <maxChunkBufferTime>300</maxChunkBufferTime>
+   <maxChunkBufferRecords>50000</maxChunkBufferRecords>
+   <maxFileCreationInterval>1500</maxFileCreationInterval>
+   <exportMode>1</exportMode>
+</ipfixCsExporter>
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+|filenamePrefix |  none  |Prefix to each file. |
+|destinationPath |  none  |Output directory for data files. |
+|maxFileSize |  none  |Maximum size of one exported file. |
+|maxChunkBufferTime |  none  |Maximum time in seconds until a chunk will be written. |
+|maxChunkBufferRecords |  none  |Maximum records per chunk. |
+|maxFileCreationInterval |  none  |Maximum time in seconds until the currently opened file will be written and a new one opened. |
+|exportMode |  none  |Sets a flag inside the exported data which privacy level the packets have. 0=plain; 1=anonymized; 2=pseudonymized |

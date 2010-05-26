@@ -104,7 +104,7 @@ bool IpfixExporterCfg::equalTo(IpfixExporterCfg* other)
 	while (iter != collectors.end()) {
 		std::vector<CollectorCfg*>::const_iterator biter = other->collectors.begin();
 		bool found = false;
-		while (biter != collectors.end()) {
+		while (biter != other->collectors.end()) {
 			if ((*iter)->equalTo(*biter)) {
 				found = true;
 				break;

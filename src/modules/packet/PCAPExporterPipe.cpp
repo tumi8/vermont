@@ -18,7 +18,7 @@
  *
  */
 
-#include "PCAPExporterFifo.h"
+#include "PCAPExporterPipe.h"
 
 #include "modules/packet/Packet.h"
 #include <unistd.h>
@@ -36,27 +36,27 @@
 
 namespace bfs = boost::filesystem;
 
-PCAPExporterFifo::PCAPExporterFifo(const std::string& logfile)
+PCAPExporterPipe::PCAPExporterPipe(const std::string& logfile)
     : logFileName(logfile), fifoReaderCmd(""), fifoReaderPid(0), 
         dummy(NULL), sigKillTimeout(1)
 {
 }
 
-PCAPExporterFifo::~PCAPExporterFifo()
+PCAPExporterPipe::~PCAPExporterPipe()
 {
 }
-void PCAPExporterFifo::setFifoReaderCmd(const std::string& cmd)
+void PCAPExporterPipe::setPipeReaderCmd(const std::string& cmd)
 {
     fifoReaderCmd = cmd;
 }
 
-void PCAPExporterFifo::setSigKillTimeout(int s)
+void PCAPExporterPipe::setSigKillTimeout(int s)
 {
     if (s < 0) s *= -1;
     sigKillTimeout = s;
 }
 
-int PCAPExporterFifo::execCmd(std::string& cmd)
+int PCAPExporterPipe::execCmd(std::string& cmd)
 {
     //char *command[] = {"tcpdump","-nr", "-" , (char*)0}; //"-w", "/tmp/pcap.dump",(char*)0};
     char *command[64];
@@ -79,8 +79,7 @@ int PCAPExporterFifo::execCmd(std::string& cmd)
 
     int pid = fork();
     if (pid == 0) {
-        close(STDIN_FILENO); //close stdin 
-        if (dup(fd[0]) == -1) { 
+        if (dup2(fd[0], STDIN_FILENO) == -1) { 
             THROWEXCEPTION("dup(fd[0]) failed");
         }
         if (logFileName != "") {
@@ -97,8 +96,7 @@ int PCAPExporterFifo::execCmd(std::string& cmd)
             if (freopen (logfile.c_str(),"w",stdout) == NULL) {
                 THROWEXCEPTION("Could not reopen stdout!");
             }
-            close(STDERR_FILENO); //redirect stderr to stdout
-            if (dup(STDOUT_FILENO) == -1) {
+            if (dup2(STDOUT_FILENO, STDERR_FILENO) == -1) {
                 THROWEXCEPTION("Could no redirect stderr!");
             }
             /*
@@ -121,7 +119,7 @@ int PCAPExporterFifo::execCmd(std::string& cmd)
     return -1;
 }
 
-void PCAPExporterFifo::performStart()
+void PCAPExporterPipe::performStart()
 {
     char errbuf[PCAP_ERRBUF_SIZE];
     dummy = pcap_open_dead(link_type, snaplen);
@@ -143,7 +141,7 @@ void PCAPExporterFifo::performStart()
         fifoReaderPid = execCmd(fifoReaderCmd);
     }
 
-	msg(MSG_INFO, "Started PCAPExporterFifo with the following parameters:");
+	msg(MSG_INFO, "Started PCAPExporterPipe with the following parameters:");
     if (fifoReaderCmd != ""){
 	    msg(MSG_INFO, "  - fifoReaderCmd = %s", fifoReaderCmd.c_str());
 	    msg(MSG_INFO, "  - fifoReaderPid = %d", fifoReaderPid);
@@ -156,18 +154,18 @@ void PCAPExporterFifo::performStart()
         msg(MSG_ERROR, "No Logfile specified - dumping to stdout!");
 	msg(MSG_INFO, "  - sigKillTimeout = %d" , sigKillTimeout);
 }
-//void PCAPExporterFifo::postReconfiguration(){ msg(MSG_INFO, "postReconfiguration"); }
-//void PCAPExporterFifo::onReconfiguration1(){ msg(MSG_INFO, "onReconfiguration1"); }
-//void PCAPExporterFifo::onReconfiguration2(){ msg(MSG_INFO, "onReconfiguration1"); }
-//void PCAPExporterFifo::preReconfiguration(){ msg(MSG_INFO, "preReconfiguration"); }
+//void PCAPExporterPipe::postReconfiguration(){ msg(MSG_INFO, "postReconfiguration"); }
+//void PCAPExporterPipe::onReconfiguration1(){ msg(MSG_INFO, "onReconfiguration1"); }
+//void PCAPExporterPipe::onReconfiguration2(){ msg(MSG_INFO, "onReconfiguration1"); }
+//void PCAPExporterPipe::preReconfiguration(){ msg(MSG_INFO, "preReconfiguration"); }
 
-void PCAPExporterFifo::performShutdown()
+void PCAPExporterPipe::performShutdown()
 {
     msg(MSG_DEBUG, "Performing shutdown for PID %d", fifoReaderPid);
     sleep(1);
     if (dumper) {
          if (-1 == pcap_dump_flush(dumper)) {
-            msg(MSG_FATAL, "PCAPExporterFifo: Could not flush dump file");
+            msg(MSG_FATAL, "PCAPExporterPipe: Could not flush dump file");
          }
 
         pcap_dump_close(dumper);
@@ -177,12 +175,14 @@ void PCAPExporterFifo::performShutdown()
     }
 }
 
-void PCAPExporterFifo::receive(Packet* packet) {
+void PCAPExporterPipe::receive(Packet* packet) {
     writePCAP(packet);
 }
 
-void PCAPExporterFifo::kill_pid(int pid)
+void PCAPExporterPipe::kill_pid(int pid)
 {
+    sleep(2); //give the process some time to finish its work
+
     int i = sigKillTimeout;
     std::ostringstream s;
     s << pid;
@@ -214,7 +214,7 @@ void PCAPExporterFifo::kill_pid(int pid)
     }
     kill(pid, 9);
 }
-bool PCAPExporterFifo::checkint(const char *my_string) {
+bool PCAPExporterPipe::checkint(const char *my_string) {
     size_t stringlength = strlen(my_string);
     for (size_t j=0; j<stringlength; j++)
         if((int)my_string[j] < 0x30 || (int)my_string[j] > 0x39) 
@@ -223,7 +223,7 @@ bool PCAPExporterFifo::checkint(const char *my_string) {
     return true;
 }
 
-void PCAPExporterFifo::kill_all(int ppid)
+void PCAPExporterPipe::kill_all(int ppid)
 {
     bfs::path path("/proc/");
     if (!bfs::exists(path) || !bfs::is_directory(path)){

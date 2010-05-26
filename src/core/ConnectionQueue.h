@@ -40,6 +40,7 @@ public:
 	ConnectionQueue(uint32_t maxEntries = 1)
 		: queue(maxEntries), thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
 	{
+		initPhase = true;
 		this->Sensor::usedBytes = sizeof(ConnectionQueue);
 	}
 
@@ -107,7 +108,7 @@ public:
 	{
 		// check if we are running, because otherwise permant calls to this function could
 		// allocate our memory which is never freed
-		if (!Adapter<T>::running)
+		if (!Adapter<T>::running && !initPhase)
 			THROWEXCEPTION("addTimeout called on a non running Queue");
 
 		mutex.lock();
@@ -127,6 +128,7 @@ private:
 	Mutex mutex;	/**< controls access to class variable timeouts */
 	uint32_t statQueueEntries;
 	uint32_t statTotalReceived;
+	bool initPhase;
 
 	/**
 	 * processes all timeouts in queue which have already timed out
@@ -140,6 +142,7 @@ private:
 		bool nexttoset = false;
 
 		mutex.lock();
+		if (initPhase) initPhase = false;
 		list<TimeoutEntry*>::iterator iter = timeouts.begin();
 		while (iter != timeouts.end()) {
 			if (compareTime((*iter)->timeout, now) <= 0) {
@@ -176,7 +179,12 @@ private:
 			} else {
 				if (!nexttoset || compareTime(nexttimeout, (*iter)->timeout) > 0) {
 					nexttoset = true;
-					nexttimeout = (*iter)->timeout;
+					struct timespec intvtime;
+					addToCurTime(&intvtime, CQ_POLL_INTERVAL);
+					if (compareTime(intvtime, (*iter)->timeout) > 0)
+						nexttimeout = (*iter)->timeout;
+					else
+						nexttimeout = intvtime;
 				}
 				iter++;
 			}
