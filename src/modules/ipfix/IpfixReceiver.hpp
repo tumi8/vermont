@@ -40,6 +40,7 @@ class IpfixReceiver
 {
 	public:
 		IpfixReceiver();
+		IpfixReceiver(int port);
 		virtual ~IpfixReceiver();
 
 		void performStart();

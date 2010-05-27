@@ -94,10 +94,13 @@ int main(int argc, char **argv)
 	 coll_ip4_addr : the collector's ipv4 address (in dot notation, e.g. "123.123.123.123")
 	 coll_port: port number of the collector
 	 proto: transport protocol to use, TCP/UDP/SCTP
+	 *aux_config: protocol dependent parameters
 
          You can add up to IPFIX_MAX_COLLECTORS collectors.
 	 */
-	ret = ipfix_add_collector(my_exporter, collector_ip, collector_port, UDP);
+	ipfix_aux_config_udp aux_config;
+	aux_config.mtu = 1500;
+	ret = ipfix_add_collector(my_exporter, collector_ip, collector_port, UDP, &aux_config);
 	printf("ipfix_add_collector returned %i\n", ret);
 
 	/*
@@ -127,7 +130,7 @@ int main(int argc, char **argv)
 	 template_id: an ID for this template
 	 field_count: # of entries/fields
 	 */
-	ret=ipfix_start_template_set(my_exporter, my_template_id, 6);
+	ret=ipfix_start_template(my_exporter, my_template_id, 6);
 
 	/*
 	 Add fields to the exporter.
@@ -146,7 +149,7 @@ int main(int argc, char **argv)
 	ret=ipfix_put_template_field(my_exporter, my_template_id, 2, 8, 0);
 
         /* Finalize the template */
-	ret=ipfix_end_template_set(my_exporter, my_template_id);
+	ret=ipfix_end_template(my_exporter, my_template_id);
 
 
 	/* Add another template */
@@ -160,7 +163,7 @@ int main(int argc, char **argv)
 	 template_id: an ID for this template
 	 field_count: # of entries/fields
 	 */
-	ret=ipfix_start_template_set(my_exporter, my_template_id2, 4);
+	ret=ipfix_start_template(my_exporter, my_template_id2, 4);
 
 	/*
 	 Add fields to the exporter.
@@ -177,7 +180,7 @@ int main(int argc, char **argv)
 	ret=ipfix_put_template_field(my_exporter, my_template_id2, 11, 2, 0);
 
         /* Finalize the template */
-	ret=ipfix_end_template_set(my_exporter, my_template_id2);
+	ret=ipfix_end_template(my_exporter, my_template_id2);
 
         /*
 	 Main exporting loop

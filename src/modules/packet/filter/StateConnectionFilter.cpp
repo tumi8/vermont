@@ -78,7 +78,7 @@ bool StateConnectionFilter::processPacket(Packet* p, bool connFilterResult)
 			// unknown connection
 			return false;
 		} else if (exportList[key] > 0) {
-			bool ret = exportList[key]>(int)payloadLen?true:false;
+			bool ret = exportList[key]>static_cast<int>(payloadLen)?true:false;
 			DPRINTF("StateConnectionFilter: Connection known, exporting packet");
 			exportList[key] -= payloadLen;
 			DPRINTF("StateConnectionFilter: We have to export %i bytes after exporting this packet", exportList[key]>0?exportList[key]:0);

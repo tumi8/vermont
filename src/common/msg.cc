@@ -95,7 +95,7 @@ extern "C" {
 			// we must lock via mutex, else logging outputs are mixed when several
 			// threads log simultaneously
 			int retval = pthread_mutex_lock(&msg_mutex);
-			if (retval != 0) DPRINTF("msg: pthread_mutex_lock returned error code %d", retval);
+			if (retval != 0) printf("!!! msg: pthread_mutex_lock returned error code %d\n", retval);
 			struct timeval tv;
 			gettimeofday(&tv, 0);
 			struct tm* tform = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
@@ -133,7 +133,7 @@ extern "C" {
 				vsnprintf(logtext, EXCEPTION_MAXLEN-strlen(logtext), fmt, *args);
 			}
 			retval = pthread_mutex_unlock(&msg_mutex);
-			if (retval != 0) DPRINTF("msg: pthread_mutex_unlock returned error code %d", retval);
+			if (retval != 0) printf("!!! msg: pthread_mutex_unlock returned error code %d\n", retval);
 		}
 	}
 

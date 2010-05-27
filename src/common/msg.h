@@ -42,8 +42,8 @@ typedef void (*LOGFUNCTION)(void *);
 //#define MSG_DEFAULT MSG_ERROR
 
 
-void msg_init();
-void msg_shutdown();
+void msg_init(void);
+void msg_shutdown(void);
 void msg2(const int, const char*, const char*, const char*, const int, const char *, ...);
 void msg_setlevel(int);
 int msg_stat(const char *fmt, ...);

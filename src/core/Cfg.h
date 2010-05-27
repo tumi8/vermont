@@ -45,7 +45,7 @@ public:
 	 */
 	std::string get(const std::string& name, XMLElement* elem = NULL) throw(IllegalEntry);
 
-	/** searches for a optinal config entry, returns the emtpy string of not found
+	/** searches for an optinal config entry, returns the emtpy string if not found
 	 *  @param name the name of the element
 	 *  @param elem the XMLElement we want to start the search, default is the root of the node
 	 */

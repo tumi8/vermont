@@ -22,8 +22,9 @@
 #define IPFIXCOLLECTORCFG_H_
 
 #include "core/Cfg.h"
-#include "CollectorCfg.h"
 #include <modules/ipfix/IpfixCollector.hpp>
+
+class CollectorCfg;
 
 class IpfixCollectorCfg
 	: public CfgHelper<IpfixCollector, IpfixCollectorCfg>
@@ -40,6 +41,15 @@ public:
 	
 private:
 	CollectorCfg* listener;
+
+	friend class CollectorCfg;
+
+	/** DTLS parameters */
+	std::string certificateChainFile;
+	std::string privateKeyFile;
+	std::string caFile;
+	std::string caPath;
+
 	
         IpfixCollector* ipfixCollector;
 

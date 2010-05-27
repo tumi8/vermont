@@ -69,7 +69,7 @@ int IpfixFileWriter::addCollector(uint16_t observationDomainId, std::string file
 		 msg(MSG_ERROR, 
 		   "maximum filsize < maximum message length - this could lead to serious problems");
 
-	if(ipfix_add_collector(ex, my_filename.c_str(), maximumFilesize, DATAFILE) != 0) {
+	if(ipfix_add_collector(ex, my_filename.c_str(), maximumFilesize, DATAFILE, NULL) != 0) {
 		msg(MSG_FATAL, "IpfixFileWriter: ipfix_add_collector of %s failed", my_filename.c_str());
 		return -1;
 	}

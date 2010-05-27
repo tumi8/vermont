@@ -28,7 +28,7 @@
 
 PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem) 
 	: CfgHelper<PSAMPExporterModule, PSAMPExporterCfg>(elem, "psampExporter"),
-	templateRefreshTime(0), templateRefreshRate(0),
+	templateRefreshTime(0), /* templateRefreshRate(0), */
 	maxPacketSize(0), exportDelay(0), reporting(NULL) 
 { 
 	if (!elem) return;
@@ -51,7 +51,7 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 		} else if (e->matches("udpTemplateManagement")) {
 			// use 0 as default values for both if the config entry isn't found 
 			templateRefreshTime = getTimeInUnit("templateRefreshTimeout", SEC, IS_DEFAULT_TEMPLATE_TIMEINTERVAL, e);
-			templateRefreshRate = getInt("templateRefreshRate", IS_DEFAULT_TEMPLATE_RECORDINTERVAL, e);
+			/* templateRefreshRate = getInt("templateRefreshRate", IS_DEFAULT_TEMPLATE_RECORDINTERVAL, e); */ /* TODO */
 		} else if (e->matches("collector")) {
 			collectors.push_back(new CollectorCfg(e));
 		} else if (e->matches("packetReporting")) {
@@ -112,7 +112,7 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 		msg(MSG_INFO, "Set maximum export timeout to %d", exportDelay);
 		instance->setExportTimeout(exportDelay);
 	}
-	if (templateRefreshTime || templateRefreshRate) {	
+	if (templateRefreshTime /* || templateRefreshRate */) {
 		msg(MSG_DIALOG, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
 	}
 	for (unsigned i = 0; i != collectors.size(); ++i) {

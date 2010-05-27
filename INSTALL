@@ -11,7 +11,7 @@ Optional:
  - libmysqlclient-dev (for MySQL support)
  - libgsl-dev (for connection-based sampling with Bloom filters)
 
-Note: for high efficiency the PCAP-MMAP modification is suggested.
+Note: for high efficiency, the PCAP-MMAP modification is suggested.
 See <http://public.lanl.gov/cpw/>
 
 

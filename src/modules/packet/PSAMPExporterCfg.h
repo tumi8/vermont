@@ -52,7 +52,7 @@ private:
 
 	/** udpTemplateManagement */
 	unsigned templateRefreshTime;
-	unsigned templateRefreshRate;
+	/* unsigned templateRefreshRate; */ /* TODO */
 
 	/** packet restrictions */
 	uint16_t maxPacketSize;

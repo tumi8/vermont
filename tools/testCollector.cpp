@@ -28,10 +28,10 @@
 #include "modules/ipfix/IpfixParser.hpp"
 #include "modules/ipfix/IpfixPacketProcessor.hpp"
 #include "modules/ipfix/IpfixReceiverUdpIpV4.hpp"
+#include "modules/ipfix/IpfixReceiverDtlsUdpIpV4.hpp"
 #include "modules/ipfix/IpfixReceiverSctpIpV4.hpp"
 #include "modules/ipfix/IpfixPrinter.hpp"
 #include "core/ConnectionQueue.h"
-
 #include "common/msg.h"
 
 #include <netinet/in.h>
@@ -39,12 +39,23 @@
 #include <unistd.h>
 #include <signal.h>
 #include <string.h>
+#include <getopt.h>
 
 #define DEFAULT_LISTEN_PORT 1500
 
-void usage()
+void usage(const char *argv0)
 {
-	msg(MSG_FATAL, "Usage: testCollector [{udp|sctp} <port>]");
+	fprintf(stderr,"Usage: %s\n",argv0);
+	fprintf(stderr," --port,-p       Port number to use\n");
+	fprintf(stderr," --protocol      Either udp, sctp or dtls_over_udp\n");
+	fprintf(stderr," --cert          The certificate to use\n");
+	fprintf(stderr," --key           The private key to use\n");
+	fprintf(stderr," --CAfile        A file containing trusted "
+			"certificates to use during client authentication\n");
+	fprintf(stderr," --CApath        The directory to use for client "
+			"certificate verification. These are also used "
+			"when building the server certificate chain.\n");
+	fprintf(stderr," --peername      Expected FQDN of the peer.\n");
 }
 
 void sigint(int) {
@@ -62,25 +73,84 @@ int main(int argc, char *argv[]) {
 
 	int lport = DEFAULT_LISTEN_PORT;
 	std::string proto = "udp";
+	std::string certificateChainFile, privateKeyFile, caFile, caPath, peername;
 
 	msg_setlevel(MSG_DEBUG);
 	
 	signal(SIGINT, sigint);
 
-	if (!(argc == 1 || argc == 2 || argc == 3)) {
-		usage();
-		return -1;
+	int c;
+
+	while (1) {
+		static struct option long_options[] = {
+			{"help", no_argument, 0, 'h'},
+			{"port", required_argument, 0, 'p'},
+			{"protocol", required_argument, 0, 'o'},
+			{"cert", required_argument, 0, 'c'},
+			{"key", required_argument, 0, 'k'},
+			{"CAfile", required_argument, 0, 'a'},
+			{"CApath", required_argument, 0, 'b'},
+			{"peername", required_argument, 0, 'n'},
+			{0,0,0,0}
+		};
+
+		int option_index = 0;
+
+		c = getopt_long(argc, argv, "hp:", long_options, &option_index);
+
+		if (c==-1) break;
+		switch(c) {
+			case 'h':
+				usage(argv[0]); return -1;
+			case 'p':
+				char *endptr;
+				lport = strtol(optarg,&endptr,10);
+				if (*endptr != '\0' || lport <= 0 || lport > (1<<16) - 1) {
+					fprintf(stderr, "illegal port number\n");
+					usage(argv[0]); return -1;
+				}
+				break;
+			case 'o':
+				proto = optarg;
+				break;
+			case 'c':
+				certificateChainFile = optarg;
+				break;
+			case 'k':
+				privateKeyFile = optarg;
+				break;
+			case 'a':
+				caFile = optarg;
+				break;
+			case 'b':
+				caPath = optarg;
+				break;
+			case 'n':
+				peername = optarg;
+				break;
+			case '?':
+				break;
+			default:
+				abort();
+		}
 	}
-	
-	if (argc == 2)
-		proto = argv[1];
-	if (argc == 3)
-		lport = atoi(argv[2]);
+
+	if (optind != argc) {
+		usage(argv[0]); return -1;
+	}
 
 	IpfixReceiver* ipfixReceiver = 0;
 	if (proto == "udp") {
 		msg(MSG_INFO, "Creating UDP listener on port %i", lport);
 		ipfixReceiver = new IpfixReceiverUdpIpV4(lport);
+	} else if (proto == "dtls_over_udp") {
+#ifdef SUPPORT_DTLS
+		msg(MSG_INFO, "Creating DTLS over UDP listener on port %i", lport);
+		ipfixReceiver = new IpfixReceiverDtlsUdpIpV4(lport,"",certificateChainFile,privateKeyFile,caFile,caPath);
+#else
+		msg(MSG_FATAL, "testcollector has been compiled without dtls/openssl support");
+		return -1;
+#endif
 	} else if (proto == "sctp") {
 #ifdef SUPPORT_SCTP
 		ipfixReceiver = new IpfixReceiverSctpIpV4(lport, "127.0.0.1");

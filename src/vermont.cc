@@ -175,7 +175,7 @@ static void sig_INT_handler(int x)
 	static bool shutdownInitiated = false;
 
 	if (shutdownInitiated) {
-		printf("second signal received, shutting down the hard way!");
+		printf("second signal received, shutting down the hard way!\n");
 		exit(2);
 	}
 

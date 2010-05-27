@@ -106,6 +106,23 @@ public:
 		return true;
 	}
 
+	// Subsequent modules that do not have
+	// their own timer will be informed about the fact that
+	// the queue is now running. It was added to inform
+	// subsequent modules that
+	// they can start using its predecessor's timer.
+	inline void sendQueueRunningNotification() {
+		bool c = false;
+		mutex.lock();		
+		if (isConnected()) {
+			dest->notifyQueueRunning();
+			c = true;
+		}
+		mutex.unlock();
+		// Unless c == true something went badly wrong
+		if (!c) THROWEXCEPTION("sendQueueRunningNotification() called although not connected.");
+	}
+	
 	inline uint32_t atomicLock()
 	{
 		return atomic_lock(&syncLock);
@@ -126,6 +143,8 @@ private:
 	bool hasSuccessor; /**< set to true if this module has a succeeding module */
 	Destination<T>* dest;
 };
+
+template <> inline void Source<NullEmitable *>::sendQueueRunningNotification() { }
 
 #endif
 
