@@ -15,36 +15,42 @@ public:
 		if (!_elem)
 			return;
 
-		ieLength = getInt("ieLength", 0);
-		ieId     = getInt("ieId", 0);
+		ieLength = (uint16_t) getUInt32("ieLength", 0);
+		ieId     = (uint16_t) getUInt32("ieId", 0);
 		enterpriseNumber = getUInt32("enterpriseNumber", 0);
-
-		try {
-			ieName = get("ieName");
-			std::transform(ieName.begin(), ieName.end(), ieName.begin(), (int(*)(int))std::tolower);
-		} catch (IllegalEntry ie) { /* ignore missing ieName */ }
-
+		ieName	         = getOptional("ieName");
 		modifier         = getOptional("modifier");
 		match            = getOptional("match");
 
 		if (ieId>0) {
-			// check given ieID 
+			// check if ieID is known to Vermont
 			const ipfix_identifier* ipfixid = ipfix_id_lookup(ieId, enterpriseNumber);
-			if (ipfixid)
+			if (ipfixid) {
+				if (ieName.size()>0) {
+					// check if ieName refers to the same IE
+					const ipfix_identifier* ipfixid2 = ipfix_name_lookup(ieName.c_str());
+					if ((ipfixid2 == NULL) || (ipfixid2->id != ieId) || (ipfixid2->pen != enterpriseNumber))
+						THROWEXCEPTION("InfoElementCfg: given information element id %u does not fit to given name %s", ieId, ieName.c_str());
+				} else {
+					// get default ieName
+					ieName = ipfixid->name;
+				}
 				knownIE = true;
-			else
-				msg(MSG_DIALOG, "InfoElementCfg: unknown information element id %u, try to continue anyway.", (unsigned) ieId);
-		}
-
-		if (ieId==0 && ieName.size()>0) {
-			// get ieId and enterpriseNumber from name
+			} else {
+				msg(MSG_INFO, "InfoElementCfg: unknown information element id %u, try to continue anyway.", ieId);
+			}
+		} else if (ieName.size()>0) {
+			// get ieId and enterpriseNumber from ieName
 			const ipfix_identifier* ipfixid = ipfix_name_lookup(ieName.c_str());
 			if (ipfixid) {
+				// check enterprise number
 				if (enterpriseNumber == 0 && ipfixid->pen != 0) {
+					// enterprise number is missing in configuration
 					enterpriseNumber = ipfixid->pen; 
-					msg(MSG_DIALOG, "InfoElementCfg: %s configured without enterprise number, assume enterprise number %lu.", ieName.c_str(), (unsigned long) enterpriseNumber);
+					msg(MSG_DIALOG, "InfoElementCfg: %s configured without enterprise number, continue with enterprise number %u.", ieName.c_str(), enterpriseNumber);
 				} else if (enterpriseNumber != ipfixid->pen) {
-					THROWEXCEPTION("InfoElementCfg: given information element %s is configured with enterprise number %lu, but %lu is expected.", ieName.c_str(), (unsigned long) enterpriseNumber, (unsigned long) ipfixid->pen);
+					// enterprise numbers do not match
+					THROWEXCEPTION("InfoElementCfg: %s is configured with enterprise number %u, but %u is expected.", ieName.c_str(), enterpriseNumber, ipfixid->pen);
 				}
 				knownIE = true;
 				ieId = ipfixid->id;
@@ -53,14 +59,8 @@ public:
 				THROWEXCEPTION("InfoElementCfg: unknown information element name %s", ieName.c_str());
 		}
 
-		if (ieId>0 && ieName.size()>0) {
-			// compare given ieID with name
-			const ipfix_identifier* ipfixid = ipfix_name_lookup(ieName.c_str());
-			if (ipfixid->id!=ieId || ipfixid->pen!=enterpriseNumber)
-				THROWEXCEPTION("InfoElementCfg: given information element type id does not fit to given name (%u, %s)", (unsigned) ieId, ieName.c_str());
-		}
-
 		if (ieLength==0 && knownIE) {
+			// get default length
 			const ipfix_identifier* ipfixid = ipfix_id_lookup(ieId, enterpriseNumber);
 			if (ipfixid) ieLength = ipfixid->length;
 		}
@@ -68,17 +68,11 @@ public:
 
 	std::string getName() { return "IE"; }
 
-	std::string getIeName() {
-		if (ieName.size()==0 && ieId>=0) {
-			const ipfix_identifier* ipfixid = ipfix_name_lookup(ieName.c_str());
-			ieName = ipfixid->name;
-		}
-		return ieName;
-	}
+	std::string getIeName() { return ieName; }
 
 	unsigned getIeLength() const { return ieLength; }
 
-	uint16_t getIeId() const { return (ieId == -1) ? ipfix_name_lookup(ieName.c_str())->id : ieId; }
+	uint16_t getIeId() const { return ieId; }
 
 	uint32_t getEnterpriseNumber() { return enterpriseNumber; }
 
@@ -91,7 +85,7 @@ public:
 private:
 	std::string ieName;
 	uint16_t ieLength;
-	int16_t ieId;
+	uint16_t ieId;
 
 	uint32_t enterpriseNumber;
 	std::string match;

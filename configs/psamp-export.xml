@@ -38,7 +38,7 @@
 			</reportedIE>
 			<reportedIE>
 			    <ieName>ippayloadpacketsection</ieName>
-			    <ieLength>65535</ieLength>
+			    <ieLength>20</ieLength>
 			</reportedIE>
 			<reportedIE>
 			    <ieName>frontPayload</ieName>

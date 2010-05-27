@@ -59,15 +59,14 @@ Template* PacketReportingCfg::getTemplate()
 	InformationElement::IeInfo ie; 
 
         for (size_t i = 0; i != exportedFields.size(); ++i) {
-                if (!exportedFields[i]->isKnownIE()) {
-                        msg(MSG_DIALOG, "Template: ignoring unknown template field %s (%u)",
-                        		exportedFields[i]->getName().c_str(), (unsigned) exportedFields[i]->getIeId());
-                        continue;
-                }
-
                 ie.id = exportedFields[i]->getIeId();
                 ie.enterprise = exportedFields[i]->getEnterpriseNumber();
                 ie.length = exportedFields[i]->getIeLength();
+
+                if (!exportedFields[i]->isKnownIE()) {
+                        msg(MSG_DIALOG, "IE %s will be ignored by PSAMP exporter.", ie.toString().c_str());
+                        continue;
+                }
 
                 if (ie.length == 65535)
                 	recordVLFields++;
