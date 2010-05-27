@@ -426,7 +426,6 @@ void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 }
 
 
-
 /**
  * prints a datarecord in a special, easy-to-read data format in one line
  */

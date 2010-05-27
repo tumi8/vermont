@@ -23,15 +23,22 @@
 
 #include "core/Cfg.h"
 
+#include <modules/ipfix/IpfixCollectorCfg.h>
 #include <modules/ipfix/IpfixReceiverUdpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverSctpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverDtlsUdpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverDtlsSctpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverFile.hpp>
+
+#include <common/ipfixlolib/ipfixlolib.h>
 
 
 #include <string>
+#include <set>
 
 /**
- * This class holds the <collector> ... </collector> information of the config
+ * This class holds the <collector> ... </collector> and the <listener> ...
+ * </listener> information of the config
  */
 class CollectorCfg
 {
@@ -39,8 +46,9 @@ public:
 	std::string getName() { return "collector"; }
 
 	CollectorCfg(XMLElement* elem)
-		: protocol(0), port(4739)
+		: protocol(UDP), port(0), mtu(0)
 	{
+		uint16_t defaultPort = 4739;
 		if (!elem)
 			return;
 
@@ -54,29 +62,57 @@ public:
 				authorizedHosts.push_back(e->getContent());
 			} else if (e->matches("transportProtocol")) {
 				std::string prot = e->getContent();
-				if (prot=="17" || prot=="UDP")
-					protocol = 17;
-				else if (prot=="132" || prot=="SCTP")
-					protocol = 132;
-				else
+				if (prot=="17" || prot=="UDP") {
+					protocol = UDP;
+					defaultPort = 4739;
+				} else if (prot=="132" || prot=="SCTP") {
+					protocol = SCTP;
+					defaultPort = 4739;
+				} else if (prot=="DTLS_OVER_UDP") {
+					protocol = DTLS_OVER_UDP;
+					defaultPort = 4740;
+				} else if (prot=="DTLS_OVER_SCTP") {
+					protocol = DTLS_OVER_SCTP;
+					defaultPort = 4740;
+				} else 
 					THROWEXCEPTION("Invalid configuration parameter for transportProtocol (%s)", prot.c_str());
 			} else if (e->matches("port")) {
 				port = (uint16_t)atoi(e->getContent().c_str());
 				if (port == 0)
 					THROWEXCEPTION("Invalid configuration parameter for port (%u)", port);
+			} else if (e->matches("mtu")) {
+				mtu = (uint16_t)atoi(e->getContent().c_str());
+			} else if (e->matches("peerFqdn")) {
+				string strdnsname(e->getFirstText());
+				transform(strdnsname.begin(),strdnsname.end(),strdnsname.begin(),
+						::tolower);
+				peerFqdns.insert(strdnsname);
 			} else {
 				msg(MSG_FATAL, "Unknown collector config statement %s\n", e->getName().c_str());
 				continue;
 			}
 		}
+		if (port==0) port = defaultPort;
 	}
 
-	IpfixReceiver* createIpfixReceiver() {
+	IpfixReceiver* createIpfixReceiver(
+			const std::string &certificateChainFile,
+			const std::string &privateKeyFile,
+			const std::string &caFile,
+			const std::string &caPath) {
 		IpfixReceiver* ipfixReceiver;
-		if (protocol == 132)
-			ipfixReceiver = new IpfixReceiverSctpIpV4(port, ipAddress);
-		else
-			ipfixReceiver = new IpfixReceiverUdpIpV4(port, ipAddress);
+		if (protocol == SCTP)
+			ipfixReceiver = new IpfixReceiverSctpIpV4(port, ipAddress);	
+		else if (protocol == DTLS_OVER_UDP)
+			ipfixReceiver = new IpfixReceiverDtlsUdpIpV4(port,
+				ipAddress, certificateChainFile,
+				privateKeyFile, caFile, caPath, peerFqdns);
+		else if (protocol == DTLS_OVER_SCTP)
+			ipfixReceiver = new IpfixReceiverDtlsSctpIpV4(port,
+				ipAddress, certificateChainFile,
+				privateKeyFile, caFile, caPath, peerFqdns);
+		else 
+			ipfixReceiver = new IpfixReceiverUdpIpV4(port, ipAddress);	
 
 		if (!ipfixReceiver) {
 			THROWEXCEPTION("Could not create IpfixReceiver");
@@ -95,6 +131,8 @@ public:
 			//(ipAddressType == other->ipAddressType) &&
 			(protocol == other->protocol) &&
 			(port == other->port) &&
+			(mtu == other->mtu) &&
+			(peerFqdns == other->peerFqdns) &&
 			(authorizedHosts.size() == other->authorizedHosts.size())) {
 			for (uint16_t i = 0; i < authorizedHosts.size(); i++)
 				if (authorizedHosts[i] != other->authorizedHosts[i])
@@ -105,16 +143,20 @@ public:
 		return false;
 	}
 
+	std::set<std::string> getPeerFqdns() { return peerFqdns; }
 	std::string getIpAddress() { return ipAddress; }
 	//unsigned getIpAddressType() { return ipAddressType; }
-	uint16_t getProtocol() { return protocol; }
+	ipfix_transport_protocol getProtocol() { return protocol; }
 	uint16_t getPort() { return port; }
+	uint16_t getMtu() { return mtu; }
 
 private:
 	std::string ipAddress;
 	std::vector<std::string> authorizedHosts;
-	uint16_t protocol;
+	ipfix_transport_protocol protocol;
 	uint16_t port;
+	uint16_t mtu;
+	std::set<std::string> peerFqdns;
 };
 
 #endif /*COLLECTORCFG_H_*/

@@ -38,14 +38,21 @@ using namespace std;
 #define SENDER_TEMPLATE_ID_HI 65535
 
 /**
- * Creates a new IPFIX Exporter. Do not forget to call @c startIpfixSender() to begin sending
+ * Creates a new IPFIX Exporter. Do not forget to call @c startIpfixSender() to
+ * begin sending
  * @param sourceID Source ID this exporter will report
  * @param ip destination collector's address
  * @param port destination collector's port
  * @return handle to use when calling @c destroyIpfixSender()
  */
-IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, uint32_t sctpDataLifetime, uint32_t sctpReconnectInterval,
-		uint32_t templateRefreshInterval, uint32_t templateRefreshRate)
+IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
+		uint32_t sctpDataLifetime, uint32_t sctpReconnectInterval,
+		uint32_t templateRefreshInterval,
+		const std::string &certificateChainFile,
+		const std::string &privateKeyFile,
+		const std::string &caFile,
+		const std::string &caPath)
+
 	: statSentDataRecords(0),
 	  statSentPackets(0),	  
 	  statPacketsInFlows(0),
@@ -55,6 +62,11 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, u
 	  currentTemplateId(0),
 	  maxRecordRate(maxRecordRate)
 {
+	const char *certificate_chain_file = NULL;
+	const char *private_key_file = NULL;
+	const char *ca_file = NULL;
+	const char *ca_path = NULL;
+
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 
 	nextTimeout.tv_sec = 0;
@@ -71,6 +83,21 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, u
 	ipfix_set_sctp_reconnect_timer(ipfixExporter, sctpReconnectInterval);
 	ipfix_set_template_transmission_timer(ipfixExporter, templateRefreshInterval);
 
+ 
+	if ( ! certificateChainFile.empty())
+		certificate_chain_file = certificateChainFile.c_str();
+	if ( ! privateKeyFile.empty())
+		private_key_file = privateKeyFile.c_str();
+	/* Private key will be searched for in the certificate chain file if
+	 * no private key file is set */
+	if (certificate_chain_file || private_key_file)
+		ipfix_set_dtls_certificate(ipfixExporter,
+				certificate_chain_file, private_key_file);
+
+	if ( ! caFile.empty() ) ca_file = caFile.c_str();
+	if ( ! caPath.empty() ) ca_path = caPath.c_str();
+	if (ca_file || ca_path)
+		ipfix_set_ca_locations(ipfixExporter, ca_file, ca_path);
 
 	msg(MSG_DEBUG, "IpfixSender: running");
 	return;
@@ -128,42 +155,60 @@ IpfixSender::~IpfixSender()
  * @param ips handle to the Exporter
  * @param ip string of the IP
  * @param port port number
+ * @param aux_config additional configuration details required for UDP,
+ * 	DTLS_OVER_UDP and DTLS_OVER_SCTP. See ipfixlolib documentation for more
+ * 	information.
  * FIXME: support for other than UDP
  */
-void IpfixSender::addCollector(const char *ip, uint16_t port, uint16_t proto)
+void IpfixSender::addCollector(const char *ip, uint16_t port,
+		ipfix_transport_protocol proto, void *aux_config)
 {
+	ipfix_exporter *ex = (ipfix_exporter *)ipfixExporter;
+
 	switch(proto) {
-	    case 17:
-	    	msg(MSG_INFO, "IpfixSender: adding UDP://%s:%u to exporter", ip, port);
-		if(ipfix_add_collector(ipfixExporter, ip, port, UDP) != 0) {
-			msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%u failed", ip, port);
-		}
+	    case UDP:
+	    	msg(MSG_INFO, "IpfixSender: adding UDP://%s:%d to exporter",
+				ip, port);
 	    	break;
-	    case 132:
-	    	msg(MSG_INFO, "IpfixSender: adding SCTP://%s:%u to exporter", ip, port);
-		if(ipfix_add_collector(ipfixExporter, ip, port, SCTP) != 0) {
-			msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%u failed", ip, port);
-		}
+	    case SCTP:
+	    	msg(MSG_INFO, "IpfixSender: adding SCTP://%s:%d to exporter",
+				ip, port);
 	    	break;
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
-	    case 0:
-	    	msg(MSG_INFO, "IpfixSender: adding RAWDIR://%s to exporter", ip);
-		if(ipfix_add_collector(ipfixExporter, ip, port, RAWDIR) != 0) {
-			msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%u failed", ip, port);
-		}
+	    case RAWDIR:
+	    	msg(MSG_INFO, "IpfixSender: adding RAWDIR://%s to exporter",
+				ip);
 	    	break;
 #endif
-	    case 6:
-	        msg(MSG_INFO, "IpfixSender: adding TCP://%s:%u to exporter", ip, port);
-		if(ipfix_add_collector(ipfixExporter, ip, port, TCP) != 0) {
-			msg(MSG_FATAL, "IpfixSender: ipfix_add_collector of %s:%u failed", ip, port);
-		}
+#ifdef SUPPORT_DTLS
+	    case DTLS_OVER_UDP:
+	    	msg(MSG_INFO,
+			"IpfixSender: adding DTLS over UDP://%s:%d to exporter",
+			ip, port);
+	    	break;
+#endif
+#ifdef SUPPORT_DTLS_OVER_SCTP
+	    case DTLS_OVER_SCTP:
+	    	msg(MSG_INFO,
+		"IpfixSender: adding DTLS over SCTP://%s:%d to exporter",
+			ip, port);
+	    	break;
+#endif
+	    case TCP:
+	        msg(MSG_INFO, "IpfixSender: adding TCP://%s:%d to exporter",
+				ip, port);
 	    default:
-	    	THROWEXCEPTION("IpfixSender: Invalid protocol (%u) given!", proto);
+	    	THROWEXCEPTION("invalid protocol (%d) given!", proto);
 	    	break;
 	}
-}
 
+	if(ipfix_add_collector(ex, ip, port, proto, aux_config) != 0) {
+		msg(MSG_FATAL,
+			"IpfixSender: ipfix_add_collector of %s:%d failed",
+			ip, port);
+		return;
+	}
+}
 
 /**
  * Get a small, unused Template Id
@@ -280,8 +325,8 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		}
 	}
 
-	if (0 != ipfix_start_datatemplate_set(ipfixExporter, my_template_id, my_preceding, dataTemplateInfo->fieldCount + splitFields, dataTemplateInfo->dataCount + splitFixedfields)) {
-		THROWEXCEPTION("IpfixSender: ipfix_start_datatemplate_set failed");
+	if (0 != ipfix_start_datatemplate(ipfixExporter, my_template_id, my_preceding, dataTemplateInfo->fieldCount + splitFields, dataTemplateInfo->dataCount + splitFixedfields)) {
+		THROWEXCEPTION("IpfixSender: ipfix_start_datatemplate failed");
 	}
 
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
@@ -350,8 +395,8 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	}
 	free(data);
 
-	if (0 != ipfix_end_template_set(ipfixExporter, my_template_id)) {
-		THROWEXCEPTION("IpfixSender: ipfix_end_template_set failed");
+	if (0 != ipfix_end_template(ipfixExporter, my_template_id)) {
+		THROWEXCEPTION("IpfixSender: ipfix_end_template failed");
 	}
 
 	msg(MSG_INFO, "IpfixSender: created template with ID %u", my_template_id);
@@ -413,8 +458,8 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	templateIdToUniqueId.erase(my_template_id);
 
 	/* Remove template from ipfixlolib */
-	if (0 != ipfix_remove_template_set(ipfixExporter, my_template_id)) {
-		msg(MSG_FATAL, "IpfixSender: ipfix_remove_template_set failed");
+	if (0 != ipfix_remove_template(ipfixExporter, my_template_id)) {
+		msg(MSG_FATAL, "IpfixSender: ipfix_remove_template failed");
 	}
 	else
 	{
@@ -443,69 +488,67 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
  * @param templateId of the new Data Set
  * @return returns -1 on error, 0 otherwise
  */
-void IpfixSender::startDataSet(TemplateInfo::TemplateId templateId)
+void IpfixSender::setTemplateId(TemplateInfo::TemplateId templateId, uint16_t dataLength)
 {
+	ipfix_exporter* exporter = (ipfix_exporter*)ipfixExporter;
 	uint16_t my_n_template_id = htons(templateId);
-
-	/* check if we can use the current Data Set */
-	//TODO: make maximum number of records per Data Set variable
-	if((noCachedRecords < 10) && (templateId == currentTemplateId))
+	if (currentTemplateId == 0)
+		; /* Do nothing */
+	else if(templateId != currentTemplateId) {
+		endDataSet();
+		if (remainingSpace < dataLength + IPFIX_OVERHEAD_PER_SET) {
+			send();
+		}
+	} else if (remainingSpace < dataLength) {
+		endDataSet();
+		send();
+	} else {
 		return;
-
-	if(noCachedRecords > 0)
-		endAndSendDataSet();
-
-	if (ipfix_start_data_set(ipfixExporter, my_n_template_id) != 0 ) {
-		THROWEXCEPTION("IpfixSender: ipfix_start_data_set failed!");
 	}
-
+		
+	if (ipfix_start_data_set(exporter, my_n_template_id) != 0 ) {
+		THROWEXCEPTION("ipfix_start_data_set failed!");
+	}
+	remainingSpace = ipfix_get_remaining_space(exporter);
 	currentTemplateId = templateId;
 }
 
-
 /**
- * Terminates and sends current Data Set if available.
+ * Terminates current Data Set.
  * @return returns -1 on error, 0 otherwise
  */
-void IpfixSender::endAndSendDataSet()
+void IpfixSender::endDataSet()
 {
-	if(noCachedRecords > 0) {
-		if (ipfix_end_data_set(ipfixExporter, noCachedRecords) != 0) {
-			THROWEXCEPTION("IpfixSender: ipfix_end_data_set failed");
-		}
-
-		// determine if we need to wait (we don't want to exceed the defined packet rate per second)
-		// check in 100ms steps if maximum packet rate is reached - if yes, wait until the 100ms step
-		// is over
-		struct timeval tv;
-		gettimeofday(&tv, 0);
-		if ((tv.tv_sec==curTimeStep.tv_sec) && (tv.tv_usec/100000==curTimeStep.tv_usec/100000)) {
-			if (recordsSentStep>maxRecordRate/10) {
-				// wait until current timestep is over
-				usleep(100000-(tv.tv_usec%100000));
-			}
-		} else {
-			curTimeStep = tv;
-			recordsSentStep = 0;
-		}
-
-		if (ipfix_send(ipfixExporter) != 0) {
-			THROWEXCEPTION("IpfixSender: ipfix_send failed");
-		}
-
-		statSentPackets++;
-
-		removeRecordReferences();
-
-		currentTemplateId = 0;
-	} else { // only send Templates
-		DPRINTF("IpfixSender::endAndSendDataSet: Send Templates only");
-		if (ipfix_send(ipfixExporter) != 0) {
-			THROWEXCEPTION("IpfixSender: ipfix_send failed");
-		}
+	if (ipfix_end_data_set(ipfixExporter, noRecordsInCurrentSet) != 0) {
+		THROWEXCEPTION("ipfix_end_data_set failed");
 	}
+	noRecordsInCurrentSet = 0;
+	currentTemplateId = 0;
 }
 
+void IpfixSender::send() {
+
+	// determine if we need to wait (we don't want to exceed the defined packet rate per second)
+	// check in 100ms steps if maximum packet rate is reached - if yes, wait until the 100ms step
+	// is over
+	struct timeval tv;
+	gettimeofday(&tv, 0);
+	if ((tv.tv_sec==curTimeStep.tv_sec) && (tv.tv_usec/100000==curTimeStep.tv_usec/100000)) {
+		if (recordsSentStep>maxRecordRate/10) {
+			// wait until current timestep is over
+			usleep(100000-(tv.tv_usec%100000));
+		}
+	} else {
+		curTimeStep = tv;
+		recordsSentStep = 0;
+	}
+
+	if (ipfix_send(ipfixExporter) != 0) {
+		THROWEXCEPTION("sndIpfix: ipfix_send failed");
+	}
+
+	removeRecordReferences();
+}
 
 /**
  * removes references to flows inside buffer recordsToRelease
@@ -561,7 +604,7 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 		return;
 	}
 
-	startDataSet(my_template_id);
+	setTemplateId(my_template_id, record->dataLength);
 
 	int i;
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
@@ -589,18 +632,18 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 			ipfix_put_data_field(ipfixExporter, data + fi->offset, fi->type.length);
 		}
 	}
-
+	remainingSpace -= record->dataLength;
 	statSentDataRecords++;
 	recordsSentStep++;
 
 	recordsToRelease.push(record);
 
 	noCachedRecords++;
+	noRecordsInCurrentSet++;
+	registerTimeout();
 
 	// release the message lock
 	ipfixMessageLock.unlock();
-
-	sendRecords();
 }
 
 /**
@@ -621,8 +664,8 @@ void IpfixSender::onReconfiguration2()
 	// Destroy all templates (they will be resent after reconfiguration if necessary)
 	for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) {
 		/* Remove template from ipfixlolib */
-		if (0 != ipfix_remove_template_set(ipfixExporter, iter->first)) {
-			msg(MSG_FATAL, "IpfixSender: ipfix_remove_template_set failed");
+		if (0 != ipfix_remove_template(ipfixExporter, iter->first)) {
+			msg(MSG_FATAL, "IpfixSender: ipfix_remove_template failed");
 		}
 		else
 		{
@@ -658,40 +701,39 @@ void IpfixSender::sendRecords(SendPolicy policy)
 		return;
 	}
 
-	// send if packet is full or if sending is forced
-	// TODO: extend ipfixlolib so that as many records as possible may be stored
-	// in one network packet
-	if ((noCachedRecords >= 10) || (policy != IfFull)) {
-		// send packet now
-		endAndSendDataSet();
-	} else { // don't send now but after timeout
-		// set next timeout
-		addToCurTime(&nextTimeout, recordCacheTimeout);
-		registerTimeout();
-	}
+	// We cancel the timeout because we're about to send
+	// out all records.
+	timeoutRegistered = false;
+	// send packet
+	if (currentTemplateId) endDataSet();
+	send();
+	statSentPackets++;
 
 	// get the message lock
 	ipfixMessageLock.unlock();
 
 }
 
-
 /**
  * gets called regularly to send data over the network
  */
-void IpfixSender::onTimeout(void* dataPtr)
-{
-	timeoutRegistered = false;
+void IpfixSender::onSendRecordsTimeout(void) {
 
+	if (!timeoutRegistered) return;
 	timeval tv;
 	gettimeofday(&tv, 0);
-	// check if this timeout corresponds to nextTimeout
-	if (nextTimeout.tv_sec>tv.tv_sec || (nextTimeout.tv_sec==tv.tv_sec && nextTimeout.tv_nsec>tv.tv_usec*1000))
-		// next timeout is in the future, reregister it
-		registerTimeout();
-	else
-		// timeout corresponds to nextTimeout, so force sending the message
-		sendRecords(IfNotEmpty);
+	if (nextTimeout.tv_sec<tv.tv_sec || (nextTimeout.tv_sec==tv.tv_sec && nextTimeout.tv_nsec<tv.tv_usec*1000)) {
+		sendRecords(Always);
+	}
+}
+void IpfixSender::onBeatTimeout(void) {
+	ipfix_beat(ipfixExporter);
+}
+void IpfixSender::onTimeout(void* dataPtr)
+{
+	onSendRecordsTimeout();
+	onBeatTimeout();
+	registerBeatTimeout();
 }
 
 /**
@@ -700,15 +742,23 @@ void IpfixSender::onTimeout(void* dataPtr)
  */
 void IpfixSender::registerTimeout()
 {
-	// check if there is already a timeout
 	if (timeoutRegistered) return;
-    if(timer){
-        timer->addTimeout(this, nextTimeout, NULL);
-        timeoutRegistered = true;
-    }
-    else {
-        msg(MSG_DEBUG, "timer == NULL, this = %p", this);
-    }
+	addToCurTime(&nextTimeout, recordCacheTimeout);
+	timeoutRegistered = true;
+}
+
+void IpfixSender::registerBeatTimeout()
+{
+	timespec to;
+	addToCurTime(&to, 100);
+	timer->addTimeout(this, to, &timeoutIpfixlolibBeat);
+}
+
+/**
+ * 
+ */
+void IpfixSender::notifyQueueRunning() {
+	registerBeatTimeout();
 }
 
 /**

@@ -44,14 +44,14 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 
         // generate the ipfix template
         tmplid = templ->getTemplateID();
-        ret =  ipfix_start_template_set(exporter, tmplid, templ->getFieldCount());
+        ret =  ipfix_start_template(exporter, tmplid, templ->getFieldCount());
 
         for(i = 0; i < templ->getFieldCount(); i++) {
 		templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
 		ipfix_put_template_field(exporter, tmplid, ttype.id, tlength, ttype.enterprise);
         }
 
-        ipfix_end_template_set(exporter, tmplid);
+        ipfix_end_template(exporter, tmplid);
 }
 
 PSAMPExporterModule::~PSAMPExporterModule()
@@ -176,20 +176,10 @@ void PSAMPExporterModule::flushPacketStream() {
 	pckCount = 0;
 }
 
-bool PSAMPExporterModule::addCollector(const char *address, uint16_t port, uint16_t protocol)
+bool PSAMPExporterModule::addCollector(const char *address, uint16_t port, ipfix_transport_protocol protocol)
 {
 	DPRINTF("Adding %i://%s:%d", protocol, address, port);
-	switch(protocol) {
-		case 132:
-			return(ipfix_add_collector(exporter, address, port, SCTP) == 0);
-			break;
-		case 17:
-			return(ipfix_add_collector(exporter, address, port, UDP) == 0);
-			break;
-		default:
-			msg(MSG_ERROR, "PSAMPExporter: Transport protocol %u not supported", protocol);
-			return false;
-	}
+	return(ipfix_add_collector(exporter, address, port, protocol, NULL) == 0);
 }
 
 void PSAMPExporterModule::receive(Packet* p)

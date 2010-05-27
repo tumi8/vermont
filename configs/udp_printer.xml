@@ -1,0 +1,11 @@
+<ipfixConfig>
+	<ipfixCollector id="1">
+		<listener>
+			<transportProtocol>UDP</transportProtocol>
+		</listener>
+		<next>2</next>
+	</ipfixCollector>
+	<ipfixPrinter id="2">
+	</ipfixPrinter>
+</ipfixConfig>
+

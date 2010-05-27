@@ -52,7 +52,9 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
 
 	listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
 	if(listen_socket < 0) {
+		/* ASK: error should be written to log file */
 		perror("Could not create socket");
+		/* ASK: Why not throw? printf format */
 		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed");
 	}
 	
@@ -61,6 +63,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
 	if(ipAddr == "")
 		serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 	else
+		/* ASK: check return value. inet_addr() is obsolete. inet_aton should be used. */
 		serverAddress.sin_addr.s_addr = inet_addr(ipAddr.c_str());
 	
 	serverAddress.sin_family = AF_INET;

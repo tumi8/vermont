@@ -72,6 +72,8 @@ ADD_LIBRARY(modules
     ipfix/Connection.cpp
     ipfix/IpfixReceiverUdpIpV4.cpp
     ipfix/IpfixReceiverSctpIpV4.cpp
+    ipfix/IpfixReceiverDtlsUdpIpV4.cpp
+    ipfix/IpfixReceiverDtlsSctpIpV4.cpp
     ipfix/IpfixReceiverFile.cpp
     ipfix/IpfixReceiverFileCfg.cpp
     ipfix/IpfixRawdirReader.cpp

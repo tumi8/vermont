@@ -30,6 +30,8 @@ ADD_LIBRARY(common
 	cryptopan/rijndael.cpp
 	hmacsha1/sha1.cpp
 	hmacsha1/sha1_hmac.cpp
+	openssl/OpenSSL.cpp
+	openssl/SSLCTXWrapper.cpp
 )
 
 SUBDIRS(

@@ -168,9 +168,11 @@ private:
 
 				// allow onTimeout to call addTimeout(...)
 				mutex.unlock();
+				// Unlocking the mutex should do no harm
+				// because onTimeout should not call any method
+				// that invalidates our iterator.
 				te->n->onTimeout(te->dataPtr);
 				mutex.lock();
-
 				Source<T>::atomicRelease();
 
 				iter = timeouts.erase(iter);
@@ -203,7 +205,8 @@ private:
 		T element;
 
 		Module::registerCurrentThread();
-
+		Source<T>::sendQueueRunningNotification();
+		
 		while (true) {
 			if (Module::getExitFlag()) {
 				if (!Module::getShutdownProperly()) break;

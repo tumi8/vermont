@@ -68,6 +68,14 @@
 #define IS_DEFAULT_SCTP_DATALIFETIME 10000
 
 /**
+ * defines amount of seconds, before a new DTLS connection setup is
+ * initiated to replace the existing DTLS connection. This mechanism
+ * aims to overcome the dead peer problem.
+ * 
+ */
+#define IS_DEFAULT_DTLS_CONNECTIONLIFETIME 3600
+
+/**
  * defines interval in seconds, how often IpfixExporter tries to reestablish a
  * lost SCTP connection
  */

@@ -52,8 +52,11 @@ public:
 	// inherited from Destination<T>
 	virtual void receive(T element)
 	{
-		printf("Adapter::receive\n");
 		Source<T>::send(element);
+	}
+
+	virtual void notifyQueueRunning() {
+		Source<T>::sendQueueRunningNotification();
 	}
 };
 

@@ -135,6 +135,7 @@ Observer::~Observer()
 
 	free(captureInterface);
 	delete[] filter_exp;
+	if (fileName) { free(fileName); fileName = NULL; }
 	msg(MSG_DEBUG, "successful shutdown");
 }
 /*

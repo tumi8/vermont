@@ -42,13 +42,22 @@ using namespace std;
 class IpfixSender : public Module, public Source<NullEmitable*>, public IpfixRecordDestination, public Notifiable
 {
 public:
-	IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, uint32_t sctpDataLifetime, uint32_t sctpReconnectInterval,
-			uint32_t templateRefreshInterval, uint32_t templateRefreshRate);
+	IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
+			uint32_t sctpDataLifetime,
+			uint32_t sctpReconnectInterval,
+			uint32_t templateRefreshInterval,
+			const std::string &certificateChainFile,
+			const std::string &privateKeyFile,
+			const std::string &caFile,
+			const std::string &caPath);
 	IpfixSender(uint32_t observationDomainId);
 	virtual ~IpfixSender();
 
-	void addCollector(const char *ip, uint16_t port, uint16_t proto);
+	void addCollector(const char *ip, uint16_t port,
+			ipfix_transport_protocol proto, void *aux_config);
 	void flushPacket();
+
+	virtual void notifyQueueRunning();
 
 	virtual void onTemplate(IpfixTemplateRecord* record);
 	virtual void onTemplateDestruction(IpfixTemplateDestructionRecord* record);
@@ -69,18 +78,23 @@ protected:
 
 private:
 	enum SendPolicy {
-		IfFull,
 		IfNotEmpty,
 		Always
 	};
 	void performShutdown(); 
 	static void* threadWrapper(void* instance);
 	void processLoop();
-	void startDataSet(uint16_t templateId);
-	void endAndSendDataSet();
-	void sendRecords(SendPolicy policy = IfFull);
+	void startDataSet(uint16_t templateId, uint16_t dataLength);
+	void setTemplateId(TemplateInfo::TemplateId templateId,
+			uint16_t dataLength);
+	void endDataSet();
+	void send();
+	void sendRecords(SendPolicy policy);
 	void removeRecordReferences();
 	void registerTimeout();
+	void onSendRecordsTimeout(void);
+	void onBeatTimeout(void);
+	void registerBeatTimeout();
 
 	TemplateInfo::TemplateId getUnusedTemplateId();
 
@@ -104,9 +118,11 @@ private:
 	// send after timeout parameters
 	queue<IpfixRecord*> recordsToRelease;
 	uint16_t noCachedRecords; /**< number of records already passed to ipfixlob, should be equal to recordsToRelease.size() */
+	uint16_t noRecordsInCurrentSet; /**< Number of records in current data set. */
 	uint16_t recordCacheTimeout; /**< how long may records be cached until sent, milliseconds */
 	bool timeoutRegistered; /**< true if next timeout was already registered in timer */
 	uint16_t currentTemplateId; /**< Template ID of the unfinished data set */
+	uint16_t remainingSpace; /**< Remaining space in current IPFIX message measured in bytes. */
 
 	uint16_t ringbufferPos; /**< Pointer to next free slot in @c conversionRingbuffer. */
 	uint8_t conversionRingbuffer[65536]; /**< Ringbuffer used to store converted imasks between @c ipfix_put_data_field() and @c ipfix_send() */
@@ -115,6 +131,9 @@ private:
 	struct timeval curTimeStep; /**< current time used for determining packet rate */
 	uint32_t recordsSentStep; /**< number of records sent in timestep (usually 100ms)*/
 	uint32_t maxRecordRate;  /** maximum number of records per seconds to be sent over the wire */
+
+	int timeoutSendRecords; /**< Dummy variable. Used as a pointer destination to distinguish between two dirrent types of timeout */
+	int timeoutIpfixlolibBeat; /**< Dummy variable. Used as a pointer destination to distinguish between two dirrent types of timeout */
 
 	// mapping of uniqueId to templateId and vice versa
 	std::map<TemplateInfo::TemplateId, uint16_t> templateIdToUniqueId; /**< stores uniqueId for a give Template ID */
