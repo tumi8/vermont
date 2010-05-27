@@ -124,7 +124,7 @@ IpfixSender* IpfixExporterCfg::createInstance()
 			case DTLS_OVER_UDP:
 				acdou.max_connection_lifetime = dtlsMaxConnectionLifetime;
 				pacd = &acdou.dtls;
-				pacu = &acu;
+				pacu = &acdou.udp;
 				aux_config = &acdou;
 				break;
 			case DTLS_OVER_SCTP:
