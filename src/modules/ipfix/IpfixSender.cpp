@@ -723,6 +723,7 @@ void IpfixSender::onSendRecordsTimeout(void) {
 	timeval tv;
 	gettimeofday(&tv, 0);
 	if (nextTimeout.tv_sec<tv.tv_sec || (nextTimeout.tv_sec==tv.tv_sec && nextTimeout.tv_nsec<tv.tv_usec*1000)) {
+		DPRINTF("Sending Records due to timeout.");
 		sendRecords(Always);
 	}
 }
