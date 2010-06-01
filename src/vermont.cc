@@ -50,6 +50,19 @@ static int setup_signal(int signal, void (*handler)(int));
 
 int main(int ac, char **dc)
 {
+	/* manager is defined at the scope of the main function in order to
+	 * steer clear of headaches which are related to the order of
+	 * initialisation of static objects.
+	 * Let's look at an example to better understand this requirement: The
+	 * constructor of ConfigMananger indirectly uses the logging facility.
+	 * As a result, we have to make sure that all static objects related to
+	 * the logging facility are initialized before the c'tor of
+	 * ConfigManager makes use of them. By defining manager inside main(),
+	 * we ensure that all static objects have been initialized by the time
+	 * the c'tor of ConfigManager is run. The same goes for the
+	 * destructors: The d'tor of ConfigManager must be executed *before*
+	 * the d'tors of the logging facility because the former makes use of
+	 * the latter. */
 	ConfigManager manager;
 	string statFile = "stats.log";
 
