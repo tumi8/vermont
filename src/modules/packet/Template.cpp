@@ -47,7 +47,7 @@ bool Template::addField(const InformationElement::IeInfo& ie)
 	{
 		if(getFieldOffsetAndHeader(ie, &offset, &header, &validPacketClass) == false)
 		{
-			msg(MSG_ERROR, "ID %s currently not supported", ie.toString().c_str());
+			msg(MSG_DIALOG, "Unsupported %s will be ignored by PSAMP exporter.", ie.toString().c_str());
 			return false;
 		}
 

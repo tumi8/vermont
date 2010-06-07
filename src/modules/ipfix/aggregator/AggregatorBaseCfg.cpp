@@ -117,7 +117,7 @@ Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 	InfoElementCfg ie(e);
 
 	if (!ie.isKnownIE())
-		THROWEXCEPTION("Unknown field %s (id=%u, enterprise=%lu).", (ie.getIeName()).c_str(), ie.getIeId(), ie.getEnterpriseNumber());
+		THROWEXCEPTION("Unsupported non-key field %s (id=%u, enterprise=%lu).", (ie.getIeName()).c_str(), ie.getIeId(), ie.getEnterpriseNumber());
 
 	ruleField->modifier = Rule::Field::AGGREGATE;
 	ruleField->type.id = ie.getIeId();
@@ -140,13 +140,13 @@ Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 
 Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 	Rule::Field* ruleField = new Rule::Field();
+	InfoElementCfg ie(e);
+
+	if (!ie.isKnownIE())
+		THROWEXCEPTION("Unknown flow key field %s (id=%u, enterprise=%u).", (ie.getIeName()).c_str(), ie.getIeId(), ie.getEnterpriseNumber());
+
 	try {   // TODO: not sure why we don't abort here; just use the same code as before restructuring
 		// I added a delete ruleField in the catch, perhaps thats why it was needed?
-
-		InfoElementCfg ie(e);
-
-		if (!ie.isKnownIE())
-			THROWEXCEPTION("Unknown field %s (id=%u, enterprise=%lu).", (ie.getIeName()).c_str(), ie.getIeId(), ie.getEnterpriseNumber());
 
 		// parse modifier
 		if (ie.getModifier().empty() || (ie.getModifier() == "keep")) {
