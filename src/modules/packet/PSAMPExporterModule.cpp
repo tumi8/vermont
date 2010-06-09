@@ -27,13 +27,13 @@ using namespace std;
 PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDomainId)
 		: sourceID(observationDomainId), templ(tmpl),
 		  exporter(NULL),
-		  numPacketsToRelease(0), numMetaFieldsToRelease(0),
+		  numPacketsToRelease(0),
 		  ipfix_maxrecords(MAX_RECORDS_PER_PACKET),
 		  exportTimeout(MAX_PACKET_LIFETIME), pckCount(0), timerFlag(0)
 {
 	int ret, i, tmplid;
-	unsigned short tlength, toffset, theader;
-	InformationElement::IeInfo ttype;
+	uint16_t offset, header;
+	InformationElement::IeInfo ie;
 
 	// generate the exporter
 	ret = ipfix_init_exporter(sourceID, &exporter);
@@ -47,8 +47,8 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
         ret =  ipfix_start_template(exporter, tmplid, templ->getFieldCount());
 
         for(i = 0; i < templ->getFieldCount(); i++) {
-		templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
-		ipfix_put_template_field(exporter, tmplid, ttype.id, tlength, ttype.enterprise);
+		templ->getFieldInfo(i, &ie, &offset, &header);
+		ipfix_put_template_field(exporter, tmplid, ie.id, ie.length, ie.enterprise);
         }
 
         ipfix_end_template(exporter, tmplid);
@@ -68,7 +68,7 @@ PSAMPExporterModule::~PSAMPExporterModule()
 void PSAMPExporterModule::startNewPacketStream()
 {
     unsigned short net_tmplid = htons(templ->getTemplateID());
-    DPRINTF("Starting new packet stream");
+    DPRINTF("Starting new PSAMP packet");
     ipfix_start_data_set(exporter, net_tmplid);
 }
 
@@ -76,9 +76,9 @@ void PSAMPExporterModule::startNewPacketStream()
 // returns true, if the Packet was successfully added
 bool PSAMPExporterModule::addPacket(Packet *pck)
 {
-	unsigned short tlength, toffset, theader;
-	InformationElement::IeInfo ttype;
-	unsigned short enc_length = 0;
+	InformationElement::IeInfo ie;
+	uint16_t length, offset, header;
+	uint8_t enc_length = 0;
 	void *data;
 	uint8_t *enc_value = 0;
 
@@ -100,36 +100,33 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 	ipfix_set_data_field_marker(exporter);
 
 	for (int i = 0; i < templ->getFieldCount(); i++) {
-		templ->getFieldInfo(i, &ttype, &tlength, &toffset, &theader);
-		if (ttype.enterprise!=0) {
-			ipfix_put_data_field(exporter, 0, tlength);
-			metaFieldsToRelease[numMetaFieldsToRelease++] = 0;
-		} else if (ttype.id == IPFIX_TYPEID_flowStartSeconds) {
-			ipfix_put_data_field(exporter, &(pck->time_sec_nbo), tlength);
-		} else if (ttype.id == IPFIX_TYPEID_flowStartMilliSeconds) {
-			ipfix_put_data_field(exporter, &(pck->time_msec_nbo), tlength);
-		} else if (ttype.id == IPFIX_TYPEID_flowStartMicroSeconds) {
-			ipfix_put_data_field(exporter, &(pck->time_usec_nbo), tlength);
-		} else if (tlength == 65535) {
+		templ->getFieldInfo(i, &ie, &offset, &header);
+		if (ie.enterprise == 0 && (ie.id == IPFIX_TYPEID_flowStartSeconds || ie.id == PSAMP_TYPEID_observationTimeSeconds)) {
+			ipfix_put_data_field(exporter, &(pck->time_sec_nbo), ie.length);
+		} else if (ie.enterprise == 0 && (ie.id == IPFIX_TYPEID_flowStartMilliSeconds || ie.id == PSAMP_TYPEID_observationTimeMilliSeconds)) {
+			ipfix_put_data_field(exporter, &(pck->time_msec_nbo), ie.length);
+		} else if (ie.enterprise == 0 && (ie.id == IPFIX_TYPEID_flowStartMicroSeconds || ie.id == PSAMP_TYPEID_observationTimeMicroSeconds)) {
+			ipfix_put_data_field(exporter, &(pck->time_usec_nbo), ie.length);
+		} else if (ie.length == 65535) {
 			// variable length field
-			data = pck->getVariableLengthPacketData(&tlength, &enc_value, &enc_length, toffset, theader);
+			data = pck->getVariableLengthPacketData(&length, &enc_value, &enc_length, offset, header);
 			if(data == NULL) {
 				msg(MSG_ERROR, "ExporterSink: getVariableLengthPacketData returned NULL! This should never happen!");
 				goto error1;
 			}
 			// put the length information first
 			ipfix_put_data_field(exporter, enc_value, enc_length);
-			ipfix_put_data_field(exporter, data, tlength);
+			ipfix_put_data_field(exporter, data, length);
 		} else {
 			// check if getPacketData actually returns data
-			// Note: getPacketData checks if data of size tlength is available.
+			// Note: getPacketData checks if data of size ie.length is available.
 			//       if not, it returns NULL
-			data = pck->getPacketData(toffset, theader, tlength);
+			data = pck->getPacketData(offset, header, ie.length);
 			if(data == NULL) {
 				msg(MSG_ERROR, "ExporterSink: getPacketData returned NULL! packet length or pcap capture length is too small.");
 				goto error1;
 			}
-			ipfix_put_data_field(exporter, data, tlength);
+			ipfix_put_data_field(exporter, data, ie.length);
 		}
 	}
 
@@ -165,15 +162,11 @@ void PSAMPExporterModule::flushPacketStream() {
 		(packetsToRelease[i])->removeReference();
 	}
 
-	// now release the additional metadata fields
-	DPRINTF("Flushing %d Metadata fields from buffer", numMetaFieldsToRelease);
-	for (int i = 0; i < numMetaFieldsToRelease; i++) {
-		free(metaFieldsToRelease[i]);
-	}
-
 	numPacketsToRelease = 0;
-	numMetaFieldsToRelease = 0;
 	pckCount = 0;
+
+	// start new Data Set
+	startNewPacketStream();
 }
 
 bool PSAMPExporterModule::addCollector(const char *address, uint16_t port, ipfix_transport_protocol protocol)
@@ -185,8 +178,6 @@ bool PSAMPExporterModule::addCollector(const char *address, uint16_t port, ipfix
 void PSAMPExporterModule::receive(Packet* p)
 {
 	if (pckCount == 0) {
-		startNewPacketStream();
-
 		if (!addPacket(p))
 			return;
 

@@ -124,6 +124,17 @@
 #define CQ_POLL_INTERVAL 1000
 
 
+/**
+ * defines in milliseconds, how long flow records may be cached in IpfixNetflowExporter
+ * until they are sent to the network
+ */
+#define INE_DEFAULT_RECORDCACHETIMEOUT 5000
+
+/**
+ * defines in packets per seconds, how many udp records are to be sent over
+ * the wire by IpfixNetflowExporter
+ */
+#define INE_DEFAULT_MAXRECORDRATE 5000
 
 
 /**
@@ -131,6 +142,11 @@
  */
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+
+/**
+ * disable alignment in structure
+ */
+#define DISABLE_ALIGNMENT __attribute__((packed));
 
 
 #endif /*DEFS_H*/

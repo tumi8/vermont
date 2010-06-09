@@ -21,12 +21,6 @@
 // TODO: Make this dynamic
 #define MAX_TEMPLATE_FIELDS 128
 
-// the PSAMP field types used
-// (for IPFIX fields the defines from the concentrator are used)
-#define PSAMP_TYPEID_ipHeaderPacketSection   313
-#define PSAMP_TYPEID_ipPayloadPacketSection   314
-
-
 class Template
 {
 	private:
@@ -38,8 +32,12 @@ class Template
 		// the field types for each field
 		InformationElement::IeInfo fieldType[MAX_TEMPLATE_FIELDS];
 
-		// the length of each field
-		uint16_t fieldLength[MAX_TEMPLATE_FIELDS];
+		// the offset in the TCP/IP packet for each field
+		uint16_t fieldPacketOffset[MAX_TEMPLATE_FIELDS];
+
+		// the header from which the corresponding field is taken
+		// HEAD_RAW, HEAD_NETWORK,... (see Packet.h)
+		uint16_t fieldPacketHeader[MAX_TEMPLATE_FIELDS];
 
 		// the packet classes for which each field is valid. This will
 		// be checked against the packet classification before exporting
@@ -60,29 +58,29 @@ class Template
 		};
 
 		// Add a template field that takes data from within the packet
-		void addFieldWithOffset(const InformationElement::IeInfo& type, uint16_t length, uint16_t offset, uint16_t header, uint32_t validPacketClasses)
+		void addFieldWithOffset(const InformationElement::IeInfo& ie, uint16_t offset, uint16_t header, uint32_t validPacketClasses)
 		{
-			DPRINTF("Adding field type %s, length %d, offset %d\n", type.toString().c_str(), length, offset);
-			fieldType[fieldCount] = type;
-			fieldLength[fieldCount] = length;
+			fieldType[fieldCount] = ie;
+			fieldPacketOffset[fieldCount] = offset;
+			fieldPacketHeader[fieldCount] = header;
 			fieldValidPacketClasses[fieldCount] = validPacketClasses;
 			fieldCount++;
 		};
 
-		// Add a template "meta-"field which gets its data not from the packet itself
+		// Add a template "meta-"field which gets its data not from the captured packet itself
 		// "length" parameter must still be correct! (i.e. 4 bytes for FT_NUMPACKETS etc.)
-		void addFieldWithoutOffset(const InformationElement::IeInfo& type, uint16_t length)
+		void addFieldWithoutOffset(const InformationElement::IeInfo& ie)
 		{
-			fieldType[fieldCount] = type;
-			fieldLength[fieldCount] = length;
+			fieldType[fieldCount] = ie;
 			fieldValidPacketClasses[fieldCount] = (uint32_t)(-1);
 			fieldCount++;
 		};
 
-		void getFieldInfo(int num, InformationElement::IeInfo* type, uint16_t *length, uint16_t *offset, uint16_t *header) const
+		void getFieldInfo(int num, InformationElement::IeInfo* ie, uint16_t* offset, uint16_t* header) const
 		{
-			*type = fieldType[num];
-			*length = fieldLength[num];
+			*ie = fieldType[num];
+			*offset = fieldPacketOffset[num];
+			*header = fieldPacketHeader[num];
 		}
 
 		int getTemplateID() const
@@ -90,7 +88,7 @@ class Template
 			return templateID;
 		}
 
-		bool addField(const InformationElement::IeInfo& id, uint16_t len);
+		bool addField(const InformationElement::IeInfo& ie);
 
 
 		// the supplied packet_classification is check against the requirements of all fields
@@ -101,11 +99,9 @@ class Template
 			DPRINTFL(MSG_VDEBUG, "Packet class: %lx", packet_classification);
 			for(i=0; i<fieldCount; i++) {
 				DPRINTFL(MSG_VDEBUG, "Field id: %s class: %lx", fieldType[i].toString().c_str(), fieldValidPacketClasses[i]);
-				// skip meta-fields
-				if(!(fieldType[i].enterprise != 0))
-					// check if packet class supports this field
-					if((packet_classification & fieldValidPacketClasses[i]) == 0)
-						return false;
+				// check if packet class supports this field
+				if((packet_classification & fieldValidPacketClasses[i]) == 0)
+					return false;
 			}
 			return true;
 		}

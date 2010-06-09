@@ -58,11 +58,36 @@ IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 	msg(MSG_INFO, "  - maxChunkBufferRecords = %d seconds" , maxChunkBufferRecords);
 	msg(MSG_INFO, "  - maxFileCreationInterval = %d seconds" , maxFileCreationInterval);
 	msg(MSG_INFO, "  - exportMode = %d" , exportMode);
+	msg(MSG_INFO, "  - export struct sizes = %u(Ipfix_basic_flow_sequence_chunk_header), %u(Ipfix_basic_flow)", sizeof(Ipfix_basic_flow_sequence_chunk_header), sizeof(Ipfix_basic_flow));
 	msg(MSG_INFO, "IpfixCsExporter: running");
 }
 
 IpfixCsExporter::~IpfixCsExporter()
 {
+}
+
+uint64_t IpfixCsExporter::retrieveTime(IpfixDataRecord* record, InformationElement::IeId id1, InformationElement::IeId id2,
+		InformationElement::IeId id3, InformationElement::IeEnterpriseNumber pen)
+{
+	uint64_t rettime;
+	TemplateInfo::FieldInfo* fi = record->templateInfo->getFieldInfo(id1, pen);
+	if (fi != 0) {
+		convertNtp64(*(uint64_t*)(record->data + fi->offset), rettime);
+	} else {
+		fi = record->templateInfo->getFieldInfo(id2, pen);
+		if (fi != 0) {
+			rettime = ntohll(*(uint64_t*)(record->data + fi->offset));
+		} else {
+			fi = record->templateInfo->getFieldInfo(id3, pen);
+			if (fi != 0) {
+				rettime = ntohl(*(uint32_t*)(record->data + fi->offset));
+				rettime *= 1000;
+			} else {
+				rettime = 0;
+			}
+		}
+	}
+	return rettime;
 }
 
 /**
@@ -81,7 +106,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 	Ipfix_basic_flow* csRecord = new Ipfix_basic_flow();
 	TemplateInfo::FieldInfo* fi;
 
-	csRecord->record_length			= htons(sizeof(Ipfix_basic_flow));		/* total length of this record in bytes */
+	csRecord->record_length			= htons(sizeof(Ipfix_basic_flow)-2);		/* total length of this record in bytes minus this element*/
 	csRecord->src_export_mode		= exportMode;				/* expected to match enum cs_export_mode */
 	csRecord->dst_export_mode		= exportMode;				/* expected to match enum cs_export_mode */
 	csRecord->ipversion				= 4;						/* expected 4 (for now) */
@@ -126,8 +151,8 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 		csRecord->destination_transport_port	= 0;
 	}
 
-	// IPFIX_TYPEID_icmpTypeCode   (ICMP type * 256) + ICMP code (network-byte order!)
-	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_icmpTypeCode, 0);
+	// IPFIX_TYPEID_icmpTypeCodeIPv4   (ICMP type * 256) + ICMP code (network-byte order!)
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_icmpTypeCodeIPv4, 0);
 	if (fi != 0) {
 		csRecord->icmp_type_ipv4 		= *(uint8_t*)(record->data + fi->offset);
 		csRecord->icmp_code_ipv4		= *(uint8_t*)(record->data + fi->offset + 8);
@@ -142,45 +167,24 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 		csRecord->tcp_control_bits = *(uint8_t*)(record->data + fi->offset);
 	}
 
-	uint64_t srcTimeStart;
-	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0);
-	if (fi != 0) {
-		convertNtp64(*(uint64_t*)(record->data + fi->offset), srcTimeStart);
-	} else {
-		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0);
-		if (fi != 0) {
-			srcTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
-		} else {
-			fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSeconds, 0);
-			if (fi != 0) {
-				srcTimeStart = ntohl(*(uint32_t*)(record->data + fi->offset));
-				srcTimeStart *= 1000;
-			} else {
-				srcTimeStart = 0;
-			}
-		}
-	}
-	csRecord->flow_start_milliseconds = htonll(srcTimeStart);
+	uint64_t timestart = retrieveTime(record, IPFIX_TYPEID_flowStartNanoSeconds, IPFIX_TYPEID_flowStartMilliSeconds,
+			IPFIX_TYPEID_flowStartSeconds, 0);
+	uint64_t revtimestart = retrieveTime(record, IPFIX_TYPEID_flowStartNanoSeconds, IPFIX_TYPEID_flowStartMilliSeconds,
+			IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse);
+	if (revtimestart>0 && revtimestart<timestart)
+		csRecord->flow_start_milliseconds = htonll(revtimestart);
+	else
+		csRecord->flow_start_milliseconds = htonll(timestart);
 
-	uint64_t srcTimeEnd;
-	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0);
-	if (fi != 0) {
-		convertNtp64(*(uint64_t*)(record->data + fi->offset), srcTimeEnd);
-	} else {
-		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
-		if (fi != 0) {
-			srcTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
-		} else {
-			fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndSeconds, 0);
-			if (fi != 0) {
-				srcTimeEnd = ntohl(*(uint32_t*)(record->data + fi->offset));
-				srcTimeEnd *= 1000;
-			} else {
-				srcTimeEnd = 0;
-			}
-		}
-	}
-	csRecord->flow_end_milliseconds = htonll(srcTimeEnd);
+	uint64_t timeend = retrieveTime(record, IPFIX_TYPEID_flowEndNanoSeconds, IPFIX_TYPEID_flowEndMilliSeconds,
+			IPFIX_TYPEID_flowEndSeconds, 0);
+	uint64_t revtimeend = retrieveTime(record, IPFIX_TYPEID_flowEndNanoSeconds, IPFIX_TYPEID_flowEndMilliSeconds,
+			IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse);
+	if (revtimeend>0 && revtimeend>timeend)
+		csRecord->flow_end_milliseconds = htonll(revtimeend);
+	else
+		csRecord->flow_end_milliseconds = htonll(timeend);
+
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_octetDeltaCount, 0);
         if (fi != 0) {
@@ -306,8 +310,7 @@ void IpfixCsExporter::writeChunkList()
 	Ipfix_basic_flow_sequence_chunk_header csChunkHeader;
 
 	csChunkHeader.ipfix_type = htons(0x0008);
-	csChunkHeader.chunk_length = htonl(chunkList.size()*sizeof(Ipfix_basic_flow));
-	msg(MSG_INFO, "chunk_length: %u, %X", chunkList.size()*sizeof(Ipfix_basic_flow), csChunkHeader.chunk_length);
+	csChunkHeader.chunk_length = htonl(chunkList.size()*sizeof(Ipfix_basic_flow)+4);
 	csChunkHeader.flow_count = htonl(chunkList.size());
 
 	if (fwrite(&csChunkHeader, sizeof(csChunkHeader), 1, currentFile)==0){

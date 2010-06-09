@@ -1,0 +1,55 @@
+<ipfixConfig>
+	<observer id="1">
+		<interface>eth1</interface>
+		<pcap_filter>ip</pcap_filter>
+		<captureLength>500</captureLength>
+		<next>2</next>
+	</observer>
+	
+	<packetQueue id="2">
+		<maxSize>10</maxSize>
+		<next>3</next>
+	</packetQueue>
+	
+	<psampExporter id="3">
+		<ipfixPacketRestrictions>
+			<maxPacketSize>1500</maxPacketSize>
+			<maxExportDelay unit="msec">500</maxExportDelay>
+		</ipfixPacketRestrictions>
+		<packetReporting>
+			<templateId>888</templateId>
+			<reportedIE>
+			    <ieName>sourceIPv4Address</ieName>
+			</reportedIE>
+			<reportedIE>
+			    <ieName>destinationIPv4Address</ieName>
+			</reportedIE>
+			<reportedIE>
+			    <ieName>protocolIdentifier</ieName>
+			</reportedIE>
+			<reportedIE>
+			    <ieName>sourceTransportPort</ieName>
+			</reportedIE>
+			<reportedIE>
+			    <ieName>destinationTransportPort</ieName>
+			</reportedIE>
+			<reportedIE>
+			    <ieName>observationTimeMilliSeconds</ieName>
+			</reportedIE>
+			<reportedIE>
+			    <ieName>ippayloadpacketsection</ieName>
+			    <ieLength>20</ieLength>
+			</reportedIE>
+			<reportedIE>
+			    <ieName>frontPayload</ieName>
+			    <enterpriseNumber>2003828736</enterpriseNumber>
+			    <ieLength>65535</ieLength>
+			</reportedIE>
+		</packetReporting>
+		<collector>
+			<ipAddress>127.0.0.1</ipAddress>
+			<transportProtocol>17</transportProtocol>
+			<port>1500</port>
+		</collector>
+	</psampExporter>	
+</ipfixConfig>

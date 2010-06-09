@@ -196,23 +196,23 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 		case 0:
 			switch (type.id) {
 				case IPFIX_TYPEID_protocolIdentifier:
-					fprintf(fh, "protocolIdentifier (id=%u): ", type.id);
+					fprintf(fh, "protocolIdentifier (id=%u, length=%u): ", type.id, type.length);
 					printProtocol(type, pattern);
 					return;
 				case IPFIX_TYPEID_sourceIPv4Address:
-					fprintf(fh, "sourceIPv4Address (id=%u): ", type.id);
+					fprintf(fh, "sourceIPv4Address (id=%u, length=%u): ", type.id, type.length);
 					printIPv4(type, pattern);
 					return;
 				case IPFIX_TYPEID_destinationIPv4Address:
-					fprintf(fh, "destinationIPv4Address (id=%u): ", type.id);
+					fprintf(fh, "destinationIPv4Address (id=%u, length=%u): ", type.id, type.length);
 					printIPv4(type, pattern);
 					return;
 				case IPFIX_TYPEID_sourceTransportPort:
-					fprintf(fh, "sourceTransportPort (id=%u): ", type.id);
+					fprintf(fh, "sourceTransportPort (id=%u, length=%u): ", type.id, type.length);
 					printPort(type, pattern);
 					return;
 				case IPFIX_TYPEID_destinationTransportPort:
-					fprintf(fh, "destinationTransportPort (id=%u): ", type.id);
+					fprintf(fh, "destinationTransportPort (id=%u, length=%u): ", type.id, type.length);
 					printPort(type, pattern);
 					return;
 				case IPFIX_TYPEID_flowStartNanoSeconds:
@@ -424,6 +424,7 @@ void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	}
 	record->removeReference();
 }
+
 
 
 /**
@@ -655,7 +656,7 @@ void IpfixPrinter::printTableRecord(IpfixDataRecord* record)
 			IPToString(c.srcIP).c_str(), IPToString(c.dstIP).c_str(), ntohs(c.srcPort), ntohs(c.dstPort), c.protocol,
 			(long long unsigned)ntohll(c.srcPackets), (long long unsigned)ntohll(c.dstPackets), (long long unsigned)ntohll(c.srcOctets), (long long unsigned)ntohll(c.dstOctets),
 			(long long unsigned)c.srcTimeStart, (long long unsigned)c.srcTimeEnd, (long long unsigned)c.dstTimeStart, (long long unsigned)c.dstTimeEnd,
-			c.srcPayloadLen, c.dstPayloadLen, c.dpaForcedExport, c.dpaReverseStart, c.dpaFlowCount, c.srcTransOctets, c.dstTransOctets);
+			c.srcPayloadLen, c.dstPayloadLen, c.dpaForcedExport, c.dpaReverseStart, c.dpaFlowCount, (long long unsigned)c.srcTransOctets, (long long unsigned)c.dstTransOctets);
 
 }
 
