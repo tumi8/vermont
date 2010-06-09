@@ -75,7 +75,7 @@ uint32_t CfgBase::getUInt32(const std::string& name, uint32_t def, XMLElement* e
 {
 	std::string str;
 	try {
-		str = get(name, elem);
+		str = _get(name, elem);
 		return strtoul(str.c_str(), NULL, 10);
 	} catch (IllegalEntry ie) { }
 
