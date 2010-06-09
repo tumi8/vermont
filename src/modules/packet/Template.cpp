@@ -25,34 +25,33 @@ using namespace std;
 using namespace InformationElement;
 
 
-bool Template::addField(const InformationElement::IeInfo& id, uint16_t len)
+bool Template::addField(const InformationElement::IeInfo& ie)
 {
 	uint16_t offset;
 	uint16_t header = 0;
 	uint32_t validPacketClass = 0;
 
-	/* it is a field with data from the packet itself */
-	// TODO: This should really be checked against some kind of static array instead of a
-	//       'switch' statement
-	// Tobi during "PEN-fix": I really do not know what is done here. I hope i fixed it correctly
-	if ((id.enterprise!=0)
-			|| (id == IeInfo(IPFIX_TYPEID_flowStartSeconds, 0) && (len == sizeof(uint32_t))) // length of timeval.tv_sec
-			|| (id == IeInfo(IPFIX_TYPEID_flowStartMicroSeconds, 0) && (len ==  sizeof(uint32_t)))
-			|| (id == IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0) && (len ==  sizeof(uint32_t long))))
+	/* time stamps are not in the captured packet bytes, but in separate member variables of the Packet class */
+	if ((ie == IeInfo(IPFIX_TYPEID_flowStartSeconds, 0, IPFIX_LENGTH_flowStartSeconds)) // length of timeval.tv_sec
+			|| (ie == IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0, IPFIX_LENGTH_flowStartMilliSeconds))
+			|| (ie == IeInfo(IPFIX_TYPEID_flowStartMicroSeconds, 0, IPFIX_LENGTH_flowStartMicroSeconds))
+			|| (ie == IeInfo(PSAMP_TYPEID_observationTimeSeconds, 0, PSAMP_LENGTH_observationTimeSeconds))
+			|| (ie == IeInfo(PSAMP_TYPEID_observationTimeMilliSeconds, 0, PSAMP_LENGTH_observationTimeMilliSeconds))
+			|| (ie == IeInfo(PSAMP_TYPEID_observationTimeMicroSeconds, 0, PSAMP_LENGTH_observationTimeMicroSeconds)))
 	{
-		addFieldWithoutOffset(id, len);
-		if (id == IeInfo(IPFIX_TYPEID_flowStartMicroSeconds, 0))
-			msg(MSG_DIALOG, "Warning! flowStartMicroSeconds used as complement for flowStartSeconds (deviating from IPFIX info model).");
+		addFieldWithoutOffset(ie);
+		if ((ie == IeInfo(IPFIX_TYPEID_flowStartMicroSeconds, 0)) || (ie == IeInfo(PSAMP_TYPEID_observationTimeMicroSeconds, 0)))
+			msg(MSG_DIALOG, "Warning! %s encoded as complement for flowStartSeconds/observationTimeSeconds (deviating from IPFIX info model).", ie.toString().c_str());
 	}
 	else
 	{
-		if(getFieldOffsetAndHeader(id, &offset, &header, &validPacketClass) == false)
+		if(getFieldOffsetAndHeader(ie, &offset, &header, &validPacketClass) == false)
 		{
-			msg(MSG_ERROR, "ID %s currently not supported", id.toString().c_str());
+			msg(MSG_DIALOG, "Unsupported %s will be ignored by PSAMP exporter.", ie.toString().c_str());
 			return false;
 		}
 
-		addFieldWithOffset(id, len, offset, header, validPacketClass);
+		addFieldWithOffset(ie, offset, header, validPacketClass);
 	}
 
 	return true;
@@ -60,10 +59,10 @@ bool Template::addField(const InformationElement::IeInfo& id, uint16_t len)
 
 
 
-bool Template::getFieldOffsetAndHeader(const IeInfo& id, uint16_t *offset, uint16_t *header, uint32_t *validPacketClass)
+bool Template::getFieldOffsetAndHeader(const IeInfo& ie, uint16_t *offset, uint16_t *header, uint32_t *validPacketClass)
 {
-	if (id.enterprise==0) {
-		switch(id.id) {
+	if (ie.enterprise==0) {
+		switch(ie.id) {
 			// IPv4 *header fields:
 			case IPFIX_TYPEID_sourceIPv4Address:
 				*offset=12;
@@ -108,7 +107,7 @@ bool Template::getFieldOffsetAndHeader(const IeInfo& id, uint16_t *offset, uint1
 				break;
 
 				// ICMP/IGMP header fields:
-			case IPFIX_TYPEID_icmpTypeCode:
+			case IPFIX_TYPEID_icmpTypeCodeIPv4:
 				*offset=0;
 				*header=HEAD_TRANSPORT;
 				*validPacketClass = PCLASS_TRN_ICMP;
@@ -197,6 +196,18 @@ bool Template::getFieldOffsetAndHeader(const IeInfo& id, uint16_t *offset, uint1
 			case IPFIX_TYPEID_destinationIPv6Address:
 			case IPFIX_TYPEID_classOfServiceV6:
 			case IPFIX_TYPEID_flowLabelV6:
+			default:
+				return false;
+		}
+	} else if (ie.enterprise == IPFIX_PEN_vermont) {
+		switch(ie.id) {
+			// Transport layer payload
+			case IPFIX_ETYPEID_frontPayload:
+				*offset=0;
+				*header=HEAD_PAYLOAD;
+				*validPacketClass = PCLASS_PAYLOAD; // any payload
+				break;
+
 			default:
 				return false;
 		}

@@ -41,7 +41,7 @@
 #define HEAD_NETWORK_AND_BEYOND   3  // for fields that might go beyond the network header border
 #define HEAD_TRANSPORT            4  // for fields that lie inside the transport header
 #define HEAD_TRANSPORT_AND_BEYOND 5  // for fields that might go beyond the transport header border
-#define HEAD_PAYLOAD              6
+#define HEAD_PAYLOAD              6  // field containing TCP/UDP payload (in the case of TCP or UDP) or IP payload (otherwise)
 
 
 // Packet classifications
@@ -70,7 +70,9 @@
 #define PCLASS_TRNMASK             0x00fff000
 // .... etc. etc. etc.
 
-// Payload classification (here, payload refers to data beyond transport header)
+// Payload classification
+// If known transport protocol is in use, PCLASS_PAYLOAD refers to data beyond transport header.
+// Otherwise, PCLASS_PAYLOAD refers to data beyond IP header.
 #define PCLASS_PAYLOAD             (1UL << 31)
 
 class Packet :  public ManagedInstance<Packet>, public Emitable
@@ -360,7 +362,7 @@ public:
 	// You can check the packet class for a single field using match(). If you want to check
 	// against all fields in a template, you should use checkPacketConformity() of the Template class.
 	// If enough data for the network/transport header has been captured, is checked by classify().
-	void * getPacketData(unsigned short offset, unsigned short header, unsigned short fieldLength) const
+	void * getPacketData(uint16_t offset, uint16_t header, uint16_t fieldLength) const
 	{
 	    DPRINTF("offset: %d header: %d fieldlen: %d available: %d\n", offset, header, fieldLength, data_length);
 	    switch(header)
@@ -393,7 +395,7 @@ public:
         // determines the encoded available data length and the length of the encoded length value in octets
 	// (=1 if length < 255, =3 if 255 <= length <= 65535)
 	// cf. IPFIX protocol draft
-	void * getVariableLengthPacketData(unsigned short *length, uint8_t **enc_value, unsigned short *enc_len, int offset, int header)
+	void * getVariableLengthPacketData(uint16_t *length, uint8_t **enc_value, uint8_t *enc_len, uint16_t offset, uint16_t header)
 	{
 	    int len;
 	    void *packetdata = NULL;

@@ -290,7 +290,7 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:
-				case IPFIX_TYPEID_icmpTypeCode:
+				case IPFIX_TYPEID_icmpTypeCodeIPv4:
 					if (efd->dstLength != 2) {
 						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
 					}
@@ -433,7 +433,7 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 			case IPFIX_TYPEID_packetDeltaCount:
 				return 1;
 
-			case IPFIX_TYPEID_icmpTypeCode:
+			case IPFIX_TYPEID_icmpTypeCodeIPv4:
 			case IPFIX_TYPEID_sourceTransportPort:
 			case IPFIX_TYPEID_destinationTransportPort:
 			case IPFIX_TYPEID_octetDeltaCount:
@@ -530,7 +530,7 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Pack
 				return 16;
 				break;
 
-			case IPFIX_TYPEID_icmpTypeCode:
+			case IPFIX_TYPEID_icmpTypeCodeIPv4:
 				if(p->ipProtocolType == Packet::ICMP) {
 					return p->transportHeader + 0 - p->netHeader;
 				} else {
@@ -597,7 +597,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
 				case IPFIX_TYPEID_destinationIPv4Address:
 					return false;
 
-				case IPFIX_TYPEID_icmpTypeCode:
+				case IPFIX_TYPEID_icmpTypeCodeIPv4:
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:
 				case IPFIX_TYPEID_tcpControlBits:
@@ -714,7 +714,7 @@ bool PacketHashtable::typeAvailable(const IeInfo& type)
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
-				case IPFIX_TYPEID_icmpTypeCode:
+				case IPFIX_TYPEID_icmpTypeCodeIPv4:
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:
 				case IPFIX_TYPEID_tcpControlBits:

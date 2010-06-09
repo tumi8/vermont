@@ -43,7 +43,7 @@ public:
 	 * @param name the name of the element
 	 *  @param elem the XMLElement we want to start the search, default is the root of the node
 	 */
-	std::string get(const std::string& name, XMLElement* elem = NULL) throw(IllegalEntry);
+	std::string get(const std::string& name, XMLElement* elem = NULL);
 
 	/** searches for an optinal config entry, returns the emtpy string if not found
 	 *  @param name the name of the element
@@ -92,6 +92,9 @@ public:
 
 
 	XMLElement* _elem;
+
+private:
+	std::string _get(const std::string& name, XMLElement* elem) throw(IllegalEntry);
 };
 
 class Cfg : public CfgBase
