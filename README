@@ -1,0 +1,133 @@
+This is VERMONT - VERsatile MONitoring Tool.
+Released under GPL2
+Project website: http://vermont.berlios.de 
+
+------------
+REQUIREMENTS
+------------
+
+VERMONT has been tested on Linux and FreeBSD systems.
+
+For compilation, GNU C/C++ compiler and standard libraries are required,
+as well as the following Ubuntu/Debian packages (or equivalent packages
+of other Linux distributions):
+ - cmake 
+ - libboost-filesystem-dev
+ - libboost-regex-dev
+ - libboost-test-dev
+ - libxml2-dev 
+ - libpcap-dev 
+ - libsctp-dev (if not available, disable cmake option SUPPORT_SCTP)
+
+The following packages are optional:
+ - cmake-curses-gui (ccmake, interactive user interface of cmake)
+ - libpq-dev (for PostGreSQL support)
+    ==> cmake option SUPPORT_PGSQL
+ - libmysqlclient-dev (for MySQL support)
+    ==> cmake option SUPPORT_MYSQL
+ - libgsl-dev (for connection-based sampling with Bloom filters)
+    ==> cmake option USE_GSL
+
+
+-------------------------
+BUILDING AND INSTALLATION
+-------------------------
+
+This project uses cmake for setting platform- and user-specific compile 
+options. In order to generate the Makefile for actual compilation, you 
+need to call in the root of the source directory:
+
+$ cmake .
+
+In order to change the default compile options, use:
+
+$ cmake -D OPTION1=value1 -D OPTION2=value2 ...
+
+To get a list of the most important options, call:
+
+$ cmake -LH
+   
+As a user-friendly alternative, you can use the interactive user 
+interface:
+
+$ ccmake .
+
+If some libraries are installed in custom directories, use:
+
+$ cmake -D CMAKE_PREFIX_PATH=/custom/directory1:/custom/directory2
+
+After successfully generating the Makefile with cmake, start the 
+compilation with:
+
+$ make
+
+Although not strictly necessary, VERMONT binaries and data files can be 
+copied to the usual install location by running:
+
+$ make install 
+
+
+-----------------------
+USAGE AND CONFIGURATION
+-----------------------
+
+In order to run VERMONT, a configuration file is needed which specifies the 
+modules to be used and their parameters:
+
+$ ./vermont -f <config-file>
+
+Example configuration files can be found in configs/.
+A documentation of the available modules and their configuration parameters
+can be found at http://vermont.berlios.de/vermont_module_configuration .
+A snapshot of this file is located at docs/config/. 
+
+Use Ctrl-C to stop VERMONT. If VERMONT does not exit properly, enter Ctrl-C
+for a second time.
+
+
+--------------------------------------
+TRAFFIC CAPTURING AT VLAN MIRROR PORTS
+--------------------------------------
+
+VERMONT can be used to capture traffic at a mirror port of a switch. If
+the mirror port is configured for VLAN traffic, the Ethernet frames will
+usually include a VLAN tag in the Ethernet header, increasing the header 
+length from 14 to 18 bytes.
+
+In order to capture such traffic correctly, you need to set the cmake 
+option IP_HEADER_OFFSET to 18. Furthermore, make sure that the observer
+is configured with <pap_filter> parameter set to "vlan and ip".
+
+
+----------------------------------------------------
+OPERATION AS COLLECTOR: TUNING SOCKET RECEIVE BUFFER
+----------------------------------------------------
+
+VERMONT can be used as an IPFIX/PSAMP and NetFlow.v9 collector. As the 
+incoming IPFIX/PSAMP/NetFlow messages usually arrive in bursts, losses 
+may occur due to insufficient buffer space.
+
+As a solution, the socket receive buffer can be increased. To check the
+current settings, use the following system calls on Linux systems with 
+/proc file system:
+
+$ cat /proc/sys/net/core/rmem_default
+$ cat /proc/sys/net/core/rmem_max
+
+In order to configure a new value X (in bytes), call:
+
+$ sysctl -w net/core/rmem_default=X
+$ sysctl -w net/core/rmem_max=X
+
+
+------------------------------------
+OPTIMIZED PACKET CAPTURING WITH PCAP
+------------------------------------
+
+To reduce the number of times packets need to be copied on their way from
+the network interface card to the user space (i.e., VERMONT), we recommend 
+the utilization of pcap library 1.0.0 or higher.
+
+For earlier versions of pcap, the pcap-mmap patch can be applied to 
+improve the performance: http://public.lanl.gov/cpw/
+
