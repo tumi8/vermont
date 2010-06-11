@@ -867,8 +867,11 @@ Output type: IpfixRecord
 |copyMode |  false  |If true, the Record Anonymizer creates a copy of the incoming record and leaves the original record unchanged. Copy mode should be turned on if the original records are processed by other moduls as well. |
 
 
-== CryptoPanPrefix ==
-This module is a submodule for the RecordAnonymizer mentioned above. It requires some additional configuration elements.
+=== CryptoPanPrefix ===
+This module is a submodule for the RecordAnonymizer mentioned above. It implements a modified version of the CryptoPan anonymization method. 
+The following only applies if the IP address passing through the module matches a subnet configured in the configuration file - elsewise the address is skipped:
+The IP address is split into a network and host identifier according to the specified CIDR, i.e. the CIDR represents the number of bits belonging to the network part. 
+After this splitting is done, only the host part of the IP address is anonymized with the basic CryptoPan algorithm. In a second step, the network part is replaced with the preconfigured subnet given in the configuration file in the **to** field. As seen below, multiple mappings are possible.
 
 **Example configuration**
 <anonRecord id="3">
