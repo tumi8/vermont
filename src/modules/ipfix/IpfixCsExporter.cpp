@@ -320,11 +320,13 @@ void IpfixCsExporter::writeChunkList()
 	msg(MSG_DEBUG, "IpfixCsExporter: writing %u records to disk", chunkList.size());
 
 	while (chunkList.size() > 0){
-		if (fwrite(chunkList.front(), sizeof(Ipfix_basic_flow), 1, currentFile)==0){
+		Ipfix_basic_flow* flow = chunkList.front();
+		if (fwrite(flow, sizeof(Ipfix_basic_flow), 1, currentFile)==0){
 			THROWEXCEPTION("Could not write basic flow data. Check disk space.");
 		}
 
 		chunkList.pop_front();
+		delete flow;
 	}
 	addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
 }
