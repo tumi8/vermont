@@ -28,7 +28,9 @@ ADD_LIBRARY(modules
     analysis/fpsigmatcher/Matcher.c
     analysis/fpsigmatcher/Signature.c
     analysis/fpsigmatcher/Utils.c
-    
+    analysis/AnomalyDetector.cpp
+    analysis/AnomalyDetectorCfg.cpp
+
     packet/Observer.cpp
     packet/ObserverCfg.cpp
     packet/Packet.cpp
