@@ -9,7 +9,6 @@ ADD_EXECUTABLE(mtutest
 TARGET_LINK_LIBRARIES(mtutest
 	ipfixlolib
 	common
-	dl
 )
 SET_TARGET_PROPERTIES(mtutest
 	PROPERTIES
@@ -18,7 +17,6 @@ SET_TARGET_PROPERTIES(mtutest
 TARGET_LINK_LIBRARIES(test_everything
 	ipfixlolib
 	common
-	dl
 )
 
 ADD_EXECUTABLE(example_code
@@ -28,7 +26,6 @@ ADD_EXECUTABLE(example_code
 TARGET_LINK_LIBRARIES(example_code
 	ipfixlolib
 	common
-	dl
 )
 
 ADD_EXECUTABLE(example_code_2
@@ -38,7 +35,6 @@ ADD_EXECUTABLE(example_code_2
 TARGET_LINK_LIBRARIES(example_code_2
 	ipfixlolib
 	common
-	dl
 )
 
 IF (SUPPORT_DTLS)
