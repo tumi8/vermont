@@ -1,0 +1,97 @@
+<ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
+        
+<observer id="1">
+    <filename>DUMP</filename>
+    <pcap_filter>ip</pcap_filter>
+    <next>3</next>
+</observer>
+
+<packetAggregator id="3">
+    <rule>
+        <templateId>998</templateId>
+        <flowKey>
+            <ieName>sourceIPv4Address</ieName>
+        </flowKey>
+        <flowKey>
+            <ieName>destinationIPv4Address</ieName>
+        </flowKey>
+        <flowKey>
+				    <ieName>protocolIdentifier</ieName>
+			  </flowKey>
+			  <flowKey>
+				    <ieName>sourceTransportPort</ieName>
+			  </flowKey>
+			  <flowKey>
+				    <ieName>destinationTransportPort</ieName>
+			  </flowKey>
+        <nonFlowKey>
+            <ieName>flowStartMilliSeconds</ieName>
+        </nonFlowKey>
+        <nonFlowKey>
+            <ieName>flowEndMilliSeconds</ieName>
+        </nonFlowKey>
+        <nonFlowKey>
+            <ieName>octetDeltaCount</ieName>
+        </nonFlowKey>
+        <nonFlowKey>
+            <ieName>packetDeltaCount</ieName>
+        </nonFlowKey>
+    </rule>
+    <expiration>
+        <inactiveTimeout unit="sec">10</inactiveTimeout>
+        <activeTimeout unit="sec">10</activeTimeout>
+    </expiration>
+    <pollInterval unit="msec">1000</pollInterval>
+    <next>5</next>
+</packetAggregator>             
+
+<ipfixAggregator id="5">
+    <rule>
+        <templateId>998</templateId>
+        <biflowAggregation>0</biflowAggregation>
+        <flowKey>
+            <ieName>sourceIPv4Address</ieName>
+        </flowKey>
+        <flowKey>
+            <ieName>destinationIPv4Address</ieName>
+        </flowKey>
+        <flowKey>
+				    <ieName>protocolIdentifier</ieName>
+			  </flowKey>
+			  <flowKey>
+				    <ieName>sourceTransportPort</ieName>
+			  </flowKey>
+			  <flowKey>
+				    <ieName>destinationTransportPort</ieName>
+			  </flowKey>
+        <nonFlowKey>
+            <ieName>flowStartMilliSeconds</ieName>
+        </nonFlowKey>
+        <nonFlowKey>
+            <ieName>flowEndMilliSeconds</ieName>
+        </nonFlowKey>
+        <nonFlowKey>
+            <ieName>octetDeltaCount</ieName>
+        </nonFlowKey>
+        <nonFlowKey>
+            <ieName>packetDeltaCount</ieName>
+        </nonFlowKey>
+    </rule>
+    <expiration>
+        <inactiveTimeout unit="sec">10</inactiveTimeout>
+        <activeTimeout unit="sec">10</activeTimeout>
+    </expiration>
+    <pollInterval unit="msec">1000</pollInterval>
+    <next>8</next>
+</ipfixAggregator> 
+
+<ipfixPrinter id="7">
+</ipfixPrinter>
+
+<anomalyDetector id="8">
+   <analyzerid>anomalyDetector</analyzerid>
+   <subnet>192.44.88.0/24</subnet>
+	 <packetRateThreshold>0.2</packetRateThreshold>
+</anomalyDetector>        
+
+</ipfixConfig>
