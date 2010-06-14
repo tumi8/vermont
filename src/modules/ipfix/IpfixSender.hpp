@@ -24,7 +24,6 @@
 #include "IpfixRecord.hpp"
 #include "IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfixlolib.h"
-#include "common/ConcurrentQueue.h"
 #include "common/Mutex.h"
 #include "core/Notifiable.h"
 #include <queue>

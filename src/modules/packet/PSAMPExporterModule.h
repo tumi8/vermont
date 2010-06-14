@@ -12,10 +12,12 @@
 #ifndef EXPORTER_SINK_H
 #define EXPORTER_SINK_H
 
+#include <pthread.h>
+
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "common/ipfixlolib/ipfix.h"
-#include "common/ConcurrentQueue.h"
 #include "common/msg.h"
+#include "common/Time.h"
 
 #include "common/Thread.h"
 #include "modules/packet/Template.h"

@@ -1,9 +1,10 @@
 /*
- * PSAMP Reference Implementation
- *
- * ConcurrentQueue.h
- *
  * Thread-safe (concurrent) queue implementation
+ * The implementation of the BaseQueue makes it thread-safe
+ *
+ * Make sure that size of T is 4 bytes on 32 bit operating systems
+ * and 8 bytes on 64 bit operating systems accordingly when using
+ * QueueTypes LOCKFREE_SINGLE or LOCKFREE_MULTI
  *
  * Author: Michael Drueing <michael@drueing.de>
  *
@@ -12,9 +13,9 @@
 #ifndef CONCURRENT_QUEUE_H
 #define CONCURRENT_QUEUE_H
 
-#include <queue>
 #include <string>
-#include "Mutex.h"
+#include "BaseQueue.h"
+#include "STLQueue.h"
 #include "TimeoutSemaphore.h"
 #include "msg.h"
 
@@ -27,10 +28,29 @@ class ConcurrentQueue
 		 */
 		static const int DEFAULT_QUEUE_SIZE = 1000;
 
-		ConcurrentQueue(int maxEntries = DEFAULT_QUEUE_SIZE) 
-			: pushedCount(0), poppedCount(0), queue(), count(0), lock(), popSemaphore(), pushSemaphore(maxEntries)
+		/**
+		 * types of queues
+		 */
+		enum QUEUETYPES {STL, LOCKFREE_SINGLE, LOCKFREE_MULTI};
+
+		ConcurrentQueue(int qType = STL, int maxEntries = DEFAULT_QUEUE_SIZE):
+			pushedCount(0), poppedCount(0), count(0), popSemaphore(), pushSemaphore(maxEntries)
 		{
 			this->maxEntries = maxEntries;
+
+			switch(qType){
+				case STL:
+					queue = new STLQueue<T>();
+					break;
+				case LOCKFREE_SINGLE:
+					THROWEXCEPTION("LOCKFREE_SINGLE not yet implemented");
+					break;
+				case LOCKFREE_MULTI:
+					THROWEXCEPTION("LOCKFREE_MULTI not yet implemented");
+					break;
+				default:
+					THROWEXCEPTION("Unknown Queue Type");
+			}
 		};
 
 		~ConcurrentQueue()
@@ -63,11 +83,9 @@ class ConcurrentQueue
 			if (waiting) DPRINTF("(%s) pushing element now", ownerName.c_str());
 #endif
 
-			lock.lock();
-			queue.push(t);
+			queue->push(t);
 			pushedCount++;
 			count++;
-			lock.unlock();
 
 			popSemaphore.post();
 			DPRINTFL(MSG_VDEBUG, "(%s) element pushed (%d elements in queue)", ownerName.c_str(), maxEntries-pushSemaphore.getCount(), pushSemaphore.getCount(), maxEntries);
@@ -78,17 +96,15 @@ class ConcurrentQueue
 			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)",
 					(ownerName.empty() ? "<owner not set>" : ownerName.c_str()),
 					maxEntries-pushSemaphore.getCount());
+
 			if (!popSemaphore.wait()) {
 				DPRINTF("(%s) failed to pop element, program is being shut down?", ownerName.c_str());
 				return false;
 			}
 
-			lock.lock();
-			*res = queue.front();
-			queue.pop();
+			queue->pop(res);
 			poppedCount++;
 			count--;
-			lock.unlock();
 
 			pushSemaphore.post();
 
@@ -111,12 +127,9 @@ class ConcurrentQueue
 			}
 
 			// popSemaphore.wait() succeeded, now pop the frontmost element
-			lock.lock();
-			*res = queue.front();
-			queue.pop();
+			queue->pop(res);
 			poppedCount++;
 			count--;
-			lock.unlock();
 
 			pushSemaphore.post();
 
@@ -131,27 +144,23 @@ class ConcurrentQueue
 		{
 			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
 			
-			if (popSemaphore.waitAbs(timeout)) {
-				// popSemaphore.wait() succeeded, now pop the frontmost element
-				lock.lock();
-				*res = queue.front();
-				queue.pop();
-				poppedCount++;
-				count--;
-				lock.unlock();
-
-				pushSemaphore.post();
-
-				DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
-
-				return true;
-			} else {
+			if (!popSemaphore.waitAbs(timeout)) {
 				// timeout occured
 				DPRINTFL(MSG_VDEBUG, "(%s) timeout or program shutdown", ownerName.c_str());
 				*res = 0;
-
 				return false;
 			}
+
+			// popSemaphore.waitAbs() succeeded, now pop the frontmost element
+			queue->pop(res);
+			poppedCount++;
+			count--;
+
+			pushSemaphore.post();
+
+			DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
+
+			return true;
 		}
 		
 		// like pop above, but with absolute time instead of delta.
@@ -160,28 +169,24 @@ class ConcurrentQueue
 		{
 			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
 		
-			if (popSemaphore.waitAbs(timeout)) {
-				// popSemaphore.wait() succeeded, now pop the frontmost element
-				lock.lock();
-				*res = queue.front();
-				queue.pop();
-				poppedCount++;
-				count--;
-				lock.unlock();
-		
-				pushSemaphore.post();
-		
-				DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
-		
-				return true;
-			}
-			else {
+			if (!popSemaphore.waitAbs(timeout)) {
 				// timeout occured
 				DPRINTFL(MSG_VDEBUG, "(%s) timeout or program shutdown", ownerName.c_str());
 				*res = 0;
 		
 				return false;
 			}
+
+			// popSemaphore.waitAbs() succeeded, now pop the frontmost element
+			queue->pop(res);
+			poppedCount++;
+			count--;
+
+			pushSemaphore.post();
+
+			DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
+
+			return true;
 		}
 
 		inline int getCount() const
@@ -216,9 +221,8 @@ class ConcurrentQueue
 		int maxEntries;
 
 	protected:
-		std::queue<T> queue;
+		BaseQueue<T>* queue;
 		volatile int count;
-		Mutex lock;
 		TimeoutSemaphore popSemaphore;
 		TimeoutSemaphore pushSemaphore;
 		std::string ownerName;
