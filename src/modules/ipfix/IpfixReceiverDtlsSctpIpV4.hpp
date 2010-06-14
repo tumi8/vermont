@@ -36,6 +36,7 @@
 #ifdef SUPPORT_DTLS
 
 #include "common/openssl/SSLCTXWrapper.hpp"
+#include "common/openssl/OpenSSL.h"
 
 #include <openssl/ssl.h>
 #ifndef HEADER_DH_H

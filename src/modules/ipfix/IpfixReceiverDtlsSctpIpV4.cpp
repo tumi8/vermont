@@ -20,13 +20,10 @@
  */
 
 #ifdef SUPPORT_DTLS_OVER_SCTP
-#include "ipfixlolib/ipfixlolib.h"
-
 #include "IpfixReceiverDtlsSctpIpV4.hpp"
 
 #include "IpfixPacketProcessor.hpp"
 #include "IpfixParser.hpp"
-#include "ipfix.hpp"
 #include "common/msg.h"
 
 #include <stdexcept>
