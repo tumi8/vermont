@@ -137,10 +137,11 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	const char* xmlglobals = "\t\t<%s>%s</%s>\n";
 
 	string lockfile = outputFilename + ".lock";
+	bool haveGraphLock;
 
 	// we must not wait for the graph lock, else there may be a race condition with
 	// the ConfigManager
-	while (!graphIS->tryLockGraph()) {
+	while (! (haveGraphLock = graphIS->tryLockGraph())) {
 		if (smExitFlag) break;
 		timespec timeout = { 0, 200000 };
 		nanosleep(&timeout, NULL);
@@ -212,9 +213,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	fprintf(file, "%s", xmlpost);
 	fclose(file);
 
-
-
-	graphIS->unlockGraph();
+	if (haveGraphLock) graphIS->unlockGraph();
 }
 
 void SensorManager::collectDataWorker()
