@@ -136,6 +136,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (optind != argc) {
+		fprintf(stderr,"unrecognized option '%s'\n",argv[optind]);
 		usage(argv[0]); return -1;
 	}
 

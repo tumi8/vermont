@@ -66,12 +66,13 @@
 		<key>configs/example_certs/exporter_key.pem</key>
 		<CAfile>configs/example_certs/vermontCA.pem</CAfile>
 		<CApath>/etc/ssl/certs</CApath>
-		<dtlsMaxConnectionLifetime unit="sec">10</dtlsMaxConnectionLifetime>
+		<dtlsMaxConnectionLifetime unit="sec">3600</dtlsMaxConnectionLifetime>
 		<collector>
 			<ipAddressType>4</ipAddressType>
 			<ipAddress>127.0.0.1</ipAddress>
 			<transportProtocol>DTLS_OVER_UDP</transportProtocol>
 			<peerFqdn>collector.example.com</peerFqdn>
+			<mtu>60000</mtu>
 		</collector>
 	</ipfixExporter>
 </ipfixConfig>
