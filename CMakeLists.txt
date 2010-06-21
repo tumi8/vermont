@@ -151,8 +151,18 @@ OPTION(DEBUG "Enable debug code. Vermont will run significantly slower if enable
 IF (DEBUG)
 	message(STATUS "Configuring build process for debug version")
 	REMOVE_DEFINITIONS(-O3)
-	ADD_DEFINITIONS(-O0 -g -pg -Wall -DDEBUG)
-	SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "-g -pg")
+	
+	if (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+		### FreeBSDs compilers have problems if profiling is enabled and exceptions are used
+		### with 8-STABLE and 7-STABLE (as of June 21th 2010). Some exceptions will not be 
+		### caugth if -pg is given at compile time.  We therefore disable profiling for FreeBSD
+		MESSAGE(STATUS "Detected a FreeBSD system. Not including profiling support in DEBUG mode")
+		ADD_DEFINITIONS(-O0 -g -Wall -DDEBUG)
+		SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "-g")
+	ELSE (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+		ADD_DEFINITIONS(-O0 -g -pg -Wall -DDEBUG)
+		SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "-g -pg")
+	ENDIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 ELSE (DEBUG)
 	REMOVE_DEFINITIONS(-O0 -g -pg -Wall -Werror -DDEBUG)
 	ADD_DEFINITIONS(-O3)
