@@ -28,7 +28,7 @@
 PCAPExporterPipeCfg::PCAPExporterPipeCfg(XMLElement* elem) 
 	: CfgHelper<PCAPExporterPipe, PCAPExporterPipeCfg>(elem, "pcapExporterPipe"), 
         link_type(DLT_EN10MB), snaplen(PCAP_MAX_CAPTURE_LENGTH), sigkilltimeout(1),
-        logFileName(""), fifoReaderCmd("")
+        logFileName(""), fifoReaderCmd(""), appenddate(false)
 { 
 	if (!elem) return;
 
@@ -53,7 +53,9 @@ PCAPExporterPipeCfg::PCAPExporterPipeCfg(XMLElement* elem)
             sigkilltimeout = getInt("sigkilltimeout", 1, e);
         } else if(e->matches("fiforeadercmd")){
             fifoReaderCmd = e->getFirstText();
-        }
+        }else if(e->matches("appenddate")){
+			appenddate = getBool("appenddate", false, e);
+		}
 	}
 } 
 
@@ -75,6 +77,7 @@ PCAPExporterPipe* PCAPExporterPipeCfg::createInstance()
 	instance->setSnaplen(snaplen);
     instance->setSigKillTimeout(sigkilltimeout);
     instance->setPipeReaderCmd(fifoReaderCmd);
+	instance->setAppendDate(appenddate);
 	return instance;
 }
 
@@ -84,7 +87,8 @@ bool PCAPExporterPipeCfg::deriveFrom(PCAPExporterPipeCfg* old)
         link_type != old->link_type ||
         snaplen != old->snaplen ||
         fifoReaderCmd != old->fifoReaderCmd || 
-        sigkilltimeout != old->sigkilltimeout 
+        sigkilltimeout != old->sigkilltimeout ||
+		appenddate != old->appenddate
         ) return false;
 	return true; // FIXME: implement
 }
