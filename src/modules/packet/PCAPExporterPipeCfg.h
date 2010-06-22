@@ -48,6 +48,7 @@ private:
 	int link_type;
 	int snaplen;
     int sigkilltimeout;
+	bool appenddate;
 	std::string logFileName;
     std::string fifoReaderCmd;
 };

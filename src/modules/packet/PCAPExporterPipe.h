@@ -27,6 +27,7 @@
 
 #include <string>
 #include <pcap.h>
+#include <ctime>
 #include "PCAPExporterBase.h"
 
 class Packet;
@@ -38,9 +39,13 @@ public:
 	~PCAPExporterPipe();
     void setPipeReaderCmd(const std::string& cmd);
     void setSigKillTimeout(int s);
+	void restartProcess();
+	void setAppendDate(bool b);
+	bool isRunning(std::string &pPath);
     int execCmd(std::string& cmd);
     void kill_all(int ppid);
     void kill_pid(int ppid);
+    void startProcess();
     bool checkint(const char *my_string);
 
 //    virtual void postReconfiguration();
@@ -56,10 +61,16 @@ private:
 
 	std::string logFileName;
 	std::string fifoReaderCmd;
+	std::string procPath;
+	bool appenddate;
     int fifoReaderPid;
 	pcap_t* dummy;
     int sigKillTimeout;
     int fd[2];
+	int child_parent_pipe[2];
+	int counter;
+	time_t last_check;
 };
+
 
 #endif

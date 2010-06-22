@@ -768,9 +768,10 @@ Output type: none
 </code>
 **Parameters:**
 |  **Element name**  |  **Default value**  |  **Description**  |
-|logfilebasename |  none  |If specified, STDOUT and STDERR of fiforeadercmd will be redircted into this file. The given parameter will be suffixed with the current time and date |
+|logfilebasename |  none  |If specified, STDOUT and STDERR of fiforeadercmd will be redircted into this file. |
 |fiforeadercmd|  none  |A single (i.e. no shell) command, which must read PCAP files via STDIN. |
 |sigkilltimeout|  1  |Maximum additional waiting time in seconds, until a SIGKILL is sent to the reader process on module shutdown. |
+|appenddate |  false  |If set to true, the logfilename given as logfilebasename will be suffixed with the current time and date |
 |linkType |  EN10MB  |Data link type of the output file. Names are DLT_ names form the pcap man page with the DLT_ removed (see `man pcap') |
 |snaplen |  PCAP_MAX_  |Snaplen for the pcap file |
 | |  CAPTURE_LENGTH  | |
