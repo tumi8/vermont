@@ -131,3 +131,41 @@ the utilization of pcap library 1.0.0 or higher.
 For earlier versions of pcap, the pcap-mmap patch can be applied to 
 improve the performance: http://public.lanl.gov/cpw/
 
+
+-------------------------------------
+EFFECTS OF RECEIVE OFFLOAD MECHANISMS
+-------------------------------------
+
+Several mechanisms have been implemented in modern network interface cards,
+drivers, and kernels to offload common functions from the protocol stack and 
+the application. One particular focus is on TCP segmentation and reassembly.
+
+Receive offload mechanisms aim at reassembling subsequent TCP segments into
+a single large packet before passing it to the IP/TCP protocol stack and 
+finally to the application. In the Linux kernel, this is done by generic 
+receive offload (GRO) if the network interface card and the driver support 
+NAPI. Latest Intel 10GE controllers (e.g., 82599) support receive side 
+coalescing (RSC) which performs TCP reassembly in hardware.
+
+If any receive offload mechanism is enabled, VERMONT (like any other 
+pcap-based application) does not observe the actually captured TCP packets 
+but the reassembled ones. One consequence is that packet counts of flows will 
+be smaller than the true number of packets.
+
+In order to avoid such distortions, all receive offload mechanisms need to 
+be disabled. In the case of GRO (and the older LRO), this can be done with 
+ethtool. The following call returns a list of the current status of all 
+offload mechanisms for interface <dev>:
+
+$ ethtool -k <dev>
+
+If GRO is not shown, you probably need to install a newer version of ethtool.
+To disable GRO (and LRO), execute:
+
+$ ethtool -K <dev> gro off
+$ ethtool -K <dev> lro off
+
+Hardware-based RSC can be deactivated at compile time of the driver as 
+explained here:
+http://downloadmirror.intel.com/19004/eng/README-2.0.72.4.txt
+
