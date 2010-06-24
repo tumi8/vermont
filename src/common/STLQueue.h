@@ -22,8 +22,8 @@ class STLQueue : public BaseQueue<T>
 		~STLQueue() {};
 
 		/**
-		 * enqueues a pointer to an element of type T in the queue
-		 * @param element pointer to the element which will be enqueued.
+		 * enqueues an element of type T in the queue
+		 * @param element which will be enqueued.
 		 * @return always true
 		 */
 		inline bool push(T element){
@@ -35,11 +35,14 @@ class STLQueue : public BaseQueue<T>
 		}
 
 		/**
-		 * returns the first pointer to an element of type T in queue
-		 * and removes this pointer from the queue
+		 * returns the first element of type T in queue
+		 * and removes it from the queue
 		 * @return first pointer in the queue
 		 */
 		inline bool pop(T* element){
+			if(queue.empty())
+				return false;
+
 			lock.lock();
 			*element = queue.front();
 			queue.pop();

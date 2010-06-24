@@ -4,7 +4,7 @@
  *
  * Make sure that size of T is 4 bytes on 32 bit operating systems
  * and 8 bytes on 64 bit operating systems accordingly when using
- * QueueTypes LOCKFREE_SINGLE or LOCKFREE_MULTI
+ * QueueType LOCKFREE_MULTI
  *
  * Author: Michael Drueing <michael@drueing.de>
  *
@@ -16,6 +16,8 @@
 #include <string>
 #include "BaseQueue.h"
 #include "STLQueue.h"
+#include "LockfreeSingleQueue.h"
+#include "LockfreeMultiQueue.h"
 #include "TimeoutSemaphore.h"
 #include "msg.h"
 
@@ -34,7 +36,7 @@ class ConcurrentQueue
 		enum QUEUETYPES {STL, LOCKFREE_SINGLE, LOCKFREE_MULTI};
 
 		ConcurrentQueue(int qType = STL, int maxEntries = DEFAULT_QUEUE_SIZE):
-			pushedCount(0), poppedCount(0), count(0), popSemaphore(), pushSemaphore(maxEntries)
+			pushedCount(0), poppedCount(0), popSemaphore(), pushSemaphore(maxEntries)
 		{
 			this->maxEntries = maxEntries;
 
@@ -43,10 +45,10 @@ class ConcurrentQueue
 					queue = new STLQueue<T>();
 					break;
 				case LOCKFREE_SINGLE:
-					THROWEXCEPTION("LOCKFREE_SINGLE not yet implemented");
+					queue = new LockfreeSingleQueue<T>(maxEntries);
 					break;
 				case LOCKFREE_MULTI:
-					THROWEXCEPTION("LOCKFREE_MULTI not yet implemented");
+					queue = new LockfreeMultiQueue<T>(maxEntries);
 					break;
 				default:
 					THROWEXCEPTION("Unknown Queue Type");
@@ -55,8 +57,8 @@ class ConcurrentQueue
 
 		~ConcurrentQueue()
 		{
-			if(count != 0) {
-				msg(MSG_DEBUG, "WARNING: freeing non-empty queue - got count: %d", count);
+			if(getCount() != 0) {
+				msg(MSG_DEBUG, "WARNING: freeing non-empty queue - got count: %d", getCount());
 			}
 		};
 
@@ -67,12 +69,12 @@ class ConcurrentQueue
 
 		inline void push(T t)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to push element (%d elements in queue)", ownerName.c_str(), count);
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to push element (%d elements in queue)", ownerName.c_str(), getCount());
 #if defined(DEBUG)
 			bool waiting = false;
 			if (pushSemaphore.getCount() == 0) {
 				waiting = true;
-				DPRINTFL(MSG_DEBUG, "(%s) queue is full with %d elements, waiting ...", ownerName.c_str(), count);
+				DPRINTFL(MSG_DEBUG, "(%s) queue is full with %d elements, waiting ...", ownerName.c_str(), getCount());
 			}
 #endif
 			if (!pushSemaphore.wait()) {
@@ -83,9 +85,9 @@ class ConcurrentQueue
 			if (waiting) DPRINTF("(%s) pushing element now", ownerName.c_str());
 #endif
 
-			queue->push(t);
+			if(!queue->push(t))
+				THROWEXCEPTION("Could not push element");
 			pushedCount++;
-			count++;
 
 			popSemaphore.post();
 			DPRINTFL(MSG_VDEBUG, "(%s) element pushed (%d elements in queue)", ownerName.c_str(), maxEntries-pushSemaphore.getCount(), pushSemaphore.getCount(), maxEntries);
@@ -102,9 +104,9 @@ class ConcurrentQueue
 				return false;
 			}
 
-			queue->pop(res);
+			if(!queue->pop(res))
+				THROWEXCEPTION("Could not pop element");
 			poppedCount++;
-			count--;
 
 			pushSemaphore.post();
 
@@ -118,7 +120,7 @@ class ConcurrentQueue
 		// of the timeout has been reached, res will be set to NULL and false will be returned
 		inline bool pop(long timeout_ms, T *res)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), getCount());
 			// try to get an item from the queue
 			if(!popSemaphore.wait(timeout_ms)) {
 				// timeout occured
@@ -127,9 +129,9 @@ class ConcurrentQueue
 			}
 
 			// popSemaphore.wait() succeeded, now pop the frontmost element
-			queue->pop(res);
+			if(!queue->pop(res))
+				THROWEXCEPTION("Could not pop element");
 			poppedCount++;
-			count--;
 
 			pushSemaphore.post();
 
@@ -142,7 +144,7 @@ class ConcurrentQueue
 		// use this instead of the above, makes things easier!
 		inline bool popAbs(const struct timeval &timeout, T *res)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), getCount());
 			
 			if (!popSemaphore.waitAbs(timeout)) {
 				// timeout occured
@@ -152,9 +154,9 @@ class ConcurrentQueue
 			}
 
 			// popSemaphore.waitAbs() succeeded, now pop the frontmost element
-			queue->pop(res);
+			if(!queue->pop(res))
+				THROWEXCEPTION("Could not pop element");
 			poppedCount++;
-			count--;
 
 			pushSemaphore.post();
 
@@ -167,7 +169,7 @@ class ConcurrentQueue
 		// use this instead of the above, makes things easier!
 		inline bool popAbs(const struct timespec& timeout, T *res)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
+			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), getCount());
 		
 			if (!popSemaphore.waitAbs(timeout)) {
 				// timeout occured
@@ -178,9 +180,9 @@ class ConcurrentQueue
 			}
 
 			// popSemaphore.waitAbs() succeeded, now pop the frontmost element
-			queue->pop(res);
+			if(!queue->pop(res))
+				THROWEXCEPTION("Could not pop element");
 			poppedCount++;
-			count--;
 
 			pushSemaphore.post();
 
@@ -191,7 +193,7 @@ class ConcurrentQueue
 
 		inline int getCount() const
 		{
-			return count;
+			return pushedCount - poppedCount;
 		};
 		
 		
@@ -214,6 +216,7 @@ class ConcurrentQueue
 		{
 			popSemaphore.restart();
 			pushSemaphore.restart();
+			queue->reset();
 		}
 
 		int pushedCount;
@@ -222,7 +225,6 @@ class ConcurrentQueue
 
 	protected:
 		BaseQueue<T>* queue;
-		volatile int count;
 		TimeoutSemaphore popSemaphore;
 		TimeoutSemaphore pushSemaphore;
 		std::string ownerName;

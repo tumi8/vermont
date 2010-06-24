@@ -1,5 +1,5 @@
 SUBDIRS(
 	vermonttest
 	ipfixlolib
-	componenttest
+	component
 )

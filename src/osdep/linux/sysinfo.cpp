@@ -173,5 +173,18 @@ unsigned long long getHertzValue()
 	return Hertz; 
 }
 
+/**
+ * returns the size of cache line of the processor in bytes
+ * if query fails, 64 bytes will be the default value
+ */
+int getCachelineSize()
+{
+	uint32_t size;
+	if((size = sysconf(_SC_LEVEL1_DCACHE_LINESIZE)) != -1)
+		return size;
+	else
+		return 64;
+}
+
 #endif // __linux__
 

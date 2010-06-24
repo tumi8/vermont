@@ -12,18 +12,18 @@ static void usage();
 
 int main(int argc, char* argv[])
 {
-	int replication = 1;
+	uint32_t replication = 1;
 	char* outputFile = (char*)"componentTestOut.txt";
 
 	//Queue
-	int queueType = 0;
-	int numQueueProducers = 1;
-	int queueSize = 1000;
-	int numQueueOps = 1000000;
+	uint32_t queueType = 0;
+	uint32_t numQueueProducers = 1;
+	uint32_t queueSize = 1000;
+	uint32_t numQueueOps = 1000000;
 
 	//get command line parameter
 	while (1) {
-		int c;
+		uint32_t c;
 		static struct option long_options[] =
 		{
 			{"qprod", 1, 0, '0'},
@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 		outf << " operations:" << numQueueOps << endl;
 		outf.close();
 
-		for(int i=0; i<replication; i++){
+		for(uint32_t i=0; i<replication; i++){
 			res = test.runTest(numQueueOps);
 
 			//write to outfile
