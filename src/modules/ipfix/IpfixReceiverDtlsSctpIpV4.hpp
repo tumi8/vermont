@@ -33,6 +33,10 @@
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
 
+#if defined(SUPPORT_DTLS_OVER_SCTP) && !defined(OPENSSL_SCTP)
+# error OpenSSL built without SCTP support. Rebuild OpenSSL with SCTP support or turn off SUPPORT_DTLS_OVER_SCTP
+#endif
+
 #ifdef SUPPORT_DTLS
 
 #include "common/openssl/SSLCTXWrapper.hpp"

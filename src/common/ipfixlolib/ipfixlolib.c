@@ -55,6 +55,10 @@ extern "C" {
 
 #define bit_set(data, bits) ((data & bits) == bits)
 
+#if defined(SUPPORT_DTLS_OVER_SCTP) && !defined(OPENSSL_SCTP)
+# error OpenSSL built without SCTP support. Rebuild OpenSSL with SCTP support or turn off SUPPORT_DTLS_OVER_SCTP
+#endif
+
 #ifdef SUPPORT_DTLS
 static int ensure_exporter_set_up_for_dtls(ipfix_exporter *exporter);
 static void deinit_openssl_ctx(ipfix_exporter *exporter);
