@@ -4,6 +4,7 @@ ADD_LIBRARY(core
 	Connector.cpp
 	Graph.cpp
 	GraphInstanceSupplier.cpp
+	MainSignalHandler.cpp
 	Module.cpp
 	SensorManager.cpp
 	Node.cpp

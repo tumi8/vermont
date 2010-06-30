@@ -29,19 +29,21 @@
 #include <pcap.h>
 #include <ctime>
 #include "PCAPExporterBase.h"
+#include <common/SignalInterface.h>
 
 class Packet;
 
-class PCAPExporterPipe : public Module, public Destination<Packet *>, public Source<Packet *>, public PCAPExporterBase
+class PCAPExporterPipe : public Module, public Destination<Packet *>, public Source<Packet *>, public PCAPExporterBase, public SignalInterface
 {
 public:
 	PCAPExporterPipe(const std::string& file);
 	~PCAPExporterPipe();
     void setPipeReaderCmd(const std::string& cmd);
     void setSigKillTimeout(int s);
-	void restartProcess();
+	virtual void handleSigChld(int i);
+	virtual void handleSigPipe(int sig);
 	void setAppendDate(bool b);
-	bool isRunning(std::string &pPath);
+	bool isRunning(int pid);
     int execCmd(std::string& cmd);
     void kill_all(int ppid);
     void kill_pid(int ppid);
@@ -61,7 +63,6 @@ private:
 
 	std::string logFileName;
 	std::string fifoReaderCmd;
-	std::string procPath;
 	bool appenddate;
     int fifoReaderPid;
 	pcap_t* dummy;
@@ -70,6 +71,7 @@ private:
 	int child_parent_pipe[2];
 	int counter;
 	time_t last_check;
+	volatile bool onRestart;
 };
 
 
