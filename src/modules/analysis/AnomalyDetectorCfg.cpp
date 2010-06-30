@@ -11,7 +11,11 @@ AnomalyDetectorCfg* AnomalyDetectorCfg::create(XMLElement* e)
 }
 
 AnomalyDetectorCfg::AnomalyDetectorCfg(XMLElement* elem)
-    : CfgHelper<AnomalyDetector, AnomalyDetectorCfg>(elem, "anomalyDetector")
+    : CfgHelper<AnomalyDetector, AnomalyDetectorCfg>(elem, "anomalyDetector"),
+    subnetmask(0),
+    packetRateThreshold(0),
+    emaTimeout(0)
+    
 {
     if (!elem) return;
 
@@ -36,6 +40,8 @@ AnomalyDetectorCfg::AnomalyDetectorCfg(XMLElement* elem)
                     subnetmask = htonl(subnetmask);
                 } else if (e->matches("packetRateThreshold")) {
                     packetRateThreshold = getDouble("packetRateThreshold");
+                } else if (e->matches("emaTimeout")) {
+                    emaTimeout = getDouble("emaTimeout");
 		            } else if (e->matches("analyzerid")) {
 			              analyzerId = e->getFirstText();
 		            } else if (e->matches("idmeftemplate")) {
@@ -46,6 +52,9 @@ AnomalyDetectorCfg::AnomalyDetectorCfg(XMLElement* elem)
                     continue;
                 }
             }
+            if (subnetmask == 0) THROWEXCEPTION("AnomalyDetectorCfg: subnetmask not set in configuration!");
+            if (packetRateThreshold == 0) THROWEXCEPTION("AnomalyDetectorCfg: packetRateThreshold not set in configuration!");
+            if (emaTimeout == 0) THROWEXCEPTION("AnomalyDetectorCfg: emaTimeout not set in configuration!");
             if (analyzerId=="") THROWEXCEPTION("AnomalyDetectorCfg: analyzerid not set in configuration!");
             //if (idmefTemplate=="") THROWEXCEPTION("AnomalyDetectorCfg: idmeftemplate not set in configuration!");
 }
@@ -56,7 +65,7 @@ AnomalyDetectorCfg::~AnomalyDetectorCfg()
 
 AnomalyDetector* AnomalyDetectorCfg::createInstance()
 {
-    instance = new AnomalyDetector(subnet, subnetmask, packetRateThreshold, analyzerId, idmefTemplate);
+    instance = new AnomalyDetector(subnet, subnetmask, packetRateThreshold, emaTimeout, analyzerId, idmefTemplate);
     return instance;
 }
 

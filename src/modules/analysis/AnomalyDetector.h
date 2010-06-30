@@ -35,7 +35,7 @@ class AnomalyDetector
 	        public Source<IDMEFMessage*>
 {
     public:
-        AnomalyDetector(uint32_t subnet, uint32_t subnetmask, double packetRateThreshold, string analyzerid, string idmeftemplate);
+        AnomalyDetector(uint32_t subnet, uint32_t subnetmask, double packetRateThreshold, double emaTimeout, string analyzerid, string idmeftemplate);
                                 
         virtual ~AnomalyDetector();
           
@@ -43,13 +43,21 @@ class AnomalyDetector
           
     private:
 
-        float alpha;          // smoothing factor for EMA
+        float alpha;     // smoothing factor for EMA
 
-        map<uint32_t, float> emaMap;  // map for EMA values (host, ema)
+        struct EmaEntry {
+              uint32_t binVal;  // current bin value on time axis (seconds)
+              float numPackets; // number of packets for current bin
+              float ema;        // EMA for this bin
+        };
+
+        map<uint32_t, EmaEntry> srcHostMap;  // map for EMA values of outgoing packets (local host is source)
+        map<uint32_t, EmaEntry> dstHostMap;  // map for EMA values of incoming packets (local host is destination)
         
         uint32_t subnet;
         uint32_t subnetmask;
-        double packetRateThreshold;
+        double packetRateThreshold; // packetRate threshold for identification of an attack
+        double emaTimeout;
 	      string analyzerId;
 	      string idmefTemplate;
 

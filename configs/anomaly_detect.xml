@@ -38,10 +38,10 @@
      </nonFlowKey>
    </rule>
    <expiration>
-      <inactiveTimeout unit="sec">10</inactiveTimeout>
-      <activeTimeout unit="sec">10</activeTimeout>
+      <inactiveTimeout unit="sec">1</inactiveTimeout>
+      <activeTimeout unit="sec">1</activeTimeout>
    </expiration>
-   <pollInterval unit="msec">1000</pollInterval>
+   <pollInterval unit="msec">500</pollInterval>
    <next>5</next>
 </packetAggregator>             
 
@@ -78,17 +78,18 @@
      </nonFlowKey>
    </rule>
    <expiration>
-      <inactiveTimeout unit="sec">10</inactiveTimeout>
-      <activeTimeout unit="sec">10</activeTimeout>
+      <inactiveTimeout unit="sec">1</inactiveTimeout>
+      <activeTimeout unit="sec">1</activeTimeout>
    </expiration>
-   <pollInterval unit="msec">1000</pollInterval>
+   <pollInterval unit="msec">500</pollInterval>
       <next>8</next>
 </ipfixAggregator> 
 
 <anomalyDetector id="8">
    <analyzerid>anomalyDetector</analyzerid>
    <subnet>192.44.88.0/24</subnet>
-   <packetRateThreshold>0.2</packetRateThreshold>
+   <emaTimeout>10</emaTimeout><!-- timeintervals, currently seconds -->
+   <packetRateThreshold>10</packetRateThreshold>
 </anomalyDetector>        
 
 </ipfixConfig>
