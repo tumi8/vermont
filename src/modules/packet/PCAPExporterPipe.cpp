@@ -1,6 +1,7 @@
 /*
  * Vermont PCAP Exporter
- * Copyright (C) 2009 Vermont Project
+ * Copyright (C) 2010 Vermont Project
+ * Copyright (C) 2010 Thomas Hauenstein <sithhaue@users.berlios.de>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,11 +23,11 @@
 
 #include "modules/packet/Packet.h"
 #include <unistd.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <cstdlib>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <signal.h>
 #include <fstream>
 #include <vector>
 #include <cstring>
@@ -34,18 +35,12 @@
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <sys/wait.h>
-#include <pthread.h>
+#include <common/SignalHandler.h>
 
 namespace bfs = boost::filesystem;
 
-PCAPExporterPipe *pcappipe_this_pointer;
-
-void handle_sigchld(int signal){
-	pcappipe_this_pointer->restartProcess();
-}
-
 PCAPExporterPipe::PCAPExporterPipe(const std::string& logfile)
-	: logFileName(logfile), fifoReaderCmd(""), procPath(""),
+	: logFileName(logfile), fifoReaderCmd(""), onRestart(false),
 	appenddate(false),  fifoReaderPid(0), dummy(NULL), 
 	sigKillTimeout(1),counter(0), last_check(0)
 {
@@ -72,7 +67,7 @@ void PCAPExporterPipe::setSigKillTimeout(int s)
 
 int PCAPExporterPipe::execCmd(std::string& cmd)
 {
-		//char *command[] = {"tcpdump","-nr", "-" , (char*)0}; //"-w", "/tmp/pcap.dump",(char*)0};
+	//char *command[] = {"tcpdump","-nr", "-" , (char*)0}; //"-w", "/tmp/pcap.dump",(char*)0};
 	char *command[64];
 	char tmp[1024];
 	if (strlen(cmd.c_str()) > 1023) {
@@ -153,7 +148,7 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 		if (execvp(command[0], command)<0) {
 			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
 				THROWEXCEPTION("exec failed"); //throw the exception only if we couldn't
-			//tell the parent that sth. went wrong...
+												//tell the parent that sth. went wrong...
 			exit(1);
 		}
 	} else if (pid > 0) {
@@ -162,7 +157,6 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 		if (read(child_parent_pipe[0], &buf, sizeof(int)) == sizeof(int)) { //The child actually wrote errno into the pipe
 			THROWEXCEPTION("An error occurred in the child: %s", strerror(buf));
 		}
-		procPath = "/proc/" + boost::lexical_cast<std::string>(pid);
 		return pid;
 	} else { 
 		THROWEXCEPTION("fork() failed");
@@ -177,10 +171,8 @@ void PCAPExporterPipe::performStart()
 	if(last_check == (time_t) -1)
 		THROWEXCEPTION("time() failed");
 
-	pcappipe_this_pointer = this;
-	if(signal(SIGCHLD, handle_sigchld) == SIG_ERR)
-		THROWEXCEPTION("signal");
-
+	SignalHandler::getInstance().registerSignalHandler(SIGCHLD, this);
+	SignalHandler::getInstance().registerSignalHandler(SIGPIPE, this);
 	dummy = pcap_open_dead(link_type, snaplen);
 	if (!dummy) {
 		THROWEXCEPTION("Could not open dummy device: %s", errbuf);
@@ -210,6 +202,8 @@ void PCAPExporterPipe::performStart()
 
 void PCAPExporterPipe::performShutdown()
 {
+	SignalHandler::getInstance().unregisterSignalHandler(SIGCHLD, this);
+	SignalHandler::getInstance().unregisterSignalHandler(SIGPIPE, this);
 	msg(MSG_DEBUG, "Performing shutdown for PID %d", fifoReaderPid);
 	sleep(1);
 	if (dumper) {
@@ -247,29 +241,36 @@ void PCAPExporterPipe::startProcess()
 }
 
 void PCAPExporterPipe::receive(Packet* packet) {
-	//TODO check overhead of isRunning....
+	if(onRestart){
+		 msg(MSG_ERROR, "Can't process packets while restarting fifoReaderCmd");
+		 return;
+	}
 	if(fifoReaderPid == 0){
 		 msg(MSG_ERROR, "fifoReaderPid = 0...this might happen during reconfiguration");
 		 return; 
 	}
 	writePCAP(packet);
 }
-void PCAPExporterPipe::restartProcess(){
-	if(exitFlag) return;
+void PCAPExporterPipe::handleSigPipe(int sig){
+	handleSigChld(SIGCHLD);
+}
+void PCAPExporterPipe::handleSigChld(int sig){
+	if(onRestart || exitFlag || isRunning(fifoReaderPid)) return;
+	onRestart = true;
 	counter++;
 	time_t tmp;
 	time(&tmp);
 	if(tmp== (time_t) -1)
 		THROWEXCEPTION("time() failed");
-	//
-	// reset the counter when the last restart was more than 5 seconds ago
+	
+	// reset the counter if the last restart was more than 5 seconds ago
 	if((tmp -last_check) > 5) counter = 0; 
 
-	if(counter > 5 && (tmp - last_check ) < 1)
+	if(counter > 5 && (tmp - last_check ) < 5)
 		THROWEXCEPTION("Too many restarts in a short time period. Maybe your commandline is erroneous");
 		
-	if(!isRunning(procPath)){
-		waitpid(fifoReaderPid, NULL, 0); 
+	if(!isRunning(fifoReaderPid)){
+		//waitpid(fifoReaderPid, NULL, 0); 
 		msg(MSG_ERROR, "Process of fifoReaderCmd \'%s\' with fifoReaderPid %d is not running!",
 				fifoReaderCmd.c_str(), fifoReaderPid);
 		startProcess();
@@ -278,53 +279,29 @@ void PCAPExporterPipe::restartProcess(){
 	time(&last_check);
 	if(last_check == (time_t) -1)
 		THROWEXCEPTION("time() failed");
+	onRestart = false;
 }
 
 void PCAPExporterPipe::kill_pid(int pid)
 {
-	sleep(2); //give the process some time to finish its work
-
 	int i = sigKillTimeout;
 	std::string path = "/proc/" + boost::lexical_cast<std::string>(pid);
-	kill(pid, 15);
+	kill(pid, SIGTERM);
 	while(i--){
 		msg(MSG_INFO, "waiting for pid %d, but no longer than %d seconds...", pid, i+1);
-		if (!isRunning(path)) return;
+		if (!isRunning(fifoReaderPid)) return;
 		sleep(1);
 	}
-	kill(pid, 9);
+	kill(pid, SIGKILL);
 	waitpid(fifoReaderPid, NULL, 0); 
 }
 
-//pPath must be an absolute Path to a PID file in the
-//proc filesystem, e.g. /proc/12345
-bool PCAPExporterPipe::isRunning(std::string &pPath)
+bool PCAPExporterPipe::isRunning(int pid)
 {
-	if(!bfs::exists(pPath)) return false; //process no longer exists
-	std::string filename = pPath + "/stat";
-	std::ifstream myfile(filename.c_str());
-	std::string line;
-	if (myfile.is_open()) {
-		getline (myfile,line);
-		char *token = strtok (const_cast<char*>(line.c_str())," ");
-		int count = 0;
-		while (token != NULL) {
-			if (count++ == 2) { //status
-				if(! strncmp(token, "Z", 1)){
-					msg(MSG_DEBUG, "Found Zombie");
-					return false;
-				}
-				break;
-			}
-			token = strtok (NULL, " ");
-		}
-	}
-	else {
-		myfile.close();
-		return false;
-	}
-	myfile.close();
-	return true;
+	int status;
+	int result = waitpid(pid, &status, WNOHANG);
+	if(result == 0) return true;
+	return false;
 }
 
 bool PCAPExporterPipe::checkint(const char *my_string) {
@@ -338,6 +315,7 @@ bool PCAPExporterPipe::checkint(const char *my_string) {
 
 void PCAPExporterPipe::kill_all(int ppid)
 {
+	sleep(2); //give the process some time to finish its work
 	bfs::path path("/proc/");
 	if (!bfs::exists(path) || !bfs::is_directory(path)){
 		THROWEXCEPTION("Directory /proc not found...");
