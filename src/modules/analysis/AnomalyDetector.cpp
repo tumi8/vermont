@@ -113,9 +113,6 @@ void AnomalyDetector::checkConnection(Connection* conn)
     map<uint32_t, EmaEntry> *emaMap;
     bool isSrc = false;
     
-    ofstream testfile;
-    testfile.open("anomTest", ios::out | ios::app );
-    
     // check if src or dst of current flow is local host
     if ((conn->srcIP & subnetmask) == subnet) {
         host = conn->srcIP;
