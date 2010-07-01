@@ -3,6 +3,7 @@
 <observer id="1">
    <filename>DUMP</filename>
    <pcap_filter>ip</pcap_filter>
+   <offlineSpeed>0</offlineSpeed>
    <next>3</next>
 </observer>
 
@@ -41,7 +42,7 @@
       <inactiveTimeout unit="sec">1</inactiveTimeout>
       <activeTimeout unit="sec">1</activeTimeout>
    </expiration>
-   <pollInterval unit="msec">500</pollInterval>
+   <pollInterval unit="msec">100</pollInterval>
    <next>5</next>
 </packetAggregator>             
 
@@ -81,14 +82,13 @@
       <inactiveTimeout unit="sec">1</inactiveTimeout>
       <activeTimeout unit="sec">1</activeTimeout>
    </expiration>
-   <pollInterval unit="msec">500</pollInterval>
+   <pollInterval unit="msec">100</pollInterval>
       <next>8</next>
 </ipfixAggregator> 
 
 <anomalyDetector id="8">
    <analyzerid>anomalyDetector</analyzerid>
    <subnet>192.44.88.0/24</subnet>
-   <emaTimeout>10</emaTimeout><!-- timeintervals, currently seconds -->
    <packetRateThreshold>10</packetRateThreshold>
 </anomalyDetector>        
 

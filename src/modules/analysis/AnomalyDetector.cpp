@@ -32,11 +32,10 @@ InstanceManager<IDMEFMessage> AnomalyDetector::idmefManager("AnomalyDetectorIDME
 /**
  * Constructor
  */ 
-AnomalyDetector::AnomalyDetector(uint32_t subnet, uint32_t subnetmask, double packetRateThreshold, double emaTimeout, string analyzerid, string idmeftemplate)
+AnomalyDetector::AnomalyDetector(uint32_t subnet, uint32_t subnetmask, double packetRateThreshold, string analyzerid, string idmeftemplate)
 	:subnet(subnet),
 	 subnetmask(subnetmask),
    packetRateThreshold(packetRateThreshold),
-   emaTimeout(emaTimeout),
    analyzerId(analyzerid),
 	 idmefTemplate(idmeftemplate)
 {
@@ -108,7 +107,7 @@ void AnomalyDetector::checkConnection(Connection* conn)
     float ema;
     float newEma;
     float ivLength = 1;     // length of observation interval(default = 1 sek)
-    uint32_t flowBinVal;    // bin value for current flow
+    uint32_t flowStartSec;  // starttime of flow (seconds)
     uint32_t host = 0;      // host in local network (srcIP or dstIP)
     map<uint32_t, EmaEntry> *emaMap;
     bool isSrc = false;
@@ -127,8 +126,8 @@ void AnomalyDetector::checkConnection(Connection* conn)
     // get number of Packets for current flow
     numFlowPackets = ntohll(conn->srcPackets);
     
-    // calc bin value for current flow
-    flowBinVal = (conn->srcTimeStart + 500) / 1000; // srcTimeStart -rounded- to seconds
+    // calc starttime for current flow
+    flowStartSec = (conn->srcTimeStart + 500) / 1000; // srcTimeStart -rounded- to seconds
     
     // look up host in map
     map<uint32_t, EmaEntry>::iterator it;
@@ -137,32 +136,42 @@ void AnomalyDetector::checkConnection(Connection* conn)
     if(it != (*emaMap).end())
     {
         // host already in map 
-        if (flowBinVal == (*emaMap)[host].binVal) {
-            // current binVal already exists -> just add packets
+        if (flowStartSec < ((*emaMap)[host].binVal + ivLength)) {
+            // flow is still within current interval -> just add packets
             (*emaMap)[host].numPackets += numFlowPackets;
         
         } else {
-            if (flowBinVal > (((*emaMap)[host].binVal) + emaTimeout)) {
-                // nothing happened for a long time -> don't use old ema value in map
+            // flow exceeded interval
+            if (flowStartSec > (((*emaMap)[host].binVal) + (ivLength *2 ))) {
+                // nothing happened for a while
                 
-                // update binVal with current binVal
-                (*emaMap)[host].binVal = flowBinVal;
-                
-                // set number of packets for current binVal
-                (*emaMap)[host].numPackets = numFlowPackets;
-                
-                // calculate initial ema with packetRate
-                packetRate = numFlowPackets / ivLength;
-                newEma = alpha * packetRate + (1 - alpha) * packetRate;
+                uint32_t timeSinceLastBin = flowStartSec - ((*emaMap)[host].binVal);
+                uint32_t numIvSinceLastBin = timeSinceLastBin / ivLength;
+                uint32_t newBinVal = (*emaMap)[host].binVal + (numIvSinceLastBin * ivLength);
+
+                // calculate and save ema for last binVal interval
+                packetRate = (*emaMap)[host].numPackets / ivLength;     
+                ema = (*emaMap)[host].ema;
+                newEma = alpha * packetRate + (1 - alpha) * ema;
                 (*emaMap)[host].ema = newEma;
+                numIvSinceLastBin --;  // we just calculated the first interval 
+                
+                // calculate ema for remaining intervals where no packets where transmitted
+                while (numIvSinceLastBin != 0) {
+                    (*emaMap)[host].ema = (1 - alpha) * ((*emaMap)[host].ema);
+                    numIvSinceLastBin--;
+                }
+                
+                // save current number of packets and current binVal
+                (*emaMap)[host].numPackets = numFlowPackets;
+                (*emaMap)[host].binVal = newBinVal;
                 
             } else {
-                // calc and save ema for last binVal
-                
-                packetRate = (*emaMap)[host].numPackets / ivLength;            
+                // calculate and save ema for last binVal
+                packetRate = (*emaMap)[host].numPackets / ivLength;      
                 ema = (*emaMap)[host].ema;
-                newEma = alpha * packetRate + (1 - alpha) * ema;  // calc new ema
-                (*emaMap)[host].ema = newEma; // update map with new ema
+                newEma = alpha * packetRate + (1 - alpha) * ema;
+                (*emaMap)[host].ema = newEma;
             
                 // check for anomaly
                 if ((packetRate - newEma) > packetRateThreshold) {
@@ -177,7 +186,7 @@ void AnomalyDetector::checkConnection(Connection* conn)
                             }
                             logfile << IPToString(host).c_str() << "\t";
                             logfile << conn->srcTimeStart << "\t";
-                            logfile << flowBinVal << "\t";
+                            logfile << flowStartSec << "\t";
                             logfile << packetRate << "\t";
                             logfile << ema << "\t";
                             logfile << newEma << "\t";
@@ -191,7 +200,7 @@ void AnomalyDetector::checkConnection(Connection* conn)
                 }
             
                 // update binVal with current binVal
-                (*emaMap)[host].binVal = flowBinVal;
+                (*emaMap)[host].binVal += ivLength;
                 // set number of packets for current binVal
                 (*emaMap)[host].numPackets = numFlowPackets;
               }
@@ -199,7 +208,7 @@ void AnomalyDetector::checkConnection(Connection* conn)
     } else {
         // host not yet in map -> create new entry
         EmaEntry emaEnt;
-        emaEnt.binVal = flowBinVal;
+        emaEnt.binVal = flowStartSec;
         emaEnt.numPackets = numFlowPackets;
         
         // calculate initial ema with packetRate

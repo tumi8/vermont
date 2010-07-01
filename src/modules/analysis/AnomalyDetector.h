@@ -35,7 +35,7 @@ class AnomalyDetector
 	        public Source<IDMEFMessage*>
 {
     public:
-        AnomalyDetector(uint32_t subnet, uint32_t subnetmask, double packetRateThreshold, double emaTimeout, string analyzerid, string idmeftemplate);
+        AnomalyDetector(uint32_t subnet, uint32_t subnetmask, double packetRateThreshold, string analyzerid, string idmeftemplate);
                                 
         virtual ~AnomalyDetector();
           
@@ -57,7 +57,6 @@ class AnomalyDetector
         uint32_t subnet;
         uint32_t subnetmask;
         double packetRateThreshold; // packetRate threshold for identification of an attack
-        double emaTimeout;
 	      string analyzerId;
 	      string idmefTemplate;
 
