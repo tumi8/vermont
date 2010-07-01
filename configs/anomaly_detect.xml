@@ -90,6 +90,7 @@
    <analyzerid>anomalyDetector</analyzerid>
    <subnet>192.44.88.0/24</subnet>
    <packetRateThreshold>10</packetRateThreshold>
+   <alpha>0.3</alpha>
 </anomalyDetector>        
 
 </ipfixConfig>

@@ -32,15 +32,14 @@ InstanceManager<IDMEFMessage> AnomalyDetector::idmefManager("AnomalyDetectorIDME
 /**
  * Constructor
  */ 
-AnomalyDetector::AnomalyDetector(uint32_t subnet, uint32_t subnetmask, double packetRateThreshold, string analyzerid, string idmeftemplate)
+AnomalyDetector::AnomalyDetector(uint32_t subnet, uint32_t subnetmask, double packetRateThreshold, double alpha, string analyzerid, string idmeftemplate)
 	:subnet(subnet),
 	 subnetmask(subnetmask),
    packetRateThreshold(packetRateThreshold),
+   alpha(alpha),
    analyzerId(analyzerid),
 	 idmefTemplate(idmeftemplate)
-{
-    alpha = 0.3;  // smoothing factor for EMA
-    
+{   
     // print headers to logfile
     ofstream logfile;
     logfile.open("anomDetectAlert");
@@ -103,9 +102,9 @@ void AnomalyDetector::onDataRecord(IpfixDataRecord* record)
 void AnomalyDetector::checkConnection(Connection* conn)
 {
     float numFlowPackets;   // number of sent or received packets for current flow
-    float packetRate;
-    float ema;
-    float newEma;
+    float packetRate;       // number of packets per second
+    float ema;              // exponential moving average
+    float newEma;           // new calculated ema
     float ivLength = 1;     // length of observation interval(default = 1 sek)
     uint32_t flowStartSec;  // starttime of flow (seconds)
     uint32_t host = 0;      // host in local network (srcIP or dstIP)
