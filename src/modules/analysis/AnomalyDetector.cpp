@@ -49,8 +49,8 @@ AnomalyDetector::AnomalyDetector(uint32_t subnet, uint32_t subnetmask, double pa
         // write headings
         logfile << "src/dst" << "\t";
         logfile << "host" << "\t";
-        logfile << "flowStart" << "\t";
-        logfile << "flowBinVal" << "\t";
+        logfile << "flowStartMs" << "\t";
+        logfile << "flowStartSec" << "\t";
         logfile << "packetRate" << "\t";
         logfile << "ema" << "\t";
         logfile << "newEma" << "\t";

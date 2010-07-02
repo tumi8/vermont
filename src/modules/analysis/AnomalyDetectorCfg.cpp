@@ -13,7 +13,7 @@ AnomalyDetectorCfg* AnomalyDetectorCfg::create(XMLElement* e)
 AnomalyDetectorCfg::AnomalyDetectorCfg(XMLElement* elem)
     : CfgHelper<AnomalyDetector, AnomalyDetectorCfg>(elem, "anomalyDetector"),
     subnetmask(0),
-    packetRateThreshold(0),
+    packetRateThreshold(-1),
     alpha(0)
 {
     if (!elem) return;
@@ -52,7 +52,7 @@ AnomalyDetectorCfg::AnomalyDetectorCfg(XMLElement* elem)
                 }
             }
             if (subnetmask == 0) THROWEXCEPTION("AnomalyDetectorCfg: subnetmask not set in configuration!");
-            if (packetRateThreshold == 0) THROWEXCEPTION("AnomalyDetectorCfg: packetRateThreshold not set in configuration!");
+            if (packetRateThreshold == -1) THROWEXCEPTION("AnomalyDetectorCfg: packetRateThreshold not set in configuration!");
             if (alpha == 0) THROWEXCEPTION("AnomalyDetectorCfg: alpha not set in configuration!");
             if (analyzerId=="") THROWEXCEPTION("AnomalyDetectorCfg: analyzerid not set in configuration!");
             //if (idmefTemplate=="") THROWEXCEPTION("AnomalyDetectorCfg: idmeftemplate not set in configuration!");
