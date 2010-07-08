@@ -12,6 +12,7 @@ For compilation, GNU C/C++ compiler and standard libraries are required,
 as well as the following Ubuntu/Debian packages (or equivalent packages
 of other Linux distributions):
  - cmake 
+ - cmake-curses-gui - Curses based user interface for CMake (ccmake)
  - libboost-filesystem-dev
  - libboost-regex-dev
  - libboost-test-dev
@@ -47,8 +48,9 @@ To get a list of the most important options, call:
 
 $ cmake -LH
    
-As a user-friendly alternative, you can use the interactive user 
-interface:
+As a user-friendly alternative, you can use the interactive user interface.
+Please note that this requires the package cmake-curses-gui, if you are using
+Debian.
 
 $ ccmake .
 
@@ -66,6 +68,85 @@ copied to the usual install location by running:
 
 $ make install 
 
+--------------------------------------
+BUILDING WITH DTLS SUPPORT
+--------------------------------------
+
+VERMONT's DTLS support is based on OpenSSL. The DTLS implementation in OpenSSL
+is fairly new and probably not as mature as the TLS/SSL implementation.  You
+are strongly advised to use the very latest version of OpenSSL which you can
+get from the CVS repository. At the time of writing, Ubuntu, for example, ships
+OpenSSL version 0.9.8k which should not be used for DTLS because it has many
+bugs.
+
+You can get the latest OpenSSL source by using the following command:
+
+cvs -z9 -d anonymous@cvs.openssl.org:/openssl-cvs co openssl
+
+You probably do not want the development version of the OpenSSL library to
+become the default version of your system. The reason behind this is that the
+development version might contain bugs and be incompatible with other packages
+in your distribution. It is therefore recommended installing the development
+version in a separate directory.
+
+For example, if you want to install OpenSSL into /home/daniel/da/openssl, you
+can use the following command to configure the build.
+
+./config -d no-dso no-shared --prefix=/home/daniel/da/openssl
+
+The switch no-dso turns off the use of shared-library methods which avoids
+linking problems related to libdl on the Linux platform.
+With no-shared on the command line, no shared but only static libraries are
+built. This should make it easier to link VERMONT to the correct version of
+OpenSSL.
+
+As the next step, you may run
+
+make && make install
+
+which builds and installs OpenSSL in the directory you specified with --prefix
+when running ./config.
+
+As soon as you completed this step, you go back to the source directory of VERMONT and
+run the following command to configure the build.
+
+cmake -DSUPPORT_DTLS=YES -DCMAKE_INCLUDE_PATH=/home/daniel/da/openssl/include -DCMAKE_LIBRARY_PATH=/home/daniel/da/openssl/lib
+
+-DCMAKE_INCLUDE_PATH and -DCMAKE_LIBRARY_PATH allow cmake to locate your
+freshly built version of OpenSSL. On 64 bit platforms, it might be necessary to
+use the following command line instead. Mind the "64" at the very end:
+
+cmake -DSUPPORT_DTLS=YES -DCMAKE_INCLUDE_PATH=/home/daniel/da/openssl/include -DCMAKE_LIBRARY_PATH=/home/daniel/da/openssl/lib64
+
+After running make, you should be ready to use VERMONT with support for IPFIX
+over DTLS over UDP. Please read the next section if you require support for
+DTLS over SCTP as well.
+
+--------------------------------------
+BUILDING WITH DTLS OVER SCTP SUPPORT
+--------------------------------------
+First of all, it should be noted that DTLS over SCTP can be used on FreeBSD
+only! This is due to the fact that FreeBSD is the only OS -- at least at the
+time of writing -- that supports the SCTP-AUTH extension (see RFC 4895).
+
+The upstream version of OpenSSL has no support for SCTP. You have to download
+some patches from
+
+http://sctp.fh-muenster.de/
+
+and apply them to the OpenSSL source tree before you are able to build OpenSSL.
+When doing so, you should be careful that you download a version of OpenSSL
+that the patches can be applied to. At the time of writing, the patches from
+the website applied cleanly to OpenSSL 1.0.0a. However, you can usually apply
+them to the latest development version from the CVS repository with little
+manual intervention.
+
+Also, make sure to add the command line argument "sctp" when running OpenSSL's
+./config to build SCTP support into OpenSSL.
+
+When running cmake, add -DSUPPORT_DTLS_OVER_SCTP to the command line. It should
+be noted that -DSUPPORT_DTLS and -DSUPPORT_SCTP have to be on the command line
+as well. DTLS and SCTP support is obviously a requirement for DTLS over SCTP.
 
 -----------------------
 USAGE AND CONFIGURATION
