@@ -49,13 +49,10 @@ AnomalyDetector::AnomalyDetector(uint32_t subnet, uint32_t subnetmask, double pa
         // write headings
         logfile << "src/dst" << "\t";
         logfile << "host" << "\t";
-        logfile << "flowStartMs" << "\t";
-        logfile << "flowStartSec" << "\t";
+        logfile << "binVal" << "\t";
         logfile << "packetRate" << "\t";
         logfile << "ema" << "\t";
-        logfile << "newEma" << "\t";
         logfile << "threshold" << "\t";
-        logfile << "overThreshold" << "\t";
         logfile << endl;
         logfile.close();
     }
@@ -101,13 +98,10 @@ void AnomalyDetector::onDataRecord(IpfixDataRecord* record)
  */
 void AnomalyDetector::checkConnection(Connection* conn)
 {
-    float numFlowPackets;   // number of sent or received packets for current flow
-    float packetRate;       // number of packets per second
-    float ema;              // exponential moving average
-    float newEma;           // new calculated ema
-    float ivLength = 1;     // length of observation interval(default = 1 sek)
-    uint32_t flowStartSec;  // starttime of flow (seconds)
-    uint32_t host = 0;      // host in local network (srcIP or dstIP)
+    float numFlowPackets;       // number of sent or received packets for current flow
+    float ivLength = 1;         // length of observation interval(default = 1 sek)
+    uint32_t flowStartSec = 0;  // starttime of flow (seconds)
+    uint32_t host = 0;          // host in local network (srcIP or dstIP)
     map<uint32_t, EmaEntry> *emaMap;
     bool isSrc = false;
     
@@ -120,6 +114,7 @@ void AnomalyDetector::checkConnection(Connection* conn)
     } else if ((conn->dstIP & subnetmask) == subnet) {
         host = conn->dstIP;
         emaMap = &dstHostMap; // Incoming Map
+        isSrc = false;
     }
     
     // get number of Packets for current flow
@@ -133,13 +128,14 @@ void AnomalyDetector::checkConnection(Connection* conn)
     it = (*emaMap).find(host);
     
     if(it != (*emaMap).end())
-    {
+    {   
         // host already in map 
         if (flowStartSec < ((*emaMap)[host].binVal + ivLength)) {
             // flow is still within current interval -> just add packets
             (*emaMap)[host].numPackets += numFlowPackets;
-        
+            
         } else {
+            (*emaMap)[host].flowStartSec = flowStartSec;
             // flow exceeded interval
             if (flowStartSec > (((*emaMap)[host].binVal) + (ivLength *2 ))) {
                 // nothing happened for a while
@@ -149,59 +145,42 @@ void AnomalyDetector::checkConnection(Connection* conn)
                 uint32_t newBinVal = (*emaMap)[host].binVal + (numIvSinceLastBin * ivLength);
 
                 // calculate and save ema for last binVal interval
-                packetRate = (*emaMap)[host].numPackets / ivLength;     
-                ema = (*emaMap)[host].ema;
-                newEma = alpha * packetRate + (1 - alpha) * ema;
-                (*emaMap)[host].ema = newEma;
-                numIvSinceLastBin --;  // we just calculated the first interval 
+                (*emaMap)[host].packetRate = (*emaMap)[host].numPackets / ivLength;
+                (*emaMap)[host].ema = alpha * ((*emaMap)[host].packetRate) + (1 - alpha) * ((*emaMap)[host].ema);
+                // for testing purpose:
+                // printEntry((*emaMap)[host], host);
+                numIvSinceLastBin --;  // we just calculated the first interval
                 
                 // calculate ema for remaining intervals where no packets where transmitted
                 while (numIvSinceLastBin != 0) {
                     (*emaMap)[host].ema = (1 - alpha) * ((*emaMap)[host].ema);
+                    (*emaMap)[host].packetRate = 0;
+                    (*emaMap)[host].binVal += ivLength;
                     numIvSinceLastBin--;
                 }
+                // for testing purpose:
+                // printEntry((*emaMap)[host], host);
                 
                 // save current number of packets and current binVal
                 (*emaMap)[host].numPackets = numFlowPackets;
+                (*emaMap)[host].packetRate = numFlowPackets / ivLength;
                 (*emaMap)[host].binVal = newBinVal;
                 
             } else {
                 // calculate and save ema for last binVal
-                packetRate = (*emaMap)[host].numPackets / ivLength;      
-                ema = (*emaMap)[host].ema;
-                newEma = alpha * packetRate + (1 - alpha) * ema;
-                (*emaMap)[host].ema = newEma;
+                (*emaMap)[host].ema = alpha * ((*emaMap)[host].packetRate) + (1 - alpha) * ((*emaMap)[host].ema);
             
                 // check for anomaly
-                if ((packetRate - newEma) > packetRateThreshold) {
+                if ((((*emaMap)[host].packetRate) - ((*emaMap)[host].ema)) > packetRateThreshold) {
                     // anomaly found -> print stuff to file
-                    ofstream logfile;
-                    logfile.open("anomDetectAlert", ios::out | ios::app );
-                        if (logfile.is_open()) {
-                            if (isSrc) {
-                              logfile << "SRC" << "\t";
-                            } else {
-                              logfile << "DST" << "\t";
-                            }
-                            logfile << IPToString(host).c_str() << "\t";
-                            logfile << conn->srcTimeStart << "\t";
-                            logfile << flowStartSec << "\t";
-                            logfile << packetRate << "\t";
-                            logfile << ema << "\t";
-                            logfile << newEma << "\t";
-                            logfile << packetRateThreshold << "\t";
-                            logfile << (packetRate - newEma) - packetRateThreshold << "\t";
-                            logfile << endl;
-                            logfile.close();
-                        } else {
-                            cout << "Unable to open file";
-                        }
+                    printEntry((*emaMap)[host], host);
                 }
             
                 // update binVal with current binVal
                 (*emaMap)[host].binVal += ivLength;
                 // set number of packets for current binVal
                 (*emaMap)[host].numPackets = numFlowPackets;
+                (*emaMap)[host].packetRate = ((*emaMap)[host].numPackets) / ivLength;
               }
           }
     } else {
@@ -209,12 +188,40 @@ void AnomalyDetector::checkConnection(Connection* conn)
         EmaEntry emaEnt;
         emaEnt.binVal = flowStartSec;
         emaEnt.numPackets = numFlowPackets;
+        emaEnt.packetRate = numFlowPackets / ivLength;
+        emaEnt.flowStartSec = flowStartSec;
+        emaEnt.isSrc = isSrc;
         
-        // calculate initial ema with packetRate
-        packetRate = numFlowPackets / ivLength;
-        emaEnt.ema = alpha * packetRate + (1 - alpha) * packetRate;
+        // set initial ema to current packetRate
+        emaEnt.ema = alpha * emaEnt.packetRate;
         
         // insert new entry in map
         (*emaMap).insert(pair<uint32_t, EmaEntry>(host, emaEnt));
+        
+        // for testing purpose:
+        // printEntry(emaEnt, host);
     }
+}
+
+    
+void AnomalyDetector::printEntry(EmaEntry entry, uint32_t host)
+{
+    ofstream logfile;
+    logfile.open("anomDetectAlert", ios::out | ios::app );
+    if (logfile.is_open()) {
+        if (entry.isSrc) {
+             logfile << "SRC" << "\t";
+        } else {
+             logfile << "DST" << "\t";
+        }
+        logfile << IPToString(host).c_str() << "\t";
+        logfile << entry.binVal << "\t";
+        logfile << entry.packetRate << "\t";
+        logfile << entry.ema << "\t";
+        logfile << packetRateThreshold << "\t";
+        logfile << endl;
+        logfile.close();
+        } else {
+             cout << "Unable to open file";
+        }
 }
