@@ -40,9 +40,11 @@ public:
 	~PCAPExporterPipe();
     void setPipeReaderCmd(const std::string& cmd);
     void setSigKillTimeout(int s);
-	virtual void handleSigChld(int i);
-	virtual void handleSigPipe(int sig);
+	void setRestartOnSignal(bool b);
 	void setAppendDate(bool b);
+	virtual void handleSigChld(int sig);
+	virtual void handleSigPipe(int sig);
+	virtual void handleSigUsr2(int sig);
 	bool isRunning(int pid);
     int execCmd(std::string& cmd);
     void kill_all(int ppid);
@@ -64,6 +66,7 @@ private:
 	std::string logFileName;
 	std::string fifoReaderCmd;
 	bool appenddate;
+	bool restartOnSignal;
     int fifoReaderPid;
 	pcap_t* dummy;
     int sigKillTimeout;
