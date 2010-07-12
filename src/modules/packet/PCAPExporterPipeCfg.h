@@ -49,6 +49,7 @@ private:
 	int snaplen;
     int sigkilltimeout;
 	bool appenddate;
+	bool restart;
 	std::string logFileName;
     std::string fifoReaderCmd;
 };

@@ -41,8 +41,8 @@ namespace bfs = boost::filesystem;
 
 PCAPExporterPipe::PCAPExporterPipe(const std::string& logfile)
 	: logFileName(logfile), fifoReaderCmd(""), onRestart(false),
-	appenddate(false),  fifoReaderPid(0), dummy(NULL), 
-	sigKillTimeout(1),counter(0), last_check(0)
+	appenddate(false),  restartOnSignal(false),fifoReaderPid(0), 
+	dummy(NULL), sigKillTimeout(1),counter(0), last_check(0)
 {
 }
 
@@ -63,6 +63,10 @@ void PCAPExporterPipe::setSigKillTimeout(int s)
 {
 	if (s < 0) s *= -1;
 	sigKillTimeout = s;
+}
+
+void PCAPExporterPipe::setRestartOnSignal(bool b){
+	restartOnSignal = b;
 }
 
 int PCAPExporterPipe::execCmd(std::string& cmd)
@@ -173,6 +177,9 @@ void PCAPExporterPipe::performStart()
 
 	SignalHandler::getInstance().registerSignalHandler(SIGCHLD, this);
 	SignalHandler::getInstance().registerSignalHandler(SIGPIPE, this);
+	if(restartOnSignal)
+		SignalHandler::getInstance().registerSignalHandler(SIGUSR2, this);
+
 	dummy = pcap_open_dead(link_type, snaplen);
 	if (!dummy) {
 		THROWEXCEPTION("Could not open dummy device: %s", errbuf);
@@ -204,6 +211,8 @@ void PCAPExporterPipe::performShutdown()
 {
 	SignalHandler::getInstance().unregisterSignalHandler(SIGCHLD, this);
 	SignalHandler::getInstance().unregisterSignalHandler(SIGPIPE, this);
+	if(restartOnSignal)
+		SignalHandler::getInstance().unregisterSignalHandler(SIGUSR2, this);
 	msg(MSG_DEBUG, "Performing shutdown for PID %d", fifoReaderPid);
 	sleep(1);
 	if (dumper) {
@@ -246,7 +255,7 @@ void PCAPExporterPipe::receive(Packet* packet) {
 		 return;
 	}
 	if(fifoReaderPid == 0){
-		 msg(MSG_ERROR, "fifoReaderPid = 0...this might happen during reconfiguration");
+		 msg(MSG_VDEBUG, "fifoReaderPid = 0...this might happen during reconfiguration");
 		 return; 
 	}
 	writePCAP(packet);
@@ -282,6 +291,13 @@ void PCAPExporterPipe::handleSigChld(int sig){
 	onRestart = false;
 }
 
+void PCAPExporterPipe::handleSigUsr2(int sig){
+	if (! restartOnSignal) return;
+	int pid = fifoReaderPid;
+	fifoReaderPid = 0;
+	kill_all(pid);
+	handleSigChld(sig);
+}
 void PCAPExporterPipe::kill_pid(int pid)
 {
 	int i = sigKillTimeout;
