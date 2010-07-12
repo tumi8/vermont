@@ -20,18 +20,12 @@
 #include "BaseQueue.h"
 #include "osdep/linux/sysinfo.h"
 
-//QueueType
-#define QUEUE_TYPE_1
-//#define QUEUE_TYPE_2
-//#define QUEUE_TYPE_3
-
-#if defined(QUEUE_TYPE_1)
 
 template<class T>
-class LockfreeSingleQueue : public BaseQueue<T>
+class LockfreeSingleQueueCacheOpt : public BaseQueue<T>
 {
 public:
-	LockfreeSingleQueue(int maxEntries){
+	LockfreeSingleQueueCacheOpt(int maxEntries){
 		uint32_t clsize = getCachelineSize();
 		void* tmp;
 
@@ -56,12 +50,12 @@ public:
 
 		/*constants*/
 		max = (uint32_t*)tmp + 3*(clsize/sizeof(uint32_t*));
-		*max = maxEntries;
+		*max = maxEntries+1;
 
 		buffer = new T[*max];
 	}
 
-	~LockfreeSingleQueue() {
+	~LockfreeSingleQueueCacheOpt() {
 		free((void*)read);
 		delete [] buffer;
 	}
@@ -137,18 +131,83 @@ private:
 	T* buffer;
 };
 
-#endif
 
-#if defined(QUEUE_TYPE_2)
+template<class T>
+class LockfreeSingleQueueBasic : public BaseQueue<T>
+{
+	public:
+		LockfreeSingleQueueBasic(uint32_t maxEntries):
+			maxEntries(maxEntries+1),
+			write(0),
+			read(0)
+		{
+			buffer = new T[this->maxEntries];
+		}
+
+		~LockfreeSingleQueueBasic() {
+			delete [] buffer;
+		}
+
+		/**
+		 * enqueues an element of type T in the queue
+		 * @param element which will be enqueued.
+		 * @return always true
+		 */
+		inline bool push(T element){
+			if(next(write) == read)
+				return false;
+
+			buffer[write] = element;
+			write = next(write);
+
+			return true;
+		}
+
+		/**
+		 * returns the first element of type T in queue
+		 * and removes it from the queue
+		 * @return first pointer in the queue
+		 */
+		inline bool pop(T* element){
+			if(read == write)
+				return false;
+
+			*element = buffer[read];
+			read = next(read);
+
+			return true;
+		}
+
+		/**
+		 * restarts the queue and sets the internal
+		 * pointers to initial values
+		 */
+		void restart(){
+			read = write = 0;
+		}
+
+	private:
+
+		inline uint32_t next(uint32_t index){
+			return ++index % maxEntries;
+		}
+
+		uint32_t maxEntries;
+		T* buffer;
+		uint32_t write;
+		uint32_t read;
+
+};
+
 
 //cache line size
 #define CACHE_LINE 64
 
 template<class T>
-class LockfreeSingleQueue : public BaseQueue<T>
+class LockfreeSingleQueueCacheOptLocal : public BaseQueue<T>
 {
 	public:
-		LockfreeSingleQueue(uint32_t maxEntries):
+		LockfreeSingleQueueCacheOptLocal(uint32_t maxEntries):
 			maxEntries(maxEntries+1),
 			write(0), read(0),
 			localWrite(0), nextRead(0),
@@ -157,7 +216,7 @@ class LockfreeSingleQueue : public BaseQueue<T>
 			buffer = new T[this->maxEntries];
 		}
 
-		~LockfreeSingleQueue() {
+		~LockfreeSingleQueueCacheOptLocal() {
 			delete [] buffer;
 		}
 
@@ -239,77 +298,5 @@ class LockfreeSingleQueue : public BaseQueue<T>
 
 };
 
-#endif
-
-#if defined(QUEUE_TYPE_3)
-
-template<class T>
-class LockfreeSingleQueue : public BaseQueue<T>
-{
-	public:
-		LockfreeSingleQueue(uint32_t maxEntries):
-			maxEntries(maxEntries+1),
-			write(0),
-			read(0)
-		{
-			buffer = new T[this->maxEntries];
-		}
-
-		~LockfreeSingleQueue() {
-			delete [] buffer;
-		}
-
-		/**
-		 * enqueues an element of type T in the queue
-		 * @param element which will be enqueued.
-		 * @return always true
-		 */
-		inline bool push(T element){
-			if(next(write) == read)
-				return false;
-
-			buffer[write] = element;
-			write = next(write);
-
-			return true;
-		}
-
-		/**
-		 * returns the first element of type T in queue
-		 * and removes it from the queue
-		 * @return first pointer in the queue
-		 */
-		inline bool pop(T* element){
-			if(read == write)
-				return false;
-
-			*element = buffer[read];
-			read = next(read);
-
-			return true;
-		}
-
-		/**
-		 * restarts the queue and sets the internal
-		 * pointers to initial values
-		 */
-		void restart(){
-			read = write = 0;
-		}
-
-	private:
-
-		inline uint32_t next(uint32_t index){
-			return ++index % maxEntries;
-		}
-
-		uint32_t maxEntries;
-		T* buffer;
-		uint32_t write;
-		uint32_t read;
-
-};
-
-#endif
 
 #endif

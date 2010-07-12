@@ -28,7 +28,7 @@ class LockfreeMultiQueue : public BaseQueue<T>
 {
 	public:
 		LockfreeMultiQueue(uint32_t maxEntries):
-			max(maxEntries),
+			max(maxEntries+1),
 			front(0), rear(0)
 		{
 			//template parameter may not be greater than 4 bytes

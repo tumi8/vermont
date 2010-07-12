@@ -1,0 +1,2 @@
+/usr/bin/ar cr libosdep.a  CMakeFiles/osdep.dir/sysinfo.o CMakeFiles/osdep.dir/ThreadCPUInterface.o
+/usr/bin/ranlib libosdep.a

@@ -18,7 +18,7 @@ template<class T>
 class STLQueue : public BaseQueue<T>
 {
 	public:
-		STLQueue() {};
+		STLQueue() { }
 		~STLQueue() {};
 
 		/**

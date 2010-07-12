@@ -28,7 +28,6 @@
  */
 #include <stdio.h>
 #include <unistd.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -37,16 +36,15 @@
 #include "common/msg.h"
 #include "common/VermontControl.h"
 #include "common/defs.h"
+#include "core/MainSignalHandler.h"
 
 #include "modules/ConfigManager.h"
 
 using namespace std;
 
 static void usage();
-static void sig_INT_handler(int x);
-static void sig_USR1_handler(int x);
 
-static int setup_signal(int signal, void (*handler)(int));
+//static int setup_signal(int signal, void (*handler)(int));
 
 ConfigManager manager;
 
@@ -60,6 +58,8 @@ int main(int ac, char **dc)
 	char *config_file=NULL;
 
 	msg_init();
+	/**< Wrapper for the main thread's signal handlers*/
+	MainSignalHandler main_signal_handler;
 
 	/* parse command line */
 	while ((c=getopt(ac, dc, "hf:ds:u:")) != -1) {
@@ -99,8 +99,6 @@ int main(int ac, char **dc)
 	msg(MSG_DIALOG, "message debug level is %d", debug_level);
 	msg_setlevel(debug_level);
 
-	setup_signal(SIGINT, sig_INT_handler);
-	setup_signal(SIGUSR1, sig_USR1_handler);
 
 	manager.parseConfig(string(config_file));
 
@@ -143,49 +141,7 @@ static void usage()
 }
 
 
-static int setup_signal(int signal, void (*handler)(int))
-{
-	struct sigaction sig;
 
-	sig.sa_handler=handler;
-	sig.sa_flags=SA_RESTART;
-	sigemptyset(&sig.sa_mask);
-	return(sigaction(signal, &sig, NULL));
-}
-
-/* WARNING: don't use any of the msg/DPRINTF/etc functions in the SIGNAL handlers;
- *          they use an internal mutex to lock the display output so you get a deadlock
- */
-static void sig_USR1_handler(int x)
-{
-	int errno_save = errno;
-
-	DPRINTF("SIGUSR called");
-	reload_config = true;
-
-	errno = errno_save;
-	wakeupMainThread();
-}
-
-/* just shallow right now */
-static void sig_INT_handler(int x)
-{
-	int errno_save = errno;
-
-	static bool shutdownInitiated = false;
-
-	if (shutdownInitiated) {
-		printf("second signal received, shutting down the hard way!");
-		exit(2);
-	}
-
-	shutdownInitiated = true;
-
-	msg(MSG_FATAL, "got signal %d - exiting", x);
-
-	initiateShutdown();
-	errno = errno_save;
-}
 
 //static void __cplusplus_really_sucks_andPeopleUsingVeryStrangeNamingConventionsWithLongLongExplicitBlaBlaAndfUnNycasE()
 //{

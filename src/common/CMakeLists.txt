@@ -19,6 +19,8 @@
 
 ADD_LIBRARY(common
 	CountingSemaphore.cpp
+	SignalHandler.cpp
+	SignalInterface.h
 	msg.cc
 	Sensor.cpp
 	VermontControl.cpp

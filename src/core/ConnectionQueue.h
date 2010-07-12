@@ -38,7 +38,7 @@ class ConnectionQueue : public Adapter<T>, public Timer
 {
 public:
 	ConnectionQueue(uint32_t maxEntries = 1)
-		: queue(ConcurrentQueue<T>::STL, maxEntries), thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
+		: queue(STL, maxEntries), thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
 	{
 		initPhase = true;
 		this->Sensor::usedBytes = sizeof(ConnectionQueue);

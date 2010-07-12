@@ -18,28 +18,48 @@ QueueTest::QueueTest(uint32_t queueType, uint32_t numProducer, uint32_t queueSiz
 	popper = new Thread(QueueTest::popFunc);
 
 	//creation of the queue
+	switch(queueType / 10){
+		case 1:
+			queue = new ConcurrentQueue<uint32_t>(STL, queueSize);
+			break;
+		case 2:
+			queue = new ConcurrentQueueCond<uint32_t>(STL, queueSize);
+			break;
+		case 3:
+			queue = new ConcurrentQueueSpinlock<uint32_t>(STL, queueSize);
+			break;
+		default:
+			THROWEXCEPTION("wrong ConcurrentQueue");
+	}
 
-	//with ConcurrentQueue
-	//Old Queue with lock
-	//if(queueType == 1)
-	//	queue = new ConcurrentQueue<uint32_t>(ConcurrentQueue<uint32_t>::STL, queueSize);
-	//lockfree Queue for single producers
-	//else if(queueType == 2 && numProducer == 1)
-	//	queue = new ConcurrentQueue<uint32_t>(ConcurrentQueue<uint32_t>::LOCKFREE_SINGLE, queueSize);
-	//lockfree Queue for multi producers
-	//else
-	//	queue = new ConcurrentQueue<uint32_t>(ConcurrentQueue<uint32_t>::LOCKFREE_MULTI, queueSize);
-
-	//plain queue
-	//Old Queue with lock
-	if(queueType == 1)
-		queue = new STLQueue<uint32_t>();
-	//lockfree Queue for single producers
-	else if(queueType == 2 && numProducer == 1)
-		queue = new LockfreeSingleQueue<uint32_t>(queueSize);
-	//lockfree Queue for multi producers
-	else
-		queue = new LockfreeMultiQueue<uint32_t>(queueSize);
+	switch(queueType % 10){
+		case 1:
+			break;
+		case 2:
+			if(numProducer != 1)
+				THROWEXCEPTION("Queue can only handle 1 producer");
+			delete queue->queueImp;
+			queue->queueImp = new LockfreeSingleQueueCacheOpt<uint32_t>(queueSize);
+			break;
+		case 3:
+			if(numProducer != 1)
+				THROWEXCEPTION("Queue can only handle 1 producer");
+			delete queue->queueImp;
+			queue->queueImp = new LockfreeSingleQueueBasic<uint32_t>(queueSize);
+			break;
+		case 4:
+			if(numProducer != 1)
+				THROWEXCEPTION("Queue can only handle 1 producer");
+			delete queue->queueImp;
+			queue->queueImp = new LockfreeSingleQueueCacheOptLocal<uint32_t>(queueSize);
+			break;
+		case 5:
+			delete queue->queueImp;
+			queue->queueImp = new LockfreeMultiQueue<uint32_t>(queueSize);
+			break;
+		default:
+			THROWEXCEPTION("wrong QueueType");
+	}
 
 }
 
@@ -92,9 +112,11 @@ struct timespec QueueTest::runTest(uint32_t numOperations){
 
 void* QueueTest::pushFunc(void* ptr){
 	QueueTest* qt = (QueueTest*)ptr;
+	uint32_t ops = qt->numOps;
+	BaseConcurrentQueue<uint32_t>* cq = qt->queue;
 
-	for(uint32_t i=1; i <= qt->numOps; i++){
-		while(!qt->queue->push(i));
+	for(uint32_t i=1; i <= ops; i++){
+		cq->push(i);
 //		printf("pushed: %d\n",i);
 	}
 
@@ -105,14 +127,17 @@ void* QueueTest::popFunc(void* ptr){
 	uint32_t element;
 	uint32_t i;
 	QueueTest* qt = (QueueTest*)ptr;
+	uint32_t ops = (qt->numOps) * (qt->numProducer);
+	BaseConcurrentQueue<uint32_t>* cq = qt->queue;
 
-	for(i=1; i <= (qt->numOps) * (qt->numProducer); i++){
-		while(!qt->queue->pop(&element));
+	for(i=1; i <= ops; i++){
+		if(!cq->pop(&element))
+			printf("pop failed in QueueTest.cpp\n");
 
 //		fprintf(stderr,"popped: %d\n",element);
 	}
 
-	if(i != (qt->numOps) * (qt->numProducer) + 1)
+	if(i != ops + 1)
 		THROWEXCEPTION("wrong number of pop calls");
 
 	return NULL;

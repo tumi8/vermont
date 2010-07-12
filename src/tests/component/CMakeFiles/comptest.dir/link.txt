@@ -1,0 +1,1 @@
+/usr/bin/c++   -g -march=i586   CMakeFiles/comptest.dir/ComponentTest.o CMakeFiles/comptest.dir/QueueTest.o  -o comptest -rdynamic ../../modules/libmodules.a ../../common/ipfixlolib/libipfixlolib.a ../../core/libcore.a ../../common/libcommon.a ../../osdep/linux/libosdep.a -lpthread -lboost_regex-mt -lboost_filesystem-mt -lpcap -lxml2 
