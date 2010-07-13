@@ -111,13 +111,13 @@ public:
 		if (!Adapter<T>::running && !initPhase)
 			THROWEXCEPTION("addTimeout called on a non running Queue");
 
-		mutex.lock();
+		//mutex.lock();
 		TimeoutEntry* e = new TimeoutEntry();
 		e->n = n;
 		e->timeout = ts;
 		e->dataPtr = (void*)dataPtr;
 		timeouts.push_back(e);
-		mutex.unlock();
+		//mutex.unlock();
 	}
 
 
@@ -125,7 +125,7 @@ private:
 	ConcurrentQueue<T> queue;  /**< contains all elements which were received from previous modules */
 	Thread thread;
 	list<TimeoutEntry*> timeouts;
-	Mutex mutex;	/**< controls access to class variable timeouts */
+	//Mutex mutex;	/**< controls access to class variable timeouts */
 	uint32_t statQueueEntries;
 	uint32_t statTotalReceived;
 	bool initPhase;
@@ -137,11 +137,14 @@ private:
 	 */
 	bool processTimeouts(struct timespec& nexttimeout)
 	{
+		if(timeouts.empty())
+			return false;
+
 		struct timespec now;
 		addToCurTime(&now, 0);
 		bool nexttoset = false;
 
-		mutex.lock();
+		//mutex.lock();
 		if (initPhase) initPhase = false;
 		list<TimeoutEntry*>::iterator iter = timeouts.begin();
 		while (iter != timeouts.end()) {
@@ -167,9 +170,9 @@ private:
 				}
 
 				// allow onTimeout to call addTimeout(...)
-				mutex.unlock();
+				//mutex.unlock();
 				te->n->onTimeout(te->dataPtr);
-				mutex.lock();
+				//mutex.lock();
 
 				Source<T>::atomicRelease();
 
@@ -189,7 +192,7 @@ private:
 				iter++;
 			}
 		}
-		mutex.unlock();
+		//mutex.unlock();
 
 		return nexttoset;
 	}
