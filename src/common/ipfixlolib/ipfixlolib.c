@@ -525,7 +525,7 @@ static int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_colle
     } else {
 	if ( ! ((exporter->ca_file || exporter->ca_path) &&
 		    exporter->certificate_chain_file) ) {
-	    msg(MSG_ERROR,"Can not verify certificates of collectors because prerequisites not met. "
+	    msg(MSG_ERROR,"Cannot verify certificates of collectors because prerequisites not met. "
 		    "Prerequisites are: 1. CApath or CAfile or both set, "
 		    "2. We have a certificate including the private key");
 	    SSL_free(con->ssl);con->ssl = NULL;
@@ -2951,7 +2951,7 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id,
     }
     if (exporter->template_arr[found_index].fields_added >=
 	    exporter->template_arr[found_index].field_count) {
-	msg(MSG_ERROR, "Can not add more template fields.");
+	msg(MSG_ERROR, "Cannot add more template fields.");
 	return -1;
     }
 
