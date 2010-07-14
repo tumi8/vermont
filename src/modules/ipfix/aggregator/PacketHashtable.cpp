@@ -677,7 +677,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 
 	// set data efd field to the offset of IPFIX_ETYPEID_frontPayloadPktCount for front payload
 	if (efd->typeId==IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont)) {
-		*reinterpret_cast<uint32_t*>(efd->data) = 0xFFFFFFFF;
+		*reinterpret_cast<uint32_t*>(efd->data) = ExpHelperTable::UNUSED;
 		for (int i=0; i<dataTemplate->fieldCount; i++) {
 			TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 			if (hfi->type.id==IPFIX_ETYPEID_frontPayloadPktCount) {
