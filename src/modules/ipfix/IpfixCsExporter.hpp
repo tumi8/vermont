@@ -130,6 +130,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 		} DISABLE_ALIGNMENT;
 
 		list<Ipfix_basic_flow*> chunkList;
+		uint32_t chunkListSize;
 };
 
 

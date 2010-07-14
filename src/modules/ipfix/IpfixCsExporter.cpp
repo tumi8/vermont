@@ -37,6 +37,7 @@ IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 	this->maxChunkBufferRecords = maxChunkBufferRecords;
 	this->maxFileCreationInterval = maxFileCreationInterval;
 	this->exportMode = exportMode;
+	this->chunkListSize = 0;
 	currentFile = NULL;
 	currentFileSize = 0;
 
@@ -215,9 +216,10 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 
 	//add data to linked list
 	chunkList.push_back(csRecord);
+	chunkListSize++;
 
 	//check if maxChunkBufferRecords is reached
-	if(chunkList.size() == maxChunkBufferRecords)
+	if(chunkListSize == maxChunkBufferRecords)
 		writeChunkList();
 
 	//check if maxFileSize is reached
@@ -310,22 +312,23 @@ void IpfixCsExporter::writeChunkList()
 	Ipfix_basic_flow_sequence_chunk_header csChunkHeader;
 
 	csChunkHeader.ipfix_type = htons(0x0008);
-	csChunkHeader.chunk_length = htonl(chunkList.size()*sizeof(Ipfix_basic_flow)+4);
-	csChunkHeader.flow_count = htonl(chunkList.size());
+	csChunkHeader.chunk_length = htonl(chunkListSize*sizeof(Ipfix_basic_flow)+4);
+	csChunkHeader.flow_count = htonl(chunkListSize);
 
 	if (fwrite(&csChunkHeader, sizeof(csChunkHeader), 1, currentFile)==0){
 		THROWEXCEPTION("Could not chunk header. Check disk space.");
 	}
 
-	msg(MSG_DEBUG, "IpfixCsExporter: writing %u records to disk", chunkList.size());
+	msg(MSG_DEBUG, "IpfixCsExporter: writing %u records to disk", chunkListSize);
 
-	while (chunkList.size() > 0){
+	while (!chunkList.empty()){
 		Ipfix_basic_flow* flow = chunkList.front();
 		if (fwrite(flow, sizeof(Ipfix_basic_flow), 1, currentFile)==0){
 			THROWEXCEPTION("Could not write basic flow data. Check disk space.");
 		}
 
 		chunkList.pop_front();
+		chunkListSize--;
 		delete flow;
 	}
 	addToCurTime(&nextChunkTimeout, maxChunkBufferTime*1000);
