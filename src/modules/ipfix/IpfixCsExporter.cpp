@@ -338,6 +338,9 @@ void IpfixCsExporter::writeChunkList()
  */
 void IpfixCsExporter::registerTimeout()
 {
+	// when this module is not connected, no timer is available
+	if (!timer) return;
+
 	if (timeoutRegistered) return;
 	if (nextChunkTimeout.tv_sec <= nextFileTimeout.tv_sec){
 		// Register a chunk timeout
