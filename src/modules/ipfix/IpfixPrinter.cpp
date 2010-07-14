@@ -88,7 +88,7 @@ void PrintHelpers::printPort(InformationElement::IeInfo type, IpfixRecord::Data*
 	fprintf(fh, "Port with length %u unparseable", type.length);
 }
 
-void PrintHelpers::printProtocol(uint16_t data) {
+void PrintHelpers::printProtocol(uint8_t data) {
 	switch (data) {
 	case IPFIX_protocolIdentifier_ICMP:
 		fprintf(fh, "ICMP");
@@ -106,7 +106,7 @@ void PrintHelpers::printProtocol(uint16_t data) {
 		fprintf(fh, "RAW");
 		return;
 	default:
-		fprintf(fh, "unknownProtocol");
+		fprintf(fh, "%u", data);
 		return;
 	}
 }
@@ -134,7 +134,7 @@ void PrintHelpers::printProtocol(InformationElement::IeInfo type, IpfixRecord::D
 		fprintf(fh, "RAW");
 		return;
 	default:
-		fprintf(fh, "unknownProtocol");
+		fprintf(fh, "%u", data[0]);
 		return;
 	}
 }
@@ -189,35 +189,37 @@ void PrintHelpers::printUint(char* buf, InformationElement::IeInfo type, IpfixRe
  * Prints a string representation of IpfixRecord::Data to stdout.
  */
 void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern) {
+
 	timeval t;
 	uint64_t hbnum;
+	string typeStr = type.toString();
+
+	// try to get the values aligned
+	if (typeStr.length() < 60)
+		fprintf(fh, "%-60s: ", type.toString().c_str());
+	else
+		fprintf(fh, "%s: ", type.toString().c_str());
 
 	switch (type.enterprise) {
 		case 0:
 			switch (type.id) {
 				case IPFIX_TYPEID_protocolIdentifier:
-					fprintf(fh, "protocolIdentifier (id=%u, length=%u): ", type.id, type.length);
 					printProtocol(type, pattern);
 					return;
 				case IPFIX_TYPEID_sourceIPv4Address:
-					fprintf(fh, "sourceIPv4Address (id=%u, length=%u): ", type.id, type.length);
 					printIPv4(type, pattern);
 					return;
 				case IPFIX_TYPEID_destinationIPv4Address:
-					fprintf(fh, "destinationIPv4Address (id=%u, length=%u): ", type.id, type.length);
 					printIPv4(type, pattern);
 					return;
 				case IPFIX_TYPEID_sourceTransportPort:
-					fprintf(fh, "sourceTransportPort (id=%u, length=%u): ", type.id, type.length);
 					printPort(type, pattern);
 					return;
 				case IPFIX_TYPEID_destinationTransportPort:
-					fprintf(fh, "destinationTransportPort (id=%u, length=%u): ", type.id, type.length);
 					printPort(type, pattern);
 					return;
 				case IPFIX_TYPEID_flowStartNanoSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
-					fprintf(fh, "%s: ", type.toString().c_str());
 					hbnum = ntohll(*(uint64_t*)pattern);
 					if (hbnum>0) {
 						t = timentp64(*((ntp64*)(&hbnum)));
@@ -233,7 +235,6 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 			switch (type.id) {
 				case IPFIX_TYPEID_flowStartNanoSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
-					fprintf(fh, "%s: ", type.toString().c_str());
 					hbnum = ntohll(*(uint64_t*)pattern);
 					if (hbnum>0) {
 						t = timentp64(*((ntp64*)(&hbnum)));
@@ -249,14 +250,12 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 		{
 			if (type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont) ||
 				type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
-				fprintf(fh, "%s: ", type.toString().c_str());
 				printFrontPayload(type, pattern);
 				return;
 			}
 		}
 	}
 
-	fprintf(fh, "%s: ", type.toString().c_str());
 	printUint(type, pattern);
 }
 
