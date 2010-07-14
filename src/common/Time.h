@@ -48,7 +48,7 @@ inline void addToCurTime(struct timespec* ts, long timediff_ms)
 	tv.tv_sec += timediff_ms/1000;
 	tv.tv_usec += (timediff_ms%1000)*1000;
 
-	if (tv.tv_usec>1000000) {
+	if (tv.tv_usec>=1000000) {
 		tv.tv_sec++;
 		tv.tv_usec -= 1000000;
 	}
