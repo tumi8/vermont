@@ -137,9 +137,6 @@ private:
 	 */
 	bool processTimeouts(struct timespec& nexttimeout)
 	{
-		if(timeouts.empty())
-			return false;
-
 		struct timespec now;
 		addToCurTime(&now, 0);
 		bool nexttoset = false;
@@ -212,18 +209,26 @@ private:
 				if (!Module::getShutdownProperly()) break;
 				else if (queue.getCount() == 0) break;
 			}
-			struct timespec nexttimeout;
-			if (!processTimeouts(nexttimeout)) {
+			if(!timeouts.empty()){
+				struct timespec nexttimeout;
+				if (!processTimeouts(nexttimeout)) {
+					if (!queue.pop(&element)) {
+						DPRINTF("queue.pop failed - timeout?");
+						continue;
+					}
+				} else {
+					if (!queue.popAbs(nexttimeout, &element)) {
+						DPRINTF("queue.pop failed - timeout?");
+						continue;
+					}
+				}
+			}else{
 				if (!queue.pop(&element)) {
 					DPRINTF("queue.pop failed - timeout?");
 					continue;
 				}
-			} else {
-				if (!queue.popAbs(nexttimeout, &element)) {
-					DPRINTF("queue.pop failed - timeout?");
-					continue;
-				}
 			}
+
 
 			if (!Source<T>::send(element)) break;
 		}

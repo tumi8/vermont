@@ -362,7 +362,7 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 					THROWEXCEPTION("lock of fullMutex failed");
 
 				int ret = pthread_cond_timedwait (fullCond, fullMutex, &timeout);
-				if(ret != 0 && ret != ETIMEDOUT)
+				if(ret != 0 && ret != ETIMEDOUT && ret != EINVAL)
 					THROWEXCEPTION("fullCond wait failed");
 
 				if (pthread_mutex_unlock (fullMutex) != 0)
@@ -396,7 +396,7 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 					THROWEXCEPTION("lock of emptyutex failed");
 
 				int ret = pthread_cond_timedwait (emptyCond, emptyMutex, &timeout);
-				if(ret != 0 && ret != ETIMEDOUT)
+				if(ret != 0 && ret != ETIMEDOUT && ret != EINVAL)
 					THROWEXCEPTION("emptyCond wait failed");
 
 				if (pthread_mutex_unlock (emptyMutex) != 0)
@@ -430,7 +430,7 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 
 				int ret = pthread_cond_timedwait (emptyCond, emptyMutex, &timeout);
 				if(ret != 0){
-					if(ret == ETIMEDOUT){
+					if(ret == ETIMEDOUT || ret != EINVAL){
 						if (pthread_mutex_unlock (emptyMutex) != 0)
 							THROWEXCEPTION("unlock of emptyMutex failed");
 						return false;

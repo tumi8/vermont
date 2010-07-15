@@ -62,6 +62,10 @@ public:
 		return CfgHelper<ConnectionQueue<T>, QueueCfg<T> >::instance;
 	}
 
+	ConnectionQueue<T>* getQueueInstance(){
+		return createInstance();
+	}
+
 	virtual bool deriveFrom(QueueCfg<T>* old)
 	{
 		if (this->maxSize != old->maxSize)

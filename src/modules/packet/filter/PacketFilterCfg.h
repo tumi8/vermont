@@ -77,6 +77,7 @@ class PacketFilterHelperCfg
 	virtual void setupWithoutSuccessors() { THROWEXCEPTION("Not supported"); }
 	virtual void disconnectInstances()  { THROWEXCEPTION("Not supported"); }
 	virtual Module* getQueueInstance()  { THROWEXCEPTION("Not supported"); return NULL; }
+	virtual bool hasQueue() { THROWEXCEPTION("Not supported"); return false; }
 protected:
 	PacketFilterHelperCfg(XMLElement *e);
 };

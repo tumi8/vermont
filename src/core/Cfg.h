@@ -151,6 +151,9 @@ public:
 	/** returns a Queue, which is used as a TimoutAdapter */
 	virtual Module* getQueueInstance() = 0;
 
+	/** returns if module has a queue to connect to */
+	virtual bool hasQueue() = 0;
+
 protected:
 
 	Cfg(XMLElement* e) : CfgBase(e) { }
@@ -256,7 +259,7 @@ public:
 	/** this method gets called *ONLY* if the instance needs a timer and the
 	 *  in the configuration there was no timer in front of the instance
 	 */
-	ConnectionQueue<typename InstanceType::dst_value_type>* getQueueInstance()
+	virtual ConnectionQueue<typename InstanceType::dst_value_type>* getQueueInstance()
 	{
 		if (!queue) {
 			msg(MSG_DIALOG, "queue is required by module id=%u but is not configured. Inserting a default queue with max size 1 (attention: this is inefficient!)", getID());
@@ -340,9 +343,19 @@ public:
 			notifiable->useTimer(timer);
 		}
 
-		if (!dest) { // dest wasn't set yet
-			dest = dynamic_cast<Destination< typename InstanceType::src_value_type>* >
+		// dest wasn't set yet
+		if (!dest) {
+			//if successor has a queue connect to it
+			if(other->hasQueue()){
+				dest = dynamic_cast<ConnectionQueue< typename InstanceType::src_value_type>* >
+					(other->getQueueInstance());
+			}
+			//otherwise connect to the predecessor directly
+			else{
+				dest = dynamic_cast<Destination< typename InstanceType::src_value_type>* >
 					(other->getInstance());
+			}
+
 			if (!dest)
 				THROWEXCEPTION("Unexpected error: can't cast %s to matching Destination<>",
 						other->getName().c_str());
@@ -423,6 +436,13 @@ public:
 	{
 		Module* m = dynamic_cast<Module*>(instance);
 		return m;
+	}
+
+	bool hasQueue(){
+		if(queue == NULL)
+			return false;
+		else
+			return true;
 	}
 
 protected:
