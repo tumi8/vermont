@@ -83,7 +83,11 @@ int main(int argc, char* argv[])
 
 			//write to outfile
 			ofstream outf(outputFile, ios::app);
-			outf << res.tv_sec << " sec " << res.tv_nsec << " nsec" << endl;
+			outf << res.tv_sec << ".";
+			outf.width(9);
+			outf.fill('0');
+			outf << res.tv_nsec;
+			outf << " sec" << endl;
 			outf.close();
 		}
 	}
