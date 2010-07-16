@@ -430,7 +430,7 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 
 				int ret = pthread_cond_timedwait (emptyCond, emptyMutex, &timeout);
 				if(ret != 0){
-					if(ret == ETIMEDOUT || ret != EINVAL){
+					if(ret == ETIMEDOUT || ret == EINVAL){
 						if (pthread_mutex_unlock (emptyMutex) != 0)
 							THROWEXCEPTION("unlock of emptyMutex failed");
 						return false;
