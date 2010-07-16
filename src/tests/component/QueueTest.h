@@ -14,7 +14,8 @@
 
 class QueueTest{
 	public:
-		QueueTest(uint32_t queueType, uint32_t numProducer, uint32_t queueSize);
+		QueueTest(uint32_t queueType, uint32_t numProducer,
+				uint32_t queueSize, uint32_t timeoutLength);
 		~QueueTest();
 		struct timespec runTest(uint32_t numOps);
 		static void* pushFunc(void*);
@@ -23,6 +24,7 @@ class QueueTest{
 		volatile uint32_t numProducer;
 		volatile uint32_t queueSize;
 		volatile uint32_t numOps;
+		volatile uint32_t timeoutLength;
 
 		Thread* pusher[20];
 		Thread* popper;

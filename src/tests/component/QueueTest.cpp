@@ -3,9 +3,10 @@
 
 #include <stdio.h>
 
-QueueTest::QueueTest(uint32_t queueType, uint32_t numProducer, uint32_t queueSize):
+QueueTest::QueueTest(uint32_t queueType, uint32_t numProducer, uint32_t queueSize, uint32_t timeoutLength):
 	numProducer(numProducer),
 	queueSize(queueSize),
+	timeoutLength(timeoutLength),
 	queue(NULL)
 {
 	if(numProducer > 20)
@@ -23,10 +24,10 @@ QueueTest::QueueTest(uint32_t queueType, uint32_t numProducer, uint32_t queueSiz
 			queue = new ConcurrentQueue<uint32_t>(STL, queueSize);
 			break;
 		case 2:
-			queue = new ConcurrentQueueCond<uint32_t>(STL, queueSize);
+			queue = new ConcurrentQueueCond<uint32_t>(STL, queueSize, timeoutLength);
 			break;
 		case 3:
-			queue = new ConcurrentQueueSpinlock<uint32_t>(STL, queueSize);
+			queue = new ConcurrentQueueSpinlock<uint32_t>(STL, queueSize, timeoutLength);
 			break;
 		default:
 			THROWEXCEPTION("wrong ConcurrentQueue");

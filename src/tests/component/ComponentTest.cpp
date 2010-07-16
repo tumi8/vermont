@@ -20,6 +20,7 @@ int main(int argc, char* argv[])
 	uint32_t numQueueProducers = 1;
 	uint32_t queueSize = 1000;
 	uint32_t numQueueOps = 1000000;
+	uint32_t timeoutLength = 100;
 
 	//get command line parameter
 	while (1) {
@@ -32,11 +33,12 @@ int main(int argc, char* argv[])
 			{"qprod", 1, 0, '3'},
 			{"qsize", 1, 0, '4'},
 			{"qops", 1, 0, '5'},
-			{"help", 1, 0, '6'},
+			{"timeout", 1, 0, '6'},
+			{"help", 1, 0, '7'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "0:1:2:3:4:5:6:", long_options, NULL);
+		c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:", long_options, NULL);
 		if (c == -1)
 			break;
 
@@ -60,6 +62,9 @@ int main(int argc, char* argv[])
 				numQueueOps=atoi(optarg);
 				break;
 			case '6':
+				timeoutLength=atoi(optarg);
+				break;
+			case '7':
 			default:
 				usage();
 				exit(1);
@@ -69,13 +74,14 @@ int main(int argc, char* argv[])
 	//ConcurrentQueue tests
 	if(queueType > 0){
 		struct timespec res;
-		QueueTest test(queueType, numQueueProducers, queueSize);
+		QueueTest test(queueType, numQueueProducers, queueSize, timeoutLength);
 
 		ofstream outf(outputFile);
 		outf << "Tested ConcurrentQueue type:" << queueType;
 		outf << " producers:" << numQueueProducers;
 		outf << " size:" << queueSize;
-		outf << " operations:" << numQueueOps << endl;
+		outf << " operations:" << numQueueOps;
+		outf << " timeout:" << timeoutLength << endl;
 		outf.close();
 
 		for(uint32_t i=0; i<replication; i++){
