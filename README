@@ -101,7 +101,7 @@ OpenSSL library on your system. Therefore, it is recommended to install the
 new version in a local directory by using the --prefix option of the config
 script.
 
-To built OpenSSL and install it into a built/ subdirectory within the OpenSSL
+To build OpenSSL and install it into a built/ subdirectory within the OpenSSL
 source directory, call the following commands:
 
 $ ./config -d no-dso no-shared --prefix=`pwd`/built
