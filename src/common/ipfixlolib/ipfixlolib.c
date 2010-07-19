@@ -6,10 +6,7 @@
  Header for encoding functions suitable for IPFIX
 
  Changes by Daniel Mentz, 2009-01
-   Added support for DTLS over UDP
-   Note that this work is still ongoing
- TODO:
-  * Call SSL_read() from time to time to receive alerts from remote end
+   Added support for DTLS over UDP and DTLS over SCTP
 
  Changes by Gerhard Muenz, 2008-03
    non-blocking SCTP socket
@@ -43,6 +40,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #ifdef __linux__
 /* Copied from linux/in.h */
@@ -805,11 +803,35 @@ static int sctp_sendmsgv(int s, struct iovec *vector, int v_len, struct sockaddr
 	char outcmsg[CMSG_SPACE(sizeof(struct sctp_sndrcvinfo))];
 	struct cmsghdr *cmsg;
 	struct sctp_sndrcvinfo *sinfo;
+	char sendbuf[IPFIX_MAX_PACKETSIZE];
+	struct iovec iv;
 
 	outmsg.msg_name = to;
 	outmsg.msg_namelen = tolen;
-	outmsg.msg_iov = vector;
-	outmsg.msg_iovlen = v_len;
+
+	/* Only IOV_MAX iovecs can be passed to sendmsg(). If we have more,
+	 we copy all these iovecs into one buffer. */
+	if (v_len <= sysconf(_SC_IOV_MAX)) {
+	    outmsg.msg_iov = vector;
+	    outmsg.msg_iovlen = v_len;
+	} else {
+	    int i;
+	    int maxsendbuflen = sizeof(sendbuf);
+	    char *sendbufcur = sendbuf;
+	    /* Collect data form iovecs */
+	    for (i=0;i<v_len;i++) {
+		if (sendbufcur + vector[i].iov_len > sendbuf + maxsendbuflen) {
+		    msg(MSG_FATAL, "sendbuffer too small.");
+		    return -1;
+		}
+		memcpy(sendbufcur,vector[i].iov_base,vector[i].iov_len);
+		sendbufcur+=vector[i].iov_len;
+	    }
+	    iv.iov_base = sendbuf;
+	    iv.iov_len = sendbufcur - sendbuf;
+	    outmsg.msg_iov = &iv;
+	    outmsg.msg_iovlen = 1;
+	}
 
 	outmsg.msg_control = outcmsg;
 	outmsg.msg_controllen = sizeof(outcmsg);
@@ -1524,6 +1546,7 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
 	write_unsigned16 (&p_pos, p_end, 0);
 	exporter->template_arr[found_index].fields_length = 8;
 	exporter->template_arr[found_index].field_count = 0;
+	exporter->template_arr[found_index].fixedfield_count = 0;
 	exporter->template_arr[found_index].fields_added = 0;
 	exporter->template_arr[found_index].state = T_WITHDRAWN;
 	DPRINTFL(MSG_VDEBUG, "... Withdrawn");
@@ -1936,7 +1959,7 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 				sctp_sendbuf->current++;
 				sctp_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
 				
-				/* ASK: We don't we just delete the template? */
+				/* ASK: Why don't we just delete the template? */
 				exporter->template_arr[i].state = T_TOBEDELETED;
 				DPRINTFL(MSG_VDEBUG, "Withdrawal for template ID: %d added to sctp_sendbuffer", exporter->template_arr[i].template_id);
 				break;
@@ -2779,17 +2802,50 @@ out:
 /*******************************************************************/
 
 /*!
- * \brief Marks the beginning of a data Template set and a Template record
+ * \brief Marks the beginning of a Data Template Set and a Template Record
+ *
+ * ipfixlolib supports only one Data Template Record per Date Template Set. So
+ * this function basically starts a Data Template Set and one Data Template
+ * Record.
+ *
+ * Data Templates are a proprietary extension to IPFIX.  See
+ * <tt>draft-dressler-ipfix-aggregation-00</tt> for details.  Data Templates
+ * are like standard Templates except that they may specify fields with fixed
+ * values i.e. fields that share the same value for all Data Records. These
+ * values are transmitted once as part of the Data Template Record instead of
+ * repeatedly transmitting them with every Data Record.
+ *
+ * A Data Template consists of (in this order):
+ * <ul>
+ * <li>Field Specifiers (like in standard Template Records)</li>
+ * <li>Field Specifiers of the fixed-value fields</li>
+ * <li>Data values of the fixed-value fields</li>
+ * </ul>
+ *
+ * Use the following functions to add the Field Specifiers and Data values to
+ * the template:
+ * <ul>
+ * <li>ipfix_put_template_field()
+ * <li>ipfix_put_template_fixedfield()
+ * <li>ipfix_put_template_data()
+ * </ul>
+ *
+ * <em>Note:</em> It is not possible to start and define multiple Data
+ * Templates in parallel.  ipfix_end_template() has to be called first before a
+ * new Data Template can be defined.
  *
  * \param exporter pointer to previously initialized exporter struct
- * \param template_id the Template's ID (in host byte order)
+ * \param template_id ID for this Template. Must be > 255.
  * \param preceding
- * \param field_count number of Template fields in this template (in host byte order)
- * \param fixedfield_count
+ * \param field_count number of fields that will be added to this Data Template Record.
+ *        It is considered an error if more or fewer fields are added.
+ * \param fixedfield_count number of fixed-value fields that will be added to this Data Template Record.
+ *        It is considered an error if more or fewer fields are added.
  * \return 0 success
  * \return -1 failure. Reasons include:<ul><li><tt>template_id</tt> is not
  * great than 255</li><li>maximum number of defined templates has been
  * exceeded</li></ul>
+ * \sa ipfix_end_template(), ipfix_put_template_field(), ipfix_put_template_fixedfield(), ipfix_send()
  */
 
 /*
@@ -2799,9 +2855,10 @@ out:
 int ipfix_start_datatemplate (ipfix_exporter *exporter,
 	uint16_t template_id, uint16_t preceding, uint16_t field_count,
 	uint16_t fixedfield_count) {
-    // are we updating an existing template?
+    /* Is this a regular Template (Set id == 2) or a Data Template (Set id == 4).
+       See draft-dressler-ipfix-aggregation-00 for more details on Data Templates.
+       Data Templates are (still) a proprietary extension to IPFIX. */
     int datatemplate=(fixedfield_count || preceding) ? 1 : 0;
-
     /* Make sure that template_id is > 255 */
     if ( ! template_id > 255 ) {
 	msg(MSG_ERROR, "Template id has to be > 255. Start of template cancelled.");
@@ -2844,11 +2901,13 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
     char *p_pos;
     char *p_end;
 
-    // allocate memory for the template's fields:
-    // maximum length of the data: 8 bytes for each field, as one field contains:
+    // allocate memory for the template's field specifiers:
+    // 8 bytes for each field specifier, as one field specifier contains:
     // field type, field length (2*2bytes)
-    // and may contain an Enterprise Number (4 bytes)
-    // also, reserve 8 bytes space for the header!
+    // and an optional Enterprise Number (4 bytes)
+    // Also, reserve 4+4 bytes for the Set Header and the Template Record header
+    // In case of a Data Template, the Data Template Record header is 8 bytes long
+    // (instead of 4 bytes). The total overhead is 4+8=12 in this case.
 
     exporter->template_arr[found_index].max_fields_length = 8 * (field_count + fixedfield_count) + (datatemplate ? 12 : 8);
     exporter->template_arr[found_index].template_fields = (char*)malloc(exporter->template_arr[found_index].max_fields_length );
@@ -2857,6 +2916,7 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
     exporter->template_arr[found_index].state = T_UNCLEAN;
     exporter->template_arr[found_index].template_id = template_id;
     exporter->template_arr[found_index].field_count = field_count;
+    exporter->template_arr[found_index].fixedfield_count = fixedfield_count;
     exporter->template_arr[found_index].fields_added = 0;
 
     // also, write the template header fields into the buffer (except the length field);
@@ -2867,10 +2927,10 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
     p_end = p_pos + exporter->template_arr[found_index].max_fields_length;
 
     // ++ Start of Set Header
-    // set ID is 2 for a template set, 4 for a template with fixed fields:
+    // set ID is 2 for a Template Set, 4 for a Data Template with fixed fields:
     // see RFC 5101: 3.3.2 Set Header Format
     write_unsigned16 (&p_pos, p_end, datatemplate ? 4 : 2);
-    // write 0 to the length field; this will be overwritten with end_template
+    // write 0 to the length field; this will be overwritten by end_template
     write_unsigned16 (&p_pos, p_end, 0);
     // ++ End of Set Header
 
@@ -2950,7 +3010,8 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id,
 	return -1;
     }
     if (exporter->template_arr[found_index].fields_added >=
-	    exporter->template_arr[found_index].field_count) {
+	    exporter->template_arr[found_index].field_count +
+	    exporter->template_arr[found_index].fixedfield_count) {
 	msg(MSG_ERROR, "Cannot add more template fields.");
 	return -1;
     }
@@ -2997,19 +3058,20 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id,
  * \brief Start defining a new Template (Set).
  *
  * ipfixlolib supports only one Template Record per Template Set. So this
- * function basically means 'start Template Set and one Template Record'.
+ * function basically starts a Template Set and one Template Record.
  *
  * <em>Note:</em> It is not possible to start and define multiple Templates in parallel.
  * ipfix_end_template() has to be called first before a new Template can be
  * defined.
  *
- * Individual fields can be added to the Template by calling
+ * Individual fields are added to the Template by calling
  * ipfix_put_data_field() before calling ipfix_end_template() to end the
  * Template.
  *
  * \param exporter pointer to previously initialized exporter struct
  * \param template_id ID for this Template. Must be > 255.
- * \param field_count number of fields to add
+ * \param field_count number of fields that will be added to this Template Record.
+ *        It is considered an error if more or fewer fields are added.
  * \return 0 success
  * \return -1 failure. Reasons might be that <tt>template_id</tt> is not great than 255
  *   or that the maximum number of defined templates has been exceeded.
@@ -3021,8 +3083,8 @@ int ipfix_start_template (ipfix_exporter *exporter, uint16_t template_id,  uint1
 
 
 /*!
- * \brief Append fixed-value data type field to the exporter's current data
- * template set, see <tt>ipfix_put_template_field()</tt>
+ * \brief Append fixed-value data type field to the exporter's current Data
+ * Template Set, see <tt>ipfix_put_template_field()</tt>.
  *
  * \param exporter pointer to previously initialized exporter struct
  * \param template_id ID of the template
@@ -3031,6 +3093,7 @@ int ipfix_start_template (ipfix_exporter *exporter, uint16_t template_id,  uint1
  * \param enterprise_id enterprise number (set to 0 if not used)
  * \return 0 success
  * \return -1 failure
+ * \sa ipfix_start_datatemplate()
 */
 int ipfix_put_template_fixedfield(ipfix_exporter *exporter, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id) {
         return ipfix_put_template_field(exporter, template_id, type, length, enterprise_id);
@@ -3046,6 +3109,7 @@ int ipfix_put_template_fixedfield(ipfix_exporter *exporter, uint16_t template_id
  * \param data_length length of data to be added, in bytes
  * \return 0 success
  * \return -1 failure
+ * \sa ipfix_start_datatemplate()
 */
 int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void* data, uint16_t data_length) {
         int found_index;
@@ -3065,30 +3129,36 @@ int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void
         }
 
         ipfix_lo_template *templ=(&(*exporter).template_arr[found_index]);
+	if (templ->fields_added != templ->field_count + templ->fixedfield_count) {
+		msg(MSG_ERROR, "All field specifiers must have been added before adding data values to Data Template Record.");
+                return -1;
+	}
         templ->max_fields_length += data_length;
         templ->template_fields=(char *)realloc(templ->template_fields, templ->max_fields_length);
 
         /* beginning of the buffer */
-        p_pos =  (*exporter).template_arr[found_index].template_fields;
+        p_pos =  templ->template_fields;
         // end of the buffer
-        p_end = p_pos + (*exporter).template_arr[found_index].max_fields_length;
-
+        p_end = p_pos + templ->max_fields_length;
+#if 0
         DPRINTFL(MSG_VDEBUG, "template found at %i", found_index);
         DPRINTFL(MSG_VDEBUG, "A p_pos %p, p_end %p", p_pos, p_end);
         DPRINTFL(MSG_VDEBUG, "max_fields_len %u ", (*exporter).template_arr[found_index].max_fields_length);
         DPRINTFL(MSG_VDEBUG, "fieldss_len %u ", (*exporter).template_arr[found_index].fields_length);
+#endif
 
         // add offset to the buffer's beginning: this is, where we will write to.
-        p_pos += (*exporter).template_arr[found_index].fields_length;
-
+        p_pos += templ->fields_length;
+#if 0
         DPRINTFL(MSG_VDEBUG, "B p_pos %p, p_end %p", p_pos, p_end);
+#endif
 
 	for(i = 0; i < data_length; i++) {
 		ret = write_octet(&p_pos, p_end, *(((uint8_t*)data)+i) );
 	}
 
         // add to the written length:
-        (*exporter).template_arr[found_index].fields_length += data_length;
+        templ->fields_length += data_length;
 
         return 0;
 }
@@ -3116,12 +3186,11 @@ int ipfix_end_template(ipfix_exporter *exporter, uint16_t template_id)
 	return -1;
     }
     ipfix_lo_template *templ=(&exporter->template_arr[found_index]);
-    if (templ->fields_added != templ->field_count) {
+    if (templ->fields_added != templ->field_count + templ->fixedfield_count) {
 	msg(MSG_ERROR, "Number of added template fields does not match number passed to ipfix_start_template");
 	ipfix_deinit_template(exporter, templ);
 	return -1;
     }
-
     // reallocate the memory , i.e. free superfluous memory, as we allocated enough memory to hold
     // all possible vendor specific IDs.
     templ->template_fields=(char *)realloc(templ->template_fields, templ->fields_length);
