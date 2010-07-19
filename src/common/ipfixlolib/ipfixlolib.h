@@ -533,10 +533,14 @@ typedef struct{
 	uint16_t template_id;
 	uint16_t field_count;	// the number of fields the user announced
 				// when calling ipfix_start_template
-	uint16_t fields_added;	// make sure the user does not add more
-				// fields than he told us to add in the
-				// first place.
-				// Make sure fields_added <= field_count
+	uint16_t fixedfield_count;
+				// the number of fixed-value fields the
+				// user announced when calling ipfix_start_datatemplate
+	uint16_t fields_added;	// make sure the user adds the exact the same number
+				// of fields he told us to add when calling
+				// ipfix_start_template()
+				// Make sure fields_added == field_count + fixedfield_count
+				// when the user calls ipfix_end_template()
 	int fields_length;	// This also includes the length of the Set Header
 				// It's basically the number of bytes written
 				// into template_fields so far.
@@ -544,10 +548,10 @@ typedef struct{
 	int max_fields_length;	// size of the malloced char array
 				// template_fields points to.
 
-	char *template_fields;	// This includes the Set Header and the
+	char *template_fields;	// Points to a byte array that contains the Set Header and the
 				// Template Record Header as it goes out on the wire.
 				// Note that the type ipfix_set_header is *not* used
-				// to build Set Headers for template sets.
+				// to build Set Headers for Template Sets.
 } ipfix_lo_template;
 
 /*
