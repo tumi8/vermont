@@ -49,10 +49,10 @@ AnomalyDetector::AnomalyDetector(uint32_t subnet, uint32_t subnetmask, double pa
         // write headings
         logfile << "src/dst" << "\t";
         logfile << "host" << "\t";
+        logfile << "flowStartMillisec" << "\t";
         logfile << "binVal" << "\t";
         logfile << "packetRate" << "\t";
         logfile << "ema" << "\t";
-        logfile << "threshold" << "\t";
         logfile << endl;
         logfile.close();
     }
@@ -98,10 +98,11 @@ void AnomalyDetector::onDataRecord(IpfixDataRecord* record)
  */
 void AnomalyDetector::checkConnection(Connection* conn)
 {
-    float numFlowPackets;       // number of sent or received packets for current flow
-    float ivLength = 1;         // length of observation interval(default = 1 sek)
-    uint32_t flowStartSec = 0;  // starttime of flow (seconds)
-    uint32_t host = 0;          // host in local network (srcIP or dstIP)
+    float numFlowPackets;           // number of sent or received packets for current flow
+    float ivLength = 1;             // length of observation interval(default = 1 sek)
+    uint32_t flowStartSec = 0;      // starttime of flow (seconds)
+    uint64_t flowStartMillisec = 0; // starttime of flow (milliseconds)
+    uint32_t host = 0;              // host in local network (srcIP or dstIP)
     map<uint32_t, EmaEntry> *emaMap;
     bool isSrc = false;
     
@@ -121,7 +122,8 @@ void AnomalyDetector::checkConnection(Connection* conn)
     numFlowPackets = ntohll(conn->srcPackets);
     
     // calc starttime for current flow
-    flowStartSec = (conn->srcTimeStart + 500) / 1000; // srcTimeStart -rounded- to seconds
+    flowStartMillisec = conn->srcTimeStart;
+    flowStartSec = (flowStartMillisec + 500) / 1000; // srcTimeStart -rounded- to seconds
     
     // look up host in map
     map<uint32_t, EmaEntry>::iterator it;
@@ -135,7 +137,7 @@ void AnomalyDetector::checkConnection(Connection* conn)
             (*emaMap)[host].numPackets += numFlowPackets;
             
         } else {
-            (*emaMap)[host].flowStartSec = flowStartSec;
+            (*emaMap)[host].flowStartMillisec = flowStartMillisec;
             // flow exceeded interval
             if (flowStartSec > (((*emaMap)[host].binVal) + (ivLength *2 ))) {
                 // nothing happened for a while
@@ -189,7 +191,7 @@ void AnomalyDetector::checkConnection(Connection* conn)
         emaEnt.binVal = flowStartSec;
         emaEnt.numPackets = numFlowPackets;
         emaEnt.packetRate = numFlowPackets / ivLength;
-        emaEnt.flowStartSec = flowStartSec;
+        emaEnt.flowStartMillisec = flowStartMillisec;
         emaEnt.isSrc = isSrc;
         
         // set initial ema to current packetRate
@@ -215,10 +217,10 @@ void AnomalyDetector::printEntry(EmaEntry entry, uint32_t host)
              logfile << "DST" << "\t";
         }
         logfile << IPToString(host).c_str() << "\t";
+        logfile << entry.flowStartMillisec << "\t";
         logfile << entry.binVal << "\t";
         logfile << entry.packetRate << "\t";
         logfile << entry.ema << "\t";
-        logfile << packetRateThreshold << "\t";
         logfile << endl;
         logfile.close();
         } else {

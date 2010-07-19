@@ -44,12 +44,12 @@ class AnomalyDetector
     private:
 
         struct EmaEntry {
-            uint32_t binVal;        // current bin value on time axis (seconds)
-            uint32_t flowStartSec;  // starttime of flow (seconds)
-            float numPackets;       // number of packets for current bin
-            float ema;              // EMA for this bin
-            float packetRate;       // packetRate for current bin
-            bool isSrc;             // source oder destination
+            uint32_t binVal;              // current bin value on time axis (seconds)
+            uint64_t flowStartMillisec;   // starttime of flow (milliseconds)
+            float numPackets;             // number of packets for current bin
+            float ema;                    // EMA for this bin
+            float packetRate;             // packetRate for current bin
+            bool isSrc;                   // source oder destination
         };
 
         map<uint32_t, EmaEntry> srcHostMap;  // map for EMA values of outgoing packets (local host is source)
