@@ -148,8 +148,11 @@ public:
 	/** returns an instance of the module which the config element describes */
 	virtual Module* getInstance() = 0;
 
-	/** returns a Queue, which is used as a TimoutAdapter */
-	virtual Module* getQueueInstance() = 0;
+	/** returns a Queue, which is used as a TimoutAdapter and/or buffer
+	 * @multi set true if the called module has more predecessors
+	 * @return Instance of the ConnectionQueue
+	 */
+	virtual Module* getQueueInstance(bool multi = false) = 0;
 
 	/** returns if module has a queue to connect to */
 	virtual bool hasQueue() = 0;
@@ -256,14 +259,20 @@ public:
 		instance->onReconfiguration2();
 	}
 
-	/** this method gets called *ONLY* if the instance needs a timer and the
-	 *  in the configuration there was no timer in front of the instance
+	/** this method can be called for 2 reasons:
+	 * 	1. if the instance needs a timer and in the configuration
+	 *  there was no timer in front of the instance
+	 *  2. if the instance has more predecessors. In this case multi
+	 *  should be set true
+	 *
+	 *  @multi set true if the called module has more predecessors
+	 * 	@return Instance of the ConnectionQueue
 	 */
-	virtual ConnectionQueue<typename InstanceType::dst_value_type>* getQueueInstance()
+	virtual ConnectionQueue<typename InstanceType::dst_value_type>* getQueueInstance(bool multi = false)
 	{
 		if (!queue) {
 			msg(MSG_DIALOG, "queue is required by module id=%u but is not configured. Inserting a default queue with max size 100", getID());
-			queue = new ConnectionQueue<typename InstanceType::dst_value_type>(100);
+			queue = new ConnectionQueue<typename InstanceType::dst_value_type>(100,multi);
 			queue->connectTo(getInstance());
 			Notifiable* n = dynamic_cast<Notifiable*>(getInstance());
 			if (n) n->useTimer(queue);

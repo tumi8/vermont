@@ -37,9 +37,15 @@ template <class T>
 class ConnectionQueue : public Adapter<T>, public Timer
 {
 public:
-	ConnectionQueue(uint32_t maxEntries = 1)
-		: queue(STL, maxEntries), thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
+	ConnectionQueue(uint32_t maxEntries, bool multipleProducers = true)
+		: thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
 	{
+		printf("#####ConnectionQueue(%d, %s)\n",maxEntries,(multipleProducers ? "true" : "false"));
+		if(multipleProducers)
+			queue = new ConcurrentQueue<T>(STL, maxEntries);
+		else
+			queue = new ConcurrentQueue<T>(SINGLE_CACHEOPT, maxEntries);
+
 		initPhase = true;
 		this->Sensor::usedBytes = sizeof(ConnectionQueue);
 	}
@@ -53,12 +59,12 @@ public:
 	{
 		DPRINTF("receive(Packet*)");
 		statTotalReceived++;
-		queue.push(packet);
+		queue->push(packet);
 	}
 
 	virtual void performStart()
 	{
-		queue.restart();
+		queue->restart();
 		thread.run(this);
 	}
 
@@ -69,11 +75,11 @@ public:
 	{
 		if (!Module::getShutdownProperly()) {
 			// this is an unclean shutdown, as elements in the queue will be lost
-			queue.notifyShutdown();
+			queue->notifyShutdown();
 			Adapter<T>::connected.shutdown();
 		} else {
-			if (queue.getCount()==0) {
-				queue.notifyShutdown();
+			if (queue->getCount()==0) {
+				queue->notifyShutdown();
 			}
 		}
 
@@ -95,7 +101,7 @@ public:
 
 	inline int getCount()
 	{
-		return queue.getCount();
+		return queue->getCount();
 	}
 
 	/**
@@ -122,7 +128,7 @@ public:
 
 
 private:
-	ConcurrentQueue<T> queue;  /**< contains all elements which were received from previous modules */
+	ConcurrentQueue<T>* queue;  /**< contains all elements which were received from previous modules */
 	Thread thread;
 	list<TimeoutEntry*> timeouts;
 	//Mutex mutex;	/**< controls access to class variable timeouts */
@@ -207,24 +213,24 @@ private:
 		while (true) {
 			if (Module::getExitFlag()) {
 				if (!Module::getShutdownProperly()) break;
-				else if (queue.getCount() == 0) break;
+				else if (queue->getCount() == 0) break;
 			}
 			if(!timeouts.empty()){
 				struct timespec nexttimeout;
 				if (!processTimeouts(nexttimeout)) {
-					if (!queue.pop(&element)) {
-						DPRINTF("queue.pop failed - timeout?");
+					if (!queue->pop(&element)) {
+						DPRINTF("queue->pop failed - timeout?");
 						continue;
 					}
 				} else {
-					if (!queue.popAbs(nexttimeout, &element)) {
-						DPRINTF("queue.pop failed - timeout?");
+					if (!queue->popAbs(nexttimeout, &element)) {
+						DPRINTF("queue->pop failed - timeout?");
 						continue;
 					}
 				}
 			}else{
-				if (!queue.pop(&element)) {
-					DPRINTF("queue.pop failed - timeout?");
+				if (!queue->pop(&element)) {
+					DPRINTF("queue->pop failed - timeout?");
 					continue;
 				}
 			}
@@ -256,7 +262,7 @@ private:
 	virtual string getStatisticsXML(double interval)
 	{
 		char text[200];
-		uint32_t entries = queue.getCount();
+		uint32_t entries = queue->getCount();
 		this->Sensor::usedBytes = entries*sizeof(T);
 		snprintf(text, ARRAY_SIZE(text), "<entries>%u</entries><totalReceived>%u</totalReceived>", entries, statTotalReceived);
 		return string(text);

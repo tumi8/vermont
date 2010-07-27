@@ -115,8 +115,8 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 
 			if(!this->queueImp->push(t))
 				THROWEXCEPTION("Could not push element");
-			pushedCount++;
-			count++;
+			__sync_add_and_fetch(&pushedCount, 1);
+			__sync_add_and_fetch(&count, 1);
 
 			popSemaphore.post();
 			DPRINTFL(MSG_VDEBUG, "(%s) element pushed (%d elements in queue)", ownerName.c_str(), maxEntries-pushSemaphore.getCount(), pushSemaphore.getCount(), maxEntries);
@@ -136,7 +136,7 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 			if(!this->queueImp->pop(res))
 				THROWEXCEPTION("Could not pop element");
 			poppedCount++;
-			count--;
+			__sync_sub_and_fetch(&count, 1);
 
 			pushSemaphore.post();
 
@@ -162,7 +162,7 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 			if(!this->queueImp->pop(res))
 				THROWEXCEPTION("Could not pop element");
 			poppedCount++;
-			count--;
+			__sync_sub_and_fetch(&count, 1);
 
 			pushSemaphore.post();
 
@@ -188,7 +188,7 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 			if(!this->queueImp->pop(res))
 				THROWEXCEPTION("Could not pop element");
 			poppedCount++;
-			count--;
+			__sync_sub_and_fetch(&count, 1);
 
 			pushSemaphore.post();
 
@@ -215,7 +215,7 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 			if(!this->queueImp->pop(res))
 				THROWEXCEPTION("Could not pop element");
 			poppedCount++;
-			count--;
+			__sync_sub_and_fetch(&count, 1);
 
 			pushSemaphore.post();
 
@@ -251,9 +251,9 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 			pushSemaphore.restart();
 		}
 
-		int pushedCount;
-		int poppedCount;
-		int maxEntries;
+		uint32_t pushedCount;
+		uint32_t poppedCount;
+		uint32_t maxEntries;
 
 	protected:
 		TimeoutSemaphore popSemaphore;
@@ -369,7 +369,7 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 					THROWEXCEPTION("unlock of fullMutex failed");
 			}
 
-			(*pushedCount)++;
+			__sync_add_and_fetch(pushedCount,1);
 
 			//wake up potential waiters
 			if (pthread_mutex_lock (emptyMutex) != 0)
@@ -568,7 +568,7 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 				nanosleep(spinLockTimeoutConsumer, NULL);
 			}
 
-			(*pushedCount)++;
+			__sync_add_and_fetch(pushedCount,1);
 
 		}
 

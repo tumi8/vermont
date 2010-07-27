@@ -33,20 +33,20 @@ Graph* Connector::connect(Graph* g)
 		vector<unsigned int> nexts = nodes[i]->getCfg()->getNext();
 
 		for (unsigned int j = 0; j < nexts.size(); j++){
-			Cfg* predecessor = id2node[nexts[j]]->getCfg();
+			Cfg* successor = id2node[nexts[j]]->getCfg();
 			bool found = false;
 
 			for(unsigned int k = 0; k < check.size(); k++){
-				if(check[k] == predecessor){
+				if(check[k] == successor){
 					found = true;
-					msg(MSG_INFO, "Creating ConnectionQueue for module %s[Id = %d]",
-						predecessor->getName().c_str(), predecessor->getID());
-					predecessor->getQueueInstance();
+					msg(MSG_INFO, "Creating ConnectionQueue for module %s[Id = %d] cause of multiple predecessors",
+							successor->getName().c_str(), successor->getID());
+					successor->getQueueInstance(true);
 					break;
 				}
 			}
 			if(!found)
-				check.push_back(predecessor);
+				check.push_back(successor);
 		}
 	}
 

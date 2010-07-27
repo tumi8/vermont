@@ -40,21 +40,15 @@ QueueTest::QueueTest(uint32_t queueType, uint32_t numProducer, uint32_t queueSiz
 			if(numProducer != 1)
 				THROWEXCEPTION("Queue can only handle 1 producer");
 			delete queue->queueImp;
-			queue->queueImp = new LockfreeSingleQueueCacheOpt<uint32_t>(queueSize);
+			queue->queueImp = new LockfreeSingleQueueBasic<uint32_t>(queueSize);
 			break;
 		case 3:
 			if(numProducer != 1)
 				THROWEXCEPTION("Queue can only handle 1 producer");
 			delete queue->queueImp;
-			queue->queueImp = new LockfreeSingleQueueBasic<uint32_t>(queueSize);
+			queue->queueImp = new LockfreeSingleQueueCacheOpt<uint32_t>(queueSize);
 			break;
 		case 4:
-			if(numProducer != 1)
-				THROWEXCEPTION("Queue can only handle 1 producer");
-			delete queue->queueImp;
-			queue->queueImp = new LockfreeSingleQueueCacheOptLocal<uint32_t>(queueSize);
-			break;
-		case 5:
 			delete queue->queueImp;
 			queue->queueImp = new LockfreeMultiQueue<uint32_t>(queueSize);
 			break;
