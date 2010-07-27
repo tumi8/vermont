@@ -28,7 +28,7 @@
 PCAPExporterPipeCfg::PCAPExporterPipeCfg(XMLElement* elem)
 	: CfgHelper<PCAPExporterPipe, PCAPExporterPipeCfg>(elem, "pcapExporterPipe"),
         link_type(DLT_EN10MB), snaplen(PCAP_MAX_CAPTURE_LENGTH), sigkilltimeout(1),
-        logFileName(""), fifoReaderCmd(""), appenddate(false), restart(false)
+        logFileName(""), fifoReaderCmd(""), workingPath(""),appenddate(false), restart(false)
 {
 	if (!elem) return;
 

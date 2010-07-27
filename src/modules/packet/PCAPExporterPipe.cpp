@@ -83,6 +83,11 @@ void PCAPExporterPipe::setRestartOnSignal(bool b){
 	restartOnSignal = b;
 }
 
+/** 
+ * Starts the command given in 'cmd'
+ * STDOUT and STDERR of 'cmd' may be redirected into a file, see
+ * module_configuration.txt for details
+ * */
 int PCAPExporterPipe::execCmd(std::string& cmd)
 {
 	//char *command[] = {"tcpdump","-nr", "-" , (char*)0}; //"-w", "/tmp/pcap.dump",(char*)0};
@@ -106,6 +111,7 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 	if (pipe(child_parent_pipe)) {
 		THROWEXCEPTION("pipe(child_parent_pipe) failed");
 	}
+
 	/* Create a pipe, which allows communication between the child and the parent.
 	 * Writing an int value (e.g. errno) into child_parent_pipe[1]
 	 * will cause an exception in the parent process.
@@ -189,6 +195,9 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 	return -1;
 }
 
+/**
+ * Startup method for the module
+ */
 void PCAPExporterPipe::performStart()
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
@@ -270,6 +279,9 @@ void PCAPExporterPipe::startProcess()
 						fifoReaderCmd.c_str(), fifoReaderPid);
 }
 
+/**
+ * Writes a packet into the pipe
+ */
 void PCAPExporterPipe::receive(Packet* packet)
 {
 	if (onRestart){
@@ -286,6 +298,12 @@ void PCAPExporterPipe::handleSigPipe(int sig)
 {
 	handleSigChld(SIGCHLD);
 }
+
+/**
+ * Handles SIGCHLD and tries to restart the external process.
+ * If this fails too often within a short time period, we assume that
+ * something went terribly wrong and throw an exception accordingly.
+ */
 void PCAPExporterPipe::handleSigChld(int sig)
 {
 	if(onRestart || exitFlag || isRunning(fifoReaderPid)) return;
@@ -315,6 +333,9 @@ void PCAPExporterPipe::handleSigChld(int sig)
 	onRestart = false;
 }
 
+/**
+ * Catches SIGUSR2 and restarts the external process
+ * */
 void PCAPExporterPipe::handleSigUsr2(int sig)
 {
 	if (! restartOnSignal) return;
@@ -324,6 +345,12 @@ void PCAPExporterPipe::handleSigUsr2(int sig)
 	handleSigChld(sig);
 }
 
+
+/**
+ * Kills a single process by sending SIGTERM to 'pid'.
+ * Waits an user-defined interval before 
+ * eventually sending SIGKILL to the process if it's still running
+ */
 void PCAPExporterPipe::kill_pid(int pid)
 {
 	int i = sigKillTimeout;
@@ -338,6 +365,9 @@ void PCAPExporterPipe::kill_pid(int pid)
 	waitpid(fifoReaderPid, NULL, 0);
 }
 
+/**
+ * Checks if the process is still running
+ * */
 bool PCAPExporterPipe::isRunning(int pid)
 {
 	int status;
@@ -356,6 +386,9 @@ bool PCAPExporterPipe::checkint(const char *my_string)
 	return true;
 }
 
+/**
+ * Kills a process and all of its children
+ * */
 void PCAPExporterPipe::kill_all(int ppid)
 {
 	sleep(2); //give the process some time to finish its work
