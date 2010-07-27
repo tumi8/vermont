@@ -33,6 +33,13 @@
 
 class Packet;
 
+/**
+ * This class writes packets in PCAP format into a pipe,
+ * allowing another process to read these packets via STDIN. 
+ * The reader process is started and ended by Vermont.
+ * The reader process may be restarted manually by sending SIGUSR2 to Vermont.
+*/
+
 class PCAPExporterPipe : public Module, public Destination<Packet *>, public Source<Packet *>, public PCAPExporterBase, public SignalInterface
 {
 public:
@@ -67,16 +74,16 @@ private:
 	std::string logFileName;
 	std::string fifoReaderCmd;
 	std::string workingPath;
+	volatile bool onRestart;
 	bool appenddate;
 	bool restartOnSignal;
     int fifoReaderPid;
 	pcap_t* dummy;
     int sigKillTimeout;
-    int fd[2];
-	int child_parent_pipe[2];
 	int counter;
 	time_t last_check;
-	volatile bool onRestart;
+    int fd[2];
+	int child_parent_pipe[2];
 };
 
 

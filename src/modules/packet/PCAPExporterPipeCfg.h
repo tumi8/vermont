@@ -48,11 +48,11 @@ private:
 	int link_type;
 	int snaplen;
     int sigkilltimeout;
-	bool appenddate;
-	bool restart;
 	std::string logFileName;
     std::string fifoReaderCmd;
     std::string workingPath;
+	bool appenddate;
+	bool restart;
 };
 
 

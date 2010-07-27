@@ -40,36 +40,39 @@ static int compare_cidrs(const void *d1, const void *d2){
     {
         struct in_addr inp;
         cpan_net_info info;
+		info.fromNet = 0;
+		info.toNet = 0;
+		info.cidr = 0;
         int res = inet_aton((*it).fromNet.c_str(), &inp);
-        if(!res){
+        if (!res) {
             THROWEXCEPTION("Invalid IP address: %s", (*it).fromNet.c_str());
-        }else {
+        } else {
             info.fromNet = inp.s_addr;
         }
 
         res = inet_aton((*it).toNet.c_str(), &inp);
-        if(!res){
+        if (!res) {
             THROWEXCEPTION("Invalid IP address: %s",(*it).toNet.c_str());
-        }else {
+        } else {
             info.toNet = inp.s_addr;
         }
 
         try {   
             info.cidr = boost::lexical_cast<uint16_t>((*it).cidr.c_str());
-        }catch(boost::bad_lexical_cast &) {
+        } catch (boost::bad_lexical_cast &) {
             THROWEXCEPTION("bad value for cidr: %s", (*it).cidr.c_str());
         }
-        if(info.cidr > 32){
+        if (info.cidr > 32) {
             THROWEXCEPTION("Invalid cidr: %d", info.cidr);
         }
         bool addMe = true;
-        for(int i=0; i<number_of_cidrs; i++){
-            if(avail_cidrs[i] == info.cidr){
+        for (int i=0; i<number_of_cidrs; i++) {
+            if (avail_cidrs[i] == info.cidr) {
                 addMe = false;
                 break;
             }
         }
-        if(addMe)
+        if (addMe)
             avail_cidrs[number_of_cidrs++] = info.cidr;
 
         //info.fromNet = (info.fromNet) & ((1<<info.cidr)-1);
@@ -91,11 +94,11 @@ uint32_t AnonCryptoPanPrefix::pseudomize(uint32_t orig_addr) {
     uint16_t cidr;
     uint32_t a_addr, cs_id, tmp;
     
-    for(int i = 0; i<number_of_cidrs; i++){
+    for (int i = 0; i<number_of_cidrs; i++) {
         //tmp = orig_addr & ((1<<(avail_cidrs[i])) -1);
         tmp = ntohl(orig_addr) & ~((1<<(32-avail_cidrs[i])) -1);
         it = net_mapping.find(tmp);
-        if(it == net_mapping.end())
+        if (it == net_mapping.end())
             continue;
 
         //cs_id = ntohl((it->second).toNet); //csp->net_ctx[index].cs_net_id;
@@ -122,7 +125,7 @@ AnonPrimitive::ANON_RESULT AnonCryptoPanPrefix::anonymize(void* buf, unsigned in
     memcpy (&cmp, buf, sizeof (UINT32));
     orig = pseudomize(orig);
     memcpy (buf, &orig, sizeof (UINT32));
-    if(cmp == orig)
+    if (cmp == orig)
         return ANON_RESULT (len, true);
 
     return ANON_RESULT (len, false);
