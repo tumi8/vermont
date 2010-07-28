@@ -18,6 +18,7 @@ int main(int argc, char* argv[])
 	//Queue
 	uint32_t queueType = 0;
 	uint32_t numQueueProducers = 1;
+	uint32_t numQueueConsumers = 1;
 	uint32_t queueSize = 1000;
 	uint32_t numQueueOps = 1000000;
 	uint32_t timeoutLength = 100;
@@ -31,14 +32,15 @@ int main(int argc, char* argv[])
 			{"rep", 1, 0, '1'},
 			{"qtype", 1, 0, '2'},
 			{"qprod", 1, 0, '3'},
-			{"qsize", 1, 0, '4'},
-			{"qops", 1, 0, '5'},
-			{"timeout", 1, 0, '6'},
-			{"help", 1, 0, '7'},
+			{"qcons", 1, 0, '4'},
+			{"qsize", 1, 0, '5'},
+			{"qops", 1, 0, '6'},
+			{"timeout", 1, 0, '7'},
+			{"help", 1, 0, '8'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:", long_options, NULL);
+		c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8", long_options, NULL);
 		if (c == -1)
 			break;
 
@@ -56,15 +58,18 @@ int main(int argc, char* argv[])
 				numQueueProducers=atoi(optarg);
 				break;
 			case '4':
-				queueSize=atoi(optarg);
+				numQueueConsumers=atoi(optarg);
 				break;
 			case '5':
-				numQueueOps=atoi(optarg);
+				queueSize=atoi(optarg);
 				break;
 			case '6':
-				timeoutLength=atoi(optarg);
+				numQueueOps=atoi(optarg);
 				break;
 			case '7':
+				timeoutLength=atoi(optarg);
+				break;
+			case '8':
 			default:
 				usage();
 				exit(1);
@@ -74,11 +79,12 @@ int main(int argc, char* argv[])
 	//ConcurrentQueue tests
 	if(queueType > 0){
 		struct timespec res;
-		QueueTest test(queueType, numQueueProducers, queueSize, timeoutLength);
+		QueueTest test(queueType, numQueueProducers, numQueueConsumers, queueSize, timeoutLength);
 
 		ofstream outf(outputFile);
 		outf << "Tested ConcurrentQueue type:" << queueType;
 		outf << " producers:" << numQueueProducers;
+		outf << " consumers:" << numQueueConsumers;
 		outf << " size:" << queueSize;
 		outf << " operations:" << numQueueOps;
 		outf << " timeout:" << timeoutLength << endl;
