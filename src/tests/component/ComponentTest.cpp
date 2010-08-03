@@ -115,8 +115,10 @@ static void usage()
 		"    --rep <num>      number of replications\n" \
 		"    --qtype <num>    type of ConcurrentQueue\n" \
 		"    --qprod <num>    number of producer threads\n" \
+		"    --qcons <num>    number of consumer threads\n" \
 		"    --qsize <num>    size of ConcurrentQueue\n" \
 		"    --qops <num>     test ConcurrentQueue num times\n" \
+		"    --timeout <num>  timeout for empty/full queue\n" \
 		"    --help           print this helptext\n"
 	);
 }

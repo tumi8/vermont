@@ -42,18 +42,18 @@ QueueTest::QueueTest(uint32_t queueType, uint32_t numProducer, uint32_t numConsu
 		case 2:
 			if(numProducer != 1 || numConsumer != 1)
 				THROWEXCEPTION("Queue can only handle 1 producer/consumer");
-			delete queue->queueImp;
-			queue->queueImp = new LockfreeSingleQueueBasic<uint32_t>(queueSize);
+			queue->deleteQueue();
+			queue->setQueue(new LockfreeSingleQueueBasic<uint32_t>(queueSize));
 			break;
 		case 3:
 			if(numProducer != 1 || numConsumer != 1)
 				THROWEXCEPTION("Queue can only handle 1 producer/consumer");
 			delete queue->queueImp;
-			queue->queueImp = new LockfreeSingleQueueCacheOpt<uint32_t>(queueSize);
+			queue->setQueue(new LockfreeSingleQueueCacheOpt<uint32_t>(queueSize));
 			break;
 		case 4:
 			delete queue->queueImp;
-			queue->queueImp = new LockfreeMultiQueue<uint32_t>(queueSize);
+			queue->setQueue(new LockfreeMultiQueue<uint32_t>(queueSize));
 			break;
 		default:
 			THROWEXCEPTION("wrong QueueType");
@@ -121,7 +121,7 @@ void* QueueTest::pushFunc(void* ptr){
 
 	for(uint32_t i=1; i <= ops; i++){
 		cq->push(i);
-		printf("pushed: %d\n",i);
+//		printf("pushed: %d\n",i);
 	}
 
 	return NULL;
@@ -138,7 +138,7 @@ void* QueueTest::popFunc(void* ptr){
 		if(!cq->pop(&element))
 			printf("pop failed in QueueTest.cpp\n");
 
-		fprintf(stderr,"popped: %d\n",element);
+//		fprintf(stderr,"popped: %d\n",element);
 	}
 
 	if(i != ops + 1)

@@ -36,8 +36,9 @@ class BaseConcurrentQueue
 		virtual bool pop(T* ) = 0;
 		virtual bool popAbs(const struct timespec& , T* ) = 0;
 		virtual void restart() {}
-		//TODO
 		virtual void reset() { this->queueImp->reset(); }
+		virtual void setQueue(BaseQueue<T>* ptr) {queueImp = ptr;}
+		virtual void deleteQueue() {delete queueImp;}
 
 		BaseQueue<T>* queueImp;
 };
@@ -276,8 +277,6 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 
 		ConcurrentQueueCond(int qType = STL, int maxEntries = DEFAULT_QUEUE_SIZE, int spinLockTimeout = DEFUALT_SPINLOCK_TIMEOUT)
 		{
-			this->maxEntries = maxEntries;
-
 			switch(qType){
 				case STL:
 					this->queueImp = new STLQueue<T>();
@@ -312,6 +311,8 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 			spinLockTimeoutProducer = pushedCount + 1;
 			*pushedCount = 0;
 			*spinLockTimeoutProducer = spinLockTimeout;
+			queueImpProducer = (BaseQueue<T>**)(spinLockTimeoutProducer + 1);
+			*queueImpProducer = this->queueImp;
 
 			//consumer variables
 			if(posix_memalign(&tmp, clsize, clsize) != 0)
@@ -320,6 +321,8 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 			spinLockTimeoutConsumer = poppedCount + 1;
 			*poppedCount = 0;
 			*spinLockTimeoutConsumer = spinLockTimeout;
+			queueImpConsumer = (BaseQueue<T>**)(spinLockTimeoutConsumer + 1);
+			*queueImpConsumer = this->queueImp;
 
 			//mutex and condition variables
 			//TODO dynamically arrange to Cache Lines (maybe Cache Line is too small)
@@ -349,14 +352,20 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 			ownerName = name;
 		}
 
+		void setQueue(BaseQueue<T>* ptr) {
+			this->queueImp = ptr;
+			*queueImpConsumer = ptr;
+			*queueImpProducer = ptr;
+		}
+
 		inline void push(T t)
 		{
 
-			while(!this->queueImp->push(t)){
+			while(!(*(this->queueImpProducer))->push(t)){
 				//go to sleep till one element is popped
 				struct timespec timeout;
 				clock_gettime(CLOCK_REALTIME, &timeout);
-				timeout.tv_nsec += *spinLockTimeoutConsumer;
+				timeout.tv_nsec += *spinLockTimeoutProducer;
 
 				if (pthread_mutex_lock (fullMutex) != 0)
 					THROWEXCEPTION("lock of fullMutex failed");
@@ -386,11 +395,11 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 		inline bool pop(T* res)
 		{
 
-			while(!this->queueImp->pop(res)){
+			while(!(*(this->queueImpConsumer))->pop(res)){
 				//go to sleep till one element is pushed
 				struct timespec timeout;
 				clock_gettime(CLOCK_REALTIME, &timeout);
-				timeout.tv_nsec += *spinLockTimeoutProducer;
+				timeout.tv_nsec += *spinLockTimeoutConsumer;
 
 				if (pthread_mutex_lock (emptyMutex) != 0)
 					THROWEXCEPTION("lock of emptyutex failed");
@@ -423,7 +432,7 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 		inline bool popAbs(const struct timespec& timeout, T *res)
 		{
 			// popSemaphore.waitAbs() succeeded, now pop the frontmost element
-			while(!this->queueImp->pop(res)){
+			while(!(*(this->queueImpConsumer))->pop(res)){
 				//go to sleep till one element is pushed
 				if (pthread_mutex_lock (emptyMutex) != 0)
 					THROWEXCEPTION("lock of emptyutex failed");
@@ -472,14 +481,15 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 		void notifyShutdown(){	}
 
 	protected:
-		int maxEntries;
-
 		//producer variables
 		uint32_t* pushedCount;
 		uint32_t* spinLockTimeoutProducer;
+		BaseQueue<T>** queueImpProducer;
+
 		//consumer variables
 		uint32_t* poppedCount;
 		uint32_t* spinLockTimeoutConsumer;
+		BaseQueue<T>** queueImpConsumer;
 
 		//mutex and condition variables for waiting
 		pthread_mutex_t* fullMutex;
@@ -502,8 +512,6 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 
 		ConcurrentQueueSpinlock(int qType = STL, int maxEntries = DEFAULT_QUEUE_SIZE, uint32_t spinLockTimeout = DEFAULT_SPINLOCK_TIMEOUT)
 		{
-			this->maxEntries = maxEntries;
-
 			switch(qType){
 				case STL:
 					this->queueImp = new STLQueue<T>();
@@ -527,7 +535,7 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 			//initialize variable in cachelines
 			void* tmp;
 			uint32_t clsize = getCachelineSize();
-			if(sizeof(uint32_t) + sizeof(struct timespec) > clsize)
+			if(sizeof(uint32_t) + sizeof(struct timespec) + sizeof(BaseQueue<T>**) > clsize)
 				THROWEXCEPTION("Error: Cacheline Size is not big enough");
 
 			//producers variables
@@ -535,18 +543,22 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 				THROWEXCEPTION("Error: posix_memalign()");
 			pushedCount = (uint32_t*)tmp;
 			spinLockTimeoutProducer = (struct timespec*)(pushedCount + 1);
+			queueImpProducer = (BaseQueue<T>**)(spinLockTimeoutProducer + 1);
 			*pushedCount = 0;
 			spinLockTimeoutProducer->tv_sec = 0;
 			spinLockTimeoutProducer->tv_nsec = spinLockTimeout;
+			*queueImpProducer = this->queueImp;
 
 			//consumer variables
 			if(posix_memalign(&tmp, clsize, clsize) != 0)
 				THROWEXCEPTION("Error: posix_memalign()");
 			poppedCount = (uint32_t*)tmp;
 			spinLockTimeoutConsumer = (struct timespec*)(poppedCount + 1);
+			queueImpConsumer = (BaseQueue<T>**)(spinLockTimeoutConsumer + 1);
 			*poppedCount = 0;
 			spinLockTimeoutConsumer->tv_sec = 0;
 			spinLockTimeoutConsumer->tv_nsec = spinLockTimeout;
+			*queueImpConsumer = this->queueImp;
 		}
 
 		~ConcurrentQueueSpinlock()
@@ -561,11 +573,16 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 			ownerName = name;
 		}
 
+		void setQueue(BaseQueue<T>* ptr) {
+			this->queueImp = ptr;
+			*queueImpConsumer = ptr;
+			*queueImpProducer = ptr;
+		}
+
 		inline void push(T t)
 		{
-
-			while(!this->queueImp->push(t)){
-				nanosleep(spinLockTimeoutConsumer, NULL);
+			while(!(*(this->queueImpProducer))->push(t)){
+				nanosleep(spinLockTimeoutProducer, NULL);
 			}
 
 			__sync_add_and_fetch(pushedCount,1);
@@ -574,9 +591,8 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 
 		inline bool pop(T* res)
 		{
-
-			while(!this->queueImp->pop(res)){
-				nanosleep(spinLockTimeoutProducer, NULL);
+			while(!(*(this->queueImpConsumer))->pop(res)){
+				nanosleep(spinLockTimeoutConsumer, NULL);
 			}
 
 			(*poppedCount)++;
@@ -589,7 +605,7 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 		inline bool popAbs(const struct timespec& timeout, T *res)
 		{
 			// popSemaphore.waitAbs() succeeded, now pop the frontmost element
-			if(!this->queueImp->pop(res)){
+			if(!(*(this->queueImpConsumer))->pop(res)){
 				nanosleep(&timeout, NULL);
 				if(!this->queueImp->pop(res))
 					return false;
@@ -618,11 +634,12 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 		//producer variables
 		uint32_t* pushedCount;
 		struct timespec* spinLockTimeoutProducer;
+		BaseQueue<T>** queueImpProducer;
 		//consumer variables
 		uint32_t* poppedCount;
 		struct timespec* spinLockTimeoutConsumer;
+		BaseQueue<T>** queueImpConsumer;
 
-		int maxEntries;
 		std::string ownerName;
 };
 
