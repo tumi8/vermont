@@ -41,16 +41,20 @@ public:
 		/*consumer’s local variables*/
 		localWrite = (uint32_t*)tmp + (clsize/sizeof(uint32_t*));
 		nextRead = localWrite + 1;
-		*localWrite = *nextRead = 0;
+		rBatch = nextRead + 1;
+		*localWrite = *nextRead = *rBatch = 0;
 
 		/*producer’s local variables*/
 		localRead = (uint32_t*)tmp + 2*(clsize/sizeof(uint32_t*));
 		nextWrite = localRead + 1;
-		*localRead = *nextWrite = 0;
+		wBatch = nextWrite + 1;
+		*localRead = *nextWrite = *wBatch = 0;
 
 		/*constants*/
 		max = (uint32_t*)tmp + 3*(clsize/sizeof(uint32_t*));
+		batchSize = max + 1;
 		*max = maxEntries+1;
+		*batchSize = 10;
 
 		buffer = new T[*max];
 	}
@@ -76,8 +80,12 @@ public:
 
 		buffer[*nextWrite] = element;
 		*nextWrite = afterNextWrite;
-		//TODO maybe add batch update functionality here
-		*write = *nextWrite;
+
+		(*wBatch)++;
+		if(*wBatch >= *batchSize){
+			*write = *nextWrite;
+			*wBatch = 0;
+		}
 
 		return true;
 	}
@@ -96,8 +104,12 @@ public:
 
 		*element = buffer[*nextRead];
 		*nextRead = next(*nextRead);
-		//TODO maybe add batch update functionality here
-		*read = *nextRead;
+
+		(*rBatch)++;
+		if(*rBatch >= *batchSize){
+			*read = *nextRead;
+			*rBatch = 0;
+		}
 
 		return true;
 	}
@@ -110,6 +122,7 @@ public:
 		*read = *write = 0;
 		*localWrite = *nextRead = 0;
 		*localRead = *nextWrite = 0;
+		*rBatch = *wBatch = 0;
 	}
 private:
 
@@ -123,11 +136,14 @@ private:
 	/*consumer’s local variables*/
 	uint32_t* localWrite;
 	uint32_t* nextRead;
+	uint32_t* rBatch;
 	/*producer’s local variables*/
 	uint32_t* localRead;
 	uint32_t* nextWrite;
+	uint32_t* wBatch;
 	/*constants*/
 	uint32_t* max;
+	uint32_t* batchSize;
 	T* buffer;
 };
 
