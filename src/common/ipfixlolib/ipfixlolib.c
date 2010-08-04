@@ -867,9 +867,10 @@ static int sctp_sendmsgv(int s, struct iovec *vector, int v_len, struct sockaddr
  * exporter an ipfix_exporter* to be initialized
  */
 /*!
- * \brief Initialize a new exporter.
+ * \brief Creates and initialize a new exporter.
+ * This function allocates memory for a new exporter struct and multiple buffers. 
  *
- * Make sure to call <tt>ipfix_deinit_exporter()</tt> when done.
+ * Make sure to call <tt>ipfix_deinit_exporter()</tt> if the exporter is not needed any more in order to free the allocated memory.
  *
  * \param observation_domain_id the Observation Domain ID that will be included in every IPFIX Message Header
  * \param exporter a pointer to a pointer to exporter struct
@@ -2976,10 +2977,9 @@ int ipfix_start_optionstemplate(ipfix_exporter *exporter,
  *
  * \param exporter pointer to previously initialized exporter struct
  * \param template_id the ID specified on call to ipfix_start_template()
- * \param type field or scope type (in host byte order) "A numeric value that
- * represents the type of Information Element.  Refer to [RFC5102]."
- * \param length length of the field or scope (in host byte order)
- * \param enterprise_id enterprise type (in host byte order)
+ * \param type Information Element ID of the field
+ * \param length length of the field (in host byte order)
+ * \param enterprise_id enterprise number (in host byte order) or 0 for Information Elements registered at IANA
  * \return 0 success
  * \return -1 failure. Reasons include:<ul><li>template ID
  * unknown</li><li>number of fields exceeds the number that was announced when
@@ -3088,9 +3088,9 @@ int ipfix_start_template (ipfix_exporter *exporter, uint16_t template_id,  uint1
  *
  * \param exporter pointer to previously initialized exporter struct
  * \param template_id ID of the template
- * \param length length of field, in bytes
- * \param type type of field; see template fields
- * \param enterprise_id enterprise number (set to 0 if not used)
+ * \param type Information Element ID of the field
+ * \param length length of the field (in host byte order)
+ * \param enterprise_id enterprise number (in host byte order) or 0 for Information Elements registered at IANA
  * \return 0 success
  * \return -1 failure
  * \sa ipfix_start_datatemplate()
