@@ -20,6 +20,7 @@
 ADD_EXECUTABLE(comptest
 	ComponentTest.cpp
 	QueueTest.cpp
+	ConcurrentQueueTest.cpp
 )
 
 TARGET_LINK_LIBRARIES(comptest
