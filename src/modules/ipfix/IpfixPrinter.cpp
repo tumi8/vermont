@@ -164,6 +164,41 @@ void PrintHelpers::printUint(InformationElement::IeInfo type, IpfixRecord::Data*
 }
 
 
+void PrintHelpers::printUTC(InformationElement::IeInfo type, IpfixRecord::Data* data) {
+	time_t tmp;
+	char str[26]; // our own buffer to be thread-proof
+	switch (type.length) {
+	case 1:
+		fprintf(fh, "%hhu",*(uint8_t*)data);
+		return;
+	case 2:
+		fprintf(fh, "%hu",ntohs(*(uint16_t*)data));
+		return;
+	case 4:
+		tmp = (time_t)ntohl(*(uint32_t*)data);
+		ctime_r(&tmp, str);
+		// remove new line
+		str[24] = '\0';
+		fprintf(fh, "%u (%s)", (uint32_t)tmp, str);
+		return;
+	case 8:
+		tmp = (time_t)ntohll(*(uint64_t*)data);
+		ctime_r(&tmp, str);
+		// remove new line
+		str[24] = '\0';
+		fprintf(fh, "%Lu (%s)", (long long unsigned)ntohll(*(uint64_t*)data), str);
+		return;
+	default:
+		for(uint16_t i = 0; i < type.length; i++) {
+		    fprintf(fh, "%02hhX",*(uint8_t*)(data+i));
+		}
+		fprintf(fh, " (%u bytes)", type.length);
+		//msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
+		return;
+	}
+}
+
+
 void PrintHelpers::printUint(char* buf, InformationElement::IeInfo type, IpfixRecord::Data* data) {
 	switch (type.length) {
 	case 1:
@@ -217,6 +252,11 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 					return;
 				case IPFIX_TYPEID_destinationTransportPort:
 					printPort(type, pattern);
+					return;
+				case IPFIX_TYPEID_flowStartSeconds:
+				case IPFIX_TYPEID_flowEndSeconds:
+				case PSAMP_TYPEID_observationTimeSeconds:
+					printUTC(type, pattern);
 					return;
 				case IPFIX_TYPEID_flowStartNanoSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
