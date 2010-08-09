@@ -39,6 +39,8 @@ class BaseConcurrentQueue
 		virtual void reset() { this->queueImp->reset(); }
 		virtual void setQueue(BaseQueue<T>* ptr) {queueImp = ptr;}
 		virtual void deleteQueue() {delete queueImp;}
+		virtual uint32_t getFullCount() { return 0; }
+		virtual uint32_t getEmptyCount() { return 0; }
 
 		BaseQueue<T>* queueImp;
 };
@@ -61,6 +63,7 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 		ConcurrentQueue(int qType = STL, int maxEntries = DEFAULT_QUEUE_SIZE):
 			pushedCount(0), poppedCount(0), count(0), popSemaphore(), pushSemaphore(maxEntries)
 		{
+			//printf("ConcurrentQueue()\n");
 			this->maxEntries = maxEntries;
 
 			switch(qType){
@@ -114,8 +117,11 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 			if (waiting) DPRINTF("(%s) pushing element now", ownerName.c_str());
 #endif
 
-			if(!this->queueImp->push(t))
-				THROWEXCEPTION("Could not push element");
+			if(!this->queueImp->push(t)){
+				this->queueImp->batchUpdate();
+				if(!this->queueImp->push(t))
+					THROWEXCEPTION("Could not push element");
+			}
 			__sync_add_and_fetch(&pushedCount, 1);
 			__sync_add_and_fetch(&count, 1);
 
@@ -134,8 +140,12 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 				return false;
 			}
 
-			if(!this->queueImp->pop(res))
-				THROWEXCEPTION("Could not pop element");
+			if(!this->queueImp->pop(res)){
+				this->queueImp->batchUpdate();
+				if(!this->queueImp->pop(res))
+					THROWEXCEPTION("Could not pop element");
+			}
+
 			poppedCount++;
 			__sync_sub_and_fetch(&count, 1);
 
@@ -160,8 +170,11 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 			}
 
 			// popSemaphore.wait() succeeded, now pop the frontmost element
-			if(!this->queueImp->pop(res))
-				THROWEXCEPTION("Could not pop element");
+			if(!this->queueImp->pop(res)){
+				this->queueImp->batchUpdate();
+				if(!this->queueImp->pop(res))
+					THROWEXCEPTION("Could not pop element");
+			}
 			poppedCount++;
 			__sync_sub_and_fetch(&count, 1);
 
@@ -186,8 +199,12 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 			}
 
 			// popSemaphore.waitAbs() succeeded, now pop the frontmost element
-			if(!this->queueImp->pop(res))
-				THROWEXCEPTION("Could not pop element");
+			if(!this->queueImp->pop(res)){
+				this->queueImp->batchUpdate();
+				if(!this->queueImp->pop(res))
+					THROWEXCEPTION("Could not pop element");
+			}
+
 			poppedCount++;
 			__sync_sub_and_fetch(&count, 1);
 
@@ -213,8 +230,11 @@ class ConcurrentQueue : public BaseConcurrentQueue<T>
 			}
 
 			// popSemaphore.waitAbs() succeeded, now pop the frontmost element
-			if(!this->queueImp->pop(res))
-				THROWEXCEPTION("Could not pop element");
+			if(!this->queueImp->pop(res)){
+				this->queueImp->batchUpdate();
+				if(!this->queueImp->pop(res))
+					THROWEXCEPTION("Could not pop element");
+			}
 			poppedCount++;
 			__sync_sub_and_fetch(&count, 1);
 
@@ -277,6 +297,7 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 
 		ConcurrentQueueCond(int qType = STL, int maxEntries = DEFAULT_QUEUE_SIZE, int spinLockTimeout = DEFUALT_SPINLOCK_TIMEOUT)
 		{
+			//printf("ConcurrentQueueCond()\n");
 			switch(qType){
 				case STL:
 					this->queueImp = new STLQueue<T>();
@@ -304,25 +325,28 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 			if(sizeof(pthread_cond_t) > clsize)
 				THROWEXCEPTION("Error: Cacheline Size is not big enough");
 
-			//producers variables
-			if(posix_memalign(&tmp, clsize, clsize) != 0)
+			if(posix_memalign(&tmp, clsize, 2*clsize) != 0)
 				THROWEXCEPTION("Error: posix_memalign()");
-			pushedCount = (uint32_t*)tmp;
+
+			//producers variables
+			pushedCount = ((uint32_t*)tmp);
 			spinLockTimeoutProducer = pushedCount + 1;
 			*pushedCount = 0;
 			*spinLockTimeoutProducer = spinLockTimeout;
 			queueImpProducer = (BaseQueue<T>**)(spinLockTimeoutProducer + 1);
 			*queueImpProducer = this->queueImp;
+			fullCount = (uint32_t*)(queueImpProducer + 1);
+			*fullCount = 0;
 
 			//consumer variables
-			if(posix_memalign(&tmp, clsize, clsize) != 0)
-				THROWEXCEPTION("Error: posix_memalign()");
-			poppedCount = (uint32_t*)tmp;
+			poppedCount = ((uint32_t*)tmp) + (clsize/sizeof(uint32_t*));
 			spinLockTimeoutConsumer = poppedCount + 1;
 			*poppedCount = 0;
 			*spinLockTimeoutConsumer = spinLockTimeout;
 			queueImpConsumer = (BaseQueue<T>**)(spinLockTimeoutConsumer + 1);
 			*queueImpConsumer = this->queueImp;
+			emptyCount = (uint32_t*)(queueImpConsumer + 1);
+			*emptyCount = 0;
 
 			//mutex and condition variables
 			//TODO dynamically arrange to Cache Lines (maybe Cache Line is too small)
@@ -345,6 +369,7 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 			if(getCount() != 0) {
 				msg(MSG_DEBUG, "WARNING: freeing non-empty queue - got count: %d", getCount());
 			}
+			free((void*)pushedCount);
 		};
 
 		void setOwner(std::string name)
@@ -358,10 +383,20 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 			*queueImpProducer = ptr;
 		}
 
+		uint32_t getFullCount() {
+			return *fullCount;
+		}
+
+		uint32_t getEmptyCount() {
+			return *emptyCount;
+		}
+
 		inline void push(T t)
 		{
 
 			while(!(*(this->queueImpProducer))->push(t)){
+				(*(this->queueImpProducer))->batchUpdate();
+				__sync_add_and_fetch(fullCount,1);
 				//go to sleep till one element is popped
 				struct timespec timeout;
 				clock_gettime(CLOCK_REALTIME, &timeout);
@@ -396,6 +431,8 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 		{
 
 			while(!(*(this->queueImpConsumer))->pop(res)){
+				(*(this->queueImpConsumer))->batchUpdate();
+				__sync_add_and_fetch(emptyCount,1);
 				//go to sleep till one element is pushed
 				struct timespec timeout;
 				clock_gettime(CLOCK_REALTIME, &timeout);
@@ -433,6 +470,8 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 		{
 			// popSemaphore.waitAbs() succeeded, now pop the frontmost element
 			while(!(*(this->queueImpConsumer))->pop(res)){
+				__sync_add_and_fetch(emptyCount,1);
+				(*(this->queueImpConsumer))->batchUpdate();
 				//go to sleep till one element is pushed
 				if (pthread_mutex_lock (emptyMutex) != 0)
 					THROWEXCEPTION("lock of emptyutex failed");
@@ -485,11 +524,13 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 		uint32_t* pushedCount;
 		uint32_t* spinLockTimeoutProducer;
 		BaseQueue<T>** queueImpProducer;
+		uint32_t* fullCount;
 
 		//consumer variables
 		uint32_t* poppedCount;
 		uint32_t* spinLockTimeoutConsumer;
 		BaseQueue<T>** queueImpConsumer;
+		uint32_t* emptyCount;
 
 		//mutex and condition variables for waiting
 		pthread_mutex_t* fullMutex;
@@ -512,6 +553,7 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 
 		ConcurrentQueueSpinlock(int qType = STL, int maxEntries = DEFAULT_QUEUE_SIZE, uint32_t spinLockTimeout = DEFAULT_SPINLOCK_TIMEOUT)
 		{
+			//printf("ConcurrentQueueSpinLock()\n");
 			switch(qType){
 				case STL:
 					this->queueImp = new STLQueue<T>();
@@ -538,27 +580,30 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 			if(sizeof(uint32_t) + sizeof(struct timespec) + sizeof(BaseQueue<T>**) > clsize)
 				THROWEXCEPTION("Error: Cacheline Size is not big enough");
 
-			//producers variables
-			if(posix_memalign(&tmp, clsize, clsize) != 0)
+			if(posix_memalign(&tmp, clsize, 2*clsize) != 0)
 				THROWEXCEPTION("Error: posix_memalign()");
-			pushedCount = (uint32_t*)tmp;
+
+			//producers variables
+			pushedCount = ((uint32_t*)tmp);
 			spinLockTimeoutProducer = (struct timespec*)(pushedCount + 1);
 			queueImpProducer = (BaseQueue<T>**)(spinLockTimeoutProducer + 1);
+			fullCount = (uint32_t*)(queueImpProducer +1);
 			*pushedCount = 0;
 			spinLockTimeoutProducer->tv_sec = 0;
 			spinLockTimeoutProducer->tv_nsec = spinLockTimeout;
 			*queueImpProducer = this->queueImp;
+			*fullCount = 0;
 
 			//consumer variables
-			if(posix_memalign(&tmp, clsize, clsize) != 0)
-				THROWEXCEPTION("Error: posix_memalign()");
-			poppedCount = (uint32_t*)tmp;
+			poppedCount = ((uint32_t*)tmp) + (clsize/sizeof(uint32_t*));
 			spinLockTimeoutConsumer = (struct timespec*)(poppedCount + 1);
 			queueImpConsumer = (BaseQueue<T>**)(spinLockTimeoutConsumer + 1);
+			emptyCount = (uint32_t*)(queueImpConsumer +1);
 			*poppedCount = 0;
 			spinLockTimeoutConsumer->tv_sec = 0;
 			spinLockTimeoutConsumer->tv_nsec = spinLockTimeout;
 			*queueImpConsumer = this->queueImp;
+			*emptyCount = 0;
 		}
 
 		~ConcurrentQueueSpinlock()
@@ -566,6 +611,7 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 			if(getCount() != 0) {
 				msg(MSG_DEBUG, "WARNING: freeing non-empty queue - got count: %d", getCount());
 			}
+			free((void*)pushedCount);
 		}
 
 		void setOwner(std::string name)
@@ -579,9 +625,20 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 			*queueImpProducer = ptr;
 		}
 
+		uint32_t getFullCount() {
+			return *fullCount;
+		}
+
+		uint32_t getEmptyCount() {
+			return *emptyCount;
+		}
+
 		inline void push(T t)
 		{
 			while(!(*(this->queueImpProducer))->push(t)){
+				(*(this->queueImpProducer))->batchUpdate();
+				__sync_add_and_fetch(fullCount,1);
+				//printf("fullCount: %d",*fullCount);
 				nanosleep(spinLockTimeoutProducer, NULL);
 			}
 
@@ -592,6 +649,9 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 		inline bool pop(T* res)
 		{
 			while(!(*(this->queueImpConsumer))->pop(res)){
+				(*(this->queueImpConsumer))->batchUpdate();
+				__sync_add_and_fetch(emptyCount,1);
+				//printf("emptyCount: %d",*emptyCount);
 				nanosleep(spinLockTimeoutConsumer, NULL);
 			}
 
@@ -606,10 +666,13 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 		{
 			// popSemaphore.waitAbs() succeeded, now pop the frontmost element
 			if(!(*(this->queueImpConsumer))->pop(res)){
+				(*(this->queueImpConsumer))->batchUpdate();
+				printf("emptyCount: %d",*emptyCount);
+				__sync_add_and_fetch(emptyCount,1);
 				nanosleep(&timeout, NULL);
 				if(!this->queueImp->pop(res))
 					return false;
-			}
+		}
 
 			(*poppedCount)++;
 
@@ -635,10 +698,12 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 		uint32_t* pushedCount;
 		struct timespec* spinLockTimeoutProducer;
 		BaseQueue<T>** queueImpProducer;
+		uint32_t* fullCount;
 		//consumer variables
 		uint32_t* poppedCount;
 		struct timespec* spinLockTimeoutConsumer;
 		BaseQueue<T>** queueImpConsumer;
+		uint32_t* emptyCount;
 
 		std::string ownerName;
 };

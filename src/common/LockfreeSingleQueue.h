@@ -26,10 +26,11 @@ class LockfreeSingleQueueCacheOpt : public BaseQueue<T>
 {
 public:
 	LockfreeSingleQueueCacheOpt(int maxEntries){
+		//printf("LockfreeSingleQueueCacheOpt()\n");
 		uint32_t clsize = getCachelineSize();
 		void* tmp;
 
-		/*get space for 4 cache lines*/
+		/*get space for 4 cache lines, one padding cacheline in front of it*/
 		if(posix_memalign(&tmp, clsize, clsize*4) != 0)
 			THROWEXCEPTION("Error: posix_memalign()");
 
@@ -115,6 +116,15 @@ public:
 	}
 
 	/**
+	 * updates read and write so that no elements stick in the queue
+	 */
+	inline void batchUpdate(){
+		*write = *nextWrite;
+		*read = *nextRead;
+		*rBatch = *wBatch = 0;
+	}
+
+	/**
 	 * restarts the queue and sets the internal
 	 * pointers to initial values
 	 */
@@ -157,6 +167,7 @@ class LockfreeSingleQueueBasic : public BaseQueue<T>
 			write(0),
 			read(0)
 		{
+			//printf("LockfreeSingleQueueBasic()\n");
 			buffer = new T[this->maxEntries];
 		}
 

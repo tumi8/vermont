@@ -5,6 +5,7 @@
 
 #include "ComponentTest.h"
 #include "QueueTest.h"
+#include "ConcurrentQueueTest.h"
 
 using namespace std;
 
@@ -14,6 +15,7 @@ int main(int argc, char* argv[])
 {
 	uint32_t replication = 1;
 	char* outputFile = (char*)"componentTestOut.txt";
+	uint32_t component = 1;
 
 	//Queue
 	uint32_t queueType = 0;
@@ -30,17 +32,18 @@ int main(int argc, char* argv[])
 		{
 			{"output", 1, 0, '0'},
 			{"rep", 1, 0, '1'},
-			{"qtype", 1, 0, '2'},
-			{"qprod", 1, 0, '3'},
-			{"qcons", 1, 0, '4'},
-			{"qsize", 1, 0, '5'},
-			{"qops", 1, 0, '6'},
-			{"timeout", 1, 0, '7'},
-			{"help", 1, 0, '8'},
+			{"comp", 1, 0, '2'},
+			{"qtype", 1, 0, '3'},
+			{"qprod", 1, 0, '4'},
+			{"qcons", 1, 0, '5'},
+			{"qsize", 1, 0, '6'},
+			{"qops", 1, 0, '7'},
+			{"timeout", 1, 0, '8'},
+			{"help", 1, 0, '9'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8", long_options, NULL);
+		c = getopt_long(argc, argv, "0:1:2:3:4:5:6:7:8:9", long_options, NULL);
 		if (c == -1)
 			break;
 
@@ -52,37 +55,41 @@ int main(int argc, char* argv[])
 				replication=atoi(optarg);
 				break;
 			case '2':
-				queueType=atoi(optarg);
+				component=atoi(optarg);
 				break;
 			case '3':
-				numQueueProducers=atoi(optarg);
+				queueType=atoi(optarg);
 				break;
 			case '4':
-				numQueueConsumers=atoi(optarg);
+				numQueueProducers=atoi(optarg);
 				break;
 			case '5':
-				queueSize=atoi(optarg);
+				numQueueConsumers=atoi(optarg);
 				break;
 			case '6':
-				numQueueOps=atoi(optarg);
+				queueSize=atoi(optarg);
 				break;
 			case '7':
-				timeoutLength=atoi(optarg);
+				numQueueOps=atoi(optarg);
 				break;
 			case '8':
+				timeoutLength=atoi(optarg);
+				break;
+			case '9':
 			default:
 				usage();
 				exit(1);
 		}
 	}
 
-	//ConcurrentQueue tests
-	if(queueType > 0){
-		struct timespec res;
-		QueueTest test(queueType, numQueueProducers, numQueueConsumers, queueSize, timeoutLength);
+	//Queue implementation tests
+	if(component == 1){
+		returnClass res;
+		QueueTest test(queueType, numQueueProducers, numQueueConsumers, queueSize);
 
 		ofstream outf(outputFile);
-		outf << "Tested ConcurrentQueue type:" << queueType;
+		outf << "Tested component: queue implementation with";
+		outf <<	" type:" << queueType;
 		outf << " producers:" << numQueueProducers;
 		outf << " consumers:" << numQueueConsumers;
 		outf << " size:" << queueSize;
@@ -95,13 +102,48 @@ int main(int argc, char* argv[])
 
 			//write to outfile
 			ofstream outf(outputFile, ios::app);
-			outf << res.tv_sec << ".";
+			outf << res.timespent.tv_sec << ".";
 			outf.width(9);
 			outf.fill('0');
-			outf << res.tv_nsec;
-			outf << " sec" << endl;
+			outf << res.timespent.tv_nsec;
+			outf << " " << res.full << " " << res.empty << endl;
 			outf.close();
 		}
+	}
+
+	//ConcurrentQueue tests
+	if(component == 2){
+		returnClassCon res;
+		ConcurrentQueueTest test(queueType, numQueueProducers, numQueueConsumers, queueSize, timeoutLength);
+
+		ofstream outf(outputFile);
+		outf << "Tested component: ConcurrentQueue with";
+		outf <<	" type:" << queueType;
+		outf << " producers:" << numQueueProducers;
+		outf << " consumers:" << numQueueConsumers;
+		outf << " size:" << queueSize;
+		outf << " operations:" << numQueueOps;
+		outf << " timeout:" << timeoutLength << endl;
+		outf.close();
+
+		for(uint32_t i=0; i<replication; i++){
+			res = test.runTest(numQueueOps);
+
+			//write to outfile
+			ofstream outf(outputFile, ios::app);
+			outf << res.timespent.tv_sec << ".";
+			outf.width(9);
+			outf.fill('0');
+			outf << res.timespent.tv_nsec;
+			outf << " " << res.full << " " << res.empty << endl;
+			outf.close();
+		}
+	}
+
+	//wrong component number
+	if(component > 2 || component < 1){
+		printf("Wrong component number\n\n");
+		usage();
 	}
 
 	return 0;
@@ -113,11 +155,12 @@ static void usage()
 		"Vermont ComponentTest\n" \
 		"    --output <file>  name output file\n" \
 		"    --rep <num>      number of replications\n" \
-		"    --qtype <num>    type of ConcurrentQueue\n" \
+		"    --comp <num>     component to test\n" \
+		"    --qtype <num>    type of component\n" \
 		"    --qprod <num>    number of producer threads\n" \
 		"    --qcons <num>    number of consumer threads\n" \
-		"    --qsize <num>    size of ConcurrentQueue\n" \
-		"    --qops <num>     test ConcurrentQueue num times\n" \
+		"    --qsize <num>    size of component\n" \
+		"    --qops <num>     test component num times\n" \
 		"    --timeout <num>  timeout for empty/full queue\n" \
 		"    --help           print this helptext\n"
 	);

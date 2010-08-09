@@ -23,7 +23,8 @@ class BaseQueue
 		virtual ~BaseQueue() {}
 		virtual bool push(T) = 0;
 		virtual bool pop(T*) = 0;
-		virtual void reset() {};
+		virtual void reset() {}
+		virtual inline void batchUpdate() {}
 };
 
 #endif

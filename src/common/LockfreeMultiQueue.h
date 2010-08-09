@@ -31,6 +31,7 @@ class LockfreeMultiQueue : public BaseQueue<T>
 			max(maxEntries+1),
 			front(0), rear(0)
 		{
+			//printf("LockfreeMultiQueue()\n");
 			//template parameter may not be greater than 4 bytes
 			BOOST_STATIC_ASSERT(sizeof(T) <= 4);
 

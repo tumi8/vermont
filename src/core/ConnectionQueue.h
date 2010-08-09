@@ -37,7 +37,7 @@ template <class T>
 class ConnectionQueue : public Adapter<T>, public Timer
 {
 public:
-	ConnectionQueue(uint32_t maxEntries, bool multipleProducers = true)
+	ConnectionQueue(uint32_t maxEntries, bool multipleProducers = false)
 		: thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
 	{
 		printf("#####ConnectionQueue(%d, %s)\n",maxEntries,(multipleProducers ? "true" : "false"));

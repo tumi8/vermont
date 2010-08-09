@@ -1,5 +1,5 @@
-#if !defined(QUEUETEST_H)
-#define QUEUETEST_H
+#if !defined(CONCURRENTQUEUETEST_H)
+#define CONCURRENTQUEUETEST_H
 
 #include "common/ConcurrentQueue.h"
 //delete after use
@@ -11,9 +11,9 @@
 #include "common/Thread.h"
 #include "common/msg.h"
 
-class returnClass{
+class returnClassCon{
 public:
-	returnClass(){
+	returnClassCon(){
 		timespent.tv_sec = 0;
 		timespent.tv_nsec = 0;
 		full = empty = 0;
@@ -24,12 +24,12 @@ public:
 	uint32_t empty;
 };
 
-class QueueTest{
+class ConcurrentQueueTest{
 	public:
-		QueueTest(uint32_t queueType, uint32_t numProducer, uint32_t numConsumers,
-				uint32_t queueSize);
-		~QueueTest();
-		returnClass runTest(uint32_t numOps);
+		ConcurrentQueueTest(uint32_t queueType, uint32_t numProducer, uint32_t numConsumers,
+				uint32_t queueSize, uint32_t timeoutLength);
+		~ConcurrentQueueTest();
+		returnClassCon runTest(uint32_t numOps);
 		static void* pushFunc(void*);
 		static void* popFunc(void*);
 
@@ -37,11 +37,12 @@ class QueueTest{
 		volatile uint32_t numConsumer;
 		volatile uint32_t queueSize;
 		volatile uint32_t numOps;
+		volatile uint32_t timeoutLength;
 
 		Thread* pusher[20];
 		Thread* popper[20];
 
-		BaseQueue<uint32_t>* queue;
+		BaseConcurrentQueue<uint32_t>* queue;
 };
 
 

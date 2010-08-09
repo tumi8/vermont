@@ -3,11 +3,10 @@
 
 #include <stdio.h>
 
-QueueTest::QueueTest(uint32_t queueType, uint32_t numProducer, uint32_t numConsumer, uint32_t queueSize, uint32_t timeoutLength):
+QueueTest::QueueTest(uint32_t queueType, uint32_t numProducer, uint32_t numConsumer, uint32_t queueSize):
 	numProducer(numProducer),
 	numConsumer(numConsumer),
 	queueSize(queueSize),
-	timeoutLength(timeoutLength),
 	queue(NULL)
 {
 	if(numProducer > 20)
@@ -22,43 +21,22 @@ QueueTest::QueueTest(uint32_t queueType, uint32_t numProducer, uint32_t numConsu
 	}
 
 	//creation of the queue
-	switch(queueType / 10){
+	switch(queueType){
 		case 1:
-			queue = new ConcurrentQueue<uint32_t>(STL, queueSize);
+			queue = new STLQueue<uint32_t>();
 			break;
 		case 2:
-			queue = new ConcurrentQueueCond<uint32_t>(STL, queueSize, timeoutLength);
+			queue = new LockfreeSingleQueueBasic<uint32_t>(queueSize);
 			break;
 		case 3:
-			queue = new ConcurrentQueueSpinlock<uint32_t>(STL, queueSize, timeoutLength);
-			break;
-		default:
-			THROWEXCEPTION("wrong ConcurrentQueue");
-	}
-
-	switch(queueType % 10){
-		case 1:
-			break;
-		case 2:
-			if(numProducer != 1 || numConsumer != 1)
-				THROWEXCEPTION("Queue can only handle 1 producer/consumer");
-			queue->deleteQueue();
-			queue->setQueue(new LockfreeSingleQueueBasic<uint32_t>(queueSize));
-			break;
-		case 3:
-			if(numProducer != 1 || numConsumer != 1)
-				THROWEXCEPTION("Queue can only handle 1 producer/consumer");
-			delete queue->queueImp;
-			queue->setQueue(new LockfreeSingleQueueCacheOpt<uint32_t>(queueSize));
+			queue = new LockfreeSingleQueueCacheOpt<uint32_t>(queueSize);
 			break;
 		case 4:
-			delete queue->queueImp;
-			queue->setQueue(new LockfreeMultiQueue<uint32_t>(queueSize));
+			queue = new LockfreeMultiQueue<uint32_t>(queueSize);
 			break;
 		default:
-			THROWEXCEPTION("wrong QueueType");
+			THROWEXCEPTION("wrong queue type");
 	}
-
 }
 
 QueueTest::~QueueTest() {
@@ -72,12 +50,14 @@ QueueTest::~QueueTest() {
 	delete queue;
 }
 
-struct timespec QueueTest::runTest(uint32_t numOperations){
+returnClass QueueTest::runTest(uint32_t numOperations){
+	returnClass ret;
 	struct timespec start;
 	struct timespec stop;
-	struct timespec ret;
 
 	numOps = numOperations;
+	if(numOps % 10 != 0)
+		THROWEXCEPTION("numOps is not valid because of batchUpdate");
 
 	//start timer resolution to 1 nano second
 	clock_gettime(CLOCK_REALTIME, &start);
@@ -92,20 +72,24 @@ struct timespec QueueTest::runTest(uint32_t numOperations){
 
 	//wait for threads to finish
 	for(uint32_t i=0; i<numProducer; i++){
-		pusher[i]->join();
+		uint32_t* ptr = (uint32_t*)(pusher[i]->join());
+		ret.full += *ptr;
+		delete ptr;
 	}
 	for(uint32_t i=0; i<numConsumer; i++){
-		popper[i]->join();
+		uint32_t* ptr = (uint32_t*)(popper[i]->join());
+		ret.empty += *ptr;
+		delete ptr;
 	}
 
 	//calculate difference
 	clock_gettime(CLOCK_REALTIME, &stop);
 	if ((stop.tv_nsec-start.tv_nsec)<0) {
-		ret.tv_sec = stop.tv_sec-start.tv_sec-1;
-		ret.tv_nsec = 1000000000 + stop.tv_nsec - start.tv_nsec;
+		ret.timespent.tv_sec = stop.tv_sec-start.tv_sec-1;
+		ret.timespent.tv_nsec = 1000000000 + stop.tv_nsec - start.tv_nsec;
 	} else {
-		ret.tv_sec = stop.tv_sec - start.tv_sec;
-		ret.tv_nsec = stop.tv_nsec - start.tv_nsec;
+		ret.timespent.tv_sec = stop.tv_sec - start.tv_sec;
+		ret.timespent.tv_nsec = stop.tv_nsec - start.tv_nsec;
 	}
 
 	//reset queue
@@ -117,14 +101,18 @@ struct timespec QueueTest::runTest(uint32_t numOperations){
 void* QueueTest::pushFunc(void* ptr){
 	QueueTest* qt = (QueueTest*)ptr;
 	uint32_t ops = qt->numOps;
-	BaseConcurrentQueue<uint32_t>* cq = qt->queue;
+	BaseQueue<uint32_t>* q = qt->queue;
+	uint32_t fullCount = 0;
 
 	for(uint32_t i=1; i <= ops; i++){
-		cq->push(i);
+		while(!q->push(i)){
+			fullCount++;
+			//printf("fullCount: %d",fullCount);
+		}
 //		printf("pushed: %d\n",i);
 	}
 
-	return NULL;
+	return new uint32_t(fullCount);
 }
 
 void* QueueTest::popFunc(void* ptr){
@@ -132,17 +120,19 @@ void* QueueTest::popFunc(void* ptr){
 	uint32_t i;
 	QueueTest* qt = (QueueTest*)ptr;
 	uint32_t ops = ((qt->numOps) * (qt->numProducer)) / qt->numConsumer;
-	BaseConcurrentQueue<uint32_t>* cq = qt->queue;
+	BaseQueue<uint32_t>* q = qt->queue;
+	uint32_t emptyCount = 0;
 
 	for(i=1; i <= ops; i++){
-		if(!cq->pop(&element))
-			printf("pop failed in QueueTest.cpp\n");
-
+		while(!q->pop(&element)){
+			emptyCount++;
+			//printf("emptyCount: %d",emptyCount);
+		}
 //		fprintf(stderr,"popped: %d\n",element);
 	}
 
 	if(i != ops + 1)
 		THROWEXCEPTION("wrong number of pop calls");
 
-	return NULL;
+	return new uint32_t(emptyCount);
 }
