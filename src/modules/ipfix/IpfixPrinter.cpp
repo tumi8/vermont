@@ -164,7 +164,7 @@ void PrintHelpers::printUint(InformationElement::IeInfo type, IpfixRecord::Data*
 }
 
 
-void PrintHelpers::printUTC(InformationElement::IeInfo type, IpfixRecord::Data* data) {
+void PrintHelpers::printLocaltime(InformationElement::IeInfo type, IpfixRecord::Data* data) {
 	time_t tmp;
 	char str[26]; // our own buffer to be thread-proof
 	switch (type.length) {
@@ -256,7 +256,7 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
 				case PSAMP_TYPEID_observationTimeSeconds:
-					printUTC(type, pattern);
+					printLocaltime(type, pattern);
 					return;
 				case IPFIX_TYPEID_flowStartNanoSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
