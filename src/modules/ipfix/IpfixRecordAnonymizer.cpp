@@ -80,16 +80,22 @@ void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 
 	boost::shared_ptr<TemplateInfo> templateInfo = myRecord->templateInfo;
 
-	//TODO: enterprise number should be considered (Gerhard 12/2009)
-
 	// anonymize Data Record fields
+	int32_t lastanonid = -2;
 	for (int i = 0; i != templateInfo->fieldCount; ++i) {
 		TemplateInfo::FieldInfo* field = templateInfo->fieldInfo + i;
-		anonField(field->type, myRecord->data + field->offset, field->type.length);
+		if (lastanonid==i-1
+				&& field->type==InformationElement::IeInfo(IPFIX_ETYPEID_anonymisationType, IPFIX_PEN_vermont)) {
+			// only if the preceding information element was really anonymised, we set this IE to 1
+			*(uint8_t*)(myRecord->data+field->offset) = 1;
+		} else if (anonField(field->type, myRecord->data + field->offset, field->type.length)) {
+			lastanonid = i;
+		}
 	}
 
 	// anonymize scope fields
-	if((record->templateInfo->scopeCount != 0) && ((record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate))) {
+	if((record->templateInfo->scopeCount != 0) && ((record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)
+			|| (record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate))) {
 		for (int i = 0; i != templateInfo->scopeCount; ++i) {
 			TemplateInfo::FieldInfo* field = templateInfo->scopeInfo + i;
 			anonField(field->type, myRecord->data + field->offset, field->type.length);

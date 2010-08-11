@@ -677,7 +677,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 
 	// set data efd field to the offset of IPFIX_ETYPEID_frontPayloadPktCount for front payload
 	if (efd->typeId==IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont)) {
-		*reinterpret_cast<uint32_t*>(efd->data) = 0xFFFFFFFF;
+		*reinterpret_cast<uint32_t*>(efd->data) = ExpHelperTable::UNUSED;
 		for (int i=0; i<dataTemplate->fieldCount; i++) {
 			TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 			if (hfi->type.id==IPFIX_ETYPEID_frontPayloadPktCount) {
@@ -782,7 +782,6 @@ void PacketHashtable::buildExpHelperTable()
 	};
 
 	vector<uint16_t> expkey2field; // maps entries from expHelperTable to original fields in template
-	vector<uint16_t> expagg2field;
 
 	// TODO: fill with correct value!
 	expHelperTable.dstIpEFieldIndex = false;
@@ -793,13 +792,11 @@ void PacketHashtable::buildExpHelperTable()
 	// special treatment of IPFIX_ETYPEID_frontPayload: for DPA, it must be the first element in the field
 	// reason: it may cause forced export of data records
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
-			TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
-			if (hfi->type.id==IPFIX_ETYPEID_frontPayload) {
-				ExpFieldData* efd = &expHelperTable.aggFields[expHelperTable.noAggFields++];
-				fillExpFieldData(efd, hfi, fieldModifier[i], expHelperTable.noAggFields-1);
-				expagg2field.push_back(i);
-				break;
-			}
+		TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+		if (hfi->type==IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont)) {
+			ExpFieldData* efd = &expHelperTable.aggFields[expHelperTable.noAggFields++];
+			fillExpFieldData(efd, hfi, fieldModifier[i], expHelperTable.noAggFields-1);
+		}
 	}
 	// now all other fields
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
@@ -814,7 +811,6 @@ void PacketHashtable::buildExpHelperTable()
 		DPRINTF("including type %s.", hfi->type.toString().c_str());
 		ExpFieldData* efd = &expHelperTable.aggFields[expHelperTable.noAggFields++];
 		fillExpFieldData(efd, hfi, fieldModifier[i], expHelperTable.noAggFields-1);
-		expagg2field.push_back(i);
 		if (hfi->type.id==IPFIX_ETYPEID_dpaForcedExport) {
 			msg(MSG_INFO, "activated dialog-based payload aggregation");
 			expHelperTable.useDPA = true;
@@ -834,6 +830,17 @@ void PacketHashtable::buildExpHelperTable()
 	DPRINTF("got %u key fields", expHelperTable.noKeyFields);
 
 	// reversed aggregatable fields
+
+	// special treatment of IPFIX_ETYPEID_frontPayload: for DPA, it must be the first element in the field
+	// reason: it may cause forced export of data records
+	for (int i=0; i<dataTemplate->fieldCount; i++) {
+		TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
+		if (hfi->type==IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
+			ExpFieldData* efd = &expHelperTable.revAggFields[expHelperTable.noRevAggFields++];
+			fillExpFieldData(efd, hfi, fieldModifier[i], expHelperTable.noRevAggFields-1);
+		}
+	}
+	// now the other fields
 	expHelperTable.noRevAggFields = 0;
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
 		TemplateInfo::FieldInfo hfi = dataTemplate->fieldInfo[i];

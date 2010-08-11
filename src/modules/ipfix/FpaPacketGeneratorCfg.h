@@ -1,6 +1,6 @@
 /*
- * Vermont Configuration Subsystem
- * Copyright (C) 2009 Vermont Project
+ * FPA PCAP Exporter
+ * Copyright (C) 2009 Tobias Limmer <http://www.cs.fau.de/~limmer>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -17,43 +17,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-
-#ifndef PCAPEXPORTERFIFOCFG_H_
-#define PCAPEXPORTERFIFOCFG_H_
+#ifndef FPA_PACKET_GENERATOR_CFG_H_
+#define FPA_PACKET_GENERATOR_CFG_H_
 
 #include "core/Cfg.h"
-#include "modules/packet/PCAPExporterPipe.h"
-#include "modules/packet/PCAPExporterBase.h"
+#include "FpaPacketGenerator.h"
 
 #include <vector>
 
 
-class PCAPExporterPipeCfg
-	: public CfgHelper<PCAPExporterPipe, PCAPExporterPipeCfg>
+class FpaPacketGeneratorCfg
+	: public CfgHelper<FpaPacketGenerator, FpaPacketGeneratorCfg>
 {
 	friend class ConfigManager;
 public:
-	virtual ~PCAPExporterPipeCfg();
+	virtual ~FpaPacketGeneratorCfg();
 
-	virtual PCAPExporterPipeCfg* create(XMLElement* elem);
+	virtual FpaPacketGeneratorCfg* create(XMLElement* elem);
 
-	virtual PCAPExporterPipe* createInstance();
+	virtual FpaPacketGenerator* createInstance();
 
-	bool deriveFrom(PCAPExporterPipeCfg* old);
+	bool deriveFrom(FpaPacketGeneratorCfg* old);
 
 protected:
-	PCAPExporterPipeCfg(XMLElement* elem);
-
-private:
-	int link_type;
-	int snaplen;
-    int sigkilltimeout;
-	std::string logFileName;
-    std::string fifoReaderCmd;
-    std::string workingPath;
-	bool appenddate;
-	bool restart;
+	FpaPacketGeneratorCfg(XMLElement* elem);
 };
 
 
-#endif /*PCAP_EXPORTERFILECFG_H_*/
+#endif

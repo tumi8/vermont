@@ -738,13 +738,15 @@ Output type: none
 	<logfilebasename>/tmp/pcap_exporter_fifo</logfilebasename>
 	<snaplen>1512</snaplen>
 	<sigkilltimeout>4</sigkilltimeout>
-	<fiforeadercmd>tcpdump -nr -</fiforeadercmd>
+	<command>tcpdump -nr -</command>
+	<workingpath>/tmp</workingpath>
 </pcapExporterPipe>
 </code>
 **Parameters:**
 |  **Element name**  |  **Default value**  |  **Description**  |
 |logfilebasename |  none  |If specified, STDOUT and STDERR of fiforeadercmd will be redircted into this file. |
-|fiforeadercmd|  none  |A single (i.e. no shell) command, which must read PCAP files via STDIN. |
+|command|  none  |A single (i.e. no shell) command, which must read PCAP files via STDIN. |
+|workingpath|  none  |Working directory for the command to be executed. |
 |sigkilltimeout|  1  |Maximum additional waiting time in seconds, until a SIGKILL is sent to the reader process on module shutdown. |
 |appenddate |  false  |If set to true, the logfilename given as logfilebasename will be suffixed with the current time and date |
 |restartonsignal |  false  |If set to true, the command specified as fiforedercmd will be restarted, when a SIGUSR2 is sent to vermont |

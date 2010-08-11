@@ -34,10 +34,11 @@ class PrintHelpers
 		void printIPv4(uint32_t data);
 		void printIPv4(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void printPort(InformationElement::IeInfo type, IpfixRecord::Data* data);
-		void printProtocol(uint16_t data);
+		void printProtocol(uint8_t data);
 		void printProtocol(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void printUint(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void printUint(char* buf, InformationElement::IeInfo type, IpfixRecord::Data* data);
+		void printLocaltime(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void printFrontPayload(InformationElement::IeInfo type, IpfixRecord::Data* data);
 
 	protected:

@@ -109,7 +109,12 @@ namespace InformationElement {
 				case IPFIX_ETYPEID_dpaReverseStart:
 				case IPFIX_ETYPEID_transportOctetDeltaCount:
 					return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
-
+			}
+			if (enterprise==IPFIX_PEN_vermont) {
+				switch (id) {
+					case IPFIX_ETYPEID_anonymisationType:
+						return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
+				}
 			}
 		}
 		THROWEXCEPTION("received unknown field type %s", toString().c_str());

@@ -40,6 +40,9 @@ static int compare_cidrs(const void *d1, const void *d2){
     {
         struct in_addr inp;
         cpan_net_info info;
+		info.fromNet = 0;
+		info.toNet = 0;
+		info.cidr = 0;
         int res = inet_aton((*it).fromNet.c_str(), &inp);
         if (!res) {
             THROWEXCEPTION("Invalid IP address: %s", (*it).fromNet.c_str());

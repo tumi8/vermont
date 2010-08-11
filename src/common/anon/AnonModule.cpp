@@ -149,10 +149,14 @@ void AnonModule::addAnonymization(InformationElement::IeInfo id, int len, AnonMe
 	}
 }
 
-void AnonModule::anonField(InformationElement::IeInfo id, void* data, int len)
+/**
+ * anonymises a field
+ * @returns true when an anonymisation was performed
+ */
+bool AnonModule::anonField(InformationElement::IeInfo id, void* data, int len)
 {
 	if (methods.find(id) == methods.end()) {
-		return;
+		return false;
 	}
 
 	int l = methods[id].len;
@@ -160,10 +164,12 @@ void AnonModule::anonField(InformationElement::IeInfo id, void* data, int len)
 		// this is a variable-length field, process everything
 		l = len;
 	}
+	bool anonymized = false;
 	for (std::vector<AnonPrimitive*>::iterator i = methods[id].primitive.begin(); i != methods[id].primitive.end(); ++i) {
         int cont = 1;
-		(*i)->anonimizeBuffer(data, l, &cont);
+		(*i)->anonymizeBuffer(data, l, anonymized, &cont);
         if (! cont) break;
 	}
+	return anonymized;
 }
 

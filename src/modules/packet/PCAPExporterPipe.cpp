@@ -7,12 +7,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -40,18 +40,33 @@
 namespace bfs = boost::filesystem;
 
 PCAPExporterPipe::PCAPExporterPipe(const std::string& logfile)
-	: logFileName(logfile), fifoReaderCmd(""), onRestart(false),
-	appenddate(false),  restartOnSignal(false),fifoReaderPid(0), 
-	dummy(NULL), sigKillTimeout(1),counter(0), last_check(0)
+	: logFileName(logfile),
+	  fifoReaderCmd(""),
+	  workingPath(""),
+	  onRestart(false),
+	  appenddate(false),
+	  restartOnSignal(false),
+	  fifoReaderPid(0),
+	  dummy(NULL),
+	  sigKillTimeout(1),
+	  counter(0),
+	  last_check(0),
+	  statPktsForwarded(0)
 {
 }
 
 PCAPExporterPipe::~PCAPExporterPipe()
 {
 }
+
 void PCAPExporterPipe::setPipeReaderCmd(const std::string& cmd)
 {
 	fifoReaderCmd = cmd;
+}
+
+void PCAPExporterPipe::setWorkingPath(const std::string& path)
+{
+	workingPath = path;
 }
 
 void PCAPExporterPipe::setAppendDate(bool value)
@@ -69,6 +84,11 @@ void PCAPExporterPipe::setRestartOnSignal(bool b){
 	restartOnSignal = b;
 }
 
+/**
+ * Starts the command given in 'cmd'
+ * STDOUT and STDERR of 'cmd' may be redirected into a file, see
+ * module_configuration.txt for details
+ * */
 int PCAPExporterPipe::execCmd(std::string& cmd)
 {
 	//char *command[] = {"tcpdump","-nr", "-" , (char*)0}; //"-w", "/tmp/pcap.dump",(char*)0};
@@ -92,6 +112,7 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 	if (pipe(child_parent_pipe)) {
 		THROWEXCEPTION("pipe(child_parent_pipe) failed");
 	}
+
 	/* Create a pipe, which allows communication between the child and the parent.
 	 * Writing an int value (e.g. errno) into child_parent_pipe[1]
 	 * will cause an exception in the parent process.
@@ -108,10 +129,17 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 
 	int pid = fork();
 	if (pid == 0) {
-		if (dup2(fd[0], STDIN_FILENO) == -1) { 
-			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int)) 
+		if (dup2(fd[0], STDIN_FILENO) == -1) {
+			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
 				THROWEXCEPTION("dup(fd[0]) failed");
 				exit(1);
+		}
+		if (workingPath != "") {
+			int res = chdir(workingPath.c_str());
+			if (res != 0) {
+				THROWEXCEPTION("failed to change to working path '%s'", workingPath.c_str());
+				exit(1);
+			}
 		}
 		if (logFileName != "") {
 			std::string logfile = logFileName;
@@ -122,7 +150,7 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 				time (&rawtime);
 				timeinfo = localtime (&rawtime);
 				if (strftime(buffer, 20, "%Y-%m-%d_%H:%M:%S", timeinfo) == 0) {
-					if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int)) 
+					if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
 						THROWEXCEPTION("strftime & write failed");
 					exit(1);
 				}
@@ -162,12 +190,15 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 			THROWEXCEPTION("An error occurred in the child: %s", strerror(buf));
 		}
 		return pid;
-	} else { 
+	} else {
 		THROWEXCEPTION("fork() failed");
 	}
 	return -1;
 }
 
+/**
+ * Startup method for the module
+ */
 void PCAPExporterPipe::performStart()
 {
 	char errbuf[PCAP_ERRBUF_SIZE];
@@ -249,21 +280,34 @@ void PCAPExporterPipe::startProcess()
 						fifoReaderCmd.c_str(), fifoReaderPid);
 }
 
-void PCAPExporterPipe::receive(Packet* packet) {
-	if(onRestart){
-		 msg(MSG_ERROR, "Can't process packets while restarting fifoReaderCmd");
+/**
+ * Writes a packet into the pipe
+ */
+void PCAPExporterPipe::receive(Packet* packet)
+{
+	if (onRestart){
+		 DPRINTF("Dropping incoming packet, as attached process is not ready");
 		 return;
 	}
 	if(fifoReaderPid == 0){
 		 msg(MSG_VDEBUG, "fifoReaderPid = 0...this might happen during reconfiguration");
-		 return; 
+		 return;
 	}
 	writePCAP(packet);
+	statPktsForwarded++;
 }
-void PCAPExporterPipe::handleSigPipe(int sig){
+void PCAPExporterPipe::handleSigPipe(int sig)
+{
 	handleSigChld(SIGCHLD);
 }
-void PCAPExporterPipe::handleSigChld(int sig){
+
+/**
+ * Handles SIGCHLD and tries to restart the external process.
+ * If this fails too often within a short time period, we assume that
+ * something went terribly wrong and throw an exception accordingly.
+ */
+void PCAPExporterPipe::handleSigChld(int sig)
+{
 	if(onRestart || exitFlag || isRunning(fifoReaderPid)) return;
 	onRestart = true;
 	counter++;
@@ -271,15 +315,15 @@ void PCAPExporterPipe::handleSigChld(int sig){
 	time(&tmp);
 	if(tmp== (time_t) -1)
 		THROWEXCEPTION("time() failed");
-	
+
 	// reset the counter if the last restart was more than 5 seconds ago
-	if((tmp -last_check) > 5) counter = 0; 
+	if((tmp -last_check) > 5) counter = 0;
 
 	if(counter > 5 && (tmp - last_check ) < 5)
 		THROWEXCEPTION("Too many restarts in a short time period. Maybe your commandline is erroneous");
-		
+
 	if(!isRunning(fifoReaderPid)){
-		//waitpid(fifoReaderPid, NULL, 0); 
+		//waitpid(fifoReaderPid, NULL, 0);
 		msg(MSG_ERROR, "Process of fifoReaderCmd \'%s\' with fifoReaderPid %d is not running!",
 				fifoReaderCmd.c_str(), fifoReaderPid);
 		startProcess();
@@ -291,13 +335,24 @@ void PCAPExporterPipe::handleSigChld(int sig){
 	onRestart = false;
 }
 
-void PCAPExporterPipe::handleSigUsr2(int sig){
+/**
+ * Catches SIGUSR2 and restarts the external process
+ * */
+void PCAPExporterPipe::handleSigUsr2(int sig)
+{
 	if (! restartOnSignal) return;
 	int pid = fifoReaderPid;
 	fifoReaderPid = 0;
 	kill_all(pid);
 	handleSigChld(sig);
 }
+
+
+/**
+ * Kills a single process by sending SIGTERM to 'pid'.
+ * Waits an user-defined interval before
+ * eventually sending SIGKILL to the process if it's still running
+ */
 void PCAPExporterPipe::kill_pid(int pid)
 {
 	int i = sigKillTimeout;
@@ -309,9 +364,12 @@ void PCAPExporterPipe::kill_pid(int pid)
 		sleep(1);
 	}
 	kill(pid, SIGKILL);
-	waitpid(fifoReaderPid, NULL, 0); 
+	waitpid(fifoReaderPid, NULL, 0);
 }
 
+/**
+ * Checks if the process is still running
+ * */
 bool PCAPExporterPipe::isRunning(int pid)
 {
 	int status;
@@ -320,15 +378,19 @@ bool PCAPExporterPipe::isRunning(int pid)
 	return false;
 }
 
-bool PCAPExporterPipe::checkint(const char *my_string) {
+bool PCAPExporterPipe::checkint(const char *my_string)
+{
 	size_t stringlength = strlen(my_string);
 	for (size_t j=0; j<stringlength; j++)
-		if((int)my_string[j] < 0x30 || (int)my_string[j] > 0x39) 
+		if((int)my_string[j] < 0x30 || (int)my_string[j] > 0x39)
 			return false;
 
 	return true;
 }
 
+/**
+ * Kills a process and all of its children
+ * */
 void PCAPExporterPipe::kill_all(int ppid)
 {
 	sleep(2); //give the process some time to finish its work
@@ -344,7 +406,7 @@ void PCAPExporterPipe::kill_all(int ppid)
 	bfs::directory_iterator dir_iterator = bfs::directory_iterator(path);
 	bfs::directory_iterator end_itr;
 	while (dir_iterator != end_itr) {
-		if (bfs::is_directory(dir_iterator->status())  && 
+		if (bfs::is_directory(dir_iterator->status())  &&
 				this->checkint(dir_iterator->leaf().c_str()))
 		{
 			std::string filename = dir_iterator->path().file_string() + "/stat";
@@ -376,7 +438,26 @@ void PCAPExporterPipe::kill_all(int ppid)
 		msg(MSG_DEBUG, "Killing Pid %d", *it);
 		kill_pid(*it);
 	}
-	return;
 }
 
 
+/**
+ * statistics function called by StatisticsManager
+ */
+std::string PCAPExporterPipe::getStatisticsXML(double interval)
+{
+	ostringstream oss;
+	oss << "<forwarded type=\"packets\">" << statPktsForwarded << "</forwarded>";
+	if (isRunning(fifoReaderPid)) {
+		oss << "<processInfo pid=\"" << fifoReaderPid << "\">";
+		try {
+			ThreadCPUInterface::JiffyTime jt = ThreadCPUInterface::getProcessJiffies(fifoReaderPid);
+			oss << "<totalJiffies type=\"system\">" << jt.sysJiffies << "</totalJiffies>";
+			oss << "<totalJiffies type=\"user\">" << jt.userJiffies << "</totalJiffies></processInfo>";
+		}
+		catch (std::runtime_error& re) {
+			// do not fail miserably when statistics were not retrieved correctly ...
+		}
+	}
+	return oss.str();
+}

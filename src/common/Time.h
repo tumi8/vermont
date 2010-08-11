@@ -43,15 +43,14 @@ inline int timeval_subtract(struct timeval* result, struct timeval* x, struct ti
 inline void addToCurTime(struct timespec* ts, long timediff_ms)
 {
 	struct timeval tv;
-	// calculate absolute time from timeout
 	gettimeofday(&tv, 0);
-	// add timeout value to the current time
-	// if no timeout is given, use standard timeout, as we need to check the exitFlag regularly
-	tv.tv_usec += timediff_ms * 1000L;
-	if (tv.tv_usec >= 1000000L)
-	{
-		tv.tv_sec += (tv.tv_usec/1000000L);
-		tv.tv_usec %= 1000000L;
+
+	tv.tv_sec += timediff_ms/1000;
+	tv.tv_usec += (timediff_ms%1000)*1000;
+
+	if (tv.tv_usec>=1000000) {
+		tv.tv_sec++;
+		tv.tv_usec -= 1000000;
 	}
 	ts->tv_sec = tv.tv_sec;
 	ts->tv_nsec = tv.tv_usec * 1000L;

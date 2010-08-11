@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include <stdlib.h>
-
+#include <limits.h>
 std::string CfgBase::get(const std::string& name, XMLElement* elem) throw(IllegalEntry)
 {
 	if (!elem)
@@ -45,7 +45,11 @@ int CfgBase::getInt(const std::string& name, int def, XMLElement* elem)
 	std::string str;
 	try {
 		str = get(name, elem);
-		return atoi(str.c_str());
+		int res = strtol(str.c_str(), NULL, 10);
+		if (res==LONG_MIN || res==LONG_MAX) {
+			THROWEXCEPTION("failed to read integer %s in element %s in configuration (is it too large? or invalid?)", str.c_str(), name.c_str());
+		}
+		return res;
 	} catch (IllegalEntry ie) { }
 
 	// return default value

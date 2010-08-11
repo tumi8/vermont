@@ -67,6 +67,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 		std::string destinationPath; /**< storage path of output files */
 		FILE *currentFile;
 		char currentFilename[512];
+		char currentTmpname[512];
 		uint16_t globalIterator;
 		uint32_t maxFileSize; /**< maximum filesize in  KiB, i.e. maximumFilesize * 1024 == maximum filesize in bytes */
 		uint32_t maxChunkBufferTime; /**< maximum Chunk Buffer Time (in seconds) */
@@ -84,6 +85,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 		//file write operations
 		void writeFileHeader();
 		void writeChunkList();
+		void closeFile();
 
 		enum cs_export_mode {
 			CS_E_PLAIN      = 0,
@@ -130,6 +132,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 		};
 
 		list<Ipfix_basic_flow*> chunkList;
+		uint32_t chunkListSize;
 };
 
 

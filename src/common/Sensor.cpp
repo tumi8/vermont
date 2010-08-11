@@ -29,7 +29,7 @@ void Sensor::getJiffiesUsed(std::list<ThreadCPUInterface::JiffyTime>& usedJiffie
 	time_t curtime = time(0);
 	while (iter != watchedThreads.end()) {
 		if (iter->active) {
-			ThreadCPUInterface::JiffyTime totaljt = ThreadCPUInterface::getJiffies(iter->tid);
+			ThreadCPUInterface::JiffyTime totaljt = ThreadCPUInterface::getThreadJiffies(iter->tid);
 			ThreadCPUInterface::JiffyTime diffjt = totaljt;
 			diffjt.userJiffies -= iter->userJiffies;
 			diffjt.sysJiffies -= iter->sysJiffies;
@@ -79,7 +79,7 @@ void Sensor::registerThreadID(pid_t tid)
 		}
 		iter++;
 	}
-	ThreadCPUInterface::JiffyTime jt = ThreadCPUInterface::getJiffies(tid);
+	ThreadCPUInterface::JiffyTime jt = ThreadCPUInterface::getThreadJiffies(tid);
 	jt.lastAccess = time(0);
 
 	watchedThreads.push_back(jt);
@@ -111,7 +111,7 @@ void Sensor::unregisterThreadID(pid_t tid)
 				THROWEXCEPTION("given thread ID was already deactived");
 			}
 			// update thread statistics
-			ThreadCPUInterface::JiffyTime jt = ThreadCPUInterface::getJiffies(iter->tid);
+			ThreadCPUInterface::JiffyTime jt = ThreadCPUInterface::getThreadJiffies(iter->tid);
 			iter->userJiffies = jt.userJiffies;
 			iter->sysJiffies = jt.sysJiffies;
 			iter->lastAccess = time(0);
