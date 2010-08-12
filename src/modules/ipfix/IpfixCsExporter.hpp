@@ -75,12 +75,14 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 		uint32_t maxFileCreationInterval; /**< time in seconds between creation of a new output file */
 		uint8_t exportMode; /**< export Mode */
 		uint32_t currentFileSize;
-
-		//to calculate criteria after given timeouts
-		void registerTimeout();
 		bool timeoutRegistered;
 		timespec nextChunkTimeout;
 		timespec nextFileTimeout;
+
+		//to calculate criteria after given timeouts
+		void registerTimeout();
+		uint64_t retrieveTime(IpfixDataRecord* record, InformationElement::IeId id1, InformationElement::IeId id2,
+				InformationElement::IeId id3, InformationElement::IeEnterpriseNumber pen);
 
 		//file write operations
 		void writeFileHeader();
@@ -95,21 +97,19 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 
 		struct CS_Ipfix_file_header {
 			uint8_t magic[8]; //expected: CS_IPFIX_MAGIC
-		};
+		} DISABLE_ALIGNMENT;
 
 		/**
 		 * class representing the start of a chunk in the CS format
 		 */
 		struct Ipfix_basic_flow_sequence_chunk_header {
-			uint16_t ipfix_type; //-> CS_IPFIX_CHUNK_TYPE -> 0x08
-			//TODO: check if comment is correct. currently implemented as
-			// number of bytes in chunk from chunk header onwards
-			uint32_t chunk_length; //number of bytes in chunk from magic onwards
+			uint16_t ipfix_type; //-> CS_IPFIX_CHUNK_TYPE -> 0x0008
+			uint32_t chunk_length; //number of bytes in chunk starting after this element, this should be flow_count*sizeof(Ipfix_basic_flow)+4
 			uint32_t flow_count; //number of Ipfix_basic_flow records to follow
-		};
+		} DISABLE_ALIGNMENT;
 
 		struct Ipfix_basic_flow {
-			uint16_t record_length;                 // total length of this record in bytes
+			uint16_t record_length;                 // total length of this record minus length of this element
 			uint8_t  src_export_mode;               // expected to match enum cs_export_mode
 			uint8_t  dst_export_mode;               // expected to match enum cs_export_mode
 			uint8_t  ipversion;                     // expected 4 (for now)
@@ -128,8 +128,8 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 			uint8_t  biflow_direction;
 			uint64_t rev_octet_total_count;
 			uint64_t rev_packet_total_count;
-			uint64_t rev_tcp_control_bits;
-		};
+			uint8_t  rev_tcp_control_bits;
+		} DISABLE_ALIGNMENT;
 
 		list<Ipfix_basic_flow*> chunkList;
 		uint32_t chunkListSize;

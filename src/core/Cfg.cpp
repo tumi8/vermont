@@ -3,7 +3,11 @@
 #include <cassert>
 #include <stdlib.h>
 #include <limits.h>
-std::string CfgBase::get(const std::string& name, XMLElement* elem) throw(IllegalEntry)
+
+/**
+ * internally used function
+ */
+std::string CfgBase::_get(const std::string& name, XMLElement* elem) throw(IllegalEntry)
 {
 	if (!elem)
 		elem = _elem;
@@ -18,11 +22,26 @@ std::string CfgBase::get(const std::string& name, XMLElement* elem) throw(Illega
 	return n->getFirstText();
 }
 
+std::string CfgBase::get(const std::string& name, XMLElement* elem)
+{
+	if (!elem) elem = _elem;
+
+	std::string result;
+	try {
+		result = _get(name, elem);
+	} catch (IllegalEntry ie) {
+
+		THROWEXCEPTION("Error: Element '%s' not found in node '%s' in configuration", name.c_str(), elem->getName().c_str());
+	}
+
+	return result;
+}
+
 std::string CfgBase::getOptional(const std::string& name, XMLElement* elem)
 {
 	std::string result;
 	try {
-		result = get(name, elem);
+		result = _get(name, elem);
 	} catch (IllegalEntry ie) { }
 
 	return result;
@@ -32,7 +51,7 @@ double CfgBase::getDouble(const std::string& name, double def, XMLElement* elem)
 {
 	std::string str;
 	try {
-		str = get(name, elem);
+		str = _get(name, elem);
 		return atof(str.c_str());
 	} catch (IllegalEntry ie) { }
 
@@ -44,7 +63,7 @@ int CfgBase::getInt(const std::string& name, int def, XMLElement* elem)
 {
 	std::string str;
 	try {
-		str = get(name, elem);
+		str = _get(name, elem);
 		int res = strtol(str.c_str(), NULL, 10);
 		if (res==LONG_MIN || res==LONG_MAX) {
 			THROWEXCEPTION("failed to read integer %s in element %s in configuration (is it too large? or invalid?)", str.c_str(), name.c_str());
@@ -60,7 +79,7 @@ uint32_t CfgBase::getUInt32(const std::string& name, uint32_t def, XMLElement* e
 {
 	std::string str;
 	try {
-		str = get(name, elem);
+		str = _get(name, elem);
 		return strtoul(str.c_str(), NULL, 10);
 	} catch (IllegalEntry ie) { }
 
@@ -72,7 +91,7 @@ int64_t CfgBase::getInt64(const std::string& name, int64_t def, XMLElement* elem
 {
 	std::string str;
 	try {
-		str = get(name, elem);
+		str = _get(name, elem);
 		return atoll(str.c_str());
 	} catch (IllegalEntry ie) { }
 
@@ -84,7 +103,7 @@ bool CfgBase::getBool(const std::string& name, bool def, XMLElement* elem)
 {
 	std::string str;
 	try {
-		str = get(name, elem);
+		str = _get(name, elem);
 		// make lower case
 		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 		return ((str == "true") || (str == "1"));

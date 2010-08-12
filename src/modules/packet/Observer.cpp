@@ -294,7 +294,7 @@ void *Observer::observerThread(void *arg)
 						wait_spec.tv_sec = wait_val.tv_sec;
 						wait_spec.tv_nsec = wait_val.tv_usec * 1000;
 						if(nanosleep(&wait_spec, NULL) != 0)
-							msg(MSG_INFO, "Observer: nanosleep returned nonzero value");
+							msg(MSG_INFO, "Observer: nanosleep returned nonzero value, errno=%u (%s)", errno, strerror(errno));
 					}
 					else if (delta_now.tv_sec > (delta_to_be.tv_sec + 1) && obs->stretchTime!=INFINITY)
 					    if (!obs->slowMessageShown) {
