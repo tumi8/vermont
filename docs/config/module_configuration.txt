@@ -359,7 +359,7 @@ Output type: none
 |password |  none  |Password for database access. |
 |bufferrecords |  30  |Amount of flow records to buffer until they are written to the database. To achieve high performance, a value from 1000 to 10000 is recommended. |
 
-== IpfiFileWriter ==
+== IpfixFileWriter ==
 
 Dumps ipfix messages into data files. 
 
@@ -381,7 +381,32 @@ Output type: none
 | observationDomainId | 0 | Observation Domain Id assigned to the records. |
 | maximumFilesize |  2097152  | maximum size for the date files in KiB (maximumFilesize*1024 == maxmimum filesize in bytes) |
 | destinationPath | ./ | Output directory for the data files. | 
+| filenamePrefix | ipfix.dump | Basename of the generated filenames. Please note that every filename will be suffixed with a consecutive 10-digit number starting at 0. |
+
+
+== IpfixNetflowExporter ==
+
+Exports flows as Netflow.v5 records, filling non-existent fields with 0. Attention: do not send Biflows to this module, as Netflow.v5 only supports undirectional flows. The reverse direction will be ignored! 
+
+Input type: IpfixRecord
+Output type: none
+
+**Example configuration:**
+<code xml>
+    <ipfixNetflowExporter id="11">
+        <host>localhost</host>
+        <port>9995</port>
+        <maxRecordRate>500</maxRecordRate> 
+    </ipfixFileWriter> 
+
+</code>
+**Parameters:**
+|  **Element name**  |  **Default value**  |  **Description**  |
+| host | none | Destination host name where Netflow packets should be sent to. |
+| port |  none  | Destination port. |
+| maxRecordRate | 500 | Maximum number of data/flow records to be sent to the receiving side. Higher flow rates will block the exporter, so maybe a buffer is required in front of the module. | 
 | filenamePrefix | ipfix.dump | Basename of the generated filenames. Please note that every filename will be suffixed with a consecutive 10-digit number starting at 0. | 
+ 
 
 == IpfiReceiverFile ==
 
@@ -846,8 +871,11 @@ Output type: IpfixRecord
 |copyMode |  false  |If true, the Record Anonymizer creates a copy of the incoming record and leaves the original record unchanged. Copy mode should be turned on if the original records are processed by other moduls as well. |
 
 
-== CryptoPanPrefix ==
-This module is a submodule for the RecordAnonymizer mentioned above. It requires some additional configuration elements.
+=== CryptoPanPrefix ===
+This module is a submodule for the RecordAnonymizer mentioned above. It implements a modified version of the CryptoPan anonymization method. 
+The following only applies if the IP address passing through the module matches a subnet configured in the configuration file - elsewise the address is skipped:
+The IP address is split into a network and host identifier according to the specified CIDR, i.e. the CIDR represents the number of bits belonging to the network part. 
+After this splitting is done, only the host part of the IP address is anonymized with the basic CryptoPan algorithm. In a second step, the network part is replaced with the preconfigured subnet given in the configuration file in the **to** field. As seen below, multiple mappings are possible.
 
 **Example configuration**
 <anonRecord id="3">

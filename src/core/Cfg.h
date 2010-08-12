@@ -95,6 +95,7 @@ public:
 
 private:
   std::string _get(const std::string& name, XMLElement* elem) throw(IllegalEntry);
+
 };
 
 class Cfg : public CfgBase
