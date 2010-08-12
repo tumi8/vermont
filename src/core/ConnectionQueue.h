@@ -40,7 +40,6 @@ public:
 	ConnectionQueue(uint32_t maxEntries, bool multipleProducers = false)
 		: thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
 	{
-		printf("#####ConnectionQueue(%d, %s)\n",maxEntries,(multipleProducers ? "true" : "false"));
 		if(multipleProducers)
 			queue = new ConcurrentQueue<T>(STL, maxEntries);
 		else

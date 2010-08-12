@@ -275,8 +275,8 @@ public:
 	virtual ConnectionQueue<typename InstanceType::dst_value_type>* getQueueInstance(bool multi = false)
 	{
 		if (!queue) {
-			msg(MSG_DIALOG, "queue is required by module id=%u but is not configured. Inserting a default queue with max size 100", getID());
-			queue = new ConnectionQueue<typename InstanceType::dst_value_type>(100,multi);
+			msg(MSG_DIALOG, "queue is required by module id=%u but is not configured. Inserting a default queue with max size 1000", getID());
+			queue = new ConnectionQueue<typename InstanceType::dst_value_type>(1000,multi);
 			queue->connectTo(getInstance());
 			Notifiable* n = dynamic_cast<Notifiable*>(getInstance());
 			if (n) n->useTimer(queue);
