@@ -40,10 +40,13 @@ class STLQueue : public BaseQueue<T>
 		 * @return first pointer in the queue
 		 */
 		inline bool pop(T* element){
-			if(queue.empty())
-				return false;
-
 			lock.lock();
+
+			if(queue.empty()){
+				lock.unlock();
+				return false;
+			}
+
 			*element = queue.front();
 			queue.pop();
 			lock.unlock();

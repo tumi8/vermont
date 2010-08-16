@@ -46,7 +46,6 @@ QueueTest::~QueueTest() {
 	for(uint32_t i=0; i<numConsumer; i++){
 		delete popper[i];
 	}
-
 	delete queue;
 }
 
