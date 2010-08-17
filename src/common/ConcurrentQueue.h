@@ -362,6 +362,12 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 			if(posix_memalign(&tmp, clsize, clsize) != 0)
 				THROWEXCEPTION("Error: posix_memalign()");
 			fullCond = (pthread_cond_t*)tmp;
+
+			pthread_mutex_init(emptyMutex, NULL);
+			pthread_cond_init (emptyCond, NULL);
+			pthread_mutex_init(fullMutex, NULL);
+			pthread_cond_init (fullCond, NULL);
+
 		};
 
 		~ConcurrentQueueCond()
@@ -370,6 +376,11 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 				msg(MSG_DEBUG, "WARNING: freeing non-empty queue - got count: %d", getCount());
 			}
 			free((void*)pushedCount);
+
+			pthread_mutex_destroy(emptyMutex);
+			pthread_cond_destroy(emptyCond);
+			pthread_mutex_destroy(fullMutex);
+			pthread_cond_destroy(fullCond);
 		};
 
 		void setOwner(std::string name)
@@ -439,7 +450,7 @@ class ConcurrentQueueCond : public BaseConcurrentQueue<T>
 				timeout.tv_nsec += *spinLockTimeoutConsumer;
 
 				if (pthread_mutex_lock (emptyMutex) != 0)
-					THROWEXCEPTION("lock of emptyutex failed");
+					THROWEXCEPTION("lock of emptyMutex failed");
 
 				int ret = pthread_cond_timedwait (emptyCond, emptyMutex, &timeout);
 				if(ret != 0 && ret != ETIMEDOUT && ret != EINVAL)
