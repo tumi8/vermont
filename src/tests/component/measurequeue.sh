@@ -60,6 +60,22 @@ taskset -c 0,2 ./comptest --rep 10 --comp 1 --qtype 4 --qsize 10000000 --qops 10
 ./comptest --rep 10 --comp 1 --qtype 1 --qsize 10 --qops 1000000 --qprod 3 --output "queueImp/1-10-31-out.txt"
 ./comptest --rep 10 --comp 1 --qtype 1 --qsize 10 --qops 1000000 --qprod 5 --output "queueImp/1-10-51-out.txt"
 
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 100 --qops 1000000 --qprod 2 --output "queueImp/1-100-21-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 100 --qops 1000000 --qprod 3 --output "queueImp/1-100-31-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 100 --qops 1000000 --qprod 5 --output "queueImp/1-100-51-out.txt"
+
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 1000 --qops 1000000 --qprod 2 --output "queueImp/1-1000-21-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 1000 --qops 1000000 --qprod 3 --output "queueImp/1-1000-31-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 1000 --qops 1000000 --qprod 5 --output "queueImp/1-1000-51-out.txt"
+
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000 --qops 1000000 --qprod 2 --output "queueImp/1-10000-21-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000 --qops 1000000 --qprod 3 --output "queueImp/1-10000-31-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000 --qops 1000000 --qprod 5 --output "queueImp/1-10000-51-out.txt"
+
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000000 --qops 1000000 --qprod 2 --output "queueImp/1-10000000-21-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000000 --qops 1000000 --qprod 3 --output "queueImp/1-10000000-31-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000000 --qops 1000000 --qprod 5 --output "queueImp/1-10000000-51-out.txt"
+
 ./comptest --rep 10 --comp 1 --qtype 4 --qsize 10 --qops 1000000 --qprod 2 --output "queueImp/4-10-21-out.txt"
 ./comptest --rep 10 --comp 1 --qtype 4 --qsize 10 --qops 1000000 --qprod 3 --output "queueImp/4-10-31-out.txt"
 ./comptest --rep 10 --comp 1 --qtype 4 --qsize 10 --qops 1000000 --qprod 5 --output "queueImp/4-10-51-out.txt"
@@ -84,6 +100,22 @@ taskset -c 0,2 ./comptest --rep 10 --comp 1 --qtype 4 --qsize 10000000 --qops 10
 ./comptest --rep 10 --comp 1 --qtype 1 --qsize 10 --qops 1000000 --qprod 2 --qcons 2 --output "queueImp/1-10-22-out.txt"
 ./comptest --rep 10 --comp 1 --qtype 1 --qsize 10 --qops 1000000 --qprod 3 --qcons 3 --output "queueImp/1-10-33-out.txt"
 ./comptest --rep 10 --comp 1 --qtype 1 --qsize 10 --qops 1000000 --qprod 5 --qcons 5 --output "queueImp/1-10-55-out.txt"
+
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 100 --qops 1000000 --qprod 2 --qcons 2 --output "queueImp/1-100-22-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 100 --qops 1000000 --qprod 3 --qcons 3 --output "queueImp/1-100-33-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 100 --qops 1000000 --qprod 5 --qcons 5 --output "queueImp/1-100-55-out.txt"
+
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 1000 --qops 1000000 --qprod 2 --qcons 2 --output "queueImp/1-1000-22-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 1000 --qops 1000000 --qprod 3 --qcons 3 --output "queueImp/1-1000-33-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 1000 --qops 1000000 --qprod 5 --qcons 5 --output "queueImp/1-1000-55-out.txt"
+
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000 --qops 1000000 --qprod 2 --qcons 2 --output "queueImp/1-10000-22-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000 --qops 1000000 --qprod 3 --qcons 3 --output "queueImp/1-10000-33-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000 --qops 1000000 --qprod 5 --qcons 5 --output "queueImp/1-10000-55-out.txt"
+
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000000 --qops 1000000 --qprod 2 --qcons 2 --output "queueImp/1-10000000-22-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000000 --qops 1000000 --qprod 3 --qcons 3 --output "queueImp/1-10000000-33-out.txt"
+./comptest --rep 10 --comp 1 --qtype 1 --qsize 10000000 --qops 1000000 --qprod 5 --qcons 5 --output "queueImp/1-10000000-55-out.txt"
 
 ./comptest --rep 10 --comp 1 --qtype 4 --qsize 10 --qops 1000000 --qprod 2 --qcons 2 --output "queueImp/4-10-22-out.txt"
 ./comptest --rep 10 --comp 1 --qtype 4 --qsize 10 --qops 1000000 --qprod 3 --qcons 3 --output "queueImp/4-10-33-out.txt"
@@ -301,6 +333,18 @@ taskset -c 0,2 ./comptest --rep 10 --comp 2 --qtype 34 --qsize 10000000 --qops 1
 ./comptest --rep 10 --comp 2 --qtype 21 --qsize 100 --qops 1000000 --qprod 3 --output "concurrentQueue/21-100-31-out.txt"
 ./comptest --rep 10 --comp 2 --qtype 21 --qsize 100 --qops 1000000 --qprod 5 --output "concurrentQueue/21-100-51-out.txt"
 
+./comptest --rep 10 --comp 2 --qtype 21 --qsize 1000 --qops 1000000 --qprod 2 --output "concurrentQueue/21-1000-21-out.txt"
+./comptest --rep 10 --comp 2 --qtype 21 --qsize 1000 --qops 1000000 --qprod 3 --output "concurrentQueue/21-1000-31-out.txt"
+./comptest --rep 10 --comp 2 --qtype 21 --qsize 1000 --qops 1000000 --qprod 5 --output "concurrentQueue/21-1000-51-out.txt"
+
+./comptest --rep 10 --comp 2 --qtype 21 --qsize 10000 --qops 1000000 --qprod 2 --output "concurrentQueue/21-10000-21-out.txt"
+./comptest --rep 10 --comp 2 --qtype 21 --qsize 10000 --qops 1000000 --qprod 3 --output "concurrentQueue/21-10000-31-out.txt"
+./comptest --rep 10 --comp 2 --qtype 21 --qsize 10000 --qops 1000000 --qprod 5 --output "concurrentQueue/21-10000-51-out.txt"
+
+./comptest --rep 10 --comp 2 --qtype 21 --qsize 10000000 --qops 1000000 --qprod 2 --output "concurrentQueue/21-10000000-21-out.txt"
+./comptest --rep 10 --comp 2 --qtype 21 --qsize 10000000 --qops 1000000 --qprod 3 --output "concurrentQueue/21-10000000-31-out.txt"
+./comptest --rep 10 --comp 2 --qtype 21 --qsize 10000000 --qops 1000000 --qprod 5 --output "concurrentQueue/21-10000000-51-out.txt"
+
 ./comptest --rep 10 --comp 2 --qtype 24 --qsize 100 --qops 1000000 --qprod 2 --output "concurrentQueue/24-100-21-out.txt"
 ./comptest --rep 10 --comp 2 --qtype 24 --qsize 100 --qops 1000000 --qprod 3 --output "concurrentQueue/24-100-31-out.txt"
 ./comptest --rep 10 --comp 2 --qtype 24 --qsize 100 --qops 1000000 --qprod 5 --output "concurrentQueue/24-100-51-out.txt"
@@ -321,6 +365,18 @@ taskset -c 0,2 ./comptest --rep 10 --comp 2 --qtype 34 --qsize 10000000 --qops 1
 ./comptest --rep 10 --comp 2 --qtype 31 --qsize 100 --qops 1000000 --qprod 2 --output "concurrentQueue/31-100-21-out.txt"
 ./comptest --rep 10 --comp 2 --qtype 31 --qsize 100 --qops 1000000 --qprod 3 --output "concurrentQueue/31-100-31-out.txt"
 ./comptest --rep 10 --comp 2 --qtype 31 --qsize 100 --qops 1000000 --qprod 5 --output "concurrentQueue/31-100-51-out.txt"
+
+./comptest --rep 10 --comp 2 --qtype 31 --qsize 1000 --qops 1000000 --qprod 2 --output "concurrentQueue/31-1000-21-out.txt"
+./comptest --rep 10 --comp 2 --qtype 31 --qsize 1000 --qops 1000000 --qprod 3 --output "concurrentQueue/31-1000-31-out.txt"
+./comptest --rep 10 --comp 2 --qtype 31 --qsize 1000 --qops 1000000 --qprod 5 --output "concurrentQueue/31-1000-51-out.txt"
+
+./comptest --rep 10 --comp 2 --qtype 31 --qsize 10000 --qops 1000000 --qprod 2 --output "concurrentQueue/31-10000-21-out.txt"
+./comptest --rep 10 --comp 2 --qtype 31 --qsize 10000 --qops 1000000 --qprod 3 --output "concurrentQueue/31-10000-31-out.txt"
+./comptest --rep 10 --comp 2 --qtype 31 --qsize 10000 --qops 1000000 --qprod 5 --output "concurrentQueue/31-10000-51-out.txt"
+
+./comptest --rep 10 --comp 2 --qtype 31 --qsize 10000000 --qops 1000000 --qprod 2 --output "concurrentQueue/31-10000000-21-out.txt"
+./comptest --rep 10 --comp 2 --qtype 31 --qsize 10000000 --qops 1000000 --qprod 3 --output "concurrentQueue/31-10000000-31-out.txt"
+./comptest --rep 10 --comp 2 --qtype 31 --qsize 10000000 --qops 1000000 --qprod 5 --output "concurrentQueue/31-10000000-51-out.txt"
 
 ./comptest --rep 10 --comp 2 --qtype 34 --qsize 100 --qops 1000000 --qprod 2 --output "concurrentQueue/34-100-21-out.txt"
 ./comptest --rep 10 --comp 2 --qtype 34 --qsize 100 --qops 1000000 --qprod 3 --output "concurrentQueue/34-100-31-out.txt"
