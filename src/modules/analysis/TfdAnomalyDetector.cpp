@@ -141,6 +141,8 @@ void TfdAnomalyDetector::checkConnection(Connection* conn)
     } else if ((conn->dstIP & subnetmask) == subnet) {
         host = conn->dstIP;
         isSrc = false;
+    } else {
+        return;
     }
     
     // get number of packets for current flow

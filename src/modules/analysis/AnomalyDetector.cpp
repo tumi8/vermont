@@ -86,6 +86,7 @@ void AnomalyDetector::onDataRecord(IpfixDataRecord* record)
     // convert ipfixrecord to connection struct
     Connection conn(record);
     
+    // check if connection is an anomaly
     checkConnection(&conn);
     
     // cleanupEntries();
@@ -116,9 +117,11 @@ void AnomalyDetector::checkConnection(Connection* conn)
         host = conn->dstIP;
         emaMap = &dstHostMap; // Incoming Map
         isSrc = false;
+    } else {
+        return; // ignore this connection
     }
     
-    // get number of Packets for current flow
+    // get number of packets for current flow
     numFlowPackets = ntohll(conn->srcPackets);
     
     // calc starttime for current flow
