@@ -41,9 +41,9 @@ public:
 		: thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
 	{
 		if(multipleProducers)
-			queue = new ConcurrentQueue<T>(STL, maxEntries);
+			queue = new ConcurrentQueueSpinlock<T>(MULTI, maxEntries);
 		else
-			queue = new ConcurrentQueue<T>(SINGLE_CACHEOPT, maxEntries);
+			queue = new ConcurrentQueueSpinlock<T>(SINGLE_CACHEOPT, maxEntries);
 
 		initPhase = true;
 		this->Sensor::usedBytes = sizeof(ConnectionQueue);
@@ -127,7 +127,7 @@ public:
 
 
 private:
-	ConcurrentQueue<T>* queue;  /**< contains all elements which were received from previous modules */
+	ConcurrentQueueSpinlock<T>* queue;  /**< contains all elements which were received from previous modules */
 	Thread thread;
 	list<TimeoutEntry*> timeouts;
 	//Mutex mutex;	/**< controls access to class variable timeouts */

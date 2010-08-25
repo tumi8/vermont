@@ -560,11 +560,10 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 		 * default queue size
 		 */
 		static const int DEFAULT_QUEUE_SIZE = 1000;
-		static const uint32_t DEFAULT_SPINLOCK_TIMEOUT = 100;
 
-		ConcurrentQueueSpinlock(int qType = STL, int maxEntries = DEFAULT_QUEUE_SIZE, uint32_t spinLockTimeout = DEFAULT_SPINLOCK_TIMEOUT)
+		ConcurrentQueueSpinlock(int qType = STL, uint32_t maxEntries = DEFAULT_QUEUE_SIZE, uint32_t spinLockTimeout = 51)
 		{
-			//printf("ConcurrentQueueSpinLock()\n");
+			printf("ConcurrentQueueSpinLock()\n");
 			switch(qType){
 				case STL:
 					this->queueImp = new STLQueue<T>();
@@ -584,6 +583,8 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 				default:
 					THROWEXCEPTION("Unknown Queue Type");
 			}
+
+			shutdownFlag = false;
 
 			//initialize variable in cachelines
 			void* tmp;
@@ -610,11 +611,13 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 			spinLockTimeoutConsumer = (struct timespec*)(poppedCount + 1);
 			queueImpConsumer = (BaseQueue<T>**)(spinLockTimeoutConsumer + 1);
 			emptyCount = (uint32_t*)(queueImpConsumer +1);
+			numSlots = (emptyCount + 1);
 			*poppedCount = 0;
 			spinLockTimeoutConsumer->tv_sec = 0;
 			spinLockTimeoutConsumer->tv_nsec = spinLockTimeout;
 			*queueImpConsumer = this->queueImp;
 			*emptyCount = 0;
+			*numSlots = maxEntries;
 		}
 
 		~ConcurrentQueueSpinlock()
@@ -651,6 +654,9 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 				__sync_add_and_fetch(fullCount,1);
 				//printf("fullCount: %d",*fullCount);
 				nanosleep(spinLockTimeoutProducer, NULL);
+
+				if(shutdownFlag)
+					return;
 			}
 
 			__sync_add_and_fetch(pushedCount,1);
@@ -662,9 +668,17 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 			while(!(*(this->queueImpConsumer))->pop(res)){
 				(*(this->queueImpConsumer))->batchUpdate();
 				__sync_add_and_fetch(emptyCount,1);
-				//printf("emptyCount: %d",*emptyCount);
+				//printf("emptyCount: %lu",spinLockTimeoutConsumer->tv_nsec);
 				nanosleep(spinLockTimeoutConsumer, NULL);
+
+				if(spinLockTimeoutConsumer->tv_nsec * 2 < 51 * (*numSlots))
+					spinLockTimeoutConsumer->tv_nsec *= 2;
+
+				if(shutdownFlag)
+					return false;
 			}
+
+			spinLockTimeoutConsumer->tv_nsec = 51;
 
 			(*poppedCount)++;
 
@@ -681,9 +695,14 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 				printf("emptyCount: %d",*emptyCount);
 				__sync_add_and_fetch(emptyCount,1);
 				nanosleep(&timeout, NULL);
+				if(spinLockTimeoutConsumer->tv_nsec * 2 < 51 * (*numSlots))
+					spinLockTimeoutConsumer->tv_nsec *= 2;
+
 				if(!this->queueImp->pop(res))
 					return false;
 		}
+
+			spinLockTimeoutConsumer->tv_nsec = 51;
 
 			(*poppedCount)++;
 
@@ -701,7 +720,7 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 		 * all functions with an error
 		 * (useful for shutdown of this instance)
 		 */
-		void notifyShutdown(){ }
+		void notifyShutdown(){ shutdownFlag = true; }
 
 
 	protected:
@@ -715,8 +734,10 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 		struct timespec* spinLockTimeoutConsumer;
 		BaseQueue<T>** queueImpConsumer;
 		uint32_t* emptyCount;
+		uint32_t* numSlots;
 
 		std::string ownerName;
+		bool shutdownFlag;
 };
 
 #endif
