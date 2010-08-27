@@ -39,7 +39,7 @@ class TfdAnomalyDetector
 	        public Source<IDMEFMessage*>
 {
     public:
-        TfdAnomalyDetector(uint32_t subnet, uint32_t subnetmask, double tfdThreshold, double ivLength, string analyzerid, string idmeftemplate);
+        TfdAnomalyDetector(uint32_t subnet, uint32_t subnetmask, double tfdThreshold, double binSize, string analyzerid, string idmeftemplate);
                                 
         virtual ~TfdAnomalyDetector();
           
@@ -78,7 +78,7 @@ class TfdAnomalyDetector
 	      string analyzerId;
 	      string idmefTemplate;
 	      double tfdThreshold;
-	      double ivLength;
+	      double binSize;
 
         static InstanceManager<IDMEFMessage> idmefManager;
 

@@ -30,6 +30,9 @@ ADD_LIBRARY(modules
     analysis/fpsigmatcher/Utils.c
     analysis/AnomalyDetector.cpp
     analysis/AnomalyDetectorCfg.cpp
+    analysis/TfdAnomalyDetector.cpp
+    analysis/TfdAnomalyDetectorCfg.cpp
+
 
     packet/Observer.cpp
     packet/ObserverCfg.cpp

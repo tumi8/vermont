@@ -54,6 +54,7 @@
 #include "modules/analysis/P2PDetectorCfg.h"
 #include "modules/analysis/HostStatisticsCfg.h"
 #include "modules/analysis/AnomalyDetectorCfg.h"
+#include "modules/analysis/TfdAnomalyDetectorCfg.h"
 
 #include <cassert>
 
@@ -92,6 +93,7 @@ Cfg* ConfigManager::configModules[] = {
 	new P2PDetectorCfg(NULL),
 	new HostStatisticsCfg(NULL),
 	new AnomalyDetectorCfg(NULL),
+        new TfdAnomalyDetectorCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
 	new IpfixDbReaderCfg(NULL),
 	new IpfixDbWriterCfg(NULL),

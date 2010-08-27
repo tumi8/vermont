@@ -1,7 +1,7 @@
 <ipfixConfig xmlns="urn:ietf:params:xml:ns:ipfix-config">
         
 <observer id="1">
-   <filename>DUMP</filename>
+   <filename>anon.dump</filename>
    <pcap_filter>ip</pcap_filter>
    <offlineSpeed>0</offlineSpeed>
    <next>3</next>
@@ -88,9 +88,9 @@
 
 <anomalyDetector id="8">
    <analyzerid>anomalyDetector</analyzerid>
-   <subnet>192.44.88.0/24</subnet>
-   <packetRateThreshold>10</packetRateThreshold>
-   <alpha>0.3</alpha>
+   <subnet>139.63.0.0/16</subnet>
+   <packetRateThreshold>3000</packetRateThreshold>
+   <alpha>1.0</alpha>
 </anomalyDetector>        
 
 </ipfixConfig>

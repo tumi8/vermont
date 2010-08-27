@@ -33,11 +33,11 @@ InstanceManager<IDMEFMessage> TfdAnomalyDetector::idmefManager("TfdAnomalyDetect
 /**
  * Constructor
  */ 
-TfdAnomalyDetector::TfdAnomalyDetector(uint32_t subnet, uint32_t subnetmask, double tfdThreshold, double ivLength, string analyzerid, string idmeftemplate)
+TfdAnomalyDetector::TfdAnomalyDetector(uint32_t subnet, uint32_t subnetmask, double tfdThreshold, double binSize, string analyzerid, string idmeftemplate)
 	:subnet(subnet),
 	 subnetmask(subnetmask),
 	 tfdThreshold(tfdThreshold),
-	 ivLength(ivLength),
+	 binSize(binSize),
    analyzerId(analyzerid),
 	 idmefTemplate(idmeftemplate)
 {   
@@ -119,7 +119,6 @@ void TfdAnomalyDetector::onDataRecord(IpfixDataRecord* record)
  */
 void TfdAnomalyDetector::checkConnection(Connection* conn)
 {
-    //float ivLength = 5;             // length of observation interval (size of timebin)
     uint32_t flowStartSec = 0;      // starttime of flow (seconds)
     uint64_t flowStartMillisec = 0; // starttime of flow (milliseconds)
     uint32_t host = 0;              // host in local network (srcIP or dstIP)
@@ -153,65 +152,18 @@ void TfdAnomalyDetector::checkConnection(Connection* conn)
     flowStartSec = (flowStartMillisec + 500) / 1000; // srcTimeStart -rounded- to seconds
  
     // get appropriate timebin for array
-    if (((flowStartSec - lastFlowStartSec) >= ivLength) && lastFlowStartSec != 0) {  // todo: variable interval lengths (currently 1 sec) -> ivLength
+    if (((flowStartSec - lastFlowStartSec) >= binSize) && lastFlowStartSec != 0) {  // todo: variable interval lengths (currently 1 sec) -> binSize
         timeBin++;      // next timebin
-        //cout << "TimeBin: " << timeBin << "\n";
-        if (timeBin >= 3) {
-          
-          /*cout << "\n -- srcIpPackets ---\n";
-          for (int m = 0; m < OD_PAIRS; m++){
-            cout << "\n";
-            cout << "OD-Pair: " << m << "  ";
-            for (int n = 0; n < TIMEBINS; n++) {
-              cout << srcIpPackets[n][m] << " ";          
-            }
-          }
-          */
+        if (timeBin >= TIMEBINS) {
         
           calculateEntropy();
-          
-          /*cout << "\n -- srcIpEntropy ---\n";
-          for (int m = 0; m < OD_PAIRS; m++){
-            cout << "\n";
-            cout << "OD-Pair: " << m << "  ";
-            for (int n = 0; n < TIMEBINS; n++) {
-              cout << srcIpEntropy[n][m] << " ";          
-            }
-          }*/
           
           normalizeMatrix(srcIpEntropy, TIMEBINS);
           normalizeMatrix(dstIpEntropy, TIMEBINS);
           normalizeMatrix(srcPortEntropy, TIMEBINS);
           normalizeMatrix(dstPortEntropy, TIMEBINS);
-          
-          /*cout << "\n -- normalized srcIpEntropy ---\n";
-          for (int m = 0; m < OD_PAIRS; m++){
-            cout << "\n";
-            cout << "OD-Pair: " << m << "  ";
-            for (int n = 0; n < TIMEBINS; n++) {
-              cout << srcIpEntropy[n][m] << " ";          
-            }
-          }*/
-          
+                   
           calculateSingleWayMatrix();
-          
-          /*cout << "\n -- SingleWayMatrix ---\n";
-          for (int m = 0; m < OD_PAIRS*4; m++){
-            cout << "\n";
-            cout << "OD-Pair: " << m << "  ";
-            for (int n = 0; n < TIMEBINS; n++) {
-              cout << singleWayMatrix[n][m] << " ";          
-            }
-          }*/
-
-          /*cout << "\n -- SingleWayMatrix after mean centering ---\n";
-          for (int m = 0; m < OD_PAIRS*4; m++){
-            cout << "\n";
-            cout << "OD-Pair: " << m << "  ";
-            for (int n = 0; n < TIMEBINS; n++) {
-              cout << singleWayMatrix[n][m] << " ";          
-            }
-          }*/
           
           calculateExpectationMaximation();
 
@@ -250,15 +202,12 @@ void TfdAnomalyDetector::checkConnection(Connection* conn)
         // host found in Map -> add port to vector
         PortListIterator portIt = find((hostIt->second).begin(), (hostIt->second).end(), srcPort);
         if (portIt != (hostIt->second).end()) {
-            //cout << "found srcPort:" << srcPort << "OD: " << odPair << "\n";
         } else {
-            //cout << "srcPort: " << srcPort << " doesn't exist for OD: " << odPair <<"\n";
             (hostIt->second).push_back(srcPort);
             srcPortNum[timeBin][odPair] += 1;
         }
     } else {
         // host not yet in Map -> add it
-        //cout << " OD: " << odPair << " not yet in map. srcPort: "<< srcPort << "\n";
         // create new port list
         PortList srcPortList(srcPort);
         srcPortMap.insert ( pair<int, PortList>(odPair, srcPortList) );
@@ -272,15 +221,12 @@ void TfdAnomalyDetector::checkConnection(Connection* conn)
         // host found in Map -> add port to vector
         PortListIterator portIt = find((hostIt->second).begin(), (hostIt->second).end(), dstPort);
         if (portIt != (hostIt->second).end()) {
-            //cout << "found dstPort:" << dstPort << " OD: " << odPair << "\n";
         } else {
-            //cout << "dstPort: " << dstPort << " doesn't exist for OD: " << odPair <<"\n";
             (hostIt->second).push_back(dstPort);
             dstPortNum[timeBin][odPair] += 1;
         }
     } else {
         // host not yet in Map -> add it
-        //cout << " OD: " << odPair << "not yet in map. dstPort: "<< dstPort << "\n";
         // create new port list
         PortList dstPortList(dstPort);
         dstPortMap.insert ( pair<int, PortList>(odPair, dstPortList) );
@@ -472,18 +418,29 @@ void TfdAnomalyDetector::calculateSingleWayMatrix() {
 
 
 void TfdAnomalyDetector::calculateExpectationMaximation() {
-  float p[OD_PAIRS*4];
-  float t[OD_PAIRS*4];
+  float subspace[OD_PAIRS*4];   // vector containing the principal component (subspace)
+  float normal[OD_PAIRS*4];     // vector for normal variation
+  float abnormal[OD_PAIRS*4];   // vector for abnormal variation (anomalous)
+  float t[OD_PAIRS*4];          // temp vector
   float row[OD_PAIRS*4];
   float t_abs_last = 0.0;
+  float anom_val;               // anomaly value
+  float x_1, x_2, x_3;          // temp variables for projection:
+       
   
-  for (int i=0; i<(OD_PAIRS*4); i++) { // init p and t
-          p[i] = 1.0;   // random
+  // init vectors
+  for (int i=0; i<(OD_PAIRS*4); i++) { 
+      subspace[i] = 1.0;   // random
+      normal[i] = 0.0;
+      abnormal[i] = 0.0;
   }
   
-  // iteration
+  
+  // ********************** 
+  //  Calculate Subspace
+  // **********************
   for (int iter=0; iter < 10; iter++) {   // max. number of iterations needed for value to convergate
-      float xp_temp = 0.0;   // row of singleWayMatrix x * randomVector p
+      float xp_temp = 0.0;   // row of singleWayMatrix x * randomVector subspace
       float t_abs = 0.0;
       
       for (int i=0; i<(OD_PAIRS*4); i++) { // init p and t
@@ -495,7 +452,7 @@ void TfdAnomalyDetector::calculateExpectationMaximation() {
 
         // (x * p)
         for(int i=0; i < (OD_PAIRS*4); i++) {
-            xp_temp += singleWayMatrix[n][i] * p[i];
+            xp_temp += singleWayMatrix[n][i] * subspace[i];
         }
       
         // (x * p) * x
@@ -504,11 +461,6 @@ void TfdAnomalyDetector::calculateExpectationMaximation() {
         }
         
         xp_temp = 0.0;
-      
-        /*cout << " ROW -------\n";
-        for(int i=0; i < (OD_PAIRS*4); i++) {
-          cout << row[i] << " "; 
-        }*/
       
         // t + (x * p) * x
         for(int i=0; i < (OD_PAIRS*4); i++) {
@@ -526,33 +478,51 @@ void TfdAnomalyDetector::calculateExpectationMaximation() {
       
       // p = t / |t|
       for(int i=0; i < (OD_PAIRS*4); i++) {
-          p[i] = t[i] / t_abs;
+          subspace[i] = t[i] / t_abs;
       }
       
-      //cout << " iter: " << iter << " t_abs: " <<  t_abs << " diff: " <<  (t_abs - t_abs_last) << "\n";
       if ((t_abs - t_abs_last) == 0) {
         break;
       }
       
       t_abs_last = t_abs;
-    }
+  } // end of subspace calculation
     
     
-    float error[TIMEBINS][OD_PAIRS*4];
-    // calculate anomalies
-    for (int a=0; a<TIMEBINS; a++) {
-      float error_val = 0;
-        for(int b=0; b < (OD_PAIRS*4); b++) {
-           error[a][b] = singleWayMatrix[a][b] - p[b];
-           error_val += error[a][b]*error[a][b];  // squared norm
+  // ********************************************* 
+  //  Project data on subspace and detect anomaly
+  // *********************************************
+    // for each timebin
+    for (int i=0; i<TIMEBINS; i++) {
+        x_1 = 0.0;
+        x_2 = 0.0;
+        x_3 = 0.0;
+        anom_val = 0.0;
+        
+        // project data onto subspace
+        for(int j=0; j < (OD_PAIRS*4); j++) {
+            x_1 += subspace[j] * singleWayMatrix[i][j];   // subspace * data_line
+            x_2 += subspace[j] * subspace[j];             // |subspace|_2
         }
         
-        if (error_val > tfdThreshold) {
+        x_3 = x_1/x_2;
+        
+        for(int j=0; j < (OD_PAIRS*4); j++) {
+            normal[j] = x_3 * subspace[j];
+            // get abnormal vector: data_line = normal + abnormal
+            abnormal[j] = singleWayMatrix[i][j] - normal[j];
+            anom_val += abnormal[j] * abnormal[j];  // squared norm of abnormal vector
+        }
+        
+        // detect anomaly
+        if (anom_val > tfdThreshold) {
           // error within timebin detected
           printEntry();
         }
-    }
+        
+    } // end: for each timebin
 }
+
 
 
 void TfdAnomalyDetector::printEntry()

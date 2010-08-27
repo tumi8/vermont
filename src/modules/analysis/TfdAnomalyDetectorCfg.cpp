@@ -37,8 +37,8 @@ TfdAnomalyDetectorCfg::TfdAnomalyDetectorCfg(XMLElement* elem)
                     subnetmask = htonl(subnetmask);
                 } else if (e->matches("tfdThreshold")) {
                     tfdThreshold = getDouble("tfdThreshold");
-                } else if (e->matches("ivLength")) {
-                    ivLength = getDouble("ivLength");
+                } else if (e->matches("binSize")) {
+                    binSize = getDouble("binSize");
                 } else if (e->matches("analyzerid")) {
 			              analyzerId = e->getFirstText();
 		            } else if (e->matches("idmeftemplate")) {
@@ -49,7 +49,7 @@ TfdAnomalyDetectorCfg::TfdAnomalyDetectorCfg(XMLElement* elem)
                     continue;
                 }
             }
-            if (ivLength == 0) THROWEXCEPTION("AnomalyDetectorCfg: ivLength not set in configuration!");
+            if (binSize == 0) THROWEXCEPTION("AnomalyDetectorCfg: binSize not set in configuration!");
             if (tfdThreshold == 0) THROWEXCEPTION("AnomalyDetectorCfg: tfdThreshold not set in configuration!");
             if (subnetmask == 0) THROWEXCEPTION("AnomalyDetectorCfg: subnetmask not set in configuration!");
             if (analyzerId=="") THROWEXCEPTION("AnomalyDetectorCfg: analyzerid not set in configuration!");
@@ -62,7 +62,7 @@ TfdAnomalyDetectorCfg::~TfdAnomalyDetectorCfg()
 
 TfdAnomalyDetector* TfdAnomalyDetectorCfg::createInstance()
 {
-    instance = new TfdAnomalyDetector(subnet, subnetmask, tfdThreshold, ivLength, analyzerId, idmefTemplate);
+    instance = new TfdAnomalyDetector(subnet, subnetmask, tfdThreshold, binSize, analyzerId, idmefTemplate);
     return instance;
 }
 

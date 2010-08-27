@@ -28,7 +28,7 @@ protected:
         uint32_t subnetmask;
         uint32_t subnet;
         double tfdThreshold;
-        double ivLength;
+        double binSize;
 
         TfdAnomalyDetectorCfg(XMLElement*);
 };
