@@ -1980,10 +1980,12 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
  * i: index of the collector in the exporters collector_arr
  */
 static int sctp_reconnect(ipfix_exporter *exporter , int i){
-	int bytes_sent, ret;
+	int bytes_sent, ret, error;
+	socklen_t len;
 	fd_set writefds;
 	struct timeval timeout;
 	time_t time_now = time(NULL);
+	struct sctp_status ss;
 	exporter->collector_arr[i].last_reconnect_attempt_time = time_now;
 	// error occurred while being connected?
 	if(exporter->collector_arr[i].state == C_CONNECTED) {
@@ -2002,6 +2004,16 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 		}
 		exporter->collector_arr[i].state = C_NEW;
 	}
+	/* Determine whether socket is writable.
+
+	   If it is writable, we can query the result of the connection
+	   setup. The result can be either success of failure.
+
+	   If the socket is not yet writable, the connection setup is
+	   still ongoing.
+	*/
+	/* We don't want select() to wait but to return immediately.
+	   Set timeout to 0. */
 	timeout.tv_sec = timeout.tv_usec = 0;
 	FD_ZERO(&writefds);
 	FD_SET(exporter->collector_arr[i].data_socket, &writefds);
@@ -2016,7 +2028,47 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	    msg(MSG_DEBUG, "socket is writable");
 	} else {
 	    // error
-	    msg(MSG_ERROR, "SCTP (re)connect failed, %s", strerror(errno));
+	    msg(MSG_ERROR, "select() failed: %s", strerror(errno));
+	    close(exporter->collector_arr[i].data_socket);
+	    exporter->collector_arr[i].data_socket = -1;
+	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    return -1;
+	}
+
+	/* Query pending error */
+	len = sizeof error;
+	if (getsockopt(exporter->collector_arr[i].data_socket, SOL_SOCKET,
+		    SO_ERROR, &error, &len) != 0) {
+	    msg(MSG_ERROR, "getsockopt(fd,SOL_SOCKET,SO_ERROR,...) failed: %s",
+		    strerror(errno));
+	    close(exporter->collector_arr[i].data_socket);
+	    exporter->collector_arr[i].data_socket = -1;
+	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    return -1;
+	}
+	if (error) {
+	    msg(MSG_ERROR, "SCTP connection setup failed: %s",
+		    strerror(error));
+	    close(exporter->collector_arr[i].data_socket);
+	    exporter->collector_arr[i].data_socket = -1;
+	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    return -1;
+	}
+
+	/* Query SCTP status */
+	len = sizeof ss;
+	if (getsockopt(exporter->collector_arr[i].data_socket, IPPROTO_SCTP,
+		    SCTP_STATUS, &ss, &len) != 0) {
+	    msg(MSG_ERROR, "getsockopt(fd,IPPROTO_SCTP,SCTP_STATUS,...) failed: %s",
+		    strerror(errno));
+	    close(exporter->collector_arr[i].data_socket);
+	    exporter->collector_arr[i].data_socket = -1;
+	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    return -1;
+	}
+	/* Make sure SCTP connection is in state ESTABLISHED */
+	if (ss.sstat_state != SCTP_ESTABLISHED) {
+	    msg(MSG_ERROR, "SCTP socket not in state ESTABLISHED");
 	    close(exporter->collector_arr[i].data_socket);
 	    exporter->collector_arr[i].data_socket = -1;
 	    exporter->collector_arr[i].state = C_DISCONNECTED;
@@ -2046,7 +2098,7 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 			exporter->collector_arr[i].state = C_DISCONNECTED;
 			return -1;
 	}
-	msg(MSG_VDEBUG, "%d template bytes sent to SCTP collector",bytes_sent);
+	msg(MSG_DEBUG, "%d template bytes sent to SCTP collector",bytes_sent);
 
 	// we are done
 	exporter->collector_arr[i].state = C_CONNECTED;
