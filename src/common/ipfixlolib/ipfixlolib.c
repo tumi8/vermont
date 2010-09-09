@@ -761,14 +761,8 @@ static int init_send_sctp_socket(struct sockaddr_in serv_addr){
 	return -1;
     }
     struct sctp_event_subscribe event;
-    /* enable the reception of SCTP_SNDRCV information on a per
-     * message basis.
-     * Also enable sender dry event notifications.*/
     memset(&event, 0, sizeof(event));
-    event.sctp_data_io_event = 1;
-#ifdef SUPPORT_DTLS_OVER_SCTP
-    event.sctp_sender_dry_event = 1;
-#endif
+    event.sctp_association_event = 1;
     if (setsockopt(s, IPPROTO_SCTP, SCTP_EVENTS, &event, sizeof(event)) != 0) {
 	    msg(MSG_ERROR, "SCTP: setsockopt() failed to enable sctp_data_io_event, %s", strerror(errno));
 	    close(s);
@@ -1982,10 +1976,16 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	int bytes_sent, ret, error;
 	socklen_t len;
-	fd_set writefds;
+	fd_set readfds;
 	struct timeval timeout;
 	time_t time_now = time(NULL);
 	struct sctp_status ss;
+	union sctp_notification snp;
+	struct sctp_assoc_change *sac;
+	struct msghdr msg;
+	struct iovec iv;
+	ssize_t r;
+
 	exporter->collector_arr[i].last_reconnect_attempt_time = time_now;
 	// error occurred while being connected?
 	if(exporter->collector_arr[i].state == C_CONNECTED) {
@@ -2004,28 +2004,28 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 		}
 		exporter->collector_arr[i].state = C_NEW;
 	}
-	/* Determine whether socket is writable.
+	/* Determine whether socket is readable.
 
-	   If it is writable, we can query the result of the connection
+	   If it is readable, we can query the result of the connection
 	   setup. The result can be either success of failure.
 
-	   If the socket is not yet writable, the connection setup is
+	   If the socket is not yet readable, the connection setup is
 	   still ongoing.
 	*/
 	/* We don't want select() to wait but to return immediately.
 	   Set timeout to 0. */
 	timeout.tv_sec = timeout.tv_usec = 0;
-	FD_ZERO(&writefds);
-	FD_SET(exporter->collector_arr[i].data_socket, &writefds);
-	ret = select(exporter->collector_arr[i].data_socket + 1,NULL,&writefds,NULL,&timeout);
+	FD_ZERO(&readfds);
+	FD_SET(exporter->collector_arr[i].data_socket, &readfds);
+	ret = select(exporter->collector_arr[i].data_socket + 1,&readfds,NULL,NULL,&timeout);
 	if (ret == 0) {
 	    // connection attempt not yet finished
-	    msg(MSG_DEBUG, "still connecting...");
+	    msg(MSG_DEBUG, "waiting for socket to become readable...");
 	    exporter->collector_arr[i].state = C_NEW;
 	    return -1;
 	} else if (ret>0) {
 	    // connected or connection setup failed.
-	    msg(MSG_DEBUG, "socket is writable");
+	    msg(MSG_DEBUG, "socket is readable.");
 	} else {
 	    // error
 	    msg(MSG_ERROR, "select() failed: %s", strerror(errno));
@@ -2053,6 +2053,61 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	    exporter->collector_arr[i].data_socket = -1;
 	    exporter->collector_arr[i].state = C_DISCONNECTED;
 	    return -1;
+	}
+
+	/* Read from socket. Expect a SCTP_ASSOC_CHANGE with
+	   sac_state==SCTP_COMM_UP */
+
+	iv.iov_base = &snp;
+	iv.iov_len = sizeof snp;
+
+	memset(&msg,0,sizeof(msg));
+	msg.msg_iov = &iv;
+	msg.msg_iovlen = 1;
+	if ((r = recvmsg(exporter->collector_arr[i].data_socket, &msg, 0))<0) {
+	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg returned: %s",
+		    strerror(error));
+	    close(exporter->collector_arr[i].data_socket);
+	    exporter->collector_arr[i].data_socket = -1;
+	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    return -1;
+	}
+	if (r==0) {
+	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg returned 0");
+	    close(exporter->collector_arr[i].data_socket);
+	    exporter->collector_arr[i].data_socket = -1;
+	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    return -1;
+	}
+	if (!(msg.msg_flags & MSG_NOTIFICATION)) {
+	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg unexpected user data.");
+	    close(exporter->collector_arr[i].data_socket);
+	    exporter->collector_arr[i].data_socket = -1;
+	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    return -1;
+	}
+	switch (snp.sn_header.sn_type) {
+	    case SCTP_ASSOC_CHANGE:
+		sac = &snp.sn_assoc_change;
+		if (!sac->sac_state==SCTP_COMM_UP) {
+		    msg(MSG_ERROR, "SCTP connection setup failed. "
+			    "Received unexpected SCTP_ASSOC_CHANGE notification with state %d",
+			    sac->sac_state);
+		    close(exporter->collector_arr[i].data_socket);
+		    exporter->collector_arr[i].data_socket = -1;
+		    exporter->collector_arr[i].state = C_DISCONNECTED;
+		    return -1;
+		}
+		msg(MSG_DEBUG,"Received SCTP_COMM_UP event.");
+		break;
+	    default:
+		msg(MSG_ERROR, "SCTP connection setup failed. "
+			"Received unexpected notification of type %d",
+			snp.sn_header.sn_type);
+		close(exporter->collector_arr[i].data_socket);
+		exporter->collector_arr[i].data_socket = -1;
+		exporter->collector_arr[i].state = C_DISCONNECTED;
+		return -1;
 	}
 
 	/* Query SCTP status */
