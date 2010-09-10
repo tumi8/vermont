@@ -60,7 +60,8 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
 	  timeoutRegistered(false),
 	  currentTemplateId(0),
-	  maxRecordRate(maxRecordRate)
+	  maxRecordRate(maxRecordRate),
+	  noRecordsInCurrentSet(0)
 {
 	const char *certificate_chain_file = NULL;
 	const char *private_key_file = NULL;

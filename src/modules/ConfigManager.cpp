@@ -242,19 +242,19 @@ Graph* ConfigManager::getGraph()
 
 void ConfigManager::onTimeout2()
 {
-    msg(MSG_VDEBUG, "Called deleter");
+	//msg(MSG_VDEBUG, "Called deleter");
 
 	for (std::list<deleter_list_item>::iterator it = deleter_list.begin(); it != deleter_list.end(); it++) {
-        if (time(NULL) > it->delete_after) {
-            msg(MSG_DEBUG, "Removing node: %s", (it->c)->getName().c_str());
-            (it->c)->shutdown(true, true);
-            it->c->disconnectInstances();
-            delete ((it->c));
-            it = deleter_list.erase(it);
-            it--;
-        } else {
-            msg(MSG_DEBUG, "Timeout for node %s not yet reached.", (it->c)->getName().c_str());
-        }
+		if (time(NULL) > it->delete_after) {
+			msg(MSG_DEBUG, "Removing node: %s", (it->c)->getName().c_str());
+			(it->c)->shutdown(true, true);
+			it->c->disconnectInstances();
+			delete ((it->c));
+			it = deleter_list.erase(it);
+			it--;
+		} else {
+			msg(MSG_DEBUG, "Timeout for node %s not yet reached.", (it->c)->getName().c_str());
+		}
 	}
 }
 
