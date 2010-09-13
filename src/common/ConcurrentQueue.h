@@ -563,7 +563,7 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 
 		ConcurrentQueueSpinlock(int qType = STL, uint32_t maxEntries = DEFAULT_QUEUE_SIZE, uint32_t spinLockTimeout = 51)
 		{
-			printf("ConcurrentQueueSpinLock()\n");
+			//printf("ConcurrentQueueSpinLock()\n");
 			switch(qType){
 				case STL:
 					this->queueImp = new STLQueue<T>();
@@ -599,25 +599,25 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 			pushedCount = ((uint32_t*)tmp);
 			spinLockTimeoutProducer = (struct timespec*)(pushedCount + 1);
 			queueImpProducer = (BaseQueue<T>**)(spinLockTimeoutProducer + 1);
-			fullCount = (uint32_t*)(queueImpProducer +1);
+			//fullCount = (uint32_t*)(queueImpProducer +1);
 			*pushedCount = 0;
 			spinLockTimeoutProducer->tv_sec = 0;
 			spinLockTimeoutProducer->tv_nsec = spinLockTimeout;
 			*queueImpProducer = this->queueImp;
-			*fullCount = 0;
+			//*fullCount = 0;
 
 			//consumer variables
 			poppedCount = ((uint32_t*)tmp) + (clsize/sizeof(uint32_t*));
 			spinLockTimeoutConsumer = (struct timespec*)(poppedCount + 1);
 			queueImpConsumer = (BaseQueue<T>**)(spinLockTimeoutConsumer + 1);
-			emptyCount = (uint32_t*)(queueImpConsumer +1);
-			numSlots = (emptyCount + 1);
+			numSlots = (uint32_t*)(queueImpConsumer +1);
+			//emptyCount = (numSlots + 1);
 			*poppedCount = 0;
 			spinLockTimeoutConsumer->tv_sec = 0;
 			spinLockTimeoutConsumer->tv_nsec = spinLockTimeout;
 			*queueImpConsumer = this->queueImp;
-			*emptyCount = 0;
 			*numSlots = maxEntries;
+			//*emptyCount = 0;
 		}
 
 		~ConcurrentQueueSpinlock()
@@ -640,18 +640,20 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 		}
 
 		uint32_t getFullCount() {
-			return *fullCount;
+			//return *fullCount;
+			return 0;
 		}
 
 		uint32_t getEmptyCount() {
-			return *emptyCount;
+			//return *emptyCount;
+			return 0;
 		}
 
 		inline void push(T t)
 		{
 			while(!(*(this->queueImpProducer))->push(t)){
 				(*(this->queueImpProducer))->batchUpdate();
-				__sync_add_and_fetch(fullCount,1);
+				//__sync_add_and_fetch(fullCount,1);
 				//printf("fullCount: %d",*fullCount);
 				nanosleep(spinLockTimeoutProducer, NULL);
 
@@ -667,7 +669,7 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 		{
 			while(!(*(this->queueImpConsumer))->pop(res)){
 				(*(this->queueImpConsumer))->batchUpdate();
-				__sync_add_and_fetch(emptyCount,1);
+				//__sync_add_and_fetch(emptyCount,1);
 				//printf("emptyCount: %lu",spinLockTimeoutConsumer->tv_nsec);
 				nanosleep(spinLockTimeoutConsumer, NULL);
 
@@ -692,8 +694,8 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 			// popSemaphore.waitAbs() succeeded, now pop the frontmost element
 			if(!(*(this->queueImpConsumer))->pop(res)){
 				(*(this->queueImpConsumer))->batchUpdate();
-				printf("emptyCount: %d",*emptyCount);
-				__sync_add_and_fetch(emptyCount,1);
+				//printf("emptyCount: %d",*emptyCount);
+				//__sync_add_and_fetch(emptyCount,1);
 				nanosleep(&timeout, NULL);
 				if(spinLockTimeoutConsumer->tv_nsec * 2 < 51 * (*numSlots))
 					spinLockTimeoutConsumer->tv_nsec *= 2;
@@ -728,12 +730,12 @@ class ConcurrentQueueSpinlock : public BaseConcurrentQueue<T>
 		uint32_t* pushedCount;
 		struct timespec* spinLockTimeoutProducer;
 		BaseQueue<T>** queueImpProducer;
-		uint32_t* fullCount;
+		//uint32_t* fullCount;
 		//consumer variables
 		uint32_t* poppedCount;
 		struct timespec* spinLockTimeoutConsumer;
 		BaseQueue<T>** queueImpConsumer;
-		uint32_t* emptyCount;
+		//uint32_t* emptyCount;
 		uint32_t* numSlots;
 
 		std::string ownerName;
