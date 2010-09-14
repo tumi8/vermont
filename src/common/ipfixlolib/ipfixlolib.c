@@ -280,6 +280,11 @@ static int dtls_manage_connection(ipfix_exporter *exporter, ipfix_receiving_coll
 	}
     }
     if (col->state == C_DISCONNECTED) {
+	/* Wait dtls_connect_timeout seconds before
+	   re-initiating DTLS connection */
+	if (time(NULL) < col->last_reconnect_attempt_time +
+		col->dtls_connect_timeout)
+	    return 1;
 	rc = 1;
 	if (setup_dtls_connection(exporter,col,&col->dtls_main)) {
 	    /* col->state stays in C_DISCONNECTED in this case
@@ -287,6 +292,7 @@ static int dtls_manage_connection(ipfix_exporter *exporter, ipfix_receiving_coll
 	    return -1;
 	}
 	col->state = C_NEW;
+	col->last_reconnect_attempt_time = time(NULL);
     }
     return rc;
 }
@@ -301,8 +307,8 @@ static int dtls_connect(ipfix_receiving_collector *col, ipfix_dtls_connection *c
 
     ret = SSL_connect(con->ssl);
     error = SSL_get_error(con->ssl,ret);
-    msg_openssl_return_code(MSG_DEBUG,"SSL_connect()",ret,error);
     if (error == SSL_ERROR_NONE) {
+	msg_openssl_return_code(MSG_DEBUG,"SSL_connect()",ret,error);
 	msg(MSG_INFO,"TLS Cipher: %s",SSL_get_cipher_name(con->ssl));
 	DPRINTF("DTLS handshake succeeded. We are now connected.");
 	if (col->peer_fqdn) { /* We need to verify the identity of our peer */
@@ -316,9 +322,10 @@ static int dtls_connect(ipfix_receiving_collector *col, ipfix_dtls_connection *c
 	}
 	return 1;
     } else if (error == SSL_ERROR_WANT_READ) {
+	msg_openssl_return_code(MSG_DEBUG,"SSL_connect()",ret,error);
 	return 0;
     } else {
-	msg_openssl_return_code(MSG_FATAL,"SSL_connect()",ret,error);
+	msg_openssl_return_code(MSG_ERROR,"SSL_connect()",ret,error);
 	dtls_fail_connection(con);
 	return -1;
     }
@@ -1192,6 +1199,7 @@ static int add_collector_dtls(
     }
     col->state = C_NEW; /* By setting the state to C_NEW we are
 				 basically allocation the slot. */
+    col->last_reconnect_attempt_time = time(NULL);
     /* col->state must *not* be C_UNUSED when we call
        update_collector_mtu(). That's why we call this function
        after setting state to C_NEW. */
