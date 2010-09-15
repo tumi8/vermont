@@ -121,7 +121,6 @@
 	
 	<ipfixExporter id="8">
 		<collector>
-			<ipAddressType>4</ipAddressType>
 			<ipAddress>127.0.0.1</ipAddress>
 			<transportProtocol>SCTP</transportProtocol>
 			<port>4433</port>

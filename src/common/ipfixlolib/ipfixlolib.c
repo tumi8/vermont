@@ -309,7 +309,7 @@ static int dtls_connect(ipfix_receiving_collector *col, ipfix_dtls_connection *c
     error = SSL_get_error(con->ssl,ret);
     if (error == SSL_ERROR_NONE) {
 	msg_openssl_return_code(MSG_DEBUG,"SSL_connect()",ret,error);
-	msg(MSG_INFO, "Successfully (re)connected to SCTP-over-DTLS collector.");
+	msg(MSG_INFO, "Successfully (re)connected to %s-over-DTLS collector.", col->protocol == DTLS_OVER_SCTP ? "SCTP" : "UDP");
 	msg(MSG_INFO,"TLS Cipher: %s",SSL_get_cipher_name(con->ssl));
 	DPRINTF("DTLS handshake succeeded. We are now connected.");
 	if (col->peer_fqdn) { /* We need to verify the identity of our peer */

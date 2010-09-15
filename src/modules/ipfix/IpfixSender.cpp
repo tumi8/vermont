@@ -406,7 +406,11 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	ipfixMessageLock.unlock();
 
 	// we want the templates to be sent to the collector
-	sendRecords(Always);
+	// Gerhard (09/2010): 
+	// - commented out because this would cause multiple sendings of Templates at startup in the case of UDP
+	// - anyway, Templates will allways be send in front of with Data Records if necessary
+	// - an advantage of calling sendRecords() here would be that we can detect if the UDP collector is offline
+	//sendRecords(Always);
 
 	record->removeReference();
 }
