@@ -88,7 +88,7 @@ public:
 						::tolower);
 				peerFqdns.insert(strdnsname);
 			} else {
-				msg(MSG_FATAL, "Unknown collector config statement %s\n", e->getName().c_str());
+				msg(MSG_FATAL, "Unknown collector config statement %s", e->getName().c_str());
 				continue;
 			}
 		}
