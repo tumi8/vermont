@@ -63,7 +63,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 				e->matches("CAfile") || e->matches("CApath")) {
 			// already done!
 		} else {
-			msg(MSG_FATAL, "Unkown observer config statement %s\n", e->getName().c_str());
+			msg(MSG_FATAL, "Unkown collector config statement %s", e->getName().c_str());
 			continue;
 		}
 	}
