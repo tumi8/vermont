@@ -342,6 +342,15 @@ int IpfixReceiverDtlsSctpIpV4::DtlsConnection::fdready() {
 
 void IpfixReceiverDtlsSctpIpV4::DtlsConnection::shutdown() {
     int ret, error;
+    /* send empty packet to packet processors to signal end
+       of connection. */
+    boost::shared_array<uint8_t> data(NULL);
+    parent.mutex.lock();
+    for (std::list<IpfixPacketProcessor*>::iterator i = parent.packetProcessors.begin();
+	    i != parent.packetProcessors.end(); ++i) { 
+	(*i)->processPacket(data, 0, sourceID);
+    }
+    parent.mutex.unlock();
     if (!ssl) return;
     ret = SSL_shutdown(ssl);
     if (ret == 0) {
