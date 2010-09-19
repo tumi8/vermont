@@ -98,7 +98,7 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 			bt = (TemplateBuffer::BufferedTemplate*)bt->next;
 		}
 	}
-	if (!found) {
+	if (!found && !all) {
 		DPRINTF("Destroy template - no matching template found (id=%u)", templateId);
 	}
 		
