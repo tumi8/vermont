@@ -40,11 +40,15 @@ class TemplateBuffer {
 		 * Represents a single Buffered Template
 		 */
 		struct BufferedTemplate {
+			friend class TemplateBuffer;
 			boost::shared_ptr<IpfixRecord::SourceID>	sourceID; /**< source identifier of exporter that sent this template */
 			boost::shared_ptr<TemplateInfo> templateInfo;
 			uint16_t	recordLength; /**< length of one Data Record that will be transferred in Data Sets. Variable-length carry -1 */
 			time_t		expires; /**< Timestamp when this Template will expire or 0 if it will never expire */
 			TemplateBuffer::BufferedTemplate*	next; /**< Pointer to next buffered Template */
+			bool isExpired();
+			private:
+			void onPreDestroy(IpfixParser* ipfixParser);
 		};
 
 		TemplateBuffer(IpfixParser* parentIpfixParser);
@@ -60,6 +64,8 @@ class TemplateBuffer {
 	protected:
 		TemplateBuffer::BufferedTemplate* head; /**< Start of BufferedTemplate chain */
 		IpfixParser* ipfixParser; /**< Pointer to the ipfixParser which instantiated this TemplateBuffer */
+	private:
+		void cleanUpExpiredTemplates();
 };
 
 #endif

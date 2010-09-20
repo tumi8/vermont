@@ -22,19 +22,29 @@
 #include "common/ipfixlolib/ipfix.h"
 #include "common/msg.h"
 
+void TemplateBuffer::BufferedTemplate::onPreDestroy(IpfixParser* ipfixParser) {
+	IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
+	ipfixRecord->sourceID = sourceID;
+	ipfixRecord->templateInfo = templateInfo;
+	ipfixParser->ipfixRecordSender->send(ipfixRecord);
+}
+
+bool TemplateBuffer::BufferedTemplate::isExpired() {
+	return expires && expires < time(NULL);
+}
+
 /**
  * Returns a TemplateInfo or NULL
  */
 TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::TemplateId templateId) {
-	time_t now = time(0);
 	TemplateBuffer::BufferedTemplate* bt = head;
 
 #ifdef DEBUG
 	DPRINTF("ALL TEMPLATES ---------------------------");
 	while (bt != 0) {
-		DPRINTF("bt->sourceID %lu %u %u %u.%u.%u.%u %u %u ptr: %lu size: %lu", bt->sourceID.get()->observationDomainId, bt->sourceID.get()->exporterPort, bt->sourceID.get()->receiverPort, bt->sourceID.get()->exporterAddress.ip[0], bt->sourceID.get()->exporterAddress.ip[1], bt->sourceID.get()->exporterAddress.ip[2], bt->sourceID.get()->exporterAddress.ip[3], bt->sourceID.get()->exporterAddress.len, bt->sourceID.get()->protocol, bt->sourceID.get(), sizeof(IpfixRecord::SourceID));
+		DPRINTF("bt->sourceID odid %lu exporter port %u collector port %u exporter ip %u.%u.%u.%u len %u prot %u ptr: %lu size: %lu expires in %d sec", bt->sourceID.get()->observationDomainId, bt->sourceID.get()->exporterPort, bt->sourceID.get()->receiverPort, bt->sourceID.get()->exporterAddress.ip[0], bt->sourceID.get()->exporterAddress.ip[1], bt->sourceID.get()->exporterAddress.ip[2], bt->sourceID.get()->exporterAddress.ip[3], bt->sourceID.get()->exporterAddress.len, bt->sourceID.get()->protocol, bt->sourceID.get(), sizeof(IpfixRecord::SourceID), bt->expires - time(NULL));
 		
-		bt = (TemplateBuffer::BufferedTemplate*)bt->next;
+		bt = bt->next;
 	}
 	DPRINTF("END ALL TEMPLATES --------------------------");
 	
@@ -44,13 +54,15 @@ TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::sha
 	
 	while (bt != 0) {
 		if ((*(bt->sourceID.get()) == *(sourceId.get())) && (bt->templateInfo->templateId == templateId)){
-			if ((bt->expires) && (bt->expires < now)) {
-				destroyBufferedTemplate(sourceId, templateId);
+			if (bt->isExpired()) {
+				DPRINTF("Template found but expired.");
+				cleanUpExpiredTemplates();
 				return 0;
 			}
+			DPRINTF("Template found.");
 			return bt;
 		}
-		bt = (TemplateBuffer::BufferedTemplate*)bt->next;
+		bt = bt->next;
 	}
 	DPRINTF("getBufferedTemplate not found!!!");
 	return 0;
@@ -60,10 +72,36 @@ TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::sha
  * Saves a TemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo overwriting existing Templates
  */
 void TemplateBuffer::bufferTemplate(TemplateBuffer::BufferedTemplate* bt) {
+	cleanUpExpiredTemplates();
 	destroyBufferedTemplate(bt->sourceID, bt->templateInfo->templateId);
 	bt->next = head;
 	bt->expires = 0;
 	head = bt;
+}
+
+/**
+ * Saves a TemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo overwriting existing Templates
+ */
+void TemplateBuffer::cleanUpExpiredTemplates() {
+	TemplateBuffer::BufferedTemplate* predecessor = 0;
+	TemplateBuffer::BufferedTemplate* bt = head;
+	while (bt != 0) {
+		if (bt->isExpired()) {
+			DPRINTF("Cleaning up expired template with id %d",bt->templateInfo->templateId);
+			bt->onPreDestroy(ipfixParser);
+			if (predecessor)
+				predecessor->next = bt->next;
+			else
+				head = bt->next;
+			TemplateBuffer::BufferedTemplate* toBeFreed = bt;
+			bt = bt->next;
+			delete toBeFreed;
+			/* leave predecessor unchanged. */
+		} else {
+			predecessor = bt;
+			bt = bt->next;
+		}
+	}
 }
 
 /**
@@ -80,22 +118,20 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 		if (((*(bt->sourceID.get()) == *(sourceId.get())) && ((bt->templateInfo->templateId == templateId) || (bt->templateInfo->setId == templateId)))
 				|| (all && sourceId->equalIgnoringODID(*(bt->sourceID.get())))) {
 			found = true;
+			DPRINTF("Destroying template with id %u", bt->templateInfo->templateId);
 			if (predecessor != 0) {
 				predecessor->next = bt->next;
 			} else {
-				head = (TemplateBuffer::BufferedTemplate*)bt->next;
+				head = bt->next;
 			}
 			/* Invoke all registered callback functions */
-			IpfixTemplateDestructionRecord* ipfixRecord = ipfixParser->templateDestructionRecordIM.getNewInstance();
-			ipfixRecord->sourceID = bt->sourceID;
-			ipfixRecord->templateInfo = bt->templateInfo;
-			ipfixParser->ipfixRecordSender->send(ipfixRecord);
+			bt->onPreDestroy(ipfixParser);
 			TemplateBuffer::BufferedTemplate* toBeFreed = bt;
-			bt = (TemplateBuffer::BufferedTemplate*)bt->next;
+			bt = bt->next;
 			delete toBeFreed;
 		} else {
 			predecessor = bt;
-			bt = (TemplateBuffer::BufferedTemplate*)bt->next;
+			bt = bt->next;
 		}
 	}
 	if (!found && !all) {
@@ -118,7 +154,7 @@ TemplateBuffer::TemplateBuffer(IpfixParser* parentIpfixParser) {
 TemplateBuffer::~TemplateBuffer() {
 	while (head != 0) {
 		TemplateBuffer::BufferedTemplate* bt = head;
-		head = (TemplateBuffer::BufferedTemplate*)bt->next;
+		head = bt->next;
 		delete bt;
 	}
 }
