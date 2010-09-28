@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <sys/stat.h>
 #include <errno.h>
 #include <stdlib.h>
 
@@ -37,7 +38,7 @@ double get_double(char string[]){
 		ret = atof(string);
 	}else{
 		int 	pre_comma_i = -1.0,
-				post_comma_i = -1.0;
+			post_comma_i = -1.0;
 		char * 	tokens[2];
 		char 	separator[] = ",. ";
 		strtoken(string, separator, tokens);
@@ -57,7 +58,7 @@ double get_double(char string[]){
 		}
 
 		double 	pre_comma_d = (double)pre_comma_i,
-				post_comma_d = (double)post_comma_i;
+			post_comma_d = (double)post_comma_i;
 
 		// Check the number of deleted 0's in post_comma
 		while(sizeOfToken1 > 1){
@@ -71,13 +72,13 @@ double get_double(char string[]){
 }
 
 int strtoken(char *str, char *separator, char *tokens[]){
-  int i = 0;
-  tokens[0] = strtok(str, separator);
-  while ( tokens[i] ) {
-	i++;
-    tokens[i] = strtok(NULL, separator);
-  }
-  return i;
+	int i = 0;
+	tokens[0] = strtok(str, separator);
+	while ( tokens[i] ) {
+		i++;
+		tokens[i] = strtok(NULL, separator);
+	}
+	return i;
 }
 
 int get_length(char * string){
@@ -88,59 +89,71 @@ int get_length(char * string){
 
 char ** get_filenames(const char * directory, int * num_of_files) {
 	int i = 0;
-    DIR *pDIR;
-    struct dirent *pDirEnt;
+	DIR *pDIR;
+	struct dirent *pDirEnt;
+	struct stat dirEntStat;
+	char filename[256];
 
-    /* Open the current directory */
+	/* Open the current directory */
 
-    pDIR = opendir(directory);
+	pDIR = opendir(directory);
 
-    if ( pDIR == NULL ) {
-        fprintf( stderr, "%s %d: opendir() failed (%s)\n",
-                 __FILE__, __LINE__, strerror( errno ));
-        exit( -1 );
-    }
+	if ( pDIR == NULL ) {
+		fprintf( stderr, "%s %d: opendir() failed (%s)\n",
+				__FILE__, __LINE__, strerror( errno ));
+		exit( -1 );
+	}
 
-    /* Count filenames */
-    int filecounter = 0;
-    pDirEnt = readdir( pDIR );
-    while ( pDirEnt != NULL ) {
-    	if( (strcmp(pDirEnt->d_name, ".") != 0 ) && (strcmp(pDirEnt->d_name, "..") != 0 )){
-    		//printf( "FOUND: %s\n", pDirEnt->d_name );
-    		filecounter++;
-    	}
-        pDirEnt = readdir( pDIR );
-    }
-
-    *num_of_files = filecounter;
-
-    //printf("\n%i relevant files found.\n", filecounter);
-    /* Get each directory entry from pDIR and store its name
-     * in an array */
-    char ** filenames;
-    filenames = (char **)malloc(sizeof(char*)*filecounter);
-    for (i = 0; i < filecounter; ++i)
-    	filenames[i] = (char*)malloc(sizeof(char)*MAX_SIZE_OF_FILENAME);
-
-    // Rewind??
-    rewinddir(pDIR);
-
-    i = 0;
-    pDirEnt = readdir( pDIR );
+	/* Count filenames */
+	int filecounter = 0;
+	pDirEnt = readdir( pDIR );
 	while ( pDirEnt != NULL ) {
-		//printf( "%s\n", pDirEnt->d_name );
-		if( (strcmp(pDirEnt->d_name, ".") != 0 ) && (strcmp(pDirEnt->d_name, "..") != 0 )){
-			snprintf(filenames[i], MAX_SIZE_OF_FILENAME-1, "%s", pDirEnt->d_name);
-			//printf( "ADDED: %s\n", filenames[i] );
-			i++;
+		/* Skip hidden entries starting with dot */
+		if( pDirEnt->d_name[0] != '.' ) {
+			/* Skip non-regular files (e.g. directories) */ 
+			if ( (snprintf(filename, sizeof(filename), "%s/%s", directory, pDirEnt->d_name) < sizeof(filename))
+					&& (stat(filename, &dirEntStat) == 0) && (S_ISREG(dirEntStat.st_mode)) ) {
+				//printf( "FOUND: %s\n", pDirEnt->d_name );
+				filecounter++;
+			}
 		}
 		pDirEnt = readdir( pDIR );
 	}
 
-    /* Release the open directory */
-    closedir( pDIR );
+	*num_of_files = filecounter;
 
-    return filenames;
+	//printf("\n%i relevant files found.\n", filecounter);
+	/* Get each directory entry from pDIR and store its name
+	 * in an array */
+	char ** filenames;
+	filenames = (char **)malloc(sizeof(char*)*filecounter);
+	for (i = 0; i < filecounter; ++i)
+		filenames[i] = (char*)malloc(sizeof(char)*MAX_SIZE_OF_FILENAME);
+
+	// Rewind??
+	rewinddir(pDIR);
+
+	i = 0;
+	pDirEnt = readdir( pDIR );
+	while ( pDirEnt != NULL ) {
+		//printf( "%s\n", pDirEnt->d_name );
+		/* Skip hidden entries starting with dot */
+		if( pDirEnt->d_name[0] != '.' ) {
+			/* Skip non-regular files (e.g. directories) */ 
+			if ( (snprintf(filename, sizeof(filename), "%s/%s", directory, pDirEnt->d_name) < sizeof(filename))
+					&& (stat(filename, &dirEntStat) == 0) && (S_ISREG(dirEntStat.st_mode)) ) {
+				snprintf(filenames[i], MAX_SIZE_OF_FILENAME-1, "%s", pDirEnt->d_name);
+				//printf( "ADDED: %s\n", filenames[i] );
+				i++;
+			}
+		}
+		pDirEnt = readdir( pDIR );
+	}
+
+	/* Release the open directory */
+	closedir( pDIR );
+
+	return filenames;
 }
 
 

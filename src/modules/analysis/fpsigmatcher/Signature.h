@@ -60,6 +60,7 @@ struct BayesSignature {
  * The most representative signature of those members can be
  * addressed via the representative, which behaves as an index
  * to the member_ids */
+// Gerhard: If the idea is that multiple signatures should belong to one class, this is not how it is implemented!
 struct SignatureClass {
 	int representative;
 	char ** member_IDs;

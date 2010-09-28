@@ -47,8 +47,7 @@ void FrontPayloadSigMatcher::matchConnection(Connection* conn)
 
 	for (int32_t j=0; j<sigmatcher->numOfClasses; j++) {
 		if (results[j]==1) {
-			msg(MSG_DIALOG, "SIGMATCHER: matched record on class '%s' in token %u",
-					sigmatcher->signatures[j]->id, j);
+			msg(MSG_DIALOG, "SIGMATCHER: front payload matches signature '%s'", sigmatcher->signatures[j]->id);
 			msg(MSG_DIALOG, "%s", conn->toString().c_str());
 		}
 	}
