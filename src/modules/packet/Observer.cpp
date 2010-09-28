@@ -218,8 +218,6 @@ void *Observer::observerThread(void *arg)
 			p = packetManager.getNewInstance();
 			p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, obs->observationDomainID, packetHeader.len);
 
-			obs->receivedBytes += packetHeader.caplen;
-
 			DPRINTF("received packet at %u.%04u, len=%d",
 					(unsigned)p->timestamp.tv_sec,
 					(unsigned)p->timestamp.tv_usec / 1000,
@@ -227,7 +225,7 @@ void *Observer::observerThread(void *arg)
 			);
 
 			// update statistics
-			obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
+			obs->receivedBytes += packetHeader.caplen;
 			obs->processedPackets++;
 
 			while (!obs->exitFlag) {

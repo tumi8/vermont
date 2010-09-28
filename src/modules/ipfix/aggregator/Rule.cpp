@@ -73,7 +73,10 @@ void Rule::initialize()
 		validProtocols = Packet::IPProtocolType(validProtocols & f->type.getValidProtocols());
 	}
 	// small exception: if protocol id is inside the template, we assume that all types of protocols are valid
-	if (protocolid) validProtocols = Packet::ALL;
+	if (protocolid) {
+		validProtocols = Packet::ALL;
+		msg(MSG_INFO, "IPFIX IE protocolIdentifier is contained in template %hu, accepting all protocol types for this template", id);
+	}
 
 	DPRINTF("valid protocols for this template: %02X", validProtocols);
 
@@ -385,7 +388,7 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 
 	/* for all patterns of this rule, check if they are matched */
-        for(i = 0; i < fieldCount; i++) {
+	for(i = 0; i < fieldCount; i++) {
 		Rule::Field* ruleField = field[i];
 
 		/* no check for biflow fields */
@@ -500,7 +503,11 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 				}
 			}
 
-			msg(MSG_VDEBUG, "No corresponding DataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
+			// anonymisationType is filled by the anonymizer, so we ignore it quietly
+			if (ruleField->type==InformationElement::IeInfo(IPFIX_ETYPEID_anonymisationType, IPFIX_PEN_vermont))
+				continue;
+
+			msg(MSG_INFO, "No corresponding DataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
 			return 0;
 		}
 	}

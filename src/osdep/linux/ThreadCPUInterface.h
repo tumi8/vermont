@@ -11,6 +11,7 @@ class ThreadCPUInterface
 public:
 #if defined(__linux__)
 	struct JiffyTime {
+		pid_t pid;
 		pid_t tid;
 		uint32_t sysJiffies;
 		uint32_t userJiffies;
@@ -35,7 +36,10 @@ public:
 		uint64_t freeMemory; // in bytes
 	};
 
-	static JiffyTime getJiffies(pid_t tid);
+	static JiffyTime getJiffies(pid_t pid, pid_t tid);
+	static JiffyTime getThreadJiffies(pid_t tid);
+	static JiffyTime getProcessJiffies(pid_t pid);
+	static JiffyTime extractJiffies(char* statfile, char* schedfile);
 	static SystemInfo getSystemInfo();
 
 	static unsigned long long getHertzValue();

@@ -120,7 +120,8 @@ class InstanceManager : public Sensor
 			mutex.lock();
 #endif
 			instance->referenceCount += count;
-#if defined(DEBUG) && !defined(IM_DISABLE)
+#if defined(DEBUG)
+#if !defined(IM_DISABLE)
 			// the referenceCount MUST NEVER be zero and still be used by some code
 			if (instance->referenceCount-count == 0) {
 				THROWEXCEPTION("instance reference counter was zero and was still used");
@@ -129,8 +130,9 @@ class InstanceManager : public Sensor
 			if (find(usedInstances.begin(), usedInstances.end(), instance) == usedInstances.end()) {
 				THROWEXCEPTION("instance (0x%08X) is not managed by InstanceManager", (void*)instance);
 			}
+#endif // IM_DISABLE
 			mutex.unlock();
-#endif
+#endif // DEBUG
 		}
 
 		inline void removeReference(T* instance)

@@ -50,7 +50,7 @@ public:
 			const std::string &privateKeyFile,
 			const std::string &caFile,
 			const std::string &caPath);
-	IpfixSender(uint32_t observationDomainId);
+	IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate = IS_DEFAULT_MAXRECORDRATE);
 	virtual ~IpfixSender();
 
 	void addCollector(const char *ip, uint16_t port,

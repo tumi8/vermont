@@ -178,7 +178,7 @@ public:
 		time_msec_nbo = other->time_msec_nbo;
 
 		memcpy(&varlength, &other->varlength, sizeof(varlength));
-		varlength_index = other->varlength_index; 
+		varlength_index = other->varlength_index;
 	}
 */
 
@@ -205,6 +205,45 @@ public:
 		}
 
 		memcpy(data, packetData, len);
+
+		// timestamps in network byte order (needed for export or concentrator)
+		time_sec_nbo = htonl(timestamp.tv_sec);
+		time_usec_nbo = htonl(timestamp.tv_usec);
+
+		// calculate time since 1970 in milliseconds according to IPFIX standard
+		time_msec_nbo = htonll(((unsigned long long)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
+		DPRINTFL(MSG_VDEBUG, "timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
+		DPRINTFL(MSG_VDEBUG, "time_msec_ipfix is %lld", time_msec_nbo);
+
+		totalPacketsReceived++;
+
+		classify();
+	};
+
+	inline void init(char** datasegments, uint32_t* segmentlens, struct timeval time, uint32_t obsdomainid, uint32_t origplen)
+	{
+		transportHeader = NULL;
+		payload = NULL;
+		transportHeaderOffset = 0;
+		payloadOffset = 0;
+		classification = 0;
+		timestamp = time;
+		varlength_index = 0;
+		ipProtocolType = NONE;
+		observationDomainID = obsdomainid;
+		pcapPacketLength = origplen;
+
+
+
+		data_length = 0;
+		for (uint32_t i=0; datasegments[i]!=0; i++) {
+			if (data_length+segmentlens[i] > PCAP_MAX_CAPTURE_LENGTH) {
+				THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d), "
+					"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH to compensate!", data_length+segmentlens[i], PCAP_MAX_CAPTURE_LENGTH);
+			}
+			memcpy(data+data_length, datasegments[i], segmentlens[i]);
+			data_length += segmentlens[i];
+		}
 
 		// timestamps in network byte order (needed for export or concentrator)
 		time_sec_nbo = htonl(timestamp.tv_sec);

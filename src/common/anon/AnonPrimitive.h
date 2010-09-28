@@ -26,7 +26,7 @@ public:
 	AnonPrimitive();
 	virtual	~AnonPrimitive() {};
 
-	unsigned int anonimizeBuffer(void* buf, unsigned int len, int *cont=NULL);
+	unsigned int anonymizeBuffer(void* buf, unsigned int len, bool& anonymized, int *cont=NULL);
 
 	AnonPrimitive* getNext();
 

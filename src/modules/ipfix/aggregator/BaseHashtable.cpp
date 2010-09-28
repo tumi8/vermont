@@ -324,6 +324,7 @@ void BaseHashtable::expireFlows(bool all)
 				exportList.remove(node);
 				destroyBucket(bucket);
 				node->removeReference();
+				statTotalEntries--;
 			}//end if
 			else
 				break;
@@ -516,6 +517,7 @@ void BaseHashtable::genBiflowStructs()
 			case 0:
 				switch (fi->type.id) {
 					case IPFIX_TYPEID_protocolIdentifier:
+					case IPFIX_TYPEID_icmpTypeCodeIPv4:
 						mapReverseElement(fi->type);
 						break;
 					case IPFIX_TYPEID_sourceIPv4Address:
@@ -545,8 +547,10 @@ void BaseHashtable::genBiflowStructs()
 					case IPFIX_ETYPEID_dpaForcedExport:
 					case IPFIX_ETYPEID_dpaFlowCount:
 					case IPFIX_ETYPEID_dpaReverseStart:
+					case IPFIX_ETYPEID_anonymisationType:
 						mapReverseElement(fi->type);
 						break;
+
 					default:
 						defaultassign = true;
 						break;

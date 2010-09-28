@@ -108,21 +108,40 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 	TemplateInfo::FieldInfo* fi;
 
 	csRecord->record_length			= htons(sizeof(Ipfix_basic_flow)-2);		/* total length of this record in bytes minus this element*/
-	csRecord->src_export_mode		= exportMode;				/* expected to match enum cs_export_mode */
-	csRecord->dst_export_mode		= exportMode;				/* expected to match enum cs_export_mode */
+	csRecord->src_export_mode		= CS_E_PLAIN;
+	csRecord->dst_export_mode		= CS_E_PLAIN;
 	csRecord->ipversion				= 4;						/* expected 4 (for now) */
 
-	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
-	if (fi != 0) {
+	int idx;
+	idx = record->templateInfo->getFieldIndex(IPFIX_TYPEID_sourceIPv4Address, 0);
+	if (idx >= 0) {
+		fi = &record->templateInfo->fieldInfo[idx];
 		csRecord->source_ipv4_address		= *(uint32_t*)(record->data + fi->offset);
+		// set export mode if anonymisationType IE is directly after this field
+		if (idx<record->templateInfo->fieldCount-1) {
+			fi = &record->templateInfo->fieldInfo[idx+1];
+			if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_anonymisationType, IPFIX_PEN_vermont)
+					&& *(uint8_t*)(record->data + fi->offset)==1) {
+				csRecord->src_export_mode = exportMode;
+			}
+		}
 	} else {
 		msg(MSG_DEBUG, "failed to determine source ip for record, assuming 0.0.0.0");
 		csRecord->source_ipv4_address		= 0;
 	}
 
-	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
-	if (fi != 0) {
+	idx = record->templateInfo->getFieldIndex(IPFIX_TYPEID_destinationIPv4Address, 0);
+	if (idx >= 0) {
+		fi = &record->templateInfo->fieldInfo[idx];
 		csRecord->destination_ipv4_address	= *(uint32_t*)(record->data + fi->offset);
+		// set export mode if anonymisationType IE is directly after this field
+		if (idx<record->templateInfo->fieldCount-1) {
+			fi = &record->templateInfo->fieldInfo[idx+1];
+			if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_anonymisationType, IPFIX_PEN_vermont)
+					&& *(uint8_t*)(record->data + fi->offset)==1) {
+				csRecord->dst_export_mode = exportMode;
+			}
+		}
 	} else {
 		msg(MSG_DEBUG, "failed to determine destination ip for record, assuming 0.0.0.0");
 		csRecord->destination_ipv4_address	= 0;
@@ -156,9 +175,8 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_icmpTypeCodeIPv4, 0);
 	if (fi != 0) {
 		csRecord->icmp_type_ipv4 		= *(uint8_t*)(record->data + fi->offset);
-		csRecord->icmp_code_ipv4		= *(uint8_t*)(record->data + fi->offset + 8);
+		csRecord->icmp_code_ipv4		= *(uint8_t*)(record->data + fi->offset + 1);
 	} else {
-		msg(MSG_DEBUG, "failed to determine icmp type and code for record, assuming 0");
 		csRecord->icmp_type_ipv4                = 0;
 		csRecord->icmp_code_ipv4                = 0;
 	}
@@ -253,14 +271,25 @@ void IpfixCsExporter::onTimeout(void* dataPtr)
 	registerTimeout();
 }
 
+void IpfixCsExporter::closeFile()
+{
+	if (currentFile == NULL) return;
+
+	fclose(currentFile);
+	if (rename(currentTmpname, currentFilename) != 0) {
+		THROWEXCEPTION("IpfixCsExporter: failed to rename file '%s' to '%s'", currentTmpname, currentFilename);
+	}
+
+	currentFile = NULL;
+}
+
 /**
  * Creates an output file and writes the CS_Ipfix_file_header
  */
 void IpfixCsExporter::writeFileHeader()
 {
-	if (currentFile != NULL) {
-		fclose(currentFile);
-	}
+	closeFile();
+
 	currentFileSize = sizeof(CS_IPFIX_MAGIC)+sizeof(Ipfix_basic_flow_sequence_chunk_header);
 
 	time_t timestamp = time(0);
@@ -268,11 +297,12 @@ void IpfixCsExporter::writeFileHeader()
 
 	struct stat sta;
 
-	char time[512];
-	sprintf(time, "%s%s%02d%02d%02d-%02d%02d",destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year+1900,st->tm_mon+1,st->tm_mday,st->tm_hour,st->tm_min);
+	char prefix[512];
+	snprintf(prefix, ARRAY_SIZE(prefix), "%s%s%02d%02d%02d-%02d%02d",
+			destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year+1900,st->tm_mon+1,st->tm_mday,st->tm_hour,st->tm_min);
 	uint32_t i = 1;
 	while (i<0xFFFFFFFE) {
-		sprintf(currentFilename, "%s_%03d",time,i);
+		snprintf(currentFilename, ARRAY_SIZE(currentFilename), "%s_%03d", prefix, i);
 		errno = 0;
 		if (stat(currentFilename,&sta) != 0) {
 			if (errno != 2) {
@@ -286,11 +316,16 @@ void IpfixCsExporter::writeFileHeader()
 		i++;
 	}
 
+	snprintf(currentTmpname, ARRAY_SIZE(currentTmpname), "%s/._%s%02d%02d%02d-%02d%02d_%03d.part",
+			destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year+1900,st->tm_mon+1,st->tm_mday,st->tm_hour,st->tm_min, i);
+
+
 	if (i==0xFFFFFFFF) {
 		THROWEXCEPTION("failed to determine index for filename postfix (i==0xFFFFFFFF). Something went terribly wrong ....");
 	}
 
-	currentFile = fopen(currentFilename, "wb");
+	// fix: cs_export is too stupid to read incomplete file. Let's create a temporary file ....
+	currentFile = fopen(currentTmpname, "wb");
 	if (currentFile == NULL) {
 		THROWEXCEPTION("Could not open file for writing. Check permissions.");
 	}
@@ -374,6 +409,6 @@ void IpfixCsExporter::performShutdown()
 {
 	if (currentFile != NULL) {
 		writeChunkList();
-		fclose(currentFile);
+		closeFile();
 	}
 }

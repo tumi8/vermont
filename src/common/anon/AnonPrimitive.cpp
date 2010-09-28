@@ -28,19 +28,21 @@ AnonPrimitive* AnonPrimitive::getNext ()
 	return next;
 }
 
-unsigned int AnonPrimitive::anonimizeBuffer (void* buf, unsigned int len, int *cont)
+unsigned int AnonPrimitive::anonymizeBuffer (void* buf, unsigned int len, bool& anonymized, int *cont)
 {
 	ANON_RESULT myres	= anonymize (buf, len);
 	ANON_RESULT nextres = myres;
     if (cont != NULL) {
         if (myres.cont)
             *cont = 1;
-        else 
+        else
             *cont = 0;
     }
 
-	if (myres.cont && next != NULL) 
-		nextres = next->anonimizeBuffer (buf, myres.newlength);
+    if (!myres.cont) anonymized = true;
+
+	if (myres.cont && next != NULL)
+		nextres = next->anonymizeBuffer(buf, myres.newlength, anonymized);
 
 	return std::min(myres.newlength, nextres.newlength);
 }

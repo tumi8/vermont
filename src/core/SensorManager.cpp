@@ -132,7 +132,7 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 
 void SensorManager::retrieveStatistics(bool ignoreshutdown)
 {
-	const char* xmlpre = "<vermont>\n\t<sensorData time=\"%s\" host=\"%s\">\n";
+	const char* xmlpre = "<vermont>\n\t<sensorData time=\"%s\" epochtime=\"%d.%03d\" host=\"%s\">\n";
 	const char* xmlpost = "\t</sensorData>\n</vermont>\n";
 	const char* xmlglobals = "\t\t<%s>%s</%s>\n";
 
@@ -156,11 +156,12 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 		perror("error:");
 	}
 
-	time_t curtime = time(0);
+	timeval tvcurtime = unixtime();
+	time_t curtime = tvcurtime.tv_sec;
 	char curtimestr[100];
 	ctime_r(&curtime, curtimestr);
 	curtimestr[strlen(curtimestr)-1] = 0;
-	fprintf(file, xmlpre, curtimestr, hostname);
+	fprintf(file, xmlpre, curtimestr, curtime, tvcurtime.tv_usec/1000, hostname);
 	char text[100];
 	snprintf(text, 100, "%u", static_cast<uint32_t>(getpid()));
 	fprintf(file, xmlglobals, "pid", text, "pid");
