@@ -32,6 +32,7 @@
 #include "modules/packet/PCAPExporterPipeCfg.h"
 #include "modules/packet/filter/PacketFilterCfg.h"
 #include "modules/ipfix/FpaPcapExporterCfg.h"
+#include "modules/ipfix/FpaPacketGeneratorCfg.h"
 #include "modules/ipfix/IpfixCollectorCfg.h"
 #include "modules/ipfix/IpfixExporterCfg.h"
 #include "modules/ipfix/IpfixPrinterCfg.h"
