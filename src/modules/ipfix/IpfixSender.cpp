@@ -108,7 +108,7 @@ out:
 	return;
 }
 
-IpfixSender::IpfixSender(uint32_t observationDomainId)
+IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate)
 	: statSentDataRecords(0),
 	  statSentPackets(0),	  
 	  statPacketsInFlows(0),
@@ -116,7 +116,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId)
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
 	  timeoutRegistered(false),
 	  currentTemplateId(0),
-	  maxRecordRate(IS_DEFAULT_MAXRECORDRATE)
+	  maxRecordRate(maxRecordRate)
 {
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 

@@ -42,16 +42,19 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 		exit(1);
 	}
 
-        // generate the ipfix template
-        tmplid = templ->getTemplateID();
-        ret =  ipfix_start_template(exporter, tmplid, templ->getFieldCount());
+    // generate the ipfix template
+    tmplid = templ->getTemplateID();
+    ret =  ipfix_start_template(exporter, tmplid, templ->getFieldCount());
 
-        for(i = 0; i < templ->getFieldCount(); i++) {
+    for(i = 0; i < templ->getFieldCount(); i++) {
 		templ->getFieldInfo(i, &ie, &offset, &header);
 		ipfix_put_template_field(exporter, tmplid, ie.id, ie.length, ie.enterprise);
-        }
+    }
 
-        ipfix_end_template(exporter, tmplid);
+    ipfix_end_template(exporter, tmplid);
+
+	// start new Data Set
+	startNewPacketStream();
 }
 
 PSAMPExporterModule::~PSAMPExporterModule()

@@ -127,6 +127,7 @@ struct ipfix_identifier ipfixids[] = {
  { IPFIX_ETYPEID_dpaReverseStart, IPFIX_ELENGTH_dpaReverseStart, IPFIX_PEN_vermont, "dpaReverseStart" },
  { IPFIX_ETYPEID_transportOctetDeltaCount, IPFIX_ELENGTH_transportOctetDeltaCount, IPFIX_PEN_vermont, "transportOctetDeltaCount" },
  { IPFIX_ETYPEID_transportOctetDeltaCount, IPFIX_ELENGTH_transportOctetDeltaCount, IPFIX_PEN_vermont|IPFIX_PEN_reverse, "revTransportOctetDeltaCount" },
+ { IPFIX_ETYPEID_anonymisationType, IPFIX_ELENGTH_anonymisationType, IPFIX_PEN_vermont, "anonymisationType" },
 };
 
 

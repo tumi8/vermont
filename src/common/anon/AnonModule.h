@@ -92,7 +92,7 @@ class AnonModule {
 public:
 	~AnonModule();
 	void addAnonymization(InformationElement::IeInfo id, int len, AnonMethod::Method methodName,  std::vector<map_info> mapping, const std::string& parameter="");
-	void anonField(InformationElement::IeInfo id, void* data, int len = -1);
+	bool anonField(InformationElement::IeInfo id, void* data, int len = -1);
 protected:
 	typedef std::map<InformationElement::IeInfo, AnonIE> MethodMap;
 	MethodMap methods;

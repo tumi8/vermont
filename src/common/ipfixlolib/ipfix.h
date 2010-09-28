@@ -33,7 +33,7 @@ extern "C" {
 #define IPFIX_LENGTH_ipv4Address 4
 #define IPFIX_LENGTH_ipv6Address 8
 #define IPFIX_LENGTH_dateTimeSeconds 4
-#define IPFIX_LENGTH_variable 65535 
+#define IPFIX_LENGTH_variable 65535
 
 // transport protocol numbers
 #define IPFIX_protocolIdentifier_ICMP                 1
@@ -171,6 +171,12 @@ extern "C" {
 #define IPFIX_ETYPEID_dpaForcedExport				6
 #define IPFIX_ETYPEID_dpaReverseStart				7
 #define IPFIX_ETYPEID_transportOctetDeltaCount		8
+/**
+ * the following values are valid for IPFIX_ETYPEID_anonymisationType:
+ * 0: the preceding information element in the data record was not anonymised
+ * 1: the preceding information element in the data record was anonymised
+ */
+#define IPFIX_ETYPEID_anonymisationType				9
 
 
 
@@ -283,6 +289,7 @@ extern "C" {
 #define IPFIX_ELENGTH_transportOctetDeltaCount		IPFIX_LENGTH_unsigned64
 #define IPFIX_ELENGTH_maxPacketGap					IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_frontPayloadPktCount			IPFIX_LENGTH_unsigned32
+#define IPFIX_ELENGTH_anonymisationType				IPFIX_LENGTH_octet
 
 #define MAX_MSG_LEN   65536
 

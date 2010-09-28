@@ -40,12 +40,15 @@ public:
 	virtual void receive(Packet* packet);
 	virtual void performStart();
 	virtual void performShutdown();
+	virtual std::string getStatisticsXML(double interval);
 
 private:
 	static void* pcapExporterSink(void* data);
 
 	std::string fileName;
 	pcap_t* dummy;
+	uint64_t statPktsForwarded;
+	uint64_t statBytesForwarded;
 };
 
 #endif

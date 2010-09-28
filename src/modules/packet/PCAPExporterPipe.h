@@ -35,7 +35,7 @@ class Packet;
 
 /**
  * This class writes packets in PCAP format into a pipe,
- * allowing another process to read these packets via STDIN. 
+ * allowing another process to read these packets via STDIN.
  * The reader process is started and ended by Vermont.
  * The reader process may be restarted manually by sending SIGUSR2 to Vermont.
 */
@@ -67,6 +67,7 @@ public:
 	virtual void receive(Packet* packet);
 	virtual void performStart();
 	virtual void performShutdown();
+	virtual std::string getStatisticsXML(double interval);
 
 private:
 	static void* pcapExporterSink(void* data);
@@ -84,6 +85,8 @@ private:
 	time_t last_check;
     int fd[2];
 	int child_parent_pipe[2];
+	uint64_t statPktsForwarded;
+	uint64_t statBytesForwarded;
 };
 
 
