@@ -32,7 +32,6 @@
 #include "modules/packet/PCAPExporterPipeCfg.h"
 #include "modules/packet/filter/PacketFilterCfg.h"
 #include "modules/ipfix/FpaPcapExporterCfg.h"
-#include "modules/ipfix/FpaPacketGeneratorCfg.h"
 #include "modules/ipfix/IpfixCollectorCfg.h"
 #include "modules/ipfix/IpfixExporterCfg.h"
 #include "modules/ipfix/IpfixPrinterCfg.h"
@@ -73,7 +72,6 @@ Cfg* ConfigManager::configModules[] = {
 	new PCAPExporterPipeCfg(NULL),
 	new PSAMPExporterCfg(NULL),
 	new FpaPcapExporterCfg(NULL),
-	new FpaPacketGeneratorCfg(NULL),
 	new IpfixCollectorCfg(NULL),
 	new IpfixQueueCfg(NULL),
 	new IpfixExporterCfg(NULL),
@@ -244,19 +242,19 @@ Graph* ConfigManager::getGraph()
 
 void ConfigManager::onTimeout2()
 {
-    msg(MSG_VDEBUG, "Called deleter");
+	//msg(MSG_VDEBUG, "Called deleter");
 
 	for (std::list<deleter_list_item>::iterator it = deleter_list.begin(); it != deleter_list.end(); it++) {
-        if (time(NULL) > it->delete_after) {
-            msg(MSG_DEBUG, "Removing node: %s", (it->c)->getName().c_str());
-            (it->c)->shutdown(true, true);
-            it->c->disconnectInstances();
-            delete ((it->c));
-            it = deleter_list.erase(it);
-            it--;
-        } else {
-            msg(MSG_DEBUG, "Timeout for node %s not yet reached.", (it->c)->getName().c_str());
-        }
+		if (time(NULL) > it->delete_after) {
+			msg(MSG_DEBUG, "Removing node: %s", (it->c)->getName().c_str());
+			(it->c)->shutdown(true, true);
+			it->c->disconnectInstances();
+			delete ((it->c));
+			it = deleter_list.erase(it);
+			it--;
+		} else {
+			msg(MSG_DEBUG, "Timeout for node %s not yet reached.", (it->c)->getName().c_str());
+		}
 	}
 }
 

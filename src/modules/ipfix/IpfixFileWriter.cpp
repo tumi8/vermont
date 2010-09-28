@@ -32,12 +32,14 @@
 /* go back to SENDER_TEMPLATE_ID_LOW if _HI is reached */
 #define SENDER_TEMPLATE_ID_HI 60000
 
+#define MAX_RECORD_RATE 33554432
+
 /**
  * Creates a new IPFIXFileWriter. Do not forget to call @c startIpfixFileWriter() to begin sending
  */
 IpfixFileWriter::IpfixFileWriter(uint16_t observationDomainId, std::string filenamePrefix, 
 	std::string destinationPath, uint32_t maximumFilesize)
-			: IpfixSender(observationDomainId)
+			: IpfixSender(observationDomainId, MAX_RECORD_RATE)
 {
 	if (filenamePrefix != "") {
 		if(addCollector(observationDomainId, filenamePrefix, destinationPath, maximumFilesize) != 0) {

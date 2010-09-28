@@ -25,7 +25,6 @@
 #include "SensorManager.h"
 #include "common/Sensor.h"
 #include "common/defs.h"
-#include "common/LockfreeMultiQueue.h"
 
 #include <queue>
 #include <list>
@@ -45,7 +44,7 @@ class InstanceManager : public Sensor
 #if defined(DEBUG)
 		list<T*> usedInstances;	// instances with active references (only used for debugging purposes)
 #endif
-		LockfreeMultiQueue<T*>* freeInstances;// unused instances
+		queue<T*> freeInstances;// unused instances
 		Mutex mutex;			// we wanna be thread-safe
 		static const int DEFAULT_NO_INSTANCES = 1000;
 		uint32_t statCreatedInstances; /**< number of created instances, used for statistical purposes */
@@ -54,14 +53,10 @@ class InstanceManager : public Sensor
 		InstanceManager(string type, int preAllocInstances = DEFAULT_NO_INSTANCES)
 			: statCreatedInstances(0)
 		{
-			//printf("##instanceManager\n");
-			int qSize = (preAllocInstances > DEFAULT_NO_INSTANCES) ? preAllocInstances : DEFAULT_NO_INSTANCES;
-			freeInstances = new LockfreeMultiQueue<T*>(qSize);
 			for (int i=0; i<preAllocInstances; i++) {
-				freeInstances->push(new T(this));
+				freeInstances.push(new T(this));
 			}
 			statCreatedInstances = preAllocInstances;
-			//**TODO size of the LockfreeMultiQueue have to be added to usedBytes*/
 			usedBytes += sizeof(InstanceManager<T>)+preAllocInstances*(sizeof(T)+4);
 			SensorManager::getInstance().addSensor(this, "InstanceManager (" + type + ")", 0);
 		}
@@ -74,14 +69,14 @@ class InstanceManager : public Sensor
 				DPRINTF("freeing instance manager, although there are still %d used instances", usedInstances.size());
 			}
 #endif
-			T *obj;
-			while (freeInstances->pop(&obj)) {
+			while (!freeInstances.empty()) {
+				T* obj = freeInstances.front();
+				freeInstances.pop();
 #if defined(DEBUG)
 				obj->deletedByManager = true;
 #endif
 				delete obj;
 			}
-			delete freeInstances;
 		}
 
 		/**
@@ -92,23 +87,25 @@ class InstanceManager : public Sensor
 		{
 			T* instance;
 #if !defined(IM_DISABLE)
+			mutex.lock();
 
-			if (!freeInstances->pop(&instance)) {
+			if (freeInstances.empty()) {
 				// create new instance
-				__sync_add_and_fetch(&statCreatedInstances,1);
+				statCreatedInstances++;
 				instance = new T(this);
-				__sync_add_and_fetch(&usedBytes,sizeof(T)+4);
+				usedBytes += sizeof(T)+4;
+			} else {
+				instance = freeInstances.front();
+				freeInstances.pop();
 			}
 
 #if defined(DEBUG)
-			mutex.lock();
 			DPRINTF("adding used instance 0x%08X", (void*)instance);
 			usedInstances.push_back(instance);
-			mutex.unlock();
 #endif
 
 			instance->referenceCount++;
-
+			mutex.unlock();
 #else // IM_DISABLE
 			instance = new T(this);
 			instance->referenceCount++;
@@ -122,7 +119,7 @@ class InstanceManager : public Sensor
 #if defined(DEBUG)
 			mutex.lock();
 #endif
-			__sync_add_and_fetch(&(instance->referenceCount),count);
+			instance->referenceCount += count;
 #if defined(DEBUG)
 #if !defined(IM_DISABLE)
 			// the referenceCount MUST NEVER be zero and still be used by some code
@@ -140,25 +137,21 @@ class InstanceManager : public Sensor
 
 		inline void removeReference(T* instance)
 		{
-			__sync_add_and_fetch(&(instance->referenceCount),-1);
+			instance->referenceCount--;
 
 			if (instance->referenceCount == 0) {
 #if !defined(IM_DISABLE)
-
-				if(!freeInstances->push(instance)){
-					delete instance;
-					__sync_add_and_fetch(&usedBytes,-(sizeof(T)+4));
-				}
-#if defined(DEBUG)
 				mutex.lock();
+				freeInstances.push(instance);
+#if defined(DEBUG)
 				typename list<T*>::iterator iter = find(usedInstances.begin(), usedInstances.end(), instance);
 				if (iter == usedInstances.end()) {
 					THROWEXCEPTION("instance (0x%08X) is not managed by InstanceManager", (void*)instance);
 				}
 				DPRINTF("removing used instance 0x%08X", (void*)instance);
 				usedInstances.erase(iter);
-				mutex.unlock();
 #endif
+				mutex.unlock();
 #else // IM_DISABLE
 				DPRINTF("removing used instance 0x%08X", (void*)instance);
 				instance->deletedByManager = true;

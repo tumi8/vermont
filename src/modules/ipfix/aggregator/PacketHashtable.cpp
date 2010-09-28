@@ -680,7 +680,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 		*reinterpret_cast<uint32_t*>(efd->data) = ExpHelperTable::UNUSED;
 		for (int i=0; i<dataTemplate->fieldCount; i++) {
 			TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
-			if (hfi->type.id==IPFIX_ETYPEID_frontPayloadPktCount) {
+			if (hfi->type==IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont)) {
 				*reinterpret_cast<uint32_t*>(efd->data) = hfi->offset;
 			}
 		}
@@ -811,7 +811,7 @@ void PacketHashtable::buildExpHelperTable()
 		DPRINTF("including type %s.", hfi->type.toString().c_str());
 		ExpFieldData* efd = &expHelperTable.aggFields[expHelperTable.noAggFields++];
 		fillExpFieldData(efd, hfi, fieldModifier[i], expHelperTable.noAggFields-1);
-		if (hfi->type.id==IPFIX_ETYPEID_dpaForcedExport) {
+		if (hfi->type==IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont)) {
 			msg(MSG_INFO, "activated dialog-based payload aggregation");
 			expHelperTable.useDPA = true;
 		}
@@ -890,7 +890,6 @@ void PacketHashtable::buildExpHelperTable()
 			efd->typeSpecData.frontPayload.pktCountOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont));
 			efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont));
 			efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaReverseStart, IPFIX_PEN_vermont));
-			efd->typeSpecData.frontPayload.dpa = expHelperTable.useDPA;
 			efd->typeSpecData.frontPayload.dpaPrivDataOffset = ExpHelperTable::UNUSED;
 			if (expHelperTable.useDPA) {
 				for (uint32_t i=0; i<expHelperTable.noAggFields; i++) {

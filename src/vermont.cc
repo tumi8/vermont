@@ -48,8 +48,6 @@ static void usage();
 
 ConfigManager manager;
 
-// this is outside main to silent valgrind about the allocation "stats.log" which seems got never free'd
-string statFile = "stats.log";
 
 int main(int ac, char **dc)
 {
@@ -73,9 +71,6 @@ int main(int ac, char **dc)
 		case 'd':
 			debug_level++;
 			break;
-
-		case 'u':
-			statFile = optarg;
 
 		case 'h':
 		default:
@@ -135,8 +130,7 @@ static void usage()
 		" mandatory:\n" \
 		"    -f <xmlfile>     load config\n" \
 		" optional:\n" \
-		"    -d               increase debug level (specify multiple for even more)\n" \
-		"    -u <file>        output statistics in specified file (default: stats.log)\n"
+		"    -d               increase debug level (specify multiple for even more)\n"
 	);
 }
 

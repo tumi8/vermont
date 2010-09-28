@@ -43,7 +43,7 @@ class IpfixSender : public Module, public Source<NullEmitable*>, public IpfixRec
 public:
 	IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate, uint32_t sctpDataLifetime, uint32_t sctpReconnectInterval,
 			uint32_t templateRefreshInterval, uint32_t templateRefreshRate);
-	IpfixSender(uint32_t observationDomainId);
+	IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate = IS_DEFAULT_MAXRECORDRATE);
 	virtual ~IpfixSender();
 
 	void addCollector(const char *ip, uint16_t port, uint16_t proto);

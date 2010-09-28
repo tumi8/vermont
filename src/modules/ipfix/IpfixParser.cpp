@@ -715,7 +715,7 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 	}
 
 	msg(MSG_VDEBUG, "NetflowV9 message from %s contained %u Data Records and %u Template Records. Sequence number was %lu.", 
-		(sourceId->toString()).c_str(), numberOfDataRecords, numberOfTemplateRecords, sequenceNumber);
+		(sourceId->toString()).c_str(), numberOfDataRecords, numberOfTemplateRecords, (unsigned long) sequenceNumber);
 
 	// Update statistics
 	statTotalMessages++;
@@ -815,7 +815,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 	}
 
 	msg(MSG_VDEBUG, "IPFIX message from %s contained %u Data Records and %u Template Records. Sequence number was %lu.", 
-		(sourceId->toString()).c_str(), numberOfDataRecords, numberOfTemplateRecords, sequenceNumber);
+		(sourceId->toString()).c_str(), numberOfDataRecords, numberOfTemplateRecords, (unsigned long) sequenceNumber);
 
 	// Update statistics
 	statTotalMessages++;
