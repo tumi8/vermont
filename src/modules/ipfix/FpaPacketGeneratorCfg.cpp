@@ -30,18 +30,7 @@ FpaPacketGeneratorCfg::FpaPacketGeneratorCfg(XMLElement* elem)
 {
 	if (!elem) return;
 
-	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
-	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
-	     it != set.end();
-	     it++) {
-		//XMLElement* e = *it;
-
-		/*if (e->matches("filename")) {
-			fileName = e->getFirstText();
-		} else if (e->matches("snaplen")) {
-			snaplen = getInt("snaplen", PCAP_MAX_CAPTURE_LENGTH, e);
-		}*/
-	}
+	// we do not have any configuration options
 }
 
 FpaPacketGeneratorCfg* FpaPacketGeneratorCfg::create(XMLElement* elem)
