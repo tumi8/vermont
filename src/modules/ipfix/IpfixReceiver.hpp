@@ -22,7 +22,6 @@
 #define _IPFIX_RECEIVER_H_
 
 #include "core/Module.h"
-#include "IpfixRecordDestination.h"
 #include "IpfixPacketProcessor.hpp"
 
 #include <pthread.h>
@@ -41,6 +40,7 @@ class IpfixReceiver
 {
 	public:
 		IpfixReceiver();
+		IpfixReceiver(int port);
 		virtual ~IpfixReceiver();
 
 		void performStart();

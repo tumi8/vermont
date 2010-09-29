@@ -93,8 +93,16 @@ AutoFocus::~AutoFocus()
 	msg(MSG_FATAL,"Autofocus is done");
 }
 
-void AutoFocus::onDataDataRecord(IpfixDataDataRecord* record)
+void AutoFocus::onDataRecord(IpfixDataRecord* record)
 {
+	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
+	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 
@@ -334,7 +342,7 @@ void AutoFocus::metalist()
 			sprintf(num,"%25s",(*iter)->global.c_str());
 			locl.append(num);
 			locl.append("\t");
-			sprintf(num,"%10llu",data);
+			sprintf(num,"%10llu",(long long unsigned)data);
 			locl.append(num);
 			locl.append(" \t");
 			percentage = (double) (data*100) / (double) (*iter)->numTotal;

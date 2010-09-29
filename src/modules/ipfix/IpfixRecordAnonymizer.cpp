@@ -1,7 +1,26 @@
+/*
+ * IPFIX Record Anonymizer
+ * Copyright (C) 2008 Lothar Braun
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
+
 #include "IpfixRecordAnonymizer.h"
 
-InstanceManager<IpfixDataRecord> IpfixRecordAnonymizer::dataRecordIM("IpfixDataRecord");
-InstanceManager<IpfixDataDataRecord> IpfixRecordAnonymizer::dataDataRecordIM("IpfixDataDataRecord");
+InstanceManager<IpfixDataRecord> IpfixRecordAnonymizer::dataRecordIM("RecordAnonymizerIpfixDataRecord", 0);
 
 void IpfixRecordAnonymizer::setCopyMode(bool mode)
 {
@@ -10,17 +29,16 @@ void IpfixRecordAnonymizer::setCopyMode(bool mode)
 
 void IpfixRecordAnonymizer::onTemplate(IpfixTemplateRecord* record)
 {
-	send(record);
-}
+	//TODO: anonymize Data Templates
+	if((record->templateInfo->setId == TemplateInfo::IpfixDataTemplate) && (record->templateInfo->dataCount != 0)) {
+		for (int i = 0; i != record->templateInfo->dataCount; ++i) {
+			TemplateInfo::FieldInfo* field = record->templateInfo->dataInfo + i;
+			// check if this fixed value field should be anonymized
+			if (methods.find(field->type) != methods.end())
+				msg(MSG_ERROR, "IpfixRecordAnonymizer: Anonymization not supported for fixed value field (ie=%u, enterprise=%u) in Data Template (id=%u)", field->type.id, field->type.enterprise, record->templateInfo->templateId);
 
-void IpfixRecordAnonymizer::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
-{
-	send(record);
-}
-
-
-void IpfixRecordAnonymizer::onDataTemplate(IpfixDataTemplateRecord* record)
-{
+		}
+	}
 	send(record);
 }
 
@@ -41,66 +59,54 @@ void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 	} else
 		myRecord = record;
 
-	for (int i = 0; i != myRecord->templateInfo->fieldCount; ++i) {
-		IpfixRecord::FieldInfo* field = myRecord->templateInfo->fieldInfo + i;
-		anonField(field->type.id, myRecord->data + field->offset, field->type.length);
-	}
-	send(myRecord);
-}
-
-
-void IpfixRecordAnonymizer::onOptionsRecord(IpfixOptionsRecord* record)
-{
-	send(record);
-}
-
-void IpfixRecordAnonymizer::onDataDataRecord(IpfixDataDataRecord* record)
-{
-	IpfixDataDataRecord* myRecord;
-	if(copyMode) {
-		// generate copy of the current record
-		myRecord = dataDataRecordIM.getNewInstance();
-		myRecord->sourceID = record->sourceID;
-		// we also need to copy the Data Template Info
-		myRecord->dataTemplateInfo = boost::shared_ptr<IpfixRecord::DataTemplateInfo>(new IpfixRecord::DataTemplateInfo(*record->dataTemplateInfo.get()));
-		//myRecord->dataTemplateInfo = record->dataTemplateInfo;
-		myRecord->dataLength = record->dataLength; // = recordLength
-		myRecord->message = boost::shared_array<IpfixRecord::Data>(new IpfixRecord::Data[record->dataLength]);
-		memcpy(myRecord->message.get(), record->data, record->dataLength);
-		myRecord->data = myRecord->message.get();
-		// release record
-		record->removeReference();
-	} else
-		myRecord = record;
-
+	/* TODO (Gerhard 12/2009): Anonymization of Data Template does not make sense if implemented at this place (only).
+	 * For example, the IpfixSender uses the Templates received by onTemplate(...), not the ones linked to the
+	 * Data Records. Therefore, anonymization should take place in IpfixRecordAnonymizer::onTemplate().
+	 * The anonymized Data Template should then be linked to all the corresponding Data Records.
+	 *
 	// anonymize data template fixed value fields if necessary
-	if(!myRecord->dataTemplateInfo->anonymized) {
-		for (int i = 0; i != myRecord->dataTemplateInfo->dataCount; ++i) {
-			IpfixRecord::FieldInfo* field = myRecord->dataTemplateInfo->dataInfo + i;
-			anonField(field->type.id, myRecord->dataTemplateInfo->data + field->offset, field->type.length);
+	if((myRecord->templateInfo->setId==TemplateInfo::IpfixDataRecord) && (!myRecord->templateInfo->anonymized)) {
+		// copy Data Template Info in copy mode
+		if(copyMode)
+			myRecord->templateInfo = boost::shared_ptr<TemplateInfo>(new TemplateInfo(*record->templateInfo.get()));
+
+		for (int i = 0; i != myRecord->templateInfo->dataCount; ++i) {
+			TemplateInfo::FieldInfo* field = myRecord->templateInfo->dataInfo + i;
+			anonField(field->type.id, myRecord->templateInfo->data + field->offset, field->type.length);
 		}
-		myRecord->dataTemplateInfo->anonymized = true; 
+		myRecord->templateInfo->anonymized = true;
 	}
-	// anonymize variable value fields
-	for (int i = 0; i != myRecord->dataTemplateInfo->fieldCount; ++i) {
-		IpfixRecord::FieldInfo* field = myRecord->dataTemplateInfo->fieldInfo + i;
-		anonField(field->type.id, myRecord->data + field->offset, field->type.length);
+	*/
+
+	boost::shared_ptr<TemplateInfo> templateInfo = myRecord->templateInfo;
+
+	// anonymize Data Record fields
+	int32_t lastanonid = -2;
+	for (int i = 0; i != templateInfo->fieldCount; ++i) {
+		TemplateInfo::FieldInfo* field = templateInfo->fieldInfo + i;
+		if (lastanonid==i-1
+				&& field->type==InformationElement::IeInfo(IPFIX_ETYPEID_anonymisationType, IPFIX_PEN_vermont)) {
+			// only if the preceding information element was really anonymised, we set this IE to 1
+			*(uint8_t*)(myRecord->data+field->offset) = 1;
+		} else if (anonField(field->type, myRecord->data + field->offset, field->type.length)) {
+			lastanonid = i;
+		}
 	}
+
+	// anonymize scope fields
+	if((record->templateInfo->scopeCount != 0) && ((record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)
+			|| (record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate))) {
+		for (int i = 0; i != templateInfo->scopeCount; ++i) {
+			TemplateInfo::FieldInfo* field = templateInfo->scopeInfo + i;
+			anonField(field->type, myRecord->data + field->offset, field->type.length);
+		}
+	}
+
 	send(myRecord);
 }
+
 
 void IpfixRecordAnonymizer::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
-{
-	send(record);
-}
-
-void IpfixRecordAnonymizer::onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record)
-{
-	send(record);
-}
-
-
-void IpfixRecordAnonymizer::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record)
 {
 	send(record);
 }

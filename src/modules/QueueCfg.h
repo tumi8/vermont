@@ -1,3 +1,23 @@
+/*
+ * Vermont Configuration Subsystem
+ * Copyright (C) 2009 Vermont Project
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
+
 #ifndef QUEUECFG_H_
 #define QUEUECFG_H_
 
@@ -20,9 +40,7 @@ public:
 	
 	virtual std::string getName()
 	{ 
-		// see below why this hack is needed
-		T t;
-		return get_name(t); 
+		return "";
 	}
 
 	virtual QueueCfg<T>* create(XMLElement* e) {
@@ -74,20 +92,13 @@ class IpfixRecord;
 typedef QueueCfg<Packet*> PacketQueueCfg;
 typedef QueueCfg<IpfixRecord*> IpfixQueueCfg;
 
-// this hack with template specialization is needed because 
-// gcc (GCC) 4.1.3 20070812 (prerelease) (Debian 4.1.2-15)
-// has in ICE if I used a static variable for the name
-template<typename X> inline std::string get_name(const X x)
-{
-	return "";
-}
 
-template<> inline std::string get_name<Packet*>(Packet* x)
+template <> std::string QueueCfg<Packet*>::getName()
 {
 	return "packetQueue";
 }
 
-template<> inline std::string get_name<IpfixRecord*>(IpfixRecord* x)
+template <> std::string QueueCfg<IpfixRecord*>::getName()
 {
 	return "ipfixQueue";
 }

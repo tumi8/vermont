@@ -21,9 +21,6 @@
 #include "IpfixReceiver.hpp"
 
 #include "IpfixPacketProcessor.hpp"
-#include "IpfixParser.hpp"
-#include "IpfixReceiverUdpIpV4.hpp"
-#include "IpfixReceiverSctpIpV4.hpp"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/msg.h"
 
@@ -42,6 +39,14 @@ IpfixReceiver::IpfixReceiver()
 	: exitFlag(true),
 	  vmodule(NULL),
 	  thread(threadWrapper)
+{
+}
+
+IpfixReceiver::IpfixReceiver(int port)
+	: exitFlag(true),
+	  receiverPort(port),
+	  thread(threadWrapper)
+	  
 {
 }
 
@@ -76,14 +81,16 @@ void IpfixReceiver::performStart()
  */
 void IpfixReceiver::performShutdown() 
 {
+	// stop receiver thread
+	exitFlag = true;
+	thread.join();
+
+	// shutdown packet processors
 	std::list<IpfixPacketProcessor*>::iterator iter = packetProcessors.begin();
 	while (iter != packetProcessors.end()) {
 		(*iter)->performShutdown();
 		iter++;
 	}
-	
-	exitFlag = true;
-	thread.join();
 }
 
 /**

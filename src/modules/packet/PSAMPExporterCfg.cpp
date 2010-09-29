@@ -1,3 +1,23 @@
+/*
+ * Vermont Configuration Subsystem
+ * Copyright (C) 2009 Vermont Project
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
+
 #include "modules/packet/PacketReportingCfg.h"
 #include "modules/packet/PSAMPExporterCfg.h"
 #include "modules/packet/PSAMPExporterModule.h"
@@ -8,7 +28,7 @@
 
 PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem) 
 	: CfgHelper<PSAMPExporterModule, PSAMPExporterCfg>(elem, "psampExporter"),
-	templateRefreshTime(0), templateRefreshRate(0),
+	templateRefreshTime(0), /* templateRefreshRate(0), */
 	maxPacketSize(0), exportDelay(0), reporting(NULL) 
 { 
 	if (!elem) return;
@@ -31,7 +51,7 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 		} else if (e->matches("udpTemplateManagement")) {
 			// use 0 as default values for both if the config entry isn't found 
 			templateRefreshTime = getTimeInUnit("templateRefreshTimeout", SEC, IS_DEFAULT_TEMPLATE_TIMEINTERVAL, e);
-			templateRefreshRate = getInt("templateRefreshRate", IS_DEFAULT_TEMPLATE_RECORDINTERVAL, e);
+			/* templateRefreshRate = getInt("templateRefreshRate", IS_DEFAULT_TEMPLATE_RECORDINTERVAL, e); */ /* TODO */
 		} else if (e->matches("collector")) {
 			collectors.push_back(new CollectorCfg(e));
 		} else if (e->matches("packetReporting")) {
@@ -74,9 +94,6 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 	if (recordLength || maxPacketSize) {
 		int recordsPerPacket = 1;
 		
-		printf ("create recordLen = %d\n\n", recordLength);
-		printf ("create maxPaSize = %d\n\n", maxPacketSize);
-		
 		if (recordLength) { 
 			// IPFIX packet header: 16 bytes, set header: 4 bytes
 			recordsPerPacket = (maxPacketSize - 16 - 4) / recordLength;
@@ -92,17 +109,17 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 		msg(MSG_INFO, "Set maximum export timeout to %d", exportDelay);
 		instance->setExportTimeout(exportDelay);
 	}
-	if (templateRefreshTime || templateRefreshRate) {	
+	if (templateRefreshTime /* || templateRefreshRate */) {
 		msg(MSG_DIALOG, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
 	}
 	for (unsigned i = 0; i != collectors.size(); ++i) {
 		msg(MSG_DEBUG, "PsampExporter: adding collector %s://%s:%d",
-				collectors[i]->getProtocolType()==SCTP?"SCTP":"UDP",
+				collectors[i]->getProtocol()==132?"SCTP":"UDP",
 				collectors[i]->getIpAddress().c_str(),
 				collectors[i]->getPort());
 		instance->addCollector(collectors[i]->getIpAddress().c_str(),
 				collectors[i]->getPort(),
-				collectors[i]->getProtocolType());
+				collectors[i]->getProtocol());
 	}
 
 	return instance;

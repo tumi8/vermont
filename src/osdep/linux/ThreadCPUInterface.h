@@ -11,12 +11,18 @@ class ThreadCPUInterface
 public:
 #if defined(__linux__)
 	struct JiffyTime {
+		pid_t pid;
 		pid_t tid;
 		uint32_t sysJiffies;
 		uint32_t userJiffies;
 		uint64_t volCtxtSwitches;	  /**< voluntary context switches, only available with Linux CFS kernel */
 		uint64_t nonvolCtxtSwitches;  /**< non-voluntary context switches, only available with Linux CFS kernel */
 		time_t lastAccess;
+		/**
+		 * threads are marked as active when they are registered. Inactive
+		 * threads are not polled for new sensor data. This variable purely exists to
+		 * retain thread data during Vermont shutdown.
+		 */
 		bool active;
 	};
 
@@ -30,7 +36,10 @@ public:
 		uint64_t freeMemory; // in bytes
 	};
 
-	static JiffyTime getJiffies(pid_t tid);
+	static JiffyTime getJiffies(pid_t pid, pid_t tid);
+	static JiffyTime getThreadJiffies(pid_t tid);
+	static JiffyTime getProcessJiffies(pid_t pid);
+	static JiffyTime extractJiffies(char* statfile, char* schedfile);
 	static SystemInfo getSystemInfo();
 
 	static unsigned long long getHertzValue();

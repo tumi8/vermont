@@ -27,7 +27,7 @@
 #define IPFIXDBWRITER_H
 
 #include "IpfixDbCommon.hpp"
-#include "IpfixParser.hpp"
+#include "IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include <mysql.h>
@@ -52,7 +52,6 @@ class IpfixDbWriter
 		~IpfixDbWriter();
 
 		void onDataRecord(IpfixDataRecord* record);
-		void onDataDataRecord(IpfixDataDataRecord* record);
 
 		/**
 		 * Struct to identify the relationship between columns names and 
@@ -61,8 +60,9 @@ class IpfixDbWriter
 		struct Column {
 			const char* columnName; 	/** column name */
 			const char* columnType;		/** column data type in database */
-			uint64_t defaultValue;       /** default value */
-			uint16_t ipfixId; 		/** IPFIX_TYPEID */
+			uint64_t defaultValue;       	/** default value */
+			InformationElement::IeId ipfixId; /** IPFIX_TYPEID */
+			InformationElement::IeEnterpriseNumber enterprise; /** enterprise number */
 		};
 
 	private:
@@ -110,16 +110,16 @@ class IpfixDbWriter
 		int createDB();
 		int setCurrentTable(time_t flowstartsec);
 		string& getInsertString(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
-				IpfixRecord::DataTemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data);
+				TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data);
 		int writeToDb();
 		int getExporterID(const IpfixRecord::SourceID& sourceID);
 		int connectToDB();
 		void processDataDataRecord(const IpfixRecord::SourceID& sourceID, 
-				IpfixRecord::DataTemplateInfo& dataTemplateInfo, uint16_t length, 
+				TemplateInfo& dataTemplateInfo, uint16_t length, 
 				IpfixRecord::Data* data);
 
 
-		uint64_t getData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
+		uint64_t getData(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		bool equalExporter(const IpfixRecord::SourceID& a, const IpfixRecord::SourceID& b);
 };
 

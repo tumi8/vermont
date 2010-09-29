@@ -1,0 +1,18 @@
+<ipfixConfig>
+	<ipfixCollector id="1">
+		<cert>configs/example_certs/collector_cert.pem</cert>
+		<key>configs/example_certs/collector_key.pem</key>
+		<CAfile>configs/example_certs/vermontCA.pem</CAfile>
+		<CApath>/etc/ssl/certs</CApath>
+		<listener>
+			<transportProtocol>DTLS_OVER_SCTP</transportProtocol>
+			<!-- transportProtocol>DTLS_OVER_UDP</transportProtocol -->
+			<!-- peerFqdn>ex352.example.com</peerFqdn -->
+			<!-- peerFqdn>exporter.example.com</peerFqdn -->
+		</listener>
+		<next>2</next>
+	</ipfixCollector>
+	<ipfixPrinter id="2">
+	</ipfixPrinter>
+</ipfixConfig>
+

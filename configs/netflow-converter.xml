@@ -1,0 +1,28 @@
+<ipfixConfig>
+        <sensorManager id="99">
+                <checkinterval>2</checkinterval>
+        </sensorManager>
+
+	<ipfixCollector id="1">
+		<listener>
+			<transportProtocol>UDP</transportProtocol>
+			<port>1500</port>
+		</listener>
+		<udpTemplateLifetime>3600</udpTemplateLifetime>
+		<next>2</next>
+	</ipfixCollector>
+
+	<netflowV9Converter id="2">
+		<next>3</next>
+	</netflowV9Converter>
+
+	<ipfixQueue id="3">
+		<entries>1000</entries>
+		<next>8</next>
+	</ipfixQueue>
+	
+	<ipfixPrinter id="8">
+		<outputType>tree</outputType>
+		<!--<filename>output.txt</filename>-->
+	</ipfixPrinter>
+</ipfixConfig>

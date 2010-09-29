@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -63,6 +63,7 @@ class InstanceManager : public Sensor
 
 		virtual ~InstanceManager()
 		{
+            SensorManager::getInstance().removeSensor(this);
 #if defined(DEBUG)
 			if (!usedInstances.empty()) {
 				DPRINTF("freeing instance manager, although there are still %d used instances", usedInstances.size());
@@ -85,6 +86,7 @@ class InstanceManager : public Sensor
 		inline T* getNewInstance()
 		{
 			T* instance;
+#if !defined(IM_DISABLE)
 			mutex.lock();
 
 			if (freeInstances.empty()) {
@@ -104,6 +106,10 @@ class InstanceManager : public Sensor
 
 			instance->referenceCount++;
 			mutex.unlock();
+#else // IM_DISABLE
+			instance = new T(this);
+			instance->referenceCount++;
+#endif // IM_DISABLE
 
 			return instance;
 		}
@@ -115,6 +121,7 @@ class InstanceManager : public Sensor
 #endif
 			instance->referenceCount += count;
 #if defined(DEBUG)
+#if !defined(IM_DISABLE)
 			// the referenceCount MUST NEVER be zero and still be used by some code
 			if (instance->referenceCount-count == 0) {
 				THROWEXCEPTION("instance reference counter was zero and was still used");
@@ -123,8 +130,9 @@ class InstanceManager : public Sensor
 			if (find(usedInstances.begin(), usedInstances.end(), instance) == usedInstances.end()) {
 				THROWEXCEPTION("instance (0x%08X) is not managed by InstanceManager", (void*)instance);
 			}
+#endif // IM_DISABLE
 			mutex.unlock();
-#endif
+#endif // DEBUG
 		}
 
 		inline void removeReference(T* instance)
@@ -132,6 +140,7 @@ class InstanceManager : public Sensor
 			instance->referenceCount--;
 
 			if (instance->referenceCount == 0) {
+#if !defined(IM_DISABLE)
 				mutex.lock();
 				freeInstances.push(instance);
 #if defined(DEBUG)
@@ -143,8 +152,13 @@ class InstanceManager : public Sensor
 				usedInstances.erase(iter);
 #endif
 				mutex.unlock();
+#else // IM_DISABLE
+				DPRINTF("removing used instance 0x%08X", (void*)instance);
+				instance->deletedByManager = true;
+				delete instance;
+#endif // IM_DISABLE
 			}
-#if defined(DEBUG)
+#if defined(DEBUG) && !defined(IM_DISABLE)
 			if (instance->referenceCount < 0) {
 				THROWEXCEPTION("referenceCount of instance is < 0");
 			}

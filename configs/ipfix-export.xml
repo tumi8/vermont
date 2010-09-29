@@ -23,7 +23,7 @@
 				<ieName>destinationIPv4Address</ieName>
 			</flowKey>
 			<flowKey>
-				<ieName>icmpTypeCode</ieName>
+				<ieName>icmpTypeCodeIPv4</ieName>
 			</flowKey>
 			<flowKey>
 				<ieName>protocolIdentifier</ieName>
@@ -125,6 +125,7 @@
 		<collector>
 			<ipAddress>127.0.0.1</ipAddress>
 			<transportProtocol>132</transportProtocol>
+			<port>1500</port>
 		</collector>
 	</ipfixExporter>
 </ipfixConfig>

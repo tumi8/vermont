@@ -40,22 +40,22 @@ class TemplateBuffer {
 		 * Represents a single Buffered Template
 		 */
 		struct BufferedTemplate {
+			friend class TemplateBuffer;
 			boost::shared_ptr<IpfixRecord::SourceID>	sourceID; /**< source identifier of exporter that sent this template */
-			TemplateID	templateID; /**< template# this template defines */
+			boost::shared_ptr<TemplateInfo> templateInfo;
 			uint16_t	recordLength; /**< length of one Data Record that will be transferred in Data Sets. Variable-length carry -1 */
-			TemplateID	setID; /**< should be 2,3,4 and determines the type of pointer used in the unions */
 			time_t		expires; /**< Timestamp when this Template will expire or 0 if it will never expire */
-			boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo;
-			boost::shared_ptr<IpfixRecord::OptionsTemplateInfo> optionsTemplateInfo;
-			boost::shared_ptr<IpfixRecord::DataTemplateInfo> dataTemplateInfo;
 			TemplateBuffer::BufferedTemplate*	next; /**< Pointer to next buffered Template */
+			bool isExpired();
+			private:
+			void onPreDestroy(IpfixParser* ipfixParser);
 		};
 
 		TemplateBuffer(IpfixParser* parentIpfixParser);
 		~TemplateBuffer();
 
-		TemplateBuffer::BufferedTemplate* getBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId);
-		void destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateID templateId, bool all = false); 
+		TemplateBuffer::BufferedTemplate* getBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::TemplateId templateId);
+		void destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::TemplateId templateId, bool all = false); 
 			// templateId=2,3,4 means that all Templates, Option Templates, or Data Templates of given sourceID are destroyed
 			// all=true overrides templateId parameter, so all Templates of given sourceID will be deleted		
 		void bufferTemplate(TemplateBuffer::BufferedTemplate* bt);
@@ -64,6 +64,8 @@ class TemplateBuffer {
 	protected:
 		TemplateBuffer::BufferedTemplate* head; /**< Start of BufferedTemplate chain */
 		IpfixParser* ipfixParser; /**< Pointer to the ipfixParser which instantiated this TemplateBuffer */
+	private:
+		void cleanUpExpiredTemplates();
 };
 
 #endif

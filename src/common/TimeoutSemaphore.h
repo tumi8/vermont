@@ -79,7 +79,7 @@ public:
 			if (retval != 0) {
 				switch (errno) {
 					case EINVAL:
-						THROWEXCEPTION("semaphore is invalid");
+						THROWEXCEPTION("semaphore or timeout values are invalid");
 						return false;
 						break;
 					default:
@@ -91,25 +91,30 @@ public:
 		} else {
 		    // wait and check the exitFlag regularly
 		    do {
+				if (timeout.tv_nsec >= 1000000000) {
+					msg(MSG_FATAL, "You have just seen a bug. in TimeoutSemarphore:wait(): timeout.tv_nsec is too big: %lu. Please fix this! I will perform some sanatation, but this does not fix the real error!", timeout.tv_nsec);
+					timeout.tv_nsec = 999999999;
+				}
 				retval = sem_timedwait(sem, &timeout);
 				if (retval != 0 && errno != ETIMEDOUT) {
+					DPRINTFL(MSG_VDEBUG, "timedwait (>=0) returned with %d: %s", errno, strerror(errno));
 					switch (errno) {
 						case EINVAL:
-						/*char text[1000];
-						 char tmp[10];
-						 strcpy(text, "last_sem: ");
-						 for (unsigned int i=0; i<sizeof(sem_t); i++) {
-						 sprintf(tmp, "%hhX", ((char*)&sem)[i]);
-						 strcat(text, tmp);
-						 }
-						 strcat(text, ", sem: ");
-						 for (unsigned int i=0; i<sizeof(sem_t); i++) {
-						 sprintf(tmp, "%hhX", ((char*)&last_sem)[i]);
-						 strcat(text, tmp);
-						 }
-						 
-						 msg(THROWEXCEPTION, text);*/
-						THROWEXCEPTION("semaphore is invalid");
+						/*
+							char text[1000];
+							char tmp[10];
+							strcpy(text, "last_sem: ");
+							for (unsigned int i=0; i<sizeof(sem_t); i++) {
+								sprintf(tmp, "%hhX", ((char*)&sem)[i]);
+								strcat(text, tmp);
+							}
+							strcat(text, ", sem: ");
+							for (unsigned int i=0; i<sizeof(sem_t); i++) {
+								sprintf(tmp, "%hhX", ((char*)&last_sem)[i]);
+								strcat(text, tmp);
+							}
+						*/						 
+						THROWEXCEPTION("semaphore or timeout is invalid: %s", strerror(errno));
 						return false;
 						break;
 						default:

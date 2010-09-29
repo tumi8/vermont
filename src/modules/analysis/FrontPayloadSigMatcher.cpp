@@ -47,8 +47,7 @@ void FrontPayloadSigMatcher::matchConnection(Connection* conn)
 
 	for (int32_t j=0; j<sigmatcher->numOfClasses; j++) {
 		if (results[j]==1) {
-			msg(MSG_DIALOG, "SIGMATCHER: matched record on class '%s' in token %u",
-					sigmatcher->signatures[j]->id, j);
+			msg(MSG_DIALOG, "SIGMATCHER: front payload matches signature '%s'", sigmatcher->signatures[j]->id);
 			msg(MSG_DIALOG, "%s", conn->toString().c_str());
 		}
 	}
@@ -56,19 +55,17 @@ void FrontPayloadSigMatcher::matchConnection(Connection* conn)
 	free(results);
 }
 
-void FrontPayloadSigMatcher::onDataDataRecord(IpfixDataDataRecord* record)
-{
-	Connection conn(record);
-	conn.swapIfNeeded();
-
-	matchConnection(&conn);
-
-	record->removeReference();
-}
-
 void FrontPayloadSigMatcher::onDataRecord(IpfixDataRecord* record)
 {
-	Connection conn(reinterpret_cast<IpfixDataDataRecord*>(record));
+	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
+	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
+	Connection conn(record);
 	conn.swapIfNeeded();
 
 	matchConnection(&conn);

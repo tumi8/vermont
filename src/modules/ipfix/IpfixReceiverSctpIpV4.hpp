@@ -30,11 +30,15 @@
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
 
-//Maximum number of simultanious connections
-#define SCTP_MAX_CONNECTIONS 5
+// Quote from man page: "maximum length to which the queue of pending connections
+// for sockfd may grow. If a connection request arrives when the queue is
+// full, the client may receive an error with an indication of ECONNREFUSED
+// or, if the underlying protocol supports retransmission, the request may
+// be ignored so that a later reattempt at connection succeeds."
+#define SCTP_MAX_BACKLOG 5
 
 
-class IpfixReceiverSctpIpV4 : public IpfixReceiver {
+class IpfixReceiverSctpIpV4 : public IpfixReceiver, Sensor {
 #ifdef SUPPORT_SCTP
 	public:
 		IpfixReceiverSctpIpV4(int port, std::string ipAddr = "");

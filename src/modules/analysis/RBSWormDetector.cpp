@@ -34,7 +34,7 @@ const char* RBSWormDetector::PAR_TOTALTIME = "TOTALTIME";
 const char* RBSWormDetector::PAR_HOSTS = "HOSTS"; 
 
 
-InstanceManager<IDMEFMessage> RBSWormDetector::idmefManager("IDMEFMessage");
+InstanceManager<IDMEFMessage> RBSWormDetector::idmefManager("RBSWormIDMEFMessage", 0);
 
 /**
  * attention: parameter idmefexporter must be free'd by the creating instance, TRWPortWormDetector
@@ -95,8 +95,16 @@ RBSWormDetector::~RBSWormDetector()
 	delete[] rbsEntries;
 }
 
-void RBSWormDetector::onDataDataRecord(IpfixDataDataRecord* record)
+void RBSWormDetector::onDataRecord(IpfixDataRecord* record)
 {
+	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
+	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 

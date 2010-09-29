@@ -23,8 +23,11 @@
 #include "common/Time.h"
 #include "Connection.h"
 
-#include <sys/sysinfo.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/sysinfo.h>
 #include <netdb.h>
 
 
@@ -141,9 +144,9 @@ void IpfixNetflowExporter::sendPacket()
 		for (uint32_t i=0; i<NF5_MAXRECORDS; i++) packet.record[i].init();
 		uint32_t count = 0;
 		while (count<NF5_MAXRECORDS && !recordCache.empty()) {
-			IpfixRecord* record = recordCache.front();
+			IpfixDataRecord* record = recordCache.front();
 			recordCache.pop();
-			Connection c(reinterpret_cast<IpfixDataDataRecord*>(record));
+			Connection c(record);
 			NetflowV5DataRecord* r = &packet.record[count];
 			r->srcaddr = c.srcIP;
 			r->dstaddr = c.dstIP;
@@ -203,7 +206,7 @@ void IpfixNetflowExporter::sendRecords(bool forcesend)
  * Put new Data Record in outbound exporter queue
  * @param rec Data Data Record
  */
-void IpfixNetflowExporter::onDataDataRecord(IpfixDataDataRecord* record)
+void IpfixNetflowExporter::onDataRecord(IpfixDataRecord* record)
 {
 	registerTimeout();
 	recordCache.push(record);

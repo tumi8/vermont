@@ -54,6 +54,11 @@ public:
 		// the packets in an own thread; for now, I think this is not needed
 		process(packet);
 	}
+	virtual void sendQueueRunningNotification() {
+		for (size_t i = 0; i < size; i++) {
+			destinations[i]->notifyQueueRunning();
+		}
+	}
 
 private:
 	inline void process(T packet)

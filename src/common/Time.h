@@ -8,6 +8,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <stdint.h>
+#include "common/ipfixlolib/encoding.h"
 
 /* Subtract the `struct timeval' values X and Y,
    storing the result in RESULT.
@@ -42,15 +43,14 @@ inline int timeval_subtract(struct timeval* result, struct timeval* x, struct ti
 inline void addToCurTime(struct timespec* ts, long timediff_ms)
 {
 	struct timeval tv;
-	// calculate absolute time from timeout
 	gettimeofday(&tv, 0);
-	// add timeout value to the current time
-	// if no timeout is given, use standard timeout, as we need to check the exitFlag regularly
-	tv.tv_usec += timediff_ms * 1000L;
-	if (tv.tv_usec >= 1000000L)
-	{
-		tv.tv_sec += (tv.tv_usec/1000000L);
-		tv.tv_usec %= 1000000L;
+
+	tv.tv_sec += timediff_ms/1000;
+	tv.tv_usec += (timediff_ms%1000)*1000;
+
+	if (tv.tv_usec>=1000000) {
+		tv.tv_sec++;
+		tv.tv_usec -= 1000000;
 	}
 	ts->tv_sec = tv.tv_sec;
 	ts->tv_nsec = tv.tv_usec * 1000L;
@@ -225,6 +225,16 @@ inline uint32_t ntp32_substract (uint32_t x, uint32_t y)
 	return ((x) > (y)) ? ((x) - (y)) : (((x) - (y)) + 0x7fffffff);
 }
 
+inline void convertNtp64(uint64_t ntptime, uint64_t& result)
+{
+        uint64_t hbnum = ntohll(*(uint64_t*)&ntptime);
+        if (hbnum>0) {
+                timeval t = timentp64(*((ntp64*)(&hbnum)));
+                result = (uint64_t)t.tv_sec*1000+(uint64_t)t.tv_usec/1000;
+        } else {
+                result = 0;
+        }
+}
 
 
 #endif

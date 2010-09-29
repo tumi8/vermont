@@ -21,32 +21,40 @@ public:
 	virtual ~Module();
 	
 	/**
-	 * is called before module receives input from other modules
-	 * e.g. used to start threads
+	 * called by ConfigManager to start the module and to restart the module after reconfiguration
+	 * performStart() is called if the module is not running
+	 * postReconfiguration() is called if module is running and if fail_if_already_running==false
+	 * @param fail_if_already_running if true, throws exception if module is already running 
 	 */
 	void start(bool fail_if_already_running = true);
-		
-	/**
-	 * notifies the module about immediate shutdown
-	 */
-	void notifyShutdown(bool shutdownProperly);
 	
 	/**
-	 * shuts down the module
+	 * called by ConfigManager or preceding module is shutdown the module
+	 * notifyShutdown(shutdownProperly) and performShutdown() are called if module is running 
 	 * function only returns when module is shut down!
+	 * @param fail_if_already_running if true, throws exception if module is not running 
 	 */
 	void shutdown(bool fail_if_not_running = true, bool shutdownProperly = false);
-	
+		
 	/**
-	 * is called when reconfiguration of vermont is complete
-	 * may be overwritten by subclasses
+	 * called during reconfiguration immediately before module is disconnected from successive modules,
+	 * modules preceding the module are already disconnected
+	 * NOTE: This method is called on all modules in the graph, independently of
+	 * whether the parameterization of the module will remain unchanged in the new
+	 * configuration.
+	 * ATTENTION: there MAY be another element still be processed in the module,
+	 * that means the module programmer MUST pay attention to deadlocks
 	 */
-	virtual void postReconfiguration() { /* override this in the modules you need */ }
-	
+	virtual void preReconfiguration() { /* override this in the modules you need */ }
+
 	/**
-	 * called to inform the module that now we are doing a reconfiguration 
+	 * called during reconfiguration after module is disconnected from successive modules and 
+	 * before calling onReconfiguration2()
 	 * Could be used to invalidate some local stuff which will get invalid after
-	 * the reconfiguration (e.g. the templates)
+	 * the reconfiguration (e.g. the templates).
+	 * NOTE: This method is called on all modules in the graph, independently of
+	 * whether the parameterization of the module will remain unchanged in the new
+	 * configuration.
 	 * is called *after* modules were disconnected
 	 * 
 	 * May be overwritten by subclasses 
@@ -54,22 +62,19 @@ public:
 	virtual void onReconfiguration1() { /* override this in the modules you need */ }
 	
 	/**
-	 * called after ALL modules were informed on the reconfiguration, so
-	 * they could to some local cleanup.
-	 * is called directly after all modules have processed onReconfiguration1
+	 * called after onReconfiguration1() was called on all modules
+	 * NOTE: This method is called on all modules in the graph, independently of
+	 * whether the parameterization of the module will remain unchanged in the new
+	 * configuration.
+	 *
+	 * TODO: The two-step approach of onReconfiguration1 and onReconfiguration2 was used 
+	 * to destroy Templates via destroyed flag in TemplateInfo. Since this flag was removed,
+	 * we could probably do with a single onReconfiguration() method instead. 
 	 *
 	 * May be overwritten by subclasses
 	 */
 	virtual void onReconfiguration2() { /* override this in the modules you need */ }	
 	
-	/**
-	 * called immediately before module is disconnected from successing modules,
-	 * modules preceding the module are already disconnected
-	 * ATTENTION: there MAY be another element still be processed in the module,
-	 * that means the module programmer MUST pay attention to deadlocks
-	 */
-	virtual void preReconfiguration() { /* override this in the modules you need */ }
-
 	/**
 	 * notifies Vermont to be shut down immediately
 	 */
@@ -78,10 +83,27 @@ public:
 
 protected:
 	/**
-	 * is called when module is started
-	 * may be overwritten by subclasses
+	 * called in shutdown() before just before performShutdown() 
+	 * sets exitFlag=true and the shutdownProperly flag to inform threads in module about shutdown
+	 */
+	void notifyShutdown(bool shutdownProperly);
+	
+	/**
+	 * is called when the module is started and before module receives input from other modules
+	 * can be used to start threads etc.
+	 *
+	 * May be overwritten by subclasses
 	 */
 	virtual void performStart()	{ }
+	
+	/**
+	 * is called after the reconfiguration of the module is complete under the condition
+	 * that the module already existed in the preceding configuration.
+	 * As the module already existed in the preceding configuration, it may
+	 * now do some reinitialization work, such as resending templates.
+	 * may be overwritten by subclasses
+	 */
+	virtual void postReconfiguration() { /* override this in the modules you need */ }
 	
 	/**
 	 * is called when module is shutdown, function may assume that all preceding modules are already

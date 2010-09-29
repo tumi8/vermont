@@ -1,0 +1,77 @@
+<ipfixConfig>
+	<sensorManager id="99">
+		<checkinterval>2</checkinterval>
+	</sensorManager>
+	<observer id="1">
+		<filename>../sample_data/sample1.cap</filename>
+		<pcap_filter>ip</pcap_filter>
+		<!-- offlineSpeed>-1</offlineSpeed -->
+		<next>2</next>
+	</observer>
+	
+	<packetQueue id="2">
+		<maxSize>10</maxSize>
+		<next>6</next>
+	</packetQueue>
+	
+	<packetAggregator id="6">
+		<rule>
+			<templateId>998</templateId>
+			<flowKey>
+				<ieName>sourceIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>protocolIdentifier</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>sourceTransportPort</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationTransportPort</ieName>
+			</flowKey>
+			<nonFlowKey>
+				<ieName>flowStartMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>flowEndMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>octetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>packetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>tcpControlBits</ieName>
+			</nonFlowKey>
+		</rule>
+		<expiration>
+			<inactiveTimeout unit="sec">1</inactiveTimeout>
+			<activeTimeout unit="sec">1</activeTimeout>
+		</expiration>
+		<pollInterval unit="msec">1000</pollInterval>
+		<next>7</next>
+	</packetAggregator>
+	
+	<ipfixQueue id="7">
+		<entries>1</entries>
+		<next>8</next>
+	</ipfixQueue>
+	
+        <ipfixExporter id="8">
+		<cert>configs/example_certs/exporter_cert.pem</cert>
+		<key>configs/example_certs/exporter_key.pem</key>
+		<CAfile>configs/example_certs/vermontCA.pem</CAfile>
+		<CApath>/etc/ssl/certs</CApath>
+		<dtlsMaxConnectionLifetime unit="sec">3600</dtlsMaxConnectionLifetime>
+		<collector>
+			<ipAddress>127.0.0.1</ipAddress>
+			<transportProtocol>DTLS_OVER_SCTP</transportProtocol>
+			<peerFqdn>collector.example.com</peerFqdn>
+			<mtu>60000</mtu>
+		</collector>
+	</ipfixExporter>
+</ipfixConfig>

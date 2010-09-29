@@ -30,7 +30,7 @@ const char* TRWPortscanDetector::PAR_SUCC_CONNS = "SUCC_CONNS";
 const char* TRWPortscanDetector::PAR_FAILED_CONNS = "FAILED_CONNS";
 
 
-InstanceManager<IDMEFMessage> TRWPortscanDetector::idmefManager("IDMEFMessage");
+InstanceManager<IDMEFMessage> TRWPortscanDetector::idmefManager("TRWPortscanIDMEFMessage", 0);
 
 /**
  * attention: parameter idmefexporter must be free'd by the creating instance, TRWPortscanDetector
@@ -71,8 +71,16 @@ TRWPortscanDetector::~TRWPortscanDetector()
 	delete[] trwEntries;
 }
 
-void TRWPortscanDetector::onDataDataRecord(IpfixDataDataRecord* record)
+void TRWPortscanDetector::onDataRecord(IpfixDataRecord* record)
 {
+	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
+	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 	

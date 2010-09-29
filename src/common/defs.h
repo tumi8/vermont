@@ -68,6 +68,14 @@
 #define IS_DEFAULT_SCTP_DATALIFETIME 10000
 
 /**
+ * defines amount of seconds, before a new DTLS connection setup is
+ * initiated to replace the existing DTLS connection. This mechanism
+ * aims to overcome the dead peer problem.
+ * 
+ */
+#define IS_DEFAULT_DTLS_CONNECTIONLIFETIME 3600
+
+/**
  * defines interval in seconds, how often IpfixExporter tries to reestablish a
  * lost SCTP connection
  */
@@ -89,6 +97,34 @@
 #define HT_DEFAULT_BITSIZE 17
 
 /**
+ * defines maximum window size of TCP connections (used in PacketHashtable for tracking
+ * number of transferred bytes)
+ */
+#define HT_MAX_TCP_WINDOW_SIZE (1<<26)
+
+
+/**
+ * defines interval in milliseconds, how often DelayedDeleter is called
+ * 10 * 1000ms = 10s
+ */
+#define DELETER_PERIOD 10000
+
+
+/**
+ * After a module is put on the deleter list, we will wait at least
+ * 20 seconds, before we destroy it
+ */
+#define DELETER_DELAY 20
+
+
+/**
+ * Defines in milliseconds, how often a connection queue polls the status of vermont
+ * this is the maximum time a queue needs to be shut down
+ */
+#define CQ_POLL_INTERVAL 1000
+
+
+/**
  * defines in milliseconds, how long flow records may be cached in IpfixNetflowExporter
  * until they are sent to the network
  */
@@ -106,6 +142,11 @@
  */
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+
+/**
+ * disable alignment in structure
+ */
+#define DISABLE_ALIGNMENT __attribute__((packed));
 
 
 #endif /*DEFS_H*/

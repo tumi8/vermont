@@ -1,6 +1,7 @@
 /*
  * IPFIX Concentrator Module Library
  * Copyright (C) 2004 Christoph Sommer <http://www.deltadevelopment.de/users/christoph/ipfix/>
+ *               2009 Gerhard Muenz
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -21,15 +22,13 @@
 #ifndef INCLUDED_IpfixParser_hpp
 #define INCLUDED_IpfixParser_hpp
 
-#define NetflowV9_SetId_Template  0
-
 #include "IpfixReceiver.hpp"
 #include "IpfixRecordSender.h"
 
-#include <list>
 #include <pthread.h>
 #include <stdint.h>
 #include <boost/smart_ptr.hpp>
+#include <map>
 
 
 class TemplateBuffer;
@@ -43,7 +42,7 @@ class TemplateBuffer;
  * (see the @c setTemplateCallback() and @c setDataRecordCallback() function groups).
  *
  * The Collector module supports higher-level modules by providing field types and offsets along 
- * with the raw data block of individual messages passed via the callback functions (see @c IpfixRecord::TemplateInfo)
+ * with the raw data block of individual messages passed via the callback functions (see @c TemplateInfo)
  */
 class IpfixParser : public IpfixPacketProcessor, public Sensor 
 {
@@ -56,10 +55,14 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		
 		virtual void performStart();
 		virtual void performShutdown();
+		virtual void preReconfiguration();
 		virtual void onReconfiguration1();
 		virtual void postReconfiguration();
 
-		void setTemplateLivetime(uint16_t time);
+		void setTemplateLifetime(uint16_t time)
+		{
+			templateLifetime = time;
+		}
 
 	protected:
 		/**
@@ -82,7 +85,7 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		typedef struct {
 			uint16_t version; /**< Expected to be 0x0009 */
 			uint16_t setCount;
-			uint32_t uptime;
+			uint32_t upTime;
 			uint32_t exportTime;
 			uint32_t sequenceNo;
 			uint32_t observationDomainId;
@@ -135,14 +138,14 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		friend class TemplateBuffer;
 		TemplateBuffer* templateBuffer; /**< TemplateBuffer* structure */
 
-		uint16_t templateLivetime;
+		uint16_t templateLifetime;
 
 		pthread_mutex_t mutex; /**< Used to give only one IpfixReceiver access to the IpfixPacketProcessor */
 
 		uint32_t processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
-		void processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
-		void processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
-		void processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
+		uint32_t processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
+		uint32_t processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
+		uint32_t processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		int processNetflowV9Packet(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 		int processIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 		
@@ -150,23 +153,40 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 
 
 	private:
-		uint32_t statTotalDataRecords; /**< amount of data records processed by parser */
-		uint32_t statTotalDRPackets; /**< amount of UDP packets containing data records processed by parser */
+		uint64_t statTotalDataRecords; /**< number of data records processed by parser */
+		uint64_t statTotalTemplateRecords; /**< number of template records processed by parser */
+		uint64_t statTotalMessages; /**< number of IPFIX/Netflow messages successfully processed by parser */
 		IpfixRecordSender* ipfixRecordSender;
 		
 		static InstanceManager<IpfixTemplateRecord> templateRecordIM;
-		static InstanceManager<IpfixOptionsTemplateRecord> optionsTemplateRecordIM;
-		static InstanceManager<IpfixDataTemplateRecord> dataTemplateRecordIM;		
 		static InstanceManager<IpfixDataRecord> dataRecordIM;
-		static InstanceManager<IpfixOptionsRecord> optionsRecordIM;
-		static InstanceManager<IpfixDataDataRecord> dataDataRecordIM;
 		static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
-		static InstanceManager<IpfixOptionsTemplateDestructionRecord> optionsTemplateDestructionRecordIM;
-		static InstanceManager<IpfixDataTemplateDestructionRecord> dataTemplateDestructionRecordIM;
 		
 		void resendBufferedTemplates();
-		void setTemplateDestroyed(bool destroyed);
+		void withdrawBufferedTemplates();
 
+		// TODO: extend Sequence Number check for 
+		//       - reorder out-of-order packets
+		//       - SCTP (therefore, we need to consider the SCTP stream id)
+		//       - expire this information? 
+		//         at the moment, it is stored forever, even if exporter has died (which we cannot detect)
+		struct SNInfo {
+			SNInfo() : expectedSN(0), 
+				receivedMessages(0), receivedDataRecords(0), receivedTemplateRecords(0),
+				outOfOrderMessages(0), lostMessages(0), lostDataRecords(0) {}
+
+			uint32_t expectedSN;
+			uint32_t receivedMessages;
+			uint32_t receivedDataRecords;
+			uint32_t receivedTemplateRecords;
+			uint32_t outOfOrderMessages;
+			// Used in case of NetflowV9:
+			uint32_t lostMessages;
+			// Used in case of IPFIX:
+			uint32_t lostDataRecords;
+		};
+		
+		std::map<IpfixRecord::SourceID, SNInfo> snInfoMap;
 };
 
 #endif

@@ -32,7 +32,7 @@
 #define MAX_PACKET_LIFETIME 400
 
 class PSAMPExporterModule
-	: public Module, public Source<Packet*>, public Destination<Packet*>, public Notifiable
+	: public Module, public Source<NullEmitable*>, public Destination<Packet*>, public Notifiable
 {
 public:
         PSAMPExporterModule(Template *tmpl, uint32_t observationDomainId);
@@ -65,7 +65,7 @@ public:
                 return true;
 	}
 
-        bool addCollector(const char *address, unsigned short port, ipfix_transport_protocol protocol);
+        bool addCollector(const char *address, uint16_t port, ipfix_transport_protocol protocol);
 
 private:
 
@@ -96,9 +96,6 @@ private:
         // these packets need to be release()'d after we send the current IPFIX packet
         int numPacketsToRelease;
         Packet *packetsToRelease[MAX_PACKETS];
-
-	int numMetaFieldsToRelease;
-	void *metaFieldsToRelease[MAX_PACKETS*10];
 
         // put this many packets into one big IPFIX packet
 	int ipfix_maxrecords;

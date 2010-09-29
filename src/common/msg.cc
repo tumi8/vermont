@@ -24,6 +24,11 @@
 extern "C" {
 #endif
 
+	/* the maximum number of functions that will be called by the message logger thread */
+	const int MAX_LOG_FUNCTIONS = 256;
+
+	/** Maximum length of exception strings */
+	const int EXCEPTION_MAXLEN = 1024;
 
 	static int msg_level=MSG_ERROR;
 	static const char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "INFO   ", "DEBUG  ", "VDEBUG ", 0};
@@ -90,7 +95,7 @@ extern "C" {
 			// we must lock via mutex, else logging outputs are mixed when several
 			// threads log simultaneously
 			int retval = pthread_mutex_lock(&msg_mutex);
-			if (retval != 0) DPRINTF("msg: pthread_mutex_lock returned error code %d", retval);
+			if (retval != 0) printf("!!! msg: pthread_mutex_lock returned error code %d\n", retval);
 			struct timeval tv;
 			gettimeofday(&tv, 0);
 			struct tm* tform = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
@@ -113,8 +118,10 @@ extern "C" {
 			// Gerhard: message level is more important than Milliseconds (at least to me)
 			printf("%02d/%02d %02d:%02d:%02d %6s", tform->tm_mday, tform->tm_mon +1, tform->tm_hour, tform->tm_min, tform->tm_sec, MSG_TAB[level]);
 #endif
-
-			vprintf(fmt, *args);
+			// need helper variable here because va_list parameter of vprintf is undefined after function call
+			va_list my_args;
+			va_copy(my_args, *args);
+			vprintf(fmt, my_args);
 			printf("\n");
 
 			if (logtext != NULL) {
@@ -126,7 +133,7 @@ extern "C" {
 				vsnprintf(logtext, EXCEPTION_MAXLEN-strlen(logtext), fmt, *args);
 			}
 			retval = pthread_mutex_unlock(&msg_mutex);
-			if (retval != 0) DPRINTF("msg: pthread_mutex_unlock returned error code %d", retval);
+			if (retval != 0) printf("!!! msg: pthread_mutex_unlock returned error code %d\n", retval);
 		}
 	}
 

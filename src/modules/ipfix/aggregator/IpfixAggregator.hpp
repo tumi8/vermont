@@ -21,7 +21,7 @@
 #ifndef AGGREGATOR_H
 #define AGGREGATOR_H
 
-#include "modules/ipfix/IpfixParser.hpp"
+#include "modules/ipfix/IpfixRecord.hpp"
 #include "Rules.hpp"
 #include "BaseAggregator.h"
 #include "modules/ipfix/IpfixRecordDestination.h"
@@ -41,7 +41,6 @@ public:
 	virtual ~IpfixAggregator();
 
 	virtual void onDataRecord(IpfixDataRecord* record);
-	virtual void onDataDataRecord(IpfixDataDataRecord* record);
 
 protected:
 	BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, 

@@ -21,7 +21,6 @@
 #include "IpfixReceiverUdpIpV4.hpp"
 
 #include "IpfixPacketProcessor.hpp"
-#include "IpfixParser.hpp"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/msg.h"
 
@@ -53,7 +52,9 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
 
 	listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
 	if(listen_socket < 0) {
+		/* ASK: error should be written to log file */
 		perror("Could not create socket");
+		/* ASK: Why not throw? printf format */
 		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed");
 	}
 	
@@ -62,6 +63,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
 	if(ipAddr == "")
 		serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 	else
+		/* ASK: check return value. inet_addr() is obsolete. inet_aton should be used. */
 		serverAddress.sin_addr.s_addr = inet_addr(ipAddr.c_str());
 	
 	serverAddress.sin_family = AF_INET;
@@ -85,6 +87,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
  */
 IpfixReceiverUdpIpV4::~IpfixReceiverUdpIpV4() {
 	close(listen_socket);
+	SensorManager::getInstance().removeSensor(this);
 }
 
 
@@ -127,7 +130,6 @@ void IpfixReceiverUdpIpV4::run() {
 		}
 
 		boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
-		boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
 
 		ret = recvfrom(listen_socket, data.get(), MAX_MSG_LEN,
 			     0, (struct sockaddr*)&clientAddress, &clientAddressLen);
@@ -139,6 +141,7 @@ void IpfixReceiverUdpIpV4::run() {
 		if (isHostAuthorized(&clientAddress.sin_addr, sizeof(clientAddress.sin_addr))) {
 			statReceivedPackets++;
 // 			uint32_t ip = clientAddress.sin_addr.s_addr;
+			boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
 			memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
 			sourceID->exporterAddress.len = 4;
 			sourceID->exporterPort = ntohs(clientAddress.sin_port);
@@ -151,7 +154,7 @@ void IpfixReceiverUdpIpV4::run() {
 			}
 			mutex.unlock();
 		} else {
-			msg(MSG_FATAL, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
+			msg(MSG_VDEBUG, "IpfixReceiverUdpIpv4: packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
 		}
 	}
 	msg(MSG_DEBUG, "IpfixReceiverUdpIpV4: Exiting");

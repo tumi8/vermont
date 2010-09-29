@@ -26,7 +26,7 @@
 #include <iostream>
 
 
-InstanceManager<IDMEFMessage> P2PDetector::idmefManager("IDMEFMessage");
+InstanceManager<IDMEFMessage> P2PDetector::idmefManager("P2PIDMEFMessage", 0);
 
 
 /**
@@ -61,8 +61,17 @@ P2PDetector::~P2PDetector()
 /**
  * Gets new Biflows from the aggregator and collects these data
  */
-void P2PDetector::onDataDataRecord(IpfixDataDataRecord* record)
+void P2PDetector::onDataRecord(IpfixDataRecord* record)
 {
+	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
+	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate) 
+		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
+		record->removeReference();
+		return;
+	}
+	
+	
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 	conn.swapIfNeeded();

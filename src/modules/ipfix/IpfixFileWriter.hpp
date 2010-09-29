@@ -25,7 +25,6 @@
 #ifndef IPFIXFILEWRITER_H
 #define IPFIXFILEWRITER_H
 
-#include "IpfixParser.hpp"
 #include "IpfixRecord.hpp"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"

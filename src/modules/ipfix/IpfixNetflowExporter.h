@@ -46,7 +46,7 @@ public:
 	void flushPacket();
 
 	// inherited from IpfixRecordDestination
-	virtual void onDataDataRecord(IpfixDataDataRecord* record);
+	virtual void onDataRecord(IpfixDataRecord* record);
 
 	virtual void onReconfiguration1();
 
@@ -123,7 +123,7 @@ private:
 	int sockfd;
 	struct sockaddr_in siDest;
 	uint16_t destPort;
-	queue<IpfixRecord*> recordCache;
+	queue<IpfixDataRecord*> recordCache;
 	timespec nextTimeout;
 	bool timeoutRegistered; /**< true if next timeout was already registered in timer */
 	bool recordsAlreadySent; /**< true if records were sent to the network as the packet was full */

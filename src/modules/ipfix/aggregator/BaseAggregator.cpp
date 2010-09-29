@@ -1,3 +1,23 @@
+/*
+ * Vermont Aggregator Subsystem
+ * Copyright (C) 2009 Vermont Project
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
+
 #include "BaseAggregator.h"
 
 #include "BaseHashtable.h"
@@ -25,6 +45,7 @@ BaseAggregator::BaseAggregator(uint32_t pollinterval)
  */
 BaseAggregator::~BaseAggregator()
 {
+	// to make sure that exitFlag is set and performShutdown() is called
 	shutdown(false);
 
 	// for a strange case a 'delete hashtable' in Rule doesn't work, because
@@ -168,7 +189,7 @@ void BaseAggregator::exporterThread()
 		}
 
 		gettimeofday(&curtime, 0);
-		msg(MSG_DEBUG,"Aggregator: starting Export");
+		msg(MSG_VDEBUG,"Aggregator: starting Export");
 		for (size_t i = 0; i < rules->count; i++) {
 			rules->rule[i]->hashtable->expireFlows();
 		}
@@ -176,7 +197,7 @@ void BaseAggregator::exporterThread()
 		gettimeofday(&endtime, 0);
 		timeval_subtract(&difftime, &endtime, &curtime);
 
-		msg (MSG_DEBUG,"Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000000+difftime.tv_sec);
+		msg (MSG_VDEBUG,"Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000000+difftime.tv_sec);
 	}
 
 	if (getShutdownProperly()) {
