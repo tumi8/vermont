@@ -3,7 +3,7 @@
 
 == FpaPcapExporter ==
 
-Expects IPFIX data records with FPA (Front Payload Aggregation) data elements. This module then creates one/two packet per flow (unidirectional/bidirectional flow) and writes the packets into a PCAP file.
+Expects IPFIX data records with FPA (Front Payload Aggregation, field IPFIX_ETYPE_frontPayload) or DPA (Dialog-based Payload Aggregation) data elements. This module then creates one/two packet per flow (unidirectional/bidirectional flow) and writes the packets into a PCAP file.
 
 Input type: IpfixRecord
 Output type: none
@@ -23,7 +23,7 @@ Output type: none
 
 == FpaPacketGenerator ==
 
-Expects IPFIX data records with FPA (Front Payload Aggregation) data elements. This module then creates one/two packet per flow (unidirectional/bidirectional flow) and forwards raw packets to the next module.
+Expects IPFIX data records with FPA (Front Payload Aggregation, field IPFIX_ETYPE_frontPayload) or DPA (Dialog-based Payload Aggregation) data elements. This module then creates one/two packet per flow (unidirectional/bidirectional flow) and forwards raw packets to the next module.
 
 Input type: IpfixRecord
 Output type: Packet
@@ -39,8 +39,7 @@ There are no parameters available!
 
 == FrontPayloadSigMatcher ==
 
-Matches flow records that contain payload (IPFIX_ETYPE_frontPayload) to rule files in specified directory, that contain signature tokens with priority and a threshold value that specifies the number of tokens to match until the whole signature matches. The module then reports matches on the command line.
-Attention: this code is alpha. The signature directory *must only* contain signature files. If other files are present, the matcher will break.
+Matches flow records containing a front payload field (IPFIX_ETYPE_frontPayload) to signature files in the specified directory. Each signature file includes the tokens (or signature substrings) the payload is searched for. Each token is associated with a support value. The support values of all matching tokens are summed up and the result is compared against a threshold. The module reports a matching signature if the sum of the support values is equal or larger than the threshold.
 
 Input type: IpfixRecord
 Output type: none
@@ -55,29 +54,28 @@ Parameters:
 |  **Element name**  |  **Default value**  |  **Description**  |
 |signaturedir |  none  |Directory that contains signature rule files. |
 
-**Example signature file**
+**Example signature file matching FTP traffic**
 <code>
-#Signature of the pcap: f5fb928cef4a24a5a18ddb305b1d2127
-#Trainingvalues: FP = 0.00000, TP = 1.00000
-#Bayes minimum Occurrence = 0.7
-
-BAYESSIGNATURE
 SIGNATUREID
-f5fb928cef4a24a5a18ddb305b1d2127
-CLASSMEMBERS
-f5fb928cef4a24a5a18ddb305b1d2127
+FTP
 TOKEN
-220 ProFTPD 1.2.9 Server (ProFTPD) [1.1.63]%0d%0a331 Password required for asaasa510.%0d%0a230 User asaasa510 logged in.%0d%0a200 Type set to I%0d%0a215 UNIX Type: L8%0d%0a500 Illegal PORT command%0d%0a
+FTP
 SUPPORT
 0.50000
 TOKEN
-SER asaasa510%0d%0aPASS 3330881%0d%0aTYPE I%0d%0aSYST%0d%0aPORT 10,0,
+220
 SUPPORT
 0.50000
 THRESHOLD
 1.0
 </code>
 
+**Signature file keywords:**
+|  **Keyword**  |  **The line(s) following this keyword are interpreted as...**  |  
+| SIGNATUREID | string which identifies the signature. If omitted, the name of the signature file is used as identifier. |
+| TOKEN       | signature substring to be matched. The substring may span multiple lines. Lines must not start with any keyword. |
+| SUPPORT    | decimal support value of the preceding token. |
+| THRESHOLD  | decimal threshold value of the signature. |
 
 == HostStatistics ==
 
@@ -104,7 +102,7 @@ Parameters:
 |logInterval |  10  |Interval in seconds, when statistics are exported. ATTENTION: currently not in use. |
 
 
-== IDMEFExporter ==
+== IdmefExporter ==
 
 Exports incoming IDMEF messages to the external perl script idmefsender.pl which sends it over the network to a specified URL.
 
@@ -207,33 +205,46 @@ Output type: IpfixRecord
 
 == IpfixCollector ==
 
-Receives IPFIX records from the network and imports them into Vermont. Protocols UDP and SCTP are supported at the moment.
+Receives IPFIX records from the network and imports them into Vermont.
 
-
-Input type: IdmefMessage
-Output type: none
+Input type: none
+Output type: IpfixRecord
 
 **Example configuration:**
 <code xml>
 <ipfixCollector>
+	<cert>configs/example_certs/collector_cert.pem</cert>
+	<key>configs/example_certs/collector_key.pem</key>
+	<CAfile>configs/example_certs/vermontCA.pem</CAfile>
+	<CApath>/etc/ssl/certs</CApath>
+
 	<listener>
 		<ipAddress>0.0.0.0</ipAddress>
-		<transportProtocol>UDP</transportProtocol>
-		<port>4739</port>
+		<transportProtocol>DTLS_OVER_UDP</transportProtocol>
+		<port>4740</port>
+		<peerFqdn>exporter.example.com</peerFqdn>
 	</listener>
+	<udpTemplateLifetime>300</udpTemplateLifetime>
 </ipfixCollector>
 </code>
 Parameters: 
-|  **Element name**  |  **Default value**  |  **Description**  |
-|listener |  none  |Specifies a port where to listen for IPFIX flows. |
-|ipAddress |  none  |IP address of interface on which collector receives IPFIX packets. If not given, collector receives at all interfaces. |
-|transportProtocol |  none  |Must be set to `UDP' or `SCTP'. |
-|port |  4739  |Port where Vermont listenes for incoming IPFIX flows. |
+^  Element name  ^  Default value  ^  Description  ^
+|listener |  none  |Specifies a port on which to listen on for IPFIX data. |
+|ipAddress |  none  |IP address at which collector receives IPFIX Messages. If not given, collector receives at all local addresses. |
+|transportProtocol |  none  |SCTP, UDP, DTLS_OVER_SCTP or DTLS_OVER_UDP  |
+|port |  4739 for insecure, 4740 for secure connections i.e. DTLS  |Port on which Vermont listenes for incoming IPFIX flows. |
+^UDP specific^^^
+|udpTemplateLifetime |  70  | Seconds after which templates received from UDP exporters are expired. A value of 0 means that templates never expire. |
+^DTLS specific^^^
+|cert|  (none)  |See [[vermont_module_configuration#ipfixexporter|IpfixExporter]] for details. |
+|key|  (none)  |See [[vermont_module_configuration#ipfixexporter|IpfixExporter]] for details. |
+|CAfile|  (none)  |See [[vermont_module_configuration#ipfixexporter|IpfixExporter]] for details. |
+|CApath|  (none)  |See [[vermont_module_configuration#ipfixexporter|IpfixExporter]] for details. |
+|peerFqdn|  (none)  |See [[vermont_module_configuration#ipfixexporter|IpfixExporter]] for details. |
 
 == IpfixExporter ==
 
-Exports internal IPFIX records to the network using protocol UDP or SCTP.
-
+Exports internal IPFIX records to the network. The transport protocols UDP and SCTP including their secure counterparts i.e. DTLS over UDP and DTLS over SCTP are supported. The OpenSSL library is required for DTLS. At the time of writing, DTLS over **SCTP** is only available on the FreeBSD platform. To make DTLS over SCTP work, you have to apply the patches from http://sctp.fh-muenster.de/ to OpenSSL.
 
 Input type: IpfixRecord
 Output type: none
@@ -241,30 +252,47 @@ Output type: none
 **Example configuration:**
 <code xml>
 <ipfixExporter id="7">
-	<templateRefreshInterval>10</templateRefreshInterval>
-	<maxRecordRate>5000</maxRecordRate>
-	<sctpDataLifetime unit="msec">10000</sctpDataLifetime>
-	<sctpReconnectInterval unit="sec">30</sctpReconnectInterval>
-	<collector>
-		<ipAddressType>4</ipAddressType>
-		<ipAddress>127.0.0.1</ipAddress>
-		<transportProtocol>17</transportProtocol>
-		<port>1500</port>
-	</collector>
+    <templateRefreshInterval>10</templateRefreshInterval>
+    <maxRecordRate>5000</maxRecordRate>
+    <sctpDataLifetime unit="msec">10000</sctpDataLifetime>
+    <sctpReconnectInterval unit="sec">30</sctpReconnectInterval>
+    <cert>configs/example_certs/exporter_cert.pem</cert>
+    <key>configs/example_certs/exporter_key.pem</key>
+    <CAfile>configs/example_certs/vermontCA.pem</CAfile>
+    <CApath>/etc/ssl/certs</CApath>
+    <dtlsMaxConnectionLifetime unit="sec">10</dtlsMaxConnectionLifetime>
+
+    <collector>
+        <ipAddressType>4</ipAddressType>
+        <ipAddress>127.0.0.1</ipAddress>
+        <port>1500</port>
+        <transportProtocol>DTLS_OVER_UDP</transportProtocol>
+        <peerFqdn>collector.example.com</peerFqdn>
+        <mtu>1492</mtu>
+    </collector>
 </ipfixExporter>
 </code>
-Parameters: 
-|  **Element name**  |  **Default value**  |  **Description**  |
+Parameters:
+^  Element name  ^  Default value  ^  Description  ^
 |observationDomainId |  0  |Observation Domain ID of the exporter. |
-|templateRefreshInteval |  20s  |Interval for periodic sending of templates. |
-|templateRefreshRate |  10000  |Interval for periodic sending of templates in records. |
+|templateRefreshInteval |  20s  |Interval for periodic sending of templates. Applies only to UDP. |
 |ipAddressType |  4  |Currently, only IPv4 is supported. |
-|ipAddress |  none  |IP address of the collector the packets are sent to. |
-|transportProtocol |  none  |Currently, only UDP (17) is supported. |
-|port |  4739  |Port number of the collector. |
+|ipAddress |  none  |The collector's IP address in Dot-decimal notation. Host names i.e. FQDNs are not accepted.|
+|transportProtocol |  none  |SCTP, UDP, DTLS_OVER_SCTP or DTLS_OVER_UDP |
+|port |  4739 for insecure, 4740 for secure connections i.e. DTLS  | Port number of the collector. |
 |maxRecordRate |  5000  |Maximum number of flow records per second sent to collector. |
-|sctpDataLifetime |  10000ms  |Time how long SCTP considers a packet valid and tries to retransmit it. |
-|sctpReconnectInterval |  30s  |Time that Exporter waits to reestablish a lost connection. |
+^UDP specific^^^
+|mtu |  0 (PMTU discovery)  |The Path Maximum Transmission Unit (PMTU) that should be assumed when creating IPFIX Messages. If set to 0, PMTU discovery will be used to determine a PMTU estimate. This works currently only on Linux. In case the platform does not provice comprehensive PMTU discovery support (e.g., FreeBSD), a conservative default value (1400) is used, which might lead to suboptimal performance. You should, therefore, manually set the PMTU if you are using a platform other than Linux. |
+^SCTP specific^^^
+|sctpDataLifetime |  10000ms  |Lifetime of SCTP messages carrying Data Records. SCTP's partial reliablity (i.e. PR-SCTP) policy "timed reliability" as defined in [RFC3758] is always turned on. |
+|sctpReconnectInterval |  30s  |Time that the Exporter waits before reestablishing a lost connection. |
+^DTLS specific^^^
+|cert|  (none)  |File containing the certificate chain used for authentication. Quote from [[http://www.openssl.org/docs/ssl/SSL_CTX_use_certificate.html|OpenSSL man page]]: "The certificates must be in PEM format and must be sorted starting with the subject's certificate (actual client or server certificate), followed by intermediate CA certificates if applicable, and ending at the highest level (root) CA."|
+|key|  (none)  |File containing the private key in PEM format corresponding to the certificate. If left empty, the file specified by the ''cert'' option will be searched for the private key. This allows for the private key to be stored in the same file as the certificate.|
+|CAfile|  (none)  |A file containing one or more certificates of trusted CAs. This file has to be in PEM format.|
+|CApath|  (none)  |A directory containing certificates of trusted CAs in PEM format. Quote from [[http://www.openssl.org/docs/ssl/SSL_CTX_load_verify_locations.html|OpenSSL man page]]: "The files each contain one CA certificate. The files are looked up by the CA subject name hash value, which must hence be available."|
+|peerFqdn|  (none)  |The expected Fully Qualified Domain Name (FQDN) of the Collector. If set, the Collector //must// present a certificate of which either the subject's Common Name (CN) or one of the subject alternative names matches this FQDN. There is no support for wildcard matching. For the certificate verification to work, ''CAfile'' or ''CApath'' or both must be set in order to specify the locations of the root CA certificates. If ''peerFqdn'' is not set, anonymous cipher suites will be added to the list of permissible cipher suites. The identity of the peer will not be verified then. Note, that //no// DNS queries will be performed. Technically, the FQDN specified by ''peerFqdn'' does not need to resolve to an IP address.|
+|dtlsMaxConnectionLifetime|  1 hour  |Lifetime of a DTLS over UDP connection. A new DTLS connection is initiated as soon as the lifetime is up. The old connection is replaced by the new one when the handshake is completed. This mechanism aims to overcome the dead peer problem.|
 
 == IpfixPrinter ==
 
@@ -276,14 +304,15 @@ Output type: none
 **Example configuration:**
 <code xml>
 <ipfixPrinter id="8">
-	<outputType>tree</outputType>
-	<filename>output.log</filename>
+    <outputType>tree</outputType>
+    <filename>output.log</filename>
 </ipfixPrinter>
 </code>
-Parameters: 
+Parameters:
 |  **Element name**  |  **Default value**  |  **Description**  |
 |outputType |  tree  |Determines the output format of IpfixPrinter. 'tree' constructs a tree of each incoming DataRecord with all values, 'table' constructs a table-like output format, 'line' produces one line of output per DataRecord, and 'none' does not output anything. |
-|fileName |  ''  |Sets the name of the output file. If nothing is specified (which is the default), data is printed on STDOUT. |
+|filename |  none  |Sets the name of the output file. If nothing is specified (which is the default), data is printed on STDOUT. |
+
 
 == IpfixDbReader ==
 
@@ -422,11 +451,10 @@ Output type: none
 | port |  none  | Destination port. |
 | maxRecordRate | 500 | Maximum number of data/flow records to be sent to the receiving side. Higher flow rates will block the exporter, so maybe a buffer is required in front of the module. | 
 | filenamePrefix | ipfix.dump | Basename of the generated filenames. Please note that every filename will be suffixed with a consecutive 10-digit number starting at 0. | 
- 
 
-== IpfiReceiverFile ==
+== IpfixReceiverFile ==
 
-Reads ipfix messages from data files generated with .
+Reads ipfix message from data files generated with IpfixFileWriter.
 
 Input type: none
 Output type: IpfixRecord
@@ -451,7 +479,7 @@ Output type: IpfixRecord
 | form | 0 | Suffix of the first file to read from. | 
 | to | end | Suffix of the last file to read from. If not specified, the suffix of the last file available will be used. |
 | ignoreTimestamps | true | If set to false, the ipfix messages will be processed with the same delay as they were originally recorded by IpfixFileWriter |
-| offlineSpeed | 1.0 | Sets the speed multiplier for file reading. A value <= 0 is equivalent to ignoreTimestamp=true. This value has no effect unless ignoreTimestamps is set to false. |
+| offlineSpeed | 1.0 | Sets the speed multiplier for file reading. A value %%<=%% 0 is equivalent to ignoreTimestamp=true. This value has no effect unless ignoreTimestamps is set to false. |
 
 
 == IpfixPayloadWriter ==
@@ -721,9 +749,9 @@ Output type: IpfixRecord
 |inactiveTimeout |  0  |Expiration timeout for idle/inactive flows. |
 |activeTimeout |  0  |Periodic expiration timeout for long-lasting flows (typically larger than inactiveTimeout). |
 |pollInterval |  0  |Length of interval when flows should be exported to next module. |
-|hashtableBits |  17  |Length of hashtable used for aggregation in bits. The resulting hashtable will have a size of 2^hashtableBits. |
+|hashtableBits |  17  |Length of hashtable used for aggregation in bits. The resulting hashtable will have a size of 2%%^%%{hashtableBits}. |
 
-== PacketIDMEFReporter ==
+== PacketIdmefReporter ==
 
 For each incoming packet an IDMEF message is generated. An extract of the packet payload called snapshot may be included in the IDMEF message.
 
@@ -732,12 +760,12 @@ Output type: IdmefMessage
 
 **Example configuration:**
 <code xml>
-<packetIDMEFReporter>
+<packetIdmefReporter>
 	<snapshotoffset>12</snapshotoffset>
 	<snapshotlength>20</snapshotlength>
 	<analyzerid>idmefreporter</analyzerid>
 	<idmeftemplate>idmef/templates/idmefreporter_template.xml</idmeftemplate>
-</packetIDMEFReporter>				
+</packetIdmefReporter>				
 </code>
 **Parameters:**
 |  **Element name**  |  **Default value**  |  **Description**  |
@@ -746,7 +774,7 @@ Output type: IdmefMessage
 |analyzerid |  none  |Analyzer ID that will be included in IDMEF message. |
 |idmeftemplate |  none  |Path to template file for IDMEF message. |
 
-== PCAPExporter ==
+== PcapExporter ==
 
 Exports incoming packets into a file in PCAP format.
 
@@ -755,9 +783,9 @@ Output type: none
 
 **Example configuration:**
 <code xml>
-<pcapExporterFile>
+<pcapExporter>
 	<filename>output.pcap</filename>
-</pcapExporterFile>
+</psampExporter>
 </code>
 **Parameters:**
 |  **Element name**  |  **Default value**  |  **Description**  |
@@ -766,7 +794,7 @@ Output type: none
 |snaplen |  PCAP_MAX_  |Snaplen for the pcap file |
 | |  CAPTURE_LENGTH  | |
 
-== PCAPExporterPipe ==
+== PcapExporterPipe ==
 
 Writes packets in PCAP format into a pipe, allowing another process to read these packets via STDIN.
 
@@ -795,7 +823,7 @@ Output type: none
 |snaplen |  PCAP_MAX_  |Snaplen for the pcap file |
 | |  CAPTURE_LENGTH  | |
 
-== PSAMPExporter ==
+== PsampExporter ==
 
 Exports incoming packets as PSAMP records over the network.
 
@@ -921,9 +949,10 @@ After this splitting is done, only the host part of the IP address is anonymized
 | from | none  | Subnet to be anonymized | 
 | to |  none  | Assigned Subnet ID | 
 
+
 == SensorManager ==
 
-Module which controls all sensors ("`Messfühler"') inside Vermont. It does not have any in- or output types and must not be connected to any other module. It is recommended to set its ID to 99 to express its special role. If this module is specified in the configuration, available sensors are activated and polled regularly. It may only be specified once.
+Module which controls all sensors ("`MessfÃŒhler"') inside Vermont. It does not have any in- or output types and must not be connected to any other module. It is recommended to set its ID to 99 to express its special role. If this module is specified in the configuration, available sensors are activated and polled regularly. It may only be specified once.
 
 Input type: none
 Output type: none
@@ -941,7 +970,7 @@ Output type: none
 |outputfile |  ''sensor_output.xml''  |Path to file, where sensor data is stored. |
 |append |  0  |Set to 1 if output file should be appended to, and not overwritten. |
 
-== TRWPortscanDetector ==
+== TrwPortscanDetector ==
 
 Detects horizontal portscans in incoming IPFIX flows. Attention: IPFIX flows must be aggregated to biflows. To achieve best results, flows should contain the following IEs:
 * sourceIPv4Address
@@ -986,13 +1015,14 @@ Output type: IdmefMessage
 |timeexpirescanner |  1800  |Seconds, until as portscanner classified IP addresses are purged from table. |
 |timeexpirebenign |  1800  |Seconds, until as benign classified IP addresses are purged from table. |
 |timecleanupinterval |  10  |Interval length in seconds, when IP address table is scanned for entries to be purged. |
+ 
 
 == IpfixCsExporter ==
 
 Writes IPFIX data records to a local disk using the CarmentiS file format. The module recieves Ipfix packets, caches them and writes them as a chunk to disk.
 
 Input type: IpfixRecord
-Output type: File on local drive
+Output type: none
 
 **Example configuration:**
 <code xml>
@@ -1015,3 +1045,4 @@ Output type: File on local drive
 |maxChunkBufferRecords |  none  |Maximum records per chunk. |
 |maxFileCreationInterval |  none  |Maximum time in seconds until the currently opened file will be written and a new one opened. |
 |exportMode |  none  |Sets a flag inside the exported data which privacy level the packets have. 0=plain; 1=anonymized; 2=pseudonymized |
+
