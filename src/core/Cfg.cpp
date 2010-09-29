@@ -1,6 +1,8 @@
 #include "Cfg.h"
 
 #include <cassert>
+#include <stdlib.h>
+#include <limits.h>
 
 
 /**
@@ -63,7 +65,23 @@ int CfgBase::getInt(const std::string& name, int def, XMLElement* elem)
 	std::string str;
 	try {
 		str = _get(name, elem);
-		return atoi(str.c_str());
+		int res = strtol(str.c_str(), NULL, 10);
+		if (res==LONG_MIN || res==LONG_MAX) {
+			THROWEXCEPTION("failed to read integer %s in element %s in configuration (is it too large? or invalid?)", str.c_str(), name.c_str());
+		}
+		return res;
+	} catch (IllegalEntry ie) { }
+
+	// return default value
+	return def;
+}
+
+uint32_t CfgBase::getUInt32(const std::string& name, uint32_t def, XMLElement* elem)
+{
+	std::string str;
+	try {
+		str = _get(name, elem);
+		return strtoul(str.c_str(), NULL, 10);
 	} catch (IllegalEntry ie) { }
 
 	// return default value

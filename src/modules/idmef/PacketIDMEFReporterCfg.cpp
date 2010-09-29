@@ -11,7 +11,7 @@ PacketIDMEFReporterCfg* PacketIDMEFReporterCfg::create(XMLElement* e)
 }
 
 PacketIDMEFReporterCfg::PacketIDMEFReporterCfg(XMLElement* elem)
-    : CfgHelper<PacketIDMEFReporter, PacketIDMEFReporterCfg>(elem, "packetIDMEFReporter"),
+    : CfgHelper<PacketIDMEFReporter, PacketIDMEFReporterCfg>(elem, "packetIdmefReporter"),
 	  snapshotOffset(0), snapshotLength(0)
 {
     if (!elem) return;

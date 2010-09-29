@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -28,7 +28,6 @@
 #include <assert.h>
 #include <stdlib.h>
 #include "Rules.hpp"
-#include "modules/ipfix/IpfixParser.hpp"
 #include "common/ipfixlolib/ipfix.h"
 
 #include "common/msg.h"
@@ -111,7 +110,7 @@ int parseModifier(const char* s, Rule::Field::Modifier* modifier) {
  * parses the given string
  * @return 0 if successful
  */
-int parseProtoPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length) {
+int parseProtoPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
 	int proto = -1;
 	if (strcmp(s, "ICMP") == 0) proto = IPFIX_protocolIdentifier_ICMP;
 	if (strcmp(s, "TCP") == 0) proto = IPFIX_protocolIdentifier_TCP;
@@ -119,7 +118,7 @@ int parseProtoPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo
 	if (strcmp(s, "RAW") == 0) proto = IPFIX_protocolIdentifier_RAW;
 	if (strcmp(s, "SCTP") == 0) proto = IPFIX_protocolIdentifier_SCTP;
 
-	if (proto == -1) 
+	if (proto == -1)
 	{
 		proto = atoi(s);
 		if((proto < 0) && (proto > 255)) return -1;
@@ -137,7 +136,7 @@ int parseProtoPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo
  * parses the given string
  * @return 0 if successful
  */
-int parseIPv4Pattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length) {
+int parseIPv4Pattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
 	char* p = s;
 	char* octet1 = get_next_token(&p, ".");
 	char* octet2 = get_next_token(&p, ".");
@@ -169,7 +168,7 @@ int parseIPv4Pattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo:
  * parses the given string
  * @return 0 if successful
  */
-int parsePortPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length) {
+int parsePortPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
 	char buf[256];
 
 	char* p = s;
@@ -201,9 +200,9 @@ int parsePortPattern(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo:
  * parses the given string
  * @return 0 if successful
  */
-int parseTcpFlags(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Type::Length* length) {
+int parseTcpFlags(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
 	uint8_t flags = 0;
-    
+
 	char* p = s;
 	char* pair;
 
@@ -216,7 +215,7 @@ int parseTcpFlags(char* s, IpfixRecord::Data** fdata, IpfixRecord::FieldInfo::Ty
 		else if (strcmp(pair, "URG") == 0) flags = flags | 0x20;
 		else return -1;
 	}
-	
+
 
 	*length = 1;
 	IpfixRecord::Data* fd = (IpfixRecord::Data*)malloc(*length);
@@ -290,7 +289,7 @@ Rules::Rules(char* fname) {
 		}
 
 		if (!col1 || !block) {
-			msg(MSG_ERROR, "Unparseable line in %s, l.%d", fname, lineNo);			
+			msg(MSG_ERROR, "Unparseable line in %s, l.%d", fname, lineNo);
 			continue;
 		}
 
@@ -304,12 +303,14 @@ Rules::Rules(char* fname) {
 			continue;
 		}
 
-		if ((ruleField->type.id = string2typeid(field)) == 0) {
+		const ipfix_identifier* ipfixid = ipfix_name_lookup(field);
+		if (!ipfixid) {
 			msg(MSG_ERROR, "Bad field type \"%s\" in %s, l.%d", field, fname, lineNo);
 			continue;
 		}
+		ruleField->type = InformationElement::IeInfo(ipfixid->id, ipfixid->pen);
 
-		if ((ruleField->type.length = string2typelength(field)) == 0) {
+		if (ruleField->type.length == 0) {
 			msg(MSG_ERROR, "Bad field type \"%s\" in %s, l.%d", field, fname, lineNo);
 			continue;
 		}

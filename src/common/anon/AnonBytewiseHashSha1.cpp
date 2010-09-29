@@ -34,10 +34,11 @@ void AnonBytewiseHashSha1::fillTable ()
 
 	for (unsigned short i = 0; i<256; i++) {
 		data = (unsigned char) i;
-		hashobj.anonimizeBuffer	(&data, 1);
+		bool anonymized = false;
+		hashobj.anonymizeBuffer	(&data, 1, anonymized);
 		anonbytes [i]			= data;
 
-	} // for (unsigned short i = 0; i<256; i++) 
+	} // for (unsigned short i = 0; i<256; i++)
 
 }
 

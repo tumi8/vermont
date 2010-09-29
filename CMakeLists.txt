@@ -82,7 +82,7 @@ INSTALL(DIRECTORY configs/
 
 ### doxygen
 
-FIND_PACKAGE(Doxygen REQUIRED)
+#FIND_PACKAGE(Doxygen REQUIRED)
 
 
 ### threads
@@ -151,8 +151,18 @@ OPTION(DEBUG "Enable debug code. Vermont will run significantly slower if enable
 IF (DEBUG)
 	message(STATUS "Configuring build process for debug version")
 	REMOVE_DEFINITIONS(-O3)
-	ADD_DEFINITIONS(-O0 -g -pg -Wall -DDEBUG)
-	SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "-g -pg")
+	
+	if (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+		### FreeBSDs compilers have problems if profiling is enabled and exceptions are used
+		### with 8-STABLE and 7-STABLE (as of June 21th 2010). Some exceptions will not be 
+		### caugth if -pg is given at compile time.  We therefore disable profiling for FreeBSD
+		MESSAGE(STATUS "Detected a FreeBSD system. Not including profiling support in DEBUG mode")
+		ADD_DEFINITIONS(-O0 -g -Wall -DDEBUG)
+		SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "-g")
+	ELSE (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+		ADD_DEFINITIONS(-O0 -g -pg -Wall -DDEBUG)
+		SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "-g -pg")
+	ENDIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 ELSE (DEBUG)
 	REMOVE_DEFINITIONS(-O0 -g -pg -Wall -Werror -DDEBUG)
 	ADD_DEFINITIONS(-O3)
@@ -202,16 +212,16 @@ IF (SUPPORT_MYSQL)
 		MESSAGE(FATAL_ERROR "Could not find MySQL libraries.")
 	ENDIF (NOT MYSQL_FOUND)
 ENDIF (SUPPORT_MYSQL)
-IF (MYSQL_FOUND)
+IF (MYSQL_FOUND AND SUPPORT_MYSQL)
 	MESSAGE(STATUS "Found MySQL libraries")
 	ADD_DEFINITIONS(-DDB_SUPPORT_ENABLED)
 	INCLUDE_DIRECTORIES(${MYSQL_INCLUDE_DIR})
 	TARGET_LINK_LIBRARIES(vermont
 		${MYSQL_LIBRARIES}
 	)
-ELSE (MYSQL_FOUND)
+ELSE (MYSQL_FOUND AND SUPPORT_MYSQL)
 	REMOVE_DEFINITIONS(-DDB_SUPPORT_ENABLED)
-ENDIF (MYSQL_FOUND)
+ENDIF (MYSQL_FOUND AND SUPPORT_MYSQL)
 
 ### PostgreSQL
 
@@ -243,7 +253,18 @@ MARK_AS_ADVANCED(
 	PCAP_INCLUDE_PATH
 )
 
+OPTION(USE_PFRING "Use pf_ring optimized libpcap." OFF)
+MARK_AS_ADVANCED(
+	PCAP_LIBRARY_PFRING
+	PFRING_LIBRARY
+)
+
 IF (USE_PCAPMMAP)
+
+    IF (USE_PFRING)
+        MESSAGE(FATAL_ERROR "Both USE_PCAPMMAP and USE_PFRING have been selected. At most one of these options may be selected!")
+    ENDIF (USE_PFRING)
+
     FIND_LIBRARY(PCAP_LIBRARY_MMAP NAMES pcap pcap-mmap PATHS ${VERMONT_SOURCE_DIR} ${VERMONT_SOURCE_DIR}/libpcap-mmap ${VERMONT_SOURCE_DIR}/../libpcap-mmap ${VERMONT_SOURCE_DIR}/../../../trunk/libpcap-mmap NO_DEFAULT_PATH)
 	FIND_PATH(PCAP_INCLUDE_PATH NAMES pcap.h PATHS ${VERMONT_SOURCE_DIR} ${VERMONT_SOURCE_DIR}/libpcap-mmap ${VERMONT_SOURCE_DIR}/../libpcap-mmap ${VERMONT_SOURCE_DIR}/../../../trunk/libpcap-mmap NO_DEFAULT_PATH)
     SET(PCAP_LIBRARY "${PCAP_LIBRARY_MMAP}")
@@ -253,15 +274,46 @@ IF (USE_PCAPMMAP)
     ELSE (PCAP_LIBRARY_MMAP)
         MESSAGE(FATAL_ERROR "Could not find libpcap-mmap. This script also looks in directory ./libpcap-mmap, so maybe you want to create a symlink to the directory of the library.")
     ENDIF (PCAP_LIBRARY_MMAP)
+    TARGET_LINK_LIBRARIES(vermont ${PCAP_LIBRARY})
+
+ELSEIF (USE_PFRING)
+
+    FIND_LIBRARY(PCAP_LIBRARY_PFRING NAMES pcap PATHS ${VERMONT_SOURCE_DIR} ${VERMONT_SOURCE_DIR}/PF_RING/userland/libpcap-1.0.0-ring ${VERMONT_SOURCE_DIR}/../PF_RING/userland/libpcap-1.0.0-ring NO_DEFAULT_PATH)
+    IF (NOT PCAP_LIBRARY_PFRING)
+        MESSAGE(FATAL_ERROR "Could not find libpcap-ring. This script looks in directories ${VERMONT_SOURCE_DIR}/PF_RING/userland/libpcap-1.0.0-ring and ${VERMONT_SOURCE_DIR}/../PF_RING/userland/libpcap-1.0.0-ring, so maybe you want to create a symlink to the directory of the library.")
+    ENDIF (NOT PCAP_LIBRARY_PFRING)
+    FIND_LIBRARY(PFRING_LIBRARY NAMES pfring PATHS ${VERMONT_SOURCE_DIR} ${VERMONT_SOURCE_DIR}/PF_RING/userland/lib ${VERMONT_SOURCE_DIR}/../PF_RING/userland/lib NO_DEFAULT_PATH)
+    IF (NOT PFRING_LIBRARY)
+        MESSAGE(FATAL_ERROR "Could not find libpfring. This script looks in directories ${VERMONT_SOURCE_DIR}/PF_RING/userland/lib and ${VERMONT_SOURCE_DIR}/../PF_RING/userland/lib, so maybe you want to create a symlink to the directory of the library.")
+    ENDIF (NOT PFRING_LIBRARY)
+    FIND_PATH(PCAP_INCLUDE_PATH NAMES pcap.h PATHS ${VERMONT_SOURCE_DIR} ${VERMONT_SOURCE_DIR}/PF_RING/userland/libpcap-1.0.0-ring ${VERMONT_SOURCE_DIR}/../PF_RING/userland/libpcap-1.0.0-ring NO_DEFAULT_PATH)
+    TARGET_LINK_LIBRARIES(vermont ${PCAP_LIBRARY_PFRING})
+    TARGET_LINK_LIBRARIES(vermont ${PFRING_LIBRARY})
+    INCLUDE_DIRECTORIES(${PCAP_INCLUDE_PATH})
+
 ELSE (USE_PCAPMMAP)
+
     FIND_LIBRARY(PCAP_LIBRARY_REGULAR NAMES pcap)
     IF (PCAP_LIBRARY_REGULAR)
         SET(PCAP_LIBRARY "${PCAP_LIBRARY_REGULAR}")
     ELSE (PCAP_LIBRARY_REGULAR)
         MESSAGE(FATAL_ERROR "Could not find libpcap")
     ENDIF (PCAP_LIBRARY_REGULAR)
+    TARGET_LINK_LIBRARIES(vermont ${PCAP_LIBRARY})
+
 ENDIF (USE_PCAPMMAP)
-TARGET_LINK_LIBRARIES(vermont ${PCAP_LIBRARY})
+
+
+
+IF (USE_PFRING)
+ELSE (USE_PFRING)
+    FIND_LIBRARY(PCAP_LIBRARY_REGULAR NAMES pcap)
+    IF (PCAP_LIBRARY_REGULAR)
+    	TARGET_LINK_LIBRARIES(vermont ${PCAP_LIBRARY_REGULAR})
+    ELSE (PCAP_LIBRARY_REGULAR)
+        MESSAGE(FATAL_ERROR "Could not find libpcap.")
+    ENDIF (PCAP_LIBRARY_REGULAR)
+ENDIF (USE_PFRING)
 
 ### sctp
 OPTION(SUPPORT_SCTP "Support SCTP transport protocol" ON)
@@ -308,6 +360,48 @@ IF (CONNECTION_FILTER)
 	ADD_DEFINITIONS(-DHAVE_CONNECTION_FILTER)
 ENDIF(CONNECTION_FILTER)
 
+### openssl
+
+OPTION(SUPPORT_DTLS "Enables/Disables encryption support for IPFIX messages." OFF)
+IF (SUPPORT_DTLS)
+	FIND_PACKAGE(OpenSSL)
+	IF (NOT OPENSSL_FOUND)
+		MESSAGE(FATAL_ERROR "Could not find openssl. Please install the library or turn off SUPPORT_DTLS")
+	ENDIF (NOT OPENSSL_FOUND)
+	INCLUDE_DIRECTORIES(${OPENSSL_INCLUDE_DIR})
+	TARGET_LINK_LIBRARIES(vermont ${OPENSSL_LIBRARIES})
+	ADD_DEFINITIONS(-DSUPPORT_DTLS)
+
+	## check wether there is a libcrypto
+	# FIND_PACKAGE(Crypto)
+	# IF (CRYPTO_FOUND)
+	# 	TARGET_LINK_LIBRARIES(vermont ${CRYPTO_LIBRARIES})
+	# ENDIF (CRYPTO_FOUND)
+ELSE(SUPPORT_DTLS)
+	REMOVE_DEFINITIONS(-DSUPPORT_DLTS)
+ENDIF(SUPPORT_DTLS)
+
+OPTION(SUPPORT_DTLS_OVER_SCTP "Enables/Disables DTLS on SCTP streams." OFF)
+IF (SUPPORT_DTLS_OVER_SCTP)
+	IF (SUPPORT_SCTP AND SUPPORT_DTLS)
+		# Make sure OpenSSL was compiled with SCTP support enabled
+		INCLUDE(CheckSymbolExists)
+		SET(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
+		# OpenSSL #defines OPENSSL_SCTP if it supports SCTP
+		CHECK_SYMBOL_EXISTS(OPENSSL_SCTP "openssl/ssl.h" OPENSSL_SUPPORTS_SCTP)
+		SET(CMAKE_REQUIRED_INCLUDES)
+		IF (NOT OPENSSL_SUPPORTS_SCTP)
+			MESSAGE(FATAL_ERROR "OpenSSL built without SCTP support. Rebuild OpenSSL with SCTP support or turn off SUPPORT_DTLS_OVER_SCTP")
+		ENDIF (NOT OPENSSL_SUPPORTS_SCTP)
+		ADD_DEFINITIONS(-DSUPPORT_DTLS_OVER_SCTP)
+	ELSE (SUPPORT_SCTP AND SUPPORT_DTLS)
+		MESSAGE(FATAL_ERROR "SUPPORT_DTLS_OVER_SCTP can only be enabled together with SUPPORT_SCTP and SUPPORT_DTLS")
+		REMOVE_DEFINITIONS(-DSUPPORT_DTLS_OVER_SCTP)
+	ENDIF(SUPPORT_SCTP AND SUPPORT_DTLS)
+ELSE (SUPPORT_DTLS_OVER_SCTP)
+	REMOVE_DEFINITIONS(-DSUPPORT_DTLS_OVER_SCTP)
+ENDIF (SUPPORT_DTLS_OVER_SCTP)
+
 ### tools
 
 OPTION(WITH_TOOLS "Build misc tools." ON)
@@ -325,6 +419,14 @@ IF (WITH_TESTS)
 	SUBDIRS(src/tests)
 ELSE (WITH_TESTS)
 ENDIF (WITH_TESTS)
+
+OPTION(DISABLE_MEMMANAGER "Disable custom memory manager (good for finding leaks with valgrind." OFF)
+IF (DISABLE_MEMMANAGER)
+	if (NOT DEBUG)
+		MESSAGE(FATAL_ERROR "Flag DISABLE_MEMMANAGER may only be set if flag DEBUG is set")
+	ENDIF (NOT DEBUG)
+	ADD_DEFINITIONS(-DIM_DISABLE)
+ENDIF (DISABLE_MEMMANAGER)
 
 
 ### IPFIXLOLIB_RAWDIR_SUPPORT

@@ -6,12 +6,12 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
@@ -35,41 +35,19 @@ IpfixRecordDestination::~IpfixRecordDestination()
  */
 void IpfixRecordDestination::receive(IpfixRecord* ipfixRecord)
 {
-	{
-		IpfixDataRecord* rec = dynamic_cast<IpfixDataRecord*>(ipfixRecord);
-		if (rec) onDataRecord(rec);
-	}
-	{
-		IpfixDataDataRecord* rec = dynamic_cast<IpfixDataDataRecord*>(ipfixRecord);
-		if (rec) onDataDataRecord(rec);
-	}
-	{
-		IpfixOptionsRecord* rec = dynamic_cast<IpfixOptionsRecord*>(ipfixRecord);
-		if (rec) onOptionsRecord(rec);
-	}
-	{
+	IpfixDataRecord* rec = dynamic_cast<IpfixDataRecord*>(ipfixRecord);
+	if (rec) {
+		onDataRecord(rec);
+	} else {
 		IpfixTemplateRecord* rec = dynamic_cast<IpfixTemplateRecord*>(ipfixRecord);
-		if (rec) onTemplate(rec);
-	}
-	{
-		IpfixDataTemplateRecord* rec = dynamic_cast<IpfixDataTemplateRecord*>(ipfixRecord);
-		if (rec) onDataTemplate(rec);
-	}
-	{
-		IpfixOptionsTemplateRecord* rec = dynamic_cast<IpfixOptionsTemplateRecord*>(ipfixRecord);
-		if (rec) onOptionsTemplate(rec);
-	}
-	{
-		IpfixTemplateDestructionRecord* rec = dynamic_cast<IpfixTemplateDestructionRecord*>(ipfixRecord);
-		if (rec) onTemplateDestruction(rec);
-	}
-	{
-		IpfixDataTemplateDestructionRecord* rec = dynamic_cast<IpfixDataTemplateDestructionRecord*>(ipfixRecord);
-		if (rec) onDataTemplateDestruction(rec);
-	}
-	{
-		IpfixOptionsTemplateDestructionRecord* rec = dynamic_cast<IpfixOptionsTemplateDestructionRecord*>(ipfixRecord);
-		if (rec) onOptionsTemplateDestruction(rec);
+		if (rec) {
+			onTemplate(rec);
+		} else {
+			IpfixTemplateDestructionRecord* rec = dynamic_cast<IpfixTemplateDestructionRecord*>(ipfixRecord);
+			if (rec) {
+				onTemplateDestruction(rec);
+			}
+		}
 	}
 }
 
@@ -79,26 +57,6 @@ void IpfixRecordDestination::receive(IpfixRecord* ipfixRecord)
  * @param templateInfo Pointer to a structure defining this Template
  */
 void IpfixRecordDestination::onTemplate(IpfixTemplateRecord* record)
-{
-	record->removeReference();
-}
-
-/**
- * Callback function invoked when a new DataTemplate arrives.
- * @param sourceID SourceID of the exporter that sent this DataTemplate
- * @param optionsTemplateInfo Pointer to a structure defining this Template
- */
-void IpfixRecordDestination::onOptionsTemplate(IpfixOptionsTemplateRecord* record)
-{
-	record->removeReference();
-}
-
-/**
- * Callback function invoked when a new DataTemplate arrives.
- * @param sourceID SourceID of the exporter that sent this DataTemplate
- * @param dataTemplateInfo Pointer to a structure defining this Template
- */
-void IpfixRecordDestination::onDataTemplate(IpfixDataTemplateRecord* record)
 {
 	record->removeReference();
 }
@@ -115,35 +73,8 @@ void IpfixRecordDestination::onDataRecord(IpfixDataRecord* record)
 	record->removeReference();
 }
 
-
-/**
- * Callback function invoked when a new Options Record arrives.
- * @param sourceID SourceID of the exporter that sent this Record
- * @param optionsTemplateInfo Pointer to a structure defining the OptionsTemplate used
- * @param length Length of the data block supplied
- * @param data Pointer to a data block containing all fields
- * @return 0 if packet handled successfully
- */
-void IpfixRecordDestination::onOptionsRecord(IpfixOptionsRecord* record)
-{
-	record->removeReference();
-}
-
-/**
- * Callback function invoked when a new Data Record with associated Fixed Values arrives.
- * @param sourceID SourceID of the exporter that sent this Record
- * @param dataTemplateInfo Pointer to a structure defining the DataTemplate used
- * @param length Length of the data block supplied
- * @param data Pointer to a data block containing all variable fields
- */
-void IpfixRecordDestination::onDataDataRecord(IpfixDataDataRecord* record)
-{
-	record->removeReference();
-}
-
 /**
  * Callback function invoked when a Template is being destroyed.
- * Particularly useful for cleaning up userData associated with this Template
  * @param sourceID SourceID of the exporter that sent this Template
  * @param templateInfo Pointer to a structure defining this Template
  */
@@ -151,27 +82,4 @@ void IpfixRecordDestination::onTemplateDestruction(IpfixTemplateDestructionRecor
 {
 	record->removeReference();
 }
-
-/**
- * Callback function invoked when a OptionsTemplate is being destroyed.
- * Particularly useful for cleaning up userData associated with this Template
- * @param sourceID SourceID of the exporter that sent this OptionsTemplate
- * @param optionsTemplateInfo Pointer to a structure defining this OptionsTemplate
- */
-void IpfixRecordDestination::onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record)
-{
-	record->removeReference();
-}
-
-/**
- * Callback function invoked when a DataTemplate is being destroyed.
- * Particularly useful for cleaning up userData associated with this Template
- * @param sourceID SourceID of the exporter that sent this DataTemplate
- * @param dataTemplateInfo Pointer to a structure defining this DataTemplate
- */
-void IpfixRecordDestination::onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record)
-{
-	record->removeReference();
-}
-
 

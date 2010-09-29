@@ -11,6 +11,7 @@
  jan@petranek.de
  */
 #include "encoding.h"
+#include "common/msg.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,7 +75,7 @@ uint64_t ntohll(uint64_t number)
 int write_octet ( char** p_pos, char* p_end, uint8_t n)
 {
 	if (p_end < ( *p_pos + sizeof(uint8_t)  ) ) {
-		fprintf(stderr, "error in write_octet: buffer too small!\n");
+		msg(MSG_ERROR, "error in write_octet: buffer too small!");
 		return -1;
 	}
 	uint8_t uint8 = n;
@@ -97,7 +98,7 @@ int write_unsigned16 ( char** p_pos, char* p_end, uint16_t n)
 {
 
 	if (p_end < ( *p_pos + sizeof(uint16_t)  ) ) {
-		fprintf(stderr, "error in write_unsigned16: buffer too small!\n");
+		msg(MSG_ERROR, "error in write_unsigned16: buffer too small!");
 		return -1;
 	}
 	uint16_t uint16=htons(n);
@@ -119,7 +120,7 @@ int write_unsigned16 ( char** p_pos, char* p_end, uint16_t n)
 int write_unsigned32 ( char** p_pos,  char* p_end, uint32_t n)
 {
 	if (p_end < ( *p_pos + sizeof(uint32_t)  ) ) {
-		fprintf(stderr, "error in write_unsigned32: buffer too small!\n");
+		msg(MSG_ERROR, "error in write_unsigned32: buffer too small!");
 		return -1;
 	}
 	uint32_t  uint32 = htonl (n);
@@ -155,7 +156,7 @@ int write_ipv4Address ( char** p_pos,  char* p_end, uint32_t n)
 int write_unsigned64 ( char** p_pos,  char* p_end, uint64_t n)
 {
 	if (p_end < ( *p_pos + sizeof(uint64_t)  ) ) {
-		fprintf(stderr, "error in write_unsigned64: buffer too small!\n");
+		msg(MSG_ERROR, "error in write_unsigned64: buffer too small!");
 		return -1;
 	}
 	uint64_t uint64 =  htonll (n);
@@ -177,7 +178,7 @@ int write_unsigned64 ( char** p_pos,  char* p_end, uint64_t n)
 int write_float32 ( char** p_base,  char* p_end, float f)
 {
 	if (p_end < ( *p_base + sizeof(float)  ) ) {
-		fprintf(stderr, "error in write_float32: buffer too small!\n");
+		msg(MSG_ERROR, "error in write_float32: buffer too small!");
 		return -1;
 	}
 
@@ -230,7 +231,7 @@ int write_boolean(char **p_pos, char *p_end, char b)
 uint8_t read_octet(char **p_pos, char *p_end)
 {
 	if (p_end < ( *p_pos + sizeof(uint8_t)  ) ) {
-		fprintf(stderr, "error in read_octet: buffer too small!\n");
+		msg(MSG_ERROR, "error in read_octet: buffer too small!");
 		return -1;
 	}
 
@@ -251,7 +252,7 @@ uint8_t read_octet(char **p_pos, char *p_end)
 uint16_t read_unsigned16(char **p_pos, char *p_end)
 {
 	if (p_end < ( *p_pos + sizeof(uint16_t)  ) ) {
-		fprintf(stderr, "error in read_unsigned16: buffer too small!\n");
+		msg(MSG_ERROR, "error in read_unsigned16: buffer too small!");
 		return -1;
 	}
 	// **p_pos is a pointer pointer.
@@ -277,7 +278,7 @@ uint16_t read_unsigned16(char **p_pos, char *p_end)
 uint32_t read_unsigned32(char **p_pos, char *p_end)
 {
 	if (p_end < ( *p_pos + sizeof(uint32_t)  ) ) {
-		fprintf(stderr, "error in read_unsigned32: buffer too small!\n");
+		msg(MSG_ERROR, "error in read_unsigned32: buffer too small!");
 		return -1;
 	}
 	// **p_pos is a pointer pointer.
@@ -318,7 +319,7 @@ float read_float32(char **p_base, char *p_end)
 {
 	// we assume, all we need is to convert the float to network-byte-order
 	if (p_end < ( *p_base + sizeof(float)  ) ) {
-		fprintf(stderr, "error in read_float32: buffer too small!\n");
+		msg(MSG_ERROR, "error in read_float32: buffer too small!");
 		return -1;
 	}
 	float f = 2.1; // initialize the float to some dummy value.
@@ -349,7 +350,7 @@ float read_float32(char **p_base, char *p_end)
 uint64_t read_unsigned64 ( char** p_pos, char* p_end)
 {
 	if (p_end < ( *p_pos + sizeof(uint64_t)  ) ) {
-		fprintf(stderr, "error in read_unsigned64: buffer too small!\n");
+		msg(MSG_ERROR, "error in read_unsigned64: buffer too small!");
 		return -1;
 	}
 	// **p_pos is a pointer pointer.
@@ -387,7 +388,7 @@ int read_octet_array(char **p_pos, char *p_end, char *p_output)
 	first_len=read_octet(p_pos, p_end);
 	// simply must work!
 	/*   if (first_len == -1) { */
-	/*     fprintf(stderr, "error in read_octet_array: reading first length byte failed!\n");       */
+	/*     msg(MSG_ERROR, "error in read_octet_array: reading first length byte failed!");       */
 	/*    return -1; */
 	/*   } */
 
@@ -397,13 +398,9 @@ int read_octet_array(char **p_pos, char *p_end, char *p_output)
 		// read another 2 bytes
 		data_length = read_unsigned16 (p_pos, p_end);
 		if (data_length < 255 ) {
-			fprintf(stderr, "scream!!!\n");
+			msg(MSG_ERROR, "malformed array of octets");
 		}
 	}
-	printf (" read_octet_array: data_length %u \n", data_length);
-	printf ("%s\n", *p_pos);
-	printf ("return\n");
-
 	memcpy (p_output, *p_pos, data_length);
 	p_pos += data_length;
 
@@ -428,7 +425,7 @@ int write_extension_and_fieldID(char** p_pos, char* p_end, uint16_t fieldID)
 	//uint16_t leading_bit = 1 << 15;
 
 	if (p_end < ( *p_pos + sizeof(uint16_t)  ) ) {
-		fprintf(stderr, "error in write_unsigned16: buffer too small!\n");
+		msg(MSG_ERROR, "error in write_unsigned16: buffer too small!");
 		return -1;
 	}
 	
@@ -459,7 +456,7 @@ int read_extension_bit(char **p_pos, char *p_end)
 	uint16_t n = *( (uint16_t*) *p_pos);
 
 	if (p_end < ( *p_pos + sizeof(uint16_t)  ) ) {
-		fprintf(stderr, "error in write_unsigned16: buffer too small!\n");
+		msg(MSG_ERROR, "error in write_unsigned16: buffer too small!");
 		return -1;
 	}
 
@@ -482,7 +479,7 @@ int read_extension_bit(char **p_pos, char *p_end)
 uint16_t read_fieldID(char **p_pos, char *p_end)
 {
 	if (p_end < ( *p_pos + sizeof(uint16_t)  ) ) {
-		fprintf(stderr, "error in read_unsigned16: buffer too small!\n");
+		msg(MSG_ERROR, "error in read_unsigned16: buffer too small!");
 		return -1;
 	}
 

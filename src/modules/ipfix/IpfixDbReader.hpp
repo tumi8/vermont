@@ -25,7 +25,7 @@
 #ifndef IPFIXDBREADER_H
 #define IPFIXDBREADER_H
 
-#include "IpfixParser.hpp"
+#include "IpfixRecord.hpp"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "core/Module.h"
@@ -78,9 +78,9 @@ class IpfixDbReader : public Module, public Source<IpfixRecord*>, public Destina
 		int getTables();
 		int getColumns(const string& tableName);
 		static void* readFromDB(void* ipfixDbReader_);
-		int dbReaderSendNewTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo, const string& tableName);
-		int dbReaderSendTable(boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo, const string& tableName);
-		int dbReaderDestroyTemplate(boost::shared_ptr<IpfixRecord::TemplateInfo> templateInfo);
+		int dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
+		int dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
+		int dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templateInfo);
 		int connectToDb( const string& hostName, const string& dbName, const string& userName, const string& password, unsigned int port);
 };
 

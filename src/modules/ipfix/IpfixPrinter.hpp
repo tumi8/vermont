@@ -25,14 +25,32 @@
 #include "core/Module.h"
 #include "IpfixRecordDestination.h"
 
+class PrintHelpers
+{
+	public:
+		PrintHelpers() : fh(stdout) {}
+
+		void printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern);
+		void printIPv4(uint32_t data);
+		void printIPv4(InformationElement::IeInfo type, IpfixRecord::Data* data);
+		void printPort(InformationElement::IeInfo type, IpfixRecord::Data* data);
+		void printProtocol(uint8_t data);
+		void printProtocol(InformationElement::IeInfo type, IpfixRecord::Data* data);
+		void printUint(InformationElement::IeInfo type, IpfixRecord::Data* data);
+		void printUint(char* buf, InformationElement::IeInfo type, IpfixRecord::Data* data);
+		void printLocaltime(InformationElement::IeInfo type, IpfixRecord::Data* data);
+		void printFrontPayload(InformationElement::IeInfo type, IpfixRecord::Data* data);
+
+	protected:
+		FILE* fh;
+};
+
 /**
  * IPFIX Printer module.
  *
- * Prints received flows to stdout
- *
- * FIXME: add file support to modes TREE and LINE
+ * Prints received flows to stdout or file
  */
-class IpfixPrinter : public Module, public IpfixRecordDestination, public Source<NullEmitable*>
+class IpfixPrinter : public Module, public IpfixRecordDestination, public Source<NullEmitable*>, private PrintHelpers
 {
 	public:
 		enum OutputType { TREE = 0, LINE, TABLE, NONE };
@@ -40,14 +58,8 @@ class IpfixPrinter : public Module, public IpfixRecordDestination, public Source
 		IpfixPrinter(OutputType outputtype = TREE, string filename = "");
 		~IpfixPrinter();
 
-		virtual void onDataTemplate(IpfixDataTemplateRecord* record);
-		virtual void onDataDataRecord(IpfixDataDataRecord* record);
-		virtual void onDataTemplateDestruction(IpfixDataTemplateDestructionRecord* record);
-		virtual void onOptionsTemplate(IpfixOptionsTemplateRecord* record);
-		virtual void onOptionsRecord(IpfixOptionsRecord* record);
-		virtual void onOptionsTemplateDestruction(IpfixOptionsTemplateDestructionRecord* record);
-		virtual void onTemplate(IpfixTemplateRecord* record);
 		virtual void onDataRecord(IpfixDataRecord* record);
+		virtual void onTemplate(IpfixTemplateRecord* record);
 		virtual void onTemplateDestruction(IpfixTemplateDestructionRecord* record);
 
 	protected:
@@ -57,14 +69,10 @@ class IpfixPrinter : public Module, public IpfixRecordDestination, public Source
 	private:
 		OutputType outputType;
 		string filename;
-		FILE* fh;
 
-		void printUint(char* buf, IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
 		void printOneLineRecord(IpfixDataRecord* record);
-		void printTableRecord(IpfixDataDataRecord* record);
+		void printTreeRecord(IpfixDataRecord* record);
+		void printTableRecord(IpfixDataRecord* record);
 };
-void printProtocol(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
-void printFieldData(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* pattern);
-void printFrontPayload(IpfixRecord::FieldInfo::Type type, IpfixRecord::Data* data);
 
 #endif

@@ -18,8 +18,6 @@
  *
  */
 
-// FIXME: Basic support for NetflowV9 packets, templates and flow records is provided. Will break when fed field types with type ID >= 0x8000.
-
 
 
 #include "IpfixCollector.hpp"
@@ -36,7 +34,7 @@
  */
 IpfixCollector::IpfixCollector(IpfixReceiver* receiver)
 	: ipfixReceiver(receiver),
-	  statRecvdRecords(0)
+	  statSentRecords(0)
 {
 	ipfixPacketProcessor = new IpfixParser(this);
 	receiver->setVModule(this);
@@ -52,6 +50,7 @@ IpfixCollector::IpfixCollector(IpfixReceiver* receiver)
  */
 IpfixCollector::~IpfixCollector() 
 {
+	// to make sure that exitFlag is set and performShutdown() is called
 	this->shutdown(false);
 	delete ipfixReceiver;
 	delete ipfixPacketProcessor;
@@ -72,6 +71,7 @@ void IpfixCollector::performStart()
 void IpfixCollector::performShutdown() 
 {
 	ipfixReceiver->performShutdown();
+	connected.shutdown();
 }
 
 void IpfixCollector::postReconfigration()
@@ -98,13 +98,23 @@ bool IpfixCollector::send(IpfixRecord* ipfixRecord)
 	// do not send anything any more, if module is to be stopped
 	if (exitFlag) return false;
 	
-	statRecvdRecords++;
+	statSentRecords++;
 	return Source<IpfixRecord*>::send(ipfixRecord);	
 }
 
 string IpfixCollector::getStatisticsXML(double interval)
 {
 	char buf[50];
-	snprintf(buf, ARRAY_SIZE(buf), "<receivedRecords>%u</receivedRecords>", statRecvdRecords);
+	snprintf(buf, ARRAY_SIZE(buf), "<sentRecords>%llu</sentRecords>", (long long unsigned)statSentRecords);
 	return buf;
+}
+
+/* Set template lifetime of IpfixParser
+ */
+void IpfixCollector::setTemplateLifetime(uint16_t time)
+{
+	if(ipfixPacketProcessor && dynamic_cast<IpfixParser*>(ipfixPacketProcessor))
+		dynamic_cast<IpfixParser*>(ipfixPacketProcessor)->setTemplateLifetime(time);
+	else
+		msg(MSG_ERROR, "IpfixCollector: Cannot set template lifetime, ipfixPacketProcessor is NULL");
 }

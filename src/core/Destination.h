@@ -21,6 +21,9 @@ public:
 	virtual ~Destination() { };
 	
 	virtual void receive(T e) = 0;
+
+	// See Source.h for comments on the queue running notification
+	virtual void notifyQueueRunning() {}
 };
 
 template<>
@@ -32,6 +35,12 @@ public:
 	virtual ~Destination() { };
 	
 	virtual void receive(Emitable* e)
+	{
+		THROWEXCEPTION("this module is no destination!");
+	}
+
+	// See Source.h for comments on the Start Signal
+	virtual void notifyQueueRunning()
 	{
 		THROWEXCEPTION("this module is no destination!");
 	}

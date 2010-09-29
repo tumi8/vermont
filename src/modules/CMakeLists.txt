@@ -33,10 +33,13 @@ ADD_LIBRARY(modules
     packet/ObserverCfg.cpp
     packet/Packet.cpp
     packet/Template.cpp
-    packet/PCAPExporterModule.cpp
+    packet/PCAPExporterBase.cpp
+    packet/PCAPExporterFile.cpp
+    packet/PCAPExporterPipe.cpp
     packet/PSAMPExporterModule.cpp
     packet/PSAMPExporterCfg.cpp
-    packet/PCAPExporterCfg.cpp
+    packet/PCAPExporterPipeCfg.cpp
+    packet/PCAPExporterFileCfg.cpp
     packet/PacketReportingCfg.cpp
     packet/filter/FilterModule.cpp
     packet/filter/PacketFilterCfg.cpp
@@ -53,7 +56,11 @@ ADD_LIBRARY(modules
     
     ipfix/FpaPcapExporter.cpp
     ipfix/FpaPcapExporterCfg.cpp
+    ipfix/FpaPacketGenerator.cpp
+    ipfix/FpaPacketGeneratorCfg.cpp
     ipfix/IpfixCollectorCfg.cpp
+    ipfix/IpfixCsExporter.cpp
+    ipfix/IpfixCsExporterCfg.cpp
     ipfix/IpfixDbReaderCfg.cpp
     ipfix/IpfixDbWriterCfg.cpp
     ipfix/IpfixDbWriterPgCfg.cpp
@@ -65,9 +72,12 @@ ADD_LIBRARY(modules
     ipfix/IpfixPayloadWriterCfg.cpp
     ipfix/IpfixPrinterCfg.cpp
     ipfix/IpfixSamplerCfg.cpp
+    ipfix/NetflowV9ConverterCfg.cpp
     ipfix/Connection.cpp
     ipfix/IpfixReceiverUdpIpV4.cpp
     ipfix/IpfixReceiverSctpIpV4.cpp
+    ipfix/IpfixReceiverDtlsUdpIpV4.cpp
+    ipfix/IpfixReceiverDtlsSctpIpV4.cpp
     ipfix/IpfixReceiverFile.cpp
     ipfix/IpfixReceiverFileCfg.cpp
     ipfix/IpfixRawdirReader.cpp
@@ -86,6 +96,7 @@ ADD_LIBRARY(modules
     ipfix/IpfixSampler.cpp
     ipfix/IpfixPayloadWriter.cpp
     ipfix/IpfixRecordAnonymizer.cpp
+    ipfix/NetflowV9Converter.cpp
     ipfix/aggregator/PacketAggregatorCfg.cpp
     ipfix/aggregator/AggregatorBaseCfg.cpp
     ipfix/aggregator/IpfixAggregatorCfg.cpp
@@ -98,4 +109,5 @@ ADD_LIBRARY(modules
     ipfix/aggregator/Rules.cpp
     ipfix/aggregator/Rule.cpp
 )
+
 

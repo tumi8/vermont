@@ -17,12 +17,6 @@ extern "C" {
 /* function prototype for message logging */  
 typedef void (*LOGFUNCTION)(void *);
 
-/* the maximum number of functions that will be called by the message logger thread */
-#define MAX_LOG_FUNCTIONS 256
-
-/* define for setting up the msg system */
-#define MSG_SETUP_NEW 1
-
 /* function names and source file locations are only to be printed with log messages during debug mode */
 #ifdef DEBUG
 
@@ -37,9 +31,6 @@ typedef void (*LOGFUNCTION)(void *);
 
 #endif
 
-/** Maximum length of exception strings */
-const int EXCEPTION_MAXLEN = 1024;
-
 /* defines for the message system */
 #define MSG_BLANK 256
 #define MSG_VDEBUG 5   // mostly for ipfix byte-level messages
@@ -51,8 +42,8 @@ const int EXCEPTION_MAXLEN = 1024;
 //#define MSG_DEFAULT MSG_ERROR
 
 
-void msg_init();
-void msg_shutdown();
+void msg_init(void);
+void msg_shutdown(void);
 void msg2(const int, const char*, const char*, const char*, const int, const char *, ...);
 void msg_setlevel(int);
 int msg_stat(const char *fmt, ...);

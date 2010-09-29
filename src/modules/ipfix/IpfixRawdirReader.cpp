@@ -23,7 +23,6 @@
 #include "IpfixRawdirReader.hpp"
 
 #include "IpfixPacketProcessor.hpp"
-#include "IpfixParser.hpp"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/msg.h"
 

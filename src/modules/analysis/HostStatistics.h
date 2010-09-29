@@ -30,7 +30,7 @@ class HostStatistics : public IpfixRecordDestination, public Module, public Sour
 {
 public:
 	HostStatistics(std::string ipSubnet, std::string addrFilter, std::string logPath, uint16_t logInt);
-	void onDataDataRecord(IpfixDataDataRecord* record);
+	void onDataRecord(IpfixDataRecord* record);
 
 	virtual void onReconfiguration1();
 

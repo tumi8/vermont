@@ -44,7 +44,7 @@ class AutoFocus
 		AutoFocus(uint32_t hashbits
 				, uint32_t ttreeint,uint32_t nummaxr, uint32_t numtrees, uint32_t subbits, string analyzerid, string reportfile);
 		virtual ~AutoFocus();
-		virtual void onDataDataRecord(IpfixDataDataRecord* record);
+		virtual void onDataRecord(IpfixDataRecord* record);
 
 	private:
 

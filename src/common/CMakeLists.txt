@@ -19,6 +19,8 @@
 
 ADD_LIBRARY(common
 	CountingSemaphore.cpp
+	SignalHandler.cpp
+	SignalInterface.h
 	msg.cc
 	Sensor.cpp
 	VermontControl.cpp
@@ -30,6 +32,8 @@ ADD_LIBRARY(common
 	cryptopan/rijndael.cpp
 	hmacsha1/sha1.cpp
 	hmacsha1/sha1_hmac.cpp
+	openssl/OpenSSL.cpp
+	openssl/SSLCTXWrapper.cpp
 )
 
 SUBDIRS(

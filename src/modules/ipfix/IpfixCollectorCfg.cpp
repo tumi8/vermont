@@ -1,20 +1,48 @@
-#include "IpfixCollectorCfg.h"
+/*
+ * Vermont Configuration Subsystem
+ * Copyright (C) 2009 Vermont Project
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
 
+#include "IpfixCollectorCfg.h"
+#include "CollectorCfg.h"
 #include <modules/ipfix/IpfixReceiverUdpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverDtlsUdpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverSctpIpV4.hpp>
-#include <modules/ipfix/IpfixReceiverFile.hpp>
+#include <modules/ipfix/IpfixReceiverDtlsSctpIpV4.hpp>
 
 IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector, IpfixCollectorCfg>(elem, "ipfixCollector"),
 	listener(NULL),
-	ipfixCollector(NULL),
-        observationDomainId(0)
+	ipfixCollector(NULL)
 {
-
 	if (!elem)
 		return;
 
-	msg(MSG_INFO, "CollectorConfiguration: Start reading packetReporting section");
+	msg(MSG_INFO, "IpfixCollectorCfg: Start reading ipfixCollector section");
+	udpTemplateLifetime = getInt("udpTemplateLifetime", -1);
+
+	// Config for DTLS
+	certificateChainFile = getOptional("cert");
+	privateKeyFile = getOptional("key");
+	caFile = getOptional("CAfile");
+	caPath = getOptional("CApath");
+	// observationDomainId = getInt("observationDomainId", 0);
+	
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -22,28 +50,39 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 		XMLElement* e = *it;
 
 		if (e->matches("listener")) {
+			if (listener)
+				THROWEXCEPTION("listener already set. There can only be one <listener> Element per Collector.");
 			listener = new CollectorCfg(e);
-		} else if (e->matches("udpTemplateLifetime")) {
-			msg(MSG_DEBUG, "Don't know how to handle udpTemplateLifetime! Ignored.");
+			if (listener->getMtu() != 0) {
+				delete listener;
+				THROWEXCEPTION("You can not set the MTU for a listener.");
+			}
+		} else if (e->matches("udpTemplateLifetime")) { // already done
 		} else if (e->matches("next")) { // ignore next
+		} else if (e->matches("cert") || e->matches("key") ||
+				e->matches("CAfile") || e->matches("CApath")) {
+			// already done!
 		} else {
-			msg(MSG_FATAL, "Unkown observer config statement %s\n", e->getName().c_str());
+			msg(MSG_FATAL, "Unkown collector config statement %s", e->getName().c_str());
 			continue;
 		}
 	}
 
-	observationDomainId = getInt("observationDomainId", 0);
-
 	if (listener == NULL)
 		THROWEXCEPTION("collectingProcess has to listen on one address!");
-	if (listener->getProtocolType() != UDP && listener->getProtocolType() != SCTP )
-		THROWEXCEPTION("collectingProcess can handle only UDP or SCTP!");
 
-	msg(MSG_INFO, "CollectorConfiguration: Successfully parsed collectingProcess section");
+	if (listener->getProtocol() != UDP &&
+			listener->getProtocol() != SCTP &&
+			listener->getProtocol() != DTLS_OVER_UDP &&
+			listener->getProtocol() != DTLS_OVER_SCTP)
+		THROWEXCEPTION("collectingProcess can handle only UDP or SCTP!");
+	
+	msg(MSG_INFO, "IpfixCollectorCfg: Successfully parsed collectingProcess section");
 }
 
 IpfixCollectorCfg::~IpfixCollectorCfg()
 {
+	// FIXME: Shouldn't we delete listener here?
 }
 
 IpfixCollectorCfg* IpfixCollectorCfg::create(XMLElement* elem)
@@ -55,17 +94,9 @@ IpfixCollectorCfg* IpfixCollectorCfg::create(XMLElement* elem)
 
 IpfixCollector* IpfixCollectorCfg::createInstance()
 {
-	IpfixReceiver* ipfixReceiver;
-	if (listener->getProtocolType() == SCTP)
-		ipfixReceiver = new IpfixReceiverSctpIpV4(listener->getPort(), listener->getIpAddress());
-	else
-		ipfixReceiver = new IpfixReceiverUdpIpV4(listener->getPort(), listener->getIpAddress());
-
-	if (!ipfixReceiver) {
-		THROWEXCEPTION("Could not create IpfixReceiver");
-	}
-
-	instance = new IpfixCollector(ipfixReceiver);
+	instance = new IpfixCollector(listener->createIpfixReceiver(certificateChainFile, privateKeyFile, caFile, caPath));
+	if(udpTemplateLifetime>=0)
+		instance->setTemplateLifetime((uint16_t)udpTemplateLifetime);
 	return instance;
 }
 

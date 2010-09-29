@@ -40,15 +40,20 @@ IpfixSampler::~IpfixSampler()
 {
 }
 
-void IpfixSampler::onDataDataRecord(IpfixDataDataRecord* record)
+void IpfixSampler::onDataRecord(IpfixDataRecord* record)
 {
-	counter++;
-	if ((counter%modulo)==0) {
+	// do not sample Options Data Records
+	if((record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate) || (record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate)) {
 		send(record);
 	} else {
-		statDropped++;
-		statTotalDropped++;
-		record->removeReference();
+		counter++;
+		if ((counter%modulo)==0) {
+			send(record);
+		} else {
+			statDropped++;
+			statTotalDropped++;
+			record->removeReference();
+		}
 	}
 }
 

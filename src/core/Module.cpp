@@ -19,13 +19,17 @@ Module::~Module()
 
 void Module::start(bool fail_if_already_running)
 {
-	if (running && !fail_if_already_running)
-		return;
+	if (running && fail_if_already_running)
+		THROWEXCEPTION("module must not be in state 'running' when started");
 
-	ASSERT(!running, "module must not be in state 'running' when started");
-	running = true;
+	if(running) {
+		// Gerhard: call postReconfiguration here and not in Cfg::connectInstances
+		postReconfiguration();
+	} else {
+		performStart();
+		running = true;
+	}
 	exitFlag = false;
-	performStart();
 }
 
 void Module::notifyShutdown(bool shutdownProperly)

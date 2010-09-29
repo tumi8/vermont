@@ -1,3 +1,23 @@
+/*
+ * Vermont Aggregator Subsystem
+ * Copyright (C) 2009 Vermont Project
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
+
 #include "BaseHashtable.h"
 
 #include <sstream>
@@ -11,7 +31,10 @@ using namespace std;
  */
 BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
-	: htableBits(hashbits),
+	: biflowAggregation(rule->biflowAggregation),
+	  revKeyMapper(NULL),
+	  switchArray(NULL),
+	  htableBits(hashbits),
 	  htableSize(1<<hashbits),
 	  minBufferTime(minBufferTime),
 	  maxBufferTime(maxBufferTime),
@@ -27,41 +50,49 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  sourceID(new IpfixRecord::SourceID),
 	  dataDataRecordIM("IpfixDataDataRecord", 0),
 	  dataTemplateRecordIM("IpfixDataTemplateRecord", 0),
+	  templateDestructionRecordIM("IpfixTemplateDestructionRecord", 0),
 	  hbucketIM("BucketListElement", 0),
-	  aggInProgress(false),
-	  resendTemplate(true)
+	  aggInProgress(false)
 {
 	msg(MSG_INFO, "Hashtable initialized with following parameters:");
 	msg(MSG_INFO, "  - minBufferTime=%d", minBufferTime);
 	msg(MSG_INFO, "  - maxBufferTime=%d", maxBufferTime);
 	msg(MSG_INFO, "  - htableBits=%d", hashbits);
 
-	memset(sourceID.get(), 0, sizeof(IpfixRecord::SourceID));
-
 	buckets = new HashtableBucket*[htableSize];
 	for (uint32_t i = 0; i < htableSize; i++)
 		buckets[i] = NULL;
 
 	createDataTemplate(rule);
+
+	if (biflowAggregation) {
+		genBiflowStructs();
+	}
 }
 
 /**
  * returns value > 0  if given type needs additional private data for aggregation
  * this is included in dataRecords after the "normal" fields
  */
-uint32_t BaseHashtable::getPrivateDataLength(IpfixRecord::FieldInfo::Type type)
+uint32_t BaseHashtable::getPrivateDataLength(const InformationElement::IeInfo& type)
 {
-	switch (type.id) {
-		case IPFIX_ETYPEID_frontPayload: // four bytes TCP sequence ID, four bytes for byte-counter for aggregated data
-		case IPFIX_ETYPEID_revFrontPayload: // "
-		case IPFIX_ETYPEID_maxPacketGap: // old flow end time (to calculate packet gap)
-		case IPFIX_ETYPEID_revMaxPacketGap: // old flow end time (to calculate packet gap)
-			return 8;
+	//TODO: if(type.enterprise=29305)... (Gerhard, 12/2009)
+	if(type.enterprise & IPFIX_PEN_vermont) {
+		switch (type.id) {
+			case IPFIX_ETYPEID_frontPayload:
+			case IPFIX_ETYPEID_transportOctetDeltaCount:
+				return sizeof(PayloadPrivateData);
 
-		default:
-			return 0;
+			case IPFIX_ETYPEID_dpaForcedExport:
+				return sizeof(DpaPrivateData);
+
+			case IPFIX_ETYPEID_maxPacketGap: // old flow end time (to calculate packet gap)
+				return 8;
+
+			default:
+				return 0;
+		}
 	}
-
 	return 0;
 }
 
@@ -69,17 +100,16 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 {
 	int dataLength = 0; /**< length in bytes of the @c data field */
 
-	dataTemplate.reset(new IpfixRecord::DataTemplateInfo);
+	dataTemplate.reset(new TemplateInfo);
 	dataTemplate->templateId = rule->id;
-	dataTemplate->preceding = rule->preceding;
-	dataTemplate->fieldCount = 0;
-	dataTemplate->fieldInfo = NULL;
+	// Let's first assume that this is a normal Template
+	if(rule->preceding != 0) {
+		dataTemplate->preceding = rule->preceding;
+		dataTemplate->setId = TemplateInfo::IpfixDataTemplate;
+	} else {
+		dataTemplate->setId = TemplateInfo::IpfixTemplate;
+	}
 	fieldLength = 0;
-	dataTemplate->dataCount = 0;
-	dataTemplate->dataInfo = NULL;
-	dataTemplate->data = NULL;
-	dataTemplate->dataLength = 0;
-	dataTemplate->userData = NULL;
 
 	fieldModifier = (Rule::Field::Modifier*) malloc(rule->fieldCount
 			* sizeof(Rule::Field::Modifier));
@@ -88,11 +118,13 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 		Rule::Field* rf = rule->field[i];
 
 		if (rf->pattern != NULL) {
+			// This is a Data Template
+			dataTemplate->setId = TemplateInfo::IpfixDataTemplate;
 			/* create new fixed-data field containing pattern */
 			dataTemplate->dataCount++;
-			dataTemplate->dataInfo = (IpfixRecord::FieldInfo*) realloc(dataTemplate->dataInfo,
-					sizeof(IpfixRecord::FieldInfo) * dataTemplate->dataCount);
-			IpfixRecord::FieldInfo* fi = &dataTemplate->dataInfo[dataTemplate->dataCount - 1];
+			dataTemplate->dataInfo = (TemplateInfo::FieldInfo*) realloc(dataTemplate->dataInfo,
+					sizeof(TemplateInfo::FieldInfo) * dataTemplate->dataCount);
+			TemplateInfo::FieldInfo* fi = &dataTemplate->dataInfo[dataTemplate->dataCount - 1];
 			fi->type = rf->type;
 			fi->offset = dataLength;
 			fi->privDataOffset = 0;
@@ -113,9 +145,9 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 		else if (rf->modifier != Rule::Field::DISCARD) {
 			/* define new data field with Rule::Field's type */
 			dataTemplate->fieldCount++;
-			dataTemplate->fieldInfo = (IpfixRecord::FieldInfo*) realloc(dataTemplate->fieldInfo,
-					sizeof(IpfixRecord::FieldInfo) * dataTemplate->fieldCount);
-			IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[dataTemplate->fieldCount - 1];
+			dataTemplate->fieldInfo = (TemplateInfo::FieldInfo*) realloc(dataTemplate->fieldInfo,
+					sizeof(TemplateInfo::FieldInfo) * dataTemplate->fieldCount);
+			TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[dataTemplate->fieldCount - 1];
 			fi->type = rf->type;
 			fi->offset = fieldLength;
 			fi->privDataOffset = 0;
@@ -129,36 +161,37 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 	uint32_t revfpLengthOffset = 0;
 	privDataLength = 0;
 	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 		uint32_t len = getPrivateDataLength(fi->type);
 		if (len > 0) {
 			fi->privDataOffset = fieldLength + privDataLength;
 			privDataLength += len;
 		}
-		if (fi->type.id == IPFIX_ETYPEID_frontPayload)
-			fpLengthOffset = fi->privDataOffset + 4;
-		if (fi->type.id == IPFIX_ETYPEID_revFrontPayload)
-			revfpLengthOffset = fi->privDataOffset + 4;
+		if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont))
+			fpLengthOffset = fi->privDataOffset;
+		if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse))
+			revfpLengthOffset = fi->privDataOffset;
 	}
 
 	// update private data offsets for fields which access private data from other fields
 	// example: front payload length accesses data from front payload
 	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
-		IpfixRecord::FieldInfo* fi = &dataTemplate->fieldInfo[i];
-		if (fi->type.id == IPFIX_ETYPEID_frontPayloadLen) {
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayloadLen, IPFIX_PEN_vermont)) {
 			if (!fpLengthOffset) {
 				THROWEXCEPTION("no front payload field specified in template, so front payload length is not available either");
 			}
 			fi->privDataOffset = fpLengthOffset;
 		}
-		if (fi->type.id == IPFIX_ETYPEID_revFrontPayloadLen) {
+		// we want to access the same private data within these fields as in frontPayload
+		if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayloadLen, IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
 			if (!revfpLengthOffset) {
 				THROWEXCEPTION("no reverse front payload field specified in template, so front payload length is not available either");
 			}
 			fi->privDataOffset = revfpLengthOffset;
 		}
 		// check validity of field
-		if (fi->type.id == IPFIX_ETYPEID_frontPayloadPktCount) {
+		if (fi->type==InformationElement::IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont)) {
 			if (!fpLengthOffset) {
 				THROWEXCEPTION("no front payload field specified in template, so front payload packet count is not available either");
 			}
@@ -202,6 +235,7 @@ HashtableBucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Da
 	bucket->prev = prev;
 	bucket->hash = hash;
 	bucket->observationDomainID = obsdomainid;
+	bucket->forceExpiry = false;
 
 	return bucket;
 }
@@ -212,9 +246,9 @@ HashtableBucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Da
 void BaseHashtable::exportBucket(HashtableBucket* bucket)
 {
 	/* Pass Data Record to exporter interface */
-	IpfixDataDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
+	IpfixDataRecord* ipfixRecord = dataDataRecordIM.getNewInstance();
 	ipfixRecord->sourceID = sourceID;
-	ipfixRecord->dataTemplateInfo = dataTemplate;
+	ipfixRecord->templateInfo = dataTemplate;
 	ipfixRecord->dataLength = fieldLength;
 	ipfixRecord->message = bucket->data;
 	ipfixRecord->data = bucket->data.get();
@@ -232,6 +266,30 @@ void BaseHashtable::destroyBucket(HashtableBucket* bucket)
 	delete bucket;
 }
 
+
+/**
+ * removes given bucket from the hashtable
+ */
+void BaseHashtable::removeBucket(HashtableBucket* bucket)
+{
+	if (bucket->next || bucket->prev)
+		statMultiEntries--;
+	if (!bucket->next && !bucket->prev)
+		statEmptyBuckets++;
+	if (bucket->prev) {
+		bucket->prev->next = bucket->next;
+	} else {
+		buckets[bucket->hash] = bucket->next;
+	}
+	if (bucket->next) {
+		bucket->next->prev = bucket->prev;
+	}
+	bucket->next = NULL;
+	bucket->prev = NULL;
+	bucket->hash = 0;
+	bucket->inTable = false;
+}
+
 /**
  * Exports all expired flows and removes them from the buffer
  */
@@ -246,16 +304,8 @@ void BaseHashtable::expireFlows(bool all)
 	}
 
 	uint32_t now = time(0);
-	uint32_t emptyBuckets = 0;
-	uint32_t exportedBuckets = 0;
-	uint32_t multiEntries = 0;
 	HashtableBucket* bucket = 0;
 	BucketListElement* node = 0;
-
-	if (resendTemplate) {
-		sendDataTemplate();
-		resendTemplate = false;
-	}
 
 	if (!exportList.isEmpty) {
 		while (exportList.head) { //check the first entry in the BucketList
@@ -268,41 +318,19 @@ void BaseHashtable::expireFlows(bool all)
 					DPRINTF("expireFlows: forced expiry");
 				else if (now > bucket->expireTime)
 					DPRINTF("expireFlows: normal expiry");
-				exportedBuckets++;
-				if (bucket->next || bucket->prev)
-					multiEntries++;
-				if (!bucket->next && !bucket->prev)
-					emptyBuckets++;
-				if (!bucket->prev) {
-					if (bucket->next) {
-						buckets[bucket->hash] = bucket->next;
-						bucket->next->prev = 0;
-					}
-					else {
-						buckets[bucket->hash] = 0;
-					}
-				} else {
-					if (!bucket->next)
-						bucket->prev->next = 0;
-					else {
-						bucket->prev->next = bucket->next;
-						bucket->next->prev = bucket->prev;
-					}
-				}
+				if (bucket->inTable) removeBucket(bucket);
+				statExportedBuckets++;
 				exportBucket(bucket);
 				exportList.remove(node);
 				destroyBucket(bucket);
 				node->removeReference();
+				statTotalEntries--;
 			}//end if
 			else
 				break;
 		}//end while
 	}
 
-	statTotalEntries -= exportedBuckets;
-	statEmptyBuckets += emptyBuckets;
-	statExportedBuckets += exportedBuckets;
-	statMultiEntries -= multiEntries;
 	atomic_release(&aggInProgress);
 }
 
@@ -310,60 +338,76 @@ void BaseHashtable::expireFlows(bool all)
  * Checks whether the given @c type is one of the types that has to be aggregated
  * @return 1 if flow is to be aggregated
  */
-int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
+int BaseHashtable::isToBeAggregated(InformationElement::IeInfo& type)
 {
-	switch (type.id) {
-		case IPFIX_TYPEID_flowStartSysUpTime:
-		case IPFIX_TYPEID_flowStartSeconds:
-		case IPFIX_TYPEID_flowStartMilliSeconds:
-		case IPFIX_TYPEID_flowStartMicroSeconds:
-		case IPFIX_TYPEID_flowStartNanoSeconds:
-		case IPFIX_TYPEID_flowEndSysUpTime:
-		case IPFIX_TYPEID_flowEndSeconds:
-		case IPFIX_TYPEID_flowEndMilliSeconds:
-		case IPFIX_TYPEID_flowEndMicroSeconds:
-		case IPFIX_TYPEID_flowEndNanoSeconds:
-		case IPFIX_TYPEID_octetDeltaCount:
-		case IPFIX_TYPEID_postOctetDeltaCount:
-		case IPFIX_TYPEID_packetDeltaCount:
-		case IPFIX_TYPEID_postPacketDeltaCount:
-		case IPFIX_TYPEID_droppedOctetDeltaCount:
-		case IPFIX_TYPEID_droppedPacketDeltaCount:
-		case IPFIX_TYPEID_tcpControlBits:
-		case IPFIX_ETYPEID_frontPayload:
-		case IPFIX_ETYPEID_frontPayloadLen:
-		case IPFIX_ETYPEID_frontPayloadPktCount:
-		case IPFIX_ETYPEID_revFrontPayload:
-		case IPFIX_ETYPEID_revFrontPayloadLen:
-		case IPFIX_ETYPEID_revFlowStartSeconds:
-		case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-		case IPFIX_ETYPEID_revFlowStartNanoSeconds:
-		case IPFIX_ETYPEID_revFlowEndSeconds:
-		case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-		case IPFIX_ETYPEID_revFlowEndNanoSeconds:
-		case IPFIX_ETYPEID_revOctetDeltaCount:
-		case IPFIX_ETYPEID_revPacketDeltaCount:
-		case IPFIX_ETYPEID_revTcpControlBits:
-		case IPFIX_ETYPEID_maxPacketGap:
-		case IPFIX_ETYPEID_revMaxPacketGap:
-			return 1;
+	switch (type.enterprise) {
+		case 0:
+			switch (type.id) {
+				case IPFIX_TYPEID_flowStartSysUpTime:
+				case IPFIX_TYPEID_flowStartSeconds:
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+				case IPFIX_TYPEID_flowStartMicroSeconds:
+				case IPFIX_TYPEID_flowStartNanoSeconds:
+				case IPFIX_TYPEID_flowEndSysUpTime:
+				case IPFIX_TYPEID_flowEndSeconds:
+				case IPFIX_TYPEID_flowEndMilliSeconds:
+				case IPFIX_TYPEID_flowEndMicroSeconds:
+				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_octetDeltaCount:
+				case IPFIX_TYPEID_postOctetDeltaCount:
+				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_postPacketDeltaCount:
+				case IPFIX_TYPEID_droppedOctetDeltaCount:
+				case IPFIX_TYPEID_droppedPacketDeltaCount:
+				case IPFIX_TYPEID_tcpControlBits:
+					return 1;
+			}
+			break;
 
-		case IPFIX_TYPEID_octetTotalCount:
-		case IPFIX_TYPEID_packetTotalCount:
-		case IPFIX_TYPEID_droppedOctetTotalCount:
-		case IPFIX_TYPEID_droppedPacketTotalCount:
-		case IPFIX_TYPEID_postMCastPacketDeltaCount:
-		case IPFIX_TYPEID_postMCastOctetDeltaCount:
-		case IPFIX_TYPEID_observedFlowTotalCount:
-		case IPFIX_TYPEID_exportedOctetTotalCount:
-		case IPFIX_TYPEID_exportedMessageTotalCount:
-		case IPFIX_TYPEID_exportedFlowTotalCount:
-			DPRINTF("isToBeAggregated: Will not aggregate %s field", typeid2string(type.id));
-			return 0;
+		case IPFIX_PEN_reverse:
+			switch (type.id) {
+				case IPFIX_TYPEID_flowStartSeconds:
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+				case IPFIX_TYPEID_flowStartNanoSeconds:
+				case IPFIX_TYPEID_flowEndSeconds:
+				case IPFIX_TYPEID_flowEndMilliSeconds:
+				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_octetDeltaCount:
+				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_tcpControlBits:
+					return 1;
+			}
+			break;
 
-		default:
-			return 0;
+		case IPFIX_PEN_vermont:
+			switch (type.id) {
+				case IPFIX_ETYPEID_frontPayload:
+				case IPFIX_ETYPEID_frontPayloadLen:
+				case IPFIX_ETYPEID_frontPayloadPktCount:
+				case IPFIX_ETYPEID_maxPacketGap:
+				case IPFIX_ETYPEID_dpaForcedExport:
+				case IPFIX_ETYPEID_dpaFlowCount:
+				case IPFIX_ETYPEID_dpaReverseStart:
+				case IPFIX_ETYPEID_transportOctetDeltaCount:
+					return 1;
+			}
+			break;
+
+		case IPFIX_PEN_vermont|IPFIX_PEN_reverse:
+			switch (type.id) {
+				case IPFIX_ETYPEID_frontPayload:
+				case IPFIX_ETYPEID_frontPayloadLen:
+				case IPFIX_ETYPEID_frontPayloadPktCount:
+				case IPFIX_ETYPEID_maxPacketGap:
+				case IPFIX_ETYPEID_dpaForcedExport:
+				case IPFIX_ETYPEID_dpaFlowCount:
+				case IPFIX_ETYPEID_dpaReverseStart:
+				case IPFIX_ETYPEID_transportOctetDeltaCount:
+					return 1;
+			}
+			break;
 	}
+	return 0;
 }
 
 /**
@@ -371,9 +415,20 @@ int BaseHashtable::isToBeAggregated(IpfixRecord::FieldInfo::Type type)
  */
 void BaseHashtable::sendDataTemplate()
 {
-	IpfixDataTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
-	ipfixRecord->sourceID.reset();
-	ipfixRecord->dataTemplateInfo = dataTemplate;
+	IpfixTemplateRecord* ipfixRecord = dataTemplateRecordIM.getNewInstance();
+	ipfixRecord->sourceID = sourceID;
+	ipfixRecord->templateInfo = dataTemplate;
+	recordSource->send(ipfixRecord);
+}
+
+/**
+ * sends template withdrawal
+ */
+void BaseHashtable::sendTemplateDestructionRecord()
+{
+	IpfixTemplateDestructionRecord* ipfixRecord = templateDestructionRecordIM.getNewInstance();
+	ipfixRecord->sourceID = sourceID;
+	ipfixRecord->templateInfo = dataTemplate;
 	recordSource->send(ipfixRecord);
 }
 
@@ -390,14 +445,16 @@ void BaseHashtable::performStart()
  */
 void BaseHashtable::performShutdown()
 {
-	// this tells all modules that the template should not be used any more
-	dataTemplate.get()->destroyed = true;
+	// we do not need to destroy the template since every module should delete stored templates during reconfiguration and shutdown
+	// sendTemplateDestructionRecord();
 }
 
 void BaseHashtable::preReconfiguration()
 {
-	msg(MSG_INFO, "forcing export for flows");
+	msg(MSG_INFO, "BaseHashtable: Forcing export for flows, then destroy Template.");
 	expireFlows(true);
+	// we do not need to destroy the template since every module should delete stored templates during reconfiguration
+	// sendTemplateDestructionRecord();
 }
 
 /**
@@ -405,8 +462,6 @@ void BaseHashtable::preReconfiguration()
  */
 void BaseHashtable::onReconfiguration1()
 {
-	// this tells all modules that the template should not be used any more
-	dataTemplate.get()->destroyed = true;
 }
 
 /**
@@ -414,9 +469,9 @@ void BaseHashtable::onReconfiguration1()
  */
 void BaseHashtable::postReconfiguration()
 {
-	// "de-invalidates" the template again, as this module is still working with the same template
+	// send the template again, as this module is still working with the same template
 	// after reconfiguration (else this function would not be called)
-	dataTemplate.get()->destroyed = false;
+	sendDataTemplate();
 }
 
 std::string BaseHashtable::getStatisticsXML(double interval)
@@ -429,4 +484,146 @@ std::string BaseHashtable::getStatisticsXML(double interval)
 	statLastExpBuckets += diff;
 	oss << "<exportedEntries>" << (uint32_t) ((double) diff / interval) << "</exportedEntries>";
 	return oss.str();
+}
+
+void BaseHashtable::mapReverseElement(const InformationElement::IeInfo& ieinfo)
+{
+	int i = dataTemplate->getFieldIndex(ieinfo);
+	if (i<0)
+		THROWEXCEPTION("failed to retrieve IPFIX field id %s (derived as reverse field). Maybe this element is not contained in flow definition?",
+				ieinfo.toString().c_str());
+	flowReverseMapper.push_back(i);
+}
+
+
+void BaseHashtable::genBiflowStructs()
+{
+	int32_t srcIPIdx = -1;
+	int32_t dstIPIdx = -1;
+	int32_t srcPortIdx = -1;
+	int32_t dstPortIdx = -1;
+	uint32_t maxFieldSize = 0;
+
+
+	// search for offsets in dataTemplate
+	revKeyMapper = new uint32_t[dataTemplate->fieldCount];
+	DPRINTF("fieldCount=%d", dataTemplate->fieldCount);
+	for (int32_t i=0; i<dataTemplate->fieldCount; i++) {
+		DPRINTF("fieldCount=%d", i);
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		if (fi->type.length>maxFieldSize) maxFieldSize = fi->type.length;
+		bool defaultassign = false;
+		switch (fi->type.enterprise) {
+			case 0:
+				switch (fi->type.id) {
+					case IPFIX_TYPEID_protocolIdentifier:
+					case IPFIX_TYPEID_icmpTypeCodeIPv4:
+						mapReverseElement(fi->type);
+						break;
+					case IPFIX_TYPEID_sourceIPv4Address:
+						srcIPIdx = i;
+						mapReverseElement(InformationElement::IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0));
+						break;
+					case IPFIX_TYPEID_destinationIPv4Address:
+						dstIPIdx = i;
+						mapReverseElement(fi->type);
+						break;
+					case IPFIX_TYPEID_sourceTransportPort:
+						srcPortIdx = i;
+						mapReverseElement(InformationElement::IeInfo(IPFIX_TYPEID_destinationTransportPort, 0));
+						break;
+					case IPFIX_TYPEID_destinationTransportPort:
+						dstPortIdx = i;
+						mapReverseElement(fi->type);
+						break;
+					default:
+						defaultassign = true;
+						break;
+				}
+				break;
+			case IPFIX_PEN_vermont:
+				switch (fi->type.id) {
+					// do not reverse these fields
+					case IPFIX_ETYPEID_dpaForcedExport:
+					case IPFIX_ETYPEID_dpaFlowCount:
+					case IPFIX_ETYPEID_dpaReverseStart:
+					case IPFIX_ETYPEID_anonymisationType:
+						mapReverseElement(fi->type);
+						break;
+
+					default:
+						defaultassign = true;
+						break;
+				}
+				break;
+			default:
+				defaultassign = true;
+				break;
+		}
+
+		if (defaultassign) {
+			// this call is dangerous, as calculated type ids may not exist at all
+			// but mapReverseElement will detect those and throw an exception
+			DPRINTF("field %s", fi->type.toString().c_str());
+			if ((fi->type.enterprise&IPFIX_PEN_reverse)==0) {
+				InformationElement::IeInfo rev = fi->type.getReverseDirection();
+				mapReverseElement(rev);
+				DPRINTF("mapping field %s to field %s", fi->type.toString().c_str(), rev.toString().c_str());
+			} else {
+				// do not reverse element
+				mapReverseElement(fi->type);
+				DPRINTF("not mapping field %s to its reverse element", fi->type.toString().c_str());
+			}
+		}
+	}
+
+	switchArray = new char[maxFieldSize];
+
+	// check if it's possible to obtain the reverse flow
+	if ((srcIPIdx<0) || (dstIPIdx<0) || (srcPortIdx<0) || (dstPortIdx<0)) {
+		THROWEXCEPTION("no biflow aggregation possible for current template, but was activated in configuration!");
+	}
+
+	for (int i=0; i<dataTemplate->fieldCount; i++) {
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		switch (fi->type.id) {
+			case IPFIX_TYPEID_sourceIPv4Address:
+				revKeyMapper[i] = dstIPIdx;
+				break;
+			case IPFIX_TYPEID_destinationIPv4Address:
+				revKeyMapper[i] = srcIPIdx;
+				break;
+			case IPFIX_TYPEID_sourceTransportPort:
+				revKeyMapper[i] = dstPortIdx;
+				break;
+			case IPFIX_TYPEID_destinationTransportPort:
+				revKeyMapper[i] = srcPortIdx;
+				break;
+			default:
+				revKeyMapper[i] = i;
+				break;
+		}
+	}
+}
+
+
+/**
+ * turns a whole flow record inside its bucket around for biflow aggregation
+ */
+void BaseHashtable::reverseFlowBucket(HashtableBucket* bucket)
+{
+	for (uint32_t i = 0; i < dataTemplate->fieldCount; i++) {
+		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
+		TemplateInfo::FieldInfo* fi2 = &dataTemplate->fieldInfo[flowReverseMapper[i]];
+
+		if (fi != fi2) {
+			//msg(MSG_ERROR, "mapping idx %d to idx %d", i, flowReverseMapper[i]);
+			IpfixRecord::Data* src = bucket->data.get()+fi->offset;
+			IpfixRecord::Data* dst = bucket->data.get()+fi2->offset;
+			uint32_t len = fi->type.length;
+			memcpy(switchArray, src, len);
+			memcpy(src, dst, len);
+			memcpy(dst, switchArray, len);
+		}
+	}
 }

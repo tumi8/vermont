@@ -132,15 +132,16 @@ void SensorManager::writeSensorXML(FILE* file, Sensor* s, const char* name, uint
 
 void SensorManager::retrieveStatistics(bool ignoreshutdown)
 {
-	const char* xmlpre = "<vermont>\n\t<sensorData time=\"%s\" host=\"%s\">\n";
+	const char* xmlpre = "<vermont>\n\t<sensorData time=\"%s\" epochtime=\"%d.%03d\" host=\"%s\">\n";
 	const char* xmlpost = "\t</sensorData>\n</vermont>\n";
 	const char* xmlglobals = "\t\t<%s>%s</%s>\n";
 
 	string lockfile = outputFilename + ".lock";
+	bool haveGraphLock;
 
 	// we must not wait for the graph lock, else there may be a race condition with
 	// the ConfigManager
-	while (!graphIS->tryLockGraph()) {
+	while (! (haveGraphLock = graphIS->tryLockGraph())) {
 		if (smExitFlag) break;
 		timespec timeout = { 0, 200000 };
 		nanosleep(&timeout, NULL);
@@ -155,11 +156,12 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 		perror("error:");
 	}
 
-	time_t curtime = time(0);
+	timeval tvcurtime = unixtime();
+	time_t curtime = tvcurtime.tv_sec;
 	char curtimestr[100];
 	ctime_r(&curtime, curtimestr);
 	curtimestr[strlen(curtimestr)-1] = 0;
-	fprintf(file, xmlpre, curtimestr, hostname);
+	fprintf(file, xmlpre, curtimestr, curtime, tvcurtime.tv_usec/1000, hostname);
 	char text[100];
 	snprintf(text, 100, "%u", static_cast<uint32_t>(getpid()));
 	fprintf(file, xmlglobals, "pid", text, "pid");
@@ -172,7 +174,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	const char* xmlglobalsuint = "\t\t<%s>%u</%s>\n";
 	ThreadCPUInterface::SystemInfo si = ThreadCPUInterface::getSystemInfo();
 
-	fprintf(file, "\t\t<jiffyFrequency>%llu</jiffyFrequency>\n", hertzValue);
+	fprintf(file, "\t\t<jiffyFrequency>%llu</jiffyFrequency>\n", (long long unsigned)hertzValue);
 	fprintf(file, xmlglobalsuint, "processorAmount", si.noCPUs, "processorAmount");
 	for (uint16_t i=0; i<si.sysJiffies.size(); i++) {
 		double sysutil = (si.sysJiffies[i]-lastSystemInfo.sysJiffies[i])/(static_cast<double>(curtime)-lasttime)/hertzValue*100;
@@ -181,7 +183,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 				i, sysutil, userutil);
 	}
 	fprintf(file, "\t\t<memory><free type=\"bytes\">%llu</free><total type=\"bytes\">%llu</total></memory>\n",
-			si.freeMemory, si.totalMemory);
+			(long long unsigned)si.freeMemory, (long long unsigned)si.totalMemory);
 	lastSystemInfo = si;
 #endif
 
@@ -203,6 +205,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	mutex.lock();
 	list<SensorEntry>::const_iterator siter = sensors.begin();
 	while (siter != sensors.end()) {
+        //DPRINTFL(MSG_ERROR, "non-module cfg->getName()=%s, s=%u", siter->name.c_str(), siter->sensor);
 		writeSensorXML(file, siter->sensor, siter->name.c_str(), siter->id, false, curtime, lasttime, NULL);
 		siter++;
 	}
@@ -211,9 +214,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	fprintf(file, "%s", xmlpost);
 	fclose(file);
 
-
-
-	graphIS->unlockGraph();
+	if (haveGraphLock) graphIS->unlockGraph();
 }
 
 void SensorManager::collectDataWorker()

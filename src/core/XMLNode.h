@@ -24,6 +24,9 @@ public:
 	/** Get the name of this node. */
 	std::string getName () const;
 
+	/** Get the content of this node. */
+	virtual std::string getContent () const;
+
 	/** compares the node name with the supplied string */
 	inline bool matches(const char* str) const
 	{

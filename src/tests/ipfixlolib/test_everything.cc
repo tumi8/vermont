@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <assert.h>
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "common/msg.h"
 
@@ -69,13 +70,13 @@ int main(int argc, char *argv[])
 			create_id = 0;
 			//Test custom templates
 			printf("Start testing Template creation!\n");
-			scanf("%u",&create_id);
+			assert(scanf("%u",&create_id)==1);
 			
 			ret=0;
 		
-			ret|=ipfix_start_template_set(my_exporter, create_id, 1);
+			ret|=ipfix_start_template(my_exporter, create_id, 1);
 			ret|=ipfix_put_template_field(my_exporter, create_id, 2, 8, 0);
-			ret|=ipfix_end_template_set(my_exporter, create_id);
+			ret|=ipfix_end_template(my_exporter, create_id);
 		
 			if (ret != 0) {
 				fprintf(stderr, "create template failed!\n");
@@ -89,9 +90,9 @@ int main(int argc, char *argv[])
 			my_template_id=4711;
 			ret=0;
 		
-			ret|=ipfix_start_template_set(my_exporter, my_template_id, 1);
+			ret|=ipfix_start_template(my_exporter, my_template_id, 1);
 			ret|=ipfix_put_template_field(my_exporter, my_template_id, 2, 8, 0);
-			ret|=ipfix_end_template_set(my_exporter, my_template_id);
+			ret|=ipfix_end_template(my_exporter, my_template_id);
 		
 			if (ret != 0) {
 				fprintf(stderr, "create template failed!\n");
@@ -112,7 +113,7 @@ int main(int argc, char *argv[])
 #ifdef SUPPORT_SCTP
 		case 'c':
 			// add SCTP collector
-			ret=ipfix_add_collector(my_exporter, "127.0.0.1", 1500, SCTP);
+			ret=ipfix_add_collector(my_exporter, "127.0.0.1", 1500, SCTP, NULL);
 			
 			if (ret != 0) {
 				fprintf(stderr, "ipfix_add_collector failed!\n");
@@ -123,7 +124,9 @@ int main(int argc, char *argv[])
 #endif
 		case 'u':
 			// add UDP collector
-			ret=ipfix_add_collector(my_exporter, "127.0.0.1", 1500, UDP);
+			ipfix_aux_config_udp aux_config;
+			aux_config.mtu = 1500;
+			ret=ipfix_add_collector(my_exporter, "127.0.0.1", 4711, UDP, &aux_config);
 			if (ret != 0) {
 				fprintf(stderr, "ipfix_add_collector failed!\n");
 				exit(-1);
@@ -131,20 +134,20 @@ int main(int argc, char *argv[])
 			break;
 		case 'd':
 			//delete template
-			scanf("%d",&delete_id);
+			assert(scanf("%d",&delete_id)==1);
 			printf("Start testing Template destruction ID : %d!\n", delete_id);
 			
-			ret=ipfix_remove_template_set(my_exporter, delete_id);
+			ret=ipfix_remove_template(my_exporter, delete_id);
 			
 			if (ret != 0) {
-				fprintf(stderr, "ipfix_remove_template_set failed!\n");
+				fprintf(stderr, "ipfix_remove_template failed!\n");
 			}
 			break;
 		case 'r':
 			//Send an empty datarecord 
 			// implemented only for testing if data is assighned to the corresponding templates correctly
 			create_id = 0;
-			scanf("%u",&create_id);
+			assert(scanf("%u",&create_id)==1);
 			//create and send datarecord
 			my_n_template_id = htons(create_id);
 			ret = ipfix_start_data_set(my_exporter, my_n_template_id);

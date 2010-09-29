@@ -53,11 +53,12 @@ class IpfixCollector
 		
 		virtual string getStatisticsXML(double interval);
 
+		void setTemplateLifetime(uint16_t time);
 
 	private:
 		IpfixReceiver* ipfixReceiver;
 		IpfixPacketProcessor* ipfixPacketProcessor;
-		uint32_t statRecvdRecords;
+		uint64_t statSentRecords;
 
 };
 
