@@ -22,6 +22,8 @@
 #include "PCAPExporterPipe.h"
 
 #include "modules/packet/Packet.h"
+#include "common/Time.h"
+
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
@@ -52,8 +54,10 @@ PCAPExporterPipe::PCAPExporterPipe(const std::string& logfile)
 	  counter(0),
 	  last_check(0),
 	  statPktsForwarded(0),
-	  statBytesForwarded(0)
+	  statBytesForwarded(0),
+	  restartInterval(0)
 {
+	bzero(&nextRestart, sizeof(nextRestart));
 }
 
 PCAPExporterPipe::~PCAPExporterPipe()
@@ -75,6 +79,11 @@ void PCAPExporterPipe::setAppendDate(bool value)
 	appenddate = value;
 }
 
+void PCAPExporterPipe::setRestartInterval(uint32_t ri)
+{
+	restartInterval = ri;
+}
+
 void PCAPExporterPipe::setSigKillTimeout(int s)
 {
 	if (s < 0) s *= -1;
@@ -92,7 +101,7 @@ void PCAPExporterPipe::setRestartOnSignal(bool b){
  * */
 int PCAPExporterPipe::execCmd(std::string& cmd)
 {
-	//char *command[] = {"tcpdump","-nr", "-" , (char*)0}; //"-w", "/tmp/pcap.dump",(char*)0};
+	int child_parent_pipe[2];
 	char *command[64];
 	char tmp[1024];
 	if (strlen(cmd.c_str()) > 1023) {
@@ -111,7 +120,7 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 	}
 	command[++i] = (char*)0;
 	if (pipe(child_parent_pipe)) {
-		THROWEXCEPTION("pipe(child_parent_pipe) failed");
+		THROWEXCEPTION("pipe(child_parent_pipe) failed with error code %u (%s)", errno, strerror(errno));
 	}
 
 	/* Create a pipe, which allows communication between the child and the parent.
@@ -130,6 +139,9 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 
 	int pid = fork();
 	if (pid == 0) {
+		// child process
+		close(fd[1]); // close write-end
+		close(child_parent_pipe[0]); // close read-end
 		if (dup2(fd[0], STDIN_FILENO) == -1) {
 			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
 				THROWEXCEPTION("dup(fd[0]) failed");
@@ -168,16 +180,8 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 					THROWEXCEPTION("dup2 & write failed");
 				exit(1);
 			}
-			/*
-			   if (setvbuf(stderr, NULL, _IONBF, 0)) {
-			   THROWEXCEPTION("setvbuf failed");
-			   }
-			   if (setvbuf(stdout, NULL, _IONBF, 0)) {
-			   THROWEXCEPTION("setvbuf failed");
-			   }
-			   */
 		}
-		close(child_parent_pipe[0]); // close read-end
+
 		if (execvp(command[0], command)<0) {
 			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
 				THROWEXCEPTION("exec failed"); //throw the exception only if we couldn't
@@ -186,6 +190,7 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 		}
 	} else if (pid > 0) {
 		close(child_parent_pipe[1]);
+		close(fd[0]);
 		int buf;
 		if (read(child_parent_pipe[0], &buf, sizeof(int)) == sizeof(int)) { //The child actually wrote errno into the pipe
 			THROWEXCEPTION("An error occurred in the child: %s", strerror(buf));
@@ -202,22 +207,16 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
  */
 void PCAPExporterPipe::performStart()
 {
-	char errbuf[PCAP_ERRBUF_SIZE];
 	time(&last_check);
 	if(last_check == (time_t) -1)
 		THROWEXCEPTION("time() failed");
 
-	SignalHandler::getInstance().registerSignalHandler(SIGCHLD, this);
-	SignalHandler::getInstance().registerSignalHandler(SIGPIPE, this);
-	if(restartOnSignal)
-		SignalHandler::getInstance().registerSignalHandler(SIGUSR2, this);
+	registerSignalHandlers();
 
 	dummy = pcap_open_dead(link_type, snaplen);
 	if (!dummy) {
-		THROWEXCEPTION("Could not open dummy device: %s", errbuf);
+		THROWEXCEPTION("Could not open dummy device: %s", pcap_geterr(dummy));
 	}
-
-	startProcess();
 
 	msg(MSG_INFO, "Started PCAPExporterPipe with the following parameters:");
 	if (fifoReaderCmd != ""){
@@ -233,51 +232,72 @@ void PCAPExporterPipe::performStart()
 	else
 		msg(MSG_ERROR, "No Logfile specified - dumping to stdout!");
 	msg(MSG_INFO, "  - sigKillTimeout = %d" , sigKillTimeout);
-}
-//void PCAPExporterPipe::postReconfiguration(){ msg(MSG_INFO, "postReconfiguration"); }
-//void PCAPExporterPipe::onReconfiguration1(){ msg(MSG_INFO, "onReconfiguration1"); }
-//void PCAPExporterPipe::onReconfiguration2(){ msg(MSG_INFO, "onReconfiguration1"); }
-//void PCAPExporterPipe::preReconfiguration(){ msg(MSG_INFO, "preReconfiguration"); }
+	msg(MSG_INFO, "  - restartInterval = %u seconds" , restartInterval);
 
-void PCAPExporterPipe::performShutdown()
+	startProcess();
+}
+
+void PCAPExporterPipe::registerSignalHandlers()
+{
+	SignalHandler::getInstance().registerSignalHandler(SIGCHLD, this);
+	SignalHandler::getInstance().registerSignalHandler(SIGPIPE, this);
+	if (restartOnSignal)
+		SignalHandler::getInstance().registerSignalHandler(SIGUSR2, this);
+}
+
+void PCAPExporterPipe::unregisterSignalHandlers()
 {
 	SignalHandler::getInstance().unregisterSignalHandler(SIGCHLD, this);
 	SignalHandler::getInstance().unregisterSignalHandler(SIGPIPE, this);
-	if(restartOnSignal)
+	if (restartOnSignal)
 		SignalHandler::getInstance().unregisterSignalHandler(SIGUSR2, this);
-	msg(MSG_DEBUG, "Performing shutdown for PID %d", fifoReaderPid);
-	sleep(1);
-	if (dumper) {
-		if (-1 == pcap_dump_flush(dumper)) {
-			msg(MSG_FATAL, "PCAPExporterPipe: Could not flush dump file");
-		}
+}
 
-		pcap_dump_close(dumper);
-		if (fifoReaderPid != 0 ) {
-			kill_all(fifoReaderPid);
-		}
-	}
+void PCAPExporterPipe::performShutdown()
+{
+	unregisterSignalHandlers();
+	stopProcess();
 }
 
 void PCAPExporterPipe::startProcess()
 {
-	char errbuf[PCAP_ERRBUF_SIZE];
-	close(fd[0]);
-	close(fd[1]);
-
 	if (pipe(fd)) {
 		THROWEXCEPTION("pipe() command failed");
 	}
-	FILE *f = fdopen(fd[1], "w");
-	if (! f) {
-		THROWEXCEPTION("fdopen failed");
-	}
-	dumper = pcap_dump_fopen(dummy, f);
-	if (!dumper) {
-		THROWEXCEPTION("Could not open dump file: %s", errbuf);
-	}
+
 	fifoReaderPid = execCmd(fifoReaderCmd);
-	msg(MSG_INFO, "Restarted process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
+	msg(MSG_INFO, "Started process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
+						fifoReaderCmd.c_str(), fifoReaderPid);
+
+	pcapFile = fdopen(fd[1], "w");
+	if (!pcapFile) {
+		THROWEXCEPTION("PCAPExporterPipe: fdopen failed, error %d (%s)", errno, strerror(errno));
+	}
+	dumper = pcap_dump_fopen(dummy, pcapFile);
+	if (!dumper) {
+		THROWEXCEPTION("PCAPExporterPipe: could not open dump file: %s", pcap_geterr(dummy));
+	}
+}
+
+void PCAPExporterPipe::stopProcess()
+{
+	if (!dumper) return;
+
+	if (-1 == pcap_dump_flush(dumper)) {
+		msg(MSG_ERROR, "PCAPExporterPipe: Could not flush dump file");
+	}
+
+	/*if (fclose(pcapFile)) {
+		msg(MSG_ERROR, "PCAPExporterPipe: failed to close pipe handle, error %d (%s)", errno, strerror(errno));
+	}*/
+
+	pcap_dump_close(dumper);
+
+	if (fifoReaderPid != 0 ) {
+		kill_all(fifoReaderPid);
+	}
+
+	msg(MSG_INFO, "Stopped process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
 						fifoReaderCmd.c_str(), fifoReaderPid);
 }
 
@@ -286,18 +306,42 @@ void PCAPExporterPipe::startProcess()
  */
 void PCAPExporterPipe::receive(Packet* packet)
 {
+	DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive() called");
 	if (onRestart){
 		 DPRINTF("Dropping incoming packet, as attached process is not ready");
+		 DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive() ended");
 		 return;
 	}
-	if(fifoReaderPid == 0){
+	if (fifoReaderPid == 0){
 		 msg(MSG_VDEBUG, "fifoReaderPid = 0...this might happen during reconfiguration");
+		 DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive() ended");
 		 return;
 	}
+	if (restartInterval) {
+		if (nextRestart.tv_sec==0) {
+			DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive(): updating nextRestart");
+			nextRestart = packet->timestamp;
+			nextRestart.tv_sec += restartInterval;
+		} else if (compareTime(nextRestart, packet->timestamp)<0) {
+			DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive(): restarting process");
+
+			// we need to unregister our signal handlers, as we get race conditions with the signal handler for restarting the process
+			unregisterSignalHandlers();
+			stopProcess();
+			startProcess();
+			registerSignalHandlers();
+			DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive(): updating nextRestart");
+			nextRestart.tv_sec += ((packet->timestamp.tv_sec-nextRestart.tv_sec)/restartInterval+1)*restartInterval;
+		}
+	}
+
 	writePCAP(packet);
+
 	statBytesForwarded += packet->data_length;
 	statPktsForwarded++;
+	DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive() ended");
 }
+
 void PCAPExporterPipe::handleSigPipe(int sig)
 {
 	handleSigChld(SIGCHLD);
@@ -359,13 +403,19 @@ void PCAPExporterPipe::kill_pid(int pid)
 {
 	int i = sigKillTimeout;
 	std::string path = "/proc/" + boost::lexical_cast<std::string>(pid);
-	kill(pid, SIGTERM);
+	/*msg(MSG_DEBUG, "Sending SIGTERM to pid %u", pid);
+	if (kill(pid, SIGTERM)) {
+		msg(MSG_ERROR, "Failed to call kill(%u, SIGTERM), error code %u (%s)", pid, errno, strerror(errno));
+	}*/
 	while(i--){
 		msg(MSG_INFO, "waiting for pid %d, but no longer than %d seconds...", pid, i+1);
 		if (!isRunning(fifoReaderPid)) return;
 		sleep(1);
 	}
-	kill(pid, SIGKILL);
+	msg(MSG_DEBUG, "Sending SIGKILL to pid %u", pid);
+	if (kill(pid, SIGKILL)) {
+		msg(MSG_ERROR, "Failed to call kill(%u, SIGKILL), error code %u (%s)", pid, errno, strerror(errno));
+	}
 	waitpid(fifoReaderPid, NULL, 0);
 }
 
@@ -395,7 +445,6 @@ bool PCAPExporterPipe::checkint(const char *my_string)
  * */
 void PCAPExporterPipe::kill_all(int ppid)
 {
-	sleep(2); //give the process some time to finish its work
 	bfs::path path("/proc/");
 	if (!bfs::exists(path) || !bfs::is_directory(path)){
 		THROWEXCEPTION("Directory /proc not found...");
@@ -421,7 +470,7 @@ void PCAPExporterPipe::kill_all(int ppid)
 					if (count++ == 3) { // field of parent pid
 						for (std::vector<int>::iterator it = my_ppids.begin(); it != my_ppids.end(); it++) {
 							if (atoi(token) == *it) {
-								msg(MSG_DEBUG, "Pid %s  is a child of %d", dir_iterator->leaf().c_str(), *it );
+								msg(MSG_DEBUG, "Pid %s is a child of %d", dir_iterator->leaf().c_str(), *it );
 								my_pids.push_back(boost::lexical_cast<int>(dir_iterator->leaf()));
 								my_ppids.push_back(boost::lexical_cast<int>(dir_iterator->leaf()));
 								break;
@@ -437,7 +486,6 @@ void PCAPExporterPipe::kill_all(int ppid)
 	}
 	my_pids.push_back(ppid);
 	for (std::vector<int>::iterator it = my_pids.begin(); it != my_pids.end(); it++) {
-		msg(MSG_DEBUG, "Killing Pid %d", *it);
 		kill_pid(*it);
 	}
 }

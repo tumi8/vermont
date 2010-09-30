@@ -53,6 +53,7 @@ private:
     std::string workingPath;
 	bool appenddate;
 	bool restart;
+	uint32_t restartInterval;
 };
 
 
