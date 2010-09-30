@@ -71,7 +71,7 @@ int main(int ac, char **dc)
 	MainSignalHandler main_signal_handler;
 
 	/* parse command line */
-	while ((c=getopt(ac, dc, "hf:ds:u:")) != -1) {
+	while ((c=getopt(ac, dc, "hf:d")) != -1) {
 
 		switch (c) {
 
