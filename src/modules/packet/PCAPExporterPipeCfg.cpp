@@ -28,7 +28,12 @@
 PCAPExporterPipeCfg::PCAPExporterPipeCfg(XMLElement* elem)
 	: CfgHelper<PCAPExporterPipe, PCAPExporterPipeCfg>(elem, "pcapExporterPipe"),
         link_type(DLT_EN10MB), snaplen(PCAP_MAX_CAPTURE_LENGTH), sigkilltimeout(1),
-        logFileName(""), fifoReaderCmd(""), workingPath(""),appenddate(false), restart(false)
+        logFileName(""),
+        fifoReaderCmd(""),
+        workingPath(""),
+        appenddate(false),
+        restart(false),
+        restartInterval(0)
 {
 	if (!elem) return;
 
@@ -57,6 +62,8 @@ PCAPExporterPipeCfg::PCAPExporterPipeCfg(XMLElement* elem)
             workingPath = e->getFirstText();
         } else if (e->matches("appenddate")) {
 			appenddate = getBool("appenddate", false, e);
+        } else if (e->matches("restartinterval")) {
+			restartInterval = getInt("restartinterval", 0);
 		} else if(e->matches("restartonsignal")) {
 			restart = getBool("restartonsignal", false, e);
 		}
@@ -84,6 +91,7 @@ PCAPExporterPipe* PCAPExporterPipeCfg::createInstance()
 	instance->setAppendDate(appenddate);
 	instance->setRestartOnSignal(restart);
 	instance->setWorkingPath(workingPath);
+	instance->setRestartInterval(restartInterval);
 	return instance;
 }
 

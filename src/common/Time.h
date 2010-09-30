@@ -82,6 +82,21 @@ inline int compareTime(const struct timespec& ts1, const struct timespec& ts2)
 	return 0;
 }
 
+/**
+ * compares two timeval values
+ * @returns -1 if ts1 is smaller, 0 if both are equal, 1 if ts2 is smaller
+ */
+inline int compareTime(const struct timeval& tv1, const struct timeval& tv2)
+{
+	if (tv1.tv_sec < tv2.tv_sec) return -1;
+	else if (tv1.tv_sec > tv2.tv_sec) return 1;
+	else {
+		if (tv1.tv_usec < tv2.tv_usec) return -1;
+		else if (tv1.tv_usec > tv2.tv_usec) return 1;
+	}
+	return 0;
+}
+
 
 // The following code was shamelessly ripped from the Mash streaming media toolkit
 // file ntp-time.h, and, of course, modified!

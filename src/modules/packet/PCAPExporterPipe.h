@@ -49,6 +49,7 @@ public:
     void setWorkingPath(const std::string& path);
     void setSigKillTimeout(int s);
 	void setRestartOnSignal(bool b);
+	void setRestartInterval(uint32_t ri);
 	void setAppendDate(bool b);
 	virtual void handleSigChld(int sig);
 	virtual void handleSigPipe(int sig);
@@ -58,6 +59,7 @@ public:
     void kill_all(int ppid);
     void kill_pid(int ppid);
     void startProcess();
+    void stopProcess();
     bool checkint(const char *my_string);
 
 //    virtual void postReconfiguration();
@@ -83,10 +85,29 @@ private:
     int sigKillTimeout;
 	int counter;
 	time_t last_check;
+	/**
+	 * file descriptors for our pipe to the process
+	 * fd[1]: vermont writes into pipe
+	 * fd[0]: child process reads from pipe
+	 */
     int fd[2];
-	int child_parent_pipe[2];
+	FILE* pcapFile;
 	uint64_t statPktsForwarded;
 	uint64_t statBytesForwarded;
+	/**
+	 * restart interval of the process in seconds
+	 * time is measured by the timestamps of the incoming packets
+	 * if 0, the process will not be automatically restarted
+	 * if >0, the process will be regularly restarted after the given time
+	 */
+	uint32_t restartInterval;
+	/**
+	 * next time the process will be restarted (used for parameter restartInterval)
+	 */
+	struct timeval nextRestart;
+
+	void registerSignalHandlers();
+	void unregisterSignalHandlers();
 };
 
 
