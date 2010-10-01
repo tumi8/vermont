@@ -11,6 +11,7 @@
 #include "Source.h"
 #include "Timer.h"
 
+#include "common/Time.h"
 #include "common/ConcurrentQueue.h"
 #include "common/msg.h"
 #include "common/Thread.h"
@@ -37,13 +38,20 @@ template <class T>
 class ConnectionQueue : public Adapter<T>, public Timer
 {
 public:
+
+	/**
+	 * initializes the ConnectionQueue
+	 * @param maxEntries maximum number of enqueued entries
+	 * @param multipleProducers true if multiple producers and/or
+	 * 	consumers using the queue
+	 */
 	ConnectionQueue(uint32_t maxEntries, bool multipleProducers = false)
 		: thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
 	{
 		if(multipleProducers)
-			queue = new ConcurrentQueueSpinlock<T>(MULTI, maxEntries);
+			queue = new ConcurrentQueue<T>(MULTI, maxEntries);
 		else
-			queue = new ConcurrentQueueSpinlock<T>(SINGLE_CACHEOPT, maxEntries);
+			queue = new ConcurrentQueue<T>(SINGLE, maxEntries);
 
 		initPhase = true;
 		this->Sensor::usedBytes = sizeof(ConnectionQueue);
@@ -54,6 +62,10 @@ public:
 		this->shutdown(false);
 	}
 
+	/**
+	 * insert an item in the queue
+	 * @param packet item to be enqueued
+	 */
 	virtual void receive(T packet)
 	{
 		DPRINTF("receive(Packet*)");
@@ -61,6 +73,9 @@ public:
 		queue->push(packet);
 	}
 
+	/**
+	 * start the queue
+	 */
 	virtual void performStart()
 	{
 		queue->restart();
@@ -127,7 +142,7 @@ public:
 
 
 private:
-	ConcurrentQueueSpinlock<T>* queue;  /**< contains all elements which were received from previous modules */
+	ConcurrentQueue<T>* queue;  /**< contains all elements which were received from previous modules */
 	Thread thread;
 	list<TimeoutEntry*> timeouts;
 	//Mutex mutex;	/**< controls access to class variable timeouts */

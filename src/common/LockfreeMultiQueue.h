@@ -5,7 +5,7 @@
  * because NULL/0 will indicate free space in the internal array
  * of the queue where the elements are stored
  * This Code only works for 32 bit systems where pointers are
- * 32 bit of size. Problems are the Compare and Swap functions.
+ * 32 bit of size. Problem here is the Compare and Swap function.
  *
  * LockfreeMultiQueue.h
  *
@@ -27,11 +27,15 @@ template<class T>
 class LockfreeMultiQueue : public BaseQueue<T>
 {
 	public:
+		/**
+		 * initializes the queue and sets the maximum number
+		 * of enqueued elements
+		 * @param maxEntries maximum number of enqueued elements
+		 */
 		LockfreeMultiQueue(uint32_t maxEntries):
 			max(maxEntries+1),
 			front(0), rear(0)
 		{
-			//printf("LockfreeMultiQueue()\n");
 			//template parameter may not be greater than 4 bytes
 			BOOST_STATIC_ASSERT(sizeof(T) <= 4);
 
@@ -47,8 +51,8 @@ class LockfreeMultiQueue : public BaseQueue<T>
 
 		/**
 		 * enqueues an element of type T in the queue
-		 * @param element which will be enqueued.
-		 * @return always true
+		 * @param element element which will be enqueued.
+		 * @return false if queue is full, otherwise true
 		 */
 		inline bool push(T element){
 			volatile uint64_t rearTmp, frontTmp;
@@ -86,7 +90,8 @@ class LockfreeMultiQueue : public BaseQueue<T>
 		/**
 		 * returns the first element of type T in queue
 		 * and removes it from the queue
-		 * @return first pointer in the queue
+		 * @param element pointer where dequeued element will be stored
+		 * @return false if no element to be dequeued, otherwise true
 		 */
 		inline bool pop(T* element){
 			volatile uint64_t frontTmp, rearTmp;
@@ -139,7 +144,7 @@ class LockfreeMultiQueue : public BaseQueue<T>
 		/**
 		 * Returns the higher 32 bits of the 64 bit argument.
 		 * Should be the value of the entry.
-		 * @entry 64 bit argument
+		 * @param entry 64 bit argument
 		 * @return higher 32 bits of the 64 bit argument
 		 */
 		inline uint32_t valueOf(uint64_t entry){
@@ -149,7 +154,7 @@ class LockfreeMultiQueue : public BaseQueue<T>
 		/**
 		 * Returns the lower 32 bits of the 64 bit argument
 		 * Should be the reference counter of the entry
-		 * @entry 64 bit argument
+		 * @param entry 64 bit argument
 		 * @return lower 32 bits of the 64 bit argument
 		 */
 		inline uint32_t refOf(uint64_t entry){
@@ -161,8 +166,8 @@ class LockfreeMultiQueue : public BaseQueue<T>
 		 * and returns it as a 64 bit entry where value will
 		 * be the higher 32 bit and ref the lower accordingly
 		 *
-		 * @value should be the value of the entry
-		 * @ ref sould be the reference counter of the entry
+		 * @param value should be the value of the entry
+		 * @param ref should be the reference counter of the entry
 		 * @return 64 bits combined by the two 32 bit arguments
 		 */
 		inline uint64_t makeEntry(T value, uint32_t ref){

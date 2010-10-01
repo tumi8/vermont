@@ -18,7 +18,7 @@ template<class T>
 class STLQueue : public BaseQueue<T>
 {
 	public:
-		STLQueue() { /*printf("STLQueue()\n");*/ }
+		STLQueue() {}
 		~STLQueue() {};
 
 		/**
@@ -26,7 +26,7 @@ class STLQueue : public BaseQueue<T>
 		 * @param element which will be enqueued.
 		 * @return always true
 		 */
-		inline bool push(T element){
+		bool push(T element){
 			lock.lock();
 			queue.push(element);
 			lock.unlock();
@@ -35,11 +35,12 @@ class STLQueue : public BaseQueue<T>
 		}
 
 		/**
-		 * returns the first element of type T in queue
+		 * dequeues the first element of type T in queue
 		 * and removes it from the queue
-		 * @return first pointer in the queue
+		 * @param element which will be dequeued
+		 * @return false if no element in queue
 		 */
-		inline bool pop(T* element){
+		bool pop(T* element){
 			lock.lock();
 
 			if(queue.empty()){

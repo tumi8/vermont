@@ -22,12 +22,19 @@
 
 
 template<class T>
-class LockfreeSingleQueueCacheOpt : public BaseQueue<T>
+class LockfreeSingleQueue : public BaseQueue<T>
 {
 public:
-	LockfreeSingleQueueCacheOpt(int maxEntries){
-		//printf("LockfreeSingleQueueCacheOpt()\n");
+
+	/**
+	 * initializes the queue and sets the maximum number
+	 * of enqueued elements
+	 * @param maxEntries maximum number of enqueued elements
+	 */
+	LockfreeSingleQueue(uint32_t maxEntries){
 		uint32_t clsize = getCachelineSize();
+		if(clsize < 3 * sizeof(uint32_t))
+			THROWEXCEPTION("Error: Systems cache-line size is too small");
 		void* tmp;
 
 		/*get space for 4 cache lines, one padding cacheline in front of it*/
@@ -60,15 +67,15 @@ public:
 		buffer = new T[*max];
 	}
 
-	~LockfreeSingleQueueCacheOpt() {
+	~LockfreeSingleQueue() {
 		free((void*)read);
 		delete [] buffer;
 	}
 
 	/**
 	 * enqueues an element of type T in the queue
-	 * @param element which will be enqueued.
-	 * @return always true
+	 * @param element element which will be enqueued.
+	 * @return false if queue is full, otherwise true
 	 */
 	inline bool push(T element){
 		uint32_t afterNextWrite = next(*nextWrite);
@@ -94,7 +101,8 @@ public:
 	/**
 	 * returns the first element of type T in queue
 	 * and removes it from the queue
-	 * @return first pointer in the queue
+	 * @param element pointer where dequeued element will be stored
+	 * @return false if no element to be dequeued, otherwise true
 	 */
 	inline bool pop(T* element){
 		if(*nextRead == *localWrite){
@@ -126,7 +134,7 @@ public:
 
 	/**
 	 * restarts the queue and sets the internal
-	 * pointers to initial values
+	 * pointers to the initial values
 	 */
 	void reset(){
 		*read = *write = 0;
@@ -136,6 +144,11 @@ public:
 	}
 private:
 
+	/**
+	 * returns next array position
+	 * @param index current array position
+	 * @return consecutive array position
+	 */
 	inline uint32_t next(uint32_t index){
 		return (++index % *max);
 	}
@@ -156,174 +169,5 @@ private:
 	uint32_t* batchSize;
 	T* buffer;
 };
-
-
-template<class T>
-class LockfreeSingleQueueBasic : public BaseQueue<T>
-{
-	public:
-		LockfreeSingleQueueBasic(uint32_t maxEntries):
-			maxEntries(maxEntries+1),
-			write(0),
-			read(0)
-		{
-			//printf("LockfreeSingleQueueBasic()\n");
-			buffer = new T[this->maxEntries];
-		}
-
-		~LockfreeSingleQueueBasic() {
-			delete [] buffer;
-		}
-
-		/**
-		 * enqueues an element of type T in the queue
-		 * @param element which will be enqueued.
-		 * @return always true
-		 */
-		inline bool push(T element){
-			if(next(write) == read)
-				return false;
-
-			buffer[write] = element;
-			write = next(write);
-
-			return true;
-		}
-
-		/**
-		 * returns the first element of type T in queue
-		 * and removes it from the queue
-		 * @return first pointer in the queue
-		 */
-		inline bool pop(T* element){
-			if(read == write)
-				return false;
-
-			*element = buffer[read];
-			read = next(read);
-
-			return true;
-		}
-
-		/**
-		 * restarts the queue and sets the internal
-		 * pointers to initial values
-		 */
-		void restart(){
-			read = write = 0;
-		}
-
-	private:
-
-		inline uint32_t next(uint32_t index){
-			return ++index % maxEntries;
-		}
-
-		uint32_t maxEntries;
-		T* buffer;
-		uint32_t write;
-		uint32_t read;
-
-};
-
-
-//cache line size
-#define CACHE_LINE 64
-
-template<class T>
-class LockfreeSingleQueueCacheOptLocal : public BaseQueue<T>
-{
-	public:
-		LockfreeSingleQueueCacheOptLocal(uint32_t maxEntries):
-			maxEntries(maxEntries+1),
-			write(0), read(0),
-			localWrite(0), nextRead(0),
-			localRead(0), nextWrite(0)
-		{
-			buffer = new T[this->maxEntries];
-		}
-
-		~LockfreeSingleQueueCacheOptLocal() {
-			delete [] buffer;
-		}
-
-		/**
-		 * enqueues an element of type T in the queue
-		 * @param element which will be enqueued.
-		 * @return always true
-		 */
-		inline bool push(T element){
-			uint32_t afterNextWrite = next(nextWrite);
-
-			if(afterNextWrite == localRead){
-				if(afterNextWrite == read)
-					return false;
-				localRead = read;
-			}
-
-			buffer[nextWrite] = element;
-			nextWrite = afterNextWrite;
-			//TODO maybe add batch update functionality here
-			write = nextWrite;
-
-			return true;
-		}
-
-		/**
-		 * returns the first element of type T in queue
-		 * and removes it from the queue
-		 * @return first pointer in the queue
-		 */
-		inline bool pop(T* element){
-			if(nextRead == localWrite){
-				if(nextRead == write)
-					return false;
-				localWrite = write;
-			}
-
-			*element = buffer[nextRead];
-			nextRead = next(nextRead);
-			//TODO maybe add batch update functionality here
-			read = nextRead;
-
-			return true;
-		}
-
-		/**
-		 * restarts the queue and sets the internal
-		 * pointers to initial values
-		 */
-		void restart(){
-			read = write = 0;
-			localWrite = nextRead = 0;
-			localRead = nextWrite = 0;
-		}
-
-	private:
-
-		inline uint32_t next(uint32_t index){
-			return (++index % maxEntries);
-		}
-
-		char pad0[CACHE_LINE];
-		/*shared control variables*/
-		volatile uint32_t read;
-		volatile uint32_t write;
-		char pad1[CACHE_LINE - 2*sizeof(uint32_t)];
-		/*consumer’s local variables*/
-		uint32_t localWrite;
-		uint32_t nextRead;
-		char pad2[CACHE_LINE - 2*sizeof(uint32_t)];
-		/*producer’s local variables*/
-		uint32_t localRead;
-		uint32_t nextWrite;
-		char pad3[CACHE_LINE - 2*sizeof(uint32_t)];
-		/*constants*/
-		uint32_t maxEntries;
-		T* buffer;
-		char pad4[CACHE_LINE - sizeof(uint32_t) - sizeof(T*)];
-
-};
-
 
 #endif
