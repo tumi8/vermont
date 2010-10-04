@@ -60,6 +60,7 @@ public:
 	virtual ~ConnectionQueue()
 	{
 		this->shutdown(false);
+		delete queue;
 	}
 
 	/**
@@ -113,6 +114,9 @@ public:
 		}
 	}
 
+	/**
+	 * @return number of currently inserted items
+	 */
 	inline int getCount()
 	{
 		return queue->getCount();

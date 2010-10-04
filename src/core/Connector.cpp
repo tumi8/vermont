@@ -39,7 +39,7 @@ Graph* Connector::connect(Graph* g)
 			for(unsigned int k = 0; k < check.size(); k++){
 				if(check[k] == successor){
 					found = true;
-					msg(MSG_INFO, "Creating ConnectionQueue for module %s[Id = %d] cause of multiple predecessors",
+					msg(MSG_INFO, "Creating ConnectionQueue for module %s[Id = %d] because of multiple predecessors",
 							successor->getName().c_str(), successor->getID());
 					successor->getQueueInstance(true);
 					break;
