@@ -35,6 +35,7 @@ namespace InformationElement {
 	bool IeInfo::isReverseField() const
 	{
 		return enterprise & IPFIX_PEN_reverse;
+		// return (enterprise == IPFIX_PEN_reverse) || ((enterprise == IPFIX_PEN_vermont) && (id & IPFIX_ETYPE_reverse_bit))
 	}
 
 	/**
@@ -46,6 +47,11 @@ namespace InformationElement {
 		if (ipfix_id_lookup(id, enterprise | IPFIX_PEN_reverse)==0) return false;
 
 		return true;
+
+		//if ((enterprise == 0) && (ipfix_id_lookup(id, IPFIX_PEN_reverse) != 0)) return true;
+		//if ((enterprise == IPFIX_PEN_reverse) && (ipfix_id_lookup(id, 0) != 0)) return true;
+		//if ((enterprise == IPFIX_PEN_vermont) && (ipfix_id_lookup(id^IPFIX_ETYPE_reverse_bit, IPFIX_PEN_vermont) != 0)) return true;
+		//return false;
 	}
 
 	/**
@@ -62,6 +68,12 @@ namespace InformationElement {
 			THROWEXCEPTION("did not find reverse element for %s", toString().c_str());
 
 		return IeInfo(id, enterprise | IPFIX_PEN_reverse, length);
+
+		//ipfix_identifier* id;
+		//if ((enterprise == 0) && ((id = ipfix_id_lookup(id, IPFIX_PEN_reverse)) != 0)) return IeInfo(id);
+		//if ((enterprise == IPFIX_PEN_reverse) && ((id = ipfix_id_lookup(id, 0)) != 0)) return IeInfo(id);
+		//if ((enterprise == IPFIX_PEN_vermont) && ((id = ipfix_id_lookup(id^IPFIX_ETYPE_reverse_bit, IPFIX_PEN_vermont)) != 0)) return IeInfo(id);
+		//THROWEXCEPTION("did not find reverse element for %s", toString().c_str());
 	}
 
 	/**

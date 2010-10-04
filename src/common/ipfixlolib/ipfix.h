@@ -156,6 +156,23 @@ extern "C" {
 
 
 #define IPFIX_PEN_reverse                           29305
+
+/* 
+// Private enterprise number of Technische Universitaet Muenchen (19518)
+#define IPFIX_PEN_TUM				    19518
+
+// For Vermont, we may use ids in the range [1..1023]
+// see http://www.net.in.tum.de/html/ipfix-pen/ or 
+// http://www.net.in.tum.de/en/miscellaneous/enterprise-specific-information-elements-for-ipfix/
+#define IPFIX_PEN_vermont			    IPFIX_PEN_TUM
+
+// For private Information Elements, we cannot use IPFIX_PEN_reverse to
+// indicate the reverse direction. Therefore, we reserve the 10th bit the allocated
+// private id range to indicate VERMONT-specific reverse Information Elements.
+// (i.e., ids in the range 513 to 1023 represent the reverse direction of ids 1 to 511)
+#define IPFIX_ETYPE_reverse_bit			    0x00000200
+*/
+
 // not registered at IANA
 // within Vermont, we combine this PEN with IPFIX_PEN_reverse
 // to declare reverse Vermont-specific IEs. That's why this
