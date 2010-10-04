@@ -1,1 +1,0 @@
-/usr/bin/c++   -g -march=i586   CMakeFiles/test_everything.dir/test_everything.o  -o test_everything -rdynamic ../../common/ipfixlolib/libipfixlolib.a ../../common/libcommon.a 

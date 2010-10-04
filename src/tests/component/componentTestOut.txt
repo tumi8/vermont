@@ -1,4 +1,0 @@
-Tested ConcurrentQueue type:33 producers:1 size:1000 operations:10000000
-1 sec 149939260 nsec
-1 sec 165087472 nsec
-1 sec 123375728 nsec

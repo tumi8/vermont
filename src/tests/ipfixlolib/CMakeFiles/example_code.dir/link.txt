@@ -1,1 +1,0 @@
-/usr/bin/c++   -g -march=i586   CMakeFiles/example_code.dir/example_code.o  -o example_code -rdynamic ../../common/ipfixlolib/libipfixlolib.a ../../common/libcommon.a 
