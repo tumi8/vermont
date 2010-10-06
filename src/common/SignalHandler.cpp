@@ -39,8 +39,10 @@ int SignalHandler::registerSignalHandler(int sig, SignalInterface *t)
 
 	it = signalList.find(sig);
 	if (it == signalList.end()) {
-		if (setupSignal(sig))
+		if (setupSignal(sig)){
+			pthread_mutex_unlock(&mutex);
 			THROWEXCEPTION("Couldn't set up signal handler for signal %d\n", sig);
+		}
 	}
 	signalList[sig].push_back(t);
 	pthread_mutex_unlock(&mutex);
@@ -56,6 +58,7 @@ int SignalHandler::unregisterSignalHandler(int sig, SignalInterface *t)
 	it = signalList.find(sig);
 	/**< no signal registered */
 	if (it == signalList.end()) {
+		pthread_mutex_unlock(&mutex);
 		return 1;
 	}
 	
