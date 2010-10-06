@@ -21,6 +21,10 @@ public:
 	virtual ~Destination() { };
 	
 	virtual void receive(T e) = 0;
+	virtual void receive(T e, int id) {
+
+	}
+
 
 	// See Source.h for comments on the queue running notification
 	virtual void notifyQueueRunning() {}
@@ -35,6 +39,11 @@ public:
 	virtual ~Destination() { };
 	
 	virtual void receive(Emitable* e)
+	{
+		THROWEXCEPTION("this module is no destination!");
+	}
+
+	virtual void receive(Emitable* e, int id)
 	{
 		THROWEXCEPTION("this module is no destination!");
 	}

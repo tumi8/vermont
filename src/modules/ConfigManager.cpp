@@ -30,6 +30,7 @@
 #include "modules/packet/PSAMPExporterCfg.h"
 #include "modules/packet/PCAPExporterFileCfg.h"
 #include "modules/packet/PCAPExporterPipeCfg.h"
+#include "modules/packet/IDSLoadbalancerCfg.h"
 #include "modules/packet/filter/PacketFilterCfg.h"
 #include "modules/ipfix/FpaPcapExporterCfg.h"
 #include "modules/ipfix/FpaPacketGeneratorCfg.h"
@@ -91,6 +92,7 @@ Cfg* ConfigManager::configModules[] = {
 	new IpfixNetflowExporterCfg(NULL),
 	new IpfixPayloadWriterCfg(NULL),
 	new IpfixFileWriterCfg(NULL),
+	new IDSLoadbalancerCfg(NULL),
 	new AnonymizerCfg(NULL),
 	new FrontPayloadSigMatcherCfg(NULL),
 	new P2PDetectorCfg(NULL),

@@ -54,6 +54,10 @@ public:
 	{
 		Source<T>::send(element);
 	}
+	virtual void receive(T element, int id)
+	{
+		Source<T>::send(element, id);
+	}
 
 	virtual void notifyQueueRunning() {
 		Source<T>::sendQueueRunningNotification();

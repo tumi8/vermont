@@ -47,6 +47,11 @@ public:
 	{
 		THROWEXCEPTION("Can't disconnect from a splicer\n");
 	}
+
+	virtual void receive(T packet, int id)
+	{
+		process(packet, id);
+	}
 	
 	virtual void receive(T packet)
 	{
@@ -61,7 +66,7 @@ public:
 	}
 
 private:
-	inline void process(T packet)
+	inline void process(T packet, int id = -1)
 	{
 		if (!Source<T>::sleepUntilConnected()) {
 			DPRINTF("Can't wait for connection, perhaps the program is shutting down?");
@@ -78,7 +83,16 @@ private:
 
 		size_t i;
 		for (i = 0; i < sz; i++) {
-			destinations[i]->receive(packet);
+			if(id == -1) {
+				//packet shall be forwarded to every successor
+				destinations[i]->receive(packet);
+				continue;
+			}
+			if(id == i){
+				//forward packet to only one succeeding module
+				destinations[i]->receive(packet);
+				break;
+			}
 		}
 	}
 

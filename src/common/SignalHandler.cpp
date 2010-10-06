@@ -34,9 +34,10 @@ SignalHandler& SignalHandler::getInstance()
 int SignalHandler::registerSignalHandler(int sig, SignalInterface *t)
 {
 	std::map<int, std::list<SignalInterface*> >::iterator it;
-	it = signalList.find(sig);
-	
+
 	pthread_mutex_lock(&mutex);
+
+	it = signalList.find(sig);
 	if (it == signalList.end()) {
 		if (setupSignal(sig))
 			THROWEXCEPTION("Couldn't set up signal handler for signal %d\n", sig);
@@ -50,13 +51,14 @@ int SignalHandler::unregisterSignalHandler(int sig, SignalInterface *t)
 {
 	std::map<int, std::list<SignalInterface*> >::iterator it;
 
+	pthread_mutex_lock(&mutex);
+
 	it = signalList.find(sig);
 	/**< no signal registered */
 	if (it == signalList.end()) {
 		return 1;
 	}
 	
-	pthread_mutex_lock(&mutex);
 
 	signalList[sig].remove(t);
 	if (signalList[sig].empty()) {
