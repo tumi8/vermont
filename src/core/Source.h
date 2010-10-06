@@ -87,8 +87,11 @@ public:
 			connected.inc(2);
 		return retval;
 	}
+	inline bool send(T t){
+		return send(t, -1);
+	}
 
-	inline bool send(T t)
+	inline bool send(T t, int id)
 	{
 		while (atomic_lock(&syncLock)) {
 			if (!sleepUntilConnected()) {
@@ -96,7 +99,12 @@ public:
 				return false;
 			}
 		}
-		if (hasSuccessor) dest->receive(t);
+		if (hasSuccessor){
+			if(id < 0 )
+				dest->receive(t);
+			else
+				dest->receive(t, id);
+		}
 		else {
 			// we don't have a succeeding module, so clean up this data element
 			t->removeReference();

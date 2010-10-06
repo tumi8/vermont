@@ -292,6 +292,8 @@ void PCAPExporterPipe::stopProcess()
 	}*/
 
 	pcap_dump_close(dumper);
+	close(fd[1]);
+	close(fd[0]);
 
 	if (fifoReaderPid != 0 ) {
 		kill_all(fifoReaderPid);
@@ -354,7 +356,8 @@ void PCAPExporterPipe::handleSigPipe(int sig)
  */
 void PCAPExporterPipe::handleSigChld(int sig)
 {
-	if(onRestart || exitFlag || isRunning(fifoReaderPid)) return;
+	int pid = fifoReaderPid;
+	if(onRestart || exitFlag || isRunning(pid)) return;
 	onRestart = true;
 	counter++;
 	time_t tmp;
@@ -368,10 +371,10 @@ void PCAPExporterPipe::handleSigChld(int sig)
 	if(counter > 5 && (tmp - last_check ) < 5)
 		THROWEXCEPTION("Too many restarts in a short time period. Maybe your commandline is erroneous");
 
-	if(!isRunning(fifoReaderPid)){
+	if(!isRunning(pid)){
 		//waitpid(fifoReaderPid, NULL, 0);
 		msg(MSG_ERROR, "Process of fifoReaderCmd \'%s\' with fifoReaderPid %d is not running!",
-				fifoReaderCmd.c_str(), fifoReaderPid);
+				fifoReaderCmd.c_str(), pid);
 		startProcess();
 	}
 
@@ -407,16 +410,17 @@ void PCAPExporterPipe::kill_pid(int pid)
 	if (kill(pid, SIGTERM)) {
 		msg(MSG_ERROR, "Failed to call kill(%u, SIGTERM), error code %u (%s)", pid, errno, strerror(errno));
 	}*/
+	kill(pid, SIGTERM);
 	while(i--){
 		msg(MSG_INFO, "waiting for pid %d, but no longer than %d seconds...", pid, i+1);
-		if (!isRunning(fifoReaderPid)) return;
+		if (!isRunning(pid)) return;
 		sleep(1);
 	}
 	msg(MSG_DEBUG, "Sending SIGKILL to pid %u", pid);
 	if (kill(pid, SIGKILL)) {
 		msg(MSG_ERROR, "Failed to call kill(%u, SIGKILL), error code %u (%s)", pid, errno, strerror(errno));
 	}
-	waitpid(fifoReaderPid, NULL, 0);
+	waitpid(pid, NULL, 0);
 }
 
 /**
@@ -425,6 +429,7 @@ void PCAPExporterPipe::kill_pid(int pid)
 bool PCAPExporterPipe::isRunning(int pid)
 {
 	int status;
+	if(pid == 0) return false;
 	int result = waitpid(pid, &status, WNOHANG);
 	if(result == 0) return true;
 	return false;
