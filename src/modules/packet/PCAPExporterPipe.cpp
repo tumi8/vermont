@@ -195,6 +195,8 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 		if (read(child_parent_pipe[0], &buf, sizeof(int)) == sizeof(int)) { //The child actually wrote errno into the pipe
 			THROWEXCEPTION("An error occurred in the child: %s", strerror(buf));
 		}
+		close(child_parent_pipe[0]);
+
 		return pid;
 	} else {
 		THROWEXCEPTION("fork() failed");
@@ -292,8 +294,6 @@ void PCAPExporterPipe::stopProcess()
 	}*/
 
 	pcap_dump_close(dumper);
-	close(fd[1]);
-	close(fd[0]);
 
 	if (fifoReaderPid != 0 ) {
 		kill_all(fifoReaderPid);
