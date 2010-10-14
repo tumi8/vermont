@@ -30,7 +30,6 @@
 #include <ctime>
 #include "PCAPExporterBase.h"
 #include <common/SignalInterface.h>
-
 class Packet;
 
 /**

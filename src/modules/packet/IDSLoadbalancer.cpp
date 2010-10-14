@@ -65,9 +65,9 @@ void IDSLoadbalancer::receive(Packet* packet)
 		DPRINTFL(MSG_VDEBUG, "Dropping packet");
 		return;
 	}	
-	if(qcount == 1)
-		send(packet);
-	else
+// 	if(qcount == 1)
+// 		send(packet);
+// 	else
 		send(packet,res);
 	//forwardPacket(packet, res);
 }

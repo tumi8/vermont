@@ -22,7 +22,7 @@ public:
 	
 	virtual void receive(T e) = 0;
 	virtual void receive(T e, int id) {
-
+	  receive(e);
 	}
 
 
