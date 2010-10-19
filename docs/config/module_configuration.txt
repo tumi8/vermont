@@ -451,6 +451,7 @@ Output type: none
 | port |  none  | Destination port. |
 | maxRecordRate | 500 | Maximum number of data/flow records to be sent to the receiving side. Higher flow rates will block the exporter, so maybe a buffer is required in front of the module. | 
 | filenamePrefix | ipfix.dump | Basename of the generated filenames. Please note that every filename will be suffixed with a consecutive 10-digit number starting at 0. | 
+ 
 
 == IpfixReceiverFile ==
 

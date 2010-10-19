@@ -77,18 +77,18 @@ private:
 		 * it should be safe to add another destination.
 		 * In the worst case, we don't push the packet to a newly added destination.
 		 */
-		size_t sz = size;
+		int sz = size;
 		if (sz > 1) // using this strange construct because size-1 could wrap
 			packet->addReference(sz - 1);
 
-		size_t i;
+		int i;
 		for (i = 0; i < sz; i++) {
 			if(id == -1) {
 				//packet shall be forwarded to every successor
 				destinations[i]->receive(packet);
 				continue;
 			}
-			if(id == i){
+			if (id == i){
 				//forward packet to only one succeeding module
 				destinations[i]->receive(packet);
 				break;

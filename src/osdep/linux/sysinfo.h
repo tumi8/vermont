@@ -4,4 +4,6 @@
 
 unsigned long long getHertzValue();
 
+int getCachelineSize();
+
 #endif

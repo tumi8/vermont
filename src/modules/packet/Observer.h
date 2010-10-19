@@ -26,7 +26,6 @@
 
 #include "common/msg.h"
 #include "common/Thread.h"
-#include "common/ConcurrentQueue.h"
 
 #include "core/InstanceManager.h"
 #include "core/Source.h"

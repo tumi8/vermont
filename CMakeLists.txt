@@ -26,6 +26,9 @@ PROJECT(VERMONT)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.3.5)
 SET(CMAKE_MODULE_PATH ${CMAKE_ROOT}/Modules ${CMAKE_SOURCE_DIR}/cmake/modules)
 
+#only for test
+#set(CMAKE_CXX_FLAGS "-g -march=i586")
+
 # move some config clutter to the advanced section
 MARK_AS_ADVANCED(
 	CMAKE_BACKWARDS_COMPATIBILITY

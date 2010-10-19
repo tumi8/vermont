@@ -37,7 +37,7 @@ Test::TestResult ConfigTester::execTest()
 
 void ConfigTester::testConfig(const std::string& configFile)
 {
-	std::string vermontCommand = "../vermont -ddddd -f test_configs/" + configFile;
+	std::string vermontCommand = "../../../vermont -ddddd -f test_configs/" + configFile;
 
 	std::string generatedOutput = "gen_output/" + configFile;
 	std::string expectedOutput = "exp_output/" + configFile;

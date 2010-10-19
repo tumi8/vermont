@@ -53,11 +53,22 @@ public:
 	
 	ConnectionQueue<T>* createInstance()
 	{
-		if (!maxSize) // create a new queue with its default size
-			return CfgHelper<ConnectionQueue<T>, QueueCfg<T> >::instance = new ConnectionQueue<T>();
-
-		CfgHelper<ConnectionQueue<T>, QueueCfg<T> >::instance = new ConnectionQueue<T>(maxSize);
+		CfgHelper<ConnectionQueue<T>, QueueCfg<T> >::instance = new ConnectionQueue<T>(maxSize, multiplePredecessors);
 		return CfgHelper<ConnectionQueue<T>, QueueCfg<T> >::instance;
+	}
+
+	/** this method can be called for 2 reasons:
+	 * 	1. if the instance needs a timer and in the configuration
+	 *  there was no timer in front of the instance
+	 *  2. if the instance has more predecessors. In this case multi
+	 *  should be set true
+	 *
+	 *  @multi set true if the called module has more predecessors
+	 * 	@return Instance of the ConnectionQueue
+	 */
+	ConnectionQueue<T>* getQueueInstance(bool multi = false){
+		multiplePredecessors = multi;
+		return createInstance();
 	}
 
 	virtual bool deriveFrom(QueueCfg<T>* old)
@@ -70,7 +81,7 @@ public:
 	
 protected:
 	QueueCfg(XMLElement* e)
-		: CfgHelper<ConnectionQueue<T>, QueueCfg<T> >(e, "QueueCfg<unspecified>"), maxSize(0)
+		: CfgHelper<ConnectionQueue<T>, QueueCfg<T> >(e, "QueueCfg<unspecified>")
 	{
 		// set the correct name in CfgHelper
 		this->name = getName();
@@ -78,11 +89,13 @@ protected:
 		if (!e)
 			return;
 		
-		maxSize = this->getInt("maxSize", 0);
+		maxSize = this->getInt("maxSize", 100);
+		multiplePredecessors = false;
 	}
 	
 private:
 	size_t maxSize;
+	bool multiplePredecessors;
 };
 
 
