@@ -23,11 +23,8 @@
 #include "common/Time.h"
 #include "Connection.h"
 
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <sys/sysinfo.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 
 

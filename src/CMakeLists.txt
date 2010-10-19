@@ -3,5 +3,4 @@ SUBDIRS(
 	core
 	common
 	modules
-	tests
 )

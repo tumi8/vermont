@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <iterator>
 
-using std::max;
+using std::map;
 using std::vector;
 
 
@@ -27,6 +27,30 @@ Graph* Connector::connect(Graph* g)
 
 	std::map<unsigned int, CfgNode*> id2node = getId2Node(nodes);
 
+	//add a ConnectionQueue to every Module which has more predecessors
+	vector<Cfg*> check;
+	for (unsigned int i = 0; i < nodes.size(); i++) {
+		vector<unsigned int> nexts = nodes[i]->getCfg()->getNext();
+
+		for (unsigned int j = 0; j < nexts.size(); j++){
+			Cfg* successor = id2node[nexts[j]]->getCfg();
+			bool found = false;
+
+			for(unsigned int k = 0; k < check.size(); k++){
+				if(check[k] == successor){
+					found = true;
+					msg(MSG_INFO, "Creating ConnectionQueue for module %s[Id = %d] because of multiple predecessors",
+							successor->getName().c_str(), successor->getID());
+					successor->getQueueInstance(true);
+					break;
+				}
+			}
+			if(!found)
+				check.push_back(successor);
+		}
+	}
+
+	//connect modules
 	for (unsigned int i = 0; i < nodes.size(); i++) {
 		CfgNode* fromNode = nodes[i];
 		Cfg* cfg = fromNode->getCfg();

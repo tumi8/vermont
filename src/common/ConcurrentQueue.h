@@ -1,227 +1,225 @@
 /*
- * PSAMP Reference Implementation
- *
- * ConcurrentQueue.h
- *
  * Thread-safe (concurrent) queue implementation
+ * The implementation of the BaseQueue makes it thread-safe
+ *
+ * Make sure that size of T is 4 bytes on 32 bit operating systems
+ * and 8 bytes on 64 bit operating systems accordingly when using
+ * QueueType LOCKFREE_MULTI
  *
  * Author: Michael Drueing <michael@drueing.de>
+ *         Simon Regnet <s-regnet@user.berlios.de>
  *
  */
 
 #ifndef CONCURRENT_QUEUE_H
 #define CONCURRENT_QUEUE_H
 
-#include <queue>
 #include <string>
-#include "Mutex.h"
-#include "TimeoutSemaphore.h"
+#include "BaseQueue.h"
+#include "STLQueue.h"
+#include "LockfreeSingleQueue.h"
+#include "LockfreeMultiQueue.h"
 #include "msg.h"
+#include "osdep/linux/sysinfo.h"
+#include <time.h>
+
+/**
+ * types of queues
+ */
+enum QUEUETYPES {
+	STL, SINGLE, MULTI
+};
 
 template<class T>
-class ConcurrentQueue
-{
-	public:
-		/**
-		 * default queue size
-		 */
-		static const int DEFAULT_QUEUE_SIZE = 1000;
+class ConcurrentQueue {
+public:
+	/**
+	 * default queue size
+	 */
+	static const uint32_t DEFAULT_QUEUE_SIZE = 1000;
 
-		ConcurrentQueue(int maxEntries = DEFAULT_QUEUE_SIZE) 
-			: pushedCount(0), poppedCount(0), queue(), count(0), lock(), popSemaphore(), pushSemaphore(maxEntries)
-		{
-			this->maxEntries = maxEntries;
-		};
+	/**
+	 * default queue size
+	 */
+	static const uint32_t DEFAULT_TIMEOUT = 51;
 
-		~ConcurrentQueue()
-		{
-			if(count != 0) {
-				msg(MSG_DEBUG, "WARNING: freeing non-empty queue - got count: %d", count);
-			}
-		};
-
-		void setOwner(std::string name)
-		{
-			ownerName = name;
+	/**
+	 * initializes the queue
+	 * @param qType STL | SINGLE | MULTI
+	 * @param maxEntries maximum number of enqueued items
+	 * @param spinLockTimeout timeout in ns after failed operation
+	 */
+	ConcurrentQueue(uint32_t qType = MULTI, uint32_t maxEntries =
+			DEFAULT_QUEUE_SIZE, uint32_t spinLockTimeout = DEFAULT_TIMEOUT) {
+		switch (qType) {
+		case STL:
+			this->queueImp = new STLQueue<T> ();
+			break;
+		case SINGLE:
+			this->queueImp = new LockfreeSingleQueue<T> (maxEntries);
+			break;
+		case MULTI:
+			this->queueImp = new LockfreeMultiQueue<T> (maxEntries);
+			break;
+		default:
+			THROWEXCEPTION("Unknown Queue Type");
 		}
 
-		inline void push(T t)
-		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to push element (%d elements in queue)", ownerName.c_str(), count);
-#if defined(DEBUG)
-			bool waiting = false;
-			if (pushSemaphore.getCount() == 0) {
-				waiting = true;
-				DPRINTFL(MSG_DEBUG, "(%s) queue is full with %d elements, waiting ...", ownerName.c_str(), count);
-			}
-#endif
-			if (!pushSemaphore.wait()) {
-				DPRINTF("(%s) failed to push element, program is being shut down?", ownerName.c_str());
+		shutdownFlag = false;
+
+		//initialize variable in cachelines
+		void* tmp;
+		uint32_t clsize = getCachelineSize();
+		if (2 * sizeof(uint32_t) + sizeof(struct timespec)
+				+ sizeof(BaseQueue<T>**) > clsize)
+			THROWEXCEPTION("Error: Cacheline Size is not big enough");
+
+		if (posix_memalign(&tmp, clsize, 2 * clsize) != 0)
+			THROWEXCEPTION("Error: posix_memalign()");
+
+		//producers variables
+		pushedCount = ((uint32_t*) tmp);
+		spinLockTimeoutProducer = (struct timespec*) (pushedCount + 1);
+		queueImpProducer = (BaseQueue<T>**) (spinLockTimeoutProducer + 1);
+		*pushedCount = 0;
+		spinLockTimeoutProducer->tv_sec = 0;
+		spinLockTimeoutProducer->tv_nsec = spinLockTimeout;
+		*queueImpProducer = this->queueImp;
+
+		//consumer variables
+		poppedCount = ((uint32_t*) tmp) + (clsize / sizeof(uint32_t*));
+		spinLockTimeoutConsumer = (struct timespec*) (poppedCount + 1);
+		queueImpConsumer = (BaseQueue<T>**) (spinLockTimeoutConsumer + 1);
+		numSlots = (int32_t*) (queueImpConsumer + 1);
+		*poppedCount = 0;
+		spinLockTimeoutConsumer->tv_sec = 0;
+		spinLockTimeoutConsumer->tv_nsec = spinLockTimeout;
+		*queueImpConsumer = this->queueImp;
+		*numSlots = maxEntries;
+	}
+
+	~ConcurrentQueue() {
+		if (getCount() != 0) {
+			msg(MSG_DEBUG, "WARNING: freeing non-empty queue - got count: %d",
+					getCount());
+		}
+		free((void*) pushedCount);
+	}
+
+	/**
+	 * sets the name of the owner
+	 * @param name name of the owner
+	 */
+	void setOwner(std::string name) {
+		ownerName = name;
+	}
+
+	/**
+	 * enqueue an element
+	 * @param t element to be enqueued
+	 */
+	inline void push(T t) {
+		while (!(*(this->queueImpProducer))->push(t)) {
+			(*(this->queueImpProducer))->batchUpdate();
+
+			nanosleep(spinLockTimeoutProducer, NULL);
+
+			if (shutdownFlag)
 				return;
-			}
-#if defined(DEBUG)
-			if (waiting) DPRINTF("(%s) pushing element now", ownerName.c_str());
-#endif
+		}
 
-			lock.lock();
-			queue.push(t);
-			pushedCount++;
-			count++;
-			lock.unlock();
+		__sync_add_and_fetch(pushedCount, 1);
 
-			popSemaphore.post();
-			DPRINTFL(MSG_VDEBUG, "(%s) element pushed (%d elements in queue)", ownerName.c_str(), maxEntries-pushSemaphore.getCount(), pushSemaphore.getCount(), maxEntries);
-		};
+	}
 
-		inline bool pop(T* res)
-		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)",
-					(ownerName.empty() ? "<owner not set>" : ownerName.c_str()),
-					maxEntries-pushSemaphore.getCount());
-			if (!popSemaphore.wait()) {
-				DPRINTF("(%s) failed to pop element, program is being shut down?", ownerName.c_str());
+	/**
+	 * dequeues an element of the queue
+	 * @param res pointer where the dequeued element will be stored
+	 * @return false if ConcurrentQueue was shutdown during the operation, true if successfull
+	 */
+	inline bool pop(T* res) {
+		while (!(*(this->queueImpConsumer))->pop(res)) {
+			(*(this->queueImpConsumer))->batchUpdate();
+
+			nanosleep(spinLockTimeoutConsumer, NULL);
+
+			if (spinLockTimeoutConsumer->tv_nsec * 2 < 51 * (*numSlots))
+				spinLockTimeoutConsumer->tv_nsec *= 2;
+
+			if (shutdownFlag)
 				return false;
-			}
+		}
 
-			lock.lock();
-			*res = queue.front();
-			queue.pop();
-			poppedCount++;
-			count--;
-			lock.unlock();
+		spinLockTimeoutConsumer->tv_nsec = 51;
 
-			pushSemaphore.post();
+		(*poppedCount)++;
 
-			DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
+		return true;
+	}
 
-			return true;
-		};
+	/**
+	 *  tries to enqueue an element. If the the operation can't be done
+	 *  within the given timeout, the operation fails.
+	 *  @param timeout timeout till the operation has to be finished
+	 *  @param res pointer where the dequeued element will be stored
+	 *  @return true if element could be dequeued, false otherwise
+	 */
+	inline bool popAbs(const struct timespec& timeout, T *res) {
+		if (!(*(this->queueImpConsumer))->pop(res)) {
+			(*(this->queueImpConsumer))->batchUpdate();
 
-		// try to pop an entry from the queue before timeout occurs
-		// if successful, res will hold the popped entry and true will be returned
-		// of the timeout has been reached, res will be set to NULL and false will be returned
-		inline bool pop(long timeout_ms, T *res)
-		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
-			// try to get an item from the queue
-			if(!popSemaphore.wait(timeout_ms)) {
-				// timeout occured
-				DPRINTFL(MSG_VDEBUG, "(%s) timeout", ownerName.c_str());
+			nanosleep(&timeout, NULL);
+
+			if (!(*(this->queueImpConsumer))->pop(res))
 				return false;
-			}
-
-			// popSemaphore.wait() succeeded, now pop the frontmost element
-			lock.lock();
-			*res = queue.front();
-			queue.pop();
-			poppedCount++;
-			count--;
-			lock.unlock();
-
-			pushSemaphore.post();
-
-			DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
-
-			return true;
 		}
 
-		// like pop above, but with absolute time instead of delta.
-		// use this instead of the above, makes things easier!
-		inline bool popAbs(const struct timeval &timeout, T *res)
-		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
-			
-			if (popSemaphore.waitAbs(timeout)) {
-				// popSemaphore.wait() succeeded, now pop the frontmost element
-				lock.lock();
-				*res = queue.front();
-				queue.pop();
-				poppedCount++;
-				count--;
-				lock.unlock();
+		spinLockTimeoutConsumer->tv_nsec = 51;
 
-				pushSemaphore.post();
+		(*poppedCount)++;
 
-				DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
+		return true;
+	}
 
-				return true;
-			} else {
-				// timeout occured
-				DPRINTFL(MSG_VDEBUG, "(%s) timeout or program shutdown", ownerName.c_str());
-				*res = 0;
+	/**
+	 * @return number of currently inserted elements
+	 */
+	inline uint32_t getCount() const {
+		return *pushedCount - *poppedCount;
+	}
 
-				return false;
-			}
-		}
-		
-		// like pop above, but with absolute time instead of delta.
-		// use this instead of the above, makes things easier!
-		inline bool popAbs(const struct timespec& timeout, T *res)
-		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
-		
-			if (popSemaphore.waitAbs(timeout)) {
-				// popSemaphore.wait() succeeded, now pop the frontmost element
-				lock.lock();
-				*res = queue.front();
-				queue.pop();
-				poppedCount++;
-				count--;
-				lock.unlock();
-		
-				pushSemaphore.post();
-		
-				DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
-		
-				return true;
-			}
-			else {
-				// timeout occured
-				DPRINTFL(MSG_VDEBUG, "(%s) timeout or program shutdown", ownerName.c_str());
-				*res = 0;
-		
-				return false;
-			}
-		}
+	/**
+	 * restarts the queue
+	 */
+	inline void restart() {
+		queueImp->reset();
+	}
 
-		inline int getCount() const
-		{
-			return count;
-		};
-		
-		
-		/**
-		 * after calling this function, queue will not block again but return
-		 * all functions with an error
-		 * (useful for shutdown of this instance)
-		 */
-		void notifyShutdown() 
-		{
-			popSemaphore.notifyShutdown();
-			pushSemaphore.notifyShutdown();
-		}
-		
-		
-		/**
-		 * activates all thread-locking functionality inside the queue again
-		 */
-		void restart()
-		{
-			popSemaphore.restart();
-			pushSemaphore.restart();
-		}
+	/**
+	 * after calling this function, queue will not block again but return
+	 * all functions with an error
+	 * (useful for shutdown of this instance)
+	 */
+	void notifyShutdown() {
+		shutdownFlag = true;
+	}
 
-		int pushedCount;
-		int poppedCount;
-		int maxEntries;
+protected:
+	//producer variables
+	uint32_t* pushedCount;
+	struct timespec* spinLockTimeoutProducer;
+	BaseQueue<T>** queueImpProducer;
 
-	protected:
-		std::queue<T> queue;
-		volatile int count;
-		Mutex lock;
-		TimeoutSemaphore popSemaphore;
-		TimeoutSemaphore pushSemaphore;
-		std::string ownerName;
+	//consumer variables
+	uint32_t* poppedCount;
+	struct timespec* spinLockTimeoutConsumer;
+	BaseQueue<T>** queueImpConsumer;
+	int32_t* numSlots;
+
+	BaseQueue<T>* queueImp;
+	std::string ownerName;
+	bool shutdownFlag;
 };
 
 #endif
+

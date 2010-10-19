@@ -30,7 +30,7 @@ template <class T>
 class TestQueue : public Destination<T>
 {
 public:
-	TestQueue() {}
+	TestQueue(): queue() {}
 	virtual ~TestQueue() {}
 	
 	bool pop(uint32_t timeout_ms, T* res)
