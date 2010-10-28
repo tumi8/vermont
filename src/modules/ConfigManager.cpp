@@ -30,6 +30,7 @@
 #include "modules/packet/PSAMPExporterCfg.h"
 #include "modules/packet/PCAPExporterFileCfg.h"
 #include "modules/packet/PCAPExporterPipeCfg.h"
+#include "modules/packet/PCAPExporterQueueCfg.h"
 #include "modules/packet/IDSLoadbalancerCfg.h"
 #include "modules/packet/filter/PacketFilterCfg.h"
 #include "modules/ipfix/FpaPcapExporterCfg.h"
@@ -72,6 +73,7 @@ Cfg* ConfigManager::configModules[] = {
 	new PacketQueueCfg(NULL),
 	new PCAPExporterFileCfg(NULL),
 	new PCAPExporterPipeCfg(NULL),
+	new PCAPExporterQueueCfg(NULL),
 	new PSAMPExporterCfg(NULL),
 	new FpaPcapExporterCfg(NULL),
 	new IpfixCollectorCfg(NULL),

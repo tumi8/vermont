@@ -36,9 +36,11 @@ ADD_LIBRARY(modules
     packet/PCAPExporterBase.cpp
     packet/PCAPExporterFile.cpp
     packet/PCAPExporterPipe.cpp
+    packet/PCAPExporterQueue.cpp
     packet/PSAMPExporterModule.cpp
     packet/PSAMPExporterCfg.cpp
     packet/PCAPExporterPipeCfg.cpp
+    packet/PCAPExporterQueueCfg.cpp
     packet/PCAPExporterFileCfg.cpp
     packet/PacketReportingCfg.cpp
 	packet/IpPacketSelector.cpp

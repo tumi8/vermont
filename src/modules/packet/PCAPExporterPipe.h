@@ -45,33 +45,22 @@ class PCAPExporterPipe : public Module, public Destination<Packet *>, public Sou
 public:
 	PCAPExporterPipe(const std::string& file);
 	~PCAPExporterPipe();
-    void setPipeReaderCmd(const std::string& cmd);
-    void setWorkingPath(const std::string& path);
-    void setSigKillTimeout(int s);
-	void setRestartOnSignal(bool b);
-	void setRestartInterval(uint32_t ri);
-	void setAppendDate(bool b);
+    virtual void setPipeReaderCmd(const std::string& cmd);
+    virtual void setWorkingPath(const std::string& path);
+    virtual void setSigKillTimeout(int s);
+	virtual void setRestartOnSignal(bool b);
+	virtual void setRestartInterval(uint32_t ri);
+	virtual void setAppendDate(bool b);
 	virtual void handleSigChld(int sig);
 	virtual void handleSigPipe(int sig);
 	virtual void handleSigUsr2(int sig);
-	bool isRunning(int pid);
-    int execCmd(std::string& cmd);
-    void kill_all(int ppid);
-    void kill_pid(int ppid);
-    void startProcess();
-    void stopProcess();
-    bool checkint(const char *my_string);
-
-//    virtual void postReconfiguration();
-//    virtual void preReconfiguration();
-//    virtual void onReconfiguration1();
-//    virtual void onReconfiguration2();
 	virtual void receive(Packet* packet);
 	virtual void performStart();
 	virtual void performShutdown();
 	virtual std::string getStatisticsXML(double interval);
 
-private:
+
+protected:
 	static void* pcapExporterSink(void* data);
 
 	std::string logFileName;
@@ -106,8 +95,18 @@ private:
 	 */
 	struct timeval nextRestart;
 
-	void registerSignalHandlers();
-	void unregisterSignalHandlers();
+	virtual void registerSignalHandlers();
+	virtual void unregisterSignalHandlers();
+	virtual bool isRunning(int pid);
+    virtual int execCmd(std::string& cmd);
+    virtual void kill_pid(int ppid);
+    virtual void startProcess();
+    virtual void stopProcess();
+
+    void kill_all(int ppid);
+    bool checkint(const char *my_string);
+
+
 };
 
 
