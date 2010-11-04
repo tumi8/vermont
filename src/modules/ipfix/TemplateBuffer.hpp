@@ -37,7 +37,7 @@ class TemplateBuffer {
 	public:
 
 		/**
-		 * Represents a single Buffered Template
+		 * Represents a single buffered Template as an element in a singly-linked list.
 		 */
 		struct BufferedTemplate {
 			friend class TemplateBuffer;
@@ -56,7 +56,7 @@ class TemplateBuffer {
 
 		TemplateBuffer::BufferedTemplate* getBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::TemplateId templateId);
 		void destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::TemplateId templateId, bool all = false); 
-			// templateId=2,3,4 means that all Templates, Option Templates, or Data Templates of given sourceID are destroyed
+			// templateId=2,3,4 means that all Templates, Option Templates, or Data Templates of given sourceID are destroyed, respectively.
 			// all=true overrides templateId parameter, so all Templates of given sourceID will be deleted		
 		void bufferTemplate(TemplateBuffer::BufferedTemplate* bt);
 		TemplateBuffer::BufferedTemplate* getFirstBufferedTemplate();
