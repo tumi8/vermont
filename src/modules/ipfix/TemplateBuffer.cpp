@@ -35,6 +35,9 @@ bool TemplateBuffer::BufferedTemplate::isExpired() {
 
 /**
  * Returns a TemplateInfo or NULL
+ *
+ * This method is time critical and supposed to run fast because it is
+ * called frequently.
  */
 TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::TemplateId templateId) {
 	TemplateBuffer::BufferedTemplate* bt = head;
@@ -42,21 +45,46 @@ TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::sha
 #ifdef DEBUG
 	DPRINTF("ALL TEMPLATES ---------------------------");
 	while (bt != 0) {
-		DPRINTF("bt->sourceID odid %lu exporter port %u collector port %u exporter ip %u.%u.%u.%u len %u prot %u ptr: %lu size: %lu expires in %d sec", bt->sourceID.get()->observationDomainId, bt->sourceID.get()->exporterPort, bt->sourceID.get()->receiverPort, bt->sourceID.get()->exporterAddress.ip[0], bt->sourceID.get()->exporterAddress.ip[1], bt->sourceID.get()->exporterAddress.ip[2], bt->sourceID.get()->exporterAddress.ip[3], bt->sourceID.get()->exporterAddress.len, bt->sourceID.get()->protocol, bt->sourceID.get(), sizeof(IpfixRecord::SourceID), bt->expires - time(NULL));
-		
+		DPRINTF("bt->sourceID odid %lu exporter port %u"
+				" collector port %u exporter ip %u.%u.%u.%u"
+				" len %u prot %u ptr: %lu size: %lu"
+				" expires in %d sec",
+			bt->sourceID.get()->observationDomainId,
+			bt->sourceID.get()->exporterPort,
+			bt->sourceID.get()->receiverPort,
+			bt->sourceID.get()->exporterAddress.ip[0],
+			bt->sourceID.get()->exporterAddress.ip[1],
+			bt->sourceID.get()->exporterAddress.ip[2],
+			bt->sourceID.get()->exporterAddress.ip[3],
+			bt->sourceID.get()->exporterAddress.len,
+			bt->sourceID.get()->protocol,
+			bt->sourceID.get(),
+			sizeof(IpfixRecord::SourceID),
+			bt->expires - time(NULL)
+		);
 		bt = bt->next;
 	}
-	DPRINTF("END ALL TEMPLATES --------------------------");
+	DPRINTF("END ALL TEMPLATES -----------------------");
 	
 	bt = head;
-	DPRINTF("Searching for : sourceID %lu %u %u %u.%u.%u.%u  %u %u", sourceId.get()->observationDomainId, sourceId.get()->exporterPort, sourceId.get()->receiverPort, sourceId.get()->exporterAddress.ip[0], sourceId.get()->exporterAddress.ip[1], sourceId.get()->exporterAddress.ip[2], sourceId.get()->exporterAddress.ip[3], sourceId.get()->exporterAddress.len, sourceId.get()->protocol);
+	DPRINTF("Searching for : sourceID %lu %u %u %u.%u.%u.%u  %u %u",
+		sourceId.get()->observationDomainId,
+		sourceId.get()->exporterPort,
+		sourceId.get()->receiverPort,
+		sourceId.get()->exporterAddress.ip[0],
+		sourceId.get()->exporterAddress.ip[1],
+		sourceId.get()->exporterAddress.ip[2],
+		sourceId.get()->exporterAddress.ip[3],
+		sourceId.get()->exporterAddress.len,
+		sourceId.get()->protocol);
 #endif
 	
 	while (bt != 0) {
-		if ((*(bt->sourceID.get()) == *(sourceId.get())) && (bt->templateInfo->templateId == templateId)){
+		// sourceID and templateId have to be equal
+		if ((*(bt->sourceID.get()) == *(sourceId.get())) &&
+				(bt->templateInfo->templateId == templateId)){
 			if (bt->isExpired()) {
 				DPRINTF("Template found but expired.");
-				cleanUpExpiredTemplates();
 				return 0;
 			}
 			DPRINTF("Template found.");
@@ -64,12 +92,14 @@ TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::sha
 		}
 		bt = bt->next;
 	}
-	DPRINTF("getBufferedTemplate not found!!!");
+	DPRINTF("Template not found!");
 	return 0;
 }
 
 /**
- * Saves a TemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo overwriting existing Templates
+ * Stores a TemplateInfo, IpfixRecord::OptionsTemplateInfo,
+ * IpfixRecord::DataTemplateInfo in a singly-linked list.
+ * Existing Templates with same sourceID and templateID are overwritten
  */
 void TemplateBuffer::bufferTemplate(TemplateBuffer::BufferedTemplate* bt) {
 	cleanUpExpiredTemplates();
@@ -80,7 +110,7 @@ void TemplateBuffer::bufferTemplate(TemplateBuffer::BufferedTemplate* bt) {
 }
 
 /**
- * Saves a TemplateInfo, IpfixRecord::OptionsTemplateInfo, IpfixRecord::DataTemplateInfo overwriting existing Templates
+ * Cleans up expired Templates
  */
 void TemplateBuffer::cleanUpExpiredTemplates() {
 	TemplateBuffer::BufferedTemplate* predecessor = 0;
@@ -88,15 +118,14 @@ void TemplateBuffer::cleanUpExpiredTemplates() {
 	while (bt != 0) {
 		if (bt->isExpired()) {
 			DPRINTF("Cleaning up expired template with id %d",bt->templateInfo->templateId);
-			bt->onPreDestroy(ipfixParser);
 			if (predecessor)
 				predecessor->next = bt->next;
 			else
 				head = bt->next;
+			bt->onPreDestroy(ipfixParser);
 			TemplateBuffer::BufferedTemplate* toBeFreed = bt;
 			bt = bt->next;
 			delete toBeFreed;
-			/* leave predecessor unchanged. */
 		} else {
 			predecessor = bt;
 			bt = bt->next;
@@ -113,13 +142,14 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 	TemplateBuffer::BufferedTemplate* bt = head;
 	bool found = false;
 	while (bt != 0) {
-		/* templateId == setID means that all templates of this set type shall be removed for given sourceID */
-		/* all == true means that all templates of given sourceID shall be removed */
-		if (((*(bt->sourceID.get()) == *(sourceId.get())) && ((bt->templateInfo->templateId == templateId) || (bt->templateInfo->setId == templateId)))
+		if (((*(bt->sourceID.get()) == *(sourceId.get())) &&
+			/* templateId == setID means that all templates of this set type shall be removed for given sourceID */
+			((bt->templateInfo->templateId == templateId) || (bt->templateInfo->setId == templateId)))
+				/* all == true means that all templates of given sourceID shall be removed */
 				|| (all && sourceId->equalIgnoringODID(*(bt->sourceID.get())))) {
 			found = true;
 			DPRINTF("Destroying template with id %u", bt->templateInfo->templateId);
-			if (predecessor != 0) {
+			if (predecessor) {
 				predecessor->next = bt->next;
 			} else {
 				head = bt->next;
@@ -143,9 +173,8 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 /**
  * initializes the buffer
  */
-TemplateBuffer::TemplateBuffer(IpfixParser* parentIpfixParser) {
-	head = 0;
-	ipfixParser = parentIpfixParser;
+TemplateBuffer::TemplateBuffer(IpfixParser* parentIpfixParser) :
+	head(0), ipfixParser(parentIpfixParser) {
 }
 
 /**
@@ -154,7 +183,7 @@ TemplateBuffer::TemplateBuffer(IpfixParser* parentIpfixParser) {
 TemplateBuffer::~TemplateBuffer() {
 	while (head != 0) {
 		TemplateBuffer::BufferedTemplate* bt = head;
-		head = bt->next;
+		head = head->next;
 		delete bt;
 	}
 }
