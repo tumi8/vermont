@@ -54,9 +54,10 @@
 #include "modules/analysis/FrontPayloadSigMatcherCfg.h"
 #include "modules/analysis/AutoFocusCfg.h"
 #include "modules/idmef/IDMEFExporterCfg.h"
-#include "modules/idmef//PacketIDMEFReporterCfg.h"
+#include "modules/idmef/PacketIDMEFReporterCfg.h"
 #include "modules/analysis/P2PDetectorCfg.h"
 #include "modules/analysis/HostStatisticsCfg.h"
+#include "modules/analysis/FlowSigMatcherCfg.h"
 
 #include <cassert>
 
@@ -96,6 +97,7 @@ Cfg* ConfigManager::configModules[] = {
 	new P2PDetectorCfg(NULL),
 	new HostStatisticsCfg(NULL),
 	new IpfixCsExporterCfg(NULL),
+        new FlowSigMatcherCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
 	new IpfixDbReaderCfg(NULL),
 	new IpfixDbWriterCfg(NULL),
