@@ -81,6 +81,7 @@ int PCAPExporterQueue::execCmd(std::string& cmd)
 
 	/* Create a pipe, which allows communication between the child and the parent.
 	 * Writing an int value (e.g. errno) into child_parent_pipe[1]
+	sleep(2);
 	 * will cause an exception in the parent process.
 	 * Throwing exceptions in the child *will not* terminate Vermont!
 	 */
@@ -206,7 +207,9 @@ void PCAPExporterQueue::startProcess()
 	fifoReaderPid = execCmd(fifoReaderCmd);
 	std::string name = "/" +  boost::lexical_cast<std::string>(fifoReaderPid);
 	if ((queuedes = mq_open(name.c_str(), O_CREAT|O_WRONLY, 00666, &attr)) == (mqd_t)-1){
-		THROWEXCEPTION("mq_open failed: %s", strerror(errno));
+		int err = errno;
+		if(fifoReaderPid) kill_all(fifoReaderPid);
+		THROWEXCEPTION("mq_open failed: %s", strerror(err));
 	}
 
 #if 0
@@ -295,13 +298,24 @@ void PCAPExporterQueue::receive(Packet* packet)
 
 void PCAPExporterQueue::dumpIntoQueue(Packet *packet){
 	struct queueMessage sendme;
-	sendme.packetHeader.ts = packet->timestamp;
-	sendme.packetHeader.caplen = packet->data_length;
-	sendme.packetHeader.len = packet->pcapPacketLength;
-	memcpy(&(sendme.data), packet->data, sendme.packetHeader.caplen);
+	struct daq_pkthdr packetHeader;
+	packetHeader.ts = packet->timestamp;
+	packetHeader.caplen = packet->data_length;
+	packetHeader.pktlen = packet->pcapPacketLength;
+	packetHeader.device_index = 0;
+	packetHeader.flags = 0;
+	if ((mqd_t)-1 == mq_send(queuedes, (char*)&packetHeader, sizeof(struct daq_pkthdr), 0)){
+		if(errno == EAGAIN){
+			msg(MSG_INFO, "EAGAIN");
+		}else {
+			closeQueue(fifoReaderPid, queuedes);
+			THROWEXCEPTION("Couldn't send message: %", strerror(errno));
+		}
+	}
+
+	//memcpy(&(sendme.data), packet->data, sendme.packetHeader.caplen);
 	//pcap_dump((unsigned char*)dumper, &packetHeader, packet->data);
-	msg(MSG_INFO, "sending packet");
-	if ((mqd_t)-1 == mq_send(queuedes, (char*)&sendme, sizeof(struct queueMessage), 0)){
+	if ((mqd_t)-1 == mq_send(queuedes, (char*)(packet->data), sizeof(char)*packetHeader.caplen, 0)){
 		if(errno == EAGAIN){
 			msg(MSG_INFO, "EAGAIN");
 		}else {
