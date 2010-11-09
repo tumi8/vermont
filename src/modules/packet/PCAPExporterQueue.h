@@ -46,10 +46,20 @@ class Packet;
 
 class PCAPExporterQueue : public PCAPExporterPipe
 {
+	struct daq_pkthdr
+	{
+		struct timeval ts;      /* Timestamp */
+		uint32_t caplen;        /* Length of the portion present */
+		uint32_t pktlen;        /* Length of this packet (off wire) */
+		int device_index;       /* Index of the receiving interface. */
+		uint32_t flags;         /* Flags for the packet (DAQ_PKT_FLAG_*) */
+	} ;
+
 	struct queueMessage {
-		struct pcap_pkthdr packetHeader;
+		struct daq_pkthdr packetHeader;
 		char data[PCAP_MAX_CAPTURE_LENGTH];
 	};
+
 
 public:
 	PCAPExporterQueue(const std::string& file);
