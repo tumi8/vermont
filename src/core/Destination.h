@@ -25,7 +25,7 @@ public:
 	  receive(e);
 	}
 
-	virtual Destination<T>* getModuleInstance(int id) {
+	virtual Destination<T>* getModuleInstance(uint32_t id) {
 		return this;
 	}
 
