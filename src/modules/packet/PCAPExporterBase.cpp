@@ -40,14 +40,3 @@ void PCAPExporterBase::setSnaplen(int len)
 {
 	snaplen = len;
 }
-
-void PCAPExporterBase::writePCAP(Packet* packet)
-{
-	static struct pcap_pkthdr packetHeader;
-	packetHeader.ts = packet->timestamp;
-	packetHeader.caplen = packet->data_length;
-	packetHeader.len = packet->pcapPacketLength;
-	pcap_dump((unsigned char*)dumper, &packetHeader, packet->data);
-	packet->removeReference();
-}
-

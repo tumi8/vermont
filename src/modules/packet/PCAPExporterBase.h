@@ -39,8 +39,6 @@ public:
 	PCAPExporterBase();
 	~PCAPExporterBase();
 
-	void writePCAP(Packet* packet);
-
 	void setDataLinkType(int type);
 	void setSnaplen(int len);
 protected:
