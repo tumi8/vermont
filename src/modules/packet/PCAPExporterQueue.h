@@ -76,7 +76,7 @@ protected:
     virtual void stopProcess();
 
 private:
-	void dumpIntoQueue(Packet *packet);
+	bool dumpIntoQueue(Packet *packet);
 	int closeQueue(int, int);
 	mqd_t queuedes;
 	uint32_t maxQueueMsgs;
