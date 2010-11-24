@@ -292,14 +292,14 @@ void PCAPExporterQueue::receive(Packet* packet)
 		}
 	}
 
-	if (freeEntries<2) {
+	/*if (freeEntries<2) {
 		struct mq_attr attr;
 		if (mq_getattr(queuedes, &attr)!=0)
 			THROWEXCEPTION("PCAPExporterQueue: failed to call mq_gettattr, error %u (%s)", errno, strerror(errno));
 		freeEntries = attr.mq_curmsgs;
-	}
-	if (freeEntries>=2) {
-		dumpIntoQueue(packet);
+	}*/
+	//if (freeEntries>=2) {
+	if (dumpIntoQueue(packet)) {
 		freeEntries -= 2;
 		statBytesForwarded += packet->data_length;
 		statPktsForwarded++;
@@ -312,7 +312,7 @@ void PCAPExporterQueue::receive(Packet* packet)
 	DPRINTFL(MSG_VDEBUG, "PCAPExporterQueue::receive() ended");
 }
 
-void PCAPExporterQueue::dumpIntoQueue(Packet *packet)
+bool PCAPExporterQueue::dumpIntoQueue(Packet *packet)
 {
 	QueueMessage sendme;
 	struct daq_pkthdr packetHeader;
@@ -321,12 +321,17 @@ void PCAPExporterQueue::dumpIntoQueue(Packet *packet)
 	packetHeader.pktlen = packet->pcapPacketLength;
 	packetHeader.device_index = 0;
 	packetHeader.flags = 0;
-	if ((mqd_t)-1 == mq_send(queuedes, (char*)&packetHeader, sizeof(struct daq_pkthdr), 0)){
-		if(errno == EAGAIN){
+	struct timespec timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_nsec = 0;
+	if ((mqd_t)-1 == mq_timedsend(queuedes, (char*)&packetHeader, sizeof(struct daq_pkthdr), 0, &timeout)) {
+		if (errno==ETIMEDOUT) {
+			return false;
+		} else if(errno == EAGAIN){
 			msg(MSG_INFO, "EAGAIN");
-		}else {
+		} else {
 			closeQueue(fifoReaderPid, queuedes);
-			THROWEXCEPTION("Couldn't send message: %", strerror(errno));
+			THROWEXCEPTION("Couldn't send message: %u (%s)", errno, strerror(errno));
 		}
 	}
 
@@ -340,6 +345,7 @@ void PCAPExporterQueue::dumpIntoQueue(Packet *packet)
 			THROWEXCEPTION("Couldn't send message: %", strerror(errno));
 		}
 	}
+	return true;
 }
 
 
@@ -383,7 +389,10 @@ void PCAPExporterQueue::handleSigChld(int sig)
 std::string PCAPExporterQueue::getStatisticsXML(double interval)
 {
 	ostringstream oss;
-	oss << "<freeQueueEntries>" << freeEntries << "</freeQueueEntries>";
+	struct mq_attr attr;
+	if (mq_getattr(queuedes, &attr)!=0)
+		THROWEXCEPTION("PCAPExporterQueue: failed to call mq_gettattr, error %u (%s)", errno, strerror(errno));
+	oss << "<freeQueueEntries>" << attr.mq_curmsgs << "</freeQueueEntries>";
 	oss << PCAPExporterPipe::getStatisticsXML(interval);
 	return oss.str();
 }
