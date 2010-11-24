@@ -55,19 +55,20 @@ class PCAPExporterQueue : public PCAPExporterPipe
 		uint32_t flags;         /* Flags for the packet (DAQ_PKT_FLAG_*) */
 	} ;
 
-	struct queueMessage {
+	struct QueueMessage {
 		struct daq_pkthdr packetHeader;
 		char data[PCAP_MAX_CAPTURE_LENGTH];
 	};
 
 
 public:
-	PCAPExporterQueue(const std::string& file);
+	PCAPExporterQueue(const std::string& file, uint32_t maxqueuemsgs);
 	~PCAPExporterQueue();
   	virtual void receive(Packet* packet);
 	virtual void performStart();
 	virtual void performShutdown();
 	virtual void handleSigChld(int sig);
+	std::string getStatisticsXML(double interval);
 
 protected:
     virtual int execCmd(std::string& cmd);
@@ -78,6 +79,8 @@ private:
 	void dumpIntoQueue(Packet *packet);
 	int closeQueue(int, int);
 	mqd_t queuedes;
+	uint32_t maxQueueMsgs;
+	uint32_t freeEntries; /**< free entries in queue - this is a pessimistic variable! */
 };
 
 
