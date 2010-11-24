@@ -337,7 +337,13 @@ void PCAPExporterPipe::receive(Packet* packet)
 		}
 	}
 
-	writePCAP(packet);
+	// write packet
+	static struct pcap_pkthdr packetHeader;
+	packetHeader.ts = packet->timestamp;
+	packetHeader.caplen = packet->data_length;
+	packetHeader.len = packet->pcapPacketLength;
+	pcap_dump((unsigned char*)dumper, &packetHeader, packet->data);
+	packet->removeReference();
 
 	statBytesForwarded += packet->data_length;
 	statPktsForwarded++;
