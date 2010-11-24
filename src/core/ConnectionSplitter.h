@@ -84,26 +84,16 @@ private:
 			return;
 		}
 		
-		/* By processing the array over a mutex proctected variable size
-		 * it should be safe to add another destination.
-		 * In the worst case, we don't push the packet to a newly added destination.
-		 */
-		int sz = size;
-		if (sz > 1) // using this strange construct because size-1 could wrap
-			packet->addReference(sz - 1);
-
-		int i;
-		for (i = 0; i < sz; i++) {
-			if(id == -1) {
-				//packet shall be forwarded to every successor
+		if (id>=(int)size) {
+			THROWEXCEPTION("ConnectionSplitter: received invalid module index to forward packet to (%d)", id);
+		} else if(id == -1) {
+			//packet shall be forwarded to every successor
+			packet->addReference(size-1);
+			for (uint32_t i=0; i<size; i++) {
 				destinations[i]->receive(packet);
-				continue;
 			}
-			if (id == i){
-				//forward packet to only one succeeding module
-				destinations[i]->receive(packet);
-				break;
-			}
+		} else {
+			destinations[id]->receive(packet);
 		}
 	}
 
