@@ -344,8 +344,8 @@ void PCAPExporterPipe::receive(Packet* packet)
 	wvec[0].iov_len = sizeof(packetHeader);
 	wvec[1].iov_base = packet->data;
 	wvec[1].iov_len = packetHeader.caplen;
-	if (writev(pcapFile, wvec, 2)!=sizeof(packetHeader)+packetHeader.caplen) {
-		if (errno=EAGAIN) {
+	if (writev(pcapFile, wvec, 2)!=(ssize_t)(sizeof(packetHeader)+packetHeader.caplen)) {
+		if (errno==EAGAIN) {
 			// pipe is full, drop packet
 			statBytesDropped += packet->data_length;
 			statPktsDropped++;
@@ -554,13 +554,15 @@ bool PCAPExporterPipe::getProcessStatistics(uint32_t& sysjiffies, uint32_t& user
 }
 
 
-void PCAPExporterPipe::getDroppedPackets(uint64_t& droppedpkts)
+void PCAPExporterPipe::getPacketStats(uint64_t& droppedpkts, uint64_t& forwpkts)
 {
 	droppedpkts = statPktsDropped;
+	forwpkts = statPktsForwarded;
 }
 
 
-void PCAPExporterPipe::getDroppedOctets(uint64_t& droppedocts)
+void PCAPExporterPipe::getOctetStats(uint64_t& droppedocts, uint64_t& forwocts)
 {
 	droppedocts = statBytesDropped;
+	forwocts = statBytesForwarded;
 }

@@ -43,14 +43,14 @@ public:
 	virtual bool getProcessStatistics(uint32_t& sysjiffies, uint32_t& userjiffies) = 0;
 
 	/**
-	 * returns total number of dropped packets due to overload of the attached process
+	 * returns total number of dropped and forwarded packets due to overload of the attached process
 	 */
-	virtual void getDroppedPackets(uint64_t& droppedpkts) = 0;
+	virtual void getPacketStats(uint64_t& droppedpkts, uint64_t& forwpkts) = 0;
 
 	/**
-	 * returns total number of dropped octets due to overload of the attached process
+	 * returns total number of dropped and forwarded octets due to overload of the attached process
 	 */
-	virtual void getDroppedOctets(uint64_t& droppedocts) = 0;
+	virtual void getOctetStats(uint64_t& droppedocts, uint64_t& forwocts) = 0;
 };
 
 /**
@@ -85,8 +85,8 @@ public:
 	virtual void performShutdown();
 	virtual std::string getStatisticsXML(double interval);
 	virtual bool getProcessStatistics(uint32_t& sysjiffies, uint32_t& userjiffies);
-	virtual void getDroppedPackets(uint64_t& droppedpkts);
-	virtual void getDroppedOctets(uint64_t& droppedocts);
+	virtual void getPacketStats(uint64_t& droppedpkts, uint64_t& forwpkts);
+	virtual void getOctetStats(uint64_t& droppedocts, uint64_t& forwocts);
 
 protected:
 	static void* pcapExporterSink(void* data);
