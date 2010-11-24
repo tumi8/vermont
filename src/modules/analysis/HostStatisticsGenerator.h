@@ -57,15 +57,17 @@ public:
 
 	 bool getOctets(uint32_t ip, uint64_t& octets);
 	 void getWatchedSubnet(uint32_t& subnet, uint32_t& mask);
+	 uint64_t getZeroOctets();
 
 private:
 	uint32_t ipSubnet;
 	uint32_t ipMask;
+	uint64_t zeroOctets;
 	std::map<uint32_t, HostStatistics> trafficMap;
 	struct timeval intervalEnd;
 	uint32_t intervalLength; // interval length in milliseconds
 
-	void addHostData(uint32_t ip, uint64_t pkts, uint64_t octs);
+	void addHostData(uint32_t ip, uint64_t octs, uint64_t pkts);
 	void changeInterval();
 };
 

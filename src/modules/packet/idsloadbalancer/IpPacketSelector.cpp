@@ -20,7 +20,8 @@
 
 #include "IpPacketSelector.hpp"
 
-IpPacketSelector::IpPacketSelector() 
+IpPacketSelector::IpPacketSelector()
+	: BasePacketSelector("IpPacketSelector")
 {
 }
 IpPacketSelector::~IpPacketSelector()

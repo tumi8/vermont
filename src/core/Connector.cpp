@@ -69,10 +69,10 @@ Graph* Connector::connect(Graph* g)
 				if (connectNodes) // insert the connection in the graph
 					g->addEdge(fromNode, toNode);
 
-				msg(MSG_INFO,  "Connecting module %s[Id = %d] -> %s[Id = %d]",
-						cfg->getName().c_str(), cfg->getID(),
+				msg(MSG_INFO,  "Connecting module %s[Id = %d/%08X] -> %s[Id = %d/%08X]",
+						cfg->getName().c_str(), cfg->getID(), cfg->getInstance(),
 						id2node[nexts[j]]->getCfg()->getName().c_str(),
-						id2node[nexts[j]]->getCfg()->getID());
+						id2node[nexts[j]]->getCfg()->getID(), id2node[nexts[j]]->getCfg()->getInstance());
 
 				if (connectModules) {// connect the modules
 					DPRINTF("connecting instances");

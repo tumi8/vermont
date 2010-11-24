@@ -39,7 +39,7 @@ class Packet;
 class IDSLoadbalancer : public Module, public Destination<Packet *>, public Source<Packet *>
 {
 public:
-	IDSLoadbalancer(std::string &_selector, uint64_t updateinterval);
+	IDSLoadbalancer(BasePacketSelector* _selector, uint64_t updateinterval);
 	~IDSLoadbalancer();
 	virtual void receive(Packet* packet);
 	void setIpConfig(std::map<uint32_t, int> &, std::map<uint32_t, int> &);
@@ -49,7 +49,6 @@ public:
 
 private:
 	BasePacketSelector *selector;
-	std::string selectorAsString;
 	uint32_t qcount;
 	std::map<uint32_t, int> src;
 	std::map<uint32_t, int> dst;

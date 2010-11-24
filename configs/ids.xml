@@ -3,21 +3,32 @@
 		<checkinterval>2</checkinterval>
 	</sensorManager>
 	<observer id="1">
-		<filename>/home/thomas/pcap.dump</filename>
+		<filename>/tmp/pcap.dump</filename>
 		<pcap_filter>ip</pcap_filter>
-		<offlineSpeed>-1</offlineSpeed>
+		<offlineSpeed>1</offlineSpeed>
 		<next>12</next>
+		<next>6</next>
 	</observer>
 
 <IDSLoadbalancer id="12">
 	<queuecount>3</queuecount>
-	<PacketSelector type="HashPacketSelector">
-	</PacketSelector>
+	<updateinterval>10000</updateinterval>
+	<!--<PacketSelector type="HashPacketSelector">
+	</PacketSelector>-->
 	<!--<PacketSelector type="IpPacketSelector">
 		<DestinationIp queueno="2">192.44.88.190</DestinationIp>
 		<SourceIp queueno="1">82.55.74.213</SourceIp>
 		<SourceIp queueno="0">69.123.232.54</SourceIp>
 	</PacketSelector>-->
+	<PacketSelector type="PriorityPacketSelector">
+		<startPriority>1.0</startPriority>
+		<minimumMonitoringTime>10000</minimumMonitoringTime>
+		<networks>
+			<!--<network address="131.188.0.0/16" weight="1" />
+			<network address="131.188.0.0/24" weight="10" />-->
+			<network address="192.168.51.0/24" weight="5" />
+		</networks>
+	</PacketSelector>
 	<next>13</next>
 	<next>14</next>
 	<next>15</next>
@@ -54,14 +65,6 @@
 </pcapExporterPipe>
 
 
-
-
-	<!--
-	<packetQueue id="2">
-		<maxSize>10</maxSize>
-		<next>6</next>
-	</packetQueue>
-	
 	<packetAggregator id="6">
 		<rule>
 			<templateId>998</templateId>
@@ -103,76 +106,10 @@
 		<pollInterval unit="msec">1000</pollInterval>
 		<next>4</next>
 	</packetAggregator>
-	
-	<ipfixAggregator id="4">
-		<rule>
-			<templateId>999</templateId>
-			<biflowAggregation>1</biflowAggregation>
-			<flowKey>
-				<ieName>sourceIPv4Address</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>destinationIPv4Address</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>protocolIdentifier</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>sourceTransportPort</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>destinationTransportPort</ieName>
-			</flowKey>
-			<nonFlowKey>
-				<ieName>flowStartMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>flowEndMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>octetDeltaCount</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>packetDeltaCount</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>tcpControlBits</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>revflowStartMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>revflowEndMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>revoctetDeltaCount</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>revpacketDeltaCount</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>revtcpControlBits</ieName>
-			</nonFlowKey>
-		</rule>
-		<expiration>
-			<inactiveTimeout unit="sec">5</inactiveTimeout>
-			<activeTimeout unit="sec">10</activeTimeout>
-		</expiration>
-		<pollInterval unit="msec">1000</pollInterval>
-		<next>7</next>
-	</ipfixAggregator>
 
-	<ipfixQueue id="7">
-		<entries>1000</entries>
-		<next>8</next>
-	</ipfixQueue>
+	<hostStatisticsGenerator id="4">
+		<subnet>192.168.51.0</subnet>
+		<mask>255.255.255.0</mask>
+	</hostStatisticsGenerator>
 	
-	<ipfixExporter id="8">
-		<collector>
-			<ipAddressType>4</ipAddressType>
-			<ipAddress>127.0.0.1</ipAddress>
-			<transportProtocol>17</transportProtocol>
-			<port>1500</port>
-		</collector>
-	</ipfixExporter>-->
 </ipfixConfig>

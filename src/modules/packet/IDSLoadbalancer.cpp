@@ -31,23 +31,13 @@
 
 using namespace std;
 
-IDSLoadbalancer::IDSLoadbalancer(std::string &_selector, uint64_t updateinterval)
-	: selector(NULL),
-	  selectorAsString(_selector),
+IDSLoadbalancer::IDSLoadbalancer(BasePacketSelector* _selector, uint64_t updateinterval)
+	: selector(_selector),
 	  qcount(0),
 	  thread(threadWrapper),
 	  shutdownThread(false),
 	  updateInterval(updateinterval)
 {
-	if (_selector == "IpPacketSelector"){
-		selector = new IpPacketSelector();
-	} else if (_selector == "HashPacketSelector"){
-		selector = new HashPacketSelector();
-	} else if (_selector == "PriorityPacketSelector"){
-		//selector = new PriorityPacketSelector(); FIXME
-	} else {
-		THROWEXCEPTION("Invalid selector");
-	}
 }
 
 IDSLoadbalancer::~IDSLoadbalancer()
@@ -61,13 +51,14 @@ void IDSLoadbalancer::performStart()
 	//SignalHandler::getInstance().registerSignalHandler(SIGPIPE, this);
 
 	msg(MSG_INFO, "Started IDSLoadbalancer with the following parameters:");
-	msg(MSG_INFO, "  - PacketSelector = %s", selectorAsString.c_str());
+	msg(MSG_INFO, "  - PacketSelector = %s", selector->getName().c_str());
 	qcount = getSucceedingModuleCount();
 	selector->setQueueCount(qcount);
 	msg(MSG_INFO, "  - QueueCount = %d", qcount);
+	msg(MSG_INFO, "  - updateInterval = %.03fs", (float)updateInterval/1000);
 
 	shutdownThread = false;
-	thread.run(this);
+	if (updateInterval>0) thread.run(this);
 }
 
 void IDSLoadbalancer::performShutdown()
@@ -111,13 +102,24 @@ void* IDSLoadbalancer::threadWrapper(void* data)
 
 void IDSLoadbalancer::updateWorker()
 {
-	struct timespec ts;
-	addToCurTime(&ts, updateInterval);
+	struct timeval nextint;
+	addToCurTime(&nextint, updateInterval);
 	while (!shutdownThread) {
+		msg(MSG_INFO, "IDSLoadbalancer: worker started work");
 		updateBalancingLists();
+		msg(MSG_INFO, "IDSLoadbalancer: worker finished work");
 
-		while (nanosleep(&ts, 0) != 0 && !shutdownThread) {}
-		addToCurTime(&ts, updateInterval);
+		struct timeval difftime;
+		struct timeval curtime;
+		gettimeofday(&curtime, 0);
+		if (timeval_subtract(&difftime, &nextint, &curtime)!=1) {
+			// restart nanosleep with the remaining sleep time
+			// if we got interrupted by a signal
+			struct timespec ts;
+			TIMEVAL_TO_TIMESPEC(&difftime, &ts);
+			while (nanosleep(&ts, &ts) == -1 && errno == EINTR);
+		}
+		addToCurTime(&nextint, updateInterval);
 	}
 }
 
@@ -128,7 +130,7 @@ void IDSLoadbalancer::updateBalancingLists()
 	// get load data from succeeding modules
 	for (uint32_t i=0; i<qcount; i++) {
 		Destination<Packet*>* dp = getSucceedingModuleInstance(i);
-		ProcessStatisticsProvider* psp = dynamic_cast<ProcessStatisticsProvider*>(dp);
+		ProcessStatisticsProvider* psp = dynamic_cast<PCAPExporterPipe*>(dp);
 		if (!psp) THROWEXCEPTION("IDSLoadBalancer: succeeding module #%u is not of type ProcessStatisticsProvider! Use module type PcapExporterPipe!", i);
 		uint32_t ujiffies, sjiffies;
 		uint64_t dpkts;

@@ -20,7 +20,9 @@
 
 #include "BasePacketSelector.hpp"
 
-BasePacketSelector::BasePacketSelector() : numberOfQueues(0)
+BasePacketSelector::BasePacketSelector(string name)
+	: numberOfQueues(0),
+	  name(name)
 {
 }
 BasePacketSelector::~BasePacketSelector()
@@ -30,4 +32,9 @@ BasePacketSelector::~BasePacketSelector()
 void BasePacketSelector::setQueueCount(uint32_t n)
 {
 	numberOfQueues = n;
+}
+
+string BasePacketSelector::getName()
+{
+	return name;
 }

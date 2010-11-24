@@ -136,6 +136,13 @@
  */
 #define INE_DEFAULT_MAXRECORDRATE 5000
 
+/**
+ * defines the alpha parameter in the exponentially-weighted moving average used for the
+ * calculation of average traffic of hosts that did not transfer any data in the last
+ * interval in module HostStatisticsGenerator
+ */
+#define HSG_DEFAULT_ZEROOCTETSALPHA 0.1
+
 
 /**
  * convenient way to determine size of a C array

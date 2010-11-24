@@ -48,7 +48,8 @@ private:
 	std::map<uint32_t, int> dst;
 	std::map<uint32_t, int> src;
 	int _queuecount;
-	std::string _selector;
+	BasePacketSelector* selector;
+	uint32_t updateInterval;
 
 	uint32_t parseIp(std::string &);
 
