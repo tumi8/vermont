@@ -55,6 +55,8 @@ PCAPExporterPipe::PCAPExporterPipe(const std::string& logfile)
 	  last_check(0),
 	  statPktsForwarded(0),
 	  statBytesForwarded(0),
+	  statPktsDropped(0),
+	  statBytesDropped(0),
 	  restartInterval(0)
 {
 	bzero(&nextRestart, sizeof(nextRestart));
@@ -510,6 +512,8 @@ std::string PCAPExporterPipe::getStatisticsXML(double interval)
 	ostringstream oss;
 	oss << "<forwarded type=\"packets\">" << statPktsForwarded << "</forwarded>";
 	oss << "<forwarded type=\"bytes\">" << statBytesForwarded << "</forwarded>";
+	oss << "<dropped type=\"packets\">" << statPktsDropped << "</dropped>";
+	oss << "<dropped type=\"bytes\">" << statBytesDropped << "</dropped>";
 	if (isRunning(fifoReaderPid)) {
 		oss << "<processInfo pid=\"" << fifoReaderPid << "\">";
 		try {
@@ -544,13 +548,11 @@ bool PCAPExporterPipe::getProcessStatistics(uint32_t& sysjiffies, uint32_t& user
 
 void PCAPExporterPipe::getDroppedPackets(uint64_t& droppedpkts)
 {
-	// FIXME: dummy, as we do not have any possibility to drop packets yet ...
-	droppedpkts = 0;
+	droppedpkts = statPktsDropped;
 }
 
 
 void PCAPExporterPipe::getDroppedOctets(uint64_t& droppedocts)
 {
-	// FIXME: dummy, as we do not have any possibility to drop packets yet ...
-	droppedocts = 0;
+	droppedocts = statBytesDropped;
 }

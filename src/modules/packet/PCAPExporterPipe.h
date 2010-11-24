@@ -112,6 +112,8 @@ protected:
 	FILE* pcapFile;
 	uint64_t statPktsForwarded;
 	uint64_t statBytesForwarded;
+	uint64_t statPktsDropped;
+	uint64_t statBytesDropped;
 	/**
 	 * restart interval of the process in seconds
 	 * time is measured by the timestamps of the incoming packets
