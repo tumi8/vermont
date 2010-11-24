@@ -35,14 +35,15 @@ struct HostData
 	float priority;
 	float weight;
 
+	uint32_t ip;
 	int16_t assignedIdsId; /**< -1 if not assigned */
 	uint64_t nextTraffic; // estimation!
 	uint64_t lastTraffic;
 
 	struct timeval startMon; /**< time when host was assigned for monitoring */
 
-	HostData(float p, float w)
-		: priority(p), weight(w), assignedIdsId(-1), nextTraffic(0), lastTraffic(0)
+	HostData(uint32_t ip, float p, float w)
+		: ip(ip), priority(p), weight(w), assignedIdsId(-1), nextTraffic(0), lastTraffic(0)
 	{
 		startMon.tv_sec = 0;
 		startMon.tv_usec = 0;
@@ -65,10 +66,16 @@ struct PriorityNetConfig
 struct IDSData
 {
 	uint64_t maxOctets;		/**< maximum octets that can be monitored by IDS in one interval */
-	list<pair<uint32_t, HostData*> > hosts; /**< hosts assigned to ids */
+	bool slowStart;			/**< determines whether we are in first phase of IDS max. rate detection */
+	list<HostData*> hosts; /**< hosts assigned to ids */
+	uint32_t hostcount;
+	uint64_t curOctets;
 
 	IDSData(uint32_t maxoctets)
-		: maxOctets(maxoctets)
+		: maxOctets(maxoctets),
+		  slowStart(true),
+		  hostcount(0),
+		  curOctets(0)
 	{}
 };
 
@@ -77,6 +84,7 @@ class PriorityPacketSelector : public BasePacketSelector
 {
 public:
 	PriorityPacketSelector(list<PriorityNetConfig>& pnc, float startprio, struct timeval minmontime);
+	virtual ~PriorityPacketSelector();
 	virtual int decide(Packet *p);
 	virtual void updateData(list<IDSLoadStatistics>& lstats);
 	virtual void setQueueCount(uint32_t n);
@@ -85,23 +93,26 @@ private:
 	static const uint32_t WARN_HOSTCOUNT;
 
 	list<PriorityNetConfig> config;
-	map<uint32_t, HostData> hosts;
-	float startPrio;
+	list<HostData*> hosts;
 	uint32_t hostCount;
+	map<uint32_t, HostData*> ip2host;
+	float startPrio;
 	IpPacketSelector ipSelector;
 	uint32_t maxHostPrioChange;	/**< called 'm' in paper */
 	float prioSum;
 	struct timeval minMonTime; /**< minimal monitoring time in milliseconds */
+	uint64_t discardOctets;
 
-	list<pair<uint32_t, HostData*> > restHosts; /**< hosts that are currently not monitored */
+	list<HostData*> restHosts; /**< hosts that are currently not monitored */
 	vector<IDSData> ids;
 
 	uint32_t insertSubnet(uint32_t subnet, uint8_t maskbits, float weight);
 	void updateTrafficEstimation();
 	void calcMaxHostPrioChange();
 	void updatePriorities();
-	void assignHosts2IDS(list<IDSLoadStatistics>& lstats);
+	void assignHosts2IDS();
 	void setIpConfig();
+	void updateIDSMaxRate(list<IDSLoadStatistics>& lstats);
 };
 
 

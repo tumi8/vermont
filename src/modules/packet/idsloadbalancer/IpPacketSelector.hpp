@@ -43,6 +43,9 @@ class IpPacketSelector : public BasePacketSelector
 	private:
 		std::map<uint32_t, int> dstips;
 		std::map<uint32_t, int> srcips;
+		std::map<uint32_t, int> newdstips;
+		std::map<uint32_t, int> newsrcips;
+		bool changelists;
 }
 ;
 

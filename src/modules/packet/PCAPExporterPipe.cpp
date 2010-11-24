@@ -541,3 +541,10 @@ void PCAPExporterPipe::getDroppedPackets(uint64_t& droppedpkts)
 	// FIXME: dummy, as we do not have any possibility to drop packets yet ...
 	droppedpkts = 0;
 }
+
+
+void PCAPExporterPipe::getDroppedOctets(uint64_t& droppedocts)
+{
+	// FIXME: dummy, as we do not have any possibility to drop packets yet ...
+	droppedocts = 0;
+}
