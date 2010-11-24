@@ -26,7 +26,19 @@
 #include <netdb.h>
 
 
+HostStatisticsGenerator* HostStatisticsGeneratorFactory::instance = NULL;
 
+HostStatisticsGenerator* HostStatisticsGeneratorFactory::getInstance()
+{
+	if (!instance) THROWEXCEPTION("FATAL ERROR: no HostStatisticsGenerator instance set yet!");
+	return instance;
+}
+
+void HostStatisticsGeneratorFactory::registerInstance(HostStatisticsGenerator* i)
+{
+	if (instance) THROWEXCEPTION("FATAL ERROR: HostStatisticsGenerator instance already set!");
+	instance = i;
+}
 
 HostStatistics::HostStatistics(uint64_t octs, uint64_t pkts)
 	: lastOctets(0),

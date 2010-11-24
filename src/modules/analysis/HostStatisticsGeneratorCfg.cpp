@@ -52,6 +52,7 @@ HostStatisticsGenerator* HostStatisticsGeneratorCfg::createInstance()
 {
 	if (!instance) {
 		instance = new HostStatisticsGenerator(ipSubnet, ipMask, intervalLength);
+		HostStatisticsGeneratorFactory::registerInstance(instance);
 	}
 	return instance;
 }
