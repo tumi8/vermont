@@ -15,6 +15,7 @@
 #include "core/Destination.h"
 #include "core/Emitable.h"
 
+
 template <typename T>
 class Source
 {
@@ -112,6 +113,16 @@ public:
 		atomic_release(&syncLock);
 
 		return true;
+	}
+
+	Destination<T>* getSucceedingModuleInstance(int id)
+	{
+		return dest->getModuleInstance(id);
+	}
+
+	int getSucceedingModuleCount()
+	{
+		return dest->getModuleCount();
 	}
 
 	// Subsequent modules that do not have
