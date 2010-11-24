@@ -33,7 +33,8 @@ PCAPExporterQueueCfg::PCAPExporterQueueCfg(XMLElement* elem)
         workingPath(""),
         appenddate(false),
         restart(false),
-        restartInterval(0)
+        restartInterval(0),
+        maxQueueSize(PEQ_DEFAULT_MESSAGEQUEUESIZE)
 {
 	if (!elem) return;
 
@@ -66,6 +67,8 @@ PCAPExporterQueueCfg::PCAPExporterQueueCfg(XMLElement* elem)
 			restartInterval = getInt("restartinterval", 0);
 		} else if(e->matches("restartonsignal")) {
 			restart = getBool("restartonsignal", false, e);
+		} else if(e->matches("maxqueuemessages")) {
+			maxQueueSize = getInt("maxqueuemessages", PEQ_DEFAULT_MESSAGEQUEUESIZE, e);
 		}
 	}
 }
@@ -83,7 +86,7 @@ PCAPExporterQueueCfg::~PCAPExporterQueueCfg()
 
 PCAPExporterQueue* PCAPExporterQueueCfg::createInstance()
 {
-	instance = new PCAPExporterQueue(logFileName);
+	instance = new PCAPExporterQueue(logFileName, maxQueueSize);
 	instance->setDataLinkType(link_type);
 	instance->setSnaplen(snaplen);
     instance->setSigKillTimeout(sigkilltimeout);

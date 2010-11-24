@@ -143,6 +143,11 @@
  */
 #define HSG_DEFAULT_ZEROOCTETSALPHA 0.1
 
+/**
+ * defines the default message queue size of PCAPExporterQueue
+ */
+#define PEQ_DEFAULT_MESSAGEQUEUESIZE 1024
+
 
 /**
  * convenient way to determine size of a C array

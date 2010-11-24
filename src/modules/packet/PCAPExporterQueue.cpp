@@ -41,8 +41,8 @@
 
 namespace bfs = boost::filesystem;
 
-PCAPExporterQueue::PCAPExporterQueue(const std::string& logfile)
-	: PCAPExporterPipe(logfile), queuedes(0)
+PCAPExporterQueue::PCAPExporterQueue(const std::string& logfile, uint32_t maxqueuemsgs)
+	: PCAPExporterPipe(logfile), queuedes(0), maxQueueMsgs(maxqueuemsgs)
 {
 }
 
@@ -180,6 +180,7 @@ void PCAPExporterQueue::performStart()
 		msg(MSG_ERROR, "No Logfile specified - dumping to stdout!");
 	msg(MSG_INFO, "  - sigKillTimeout = %d" , sigKillTimeout);
 	msg(MSG_INFO, "  - restartInterval = %u seconds" , restartInterval);
+	msg(MSG_INFO, "  - maxQueueSize = %u entries" , maxQueueMsgs);
 
 	startProcess();
 }
@@ -194,12 +195,14 @@ void PCAPExporterQueue::startProcess()
 {
 	struct mq_attr attr;
 	struct rlimit limit;
-	limit.rlim_cur = (sizeof(char)*1024*1024*64);
-	limit.rlim_max = (sizeof(char)*1024*1024*128);
+	limit.rlim_cur = RLIM_INFINITY;
+	limit.rlim_max = RLIM_INFINITY;
 
 	attr.mq_flags = 0; //O_NONBLOCK;     
-	attr.mq_maxmsg =(131072 / sizeof(void *));
-	attr.mq_msgsize = sizeof(struct queueMessage);  
+	attr.mq_maxmsg = maxQueueMsgs;
+	attr.mq_msgsize = sizeof(QueueMessage);
+
+	freeEntries = maxQueueMsgs;
 
 	if(setrlimit(RLIMIT_MSGQUEUE, &limit) == -1)
 		THROWEXCEPTION("setrlimit failed: %s", strerror(errno));
@@ -289,15 +292,29 @@ void PCAPExporterQueue::receive(Packet* packet)
 		}
 	}
 
-	dumpIntoQueue(packet);
+	if (freeEntries<2) {
+		struct mq_attr attr;
+		if (mq_getattr(queuedes, &attr)!=0)
+			THROWEXCEPTION("PCAPExporterQueue: failed to call mq_gettattr, error %u (%s)", errno, strerror(errno));
+		freeEntries = attr.mq_curmsgs;
+	}
+	if (freeEntries>=2) {
+		dumpIntoQueue(packet);
+		freeEntries -= 2;
+		statBytesForwarded += packet->data_length;
+		statPktsForwarded++;
+	} else {
+		statBytesDropped += packet->data_length;
+		statPktsDropped++;
+	}
 
-	statBytesForwarded += packet->data_length;
-	statPktsForwarded++;
+	packet->removeReference();
 	DPRINTFL(MSG_VDEBUG, "PCAPExporterQueue::receive() ended");
 }
 
-void PCAPExporterQueue::dumpIntoQueue(Packet *packet){
-	struct queueMessage sendme;
+void PCAPExporterQueue::dumpIntoQueue(Packet *packet)
+{
+	QueueMessage sendme;
 	struct daq_pkthdr packetHeader;
 	packetHeader.ts = packet->timestamp;
 	packetHeader.caplen = packet->data_length;
@@ -323,7 +340,6 @@ void PCAPExporterQueue::dumpIntoQueue(Packet *packet){
 			THROWEXCEPTION("Couldn't send message: %", strerror(errno));
 		}
 	}
-	packet->removeReference();
 }
 
 
@@ -364,3 +380,10 @@ void PCAPExporterQueue::handleSigChld(int sig)
 	onRestart = false;
 }
 
+std::string PCAPExporterQueue::getStatisticsXML(double interval)
+{
+	ostringstream oss;
+	oss << "<freeQueueEntries>" << freeEntries << "</freeQueueEntries>";
+	oss << PCAPExporterPipe::getStatisticsXML(interval);
+	return oss.str();
+}
