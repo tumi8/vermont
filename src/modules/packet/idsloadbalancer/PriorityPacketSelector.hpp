@@ -32,8 +32,8 @@ using namespace std;
 
 struct HostData
 {
-	float priority;
-	float weight;
+	double priority;
+	double weight;
 
 	uint32_t ip;
 	int16_t assignedIdsId; /**< -1 if not assigned */
@@ -42,13 +42,7 @@ struct HostData
 
 	struct timeval startMon; /**< time when host was assigned for monitoring */
 
-	HostData(uint32_t ip, float p, float w)
-		: ip(ip), priority(p), weight(w), assignedIdsId(-1), nextTraffic(0), lastTraffic(0)
-	{
-		startMon.tv_sec = 0;
-		startMon.tv_usec = 0;
-	}
-
+	HostData(uint32_t ip, double p, double w);
 	bool belowMinMonTime(struct timeval& tv, struct timeval& minmontime);
 };
 
@@ -58,9 +52,9 @@ struct PriorityNetConfig
 	uint32_t mask;
 	uint8_t maskbits;
 	uint32_t hostcount;
-	float weight;
+	double weight;
 
-	PriorityNetConfig(uint32_t subnet, uint32_t mask, uint8_t maskbits, float weight);
+	PriorityNetConfig(uint32_t subnet, uint32_t mask, uint8_t maskbits, double weight);
 };
 
 struct IDSData
@@ -69,13 +63,29 @@ struct IDSData
 	bool slowStart;			/**< determines whether we are in first phase of IDS max. rate detection */
 	list<HostData*> hosts; /**< hosts assigned to ids */
 	uint32_t hostcount;
-	uint64_t curOctets;
+
+	uint64_t lastForwOct;
+	uint64_t curForwOct;
+	uint64_t lastForwPkt;
+	uint64_t curForwPkt;
+
+	uint64_t curDropOct;
+	uint64_t lastDropOct;
+	uint64_t curDropPkt;
+	uint64_t lastDropPkt;
 
 	IDSData(uint32_t maxoctets)
 		: maxOctets(maxoctets),
 		  slowStart(true),
 		  hostcount(0),
-		  curOctets(0)
+		  lastForwOct(0),
+		  curForwOct(0),
+		  lastForwPkt(0),
+		  curForwPkt(0),
+		  curDropOct(0),
+		  lastDropOct(0),
+		  curDropPkt(0),
+		  lastDropPkt(0)
 	{}
 };
 
@@ -83,11 +93,13 @@ struct IDSData
 class PriorityPacketSelector : public BasePacketSelector
 {
 public:
-	PriorityPacketSelector(list<PriorityNetConfig>& pnc, float startprio, struct timeval minmontime);
+	PriorityPacketSelector(list<PriorityNetConfig>& pnc, double startprio, struct timeval minmontime);
 	virtual ~PriorityPacketSelector();
 	virtual int decide(Packet *p);
 	virtual void updateData(list<IDSLoadStatistics>& lstats);
 	virtual void setQueueCount(uint32_t n);
+	virtual void start();
+	virtual void stop();
 
 private:
 	static const uint32_t WARN_HOSTCOUNT;
@@ -96,23 +108,24 @@ private:
 	list<HostData*> hosts;
 	uint32_t hostCount;
 	map<uint32_t, HostData*> ip2host;
-	float startPrio;
+	double startPrio;
 	IpPacketSelector ipSelector;
 	uint32_t maxHostPrioChange;	/**< called 'm' in paper */
-	float prioSum;
+	double prioSum;
 	struct timeval minMonTime; /**< minimal monitoring time in milliseconds */
 	uint64_t discardOctets;
+	struct timeval startTime;
 
 	list<HostData*> restHosts; /**< hosts that are currently not monitored */
 	vector<IDSData> ids;
 
-	uint32_t insertSubnet(uint32_t subnet, uint8_t maskbits, float weight);
+	uint32_t insertSubnet(uint32_t subnet, uint8_t maskbits, double weight);
 	void updateTrafficEstimation();
 	void calcMaxHostPrioChange();
 	void updatePriorities();
 	void assignHosts2IDS();
 	void setIpConfig();
-	void updateIDSMaxRate(list<IDSLoadStatistics>& lstats);
+	void updateIDSMaxRate();
 };
 
 

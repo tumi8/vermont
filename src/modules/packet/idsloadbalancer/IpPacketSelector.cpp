@@ -31,6 +31,7 @@ IpPacketSelector::~IpPacketSelector()
 void IpPacketSelector::initializeConfig(std::map<uint32_t, int>& src, std::map<uint32_t, int>& dst){
 	newsrcips = src;
 	newdstips = dst;
+	changelists = true;
 }
 	
 void IpPacketSelector::addDestinationIp(uint32_t dst, int queueno)

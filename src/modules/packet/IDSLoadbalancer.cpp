@@ -59,12 +59,16 @@ void IDSLoadbalancer::performStart()
 
 	shutdownThread = false;
 	if (updateInterval>0) thread.run(this);
+
+	selector->start();
 }
 
 void IDSLoadbalancer::performShutdown()
 {
 	shutdownThread = true;
 	thread.join();
+
+	selector->stop();
 }
 
 
@@ -74,10 +78,9 @@ void IDSLoadbalancer::receive(Packet* packet)
 	if (res == -1){
 		DPRINTFL(MSG_VDEBUG, "Dropping packet");
 		packet->removeReference();
-		return;
+	} else {
+		send(packet, res);
 	}
-
-	send(packet, res);
 }
 
 void IDSLoadbalancer::forwardPacket(Packet* packet, int queue)
@@ -126,21 +129,23 @@ void IDSLoadbalancer::updateWorker()
 
 void IDSLoadbalancer::updateBalancingLists()
 {
-	list<IDSLoadStatistics> stats(qcount);
+	list<IDSLoadStatistics> stats;
 
 	// get load data from succeeding modules
 	for (uint32_t i=0; i<qcount; i++) {
 		Destination<Packet*>* dp = getSucceedingModuleInstance(i);
 		ProcessStatisticsProvider* psp = dynamic_cast<PCAPExporterPipe*>(dp);
 		if (!psp) THROWEXCEPTION("IDSLoadBalancer: succeeding module #%u is not of type ProcessStatisticsProvider! Use module type PcapExporterPipe!", i);
-		uint32_t ujiffies, sjiffies;
-		uint64_t dpkts, docts;
-		psp->getDroppedPackets(dpkts);
-		psp->getDroppedOctets(docts);
+		uint32_t ujiffies = 0;
+		uint32_t sjiffies = 0;
+		uint64_t dpkts = 0, fpkts = 0;
+		uint64_t docts = 0, focts = 0;
+		psp->getPacketStats(dpkts, fpkts);
+		psp->getOctetStats(docts, focts);
 		if (psp->getProcessStatistics(sjiffies, ujiffies)) {
-			stats.push_back(IDSLoadStatistics(true, dpkts, docts, sjiffies, ujiffies));
+			stats.push_back(IDSLoadStatistics(true, dpkts, docts, fpkts, focts, sjiffies, ujiffies));
 		} else {
-			stats.push_back(IDSLoadStatistics(true, dpkts, docts));
+			stats.push_back(IDSLoadStatistics(true, dpkts, docts, fpkts, focts));
 		}
 	}
 	selector->updateData(stats);

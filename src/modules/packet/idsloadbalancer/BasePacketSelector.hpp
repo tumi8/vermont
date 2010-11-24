@@ -44,6 +44,8 @@ class BasePacketSelector {
 		virtual int decide(Packet *p) = 0;
 		virtual void updateData(list<IDSLoadStatistics>& lstats) {}
 		virtual string getName();
+		virtual void start() {}
+		virtual void stop() {}
 
 	protected:
 		uint32_t numberOfQueues;

@@ -148,6 +148,11 @@
  */
 #define PEQ_DEFAULT_MESSAGEQUEUESIZE 1024
 
+/**
+ * defines the number of seconds PriorityPacketSelector waits before judging the performance
+ * of succeeding processes
+ */
+#define PPS_DEFAULT_MINSTARTDELAY 10
 
 /**
  * convenient way to determine size of a C array

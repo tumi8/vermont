@@ -27,14 +27,27 @@ struct IDSLoadStatistics
 	uint32_t userJiffies;
 	uint64_t droppedPackets;
 	uint64_t droppedOctets;
+	uint64_t forwardedPackets;
+	uint64_t forwardedOctets;
 	bool running;
 
-	IDSLoadStatistics() {}
-	IDSLoadStatistics(bool r, uint64_t dp, uint64_t doc, uint32_t sj=0, uint32_t uj=0)
+	IDSLoadStatistics()
+		: sysJiffies(0),
+		  userJiffies(0),
+		  droppedPackets(0),
+		  droppedOctets(0),
+		  forwardedPackets(0),
+		  forwardedOctets(0),
+		  running(false)
+	{}
+
+	IDSLoadStatistics(bool r, uint64_t dp, uint64_t doc, uint64_t fp, uint64_t foc, uint32_t sj=0, uint32_t uj=0)
 		: sysJiffies(sj),
 		  userJiffies(uj),
 		  droppedPackets(dp),
 		  droppedOctets(doc),
+		  forwardedPackets(fp),
+		  forwardedOctets(foc),
 		  running(r)
 	{}
 };
