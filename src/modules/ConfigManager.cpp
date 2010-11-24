@@ -59,7 +59,7 @@
 #include "modules/idmef/IDMEFExporterCfg.h"
 #include "modules/idmef//PacketIDMEFReporterCfg.h"
 #include "modules/analysis/P2PDetectorCfg.h"
-#include "modules/analysis/HostStatisticsCfg.h"
+#include "modules/analysis/HostStatisticsGeneratorCfg.h"
 
 #include <cassert>
 
@@ -100,7 +100,7 @@ Cfg* ConfigManager::configModules[] = {
 	new AnonymizerCfg(NULL),
 	new FrontPayloadSigMatcherCfg(NULL),
 	new P2PDetectorCfg(NULL),
-	new HostStatisticsCfg(NULL),
+	new HostStatisticsGeneratorCfg(NULL),
 	new IpfixCsExporterCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
 	new IpfixDbReaderCfg(NULL),
