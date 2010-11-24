@@ -17,38 +17,41 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "HostStatisticsCfg.h"
+#include "HostStatisticsGeneratorCfg.h"
 
-HostStatisticsCfg::HostStatisticsCfg(XMLElement* elem) : CfgHelper<HostStatistics, HostStatisticsCfg>(elem, "hostStatistics")
+#include <arpa/inet.h>
+
+HostStatisticsGeneratorCfg::HostStatisticsGeneratorCfg(XMLElement* elem) : CfgHelper<HostStatisticsGenerator, HostStatisticsGeneratorCfg>(elem, "hostStatistics")
 {
 	if (!elem) return;  // needed because of table inside ConfigManager
 
 	try {
-		ipSubnet = get("subnet");
-		addrFilter = get("addrFilter");
-		logPath = get("logPath");
-		logInt = (uint16_t)getInt("logInterval", 10);
+		if (inet_aton(get("subnet").c_str(), (in_addr*)(&ipSubnet))==0)
+			THROWEXCEPTION("Invalid subnetwork specified for module hostStatisticsGenerator");
+		if (inet_aton(get("mask").c_str(), (in_addr*)(&ipMask))==0)
+			THROWEXCEPTION("Invalid subnetwork specified for module hostStatisticsGenerator");
+		intervalLength = getInt("intervallength", 1000);
 	} catch(IllegalEntry ie) {
 		THROWEXCEPTION("Illegal hostStatistics entry in config file");
 	}
 }
 
-bool HostStatisticsCfg::deriveFrom(HostStatisticsCfg* old)
+bool HostStatisticsGeneratorCfg::deriveFrom(HostStatisticsGeneratorCfg* old)
 {
 	return false;
 }
 
-HostStatisticsCfg* HostStatisticsCfg::create(XMLElement* e)
+HostStatisticsGeneratorCfg* HostStatisticsGeneratorCfg::create(XMLElement* e)
 {
 	assert(e);
 	assert(e->getName() == getName());
-	return new HostStatisticsCfg(e);
+	return new HostStatisticsGeneratorCfg(e);
 }
 
-HostStatistics* HostStatisticsCfg::createInstance()
+HostStatisticsGenerator* HostStatisticsGeneratorCfg::createInstance()
 {
 	if (!instance) {
-		instance = new HostStatistics(ipSubnet, addrFilter, logPath, logInt);
+		instance = new HostStatisticsGenerator(ipSubnet, ipMask, intervalLength);
 	}
 	return instance;
 }

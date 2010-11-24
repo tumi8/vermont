@@ -21,8 +21,8 @@ ADD_LIBRARY(modules
     analysis/P2PDetectorCfg.cpp
     analysis/RBSWormDetectorCfg.cpp
     analysis/TRWPortscanDetectorCfg.cpp
-    analysis/HostStatistics.cpp
-    analysis/HostStatisticsCfg.cpp
+    analysis/HostStatisticsGenerator.cpp
+    analysis/HostStatisticsGeneratorCfg.cpp
     # support files for FrontPayloadSigMatcher
     analysis/fpsigmatcher/KTree.c
     analysis/fpsigmatcher/Matcher.c

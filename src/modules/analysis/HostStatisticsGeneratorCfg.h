@@ -21,35 +21,29 @@
 #define HOSTSTATISTICSCFG_H_
 
 #include "core/InfoElementCfg.h"
-#include "HostStatistics.h"
+#include "HostStatisticsGenerator.h"
 
 #include <string>
 
 
-class HostStatisticsCfg : public CfgHelper<HostStatistics, HostStatisticsCfg>
+class HostStatisticsGeneratorCfg : public CfgHelper<HostStatisticsGenerator, HostStatisticsGeneratorCfg>
 {
 public:
 	friend class ConfigManager;
 
-	std::string getName() { return "hostStatistics"; }
+	std::string getName() { return "hostStatisticsGenerator"; }
 
-	HostStatistics* createInstance();
-	virtual HostStatisticsCfg* create(XMLElement* e);
-	virtual bool deriveFrom(HostStatisticsCfg* old);
+	HostStatisticsGenerator* createInstance();
+	virtual HostStatisticsGeneratorCfg* create(XMLElement* e);
+	virtual bool deriveFrom(HostStatisticsGeneratorCfg* old);
 
 protected:
-	HostStatisticsCfg(XMLElement*);
-
-	std::string getSubnet() { return ipSubnet; }
-	std::string getAddrFilter() { return addrFilter; }
-	std::string getLogPath() { return logPath; }
-	uint16_t getLogIntervall() { return logInt; }
+	HostStatisticsGeneratorCfg(XMLElement*);
 
 private:
-	std::string ipSubnet;
-	std::string addrFilter;
-	std::string logPath;
-	uint16_t logInt;
+	uint32_t ipSubnet;
+	uint32_t ipMask;
+	uint32_t intervalLength;
 };
 
 #endif /* HOSTSTATISTICSCFG_H_ */
