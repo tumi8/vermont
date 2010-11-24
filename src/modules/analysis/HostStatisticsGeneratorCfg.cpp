@@ -21,7 +21,8 @@
 
 #include <arpa/inet.h>
 
-HostStatisticsGeneratorCfg::HostStatisticsGeneratorCfg(XMLElement* elem) : CfgHelper<HostStatisticsGenerator, HostStatisticsGeneratorCfg>(elem, "hostStatistics")
+HostStatisticsGeneratorCfg::HostStatisticsGeneratorCfg(XMLElement* elem)
+: CfgHelper<HostStatisticsGenerator, HostStatisticsGeneratorCfg>(elem, "hostStatisticsGenerator")
 {
 	if (!elem) return;  // needed because of table inside ConfigManager
 
@@ -30,6 +31,8 @@ HostStatisticsGeneratorCfg::HostStatisticsGeneratorCfg(XMLElement* elem) : CfgHe
 			THROWEXCEPTION("Invalid subnetwork specified for module hostStatisticsGenerator");
 		if (inet_aton(get("mask").c_str(), (in_addr*)(&ipMask))==0)
 			THROWEXCEPTION("Invalid subnetwork specified for module hostStatisticsGenerator");
+		ipSubnet = ntohl(ipSubnet);
+		ipMask = ntohl(ipMask);
 		intervalLength = getInt("intervallength", 1000);
 	} catch(IllegalEntry ie) {
 		THROWEXCEPTION("Illegal hostStatistics entry in config file");

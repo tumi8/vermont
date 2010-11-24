@@ -70,13 +70,14 @@ void HostStatistics::commit()
 HostStatisticsGenerator::HostStatisticsGenerator(uint32_t ipSubnet, uint32_t ipMask, uint32_t intervalLength)
 	: ipSubnet(ipSubnet),
 	  ipMask(ipMask),
+	  zeroOctets(0),
 	  intervalLength(intervalLength)
 {
 	addToCurTime(&intervalEnd, intervalLength);
 }
 
 
-void HostStatisticsGenerator::addHostData(uint32_t ip, uint64_t pkts, uint64_t octs)
+void HostStatisticsGenerator::addHostData(uint32_t ip, uint64_t octs, uint64_t pkts)
 {
 	std::map<uint32_t, HostStatistics>::iterator it;
 	it = trafficMap.find(ip);
@@ -90,9 +91,18 @@ void HostStatisticsGenerator::addHostData(uint32_t ip, uint64_t pkts, uint64_t o
 void HostStatisticsGenerator::changeInterval()
 {
 	std::map<uint32_t, HostStatistics>::iterator it;
+	uint32_t zerohosts = 0;
+	uint64_t zeroocts = 0;
 	for (it=trafficMap.begin(); it!=trafficMap.end(); it++) {
+		if (it->second.lastOctets==0) {
+			zerohosts++;
+			zeroocts += it->second.curOctets;
+		}
 		it->second.commit();
 	}
+	zeroOctets = (double)zeroocts/zerohosts*HSG_DEFAULT_ZEROOCTETSALPHA+(1.0-HSG_DEFAULT_ZEROOCTETSALPHA)*zeroOctets;
+	msg(MSG_DEBUG, "zeroocts=%llu, zerohosts=%u", zeroocts, zerohosts);
+	msg(MSG_DEBUG, "HostStatisticsGenerator: average traffic by hosts with no traffic in last interval: %llu bytes", zeroOctets);
 }
 
 void HostStatisticsGenerator::onDataRecord(IpfixDataRecord* record)
@@ -107,11 +117,14 @@ void HostStatisticsGenerator::onDataRecord(IpfixDataRecord* record)
 	
 	Connection conn(record);
 
-	if ((conn.srcIP&ipMask)==ipSubnet) {
-		addHostData(conn.srcIP, ntohll(conn.srcOctets)+ntohll(conn.dstOctets), ntohll(conn.srcPackets)+ntohll(conn.dstPackets));
+	uint32_t srcip = ntohl(conn.srcIP);
+	uint32_t dstip = ntohl(conn.dstIP);
+
+	if ((srcip&ipMask)==ipSubnet) {
+		addHostData(srcip, ntohll(conn.srcOctets)+ntohll(conn.dstOctets), ntohll(conn.srcPackets)+ntohll(conn.dstPackets));
 	}
-	if ((conn.dstIP&ipMask)==ipSubnet) {
-		addHostData(conn.dstIP, ntohll(conn.srcOctets)+ntohll(conn.dstOctets), ntohll(conn.srcPackets)+ntohll(conn.dstPackets));
+	if ((dstip&ipMask)==ipSubnet) {
+		addHostData(dstip, ntohll(conn.srcOctets)+ntohll(conn.dstOctets), ntohll(conn.srcPackets)+ntohll(conn.dstPackets));
 	}
 	record->removeReference();
 
@@ -147,4 +160,9 @@ void HostStatisticsGenerator::getWatchedSubnet(uint32_t& subnet, uint32_t& mask)
 {
 	subnet = ipSubnet;
 	mask = ipMask;
+}
+
+uint64_t HostStatisticsGenerator::getZeroOctets()
+{
+	return zeroOctets;
 }

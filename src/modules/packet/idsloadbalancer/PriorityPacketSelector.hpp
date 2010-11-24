@@ -55,18 +55,17 @@ struct PriorityNetConfig
 {
 	uint32_t subnet;
 	uint32_t mask;
+	uint8_t maskbits;
 	uint32_t hostcount;
 	float weight;
 
-	PriorityNetConfig(uint32_t subnet, uint32_t mask, float weight)
-		: subnet(subnet), mask(mask), hostcount(0), weight(weight)
-	{}
+	PriorityNetConfig(uint32_t subnet, uint32_t mask, uint8_t maskbits, float weight);
 };
 
 struct IDSData
 {
 	uint64_t maxOctets;		/**< maximum octets that can be monitored by IDS in one interval */
-	vector<pair<uint32_t, HostData*> > hosts; /**< hosts assigned to ids */
+	list<pair<uint32_t, HostData*> > hosts; /**< hosts assigned to ids */
 
 	IDSData(uint32_t maxoctets)
 		: maxOctets(maxoctets)
@@ -79,7 +78,8 @@ class PriorityPacketSelector : public BasePacketSelector
 public:
 	PriorityPacketSelector(list<PriorityNetConfig>& pnc, float startprio, struct timeval minmontime);
 	virtual int decide(Packet *p);
-	virtual void updateData(IDSLoadStatistics* lstats);
+	virtual void updateData(list<IDSLoadStatistics>& lstats);
+	virtual void setQueueCount(uint32_t n);
 
 private:
 	static const uint32_t WARN_HOSTCOUNT;
@@ -93,14 +93,15 @@ private:
 	float prioSum;
 	struct timeval minMonTime; /**< minimal monitoring time in milliseconds */
 
-	vector<pair<uint32_t, HostData*> > restHosts; /**< hosts that are currently not monitored */
+	list<pair<uint32_t, HostData*> > restHosts; /**< hosts that are currently not monitored */
 	vector<IDSData> ids;
 
-	uint32_t insertSubnet(uint32_t subnet, uint32_t mask, float weight);
+	uint32_t insertSubnet(uint32_t subnet, uint8_t maskbits, float weight);
 	void updateTrafficEstimation();
 	void calcMaxHostPrioChange();
 	void updatePriorities();
-	void assignHosts2IDS(IDSLoadStatistics* lstats);
+	void assignHosts2IDS(list<IDSLoadStatistics>& lstats);
+	void setIpConfig();
 };
 
 

@@ -33,7 +33,7 @@ class Packet;
 
 class BasePacketSelector {
 	public:
-		BasePacketSelector();
+		BasePacketSelector(string name);
 		~BasePacketSelector();
 
 		virtual void setQueueCount(uint32_t n);
@@ -43,9 +43,11 @@ class BasePacketSelector {
 		 */
 		virtual int decide(Packet *p) = 0;
 		virtual void updateData(list<IDSLoadStatistics>& lstats) {}
+		virtual string getName();
 
 	protected:
 		uint32_t numberOfQueues;
+		string name;
 
 };
 

@@ -20,6 +20,7 @@
 #include "HashPacketSelector.hpp"
 
 HashPacketSelector::HashPacketSelector() 
+	: BasePacketSelector("HashPacketSelector")
 {
 }
 HashPacketSelector::~HashPacketSelector()
