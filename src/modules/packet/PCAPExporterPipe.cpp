@@ -49,7 +49,6 @@ PCAPExporterPipe::PCAPExporterPipe(const std::string& logfile)
 	  appenddate(false),
 	  restartOnSignal(false),
 	  fifoReaderPid(0),
-	  dummy(NULL),
 	  sigKillTimeout(1),
 	  counter(0),
 	  last_check(0),
@@ -217,11 +216,6 @@ void PCAPExporterPipe::performStart()
 
 	registerSignalHandlers();
 
-	dummy = pcap_open_dead(link_type, snaplen);
-	if (!dummy) {
-		THROWEXCEPTION("Could not open dummy device: %s", pcap_geterr(dummy));
-	}
-
 	msg(MSG_INFO, "Started PCAPExporterPipe with the following parameters:");
 	if (fifoReaderCmd != ""){
 		msg(MSG_INFO, "  - fifoReaderCmd = %s", fifoReaderCmd.c_str());
@@ -263,6 +257,11 @@ void PCAPExporterPipe::performShutdown()
 	stopProcess();
 }
 
+
+// some magic values taken from the version of libpcap where we got the code
+#define TCPDUMP_MAGIC		0xa1b2c3d4
+#define PCAP_VERSION_MAJOR 	2
+#define PCAP_VERSION_MINOR 	4
 void PCAPExporterPipe::startProcess()
 {
 	if (pipe(fd)) {
@@ -273,29 +272,25 @@ void PCAPExporterPipe::startProcess()
 	msg(MSG_INFO, "Started process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
 						fifoReaderCmd.c_str(), fifoReaderPid);
 
-	pcapFile = fdopen(fd[1], "w");
-	if (!pcapFile) {
-		THROWEXCEPTION("PCAPExporterPipe: fdopen failed, error %d (%s)", errno, strerror(errno));
-	}
-	dumper = pcap_dump_fopen(dummy, pcapFile);
-	if (!dumper) {
-		THROWEXCEPTION("PCAPExporterPipe: could not open dump file: %s", pcap_geterr(dummy));
-	}
+	pcapFile = fd[1];
+	if (fcntl(pcapFile, F_SETFL, fcntl(pcapFile, F_GETFL) | O_NONBLOCK)==-1)
+		THROWEXCEPTION("PCAPExporterPipe: fcntl failed, error %d (%s)", errno, strerror(errno));
+	struct pcap_file_header hdr;
+	hdr.magic = TCPDUMP_MAGIC;
+	hdr.version_major = PCAP_VERSION_MAJOR;
+	hdr.version_minor = PCAP_VERSION_MINOR;
+	hdr.thiszone = 0;
+	hdr.snaplen = snaplen;
+	hdr.sigfigs = 0;
+	hdr.linktype = DLT_EN10MB;
+
+    if (write(pcapFile, (char *)&hdr, sizeof(hdr)) != sizeof(hdr))
+        THROWEXCEPTION("PCAPExporterPipe: failed to write: %u (%s)", errno, strerror(errno));
 }
 
 void PCAPExporterPipe::stopProcess()
 {
-	if (!dumper) return;
-
-	if (-1 == pcap_dump_flush(dumper)) {
-		msg(MSG_ERROR, "PCAPExporterPipe: Could not flush dump file");
-	}
-
-	/*if (fclose(pcapFile)) {
-		msg(MSG_ERROR, "PCAPExporterPipe: failed to close pipe handle, error %d (%s)", errno, strerror(errno));
-	}*/
-
-	pcap_dump_close(dumper);
+	close(pcapFile);
 
 	if (fifoReaderPid != 0 ) {
 		kill_all(fifoReaderPid);
@@ -344,11 +339,24 @@ void PCAPExporterPipe::receive(Packet* packet)
 	packetHeader.ts = packet->timestamp;
 	packetHeader.caplen = packet->data_length;
 	packetHeader.len = packet->pcapPacketLength;
-	pcap_dump((unsigned char*)dumper, &packetHeader, packet->data);
-	packet->removeReference();
+	struct iovec wvec[2];
+	wvec[0].iov_base = &packetHeader;
+	wvec[0].iov_len = sizeof(packetHeader);
+	wvec[1].iov_base = packet->data;
+	wvec[1].iov_len = packetHeader.caplen;
+	if (writev(pcapFile, wvec, 2)!=sizeof(packetHeader)+packetHeader.caplen) {
+		if (errno=EAGAIN) {
+			// pipe is full, drop packet
+			statBytesDropped += packet->data_length;
+			statPktsDropped++;
+		} else
+			THROWEXCEPTION("PCAPExporterPipe: failed to write, error %u (%s)", errno, strerror(errno));
+	} else {
+		statBytesForwarded += packet->data_length;
+		statPktsForwarded++;
+	}
 
-	statBytesForwarded += packet->data_length;
-	statPktsForwarded++;
+	packet->removeReference();
 	DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive() ended");
 }
 

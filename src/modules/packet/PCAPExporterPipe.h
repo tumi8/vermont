@@ -26,7 +26,6 @@
 #include <common/msg.h>
 
 #include <string>
-#include <pcap.h>
 #include <ctime>
 #include "PCAPExporterBase.h"
 #include <common/SignalInterface.h>
@@ -99,7 +98,6 @@ protected:
 	bool appenddate;
 	bool restartOnSignal;
     int fifoReaderPid;
-	pcap_t* dummy;
     int sigKillTimeout;
 	int counter;
 	time_t last_check;
@@ -109,7 +107,7 @@ protected:
 	 * fd[0]: child process reads from pipe
 	 */
     int fd[2];
-	FILE* pcapFile;
+	int pcapFile;
 	uint64_t statPktsForwarded;
 	uint64_t statBytesForwarded;
 	uint64_t statPktsDropped;
