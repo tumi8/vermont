@@ -55,7 +55,8 @@ public:
 	HostStatisticsGenerator(uint32_t ipSubnet, uint32_t ipMask, uint32_t intervalLength);
 	void onDataRecord(IpfixDataRecord* record);
 
-
+	 bool getOctets(uint32_t ip, uint64_t& octets);
+	 void getWatchedSubnet(uint32_t& subnet, uint32_t& mask);
 
 private:
 	uint32_t ipSubnet;

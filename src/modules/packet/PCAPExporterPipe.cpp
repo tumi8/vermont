@@ -517,3 +517,27 @@ std::string PCAPExporterPipe::getStatisticsXML(double interval)
 	}
 	return oss.str();
 }
+
+bool PCAPExporterPipe::getProcessStatistics(uint32_t& sysjiffies, uint32_t& userjiffies)
+{
+	if (!isRunning(fifoReaderPid)) return false;
+
+	try {
+		ThreadCPUInterface::JiffyTime jt = ThreadCPUInterface::getProcessJiffies(fifoReaderPid);
+		sysjiffies = jt.sysJiffies;
+		userjiffies = jt.userJiffies;
+	}
+	catch (std::runtime_error& re) {
+		// do not fail miserably when statistics were not retrieved correctly ...
+		return false;
+	}
+
+	return true;
+}
+
+
+void PCAPExporterPipe::getDroppedPackets(uint64_t& droppedpkts)
+{
+	// FIXME: dummy, as we do not have any possibility to drop packets yet ...
+	droppedpkts = 0;
+}

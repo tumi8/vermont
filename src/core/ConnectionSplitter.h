@@ -65,6 +65,17 @@ public:
 		}
 	}
 
+	virtual Destination<T>* getModuleInstance(uint32_t id)
+	{
+		if (id<0 || id>=size) THROWEXCEPTION("ConnectionSplitter::getModuleInstance() got invalid id (%d)", id);
+		return destinations[id];
+	}
+
+	virtual int getModuleCount()
+	{
+		return size;
+	}
+
 private:
 	inline void process(T packet, int id = -1)
 	{

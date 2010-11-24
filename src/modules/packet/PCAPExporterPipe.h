@@ -33,6 +33,23 @@
 
 class Packet;
 
+
+class ProcessStatisticsProvider
+{
+public:
+	/**
+	 * returns process statistics of the attached process
+	 * @returns true if process is running, false if not
+	 */
+	virtual bool getProcessStatistics(uint32_t& sysjiffies, uint32_t& userjiffies) = 0;
+
+	/**
+	 * returns total number of dropped packets due to overload of the attached process
+	 * @returns true if process is running, false if not
+	 */
+	virtual void getDroppedPackets(uint64_t& droppedpkts) = 0;
+};
+
 /**
  * This class writes packets in PCAP format into a pipe,
  * allowing another process to read these packets via STDIN.
@@ -40,7 +57,13 @@ class Packet;
  * The reader process may be restarted manually by sending SIGUSR2 to Vermont.
 */
 
-class PCAPExporterPipe : public Module, public Destination<Packet *>, public Source<Packet *>, public PCAPExporterBase, public SignalInterface
+class PCAPExporterPipe :
+	public Module,
+	public Destination<Packet *>,
+	public Source<Packet *>,
+	public PCAPExporterBase,
+	public SignalInterface,
+	public ProcessStatisticsProvider
 {
 public:
 	PCAPExporterPipe(const std::string& file);
@@ -58,6 +81,8 @@ public:
 	virtual void performStart();
 	virtual void performShutdown();
 	virtual std::string getStatisticsXML(double interval);
+	virtual bool getProcessStatistics(uint32_t& sysjiffies, uint32_t& userjiffies);
+	virtual void getDroppedPackets(uint64_t& droppedpkts);
 
 
 protected:
@@ -105,8 +130,6 @@ protected:
 
     void kill_all(int ppid);
     bool checkint(const char *my_string);
-
-
 };
 
 

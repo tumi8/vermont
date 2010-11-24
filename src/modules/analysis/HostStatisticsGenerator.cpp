@@ -125,3 +125,26 @@ void HostStatisticsGenerator::onDataRecord(IpfixDataRecord* record)
 		intervalEnd.tv_usec += intervalLength%1000;
 	}
 }
+
+/**
+ * @param octets the given IP's octets that were transferred in the last interval
+ * @returns true if host was watched, else false
+ */
+bool HostStatisticsGenerator::getOctets(uint32_t ip, uint64_t& octets)
+{
+	std::map<uint32_t, HostStatistics>::iterator it;
+	it = trafficMap.find(ip);
+	if (it != trafficMap.end())	{
+		octets = it->second.lastOctets;
+		return true;
+	} else {
+		// not found
+		return false;
+	}
+}
+
+void HostStatisticsGenerator::getWatchedSubnet(uint32_t& subnet, uint32_t& mask)
+{
+	subnet = ipSubnet;
+	mask = ipMask;
+}

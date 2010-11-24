@@ -45,16 +45,13 @@ ADD_LIBRARY(modules
     packet/PCAPExporterFileCfg.cpp
     packet/PCAPExporterMemCfg.cpp
     packet/PacketReportingCfg.cpp
-	packet/IpPacketSelector.cpp
-	packet/BasePacketSelector.cpp
-	packet/IpPacketSelector.hpp
+	packet/idsloadbalancer/IpPacketSelector.cpp
+	packet/idsloadbalancer/BasePacketSelector.cpp
+    packet/idsloadbalancer/HashPacketSelector.cpp
+    packet/idsloadbalancer/PriorityPacketSelector.cpp
 	packet/IDSLoadbalancer.cpp
-	packet/BasePacketSelector.hpp
-	packet/HashPacketSelector.cpp
 	packet/IDSLoadbalancer.hpp
-	packet/HashPacketSelector.hpp
 	packet/IDSLoadbalancerCfg.cpp
-	packet/IDSLoadbalancerCfg.h
     packet/filter/FilterModule.cpp
     packet/filter/PacketFilterCfg.cpp
     packet/filter/IPHeaderFilter.cpp

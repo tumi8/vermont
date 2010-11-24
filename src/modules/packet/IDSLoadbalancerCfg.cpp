@@ -19,7 +19,7 @@
  */
 
 #include "IDSLoadbalancerCfg.h"
-#include "BasePacketSelector.hpp"
+#include "idsloadbalancer/BasePacketSelector.hpp"
 
 #include "common/defs.h"
 

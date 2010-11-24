@@ -25,6 +25,13 @@ public:
 	  receive(e);
 	}
 
+	virtual Destination<T>* getModuleInstance(int id) {
+		return this;
+	}
+
+	virtual int getModuleCount() {
+		return 1;
+	}
 
 	// See Source.h for comments on the queue running notification
 	virtual void notifyQueueRunning() {}

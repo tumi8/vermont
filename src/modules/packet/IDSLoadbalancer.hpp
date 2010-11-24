@@ -22,8 +22,8 @@
 #define IDS_LOADBALANCER_HPP
 
 #include "core/Module.h"
-#include "HashPacketSelector.hpp"
-#include "IpPacketSelector.hpp"
+#include "idsloadbalancer/HashPacketSelector.hpp"
+#include "idsloadbalancer/IpPacketSelector.hpp"
 
 #include <common/msg.h>
 
@@ -31,13 +31,15 @@
 #include <ctime>
 #include <common/SignalInterface.h>
 
+
 class Packet;
 
 
-class IDSLoadbalancer : public Module, public Destination<Packet *>, public Source<Packet *> 
+
+class IDSLoadbalancer : public Module, public Destination<Packet *>, public Source<Packet *>
 {
 public:
-	IDSLoadbalancer(std::string &_selector, int count);
+	IDSLoadbalancer(std::string &_selector, uint64_t updateinterval);
 	~IDSLoadbalancer();
 	virtual void receive(Packet* packet);
 	void setIpConfig(std::map<uint32_t, int> &, std::map<uint32_t, int> &);
@@ -48,9 +50,16 @@ public:
 private:
 	BasePacketSelector *selector;
 	std::string selectorAsString;
-	int qcount;
+	uint32_t qcount;
 	std::map<uint32_t, int> src;
 	std::map<uint32_t, int> dst;
+	Thread thread;
+	bool shutdownThread;
+	uint64_t updateInterval; /**< update interval in milliseconds of internal IP address list (if needed) */
+
+	static void* threadWrapper(void* data);
+	void updateWorker();
+	void updateBalancingLists();
 };
 
 #endif
