@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef HOSTSTATISTICS_H_
-#define HOSTSTATISTICS_H_
+#ifndef HOSTSTATISTICSGENERATOR_H_
+#define HOSTSTATISTICSGENERATOR_H_
 
 #include <time.h>
 #include <map>
@@ -56,6 +56,7 @@ public:
 	void onDataRecord(IpfixDataRecord* record);
 
 
+
 private:
 	uint32_t ipSubnet;
 	uint32_t ipMask;
@@ -67,4 +68,21 @@ private:
 	void changeInterval();
 };
 
-#endif /* HOSTSTATISTICS_H_ */
+
+
+/**
+ * a small hack to be able to access the instance of HostStatisticsGenerator from
+ * PrioritySystem
+ * ATTENTION: we assume that only ONE HostStatisticsGenerator is available as module within Vermont
+ */
+class HostStatisticsGeneratorFactory
+{
+public:
+	static HostStatisticsGenerator* getInstance();
+	static void registerInstance(HostStatisticsGenerator* i);
+
+private:
+	static HostStatisticsGenerator* instance;
+};
+
+#endif /* HOSTSTATISTICSGENERATOR_H_ */
