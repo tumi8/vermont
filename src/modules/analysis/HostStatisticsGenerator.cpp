@@ -100,7 +100,8 @@ void HostStatisticsGenerator::changeInterval()
 		}
 		it->second.commit();
 	}
-	zeroOctets = (double)zeroocts/zerohosts*HSG_DEFAULT_ZEROOCTETSALPHA+(1.0-HSG_DEFAULT_ZEROOCTETSALPHA)*zeroOctets;
+	if (zerohosts>0) zeroOctets = (double)zeroocts/zerohosts*HSG_DEFAULT_ZEROOCTETSALPHA+(1.0-HSG_DEFAULT_ZEROOCTETSALPHA)*zeroOctets;
+	else zeroOctets = (1.0-HSG_DEFAULT_ZEROOCTETSALPHA)*zeroOctets;
 	msg(MSG_DEBUG, "zeroocts=%llu, zerohosts=%u", zeroocts, zerohosts);
 	msg(MSG_DEBUG, "HostStatisticsGenerator: average traffic by hosts with no traffic in last interval: %llu bytes", zeroOctets);
 }

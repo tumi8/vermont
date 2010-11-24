@@ -45,9 +45,13 @@ public:
 
 	/**
 	 * returns total number of dropped packets due to overload of the attached process
-	 * @returns true if process is running, false if not
 	 */
 	virtual void getDroppedPackets(uint64_t& droppedpkts) = 0;
+
+	/**
+	 * returns total number of dropped octets due to overload of the attached process
+	 */
+	virtual void getDroppedOctets(uint64_t& droppedocts) = 0;
 };
 
 /**
@@ -83,7 +87,7 @@ public:
 	virtual std::string getStatisticsXML(double interval);
 	virtual bool getProcessStatistics(uint32_t& sysjiffies, uint32_t& userjiffies);
 	virtual void getDroppedPackets(uint64_t& droppedpkts);
-
+	virtual void getDroppedOctets(uint64_t& droppedocts);
 
 protected:
 	static void* pcapExporterSink(void* data);

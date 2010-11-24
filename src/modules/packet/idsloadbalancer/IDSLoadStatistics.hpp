@@ -26,13 +26,16 @@ struct IDSLoadStatistics
 	uint32_t sysJiffies;
 	uint32_t userJiffies;
 	uint64_t droppedPackets;
-	uint64_t recvPackets;
-	uint64_t recvOctets;
+	uint64_t droppedOctets;
 	bool running;
 
 	IDSLoadStatistics() {}
-	IDSLoadStatistics(bool r, uint64_t dp, uint32_t sj=0, uint32_t uj=0)
-		: sysJiffies(sj), userJiffies(uj), droppedPackets(dp), recvPackets(0), recvOctets(0), running(r)
+	IDSLoadStatistics(bool r, uint64_t dp, uint64_t doc, uint32_t sj=0, uint32_t uj=0)
+		: sysJiffies(sj),
+		  userJiffies(uj),
+		  droppedPackets(dp),
+		  droppedOctets(doc),
+		  running(r)
 	{}
 };
 

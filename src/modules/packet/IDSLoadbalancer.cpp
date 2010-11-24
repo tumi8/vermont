@@ -73,6 +73,7 @@ void IDSLoadbalancer::receive(Packet* packet)
 	int res = selector->decide(packet);
 	if (res == -1){
 		DPRINTFL(MSG_VDEBUG, "Dropping packet");
+		packet->removeReference();
 		return;
 	}
 
@@ -133,12 +134,13 @@ void IDSLoadbalancer::updateBalancingLists()
 		ProcessStatisticsProvider* psp = dynamic_cast<PCAPExporterPipe*>(dp);
 		if (!psp) THROWEXCEPTION("IDSLoadBalancer: succeeding module #%u is not of type ProcessStatisticsProvider! Use module type PcapExporterPipe!", i);
 		uint32_t ujiffies, sjiffies;
-		uint64_t dpkts;
+		uint64_t dpkts, docts;
 		psp->getDroppedPackets(dpkts);
+		psp->getDroppedOctets(docts);
 		if (psp->getProcessStatistics(sjiffies, ujiffies)) {
-			stats.push_back(IDSLoadStatistics(true, dpkts, sjiffies, ujiffies));
+			stats.push_back(IDSLoadStatistics(true, dpkts, docts, sjiffies, ujiffies));
 		} else {
-			stats.push_back(IDSLoadStatistics(true, dpkts));
+			stats.push_back(IDSLoadStatistics(true, dpkts, docts));
 		}
 	}
 	selector->updateData(stats);
