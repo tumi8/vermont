@@ -20,6 +20,8 @@
 
 #include "BaseHashtable.h"
 
+#include "common/Time.h"
+
 #include <sstream>
 #include <stdint.h>
 #include <iostream>
@@ -30,7 +32,7 @@ using namespace std;
  * Creates and initializes a new hashtable buffer for flows matching @c rule
  */
 BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
-		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
+		uint32_t minBufferTime, uint32_t maxBufferTime, uint8_t hashbits)
 	: biflowAggregation(rule->biflowAggregation),
 	  revKeyMapper(NULL),
 	  switchArray(NULL),
@@ -55,8 +57,8 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  aggInProgress(false)
 {
 	msg(MSG_INFO, "Hashtable initialized with following parameters:");
-	msg(MSG_INFO, "  - minBufferTime=%d", minBufferTime);
-	msg(MSG_INFO, "  - maxBufferTime=%d", maxBufferTime);
+	msg(MSG_INFO, "  - minBufferTime=%d ms", minBufferTime);
+	msg(MSG_INFO, "  - maxBufferTime=%d ms", maxBufferTime);
 	msg(MSG_INFO, "  - htableBits=%d", hashbits);
 
 	buckets = new HashtableBucket*[htableSize];
@@ -228,8 +230,8 @@ HashtableBucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Da
 		uint32_t obsdomainid, HashtableBucket* next, HashtableBucket* prev, uint32_t hash)
 {
 	HashtableBucket* bucket = new HashtableBucket();
-	bucket->expireTime = time(0) + minBufferTime;
-	bucket->forceExpireTime = time(0) + maxBufferTime;
+	addToCurTime(&bucket->expireTime, minBufferTime);
+	addToCurTime(&bucket->forceExpireTime, maxBufferTime);
 	bucket->data = data;
 	bucket->next = next;
 	bucket->prev = prev;
@@ -303,7 +305,8 @@ void BaseHashtable::expireFlows(bool all)
 		nanosleep(&req, &req);
 	}
 
-	uint32_t now = time(0);
+	struct timeval curtime;
+	gettimeofday(&curtime, 0);
 	HashtableBucket* bucket = 0;
 	BucketListElement* node = 0;
 
@@ -313,11 +316,13 @@ void BaseHashtable::expireFlows(bool all)
 			bucket = node->bucket;
 			// TODO: change this one list to two lists: one for active, one for passive timeout
 			// problem here: flows with active timeout may be exported passive timeout seconds too late
-			if ((bucket->expireTime < now) || (bucket->forceExpireTime < now) || all) {
-				if (now > bucket->forceExpireTime)
+			if ((compareTime(bucket->expireTime, curtime) < 0) || (compareTime(bucket->forceExpireTime, curtime) < 0) || all) {
+#ifdef DEBUG
+				if (compareTime(curtime, bucket->forceExpireTime)>0)
 					DPRINTF("expireFlows: forced expiry");
-				else if (now > bucket->expireTime)
+				else if (compareTime(curtime, bucket->expireTime)>0)
 					DPRINTF("expireFlows: normal expiry");
+#endif
 				if (bucket->inTable) removeBucket(bucket);
 				statExportedBuckets++;
 				exportBucket(bucket);

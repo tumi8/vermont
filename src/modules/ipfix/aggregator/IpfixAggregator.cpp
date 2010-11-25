@@ -86,8 +86,8 @@ void IpfixAggregator::onDataRecord(IpfixDataRecord* record)
 /**
  * creates hashtable for this aggregator
  */
-BaseHashtable* IpfixAggregator::createHashtable(Rule* rule, uint16_t minBufferTime, 
-		uint16_t maxBufferTime, uint8_t hashbits)
+BaseHashtable* IpfixAggregator::createHashtable(Rule* rule, uint32_t minBufferTime,
+		uint32_t maxBufferTime, uint8_t hashbits)
 {
 	return new FlowHashtable(this, rule, minBufferTime, maxBufferTime, hashbits);
 }

@@ -35,8 +35,8 @@ public:
 	BaseAggregator(uint32_t pollinterval);
 	virtual ~BaseAggregator();
 		
-	void buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits);
-	void buildAggregator(char* rulefile, uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits);
+	void buildAggregator(Rules* rules, uint32_t minBufferTime, uint32_t maxBufferTime, uint8_t hashbits);
+	void buildAggregator(char* rulefile, uint32_t minBufferTime, uint32_t maxBufferTime, uint8_t hashbits);
 
 	// events from Module
 	virtual void preReconfiguration();
@@ -53,7 +53,7 @@ protected:
 	 * creates a hashtable using the given parameters
 	 * to be overloaded by specialised versions of aggregator module
 	 */
-	virtual BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits) = 0;
+	virtual BaseHashtable* createHashtable(Rule* rule, uint32_t minBufferTime, uint32_t maxBufferTime, uint8_t hashbits) = 0;
 	void poll();
 	void exporterThread();
 	

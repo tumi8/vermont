@@ -44,8 +44,8 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 				rules->rule[rules->count++] = r;
 		} else if (e->matches("expiration")) {
 			// get the time values or set them to '0' if they are not specified
-			maxBufferTime = getTimeInUnit("activeTimeout", SEC, 0, e);
-			minBufferTime = getTimeInUnit("inactiveTimeout", SEC, 0, e);
+			maxBufferTime = getTimeInUnit("activeTimeout", mSEC, 0, e);
+			minBufferTime = getTimeInUnit("inactiveTimeout", mSEC, 0, e);
 			if (!maxBufferTime) THROWEXCEPTION("active timeout not set in configuration for aggregator");
 			if (!minBufferTime) THROWEXCEPTION("inactive timeout not set in configuration for aggregator");
 		} else if (e->matches("pollInterval")) {
