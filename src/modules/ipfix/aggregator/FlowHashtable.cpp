@@ -23,12 +23,13 @@
 
 #include "common/crc.hpp"
 #include "common/Misc.h"
+#include "common/Time.h"
 #include "modules/ipfix/IpfixPrinter.hpp"
 
 
 
 FlowHashtable::FlowHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
-		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
+		uint32_t minBufferTime, uint32_t maxBufferTime, uint8_t hashbits)
 	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits)
 {
 }
@@ -438,8 +439,8 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 	if (bucket != NULL) {
 		DPRINTFL(MSG_VDEBUG, "aggregating flow");
 		aggregateFlow(bucket->data.get(), data.get(), false);
-		bucket->expireTime = time(0) + minBufferTime;
-		if (bucket->forceExpireTime>bucket->expireTime) {
+		addToCurTime(&bucket->expireTime, minBufferTime);
+		if (compareTime(bucket->forceExpireTime, bucket->expireTime)>0) {
 			exportList.remove(bucket->listNode);
 			exportList.push(bucket->listNode);
 		}
@@ -471,8 +472,8 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 					buckets[nhash] = bucket;
 					bucket->prev = 0;
 					if (bucket->next != NULL) bucket->next->prev = bucket;
-					bucket->expireTime = time(0) + minBufferTime;
-					if (bucket->forceExpireTime>bucket->expireTime) {
+					addToCurTime(&bucket->expireTime, minBufferTime);
+					if (compareTime(bucket->forceExpireTime, bucket->expireTime)>0) {
 						exportList.remove(bucket->listNode);
 						exportList.push(bucket->listNode);
 					}

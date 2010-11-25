@@ -49,8 +49,8 @@ public:
 
 
 protected:
-	virtual BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime,
-			uint16_t maxBufferTime, uint8_t hashbits);
+	virtual BaseHashtable* createHashtable(Rule* rule, uint32_t minBufferTime,
+			uint32_t maxBufferTime, uint8_t hashbits);
 
 private:
 	uint32_t statPacketsReceived;

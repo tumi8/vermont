@@ -124,7 +124,7 @@ void BaseAggregator::postReconfiguration()
  * @param minBufferTime minimum buffer time for flows in hashtable
  * @param maxBufferTime maximum buffer time for flows in hashtable
  */
-void BaseAggregator::buildAggregator(char* rulefile, uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
+void BaseAggregator::buildAggregator(char* rulefile, uint32_t minBufferTime, uint32_t maxBufferTime, uint8_t hashbits)
 {
 	Rules* rules = new Rules(rulefile);
 
@@ -138,10 +138,10 @@ void BaseAggregator::buildAggregator(char* rulefile, uint16_t minBufferTime, uin
 /**
  * initializes aggregator module and creates hashtable
  * @param rules rules to use for creation of hashtables
- * @param minBufferTime minimum buffer time for flows in hashtable
- * @param maxBufferTime maximum buffer time for flows in hashtable
+ * @param minBufferTime minimum buffer time in ms for flows in hashtable
+ * @param maxBufferTime maximum buffer time in ms for flows in hashtable
  */
-void BaseAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
+void BaseAggregator::buildAggregator(Rules* rules, uint32_t minBufferTime, uint32_t maxBufferTime, uint8_t hashbits)
 {
 	this->rules = rules;
 

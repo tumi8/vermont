@@ -1237,9 +1237,9 @@ void PacketHashtable::aggregateFlow(HashtableBucket* bucket, const Packet* p, bo
 	// TODO: tobi_optimize
 	// replace call of time() with access to a static variable which is updated regularly (such as every 100ms)
 	if (!bucket->forceExpiry) {
-		bucket->expireTime = time(0) + minBufferTime;
+		addToCurTime(&bucket->expireTime, minBufferTime);
 
-		if (bucket->forceExpireTime>bucket->expireTime) {
+		if (compareTime(bucket->forceExpireTime, bucket->expireTime)>0) {
 			exportList.remove(bucket->listNode);
 			exportList.push(bucket->listNode);
 		}

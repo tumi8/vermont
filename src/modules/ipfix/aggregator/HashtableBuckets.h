@@ -32,8 +32,8 @@ class BucketListElement;
 class HashtableBucket
 {
 public:
-	uint32_t expireTime; /**<timestamp when this bucket will expire if no new flows are added*/
-	uint32_t forceExpireTime; /**<timestamp when this bucket is forced to expire */
+	struct timeval expireTime; /**<timestamp when this bucket will expire if no new flows are added*/
+	struct timeval forceExpireTime; /**<timestamp when this bucket is forced to expire */
 	boost::shared_array<IpfixRecord::Data> data; /**< contains variable fields of aggregated flow; format defined in Hashtable::dataInfo::fieldInfo*/
 	bool forceExpiry; /**< is set to true when bucket must be exported immediately */
 	bool inTable; /**< set to true when bucket is listed in the hashtable */
