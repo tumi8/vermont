@@ -49,8 +49,6 @@ class Packet;
 class PCAPExporterMem : public PCAPExporterPipe
 {
 	typedef struct SHMEntry{
-		int locked;
-		int new_data;
 		struct daq_pkthdr
 		{
 			struct timeval ts;      /* Timestamp */
@@ -78,12 +76,47 @@ protected:
     virtual void stopProcess();
 
 private:
-	void writeIntoMemory(Packet *packet);
-	int removeSHM(int, int);
+	bool writeIntoMemory(Packet *packet);
+	void *getNewSharedMemory(int *fd, int size, std::string name);
+	//sets up all queue variables 
+	void createQueue(int maxEntries);
+	//closes shmfd/queuefd and calls shm_unlink()
+	int removeSHM(int);
+	/**
+	 * returns next array position
+	 * @param index current array position
+	 * @return consecutive array position
+	 */
+	inline uint32_t next(uint32_t index){
+		return (++index % *max);
+	}
+
+
+	// filehandle for the shared memory segment which holds the actual queue
 	int shmfd;
+	// filehandle for the queue's control variables
+	int queuefd;
 	SHMEntry *shm_list;
-	int currentListEntry;
+	void *queuevarspointer;
 	const int QUEUEENTRIES;
+	int packetcount;
+	int dropcount;
+
+	/*shared control variables*/
+	uint32_t* glob_read;
+	uint32_t* glob_write;
+	/*consumer’s local variables*/
+	uint32_t* localWrite;
+	uint32_t* nextRead;
+	uint32_t* rBatch;
+	/*producer’s local variables*/
+	uint32_t* localRead;
+	uint32_t* nextWrite;
+	uint32_t* wBatch;
+	/*constants*/
+	uint32_t* max;
+	uint32_t* batchSize;
+
 };
 
 
