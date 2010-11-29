@@ -23,6 +23,7 @@
 
 #include "modules/packet/Packet.h"
 #include "common/Time.h"
+#include "osdep/linux/sysinfo.h"
 
 #include <unistd.h>
 #include <signal.h>
@@ -42,7 +43,8 @@
 namespace bfs = boost::filesystem;
 
 PCAPExporterMem::PCAPExporterMem(const std::string& logfile)
-	: PCAPExporterPipe(logfile), shmfd(0), shm_list(NULL), currentListEntry(0), QUEUEENTRIES(8096*4)
+	: PCAPExporterPipe(logfile), shmfd(0), queuefd(0), shm_list(NULL), queuevarspointer(0),
+	QUEUEENTRIES(128), packetcount(0), dropcount(0)
 {
 }
 
@@ -187,38 +189,18 @@ void PCAPExporterMem::performStart()
 
 void PCAPExporterMem::performShutdown()
 {
-	std::string lockfile = "/tmp/" + boost::lexical_cast<std::string>(fifoReaderPid);
-	std::string shutdown = "/tmp/shutdown_" + boost::lexical_cast<std::string>(fifoReaderPid);
-	FILE *f = fopen(shutdown.c_str(), "w");
-	fclose(f);
-	while(bfs::exists(lockfile)){
-	}	; // wait for snort to exit
-
 	unregisterSignalHandlers();
 	stopProcess();
+	msg(MSG_INFO, "Sent %u packets, dropped %u packets", packetcount, dropcount);
 }
 
 void PCAPExporterMem::startProcess()
 {
-	int size = sizeof(SHMEntry)*QUEUEENTRIES;
+	int size = sizeof(SHMEntry)*(QUEUEENTRIES+1);
 	fifoReaderPid = execCmd(fifoReaderCmd);
 	std::string name = "/" +  boost::lexical_cast<std::string>(fifoReaderPid);
-	if ((shmfd = shm_open(name.c_str(), O_CREAT | O_EXCL | O_RDWR, 00666)) == -1){
-		int err = errno;
-		if(fifoReaderPid) kill_all(fifoReaderPid);
-		THROWEXCEPTION("shm_open failed: %s", strerror(err));
-	}
-
-	if(ftruncate(shmfd, size)){
-		int err = errno;
-		if(fifoReaderPid) kill_all(fifoReaderPid);
-		THROWEXCEPTION("ftruncate failed: %s", strerror(err));
-	}
-	shm_list = (SHMEntry *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0);
-    if (shm_list == NULL) {
-        perror("In mmap()");
-        exit(1);
-    }
+	shm_list = (SHMEntry *) getNewSharedMemory(&shmfd, size, name);
+	createQueue(QUEUEENTRIES);
 	memset((void*)shm_list, 0, size);
 	std::string lockfile = "/tmp/" + boost::lexical_cast<std::string>(fifoReaderPid);
 	FILE *f = fopen(lockfile.c_str(), "w");
@@ -236,7 +218,7 @@ void PCAPExporterMem::stopProcess()
 		kill_all(fifoReaderPid);
 	}
 
-	removeSHM(fifoReaderPid, shmfd);
+	removeSHM(fifoReaderPid);
 
 	msg(MSG_INFO, "Stopped process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
 					fifoReaderCmd.c_str(), fifoReaderPid);
@@ -249,11 +231,14 @@ void PCAPExporterMem::stopProcess()
  * termination!
  * TODO
  * */
-int PCAPExporterMem::removeSHM(int pid, int des){
+int PCAPExporterMem::removeSHM(int pid){
 	int ret = 0;
 	std::string name = "/" + boost::lexical_cast<std::string>(pid);
-	ret += close(des);
-	//ret += shm_unlink(name.c_str()); //snort must unlink the segment
+	ret += close(shmfd);
+	ret += close(queuefd);
+	ret += shm_unlink(name.c_str());
+	name += "_queuevars";
+	ret += shm_unlink(name.c_str());
 	return ret;
 }
 
@@ -291,35 +276,42 @@ void PCAPExporterMem::receive(Packet* packet)
 		}
 	}
 
-	writeIntoMemory(packet);
-
+	if(writeIntoMemory(packet)){
+		msg(MSG_VDEBUG, "Wrote packet %d at pos %u", ++packetcount, *nextWrite);
+	} else {
+		msg(MSG_VDEBUG, "Dropped packet %d ", ++dropcount);
+	}
 	statBytesForwarded += packet->data_length;
 	statPktsForwarded++;
+	packet->removeReference();
 	DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive() ended");
 }
 
-void PCAPExporterMem::writeIntoMemory(Packet *packet){
-START:
-	while(! __sync_bool_compare_and_swap(&(shm_list[currentListEntry].locked), 0, 1)) {
-		//wait until we got a lock on the entry
-	}
-	if(shm_list[currentListEntry].new_data == 1){
-		shm_list[currentListEntry].locked = 0;
-		goto START;
+bool PCAPExporterMem::writeIntoMemory(Packet *packet){
+	uint32_t afterNextWrite = next(*nextWrite);
+
+	if(afterNextWrite == *localRead){
+		if(afterNextWrite == *glob_read){
+			return false;
+		}
+		*localRead = *glob_read;
 	}
 
-	shm_list[currentListEntry].packetHeader.ts = packet->timestamp;
-	shm_list[currentListEntry].packetHeader.caplen = packet->data_length;
-	shm_list[currentListEntry].packetHeader.pktlen = packet->pcapPacketLength;
-	shm_list[currentListEntry].packetHeader.device_index = 0;
-	shm_list[currentListEntry].packetHeader.flags = 0;
-	memcpy(shm_list[currentListEntry].data, packet->data, packet->data_length);
+	shm_list[*nextWrite].packetHeader.ts = packet->timestamp;
+	shm_list[*nextWrite].packetHeader.caplen = packet->data_length;
+	shm_list[*nextWrite].packetHeader.pktlen = packet->pcapPacketLength;
+	shm_list[*nextWrite].packetHeader.device_index = 0;
+	shm_list[*nextWrite].packetHeader.flags = 0;
+	memcpy(shm_list[*nextWrite].data, packet->data, packet->data_length);
 
-	shm_list[currentListEntry].new_data = 1;
-	shm_list[currentListEntry].locked = 0;
-	currentListEntry++;
-	currentListEntry %= QUEUEENTRIES;
-	packet->removeReference();
+	*nextWrite = afterNextWrite;
+	(*wBatch)++;
+	if(*wBatch >= *batchSize){
+		*glob_write = *nextWrite;
+		*wBatch = 0;
+	}
+
+	return true;
 }
 
 
@@ -350,7 +342,7 @@ void PCAPExporterMem::handleSigChld(int sig)
 		//waitpid(fifoReaderPid, NULL, 0);
 		msg(MSG_ERROR, "Process of fifoReaderCmd \'%s\' with fifoReaderPid %d is not running!",
 				fifoReaderCmd.c_str(), pid);
-		removeSHM(pid, des);
+		removeSHM(pid);
 		startProcess();
 	}
 
@@ -359,4 +351,66 @@ void PCAPExporterMem::handleSigChld(int sig)
 		THROWEXCEPTION("time() failed");
 	onRestart = false;
 }
+
+void *PCAPExporterMem::getNewSharedMemory(int *fd, int size, std::string name){
+	if ((*fd = shm_open(name.c_str(), O_CREAT | O_EXCL | O_RDWR, 00666)) == -1){
+		int err = errno;
+		if(fifoReaderPid) kill_all(fifoReaderPid);
+		THROWEXCEPTION("shm_open failed: %s", strerror(err));
+	}
+	if(ftruncate(*fd, size)){
+		int err = errno;
+		if(fifoReaderPid) kill_all(fifoReaderPid);
+		THROWEXCEPTION("ftruncate failed: %s", strerror(err));
+	}
+	void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
+	if (ptr == NULL) {
+		perror("In mmap()");
+		exit(1);
+	}
+	return ptr;
+}
+
+
+void PCAPExporterMem::createQueue(int maxEntries){
+	uint32_t clsize = getCachelineSize();
+	std::string name = "/" +  boost::lexical_cast<std::string>(fifoReaderPid) + "_queuevars";
+
+	if(clsize < 3 * sizeof(uint32_t))
+		THROWEXCEPTION("Error: Systems cache-line size is too small");
+
+	void *ptr = getNewSharedMemory(&queuefd, clsize*5, name); //get a shared memory segment of 5*cachelinesize bytes
+	queuevarspointer = ptr;
+
+
+	uint32_t t = (uint32_t)ptr;
+	while(t % clsize) t++;
+	
+	void *tmp = (void*)t;
+
+	/*shared control variables*/
+	glob_read = (uint32_t*)tmp;
+	glob_write = glob_read + 1;
+	*glob_read = *glob_write = 0;
+
+	/*consumer’s local variables*/
+	localWrite = (uint32_t*)tmp + (clsize/sizeof(uint32_t*));
+	nextRead = localWrite + 1;
+	rBatch = nextRead + 1;
+	*localWrite = *nextRead = *rBatch = 0;
+
+	/*producer’s local variables*/
+	localRead = (uint32_t*)tmp + 2*(clsize/sizeof(uint32_t*));
+	nextWrite = localRead + 1;
+	wBatch = nextWrite + 1;
+	*localRead = *nextWrite = *wBatch = 0;
+
+	/*constants*/
+	max = (uint32_t*)tmp + 3*(clsize/sizeof(uint32_t*));
+	batchSize = max + 1;
+	*max = maxEntries+1;
+	*batchSize = 10;
+}
+
+
 
