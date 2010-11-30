@@ -57,6 +57,7 @@ public:
 
 	 bool getOctets(uint32_t ip, uint64_t& octets);
 	 void getWatchedSubnet(uint32_t& subnet, uint32_t& mask);
+	 uint32_t getIntervalLength();
 	 uint64_t getZeroOctets();
 
 private:

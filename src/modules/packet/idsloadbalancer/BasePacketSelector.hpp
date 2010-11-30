@@ -43,6 +43,7 @@ class BasePacketSelector {
 		 */
 		virtual int decide(Packet *p) = 0;
 		virtual void updateData(list<IDSLoadStatistics>& lstats) {}
+		virtual void setUpdateInterval(uint32_t ms) {}
 		virtual string getName();
 		virtual void start() {}
 		virtual void stop() {}
