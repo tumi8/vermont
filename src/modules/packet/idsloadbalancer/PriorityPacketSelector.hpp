@@ -98,6 +98,7 @@ public:
 	virtual int decide(Packet *p);
 	virtual void updateData(list<IDSLoadStatistics>& lstats);
 	virtual void setQueueCount(uint32_t n);
+	virtual void setUpdateInterval(uint32_t ms);
 	virtual void start();
 	virtual void stop();
 
@@ -115,6 +116,7 @@ private:
 	struct timeval minMonTime; /**< minimal monitoring time in milliseconds */
 	uint64_t discardOctets;
 	struct timeval startTime;
+	uint32_t updateInterval; /**< update interval in ms */
 
 	list<HostData*> restHosts; /**< hosts that are currently not monitored */
 	vector<IDSData> ids;

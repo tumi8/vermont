@@ -69,7 +69,8 @@ PriorityPacketSelector::PriorityPacketSelector(list<PriorityNetConfig>& pnc, dou
 	  hostCount(0),
 	  startPrio(startprio),
 	  minMonTime(minmontime),
-	  discardOctets(0)
+	  discardOctets(0),
+	  updateInterval(0)
 {
 	msg(MSG_INFO, "PriorityPacketSelector: Creating host priority entries ...");
 
@@ -226,7 +227,8 @@ void PriorityPacketSelector::updateIDSMaxRate()
 			}
 		} else {
 			if (ids[i].curDropOct>0) {
-				ids[i].maxOctets = (float)ids[i].maxOctets/adaptratio;
+				if (ids[i].curForwOct<ids[i].maxOctets)
+					ids[i].maxOctets = (float)ids[i].maxOctets/adaptratio;
 			} else if (ids[i].curForwOct>ids[i].maxOctets/2) {
 				ids[i].maxOctets = (float)ids[i].maxOctets*adaptratio;
 			}
@@ -240,17 +242,21 @@ void PriorityPacketSelector::updateTrafficEstimation()
 {
 	msg(MSG_DEBUG, "PriorityPacketSelector: updating host traffic estimation");
 	HostStatisticsGenerator* hoststats = HostStatisticsGeneratorFactory::getInstance();
+	uint32_t hsglength = hoststats->getIntervalLength();
+	double ratio = (double)updateInterval/hsglength;
+	uint64_t zerooctets = ratio*hoststats->getZeroOctets();
 	for (list<HostData*>::iterator iter = hosts.begin(); iter!=hosts.end(); iter++) {
 		HostData* host = *iter;
 		uint64_t octets;
 		if (hoststats->getOctets(host->ip, octets)) {
+			octets *= ratio;
 			host->lastTraffic = octets;
-			if (octets==0) host->nextTraffic = hoststats->getZeroOctets();
+			if (octets==0) host->nextTraffic = zerooctets;
 			else host->nextTraffic = octets;
 		} else {
 			// we do not have any new data for this host ...
 			host->lastTraffic = 0;
-			host->nextTraffic = hoststats->getZeroOctets();
+			host->nextTraffic = zerooctets;
 		}
 	}
 }
@@ -329,6 +335,7 @@ void PriorityPacketSelector::assignHosts2IDS()
 		idsoctets.push_back(octets);
 	}
 	restHosts.sort(greaterpriothan);
+	msg(MSG_ERROR, "resthosts first: %.2f, last: %.2f", restHosts.front()->priority, restHosts.back()->priority);
 
 	struct timeval curtime;
 	gettimeofday(&curtime, 0);
@@ -338,6 +345,7 @@ void PriorityPacketSelector::assignHosts2IDS()
 		uint32_t rcount = 0;
 		uint32_t acount = 0;
 
+		ids[i].hosts.sort(smallerpriothan);
 		// remove hosts from IDS because too much traffic would be analyzed
 		list<HostData*>::iterator iter = ids[i].hosts.begin();
 		while (idsoctets[i]>(int64_t)ids[i].maxOctets && iter!=ids[i].hosts.end()) {
@@ -488,4 +496,9 @@ void PriorityPacketSelector::stop()
 {
 	startTime.tv_sec = 0;
 	startTime.tv_usec = 0;
+}
+
+void PriorityPacketSelector::setUpdateInterval(uint32_t ms)
+{
+	updateInterval = ms;
 }

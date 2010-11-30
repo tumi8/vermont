@@ -167,3 +167,8 @@ uint64_t HostStatisticsGenerator::getZeroOctets()
 {
 	return zeroOctets;
 }
+
+uint32_t HostStatisticsGenerator::getIntervalLength()
+{
+	return intervalLength;
+}

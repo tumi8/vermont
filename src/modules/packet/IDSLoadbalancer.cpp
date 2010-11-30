@@ -56,6 +56,7 @@ void IDSLoadbalancer::performStart()
 	selector->setQueueCount(qcount);
 	msg(MSG_INFO, "  - QueueCount = %d", qcount);
 	msg(MSG_INFO, "  - updateInterval = %.03fs", (float)updateInterval/1000);
+	selector->setUpdateInterval(updateInterval);
 
 	shutdownThread = false;
 	if (updateInterval>0) thread.run(this);
