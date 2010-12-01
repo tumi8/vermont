@@ -57,7 +57,7 @@ class PCAPExporterMem : public PCAPExporterPipe
 			int device_index;       /* Index of the receiving interface. */
 			uint32_t flags;         /* Flags for the packet (DAQ_PKT_FLAG_*) */
 		} packetHeader;
-		char data[PCAP_MAX_CAPTURE_LENGTH];
+		char data[1600];
 
 	}SHMEntry;
 

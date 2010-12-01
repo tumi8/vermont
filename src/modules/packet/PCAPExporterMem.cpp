@@ -287,11 +287,12 @@ void PCAPExporterMem::receive(Packet* packet)
 	DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive() ended");
 }
 
-bool PCAPExporterMem::writeIntoMemory(Packet *packet){
+bool PCAPExporterMem::writeIntoMemory(Packet *packet)
+{
 	uint32_t afterNextWrite = next(*nextWrite);
 
-	if(afterNextWrite == *localRead){
-		if(afterNextWrite == *glob_read){
+	if (afterNextWrite == *localRead){
+		if (afterNextWrite == *glob_read){
 			return false;
 		}
 		*localRead = *glob_read;
@@ -306,7 +307,7 @@ bool PCAPExporterMem::writeIntoMemory(Packet *packet){
 
 	*nextWrite = afterNextWrite;
 	(*wBatch)++;
-	if(*wBatch >= *batchSize){
+	if (*wBatch >= *batchSize) {
 		*glob_write = *nextWrite;
 		*wBatch = 0;
 	}
@@ -352,7 +353,8 @@ void PCAPExporterMem::handleSigChld(int sig)
 	onRestart = false;
 }
 
-void *PCAPExporterMem::getNewSharedMemory(int *fd, int size, std::string name){
+void *PCAPExporterMem::getNewSharedMemory(int *fd, int size, std::string name)
+{
 	if ((*fd = shm_open(name.c_str(), O_CREAT | O_EXCL | O_RDWR, 00666)) == -1){
 		int err = errno;
 		if(fifoReaderPid) kill_all(fifoReaderPid);
