@@ -33,7 +33,8 @@ PCAPExporterMemCfg::PCAPExporterMemCfg(XMLElement* elem)
         workingPath(""),
         appenddate(false),
         restart(false),
-        restartInterval(0)
+        restartInterval(0),
+		queueentries(1024)
 {
 	if (!elem) return;
 
@@ -54,6 +55,8 @@ PCAPExporterMemCfg::PCAPExporterMemCfg(XMLElement* elem)
 			}
 		} else if (e->matches("snaplen")) {
 			snaplen = getInt("snaplen", PCAP_MAX_CAPTURE_LENGTH, e);
+		} else if (e->matches("queueentries")){
+			queueentries = getInt("queueentries", 1024, e);
 		} else if (e->matches("sigkilltimeout")) {
             sigkilltimeout = getInt("sigkilltimeout", 1, e);
         } else if(e->matches("command")) {
@@ -92,6 +95,7 @@ PCAPExporterMem* PCAPExporterMemCfg::createInstance()
 	instance->setRestartOnSignal(restart);
 	instance->setWorkingPath(workingPath);
 	instance->setRestartInterval(restartInterval);
+	instance->setQueueEntries(queueentries);
 	return instance;
 }
 
@@ -103,7 +107,8 @@ bool PCAPExporterMemCfg::deriveFrom(PCAPExporterMemCfg* old)
         fifoReaderCmd != old->fifoReaderCmd ||
         sigkilltimeout != old->sigkilltimeout ||
 		appenddate != old->appenddate ||
-		restart != old->restart
+		restart != old->restart ||
+		queueentries != old->queueentries
         ) return false;
 	return true; // FIXME: implement
 }

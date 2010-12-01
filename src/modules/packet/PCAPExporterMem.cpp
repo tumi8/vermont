@@ -44,13 +44,19 @@ namespace bfs = boost::filesystem;
 
 PCAPExporterMem::PCAPExporterMem(const std::string& logfile)
 	: PCAPExporterPipe(logfile), shmfd(0), queuefd(0), shm_list(NULL), queuevarspointer(0),
-	QUEUEENTRIES(1024), packetcount(0), dropcount(0)
+	queueentries(1024), packetcount(0), dropcount(0)
 {
-	if (PCAP_MAX_CAPTURE_LENGTH>1600) THROWEXCEPTION("PCAPExporterMem: PCAP_MAX_CAPTURE_LENGTH must be <=1600 bytes, it is %u now", PCAP_MAX_CAPTURE_LENGTH);
+	if (PCAP_MAX_CAPTURE_LENGTH>1600)
+		 THROWEXCEPTION("PCAPExporterMem: PCAP_MAX_CAPTURE_LENGTH must be <=1600 bytes, it is %u now", PCAP_MAX_CAPTURE_LENGTH);
 }
 
 PCAPExporterMem::~PCAPExporterMem()
 {
+}
+
+void PCAPExporterMem::setQueueEntries(int q)
+{
+	queueentries = q;
 }
 
 /**
@@ -163,7 +169,7 @@ int PCAPExporterMem::execCmd(std::string& cmd)
 void PCAPExporterMem::performStart()
 {
 	time(&last_check);
-	if(last_check == (time_t) -1)
+	if (last_check == (time_t) -1)
 		THROWEXCEPTION("time() failed");
 
 	registerSignalHandlers();
@@ -184,6 +190,7 @@ void PCAPExporterMem::performStart()
 	msg(MSG_INFO, "  - sigKillTimeout = %d" , sigKillTimeout);
 	msg(MSG_INFO, "  - restartInterval = %u seconds" , restartInterval);
 	msg(MSG_INFO, "  - PCAP_MAX_CAPTURE_LENGTH = %u seconds" , PCAP_MAX_CAPTURE_LENGTH);
+	msg(MSG_INFO, "  - queueentries = %u " , queueentries);
 
 	startProcess();
 }
@@ -192,23 +199,19 @@ void PCAPExporterMem::performShutdown()
 {
 	unregisterSignalHandlers();
 	stopProcess();
-	msg(MSG_INFO, "Sent %u packets, dropped %u packets", packetcount, dropcount);
+	msg(MSG_INFO, "PCAPExporterMem: sent %u packets, dropped %u packets", packetcount, dropcount);
 }
 
 void PCAPExporterMem::startProcess()
 {
-	int size = sizeof(SHMEntry)*(QUEUEENTRIES+1);
+	int size = sizeof(SHMEntry)*(queueentries+1);
 	fifoReaderPid = execCmd(fifoReaderCmd);
 	std::string name = "/" +  boost::lexical_cast<std::string>(fifoReaderPid);
 	shm_list = (SHMEntry *) getNewSharedMemory(&shmfd, size, name);
-	createQueue(QUEUEENTRIES);
+	createQueue(queueentries);
 	memset((void*)shm_list, 0, size);
-	std::string lockfile = "/tmp/" + boost::lexical_cast<std::string>(fifoReaderPid);
-	FILE *f = fopen(lockfile.c_str(), "w");
-	fclose(f);
 
-
-	msg(MSG_INFO, "Started process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
+	msg(MSG_INFO, "PCAPExporterMem: started process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
 						fifoReaderCmd.c_str(), fifoReaderPid);
 }
 
@@ -221,7 +224,7 @@ void PCAPExporterMem::stopProcess()
 
 	removeSHM(fifoReaderPid);
 
-	msg(MSG_INFO, "Stopped process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
+	msg(MSG_INFO, "PCAPExporterMem: stopped process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
 					fifoReaderCmd.c_str(), fifoReaderPid);
 }
 
@@ -230,7 +233,9 @@ void PCAPExporterMem::stopProcess()
  * It is important to invoke this method whenever Vermont is shut down,
  * because shm segments are not automatically destroyed upon process 
  * termination!
- * TODO
+ * It's possible to delete the shm regions by deleting the
+ * corresponding files in /dev/shm, however this should only
+ * be necessary when Vermont wasn't shutdown correctly
  * */
 int PCAPExporterMem::removeSHM(int pid){
 	int ret = 0;
@@ -244,17 +249,17 @@ int PCAPExporterMem::removeSHM(int pid){
 }
 
 /**
-* Writes a packet into the pipe
+* Receives a packet and tries to write the packet into the ringbuffer
 */
 void PCAPExporterMem::receive(Packet* packet)
 {
 	DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive() called");
-	if (onRestart){
+	if (onRestart) {
 		 DPRINTF("Dropping incoming packet, as attached process is not ready");
 		 DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive() ended");
 		 return;
 	}
-	if (fifoReaderPid == 0){
+	if (fifoReaderPid == 0) {
 		 msg(MSG_VDEBUG, "fifoReaderPid = 0...this might happen during reconfiguration");
 		 DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive() ended");
 		 return;
@@ -277,10 +282,12 @@ void PCAPExporterMem::receive(Packet* packet)
 		}
 	}
 
-	if(writeIntoMemory(packet)){
-		msg(MSG_VDEBUG, "Wrote packet %d at pos %u", ++packetcount, *nextWrite);
+	if (writeIntoMemory(packet)) {
+		msg(MSG_VDEBUG, "PCAPExporterMem::receive(): wrote packet %d at pos %u", ++packetcount, *nextWrite);
 	} else {
-		msg(MSG_VDEBUG, "Dropped packet %d ", ++dropcount);
+		batchUpdate();
+		nanosleep(&spinLockTimeoutProducer, NULL);
+		msg(MSG_VDEBUG, "PCAPExporterMem::receive(): dropped packet %d ", ++dropcount);
 	}
 	statBytesForwarded += packet->data_length;
 	statPktsForwarded++;
@@ -288,12 +295,17 @@ void PCAPExporterMem::receive(Packet* packet)
 	DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive() ended");
 }
 
+
+/* Tries to write a packet into the shared memory
+ * If there's no slot available, false is returned and no
+ * packet will be written.
+ */
 bool PCAPExporterMem::writeIntoMemory(Packet *packet)
 {
 	uint32_t afterNextWrite = next(*nextWrite);
 
-	if (afterNextWrite == *localRead){
-		if (afterNextWrite == *glob_read){
+	if (afterNextWrite == *localRead) {
+		if (afterNextWrite == *glob_read) {
 			return false;
 		}
 		*localRead = *glob_read;
@@ -330,37 +342,42 @@ void PCAPExporterMem::handleSigChld(int sig)
 	counter++;
 	time_t tmp;
 	time(&tmp);
-	if(tmp== (time_t) -1)
+	if (tmp== (time_t) -1)
 		THROWEXCEPTION("time() failed");
 
 	// reset the counter if the last restart was more than 5 seconds ago
-	if((tmp -last_check) > 5) counter = 0;
+	if ((tmp -last_check) > 5) 
+		counter = 0;
 
-	if(counter > 5 && (tmp - last_check ) < 5)
+	if (counter > 5 && (tmp - last_check ) < 5)
 		THROWEXCEPTION("Too many restarts in a short time period. Maybe your commandline is erroneous");
 
-	if(!isRunning(pid)){
+	if (!isRunning(pid)) {
 		//waitpid(fifoReaderPid, NULL, 0);
-		msg(MSG_ERROR, "Process of fifoReaderCmd \'%s\' with fifoReaderPid %d is not running!",
+		msg(MSG_ERROR, "PCAPExporterMem: Process of fifoReaderCmd \'%s\' with fifoReaderPid %d is not running!",
 				fifoReaderCmd.c_str(), pid);
 		removeSHM(pid);
 		startProcess();
 	}
 
 	time(&last_check);
-	if(last_check == (time_t) -1)
+	if (last_check == (time_t) -1)
 		THROWEXCEPTION("time() failed");
 	onRestart = false;
 }
 
+/* Creates a new shared memory of size "size".
+ * Returns a pointer to the newly allocated memory
+ */
 void *PCAPExporterMem::getNewSharedMemory(int *fd, int size, std::string name)
 {
-	if ((*fd = shm_open(name.c_str(), O_CREAT | O_EXCL | O_RDWR, 00666)) == -1){
+	if ((*fd = shm_open(name.c_str(), O_CREAT | O_EXCL | O_RDWR, 00666)) == -1) {
 		int err = errno;
-		if(fifoReaderPid) kill_all(fifoReaderPid);
+		if (fifoReaderPid) 
+			kill_all(fifoReaderPid);
 		THROWEXCEPTION("shm_open failed: %s", strerror(err));
 	}
-	if(ftruncate(*fd, size)){
+	if (ftruncate(*fd, size)) {
 		int err = errno;
 		if(fifoReaderPid) kill_all(fifoReaderPid);
 		THROWEXCEPTION("ftruncate failed: %s", strerror(err));
@@ -373,13 +390,15 @@ void *PCAPExporterMem::getNewSharedMemory(int *fd, int size, std::string name)
 	return ptr;
 }
 
-
+/*	Sets up the configuratiuon variables for the queue and places them into a shared memory
+ *	region which is accessible via "/dev/shm/fiforeaderpid_queuevars".
+ */
 void PCAPExporterMem::createQueue(int maxEntries)
 {
 	uint32_t clsize = getCachelineSize();
 	std::string name = "/" +  boost::lexical_cast<std::string>(fifoReaderPid) + "_queuevars";
 
-	if(clsize < 3 * sizeof(uint32_t))
+	if (clsize < 3 * sizeof(uint32_t))
 		THROWEXCEPTION("Error: Systems cache-line size is too small");
 
 	void *ptr = getNewSharedMemory(&queuefd, clsize*5, name); //get a shared memory segment of 5*cachelinesize bytes
@@ -413,7 +432,8 @@ void PCAPExporterMem::createQueue(int maxEntries)
 	batchSize = max + 1;
 	*max = maxEntries+1;
 	*batchSize = 10;
+
+	spinLockTimeoutProducer.tv_sec = 0;
+	spinLockTimeoutProducer.tv_nsec = 51;
 }
-
-
 
