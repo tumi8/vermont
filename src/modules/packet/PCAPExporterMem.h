@@ -59,7 +59,7 @@ class PCAPExporterMem : public PCAPExporterPipe
 		} packetHeader;
 		char data[1600];
 
-	}SHMEntry;
+	} SHMEntry;
 
 
 public:

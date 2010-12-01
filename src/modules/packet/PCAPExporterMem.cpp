@@ -44,8 +44,9 @@ namespace bfs = boost::filesystem;
 
 PCAPExporterMem::PCAPExporterMem(const std::string& logfile)
 	: PCAPExporterPipe(logfile), shmfd(0), queuefd(0), shm_list(NULL), queuevarspointer(0),
-	QUEUEENTRIES(128), packetcount(0), dropcount(0)
+	QUEUEENTRIES(1024), packetcount(0), dropcount(0)
 {
+	if (PCAP_MAX_CAPTURE_LENGTH>1600) THROWEXCEPTION("PCAPExporterMem: PCAP_MAX_CAPTURE_LENGTH must be <=1600 bytes, it is %u now", PCAP_MAX_CAPTURE_LENGTH);
 }
 
 PCAPExporterMem::~PCAPExporterMem()
@@ -324,7 +325,6 @@ bool PCAPExporterMem::writeIntoMemory(Packet *packet)
 void PCAPExporterMem::handleSigChld(int sig)
 {
 	int pid = fifoReaderPid;
-	int des = shmfd;
 	if(onRestart || exitFlag || isRunning(pid)) return;
 	onRestart = true;
 	counter++;
@@ -374,7 +374,8 @@ void *PCAPExporterMem::getNewSharedMemory(int *fd, int size, std::string name)
 }
 
 
-void PCAPExporterMem::createQueue(int maxEntries){
+void PCAPExporterMem::createQueue(int maxEntries)
+{
 	uint32_t clsize = getCachelineSize();
 	std::string name = "/" +  boost::lexical_cast<std::string>(fifoReaderPid) + "_queuevars";
 
