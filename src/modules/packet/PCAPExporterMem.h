@@ -40,8 +40,9 @@
 class Packet;
 
 /**
- * This class writes packets in PCAP format into a pipe,
- * allowing another process to read these packets via STDIN.
+ * This class writes packets in PCAP format into a shared memory region
+ * allowing another process (e.g. Snort) to read these packets from the shared memory.
+ * Synchronization code is adopted from src/common/LockfreeSingleQueue.h
  * The reader process is started and ended by Vermont.
  * The reader process may be restarted manually by sending SIGUSR2 to Vermont.
 */
@@ -69,6 +70,7 @@ public:
 	virtual void performStart();
 	virtual void performShutdown();
 	virtual void handleSigChld(int sig);
+	void setQueueEntries(int q);
 
 protected:
     virtual int execCmd(std::string& cmd);
@@ -78,10 +80,11 @@ protected:
 private:
 	bool writeIntoMemory(Packet *packet);
 	void *getNewSharedMemory(int *fd, int size, std::string name);
-	//sets up all queue variables 
+	/*sets up all queue variables */
 	void createQueue(int maxEntries);
-	//closes shmfd/queuefd and calls shm_unlink()
+	/*closes shmfd/queuefd and calls shm_unlink()*/
 	int removeSHM(int);
+
 	/**
 	 * returns next array position
 	 * @param index current array position
@@ -89,6 +92,11 @@ private:
 	 */
 	inline uint32_t next(uint32_t index){
 		return (++index % *max);
+	}
+	inline void batchUpdate(){
+		*glob_write = *nextWrite;
+		*glob_read = *nextRead;
+		*rBatch = *wBatch = 0;
 	}
 
 
@@ -98,9 +106,10 @@ private:
 	int queuefd;
 	SHMEntry *shm_list;
 	void *queuevarspointer;
-	const int QUEUEENTRIES;
+	int queueentries;
 	int packetcount;
 	int dropcount;
+	struct timespec spinLockTimeoutProducer;
 
 	/*shared control variables*/
 	uint32_t* glob_read;
