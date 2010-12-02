@@ -108,8 +108,6 @@ private:
 	SHMEntry *shm_list;
 	void *queuevarspointer;
 	int queueentries;
-	int packetcount;
-	int dropcount;
 	struct timespec spinLockTimeoutProducer;
 
 	/*shared control variables*/

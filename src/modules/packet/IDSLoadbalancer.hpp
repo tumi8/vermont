@@ -42,7 +42,6 @@ public:
 	IDSLoadbalancer(BasePacketSelector* _selector, uint64_t updateinterval);
 	~IDSLoadbalancer();
 	virtual void receive(Packet* packet);
-	void setIpConfig(std::map<uint32_t, int> &, std::map<uint32_t, int> &);
 	void performStart();
 	void performShutdown();
 	void forwardPacket(Packet* packet, int queue);
