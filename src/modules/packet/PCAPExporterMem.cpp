@@ -48,9 +48,7 @@ PCAPExporterMem::PCAPExporterMem(const std::string& logfile)
 	  queuefd(0),
 	  shm_list(NULL),
 	  queuevarspointer(0),
-	  queueentries(1024),
-	  packetcount(0),
-	  dropcount(0)
+	  queueentries(1024)
 {
 	if (PCAP_MAX_CAPTURE_LENGTH>1600)
 		 THROWEXCEPTION("PCAPExporterMem: PCAP_MAX_CAPTURE_LENGTH must be <=1600 bytes, it is %u now", PCAP_MAX_CAPTURE_LENGTH);
@@ -205,7 +203,7 @@ void PCAPExporterMem::performShutdown()
 {
 	unregisterSignalHandlers();
 	stopProcess();
-	msg(MSG_INFO, "PCAPExporterMem: sent %u packets, dropped %u packets", packetcount, dropcount);
+	msg(MSG_INFO, "PCAPExporterMem: sent %llu packets, dropped %llu packets", statPktsForwarded, statPktsDropped);
 }
 
 void PCAPExporterMem::startProcess()
@@ -289,11 +287,16 @@ void PCAPExporterMem::receive(Packet* packet)
 	}
 
 	if (writeIntoMemory(packet)) {
-		msg(MSG_VDEBUG, "PCAPExporterMem::receive(): wrote packet %d at pos %u", ++packetcount, *nextWrite);
+		statPktsForwarded++;
+		statBytesForwarded += packet->data_length;
+		DPRINTFL(MSG_VDEBUG, "Wrote packet at pos %u", *nextWrite);
 	} else {
 		batchUpdate();
 		nanosleep(&spinLockTimeoutProducer, NULL);
-		msg(MSG_VDEBUG, "PCAPExporterMem::receive(): dropped packet %d ", ++dropcount);
+
+		statPktsDropped++;
+		statBytesDropped += packet->data_length;
+		DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive(): dropped packet");
 	}
 	statBytesForwarded += packet->data_length;
 	statPktsForwarded++;

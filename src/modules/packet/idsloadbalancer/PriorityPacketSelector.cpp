@@ -85,6 +85,14 @@ PriorityPacketSelector::PriorityPacketSelector(list<PriorityNetConfig>& pnc, dou
 	startTime.tv_usec = 0;
 
 	calcMaxHostPrioChange();
+
+	list<uint32_t> subnets;
+	list<uint32_t> masks;
+	for (list<PriorityNetConfig>::iterator iter=config.begin(); iter!=config.end(); iter++) {
+		subnets.push_back(htonl(iter->subnet));
+		masks.push_back(htonl(iter->mask));
+	}
+	ipSelector.setSubnets(subnets, masks);
 }
 
 PriorityPacketSelector::~PriorityPacketSelector()
@@ -199,7 +207,7 @@ int PriorityPacketSelector::decide(Packet *p)
 void PriorityPacketSelector::updateIDSMaxRate()
 {
 	float slowstartratio = 2;
-	float adaptratio = 1.1;
+	float adaptratio = 1.02;
 
 	// if we just started the process, do nothing
 	struct timeval curtime;
@@ -436,8 +444,8 @@ void PriorityPacketSelector::assignHosts2IDS()
 			riter++;
 		}
 
-		msg(MSG_DEBUG, "PriorityPacketSelector: IDS %u, hosts %u (+%u,-%u), est.load %llu, act.load %llu, max load %llu, dropped %llu",
-				i, ids[i].hosts.size(), acount, rcount, idsoctets[i], ids[i].curForwOct, ids[i].maxOctets, ids[i].curDropOct);
+		msg(MSG_DEBUG, "PriorityPacketSelector: IDS %u, hosts %u (+%u,-%u), est.load %llu, act.load %llu, max load %llu, dropped %llu, max qu %u, cur qu %u",
+				i, ids[i].hosts.size(), acount, rcount, idsoctets[i], ids[i].curForwOct, ids[i].maxOctets, ids[i].curDropOct, ids[i].maxQueueSize, ids[i].curQueueSize);
 	}
 
 	msg(MSG_DEBUG, "PriorityPacketSelector: unmonitored hosts: %u", resthostcount);
@@ -450,7 +458,7 @@ void PriorityPacketSelector::assignHosts2IDS()
 
 void PriorityPacketSelector::setIpConfig()
 {
-	map<uint32_t, int> scfg;
+	boost::unordered_map<uint32_t, int> scfg;
 
 	for (uint32_t i=0; i<numberOfQueues; i++) {
 		list<HostData*>::iterator iter = ids[i].hosts.begin();

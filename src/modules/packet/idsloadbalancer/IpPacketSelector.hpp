@@ -22,10 +22,10 @@
 #define IP_PACKET_SELECTOR_HPP
 
 #include "BasePacketSelector.hpp"
-#include <map>
 #include <stdint.h>
 #include <arpa/inet.h>
-
+#include <boost/unordered_map.hpp>
+#include <list>
 
 
 class Packet;
@@ -35,16 +35,19 @@ class IpPacketSelector : public BasePacketSelector
 	public:
 		~IpPacketSelector();
 		IpPacketSelector();
-		void initializeConfig(std::map<uint32_t, int>&, std::map<uint32_t, int>&);
+		void setSubnets(list<uint32_t> subnets, list<uint32_t> masks);
+		void initializeConfig(boost::unordered_map<uint32_t, int>&, boost::unordered_map<uint32_t, int>&);
 		virtual int decide(Packet *p);
 		void addDestinationIp(uint32_t dst, int queueno);
 		void addSourceIp(uint32_t src, int queueno);
 		
 	private:
-		std::map<uint32_t, int> dstips;
-		std::map<uint32_t, int> srcips;
-		std::map<uint32_t, int> newdstips;
-		std::map<uint32_t, int> newsrcips;
+		boost::unordered_map<uint32_t, int> dstips;
+		boost::unordered_map<uint32_t, int> srcips;
+		boost::unordered_map<uint32_t, int> newdstips;
+		boost::unordered_map<uint32_t, int> newsrcips;
+		list<uint32_t> subnets;
+		list<uint32_t> masks;
 		bool changelists;
 }
 ;

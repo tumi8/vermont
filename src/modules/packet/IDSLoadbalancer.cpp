@@ -89,13 +89,6 @@ void IDSLoadbalancer::forwardPacket(Packet* packet, int queue)
 	//msg(MSG_INFO, "Forwarding packet to queue %d", queue);
 }
 
-void IDSLoadbalancer::setIpConfig(std::map<uint32_t, int> & s, std::map<uint32_t, int> &d)
-{
-	static_cast<IpPacketSelector*>(selector)->initializeConfig(s, d);
-	//src = s;
-	//dst = d;
-}
-
 void* IDSLoadbalancer::threadWrapper(void* data)
 {
 	IDSLoadbalancer* ilb = reinterpret_cast<IDSLoadbalancer*>(data);
