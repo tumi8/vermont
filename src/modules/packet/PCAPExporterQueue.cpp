@@ -314,7 +314,6 @@ void PCAPExporterQueue::receive(Packet* packet)
 
 bool PCAPExporterQueue::dumpIntoQueue(Packet *packet)
 {
-	QueueMessage sendme;
 	struct daq_pkthdr packetHeader;
 	packetHeader.ts = packet->timestamp;
 	packetHeader.caplen = packet->data_length;

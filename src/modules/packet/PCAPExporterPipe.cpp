@@ -566,3 +566,8 @@ void PCAPExporterPipe::getOctetStats(uint64_t& droppedocts, uint64_t& forwocts)
 	droppedocts = statBytesDropped;
 	forwocts = statBytesForwarded;
 }
+
+bool PCAPExporterPipe::getQueueStats(uint32_t& maxsize, uint32_t& cursize)
+{
+	return false;
+}

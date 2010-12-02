@@ -29,6 +29,8 @@ struct IDSLoadStatistics
 	uint64_t droppedOctets;
 	uint64_t forwardedPackets;
 	uint64_t forwardedOctets;
+	uint32_t maxQueueSize;
+	uint32_t curQueueSize;
 	bool running;
 
 	IDSLoadStatistics()
@@ -38,6 +40,8 @@ struct IDSLoadStatistics
 		  droppedOctets(0),
 		  forwardedPackets(0),
 		  forwardedOctets(0),
+		  maxQueueSize(0),
+		  curQueueSize(0),
 		  running(false)
 	{}
 
@@ -48,6 +52,8 @@ struct IDSLoadStatistics
 		  droppedOctets(doc),
 		  forwardedPackets(fp),
 		  forwardedOctets(foc),
+		  maxQueueSize(0),
+		  curQueueSize(0),
 		  running(r)
 	{}
 };
