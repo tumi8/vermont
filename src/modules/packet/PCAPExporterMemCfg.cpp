@@ -27,14 +27,16 @@
 
 PCAPExporterMemCfg::PCAPExporterMemCfg(XMLElement* elem)
 	: CfgHelper<PCAPExporterMem, PCAPExporterMemCfg>(elem, "pcapExporterMem"),
-        link_type(DLT_EN10MB), snaplen(PCAP_MAX_CAPTURE_LENGTH), sigkilltimeout(1),
-        logFileName(""),
-        fifoReaderCmd(""),
-        workingPath(""),
-        appenddate(false),
-        restart(false),
-        restartInterval(0),
-		queueentries(1024)
+      link_type(DLT_EN10MB),
+      snaplen(PCAP_MAX_CAPTURE_LENGTH),
+      sigkilltimeout(1),
+	  queueentries(1024),
+      logFileName(""),
+      fifoReaderCmd(""),
+      workingPath(""),
+      appenddate(false),
+      restart(false),
+	  restartInterval(0)
 {
 	if (!elem) return;
 

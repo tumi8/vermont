@@ -43,8 +43,14 @@
 namespace bfs = boost::filesystem;
 
 PCAPExporterMem::PCAPExporterMem(const std::string& logfile)
-	: PCAPExporterPipe(logfile), shmfd(0), queuefd(0), shm_list(NULL), queuevarspointer(0),
-	queueentries(1024), packetcount(0), dropcount(0)
+	: PCAPExporterPipe(logfile),
+	  shmfd(0),
+	  queuefd(0),
+	  shm_list(NULL),
+	  queuevarspointer(0),
+	  queueentries(1024),
+	  packetcount(0),
+	  dropcount(0)
 {
 	if (PCAP_MAX_CAPTURE_LENGTH>1600)
 		 THROWEXCEPTION("PCAPExporterMem: PCAP_MAX_CAPTURE_LENGTH must be <=1600 bytes, it is %u now", PCAP_MAX_CAPTURE_LENGTH);
@@ -435,5 +441,18 @@ void PCAPExporterMem::createQueue(int maxEntries)
 
 	spinLockTimeoutProducer.tv_sec = 0;
 	spinLockTimeoutProducer.tv_nsec = 51;
+}
+
+bool PCAPExporterMem::getQueueStats(uint32_t& maxsize, uint32_t& cursize)
+{
+	maxsize = *max;
+
+	uint32_t readidx = *glob_read;
+	uint32_t writeidx = *glob_read;
+	if (readidx<writeidx)
+		cursize = writeidx-readidx;
+	else
+		cursize = maxsize-(readidx-writeidx);
+	return true;
 }
 

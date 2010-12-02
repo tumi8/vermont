@@ -145,8 +145,18 @@ void IDSLoadbalancer::updateBalancingLists()
 		psp->getOctetStats(docts, focts);
 		if (psp->getProcessStatistics(sjiffies, ujiffies)) {
 			stats.push_back(IDSLoadStatistics(true, dpkts, docts, fpkts, focts, sjiffies, ujiffies));
+			uint32_t maxsize, cursize;
+			if (psp->getQueueStats(maxsize, cursize)) {
+				stats.back().maxQueueSize = maxsize;
+				stats.back().curQueueSize = cursize;
+			}
 		} else {
 			stats.push_back(IDSLoadStatistics(true, dpkts, docts, fpkts, focts));
+			uint32_t maxsize, cursize;
+			if (psp->getQueueStats(maxsize, cursize)) {
+				stats.back().maxQueueSize = maxsize;
+				stats.back().curQueueSize = cursize;
+			}
 		}
 	}
 	selector->updateData(stats);

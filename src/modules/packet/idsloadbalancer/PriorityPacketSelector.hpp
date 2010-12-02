@@ -74,6 +74,9 @@ struct IDSData
 	uint64_t curDropPkt;
 	uint64_t lastDropPkt;
 
+	uint32_t maxQueueSize;
+	uint32_t curQueueSize;
+
 	IDSData(uint32_t maxoctets)
 		: maxOctets(maxoctets),
 		  slowStart(true),
@@ -85,7 +88,9 @@ struct IDSData
 		  curDropOct(0),
 		  lastDropOct(0),
 		  curDropPkt(0),
-		  lastDropPkt(0)
+		  lastDropPkt(0),
+		  maxQueueSize(0),
+		  curQueueSize(0)
 	{}
 };
 

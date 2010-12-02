@@ -71,6 +71,7 @@ public:
 	virtual void performShutdown();
 	virtual void handleSigChld(int sig);
 	void setQueueEntries(int q);
+	virtual bool getQueueStats(uint32_t& maxsize, uint32_t& cursize);
 
 protected:
     virtual int execCmd(std::string& cmd);

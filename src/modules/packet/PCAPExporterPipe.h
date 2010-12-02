@@ -51,6 +51,12 @@ public:
 	 * returns total number of dropped and forwarded octets due to overload of the attached process
 	 */
 	virtual void getOctetStats(uint64_t& droppedocts, uint64_t& forwocts) = 0;
+
+	/**
+	 * returns number of elements currently in queue
+	 * @returns false if not supported
+	 */
+	virtual bool getQueueStats(uint32_t& maxsize, uint32_t& cursize) = 0;
 };
 
 /**
@@ -87,6 +93,7 @@ public:
 	virtual bool getProcessStatistics(uint32_t& sysjiffies, uint32_t& userjiffies);
 	virtual void getPacketStats(uint64_t& droppedpkts, uint64_t& forwpkts);
 	virtual void getOctetStats(uint64_t& droppedocts, uint64_t& forwocts);
+	virtual bool getQueueStats(uint32_t& maxsize, uint32_t& cursize);
 
 protected:
 	static void* pcapExporterSink(void* data);
