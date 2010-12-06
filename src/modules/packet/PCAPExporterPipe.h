@@ -94,6 +94,8 @@ public:
 	virtual void getPacketStats(uint64_t& droppedpkts, uint64_t& forwpkts);
 	virtual void getOctetStats(uint64_t& droppedocts, uint64_t& forwocts);
 	virtual bool getQueueStats(uint32_t& maxsize, uint32_t& cursize);
+	virtual void parseCommandLine(std::string &cmd, std::vector<std::string> &tokens);
+	virtual void redirectLogfile();
 
 protected:
 	static void* pcapExporterSink(void* data);
@@ -115,6 +117,7 @@ protected:
 	 */
     int fd[2];
 	int pcapFile;
+	int child_parent_pipe[2];
 	uint64_t statPktsForwarded;
 	uint64_t statBytesForwarded;
 	uint64_t statPktsDropped;
