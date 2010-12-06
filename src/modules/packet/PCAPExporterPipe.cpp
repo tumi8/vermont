@@ -202,7 +202,7 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 		redirectLogfile();
 
 		if (execvp(command[0], command)<0) {
-			if (1 || write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
+			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
 				THROWEXCEPTION("exec failed"); //throw the exception only if we couldn't
 												//tell the parent that sth. went wrong...
 			exit(1);
