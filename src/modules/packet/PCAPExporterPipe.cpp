@@ -35,6 +35,7 @@
 #include <cstring>
 #include <boost/filesystem/operations.hpp>
 #include <boost/lexical_cast.hpp>
+#include<boost/tokenizer.hpp>
 #include <iostream>
 #include <sys/wait.h>
 #include <common/SignalHandler.h>
@@ -95,6 +96,57 @@ void PCAPExporterPipe::setRestartOnSignal(bool b){
 	restartOnSignal = b;
 }
 
+/** 
+ * Splits a string into single tokens using whitespaces as delimiter
+ */
+void PCAPExporterPipe::parseCommandLine(std::string &cmd, std::vector<std::string> &tokens){
+	using namespace boost;
+	if (cmd.length() > 1023) {
+		THROWEXCEPTION("Command too long");
+	}
+	int i = 0;
+	//treat substrings containing whitespaces enclosed in quotation marks as single argument
+	escaped_list_separator<char> sep('\\', ' ', '\"');
+	tokenizer<escaped_list_separator<char> > tok(cmd, sep);
+	for(tokenizer<escaped_list_separator<char> >::iterator it=tok.begin(); 
+		it!=tok.end();
+		++it)
+	{
+		tokens.push_back(*it);
+	}
+}
+
+void PCAPExporterPipe::redirectLogfile()
+{
+	if (logFileName != "") {
+		std::string logfile = logFileName;
+		if(appenddate){
+			time_t rawtime;
+			struct tm * timeinfo;
+			char buffer [20];
+			time (&rawtime);
+			timeinfo = localtime (&rawtime);
+			if (strftime(buffer, 20, "%Y-%m-%d_%H:%M:%S", timeinfo) == 0) {
+				if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
+					THROWEXCEPTION("strftime & write failed");
+				exit(1);
+			}
+			logfile = logFileName + "_" + buffer + ".log";
+		}
+
+		if (freopen (logfile.c_str(),"a",stdout) == NULL) {
+			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
+				THROWEXCEPTION("freopen & write failed");
+			exit(1);
+		}
+		if (dup2(STDOUT_FILENO, STDERR_FILENO) == -1) {
+			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
+				THROWEXCEPTION("dup2 & write failed");
+			exit(1);
+		}
+	}
+}
+
 /**
  * Starts the command given in 'cmd'
  * STDOUT and STDERR of 'cmd' may be redirected into a file, see
@@ -102,24 +154,16 @@ void PCAPExporterPipe::setRestartOnSignal(bool b){
  * */
 int PCAPExporterPipe::execCmd(std::string& cmd)
 {
-	int child_parent_pipe[2];
-	char *command[64];
-	char tmp[1024];
-	if (strlen(cmd.c_str()) > 1023) {
-		THROWEXCEPTION("Command too long");
+	char *command[64]; 
+	int i=0;
+	std::vector<std::string> tokens;
+	parseCommandLine(cmd, tokens);
+	for (std::vector<std::string>::iterator it = tokens.begin(); it!=tokens.end(); it++){
+		command[i++] = const_cast<char*>(it->c_str());
+		if(i>62) THROWEXCEPTION("Argument list too long");
 	}
-	strcpy(tmp, cmd.c_str());
-	command[0] = strtok(tmp, " \t");
-	int i = 0;
-	//TODO:  handle arguments containg whitespaces
-	while (command[i]) {
-		i++;
-		if (i == 63) {
-			THROWEXCEPTION("Argument list too long");
-		}
-		command[i] = strtok(NULL, " \t");
-	}
-	command[++i] = (char*)0;
+	command[i] = (char*)NULL;
+		
 	if (pipe(child_parent_pipe)) {
 		THROWEXCEPTION("pipe(child_parent_pipe) failed with error code %u (%s)", errno, strerror(errno));
 	}
@@ -155,36 +199,10 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 				exit(1);
 			}
 		}
-		if (logFileName != "") {
-			std::string logfile = logFileName;
-			if(appenddate){
-				time_t rawtime;
-				struct tm * timeinfo;
-				char buffer [20];
-				time (&rawtime);
-				timeinfo = localtime (&rawtime);
-				if (strftime(buffer, 20, "%Y-%m-%d_%H:%M:%S", timeinfo) == 0) {
-					if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
-						THROWEXCEPTION("strftime & write failed");
-					exit(1);
-				}
-				logfile = logFileName + "_" + buffer + ".log";
-			}
-
-			if (freopen (logfile.c_str(),"a",stdout) == NULL) {
-				if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
-					THROWEXCEPTION("freopen & write failed");
-				exit(1);
-			}
-			if (dup2(STDOUT_FILENO, STDERR_FILENO) == -1) {
-				if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
-					THROWEXCEPTION("dup2 & write failed");
-				exit(1);
-			}
-		}
+		redirectLogfile();
 
 		if (execvp(command[0], command)<0) {
-			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
+			if (1 || write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
 				THROWEXCEPTION("exec failed"); //throw the exception only if we couldn't
 												//tell the parent that sth. went wrong...
 			exit(1);
@@ -485,7 +503,8 @@ void PCAPExporterPipe::kill_all(int ppid)
 			std::ifstream myfile(filename.c_str());
 			if (myfile.is_open()) {
 				getline (myfile,line);
-				char *token = strtok (const_cast<char*>(line.c_str())," ");
+				char *saveptr;
+				char *token = strtok_r (const_cast<char*>(line.c_str())," ", &saveptr);
 				int count = 0;
 				while (token != NULL) {
 					if (count++ == 3) { // field of parent pid
@@ -498,7 +517,7 @@ void PCAPExporterPipe::kill_all(int ppid)
 							}
 						}
 					}
-					token = strtok (NULL, " ");
+					token = strtok_r (NULL, " ", &saveptr);
 				}
 				myfile.close();
 			}

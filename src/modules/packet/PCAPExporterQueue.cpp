@@ -57,24 +57,16 @@ PCAPExporterQueue::~PCAPExporterQueue()
  * */
 int PCAPExporterQueue::execCmd(std::string& cmd)
 {
-	int child_parent_pipe[2];
 	char *command[64];
-	char tmp[1024];
-	if (strlen(cmd.c_str()) > 1023) {
-		THROWEXCEPTION("Command too long");
+	int i=0;
+	std::vector<std::string> tokens;
+	parseCommandLine(cmd, tokens);
+	for (std::vector<std::string>::iterator it = tokens.begin(); it!=tokens.end(); it++){
+		command[i++] = const_cast<char*>(it->c_str());
+		if(i>62) THROWEXCEPTION("Argument list too long");
 	}
-	strcpy(tmp, cmd.c_str());
-	command[0] = strtok(tmp, " \t");
-	int i = 0;
-	//TODO:  handle arguments containg whitespaces
-	while (command[i]) {
-		i++;
-		if (i == 63) {
-			THROWEXCEPTION("Argument list too long");
-		}
-		command[i] = strtok(NULL, " \t");
-	}
-	command[++i] = (char*)0;
+	command[i] = (char*)NULL;
+
 	if (pipe(child_parent_pipe)) {
 		THROWEXCEPTION("pipe(child_parent_pipe) failed with error code %u (%s)", errno, strerror(errno));
 	}
@@ -105,34 +97,8 @@ int PCAPExporterQueue::execCmd(std::string& cmd)
 				exit(1);
 			}
 		}
-		if (logFileName != "") {
-			std::string logfile = logFileName;
-			if(appenddate){
-				time_t rawtime;
-				struct tm * timeinfo;
-				char buffer [20];
-				time (&rawtime);
-				timeinfo = localtime (&rawtime);
-				if (strftime(buffer, 20, "%Y-%m-%d_%H:%M:%S", timeinfo) == 0) {
-					if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
-						THROWEXCEPTION("strftime & write failed");
-					exit(1);
-				}
-				logfile = logFileName + "_" + buffer + ".log";
-			}
-
-			if (freopen (logfile.c_str(),"a",stdout) == NULL) {
-				if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
-					THROWEXCEPTION("freopen & write failed");
-				exit(1);
-			}
-			if (dup2(STDOUT_FILENO, STDERR_FILENO) == -1) {
-				if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
-					THROWEXCEPTION("dup2 & write failed");
-				exit(1);
-			}
-		}
-
+		redirectLogfile();
+		
 		if (execvp(command[0], command)<0) {
 			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
 				THROWEXCEPTION("exec failed"); //throw the exception only if we couldn't
