@@ -37,7 +37,7 @@ class PCAPExporterBase
 
 public:
 	PCAPExporterBase();
-	~PCAPExporterBase();
+	virtual ~PCAPExporterBase();
 
 	void setDataLinkType(int type);
 	void setSnaplen(int len);

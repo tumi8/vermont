@@ -47,9 +47,13 @@ class Packet;
  * The reader process may be restarted manually by sending SIGUSR2 to Vermont.
 */
 
-class PCAPExporterMem : public PCAPExporterPipe
+class PCAPExporterMem :
+	public Module,
+	public Destination<Packet *>,
+	public Source<Packet *>,
+	public PCAPExporterProcessBase
 {
-	typedef struct SHMEntry{
+	typedef struct SHMEntry {
 		struct daq_pkthdr
 		{
 			struct timeval ts;      /* Timestamp */
@@ -65,18 +69,19 @@ class PCAPExporterMem : public PCAPExporterPipe
 
 public:
 	PCAPExporterMem(const std::string& file);
-	~PCAPExporterMem();
+	virtual ~PCAPExporterMem();
+
   	virtual void receive(Packet* packet);
 	virtual void performStart();
 	virtual void performShutdown();
 	virtual void handleSigChld(int sig);
 	void setQueueEntries(int q);
-	virtual bool getQueueStats(uint32_t& maxsize, uint32_t& cursize);
+	virtual bool getQueueStats(uint32_t* maxsize, uint32_t* cursize);
 
 protected:
-    virtual int execCmd(std::string& cmd);
     virtual void startProcess();
     virtual void stopProcess();
+    virtual int execCmd(std::string& cmd);
 
 private:
 	bool writeIntoMemory(Packet *packet);

@@ -43,7 +43,7 @@
 namespace bfs = boost::filesystem;
 
 PCAPExporterMem::PCAPExporterMem(const std::string& logfile)
-	: PCAPExporterPipe(logfile),
+	: PCAPExporterProcessBase(logfile),
 	  shmfd(0),
 	  queuefd(0),
 	  shm_list(NULL),
@@ -61,75 +61,6 @@ PCAPExporterMem::~PCAPExporterMem()
 void PCAPExporterMem::setQueueEntries(int q)
 {
 	queueentries = q;
-}
-
-/**
- * Starts the command given in 'cmd'
- * STDOUT and STDERR of 'cmd' may be redirected into a file, see
- * module_configuration.txt for details
- * */
-int PCAPExporterMem::execCmd(std::string& cmd)
-{
-	char *command[64];
-	int i=0;
-	std::vector<std::string> tokens;
-	parseCommandLine(cmd, tokens);
-	for (std::vector<std::string>::iterator it = tokens.begin(); it!=tokens.end(); it++){
-		command[i++] = const_cast<char*>(it->c_str());
-		if(i>62) THROWEXCEPTION("Argument list too long");
-	}
-	command[i] = (char*)NULL;
-
-	if (pipe(child_parent_pipe)) {
-		THROWEXCEPTION("pipe(child_parent_pipe) failed with error code %u (%s)", errno, strerror(errno));
-	}
-
-	/* Create a pipe, which allows communication between the child and the parent.
-	 * Writing an int value (e.g. errno) into child_parent_pipe[1]
-	 * will cause an exception in the parent process.
-	 * Throwing exceptions in the child *will not* terminate Vermont!
-	 */
-	for (int i=0; i<2; i++) {
-		int oldflags = fcntl (child_parent_pipe[i], F_GETFD, 0);
-		if(-1 == oldflags)
-			THROWEXCEPTION("fctnl: %s", strerror(errno));
-		oldflags |= FD_CLOEXEC;
-		if (-1 == fcntl (child_parent_pipe[i], F_SETFD, oldflags))
-			THROWEXCEPTION("fctnl: %s", strerror(errno));
-	}
-
-	int pid = fork();
-	if (pid == 0) {
-		// child process
-		close(child_parent_pipe[0]); // close read-end
-		if (workingPath != "") {
-			int res = chdir(workingPath.c_str());
-			if (res != 0) {
-				THROWEXCEPTION("failed to change to working path '%s'", workingPath.c_str());
-				exit(1);
-			}
-		}
-		redirectLogfile();
-
-		if (execvp(command[0], command)<0) {
-			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
-				THROWEXCEPTION("exec failed"); //throw the exception only if we couldn't
-												//tell the parent that sth. went wrong...
-			exit(1);
-		}
-	} else if (pid > 0) {
-		close(child_parent_pipe[1]);
-		int buf;
-		if (read(child_parent_pipe[0], &buf, sizeof(int)) == sizeof(int)) { //The child actually wrote errno into the pipe
-			THROWEXCEPTION("An error occurred in the child: %s", strerror(buf));
-		}
-		close(child_parent_pipe[0]);
-
-		return pid;
-	} else {
-		THROWEXCEPTION("fork() failed");
-	}
-	return -1;
 }
 
 /**
@@ -406,16 +337,88 @@ void PCAPExporterMem::createQueue(int maxEntries)
 	*batchSize = 10;
 }
 
-bool PCAPExporterMem::getQueueStats(uint32_t& maxsize, uint32_t& cursize)
+bool PCAPExporterMem::getQueueStats(uint32_t* maxsize, uint32_t* cursize)
 {
-	maxsize = *max;
+	*maxsize = *max;
 
 	uint32_t readidx = *glob_read;
 	uint32_t writeidx = *glob_write;
-	if (readidx<writeidx)
-		cursize = writeidx-readidx;
+	if (readidx<=writeidx)
+		*cursize = writeidx-readidx;
 	else
-		cursize = maxsize-(readidx-writeidx);
+		*cursize = *maxsize-(readidx-writeidx);
+
+	msg(MSG_ERROR, "OK, cursize = %u, maxsize = %u", *cursize, *maxsize);
 	return true;
 }
 
+
+/**
+ * Starts the command given in 'cmd'
+ * STDOUT and STDERR of 'cmd' may be redirected into a file, see
+ * module_configuration.txt for details
+ * */
+int PCAPExporterMem::execCmd(std::string& cmd)
+{
+	int child_parent_pipe[2];
+	char *command[64];
+	int i=0;
+	std::vector<std::string> tokens;
+	parseCommandLine(cmd, tokens);
+	for (std::vector<std::string>::iterator it = tokens.begin(); it!=tokens.end(); it++){
+		command[i++] = const_cast<char*>(it->c_str());
+		if(i>62) THROWEXCEPTION("Argument list too long");
+	}
+	command[i] = (char*)NULL;
+
+	if (pipe(child_parent_pipe)) {
+		THROWEXCEPTION("pipe(child_parent_pipe) failed with error code %u (%s)", errno, strerror(errno));
+	}
+
+	/* Create a pipe, which allows communication between the child and the parent.
+	 * Writing an int value (e.g. errno) into child_parent_pipe[1]
+	 * will cause an exception in the parent process.
+	 * Throwing exceptions in the child *will not* terminate Vermont!
+	 */
+	for (int i=0; i<2; i++) {
+		int oldflags = fcntl (child_parent_pipe[i], F_GETFD, 0);
+		if(-1 == oldflags)
+			THROWEXCEPTION("fctnl: %s", strerror(errno));
+		oldflags |= FD_CLOEXEC;
+		if (-1 == fcntl (child_parent_pipe[i], F_SETFD, oldflags))
+			THROWEXCEPTION("fctnl: %s", strerror(errno));
+	}
+
+	int pid = fork();
+	if (pid == 0) {
+		// child process
+		close(child_parent_pipe[0]); // close read-end
+		if (workingPath != "") {
+			int res = chdir(workingPath.c_str());
+			if (res != 0) {
+				THROWEXCEPTION("failed to change to working path '%s'", workingPath.c_str());
+				exit(1);
+			}
+		}
+		redirectLogfile();
+
+		if (execvp(command[0], command)<0) {
+			if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
+				THROWEXCEPTION("exec failed"); //throw the exception only if we couldn't
+												//tell the parent that sth. went wrong...
+			exit(1);
+		}
+	} else if (pid > 0) {
+		close(child_parent_pipe[1]);
+		int buf;
+		if (read(child_parent_pipe[0], &buf, sizeof(int)) == sizeof(int)) { //The child actually wrote errno into the pipe
+			THROWEXCEPTION("An error occurred in the child: %s", strerror(buf));
+		}
+		close(child_parent_pipe[0]);
+
+		return pid;
+	} else {
+		THROWEXCEPTION("fork() failed");
+	}
+	return -1;
+}
