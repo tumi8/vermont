@@ -108,7 +108,6 @@ private:
 	SHMEntry *shm_list;
 	void *queuevarspointer;
 	int queueentries;
-	struct timespec spinLockTimeoutProducer;
 
 	/*shared control variables*/
 	uint32_t* glob_read;

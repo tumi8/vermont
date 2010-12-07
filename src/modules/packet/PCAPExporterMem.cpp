@@ -86,7 +86,6 @@ int PCAPExporterMem::execCmd(std::string& cmd)
 
 	/* Create a pipe, which allows communication between the child and the parent.
 	 * Writing an int value (e.g. errno) into child_parent_pipe[1]
-	sleep(2);
 	 * will cause an exception in the parent process.
 	 * Throwing exceptions in the child *will not* terminate Vermont!
 	 */
@@ -159,7 +158,6 @@ void PCAPExporterMem::performStart()
 		msg(MSG_ERROR, "No Logfile specified - dumping to stdout!");
 	msg(MSG_INFO, "  - sigKillTimeout = %d" , sigKillTimeout);
 	msg(MSG_INFO, "  - restartInterval = %u seconds" , restartInterval);
-	msg(MSG_INFO, "  - PCAP_MAX_CAPTURE_LENGTH = %u seconds" , PCAP_MAX_CAPTURE_LENGTH);
 	msg(MSG_INFO, "  - queueentries = %u " , queueentries);
 
 	startProcess();
@@ -258,7 +256,6 @@ void PCAPExporterMem::receive(Packet* packet)
 		DPRINTFL(MSG_VDEBUG, "Wrote packet at pos %u", *nextWrite);
 	} else {
 		batchUpdate();
-		nanosleep(&spinLockTimeoutProducer, NULL);
 
 		statPktsDropped++;
 		statBytesDropped += packet->data_length;
@@ -407,9 +404,6 @@ void PCAPExporterMem::createQueue(int maxEntries)
 	batchSize = max + 1;
 	*max = maxEntries+1;
 	*batchSize = 10;
-
-	spinLockTimeoutProducer.tv_sec = 0;
-	spinLockTimeoutProducer.tv_nsec = 51;
 }
 
 bool PCAPExporterMem::getQueueStats(uint32_t& maxsize, uint32_t& cursize)
