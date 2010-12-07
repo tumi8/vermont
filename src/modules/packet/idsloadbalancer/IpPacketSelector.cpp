@@ -33,6 +33,8 @@ IpPacketSelector::~IpPacketSelector()
 
 void IpPacketSelector::initializeConfig(boost::unordered_map<uint32_t, int>& src, boost::unordered_map<uint32_t, int>& dst)
 {
+	// busy wait until lists have been accepted by own thread
+	while (changelists) {}
 	newsrcips = src;
 	newdstips = dst;
 	changelists = true;
@@ -43,23 +45,13 @@ void IpPacketSelector::setSubnets(list<uint32_t> subnets, list<uint32_t> masks)
 	this->subnets = subnets;
 	this->masks = masks;
 }
-	
-void IpPacketSelector::addDestinationIp(uint32_t dst, int queueno)
-{
-	dstips[dst] = queueno;
-}
-
-void IpPacketSelector::addSourceIp(uint32_t src, int queueno)
-{
-	srcips[src] = queueno;
-}
 
 int IpPacketSelector::decide(Packet *p)
 {
 	if (changelists) {
-		changelists = false;
 		srcips = newsrcips;
 		dstips = newdstips;
+		changelists = false;
 	}
 	//msg(MSG_INFO, "decider: %d, %d", srcips.size(), dstips.size());
 	uint32_t src = 	*((uint32_t *)(p->netHeader + SRC_ADDRESS_OFFSET));
@@ -75,7 +67,7 @@ int IpPacketSelector::decide(Packet *p)
 			}
 		}
 		if ((dst&*miter)==*siter) {
-			boost::unordered_map<uint32_t, int>::iterator res = srcips.find(dst);
+			boost::unordered_map<uint32_t, int>::iterator res = dstips.find(dst);
 			if (res != dstips.end()) {
 				return res->second;
 			}
