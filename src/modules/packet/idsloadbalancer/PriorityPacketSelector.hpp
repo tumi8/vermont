@@ -33,6 +33,7 @@ using namespace std;
 struct HostData
 {
 	double priority;
+	double oldpriority; // priority before monitoring was started
 	double weight;
 
 	uint32_t ip;
@@ -61,8 +62,13 @@ struct IDSData
 {
 	uint64_t maxOctets;		/**< maximum octets that can be monitored by IDS in one interval */
 	bool slowStart;			/**< determines whether we are in first phase of IDS max. rate detection */
-	list<HostData*> hosts; /**< hosts assigned to ids */
+	list<HostData*> hosts;  /**< hosts assigned to ids */
 	uint32_t hostcount;
+
+	// control system related parameters
+	double estRatio; /**< estimation ratio: predicted rate = estRatio * original predicted rate by summing traffic predictions */
+	double kp; 		 /**< gain for p-controller */
+	uint64_t expOctets; /**< traffic expected by summing up all hosts' traffic (taken from last round) */
 
 	uint64_t lastForwOct;
 	uint64_t curForwOct;
@@ -77,10 +83,13 @@ struct IDSData
 	uint32_t maxQueueSize;
 	uint32_t curQueueSize;
 
-	IDSData(uint32_t maxoctets)
+	IDSData(uint64_t maxoctets, double kp)
 		: maxOctets(maxoctets),
 		  slowStart(true),
 		  hostcount(0),
+		  estRatio(1.0),
+		  kp(kp),
+		  expOctets(0),
 		  lastForwOct(0),
 		  curForwOct(0),
 		  lastForwPkt(0),
@@ -133,6 +142,7 @@ private:
 	void assignHosts2IDS();
 	void setIpConfig();
 	void updateIDSMaxRate();
+	void updateEstRatio();
 };
 
 
