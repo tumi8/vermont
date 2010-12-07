@@ -34,14 +34,13 @@ ADD_LIBRARY(modules
     packet/Packet.cpp
     packet/Template.cpp
     packet/PCAPExporterBase.cpp
+    packet/PCAPExporterProcessBase.cpp
     packet/PCAPExporterFile.cpp
     packet/PCAPExporterPipe.cpp
-    packet/PCAPExporterQueue.cpp
     packet/PCAPExporterMem.cpp
     packet/PSAMPExporterModule.cpp
     packet/PSAMPExporterCfg.cpp
     packet/PCAPExporterPipeCfg.cpp
-    packet/PCAPExporterQueueCfg.cpp
     packet/PCAPExporterFileCfg.cpp
     packet/PCAPExporterMemCfg.cpp
     packet/PacketReportingCfg.cpp
