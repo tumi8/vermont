@@ -22,6 +22,7 @@
 
 #include "modules/packet/Packet.h"
 #include "modules/packet/PCAPExporterPipe.h"
+#include "modules/packet/PCAPExporterMem.h"
 #include "common/Time.h"
 #include "idsloadbalancer/PriorityPacketSelector.hpp"
 
@@ -128,8 +129,8 @@ void IDSLoadbalancer::updateBalancingLists()
 	// get load data from succeeding modules
 	for (uint32_t i=0; i<qcount; i++) {
 		Destination<Packet*>* dp = getSucceedingModuleInstance(i);
-		ProcessStatisticsProvider* psp = dynamic_cast<PCAPExporterPipe*>(dp);
-		if (!psp) THROWEXCEPTION("IDSLoadBalancer: succeeding module #%u is not of type ProcessStatisticsProvider! Use module type PcapExporterPipe!", i);
+		PCAPExporterProcessBase* psp = dynamic_cast<PCAPExporterProcessBase*>(dp);
+		if (!psp) THROWEXCEPTION("IDSLoadBalancer: succeeding module #%u is not of type PCAPExporterProcessBase! Use module type PcapExporterPipe/Mem!", i);
 		uint32_t ujiffies = 0;
 		uint32_t sjiffies = 0;
 		uint64_t dpkts = 0, fpkts = 0;
@@ -138,18 +139,13 @@ void IDSLoadbalancer::updateBalancingLists()
 		psp->getOctetStats(docts, focts);
 		if (psp->getProcessStatistics(sjiffies, ujiffies)) {
 			stats.push_back(IDSLoadStatistics(true, dpkts, docts, fpkts, focts, sjiffies, ujiffies));
-			uint32_t maxsize, cursize;
-			if (psp->getQueueStats(maxsize, cursize)) {
-				stats.back().maxQueueSize = maxsize;
-				stats.back().curQueueSize = cursize;
-			}
 		} else {
 			stats.push_back(IDSLoadStatistics(true, dpkts, docts, fpkts, focts));
-			uint32_t maxsize, cursize;
-			if (psp->getQueueStats(maxsize, cursize)) {
-				stats.back().maxQueueSize = maxsize;
-				stats.back().curQueueSize = cursize;
-			}
+		}
+		uint32_t maxsize, cursize;
+		if (psp->getQueueStats(&maxsize, &cursize)) {
+			stats.back().maxQueueSize = maxsize;
+			stats.back().curQueueSize = cursize;
 		}
 	}
 	selector->updateData(stats);
