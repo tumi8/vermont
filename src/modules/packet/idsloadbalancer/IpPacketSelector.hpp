@@ -38,8 +38,6 @@ class IpPacketSelector : public BasePacketSelector
 		void setSubnets(list<uint32_t> subnets, list<uint32_t> masks);
 		void initializeConfig(boost::unordered_map<uint32_t, int>&, boost::unordered_map<uint32_t, int>&);
 		virtual int decide(Packet *p);
-		void addDestinationIp(uint32_t dst, int queueno);
-		void addSourceIp(uint32_t src, int queueno);
 		
 	private:
 		boost::unordered_map<uint32_t, int> dstips;
