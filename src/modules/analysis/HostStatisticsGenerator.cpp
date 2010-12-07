@@ -93,17 +93,20 @@ void HostStatisticsGenerator::changeInterval()
 	std::map<uint32_t, HostStatistics>::iterator it;
 	uint32_t zerohosts = 0;
 	uint64_t zeroocts = 0;
+	int64_t diff = 0;
 	for (it=trafficMap.begin(); it!=trafficMap.end(); it++) {
 		if (it->second.lastOctets==0) {
 			zerohosts++;
 			zeroocts += it->second.curOctets;
 		}
+		diff += it->second.lastOctets-it->second.curOctets;
 		it->second.commit();
 	}
 	if (zerohosts>0) zeroOctets = (double)zeroocts/zerohosts*HSG_DEFAULT_ZEROOCTETSALPHA+(1.0-HSG_DEFAULT_ZEROOCTETSALPHA)*zeroOctets;
 	else zeroOctets = (1.0-HSG_DEFAULT_ZEROOCTETSALPHA)*zeroOctets;
 	msg(MSG_DEBUG, "zeroocts=%llu, zerohosts=%u", zeroocts, zerohosts);
 	msg(MSG_DEBUG, "HostStatisticsGenerator: average traffic by hosts with no traffic in last interval: %llu bytes", zeroOctets);
+	DPRINTFL(MSG_DEBUG, "diff=%lld", diff);
 }
 
 void HostStatisticsGenerator::onDataRecord(IpfixDataRecord* record)
