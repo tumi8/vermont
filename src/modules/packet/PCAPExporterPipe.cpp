@@ -200,11 +200,13 @@ void PCAPExporterPipe::receive(Packet* packet)
 	if (onRestart){
 		 DPRINTF("Dropping incoming packet, as attached process is not ready");
 		 DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive() ended");
+		 packet->removeReference();
 		 return;
 	}
 	if (fifoReaderPid == 0){
 		 msg(MSG_VDEBUG, "fifoReaderPid = 0...this might happen during reconfiguration");
 		 DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive() ended");
+		 packet->removeReference();
 		 return;
 	}
 	if (restartInterval) {
