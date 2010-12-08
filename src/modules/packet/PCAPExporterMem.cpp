@@ -156,11 +156,13 @@ void PCAPExporterMem::receive(Packet* packet)
 	if (onRestart) {
 		 DPRINTF("Dropping incoming packet, as attached process is not ready");
 		 DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive() ended");
+		 packet->removeReference();
 		 return;
 	}
 	if (fifoReaderPid == 0) {
 		 msg(MSG_VDEBUG, "fifoReaderPid = 0...this might happen during reconfiguration");
 		 DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive() ended");
+		 packet->removeReference();
 		 return;
 	}
 	if (restartInterval) {
@@ -192,8 +194,6 @@ void PCAPExporterMem::receive(Packet* packet)
 		statBytesDropped += packet->data_length;
 		DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive(): dropped packet");
 	}
-	statBytesForwarded += packet->data_length;
-	statPktsForwarded++;
 	packet->removeReference();
 	DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive() ended");
 }
