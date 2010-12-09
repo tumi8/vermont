@@ -34,7 +34,8 @@ bool compareDecrMask(PriorityNetConfig& pnc1, PriorityNetConfig& pnc2)
 
 IDSLoadbalancerCfg::IDSLoadbalancerCfg(XMLElement* elem)
 	: CfgHelper<IDSLoadbalancer, IDSLoadbalancerCfg>(elem, "IDSLoadbalancer"),
-	selector(NULL)
+	selector(NULL),
+	updateInterval(0)
 {
 	if (!elem) return;
 
