@@ -34,7 +34,7 @@ bool compareDecrMask(PriorityNetConfig& pnc1, PriorityNetConfig& pnc2)
 
 IDSLoadbalancerCfg::IDSLoadbalancerCfg(XMLElement* elem)
 	: CfgHelper<IDSLoadbalancer, IDSLoadbalancerCfg>(elem, "IDSLoadbalancer"),
-	_queuecount(1), selector(NULL)
+	selector(NULL)
 {
 	if (!elem) return;
 
@@ -42,9 +42,7 @@ IDSLoadbalancerCfg::IDSLoadbalancerCfg(XMLElement* elem)
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin(); it != set.end(); it++) {
 		XMLElement* e = *it;
 
-		if (e->matches("queuecount")) {
-			_queuecount = getInt("queuecount", 1, e);
-		} else if (e->matches("updateinterval")) {
+		if (e->matches("updateinterval")) {
 			updateInterval = getInt("updateinterval", 0, e);
 		} else if (e->matches("PacketSelector")) {
 			XMLAttribute *a = e->getAttribute("type");

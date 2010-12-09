@@ -104,9 +104,9 @@ void IDSLoadbalancer::updateWorker()
 	struct timeval nextint;
 	addToCurTime(&nextint, updateInterval);
 	while (!shutdownThread) {
-		msg(MSG_INFO, "IDSLoadbalancer: worker started work");
+		msg(MSG_DEBUG, "IDSLoadbalancer: worker started work");
 		updateBalancingLists();
-		msg(MSG_INFO, "IDSLoadbalancer: worker finished work");
+		msg(MSG_DEBUG, "IDSLoadbalancer: worker finished work");
 
 		struct timeval difftime;
 		struct timeval curtime;
