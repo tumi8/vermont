@@ -31,8 +31,9 @@
 
 
 
-PCAPExporterPipe::PCAPExporterPipe(const std::string& logfile)
-	: PCAPExporterProcessBase(logfile)
+PCAPExporterPipe::PCAPExporterPipe(const std::string& logfile, bool blocking)
+	: PCAPExporterProcessBase(logfile),
+	  blocking(blocking)
 {
 }
 
@@ -164,8 +165,10 @@ void PCAPExporterPipe::startProcess()
 						fifoReaderCmd.c_str(), fifoReaderPid);
 
 	pcapFile = fd[1];
-	if (fcntl(pcapFile, F_SETFL, fcntl(pcapFile, F_GETFL) | O_NONBLOCK)==-1)
-		THROWEXCEPTION("PCAPExporterPipe: fcntl failed, error %d (%s)", errno, strerror(errno));
+	if (!blocking) {
+		if (fcntl(pcapFile, F_SETFL, fcntl(pcapFile, F_GETFL) | O_NONBLOCK)==-1)
+			THROWEXCEPTION("PCAPExporterPipe: fcntl failed, error %d (%s)", errno, strerror(errno));
+	}
 	struct pcap_file_header hdr;
 	hdr.magic = TCPDUMP_MAGIC;
 	hdr.version_major = PCAP_VERSION_MAJOR;

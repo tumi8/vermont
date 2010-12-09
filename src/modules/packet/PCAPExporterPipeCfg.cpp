@@ -33,6 +33,7 @@ PCAPExporterPipeCfg::PCAPExporterPipeCfg(XMLElement* elem)
         workingPath(""),
         appenddate(false),
         restart(false),
+        blocking(false),
         restartInterval(0)
 {
 	if (!elem) return;
@@ -66,6 +67,8 @@ PCAPExporterPipeCfg::PCAPExporterPipeCfg(XMLElement* elem)
 			restartInterval = getInt("restartinterval", 0);
 		} else if(e->matches("restartonsignal")) {
 			restart = getBool("restartonsignal", false, e);
+		} else if(e->matches("blocking")) {
+			blocking = getBool("blocking", false, e);
 		}
 	}
 }
@@ -83,7 +86,7 @@ PCAPExporterPipeCfg::~PCAPExporterPipeCfg()
 
 PCAPExporterPipe* PCAPExporterPipeCfg::createInstance()
 {
-	instance = new PCAPExporterPipe(logFileName);
+	instance = new PCAPExporterPipe(logFileName, blocking);
 	instance->setDataLinkType(link_type);
 	instance->setSnaplen(snaplen);
     instance->setSigKillTimeout(sigkilltimeout);

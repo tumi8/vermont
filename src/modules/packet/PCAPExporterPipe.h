@@ -48,7 +48,7 @@ class PCAPExporterPipe :
 	public PCAPExporterProcessBase
 {
 public:
-	PCAPExporterPipe(const std::string& file);
+	PCAPExporterPipe(const std::string& file, bool blocking);
 	virtual ~PCAPExporterPipe();
 	virtual void receive(Packet* packet);
 	
@@ -63,6 +63,7 @@ protected:
     virtual int execCmd(std::string& cmd);
 
 	int pcapFile;
+	bool blocking;
 
 };
 

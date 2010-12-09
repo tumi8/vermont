@@ -822,7 +822,7 @@ Output type: none
 |restartonsignal |  false  |If set to true, the command specified as fiforedercmd will be restarted, when a SIGUSR2 is sent to vermont |
 |linkType |  EN10MB  |Data link type of the output file. Names are DLT_ names form the pcap man page with the DLT_ removed (see `man pcap') |
 |snaplen |  PCAP_MAX_  |Snaplen for the pcap file |
-| |  CAPTURE_LENGTH  | |
+|blocking |  false  |Specifies whether the pipe should block when the succeding process fails to process the incoming data rates |
 
 == PcapExporterMem ==
 
