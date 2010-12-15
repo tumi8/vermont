@@ -287,8 +287,9 @@ void *PCAPExporterMem::getNewSharedMemory(int *fd, int size, std::string name)
 	}
 	void *ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, *fd, 0);
 	if (ptr == NULL) {
-		perror("In mmap()");
-		exit(1);
+		int err = errno;
+		if(fifoReaderPid) kill_all(fifoReaderPid);
+		THROWEXCEPTION("mmap failed: %s", strerror(err));
 	}
 	return ptr;
 }
