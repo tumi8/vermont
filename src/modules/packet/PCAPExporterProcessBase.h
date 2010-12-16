@@ -78,15 +78,26 @@ public:
 protected:
 	static void* pcapExporterSink(void* data);
 
+	/*name of the optional logfile*/
 	std::string logFileName;
+	/*startup command for the external program*/
 	std::string fifoReaderCmd;
+	/*working path for the external command*/
 	std::string workingPath;
+	/*true if the module is restarting*/
 	volatile bool onRestart;
+	/*if true, the logfile's name will be appended with the current time/date*/
 	bool appenddate;
+	/*if true, the external command will be restarted, when SIGUSR2 is
+	 * sent to Vermont*/
 	bool restartOnSignal;
+	/*PID of the external process*/
     int fifoReaderPid;
+	/* time gap in seconds between SIGTERM an SIGKILL*/ 
     int sigKillTimeout;
+	/* restart counter for the external process*/
 	int counter;
+	/*time of the last restart of the external command*/
 	time_t last_check;
 	uint64_t statPktsForwarded;
 	uint64_t statBytesForwarded;

@@ -341,7 +341,14 @@ void PCAPExporterProcessBase::parseCommandLine(std::string &cmd, std::vector<std
 	}
 }
 
-
+/**
+ * If a logfile name is given in the module configuration, this 
+ * method tries to redircet STDOUT/STDERR of the child into a
+ * file. If "appenddate" is set to true, the logfile's name will
+ * be appended with the current date and time.
+ * This method must be called in the child-branch of the code
+ * after calling fork().
+ */
 void PCAPExporterProcessBase::redirectLogfile()
 {
 	if (logFileName != "") {
