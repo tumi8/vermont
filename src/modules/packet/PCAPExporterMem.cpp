@@ -93,6 +93,9 @@ void PCAPExporterMem::performStart()
 
 	startProcess();
 }
+/**
+ * Shutdown method for the module
+ */
 
 void PCAPExporterMem::performShutdown()
 {
@@ -101,6 +104,10 @@ void PCAPExporterMem::performShutdown()
 	msg(MSG_INFO, "PCAPExporterMem: sent %llu packets, dropped %llu packets", statPktsForwarded, statPktsDropped);
 }
 
+/**
+ * Tries to start the process specified in fifoReaderCmd and
+ * sets up a new shared memory region 
+ */
 void PCAPExporterMem::startProcess()
 {
 	int size = sizeof(SHMEntry)*(queueentries+1);
@@ -114,6 +121,9 @@ void PCAPExporterMem::startProcess()
 						fifoReaderCmd.c_str(), fifoReaderPid);
 }
 
+/**
+ * Kills the process with PID fifoReaderPid and deletes the shared memory segment
+ */
 void PCAPExporterMem::stopProcess()
 {
 	std::string name = "/" + boost::lexical_cast<std::string>(fifoReaderPid);
@@ -135,7 +145,7 @@ void PCAPExporterMem::stopProcess()
  * It's possible to delete the shm regions by deleting the
  * corresponding files in /dev/shm, however this should only
  * be necessary when Vermont wasn't shutdown correctly
- * */
+ */
 int PCAPExporterMem::removeSHM(int pid){
 	int ret = 0;
 	std::string name = "/" + boost::lexical_cast<std::string>(pid);
@@ -269,7 +279,8 @@ void PCAPExporterMem::handleSigChld(int sig)
 	onRestart = false;
 }
 
-/* Creates a new shared memory of size "size".
+/**
+ * Creates a new shared memory of size "size".
  * Returns a pointer to the newly allocated memory
  */
 void *PCAPExporterMem::getNewSharedMemory(int *fd, int size, std::string name)
@@ -305,6 +316,9 @@ void PCAPExporterMem::createQueue(int maxEntries)
 	if (clsize < 3 * sizeof(uint32_t))
 		THROWEXCEPTION("Error: Systems cache-line size is too small");
 
+	
+	/*the shared memory segment holding the management variables is created as
+	/dev/shm/"fiforeadpid"_queuvars */
 	void *ptr = getNewSharedMemory(&queuefd, clsize*5, name); //get a shared memory segment of 5*cachelinesize bytes
 	queuevarspointer = ptr;
 
@@ -337,7 +351,10 @@ void PCAPExporterMem::createQueue(int maxEntries)
 	*max = maxEntries+1;
 	*batchSize = 10;
 }
-
+/**
+ * Allows the retrieval of the current capacity utilisation 
+ * of the queue
+*/
 bool PCAPExporterMem::getQueueStats(uint32_t* maxsize, uint32_t* cursize)
 {
 	*maxsize = *max;
