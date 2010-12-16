@@ -106,12 +106,15 @@ private:
 	}
 
 
-	// filehandle for the shared memory segment which holds the actual queue
+	/*filehandle for the shared memory segment which holds the actual queue*/
 	int shmfd;
-	// filehandle for the queue's control variables
+	/*filehandle for the queue's control variables*/
 	int queuefd;
+	/*Pointer to access the shared memory region as an array of SHMEntries*/
 	SHMEntry *shm_list;
+	/*Base pointer to access the management variables for the ringbuffer*/
 	void *queuevarspointer;
+	/*Size of the ringbuffer*/
 	int queueentries;
 
 	/*shared control variables*/
