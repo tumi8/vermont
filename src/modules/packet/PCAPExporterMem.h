@@ -42,7 +42,11 @@ class Packet;
 /**
  * This class writes packets in PCAP format into a shared memory region
  * allowing another process (e.g. Snort) to read these packets from the shared memory.
+ * The shared memory is used as a ringbuffer with a configurable size. The other process 
+ * must know about the size of the ringbuffer, the element size of each entry (sizeof(SHMEntry))
+ *  and the synchronization protocol in order to allow concurrent access.
  * Synchronization code is adopted from src/common/LockfreeSingleQueue.h
+ *
  * The reader process is started and ended by Vermont.
  * The reader process may be restarted manually by sending SIGUSR2 to Vermont.
 */
