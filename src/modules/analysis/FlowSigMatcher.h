@@ -25,10 +25,100 @@
 #include "modules/ipfix/Connection.h"
 #include "core/Source.h"
 
+#include <boost/regex.hpp>
 #include <list>
 #include <string>
+#include <map>
+#include <iostream>
+#include <fstream>
 
 using namespace std;
+
+typedef struct {
+        uint32_t ip;
+        uint16_t mask;
+} ipEntry;
+
+typedef struct {
+        uint32_t protocol;
+        uint16_t srcPort;
+        uint16_t srcPortEnd;
+        uint16_t dstPort;
+        uint16_t dstPortEnd;
+        list<ipEntry*> src;
+        list<ipEntry*> dst;
+        uint32_t sid;
+        string type;
+        string source;
+        string msg;
+} IdsRule;
+
+int parse_ip(string text, IdsRule& rule);
+int parse_config(const char* text, IdsRule& rule);
+
+class GenNode {
+	public:
+        static uint16_t order[5];
+	static GenNode* newGenNode(int depth);
+	virtual void findRule(Connection* conn, list<IdsRule*>& rules)=0;
+	virtual void insertRule(IdsRule* rule,int depth)=0;
+	virtual ~GenNode() {};
+};
+
+class ProtoNode : public GenNode {
+	GenNode* any;
+	GenNode* udp;
+	GenNode* tcp;
+	GenNode* icmp;
+	public:
+	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void insertRule(IdsRule* rule,int depth);
+	~ProtoNode();
+};
+
+class SrcIpNode : public GenNode {
+	GenNode* any;
+	map<uint32_t,GenNode*> ipmaps[4];
+	public:
+	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void insertRule(IdsRule* rule,int depth);
+	~SrcIpNode();
+};
+
+class DstIpNode : public GenNode {
+	GenNode* any;
+	map<uint32_t,GenNode*> ipmaps[4];
+	public:
+	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void insertRule(IdsRule* rule,int depth);
+	~DstIpNode();
+};
+
+class SrcPortNode : public GenNode {
+	GenNode* any;
+	map<uint16_t,GenNode*> portmap;
+	public:
+	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void insertRule(IdsRule* rule,int depth);
+	~SrcPortNode();
+};
+
+class DstPortNode : public GenNode {
+	GenNode* any;
+	map<uint16_t,GenNode*> portmap;
+	public:
+	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void insertRule(IdsRule* rule,int depth);
+	~DstPortNode();
+};
+
+class RuleNode : public GenNode {
+	list<IdsRule*> rulesList;
+	public:
+	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void insertRule(IdsRule* rule,int depth);
+	~RuleNode();
+};
 
 class FlowSigMatcher
 	: public Module,
@@ -36,56 +126,32 @@ class FlowSigMatcher
 	  public Source<IDMEFMessage*>
 {
 	public:
-		FlowSigMatcher(uint32_t hashbits, uint32_t texppend, uint32_t texpscan,
-				uint32_t texpben, uint32_t tcleanint, string analyzerid, string idmeftemplate);
+		FlowSigMatcher(string homenet, string rulesfile, string analyzerid, string idmeftemplate);
 		virtual ~FlowSigMatcher();
 
 		virtual void onDataRecord(IpfixDataRecord* record);
 
 	private:
-		enum TRWDecision { PENDING, SCANNER, BENIGN };
-		struct TRWEntry {
-			uint32_t srcIP;
-			uint32_t dstSubnet;
-			uint32_t dstSubnetMask;
-			uint32_t numFailedConns;
-			uint32_t numSuccConns;
-			int32_t timeExpire;
-			list<uint32_t> accessedHosts;
-			float S_N;
-			TRWDecision decision;
-		};
-
-		uint32_t hashSize;
-		uint32_t hashBits;	/**< amount of bits used for hashtable */
-		uint32_t timeExpirePending; // time in seconds until pending entries are expired
-		uint32_t timeExpireScanner; // time in seconds until scanner entries are expired
-		uint32_t timeExpireBenign; // time in seconds until benign entries are expired
-		uint32_t timeCleanupInterval; // time in seconds of interval when hashtable with source hosts is cleaned up (trwEntries)
+                ifstream infile;
+                string homenet;
+                string rulesfile;
 		string analyzerId;	/**< analyzer id for IDMEF messages */
 		string idmefTemplate;	/**< template file for IDMEF messages */
 
 
 		// idmef parameters
-		const static char* PAR_SUCC_CONNS; // = "SUCC_CONNS";
-		const static char* PAR_FAILED_CONNS; // = "FAILED_CONNS";
-
-		list<TRWEntry*>* trwEntries;
-		uint32_t statEntriesAdded;
-		uint32_t statEntriesRemoved;
-		uint32_t statNumScanners;
-		float logeta_0, logeta_1;
-		float X_0, X_1;
-		time_t lastCleanup;
+                list<IdsRule*> parsedRules;
+                GenNode* treeRoot;
 
 		// manages instances of IDMEFMessages
 		static InstanceManager<IDMEFMessage> idmefManager;
-
-		TRWEntry* createEntry(Connection* conn);
-		TRWEntry* getEntry(Connection* conn);
-		void addConnection(Connection* conn);
+                int parse_line(string text);
+                int parse_port(string text, IdsRule& rule, uint32_t dst);
+                void split_ip(string text, list<ipEntry*>& list);
+                int parse_ip(string text, IdsRule& rule, uint32_t dst);
+		/*void addConnection(Connection* conn);
 		virtual string getStatisticsXML(double interval);
-		void cleanupEntries();
+		void cleanupEntries();*/
 };
 
 #endif

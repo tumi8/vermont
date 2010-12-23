@@ -25,13 +25,11 @@ public:
 
 protected:
 
-	uint32_t hashBits;	/**< amount of bits used for hashtable */
-	uint32_t timeExpirePending; // time in seconds until pending entries are expired
-	uint32_t timeExpireScanner; // time in seconds until scanner entries are expired
-	uint32_t timeExpireBenign; // time in seconds until benign entries are expired
-	uint32_t timeCleanupInterval; // time in seconds of interval when hashtable with source hosts is cleaned up (trwEntries)
+	
 	string analyzerId;	/**< analyzer id for IDMEF messages */
 	string idmefTemplate;	/**< template file for IDMEF messages */
+        string homenet; // <homenet i.e. 192.168.0.0/16
+        string rulesfile; //Path and name of rulesfile
 
 	FlowSigMatcherCfg(XMLElement*);
 };

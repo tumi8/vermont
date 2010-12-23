@@ -9,12 +9,7 @@ FlowSigMatcherCfg* FlowSigMatcherCfg::create(XMLElement* e)
 }
 
 FlowSigMatcherCfg::FlowSigMatcherCfg(XMLElement* elem)
-    : CfgHelper<FlowSigMatcher, FlowSigMatcherCfg>(elem, "FlowSigMatcher"),
-      hashBits(20),
-      timeExpirePending(60*60*24),
-      timeExpireScanner(60*30),
-      timeExpireBenign(60*30),
-      timeCleanupInterval(10)
+    : CfgHelper<FlowSigMatcher, FlowSigMatcherCfg>(elem, "flowSigMatcher")
 {
     if (!elem) return;
 
@@ -23,27 +18,22 @@ FlowSigMatcherCfg::FlowSigMatcherCfg(XMLElement* elem)
 	     it != set.end();
 	     it++) {
 		XMLElement* e = *it;
-
-		if (e->matches("hashbits")) {
-			hashBits = getInt("hashbits");
-		} else if (e->matches("timeexpirepending")) {
-			timeExpirePending = getInt("timeexpirepending");
-		} else if (e->matches("timeexpirescanner")) {
-			timeExpireScanner = getInt("timeexpirescanner");
-		} else if (e->matches("timeexpirebenign")) {
-			timeExpireBenign = getInt("timeexpirebenign");
-		} else if (e->matches("timecleanupinterval")) {
-			timeCleanupInterval = getInt("timecleanupinterval");
-		} else if (e->matches("analyzerid")) {
+                if (e->matches("analyzerid")) {
 			analyzerId = e->getFirstText();
 		} else if (e->matches("idmeftemplate")) {
 			idmefTemplate = e->getFirstText();
+                } else if (e->matches("homenet")) {
+			homenet = e->getFirstText();
+                } else if (e->matches("rulesfile")) {
+			rulesfile = e->getFirstText();
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown FlowSigMatcher config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
+        if (rulesfile=="") THROWEXCEPTION("FlowSigMatcherCfg: rulesfilename not set in configuration!");
+        if (homenet=="") THROWEXCEPTION("FlowSigMatcherCfg: homenet not set in configuration!");
 	if (analyzerId=="") THROWEXCEPTION("FlowSigMatcherCfg: analyzerid not set in configuration!");
 	if (idmefTemplate=="") THROWEXCEPTION("FlowSigMatcherCfg: idmeftemplate not set in configuration!");
 }
@@ -54,7 +44,7 @@ FlowSigMatcherCfg::~FlowSigMatcherCfg()
 
 FlowSigMatcher* FlowSigMatcherCfg::createInstance()
 {
-    instance = new FlowSigMatcher(hashBits, timeExpirePending, timeExpireScanner, timeExpireBenign, timeCleanupInterval, analyzerId, idmefTemplate);
+    instance = new FlowSigMatcher(homenet, rulesfile, analyzerId, idmefTemplate);
     return instance;
 }
 

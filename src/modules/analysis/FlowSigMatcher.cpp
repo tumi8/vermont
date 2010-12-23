@@ -26,9 +26,6 @@
 #include <iostream>
 
 
-const char* FlowSigMatcher::PAR_SUCC_CONNS = "SUCC_CONNS";
-const char* FlowSigMatcher::PAR_FAILED_CONNS = "FAILED_CONNS";
-
 
 InstanceManager<IDMEFMessage> FlowSigMatcher::idmefManager("TRWPortscanIDMEFMessage", 0);
 
@@ -36,50 +33,45 @@ InstanceManager<IDMEFMessage> FlowSigMatcher::idmefManager("TRWPortscanIDMEFMess
  * attention: parameter idmefexporter must be free'd by the creating instance, FlowSigMatcher
  * does not dare to delete it, in case it's used
  */
-FlowSigMatcher::FlowSigMatcher(uint32_t hashbits, uint32_t texppend,
-		uint32_t texpscan, uint32_t texpben, uint32_t tcleanint,
-		string analyzerid, string idmeftemplate)
-	: hashBits(hashbits),
-	  timeExpirePending(texppend),
-	  timeExpireScanner(texpscan),
-	  timeExpireBenign(texpben),
-	  timeCleanupInterval(tcleanint),
+FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string analyzerid, string idmeftemplate)
+	: homenet(homenet),
+	  rulesfile(rulesfile),
 	  analyzerId(analyzerid),
 	  idmefTemplate(idmeftemplate)
 {
-	// make some initialization calculations
-	hashSize = 1<<hashBits;
-	float theta_0 = 0.8; // probability that benign host makes successful connection
-	float theta_1 = 0.2; // probability that malicious host makes successful connection
-	float P_F = 0.00001; // probability of false alarm
-	float P_D = 0.99999; // probability of scanner detection
-
-	float eta_1 = 1/P_F;
-	float eta_0 = 1-P_D;
-	logeta_0 = logf(eta_0);
-	logeta_1 = logf(eta_1);
-	X_0 = logf(theta_1/theta_0);
-	X_1 = logf((1-theta_1)/(1-theta_0));
-	msg(MSG_INFO, "TRW variables: logeta_0: %f, logeta_1: %f, X_0: %f, X_1: %f", logeta_0, logeta_1, X_0, X_1);
-	lastCleanup = time(0);
-
-	trwEntries = new list<TRWEntry*>[hashSize];
+    char buffer[256];
+    infile.exceptions ( ifstream::eofbit | ifstream::failbit | ifstream::badbit );
+    try {
+    	infile.open(rulesfile.c_str(),ifstream::in);
+	while(!infile.eof()) {
+            infile.getline(buffer,256);
+            parse_line(buffer);
+        }
+    }
+    catch (ifstream::failure e) {
+	cout << "Exception opening/reading file";
+    }
+    infile.close();
+    list<IdsRule*>::iterator it;
+    treeRoot=GenNode::newGenNode(0);
+    for(it=parsedRules.begin();it!=parsedRules.end();it++) {
+        treeRoot->insertRule(*it,0);
+    }
 }
 
 FlowSigMatcher::~FlowSigMatcher()
 {
-	delete[] trwEntries;
 }
 
 void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
 {
 	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
-	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate)
+	/*if((record->templateInfo->setId != TemplateInfo::NetflowTemplate)
 		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)
 		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
 		record->removeReference();
 		return;
-	}
+	}*/
 
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
@@ -87,163 +79,317 @@ void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
 	conn.swapIfNeeded();
 
 	// only use this connection if it was a connection attempt
-	if (conn.srcTcpControlBits&Connection::SYN) {
+/*	if (conn.srcTcpControlBits&Connection::SYN) {
 		addConnection(&conn);
-	}
-
+	}*/
+        list<IdsRule*> matchingRules;
+        treeRoot->findRule(&conn,matchingRules);
 	record->removeReference();
 }
 
-FlowSigMatcher::TRWEntry* FlowSigMatcher::createEntry(Connection* conn)
-{
-	TRWEntry* trw = new TRWEntry();
-	trw->srcIP = conn->srcIP;
-	trw->dstSubnet = 0;
-	trw->dstSubnetMask = 0xFFFFFFFF;
-	trw->numFailedConns = 0;
-	trw->numSuccConns = 0;
-	trw->timeExpire = time(0) + timeExpirePending;
-	trw->decision = PENDING;
-	trw->S_N = 0;
 
-	statEntriesAdded++;
-
-	return trw;
+void ProtoNode::findRule(Connection* conn,list<IdsRule*>& rules) {
+	if(conn->protocol==6) {
+		if(tcp!=NULL)	tcp->findRule(conn,rules);
+	}
+	else if(conn->protocol==17) {
+		if(udp!=NULL) udp->findRule(conn,rules);
+	}
+	else if(conn->protocol==1) {
+		if(icmp!=NULL) icmp->findRule(conn,rules);
+	}
 }
 
-/**
- * erases entries in our hashtable which are expired
- */
-void FlowSigMatcher::cleanupEntries()
-{
-	time_t curtime = time(0);
+void ProtoNode::insertRule(IdsRule* rule,int depth) {
+	if(rule->protocol==6) { //TCP
+		if(tcp==NULL) tcp=newGenNode(depth+1);
+		tcp->insertRule(rule,depth+1);
+	}
+        else if(rule->protocol==17) { //UDP
+		if(udp==NULL) udp=newGenNode(depth+1);
+		udp->insertRule(rule,depth+1);
+        }
+        else if(rule->protocol==1) { //ICMP
+		if(icmp==NULL) icmp=newGenNode(depth+1);
+		icmp->insertRule(rule,depth+1);
+	}
+}
 
-	for (uint32_t i=0; i<hashSize; i++) {
-		if (trwEntries[i].size()==0) continue;
+ProtoNode::~ProtoNode() {
+	if(tcp!=NULL) delete tcp;
+	if(udp!=NULL) delete udp;
+	if(icmp!=NULL) delete icmp;
+}
 
-		list<TRWEntry*>::iterator iter = trwEntries[i].begin();
-		while (iter != trwEntries[i].end()) {
-			if (curtime > (*iter)->timeExpire) {
-				TRWEntry* te = *iter;
-				iter = trwEntries[i].erase(iter);
-				delete te;
-				statEntriesRemoved++;
-			} else {
-				iter++;
-			}
+void SrcPortNode::findRule(Connection* conn,list<IdsRule*>& rules) {
+	if(any!=NULL) any->findRule(conn,rules);
+	map<uint16_t,GenNode*>::iterator it;
+	it=portmap.find(ntohs(conn->srcPort));
+	if(it!=portmap.end()) it->second->findRule(conn,rules);
+}
+
+void SrcPortNode::insertRule(IdsRule* rule,int depth) {
+	if(rule->srcPort==0) {
+		if(any==NULL) any=newGenNode(depth+1);
+		any->insertRule(rule,depth+1);
+	}
+        else if(rule->srcPortEnd!=0&&(rule->srcPort<=rule->srcPortEnd)) {
+            for(uint16_t port=rule->srcPort;port<=rule->srcPortEnd;port++) {
+                map<uint16_t,GenNode*>::iterator it;
+		it=portmap.find(port);
+		if(it==portmap.end()) portmap[port]=newGenNode(depth+1);
+		portmap[port]->insertRule(rule,depth+1);
+            }
+        }
+	else {
+		map<uint16_t,GenNode*>::iterator it;
+		it=portmap.find(rule->srcPort);
+		if(it==portmap.end()) portmap[rule->srcPort]=newGenNode(depth+1);
+		portmap[rule->srcPort]->insertRule(rule,depth+1);
+	}
+}
+
+SrcPortNode::~SrcPortNode() {
+	if(any!=NULL) delete any;
+	map<uint16_t,GenNode*>::iterator it;
+	for(it=portmap.begin();it!=portmap.end();it++) {
+		if(it->second!=NULL)	delete it->second;
+	}
+
+}
+
+void DstPortNode::findRule(Connection* conn,list<IdsRule*>& rules) {
+	if(any!=NULL) any->findRule(conn,rules);
+	map<uint16_t,GenNode*>::iterator it;
+	it=portmap.find(ntohs(conn->dstPort));
+	if(it!=portmap.end()) it->second->findRule(conn,rules);
+}
+
+void DstPortNode::insertRule(IdsRule* rule,int depth) {
+	if(rule->dstPort==0) {
+		if(any==NULL) any=newGenNode(depth+1);
+		any->insertRule(rule,depth+1);
+	}
+        else if(rule->dstPortEnd!=0&&(rule->dstPort<=rule->dstPortEnd)) {
+            for(uint16_t port=rule->dstPort;port<=rule->dstPortEnd;port++) {
+                map<uint16_t,GenNode*>::iterator it;
+		it=portmap.find(port);
+		if(it==portmap.end()) portmap[port]=newGenNode(depth+1);
+		portmap[port]->insertRule(rule,depth+1);
+            }
+
+        }
+	else {
+		map<uint16_t,GenNode*>::iterator it;
+		it=portmap.find(rule->dstPort);
+		if(it==portmap.end()) portmap[rule->dstPort]=newGenNode(depth+1);
+		portmap[rule->dstPort]->insertRule(rule,depth+1);
+	}
+}
+
+DstPortNode::~DstPortNode() {
+	if(any!=NULL) delete any;
+	map<uint16_t,GenNode*>::iterator it;
+	for(it=portmap.begin();it!=portmap.end();it++) {
+		if(it->second!=NULL)	delete it->second;
+	}
+}
+
+void SrcIpNode::findRule(Connection* conn,list<IdsRule*>& rules) {
+	map<uint32_t,GenNode*>::iterator it;
+	for(int i=0;i<4;i++) {
+		it=ipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
+		if(it!=ipmaps[i].end()) it->second->findRule(conn,rules);
+	}
+}
+
+void SrcIpNode::insertRule(IdsRule* rule,int depth) {
+        list<ipEntry*>::iterator listit;
+        for(listit=rule->src.begin();listit!=rule->src.end();listit++) {
+            if((*listit)->mask==0) {
+                    if(any==NULL) any=newGenNode(depth+1);
+                    any->insertRule(rule,depth+1);
+            }
+            else {
+                    map<uint32_t,GenNode*>::iterator it;
+                    int fact=((*listit)->mask-1)/8;
+                    int mod=(*listit)->mask%8;
+                    if(mod==0) {
+                            it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
+                            if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newGenNode(depth+1);
+                            ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRule(rule,depth+1);
+                    }
+                    else {
+                            for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+                                    it=ipmaps[fact].find(i);
+                                    if(it==ipmaps[fact].end()) ipmaps[fact][i]=newGenNode(depth+1);
+                                    ipmaps[fact][i]->insertRule(rule,depth+1);
+                            }
+                    }
+            }
+        }
+}
+
+SrcIpNode::~SrcIpNode() {
+	if(any!=NULL) delete any;
+	map<uint32_t,GenNode*>::iterator it;
+	for(int i=0;i<4;i++) {
+		for(it=ipmaps[i].begin();it!=ipmaps[i].end();it++) {
+			if(it->second!=NULL)	delete it->second;
 		}
 	}
 }
 
-/**
- * returns entry in hashtable for the given connection
- * if it was not found, a new entry is created and returned
- */
-FlowSigMatcher::TRWEntry* FlowSigMatcher::getEntry(Connection* conn)
-{
-	time_t curtime = time(0);
-	uint32_t hash = crc32(0, 2, &reinterpret_cast<char*>(&conn->srcIP)[2]) & (hashSize-1);
-
-	// regularly cleanup expired entries in hashtable
-	if (lastCleanup+timeCleanupInterval < (uint32_t)curtime) {
-		cleanupEntries();
-		lastCleanup = curtime;
+void DstIpNode::findRule(Connection* conn,list<IdsRule*>& rules) {
+	map<uint32_t,GenNode*>::iterator it;
+	for(int i=0;i<4;i++) {
+		it=ipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
+		if(it!=ipmaps[i].end()) it->second->findRule(conn,rules);
 	}
-
-	list<TRWEntry*>::iterator iter = trwEntries[hash].begin();
-	while (iter != trwEntries[hash].end()) {
-		if ((*iter)->srcIP == conn->srcIP) {
-			// found the entry
-			return *iter;
-		}
-		iter++;
-	}
-
-	// no entry found, create a new one
-	TRWEntry* trw = createEntry(conn);
-	trwEntries[hash].push_back(trw);
-
-	return trw;
 }
 
-void FlowSigMatcher::addConnection(Connection* conn)
-{
-	TRWEntry* te = getEntry(conn);
+void DstIpNode::insertRule(IdsRule* rule,int depth) {
+        list<ipEntry*>::iterator listit;
+        for(listit=rule->dst.begin();listit!=rule->dst.end();listit++) {
+            if((*listit)->mask==0) {
+                    if(any==NULL) any=newGenNode(depth+1);
+                    any->insertRule(rule,depth+1);
+            }
+            else {
+                    map<uint32_t,GenNode*>::iterator it;
+                    int fact=((*listit)->mask-1)/8;
+                    int mod=(*listit)->mask%8;
+                    if(mod==0) {
+                            it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
+                            if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newGenNode(depth+1);
+                            ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRule(rule,depth+1);
+                    }
+                    else {
+                            for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+                                    it=ipmaps[fact].find(i);
+                                    if(it==ipmaps[fact].end()) ipmaps[fact][i]=newGenNode(depth+1);
+                                    ipmaps[fact][i]->insertRule(rule,depth+1);
+                            }
+                    }
+            }
+        }
+}
 
-	// this host was already decided on, don't do anything any more
-	if (te->decision != PENDING) return;
-
-	// determine if connection was a failed or successful connection attempt
-	// by looking if answering host sets the syn+ack bits for the threeway handshake
-	bool connsuccess;
-	if ((conn->dstTcpControlBits&(Connection::SYN|Connection::ACK))!=(Connection::SYN|Connection::ACK)) {
-		// no, this is not a successful connection attempt!
-		te->numFailedConns++;
-		connsuccess = false;
-
-	} else {
-		te->numSuccConns++;
-		connsuccess = true;
-	}
-
-	te->timeExpire = time(0) + timeExpirePending;
-
-	// only work with this connection, if it wasn't accessed earlier by this host
-	if (find(te->accessedHosts.begin(), te->accessedHosts.end(), conn->dstIP) != te->accessedHosts.end()) return;
-
-	te->accessedHosts.push_back(conn->dstIP);
-
-	te->S_N += (connsuccess ? X_0 : X_1);
-
-	// aggregate new connection into entry
-	if (te->dstSubnet==0 && te->dstSubnetMask==0xFFFFFFFF) {
-		te->dstSubnet = conn->dstIP;
-	} else {
-		// adapt subnet mask so that new destination ip is inside given subnet
-		while ((te->dstSubnet&te->dstSubnetMask)!=(conn->dstIP&te->dstSubnetMask)) {
-			te->dstSubnetMask = ntohl(te->dstSubnetMask);
-			te->dstSubnetMask <<= 1;
-			te->dstSubnetMask = htonl(te->dstSubnetMask);
-			te->dstSubnet &= te->dstSubnetMask;
+DstIpNode::~DstIpNode() {
+	if(any!=NULL) delete any;
+	map<uint32_t,GenNode*>::iterator it;
+	for(int i=0;i<4;i++) {
+		for(it=ipmaps[i].begin();it!=ipmaps[i].end();it++) {
+			if(it->second!=NULL)	delete it->second;
 		}
 	}
+}
 
-	DPRINTF("IP: %s, S_N: %f", IPToString(te->srcIP).c_str(), te->S_N);
+void RuleNode::insertRule(IdsRule* rule,int depth) {
+	rulesList.push_back(rule);
+}
 
-	// look if information is adequate for deciding on host
-	if (te->S_N<logeta_0) {
-		// no portscanner, just let entry stay here until it expires
-		te->timeExpire = time(0)+timeExpireBenign;
-		te->decision = BENIGN;
-	} else if (te->S_N>logeta_1) {
-		//this is a portscanner!
-		te->decision = SCANNER;
-		statNumScanners++;
-		te->timeExpire = time(0)+timeExpireScanner;
-		msg(MSG_DEBUG, "portscanner detected:");
-		msg(MSG_DEBUG, "srcIP: %s, dstSubnet: %s, dstSubMask: %s", IPToString(te->srcIP).c_str(),
-				IPToString(te->dstSubnet).c_str(), IPToString(te->dstSubnetMask).c_str());
-		msg(MSG_DEBUG, "numFailedConns: %d, numSuccConns: %d", te->numFailedConns, te->numSuccConns);
-
-		IDMEFMessage* msg = idmefManager.getNewInstance();
-		msg->init(idmefTemplate, analyzerId);
-		msg->setVariable(PAR_SUCC_CONNS, te->numSuccConns);
-		msg->setVariable(PAR_FAILED_CONNS, te->numFailedConns);
-		msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(te->srcIP));
-		msg->setVariable(IDMEFMessage::PAR_TARGET_ADDRESS, IPToString(te->dstSubnet)+"/"+IPToString(te->dstSubnetMask));
-		msg->applyVariables();
-		send(msg);
+void RuleNode::findRule(Connection* conn,list<IdsRule*>& rules) {
+	list<IdsRule*>::iterator it;
+	for(it=rulesList.begin();it!=rulesList.end();it++) {
+		rules.push_back(*it);
 	}
 }
 
-string FlowSigMatcher::getStatisticsXML(double interval)
-{
-	ostringstream oss;
-	oss << "<hostsCached>" << statEntriesAdded-statEntriesRemoved << "</hostsCached>";
-	oss << "<totalHostsRemoved>" << statEntriesRemoved << "</totalHostsRemoved>";
-	oss << "<totalScannersDetected>" << statNumScanners << "</totalScannersDetected>";
-	return oss.str();
+RuleNode::~RuleNode() {}
+
+GenNode* GenNode::newGenNode(int depth) {
+	if(depth>=5) return new RuleNode;
+        else if(order[depth]==0) return new ProtoNode;
+	else if(order[depth]==1) return new SrcIpNode;
+	else if(order[depth]==2) return new DstIpNode;
+	else if(order[depth]==3) return new SrcPortNode;
+	else return new DstPortNode;
 }
 
+uint16_t GenNode::order[5]={0,1,2,3,4};
 
+int FlowSigMatcher::parse_line(string text) {
+  boost::cmatch what;
+  const boost::regex exp_line("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
+  if(!boost::regex_match(text.c_str(), what, exp_line)) return false;
+  IdsRule* rule=new IdsRule;
+  parsedRules.push_back(rule);
+    // what[0] contains the whole string
+    // what[1] contains the response code
+    // what[2] contains the separator character
+    // what[3] contains the text message.
+    rule->sid=atoi(static_cast<string>(what[1]).c_str());
+    parse_ip(what[2], *rule,0);
+    parse_port(what[3],*rule,0);
+    parse_ip(what[5], *rule,1);
+    parse_port(what[6],*rule,1);
+    string tcp("TCP");
+    string udp("UDP");
+    string icmp("ICMP");
+    if(tcp.compare(what[7])==0) rule->protocol=6;
+    else if(udp.compare(what[7])==0) rule->protocol=17;
+    else if(icmp.compare(what[7])==0) rule->protocol=1;
+    rule->type=what[8];
+    rule->source=what[9];
+    rule->msg=what[10];
+	return true;
+}
 
+int FlowSigMatcher::parse_port(string text, IdsRule& rule, uint32_t dst) {
+  boost::cmatch what;
+  const boost::regex exp_port("(\\d+)\\:(\\d+)");
+  if(boost::regex_match(text.c_str(), what, exp_port)) {
+    if(dst==0) {
+      rule.srcPort=atoi(static_cast<string>(what[1]).c_str());
+      rule.srcPortEnd=atoi(static_cast<string>(what[2]).c_str());
+    }
+    else {
+      rule.dstPort=atoi(static_cast<string>(what[1]).c_str());
+      rule.dstPortEnd=atoi(static_cast<string>(what[2]).c_str());
+    }
+  }
+  else {
+    if(dst==0) {
+      rule.srcPort=atoi(text.c_str());
+      if((text.compare("*")==0)||(text.compare("any")==0)||(text.compare("ANY")==0)) rule.srcPort=0;
+      rule.srcPortEnd=0;
+    }
+    else {
+      rule.dstPort=atoi(text.c_str());
+      if((text.compare("*")==0)||(text.compare("any")==0)||(text.compare("ANY")==0)) rule.dstPort=0;
+      rule.dstPortEnd=0;
+    }
+  }
+  return true;
+}
+
+int FlowSigMatcher::parse_ip(string text, IdsRule& rule, uint32_t dst) {
+  const boost::regex exp_braces("\\[.+\\]");
+  if(boost::regex_match(text,exp_braces)) {
+	  text.erase(text.begin());
+	  text.erase(text.end()-1);
+	  const boost::regex expip(", *");
+	  boost::sregex_token_iterator i(text.begin(), text.end(), expip, -1);
+	  boost::sregex_token_iterator j;
+	  if(dst==0)  while(i!=j) split_ip(*i++,rule.src);
+	  else while(i!=j) split_ip(*i++,rule.dst);
+  }
+  else {
+	if(dst==0) split_ip(text,rule.src);
+	else split_ip(text,rule.dst);
+  }
+  return true;
+}
+
+void FlowSigMatcher::split_ip(string text, list<ipEntry*>& list) {
+	boost::cmatch what;
+	const boost::regex exp_split_ip("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?:/(\\d+))*");
+	boost::regex_match(text.c_str(),what,exp_split_ip);
+	ipEntry* entry=new ipEntry;
+	string emptymask="";
+	if(emptymask.compare(what[5])==0) entry->mask=32;
+	else entry->mask=atoi(static_cast<string>(what[5]).c_str());
+	entry->ip=(atoi(static_cast<string>(what[1]).c_str())<<24)|(atoi(static_cast<string>(what[2]).c_str())<<16)|(atoi(static_cast<string>(what[3]).c_str())<<8)|(atoi(static_cast<string>(what[4]).c_str()));
+	list.push_back(entry);
+}
