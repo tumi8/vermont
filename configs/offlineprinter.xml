@@ -3,12 +3,12 @@
 		<checkinterval>2</checkinterval>
 	</sensorManager>
 	<observer id="1">
-		<!--<interface>lo</interface>-->
-		<filename>test.dump</filename>
+		<interface>eth0</interface>
+		<!--<filename>test.pcap</filename>-->
 		<pcap_filter>ip</pcap_filter>
-		<offlineAutoExit>1</offlineAutoExit>
-		<offlineSpeed>0</offlineSpeed>
-		<captureLength>166</captureLength>
+		<!--<offlineAutoExit>1</offlineAutoExit>-->
+		<!--<offlineSpeed>0</offlineSpeed>-->
+		<!--<captureLength>120</captureLength>-->
 		<next>2</next>
 	</observer>
 	

@@ -40,16 +40,17 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string analyzer
 	  idmefTemplate(idmeftemplate)
 {
     char buffer[256];
-    infile.exceptions ( ifstream::eofbit | ifstream::failbit | ifstream::badbit );
+    //infile.exceptions (ifstream::eofbit | ifstream::failbit | ifstream::badbit );
     try {
     	infile.open(rulesfile.c_str(),ifstream::in);
-	while(!infile.eof()) {
-            infile.getline(buffer,256);
-            parse_line(buffer);
-        }
     }
     catch (ifstream::failure e) {
-	cout << "Exception opening/reading file";
+	cout << "Exception opening/reading rulesfile: " << rulesfile <<" "<< e.what() <<endl;
+    }
+    while(infile.good()) {
+            cout<<"after"<<endl;
+            infile.getline(buffer,256);
+            parse_line(buffer);
     }
     infile.close();
     list<IdsRule*>::iterator it;
@@ -84,9 +85,16 @@ void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
 	}*/
         list<IdsRule*> matchingRules;
         treeRoot->findRule(&conn,matchingRules);
+        list<IdsRule*>::iterator it;
+        for(it=matchingRules.begin();it!=matchingRules.end();it++) {
+        	msg(MSG_DIALOG, "intruder detected:");
+		msg(MSG_DIALOG, "srcIP: %s, dstIP: %s, srcPort: %i dstPort: %i", IPToString(conn.srcIP).c_str(),
+				IPToString(conn.dstIP).c_str(), ntohs(conn.srcPort), ntohs(conn.dstPort));
+        }
 	record->removeReference();
 }
 
+ProtoNode::ProtoNode() : any(NULL), udp(NULL), tcp(NULL), icmp(NULL) {}
 
 void ProtoNode::findRule(Connection* conn,list<IdsRule*>& rules) {
 	if(conn->protocol==6) {
@@ -120,20 +128,23 @@ ProtoNode::~ProtoNode() {
 	if(udp!=NULL) delete udp;
 	if(icmp!=NULL) delete icmp;
 }
+SrcPortNode::SrcPortNode() :any(NULL) {}
 
 void SrcPortNode::findRule(Connection* conn,list<IdsRule*>& rules) {
 	if(any!=NULL) any->findRule(conn,rules);
 	map<uint16_t,GenNode*>::iterator it;
 	it=portmap.find(ntohs(conn->srcPort));
 	if(it!=portmap.end()) it->second->findRule(conn,rules);
+
 }
 
 void SrcPortNode::insertRule(IdsRule* rule,int depth) {
 	if(rule->srcPort==0) {
+            cout<<"any"<<endl;
 		if(any==NULL) any=newGenNode(depth+1);
 		any->insertRule(rule,depth+1);
 	}
-        else if(rule->srcPortEnd!=0&&(rule->srcPort<=rule->srcPortEnd)) {
+        else if((rule->srcPortEnd!=0)&&(rule->srcPort<=rule->srcPortEnd)) {
             for(uint16_t port=rule->srcPort;port<=rule->srcPortEnd;port++) {
                 map<uint16_t,GenNode*>::iterator it;
 		it=portmap.find(port);
@@ -157,6 +168,8 @@ SrcPortNode::~SrcPortNode() {
 	}
 
 }
+
+DstPortNode::DstPortNode() : any(NULL) {}
 
 void DstPortNode::findRule(Connection* conn,list<IdsRule*>& rules) {
 	if(any!=NULL) any->findRule(conn,rules);
@@ -194,9 +207,11 @@ DstPortNode::~DstPortNode() {
 		if(it->second!=NULL)	delete it->second;
 	}
 }
+SrcIpNode::SrcIpNode() : any(NULL) {}
 
 void SrcIpNode::findRule(Connection* conn,list<IdsRule*>& rules) {
 	map<uint32_t,GenNode*>::iterator it;
+	if(any!=NULL) any->findRule(conn,rules);
 	for(int i=0;i<4;i++) {
 		it=ipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
 		if(it!=ipmaps[i].end()) it->second->findRule(conn,rules);
@@ -239,8 +254,10 @@ SrcIpNode::~SrcIpNode() {
 		}
 	}
 }
+DstIpNode::DstIpNode() : any(NULL) {}
 
 void DstIpNode::findRule(Connection* conn,list<IdsRule*>& rules) {
+	if(any!=NULL) any->findRule(conn,rules);
 	map<uint32_t,GenNode*>::iterator it;
 	for(int i=0;i<4;i++) {
 		it=ipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
@@ -276,8 +293,8 @@ void DstIpNode::insertRule(IdsRule* rule,int depth) {
 }
 
 DstIpNode::~DstIpNode() {
-	if(any!=NULL) delete any;
 	map<uint32_t,GenNode*>::iterator it;
+	if(any!=NULL) delete any;
 	for(int i=0;i<4;i++) {
 		for(it=ipmaps[i].begin();it!=ipmaps[i].end();it++) {
 			if(it->second!=NULL)	delete it->second;
@@ -296,7 +313,7 @@ void RuleNode::findRule(Connection* conn,list<IdsRule*>& rules) {
 	}
 }
 
-RuleNode::~RuleNode() {}
+RuleNode::~RuleNode(){}
 
 GenNode* GenNode::newGenNode(int depth) {
 	if(depth>=5) return new RuleNode;
@@ -307,11 +324,11 @@ GenNode* GenNode::newGenNode(int depth) {
 	else return new DstPortNode;
 }
 
-uint16_t GenNode::order[5]={0,1,2,3,4};
+uint16_t GenNode::order[5]={4,2,1,3,0};
 
 int FlowSigMatcher::parse_line(string text) {
   boost::cmatch what;
-  const boost::regex exp_line("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
+  const boost::regex exp_line("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
   if(!boost::regex_match(text.c_str(), what, exp_line)) return false;
   IdsRule* rule=new IdsRule;
   parsedRules.push_back(rule);
@@ -319,10 +336,35 @@ int FlowSigMatcher::parse_line(string text) {
     // what[1] contains the response code
     // what[2] contains the separator character
     // what[3] contains the text message.
+    string bi_dir("<>");
+    if(bi_dir.compare(what[4])==0) {
+	IdsRule* birule=new IdsRule;
+	parsedRules.push_back(birule);
+	birule->sid=atoi(static_cast<string>(what[1]).c_str());
+	string home_net("$HOME_NET");
+	if(home_net.compare(what[2])==0) parse_ip(homenet,*birule,1);
+	else   parse_ip(what[2], *birule,1);
+	parse_port(what[3],*birule,1);
+	if(home_net.compare(what[5])==0) parse_ip(homenet,*birule,0);
+	else parse_ip(what[5], *birule,0);
+	parse_port(what[6],*birule,0);
+	string tcp("TCP");
+	string udp("UDP");
+	string icmp("ICMP");
+	if(tcp.compare(what[7])==0) birule->protocol=6;
+	else if(udp.compare(what[7])==0) birule->protocol=17;
+	else if(icmp.compare(what[7])==0) birule->protocol=1;
+	birule->type=what[8];
+	birule->source=what[9];
+	birule->msg=what[10];
+    }
     rule->sid=atoi(static_cast<string>(what[1]).c_str());
-    parse_ip(what[2], *rule,0);
+    string home_net("$HOME_NET");
+    if(home_net.compare(what[2])==0) parse_ip(homenet,*rule,0);
+    else   parse_ip(what[2], *rule,0);
     parse_port(what[3],*rule,0);
-    parse_ip(what[5], *rule,1);
+    if(home_net.compare(what[5])==0) parse_ip(homenet,*rule,1);
+    else parse_ip(what[5], *rule,1);
     parse_port(what[6],*rule,1);
     string tcp("TCP");
     string udp("UDP");
@@ -333,7 +375,7 @@ int FlowSigMatcher::parse_line(string text) {
     rule->type=what[8];
     rule->source=what[9];
     rule->msg=what[10];
-	return true;
+    return true;
 }
 
 int FlowSigMatcher::parse_port(string text, IdsRule& rule, uint32_t dst) {

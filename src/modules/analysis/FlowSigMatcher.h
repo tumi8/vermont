@@ -73,6 +73,7 @@ class ProtoNode : public GenNode {
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
+        ProtoNode();
 	~ProtoNode();
 };
 
@@ -82,6 +83,7 @@ class SrcIpNode : public GenNode {
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
+        SrcIpNode();
 	~SrcIpNode();
 };
 
@@ -91,6 +93,7 @@ class DstIpNode : public GenNode {
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
+        DstIpNode();
 	~DstIpNode();
 };
 
@@ -100,6 +103,7 @@ class SrcPortNode : public GenNode {
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
+        SrcPortNode();
 	~SrcPortNode();
 };
 
@@ -109,7 +113,8 @@ class DstPortNode : public GenNode {
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
-	~DstPortNode();
+        DstPortNode();
+        ~DstPortNode();
 };
 
 class RuleNode : public GenNode {
