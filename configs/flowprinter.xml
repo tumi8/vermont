@@ -3,13 +3,11 @@
 		<checkinterval>2</checkinterval>
 	</sensorManager>
 	<observer id="1">
-		<!--interface>eth0</interface>-->
-		<filename>test.pcap</filename>
+		<filename>test.dump</filename>
 		<pcap_filter>ip</pcap_filter>
 		<offlineAutoExit>1</offlineAutoExit>
 		<offlineSpeed>0</offlineSpeed>
 		<captureLength>128</captureLength>
-		<pcap_filter>ip</pcap_filter>
 		<next>2</next>
 	</observer>
 	
@@ -166,13 +164,12 @@
 		<next>5</next>
 	</ipfixAggregator>
 	
-
 	<flowSigMatcher id="5">
-	<rulesfile>/home/phil/studienarbeit/vermont/my_rules.rules</rulesfile>
-	<homenet>192.168.178.0/24</homenet>
-	<analyzerid>flowSigMatcher</analyzerid>
-	<idmeftemplate>bla</idmeftemplate>
+		<rulesfile>/home/phil/studienarbeit/vermont/my_rules.rule</rulesfile>
+		<rulesorder>srcIP dstIP proto srcPort dstPort</rulesorder>
+		<homenet>192.168.178.0/24</homenet>
+		<analyzerid>1</analyzerid>
+		<idmeftemplate>bla</idmeftemplate>
 	</flowSigMatcher>
 	
 </ipfixConfig>
-

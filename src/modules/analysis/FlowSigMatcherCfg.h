@@ -30,6 +30,7 @@ protected:
 	string idmefTemplate;	/**< template file for IDMEF messages */
         string homenet; // <homenet i.e. 192.168.0.0/16
         string rulesfile; //Path and name of rulesfile
+        string rulesorder; //Path and name of rulesfile
 
 	FlowSigMatcherCfg(XMLElement*);
 };

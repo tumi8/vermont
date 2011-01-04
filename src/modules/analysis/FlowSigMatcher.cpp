@@ -26,31 +26,32 @@
 #include <iostream>
 
 
-
 InstanceManager<IDMEFMessage> FlowSigMatcher::idmefManager("TRWPortscanIDMEFMessage", 0);
 
 /**
  * attention: parameter idmefexporter must be free'd by the creating instance, FlowSigMatcher
  * does not dare to delete it, in case it's used
  */
-FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string analyzerid, string idmeftemplate)
+FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesorder, string analyzerid, string idmeftemplate)
 	: homenet(homenet),
 	  rulesfile(rulesfile),
 	  analyzerId(analyzerid),
 	  idmefTemplate(idmeftemplate)
 {
+    GenNode::parse_order(rulesorder);
     char buffer[256];
     //infile.exceptions (ifstream::eofbit | ifstream::failbit | ifstream::badbit );
+    
     try {
     	infile.open(rulesfile.c_str(),ifstream::in);
     }
     catch (ifstream::failure e) {
-	cout << "Exception opening/reading rulesfile: " << rulesfile <<" "<< e.what() <<endl;
+	msg(MSG_FATAL, "FlowSigmatcher: Exception opening/reading FlowSigMatcher's rulesfile: %s %s\n", rulesfile.c_str(), e.what());
     }
     while(infile.good()) {
-            cout<<"after"<<endl;
-            infile.getline(buffer,256);
-            parse_line(buffer);
+	    cout<<"after"<<endl;
+	    infile.getline(buffer,256);
+	    parse_line(buffer);
     }
     infile.close();
     list<IdsRule*>::iterator it;
@@ -93,6 +94,30 @@ void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
         }
 	record->removeReference();
 }
+
+void GenNode::parse_order(string order) {
+   if(order.compare("")==0) return;
+   boost::char_separator<char> sep(", ");
+   boost::tokenizer<boost::char_separator<char> > tokens(order, sep);
+   int i=0;
+   BOOST_FOREACH(string t, tokens) {
+        if(t.compare("srcIP")==0) GenNode::order[i]=srcIP;
+        else if(t.compare("dstIP")==0) GenNode::order[i]=dstIP;
+        else if(t.compare("srcPort")==0) GenNode::order[i]=srcPort;
+        else if(t.compare("dstPort")==0) GenNode::order[i]=dstPort;
+        else if(t.compare("proto")==0) GenNode::order[i]=proto;
+	i++;
+   }
+   GenNode::order[i]=rule;
+   int tmp[5]={0};
+   for(i=0;i<5;i++) tmp[GenNode::order[i]]+=1;
+   for(i=0;i<5;i++) {
+	if(tmp[i]>1) THROWEXCEPTION("FlowSigMatcher: rulesorder - same GenNode Types selected more than once");
+	else if(tmp[i]==0) THROWEXCEPTION("FlowSigMatcher: rulesorder - not all GenNode Types selected");
+
+  }
+}
+
 
 ProtoNode::ProtoNode() : any(NULL), udp(NULL), tcp(NULL), icmp(NULL) {}
 
@@ -302,6 +327,8 @@ DstIpNode::~DstIpNode() {
 	}
 }
 
+
+
 void RuleNode::insertRule(IdsRule* rule,int depth) {
 	rulesList.push_back(rule);
 }
@@ -316,15 +343,15 @@ void RuleNode::findRule(Connection* conn,list<IdsRule*>& rules) {
 RuleNode::~RuleNode(){}
 
 GenNode* GenNode::newGenNode(int depth) {
-	if(depth>=5) return new RuleNode;
-        else if(order[depth]==0) return new ProtoNode;
+        if(order[depth]==0) return new ProtoNode;
 	else if(order[depth]==1) return new SrcIpNode;
 	else if(order[depth]==2) return new DstIpNode;
 	else if(order[depth]==3) return new SrcPortNode;
-	else return new DstPortNode;
+	else if(order[depth]==4) return new DstPortNode;
+	else return new RuleNode;
 }
 
-uint16_t GenNode::order[5]={4,2,1,3,0};
+GenNode::GenType GenNode::order[6]={ proto, srcIP, dstIP, srcPort, dstPort, rule };
 
 int FlowSigMatcher::parse_line(string text) {
   boost::cmatch what;

@@ -26,6 +26,8 @@
 #include "core/Source.h"
 
 #include <boost/regex.hpp>
+#include <boost/foreach.hpp>
+#include <boost/tokenizer.hpp>
 #include <list>
 #include <string>
 #include <map>
@@ -53,13 +55,19 @@ typedef struct {
         string msg;
 } IdsRule;
 
-int parse_ip(string text, IdsRule& rule);
-int parse_config(const char* text, IdsRule& rule);
-
 class GenNode {
 	public:
-        static uint16_t order[5];
+    enum GenType {
+      proto,
+      srcIP,
+      dstIP,
+      srcPort,
+      dstPort,
+      rule
+   };
+  static GenType order[6];
 	static GenNode* newGenNode(int depth);
+  static void parse_order(string order);
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules)=0;
 	virtual void insertRule(IdsRule* rule,int depth)=0;
 	virtual ~GenNode() {};
@@ -131,7 +139,7 @@ class FlowSigMatcher
 	  public Source<IDMEFMessage*>
 {
 	public:
-		FlowSigMatcher(string homenet, string rulesfile, string analyzerid, string idmeftemplate);
+		FlowSigMatcher(string homenet, string rulesfile, string rulesorder, string analyzerid, string idmeftemplate);
 		virtual ~FlowSigMatcher();
 
 		virtual void onDataRecord(IpfixDataRecord* record);

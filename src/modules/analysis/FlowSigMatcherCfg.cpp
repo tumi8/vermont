@@ -26,6 +26,8 @@ FlowSigMatcherCfg::FlowSigMatcherCfg(XMLElement* elem)
 			homenet = e->getFirstText();
                 } else if (e->matches("rulesfile")) {
 			rulesfile = e->getFirstText();
+                } else if (e->matches("rulesorder")) {
+                    rulesorder = e->getFirstText();
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown FlowSigMatcher config statement %s\n", e->getName().c_str());
@@ -44,7 +46,7 @@ FlowSigMatcherCfg::~FlowSigMatcherCfg()
 
 FlowSigMatcher* FlowSigMatcherCfg::createInstance()
 {
-    instance = new FlowSigMatcher(homenet, rulesfile, analyzerId, idmefTemplate);
+    instance = new FlowSigMatcher(homenet, rulesfile, rulesorder, analyzerId, idmefTemplate);
     return instance;
 }
 
