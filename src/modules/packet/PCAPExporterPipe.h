@@ -53,6 +53,7 @@ public:
 	virtual void receive(Packet* packet);
 	
 	virtual bool getQueueStats(uint32_t* maxsize, uint32_t* cursize);
+	virtual std::string getStatisticsXML(double interval);
 
 protected:
 	static void* pcapExporterSink(void* data);

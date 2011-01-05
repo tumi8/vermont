@@ -38,17 +38,20 @@
 #include <boost/lexical_cast.hpp>
 #include <iostream>
 #include <sys/wait.h>
+#include <sched.h>
 #include <common/SignalHandler.h>
 
 namespace bfs = boost::filesystem;
 
-PCAPExporterMem::PCAPExporterMem(const std::string& logfile)
+PCAPExporterMem::PCAPExporterMem(const std::string& logfile, uint32_t cpuaffinity)
 	: PCAPExporterProcessBase(logfile),
 	  shmfd(0),
 	  queuefd(0),
 	  shm_list(NULL),
 	  queuevarspointer(0),
-	  queueentries(1024)
+	  queueentries(1024),
+	  cpuAffinity(cpuaffinity),
+	  exporterNotification(0)
 {
 	if (PCAP_MAX_CAPTURE_LENGTH>1600)
 		 THROWEXCEPTION("PCAPExporterMem: PCAP_MAX_CAPTURE_LENGTH must be <=1600 bytes, it is %u now", PCAP_MAX_CAPTURE_LENGTH);
@@ -163,6 +166,7 @@ int PCAPExporterMem::removeSHM(int pid){
 void PCAPExporterMem::receive(Packet* packet)
 {
 	DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive() called");
+
 	if (onRestart) {
 		 DPRINTF("Dropping incoming packet, as attached process is not ready");
 		 DPRINTFL(MSG_VDEBUG, "PCAPExporterMem::receive() ended");
@@ -219,9 +223,12 @@ bool PCAPExporterMem::writeIntoMemory(Packet *packet)
 
 	if (afterNextWrite == *localRead) {
 		if (afterNextWrite == *glob_read) {
+			// queue is full
+			removeHosts(packet);
 			return false;
 		}
 		*localRead = *glob_read;
+		removeHosts(packet);
 	}
 
 	shm_list[*nextWrite].packetHeader.ts = packet->timestamp;
@@ -409,6 +416,31 @@ int PCAPExporterMem::execCmd(std::string& cmd)
 
 	int pid = fork();
 	if (pid == 0) {
+		// set cpu affinity
+		if (cpuAffinity) {
+			cpu_set_t* cpusetp;
+			int cpucount = 31; // we allow at maximum 31 CPUs at the moment
+			cpusetp = CPU_ALLOC(cpucount);
+			if (!cpusetp) {
+				if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
+					THROWEXCEPTION("PCAPExporterMem: failed to allocate cpu affinity memory: %u (%s)", errno, strerror(errno));
+				exit(1);
+			}
+			size_t size = CPU_ALLOC_SIZE(cpucount);
+			CPU_ZERO_S(size, cpusetp);
+			for (int32_t i=0; i<cpucount; i++) {
+				if (cpuAffinity&(1<<i)) {
+					fprintf(stderr, "Setting CPU %u", i);
+					CPU_SET_S(i, size, cpusetp);
+				}
+			}
+			if (sched_setaffinity(getpid(), size, cpusetp)!=0) {
+				if (write(child_parent_pipe[1], &errno, sizeof(int)) != sizeof(int))
+					THROWEXCEPTION("PCAPExporterMem: failed to set CPU affinity: %u (%s)", errno, strerror(errno));
+				exit(1);
+			}
+			CPU_FREE(cpusetp);
+		}
 		// child process
 		close(child_parent_pipe[0]); // close read-end
 		if (workingPath != "") {
@@ -439,4 +471,19 @@ int PCAPExporterMem::execCmd(std::string& cmd)
 		THROWEXCEPTION("fork() failed");
 	}
 	return -1;
+}
+
+void PCAPExporterMem::removeHosts(Packet* packet)
+{
+	if (!exporterNotification) return;
+	//if (!packet->customData) return;
+	//PacketHostInfo* phi = reinterpret_cast<PacketHostInfo*>(packet->customData);
+
+	uint32_t cursize;
+	if (*localRead<=*localWrite)
+		cursize = *localWrite-*localRead;
+	else
+		cursize = *max-(*localRead-*localWrite);
+
+	exporterNotification->queueUtilization(*max, cursize);
 }

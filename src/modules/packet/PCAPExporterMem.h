@@ -36,6 +36,18 @@
 #include "PCAPExporterBase.h"
 #include "PCAPExporterPipe.h"
 #include <common/SignalInterface.h>
+#include "idsloadbalancer/PriorityPacketSelector.hpp"
+
+
+/**
+ * other classes can register themselves when queue becomes too full
+ */
+class ExporterNotificationHandler
+{
+public:
+	virtual void queueUtilization(uint32_t maxsize, uint32_t cursize) = 0;
+};
+
 
 class Packet;
 
@@ -50,7 +62,6 @@ class Packet;
  * The reader process is started and ended by Vermont.
  * The reader process may be restarted manually by sending SIGUSR2 to Vermont.
 */
-
 class PCAPExporterMem :
 	public Module,
 	public Destination<Packet *>,
@@ -72,7 +83,7 @@ class PCAPExporterMem :
 
 
 public:
-	PCAPExporterMem(const std::string& file);
+	PCAPExporterMem(const std::string& file, uint32_t cpuaffinity);
 	virtual ~PCAPExporterMem();
 
   	virtual void receive(Packet* packet);
@@ -94,6 +105,7 @@ private:
 	void createQueue(int maxEntries);
 	/*closes shmfd/queuefd and calls shm_unlink()*/
 	int removeSHM(int);
+	void removeHosts(Packet* packet);
 
 	/**
 	 * returns next array position
@@ -120,6 +132,7 @@ private:
 	void *queuevarspointer;
 	/*Size of the ringbuffer*/
 	int queueentries;
+	uint32_t cpuAffinity;
 
 	/*shared control variables*/
 	uint32_t* glob_read;
@@ -136,6 +149,7 @@ private:
 	uint32_t* max;
 	uint32_t* batchSize;
 
+	ExporterNotificationHandler* exporterNotification;
 };
 
 

@@ -134,19 +134,27 @@ public:
 	uint8_t varlength[12];
 	uint8_t varlength_index;
 
+	/**
+	 * custom data pointer for some modules that must pass additional information with packet
+	 * (e.g. IDSLoadBalancer/PriorityPacketSelector to PCAPExporterMem)
+	 */
+	void* customData;
+
 
 	Packet(InstanceManager<Packet>* im)
 		: ManagedInstance<Packet>(im),
 		  zeroBytes(0),
 		  netHeader(data + IPHeaderOffset), // netHeader must not be changed afterwards
-		  netHeaderOffset(IPHeaderOffset)
+		  netHeaderOffset(IPHeaderOffset),
+		  customData(0)
 	{
 	}
 
 	Packet()
 		: ManagedInstance<Packet>(0),
 		  netHeader(data + IPHeaderOffset),
-		  netHeaderOffset(IPHeaderOffset)
+		  netHeaderOffset(IPHeaderOffset),
+		  customData(0)
 	{
 	}
 
@@ -198,6 +206,7 @@ public:
 		ipProtocolType = NONE;
 		observationDomainID = obsdomainid;
 		pcapPacketLength = origplen;
+		customData = 0;
 
 		if (len > PCAP_MAX_CAPTURE_LENGTH) {
 			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d), "
@@ -232,6 +241,7 @@ public:
 		ipProtocolType = NONE;
 		observationDomainID = obsdomainid;
 		pcapPacketLength = origplen;
+		customData = 0;
 
 
 

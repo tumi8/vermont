@@ -55,6 +55,7 @@ private:
 	bool appenddate;
 	bool restart;
 	uint32_t restartInterval;
+	uint32_t cpuAffinity;
 };
 
 

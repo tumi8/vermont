@@ -47,6 +47,20 @@ struct HostData
 	bool belowMinMonTime(struct timeval& tv, struct timeval& minmontime);
 };
 
+
+/**
+ * included in Packets sent to PCAPExporterMem
+ * is also manipulated by that class
+ */
+struct PacketHostInfo
+{
+	HostData* currentHost;
+	list<HostData*> sortedHosts;
+	list<HostData*> removedHosts;
+	HostHashtable* selectorData;
+};
+
+
 struct PriorityNetConfig
 {
 	uint32_t subnet;
@@ -115,6 +129,8 @@ public:
 	virtual void setUpdateInterval(uint32_t ms);
 	virtual void start();
 	virtual void stop();
+	void queueUtilization(uint32_t queueid, uint32_t maxsize, uint32_t cursize);
+
 
 private:
 	static const uint32_t WARN_HOSTCOUNT;
@@ -131,6 +147,8 @@ private:
 	uint64_t discardOctets;
 	struct timeval startTime;
 	uint32_t updateInterval; /**< update interval in ms */
+	PacketHostInfo** packetHostInfo;
+	PacketHostInfo** newPacketHostInfo;
 
 	list<HostData*> restHosts; /**< hosts that are currently not monitored */
 	vector<IDSData> ids;

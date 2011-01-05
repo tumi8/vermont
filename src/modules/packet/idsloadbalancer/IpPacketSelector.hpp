@@ -26,9 +26,22 @@
 #include <arpa/inet.h>
 #include <boost/unordered_map.hpp>
 #include <list>
+#include <vector>
 
 
 class Packet;
+
+struct SelectorHostData
+{
+	SelectorHostData() {}
+	SelectorHostData(int queueid)
+		: queueid(queueid)
+	{}
+
+	int queueid;
+};
+
+typedef boost::unordered_map<uint32_t, SelectorHostData> HostHashtable;
 
 class IpPacketSelector : public BasePacketSelector 
 {
@@ -36,14 +49,16 @@ class IpPacketSelector : public BasePacketSelector
 		~IpPacketSelector();
 		IpPacketSelector();
 		void setSubnets(list<uint32_t> subnets, list<uint32_t> masks);
-		void initializeConfig(boost::unordered_map<uint32_t, int>&, boost::unordered_map<uint32_t, int>&);
+		void setHosts(HostHashtable* hosts);
 		virtual int decide(Packet *p);
+		void increaseDropModulo(uint32_t queueid);
+		bool wasIpDropped(uint32_t queueid, uint32_t ip);
 		
 	private:
-		boost::unordered_map<uint32_t, int> dstips;
-		boost::unordered_map<uint32_t, int> srcips;
-		boost::unordered_map<uint32_t, int> newdstips;
-		boost::unordered_map<uint32_t, int> newsrcips;
+		HostHashtable* hosts;
+		HostHashtable* newHosts;
+		std::vector<uint32_t> dropModulo;
+		uint32_t salt;
 		list<uint32_t> subnets;
 		list<uint32_t> masks;
 		bool changelists;

@@ -24,6 +24,7 @@
 #include "core/Module.h"
 #include "idsloadbalancer/HashPacketSelector.hpp"
 #include "idsloadbalancer/IpPacketSelector.hpp"
+#include "PCAPExporterMem.h"
 
 #include <common/msg.h>
 
@@ -35,8 +36,7 @@
 class Packet;
 
 
-
-class IDSLoadbalancer : public Module, public Destination<Packet *>, public Source<Packet *>
+class IDSLoadbalancer : public Module, public Destination<Packet *>, public Source<Packet *>, ExporterNotificationHandler
 {
 public:
 	IDSLoadbalancer(BasePacketSelector* _selector, uint64_t updateinterval);
@@ -44,16 +44,18 @@ public:
 	virtual void receive(Packet* packet);
 	void performStart();
 	void performShutdown();
-	void forwardPacket(Packet* packet, int queue);
+	virtual void queueUtilization(uint32_t maxsize, uint32_t cursize);
 
 private:
 	BasePacketSelector *selector;
+	PriorityPacketSelector* ppselector;
 	uint32_t qcount;
 	std::map<uint32_t, int> src;
 	std::map<uint32_t, int> dst;
 	Thread thread;
 	bool shutdownThread;
 	uint64_t updateInterval; /**< update interval in milliseconds of internal IP address list (if needed) */
+	int curPacketQueueID;
 
 	static void* threadWrapper(void* data);
 	void updateWorker();

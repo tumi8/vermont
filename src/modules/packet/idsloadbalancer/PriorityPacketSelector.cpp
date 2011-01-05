@@ -71,7 +71,9 @@ PriorityPacketSelector::PriorityPacketSelector(list<PriorityNetConfig>& pnc, dou
 	  startPrio(startprio),
 	  minMonTime(minmontime),
 	  discardOctets(0),
-	  updateInterval(0)
+	  updateInterval(0),
+	  packetHostInfo(0),
+	  newPacketHostInfo(0)
 {
 	msg(MSG_INFO, "PriorityPacketSelector: Creating host priority entries ...");
 
@@ -102,6 +104,19 @@ PriorityPacketSelector::~PriorityPacketSelector()
 		delete hosts.front();
 		hosts.pop_front();
 	}
+
+	if (packetHostInfo) {
+		delete packetHostInfo[0]->selectorData;
+		for (uint32_t i=0; i<numberOfQueues; i++)
+			delete packetHostInfo[i];
+		delete[] packetHostInfo;
+	}
+	if (newPacketHostInfo) {
+		delete newPacketHostInfo[0]->selectorData;
+		for (uint32_t i=0; i<numberOfQueues; i++)
+			delete newPacketHostInfo[i];
+		delete[] newPacketHostInfo;
+	}
 }
 
 void PriorityPacketSelector::setQueueCount(uint32_t n)
@@ -111,6 +126,10 @@ void PriorityPacketSelector::setQueueCount(uint32_t n)
 		const double KP = 0.01;
 		ids.push_back(IDSData(100000, KP));
 	}
+
+	if (packetHostInfo) delete[] packetHostInfo;
+	packetHostInfo = new PacketHostInfo*[n];
+	for (uint32_t i=0; i<n; i++) packetHostInfo[i] = 0;
 }
 
 
@@ -199,14 +218,33 @@ void PriorityPacketSelector::calcMaxHostPrioChange()
 
 int PriorityPacketSelector::decide(Packet *p)
 {
+	// apply new host information
+	if (newPacketHostInfo && packetHostInfo) {
+		if (packetHostInfo[0] && packetHostInfo[0]->selectorData)
+			delete packetHostInfo[0]->selectorData;
+		for (uint32_t i=0; i<numberOfQueues; i++)
+			if (packetHostInfo[i]) delete packetHostInfo[i];
+		delete[] packetHostInfo;
+		packetHostInfo = newPacketHostInfo;
+		newPacketHostInfo = 0;
+	}
+
+	if (p->customData)
+		THROWEXCEPTION("PriorityPacketSelector: received packet already contains custom data - this must not happen. Check the configuration!");
+	else {
+		p->customData = packetHostInfo[0];
+	}
+
 	int qid = ipSelector.decide(p);
 
+	p->customData = packetHostInfo[qid];
 
 	// we do not need to collect statistics here, this is done by the succeeding modules
 	//if (qid>=0)	ids[qid].curOctets += p->data_length;
 	if (qid<0) discardOctets += p->data_length;
 	return qid;
 }
+
 
 void PriorityPacketSelector::updateIDSMaxRate()
 {
@@ -301,8 +339,12 @@ void PriorityPacketSelector::updatePriorities()
 			PPDPRINTFL(MSG_VDEBUG, "PriorityPacketSelector: old priority of monitored host %s: %.2f", IPToString(htonl((*iter)->ip)).c_str(), (double)(*iter)->priority);
 			(*iter)->priority -= 1.0/(*iter)->weight;
 		}
-		curpriosum += (*iter)->priority;
-		count++;
+
+		// only decrease priority if this host was not forcibly removed from the last monitoring interval
+		if (!ipSelector.wasIpDropped((*iter)->assignedIdsId, (*iter)->ip)) {
+			curpriosum += (*iter)->priority;
+			count++;
+		}
 	}
 
 	// build sum of priorities
@@ -480,16 +522,29 @@ void PriorityPacketSelector::assignHosts2IDS()
 
 void PriorityPacketSelector::setIpConfig()
 {
-	boost::unordered_map<uint32_t, int> scfg;
+	// wait until the hostdata structure has been processed
+	while (newPacketHostInfo) {};
+
+	HostHashtable* hh = new HostHashtable;
 
 	for (uint32_t i=0; i<numberOfQueues; i++) {
 		list<HostData*>::iterator iter = ids[i].hosts.begin();
 		for (list<HostData*>::iterator iter = ids[i].hosts.begin(); iter!=ids[i].hosts.end(); iter++) {
-			scfg[htonl((*iter)->ip)] = i;
+			(*hh)[htonl((*iter)->ip)] = SelectorHostData(i);
 		}
 	}
 
-	ipSelector.initializeConfig(scfg, scfg);
+	// build tables for PCAPExporterMem and its fast removal
+	PacketHostInfo** philist = new PacketHostInfo*[numberOfQueues];
+	for (uint32_t idsidx=0; idsidx<numberOfQueues; idsidx++) {
+		PacketHostInfo* phi = new PacketHostInfo;
+		phi->sortedHosts = ids[idsidx].hosts;
+		phi->sortedHosts.sort(smallerpriothan);
+		phi->currentHost = 0;
+		phi->selectorData = hh;
+		philist[idsidx] = phi;
+	}
+	newPacketHostInfo = philist;
 }
 
 
@@ -553,4 +608,12 @@ void PriorityPacketSelector::stop()
 void PriorityPacketSelector::setUpdateInterval(uint32_t ms)
 {
 	updateInterval = ms;
+}
+
+void PriorityPacketSelector::queueUtilization(uint32_t queueid, uint32_t maxsize, uint32_t cursize)
+{
+	if ((maxsize>>1)<cursize) {
+		// queue half full, increase modulo ratio
+		ipSelector.increaseDropModulo(queueid);
+	}
 }

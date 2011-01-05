@@ -39,6 +39,7 @@ IDSLoadbalancer::IDSLoadbalancer(BasePacketSelector* _selector, uint64_t updatei
 	  shutdownThread(false),
 	  updateInterval(updateinterval)
 {
+	ppselector = dynamic_cast<PriorityPacketSelector*>(selector);
 }
 
 IDSLoadbalancer::~IDSLoadbalancer()
@@ -59,11 +60,18 @@ void IDSLoadbalancer::performStart()
 	msg(MSG_INFO, "  - updateInterval = %.03fs", (float)updateInterval/1000);
 	selector->setUpdateInterval(updateInterval);
 
+	Destination<Packet*>* m = getSucceedingModuleInstance(0);
+	PCAPExporterMem* pem = dynamic_cast<PCAPExporterMem*>(m);
+	if (!pem)
+		THROWEXCEPTION("IDSLoadbalancer: not expected succeding module type PCAPExporterMem");
+
+
 	shutdownThread = false;
 	if (updateInterval>0) thread.run(this);
 
 	selector->start();
 }
+
 
 void IDSLoadbalancer::performShutdown()
 {
@@ -76,19 +84,15 @@ void IDSLoadbalancer::performShutdown()
 
 void IDSLoadbalancer::receive(Packet* packet)
 {
-	int res = selector->decide(packet);
-	if (res == -1){
+	curPacketQueueID = selector->decide(packet);
+	if (curPacketQueueID == -1){
 		DPRINTFL(MSG_VDEBUG, "Dropping packet");
 		packet->removeReference();
 	} else {
-		send(packet, res);
+		send(packet, curPacketQueueID);
 	}
 }
 
-void IDSLoadbalancer::forwardPacket(Packet* packet, int queue)
-{
-	//msg(MSG_INFO, "Forwarding packet to queue %d", queue);
-}
 
 void* IDSLoadbalancer::threadWrapper(void* data)
 {
@@ -137,6 +141,7 @@ void IDSLoadbalancer::updateBalancingLists()
 		uint64_t docts = 0, focts = 0;
 		psp->getPacketStats(dpkts, fpkts);
 		psp->getOctetStats(docts, focts);
+
 		if (psp->getProcessStatistics(sjiffies, ujiffies)) {
 			stats.push_back(IDSLoadStatistics(true, dpkts, docts, fpkts, focts, sjiffies, ujiffies));
 		} else {
@@ -149,4 +154,9 @@ void IDSLoadbalancer::updateBalancingLists()
 		}
 	}
 	selector->updateData(stats);
+}
+
+void IDSLoadbalancer::queueUtilization(uint32_t maxsize, uint32_t cursize)
+{
+	if (ppselector) ppselector->queueUtilization(curPacketQueueID, maxsize, cursize);
 }

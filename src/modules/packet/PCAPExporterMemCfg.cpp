@@ -36,7 +36,8 @@ PCAPExporterMemCfg::PCAPExporterMemCfg(XMLElement* elem)
       workingPath(""),
       appenddate(false),
       restart(false),
-	  restartInterval(0)
+	  restartInterval(0),
+	  cpuAffinity(0)
 {
 	if (!elem) return;
 
@@ -71,6 +72,8 @@ PCAPExporterMemCfg::PCAPExporterMemCfg(XMLElement* elem)
 			restartInterval = getInt("restartinterval", 0);
 		} else if(e->matches("restartonsignal")) {
 			restart = getBool("restartonsignal", false, e);
+		} else if(e->matches("cpuaffinity")) {
+			cpuAffinity = getInt("cpuaffinity", 0, e);
 		}
 	}
 }
@@ -88,7 +91,7 @@ PCAPExporterMemCfg::~PCAPExporterMemCfg()
 
 PCAPExporterMem* PCAPExporterMemCfg::createInstance()
 {
-	instance = new PCAPExporterMem(logFileName);
+	instance = new PCAPExporterMem(logFileName, cpuAffinity);
 	instance->setDataLinkType(link_type);
 	instance->setSnaplen(snaplen);
     instance->setSigKillTimeout(sigkilltimeout);

@@ -268,3 +268,8 @@ bool PCAPExporterPipe::getQueueStats(uint32_t* maxsize, uint32_t* cursize)
 {
 	return false;
 }
+
+std::string PCAPExporterPipe::getStatisticsXML(double interval)
+{
+	return PCAPExporterProcessBase::getStatisticsXML(interval);
+}
