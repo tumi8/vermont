@@ -169,7 +169,10 @@
 		<rulesorder>srcIP dstIP proto srcPort dstPort</rulesorder>
 		<homenet>192.168.178.0/24</homenet>
 		<analyzerid>1</analyzerid>
-		<idmeftemplate>bla</idmeftemplate>
+		<idmeftemplate>configs/idmef_templates/flowsigmatcher_template.xml</idmeftemplate>
+		<next>6</next>
 	</flowSigMatcher>
-	
+	<idmefExporter id="6">
+		<sendurl>http://localhost</sendurl>
+	</idmefExporter>
 </ipfixConfig>

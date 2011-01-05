@@ -33,6 +33,7 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 using namespace std;
 
@@ -49,7 +50,7 @@ typedef struct {
         uint16_t dstPortEnd;
         list<ipEntry*> src;
         list<ipEntry*> dst;
-        uint32_t sid;
+        uint32_t uid;
         string type;
         string source;
         string msg;
@@ -57,17 +58,17 @@ typedef struct {
 
 class GenNode {
 	public:
-    enum GenType {
-      proto,
-      srcIP,
-      dstIP,
-      srcPort,
-      dstPort,
-      rule
-   };
-  static GenType order[6];
+	enum GenType {
+		proto,
+		srcIP,
+		dstIP,
+		srcPort,
+		dstPort,
+		rule
+	};
+	static GenType order[6];
 	static GenNode* newGenNode(int depth);
-  static void parse_order(string order);
+	static void parse_order(string order);
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules)=0;
 	virtual void insertRule(IdsRule* rule,int depth)=0;
 	virtual ~GenNode() {};
@@ -153,6 +154,13 @@ class FlowSigMatcher
 
 
 		// idmef parameters
+		const static char* PAR_SOURCE_PORT; // = "SOURCE_PORT";
+		const static char* PAR_TARGET_PORT; // = "TARGET_PORT";
+		const static char* PAR_SOURCE; // = "SOURCE";
+		const static char* PAR_UID; // = "UID";
+		const static char* PAR_TYPE; // = "TYPE";
+		const static char* PAR_MSG; // = "MSM";
+	
                 list<IdsRule*> parsedRules;
                 GenNode* treeRoot;
 

@@ -25,8 +25,16 @@
 #include <math.h>
 #include <iostream>
 
+GenNode::GenType GenNode::order[6]={ proto, srcIP, dstIP, srcPort, dstPort, rule };
+const char* FlowSigMatcher::PAR_SOURCE_PORT = "SOURCE_PORT";
+const char* FlowSigMatcher::PAR_TARGET_PORT = "TARGET_PORT";
+const char* FlowSigMatcher::PAR_SOURCE = "SOURCE";
+const char* FlowSigMatcher::PAR_UID = "UID";
+const char* FlowSigMatcher::PAR_TYPE = "TYPE";
+const char* FlowSigMatcher::PAR_MSG = "MSG";
 
-InstanceManager<IDMEFMessage> FlowSigMatcher::idmefManager("TRWPortscanIDMEFMessage", 0);
+
+InstanceManager<IDMEFMessage> FlowSigMatcher::idmefManager("FlowSigMatcherIDMEFMessage", 0);
 
 /**
  * attention: parameter idmefexporter must be free'd by the creating instance, FlowSigMatcher
@@ -91,6 +99,22 @@ void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
         	msg(MSG_DIALOG, "intruder detected:");
 		msg(MSG_DIALOG, "srcIP: %s, dstIP: %s, srcPort: %i dstPort: %i", IPToString(conn.srcIP).c_str(),
 				IPToString(conn.dstIP).c_str(), ntohs(conn.srcPort), ntohs(conn.dstPort));
+                IDMEFMessage* msg = idmefManager.getNewInstance();
+                msg->init(idmefTemplate, analyzerId);
+		stringstream ssrcPort;
+		ssrcPort << ntohs(conn.srcPort);
+		stringstream sdstPort;
+		sdstPort << ntohs(conn.dstPort);
+                msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(conn.srcIP));
+                msg->setVariable(IDMEFMessage::PAR_TARGET_ADDRESS, IPToString(conn.dstIP));
+                msg->setVariable(PAR_SOURCE_PORT, ssrcPort.str());
+                msg->setVariable(PAR_TARGET_PORT, sdstPort.str());
+                msg->setVariable(PAR_SOURCE, (*it)->source);
+                msg->setVariable(PAR_UID, (*it)->uid);
+                msg->setVariable(PAR_TYPE, (*it)->type);
+                msg->setVariable(PAR_MSG, (*it)->msg);
+                msg->applyVariables();
+                send(msg);
         }
 	record->removeReference();
 }
@@ -351,8 +375,6 @@ GenNode* GenNode::newGenNode(int depth) {
 	else return new RuleNode;
 }
 
-GenNode::GenType GenNode::order[6]={ proto, srcIP, dstIP, srcPort, dstPort, rule };
-
 int FlowSigMatcher::parse_line(string text) {
   boost::cmatch what;
   const boost::regex exp_line("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
@@ -367,7 +389,7 @@ int FlowSigMatcher::parse_line(string text) {
     if(bi_dir.compare(what[4])==0) {
 	IdsRule* birule=new IdsRule;
 	parsedRules.push_back(birule);
-	birule->sid=atoi(static_cast<string>(what[1]).c_str());
+	birule->uid=atoi(static_cast<string>(what[1]).c_str());
 	string home_net("$HOME_NET");
 	if(home_net.compare(what[2])==0) parse_ip(homenet,*birule,1);
 	else   parse_ip(what[2], *birule,1);
@@ -385,7 +407,7 @@ int FlowSigMatcher::parse_line(string text) {
 	birule->source=what[9];
 	birule->msg=what[10];
     }
-    rule->sid=atoi(static_cast<string>(what[1]).c_str());
+    rule->uid=atoi(static_cast<string>(what[1]).c_str());
     string home_net("$HOME_NET");
     if(home_net.compare(what[2])==0) parse_ip(homenet,*rule,0);
     else   parse_ip(what[2], *rule,0);
