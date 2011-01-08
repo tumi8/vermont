@@ -165,10 +165,11 @@
 	</ipfixAggregator>
 	
 	<flowSigMatcher id="5">
-		<rulesfile>/home/phil/studienarbeit/vermont/my_rules.rule</rulesfile>
+		<rulesfile>my_rules.rule</rulesfile>
 		<rulesorder>srcIP dstIP proto srcPort dstPort</rulesorder>
 		<homenet>192.168.178.0/24</homenet>
 		<analyzerid>1</analyzerid>
+		<flagstimeout>20000</flagstimeout>
 		<idmeftemplate>configs/idmef_templates/flowsigmatcher_template.xml</idmeftemplate>
 		<next>6</next>
 	</flowSigMatcher>

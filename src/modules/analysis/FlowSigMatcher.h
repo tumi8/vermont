@@ -29,6 +29,7 @@
 #include <boost/foreach.hpp>
 #include <boost/tokenizer.hpp>
 #include <list>
+#include <set>
 #include <string>
 #include <map>
 #include <iostream>
@@ -36,6 +37,7 @@
 #include <vector>
 
 using namespace std;
+
 
 typedef struct {
         uint32_t ip;
@@ -51,10 +53,19 @@ typedef struct {
         list<ipEntry*> src;
         list<ipEntry*> dst;
         uint32_t uid;
-        string type;
-        string source;
+        uint8_t type;
+        uint8_t source;
+	uint32_t flag;
         string msg;
 } IdsRule;
+
+typedef struct {
+        set<uint32_t> flags;
+        uint32_t uid;
+        uint8_t type;
+        uint8_t source;
+        string msg;
+} FlagsRule;
 
 class GenNode {
 	public:
@@ -140,7 +151,7 @@ class FlowSigMatcher
 	  public Source<IDMEFMessage*>
 {
 	public:
-		FlowSigMatcher(string homenet, string rulesfile, string rulesorder, string analyzerid, string idmeftemplate);
+		FlowSigMatcher(string homenet, string rulesfile, string rulesorder, string analyzerid, string idmeftemplate, string flagstimeout);
 		virtual ~FlowSigMatcher();
 
 		virtual void onDataRecord(IpfixDataRecord* record);
@@ -151,6 +162,7 @@ class FlowSigMatcher
                 string rulesfile;
 		string analyzerId;	/**< analyzer id for IDMEF messages */
 		string idmefTemplate;	/**< template file for IDMEF messages */
+		uint64_t flagsTimeout;
 
 
 		// idmef parameters
@@ -162,14 +174,21 @@ class FlowSigMatcher
 		const static char* PAR_MSG; // = "MSM";
 	
                 list<IdsRule*> parsedRules;
+                list<FlagsRule*> flagRules;
+		map<uint32_t,uint64_t> activeFlags;
                 GenNode* treeRoot;
+		vector<string> idsRuleType;
+		vector<string> idsRuleSource;
 
 		// manages instances of IDMEFMessages
 		static InstanceManager<IDMEFMessage> idmefManager;
+		int parseFlags(string text, FlagsRule& rule);
                 int parse_line(string text);
                 int parse_port(string text, IdsRule& rule, uint32_t dst);
                 void split_ip(string text, list<ipEntry*>& list);
                 int parse_ip(string text, IdsRule& rule, uint32_t dst);
+		uint8_t findVectorNr(string text, vector<string>& vec) ;
+		void sendMessage(Connection& conn,uint8_t source, uint8_t type, uint32_t uid, string msg);
 		/*void addConnection(Connection* conn);
 		virtual string getStatisticsXML(double interval);
 		void cleanupEntries();*/

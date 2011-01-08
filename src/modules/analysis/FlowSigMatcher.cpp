@@ -40,15 +40,16 @@ InstanceManager<IDMEFMessage> FlowSigMatcher::idmefManager("FlowSigMatcherIDMEFM
  * attention: parameter idmefexporter must be free'd by the creating instance, FlowSigMatcher
  * does not dare to delete it, in case it's used
  */
-FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesorder, string analyzerid, string idmeftemplate)
+FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesorder, string analyzerid, string idmeftemplate, string flagstimeout)
 	: homenet(homenet),
 	  rulesfile(rulesfile),
 	  analyzerId(analyzerid),
-	  idmefTemplate(idmeftemplate)
+	  idmefTemplate(idmeftemplate),
+	  flagsTimeout(10000)
 {
     GenNode::parse_order(rulesorder);
+    if(flagstimeout.compare("")!=0) flagsTimeout=strtoull(flagstimeout.c_str(),NULL,10);
     char buffer[256];
-    //infile.exceptions (ifstream::eofbit | ifstream::failbit | ifstream::badbit );
     
     try {
     	infile.open(rulesfile.c_str(),ifstream::in);
@@ -57,7 +58,6 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesord
 	msg(MSG_FATAL, "FlowSigmatcher: Exception opening/reading FlowSigMatcher's rulesfile: %s %s\n", rulesfile.c_str(), e.what());
     }
     while(infile.good()) {
-	    cout<<"after"<<endl;
 	    infile.getline(buffer,256);
 	    parse_line(buffer);
     }
@@ -71,6 +71,16 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesord
 
 FlowSigMatcher::~FlowSigMatcher()
 {
+	delete treeRoot;
+	list<IdsRule*>::iterator it;
+        list<FlagsRule*>::iterator flagIt;
+	for(it=parsedRules.begin();it!=parsedRules.end();it++) {
+		list<ipEntry*>::iterator ipIt;
+		for(ipIt=(*it)->src.begin();ipIt!=(*it)->src.end();ipIt++) delete (*ipIt);
+		for(ipIt=(*it)->dst.begin();ipIt!=(*it)->dst.end();ipIt++) delete (*ipIt);
+		delete (*it); 
+	}
+	for(flagIt=flagRules.begin();flagIt!=flagRules.end();flagIt++) delete (*flagIt); 
 }
 
 void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
@@ -96,50 +106,76 @@ void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
         treeRoot->findRule(&conn,matchingRules);
         list<IdsRule*>::iterator it;
         for(it=matchingRules.begin();it!=matchingRules.end();it++) {
-        	msg(MSG_DIALOG, "intruder detected:");
-		msg(MSG_DIALOG, "srcIP: %s, dstIP: %s, srcPort: %i dstPort: %i", IPToString(conn.srcIP).c_str(),
-				IPToString(conn.dstIP).c_str(), ntohs(conn.srcPort), ntohs(conn.dstPort));
-                IDMEFMessage* msg = idmefManager.getNewInstance();
-                msg->init(idmefTemplate, analyzerId);
-		stringstream ssrcPort;
-		ssrcPort << ntohs(conn.srcPort);
-		stringstream sdstPort;
-		sdstPort << ntohs(conn.dstPort);
-                msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(conn.srcIP));
-                msg->setVariable(IDMEFMessage::PAR_TARGET_ADDRESS, IPToString(conn.dstIP));
-                msg->setVariable(PAR_SOURCE_PORT, ssrcPort.str());
-                msg->setVariable(PAR_TARGET_PORT, sdstPort.str());
-                msg->setVariable(PAR_SOURCE, (*it)->source);
-                msg->setVariable(PAR_UID, (*it)->uid);
-                msg->setVariable(PAR_TYPE, (*it)->type);
-                msg->setVariable(PAR_MSG, (*it)->msg);
-                msg->applyVariables();
-                send(msg);
+		if((*it)->flag==0) {
+			sendMessage(conn, (*it)->source, (*it)->type, (*it)->uid, (*it)->msg); 
+		}
+		else {
+			map<uint32_t,uint64_t>::iterator flagIt;
+			uint64_t latestTime;
+			if (conn.dstTimeEnd>conn.srcTimeEnd) latestTime=conn.dstTimeEnd;
+			else latestTime=conn.srcTimeEnd;
+			if (activeFlags[(*it)->flag]<latestTime) activeFlags[(*it)->flag]=latestTime;
+			for(flagIt=activeFlags.begin();flagIt!=activeFlags.end();flagIt++) { //delete outdated flags
+				if(((*flagIt).second < conn.srcTimeStart)&&(conn.srcTimeStart - (*flagIt).second > flagsTimeout)) activeFlags.erase(flagIt);
+			}
+			list<FlagsRule*>::iterator flagRulesIt;
+			for(flagRulesIt=flagRules.begin();flagRulesIt!=flagRules.end();flagRulesIt++) {
+				set<uint32_t>::iterator it;
+				for(it=(*flagRulesIt)->flags.begin();it!=(*flagRulesIt)->flags.end();it++) {
+					if(activeFlags.find(*it) == activeFlags.end()) break;
+				}
+				if(it==(*flagRulesIt)->flags.end()) {
+					sendMessage(conn, (*flagRulesIt)->source, (*flagRulesIt)->type, (*flagRulesIt)->uid, (*flagRulesIt)->msg); 
+				}
+			}
+		}
         }
 	record->removeReference();
 }
 
-void GenNode::parse_order(string order) {
-   if(order.compare("")==0) return;
-   boost::char_separator<char> sep(", ");
-   boost::tokenizer<boost::char_separator<char> > tokens(order, sep);
-   int i=0;
-   BOOST_FOREACH(string t, tokens) {
-        if(t.compare("srcIP")==0) GenNode::order[i]=srcIP;
-        else if(t.compare("dstIP")==0) GenNode::order[i]=dstIP;
-        else if(t.compare("srcPort")==0) GenNode::order[i]=srcPort;
-        else if(t.compare("dstPort")==0) GenNode::order[i]=dstPort;
-        else if(t.compare("proto")==0) GenNode::order[i]=proto;
-	i++;
-   }
-   GenNode::order[i]=rule;
-   int tmp[5]={0};
-   for(i=0;i<5;i++) tmp[GenNode::order[i]]+=1;
-   for(i=0;i<5;i++) {
-	if(tmp[i]>1) THROWEXCEPTION("FlowSigMatcher: rulesorder - same GenNode Types selected more than once");
-	else if(tmp[i]==0) THROWEXCEPTION("FlowSigMatcher: rulesorder - not all GenNode Types selected");
+void FlowSigMatcher::sendMessage(Connection& conn,uint8_t source, uint8_t type, uint32_t uid, string message) {
+	msg(MSG_DIALOG, "intruder detected:");
+	msg(MSG_DIALOG, "srcIP: %s, dstIP: %s, srcPort: %i dstPort: %i", IPToString(conn.srcIP).c_str(),
+			IPToString(conn.dstIP).c_str(), ntohs(conn.srcPort), ntohs(conn.dstPort));
+	IDMEFMessage* msg = idmefManager.getNewInstance();
+	msg->init(idmefTemplate, analyzerId);
+	stringstream ssrcPort;
+	ssrcPort << ntohs(conn.srcPort);
+	stringstream sdstPort;
+	sdstPort << ntohs(conn.dstPort);
+	msg->setVariable(IDMEFMessage::PAR_SOURCE_ADDRESS, IPToString(conn.srcIP));
+	msg->setVariable(IDMEFMessage::PAR_TARGET_ADDRESS, IPToString(conn.dstIP));
+	msg->setVariable(PAR_SOURCE_PORT, ssrcPort.str());
+	msg->setVariable(PAR_TARGET_PORT, sdstPort.str());
+	msg->setVariable(PAR_SOURCE, idsRuleSource.at(source));
+	msg->setVariable(PAR_UID, uid);
+	msg->setVariable(PAR_TYPE, idsRuleType.at(type));
+	msg->setVariable(PAR_MSG, message);
+	msg->applyVariables();
+	send(msg);
+}
 
-  }
+void GenNode::parse_order(string order) {
+	if(order.compare("")==0) return;
+	boost::char_separator<char> sep(", ");
+	boost::tokenizer<boost::char_separator<char> > tokens(order, sep);
+	int i=0;
+	BOOST_FOREACH(string t, tokens) {
+	if(t.compare("srcIP")==0) GenNode::order[i]=srcIP;
+	else if(t.compare("dstIP")==0) GenNode::order[i]=dstIP;
+	else if(t.compare("srcPort")==0) GenNode::order[i]=srcPort;
+	else if(t.compare("dstPort")==0) GenNode::order[i]=dstPort;
+	else if(t.compare("proto")==0) GenNode::order[i]=proto;
+	else THROWEXCEPTION("FlowSigMatcher: rulesorder - rulesorder may only contain the following keywords: srcIP, dstIP, srcPort, dstPort, proto");
+	i++;
+	}
+	GenNode::order[i]=rule;
+	int tmp[5]={0};
+	for(i=0;i<5;i++) tmp[GenNode::order[i]]+=1;
+	for(i=0;i<5;i++) {
+		if(tmp[i]>1) THROWEXCEPTION("FlowSigMatcher: rulesorder - same GenNode Types selected more than once");
+		else if(tmp[i]==0) THROWEXCEPTION("FlowSigMatcher: rulesorder - not all GenNode Types selected");
+	}
 }
 
 
@@ -189,7 +225,6 @@ void SrcPortNode::findRule(Connection* conn,list<IdsRule*>& rules) {
 
 void SrcPortNode::insertRule(IdsRule* rule,int depth) {
 	if(rule->srcPort==0) {
-            cout<<"any"<<endl;
 		if(any==NULL) any=newGenNode(depth+1);
 		any->insertRule(rule,depth+1);
 	}
@@ -377,8 +412,9 @@ GenNode* GenNode::newGenNode(int depth) {
 
 int FlowSigMatcher::parse_line(string text) {
   boost::cmatch what;
-  const boost::regex exp_line("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
-  if(!boost::regex_match(text.c_str(), what, exp_line)) return false;
+  const boost::regex expLine("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
+  const boost::regex expFlagsLine("(\\d+) +flags +\\((.+)\\) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
+  if(boost::regex_match(text.c_str(), what, expLine)) { 
   IdsRule* rule=new IdsRule;
   parsedRules.push_back(rule);
     // what[0] contains the whole string
@@ -403,8 +439,8 @@ int FlowSigMatcher::parse_line(string text) {
 	if(tcp.compare(what[7])==0) birule->protocol=6;
 	else if(udp.compare(what[7])==0) birule->protocol=17;
 	else if(icmp.compare(what[7])==0) birule->protocol=1;
-	birule->type=what[8];
-	birule->source=what[9];
+	birule->type=findVectorNr(what[8],idsRuleType);
+	birule->source=findVectorNr(what[9],idsRuleSource);
 	birule->msg=what[10];
     }
     rule->uid=atoi(static_cast<string>(what[1]).c_str());
@@ -418,13 +454,37 @@ int FlowSigMatcher::parse_line(string text) {
     string tcp("TCP");
     string udp("UDP");
     string icmp("ICMP");
+    string emptyString("");
     if(tcp.compare(what[7])==0) rule->protocol=6;
     else if(udp.compare(what[7])==0) rule->protocol=17;
     else if(icmp.compare(what[7])==0) rule->protocol=1;
-    rule->type=what[8];
-    rule->source=what[9];
+    rule->type=findVectorNr(what[8],idsRuleType);
+    rule->source=findVectorNr(what[9],idsRuleSource);
     rule->msg=what[10];
+    if(emptyString.compare(what[11])==0) rule->flag=0;
+    else rule->flag=atoi(static_cast<string>(what[11]).c_str());
     return true;
+    }
+    else if(boost::regex_match(text.c_str(), what, expFlagsLine)) { 
+	FlagsRule* rule= new FlagsRule();
+	flagRules.push_back(rule);
+	parseFlags(what[2],*rule);
+	rule->uid=atoi(static_cast<string>(what[1]).c_str());
+	rule->type=findVectorNr(what[3],idsRuleType);
+	rule->source=findVectorNr(what[4],idsRuleSource);
+	rule->msg=what[5];
+	return true;
+    }
+    else return false;
+}
+
+uint8_t FlowSigMatcher::findVectorNr(string text, vector<string>& vec) {
+	uint8_t i;
+	for(i=0;i<vec.size();i++) {
+		if(vec[i].compare(text)==0) return i;
+	}
+	vec.push_back(text);
+	return i;
 }
 
 int FlowSigMatcher::parse_port(string text, IdsRule& rule, uint32_t dst) {
@@ -455,13 +515,23 @@ int FlowSigMatcher::parse_port(string text, IdsRule& rule, uint32_t dst) {
   return true;
 }
 
+int FlowSigMatcher::parseFlags(string text, FlagsRule& rule) {
+	  const boost::regex expFlags(", *| +");
+	  boost::sregex_token_iterator i(text.begin(), text.end(), expFlags, -1);
+	  boost::sregex_token_iterator j;
+	  while(i!=j) {
+		rule.flags.insert(atoi(static_cast<string>(*i++).c_str()));
+	}
+	return true;
+}
+
 int FlowSigMatcher::parse_ip(string text, IdsRule& rule, uint32_t dst) {
   const boost::regex exp_braces("\\[.+\\]");
   if(boost::regex_match(text,exp_braces)) {
 	  text.erase(text.begin());
 	  text.erase(text.end()-1);
-	  const boost::regex expip(", *");
-	  boost::sregex_token_iterator i(text.begin(), text.end(), expip, -1);
+	  const boost::regex expIp(", *| +");
+	  boost::sregex_token_iterator i(text.begin(), text.end(), expIp, -1);
 	  boost::sregex_token_iterator j;
 	  if(dst==0)  while(i!=j) split_ip(*i++,rule.src);
 	  else while(i!=j) split_ip(*i++,rule.dst);
