@@ -39,33 +39,33 @@
 using namespace std;
 
 
-typedef struct {
+struct IpEntry{
         uint32_t ip;
-        uint16_t mask;
-} ipEntry;
+        uint8_t mask;
+};
 
-typedef struct {
-        uint32_t protocol;
+struct IdsRule {
+        uint8_t protocol;
         uint16_t srcPort;
         uint16_t srcPortEnd;
         uint16_t dstPort;
         uint16_t dstPortEnd;
-        list<ipEntry*> src;
-        list<ipEntry*> dst;
+        list<IpEntry*> src;
+        list<IpEntry*> dst;
         uint32_t uid;
         uint8_t type;
         uint8_t source;
 	uint32_t flag;
         string msg;
-} IdsRule;
+};
 
-typedef struct {
+struct FlagsRule {
         set<uint32_t> flags;
         uint32_t uid;
         uint8_t type;
         uint8_t source;
         string msg;
-} FlagsRule;
+};
 
 class GenNode {
 	public:
@@ -78,7 +78,7 @@ class GenNode {
 		rule
 	};
 	static GenType order[6];
-	static GenNode* newGenNode(int depth);
+	static GenNode* newNode(int depth);
 	static void parse_order(string order);
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules)=0;
 	virtual void insertRule(IdsRule* rule,int depth)=0;
@@ -185,7 +185,7 @@ class FlowSigMatcher
 		int parseFlags(string text, FlagsRule& rule);
                 int parse_line(string text);
                 int parse_port(string text, IdsRule& rule, uint32_t dst);
-                void split_ip(string text, list<ipEntry*>& list);
+                void split_ip(string text, list<IpEntry*>& list);
                 int parse_ip(string text, IdsRule& rule, uint32_t dst);
 		uint8_t findVectorNr(string text, vector<string>& vec) ;
 		void sendMessage(Connection& conn,uint8_t source, uint8_t type, uint32_t uid, string msg);
