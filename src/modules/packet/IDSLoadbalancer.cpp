@@ -60,6 +60,14 @@ void IDSLoadbalancer::performStart()
 	msg(MSG_INFO, "  - updateInterval = %.03fs", (float)updateInterval/1000);
 	selector->setUpdateInterval(updateInterval);
 
+	for (uint32_t i=0; i<qcount; i++) {
+		PCAPExporterMem* pem = dynamic_cast<PCAPExporterMem*>(getSucceedingModuleInstance(i));
+		if (pem) {
+			msg(MSG_INFO, "IDSLoadbalancer: detected PCAPExporterMem module at queue %u", i);
+			pem->setExporterNotificationHandler(this);
+		}
+	}
+
 	Destination<Packet*>* m = getSucceedingModuleInstance(0);
 	PCAPExporterMem* pem = dynamic_cast<PCAPExporterMem*>(m);
 	if (!pem)

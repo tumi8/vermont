@@ -49,7 +49,7 @@ struct HostData
 
 
 /**
- * included in Packets sent to PCAPExporterMem
+ * included in Packets sent to PCAPExporterMem and IpPacketSelector
  * is also manipulated by that class
  */
 struct PacketHostInfo
@@ -58,6 +58,9 @@ struct PacketHostInfo
 	list<HostData*> sortedHosts;
 	list<HostData*> removedHosts;
 	HostHashtable* selectorData;
+	uint32_t dropModulo;
+	uint32_t salt;
+	uint64_t controlDropped;
 };
 
 
@@ -93,6 +96,7 @@ struct IDSData
 	uint64_t lastDropOct;
 	uint64_t curDropPkt;
 	uint64_t lastDropPkt;
+	uint64_t controlDropOct;
 
 	uint32_t maxQueueSize;
 	uint32_t curQueueSize;
@@ -112,6 +116,7 @@ struct IDSData
 		  lastDropOct(0),
 		  curDropPkt(0),
 		  lastDropPkt(0),
+		  controlDropOct(0),
 		  maxQueueSize(0),
 		  curQueueSize(0)
 	{}
@@ -152,6 +157,7 @@ private:
 
 	list<HostData*> restHosts; /**< hosts that are currently not monitored */
 	vector<IDSData> ids;
+	uint64_t round;
 
 	uint32_t insertSubnet(uint32_t subnet, uint8_t maskbits, double weight);
 	void updateTrafficEstimation();
@@ -161,6 +167,7 @@ private:
 	void setIpConfig();
 	void updateIDSMaxRate();
 	void updateEstRatio();
+	bool wasIpDropped(uint32_t queueid, uint32_t ip);
 };
 
 

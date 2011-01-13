@@ -92,6 +92,7 @@ public:
 	virtual void handleSigChld(int sig);
 	void setQueueEntries(int q);
 	virtual bool getQueueStats(uint32_t* maxsize, uint32_t* cursize);
+	void setExporterNotificationHandler(ExporterNotificationHandler* enh);
 
 protected:
     virtual void startProcess();

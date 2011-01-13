@@ -487,3 +487,8 @@ void PCAPExporterMem::removeHosts(Packet* packet)
 
 	exporterNotification->queueUtilization(*max, cursize);
 }
+
+void PCAPExporterMem::setExporterNotificationHandler(ExporterNotificationHandler* enh)
+{
+	exporterNotification = enh;
+}

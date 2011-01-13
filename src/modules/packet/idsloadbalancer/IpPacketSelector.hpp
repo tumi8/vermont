@@ -43,6 +43,7 @@ struct SelectorHostData
 
 typedef boost::unordered_map<uint32_t, SelectorHostData> HostHashtable;
 
+
 class IpPacketSelector : public BasePacketSelector 
 {
 	public:
@@ -51,17 +52,10 @@ class IpPacketSelector : public BasePacketSelector
 		void setSubnets(list<uint32_t> subnets, list<uint32_t> masks);
 		void setHosts(HostHashtable* hosts);
 		virtual int decide(Packet *p);
-		void increaseDropModulo(uint32_t queueid);
-		bool wasIpDropped(uint32_t queueid, uint32_t ip);
 		
 	private:
-		HostHashtable* hosts;
-		HostHashtable* newHosts;
-		std::vector<uint32_t> dropModulo;
-		uint32_t salt;
 		list<uint32_t> subnets;
 		list<uint32_t> masks;
-		bool changelists;
 }
 ;
 

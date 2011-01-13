@@ -73,7 +73,8 @@ PriorityPacketSelector::PriorityPacketSelector(list<PriorityNetConfig>& pnc, dou
 	  discardOctets(0),
 	  updateInterval(0),
 	  packetHostInfo(0),
-	  newPacketHostInfo(0)
+	  newPacketHostInfo(0),
+	  round(0)
 {
 	msg(MSG_INFO, "PriorityPacketSelector: Creating host priority entries ...");
 
@@ -231,16 +232,14 @@ int PriorityPacketSelector::decide(Packet *p)
 
 	if (p->customData)
 		THROWEXCEPTION("PriorityPacketSelector: received packet already contains custom data - this must not happen. Check the configuration!");
-	else {
-		p->customData = packetHostInfo[0];
-	}
 
+	// do not forward a packet until the first host list has been generated
+	if (!packetHostInfo[0]) return -1;
+
+	p->customData = packetHostInfo;
 	int qid = ipSelector.decide(p);
-
 	p->customData = packetHostInfo[qid];
 
-	// we do not need to collect statistics here, this is done by the succeeding modules
-	//if (qid>=0)	ids[qid].curOctets += p->data_length;
 	if (qid<0) discardOctets += p->data_length;
 	return qid;
 }
@@ -260,10 +259,11 @@ void PriorityPacketSelector::updateIDSMaxRate()
 
 	for (uint32_t i=0; i<numberOfQueues; i++) {
 		uint64_t oldmax = ids[i].maxOctets;
+		uint64_t droppedoct = ids[i].curDropOct+ids[i].controlDropOct;
 
 		if (ids[i].slowStart) {
 			// roughly try to determine maximum IDS speed
-			if (ids[i].curDropOct>0) {
+			if (droppedoct>0) {
 				if (ids[i].curForwOct<ids[i].maxOctets*2) {
 					ids[i].slowStart = false;
 					ids[i].maxOctets = (float)ids[i].maxOctets/adaptratio;
@@ -276,7 +276,7 @@ void PriorityPacketSelector::updateIDSMaxRate()
 					ids[i].maxOctets = slowstartratio*(float)ids[i].maxOctets;
 			}
 		} else {
-			if (ids[i].curDropOct>0) {
+			if (droppedoct>0) {
 				if (ids[i].curForwOct<ids[i].maxOctets)
 					ids[i].maxOctets = (float)ids[i].maxOctets/adaptratio;
 			} else if (ids[i].curForwOct>ids[i].maxOctets/2) {
@@ -341,7 +341,7 @@ void PriorityPacketSelector::updatePriorities()
 		}
 
 		// only decrease priority if this host was not forcibly removed from the last monitoring interval
-		if (!ipSelector.wasIpDropped((*iter)->assignedIdsId, (*iter)->ip)) {
+		if (round>0 && !wasIpDropped((*iter)->assignedIdsId, (*iter)->ip)) {
 			curpriosum += (*iter)->priority;
 			count++;
 		}
@@ -508,8 +508,8 @@ void PriorityPacketSelector::assignHosts2IDS()
 		}
 
 		ids[i].expOctets = (double)idsoctets[i];
-		msg(MSG_DEBUG, "PriorityPacketSelector: IDS %u, hosts %u (+%u,-%u), est.load %llu, act.load %llu, max load %llu, dropped %llu, max qu %u, cur qu %u",
-				i, ids[i].hosts.size(), acount, rcount, ids[i].expOctets, ids[i].curForwOct, ids[i].maxOctets, ids[i].curDropOct, ids[i].maxQueueSize, ids[i].curQueueSize);
+		msg(MSG_DEBUG, "PriorityPacketSelector: IDS %u, hosts %u (+%u,-%u), est.load %llu, act.load %llu, max load %llu, contrdropped %llu, dropped %llu, max qu %u, cur qu %u",
+				i, ids[i].hosts.size(), acount, rcount, ids[i].expOctets, ids[i].curForwOct, ids[i].maxOctets, ids[i].controlDropOct, ids[i].curDropOct, ids[i].maxQueueSize, ids[i].curQueueSize);
 	}
 
 	msg(MSG_DEBUG, "PriorityPacketSelector: unmonitored hosts: %u", resthostcount);
@@ -542,6 +542,12 @@ void PriorityPacketSelector::setIpConfig()
 		phi->sortedHosts.sort(smallerpriothan);
 		phi->currentHost = 0;
 		phi->selectorData = hh;
+		phi->controlDropped = 0;
+		phi->dropModulo = 1;
+		if (!packetHostInfo || !packetHostInfo[idsidx])
+			phi->salt = 1;
+		else
+			phi->salt = packetHostInfo[idsidx]->salt + 1;
 		philist[idsidx] = phi;
 	}
 	newPacketHostInfo = philist;
@@ -554,7 +560,7 @@ void PriorityPacketSelector::updateEstRatio()
 	for (uint32_t i=0; i<numberOfQueues; i++) {
 		double w = ids[i].expOctets;
 		if (w>0) {
-			double y = ids[i].curForwOct+ids[i].curDropOct;
+			double y = ids[i].curForwOct+ids[i].curDropOct+ids[i].controlDropOct;
 			double e = w-y;
 			double u = ids[i].kp*e;
 			double d = -u/w;
@@ -582,6 +588,8 @@ void PriorityPacketSelector::updateData(list<IDSLoadStatistics>& lstats)
 		ids[i].lastForwPkt = iter->forwardedPackets;
 		ids[i].curQueueSize = iter->curQueueSize;
 		ids[i].maxQueueSize = iter->maxQueueSize;
+		ids[i].controlDropOct = 0;
+		if (packetHostInfo && packetHostInfo[i]) ids[i].controlDropOct = packetHostInfo[i]->controlDropped;
 		iter++;
 	}
 
@@ -614,6 +622,20 @@ void PriorityPacketSelector::queueUtilization(uint32_t queueid, uint32_t maxsize
 {
 	if ((maxsize>>1)<cursize) {
 		// queue half full, increase modulo ratio
-		ipSelector.increaseDropModulo(queueid);
+
+		msg(MSG_INFO, "drop modulo for queue id %u: %u", queueid, packetHostInfo[queueid]->dropModulo);
+		if (packetHostInfo[queueid]->dropModulo==0xF0000000) {
+			msg(MSG_INFO, "drop modulo for queue id %u already at maximum!", queueid);
+			return;
+		}
+		packetHostInfo[queueid]->dropModulo <<= 1;
+		msg(MSG_INFO, "increasing drop modulo for queue id %u to %u", queueid, packetHostInfo[queueid]->dropModulo);
 	}
+}
+
+
+bool PriorityPacketSelector::wasIpDropped(uint32_t queueid, uint32_t ip)
+{
+	if (!packetHostInfo || !packetHostInfo[queueid]) return false;
+	return (packetHostInfo[queueid]->dropModulo>1) && ((ip^packetHostInfo[queueid]->salt)%packetHostInfo[queueid]->dropModulo!=0);
 }

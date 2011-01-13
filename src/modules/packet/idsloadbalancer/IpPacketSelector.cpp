@@ -21,12 +21,11 @@
 #include "IpPacketSelector.hpp"
 
 #include "PriorityPacketSelector.hpp"
+#include "common/Misc.h"
+#include <sstream>
 
 IpPacketSelector::IpPacketSelector()
-	: BasePacketSelector("IpPacketSelector"),
-	  hosts(0),
-	  newHosts(0),
-	  changelists(false)
+	: BasePacketSelector("IpPacketSelector")
 {
 }
 
@@ -34,46 +33,32 @@ IpPacketSelector::~IpPacketSelector()
 {
 }
 
-void IpPacketSelector::setHosts(HostHashtable* hosts)
-{
-	if (numberOfQueues==0) {
-		THROWEXCEPTION("IpPacketSelector: internal error, queue count has not been set to a value >0 when setHosts() was called");
-	}
-
-	// busy wait until lists have been accepted by own thread
-	while (changelists) {}
-	newHosts = hosts;
-	changelists = true;
-}
 
 void IpPacketSelector::setSubnets(list<uint32_t> subnets, list<uint32_t> masks)
 {
 	this->subnets = subnets;
 	this->masks = masks;
+
+	ostringstream oss;
+	oss << "IpPacketSelector: subnet and mask filter set to ";
+	list<uint32_t>::iterator siter = subnets.begin();
+	list<uint32_t>::iterator miter = masks.begin();
+	while (siter!=subnets.end()) {
+		oss << IPToString(*siter) << "/" << IPToString(*miter);
+		siter++;
+		miter++;
+	}
+	msg(MSG_INFO, oss.str().c_str());
 }
 
-void IpPacketSelector::increaseDropModulo(uint32_t queueid)
-{
-	dropModulo[queueid] <<= 1;
-	msg(MSG_INFO, "increasing drop modulo for queue id %u to %u", queueid, dropModulo[queueid]);
-}
 
 int IpPacketSelector::decide(Packet *p)
 {
-	if (changelists) {
-		dropModulo.resize(numberOfQueues, 1);
-		for (vector<uint32_t>::iterator iter = dropModulo.begin(); iter!=dropModulo.end(); iter++)
-			*iter = 1;
-		salt += 1;
-		hosts = newHosts;
-		changelists = false;
+	if (!p->customData) {
+		THROWEXCEPTION("IpPacketSelector: no custom data in packet found, but required");
 	}
-	if (p->customData) {
-		PacketHostInfo* phi = reinterpret_cast<PacketHostInfo*>(p->customData);
-		hosts = phi->selectorData;
-	} else if (hosts==0) {
-		return -1;
-	}
+	PacketHostInfo** phi = reinterpret_cast<PacketHostInfo**>(p->customData);
+	HostHashtable* hosts = phi[0]->selectorData;
 
 	uint32_t src = 	*((uint32_t *)(p->netHeader + SRC_ADDRESS_OFFSET));
 	uint32_t dst = 	*((uint32_t *)(p->netHeader + DST_ADDRESS_OFFSET));
@@ -85,7 +70,11 @@ int IpPacketSelector::decide(Packet *p)
 			HostHashtable::iterator res = hosts->find(src);
 			if (res != hosts->end()) {
 				int qid = res->second.queueid;
-				if (dropModulo[qid]>1 && (src^salt)%dropModulo[qid]!=0) break;
+				PacketHostInfo* ph = phi[qid];
+				if (ph->dropModulo>1 && (((ntohl(src)^ph->salt)%ph->dropModulo)!=0)) {
+					ph->controlDropped += p->data_length;
+					break;
+				}
 				return qid;
 			}
 		}
@@ -93,7 +82,11 @@ int IpPacketSelector::decide(Packet *p)
 			HostHashtable::iterator res = hosts->find(dst);
 			if (res != hosts->end()) {
 				int qid = res->second.queueid;
-				if (dropModulo[qid]>1 && (dst^salt)%dropModulo[qid]!=0) break;
+				PacketHostInfo* ph = phi[qid];
+				if (ph->dropModulo>1 && (((ntohl(dst)^ph->salt)%ph->dropModulo)!=0)) {
+					ph->controlDropped += p->data_length;
+					break;
+				}
 				return qid;
 			}
 		}
@@ -103,8 +96,3 @@ int IpPacketSelector::decide(Packet *p)
 	return -1;
 }
 
-bool IpPacketSelector::wasIpDropped(uint32_t queueid, uint32_t ip)
-{
-	if (queueid>=dropModulo.size()) return false;
-	return (dropModulo[queueid]>1) && ((ip^salt)%dropModulo[queueid]!=0);
-}
