@@ -510,7 +510,8 @@ uint8_t FlowSigMatcher::findVectorNr(string text, vector<string>& vec)
 	for(i=0;i<vec.size();i++) {
 		if(vec[i].compare(text)==0) return i;
 	}
-	vec.push_back(text);
+	if(vec.size()<256) vec.push_back(text);
+        else THROWEXCEPTION("maximal number of different Sources or Types is reached");
 	return i;
 }
 
