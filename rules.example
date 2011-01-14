@@ -1,0 +1,25 @@
+#SIGNATURE RULES
+#UID SOURCE_IP/MASK SOURCE_PORT DIRECTION DST_IP/MASK  DST_PORT PROTOCOL TYPE SOURCE "MESSAGE"
+123 209.85.0.0/16 443 -> 192.168.178.0/24 ANY UDP spam-ip emerging "new rule" 
+
+#BIDIRECTIONAL
+123 209.85.0.0/16 443 <> 192.168.178.0/24 ANY UDP spam-ip emerging "new rule" 
+
+#we can also define more than 1 source or destination IP by putting them in brackets [] or use variable $HOME_NET
+123 [209.85.0.0/16, 210.86.87.0/24] 443 <> $HOME_NET ANY UDP spam-ip emerging "new rule" 
+
+#port ranges are also possible
+123 [209.85.0.0/16, 210.86.87.0/24] 440:445 <> $HOME_NET ANY UDP spam-ip emerging "new rule"
+
+#IF PORTS or PROTOL is not specified just use the ANY KEYWORD, but for any ips use 0.0.0.0/0
+123 0.0.0.0/0 ANY <> $HOME_NET ANY ANY spam-ip emerging "new rule"
+
+#An optional flag is possible as last argument
+#if a flag is set and non-zero this rule will not cause an alert immediatly.
+#it hast to match with other flags defined in FLAG RULES
+123 209.85.0.0/16 443 -> 192.168.178.0/24 ANY UDP spam-ip emerging "new rule" 14 
+
+#FLAG RULES
+#UID flags (Flag 1 Flags2 ...) TYPE SOURCE "MESSAGE"
+125 flags (14 15) spam-ip emerging "new rule"
+126 flags (14 15 16 17 18) spam-ip emerging "new rule"
