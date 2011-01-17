@@ -175,7 +175,7 @@ class FlowSigMatcher
 	
                 list<IdsRule*> parsedRules;
                 list<FlagsRule*> flagRules;
-		map<uint32_t,uint64_t> activeFlags;
+		map< uint32_t,map<uint32_t,uint64_t> > activeFlags;
                 GenNode* treeRoot;
 		vector<string> idsRuleType;
 		vector<string> idsRuleSource;

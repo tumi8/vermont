@@ -110,22 +110,29 @@ void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
 			sendMessage(conn, (*it)->source, (*it)->type, (*it)->uid, (*it)->msg); 
 		}
 		else {
-			map<uint32_t,uint64_t>::iterator flagIt;
+			map< uint32_t, map<uint32_t,uint64_t> >::iterator flagIpIt;
+			map< uint32_t, uint64_t >::iterator flagIt;
 			uint64_t latestTime;
 			if (conn.dstTimeEnd>conn.srcTimeEnd) latestTime=conn.dstTimeEnd;
 			else latestTime=conn.srcTimeEnd;
-			if (activeFlags[(*it)->flag]<latestTime) activeFlags[(*it)->flag]=latestTime;
-			for(flagIt=activeFlags.begin();flagIt!=activeFlags.end();flagIt++) { //delete outdated flags
-				if(((*flagIt).second < conn.srcTimeStart)&&(conn.srcTimeStart - (*flagIt).second > flagsTimeout)) activeFlags.erase(flagIt);
+			//if (activeFlags[0][(*it)->flag]<latestTime) activeFlags[0][(*it)->flag]=latestTime;
+			if (activeFlags[htonl(conn.srcIP)][(*it)->flag]<latestTime) activeFlags[htonl(conn.srcIP)][(*it)->flag]=latestTime;
+			if (activeFlags[htonl(conn.dstIP)][(*it)->flag]<latestTime) activeFlags[htonl(conn.dstIP)][(*it)->flag]=latestTime;
+			for(flagIpIt=activeFlags.begin();flagIpIt!=activeFlags.end();flagIpIt++) {
+				for(flagIt=flagIpIt->second.begin();flagIt!=flagIpIt->second.end();flagIt++) { //delete outdated flags
+					if((flagIt->second < conn.srcTimeStart)&&(conn.srcTimeStart - flagIt->second > flagsTimeout)) flagIpIt->second.erase(flagIt);
+				}
 			}
 			list<FlagsRule*>::iterator flagRulesIt;
 			for(flagRulesIt=flagRules.begin();flagRulesIt!=flagRules.end();flagRulesIt++) {
 				set<uint32_t>::iterator it;
-				for(it=(*flagRulesIt)->flags.begin();it!=(*flagRulesIt)->flags.end();it++) {
-					if(activeFlags.find(*it) == activeFlags.end()) break;
-				}
-				if(it==(*flagRulesIt)->flags.end()) {
-					sendMessage(conn, (*flagRulesIt)->source, (*flagRulesIt)->type, (*flagRulesIt)->uid, (*flagRulesIt)->msg); 
+				for(flagIpIt=activeFlags.begin();flagIpIt!=activeFlags.end();flagIpIt++) {
+					for(it=(*flagRulesIt)->flags.begin();it!=(*flagRulesIt)->flags.end();it++) {
+						if(flagIpIt->second.find(*it) == flagIpIt->second.end()) break;
+					}
+					if(it==(*flagRulesIt)->flags.end()) {
+						sendMessage(conn, (*flagRulesIt)->source, (*flagRulesIt)->type, (*flagRulesIt)->uid, (*flagRulesIt)->msg); 
+					}
 				}
 			}
 		}
