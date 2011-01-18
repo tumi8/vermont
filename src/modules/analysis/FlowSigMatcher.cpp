@@ -50,15 +50,10 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesord
 	GenNode::parse_order(rulesorder);
 	if(flagstimeout.compare("")!=0) flagsTimeout=strtoull(flagstimeout.c_str(),NULL,10);
 	string buffer;
-	infile.exceptions ( ifstream::badbit | ifstream::failbit );
 	infile.open(rulesfile.c_str(),ifstream::in);
-	try {
-		if(!infile.is_open()) return;
-		while(getline(infile,buffer)) {
-			parse_line(buffer);
-		}
-	}
-	catch (ifstream::failure e) {
+	if(!infile.is_open()) {THROWEXCEPTION("Couldn't open rulesfile!");}
+	while(getline(infile,buffer)) {
+		parse_line(buffer);
 	}
 	msg(MSG_DIALOG, "added %i rules\n",parsedRules.size());
 	infile.close();
