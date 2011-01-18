@@ -51,7 +51,10 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesord
 	if(flagstimeout.compare("")!=0) flagsTimeout=strtoull(flagstimeout.c_str(),NULL,10);
 	string buffer;
 	infile.open(rulesfile.c_str(),ifstream::in);
-	if(!infile.is_open()) {THROWEXCEPTION("Couldn't open rulesfile!");}
+	if(!infile.is_open()) {
+		THROWEXCEPTION("Couldn't open rulesfile! %s", rulesfile.c_str());
+		return;
+	}
 	while(getline(infile,buffer)) {
 		parse_line(buffer);
 	}
@@ -438,7 +441,7 @@ GenNode* GenNode::newNode(int depth)
 int FlowSigMatcher::parse_line(string text) 
 {
 	boost::cmatch what;
-	const boost::regex expLine("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
+	const boost::regex expLine("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)|any|ANY) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
 	const boost::regex expFlagsLine("(\\d+) +flags +\\((.+)\\) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
 	if(boost::regex_match(text.c_str(), what, expLine)) { 
 		IdsRule* rule=new IdsRule;
@@ -580,11 +583,19 @@ void FlowSigMatcher::split_ip(string text, list<IpEntry*>& list)
 {
 	boost::cmatch what;
 	const boost::regex exp_split_ip("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?:/(\\d+))*");
-	boost::regex_match(text.c_str(),what,exp_split_ip);
-	IpEntry* entry=new IpEntry;
-	string emptymask="";
-	if(emptymask.compare(what[5])==0) entry->mask=32;
-	else entry->mask=atoi(static_cast<string>(what[5]).c_str());
-	entry->ip=(atoi(static_cast<string>(what[1]).c_str())<<24)|(atoi(static_cast<string>(what[2]).c_str())<<16)|(atoi(static_cast<string>(what[3]).c_str())<<8)|(atoi(static_cast<string>(what[4]).c_str()));
-	list.push_back(entry);
+	const boost::regex exp_split_anyip("(any|ANY)");
+	if(boost::regex_match(text.c_str(),what,exp_split_ip)) {
+		IpEntry* entry=new IpEntry;
+		string emptymask="";
+		if(emptymask.compare(what[5])==0) entry->mask=32;
+		else entry->mask=atoi(static_cast<string>(what[5]).c_str());
+		entry->ip=(atoi(static_cast<string>(what[1]).c_str())<<24)|(atoi(static_cast<string>(what[2]).c_str())<<16)|(atoi(static_cast<string>(what[3]).c_str())<<8)|(atoi(static_cast<string>(what[4]).c_str()));
+		list.push_back(entry);
+	}
+	else if(boost::regex_match(text.c_str(),what,exp_split_anyip)) {
+		IpEntry* entry=new IpEntry;
+		entry->mask=0;
+		entry->ip=0;
+		list.push_back(entry);
+	}
 }
