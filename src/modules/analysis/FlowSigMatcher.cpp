@@ -49,18 +49,18 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesord
 {
 	GenNode::parse_order(rulesorder);
 	if(flagstimeout.compare("")!=0) flagsTimeout=strtoull(flagstimeout.c_str(),NULL,10);
-	char buffer[256];
-
+	string buffer;
+	infile.exceptions ( ifstream::badbit | ifstream::failbit );
+	infile.open(rulesfile.c_str(),ifstream::in);
 	try {
-		infile.open(rulesfile.c_str(),ifstream::in);
+		if(!infile.is_open()) return;
+		while(getline(infile,buffer)) {
+			parse_line(buffer);
+		}
 	}
 	catch (ifstream::failure e) {
-		msg(MSG_FATAL, "FlowSigmatcher: Exception opening/reading FlowSigMatcher's rulesfile: %s %s\n", rulesfile.c_str(), e.what());
 	}
-	while(infile.good()) {
-		infile.getline(buffer,256);
-		parse_line(buffer);
-	}
+	msg(MSG_DIALOG, "added %i rules\n",parsedRules.size());
 	infile.close();
 	list<IdsRule*>::iterator it;
 	treeRoot=GenNode::newNode(0);
