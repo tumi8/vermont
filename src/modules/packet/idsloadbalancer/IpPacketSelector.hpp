@@ -35,10 +35,12 @@ struct SelectorHostData
 {
 	SelectorHostData() {}
 	SelectorHostData(int queueid)
-		: queueid(queueid)
+		: queueid(queueid),
+		  hostid(0)
 	{}
 
 	int queueid;
+	uint32_t hostid; /**< used for fast dropping */
 };
 
 typedef boost::unordered_map<uint32_t, SelectorHostData> HostHashtable;

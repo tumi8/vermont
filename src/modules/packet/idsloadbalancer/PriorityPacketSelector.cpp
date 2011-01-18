@@ -17,7 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-
 #include "PriorityPacketSelector.hpp"
 
 #include "modules/analysis/HostStatisticsGenerator.h"
@@ -25,22 +24,14 @@
 
 #include <limits>
 
-
-const uint32_t PriorityPacketSelector::WARN_HOSTCOUNT = 1<<22;
-
+const uint32_t PriorityPacketSelector::WARN_HOSTCOUNT = 1 << 22;
 
 //#define PPDPRINTFL(lvl, fmt, args...)  msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
 #define PPDPRINTFL(lvl, fmt, args...)
 
-
-HostData::HostData(uint32_t ip, double p, double w)
-		: priority(p),
-		  oldpriority(p),
-		  weight(w),
-		  ip(ip),
-		  assignedIdsId(-1),
-		  nextTraffic(0),
-		  lastTraffic(0)
+HostData::HostData(uint32_t ip, double p, double w) :
+	priority(p), oldpriority(p), weight(w), ip(ip), assignedIdsId(-1), nextTraffic(0), lastTraffic(
+			0)
 {
 	startMon.tv_sec = 0;
 	startMon.tv_usec = 0;
@@ -49,8 +40,9 @@ HostData::HostData(uint32_t ip, double p, double w)
 /**
  * WARNING: does not set hostcount by itself, it is set by PriorityPacketSelector
  */
-PriorityNetConfig::PriorityNetConfig(uint32_t subnet, uint32_t mask, uint8_t maskbits, double weight)
-	: subnet(subnet), mask(mask), maskbits(maskbits), hostcount(0), weight(weight)
+PriorityNetConfig::PriorityNetConfig(uint32_t subnet, uint32_t mask, uint8_t maskbits,
+		double weight) :
+	subnet(subnet), mask(mask), maskbits(maskbits), hostcount(0), weight(weight)
 {
 }
 
@@ -58,31 +50,25 @@ bool HostData::belowMinMonTime(struct timeval& tv, struct timeval& minmontime)
 {
 	struct timeval diff;
 	timeval_subtract(&diff, &tv, &startMon);
-	return compareTime(minmontime, diff)>0;
+	return compareTime(minmontime, diff) > 0;
 }
 
 /**
  * @param pnc expected in order of decreasing bits in the mask!
  */
-PriorityPacketSelector::PriorityPacketSelector(list<PriorityNetConfig>& pnc, double startprio, struct timeval minmontime)
-	: BasePacketSelector("PriorityPacketSelector"),
-	  config(pnc),
-	  hostCount(0),
-	  startPrio(startprio),
-	  minMonTime(minmontime),
-	  discardOctets(0),
-	  updateInterval(0),
-	  packetHostInfo(0),
-	  newPacketHostInfo(0),
-	  round(0)
+PriorityPacketSelector::PriorityPacketSelector(list<PriorityNetConfig>& pnc, double startprio,
+		struct timeval minmontime) :
+	BasePacketSelector("PriorityPacketSelector"), config(pnc), hostCount(0), startPrio(startprio),
+			minMonTime(minmontime), discardOctets(0), updateInterval(0), packetHostInfo(0),
+			newPacketHostInfo(0), round(0)
 {
 	msg(MSG_INFO, "PriorityPacketSelector: Creating host priority entries ...");
 
 	// create host entries
-	for (list<PriorityNetConfig>::iterator citer = config.begin(); citer!=config.end(); citer++) {
+	for (list<PriorityNetConfig>::iterator citer = config.begin(); citer != config.end(); citer++) {
 		citer->hostcount = insertSubnet(citer->subnet, citer->maskbits, citer->weight);
 	}
-	prioSum = startprio*hostCount;
+	prioSum = startprio * hostCount;
 	msg(MSG_INFO, "PriorityPacketSelector: Created %u entries with start priority %.2f", hostCount, startprio);
 
 	startTime.tv_sec = 0;
@@ -92,7 +78,7 @@ PriorityPacketSelector::PriorityPacketSelector(list<PriorityNetConfig>& pnc, dou
 
 	list<uint32_t> subnets;
 	list<uint32_t> masks;
-	for (list<PriorityNetConfig>::iterator iter=config.begin(); iter!=config.end(); iter++) {
+	for (list<PriorityNetConfig>::iterator iter = config.begin(); iter != config.end(); iter++) {
 		subnets.push_back(htonl(iter->subnet));
 		masks.push_back(htonl(iter->mask));
 	}
@@ -108,13 +94,13 @@ PriorityPacketSelector::~PriorityPacketSelector()
 
 	if (packetHostInfo) {
 		delete packetHostInfo[0]->selectorData;
-		for (uint32_t i=0; i<numberOfQueues; i++)
+		for (uint32_t i = 0; i < numberOfQueues; i++)
 			delete packetHostInfo[i];
 		delete[] packetHostInfo;
 	}
 	if (newPacketHostInfo) {
 		delete newPacketHostInfo[0]->selectorData;
-		for (uint32_t i=0; i<numberOfQueues; i++)
+		for (uint32_t i = 0; i < numberOfQueues; i++)
 			delete newPacketHostInfo[i];
 		delete[] newPacketHostInfo;
 	}
@@ -123,25 +109,26 @@ PriorityPacketSelector::~PriorityPacketSelector()
 void PriorityPacketSelector::setQueueCount(uint32_t n)
 {
 	BasePacketSelector::setQueueCount(n);
-	for (uint32_t i=0; i<numberOfQueues; i++) {
+	for (uint32_t i = 0; i < numberOfQueues; i++) {
 		const double KP = 0.01;
 		ids.push_back(IDSData(100000, KP));
 	}
 
-	if (packetHostInfo) delete[] packetHostInfo;
+	if (packetHostInfo)
+		delete[] packetHostInfo;
 	packetHostInfo = new PacketHostInfo*[n];
-	for (uint32_t i=0; i<n; i++) packetHostInfo[i] = 0;
+	for (uint32_t i = 0; i < n; i++)
+		packetHostInfo[i] = 0;
 }
-
 
 /**
  * @returns number of generated host entries
  */
 uint32_t PriorityPacketSelector::insertSubnet(uint32_t subnet, uint8_t maskbits, double weight)
 {
-	if (maskbits==32) {
+	if (maskbits == 32) {
 		// insert single host
-		if (ip2host.find(subnet)==ip2host.end()) {
+		if (ip2host.find(subnet) == ip2host.end()) {
 			HostData* hd = new HostData(subnet, startPrio, weight);
 			hosts.push_back(hd);
 			ip2host[subnet] = hd;
@@ -150,20 +137,21 @@ uint32_t PriorityPacketSelector::insertSubnet(uint32_t subnet, uint8_t maskbits,
 		}
 		return 1;
 
-	} else {
+	}
+	else {
 		// iterate through all possible IP values
 		bool warningdisp = false;
 		uint32_t hcount = 0;
-		for (uint32_t i=1; i<(1u<<(32-maskbits))-1; i++) {
+		for (uint32_t i = 1; i < (1u << (32 - maskbits)) - 1; i++) {
 			uint32_t ip = i | subnet;
-			if (ip2host.find(ip)==ip2host.end()) {
+			if (ip2host.find(ip) == ip2host.end()) {
 				HostData* hd = new HostData(ip, startPrio, weight);
 				hosts.push_back(hd);
 				ip2host[ip] = hd;
 				restHosts.push_back(hd);
 				hostCount++;
 				hcount++;
-				if (hostCount>WARN_HOSTCOUNT && !warningdisp) {
+				if (hostCount > WARN_HOSTCOUNT && !warningdisp) {
 					msg(MSG_DIALOG, "PriorityPacketSelector: Warning, number of prioritized hosts is greated than %u!", WARN_HOSTCOUNT);
 					warningdisp = true;
 				}
@@ -173,7 +161,6 @@ uint32_t PriorityPacketSelector::insertSubnet(uint32_t subnet, uint8_t maskbits,
 	}
 }
 
-
 /**
  * calculate "m", the maximum number of hosts whose priority may be changed because of monitoring
  */
@@ -182,13 +169,13 @@ void PriorityPacketSelector::calcMaxHostPrioChange()
 	// generate subnet list with ascending weights
 	list<PriorityNetConfig*> ascw;
 	list<PriorityNetConfig*> temp;
-	for (list<PriorityNetConfig>::iterator citer = config.begin(); citer!=config.end(); citer++) {
+	for (list<PriorityNetConfig>::iterator citer = config.begin(); citer != config.end(); citer++) {
 		temp.push_back(&(*citer));
 	}
 	while (!temp.empty()) {
 		list<PriorityNetConfig*>::iterator maxw = temp.begin();
-		for (list<PriorityNetConfig*>::iterator iter = ++temp.begin(); iter!=temp.end(); iter++) {
-			if ((*maxw)->weight>(*iter)->weight) {
+		for (list<PriorityNetConfig*>::iterator iter = ++temp.begin(); iter != temp.end(); iter++) {
+			if ((*maxw)->weight > (*iter)->weight) {
 				maxw = iter;
 			}
 		}
@@ -197,25 +184,26 @@ void PriorityPacketSelector::calcMaxHostPrioChange()
 	}
 
 	maxHostPrioChange = 0;
-	double invmaxw = 1.0/ascw.back()->weight;
+	double invmaxw = 1.0 / ascw.back()->weight;
 	double minwsum = 0; // M_minw(r,m)^T/W (temporary value)
-	for (list<PriorityNetConfig*>::iterator iter = ascw.begin(); iter!=ascw.end(); iter++) {
-		if (invmaxw<=((double)hostCount/(minwsum+(*iter)->hostcount/(*iter)->weight))) {
+	for (list<PriorityNetConfig*>::iterator iter = ascw.begin(); iter != ascw.end(); iter++) {
+		if (invmaxw <= ((double) hostCount / (minwsum + (*iter)->hostcount / (*iter)->weight))) {
 			// portion of the hosts in this subnet is needed to fulfil criteria
-			maxHostPrioChange += (uint32_t)((*iter)->weight*((double)hostCount*invmaxw)-minwsum);
+			maxHostPrioChange += (uint32_t) ((*iter)->weight * ((double) hostCount * invmaxw)
+					- minwsum);
 			break;
-		} else {
+		}
+		else {
 			// invmaxw is not reached yet, add hosts to temporary value
-			minwsum += (*iter)->hostcount/(*iter)->weight;
+			minwsum += (*iter)->hostcount / (*iter)->weight;
 			maxHostPrioChange += (*iter)->hostcount;
 		}
 	}
 	msg(MSG_INFO, "PriorityPacketSelector: maxHostPrioChange=%u", maxHostPrioChange);
-	if (maxHostPrioChange==0) {
+	if (maxHostPrioChange == 0) {
 		THROWEXCEPTION("PriorityPacketSelector: due to the maximum weight assigned to at least one host, this priority system does not work. See section 'extreme cases' in paper.");
 	}
 }
-
 
 int PriorityPacketSelector::decide(Packet *p)
 {
@@ -223,8 +211,9 @@ int PriorityPacketSelector::decide(Packet *p)
 	if (newPacketHostInfo && packetHostInfo) {
 		if (packetHostInfo[0] && packetHostInfo[0]->selectorData)
 			delete packetHostInfo[0]->selectorData;
-		for (uint32_t i=0; i<numberOfQueues; i++)
-			if (packetHostInfo[i]) delete packetHostInfo[i];
+		for (uint32_t i = 0; i < numberOfQueues; i++)
+			if (packetHostInfo[i])
+				delete packetHostInfo[i];
 		delete[] packetHostInfo;
 		packetHostInfo = newPacketHostInfo;
 		newPacketHostInfo = 0;
@@ -234,16 +223,18 @@ int PriorityPacketSelector::decide(Packet *p)
 		THROWEXCEPTION("PriorityPacketSelector: received packet already contains custom data - this must not happen. Check the configuration!");
 
 	// do not forward a packet until the first host list has been generated
-	if (!packetHostInfo[0]) return -1;
+	if (!packetHostInfo[0])
+		return -1;
 
 	p->customData = packetHostInfo;
 	int qid = ipSelector.decide(p);
 	p->customData = packetHostInfo[qid];
 
-	if (qid<0) discardOctets += p->data_length;
+	if (qid < 0)
+		discardOctets += p->data_length;
+
 	return qid;
 }
-
 
 void PriorityPacketSelector::updateIDSMaxRate()
 {
@@ -255,55 +246,62 @@ void PriorityPacketSelector::updateIDSMaxRate()
 	struct timeval diff;
 	gettimeofday(&curtime, 0);
 	timeval_subtract(&diff, &curtime, &startTime);
-	if (diff.tv_sec<PPS_DEFAULT_MINSTARTDELAY) return;
+	if (diff.tv_sec < PPS_DEFAULT_MINSTARTDELAY)
+		return;
 
-	for (uint32_t i=0; i<numberOfQueues; i++) {
+	for (uint32_t i = 0; i < numberOfQueues; i++) {
 		uint64_t oldmax = ids[i].maxOctets;
-		uint64_t droppedoct = ids[i].curDropOct+ids[i].controlDropOct;
+		uint64_t droppedoct = ids[i].curDropOct + ids[i].controlDropOct;
 
 		if (ids[i].slowStart) {
 			// roughly try to determine maximum IDS speed
-			if (droppedoct>0) {
-				if (ids[i].curForwOct<ids[i].maxOctets*2) {
+			if (droppedoct > 0) {
+				if (ids[i].curForwOct < ids[i].maxOctets * 2) {
 					ids[i].slowStart = false;
-					ids[i].maxOctets = (float)ids[i].maxOctets/adaptratio;
-				} else {
-					if (ids[i].curForwOct>ids[i].maxOctets/2)
-						ids[i].maxOctets = slowstartratio*(float)ids[i].maxOctets;
+					ids[i].maxOctets = (float) ids[i].maxOctets / adaptratio;
 				}
-			} else {
-				if (ids[i].curForwOct>ids[i].maxOctets/2)
-					ids[i].maxOctets = slowstartratio*(float)ids[i].maxOctets;
+				else {
+					if (ids[i].curForwOct > ids[i].maxOctets / 2)
+						ids[i].maxOctets = slowstartratio * (float) ids[i].maxOctets;
+				}
 			}
-		} else {
-			if (droppedoct>0) {
-				if (ids[i].curForwOct<ids[i].maxOctets)
-					ids[i].maxOctets = (float)ids[i].maxOctets/adaptratio;
-			} else if (ids[i].curForwOct>ids[i].maxOctets/2) {
-				ids[i].maxOctets = (float)ids[i].maxOctets*adaptratio;
+			else {
+				if (ids[i].curForwOct > ids[i].maxOctets / 2)
+					ids[i].maxOctets = slowstartratio * (float) ids[i].maxOctets;
+			}
+		}
+		else {
+			if (droppedoct > 0) {
+				if (ids[i].curForwOct < ids[i].maxOctets)
+					ids[i].maxOctets = (float) ids[i].maxOctets / adaptratio;
+			}
+			else if (ids[i].curForwOct > ids[i].maxOctets / 2) {
+				ids[i].maxOctets = (float) ids[i].maxOctets * adaptratio;
 			}
 		}
 		msg(MSG_DEBUG, "PriorityPacketSelector: IDS %u maximum octets - old: %llu, new: %llu", i, oldmax, ids[i].maxOctets);
 	}
 }
 
-
 void PriorityPacketSelector::updateTrafficEstimation()
 {
 	msg(MSG_DEBUG, "PriorityPacketSelector: updating host traffic estimation");
 	HostStatisticsGenerator* hoststats = HostStatisticsGeneratorFactory::getInstance();
 	uint32_t hsglength = hoststats->getIntervalLength();
-	double ratio = (double)updateInterval/hsglength;
-	uint64_t zerooctets = ratio*hoststats->getZeroOctets();
-	for (list<HostData*>::iterator iter = hosts.begin(); iter!=hosts.end(); iter++) {
+	double ratio = (double) updateInterval / hsglength;
+	uint64_t zerooctets = ratio * hoststats->getZeroOctets();
+	for (list<HostData*>::iterator iter = hosts.begin(); iter != hosts.end(); iter++) {
 		HostData* host = *iter;
 		uint64_t octets;
 		if (hoststats->getOctets(host->ip, octets)) {
 			octets *= ratio;
 			host->lastTraffic = octets;
-			if (octets==0) host->nextTraffic = zerooctets;
-			else host->nextTraffic = octets;
-		} else {
+			if (octets == 0)
+				host->nextTraffic = zerooctets;
+			else
+				host->nextTraffic = octets;
+		}
+		else {
 			// we do not have any new data for this host ...
 			host->lastTraffic = 0;
 			host->nextTraffic = zerooctets;
@@ -311,20 +309,18 @@ void PriorityPacketSelector::updateTrafficEstimation()
 	}
 }
 
-
 bool greaterpriothan(HostData* i, HostData* j)
 {
-	return i->priority>j->priority;
+	return i->priority > j->priority;
 }
-
 
 void PriorityPacketSelector::updatePriorities()
 {
 	msg(MSG_DEBUG, "PriorityPacketSelector: updating host priorities");
 	// sort hosts by priority
 	vector<HostData*> sortedhosts;
-	for (uint32_t i=0; i<numberOfQueues; i++) {
-		for (list<HostData*>::iterator iter = ids[i].hosts.begin(); iter!=ids[i].hosts.end(); iter++) {
+	for (uint32_t i = 0; i < numberOfQueues; i++) {
+		for (list<HostData*>::iterator iter = ids[i].hosts.begin(); iter != ids[i].hosts.end(); iter++) {
 			HostData* hd = *iter;
 			sortedhosts.push_back(hd);
 		}
@@ -334,62 +330,61 @@ void PriorityPacketSelector::updatePriorities()
 	// update priorities of monitored hosts
 	double curpriosum = 0;
 	uint32_t count = 0;
-	for (vector<HostData*>::iterator iter=sortedhosts.begin(); iter!=sortedhosts.end(); iter++) {
-		if (count<=maxHostPrioChange) {
+	for (vector<HostData*>::iterator iter = sortedhosts.begin(); iter != sortedhosts.end(); iter++) {
+		if (count <= maxHostPrioChange) {
 			PPDPRINTFL(MSG_VDEBUG, "PriorityPacketSelector: old priority of monitored host %s: %.2f", IPToString(htonl((*iter)->ip)).c_str(), (double)(*iter)->priority);
-			(*iter)->priority -= 1.0/(*iter)->weight;
+			(*iter)->priority -= 1.0 / (*iter)->weight;
 		}
 
 		// only decrease priority if this host was not forcibly removed from the last monitoring interval
-		if (round>0 && !wasIpDropped((*iter)->assignedIdsId, (*iter)->ip)) {
+		if (round > 0 && !wasHostDropped(*iter)) {
 			curpriosum += (*iter)->priority;
 			count++;
 		}
 	}
 
 	// build sum of priorities
-	for (list<HostData*>::iterator iter=restHosts.begin(); iter!=restHosts.end(); iter++) {
+	for (list<HostData*>::iterator iter = restHosts.begin(); iter != restHosts.end(); iter++) {
 		curpriosum += (*iter)->priority;
 		PPDPRINTFL(MSG_VDEBUG, "PriorityPacketSelector: old priority of non-monitored host %s: %.2f", IPToString(htonl((*iter)->ip)).c_str(), (double)(*iter)->priority);
-	}
-	PPDPRINTFL(MSG_DEBUG, "PriorityPacketSelector: current priority sum: %.2f (original: %.2f)", curpriosum, prioSum);
+	} PPDPRINTFL(MSG_DEBUG, "PriorityPacketSelector: current priority sum: %.2f (original: %.2f)", curpriosum, prioSum);
 
 	// equalize sum of priorities
 	double min, max;
-	for (list<HostData*>::iterator iter=hosts.begin(); iter!=hosts.end(); iter++) {
-		double prio = (*iter)->priority + (prioSum-curpriosum)/hostCount;
+	for (list<HostData*>::iterator iter = hosts.begin(); iter != hosts.end(); iter++) {
+		double prio = (*iter)->priority + (prioSum - curpriosum) / hostCount;
 		(*iter)->priority = prio;
 
-		if (iter==hosts.begin() || min>prio)
+		if (iter == hosts.begin() || min > prio)
 			min = prio;
-		if (iter==hosts.begin() || max<prio)
+		if (iter == hosts.begin() || max < prio)
 			max = prio;
 	}
 	msg(MSG_DEBUG, "PriorityPacketSelector: minimum priority %.2f, maximum priority %.2f", min, max);
 }
 
-
 bool smallerpriothan(HostData* i, HostData* j)
 {
-	return i->priority<j->priority;
+	return i->priority < j->priority;
 }
-
 
 void PriorityPacketSelector::assignHosts2IDS()
 {
 	msg(MSG_DEBUG, "PriorityPacketSelector: reassigning hosts to IDSs");
 	// sort hosts
 	vector<int64_t> idsoctets;
-	for (uint32_t i=0; i<numberOfQueues; i++) {
+	for (uint32_t i = 0; i < numberOfQueues; i++) {
 		ids[i].hosts.sort(smallerpriothan);
 		uint64_t octets = 0;
-		for (list<HostData*>::iterator liter = ids[i].hosts.begin(); liter!=ids[i].hosts.end(); liter++) {
+		for (list<HostData*>::iterator liter = ids[i].hosts.begin(); liter != ids[i].hosts.end(); liter++) {
 			octets += (*liter)->nextTraffic;
 		}
-		idsoctets.push_back(octets*ids[i].estRatio); // estRatio comes from the control loop that tries to adjust to estimation errors
+		idsoctets.push_back(octets * ids[i].estRatio); // estRatio comes from the control loop that tries to adjust to estimation errors
 	}
 	restHosts.sort(greaterpriothan);
-	msg(MSG_ERROR, "resthosts first: %.2f, last: %.2f", restHosts.front()->priority, restHosts.back()->priority);
+	msg(MSG_ERROR, "resthosts first: %.2f (%s/%llu bytes), last: %.2f (%s/%llu bytes)",
+			restHosts.front()->priority, IPToString(restHosts.front()->ip).c_str(), restHosts.front()->lastTraffic,
+			restHosts.back()->priority, IPToString(restHosts.back()->ip).c_str(), restHosts.back()->lastTraffic);
 
 	struct timeval curtime;
 	gettimeofday(&curtime, 0);
@@ -397,18 +392,18 @@ void PriorityPacketSelector::assignHosts2IDS()
 	// randomize list of IDS
 	list<uint32_t> idxrand;
 	vector<uint32_t> indexes(numberOfQueues);
-	for (uint32_t i=0; i<numberOfQueues; i++) {
+	for (uint32_t i = 0; i < numberOfQueues; i++) {
 		indexes[i] = i;
 	}
 	while (!indexes.empty()) {
 		uint32_t j = (rand() % indexes.size());
 		idxrand.push_back(indexes[j]);
-		indexes.erase(indexes.begin()+j);
+		indexes.erase(indexes.begin() + j);
 	}
 
 	uint32_t resthostcount = restHosts.size();
 	// iterate through randomized list
-	for (list<uint32_t>::iterator idxiter=idxrand.begin(); idxiter!=idxrand.end(); idxiter++) {
+	for (list<uint32_t>::iterator idxiter = idxrand.begin(); idxiter != idxrand.end(); idxiter++) {
 		uint32_t i = *idxiter;
 		double estratio = ids[i].estRatio;
 		uint32_t rcount = 0;
@@ -418,12 +413,12 @@ void PriorityPacketSelector::assignHosts2IDS()
 		ids[i].hosts.sort(smallerpriothan);
 		// remove hosts from IDS because too much traffic would be analyzed
 		list<HostData*>::iterator iter = ids[i].hosts.begin();
-		while (idsoctets[i]>(int64_t)maxoctets && iter!=ids[i].hosts.end()) {
+		while (idsoctets[i] > (int64_t) maxoctets && iter != ids[i].hosts.end()) {
 			HostData* host = *iter;
 			iter = ids[i].hosts.erase(iter);
 			ids[i].hostcount--;
 			restHosts.push_back(host);
-			idsoctets[i] -= host->nextTraffic*estratio;
+			idsoctets[i] -= host->nextTraffic * estratio;
 			if (host->belowMinMonTime(curtime, minMonTime)) {
 				// reset priority of host
 				host->priority = host->oldpriority;
@@ -434,7 +429,7 @@ void PriorityPacketSelector::assignHosts2IDS()
 		// reassign hosts
 		iter = ids[i].hosts.begin();
 		list<HostData*>::iterator riter = restHosts.begin();
-		while (riter!=restHosts.end()) {
+		while (riter != restHosts.end()) {
 			PPDPRINTFL(MSG_DEBUG, "restHosts=%u", resthostcount);
 			HostData* resthost = *riter;
 			PPDPRINTFL(MSG_DEBUG, "PriorityPacketSelector: trying to move host %s (traffic %llu bytes) to IDS %d", IPToString(ntohl(resthost->ip)).c_str(), resthost->nextTraffic, i);
@@ -442,72 +437,74 @@ void PriorityPacketSelector::assignHosts2IDS()
 			// try to find hosts to remove from IDS
 			list<HostData*> removedhosts;
 			uint64_t remoctets = 0;
-			if (iter!=ids[i].hosts.end()) {
+			if (iter != ids[i].hosts.end()) {
 				HostData* idshost = *iter;
-				while (iter != ids[i].hosts.end() &&
-						maxoctets-idsoctets[i]<resthost->nextTraffic*estratio &&
-						idshost->priority<resthost->priority) {
+				while (iter != ids[i].hosts.end() && maxoctets - idsoctets[i]
+						< resthost->nextTraffic * estratio && idshost->priority
+						< resthost->priority) {
 					if (!idshost->belowMinMonTime(curtime, minMonTime)) {
 						PPDPRINTFL(MSG_DEBUG, "PriorityPacketSelector:temporarily removing host %s from IDS %d", IPToString(ntohl(idshost->ip)).c_str(), i);
 						removedhosts.push_back(*iter);
 						iter = ids[i].hosts.erase(iter);
 						ids[i].hostcount--;
-						idsoctets[i] -= idshost->nextTraffic*estratio;
-						remoctets += idshost->nextTraffic*estratio;
-					} else {
+						idsoctets[i] -= idshost->nextTraffic * estratio;
+						remoctets += idshost->nextTraffic * estratio;
+					}
+					else {
 						iter++;
 					}
 					idshost = *iter;
 				}
 			}
-			if ((int64_t)maxoctets-idsoctets[i]>=(int64_t)resthost->nextTraffic*estratio) {
+			if ((int64_t) maxoctets - idsoctets[i] >= (int64_t) resthost->nextTraffic * estratio) {
 				// success! insert our host
 				PPDPRINTFL(MSG_DEBUG, "PriorityPacketSelector:success, really inserting host %s to IDS %d", IPToString(ntohl(resthost->ip)).c_str(), i);
 				ids[i].hosts.push_back(resthost);
 				resthost->startMon = curtime;
 				resthost->oldpriority = resthost->priority;
 				ids[i].hostcount++;
-				idsoctets[i] += resthost->nextTraffic*estratio;
+				idsoctets[i] += resthost->nextTraffic * estratio;
 				riter = restHosts.erase(riter);
 				resthostcount--;
 				resthostcount += removedhosts.size();
 				rcount += removedhosts.size();
 				restHosts.insert(restHosts.end(), removedhosts.begin(), removedhosts.end());
 				acount++;
-			} else {
+			}
+			else {
 				if (ids[i].hosts.empty()) {
 					// all hosts were removed from IDS, and still the new host cannot be added ... do it anyway
 					PPDPRINTFL(MSG_DEBUG, "PriorityPacketSelector:success, inserting host %s to IDS %d, although it's got too much traffic", IPToString(ntohl(resthost->ip)).c_str(), i);
 					ids[i].hosts.push_back(resthost);
 					resthost->startMon = curtime;
 					ids[i].hostcount++;
-					idsoctets[i] += resthost->nextTraffic*estratio;
+					idsoctets[i] += resthost->nextTraffic * estratio;
 					riter = restHosts.erase(riter);
 					resthostcount--;
 					resthostcount += removedhosts.size();
 					rcount += removedhosts.size();
 					restHosts.insert(restHosts.end(), removedhosts.begin(), removedhosts.end());
 					acount++;
-				} else {
+				}
+				else {
 					// failure - go to next host
 					PPDPRINTFL(MSG_DEBUG, "PriorityPacketSelector: failure, on to next host", IPToString(ntohl(resthost->ip)).c_str(), i);
-					ids[i].hosts.insert(ids[i].hosts.begin(), removedhosts.begin(), removedhosts.end());
+					ids[i].hosts.insert(ids[i].hosts.begin(), removedhosts.begin(),
+							removedhosts.end());
 					ids[i].hostcount += removedhosts.size();
 					idsoctets[i] += remoctets;
-#ifdef DEBUG
-					for (list<HostData*>::iterator miter = ids[i].hosts.begin(); miter!=ids[i].hosts.end(); miter++) {
-						PPDPRINTFL(MSG_VDEBUG, "PriorityPacketSelector: IDS %d: %s", i, IPToString(ntohl((*miter)->ip)).c_str());
-					}
-					for (list<HostData*>::iterator miter = restHosts.begin(); miter!=restHosts.end(); miter++) {
+//#ifdef DEBUG
+
+	/*				for (list<HostData*>::iterator miter = restHosts.begin(); miter!=restHosts.end(); miter++) {
 						PPDPRINTFL(MSG_VDEBUG, "PriorityPacketSelector: restHosts: %s", IPToString(ntohl((*miter)->ip)).c_str());
-					}
-#endif
+					}*/
+//#endif
 				}
 			}
 			riter++;
 		}
 
-		ids[i].expOctets = (double)idsoctets[i];
+		ids[i].expOctets = (double) idsoctets[i];
 		msg(MSG_DEBUG, "PriorityPacketSelector: IDS %u, hosts %u (+%u,-%u), est.load %llu, act.load %llu, max load %llu, contrdropped %llu, dropped %llu, max qu %u, cur qu %u",
 				i, ids[i].hosts.size(), acount, rcount, ids[i].expOctets, ids[i].curForwOct, ids[i].maxOctets, ids[i].controlDropOct, ids[i].curDropOct, ids[i].maxQueueSize, ids[i].curQueueSize);
 	}
@@ -519,77 +516,84 @@ void PriorityPacketSelector::assignHosts2IDS()
 	msg(MSG_DEBUG, "PriorityPacketSelector: discarded %llu bytes", docts);
 }
 
-
 void PriorityPacketSelector::setIpConfig()
 {
 	// wait until the hostdata structure has been processed
-	while (newPacketHostInfo) {};
+	while (newPacketHostInfo) {
+	};
 
 	HostHashtable* hh = new HostHashtable;
 
-	for (uint32_t i=0; i<numberOfQueues; i++) {
-		list<HostData*>::iterator iter = ids[i].hosts.begin();
-		for (list<HostData*>::iterator iter = ids[i].hosts.begin(); iter!=ids[i].hosts.end(); iter++) {
-			(*hh)[htonl((*iter)->ip)] = SelectorHostData(i);
-		}
-	}
-
 	// build tables for PCAPExporterMem and its fast removal
 	PacketHostInfo** philist = new PacketHostInfo*[numberOfQueues];
-	for (uint32_t idsidx=0; idsidx<numberOfQueues; idsidx++) {
+	for (uint32_t idsidx = 0; idsidx < numberOfQueues; idsidx++) {
 		PacketHostInfo* phi = new PacketHostInfo;
 		phi->sortedHosts = ids[idsidx].hosts;
-		phi->sortedHosts.sort(smallerpriothan);
+		phi->sortedHosts.sort(greaterpriothan);
+
+		uint32_t hidx = 0;
+		for (list<HostData*>::iterator iter = phi->sortedHosts.begin(); iter != phi->sortedHosts.end(); iter++) {
+			SelectorHostData shd = SelectorHostData(idsidx);
+			(*iter)->id = hidx++;
+			shd.hostid = (*iter)->id;
+			(*hh)[htonl((*iter)->ip)] = shd;
+		}
+
 		phi->currentHost = 0;
+		phi->hostCount = hidx;
 		phi->selectorData = hh;
 		phi->controlDropped = 0;
-		phi->dropModulo = 1;
-		if (!packetHostInfo || !packetHostInfo[idsidx])
-			phi->salt = 1;
-		else
-			phi->salt = packetHostInfo[idsidx]->salt + 1;
+		phi->maxHostId = hidx - 1;
 		philist[idsidx] = phi;
+
+		/*printf("IDS %d: \n", idsidx);
+		for (list<HostData*>::iterator miter = phi->sortedHosts.begin(); miter!=phi->sortedHosts.end(); miter++) {
+			printf("%s(%.2f) ", IPToString(ntohl((*miter)->ip)).c_str(), (*miter)->priority);
+		}
+		printf("\n");*/
+
 	}
 	newPacketHostInfo = philist;
 }
 
-
 void PriorityPacketSelector::updateEstRatio()
 {
 	// update control system for each IDS
-	for (uint32_t i=0; i<numberOfQueues; i++) {
+	for (uint32_t i = 0; i < numberOfQueues; i++) {
 		double w = ids[i].expOctets;
-		if (w>0) {
-			double y = ids[i].curForwOct+ids[i].curDropOct+ids[i].controlDropOct;
-			double e = w-y;
-			double u = ids[i].kp*e;
-			double d = -u/w;
-			if (fabs(d)>0.01) d = (d>0 ? 0.01 : -0.01);
+		if (w > 0) {
+			double y = ids[i].curForwOct + ids[i].curDropOct + ids[i].controlDropOct;
+			double e = w - y;
+			double u = ids[i].kp * e;
+			double d = -u / w;
+			if (fabs(d) > 0.01)
+				d = (d > 0 ? 0.01 : -0.01);
 			ids[i].estRatio += d;
-			if (ids[i].estRatio<0) ids[i].estRatio -= d;
+			if (ids[i].estRatio < 0)
+				ids[i].estRatio -= d;
 			msg(MSG_DEBUG, "PriorityPacketSelector: est. ratio for IDS %u = %.3f (+=%.3f), e=%.0f, u=%.3f", i, ids[i].estRatio, d, e, u);
 		}
 	}
 }
 
-
 void PriorityPacketSelector::updateData(list<IDSLoadStatistics>& lstats)
 {
 	list<IDSLoadStatistics>::iterator iter = lstats.begin();
 	// ProcessStatisticsProvider only provides the sum of dropped octets/packets, get actual value of last interval
-	for (uint32_t i=0; i<numberOfQueues; i++) {
-		ids[i].curDropOct = iter->droppedOctets-ids[i].lastDropOct;
+	for (uint32_t i = 0; i < numberOfQueues; i++) {
+		ids[i].curDropOct = iter->droppedOctets - ids[i].lastDropOct;
 		ids[i].lastDropOct = iter->droppedOctets;
-		ids[i].curDropPkt = iter->droppedPackets-ids[i].lastDropPkt;
+		ids[i].curDropPkt = iter->droppedPackets - ids[i].lastDropPkt;
 		ids[i].lastDropPkt = iter->droppedPackets;
-		ids[i].curForwOct = iter->forwardedOctets-ids[i].lastForwOct;
+		ids[i].curForwOct = iter->forwardedOctets - ids[i].lastForwOct;
 		ids[i].lastForwOct = iter->forwardedOctets;
-		ids[i].curForwPkt = iter->forwardedPackets-ids[i].lastForwPkt;
+		ids[i].curForwPkt = iter->forwardedPackets - ids[i].lastForwPkt;
 		ids[i].lastForwPkt = iter->forwardedPackets;
 		ids[i].curQueueSize = iter->curQueueSize;
 		ids[i].maxQueueSize = iter->maxQueueSize;
 		ids[i].controlDropOct = 0;
-		if (packetHostInfo && packetHostInfo[i]) ids[i].controlDropOct = packetHostInfo[i]->controlDropped;
+		if (packetHostInfo && packetHostInfo[i])
+			ids[i].controlDropOct = packetHostInfo[i]->controlDropped;
 		iter++;
 	}
 
@@ -600,7 +604,6 @@ void PriorityPacketSelector::updateData(list<IDSLoadStatistics>& lstats)
 	assignHosts2IDS();
 	setIpConfig();
 }
-
 
 void PriorityPacketSelector::start()
 {
@@ -620,22 +623,22 @@ void PriorityPacketSelector::setUpdateInterval(uint32_t ms)
 
 void PriorityPacketSelector::queueUtilization(uint32_t queueid, uint32_t maxsize, uint32_t cursize)
 {
-	if ((maxsize>>1)<cursize) {
+	if ((maxsize >> 1) < cursize) {
 		// queue half full, increase modulo ratio
 
-		msg(MSG_INFO, "drop modulo for queue id %u: %u", queueid, packetHostInfo[queueid]->dropModulo);
-		if (packetHostInfo[queueid]->dropModulo==0xF0000000) {
-			msg(MSG_INFO, "drop modulo for queue id %u already at maximum!", queueid);
+		msg(MSG_INFO, "max id for queue id %u: %u (host count: %u", queueid, packetHostInfo[queueid]->maxHostId, packetHostInfo[queueid]->hostCount);
+		if (packetHostInfo[queueid]->maxHostId == 1) {
+			msg(MSG_INFO, "maxHostId for queue id %u already at minimum (==1)!", queueid);
 			return;
 		}
-		packetHostInfo[queueid]->dropModulo <<= 1;
-		msg(MSG_INFO, "increasing drop modulo for queue id %u to %u", queueid, packetHostInfo[queueid]->dropModulo);
+		packetHostInfo[queueid]->maxHostId >>= 1;
+		msg(MSG_INFO, "increasing drop ratio for queue id %u to %.3f", queueid, (double)packetHostInfo[queueid]->hostCount/packetHostInfo[queueid]->maxHostId);
 	}
 }
 
-
-bool PriorityPacketSelector::wasIpDropped(uint32_t queueid, uint32_t ip)
+bool PriorityPacketSelector::wasHostDropped(HostData* host)
 {
-	if (!packetHostInfo || !packetHostInfo[queueid]) return false;
-	return (packetHostInfo[queueid]->dropModulo>1) && ((ip^packetHostInfo[queueid]->salt)%packetHostInfo[queueid]->dropModulo!=0);
+	if (!packetHostInfo || !packetHostInfo[host->assignedIdsId])
+		return false;
+	return (host->id > packetHostInfo[host->assignedIdsId]->maxHostId);
 }

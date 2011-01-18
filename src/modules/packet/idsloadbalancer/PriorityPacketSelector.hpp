@@ -40,6 +40,7 @@ struct HostData
 	int16_t assignedIdsId; /**< -1 if not assigned */
 	uint64_t nextTraffic; // estimation!
 	uint64_t lastTraffic;
+	uint32_t id; /**< sorted id for this queue, used for fast dropping */
 
 	struct timeval startMon; /**< time when host was assigned for monitoring */
 
@@ -51,6 +52,7 @@ struct HostData
 /**
  * included in Packets sent to PCAPExporterMem and IpPacketSelector
  * is also manipulated by that class
+ * one instance per queue is created
  */
 struct PacketHostInfo
 {
@@ -58,8 +60,8 @@ struct PacketHostInfo
 	list<HostData*> sortedHosts;
 	list<HostData*> removedHosts;
 	HostHashtable* selectorData;
-	uint32_t dropModulo;
-	uint32_t salt;
+	uint32_t maxHostId;
+	uint32_t hostCount;
 	uint64_t controlDropped;
 };
 
@@ -167,7 +169,7 @@ private:
 	void setIpConfig();
 	void updateIDSMaxRate();
 	void updateEstRatio();
-	bool wasIpDropped(uint32_t queueid, uint32_t ip);
+	bool wasHostDropped(HostData* host);
 };
 
 

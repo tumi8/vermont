@@ -71,7 +71,7 @@ int IpPacketSelector::decide(Packet *p)
 			if (res != hosts->end()) {
 				int qid = res->second.queueid;
 				PacketHostInfo* ph = phi[qid];
-				if (ph->dropModulo>1 && (((ntohl(src)^ph->salt)%ph->dropModulo)!=0)) {
+				if (res->second.hostid>ph->maxHostId) {
 					ph->controlDropped += p->data_length;
 					break;
 				}
@@ -83,7 +83,7 @@ int IpPacketSelector::decide(Packet *p)
 			if (res != hosts->end()) {
 				int qid = res->second.queueid;
 				PacketHostInfo* ph = phi[qid];
-				if (ph->dropModulo>1 && (((ntohl(dst)^ph->salt)%ph->dropModulo)!=0)) {
+				if (res->second.hostid>ph->maxHostId) {
 					ph->controlDropped += p->data_length;
 					break;
 				}
