@@ -47,7 +47,7 @@ public:
 				if (enterpriseNumber == 0 && ipfixid->pen != 0) {
 					// enterprise number is missing in configuration
 					enterpriseNumber = ipfixid->pen; 
-					msg(MSG_DIALOG, "InfoElementCfg: %s configured without enterprise number, continue with enterprise number %u.", ieName.c_str(), enterpriseNumber);
+					msg(MSG_INFO, "InfoElementCfg: %s configured without enterprise number, continue with enterprise number %u.", ieName.c_str(), enterpriseNumber);
 				} else if (enterpriseNumber != ipfixid->pen) {
 					// enterprise numbers do not match
 					THROWEXCEPTION("InfoElementCfg: %s is configured with enterprise number %u, but %u is expected.", ieName.c_str(), enterpriseNumber, ipfixid->pen);
