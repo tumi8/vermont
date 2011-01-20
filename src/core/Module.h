@@ -5,7 +5,6 @@
 	@author Peter Baumann <siprbaum@users.berlios.de>
 */
 
-#include "Source.h"
 #include "common/Sensor.h"
 
 using namespace std;

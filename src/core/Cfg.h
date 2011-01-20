@@ -4,7 +4,6 @@
 #include "core/XMLElement.h"
 #include "core/Module.h"
 #include "core/ConnectionQueue.h"
-#include "core/ConnectionSplitter.h"
 #include "core//Timer.h"
 
 #include <exception>
@@ -188,7 +187,6 @@ public:
 	CfgHelper(XMLElement* elem, std::string name, bool freeInstance = true)
 		: Cfg(elem),
 		instance(NULL),
-		splitter(NULL),
 		queue(NULL),
 		notifiable(NULL),
 		name(name),
@@ -202,7 +200,6 @@ public:
 		shutdown(false);
 		freeTimeoutAdapter();
 		freeInstance();
-		freeSplitter();
 	}
 
 	virtual std::string getName()
@@ -214,11 +211,9 @@ public:
 	virtual void start(bool fail_if_already_running = true)
 	{
 		// create instance, if not already present
-		if ((splitter==NULL) && (instance==NULL) && (queue==NULL))
+		if ((instance==NULL) && (queue==NULL))
 			createInstance();
 
-		if (splitter)
-			splitter->start(fail_if_already_running);
 		if (instance)
 			instance->start(fail_if_already_running);
 		if (queue)
@@ -232,8 +227,6 @@ public:
 			queue->shutdown(fail_if_not_running, shutdownProperly);
 		if (instance)
 			instance->shutdown(fail_if_not_running, shutdownProperly);
-		if (splitter)
-			splitter->shutdown(fail_if_not_running, shutdownProperly);
 	}
 
 	/** returns the module instance (if neccessary, it will create it */
@@ -377,15 +370,7 @@ public:
 		//Gerhard: postReconfiguration() is now called in Module::start()
 		//this->postReconfiguration();
 
-		// check if we need a splitter
-		if (this->getNext().size() > 1) {
-			if (!splitter) {
-				splitter = new ConnectionSplitter<typename InstanceType::src_value_type>();
-				instance->connectTo(splitter);
-			}
-			splitter->connectTo(dest);
-		} else
-			instance->connectTo(dest);
+		instance->connectTo(dest);
 	}
 
 	/** disconnect the instances and deletes an automaticly created splitter */
@@ -408,8 +393,6 @@ public:
 		// this will disconnect either the splitter or the other module
 		if (instance)
 			instance->disconnect();
-
-		freeSplitter();
 	}
 
 	/** helper method to transfer one instance to another Cfg
@@ -461,7 +444,6 @@ protected:
 
 	InstanceType* instance;
 
-	ConnectionSplitter<typename InstanceType::src_value_type>* splitter;
 	ConnectionQueue<typename InstanceType::dst_value_type>* queue;
 
 	Notifiable* notifiable;
@@ -479,15 +461,6 @@ private:
 			return;
 		delete queue;
 		queue = NULL;
-	}
-
-	/** delete the splitter if any */
-	inline void freeSplitter()
-	{
-		if (!splitter)
-			return;
-		delete splitter;
-		splitter = NULL;
 	}
 };
 

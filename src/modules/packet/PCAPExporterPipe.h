@@ -23,6 +23,8 @@
 
 #include "core/Module.h"
 #include "PCAPExporterProcessBase.h"
+#include "core/Source.h"
+#include "core/Destination.h"
 
 #include <common/msg.h>
 

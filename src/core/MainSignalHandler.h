@@ -1,3 +1,8 @@
+
+/** @file
+ * file contains the main signal handler for Vermont
+ */
+
 #ifndef _MAIN_SIGNAL_HANDLER
 #define _MAIN_SIGNAL_HANDLER
 
@@ -6,6 +11,7 @@
 
 #include "common/VermontControl.h"
 #include "modules/ConfigManager.h"
+
 
 class MainSignalHandler : public SignalInterface 
 {

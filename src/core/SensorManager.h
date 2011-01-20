@@ -1,6 +1,12 @@
-#ifndef SENSORMANAGER_H_
-#define SENSORMANAGER_H_
+/** @file
+ * Contains the description of a destination for elements within the Vermont module graph
+ */
 
+#if !defined(SENSORMANAGER_H__)
+#define SENSORMANAGER_H__
+
+#include "core/Source.h"
+#include "core/Destination.h"
 #include "core/Module.h"
 #include "core/GraphInstanceSupplier.h"
 

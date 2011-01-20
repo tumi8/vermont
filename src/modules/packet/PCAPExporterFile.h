@@ -22,6 +22,8 @@
 #define _PCAP_EXPORTER_MODULE_H_
 
 #include "core/Module.h"
+#include "core/Destination.h"
+#include "core/Source.h"
 
 #include <common/msg.h>
 
@@ -31,7 +33,11 @@
 
 class Packet;
 
-class PCAPExporterFile : public Module, public Destination<Packet *>, public Source<Packet *>, public PCAPExporterBase
+class PCAPExporterFile
+	: public Module,
+	  public Destination<Packet *>,
+	  public Source<Packet *>,
+	  public PCAPExporterBase
 {
 public:
 	PCAPExporterFile(const std::string& file);

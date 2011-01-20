@@ -11,26 +11,51 @@
 #include "common/CountingSemaphore.h"
 #include "common/atomic_lock.h"
 
-
+#include "core/Module.h"
 #include "core/Destination.h"
 #include "core/Emitable.h"
+
+#include <vector>
+
+using namespace std;
 
 
 template <typename T>
 class Source
 {
+protected:
+	Mutex mutex;
+	CountingSemaphore connected;
+	bool disconnectInProgress;
+
+private:
+	alock_t syncLock; /**< is locked when an element is sent to next module or no next module is available */
+	bool hasSuccessor; /**< set to true if this module has a succeeding module */
+	vector<Destination<T>*> destinations;
+	uint32_t destinationSize;
+	vector<Module*> optDestinations;
+	uint32_t optDestinationSize;
+
 public:
 	typedef T src_value_type;
 
-	Source() : mutex(), connected(1), disconnectInProgress(false), syncLock(1), hasSuccessor(true), dest(NULL) { }
+	Source()
+		: mutex(),
+		  connected(1),
+		  disconnectInProgress(false),
+		  syncLock(1),
+		  hasSuccessor(true),
+		  destinationSize(0),
+		  optDestinationSize(0)
+	{ }
+
 	virtual ~Source() { }
 
 	virtual void connectTo(Destination<T>* destination)
 	{
 		mutex.lock();
-		if (dest)
-			THROWEXCEPTION("ERROR: already connected\n");
-		dest = destination;
+		destinations.push_back(destination);
+		destinationSize++;
 		connected.inc(1);
 		atomic_release(&syncLock);
 		mutex.unlock();
@@ -39,10 +64,9 @@ public:
 	void connectToNothing()
 	{
 		mutex.lock();
-		if (dest)
+		if (destinationSize>0 || optDestinationSize>0)
 			THROWEXCEPTION("ERROR: already connected\n");
 		hasSuccessor = false;
-		dest = NULL;
 		connected.inc(1);
 		atomic_release(&syncLock);
 		mutex.unlock();
@@ -56,7 +80,7 @@ public:
 		 *	  nothing prevents another thread to unconnect source from dest after
 		 *	  returning true in this method
 		 */
-		return dest != NULL;
+		return destinationSize>0;
 	}
 
 	virtual void disconnect()
@@ -71,7 +95,10 @@ public:
 				req.tv_nsec = 1000000;
 				nanosleep(&req, &req);
 			}
-			dest = NULL;
+			destinations.clear();
+			optDestinations.clear();
+			destinationSize = 0;
+			optDestinationSize = 0;
 			connected.dec(1);
 		}
 
@@ -88,6 +115,7 @@ public:
 			connected.inc(2);
 		return retval;
 	}
+
 	inline bool send(T t){
 		return send(t, -1);
 	}
@@ -100,11 +128,15 @@ public:
 				return false;
 			}
 		}
-		if (hasSuccessor){
-			if(id < 0 )
-				dest->receive(t);
-			else
-				dest->receive(t, id);
+		if (destinationSize>0) {
+			if (id < 0) {
+				if (destinationSize>1) t->addReference(destinationSize-1);
+				for (uint32_t i=0; i<destinationSize; i++) {
+					destinations[i]->receive(t);
+				}
+			} else {
+				destinations[id]->receive(t);
+			}
 		}
 		else {
 			// we don't have a succeeding module, so clean up this data element
@@ -117,12 +149,13 @@ public:
 
 	Destination<T>* getSucceedingModuleInstance(int id)
 	{
-		return dest->getModuleInstance(id);
+		if (id<0 || id>=(int)destinationSize) THROWEXCEPTION("Source::getSucceedingModuleInstance() got invalid id (%d)", id);
+		return destinations[id];
 	}
 
 	int getSucceedingModuleCount()
 	{
-		return dest->getModuleCount();
+		return destinationSize;
 	}
 
 	// Subsequent modules that do not have
@@ -134,7 +167,9 @@ public:
 		bool c = false;
 		mutex.lock();		
 		if (isConnected()) {
-			dest->notifyQueueRunning();
+			for (uint32_t i=0; i<destinationSize; i++) {
+				destinations[i]->notifyQueueRunning();
+			}
 			c = true;
 		}
 		mutex.unlock();
@@ -151,16 +186,6 @@ public:
 	{
 		atomic_release(&syncLock);
 	}
-
-protected:
-	Mutex mutex;
-	CountingSemaphore connected;
-	bool disconnectInProgress;
-
-private:
-	alock_t syncLock; /**< is locked when an element is sent to next module or no next module is available */
-	bool hasSuccessor; /**< set to true if this module has a succeeding module */
-	Destination<T>* dest;
 };
 
 template <> inline void Source<NullEmitable *>::sendQueueRunningNotification() { }
