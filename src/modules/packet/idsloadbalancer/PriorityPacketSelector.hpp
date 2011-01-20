@@ -131,15 +131,25 @@ public:
 	PriorityPacketSelector(list<PriorityNetConfig>& pnc, double startprio, struct timeval minmontime);
 	virtual ~PriorityPacketSelector();
 	virtual int decide(Packet *p);
-	virtual void updateData(list<IDSLoadStatistics>& lstats);
+	virtual void updateData(struct timeval curtime, list<IDSLoadStatistics>& lstats);
 	virtual void setQueueCount(uint32_t n);
 	virtual void setUpdateInterval(uint32_t ms);
 	virtual void start();
 	virtual void stop();
 	void queueUtilization(uint32_t queueid, uint32_t maxsize, uint32_t cursize);
+	virtual void setFlowExporter(Destination<IpfixRecord*>* di);
 
 
 private:
+
+	struct IpfixData {
+		uint32_t ip;
+		uint8_t monitored;
+		uint64_t octets;
+		uint64_t flowStartTime;
+		uint64_t flowEndTime;
+	};
+
 	static const uint32_t WARN_HOSTCOUNT;
 
 	list<PriorityNetConfig> config;
@@ -153,6 +163,7 @@ private:
 	struct timeval minMonTime; /**< minimal monitoring time in milliseconds */
 	uint64_t discardOctets;
 	struct timeval startTime;
+	struct timeval roundStart;
 	uint32_t updateInterval; /**< update interval in ms */
 	PacketHostInfo** packetHostInfo;
 	PacketHostInfo** newPacketHostInfo;
@@ -160,6 +171,12 @@ private:
 	list<HostData*> restHosts; /**< hosts that are currently not monitored */
 	vector<IDSData> ids;
 	uint64_t round;
+	Destination<IpfixRecord*>* flowExporter;
+
+	boost::shared_ptr<IpfixRecord::SourceID> sourceId;
+	boost::shared_ptr<TemplateInfo> templateInfo;
+
+	static InstanceManager<IpfixDataRecord> dataRecordIM;
 
 	uint32_t insertSubnet(uint32_t subnet, uint8_t maskbits, double weight);
 	void updateTrafficEstimation();
@@ -170,6 +187,8 @@ private:
 	void updateIDSMaxRate();
 	void updateEstRatio();
 	bool wasHostDropped(HostData* host);
+
+
 };
 
 

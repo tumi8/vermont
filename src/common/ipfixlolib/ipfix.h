@@ -194,7 +194,7 @@ extern "C" {
  * 1: the preceding information element in the data record was anonymised
  */
 #define IPFIX_ETYPEID_anonymisationType				9
-
+#define IPFIX_ETYPEID_monitored						10
 
 
 #define IPFIX_LENGTH_ipVersion                      IPFIX_LENGTH_octet
@@ -307,6 +307,7 @@ extern "C" {
 #define IPFIX_ELENGTH_maxPacketGap					IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_frontPayloadPktCount			IPFIX_LENGTH_unsigned32
 #define IPFIX_ELENGTH_anonymisationType				IPFIX_LENGTH_octet
+#define IPFIX_ELENGTH_monitored						IPFIX_LENGTH_octet
 
 #define MAX_MSG_LEN   65536
 

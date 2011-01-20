@@ -37,7 +37,8 @@ IDSLoadbalancer::IDSLoadbalancer(BasePacketSelector* _selector, uint64_t updatei
 	  qcount(0),
 	  thread(threadWrapper),
 	  shutdownThread(false),
-	  updateInterval(updateinterval)
+	  updateInterval(updateinterval),
+	  ipfixModule(0)
 {
 	ppselector = dynamic_cast<PriorityPacketSelector*>(selector);
 }
@@ -55,24 +56,36 @@ void IDSLoadbalancer::performStart()
 	msg(MSG_INFO, "Started IDSLoadbalancer with the following parameters:");
 	msg(MSG_INFO, "  - PacketSelector = %s", selector->getName().c_str());
 	qcount = getSucceedingModuleCount();
-	selector->setQueueCount(qcount);
-	msg(MSG_INFO, "  - QueueCount = %d", qcount);
-	msg(MSG_INFO, "  - updateInterval = %.03fs", (float)updateInterval/1000);
-	selector->setUpdateInterval(updateInterval);
 
+	// analyze succeding modules and
+	// determine whether we also have an IPFIX flow receiving module (used for exporting load balancing status)
 	for (uint32_t i=0; i<qcount; i++) {
-		PCAPExporterMem* pem = dynamic_cast<PCAPExporterMem*>(getSucceedingModuleInstance(i));
-		if (pem) {
-			msg(MSG_INFO, "IDSLoadbalancer: detected PCAPExporterMem module at queue %u", i);
-			pem->setExporterNotificationHandler(this);
+		Destination<Packet*>* dp = dynamic_cast<Destination<Packet*>*>(getSucceedingModuleInstance(i));
+		if (dp) {
+			PCAPExporterMem* pem = dynamic_cast<PCAPExporterMem*>(getSucceedingModuleInstance(i));
+			if (pem) {
+				msg(MSG_INFO, "IDSLoadbalancer: detected PCAPExporterMem module at queue %u", i);
+				pem->setExporterNotificationHandler(this);
+			}
+			packetModuleIds.push_back(i);
+		} else {
+			Destination<IpfixRecord*>* di = dynamic_cast<Destination<IpfixRecord*>*>(getSucceedingModuleInstance(i));
+			if (di) {
+				if (ipfixModule) THROWEXCEPTION("IDSLoadbalancer: detected more than one succeeding IPFIX receiving module, this is not supported!");
+				ipfixModule = di;
+				msg(MSG_INFO, "IDSLoadbalancer: detected IPFIX flow receiving module");
+			}
 		}
 	}
+	qcount = packetModuleIds.size();
 
-	Destination<Packet*>* m = getSucceedingModuleInstance(0);
-	PCAPExporterMem* pem = dynamic_cast<PCAPExporterMem*>(m);
-	if (!pem)
-		THROWEXCEPTION("IDSLoadbalancer: not expected succeding module type PCAPExporterMem");
+	selector->setQueueCount(qcount);
+	selector->setFlowExporter(ipfixModule);
 
+	msg(MSG_INFO, "  - queue count = %d", qcount);
+	msg(MSG_INFO, "  - updateInterval = %.03fs", (float)updateInterval/1000);
+
+	selector->setUpdateInterval(updateInterval);
 
 	shutdownThread = false;
 	if (updateInterval>0) thread.run(this);
@@ -87,6 +100,9 @@ void IDSLoadbalancer::performShutdown()
 	thread.join();
 
 	selector->stop();
+
+	ipfixModule = NULL;
+	packetModuleIds.clear();
 }
 
 
@@ -97,7 +113,7 @@ void IDSLoadbalancer::receive(Packet* packet)
 		DPRINTFL(MSG_VDEBUG, "Dropping packet");
 		packet->removeReference();
 	} else {
-		send(packet, curPacketQueueID);
+		send(packet, packetModuleIds[curPacketQueueID]);
 	}
 }
 
@@ -116,12 +132,14 @@ void IDSLoadbalancer::updateWorker()
 	struct timeval nextint;
 	addToCurTime(&nextint, updateInterval);
 	while (!shutdownThread) {
+		struct timeval curtime;
+		gettimeofday(&curtime, 0);
+
 		msg(MSG_DEBUG, "IDSLoadbalancer: worker started work");
-		updateBalancingLists();
+		updateBalancingLists(curtime);
 		msg(MSG_DEBUG, "IDSLoadbalancer: worker finished work");
 
 		struct timeval difftime;
-		struct timeval curtime;
 		gettimeofday(&curtime, 0);
 		if (timeval_subtract(&difftime, &nextint, &curtime)!=1) {
 			// restart nanosleep with the remaining sleep time
@@ -134,7 +152,7 @@ void IDSLoadbalancer::updateWorker()
 	}
 }
 
-void IDSLoadbalancer::updateBalancingLists()
+void IDSLoadbalancer::updateBalancingLists(struct timeval curtime)
 {
 	list<IDSLoadStatistics> stats;
 
@@ -161,7 +179,7 @@ void IDSLoadbalancer::updateBalancingLists()
 			stats.back().curQueueSize = cursize;
 		}
 	}
-	selector->updateData(stats);
+	selector->updateData(curtime, stats);
 }
 
 void IDSLoadbalancer::queueUtilization(uint32_t maxsize, uint32_t cursize)

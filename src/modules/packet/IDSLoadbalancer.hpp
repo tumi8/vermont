@@ -24,6 +24,7 @@
 #include "core/Module.h"
 #include "idsloadbalancer/HashPacketSelector.hpp"
 #include "idsloadbalancer/IpPacketSelector.hpp"
+#include "modules/ipfix/IpfixRecord.hpp"
 #include "PCAPExporterMem.h"
 
 #include <common/msg.h>
@@ -56,10 +57,12 @@ private:
 	bool shutdownThread;
 	uint64_t updateInterval; /**< update interval in milliseconds of internal IP address list (if needed) */
 	int curPacketQueueID;
+	vector<uint32_t> packetModuleIds;
+	Destination<IpfixRecord*>* ipfixModule;
 
 	static void* threadWrapper(void* data);
 	void updateWorker();
-	void updateBalancingLists();
+	void updateBalancingLists(struct timeval curtime);
 };
 
 #endif

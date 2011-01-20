@@ -22,6 +22,7 @@
 #define BASE_PACKET_SELECTOR_HPP
 
 #include "modules/packet/Packet.h"
+#include "modules/ipfix/IpfixRecord.hpp"
 #include "IDSLoadStatistics.hpp"
 
 #define SRC_ADDRESS_OFFSET 12
@@ -42,8 +43,9 @@ class BasePacketSelector {
 		 * @returns ID of queue where packet should be inserted. If it is to be dropped, -1 is returned
 		 */
 		virtual int decide(Packet *p) = 0;
-		virtual void updateData(list<IDSLoadStatistics>& lstats) {}
+		virtual void updateData(struct timeval curtime, list<IDSLoadStatistics>& lstats) {}
 		virtual void setUpdateInterval(uint32_t ms) {}
+		virtual void setFlowExporter(Destination<IpfixRecord*>* di) {}
 		virtual string getName();
 		virtual void start() {}
 		virtual void stop() {}

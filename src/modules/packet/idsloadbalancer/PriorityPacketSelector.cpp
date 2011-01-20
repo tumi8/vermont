@@ -26,6 +26,8 @@
 
 const uint32_t PriorityPacketSelector::WARN_HOSTCOUNT = 1 << 22;
 
+InstanceManager<IpfixDataRecord> PriorityPacketSelector::dataRecordIM("PriorityPacketSelector", 0);
+
 //#define PPDPRINTFL(lvl, fmt, args...)  msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
 #define PPDPRINTFL(lvl, fmt, args...)
 
@@ -57,10 +59,20 @@ bool HostData::belowMinMonTime(struct timeval& tv, struct timeval& minmontime)
  * @param pnc expected in order of decreasing bits in the mask!
  */
 PriorityPacketSelector::PriorityPacketSelector(list<PriorityNetConfig>& pnc, double startprio,
-		struct timeval minmontime) :
-	BasePacketSelector("PriorityPacketSelector"), config(pnc), hostCount(0), startPrio(startprio),
-			minMonTime(minmontime), discardOctets(0), updateInterval(0), packetHostInfo(0),
-			newPacketHostInfo(0), round(0)
+		struct timeval minmontime)
+	: BasePacketSelector("PriorityPacketSelector"),
+	  config(pnc),
+	  hostCount(0),
+	  startPrio(startprio),
+	  minMonTime(minmontime),
+	  discardOctets(0),
+	  updateInterval(0),
+	  packetHostInfo(0),
+	  newPacketHostInfo(0),
+	  round(0),
+	  flowExporter(0),
+	  sourceId(new IpfixRecord::SourceID),
+	  templateInfo(new TemplateInfo)
 {
 	msg(MSG_INFO, "PriorityPacketSelector: Creating host priority entries ...");
 
@@ -83,6 +95,36 @@ PriorityPacketSelector::PriorityPacketSelector(list<PriorityNetConfig>& pnc, dou
 		masks.push_back(htonl(iter->mask));
 	}
 	ipSelector.setSubnets(subnets, masks);
+
+	roundStart.tv_sec = 0;
+	roundStart.tv_usec = 0;
+
+	// TODO: make this configurable!
+	sourceId->observationDomainId = 999;
+
+	// build template when statistics flows need to be sent
+	InformationElement::IeInfo recordtypes[] = {
+			InformationElement::IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0),
+			InformationElement::IeInfo(IPFIX_ETYPEID_monitored, IPFIX_PEN_vermont),
+			InformationElement::IeInfo(IPFIX_TYPEID_packetDeltaCount, 0),
+			InformationElement::IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0),
+			InformationElement::IeInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0)
+	};
+
+	templateInfo->templateId = 9999;
+	templateInfo->setId = TemplateInfo::IpfixTemplate;
+	templateInfo->fieldCount = 2;
+	templateInfo->fieldInfo = new TemplateInfo::FieldInfo[ARRAY_SIZE(recordtypes)];
+
+	uint16_t offset = 0;
+	for (uint32_t i=0; i<ARRAY_SIZE(recordtypes); i++) {
+		const struct ipfix_identifier* ident = ipfix_id_lookup(recordtypes[i].id, recordtypes[i].enterprise);
+		templateInfo->fieldInfo[i].type = recordtypes[i];
+		templateInfo->fieldInfo[i].offset = offset;
+		offset += ident->length;
+		templateInfo->fieldInfo[i].privDataOffset = 0;
+		templateInfo->fieldInfo[i].isVariableLength = false;
+	}
 }
 
 PriorityPacketSelector::~PriorityPacketSelector()
@@ -330,6 +372,10 @@ void PriorityPacketSelector::updatePriorities()
 	// update priorities of monitored hosts
 	double curpriosum = 0;
 	uint32_t count = 0;
+	uint64_t roundstart = (uint64_t)roundStart.tv_sec*1000+roundStart.tv_usec/1000;
+	struct timeval curtime;
+	gettimeofday(&curtime, 0);
+	uint64_t roundend = (uint64_t)curtime.tv_sec*1000+curtime.tv_usec/1000;
 	for (vector<HostData*>::iterator iter = sortedhosts.begin(); iter != sortedhosts.end(); iter++) {
 		if (count <= maxHostPrioChange) {
 			PPDPRINTFL(MSG_VDEBUG, "PriorityPacketSelector: old priority of monitored host %s: %.2f", IPToString(htonl((*iter)->ip)).c_str(), (double)(*iter)->priority);
@@ -337,9 +383,26 @@ void PriorityPacketSelector::updatePriorities()
 		}
 
 		// only decrease priority if this host was not forcibly removed from the last monitoring interval
-		if (round > 0 && !wasHostDropped(*iter)) {
+		bool hostdropped = wasHostDropped(*iter);
+		if (round > 0 && !hostdropped) {
 			curpriosum += (*iter)->priority;
 			count++;
+		}
+
+		if (flowExporter && roundStart.tv_sec>0) {
+			IpfixDataRecord* record = dataRecordIM.getNewInstance();
+			record->sourceID = sourceId;
+			record->templateInfo = templateInfo;
+			record->dataLength = sizeof(IpfixData);
+			boost::shared_array<IpfixRecord::Data> data = boost::shared_array<IpfixRecord::Data>(new IpfixRecord::Data[sizeof(IpfixData)]);
+			record->message = data;
+			record->data = data.get();
+			IpfixData* idata = reinterpret_cast<IpfixData*>(data.get());
+			idata->ip = (*iter)->ip;
+			idata->monitored = !hostdropped;
+			idata->octets = (*iter)->lastTraffic;
+			idata->flowStartTime = roundstart;
+			idata->flowEndTime = roundend;
 		}
 	}
 
@@ -576,7 +639,7 @@ void PriorityPacketSelector::updateEstRatio()
 	}
 }
 
-void PriorityPacketSelector::updateData(list<IDSLoadStatistics>& lstats)
+void PriorityPacketSelector::updateData(struct timeval curtime, list<IDSLoadStatistics>& lstats)
 {
 	list<IDSLoadStatistics>::iterator iter = lstats.begin();
 	// ProcessStatisticsProvider only provides the sum of dropped octets/packets, get actual value of last interval
@@ -603,6 +666,7 @@ void PriorityPacketSelector::updateData(list<IDSLoadStatistics>& lstats)
 	updatePriorities();
 	assignHosts2IDS();
 	setIpConfig();
+	gettimeofday(&roundStart, 0);
 }
 
 void PriorityPacketSelector::start()
@@ -638,7 +702,12 @@ void PriorityPacketSelector::queueUtilization(uint32_t queueid, uint32_t maxsize
 
 bool PriorityPacketSelector::wasHostDropped(HostData* host)
 {
-	if (!packetHostInfo || !packetHostInfo[host->assignedIdsId])
+	if (!packetHostInfo || host->assignedIdsId<0 || !packetHostInfo[host->assignedIdsId])
 		return false;
 	return (host->id > packetHostInfo[host->assignedIdsId]->maxHostId);
+}
+
+void PriorityPacketSelector::setFlowExporter(Destination<IpfixRecord*>* di)
+{
+	flowExporter = di;
 }
