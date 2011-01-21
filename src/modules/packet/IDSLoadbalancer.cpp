@@ -40,6 +40,7 @@ IDSLoadbalancer::IDSLoadbalancer(BasePacketSelector* _selector, uint64_t updatei
 	  updateInterval(updateinterval),
 	  ipfixModule(0)
 {
+	setAllowOptionalModules(true);
 	ppselector = dynamic_cast<PriorityPacketSelector*>(selector);
 }
 
@@ -67,17 +68,18 @@ void IDSLoadbalancer::performStart()
 				msg(MSG_INFO, "IDSLoadbalancer: detected PCAPExporterMem module at queue %u", i);
 				pem->setExporterNotificationHandler(this);
 			}
-			packetModuleIds.push_back(i);
-		} else {
-			Destination<IpfixRecord*>* di = dynamic_cast<Destination<IpfixRecord*>*>(getSucceedingModuleInstance(i));
-			if (di) {
-				if (ipfixModule) THROWEXCEPTION("IDSLoadbalancer: detected more than one succeeding IPFIX receiving module, this is not supported!");
-				ipfixModule = di;
-				msg(MSG_INFO, "IDSLoadbalancer: detected IPFIX flow receiving module");
-			}
 		}
 	}
-	qcount = packetModuleIds.size();
+
+
+	if (getSucceedingOptModuleCount()==1) {
+		ipfixModule = dynamic_cast<Destination<IpfixRecord*>*>(getSucceedingOptModuleInstance(0));
+		if (ipfixModule) {
+			msg(MSG_INFO, "IDSLoadbalancer: detected IPFIX flow receiving module");
+		}
+	} else if (getSucceedingOptModuleCount()>1) {
+		THROWEXCEPTION("IDSLoadbalancer: detected more than one succeeding IPFIX receiving module, this is not supported!");
+	}
 
 	selector->setQueueCount(qcount);
 	selector->setFlowExporter(ipfixModule);
@@ -97,12 +99,12 @@ void IDSLoadbalancer::performStart()
 void IDSLoadbalancer::performShutdown()
 {
 	shutdownThread = true;
+	selector->setShutdownFlag(true);
 	thread.join();
 
 	selector->stop();
 
 	ipfixModule = NULL;
-	packetModuleIds.clear();
 }
 
 
@@ -113,7 +115,7 @@ void IDSLoadbalancer::receive(Packet* packet)
 		DPRINTFL(MSG_VDEBUG, "Dropping packet");
 		packet->removeReference();
 	} else {
-		send(packet, packetModuleIds[curPacketQueueID]);
+		send(packet, curPacketQueueID);
 	}
 }
 

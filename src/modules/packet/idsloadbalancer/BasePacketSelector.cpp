@@ -22,7 +22,8 @@
 
 BasePacketSelector::BasePacketSelector(string name)
 	: numberOfQueues(0),
-	  name(name)
+	  name(name),
+	  shutdownFlag(false)
 {
 }
 BasePacketSelector::~BasePacketSelector()
@@ -37,4 +38,9 @@ void BasePacketSelector::setQueueCount(uint32_t n)
 string BasePacketSelector::getName()
 {
 	return name;
+}
+
+void BasePacketSelector::setShutdownFlag(bool flag)
+{
+	shutdownFlag = flag;
 }

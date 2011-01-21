@@ -148,7 +148,7 @@ private:
 		uint64_t octets;
 		uint64_t flowStartTime;
 		uint64_t flowEndTime;
-	};
+	} DISABLE_ALIGNMENT;
 
 	static const uint32_t WARN_HOSTCOUNT;
 
@@ -177,6 +177,7 @@ private:
 	boost::shared_ptr<TemplateInfo> templateInfo;
 
 	static InstanceManager<IpfixDataRecord> dataRecordIM;
+	static InstanceManager<IpfixTemplateRecord> templateRecordIM;
 
 	uint32_t insertSubnet(uint32_t subnet, uint8_t maskbits, double weight);
 	void updateTrafficEstimation();
@@ -187,7 +188,7 @@ private:
 	void updateIDSMaxRate();
 	void updateEstRatio();
 	bool wasHostDropped(HostData* host);
-
+	void sendFlowRecord(HostData* host, bool monitored, uint64_t starttime, uint64_t endtime);
 
 };
 

@@ -57,7 +57,6 @@ private:
 	bool shutdownThread;
 	uint64_t updateInterval; /**< update interval in milliseconds of internal IP address list (if needed) */
 	int curPacketQueueID;
-	vector<uint32_t> packetModuleIds;
 	Destination<IpfixRecord*>* ipfixModule;
 
 	static void* threadWrapper(void* data);

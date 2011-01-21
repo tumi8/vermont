@@ -46,6 +46,7 @@ class BasePacketSelector {
 		virtual void updateData(struct timeval curtime, list<IDSLoadStatistics>& lstats) {}
 		virtual void setUpdateInterval(uint32_t ms) {}
 		virtual void setFlowExporter(Destination<IpfixRecord*>* di) {}
+		virtual void setShutdownFlag(bool flag);
 		virtual string getName();
 		virtual void start() {}
 		virtual void stop() {}
@@ -53,6 +54,7 @@ class BasePacketSelector {
 	protected:
 		uint32_t numberOfQueues;
 		string name;
+		bool shutdownFlag;
 
 };
 
