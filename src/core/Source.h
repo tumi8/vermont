@@ -33,8 +33,14 @@ private:
 	bool hasSuccessor; /**< set to true if this module has a succeeding module */
 	vector<Destination<T>*> destinations;
 	uint32_t destinationSize;
+	/**
+	 * This vector stores optional modules that do not need to have correct element types for reception.
+	 * If they are allowed, no elements will be sent there through the normal module graph. This module
+	 * instance has to care for itself to send elements there (as well as ensure correct element types)
+	 */
 	vector<Module*> optDestinations;
 	uint32_t optDestinationSize;
+	bool allowOptionalModules;
 
 public:
 	typedef T src_value_type;
@@ -46,7 +52,8 @@ public:
 		  syncLock(1),
 		  hasSuccessor(true),
 		  destinationSize(0),
-		  optDestinationSize(0)
+		  optDestinationSize(0),
+		  allowOptionalModules(false)
 	{ }
 
 	virtual ~Source() { }
@@ -59,6 +66,28 @@ public:
 		connected.inc(1);
 		atomic_release(&syncLock);
 		mutex.unlock();
+	}
+
+
+	virtual void connectToOptional(Module* destination)
+	{
+		if (!allowOptionalModules)
+			THROWEXCEPTION("Source: internal error, optional error are not allowed for this module, but one would have been inserted nevertheless!");
+
+		mutex.lock();
+		optDestinations.push_back(destination);
+		optDestinationSize++;
+		mutex.unlock();
+	}
+
+	void setAllowOptionalModules(bool b)
+	{
+		allowOptionalModules = b;
+	}
+
+	bool optionalModulesAllowed()
+	{
+		return allowOptionalModules;
 	}
 
 	void connectToNothing()
@@ -156,6 +185,17 @@ public:
 	int getSucceedingModuleCount()
 	{
 		return destinationSize;
+	}
+
+	Module* getSucceedingOptModuleInstance(int id)
+	{
+		if (id<0 || id>=(int)optDestinationSize) THROWEXCEPTION("Source::getSucceedingOptModuleInstance() got invalid id (%d)", id);
+		return optDestinations[id];
+	}
+
+	int getSucceedingOptModuleCount()
+	{
+		return optDestinationSize;
 	}
 
 	// Subsequent modules that do not have

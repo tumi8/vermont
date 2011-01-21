@@ -360,17 +360,23 @@ public:
 				dest = dynamic_cast<Destination< typename InstanceType::src_value_type>* >
 					(other->getInstance());
 			}
-
-			if (!dest)
-				THROWEXCEPTION("Unexpected error: can't cast %s to matching Destination<>",
-						other->getName().c_str());
 		}
 
 		// call postReconfiguration(), e.g. to tell the module to resend its template
 		//Gerhard: postReconfiguration() is now called in Module::start()
 		//this->postReconfiguration();
 
-		instance->connectTo(dest);
+
+		if (!dest) {
+			if (instance->optionalModulesAllowed()) {
+				instance->connectToOptional(other->getInstance());
+			} else {
+				THROWEXCEPTION("Unexpected error: can't cast %s to matching Destination<>",
+					other->getName().c_str());
+			}
+		} else {
+			instance->connectTo(dest);
+		}
 	}
 
 	/** disconnect the instances and deletes an automaticly created splitter */
