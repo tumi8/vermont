@@ -55,6 +55,7 @@ struct IdsRule {
         uint32_t uid;
         uint8_t type;
         uint8_t source;
+	uint8_t mode;
 	uint32_t flag;
         string msg;
 };
@@ -82,6 +83,7 @@ class GenNode {
 	static void parse_order(string order);
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules)=0;
 	virtual void insertRule(IdsRule* rule,int depth)=0;
+	virtual void insertRevRule(IdsRule* rule,int depth)=0;
 	virtual ~GenNode() {};
 };
 
@@ -93,6 +95,7 @@ class ProtoNode : public GenNode {
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
+	virtual void insertRevRule(IdsRule* rule,int depth);
         ProtoNode();
 	~ProtoNode();
 };
@@ -103,6 +106,7 @@ class SrcIpNode : public GenNode {
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
+	virtual void insertRevRule(IdsRule* rule,int depth);
         SrcIpNode();
 	~SrcIpNode();
 };
@@ -113,6 +117,7 @@ class DstIpNode : public GenNode {
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
+	virtual void insertRevRule(IdsRule* rule,int depth);
         DstIpNode();
 	~DstIpNode();
 };
@@ -123,6 +128,7 @@ class SrcPortNode : public GenNode {
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
+	virtual void insertRevRule(IdsRule* rule,int depth);
         SrcPortNode();
 	~SrcPortNode();
 };
@@ -133,6 +139,7 @@ class DstPortNode : public GenNode {
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
+	virtual void insertRevRule(IdsRule* rule,int depth);
         DstPortNode();
         ~DstPortNode();
 };
@@ -142,6 +149,7 @@ class RuleNode : public GenNode {
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
+	virtual void insertRevRule(IdsRule* rule,int depth);
 	~RuleNode();
 };
 

@@ -64,6 +64,7 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesord
 	treeRoot=GenNode::newNode(0);
 	for(it=parsedRules.begin();it!=parsedRules.end();it++) {
 		treeRoot->insertRule(*it,0);
+		if((*it)->mode==1) treeRoot->insertRevRule(*it,0);
 	}
 }
 
@@ -221,6 +222,25 @@ void ProtoNode::insertRule(IdsRule* rule,int depth)
 	}
 }
 
+void ProtoNode::insertRevRule(IdsRule* rule,int depth) 
+{
+	if(rule->protocol==6) { //TCP
+		if(tcp==NULL) tcp=newNode(depth+1);
+		tcp->insertRevRule(rule,depth+1);
+	}
+        else if(rule->protocol==17) { //UDP
+		if(udp==NULL) udp=newNode(depth+1);
+		udp->insertRevRule(rule,depth+1);
+        }
+        else if(rule->protocol==1) { //ICMP
+		if(icmp==NULL) icmp=newNode(depth+1);
+		icmp->insertRevRule(rule,depth+1);
+	} else {
+		if(any==NULL) any=newNode(depth+1);
+		any->insertRevRule(rule,depth+1);
+	}
+}
+
 ProtoNode::~ProtoNode() 
 {
 	if(tcp!=NULL) delete tcp;
@@ -257,6 +277,28 @@ void SrcPortNode::insertRule(IdsRule* rule,int depth)
 		it=portmap.find(rule->srcPort);
 		if(it==portmap.end()) portmap[rule->srcPort]=newNode(depth+1);
 		portmap[rule->srcPort]->insertRule(rule,depth+1);
+	}
+}
+
+void DstPortNode::insertRevRule(IdsRule* rule,int depth) 
+{
+	if(rule->srcPort==0) {
+		if(any==NULL) any=newNode(depth+1);
+		any->insertRevRule(rule,depth+1);
+	}
+        else if((rule->srcPortEnd!=0)&&(rule->srcPort<=rule->srcPortEnd)) {
+            for(uint16_t port=rule->srcPort;port<=rule->srcPortEnd;port++) {
+                map<uint16_t,GenNode*>::iterator it;
+		it=portmap.find(port);
+		if(it==portmap.end()) portmap[port]=newNode(depth+1);
+		portmap[port]->insertRevRule(rule,depth+1);
+            }
+        }
+	else {
+		map<uint16_t,GenNode*>::iterator it;
+		it=portmap.find(rule->srcPort);
+		if(it==portmap.end()) portmap[rule->srcPort]=newNode(depth+1);
+		portmap[rule->srcPort]->insertRevRule(rule,depth+1);
 	}
 }
 
@@ -302,6 +344,28 @@ void DstPortNode::insertRule(IdsRule* rule,int depth)
 	}
 }
 
+void SrcPortNode::insertRevRule(IdsRule* rule,int depth) 
+{
+	if(rule->dstPort==0) {
+		if(any==NULL) any=newNode(depth+1);
+		any->insertRevRule(rule,depth+1);
+	}
+        else if(rule->dstPortEnd!=0&&(rule->dstPort<=rule->dstPortEnd)) {
+		for(uint16_t port=rule->dstPort;port<=rule->dstPortEnd;port++) {
+			map<uint16_t,GenNode*>::iterator it;
+			it=portmap.find(port);
+			if(it==portmap.end()) portmap[port]=newNode(depth+1);
+			portmap[port]->insertRevRule(rule,depth+1);
+		}
+        }
+	else {
+		map<uint16_t,GenNode*>::iterator it;
+		it=portmap.find(rule->dstPort);
+		if(it==portmap.end()) portmap[rule->dstPort]=newNode(depth+1);
+		portmap[rule->dstPort]->insertRevRule(rule,depth+1);
+	}
+}
+
 DstPortNode::~DstPortNode() 
 {
 	if(any!=NULL) delete any;
@@ -344,6 +408,34 @@ void SrcIpNode::insertRule(IdsRule* rule,int depth)
 					it=ipmaps[fact].find(i);
 					if(it==ipmaps[fact].end()) ipmaps[fact][i]=newNode(depth+1);
 					ipmaps[fact][i]->insertRule(rule,depth+1);
+				}
+			}
+		}
+        }
+}
+
+void DstIpNode::insertRevRule(IdsRule* rule,int depth) 
+{
+        list<IpEntry*>::iterator listit;
+        for(listit=rule->src.begin();listit!=rule->src.end();listit++) {
+		if((*listit)->mask==0) {
+			if(any==NULL) any=newNode(depth+1);
+			any->insertRevRule(rule,depth+1);
+		}
+		else {
+			map<uint32_t,GenNode*>::iterator it;
+			int fact=((*listit)->mask-1)/8;
+			int mod=(*listit)->mask%8;
+			if(mod==0) {
+				it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
+				if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
+				ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRevRule(rule,depth+1);
+			}
+			else {
+				for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+					it=ipmaps[fact].find(i);
+					if(it==ipmaps[fact].end()) ipmaps[fact][i]=newNode(depth+1);
+					ipmaps[fact][i]->insertRevRule(rule,depth+1);
 				}
 			}
 		}
@@ -400,6 +492,34 @@ void DstIpNode::insertRule(IdsRule* rule,int depth)
 	}
 }
 
+void SrcIpNode::insertRevRule(IdsRule* rule,int depth) 
+{
+        list<IpEntry*>::iterator listit;
+        for(listit=rule->dst.begin();listit!=rule->dst.end();listit++) {
+		if((*listit)->mask==0) {
+			if(any==NULL) any=newNode(depth+1);
+			any->insertRevRule(rule,depth+1);
+		}
+		else {
+			map<uint32_t,GenNode*>::iterator it;
+			int fact=((*listit)->mask-1)/8;
+			int mod=(*listit)->mask%8;
+			if(mod==0) {
+				it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
+				if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
+				ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRevRule(rule,depth+1);
+			}
+			else {
+				for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+					it=ipmaps[fact].find(i);
+					if(it==ipmaps[fact].end()) ipmaps[fact][i]=newNode(depth+1);
+					ipmaps[fact][i]->insertRevRule(rule,depth+1);
+				}
+			}
+		}
+	}
+}
+
 DstIpNode::~DstIpNode() 
 {
 	map<uint32_t,GenNode*>::iterator it;
@@ -414,6 +534,11 @@ DstIpNode::~DstIpNode()
 
 
 void RuleNode::insertRule(IdsRule* rule,int depth) 
+{
+	rulesList.push_back(rule);
+}
+
+void RuleNode::insertRevRule(IdsRule* rule,int depth) 
 {
 	rulesList.push_back(rule);
 }
@@ -452,27 +577,8 @@ int FlowSigMatcher::parse_line(string text)
 		// what[3] contains the text message.
 		string bi_dir("<>");
 		if(bi_dir.compare(what[4])==0) {
-			IdsRule* birule=new IdsRule;
-			parsedRules.push_back(birule);
-			birule->uid=atoi(static_cast<string>(what[1]).c_str());
-			string home_net("$HOME_NET");
-			if(home_net.compare(what[2])==0) parse_ip(homenet,*birule,1);
-			else   parse_ip(what[2], *birule,1);
-			parse_port(what[3],*birule,1);
-			if(home_net.compare(what[5])==0) parse_ip(homenet,*birule,0);
-			else parse_ip(what[5], *birule,0);
-			parse_port(what[6],*birule,0);
-			string tcp("TCP");
-			string udp("UDP");
-			string icmp("ICMP");
-			if(tcp.compare(what[7])==0) birule->protocol=6;
-			else if(udp.compare(what[7])==0) birule->protocol=17;
-			else if(icmp.compare(what[7])==0) birule->protocol=1;
-			else birule->protocol=0;
-			birule->type=findVectorNr(what[8],idsRuleType);
-			birule->source=findVectorNr(what[9],idsRuleSource);
-			birule->msg=what[10];
-		}
+			rule->mode=1;
+		} else rule->mode=0;
 		rule->uid=atoi(static_cast<string>(what[1]).c_str());
 		string home_net("$HOME_NET");
 		if(home_net.compare(what[2])==0) parse_ip(homenet,*rule,0);
