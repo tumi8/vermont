@@ -158,17 +158,24 @@ public:
 	}
 
 	/**
-	 *  tries to enqueue an element. If the the operation can't be done
+	 *  tries to dequeue an element. If the the operation can't be done
 	 *  within the given timeout, the operation fails.
 	 *  @param timeout timeout till the operation has to be finished
 	 *  @param res pointer where the dequeued element will be stored
 	 *  @return true if element could be dequeued, false otherwise
 	 */
-	inline bool popAbs(const struct timespec& timeout, T *res) {
+	inline bool popAbs(struct timespec& timeout, T *res) {
 		if (!(*(this->queueImpConsumer))->pop(res)) {
 			(*(this->queueImpConsumer))->batchUpdate();
 
-			nanosleep(&timeout, NULL);
+			struct timespec diff;
+			struct timeval tvcur;
+			struct timespec tscur;
+			gettimeofday(&tvcur, 0);
+			TIMEVAL_TO_TIMESPEC(&tvcur, &tscur);
+			if (!timespec_subtract(&diff, &tscur, &timeout)) {
+				nanosleep(&diff, NULL);
+			}
 
 			if (!(*(this->queueImpConsumer))->pop(res))
 				return false;

@@ -48,7 +48,7 @@ public:
 	ConnectionQueue(uint32_t maxEntries, bool multipleProducers = false)
 		: thread(threadWrapper), statQueueEntries(0), statTotalReceived(0)
 	{
-		if(multipleProducers)
+		if (multipleProducers)
 			queue = new ConcurrentQueue<T>(MULTI, maxEntries);
 		else
 			queue = new ConcurrentQueue<T>(SINGLE, maxEntries);
