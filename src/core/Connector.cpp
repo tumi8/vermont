@@ -33,6 +33,9 @@ Graph* Connector::connect(Graph* g)
 		vector<unsigned int> nexts = nodes[i]->getCfg()->getNext();
 
 		for (unsigned int j = 0; j < nexts.size(); j++){
+			if (id2node.find(nexts[j])==id2node.end()) {
+				THROWEXCEPTION("Connector: found reference to module %u, but module with ID %u was not found!", nexts[j], nexts[j]);
+			}
 			Cfg* successor = id2node[nexts[j]]->getCfg();
 			bool found = false;
 
