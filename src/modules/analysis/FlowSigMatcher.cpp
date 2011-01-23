@@ -64,7 +64,7 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesord
 	treeRoot=GenNode::newNode(0);
 	for(it=parsedRules.begin();it!=parsedRules.end();it++) {
 		treeRoot->insertRule(*it,0);
-		if((*it)->mode==1) treeRoot->insertRevRule(*it,0);
+		if((*it)->mode>0&&(*it)->mode!=3) treeRoot->insertRevRule(*it,0);
 	}
 }
 
@@ -105,6 +105,13 @@ void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
         treeRoot->findRule(&conn,matchingRules);
         list<IdsRule*>::iterator it;
         for(it=matchingRules.begin();it!=matchingRules.end();it++) {
+		if(((*it)->mode>=2)&&(conn.srcPackets==0||conn.dstPackets==0)) continue; //check if flows are bidir
+		if(((*it)->mode>=3)&&(conn.protocol==6)) { //check for tcp 3-way handshake
+			if((conn.srcTcpControlBits&(Connection::SYN|Connection::ACK))!=(Connection::SYN|Connection::ACK)) continue;
+			if((conn.dstTcpControlBits&(Connection::SYN|Connection::ACK))!=(Connection::SYN|Connection::ACK)) continue;
+			if(ntohll(conn.srcOctets)/ntohll(conn.srcPackets)<44) continue;
+			if(ntohll(conn.dstOctets)/ntohll(conn.dstPackets)<44) continue;
+		}
 		if((*it)->flag==0) {
 			sendMessage(conn, (*it)->source, (*it)->type, (*it)->uid, (*it)->msg); 
 		}
@@ -566,19 +573,10 @@ GenNode* GenNode::newNode(int depth)
 int FlowSigMatcher::parse_line(string text) 
 {
 	boost::cmatch what;
-	const boost::regex expLine("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)|any|ANY) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
+	const boost::regex expLine("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)|any|ANY) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>|<!>|=>|<=>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
 	const boost::regex expFlagsLine("(\\d+) +flags +\\((.+)\\) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
 	if(boost::regex_match(text.c_str(), what, expLine)) { 
 		IdsRule* rule=new IdsRule;
-		parsedRules.push_back(rule);
-		// what[0] contains the whole string
-		// what[1] contains the response code
-		// what[2] contains the separator character
-		// what[3] contains the text message.
-		string bi_dir("<>");
-		if(bi_dir.compare(what[4])==0) {
-			rule->mode=1;
-		} else rule->mode=0;
 		rule->uid=atoi(static_cast<string>(what[1]).c_str());
 		string home_net("$HOME_NET");
 		if(home_net.compare(what[2])==0) parse_ip(homenet,*rule,0);
@@ -595,11 +593,27 @@ int FlowSigMatcher::parse_line(string text)
 		else if(udp.compare(what[7])==0) rule->protocol=17;
 		else if(icmp.compare(what[7])==0) rule->protocol=1;
 		else rule->protocol=0;
+		string dir(what[4]);
+		if(dir.compare("->")==0) {
+			rule->mode=0;
+		} else if(dir.compare("<>")==0) {
+			rule->mode=1;
+		} else if(dir.compare("<!>")==0) {
+			rule->mode=2;
+		} else if((dir.compare("=>")==0)&&(rule->protocol==6)) {
+			rule->mode=3;
+		} else if((dir.compare("<=>")==0)&&(rule->protocol==6)) {
+			rule->mode=4;
+                } else {
+			free(rule);
+			return false;
+		}
 		rule->type=findVectorNr(what[8],idsRuleType);
 		rule->source=findVectorNr(what[9],idsRuleSource);
 		rule->msg=what[10];
 		if(emptyString.compare(what[11])==0) rule->flag=0;
 		else rule->flag=atoi(static_cast<string>(what[11]).c_str());
+		parsedRules.push_back(rule);
 		return true;
 	}
 	else if(boost::regex_match(text.c_str(), what, expFlagsLine)) { 
