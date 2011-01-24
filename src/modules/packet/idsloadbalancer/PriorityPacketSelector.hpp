@@ -41,6 +41,7 @@ struct HostData
 	uint64_t nextTraffic; // estimation!
 	uint64_t lastTraffic;
 	uint32_t id; /**< sorted id for this queue, used for fast dropping */
+	bool lowPriority; /**< set to true when during assignment a host preceeding this one was not assigned to an IDS */
 
 	struct timeval startMon; /**< time when host was assigned for monitoring */
 
@@ -75,6 +76,14 @@ struct PriorityNetConfig
 	double weight;
 
 	PriorityNetConfig(uint32_t subnet, uint32_t mask, uint8_t maskbits, double weight);
+};
+
+struct WeightModifierConfig
+{
+	float quantile;
+	float weight;
+
+	WeightModifierConfig(float quantile, float weight);
 };
 
 struct IDSData
@@ -124,11 +133,13 @@ struct IDSData
 	{}
 };
 
+class HostStatisticsGenerator;
 
 class PriorityPacketSelector : public BasePacketSelector
 {
 public:
-	PriorityPacketSelector(list<PriorityNetConfig>& pnc, double startprio, struct timeval minmontime);
+	PriorityPacketSelector(list<PriorityNetConfig>& pnc, double startprio, struct timeval minmontime,
+			list<WeightModifierConfig>& wmc);
 	virtual ~PriorityPacketSelector();
 	virtual int decide(Packet *p);
 	virtual void updateData(struct timeval curtime, list<IDSLoadStatistics>& lstats);
@@ -153,6 +164,7 @@ private:
 	static const uint32_t WARN_HOSTCOUNT;
 
 	list<PriorityNetConfig> config;
+	list<WeightModifierConfig> weightModifiers;
 	list<HostData*> hosts;
 	uint32_t hostCount;
 	map<uint32_t, HostData*> ip2host;
@@ -189,6 +201,7 @@ private:
 	void updateEstRatio();
 	bool wasHostDropped(HostData* host);
 	void sendFlowRecord(HostData* host, bool monitored, uint64_t starttime, uint64_t endtime);
+	float getWeightModifier(HostStatisticsGenerator* hoststats, HostData* host);
 
 };
 

@@ -39,6 +39,8 @@ struct HostStatistics
 	// aggregate values of current interval - ATTENTION: will increase until interval has ended!
 	uint64_t curOctets;
 	uint64_t curPackets;
+
+	uint32_t sortedIndex; /**< index of this host in an array sorted by increasing data rate */
 };
 
 
@@ -56,6 +58,7 @@ public:
 	void onDataRecord(IpfixDataRecord* record);
 
 	 bool getOctets(uint32_t ip, uint64_t& octets);
+	 bool getTrafficQuantile(uint32_t ip, float& quantile);
 	 void getWatchedSubnet(uint32_t& subnet, uint32_t& mask);
 	 uint32_t getIntervalLength();
 	 uint64_t getZeroOctets();

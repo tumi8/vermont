@@ -101,6 +101,7 @@ IDSLoadbalancerCfg::IDSLoadbalancerCfg(XMLElement* elem)
 				float startprio = getDouble("startPriority", 1.0, e);
 				uint32_t minmontime = getInt("minimumMonitoringTime", 10000, e);
 				list<PriorityNetConfig> config;
+				list<WeightModifierConfig> weightmods;
 				XMLNode::XMLSet<XMLElement*> set = e->getElementChildren();
 				for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin(); it != set.end(); it++) {
 					XMLElement* e = *it;
@@ -131,6 +132,26 @@ IDSLoadbalancerCfg::IDSLoadbalancerCfg(XMLElement* elem)
 							}
 						}
 					}
+					if (e->matches("weightModifiers")) {
+						XMLNode::XMLSet<XMLElement*> netset = e->getElementChildren();
+						for (XMLNode::XMLSet<XMLElement*>::iterator nit = netset.begin(); nit != netset.end(); nit++) {
+							XMLElement* e = *nit;
+							if (e->matches("traffic")) {
+								XMLAttribute* a = e->getAttribute("quantile");
+								if (!a) THROWEXCEPTION("IDSLoadBalancerCfg: no attribute 'quantile' in configuration element 'traffic'!");
+								char* res;
+								float quantile = strtof(a->getFirstText().c_str(), &res);
+								if (quantile<=0 || quantile>1 || res==a->getFirstText().c_str())
+									THROWEXCEPTION("IDSLoadBalancerCfg: attribute 'quantile' is not in expected range (0<x<=1): %s", a->getFirstText().c_str());
+								a = e->getAttribute("weightModifier");
+								if (!a) THROWEXCEPTION("IDSLoadBalancerCfg: no attribute 'weightModifier' in configuration element 'traffic'!");
+								float weightmod = strtof(a->getFirstText().c_str(), &res);
+								if (weightmod<=0 || res==a->getFirstText().c_str())
+									THROWEXCEPTION("IDSLoadBalancerCfg: attribute 'weightModifier' is not in expected range (0<x): %s", a->getFirstText().c_str());
+								weightmods.push_back(WeightModifierConfig(quantile, weightmod));
+							}
+						}
+					}
 				}
 
 				if (!selector) {
@@ -140,7 +161,7 @@ IDSLoadbalancerCfg::IDSLoadbalancerCfg(XMLElement* elem)
 
 					// sort the network configuration by decreasing maskbits
 					config.sort(compareDecrMask);
-					selector = new PriorityPacketSelector(config, startprio, tv);
+					selector = new PriorityPacketSelector(config, startprio, tv, weightmods);
 				} else
 					THROWEXCEPTION("IDSLoadBalancerCfg: multiple packet selectors specified! This is not allowed.");
 			} else {

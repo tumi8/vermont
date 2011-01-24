@@ -49,6 +49,12 @@ PriorityNetConfig::PriorityNetConfig(uint32_t subnet, uint32_t mask, uint8_t mas
 {
 }
 
+WeightModifierConfig::WeightModifierConfig(float quantile, float weight)
+	: quantile(quantile),
+	  weight(weight)
+{
+}
+
 bool HostData::belowMinMonTime(struct timeval& tv, struct timeval& minmontime)
 {
 	struct timeval diff;
@@ -60,9 +66,10 @@ bool HostData::belowMinMonTime(struct timeval& tv, struct timeval& minmontime)
  * @param pnc expected in order of decreasing bits in the mask!
  */
 PriorityPacketSelector::PriorityPacketSelector(list<PriorityNetConfig>& pnc, double startprio,
-		struct timeval minmontime)
+		struct timeval minmontime, list<WeightModifierConfig>& wmc)
 	: BasePacketSelector("PriorityPacketSelector"),
 	  config(pnc),
+	  weightModifiers(wmc),
 	  hostCount(0),
 	  startPrio(startprio),
 	  minMonTime(minmontime),
@@ -96,6 +103,15 @@ PriorityPacketSelector::PriorityPacketSelector(list<PriorityNetConfig>& pnc, dou
 		masks.push_back(htonl(iter->mask));
 	}
 	ipSelector.setSubnets(subnets, masks);
+
+	float lastquantile = 0;
+	for (list<WeightModifierConfig>::iterator iter = weightModifiers.begin(); iter!=weightModifiers.end(); iter++) {
+		if (lastquantile >= iter->quantile)
+			THROWEXCEPTION("PriorityPacketSelector: traffic quantiles given in weight modifier configuration are not monotonically increasing!");
+		lastquantile = iter->quantile;
+	}
+	if (weightModifiers.size()>0 && lastquantile!=1)
+		THROWEXCEPTION("PriorityPacketSelector: last traffic quantile given in weight modifier configuration is not equal to 1!");
 
 	roundStart.tv_sec = 0;
 	roundStart.tv_usec = 0;
@@ -361,9 +377,28 @@ bool greaterpriothan(HostData* i, HostData* j)
 	return i->priority > j->priority;
 }
 
+float PriorityPacketSelector::getWeightModifier(HostStatisticsGenerator* hoststats, HostData* host)
+{
+	if (weightModifiers.size()==0) return 1;
+
+	float quantile;
+	float modifier = 1;
+	if (!hoststats->getTrafficQuantile(host->ip, quantile))
+		quantile = 0; // we assume that when this host was not measured yet, it will have traffic index=0, as it did not transfer any data
+
+	for (list<WeightModifierConfig>::iterator iter = weightModifiers.begin(); iter!=weightModifiers.end(); iter++) {
+		if (iter->quantile<quantile) {
+			modifier *= iter->weight;
+			break;
+		}
+	}
+	return modifier;
+}
+
 void PriorityPacketSelector::updatePriorities()
 {
 	msg(MSG_DEBUG, "PriorityPacketSelector: updating host priorities");
+
 	// sort hosts by priority
 	vector<HostData*> sortedhosts;
 	for (uint32_t i = 0; i < numberOfQueues; i++) {
@@ -379,10 +414,12 @@ void PriorityPacketSelector::updatePriorities()
 	uint32_t count = 0;
 	struct timeval curtime;
 	gettimeofday(&curtime, 0);
+	HostStatisticsGenerator* hoststats = HostStatisticsGeneratorFactory::getInstance();
 	for (vector<HostData*>::iterator iter = sortedhosts.begin(); iter != sortedhosts.end(); iter++) {
 		if (count <= maxHostPrioChange) {
 			PPDPRINTFL(MSG_VDEBUG, "PriorityPacketSelector: old priority of monitored host %s: %.2f", IPToString(htonl((*iter)->ip)).c_str(), (double)(*iter)->priority);
-			(*iter)->priority -= 1.0 / (*iter)->weight;
+
+			(*iter)->priority -= 1.0 / (*iter)->weight * getWeightModifier(hoststats, *iter);
 		}
 
 		// only decrease priority if this host was not forcibly removed from the last monitoring interval
@@ -441,6 +478,7 @@ void PriorityPacketSelector::sendFlowRecord(HostData* host, bool monitored, uint
 void PriorityPacketSelector::assignHosts2IDS()
 {
 	msg(MSG_DEBUG, "PriorityPacketSelector: reassigning hosts to IDSs");
+
 	// sort hosts
 	vector<int64_t> idsoctets;
 	for (uint32_t i = 0; i < numberOfQueues; i++) {
@@ -492,6 +530,8 @@ void PriorityPacketSelector::assignHosts2IDS()
 			if (wasHostDropped(host)) {
 				sendFlowRecord(host, !host->belowMinMonTime(roundStart, minMonTime), roundstart, roundend);
 				hiter = ids[i].hosts.erase(hiter);
+				ids[i].hostcount--;
+				restHosts.push_back(host);
 			} else {
 				hiter++;
 			}
@@ -518,6 +558,7 @@ void PriorityPacketSelector::assignHosts2IDS()
 		// reassign hosts
 		iter = ids[i].hosts.begin();
 		list<HostData*>::iterator riter = restHosts.begin();
+		bool lowpriority = false;
 		while (riter != restHosts.end()) {
 			PPDPRINTFL(MSG_DEBUG, "restHosts=%u", resthostcount);
 			HostData* resthost = *riter;
@@ -528,10 +569,12 @@ void PriorityPacketSelector::assignHosts2IDS()
 			uint64_t remoctets = 0;
 			if (iter != ids[i].hosts.end()) {
 				HostData* idshost = *iter;
-				while (iter != ids[i].hosts.end() && maxoctets - idsoctets[i]
-						< resthost->nextTraffic * estratio && idshost->priority
-						< resthost->priority) {
-					if (!idshost->belowMinMonTime(curtime, minMonTime)) {
+				while (iter != ids[i].hosts.end()
+						&& maxoctets - idsoctets[i] < resthost->nextTraffic * estratio
+						&& idshost->priority < resthost->priority) {
+					if (!idshost->belowMinMonTime(curtime, minMonTime) || idshost->lowPriority) {
+						// TODO: maybe remove the low priority hosts in order of decreasing monitoring time
+						// to ensure as highest consecutive monitoring times as possible
 						PPDPRINTFL(MSG_DEBUG, "PriorityPacketSelector:temporarily removing host %s from IDS %d", IPToString(ntohl(idshost->ip)).c_str(), i);
 						removedhosts.push_back(*iter);
 						iter = ids[i].hosts.erase(iter);
@@ -539,8 +582,7 @@ void PriorityPacketSelector::assignHosts2IDS()
 						sendFlowRecord(idshost, true, roundstart, roundend);
 						idsoctets[i] -= idshost->nextTraffic * estratio;
 						remoctets += idshost->nextTraffic * estratio;
-					}
-					else {
+					} else {
 						iter++;
 					}
 					idshost = *iter;
@@ -552,6 +594,7 @@ void PriorityPacketSelector::assignHosts2IDS()
 				ids[i].hosts.push_back(resthost);
 				resthost->startMon = curtime;
 				resthost->oldpriority = resthost->priority;
+				resthost->lowPriority = lowpriority;
 				ids[i].hostcount++;
 				idsoctets[i] += resthost->nextTraffic * estratio;
 				riter = restHosts.erase(riter);
@@ -579,6 +622,7 @@ void PriorityPacketSelector::assignHosts2IDS()
 				else {
 					// failure - go to next host
 					PPDPRINTFL(MSG_DEBUG, "PriorityPacketSelector: failure, on to next host", IPToString(ntohl(resthost->ip)).c_str(), i);
+					lowpriority = true;
 					ids[i].hosts.insert(ids[i].hosts.begin(), removedhosts.begin(),
 							removedhosts.end());
 					ids[i].hostcount += removedhosts.size();
@@ -728,7 +772,7 @@ void PriorityPacketSelector::queueUtilization(uint32_t queueid, uint32_t maxsize
 
 		msg(MSG_INFO, "max id for queue id %u: %u (host count: %u", queueid, packetHostInfo[queueid]->maxHostId, packetHostInfo[queueid]->hostCount);
 		if (packetHostInfo[queueid]->maxHostId == 1) {
-			msg(MSG_INFO, "maxHostId for queue id %u already at minimum (==1)!", queueid);
+			msg(MSG_DEBUG, "maxHostId for queue id %u already at minimum (==1)!", queueid);
 			return;
 		}
 		packetHostInfo[queueid]->maxHostId >>= 1;

@@ -44,7 +44,8 @@ HostStatistics::HostStatistics(uint64_t octs, uint64_t pkts)
 	: lastOctets(0),
 	  lastPackets(0),
 	  curOctets(octs),
-	  curPackets(pkts)
+	  curPackets(pkts),
+	  sortedIndex(0)
 {
 }
 
@@ -88,12 +89,20 @@ void HostStatisticsGenerator::addHostData(uint32_t ip, uint64_t octs, uint64_t p
 	}
 }
 
+
+bool lesstrafficthan(HostStatistics* i, HostStatistics* j)
+{
+	return i->lastOctets < j->lastOctets;
+}
+
+
 void HostStatisticsGenerator::changeInterval()
 {
 	std::map<uint32_t, HostStatistics>::iterator it;
 	uint32_t zerohosts = 0;
 	uint64_t zeroocts = 0;
 	int64_t diff = 0;
+	list<HostStatistics*> sortedhosts;
 	for (it=trafficMap.begin(); it!=trafficMap.end(); it++) {
 		if (it->second.lastOctets==0) {
 			zerohosts++;
@@ -101,12 +110,22 @@ void HostStatisticsGenerator::changeInterval()
 		}
 		diff += it->second.lastOctets-it->second.curOctets;
 		it->second.commit();
+		sortedhosts.push_back(&it->second);
 	}
 	if (zerohosts>0) zeroOctets = (double)zeroocts/zerohosts*HSG_DEFAULT_ZEROOCTETSALPHA+(1.0-HSG_DEFAULT_ZEROOCTETSALPHA)*zeroOctets;
 	else zeroOctets = (1.0-HSG_DEFAULT_ZEROOCTETSALPHA)*zeroOctets;
 	msg(MSG_DEBUG, "zeroocts=%llu, zerohosts=%u", zeroocts, zerohosts);
 	msg(MSG_DEBUG, "HostStatisticsGenerator: average traffic by hosts with no traffic in last interval: %llu bytes", zeroOctets);
 	DPRINTFL(MSG_DEBUG, "diff=%lld", diff);
+
+	sortedhosts.sort(lesstrafficthan);
+	uint32_t index = 0;
+	uint64_t lastoctets = 0;
+	for (list<HostStatistics*>::iterator iter = sortedhosts.begin(); iter!=sortedhosts.end(); iter++) {
+		HostStatistics* hs = *iter;
+		hs->sortedIndex = index;
+		if (lastoctets!=hs->lastOctets) index++;
+	}
 }
 
 void HostStatisticsGenerator::onDataRecord(IpfixDataRecord* record)
@@ -153,6 +172,23 @@ bool HostStatisticsGenerator::getOctets(uint32_t ip, uint64_t& octets)
 	it = trafficMap.find(ip);
 	if (it != trafficMap.end())	{
 		octets = it->second.lastOctets;
+		return true;
+	} else {
+		// not found
+		return false;
+	}
+}
+
+/**
+ * @param trafficquantile give the quantile of this host in an array sorted in increasing order for data rate
+ * @returns true if host was watched, else false
+ */
+bool HostStatisticsGenerator::getTrafficQuantile(uint32_t ip, float& quantile)
+{
+	std::map<uint32_t, HostStatistics>::iterator it;
+	it = trafficMap.find(ip);
+	if (it != trafficMap.end())	{
+		quantile = (float)it->second.sortedIndex/trafficMap.size();
 		return true;
 	} else {
 		// not found
