@@ -532,6 +532,7 @@ void PriorityPacketSelector::assignHosts2IDS()
 				hiter = ids[i].hosts.erase(hiter);
 				ids[i].hostcount--;
 				restHosts.push_back(host);
+				resthostcount++;
 			} else {
 				hiter++;
 			}
@@ -544,6 +545,7 @@ void PriorityPacketSelector::assignHosts2IDS()
 			iter = ids[i].hosts.erase(iter);
 			ids[i].hostcount--;
 			restHosts.push_back(host);
+			resthostcount++;
 
 			sendFlowRecord(host, !host->belowMinMonTime(curtime, minMonTime), roundstart, roundend);
 
