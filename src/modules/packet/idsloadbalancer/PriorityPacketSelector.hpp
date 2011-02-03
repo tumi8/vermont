@@ -64,6 +64,7 @@ struct PacketHostInfo
 	uint32_t maxHostId;
 	uint32_t hostCount;
 	uint64_t controlDropped;
+	bool minWarningShown;
 };
 
 
