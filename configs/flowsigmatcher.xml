@@ -1,0 +1,88 @@
+<ipfixConfig>
+	<sensorManager id="99">
+		<checkinterval>2</checkinterval>
+	</sensorManager>
+	<observer id="1">
+		<filename>/tmp/test.dump</filename>
+		<offlineAutoExit>1</offlineAutoExit>
+		<offlineSpeed>0</offlineSpeed>
+		<pcap_filter>ip</pcap_filter>
+		<captureLength>128</captureLength>
+		<next>3</next>
+	</observer>
+	
+	<packetAggregator id="3">
+		<rule>
+			<templateId>888</templateId>
+			<biflowAggregation>1</biflowAggregation>
+			<flowKey>
+				<ieName>sourceIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>protocolIdentifier</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>sourceTransportPort</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationTransportPort</ieName>
+			</flowKey>
+			<nonFlowKey>
+				<ieName>flowStartMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>flowEndMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>octetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>packetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>tcpControlBits</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revflowStartMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revflowEndMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revoctetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revpacketDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>revtcpControlBits</ieName>
+			</nonFlowKey>
+		</rule>
+		<expiration>
+			<inactiveTimeout unit="sec">30</inactiveTimeout>
+			<activeTimeout unit="sec">300</activeTimeout>
+		</expiration>
+		<pollInterval unit="msec">1000</pollInterval>
+		<next>5</next>
+		<next>7</next>
+	</packetAggregator>
+
+	<ipfixPrinter id="7">
+	</ipfixPrinter>
+	
+	<flowSigMatcher id="5">
+		<rulesfile>vermont.sig</rulesfile>
+		<rulesorder>srcIP dstIP proto srcPort dstPort</rulesorder>
+		<homenet>131.188.0.0/16</homenet>
+		<analyzerid>1</analyzerid>
+		<flagstimeout>20000</flagstimeout>
+		<idmeftemplate>configs/idmef_templates/flowsigmatcher_template.xml</idmeftemplate>
+		<next>6</next>
+	</flowSigMatcher>
+	<idmefExporter id="6">
+		<sendurl>http://localhost</sendurl>
+	</idmefExporter>
+</ipfixConfig>
