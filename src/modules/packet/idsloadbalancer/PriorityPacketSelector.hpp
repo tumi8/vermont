@@ -41,7 +41,6 @@ struct HostData
 	uint64_t nextTraffic; // estimation!
 	uint64_t lastTraffic;
 	uint32_t id; /**< sorted id for this queue, used for fast dropping */
-	bool lowPriority; /**< set to true when during assignment a host preceeding this one was not assigned to an IDS */
 
 	struct timeval startMon; /**< time when host was assigned for monitoring */
 
@@ -63,6 +62,7 @@ struct PacketHostInfo
 	HostHashtable* selectorData;
 	uint32_t maxHostId;
 	uint32_t hostCount;
+	uint32_t critQueueSize;
 	uint64_t controlDropped;
 	bool minWarningShown;
 };
@@ -140,7 +140,7 @@ class PriorityPacketSelector : public BasePacketSelector
 {
 public:
 	PriorityPacketSelector(list<PriorityNetConfig>& pnc, double startprio, struct timeval minmontime,
-			list<WeightModifierConfig>& wmc);
+			uint32_t maxspeed, list<WeightModifierConfig>& wmc);
 	virtual ~PriorityPacketSelector();
 	virtual int decide(Packet *p);
 	virtual void updateData(struct timeval curtime, list<IDSLoadStatistics>& lstats);
@@ -150,6 +150,7 @@ public:
 	virtual void stop();
 	void queueUtilization(uint32_t queueid, uint32_t maxsize, uint32_t cursize);
 	virtual void setFlowExporter(Destination<IpfixRecord*>* di);
+	virtual void setQueueSizes(vector<uint32_t> queuesizes);
 
 
 private:
@@ -178,13 +179,17 @@ private:
 	struct timeval startTime;
 	struct timeval roundStart;
 	uint32_t updateInterval; /**< update interval in ms */
-	PacketHostInfo** packetHostInfo;
-	PacketHostInfo** newPacketHostInfo;
+	volatile PacketHostInfo** packetHostInfo;
+	volatile PacketHostInfo** newPacketHostInfo;
+	vector<uint32_t> queueSizes;
+	uint32_t maxSpeed; /** maximum speed per queue in bytes/second, if 0: determine speed automatically */
+	uint64_t startMaxSpeed;
 
 	list<HostData*> restHosts; /**< hosts that are currently not monitored */
 	vector<IDSData> ids;
 	uint64_t round;
 	Destination<IpfixRecord*>* flowExporter;
+	list<HostData*> finishedHosts; /**< hosts that were removed from IDS assignment with uninterrupted monitoring */
 
 	boost::shared_ptr<IpfixRecord::SourceID> sourceId;
 	boost::shared_ptr<TemplateInfo> templateInfo;
