@@ -60,6 +60,7 @@ void IDSLoadbalancer::performStart()
 
 	// analyze succeding modules and
 	// determine whether we also have an IPFIX flow receiving module (used for exporting load balancing status)
+	vector<uint32_t> queueSizes;
 	for (uint32_t i=0; i<qcount; i++) {
 		Destination<Packet*>* dp = dynamic_cast<Destination<Packet*>*>(getSucceedingModuleInstance(i));
 		if (dp) {
@@ -67,6 +68,9 @@ void IDSLoadbalancer::performStart()
 			if (pem) {
 				msg(MSG_INFO, "IDSLoadbalancer: detected PCAPExporterMem module at queue %u", i);
 				pem->setExporterNotificationHandler(this);
+				uint32_t maxsize, cursize;
+				pem->getQueueStats(&maxsize, &cursize);
+				queueSizes.push_back(maxsize);
 			}
 		}
 	}
@@ -82,6 +86,7 @@ void IDSLoadbalancer::performStart()
 	}
 
 	selector->setQueueCount(qcount);
+	selector->setQueueSizes(queueSizes);
 	selector->setFlowExporter(ipfixModule);
 
 	msg(MSG_INFO, "  - queue count = %d", qcount);

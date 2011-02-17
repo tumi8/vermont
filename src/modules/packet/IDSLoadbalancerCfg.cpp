@@ -100,6 +100,7 @@ IDSLoadbalancerCfg::IDSLoadbalancerCfg(XMLElement* elem)
 			} else if (_selector == "PriorityPacketSelector") {
 				float startprio = getDouble("startPriority", 1.0, e);
 				uint32_t minmontime = getInt("minimumMonitoringTime", 10000, e);
+				uint32_t maxspeed = getInt("maxSpeed", 0, e);
 				list<PriorityNetConfig> config;
 				list<WeightModifierConfig> weightmods;
 				XMLNode::XMLSet<XMLElement*> set = e->getElementChildren();
@@ -161,7 +162,7 @@ IDSLoadbalancerCfg::IDSLoadbalancerCfg(XMLElement* elem)
 
 					// sort the network configuration by decreasing maskbits
 					config.sort(compareDecrMask);
-					selector = new PriorityPacketSelector(config, startprio, tv, weightmods);
+					selector = new PriorityPacketSelector(config, startprio, tv, maxspeed, weightmods);
 				} else
 					THROWEXCEPTION("IDSLoadBalancerCfg: multiple packet selectors specified! This is not allowed.");
 			} else {
