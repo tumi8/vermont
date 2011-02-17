@@ -430,7 +430,7 @@ int PCAPExporterMem::execCmd(std::string& cmd)
 			CPU_ZERO_S(size, cpusetp);
 			for (int32_t i=0; i<cpucount; i++) {
 				if (cpuAffinity&(1<<i)) {
-					fprintf(stderr, "Setting CPU %u", i);
+					fprintf(stderr, "Setting CPU %u\n", i);
 					CPU_SET_S(i, size, cpusetp);
 				}
 			}
