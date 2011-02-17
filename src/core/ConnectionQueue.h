@@ -198,14 +198,9 @@ private:
 				delete te;
 
 			} else {
-				if (!nexttoset || compareTime(nexttimeout, (*iter)->timeout) > 0) {
+				if (compareTime(nexttimeout, (*iter)->timeout) > 0) {
 					nexttoset = true;
-					struct timespec intvtime;
-					addToCurTime(&intvtime, CQ_POLL_INTERVAL);
-					if (compareTime(intvtime, (*iter)->timeout) > 0)
-						nexttimeout = (*iter)->timeout;
-					else
-						nexttimeout = intvtime;
+					nexttimeout = (*iter)->timeout;
 				}
 				iter++;
 			}
@@ -230,20 +225,13 @@ private:
 				if (!Module::getShutdownProperly()) break;
 				else if (queue->getCount() == 0) break;
 			}
-			if(!timeouts.empty()){
-				struct timespec nexttimeout;
-				if (!processTimeouts(nexttimeout)) {
-					if (!queue->pop(&element)) {
-						DPRINTF("queue->pop failed - timeout?");
-						continue;
-					}
-				} else {
-					if (!queue->popAbs(nexttimeout, &element)) {
-						DPRINTF("queue->pop failed - timeout?");
-						continue;
-					}
+			struct timespec nexttimeout;
+			if (!timeouts.empty() && processTimeouts(nexttimeout)) {
+				if (!queue->popAbs(nexttimeout, &element)) {
+					DPRINTF("queue->pop failed - timeout?");
+					continue;
 				}
-			}else{
+			} else{
 				if (!queue->pop(&element)) {
 					DPRINTF("queue->pop failed - timeout?");
 					continue;
