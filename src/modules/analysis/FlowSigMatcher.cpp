@@ -56,9 +56,11 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesord
 		return;
 	}
 	while(getline(infile,buffer)) {
-		parse_line(buffer);
+		if(parse_line(buffer)==false) {
+		msg(MSG_DIALOG,"Couldn't parse this rule: %s",buffer.c_str());
+		}
 	}
-	msg(MSG_DIALOG, "added %i rules\n",parsedRules.size());
+	msg(MSG_DIALOG, "added %i rules",parsedRules.size());
 	infile.close();
 	list<IdsRule*>::iterator it;
 	treeRoot=GenNode::newNode(0);
@@ -279,12 +281,6 @@ void SrcPortNode::insertRule(IdsRule* rule,int depth)
 		portmap[port]->insertRule(rule,depth+1);
             }
         }
-	else {
-		map<uint16_t,GenNode*>::iterator it;
-		it=portmap.find(rule->srcPort);
-		if(it==portmap.end()) portmap[rule->srcPort]=newNode(depth+1);
-		portmap[rule->srcPort]->insertRule(rule,depth+1);
-	}
 }
 
 void DstPortNode::insertRevRule(IdsRule* rule,int depth) 
@@ -301,12 +297,6 @@ void DstPortNode::insertRevRule(IdsRule* rule,int depth)
 		portmap[port]->insertRevRule(rule,depth+1);
             }
         }
-	else {
-		map<uint16_t,GenNode*>::iterator it;
-		it=portmap.find(rule->srcPort);
-		if(it==portmap.end()) portmap[rule->srcPort]=newNode(depth+1);
-		portmap[rule->srcPort]->insertRevRule(rule,depth+1);
-	}
 }
 
 SrcPortNode::~SrcPortNode() 
@@ -343,12 +333,6 @@ void DstPortNode::insertRule(IdsRule* rule,int depth)
 			portmap[port]->insertRule(rule,depth+1);
 		}
         }
-	else {
-		map<uint16_t,GenNode*>::iterator it;
-		it=portmap.find(rule->dstPort);
-		if(it==portmap.end()) portmap[rule->dstPort]=newNode(depth+1);
-		portmap[rule->dstPort]->insertRule(rule,depth+1);
-	}
 }
 
 void SrcPortNode::insertRevRule(IdsRule* rule,int depth) 
@@ -365,12 +349,6 @@ void SrcPortNode::insertRevRule(IdsRule* rule,int depth)
 			portmap[port]->insertRevRule(rule,depth+1);
 		}
         }
-	else {
-		map<uint16_t,GenNode*>::iterator it;
-		it=portmap.find(rule->dstPort);
-		if(it==portmap.end()) portmap[rule->dstPort]=newNode(depth+1);
-		portmap[rule->dstPort]->insertRevRule(rule,depth+1);
-	}
 }
 
 DstPortNode::~DstPortNode() 
@@ -575,16 +553,22 @@ int FlowSigMatcher::parse_line(string text)
 	boost::cmatch what;
 	const boost::regex expLine("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)|any|ANY) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>|<!>|=>|<=>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
 	const boost::regex expFlagsLine("(\\d+) +flags +\\((.+)\\) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
-	if(boost::regex_match(text.c_str(), what, expLine)) { 
+	const boost::regex expCommentLine("^#|^[:space:]*$");
+	if(boost::regex_search(text.c_str(), expCommentLine)) return true;
+	else if(boost::regex_match(text.c_str(), what, expLine)) { 
 		IdsRule* rule=new IdsRule;
 		rule->uid=atoi(static_cast<string>(what[1]).c_str());
 		string home_net("$HOME_NET");
 		if(home_net.compare(what[2])==0) parse_ip(homenet,*rule,0);
 		else   parse_ip(what[2], *rule,0);
-		parse_port(what[3],*rule,0);
+		if(parse_port(what[3],*rule,0)==false) {
+			return false;
+		}
 		if(home_net.compare(what[5])==0) parse_ip(homenet,*rule,1);
 		else parse_ip(what[5], *rule,1);
-		parse_port(what[6],*rule,1);
+		if(parse_port(what[6],*rule,1)==false) {
+			return false;
+		}
 		string tcp("TCP");
 		string udp("UDP");
 		string icmp("ICMP");
@@ -648,22 +632,26 @@ int FlowSigMatcher::parse_port(string text, IdsRule& rule, uint32_t dst)
 		if(dst==0) {
 			rule.srcPort=atoi(static_cast<string>(what[1]).c_str());
 			rule.srcPortEnd=atoi(static_cast<string>(what[2]).c_str());
+			if(rule.srcPort>rule.srcPortEnd) return false;
 		}
 		else {
 			rule.dstPort=atoi(static_cast<string>(what[1]).c_str());
 			rule.dstPortEnd=atoi(static_cast<string>(what[2]).c_str());
+			if(rule.dstPort>rule.dstPortEnd) return false;
 		}
 	}
 	else {
 		if(dst==0) {
 			rule.srcPort=atoi(text.c_str());
 			if((text.compare("*")==0)||(text.compare("any")==0)||(text.compare("ANY")==0)) rule.srcPort=0;
-			rule.srcPortEnd=0;
+			//rule.srcPortEnd=0;
+			rule.srcPortEnd=rule.srcPort;
 		}
 		else {
 			rule.dstPort=atoi(text.c_str());
 			if((text.compare("*")==0)||(text.compare("any")==0)||(text.compare("ANY")==0)) rule.dstPort=0;
-			rule.dstPortEnd=0;
+			//rule.dstPortEnd=0;
+			rule.dstPortEnd=rule.dstPort;
 		}
 	}
 	return true;
