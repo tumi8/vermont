@@ -269,34 +269,40 @@ void SrcPortNode::findRule(Connection* conn,list<IdsRule*>& rules)
 
 void SrcPortNode::insertRule(IdsRule* rule,int depth) 
 {
-	if(rule->srcPort==0) {
-		if(any==NULL) any=newNode(depth+1);
-		any->insertRule(rule,depth+1);
+        list<PortEntry*>::iterator listit;
+        for(listit=rule->sPort.begin();listit!=rule->sPort.end();listit++) {
+		if((*listit)->port==0) {
+			if(any==NULL) any=newNode(depth+1);
+			any->insertRule(rule,depth+1);
+		}
+		else if(((*listit)->portEnd!=0)&&((*listit)->port<=(*listit)->portEnd)) {
+		    for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
+			map<uint16_t,GenNode*>::iterator it;
+			it=portmap.find(port);
+			if(it==portmap.end()) portmap[port]=newNode(depth+1);
+			portmap[port]->insertRule(rule,depth+1);
+		    }
+		}
 	}
-        else if((rule->srcPortEnd!=0)&&(rule->srcPort<=rule->srcPortEnd)) {
-            for(uint16_t port=rule->srcPort;port<=rule->srcPortEnd;port++) {
-                map<uint16_t,GenNode*>::iterator it;
-		it=portmap.find(port);
-		if(it==portmap.end()) portmap[port]=newNode(depth+1);
-		portmap[port]->insertRule(rule,depth+1);
-            }
-        }
 }
 
 void DstPortNode::insertRevRule(IdsRule* rule,int depth) 
 {
-	if(rule->srcPort==0) {
-		if(any==NULL) any=newNode(depth+1);
-		any->insertRevRule(rule,depth+1);
+        list<PortEntry*>::iterator listit;
+        for(listit=rule->sPort.begin();listit!=rule->sPort.end();listit++) {
+		if((*listit)->port==0) {
+			if(any==NULL) any=newNode(depth+1);
+			any->insertRule(rule,depth+1);
+		}
+		else if(((*listit)->portEnd!=0)&&((*listit)->port<=(*listit)->portEnd)) {
+		    for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
+			map<uint16_t,GenNode*>::iterator it;
+			it=portmap.find(port);
+			if(it==portmap.end()) portmap[port]=newNode(depth+1);
+			portmap[port]->insertRule(rule,depth+1);
+		    }
+		}
 	}
-        else if((rule->srcPortEnd!=0)&&(rule->srcPort<=rule->srcPortEnd)) {
-            for(uint16_t port=rule->srcPort;port<=rule->srcPortEnd;port++) {
-                map<uint16_t,GenNode*>::iterator it;
-		it=portmap.find(port);
-		if(it==portmap.end()) portmap[port]=newNode(depth+1);
-		portmap[port]->insertRevRule(rule,depth+1);
-            }
-        }
 }
 
 SrcPortNode::~SrcPortNode() 
@@ -321,34 +327,40 @@ void DstPortNode::findRule(Connection* conn,list<IdsRule*>& rules)
 
 void DstPortNode::insertRule(IdsRule* rule,int depth) 
 {
-	if(rule->dstPort==0) {
-		if(any==NULL) any=newNode(depth+1);
-		any->insertRule(rule,depth+1);
-	}
-        else if(rule->dstPortEnd!=0&&(rule->dstPort<=rule->dstPortEnd)) {
-		for(uint16_t port=rule->dstPort;port<=rule->dstPortEnd;port++) {
+        list<PortEntry*>::iterator listit;
+        for(listit=rule->sPort.begin();listit!=rule->sPort.end();listit++) {
+		if((*listit)->port==0) {
+			if(any==NULL) any=newNode(depth+1);
+			any->insertRule(rule,depth+1);
+		}
+		else if(((*listit)->portEnd!=0)&&((*listit)->port<=(*listit)->portEnd)) {
+		    for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
 			map<uint16_t,GenNode*>::iterator it;
 			it=portmap.find(port);
 			if(it==portmap.end()) portmap[port]=newNode(depth+1);
 			portmap[port]->insertRule(rule,depth+1);
+		    }
 		}
-        }
+	}
 }
 
 void SrcPortNode::insertRevRule(IdsRule* rule,int depth) 
 {
-	if(rule->dstPort==0) {
-		if(any==NULL) any=newNode(depth+1);
-		any->insertRevRule(rule,depth+1);
-	}
-        else if(rule->dstPortEnd!=0&&(rule->dstPort<=rule->dstPortEnd)) {
-		for(uint16_t port=rule->dstPort;port<=rule->dstPortEnd;port++) {
+        list<PortEntry*>::iterator listit;
+        for(listit=rule->dPort.begin();listit!=rule->dPort.end();listit++) {
+		if((*listit)->port==0) {
+			if(any==NULL) any=newNode(depth+1);
+			any->insertRule(rule,depth+1);
+		}
+		else if(((*listit)->portEnd!=0)&&((*listit)->port<=(*listit)->portEnd)) {
+		    for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
 			map<uint16_t,GenNode*>::iterator it;
 			it=portmap.find(port);
 			if(it==portmap.end()) portmap[port]=newNode(depth+1);
-			portmap[port]->insertRevRule(rule,depth+1);
+			portmap[port]->insertRule(rule,depth+1);
+		    }
 		}
-        }
+	}
 }
 
 DstPortNode::~DstPortNode() 
@@ -551,7 +563,7 @@ GenNode* GenNode::newNode(int depth)
 int FlowSigMatcher::parse_line(string text) 
 {
 	boost::cmatch what;
-	const boost::regex expLine("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)|any|ANY) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(->|<>|<!>|=>|<=>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
+	const boost::regex expLine("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)|any|ANY) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)|(?:\\[.+\\])) +(->|<>|<!>|=>|<=>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)|(?:\\[.+\\])) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
 	const boost::regex expFlagsLine("(\\d+) +flags +\\((.+)\\) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
 	const boost::regex expCommentLine("^#|^[:space:]*$");
 	if(boost::regex_search(text.c_str(), expCommentLine)) return true;
@@ -562,11 +574,13 @@ int FlowSigMatcher::parse_line(string text)
 		if(home_net.compare(what[2])==0) parse_ip(homenet,*rule,0);
 		else   parse_ip(what[2], *rule,0);
 		if(parse_port(what[3],*rule,0)==false) {
+			delete rule;
 			return false;
 		}
 		if(home_net.compare(what[5])==0) parse_ip(homenet,*rule,1);
 		else parse_ip(what[5], *rule,1);
 		if(parse_port(what[6],*rule,1)==false) {
+			delete rule;
 			return false;
 		}
 		string tcp("TCP");
@@ -589,7 +603,7 @@ int FlowSigMatcher::parse_line(string text)
 		} else if((dir.compare("<=>")==0)&&(rule->protocol==6)) {
 			rule->mode=4;
                 } else {
-			free(rule);
+			delete rule;
 			return false;
 		}
 		rule->type=findVectorNr(what[8],idsRuleType);
@@ -624,37 +638,53 @@ uint8_t FlowSigMatcher::findVectorNr(string text, vector<string>& vec)
 	return i;
 }
 
-int FlowSigMatcher::parse_port(string text, IdsRule& rule, uint32_t dst) 
+int FlowSigMatcher::parse_port(string text, IdsRule& rule, uint32_t dst)
 {
-	boost::cmatch what;
-	const boost::regex exp_port("(\\d+)\\:(\\d+)");
-	if(boost::regex_match(text.c_str(), what, exp_port)) {
-		if(dst==0) {
-			rule.srcPort=atoi(static_cast<string>(what[1]).c_str());
-			rule.srcPortEnd=atoi(static_cast<string>(what[2]).c_str());
-			if(rule.srcPort>rule.srcPortEnd) return false;
-		}
-		else {
-			rule.dstPort=atoi(static_cast<string>(what[1]).c_str());
-			rule.dstPortEnd=atoi(static_cast<string>(what[2]).c_str());
-			if(rule.dstPort>rule.dstPortEnd) return false;
-		}
+	const boost::regex exp_braces("\\[.+\\]");
+	if(boost::regex_match(text,exp_braces)) {
+		text.erase(text.begin());
+		text.erase(text.end()-1);
+		const boost::regex expIp(", *| +");
+		boost::sregex_token_iterator i(text.begin(), text.end(), expIp, -1);
+		boost::sregex_token_iterator j;
+		if(dst==0)  while(i!=j) split_port(*i++,rule.sPort);
+		else while(i!=j) split_port(*i++,rule.dPort);
 	}
 	else {
+		if(dst==0) split_port(text,rule.sPort);
+		else split_port(text,rule.dPort);
+	}
 		if(dst==0) {
-			rule.srcPort=atoi(text.c_str());
-			if((text.compare("*")==0)||(text.compare("any")==0)||(text.compare("ANY")==0)) rule.srcPort=0;
-			//rule.srcPortEnd=0;
-			rule.srcPortEnd=rule.srcPort;
+			if(rule.sPort.size()==0) return false;
 		}
 		else {
-			rule.dstPort=atoi(text.c_str());
-			if((text.compare("*")==0)||(text.compare("any")==0)||(text.compare("ANY")==0)) rule.dstPort=0;
-			//rule.dstPortEnd=0;
-			rule.dstPortEnd=rule.dstPort;
+			if(rule.dPort.size()==0) return false;
+		}
+	return true;
+} 
+
+void FlowSigMatcher::split_port(string text, list<PortEntry*>& list) 
+{
+	boost::cmatch what;
+	const boost::regex exp_port_range("(\\d+)\\:(\\d+)");
+	const boost::regex exp_port("(\\d+)");
+	PortEntry* entry;
+	if(boost::regex_match(text.c_str(), what, exp_port_range)) {
+		entry= new PortEntry;
+		entry->port=atoi(static_cast<string>(what[1]).c_str());
+		entry->portEnd=atoi(static_cast<string>(what[2]).c_str());
+		if(entry->port>entry->portEnd) {
+			delete entry;
+			return;
 		}
 	}
-	return true;
+	else if(boost::regex_match(text.c_str(), what, exp_port)) {
+		entry= new PortEntry;
+		entry->port=atoi(text.c_str());
+		if((text.compare("*")==0)||(text.compare("any")==0)||(text.compare("ANY")==0)) entry->port=0;
+		entry->portEnd=entry->port;
+	}
+	list.push_back(entry);
 }
 
 int FlowSigMatcher::parseFlags(string text, FlagsRule& rule) 

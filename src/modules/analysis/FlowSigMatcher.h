@@ -44,12 +44,15 @@ struct IpEntry{
         uint8_t mask;
 };
 
+struct PortEntry{
+	uint16_t port;
+	uint16_t portEnd;
+};
+
 struct IdsRule {
         uint8_t protocol;
-        uint16_t srcPort;
-        uint16_t srcPortEnd;
-        uint16_t dstPort;
-        uint16_t dstPortEnd;
+	list<PortEntry*>sPort;
+	list<PortEntry*>dPort;
         list<IpEntry*> src;
         list<IpEntry*> dst;
         uint32_t uid;
@@ -193,6 +196,7 @@ class FlowSigMatcher
 		int parseFlags(string text, FlagsRule& rule);
                 int parse_line(string text);
                 int parse_port(string text, IdsRule& rule, uint32_t dst);
+                void split_port(string text, list<PortEntry*>& list);
                 void split_ip(string text, list<IpEntry*>& list);
                 int parse_ip(string text, IdsRule& rule, uint32_t dst);
 		uint8_t findVectorNr(string text, vector<string>& vec) ;
