@@ -212,6 +212,20 @@ void ProtoNode::findRule(Connection* conn,list<IdsRule*>& rules)
 	}
 }
 
+void ProtoNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
+{
+	if(any!=NULL) any->invalidateRule(conn,rules);
+	if(conn->protocol==6) {
+		if(tcp!=NULL)	tcp->invalidateRule(conn,rules);
+	}
+	else if(conn->protocol==17) {
+		if(udp!=NULL) udp->invalidateRule(conn,rules);
+	}
+	else if(conn->protocol==1) {
+		if(icmp!=NULL) icmp->invalidateRule(conn,rules);
+	}
+}
+
 void ProtoNode::insertRule(IdsRule* rule,int depth) 
 {
 	if(rule->protocol==6) { //TCP
@@ -261,10 +275,39 @@ SrcPortNode::SrcPortNode() :any(NULL) {}
 void SrcPortNode::findRule(Connection* conn,list<IdsRule*>& rules) 
 {
 	if(any!=NULL) any->findRule(conn,rules);
-	map<uint16_t,GenNode*>::iterator it;
+	map<uint16_t,GenNode*>::iterator it, notit;
 	it=portmap.find(ntohs(conn->srcPort));
 	if(it!=portmap.end()) it->second->findRule(conn,rules);
+	it=notportmap.find(ntohs(conn->srcPort));
+	for(notit=notportmap.begin();notit!=it;notit++) {
+		notit->second->findRule(conn,rules);
+	}
+	if(notit!=notportmap.end()) {
+		notit++;
+		for(;notit!=notportmap.end();notit++) {
+			notit->second->findRule(conn,rules);
+		}
+		it->second->invalidateRule(conn,rules);
+	}
+}
 
+void SrcPortNode::invalidateRule(Connection* conn, list<IdsRule*>& rules)
+{
+	if(any!=NULL) any->findRule(conn,rules);
+	map<uint16_t,GenNode*>::iterator it, notit;
+	it=portmap.find(ntohs(conn->srcPort));
+	if(it!=portmap.end()) it->second->invalidateRule(conn,rules);
+	//it=notportmap.find(ntohs(conn->srcPort));
+	for(notit=notportmap.begin();notit!=notportmap.end();notit++) {
+		notit->second->invalidateRule(conn,rules);
+	}
+	/*if(notit!=notportmap.end()) {
+		notit++;
+		for(;notit!=notportmap.end();notit++) {
+			notit->second->invalidateRule(conn,rules);
+		}
+		notit->second->invalidateRule(conn,rules);
+	}*/
 }
 
 void SrcPortNode::insertRule(IdsRule* rule,int depth) 
@@ -276,12 +319,20 @@ void SrcPortNode::insertRule(IdsRule* rule,int depth)
 			any->insertRule(rule,depth+1);
 		}
 		else if(((*listit)->portEnd!=0)&&((*listit)->port<=(*listit)->portEnd)) {
-		    for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
-			map<uint16_t,GenNode*>::iterator it;
-			it=portmap.find(port);
-			if(it==portmap.end()) portmap[port]=newNode(depth+1);
-			portmap[port]->insertRule(rule,depth+1);
-		    }
+			for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
+				map<uint16_t,GenNode*>::iterator it;
+				if((*listit)->notFlag==0) {
+					it=portmap.find(port);
+					if(it==portmap.end()) portmap[port]=newNode(depth+1);
+					portmap[port]->insertRule(rule,depth+1);
+				}
+				else {
+					it=notportmap.find(port);
+					if(it==notportmap.end()) notportmap[port]=newNode(depth+1);
+					notportmap[port]->insertRule(rule,depth+1);
+				}
+				if(port==65535) break;
+			}
 		}
 	}
 }
@@ -295,12 +346,20 @@ void DstPortNode::insertRevRule(IdsRule* rule,int depth)
 			any->insertRule(rule,depth+1);
 		}
 		else if(((*listit)->portEnd!=0)&&((*listit)->port<=(*listit)->portEnd)) {
-		    for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
-			map<uint16_t,GenNode*>::iterator it;
-			it=portmap.find(port);
-			if(it==portmap.end()) portmap[port]=newNode(depth+1);
-			portmap[port]->insertRule(rule,depth+1);
-		    }
+			for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
+				map<uint16_t,GenNode*>::iterator it;
+				if((*listit)->notFlag==0) {
+					it=portmap.find(port);
+					if(it==portmap.end()) portmap[port]=newNode(depth+1);
+					portmap[port]->insertRule(rule,depth+1);
+				}
+				else {
+					it=notportmap.find(port);
+					if(it==notportmap.end()) notportmap[port]=newNode(depth+1);
+					notportmap[port]->insertRule(rule,depth+1);
+				}
+				if(port==65535) break;
+			}
 		}
 	}
 }
@@ -312,7 +371,9 @@ SrcPortNode::~SrcPortNode()
 	for(it=portmap.begin();it!=portmap.end();it++) {
 		if(it->second!=NULL)	delete it->second;
 	}
-
+	for(it=notportmap.begin();it!=notportmap.end();it++) {
+		if(it->second!=NULL)	delete it->second;
+	}
 }
 
 DstPortNode::DstPortNode() : any(NULL) {}
@@ -320,26 +381,64 @@ DstPortNode::DstPortNode() : any(NULL) {}
 void DstPortNode::findRule(Connection* conn,list<IdsRule*>& rules) 
 {
 	if(any!=NULL) any->findRule(conn,rules);
-	map<uint16_t,GenNode*>::iterator it;
+	map<uint16_t,GenNode*>::iterator it, notit;
 	it=portmap.find(ntohs(conn->dstPort));
 	if(it!=portmap.end()) it->second->findRule(conn,rules);
+	it=notportmap.find(ntohs(conn->dstPort));
+	for(notit=notportmap.begin();notit!=it;notit++) {
+		notit->second->findRule(conn,rules);
+	}
+	if(notit!=notportmap.end()) {
+		notit++;
+		for(;notit!=notportmap.end();notit++) {
+			notit->second->findRule(conn,rules);
+		}
+		it->second->invalidateRule(conn,rules);
+	}
+}
+
+void DstPortNode::invalidateRule(Connection* conn, list<IdsRule*>& rules)
+{
+	if(any!=NULL) any->findRule(conn,rules);
+	map<uint16_t,GenNode*>::iterator it, notit;
+	it=portmap.find(ntohs(conn->dstPort));
+	if(it!=portmap.end()) it->second->invalidateRule(conn,rules);
+	//it=notportmap.find(ntohs(conn->dstPort));
+	for(notit=notportmap.begin();notit!=notportmap.end();notit++) {
+		notit->second->invalidateRule(conn,rules);
+	}
+	/*if(notit!=notportmap.end()) {
+		notit++;
+		for(;notit!=notportmap.end();notit++) {
+			notit->second->invalidateRule(conn,rules);
+		}
+		notit->second->invalidateRule(conn,rules);
+	}*/
 }
 
 void DstPortNode::insertRule(IdsRule* rule,int depth) 
 {
         list<PortEntry*>::iterator listit;
-        for(listit=rule->sPort.begin();listit!=rule->sPort.end();listit++) {
+        for(listit=rule->dPort.begin();listit!=rule->dPort.end();listit++) {
 		if((*listit)->port==0) {
 			if(any==NULL) any=newNode(depth+1);
 			any->insertRule(rule,depth+1);
 		}
 		else if(((*listit)->portEnd!=0)&&((*listit)->port<=(*listit)->portEnd)) {
-		    for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
-			map<uint16_t,GenNode*>::iterator it;
-			it=portmap.find(port);
-			if(it==portmap.end()) portmap[port]=newNode(depth+1);
-			portmap[port]->insertRule(rule,depth+1);
-		    }
+			for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
+				map<uint16_t,GenNode*>::iterator it;
+				if((*listit)->notFlag==0) {
+					it=portmap.find(port);
+					if(it==portmap.end()) portmap[port]=newNode(depth+1);
+					portmap[port]->insertRule(rule,depth+1);
+				}
+				else {
+					it=notportmap.find(port);
+					if(it==notportmap.end()) notportmap[port]=newNode(depth+1);
+					notportmap[port]->insertRule(rule,depth+1);
+				}
+				if(port==65535) break;
+			}
 		}
 	}
 }
@@ -353,12 +452,20 @@ void SrcPortNode::insertRevRule(IdsRule* rule,int depth)
 			any->insertRule(rule,depth+1);
 		}
 		else if(((*listit)->portEnd!=0)&&((*listit)->port<=(*listit)->portEnd)) {
-		    for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
-			map<uint16_t,GenNode*>::iterator it;
-			it=portmap.find(port);
-			if(it==portmap.end()) portmap[port]=newNode(depth+1);
-			portmap[port]->insertRule(rule,depth+1);
-		    }
+			for(uint16_t port=(*listit)->port;port<=(*listit)->portEnd;port++) {
+				map<uint16_t,GenNode*>::iterator it;
+				if((*listit)->notFlag==0) {
+					it=portmap.find(port);
+					if(it==portmap.end()) portmap[port]=newNode(depth+1);
+					portmap[port]->insertRule(rule,depth+1);
+				}
+				else {
+					it=notportmap.find(port);
+					if(it==notportmap.end()) notportmap[port]=newNode(depth+1);
+					notportmap[port]->insertRule(rule,depth+1);
+				}
+				if(port==65535) break;
+			}
 		}
 	}
 }
@@ -368,6 +475,9 @@ DstPortNode::~DstPortNode()
 	if(any!=NULL) delete any;
 	map<uint16_t,GenNode*>::iterator it;
 	for(it=portmap.begin();it!=portmap.end();it++) {
+		if(it->second!=NULL)	delete it->second;
+	}
+	for(it=notportmap.begin();it!=notportmap.end();it++) {
 		if(it->second!=NULL)	delete it->second;
 	}
 }
@@ -380,6 +490,16 @@ void SrcIpNode::findRule(Connection* conn,list<IdsRule*>& rules)
 	for(int i=0;i<4;i++) {
 		it=ipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
 		if(it!=ipmaps[i].end()) it->second->findRule(conn,rules);
+	}
+}
+
+void SrcIpNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
+{
+	map<uint32_t,GenNode*>::iterator it;
+	if(any!=NULL) any->findRule(conn,rules);
+	for(int i=0;i<4;i++) {
+		it=ipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
+		if(it!=ipmaps[i].end()) it->second->invalidateRule(conn,rules);
 	}
 }
 
@@ -448,6 +568,11 @@ SrcIpNode::~SrcIpNode()
 			if(it->second!=NULL)	delete it->second;
 		}
 	}
+	for(int i=0;i<4;i++) {
+		for(it=notipmaps[i].begin();it!=notipmaps[i].end();it++) {
+			if(it->second!=NULL)	delete it->second;
+		}
+	}
 }
 DstIpNode::DstIpNode() : any(NULL) {}
 
@@ -458,6 +583,16 @@ void DstIpNode::findRule(Connection* conn,list<IdsRule*>& rules)
 	for(int i=0;i<4;i++) {
 		it=ipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
 		if(it!=ipmaps[i].end()) it->second->findRule(conn,rules);
+	}
+}
+
+void DstIpNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
+{
+	map<uint32_t,GenNode*>::iterator it;
+	if(any!=NULL) any->findRule(conn,rules);
+	for(int i=0;i<4;i++) {
+		it=ipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
+		if(it!=ipmaps[i].end()) it->second->invalidateRule(conn,rules);
 	}
 }
 
@@ -526,6 +661,11 @@ DstIpNode::~DstIpNode()
 			if(it->second!=NULL)	delete it->second;
 		}
 	}
+	for(int i=0;i<4;i++) {
+		for(it=notipmaps[i].begin();it!=notipmaps[i].end();it++) {
+			if(it->second!=NULL)	delete it->second;
+		}
+	}
 }
 
 
@@ -546,6 +686,15 @@ void RuleNode::findRule(Connection* conn,list<IdsRule*>& rules)
 	for(it=rulesList.begin();it!=rulesList.end();it++) {
 		rules.push_back(*it);
 	}
+	rules.unique();
+}
+
+void RuleNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
+{
+	list<IdsRule*>::iterator it,retit;
+	for(it=rulesList.begin();it!=rulesList.end();it++) {
+		rules.remove(*it);
+	}
 }
 
 RuleNode::~RuleNode(){}
@@ -563,7 +712,7 @@ GenNode* GenNode::newNode(int depth)
 int FlowSigMatcher::parse_line(string text) 
 {
 	boost::cmatch what;
-	const boost::regex expLine("(\\d+) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)|any|ANY) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)|(?:\\[.+\\])) +(->|<>|<!>|=>|<=>) +((?:\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(\\d+|any|ANY|\\*|(?:\\d+\\:\\d+)|(?:\\[.+\\])) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
+	const boost::regex expLine("(\\d+) +((?:!?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)|any|ANY) +(!?\\d+|any|ANY|\\*|(?:!?(?:\\d+)?\\:(?:\\d+)?)|(?:\\[.+\\])) +(->|<>|<!>|=>|<=>) +((?:!?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(!?\\d+|any|ANY|\\*|(?:!?(?:\\d+)?\\:(?:\\d+)?)|(?:\\[.+\\])) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
 	const boost::regex expFlagsLine("(\\d+) +flags +\\((.+)\\) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
 	const boost::regex expCommentLine("^#|^[:space:]*$");
 	if(boost::regex_search(text.c_str(), expCommentLine)) return true;
@@ -654,25 +803,29 @@ int FlowSigMatcher::parse_port(string text, IdsRule& rule, uint32_t dst)
 		if(dst==0) split_port(text,rule.sPort);
 		else split_port(text,rule.dPort);
 	}
-		if(dst==0) {
-			if(rule.sPort.size()==0) return false;
-		}
-		else {
-			if(rule.dPort.size()==0) return false;
-		}
+	if(dst==0) {
+		if(rule.sPort.size()==0) return false;
+	}
+	else {
+		if(rule.dPort.size()==0) return false;
+	}
 	return true;
 } 
 
 void FlowSigMatcher::split_port(string text, list<PortEntry*>& list) 
 {
 	boost::cmatch what;
-	const boost::regex exp_port_range("(\\d+)\\:(\\d+)");
-	const boost::regex exp_port("(\\d+)");
+	const boost::regex exp_port_range("(!)?(\\d+)?\\:(\\d+)?");
+	const boost::regex exp_port("(!)?(\\d+)");
 	PortEntry* entry;
 	if(boost::regex_match(text.c_str(), what, exp_port_range)) {
 		entry= new PortEntry;
-		entry->port=atoi(static_cast<string>(what[1]).c_str());
-		entry->portEnd=atoi(static_cast<string>(what[2]).c_str());
+		if(static_cast<string>(what[1]).compare("!")==0) entry->notFlag=1; 
+		else entry->notFlag=0;
+		entry->port=atoi(static_cast<string>(what[2]).c_str());
+		if(static_cast<string>(what[2]).compare("")==0) entry->port=1;
+		if(static_cast<string>(what[3]).compare("")==0) entry->portEnd=65535;
+		else entry->portEnd=atoi(static_cast<string>(what[3]).c_str());
 		if(entry->port>entry->portEnd) {
 			delete entry;
 			return;
@@ -680,9 +833,15 @@ void FlowSigMatcher::split_port(string text, list<PortEntry*>& list)
 	}
 	else if(boost::regex_match(text.c_str(), what, exp_port)) {
 		entry= new PortEntry;
-		entry->port=atoi(text.c_str());
+		if (static_cast<string>(what[1]).compare("!")==0) entry->notFlag=1; 
+		else entry->notFlag=0;
+		entry->port=atoi(static_cast<string>(what[2]).c_str());
 		if((text.compare("*")==0)||(text.compare("any")==0)||(text.compare("ANY")==0)) entry->port=0;
 		entry->portEnd=entry->port;
+	}
+	else {
+		delete entry;
+		return;
 	}
 	list.push_back(entry);
 }
@@ -714,20 +873,28 @@ int FlowSigMatcher::parse_ip(string text, IdsRule& rule, uint32_t dst)
 		if(dst==0) split_ip(text,rule.src);
 		else split_ip(text,rule.dst);
 	}
+	if(dst==0) {
+		if(rule.src.size()==0) return false;
+	}
+	else {
+		if(rule.dst.size()==0) return false;
+	}
 	return true;
 }
 
 void FlowSigMatcher::split_ip(string text, list<IpEntry*>& list) 
 {
 	boost::cmatch what;
-	const boost::regex exp_split_ip("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?:/(\\d+))*");
+	const boost::regex exp_split_ip("(!)?(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?:/(\\d+))*");
 	const boost::regex exp_split_anyip("(any|ANY)");
 	if(boost::regex_match(text.c_str(),what,exp_split_ip)) {
 		IpEntry* entry=new IpEntry;
 		string emptymask="";
-		if(emptymask.compare(what[5])==0) entry->mask=32;
-		else entry->mask=atoi(static_cast<string>(what[5]).c_str());
-		entry->ip=(atoi(static_cast<string>(what[1]).c_str())<<24)|(atoi(static_cast<string>(what[2]).c_str())<<16)|(atoi(static_cast<string>(what[3]).c_str())<<8)|(atoi(static_cast<string>(what[4]).c_str()));
+		if(static_cast<string>(what[1]).compare("!")==0)entry->notFlag=1;
+		else entry->notFlag=0;
+		if(emptymask.compare(what[6])==0) entry->mask=32;
+		else entry->mask=atoi(static_cast<string>(what[6]).c_str());
+		entry->ip=(atoi(static_cast<string>(what[2]).c_str())<<24)|(atoi(static_cast<string>(what[3]).c_str())<<16)|(atoi(static_cast<string>(what[4]).c_str())<<8)|(atoi(static_cast<string>(what[5]).c_str()));
 		list.push_back(entry);
 	}
 	else if(boost::regex_match(text.c_str(),what,exp_split_anyip)) {

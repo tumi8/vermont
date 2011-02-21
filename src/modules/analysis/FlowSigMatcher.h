@@ -42,11 +42,13 @@ using namespace std;
 struct IpEntry{
         uint32_t ip;
         uint8_t mask;
+        uint8_t notFlag;
 };
 
 struct PortEntry{
 	uint16_t port;
 	uint16_t portEnd;
+        uint8_t notFlag;
 };
 
 struct IdsRule {
@@ -85,6 +87,7 @@ class GenNode {
 	static GenNode* newNode(int depth);
 	static void parse_order(string order);
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules)=0;
+	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules)=0;
 	virtual void insertRule(IdsRule* rule,int depth)=0;
 	virtual void insertRevRule(IdsRule* rule,int depth)=0;
 	virtual ~GenNode() {};
@@ -97,6 +100,7 @@ class ProtoNode : public GenNode {
 	GenNode* icmp;
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
         ProtoNode();
@@ -106,8 +110,10 @@ class ProtoNode : public GenNode {
 class SrcIpNode : public GenNode {
 	GenNode* any;
 	map<uint32_t,GenNode*> ipmaps[4];
+	map<uint32_t,GenNode*> notipmaps[4];
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
         SrcIpNode();
@@ -117,8 +123,10 @@ class SrcIpNode : public GenNode {
 class DstIpNode : public GenNode {
 	GenNode* any;
 	map<uint32_t,GenNode*> ipmaps[4];
+	map<uint32_t,GenNode*> notipmaps[4];
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
         DstIpNode();
@@ -128,8 +136,10 @@ class DstIpNode : public GenNode {
 class SrcPortNode : public GenNode {
 	GenNode* any;
 	map<uint16_t,GenNode*> portmap;
+	map<uint16_t,GenNode*> notportmap;
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
         SrcPortNode();
@@ -139,8 +149,10 @@ class SrcPortNode : public GenNode {
 class DstPortNode : public GenNode {
 	GenNode* any;
 	map<uint16_t,GenNode*> portmap;
+	map<uint16_t,GenNode*> notportmap;
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
         DstPortNode();
@@ -151,6 +163,7 @@ class RuleNode : public GenNode {
 	list<IdsRule*> rulesList;
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
 	~RuleNode();
