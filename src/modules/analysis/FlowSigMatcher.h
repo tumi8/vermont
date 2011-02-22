@@ -51,10 +51,20 @@ struct PortEntry{
         uint8_t notFlag;
 };
 
+struct PortListEntry{
+	struct PortEntry* entry;
+	struct GenNode* node;
+};
+
+struct IpListEntry{
+	struct IpEntry* entry;
+	struct GenNode* node;
+};
+
 struct IdsRule {
         uint8_t protocol;
-	list<PortEntry*>sPort;
-	list<PortEntry*>dPort;
+	list<PortEntry*> sPort;
+	list<PortEntry*> dPort;
         list<IpEntry*> src;
         list<IpEntry*> dst;
         uint32_t uid;
@@ -137,6 +147,8 @@ class SrcPortNode : public GenNode {
 	GenNode* any;
 	map<uint16_t,GenNode*> portmap;
 	map<uint16_t,GenNode*> notportmap;
+	list<PortListEntry*> portlist;
+	list<PortListEntry*> notportlist;
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
@@ -150,6 +162,8 @@ class DstPortNode : public GenNode {
 	GenNode* any;
 	map<uint16_t,GenNode*> portmap;
 	map<uint16_t,GenNode*> notportmap;
+	list<PortListEntry*> portlist;
+	list<PortListEntry*> notportlist;
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
