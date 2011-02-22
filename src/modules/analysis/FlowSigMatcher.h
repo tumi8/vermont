@@ -121,6 +121,8 @@ class SrcIpNode : public GenNode {
 	GenNode* any;
 	map<uint32_t,GenNode*> ipmaps[4];
 	map<uint32_t,GenNode*> notipmaps[4];
+	list<IpListEntry*> iplist;
+	list<IpListEntry*> notiplist;
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
@@ -134,6 +136,8 @@ class DstIpNode : public GenNode {
 	GenNode* any;
 	map<uint32_t,GenNode*> ipmaps[4];
 	map<uint32_t,GenNode*> notipmaps[4];
+	list<IpListEntry*> iplist;
+	list<IpListEntry*> notiplist;
 	public:
 	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
 	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);

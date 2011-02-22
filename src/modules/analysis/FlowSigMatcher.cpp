@@ -322,7 +322,10 @@ void SrcPortNode::invalidateRule(Connection* conn, list<IdsRule*>& rules)
 		notit->second->invalidateRule(conn,rules);
 	}
 	list<PortListEntry*>::iterator listit;		
-	for(listit=portlist.begin();listit!=portlist.end();listit++) (*listit)->node->invalidateRule(conn,rules);
+	for(listit=portlist.begin();listit!=portlist.end();listit++) {
+		if(((*listit)->entry->port<=ntohs(conn->srcPort))&&((*listit)->entry->portEnd>=ntohs(conn->srcPort))) 
+		(*listit)->node->invalidateRule(conn,rules);
+	}
 	for(listit=notportlist.begin();listit!=notportlist.end();listit++) (*listit)->node->invalidateRule(conn,rules);
 }
 
@@ -511,7 +514,10 @@ void DstPortNode::invalidateRule(Connection* conn, list<IdsRule*>& rules)
 		notit->second->invalidateRule(conn,rules);
 	}
 	list<PortListEntry*>::iterator listit;		
-	for(listit=portlist.begin();listit!=portlist.end();listit++) (*listit)->node->invalidateRule(conn,rules);
+	for(listit=portlist.begin();listit!=portlist.end();listit++) {
+		if(((*listit)->entry->port<=ntohs(conn->srcPort))&&((*listit)->entry->portEnd>=ntohs(conn->srcPort))) 
+		(*listit)->node->invalidateRule(conn,rules);
+	}
 	for(listit=notportlist.begin();listit!=notportlist.end();listit++) (*listit)->node->invalidateRule(conn,rules);
 }
 
@@ -648,21 +654,69 @@ SrcIpNode::SrcIpNode() : any(NULL) {}
 
 void SrcIpNode::findRule(Connection* conn,list<IdsRule*>& rules) 
 {
-	map<uint32_t,GenNode*>::iterator it;
+	map<uint32_t,GenNode*>::iterator it, notit;
+	list<IpListEntry*>::iterator listit;
+	list<GenNode*> nodes;
+	list<GenNode*>::iterator nodesit;
 	if(any!=NULL) any->findRule(conn,rules);
 	for(int i=0;i<4;i++) {
 		it=ipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
 		if(it!=ipmaps[i].end()) it->second->findRule(conn,rules);
+	//}
+	//for(int i=0;i<4;i++) {
+		it=notipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
+		for(notit=notipmaps[i].begin();notit!=it;notit++) {
+			notit->second->findRule(conn,rules);	
+			cout<<"before"<<endl;
+		}
+		if(it!=notipmaps[i].end()) {
+			notit++;
+			for(;notit!=notipmaps[i].end();notit++) {
+			cout<<"after"<<endl;
+				notit->second->findRule(conn,rules);	
+			}
+			nodes.push_back(it->second);
+		}
+	}
+	for(listit=iplist.begin();listit!=iplist.end();listit++) {
+		if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->srcIP))>>(32-(*listit)->entry->mask))) {
+			(*listit)->node->findRule(conn,rules);
+		}
+	}
+	for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
+		if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) != ((ntohl(conn->srcIP))>>(32-(*listit)->entry->mask))) {
+			(*listit)->node->findRule(conn,rules);
+		}
+		else nodes.push_back((*listit)->node);
+	}
+	for(nodesit=nodes.begin();nodesit!=nodes.end();nodesit++) {
+		(*nodesit)->invalidateRule(conn,rules);
 	}
 }
 
 void SrcIpNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
 {
-	map<uint32_t,GenNode*>::iterator it;
-	if(any!=NULL) any->findRule(conn,rules);
+	map<uint32_t,GenNode*>::iterator it, notit;
+	list<IpListEntry*>::iterator listit;
+	list<GenNode*> nodes;
+	list<GenNode*>::iterator nodesit;
+	if(any!=NULL) any->invalidateRule(conn,rules);
 	for(int i=0;i<4;i++) {
 		it=ipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
 		if(it!=ipmaps[i].end()) it->second->invalidateRule(conn,rules);
+	//}
+	//for(int i=0;i<4;i++) {
+		for(notit=notipmaps[i].begin();notit!=notipmaps[i].end();notit++) {
+			notit->second->invalidateRule(conn,rules);	
+		}
+	}
+	for(listit=iplist.begin();listit!=iplist.end();listit++) {
+		if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->srcIP))>>(32-(*listit)->entry->mask))) {
+			(*listit)->node->invalidateRule(conn,rules);
+		}
+	}
+	for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
+			(*listit)->node->invalidateRule(conn,rules);
 	}
 }
 
@@ -678,16 +732,64 @@ void SrcIpNode::insertRule(IdsRule* rule,int depth)
 			map<uint32_t,GenNode*>::iterator it;
 			int fact=((*listit)->mask-1)/8;
 			int mod=(*listit)->mask%8;
-			if(mod==0) {
-				it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
-				if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
-				ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRule(rule,depth+1);
+			if((*listit)->notFlag==0) {
+				if(mod==0) {
+					it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
+					if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
+					ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRule(rule,depth+1);
+				}
+				else if(8-mod<=3) {
+					for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+						it=ipmaps[fact].find(i);
+						if(it==ipmaps[fact].end()) ipmaps[fact][i]=newNode(depth+1);
+						ipmaps[fact][i]->insertRule(rule,depth+1);
+					}
+				}
+				else {
+					list<IpListEntry*>::iterator it;		
+					for(it=iplist.begin();it!=iplist.end();it++) {
+						if(((*listit)->ip==(*it)->entry->ip)&&((*listit)->mask==(*it)->entry->mask)) {
+							(*it)->node->insertRule(rule,depth+1);
+							break;
+						}
+					}
+					if(it==iplist.end()) {
+						IpListEntry* entry=new IpListEntry;	
+						entry->entry=*listit;
+						entry->node=newNode(depth+1);
+						entry->node->insertRule(rule,depth+1);
+						iplist.push_back(entry);
+					}
+				}
 			}
 			else {
-				for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
-					it=ipmaps[fact].find(i);
-					if(it==ipmaps[fact].end()) ipmaps[fact][i]=newNode(depth+1);
-					ipmaps[fact][i]->insertRule(rule,depth+1);
+				if(mod==0) {
+					it=notipmaps[fact].find((*listit)->ip>>(24-fact*8));
+					if(it==notipmaps[fact].end()) notipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
+					notipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRule(rule,depth+1);
+				}
+				else if(8-mod<=3) {
+					for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+						it=notipmaps[fact].find(i);
+						if(it==notipmaps[fact].end()) notipmaps[fact][i]=newNode(depth+1);
+						notipmaps[fact][i]->insertRule(rule,depth+1);
+					}
+				}
+				else {
+					list<IpListEntry*>::iterator it;		
+					for(it=notiplist.begin();it!=notiplist.end();it++) {
+						if(((*listit)->ip==(*it)->entry->ip)&&((*listit)->mask==(*it)->entry->mask)) {
+							(*it)->node->insertRule(rule,depth+1);
+							break;
+						}
+					}
+					if(it==notiplist.end()) {
+						IpListEntry* entry=new IpListEntry;	
+						entry->entry=*listit;
+						entry->node=newNode(depth+1);
+						entry->node->insertRule(rule,depth+1);
+						notiplist.push_back(entry);
+					}
 				}
 			}
 		}
@@ -706,16 +808,64 @@ void DstIpNode::insertRevRule(IdsRule* rule,int depth)
 			map<uint32_t,GenNode*>::iterator it;
 			int fact=((*listit)->mask-1)/8;
 			int mod=(*listit)->mask%8;
-			if(mod==0) {
-				it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
-				if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
-				ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRevRule(rule,depth+1);
+			if((*listit)->notFlag==0) {
+				if(mod==0) {
+					it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
+					if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
+					ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRevRule(rule,depth+1);
+				}
+				else if(8-mod<=3) {
+					for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+						it=ipmaps[fact].find(i);
+						if(it==ipmaps[fact].end()) ipmaps[fact][i]=newNode(depth+1);
+						ipmaps[fact][i]->insertRevRule(rule,depth+1);
+					}
+				}
+				else {
+					list<IpListEntry*>::iterator it;		
+					for(it=iplist.begin();it!=iplist.end();it++) {
+						if(((*listit)->ip==(*it)->entry->ip)&&((*listit)->mask==(*it)->entry->mask)) {
+							(*it)->node->insertRevRule(rule,depth+1);
+							break;
+						}
+					}
+					if(it==iplist.end()) {
+						IpListEntry* entry=new IpListEntry;	
+						entry->entry=*listit;
+						entry->node=newNode(depth+1);
+						entry->node->insertRevRule(rule,depth+1);
+						iplist.push_back(entry);
+					}
+				}
 			}
 			else {
-				for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
-					it=ipmaps[fact].find(i);
-					if(it==ipmaps[fact].end()) ipmaps[fact][i]=newNode(depth+1);
-					ipmaps[fact][i]->insertRevRule(rule,depth+1);
+				if(mod==0) {
+					it=notipmaps[fact].find((*listit)->ip>>(24-fact*8));
+					if(it==notipmaps[fact].end()) notipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
+					notipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRevRule(rule,depth+1);
+				}
+				else if(8-mod<=3) {
+					for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+						it=notipmaps[fact].find(i);
+						if(it==notipmaps[fact].end()) notipmaps[fact][i]=newNode(depth+1);
+						notipmaps[fact][i]->insertRevRule(rule,depth+1);
+					}
+				}
+				else {
+					list<IpListEntry*>::iterator it;		
+					for(it=notiplist.begin();it!=notiplist.end();it++) {
+						if(((*listit)->ip==(*it)->entry->ip)&&((*listit)->mask==(*it)->entry->mask)) {
+							(*it)->node->insertRevRule(rule,depth+1);
+							break;
+						}
+					}
+					if(it==notiplist.end()) {
+						IpListEntry* entry=new IpListEntry;	
+						entry->entry=*listit;
+						entry->node=newNode(depth+1);
+						entry->node->insertRevRule(rule,depth+1);
+						notiplist.push_back(entry);
+					}
 				}
 			}
 		}
@@ -741,21 +891,67 @@ DstIpNode::DstIpNode() : any(NULL) {}
 
 void DstIpNode::findRule(Connection* conn,list<IdsRule*>& rules) 
 {
+	map<uint32_t,GenNode*>::iterator it, notit;
+	list<IpListEntry*>::iterator listit;
+	list<GenNode*> nodes;
+	list<GenNode*>::iterator nodesit;
 	if(any!=NULL) any->findRule(conn,rules);
-	map<uint32_t,GenNode*>::iterator it;
 	for(int i=0;i<4;i++) {
 		it=ipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
 		if(it!=ipmaps[i].end()) it->second->findRule(conn,rules);
+	//}
+	//for(int i=0;i<4;i++) {
+		it=notipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
+		for(notit=notipmaps[i].begin();notit!=it;notit++) {
+			notit->second->findRule(conn,rules);	
+		}
+		if(it!=notipmaps[i].end()) {
+			notit++;
+			for(;notit!=notipmaps[i].end();notit++) {
+				notit->second->findRule(conn,rules);	
+			}
+			nodes.push_back(it->second);
+		}
+	}
+	for(listit=iplist.begin();listit!=iplist.end();listit++) {
+		if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->dstIP))>>(32-(*listit)->entry->mask))) {
+			(*listit)->node->findRule(conn,rules);
+		}
+	}
+	for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
+		if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) != ((ntohl(conn->dstIP))>>(32-(*listit)->entry->mask))) {
+			(*listit)->node->findRule(conn,rules);
+		}
+		else nodes.push_back((*listit)->node);
+	}
+	for(nodesit=nodes.begin();nodesit!=nodes.end();nodesit++) {
+		(*nodesit)->invalidateRule(conn,rules);
 	}
 }
 
 void DstIpNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
 {
-	map<uint32_t,GenNode*>::iterator it;
-	if(any!=NULL) any->findRule(conn,rules);
+	map<uint32_t,GenNode*>::iterator it, notit;
+	list<IpListEntry*>::iterator listit;
+	list<GenNode*> nodes;
+	list<GenNode*>::iterator nodesit;
+	if(any!=NULL) any->invalidateRule(conn,rules);
 	for(int i=0;i<4;i++) {
 		it=ipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
 		if(it!=ipmaps[i].end()) it->second->invalidateRule(conn,rules);
+	}
+	for(int i=0;i<4;i++) {
+		for(notit=notipmaps[i].begin();notit!=notipmaps[i].end();notit++) {
+			notit->second->invalidateRule(conn,rules);	
+		}
+	}
+	for(listit=iplist.begin();listit!=iplist.end();listit++) {
+		if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->dstIP))>>(32-(*listit)->entry->mask))) {
+			(*listit)->node->invalidateRule(conn,rules);
+		}
+	}
+	for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
+			(*listit)->node->invalidateRule(conn,rules);
 	}
 }
 
@@ -771,20 +967,68 @@ void DstIpNode::insertRule(IdsRule* rule,int depth)
 			map<uint32_t,GenNode*>::iterator it;
 			int fact=((*listit)->mask-1)/8;
 			int mod=(*listit)->mask%8;
-			if(mod==0) {
-				it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
-				if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
-				ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRule(rule,depth+1);
+			if((*listit)->notFlag==0) {
+				if(mod==0) {
+					it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
+					if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
+					ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRule(rule,depth+1);
+				}
+				else if(8-mod<=3) {
+					for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+						it=ipmaps[fact].find(i);
+						if(it==ipmaps[fact].end()) ipmaps[fact][i]=newNode(depth+1);
+						ipmaps[fact][i]->insertRule(rule,depth+1);
+					}
+				}
+				else {
+					list<IpListEntry*>::iterator it;		
+					for(it=iplist.begin();it!=iplist.end();it++) {
+						if(((*listit)->ip==(*it)->entry->ip)&&((*listit)->mask==(*it)->entry->mask)) {
+							(*it)->node->insertRule(rule,depth+1);
+							break;
+						}
+					}
+					if(it==iplist.end()) {
+						IpListEntry* entry=new IpListEntry;	
+						entry->entry=*listit;
+						entry->node=newNode(depth+1);
+						entry->node->insertRule(rule,depth+1);
+						iplist.push_back(entry);
+					}
+				}
 			}
 			else {
-				for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
-					it=ipmaps[fact].find(i);
-					if(it==ipmaps[fact].end()) ipmaps[fact][i]=newNode(depth+1);
-					ipmaps[fact][i]->insertRule(rule,depth+1);
+				if(mod==0) {
+					it=notipmaps[fact].find((*listit)->ip>>(24-fact*8));
+					if(it==notipmaps[fact].end()) notipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
+					notipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRule(rule,depth+1);
+				}
+				else if(8-mod<=3) {
+					for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+						it=notipmaps[fact].find(i);
+						if(it==notipmaps[fact].end()) notipmaps[fact][i]=newNode(depth+1);
+						notipmaps[fact][i]->insertRule(rule,depth+1);
+					}
+				}
+				else {
+					list<IpListEntry*>::iterator it;		
+					for(it=notiplist.begin();it!=notiplist.end();it++) {
+						if(((*listit)->ip==(*it)->entry->ip)&&((*listit)->mask==(*it)->entry->mask)) {
+							(*it)->node->insertRule(rule,depth+1);
+							break;
+						}
+					}
+					if(it==notiplist.end()) {
+						IpListEntry* entry=new IpListEntry;	
+						entry->entry=*listit;
+						entry->node=newNode(depth+1);
+						entry->node->insertRule(rule,depth+1);
+						notiplist.push_back(entry);
+					}
 				}
 			}
 		}
-	}
+        }
 }
 
 void SrcIpNode::insertRevRule(IdsRule* rule,int depth) 
@@ -799,20 +1043,68 @@ void SrcIpNode::insertRevRule(IdsRule* rule,int depth)
 			map<uint32_t,GenNode*>::iterator it;
 			int fact=((*listit)->mask-1)/8;
 			int mod=(*listit)->mask%8;
-			if(mod==0) {
-				it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
-				if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
-				ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRevRule(rule,depth+1);
+			if((*listit)->notFlag==0) {
+				if(mod==0) {
+					it=ipmaps[fact].find((*listit)->ip>>(24-fact*8));
+					if(it==ipmaps[fact].end()) ipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
+					ipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRevRule(rule,depth+1);
+				}
+				else if(8-mod<=3) {
+					for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+						it=ipmaps[fact].find(i);
+						if(it==ipmaps[fact].end()) ipmaps[fact][i]=newNode(depth+1);
+						ipmaps[fact][i]->insertRevRule(rule,depth+1);
+					}
+				}
+				else {
+					list<IpListEntry*>::iterator it;		
+					for(it=iplist.begin();it!=iplist.end();it++) {
+						if(((*listit)->ip==(*it)->entry->ip)&&((*listit)->mask==(*it)->entry->mask)) {
+							(*it)->node->insertRevRule(rule,depth+1);
+							break;
+						}
+					}
+					if(it==iplist.end()) {
+						IpListEntry* entry=new IpListEntry;	
+						entry->entry=*listit;
+						entry->node=newNode(depth+1);
+						entry->node->insertRevRule(rule,depth+1);
+						iplist.push_back(entry);
+					}
+				}
 			}
 			else {
-				for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
-					it=ipmaps[fact].find(i);
-					if(it==ipmaps[fact].end()) ipmaps[fact][i]=newNode(depth+1);
-					ipmaps[fact][i]->insertRevRule(rule,depth+1);
+				if(mod==0) {
+					it=notipmaps[fact].find((*listit)->ip>>(24-fact*8));
+					if(it==notipmaps[fact].end()) notipmaps[fact][(*listit)->ip>>(24-fact*8)]=newNode(depth+1);
+					notipmaps[fact][(*listit)->ip>>(24-fact*8)]->insertRevRule(rule,depth+1);
+				}
+				else if(8-mod<=3) {
+					for(uint32_t i=((*listit)->ip)>>(24-fact*8);(i>>(8-mod))==(((*listit)->ip)>>(32-(*listit)->mask));i++) {
+						it=notipmaps[fact].find(i);
+						if(it==notipmaps[fact].end()) notipmaps[fact][i]=newNode(depth+1);
+						notipmaps[fact][i]->insertRevRule(rule,depth+1);
+					}
+				}
+				else {
+					list<IpListEntry*>::iterator it;		
+					for(it=notiplist.begin();it!=notiplist.end();it++) {
+						if(((*listit)->ip==(*it)->entry->ip)&&((*listit)->mask==(*it)->entry->mask)) {
+							(*it)->node->insertRevRule(rule,depth+1);
+							break;
+						}
+					}
+					if(it==notiplist.end()) {
+						IpListEntry* entry=new IpListEntry;	
+						entry->entry=*listit;
+						entry->node=newNode(depth+1);
+						entry->node->insertRevRule(rule,depth+1);
+						notiplist.push_back(entry);
+					}
 				}
 			}
 		}
-	}
+        }
 }
 
 DstIpNode::~DstIpNode() 
@@ -849,6 +1141,7 @@ void RuleNode::findRule(Connection* conn,list<IdsRule*>& rules)
 	for(it=rulesList.begin();it!=rulesList.end();it++) {
 		rules.push_back(*it);
 	}
+	//rules.unique();
 }
 
 void RuleNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
