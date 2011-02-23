@@ -47,6 +47,9 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesord
 	  idmefTemplate(idmeftemplate),
 	  flagsTimeout(10000)
 {
+	const boost::regex exp_valid_homenet("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?:/(\\d+))*");
+	boost::cmatch what;
+	if(!boost::regex_match(homenet.c_str(),what,exp_valid_homenet)) THROWEXCEPTION("HOMENET is invalid: %s",homenet.c_str());
 	GenNode::parse_order(rulesorder);
 	if(flagstimeout.compare("")!=0) flagsTimeout=strtoull(flagstimeout.c_str(),NULL,10);
 	string buffer;
@@ -1188,7 +1191,7 @@ GenNode* GenNode::newNode(int depth)
 int FlowSigMatcher::parse_line(string text) 
 {
 	boost::cmatch what;
-	const boost::regex expLine("(\\d+) +((?:!?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:\\$HOME_NET)|any|ANY) +(!?\\d+|any|ANY|\\*|(?:!?(?:\\d+)?\\:(?:\\d+)?)|(?:\\[.+\\])) +(->|<>|<!>|=>|<=>) +((?:!?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:\\$HOME_NET)) +(!?\\d+|any|ANY|\\*|(?:!?(?:\\d+)?\\:(?:\\d+)?)|(?:\\[.+\\])) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
+	const boost::regex expLine("(\\d+) +((?:!?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:!?\\$HOME_NET)|any|ANY) +(!?\\d+|any|ANY|\\*|(?:!?(?:\\d+)?\\:(?:\\d+)?)|(?:\\[.+\\])) +(->|<>|<!>|=>|<=>) +((?:!?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:!?\\$HOME_NET)) +(!?\\d+|any|ANY|\\*|(?:!?(?:\\d+)?\\:(?:\\d+)?)|(?:\\[.+\\])) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
 	const boost::regex expFlagsLine("(\\d+) +flags +\\((.+)\\) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
 	const boost::regex expCommentLine("^#|^[:space:]*$");
 	if(boost::regex_search(text.c_str(), expCommentLine)) return true;
@@ -1196,15 +1199,8 @@ int FlowSigMatcher::parse_line(string text)
 		IdsRule* rule=new IdsRule;
 		rule->uid=atoi(static_cast<string>(what[1]).c_str());
 		string home_net("$HOME_NET");
-		if(home_net.compare(what[2])==0) parse_ip(homenet,*rule,0);
-		else   parse_ip(what[2], *rule,0);
-		if(parse_port(what[3],*rule,0)==false) {
-			delete rule;
-			return false;
-		}
-		if(home_net.compare(what[5])==0) parse_ip(homenet,*rule,1);
-		else parse_ip(what[5], *rule,1);
-		if(parse_port(what[6],*rule,1)==false) {
+		string nothome_net("!$HOME_NET");
+		if((!parse_ip(what[2], *rule,0))||(!parse_port(what[3],*rule,0))||(!parse_ip(what[5], *rule,1))||(parse_port(what[6],*rule,1)==false)) {
 			delete rule;
 			return false;
 		}
@@ -1316,6 +1312,7 @@ void FlowSigMatcher::split_port(string text, list<PortEntry*>& list)
 		entry->portEnd=entry->port;
 	}
 	else {
+		msg(MSG_DIALOG,"Couldn't parse this port parameter: %s",text.c_str());
 		delete entry;
 		return;
 	}
@@ -1362,6 +1359,7 @@ void FlowSigMatcher::split_ip(string text, list<IpEntry*>& list)
 {
 	boost::cmatch what;
 	const boost::regex exp_split_ip("(!)?(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?:/(\\d+))*");
+	const boost::regex exp_split_home("(!)?(\\$HOME_NET)");
 	const boost::regex exp_split_anyip("(any|ANY)");
 	if(boost::regex_match(text.c_str(),what,exp_split_ip)) {
 		IpEntry* entry=new IpEntry;
@@ -1378,5 +1376,13 @@ void FlowSigMatcher::split_ip(string text, list<IpEntry*>& list)
 		entry->mask=0;
 		entry->ip=0;
 		list.push_back(entry);
+	}
+	else if(boost::regex_match(text.c_str(),what,exp_split_home)) {
+		cout<<"RIGHT!!!"<<endl;
+		if(static_cast<string>(what[1]).compare("")==0) split_ip(homenet,list);
+		else split_ip("!"+homenet,list);
+	}
+	else {
+		msg(MSG_DIALOG,"Couldn't parse this IP parameter: %s",text.c_str());
 	}
 }
