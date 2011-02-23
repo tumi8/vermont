@@ -106,9 +106,9 @@ void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
 /*	if (conn.srcTcpControlBits&Connection::SYN) {
 		addConnection(&conn);
 	}*/
-        list<IdsRule*> matchingRules;
+        set<IdsRule*> matchingRules;
         treeRoot->findRule(&conn,matchingRules);
-        list<IdsRule*>::iterator it;
+        set<IdsRule*>::iterator it;
         for(it=matchingRules.begin();it!=matchingRules.end();it++) {
 		if(((*it)->mode>=2)&&(conn.srcPackets==0||conn.dstPackets==0)) continue; //check if flows are bidir
 		if(((*it)->mode>=3)&&(conn.protocol==6)) { //check for tcp 3-way handshake
@@ -201,7 +201,7 @@ void GenNode::parse_order(string order)
 
 ProtoNode::ProtoNode() : any(NULL), udp(NULL), tcp(NULL), icmp(NULL) {}
 
-void ProtoNode::findRule(Connection* conn,list<IdsRule*>& rules) 
+void ProtoNode::findRule(Connection* conn,set<IdsRule*>& rules) 
 {
 	if(any!=NULL) any->findRule(conn,rules);
 	if(conn->protocol==6) {
@@ -215,7 +215,7 @@ void ProtoNode::findRule(Connection* conn,list<IdsRule*>& rules)
 	}
 }
 
-void ProtoNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
+void ProtoNode::invalidateRule(Connection* conn,set<IdsRule*>& rules) 
 {
 	if(any!=NULL) any->invalidateRule(conn,rules);
 	if(conn->protocol==6) {
@@ -275,7 +275,7 @@ ProtoNode::~ProtoNode()
 }
 SrcPortNode::SrcPortNode() :any(NULL) {}
 
-void SrcPortNode::findRule(Connection* conn,list<IdsRule*>& rules) 
+void SrcPortNode::findRule(Connection* conn,set<IdsRule*>& rules) 
 {
 	if(any!=NULL) any->findRule(conn,rules);
 	map<uint16_t,GenNode*>::iterator it, notit;
@@ -312,7 +312,7 @@ void SrcPortNode::findRule(Connection* conn,list<IdsRule*>& rules)
 	}
 }
 
-void SrcPortNode::invalidateRule(Connection* conn, list<IdsRule*>& rules)
+void SrcPortNode::invalidateRule(Connection* conn, set<IdsRule*>& rules)
 {
 	if(any!=NULL) any->invalidateRule(conn,rules);
 	map<uint16_t,GenNode*>::iterator it, notit;
@@ -467,7 +467,7 @@ SrcPortNode::~SrcPortNode()
 
 DstPortNode::DstPortNode() : any(NULL) {}
 
-void DstPortNode::findRule(Connection* conn,list<IdsRule*>& rules) 
+void DstPortNode::findRule(Connection* conn,set<IdsRule*>& rules) 
 {
 	if(any!=NULL) any->findRule(conn,rules);
 	map<uint16_t,GenNode*>::iterator it, notit;
@@ -504,7 +504,7 @@ void DstPortNode::findRule(Connection* conn,list<IdsRule*>& rules)
 	}
 }
 
-void DstPortNode::invalidateRule(Connection* conn, list<IdsRule*>& rules)
+void DstPortNode::invalidateRule(Connection* conn, set<IdsRule*>& rules)
 {
 	if(any!=NULL) any->invalidateRule(conn,rules);
 	map<uint16_t,GenNode*>::iterator it, notit;
@@ -652,7 +652,7 @@ DstPortNode::~DstPortNode()
 }
 SrcIpNode::SrcIpNode() : any(NULL) {}
 
-void SrcIpNode::findRule(Connection* conn,list<IdsRule*>& rules) 
+void SrcIpNode::findRule(Connection* conn,set<IdsRule*>& rules) 
 {
 	map<uint32_t,GenNode*>::iterator it, notit;
 	list<IpListEntry*>::iterator listit;
@@ -665,12 +665,16 @@ void SrcIpNode::findRule(Connection* conn,list<IdsRule*>& rules)
 	//}
 	//for(int i=0;i<4;i++) {
 		it=notipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
+		//cout<<"notmap:"<<endl;
 		for(notit=notipmaps[i].begin();notit!=it;notit++) {
+		//cout<<IPToString(htonl(notit->first))<<endl;
 			notit->second->findRule(conn,rules);	
 		}
 		if(it!=notipmaps[i].end()) {
+			//cout<<"Matching:"<<IPToString(htonl(notit->first))<<endl;
 			notit++;
 			for(;notit!=notipmaps[i].end();notit++) {
+				//cout<<IPToString(htonl(notit->first))<<endl;
 				notit->second->findRule(conn,rules);	
 			}
 			nodes.push_back(it->second);
@@ -694,7 +698,7 @@ void SrcIpNode::findRule(Connection* conn,list<IdsRule*>& rules)
 	}
 }
 
-void SrcIpNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
+void SrcIpNode::invalidateRule(Connection* conn,set<IdsRule*>& rules) 
 {
 	map<uint32_t,GenNode*>::iterator it, notit;
 	list<IpListEntry*>::iterator listit;
@@ -898,7 +902,7 @@ SrcIpNode::~SrcIpNode()
 }
 DstIpNode::DstIpNode() : any(NULL) {}
 
-void DstIpNode::findRule(Connection* conn,list<IdsRule*>& rules) 
+void DstIpNode::findRule(Connection* conn,set<IdsRule*>& rules) 
 {
 	map<uint32_t,GenNode*>::iterator it, notit;
 	list<IpListEntry*>::iterator listit;
@@ -938,7 +942,7 @@ void DstIpNode::findRule(Connection* conn,list<IdsRule*>& rules)
 	}
 }
 
-void DstIpNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
+void DstIpNode::invalidateRule(Connection* conn,set<IdsRule*>& rules) 
 {
 	map<uint32_t,GenNode*>::iterator it, notit;
 	list<IpListEntry*>::iterator listit;
@@ -948,8 +952,8 @@ void DstIpNode::invalidateRule(Connection* conn,list<IdsRule*>& rules)
 	for(int i=0;i<4;i++) {
 		it=ipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
 		if(it!=ipmaps[i].end()) it->second->invalidateRule(conn,rules);
-	}
-	for(int i=0;i<4;i++) {
+	//}
+	//for(int i=0;i<4;i++) {
 		for(notit=notipmaps[i].begin();notit!=notipmaps[i].end();notit++) {
 			notit->second->invalidateRule(conn,rules);	
 		}
@@ -1153,20 +1157,19 @@ void RuleNode::insertRevRule(IdsRule* rule,int depth)
 	rulesList.push_back(rule);
 }
 
-void RuleNode::findRule(Connection* conn,list<IdsRule*>& rules) 
+void RuleNode::findRule(Connection* conn,set<IdsRule*>& rules) 
 {
 	list<IdsRule*>::iterator it;
 	for(it=rulesList.begin();it!=rulesList.end();it++) {
-		rules.push_back(*it);
+		rules.insert(*it);
 	}
-	//rules.unique();
 }
 
-void RuleNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
+void RuleNode::invalidateRule(Connection* conn, set<IdsRule*>& rules) 
 {
 	list<IdsRule*>::iterator it;
 	for(it=rulesList.begin();it!=rulesList.end();it++) {
-		rules.remove(*it);
+		rules.erase(*it);
 	}
 }
 

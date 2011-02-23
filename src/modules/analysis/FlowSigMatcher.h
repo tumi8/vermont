@@ -96,8 +96,8 @@ class GenNode {
 	static GenType order[6];
 	static GenNode* newNode(int depth);
 	static void parse_order(string order);
-	virtual void findRule(Connection* conn, list<IdsRule*>& rules)=0;
-	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules)=0;
+	virtual void findRule(Connection* conn, set<IdsRule*>& rules)=0;
+	virtual void invalidateRule(Connection* conn, set<IdsRule*>& rules)=0;
 	virtual void insertRule(IdsRule* rule,int depth)=0;
 	virtual void insertRevRule(IdsRule* rule,int depth)=0;
 	virtual ~GenNode() {};
@@ -109,8 +109,8 @@ class ProtoNode : public GenNode {
 	GenNode* tcp;
 	GenNode* icmp;
 	public:
-	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
-	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void findRule(Connection* conn, set<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, set<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
         ProtoNode();
@@ -124,8 +124,8 @@ class SrcIpNode : public GenNode {
 	list<IpListEntry*> iplist;
 	list<IpListEntry*> notiplist;
 	public:
-	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
-	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void findRule(Connection* conn, set<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, set<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
         SrcIpNode();
@@ -139,8 +139,8 @@ class DstIpNode : public GenNode {
 	list<IpListEntry*> iplist;
 	list<IpListEntry*> notiplist;
 	public:
-	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
-	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void findRule(Connection* conn, set<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, set<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
         DstIpNode();
@@ -154,8 +154,8 @@ class SrcPortNode : public GenNode {
 	list<PortListEntry*> portlist;
 	list<PortListEntry*> notportlist;
 	public:
-	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
-	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void findRule(Connection* conn, set<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, set<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
         SrcPortNode();
@@ -169,8 +169,8 @@ class DstPortNode : public GenNode {
 	list<PortListEntry*> portlist;
 	list<PortListEntry*> notportlist;
 	public:
-	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
-	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void findRule(Connection* conn, set<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, set<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
         DstPortNode();
@@ -180,8 +180,8 @@ class DstPortNode : public GenNode {
 class RuleNode : public GenNode {
 	list<IdsRule*> rulesList;
 	public:
-	virtual void findRule(Connection* conn, list<IdsRule*>& rules);
-	virtual void invalidateRule(Connection* conn, list<IdsRule*>& rules);
+	virtual void findRule(Connection* conn, set<IdsRule*>& rules);
+	virtual void invalidateRule(Connection* conn, set<IdsRule*>& rules);
 	virtual void insertRule(IdsRule* rule,int depth);
 	virtual void insertRevRule(IdsRule* rule,int depth);
 	~RuleNode();
