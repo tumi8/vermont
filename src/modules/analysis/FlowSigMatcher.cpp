@@ -667,12 +667,10 @@ void SrcIpNode::findRule(Connection* conn,list<IdsRule*>& rules)
 		it=notipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
 		for(notit=notipmaps[i].begin();notit!=it;notit++) {
 			notit->second->findRule(conn,rules);	
-			cout<<"before"<<endl;
 		}
 		if(it!=notipmaps[i].end()) {
 			notit++;
 			for(;notit!=notipmaps[i].end();notit++) {
-			cout<<"after"<<endl;
 				notit->second->findRule(conn,rules);	
 			}
 			nodes.push_back(it->second);
@@ -687,7 +685,9 @@ void SrcIpNode::findRule(Connection* conn,list<IdsRule*>& rules)
 		if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) != ((ntohl(conn->srcIP))>>(32-(*listit)->entry->mask))) {
 			(*listit)->node->findRule(conn,rules);
 		}
-		else nodes.push_back((*listit)->node);
+		else {
+			nodes.push_back((*listit)->node);
+		}
 	}
 	for(nodesit=nodes.begin();nodesit!=nodes.end();nodesit++) {
 		(*nodesit)->invalidateRule(conn,rules);
@@ -876,6 +876,7 @@ SrcIpNode::~SrcIpNode()
 {
 	if(any!=NULL) delete any;
 	map<uint32_t,GenNode*>::iterator it;
+	list<IpListEntry*>::iterator listit;
 	for(int i=0;i<4;i++) {
 		for(it=ipmaps[i].begin();it!=ipmaps[i].end();it++) {
 			if(it->second!=NULL)	delete it->second;
@@ -885,6 +886,14 @@ SrcIpNode::~SrcIpNode()
 		for(it=notipmaps[i].begin();it!=notipmaps[i].end();it++) {
 			if(it->second!=NULL)	delete it->second;
 		}
+	}
+	for(listit=iplist.begin();listit!=iplist.end();listit++) {
+		delete (*listit)->node;
+		delete (*listit);
+	}
+	for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
+		delete (*listit)->node;
+		delete (*listit);
 	}
 }
 DstIpNode::DstIpNode() : any(NULL) {}
@@ -1110,6 +1119,7 @@ void SrcIpNode::insertRevRule(IdsRule* rule,int depth)
 DstIpNode::~DstIpNode() 
 {
 	map<uint32_t,GenNode*>::iterator it;
+	list<IpListEntry*>::iterator listit;
 	if(any!=NULL) delete any;
 	for(int i=0;i<4;i++) {
 		for(it=ipmaps[i].begin();it!=ipmaps[i].end();it++) {
@@ -1120,6 +1130,14 @@ DstIpNode::~DstIpNode()
 		for(it=notipmaps[i].begin();it!=notipmaps[i].end();it++) {
 			if(it->second!=NULL)	delete it->second;
 		}
+	}
+	for(listit=iplist.begin();listit!=iplist.end();listit++) {
+		delete (*listit)->node;
+		delete (*listit);
+	}
+	for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
+		delete (*listit)->node;
+		delete (*listit);
 	}
 }
 
@@ -1146,7 +1164,7 @@ void RuleNode::findRule(Connection* conn,list<IdsRule*>& rules)
 
 void RuleNode::invalidateRule(Connection* conn,list<IdsRule*>& rules) 
 {
-	list<IdsRule*>::iterator it,retit;
+	list<IdsRule*>::iterator it;
 	for(it=rulesList.begin();it!=rulesList.end();it++) {
 		rules.remove(*it);
 	}
