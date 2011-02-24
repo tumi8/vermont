@@ -297,7 +297,7 @@ void SrcPortNode::findRule(Connection* conn,set<IdsRule*>& rules)
 	list<GenNode*>::iterator listit2;
 	if((portmap.size()==0)&&(portlist.size()==0)) {
 		for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
-			if(((*listit)->entry->port>ntohs(conn->srcPort))&&((*listit)->entry->portEnd<ntohs(conn->srcPort))) {
+			if(((*listit)->entry->port>ntohs(conn->srcPort))||((*listit)->entry->portEnd<ntohs(conn->srcPort))) {
 				(*listit)->node->findRule(conn,rules);
 			}
 			else nodes.push_back((*listit)->node);
@@ -512,7 +512,7 @@ void DstPortNode::findRule(Connection* conn,set<IdsRule*>& rules)
 	list<GenNode*>::iterator listit2;
 	if((portmap.size()==0)&&(portlist.size()==0)) {
 		for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
-			if(((*listit)->entry->port>ntohs(conn->dstPort))&&((*listit)->entry->portEnd<ntohs(conn->dstPort))) {
+			if(((*listit)->entry->port>ntohs(conn->dstPort))||((*listit)->entry->portEnd<ntohs(conn->dstPort))) {
 				(*listit)->node->findRule(conn,rules);
 			}
 			else nodes.push_back((*listit)->node);
