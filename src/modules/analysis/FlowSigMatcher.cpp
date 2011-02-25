@@ -293,40 +293,12 @@ void SrcPortNode::findRule(Connection* conn,set<IdsRule*>& rules)
 			(*listit)->node->findRule(conn,rules);
 		}
 	}
-	list<GenNode*> nodes;
-	list<GenNode*>::iterator listit2;
-	if((portmap.size()==0)&&(portlist.size()==0)) {
-		for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
-			if(((*listit)->entry->port>ntohs(conn->srcPort))||((*listit)->entry->portEnd<ntohs(conn->srcPort))) {
-				(*listit)->node->findRule(conn,rules);
-			}
-			else nodes.push_back((*listit)->node);
-		}
-	} else {
-		for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
-			if(((*listit)->entry->port<=ntohs(conn->srcPort))&&((*listit)->entry->portEnd>=ntohs(conn->srcPort))) 
-			nodes.push_back((*listit)->node);
-		}
-
+	for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
+		if(((*listit)->entry->port<=ntohs(conn->srcPort))&&((*listit)->entry->portEnd>=ntohs(conn->srcPort))) 
+		(*listit)->node->invalidateRule(conn,rules);
 	}
 	it=notportmap.find(ntohs(conn->srcPort));
-	if((portmap.size()==0)&&(portlist.size()==0)) {
-		for(notit=notportmap.begin();notit!=it;notit++) {
-			notit->second->findRule(conn,rules);
-		}
-		if(notit!=notportmap.end()) {
-			notit++;
-			for(;notit!=notportmap.end();notit++) {
-				notit->second->findRule(conn,rules);
-			}
-			nodes.push_back(it->second);
-		}
-	} else {
-			if(it!=notportmap.end()) it->second->invalidateRule(conn,rules);
-	}
-	for(listit2=nodes.begin();listit2!=nodes.end();listit2++) {
-		(*listit2)->invalidateRule(conn,rules);
-	}
+	if(it!=notportmap.end()) it->second->invalidateRule(conn,rules);
 }
 
 void SrcPortNode::invalidateRule(Connection* conn, set<IdsRule*>& rules)
@@ -340,24 +312,28 @@ void SrcPortNode::invalidateRule(Connection* conn, set<IdsRule*>& rules)
 		if(((*listit)->entry->port<=ntohs(conn->srcPort))&&((*listit)->entry->portEnd>=ntohs(conn->srcPort))) 
 		(*listit)->node->invalidateRule(conn,rules);
 	}
-	if((portmap.size()==0)&&(portlist.size()==0)) {
-		for(listit=notportlist.begin();listit!=notportlist.end();listit++) (*listit)->node->invalidateRule(conn,rules);
-		for(notit=notportmap.begin();notit!=notportmap.end();notit++) {
-			notit->second->invalidateRule(conn,rules);
-		}
-	} else {
-		it=notportmap.find(ntohs(conn->srcPort));
-		if(it!=notportmap.end()) it->second->invalidateRule(conn,rules);
-		for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
-			if(((*listit)->entry->port<=ntohs(conn->srcPort))&&((*listit)->entry->portEnd>=ntohs(conn->srcPort))) 
-				(*listit)->node->invalidateRule(conn,rules);
-		}
+	it=notportmap.find(ntohs(conn->srcPort));
+	if(it!=notportmap.end()) it->second->invalidateRule(conn,rules);
+	for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
+		if(((*listit)->entry->port<=ntohs(conn->srcPort))&&((*listit)->entry->portEnd>=ntohs(conn->srcPort))) 
+			(*listit)->node->invalidateRule(conn,rules);
 	}
 }
 
 void SrcPortNode::insertRule(IdsRule* rule,int depth) 
 {
+	int onlyNeg=1;
         list<PortEntry*>::iterator listit;
+        for(listit=rule->sPort.begin();listit!=rule->sPort.end();listit++) {
+		if((*listit)->notFlag==0) {
+			onlyNeg=0;
+			break;
+		}
+	}
+	if(onlyNeg) {
+		if(any==NULL) any=newNode(depth+1);
+		any->insertRule(rule,depth+1);
+	}
         for(listit=rule->sPort.begin();listit!=rule->sPort.end();listit++) {
 		if((*listit)->port==0) {
 			if(any==NULL) any=newNode(depth+1);
@@ -416,7 +392,18 @@ void SrcPortNode::insertRule(IdsRule* rule,int depth)
 
 void DstPortNode::insertRevRule(IdsRule* rule,int depth) 
 {
+	int onlyNeg=1;
         list<PortEntry*>::iterator listit;
+        for(listit=rule->sPort.begin();listit!=rule->sPort.end();listit++) {
+		if((*listit)->notFlag==0) {
+			onlyNeg=0;
+			break;
+		}
+	}
+	if(onlyNeg) {
+		if(any==NULL) any=newNode(depth+1);
+		any->insertRevRule(rule,depth+1);
+	}
         for(listit=rule->sPort.begin();listit!=rule->sPort.end();listit++) {
 		if((*listit)->port==0) {
 			if(any==NULL) any=newNode(depth+1);
@@ -444,7 +431,7 @@ void DstPortNode::insertRevRule(IdsRule* rule,int depth)
 						break;
 					}
 				}
-				if(it!=portlist.end()) {
+				if(it==portlist.end()) {
 					PortListEntry* entry=new PortListEntry;	
 					entry->entry=*listit;
 					entry->node=newNode(depth+1);
@@ -460,7 +447,7 @@ void DstPortNode::insertRevRule(IdsRule* rule,int depth)
 						break;
 					}
 				}
-				if(it!=notportlist.end()) {
+				if(it==notportlist.end()) {
 					PortListEntry* entry=new PortListEntry;	
 					entry->entry=*listit;
 					entry->node=newNode(depth+1);
@@ -508,40 +495,12 @@ void DstPortNode::findRule(Connection* conn,set<IdsRule*>& rules)
 			(*listit)->node->findRule(conn,rules);
 		}
 	}
-	list<GenNode*> nodes;
-	list<GenNode*>::iterator listit2;
-	if((portmap.size()==0)&&(portlist.size()==0)) {
-		for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
-			if(((*listit)->entry->port>ntohs(conn->dstPort))||((*listit)->entry->portEnd<ntohs(conn->dstPort))) {
-				(*listit)->node->findRule(conn,rules);
-			}
-			else nodes.push_back((*listit)->node);
-		}
-	} else {
-		for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
-			if(((*listit)->entry->port<=ntohs(conn->dstPort))&&((*listit)->entry->portEnd>=ntohs(conn->dstPort))) 
-			nodes.push_back((*listit)->node);
-		}
-
+	for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
+		if(((*listit)->entry->port<=ntohs(conn->dstPort))&&((*listit)->entry->portEnd>=ntohs(conn->dstPort))) 
+		(*listit)->node->invalidateRule(conn,rules);
 	}
 	it=notportmap.find(ntohs(conn->dstPort));
-	if((portmap.size()==0)&&(portlist.size()==0)) {
-		for(notit=notportmap.begin();notit!=it;notit++) {
-			notit->second->findRule(conn,rules);
-		}
-		if(notit!=notportmap.end()) {
-			notit++;
-			for(;notit!=notportmap.end();notit++) {
-				notit->second->findRule(conn,rules);
-			}
-			nodes.push_back(it->second);
-		}
-	} else {
-			if(it!=notportmap.end()) it->second->invalidateRule(conn,rules);
-	}
-	for(listit2=nodes.begin();listit2!=nodes.end();listit2++) {
-		(*listit2)->invalidateRule(conn,rules);
-	}
+	if(it!=notportmap.end()) it->second->invalidateRule(conn,rules);
 }
 
 void DstPortNode::invalidateRule(Connection* conn, set<IdsRule*>& rules)
@@ -555,24 +514,28 @@ void DstPortNode::invalidateRule(Connection* conn, set<IdsRule*>& rules)
 		if(((*listit)->entry->port<=ntohs(conn->dstPort))&&((*listit)->entry->portEnd>=ntohs(conn->dstPort))) 
 		(*listit)->node->invalidateRule(conn,rules);
 	}
-	if((portmap.size()==0)&&(portlist.size()==0)) {
-		for(listit=notportlist.begin();listit!=notportlist.end();listit++) (*listit)->node->invalidateRule(conn,rules);
-		for(notit=notportmap.begin();notit!=notportmap.end();notit++) {
-			notit->second->invalidateRule(conn,rules);
-		}
-	} else {
-		it=notportmap.find(ntohs(conn->dstPort));
-		if(it!=notportmap.end()) it->second->invalidateRule(conn,rules);
-		for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
-			if(((*listit)->entry->port<=ntohs(conn->dstPort))&&((*listit)->entry->portEnd>=ntohs(conn->dstPort))) 
-				(*listit)->node->invalidateRule(conn,rules);
-		}
+	it=notportmap.find(ntohs(conn->dstPort));
+	if(it!=notportmap.end()) it->second->invalidateRule(conn,rules);
+	for(listit=notportlist.begin();listit!=notportlist.end();listit++) {
+		if(((*listit)->entry->port<=ntohs(conn->dstPort))&&((*listit)->entry->portEnd>=ntohs(conn->dstPort))) 
+			(*listit)->node->invalidateRule(conn,rules);
 	}
 }
 
 void DstPortNode::insertRule(IdsRule* rule,int depth) 
 {
+	int onlyNeg=1;
         list<PortEntry*>::iterator listit;
+        for(listit=rule->dPort.begin();listit!=rule->dPort.end();listit++) {
+		if((*listit)->notFlag==0) {
+			onlyNeg=0;
+			break;
+		}
+	}
+	if(onlyNeg) {
+		if(any==NULL) any=newNode(depth+1);
+		any->insertRule(rule,depth+1);
+	}
         for(listit=rule->dPort.begin();listit!=rule->dPort.end();listit++) {
 		if((*listit)->port==0) {
 			if(any==NULL) any=newNode(depth+1);
@@ -600,7 +563,7 @@ void DstPortNode::insertRule(IdsRule* rule,int depth)
 						break;
 					}
 				}
-				if(it!=portlist.end()) {
+				if(it==portlist.end()) {
 					PortListEntry* entry=new PortListEntry;	
 					entry->entry=*listit;
 					entry->node=newNode(depth+1);
@@ -616,7 +579,7 @@ void DstPortNode::insertRule(IdsRule* rule,int depth)
 						break;
 					}
 				}
-				if(it!=notportlist.end()) {
+				if(it==notportlist.end()) {
 					PortListEntry* entry=new PortListEntry;	
 					entry->entry=*listit;
 					entry->node=newNode(depth+1);
@@ -631,7 +594,18 @@ void DstPortNode::insertRule(IdsRule* rule,int depth)
 
 void SrcPortNode::insertRevRule(IdsRule* rule,int depth) 
 {
+	int onlyNeg=1;
         list<PortEntry*>::iterator listit;
+        for(listit=rule->dPort.begin();listit!=rule->dPort.end();listit++) {
+		if((*listit)->notFlag==0) {
+			onlyNeg=0;
+			break;
+		}
+	}
+	if(onlyNeg) {
+		if(any==NULL) any=newNode(depth+1);
+		any->insertRevRule(rule,depth+1);
+	}
         for(listit=rule->dPort.begin();listit!=rule->dPort.end();listit++) {
 		if((*listit)->port==0) {
 			if(any==NULL) any=newNode(depth+1);
@@ -659,7 +633,7 @@ void SrcPortNode::insertRevRule(IdsRule* rule,int depth)
 						break;
 					}
 				}
-				if(it!=portlist.end()) {
+				if(it==portlist.end()) {
 					PortListEntry* entry=new PortListEntry;	
 					entry->entry=*listit;
 					entry->node=newNode(depth+1);
@@ -675,7 +649,7 @@ void SrcPortNode::insertRevRule(IdsRule* rule,int depth)
 						break;
 					}
 				}
-				if(it!=notportlist.end()) {
+				if(it==notportlist.end()) {
 					PortListEntry* entry=new PortListEntry;	
 					entry->entry=*listit;
 					entry->node=newNode(depth+1);
@@ -717,42 +691,14 @@ void SrcIpNode::findRule(Connection* conn,set<IdsRule*>& rules)
 			(*listit)->node->findRule(conn,rules);
 		}
 	}
-	if((ipmaps[0].size()==0)&&(ipmaps[1].size()==0)&&(ipmaps[2].size()==0)&&(ipmaps[3].size()==0)&&(iplist.size()==0)) {
-		for(int i=0;i<4;i++) {
-			it=notipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
-			for(notit=notipmaps[i].begin();notit!=it;notit++) {
-				notit->second->findRule(conn,rules);	
-			}
-			if(it!=notipmaps[i].end()) {
-				notit++;
-				for(;notit!=notipmaps[i].end();notit++) {
-					notit->second->findRule(conn,rules);	
-				}
-				nodes.push_back(it->second);
-			}
-		}
-		for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
-			if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) != ((ntohl(conn->srcIP))>>(32-(*listit)->entry->mask))) {
-				(*listit)->node->findRule(conn,rules);
-			}
-			else {
-				nodes.push_back((*listit)->node);
-			}
-		}
+	for(int i=0;i<4;i++) {
+		it=notipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
+		if(it!=notipmaps[i].end()) it->second->invalidateRule(conn,rules);
 	}
-	else {
-		for(int i=0;i<4;i++) {
-			it=notipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
-			if(it!=notipmaps[i].end()) nodes.push_back(it->second);
+	for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
+		if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->srcIP))>>(32-(*listit)->entry->mask))) {
+			(*listit)->node->invalidateRule(conn,rules);
 		}
-		for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
-			if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->srcIP))>>(32-(*listit)->entry->mask))) {
-				nodes.push_back((*listit)->node);
-			}
-		}
-	}
-	for(nodesit=nodes.begin();nodesit!=nodes.end();nodesit++) {
-		(*nodesit)->invalidateRule(conn,rules);
 	}
 }
 
@@ -772,24 +718,13 @@ void SrcIpNode::invalidateRule(Connection* conn,set<IdsRule*>& rules)
 			(*listit)->node->invalidateRule(conn,rules);
 		}
 	}
-	if((ipmaps[0].size()==0)&&(ipmaps[1].size()==0)&&(ipmaps[2].size()==0)&&(ipmaps[3].size()==0)&&(iplist.size()==0)) {
-		for(int i=0;i<4;i++) {
-			for(notit=notipmaps[i].begin();notit!=notipmaps[i].end();notit++) {
-				notit->second->invalidateRule(conn,rules);	
-			}
-		}
-		for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
-				(*listit)->node->invalidateRule(conn,rules);
-		}
-	} else {
-		for(int i=0;i<4;i++) {
-			it=notipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
-			if(it!=notipmaps[i].end()) it->second->invalidateRule(conn,rules);
-		}
-		for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
-			if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->srcIP))>>(32-(*listit)->entry->mask))) {
-				(*listit)->node->invalidateRule(conn,rules);
-			}
+	for(int i=0;i<4;i++) {
+		it=notipmaps[i].find(ntohl(conn->srcIP)>>(24-i*8));
+		if(it!=notipmaps[i].end()) it->second->invalidateRule(conn,rules);
+	}
+	for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
+		if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->srcIP))>>(32-(*listit)->entry->mask))) {
+			(*listit)->node->invalidateRule(conn,rules);
 		}
 	}
 }
@@ -797,6 +732,17 @@ void SrcIpNode::invalidateRule(Connection* conn,set<IdsRule*>& rules)
 void SrcIpNode::insertRule(IdsRule* rule,int depth) 
 {
         list<IpEntry*>::iterator listit;
+	int onlyNeg=1;
+        for(listit=rule->src.begin();listit!=rule->src.end();listit++) {
+		if((*listit)->notFlag==0) {
+			onlyNeg=0;
+			break;
+		}
+	}
+	if(onlyNeg) {
+		if(any==NULL) any=newNode(depth+1);
+		any->insertRule(rule,depth+1);
+	}
         for(listit=rule->src.begin();listit!=rule->src.end();listit++) {
 		if((*listit)->mask==0) {
 			if(any==NULL) any=newNode(depth+1);
@@ -873,6 +819,17 @@ void SrcIpNode::insertRule(IdsRule* rule,int depth)
 void DstIpNode::insertRevRule(IdsRule* rule,int depth) 
 {
         list<IpEntry*>::iterator listit;
+	int onlyNeg=1;
+        for(listit=rule->src.begin();listit!=rule->src.end();listit++) {
+		if((*listit)->notFlag==0) {
+			onlyNeg=0;
+			break;
+		}
+	}
+	if(onlyNeg) {
+		if(any==NULL) any=newNode(depth+1);
+		any->insertRevRule(rule,depth+1);
+	}
         for(listit=rule->src.begin();listit!=rule->src.end();listit++) {
 		if((*listit)->mask==0) {
 			if(any==NULL) any=newNode(depth+1);
@@ -988,42 +945,14 @@ void DstIpNode::findRule(Connection* conn,set<IdsRule*>& rules)
 			(*listit)->node->findRule(conn,rules);
 		}
 	}
-	if((ipmaps[0].size()==0)&&(ipmaps[1].size()==0)&&(ipmaps[2].size()==0)&&(ipmaps[3].size()==0)&&(iplist.size()==0)) {
-		for(int i=0;i<4;i++) {
-			it=notipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
-			for(notit=notipmaps[i].begin();notit!=it;notit++) {
-				notit->second->findRule(conn,rules);	
-			}
-			if(it!=notipmaps[i].end()) {
-				notit++;
-				for(;notit!=notipmaps[i].end();notit++) {
-					notit->second->findRule(conn,rules);	
-				}
-				nodes.push_back(it->second);
-			}
-		}
-		for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
-			if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) != ((ntohl(conn->dstIP))>>(32-(*listit)->entry->mask))) {
-				(*listit)->node->findRule(conn,rules);
-			}
-			else {
-				nodes.push_back((*listit)->node);
-			}
-		}
+	for(int i=0;i<4;i++) {
+		it=notipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
+		if(it!=notipmaps[i].end()) it->second->invalidateRule(conn,rules);
 	}
-	else {
-		for(int i=0;i<4;i++) {
-			it=notipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
-			if(it!=notipmaps[i].end()) nodes.push_back(it->second);
+	for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
+		if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->dstIP))>>(32-(*listit)->entry->mask))) {
+			(*listit)->node->invalidateRule(conn,rules);
 		}
-		for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
-			if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->dstIP))>>(32-(*listit)->entry->mask))) {
-				nodes.push_back((*listit)->node);
-			}
-		}
-	}
-	for(nodesit=nodes.begin();nodesit!=nodes.end();nodesit++) {
-		(*nodesit)->invalidateRule(conn,rules);
 	}
 }
 
@@ -1043,24 +972,13 @@ void DstIpNode::invalidateRule(Connection* conn,set<IdsRule*>& rules)
 			(*listit)->node->invalidateRule(conn,rules);
 		}
 	}
-	if((ipmaps[0].size()==0)&&(ipmaps[1].size()==0)&&(ipmaps[2].size()==0)&&(ipmaps[3].size()==0)&&(iplist.size()==0)) {
-		for(int i=0;i<4;i++) {
-			for(notit=notipmaps[i].begin();notit!=notipmaps[i].end();notit++) {
-				notit->second->invalidateRule(conn,rules);	
-			}
-		}
-		for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
-				(*listit)->node->invalidateRule(conn,rules);
-		}
-	} else {
-		for(int i=0;i<4;i++) {
-			it=notipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
-			if(it!=notipmaps[i].end())it->second->invalidateRule(conn,rules);
-		}
-		for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
-			if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->dstIP))>>(32-(*listit)->entry->mask))) {
-				(*listit)->node->invalidateRule(conn,rules);
-			}
+	for(int i=0;i<4;i++) {
+		it=notipmaps[i].find(ntohl(conn->dstIP)>>(24-i*8));
+		if(it!=notipmaps[i].end()) it->second->invalidateRule(conn,rules);
+	}
+	for(listit=notiplist.begin();listit!=notiplist.end();listit++) {
+		if ((((*listit)->entry->ip) >> (32-(*listit)->entry->mask)) == ((ntohl(conn->dstIP))>>(32-(*listit)->entry->mask))) {
+			(*listit)->node->invalidateRule(conn,rules);
 		}
 	}
 }
@@ -1068,6 +986,17 @@ void DstIpNode::invalidateRule(Connection* conn,set<IdsRule*>& rules)
 void DstIpNode::insertRule(IdsRule* rule,int depth) 
 {
         list<IpEntry*>::iterator listit;
+	int onlyNeg=1;
+        for(listit=rule->dst.begin();listit!=rule->dst.end();listit++) {
+		if((*listit)->notFlag==0) {
+			onlyNeg=0;
+			break;
+		}
+	}
+	if(onlyNeg) {
+		if(any==NULL) any=newNode(depth+1);
+		any->insertRule(rule,depth+1);
+	}
         for(listit=rule->dst.begin();listit!=rule->dst.end();listit++) {
 		if((*listit)->mask==0) {
 			if(any==NULL) any=newNode(depth+1);
@@ -1144,6 +1073,17 @@ void DstIpNode::insertRule(IdsRule* rule,int depth)
 void SrcIpNode::insertRevRule(IdsRule* rule,int depth) 
 {
         list<IpEntry*>::iterator listit;
+	int onlyNeg=1;
+        for(listit=rule->dst.begin();listit!=rule->dst.end();listit++) {
+		if((*listit)->notFlag==0) {
+			onlyNeg=0;
+			break;
+		}
+	}
+	if(onlyNeg) {
+		if(any==NULL) any=newNode(depth+1);
+		any->insertRevRule(rule,depth+1);
+	}
         for(listit=rule->dst.begin();listit!=rule->dst.end();listit++) {
 		if((*listit)->mask==0) {
 			if(any==NULL) any=newNode(depth+1);
