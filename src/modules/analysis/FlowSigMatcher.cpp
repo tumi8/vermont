@@ -1323,7 +1323,7 @@ void FlowSigMatcher::split_port(string text, list<PortEntry*>& list)
 	boost::cmatch what;
 	const boost::regex exp_port_range("(!)?(\\d+)?\\:(\\d+)?");
 	const boost::regex exp_port("(!)?(\\d+)");
-	const boost::regex exp_port("(\\*|any|ANY)");
+	const boost::regex exp_anyport("(\\*|any|ANY)");
 	PortEntry* entry;
 	if(boost::regex_match(text.c_str(), what, exp_port_range)) {
 		entry= new PortEntry;
