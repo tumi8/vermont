@@ -1323,6 +1323,7 @@ void FlowSigMatcher::split_port(string text, list<PortEntry*>& list)
 	boost::cmatch what;
 	const boost::regex exp_port_range("(!)?(\\d+)?\\:(\\d+)?");
 	const boost::regex exp_port("(!)?(\\d+)");
+	const boost::regex exp_port("(\\*|any|ANY)");
 	PortEntry* entry;
 	if(boost::regex_match(text.c_str(), what, exp_port_range)) {
 		entry= new PortEntry;
@@ -1342,8 +1343,12 @@ void FlowSigMatcher::split_port(string text, list<PortEntry*>& list)
 		if (static_cast<string>(what[1]).compare("!")==0) entry->notFlag=1; 
 		else entry->notFlag=0;
 		entry->port=atoi(static_cast<string>(what[2]).c_str());
-		if((text.compare("*")==0)||(text.compare("any")==0)||(text.compare("ANY")==0)) entry->port=0;
 		entry->portEnd=entry->port;
+	}
+	else if(boost::regex_match(text.c_str(),what,exp_anyport)) {
+		entry = new PortEntry;
+		entry->notFlag=0;
+		entry->port=0;
 	}
 	else {
 		msg(MSG_DIALOG,"Couldn't parse this port parameter: %s",text.c_str());
