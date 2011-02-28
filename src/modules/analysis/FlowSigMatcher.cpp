@@ -1232,19 +1232,13 @@ int FlowSigMatcher::parse_line(string text)
 	else if(boost::regex_match(text.c_str(), what, expLine)) { 
 		IdsRule* rule=new IdsRule;
 		rule->uid=atoi(static_cast<string>(what[1]).c_str());
-		string home_net("$HOME_NET");
-		string nothome_net("!$HOME_NET");
 		if((!parse_ip(what[2], *rule,0))||(!parse_port(what[3],*rule,0))||(!parse_ip(what[5], *rule,1))||(parse_port(what[6],*rule,1)==false)) {
 			delete rule;
 			return false;
 		}
-		string tcp("TCP");
-		string udp("UDP");
-		string icmp("ICMP");
-		string emptyString("");
-		if(tcp.compare(what[7])==0) rule->protocol=6;
-		else if(udp.compare(what[7])==0) rule->protocol=17;
-		else if(icmp.compare(what[7])==0) rule->protocol=1;
+		if(static_cast<string>(what[7]).compare("TCP")==0||static_cast<string>(what[7]).compare("tcp")==0) rule->protocol=6;
+		else if(static_cast<string>(what[7]).compare("UDP")==0||static_cast<string>(what[7]).compare("udp")==0) rule->protocol=6;
+		else if(static_cast<string>(what[7]).compare("ICMP")==0||static_cast<string>(what[7]).compare("icmp")==0) rule->protocol=6;
 		else rule->protocol=0;
 		string dir(what[4]);
 		if(dir.compare("->")==0) {
@@ -1264,7 +1258,7 @@ int FlowSigMatcher::parse_line(string text)
 		rule->type=findVectorNr(what[8],idsRuleType);
 		rule->source=findVectorNr(what[9],idsRuleSource);
 		rule->msg=what[10];
-		if(emptyString.compare(what[11])==0) rule->flag=0;
+		if(static_cast<string>(what[11]).compare("")==0) rule->flag=0;
 		else rule->flag=atoi(static_cast<string>(what[11]).c_str());
 		parsedRules.push_back(rule);
 		return true;
