@@ -135,6 +135,7 @@ Observer::~Observer()
 
 	free(captureInterface);
 	delete[] filter_exp;
+	if (fileName) { free(fileName); fileName = NULL; }
 	msg(MSG_DEBUG, "successful shutdown");
 }
 /*
@@ -152,6 +153,7 @@ void *Observer::observerThread(void *arg)
 	struct pcap_pkthdr packetHeader;
 	bool have_send = false;
 	obs->registerCurrentThread();
+    bool file_eof = false;
 
 
 
@@ -216,8 +218,6 @@ void *Observer::observerThread(void *arg)
 			p = packetManager.getNewInstance();
 			p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, obs->observationDomainID, packetHeader.len);
 
-			obs->receivedBytes += packetHeader.caplen;
-
 			DPRINTF("received packet at %u.%04u, len=%d",
 					(unsigned)p->timestamp.tv_sec,
 					(unsigned)p->timestamp.tv_usec / 1000,
@@ -225,7 +225,7 @@ void *Observer::observerThread(void *arg)
 			);
 
 			// update statistics
-			obs->receivedBytes += ntohs(*(uint16_t*)(p->netHeader+2));
+			obs->receivedBytes += packetHeader.caplen;
 			obs->processedPackets++;
 
 			while (!obs->exitFlag) {
@@ -261,6 +261,7 @@ void *Observer::observerThread(void *arg)
 				/* no packet data was available */
 				if(feof(fh))
 				        msg(MSG_DIALOG, "Observer: reached end of file (%llu packets)", obs->processedPackets);
+                        file_eof = true;
       				break;
       			}
 			DPRINTFL(MSG_VDEBUG, "got new packet!");
@@ -292,7 +293,7 @@ void *Observer::observerThread(void *arg)
 						wait_spec.tv_sec = wait_val.tv_sec;
 						wait_spec.tv_nsec = wait_val.tv_usec * 1000;
 						if(nanosleep(&wait_spec, NULL) != 0)
-							msg(MSG_INFO, "Observer: nanosleep returned nonzero value");
+							msg(MSG_INFO, "Observer: nanosleep returned nonzero value, errno=%u (%s)", errno, strerror(errno));
 					}
 					else if (delta_now.tv_sec > (delta_to_be.tv_sec + 1) && obs->stretchTime!=INFINITY)
 					    if (!obs->slowMessageShown) {
@@ -334,7 +335,7 @@ void *Observer::observerThread(void *arg)
 		}
 	}
 
-	if (obs->autoExit) {
+	if (obs->autoExit && (file_eof || (obs->maxPackets && obs->processedPackets>=obs->maxPackets)) ) {
 		// notify Vermont to shut down
 		DPRINTF("notifying Vermont to shut down, as all PCAP file data was read, or maximum packet count was reached");
 		obs->shutdownVermont();

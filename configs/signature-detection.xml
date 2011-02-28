@@ -1,0 +1,15 @@
+<ipfixConfig>
+
+    <ipfixCollector id="1">
+	<listener>
+	    <transportProtocol>UDP</transportProtocol>
+	    <port>1500</port>
+	</listener>
+	<next>5</next>
+    </ipfixCollector>
+
+    <frontPayloadSigMatcher id="5">
+	<signaturedir>./configs/signatures</signaturedir>
+    </frontPayloadSigMatcher>
+
+</ipfixConfig>	

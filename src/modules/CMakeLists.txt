@@ -35,10 +35,10 @@ ADD_LIBRARY(modules
     packet/Template.cpp
     packet/PCAPExporterBase.cpp
     packet/PCAPExporterFile.cpp
-    packet/PCAPExporterFifo.cpp
+    packet/PCAPExporterPipe.cpp
     packet/PSAMPExporterModule.cpp
     packet/PSAMPExporterCfg.cpp
-    packet/PCAPExporterFifoCfg.cpp
+    packet/PCAPExporterPipeCfg.cpp
     packet/PCAPExporterFileCfg.cpp
     packet/PacketReportingCfg.cpp
     packet/filter/FilterModule.cpp
@@ -56,13 +56,19 @@ ADD_LIBRARY(modules
     
     ipfix/FpaPcapExporter.cpp
     ipfix/FpaPcapExporterCfg.cpp
+    ipfix/FpaPacketGenerator.cpp
+    ipfix/FpaPacketGeneratorCfg.cpp
     ipfix/IpfixCollectorCfg.cpp
+    ipfix/IpfixCsExporter.cpp
+    ipfix/IpfixCsExporterCfg.cpp
     ipfix/IpfixDbReaderCfg.cpp
     ipfix/IpfixDbWriterCfg.cpp
     ipfix/IpfixDbWriterPgCfg.cpp
     ipfix/IpfixExporterCfg.cpp
     ipfix/IpfixFileWriter.cpp
     ipfix/IpfixFileWriterCfg.cpp
+    ipfix/IpfixNetflowExporter.cpp
+    ipfix/IpfixNetflowExporterCfg.cpp
     ipfix/IpfixPayloadWriterCfg.cpp
     ipfix/IpfixPrinterCfg.cpp
     ipfix/IpfixSamplerCfg.cpp
@@ -70,6 +76,8 @@ ADD_LIBRARY(modules
     ipfix/Connection.cpp
     ipfix/IpfixReceiverUdpIpV4.cpp
     ipfix/IpfixReceiverSctpIpV4.cpp
+    ipfix/IpfixReceiverDtlsUdpIpV4.cpp
+    ipfix/IpfixReceiverDtlsSctpIpV4.cpp
     ipfix/IpfixReceiverFile.cpp
     ipfix/IpfixReceiverFileCfg.cpp
     ipfix/IpfixRawdirReader.cpp

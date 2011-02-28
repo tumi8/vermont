@@ -24,14 +24,56 @@ ThreadCPUInterface::~ThreadCPUInterface()
 /**
  * determines current amount of jiffies used by given thread id
  * accesses proc filesystem to get info
+ * @param tid thread id
  */
-ThreadCPUInterface::JiffyTime ThreadCPUInterface::getJiffies(pid_t tid)
+ThreadCPUInterface::JiffyTime ThreadCPUInterface::getThreadJiffies(pid_t tid)
 {
 	pid_t pid = getpid();
+	return getJiffies(pid, tid);
+}
+
+/**
+ * determines current amount of jiffies used by given process id
+ * accesses proc filesystem to get info
+ * @param pid process id
+ */
+ThreadCPUInterface::JiffyTime ThreadCPUInterface::getProcessJiffies(pid_t pid)
+{
 	char statfile[1024];
+	char schedfile[1024];
+	snprintf(statfile, ARRAY_SIZE(statfile), "/proc/%u/stat", static_cast<uint32_t>(pid));
+	snprintf(schedfile, ARRAY_SIZE(schedfile), "/proc/%u/sched", static_cast<uint32_t>(pid));
+	JiffyTime jt = extractJiffies(statfile, schedfile);
+	jt.pid = pid;
+	jt.tid = 0;
+	return jt;
+}
 
-	snprintf(statfile, 1024, "/proc/%u/task/%u/stat", static_cast<uint32_t>(pid), static_cast<uint32_t>(tid));
+/**
+ * determines current amount of jiffies used by given thread id
+ * accesses proc filesystem to get info
+ * @param pid process id
+ * @param tid thread id
+ */
+ThreadCPUInterface::JiffyTime ThreadCPUInterface::getJiffies(pid_t pid, pid_t tid)
+{
+	char statfile[1024];
+	char schedfile[1024];
+	snprintf(statfile, ARRAY_SIZE(statfile), "/proc/%u/task/%u/stat", static_cast<uint32_t>(pid), static_cast<uint32_t>(tid));
+	snprintf(schedfile, ARRAY_SIZE(schedfile), "/proc/%u/task/%u/sched", static_cast<uint32_t>(pid), static_cast<uint32_t>(tid));
+	JiffyTime jt = extractJiffies(statfile, schedfile);
+	jt.pid = pid;
+	jt.tid = tid;
+	return jt;
+}
 
+/**
+ * extracts jiffy information from given statfile in proc filesystem
+ * @param statfile absolut path to process or thread statfile in proc-fs
+ * @param schedfile absolut path to process or thread schedule file in proc-fs
+ */
+ThreadCPUInterface::JiffyTime ThreadCPUInterface::extractJiffies(char* statfile, char* schedfile)
+{
 	struct stat buf;
 	if (stat(statfile, &buf) != 0) {
 		THROWEXCEPTION("failed to access stat file '%s' (stat)", statfile);
@@ -52,8 +94,6 @@ ThreadCPUInterface::JiffyTime ThreadCPUInterface::getJiffies(pid_t tid)
 	fclose(f);
 
 
-	char schedfile[1024];
-	snprintf(schedfile, ARRAY_SIZE(schedfile), "/proc/%u/task/%u/sched", static_cast<uint32_t>(pid), static_cast<uint32_t>(tid));
 	uint64_t vcswitch = 0;
 	uint64_t nvcswitch = 0;
 	char line[1024];
@@ -76,7 +116,7 @@ ThreadCPUInterface::JiffyTime ThreadCPUInterface::getJiffies(pid_t tid)
 	}
 
 
-	JiffyTime jt = { tid, stime, utime, vcswitch, nvcswitch, 0, true };
+	JiffyTime jt = { 0, 0, stime, utime, vcswitch, nvcswitch, 0, true };
 	return jt;
 }
 

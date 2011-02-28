@@ -49,21 +49,22 @@ private:
 
 	/** template management */
 	unsigned templateRefreshTime;
-	unsigned templateRefreshRate;
+	/* unsigned templateRefreshRate; */ /* TODO */
 	
 	/** sctp parameters */
 	uint32_t sctpDataLifetime;
 	uint32_t sctpReconnectInterval;
 
-	/** packet restrictions */
-	uint16_t maxPacketSize;
-	unsigned exportDelay;
-	
 	uint32_t recordRateLimit;
 	uint32_t observationDomainId;
 	
-	int recordsPerPacket;
-	int recordLength;
+	/** DTLS parameters */
+	std::string certificateChainFile;
+	std::string privateKeyFile;
+	std::string caFile;
+	std::string caPath;
+
+	unsigned dtlsMaxConnectionLifetime;
 };
 
 #endif /*IPFIXEXPORTERCFG_H_*/

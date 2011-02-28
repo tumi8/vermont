@@ -40,9 +40,7 @@ public:
 	
 	virtual std::string getName()
 	{ 
-		// see below why this hack is needed
-		T t;
-		return get_name(t); 
+		return "";
 	}
 
 	virtual QueueCfg<T>* create(XMLElement* e) {
@@ -94,20 +92,13 @@ class IpfixRecord;
 typedef QueueCfg<Packet*> PacketQueueCfg;
 typedef QueueCfg<IpfixRecord*> IpfixQueueCfg;
 
-// this hack with template specialization is needed because 
-// gcc (GCC) 4.1.3 20070812 (prerelease) (Debian 4.1.2-15)
-// has in ICE if I used a static variable for the name
-template<typename X> inline std::string get_name(const X x)
-{
-	return "";
-}
 
-template<> inline std::string get_name<Packet*>(Packet* x)
+template <> std::string QueueCfg<Packet*>::getName()
 {
 	return "packetQueue";
 }
 
-template<> inline std::string get_name<IpfixRecord*>(IpfixRecord* x)
+template <> std::string QueueCfg<IpfixRecord*>::getName()
 {
 	return "ipfixQueue";
 }

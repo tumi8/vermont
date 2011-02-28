@@ -1,2 +1,0 @@
-struct ipfix_midentifier { char *name; uint16_t id; };
-%%

@@ -51,24 +51,24 @@ const uint16_t MAX_COL_LENGTH = 22;
  *      Attention: order of entries is important!
  */
 const IpfixDbWriterPg::Column IpfixDbWriterPg::identify [] = {
-	{	"srcIP", IPFIX_TYPEID_sourceIPv4Address, "inet", 0},
-	{	"dstIP", IPFIX_TYPEID_destinationIPv4Address, "inet", 0},
-	{	"srcPort", IPFIX_TYPEID_sourceTransportPort, "integer", 0},
-	{	"dstPort", IPFIX_TYPEID_destinationTransportPort, "integer",0},
-	{	"proto",IPFIX_TYPEID_protocolIdentifier , "smallint", 0},
-	{	"dstTos", IPFIX_TYPEID_classOfServiceIPv4, "smallint", 0},
-	{	"bytes", IPFIX_TYPEID_octetDeltaCount, "bigint", 0},
-	{	"pkts", IPFIX_TYPEID_packetDeltaCount, "bigint", 0},
-	{	"firstSwitched", IPFIX_TYPEID_flowStartMilliSeconds, "timestamp", 0}, // default value is invalid/not used for this entry
-	{	"lastSwitched", IPFIX_TYPEID_flowEndMilliSeconds, "timestamp", 0}, // default value is invalid/not used for this entry
-	{	"tcpControlBits", IPFIX_TYPEID_tcpControlBits,  "smallint", 0},
-	{	"revbytes", IPFIX_ETYPEID_revOctetDeltaCount, "bigint", 0},
-	{	"revpkts", IPFIX_ETYPEID_revPacketDeltaCount, "bigint", 0},
-	{	"revFirstSwitched", IPFIX_ETYPEID_revFlowStartMilliSeconds, "timestamp", 0}, // default value is invalid/not used for this entry
-	{	"revLastSwitched", IPFIX_ETYPEID_revFlowEndMilliSeconds, "timestamp", 0}, // default value is invalid/not used for this entry
-	{	"revTcpControlBits", IPFIX_ETYPEID_revTcpControlBits,  "smallint", 0},
-	{	"maxPacketGap", IPFIX_ETYPEID_maxPacketGap,  "bigint", 0},
-	{	"revMaxPacketGap", IPFIX_ETYPEID_revMaxPacketGap,  "bigint", 0},
+	{	"srcIP", IPFIX_TYPEID_sourceIPv4Address, "inet", 0, 0},
+	{	"dstIP", IPFIX_TYPEID_destinationIPv4Address, "inet", 0, 0},
+	{	"srcPort", IPFIX_TYPEID_sourceTransportPort, "integer", 0, 0},
+	{	"dstPort", IPFIX_TYPEID_destinationTransportPort, "integer",0, 0},
+	{	"proto",IPFIX_TYPEID_protocolIdentifier , "smallint", 0, 0},
+	{	"dstTos", IPFIX_TYPEID_classOfServiceIPv4, "smallint", 0, 0},
+	{	"bytes", IPFIX_TYPEID_octetDeltaCount, "bigint", 0, 0},
+	{	"pkts", IPFIX_TYPEID_packetDeltaCount, "bigint", 0, 0},
+	{	"firstSwitched", IPFIX_TYPEID_flowStartMilliSeconds, "timestamp", 0, 0}, // default value is invalid/not used for this entry
+	{	"lastSwitched", IPFIX_TYPEID_flowEndMilliSeconds, "timestamp", 0, 0}, // default value is invalid/not used for this entry
+	{	"tcpControlBits", IPFIX_TYPEID_tcpControlBits,  "smallint", 0, 0},
+	{	"revbytes", IPFIX_TYPEID_octetDeltaCount, "bigint", IPFIX_PEN_reverse, 0},
+	{	"revpkts", IPFIX_TYPEID_packetDeltaCount, "bigint", IPFIX_PEN_reverse, 0},
+	{	"revFirstSwitched", IPFIX_TYPEID_flowStartMilliSeconds, "timestamp", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	"revLastSwitched", IPFIX_TYPEID_flowEndMilliSeconds, "timestamp", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	"revTcpControlBits", IPFIX_TYPEID_tcpControlBits,  "smallint", IPFIX_PEN_reverse, 0},
+	{	"maxPacketGap", IPFIX_ETYPEID_maxPacketGap,  "bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
+	{	"revMaxPacketGap", IPFIX_ETYPEID_maxPacketGap,  "bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
 	{	"exporterID",EXPORTERID, "integer", 0},
 	{	0} // last entry must be 0
 };
@@ -308,8 +308,8 @@ void IpfixDbWriterPg::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 void IpfixDbWriterPg::onDataRecord(IpfixDataRecord* record)
 {
 	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
-	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate) 
-		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate) 
+	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate)
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)
 		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
 		record->removeReference();
 		return;
@@ -434,75 +434,83 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			}
 			if(notfound) {
 				// for some Ids, we have an alternative
-				switch (identify[j].ipfixId) {
-					case IPFIX_TYPEID_flowStartMilliSeconds:
-						// look for alternative (flowStartMilliSeconds/1000)
-						if(dataTemplateInfo->fieldCount > 0) {
-							for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-								if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSeconds) {
-									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-									notfound = false;
-									break;
-								} else if (dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartNanoSeconds) {
-									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-									extractNtp64(intdata, microseconds);
-									notfound = false;
-									break;
+				if (identify[j].enterprise==0) {
+					switch (identify[j].ipfixId) {
+						case IPFIX_TYPEID_flowStartMilliSeconds:
+							// look for alternative (flowStartMilliSeconds/1000)
+							if(dataTemplateInfo->fieldCount > 0) {
+								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartSeconds, 0)) {
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
+										notfound = false;
+										break;
+									} else if (dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0)) {
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+										extractNtp64(intdata, microseconds);
+										notfound = false;
+										break;
+									}
 								}
 							}
-						}
-						break;
-					case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-						// look for alternative (revFlowStartMilliSeconds/1000)
-						if(dataTemplateInfo->fieldCount > 0) {
-							for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-								if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowStartSeconds) {
-									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-									notfound = false;
-									break;
-								} else if (dataTemplateInfo->fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowStartNanoSeconds) {
-									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-									extractNtp64(intdata, microseconds);
-									notfound = false;
-									break;
+							break;
+						case IPFIX_TYPEID_flowEndMilliSeconds:
+							// look for alternative (flowEndMilliSeconds/1000)
+							if(dataTemplateInfo->fieldCount > 0) {
+								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndSeconds, 0)) {
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
+										notfound = false;
+										break;
+									} else if (dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndNanoSeconds, 0)) {
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+										extractNtp64(intdata, microseconds);
+										notfound = false;
+										break;
+									}
 								}
 							}
-						}
-						break;
-					case IPFIX_TYPEID_flowEndMilliSeconds:
-						// look for alternative (flowEndMilliSeconds/1000)
-						if(dataTemplateInfo->fieldCount > 0) {
-							for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-								if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSeconds) {
-									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-									notfound = false;
-									break;
-								} else if (dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndNanoSeconds) {
-									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-									extractNtp64(intdata, microseconds);
-									notfound = false;
-									break;
+							break;
+					}
+				} else if (identify[j].enterprise==IPFIX_PEN_reverse) {
+					switch (identify[j].ipfixId) {
+						case IPFIX_TYPEID_flowStartMilliSeconds:
+							// look for alternative (revFlowStartMilliSeconds/1000)
+							if(dataTemplateInfo->fieldCount > 0) {
+								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse)) {
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
+										notfound = false;
+										break;
+									} else if (dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartNanoSeconds, IPFIX_PEN_reverse)) {
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+										extractNtp64(intdata, microseconds);
+										notfound = false;
+										break;
+									}
 								}
 							}
-						}
-						break;
-					case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-						// look for alternative (revFlowEndMilliSeconds/1000)
-						if(dataTemplateInfo->fieldCount > 0) {
-							for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-								if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowEndSeconds) {
-									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-									notfound = false;
-									break;
-								} else if (dataTemplateInfo->fieldInfo[k].type.id == IPFIX_ETYPEID_revFlowEndNanoSeconds) {
-									intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-									extractNtp64(intdata, microseconds);
-									notfound = false;
-									break;
+							break;
+
+						case IPFIX_TYPEID_flowEndMilliSeconds:
+							// look for alternative (revFlowEndMilliSeconds/1000)
+							if(dataTemplateInfo->fieldCount > 0) {
+								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse)) {
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
+										notfound = false;
+										break;
+									} else if (dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndNanoSeconds, IPFIX_PEN_reverse)) {
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+										extractNtp64(intdata, microseconds);
+										notfound = false;
+										break;
+									}
 								}
 							}
-						}
-						break;
+							break;
+
+					}
+
 				}
 				// if still not found, get default value
 				if(notfound)
@@ -541,21 +549,42 @@ void IpfixDbWriterPg::fillInsertRow(IpfixRecord::SourceID* sourceID,
 
 		DPRINTF("saw ipfix id %d in packet with intdata %llX", identify[j].ipfixId, intdata);
 
-		switch (identify[j].ipfixId) {
-			// convert IPv4 address to string notation, as this is required by Postgres
-			case IPFIX_TYPEID_sourceIPv4Address:
-			case IPFIX_TYPEID_destinationIPv4Address:
-				insertsql << "'" << IPToString(ntohl(intdata)) << "'";
+		switch (identify[j].enterprise) {
+			case 0:
+				switch (identify[j].ipfixId) {
+					// convert IPv4 address to string notation, as this is required by Postgres
+					case IPFIX_TYPEID_sourceIPv4Address:
+					case IPFIX_TYPEID_destinationIPv4Address:
+						insertsql << "'" << IPToString(ntohl(intdata)) << "'";
+						break;
+
+					// convert integer to timestamps
+					case IPFIX_TYPEID_flowStartMilliSeconds:
+						// save time for table access
+						if (flowstart==0) flowstart = intdata;
+					case IPFIX_TYPEID_flowEndMilliSeconds:
+						insertsql << "'" << getTimeAsString(intdata, "%Y-%m-%d %H:%M:%S", true, microseconds) << "'";
+						break;
+
+					// all other integer data is directly converted to a string
+					default:
+						insertsql << intdata;
+						break;
+				}
 				break;
 
-			// convert integer to timestamps
-			case IPFIX_TYPEID_flowStartMilliSeconds:
-				// save time for table access
-				if (flowstart==0) flowstart = intdata;
-			case IPFIX_TYPEID_flowEndMilliSeconds:
-			case IPFIX_ETYPEID_revFlowStartMilliSeconds:
-			case IPFIX_ETYPEID_revFlowEndMilliSeconds:
-				insertsql << "'" << getTimeAsString(intdata, "%Y-%m-%d %H:%M:%S", true, microseconds) << "'";
+			case IPFIX_PEN_reverse:
+				switch (identify[j].ipfixId) {
+					case IPFIX_TYPEID_flowStartMilliSeconds:
+					case IPFIX_TYPEID_flowEndMilliSeconds:
+						insertsql << "'" << getTimeAsString(intdata, "%Y-%m-%d %H:%M:%S", true, microseconds) << "'";
+						break;
+
+					// all other integer data is directly converted to a string
+					default:
+						insertsql << intdata;
+						break;
+				}
 				break;
 
 			// all other integer data is directly converted to a string

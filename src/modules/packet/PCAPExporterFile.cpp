@@ -22,8 +22,15 @@
 
 #include "modules/packet/Packet.h"
 
+#include <sstream>
+
+using namespace std;
+
 PCAPExporterFile::PCAPExporterFile(const std::string& file)
-	: fileName(file), dummy(NULL)
+	: fileName(file),
+	  dummy(NULL),
+	  statPktsForwarded(0),
+	  statBytesForwarded(0)
 {
 }
 
@@ -57,5 +64,18 @@ void PCAPExporterFile::performShutdown()
 void PCAPExporterFile::receive(Packet* packet)
 {
     writePCAP(packet);
+
+	statBytesForwarded += packet->data_length;
+	statPktsForwarded++;
 }
 
+/**
+ * statistics function called by StatisticsManager
+ */
+std::string PCAPExporterFile::getStatisticsXML(double interval)
+{
+	ostringstream oss;
+	oss << "<forwarded type=\"packets\">" << statPktsForwarded << "</forwarded>";
+	oss << "<forwarded type=\"bytes\">" << statBytesForwarded << "</forwarded>";
+	return oss.str();
+}

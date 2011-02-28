@@ -66,7 +66,7 @@ IpfixReceiverSctpIpV4::IpfixReceiverSctpIpV4(int port, std::string ipAddr) {
 		perror("Could not bind socket");
 		THROWEXCEPTION("Cannot create IpfixReceiverSctpIpV4 %s:%d",ipAddr.c_str(), port );
 	}
-	if(listen(listen_socket, SCTP_MAX_CONNECTIONS) < 0 ) {
+	if(listen(listen_socket, SCTP_MAX_BACKLOG) < 0 ) {
 		msg(MSG_ERROR ,"Could not listen on SCTP socket %i", listen_socket);
 		THROWEXCEPTION("Cannot create IpfixReceiverSctpIpV4");
 	}
