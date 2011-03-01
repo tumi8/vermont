@@ -47,7 +47,7 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesord
 	  idmefTemplate(idmeftemplate),
 	  flagsTimeout(10000)
 {
-	const boost::regex exp_valid_homenet("(\\[.*\\]|(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?:/(\\d+))*)");
+	const boost::regex exp_valid_homenet("(\\[.*\\]|(!?\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?:/(\\d+))*)");
 	boost::cmatch what;
 	if(!boost::regex_match(homenet.c_str(),what,exp_valid_homenet)) THROWEXCEPTION("HOMENET is invalid: %s",homenet.c_str());
 	GenNode::parse_order(rulesorder);
@@ -1410,6 +1410,7 @@ void FlowSigMatcher::split_ip(string text, list<IpEntry*>& list)
 		list.push_back(entry);
 	}
 	else if(boost::regex_match(text.c_str(),what,exp_split_home)) {
+		string text=homenet;
 		const boost::regex exp_braces("\\[.+\\]");
 		if(boost::regex_match(text,exp_braces)) {
 			text.erase(text.begin());
@@ -1417,18 +1418,32 @@ void FlowSigMatcher::split_ip(string text, list<IpEntry*>& list)
 			const boost::regex expIp(", *| +");
 			boost::sregex_token_iterator i(text.begin(), text.end(), expIp, -1);
 			boost::sregex_token_iterator j;
-			while(i!=j) {
-				string tmp=*i++;
-				if(tmp[0]!='!')	split_ip('!'+ tmp,list);
-				else {
-					tmp.erase(0,1);
-					split_ip(tmp,list);
+			if(static_cast<string>(what[1]).compare("")==0) {
+				while(i!=j) {
+					split_ip(*i++,list);
+				}
+			}
+			else {
+				while(i!=j) {
+					string tmp=*i++;
+					if(tmp[0]!='!')	split_ip('!'+ tmp,list);
+					else {
+						tmp.erase(0,1);
+						split_ip(tmp,list);
+					}
 				}
 			}
 		}
 		else {
 			if(static_cast<string>(what[1]).compare("")==0) split_ip(homenet,list);
-			else split_ip("!"+homenet,list);
+			else {
+				string tmp=homenet;
+				if(tmp[0]!='!') split_ip('!'+tmp,list);
+				else {
+					tmp.erase(0,1);
+					split_ip(tmp,list);
+				}
+			}
 		}
 	}
 	else {
