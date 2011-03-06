@@ -500,6 +500,7 @@ std::string PCAPExporterPipe::getStatisticsXML(double interval)
 	oss << "<forwarded type=\"packets\">" << statPktsForwarded << "</forwarded>";
 	oss << "<forwarded type=\"bytes\">" << statBytesForwarded << "</forwarded>";
 	if (isRunning(fifoReaderPid)) {
+#ifdef __linux__
 		oss << "<processInfo pid=\"" << fifoReaderPid << "\">";
 		try {
 			ThreadCPUInterface::JiffyTime jt = ThreadCPUInterface::getProcessJiffies(fifoReaderPid);
@@ -509,6 +510,7 @@ std::string PCAPExporterPipe::getStatisticsXML(double interval)
 		catch (std::runtime_error& re) {
 			// do not fail miserably when statistics were not retrieved correctly ...
 		}
+#endif
 	}
 	return oss.str();
 }
