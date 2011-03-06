@@ -62,18 +62,21 @@ extern "C" {
 
 
 /* both assumes little-endianness */
+#ifndef htonll
 extern inline uint64_t htonll(uint64_t number)
 {
 	return ( htonl( (number >> 32) & 0xFFFFFFFF) |
 		 ((uint64_t) (htonl(number & 0xFFFFFFFF))  << 32));
 }
+#endif
 
+#ifndef ntohll
 extern inline uint64_t ntohll(uint64_t number)
 {
 	return ( htonl( (number >> 32) & 0xFFFFFFFF) |
 		 ((uint64_t) (htonl(number & 0xFFFFFFFF))  << 32));
 }
-
+#endif
 
 /*
  * Write an octet
