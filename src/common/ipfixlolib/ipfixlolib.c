@@ -1717,7 +1717,8 @@ static void ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ip
 
 #ifdef SUPPORT_COMPRESSED_IPFIX
 	if (p_exporter->compressed_ipfix) {
-		return ipfix_prepend_compressed_header(p_exporter, data_length, sendbuf);	
+		ipfix_prepend_compressed_header(p_exporter, data_length, sendbuf);	
+		return;
 	}	
 #endif
 
@@ -1897,7 +1898,6 @@ static int ipfix_reset_sendbuffer(ipfix_sendbuffer *sendbuf)
 
         // also reset the set_manager!
 	(sendbuf->set_manager).set_counter = 0;
-	(sendbuf->set_manager).header_iovec = NULL;
         memset(&(sendbuf->set_manager).set_header_store, 0, sizeof((sendbuf->set_manager).set_header_store));
 #ifdef SUPPORT_COMPRESSED_IPFIX
 	memset(&(sendbuf->set_manager).compressed_set_header_store, 0,
