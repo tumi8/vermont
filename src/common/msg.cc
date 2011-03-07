@@ -61,7 +61,10 @@ extern "C" {
 	void msg_init()
 	{
 		// init the logging function's mutex
-		pthread_mutex_init(&msg_mutex, 0);
+		int retval = pthread_mutex_init(&msg_mutex, 0);
+		if (retval != 0) {
+			printf("!!! msg: pthread_mutex_init returned error code %d (%s)\n", retval, strerror(retval));
+		}
 
 		// set stdout and stderr to non-buffered
 		setvbuf(stdout, NULL, _IONBF, 0);
@@ -95,7 +98,7 @@ extern "C" {
 			// we must lock via mutex, else logging outputs are mixed when several
 			// threads log simultaneously
 			int retval = pthread_mutex_lock(&msg_mutex);
-			if (retval != 0) printf("!!! msg: pthread_mutex_lock returned error code %d\n", retval);
+			if (retval != 0) printf("!!! msg: pthread_mutex_lock returned error code %d (%s)\n", retval, strerror(retval));
 			struct timeval tv;
 			gettimeofday(&tv, 0);
 			struct tm* tform = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));

@@ -75,6 +75,7 @@ int main(int argc, char *argv[]) {
 	std::string proto = "udp";
 	std::string certificateChainFile, privateKeyFile, caFile, caPath, peername;
 
+	msg_init();
 	msg_setlevel(MSG_DEBUG);
 	
 	signal(SIGINT, sigint);
