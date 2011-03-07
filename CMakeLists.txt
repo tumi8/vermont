@@ -117,9 +117,14 @@ IF (Boost_FOUND)
 	IF (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY)
 		MESSAGE(FATAL_ERROR "Could not find boost unit test framework")
 	ENDIF (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY)
+	FIND_LIBRARY(Boost_SYSTEM_LIBRARY NAMES boost_system-mt boost_system PATHS ${Boost_LIBRARY_DIRS})
+	IF (NOT Boost_SYSTEM_LIBRARY)
+		MESSAGE(FATAL_ERROR "Could not find boost system library")
+	ENDIF (NOT Boost_SYSTEM_LIBRARY)
 	TARGET_LINK_LIBRARIES(vermont
 		${Boost_REGEX_LIBRARY}
 		${Boost_FILESYSTEM_LIBRARY}
+		${Boost_SYSTEM_LIBRARY}
 	)
 ELSE (Boost_FOUND)
 	MESSAGE(FATAL_ERROR "Could not find boost libraries")
