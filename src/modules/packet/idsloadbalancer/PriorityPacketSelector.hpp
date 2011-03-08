@@ -148,7 +148,7 @@ public:
 	virtual void setUpdateInterval(uint32_t ms);
 	virtual void start();
 	virtual void stop();
-	void queueUtilization(uint32_t queueid, uint32_t maxsize, uint32_t cursize);
+	void queueUtilization(uint32_t queueid, uint32_t maxsize, uint32_t cursize, Packet* packet);
 	virtual void setFlowExporter(Destination<IpfixRecord*>* di);
 	virtual void setQueueSizes(vector<uint32_t> queuesizes);
 

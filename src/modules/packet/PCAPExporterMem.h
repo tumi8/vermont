@@ -45,7 +45,7 @@
 class ExporterNotificationHandler
 {
 public:
-	virtual void queueUtilization(uint32_t maxsize, uint32_t cursize) = 0;
+	virtual void queueUtilization(uint32_t maxsize, uint32_t cursize, Packet* packet) = 0;
 };
 
 

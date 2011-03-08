@@ -281,6 +281,8 @@ int PriorityPacketSelector::decide(Packet *p)
 		delete[] packetHostInfo;
 		packetHostInfo = newPacketHostInfo;
 		newPacketHostInfo = 0;
+		msg(MSG_INFO, "PriorityPacketSelector: (packet time %u.%06u) applying new host information",
+				p->timestamp.tv_sec, p->timestamp.tv_usec);
 	}
 
 	if (p->customData)
@@ -331,8 +333,7 @@ void PriorityPacketSelector::updateIDSMaxRate()
 					&& ids[i].maxOctets>startMaxSpeed)
 					ids[i].maxOctets = (float) ids[i].maxOctets / ratio;
 			}
-			else if (ids[i].curForwOct > ids[i].maxOctets / 2
-					&& (ids[i].expOctets>0.75*ids[i].maxOctets)) // the IDS should have been almost completely filled by the assignment process
+			else if (ids[i].curForwOct > ids[i].maxOctets / 2)
 			{
 				ids[i].maxOctets = (float) ids[i].maxOctets * ratio;
 			}
@@ -690,7 +691,7 @@ void PriorityPacketSelector::setIpConfig()
 
 		/*printf("IDS %d: \n", idsidx);
 		for (list<HostData*>::iterator miter = phi->sortedHosts.begin(); miter!=phi->sortedHosts.end(); miter++) {
-			printf("%s(%.2f) ", IPToString(ntohl((*miter)->ip)).c_str(), (*miter)->priority);
+			printf("%s:%.2f\n", IPToString(ntohl((*miter)->ip)).c_str(), (*miter)->priority);
 		}
 		printf("\n");*/
 
@@ -774,7 +775,7 @@ void PriorityPacketSelector::setUpdateInterval(uint32_t ms)
 	updateInterval = ms;
 }
 
-void PriorityPacketSelector::queueUtilization(uint32_t queueid, uint32_t maxsize, uint32_t cursize)
+void PriorityPacketSelector::queueUtilization(uint32_t queueid, uint32_t maxsize, uint32_t cursize, Packet* packet)
 {
 	volatile PacketHostInfo* phi = packetHostInfo[queueid];
 	if (cursize>phi->critQueueSize && phi->maxHostId > 1) {
@@ -791,13 +792,17 @@ void PriorityPacketSelector::queueUtilization(uint32_t queueid, uint32_t maxsize
 		}
 		phi->critQueueSize = maxsize-((maxsize-phi->critQueueSize)>>1);
 		packetHostInfo[queueid]->maxHostId >>= 1;
-		msg(MSG_INFO, "increasing drop ratio for queue id %u to %.3f", queueid, (double)phi->hostCount/phi->maxHostId);
+		msg(MSG_INFO, "(packet time %u.%06u)increasing drop ratio for queue id %u to %.3f, critQueueSize: %u", packet->timestamp.tv_sec,
+				packet->timestamp.tv_usec, queueid, (double)phi->hostCount/phi->maxHostId, phi->critQueueSize);
 	} else {
 		// reset critical queue size again
 		if (phi->critQueueSize>(maxsize>>1)) {
 			uint32_t cqs = maxsize-((maxsize-phi->critQueueSize)<<1);
-			if (cursize<cqs)
+			if (cursize<cqs) {
 				phi->critQueueSize = cqs;
+				msg(MSG_INFO, "(packet time %u.%06u) decreasing critQueueSize to %u of queue id %u",
+						packet->timestamp.tv_sec, packet->timestamp.tv_usec, phi->critQueueSize, queueid);
+			}
 		}
 	}
 }

@@ -485,7 +485,7 @@ void PCAPExporterMem::removeHosts(Packet* packet)
 	else
 		cursize = *max-(*localRead-*localWrite);
 
-	exporterNotification->queueUtilization(*max, cursize);
+	exporterNotification->queueUtilization(*max, cursize, packet);
 }
 
 void PCAPExporterMem::setExporterNotificationHandler(ExporterNotificationHandler* enh)

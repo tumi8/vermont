@@ -45,7 +45,7 @@ public:
 	virtual void receive(Packet* packet);
 	void performStart();
 	void performShutdown();
-	virtual void queueUtilization(uint32_t maxsize, uint32_t cursize);
+	virtual void queueUtilization(uint32_t maxsize, uint32_t cursize, Packet* packet);
 
 private:
 	BasePacketSelector *selector;

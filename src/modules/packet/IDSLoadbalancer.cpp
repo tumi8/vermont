@@ -189,7 +189,7 @@ void IDSLoadbalancer::updateBalancingLists(struct timeval curtime)
 	selector->updateData(curtime, stats);
 }
 
-void IDSLoadbalancer::queueUtilization(uint32_t maxsize, uint32_t cursize)
+void IDSLoadbalancer::queueUtilization(uint32_t maxsize, uint32_t cursize, Packet* packet)
 {
-	if (ppselector) ppselector->queueUtilization(curPacketQueueID, maxsize, cursize);
+	if (ppselector) ppselector->queueUtilization(curPacketQueueID, maxsize, cursize, packet);
 }
