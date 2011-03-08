@@ -1,4 +1,4 @@
-ADD_LIBRARY(modules
+set(MODULES_SRC
     AnonymizerCfg.cpp
     SensorManagerCfg.cpp
     ConfigManager.cpp
@@ -120,4 +120,13 @@ ADD_LIBRARY(modules
     ipfix/aggregator/Rule.cpp
 )
 
+IF (PYTHONLIBS_FOUND)
+    list(APPEND MODULES_SRC
+        analysis/PythonFlowAnalyzer.cpp
+        analysis/PythonFlowAnalyzerCfg.cpp
+    )
+ENDIF (PYTHONLIBS_FOUND)
 
+
+
+ADD_LIBRARY(modules ${MODULES_SRC})
