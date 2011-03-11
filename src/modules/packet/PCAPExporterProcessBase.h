@@ -107,7 +107,7 @@ protected:
 	 * restart interval of the process in seconds
 	 * time is measured by the timestamps of the incoming packets
 	 * if 0, the process will not be automatically restarted
-	 * if >0, the process will be regularly restarted after the given time
+	 * if >0, the process will be regularly restarted after the given time in milliseconds
 	 */
 	uint32_t restartInterval;
 	/**

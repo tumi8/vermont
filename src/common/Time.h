@@ -10,6 +10,19 @@
 #include <stdint.h>
 #include "common/ipfixlolib/encoding.h"
 
+/**
+ * adds parameter add to parameter result
+ */
+inline void timeval_add(struct timeval* result, struct timeval* add)
+{
+	result->tv_sec += add->tv_sec;
+	result->tv_usec += add->tv_usec;
+	if (result->tv_usec>1000000) {
+		result->tv_sec += 1;
+		result->tv_usec -= 1000000;
+	}
+}
+
 /* Subtract the `struct timeval' values X and Y,
    storing the result in RESULT.
    Return 1 if the difference is negative, otherwise 0.  */

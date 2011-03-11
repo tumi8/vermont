@@ -64,7 +64,7 @@ PCAPExporterPipeCfg::PCAPExporterPipeCfg(XMLElement* elem)
         } else if (e->matches("appenddate")) {
 			appenddate = getBool("appenddate", false, e);
         } else if (e->matches("restartinterval")) {
-			restartInterval = getInt("restartinterval", 0);
+			restartInterval = getTimeInUnit("restartinterval", mSEC, 0);
 		} else if(e->matches("restartonsignal")) {
 			restart = getBool("restartonsignal", false, e);
 		} else if(e->matches("blocking")) {

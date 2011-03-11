@@ -143,7 +143,7 @@ void PCAPExporterPipe::performStart()
 	else
 		msg(MSG_ERROR, "No Logfile specified - dumping to stdout!");
 	msg(MSG_INFO, "  - sigKillTimeout = %d" , sigKillTimeout);
-	msg(MSG_INFO, "  - restartInterval = %u seconds" , restartInterval);
+	msg(MSG_INFO, "  - restartInterval = %u ms" , restartInterval);
 
 	startProcess();
 }
@@ -216,7 +216,8 @@ void PCAPExporterPipe::receive(Packet* packet)
 		if (nextRestart.tv_sec==0) {
 			DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive(): updating nextRestart");
 			nextRestart = packet->timestamp;
-			nextRestart.tv_sec += restartInterval;
+			struct timeval tv = { restartInterval/1000, (restartInterval % 1000)*1000 };
+			timeval_add(&nextRestart, &tv);
 		} else if (compareTime(nextRestart, packet->timestamp)<0) {
 			DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive(): restarting process");
 
@@ -226,7 +227,13 @@ void PCAPExporterPipe::receive(Packet* packet)
 			startProcess();
 			registerSignalHandlers();
 			DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive(): updating nextRestart");
-			nextRestart.tv_sec += ((packet->timestamp.tv_sec-nextRestart.tv_sec)/restartInterval+1)*restartInterval;
+			timeval tvdiff;
+			timeval_subtract(&tvdiff, &packet->timestamp, &nextRestart);
+			uint32_t msdiff = tvdiff.tv_sec*1000+tvdiff.tv_usec/1000;
+			uint32_t mswait = (msdiff/restartInterval+1)*restartInterval;
+			tvdiff.tv_sec = mswait/1000;
+			tvdiff.tv_usec = (mswait%1000)*1000;
+			timeval_add(&nextRestart, &tvdiff);
 		}
 	}
 

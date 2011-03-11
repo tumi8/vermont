@@ -54,7 +54,7 @@ private:
 	bool appenddate;
 	bool restart;
 	bool blocking;
-	uint32_t restartInterval;
+	uint32_t restartInterval; /**< restart interval in milliseconds */
 };
 
 
