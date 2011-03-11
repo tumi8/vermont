@@ -9,8 +9,19 @@ def String2IP(dotted_quad_ip):
 
 
 class FlowRecord:
-	def __init__(self, sip, dip, sport, dport):
-		self._src_ip = sip
-		self._dst_ip = dip
-		self._src_port = sport
-		self._dst_port = dport
+	field_map = { "sourceIPv4Address" : "_src_ip",
+				  "destinationIPv4Address" : "_dst_ip",
+				  "sourceTransportPort" : "_src_port",
+				  "destinationTransportPort" : "_dst_port",
+				  "protocolIdentifier" : "_prot",
+				  "flowStartMilliSeconds" : "_start_time",
+				  "flowEndMilliSeconds" : "_end_time",
+				  "revFlowStartMilliSeconds" : "_rev_start_time",
+				  "revFlowEndMilliSeconds" : "_rev_end_time",
+				}
+	def __init__(self, fields):
+		for f in fields.keys():
+			attrname = f
+			if f in self.field_map: 
+				attrname = self.field_map[f]
+			setattr(self, attrname, fields[f])

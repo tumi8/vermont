@@ -59,7 +59,9 @@
 #include "modules/idmef//PacketIDMEFReporterCfg.h"
 #include "modules/analysis/P2PDetectorCfg.h"
 #include "modules/analysis/HostStatisticsGeneratorCfg.h"
+#ifdef PYTHON_SUPPORT_ENABLED
 #include "modules/analysis/PythonFlowAnalyzerCfg.h"
+#endif
 
 #include <cassert>
 
@@ -101,7 +103,9 @@ Cfg* ConfigManager::configModules[] = {
 	new P2PDetectorCfg(NULL),
 	new HostStatisticsGeneratorCfg(NULL),
 	new IpfixCsExporterCfg(NULL),
+#ifdef PYTHON_SUPPORT_ENABLED
 	new PythonFlowAnalyzerCfg(NULL),
+#endif
 #ifdef DB_SUPPORT_ENABLED
 	new IpfixDbReaderCfg(NULL),
 	new IpfixDbWriterCfg(NULL),
