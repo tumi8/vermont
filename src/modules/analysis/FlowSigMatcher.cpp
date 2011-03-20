@@ -136,11 +136,22 @@ void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
 				for(flagIt=flagIpIt->second.begin();flagIt!=flagIpIt->second.end();flagIt++) { //delete outdated flags
 					if((flagIt->second < conn.srcTimeStart)&&(conn.srcTimeStart - flagIt->second > flagsTimeout)) flagIpIt->second.erase(flagIt);
 				}
+				if(flagIpIt->second.empty()) {//delete empty states from map
+					activeFlags.erase(flagIpIt);
+				}
 			}
 			list<FlagsRule*>::iterator flagRulesIt;
 			for(flagRulesIt=flagRules.begin();flagRulesIt!=flagRules.end();flagRulesIt++) {
 				set<uint32_t>::iterator it;
-				for(flagIpIt=activeFlags.begin();flagIpIt!=activeFlags.end();flagIpIt++) {
+				if((flagIpIt=activeFlags.find(htonl(conn.srcIP)))!=activeFlags.end()) {
+					for(it=(*flagRulesIt)->flags.begin();it!=(*flagRulesIt)->flags.end();it++) {
+						if(flagIpIt->second.find(*it) == flagIpIt->second.end()) break;
+					}
+					if(it==(*flagRulesIt)->flags.end()) {
+						sendMessage(conn, (*flagRulesIt)->source, (*flagRulesIt)->type, (*flagRulesIt)->uid, (*flagRulesIt)->msg); 
+					}
+				}
+				if((flagIpIt=activeFlags.find(htonl(conn.dstIP)))!=activeFlags.end()) {
 					for(it=(*flagRulesIt)->flags.begin();it!=(*flagRulesIt)->flags.end();it++) {
 						if(flagIpIt->second.find(*it) == flagIpIt->second.end()) break;
 					}
@@ -1225,7 +1236,7 @@ GenNode* GenNode::newNode(int depth)
 int FlowSigMatcher::parse_line(string text) 
 {
 	boost::cmatch what;
-	const boost::regex expLine("(\\d+) +((?:!?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:!?\\$HOME_NET)|any|ANY) +(!?\\d+|any|ANY|\\*|(?:!?(?:\\d+)?\\:(?:\\d+)?)|(?:\\[.+\\])) +(->|<>|<!>|=>|<=>) +((?:!?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:!?\\$HOME_NET)) +(!?\\d+|any|ANY|\\*|(?:!?(?:\\d+)?\\:(?:\\d+)?)|(?:\\[.+\\])) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d*))?");
+	const boost::regex expLine("(\\d+) +((?:!?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*)|(?:\\[.+\\])|(?:!?\\$HOME_NET)|any|ANY) +(!?\\d+|any|ANY|\\*|(?:!?(?:\\d+)?\\:(?:\\d+)?)|(?:\\[.+\\])) +(->|<>|<!>|=>|<=>) +((?:!?\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d+)*|any|ANY)|(?:\\[.+\\])|(?:!?\\$HOME_NET)) +(!?\\d+|any|ANY|\\*|(?:!?(?:\\d+)?\\:(?:\\d+)?)|(?:\\[.+\\])) +(\\w+) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"(?: +(\\d+))?");
 	const boost::regex expFlagsLine("(\\d+) +flags +\\((.+)\\) +([\\w\\-]+) +([\\w\\-]+) +\"(.*)\"");
 	const boost::regex expCommentLine("^#|^[:space:]*$");
 	if(boost::regex_search(text.c_str(), expCommentLine)) return true;
@@ -1237,8 +1248,8 @@ int FlowSigMatcher::parse_line(string text)
 			return false;
 		}
 		if(static_cast<string>(what[7]).compare("TCP")==0||static_cast<string>(what[7]).compare("tcp")==0) rule->protocol=6;
-		else if(static_cast<string>(what[7]).compare("UDP")==0||static_cast<string>(what[7]).compare("udp")==0) rule->protocol=6;
-		else if(static_cast<string>(what[7]).compare("ICMP")==0||static_cast<string>(what[7]).compare("icmp")==0) rule->protocol=6;
+		else if(static_cast<string>(what[7]).compare("UDP")==0||static_cast<string>(what[7]).compare("udp")==0) rule->protocol=17;
+		else if(static_cast<string>(what[7]).compare("ICMP")==0||static_cast<string>(what[7]).compare("icmp")==0) rule->protocol=1;
 		else rule->protocol=0;
 		string dir(what[4]);
 		if(dir.compare("->")==0) {
