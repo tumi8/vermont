@@ -255,6 +255,8 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 					return;
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
+        case IPFIX_TYPEID_flowStartMilliSeconds:
+        case IPFIX_TYPEID_flowEndMilliSeconds:
 				case PSAMP_TYPEID_observationTimeSeconds:
 					printLocaltime(type, pattern);
 					return;
