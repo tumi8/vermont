@@ -1,0 +1,12 @@
+<ipfixConfig>
+	<ipfixCollector id="1">
+		<listener>
+			<transportProtocol>UDP</transportProtocol>
+			<port>4711</port>
+		</listener>
+		<next>2</next>
+	</ipfixCollector>
+	<ipfixPrinter id="2">
+	</ipfixPrinter>
+</ipfixConfig>
+
