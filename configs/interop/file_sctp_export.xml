@@ -1,0 +1,24 @@
+<ipfixConfig>
+	
+	<ipfixReceiverFile id="1">
+    <packetFileDirectory>/home/phil/Documents/ipfixdata</packetFileDirectory>
+		<packetFileBasename>test</packetFileBasename>
+		<ignoreTimestamps>true</ignoreTimestamps>
+		<offlineSpeed>15</offlineSpeed>
+		<next>7</next>
+	</ipfixReceiverFile>
+
+	<ipfixQueue id="7">
+		<entries>1</entries>
+		<next>8</next>
+	</ipfixQueue>
+	
+	<ipfixExporter id="8">
+		<collector>
+			<ipAddress>195.113.231.139</ipAddress>
+			<transportProtocol>SCTP</transportProtocol>
+			<port>4711</port>
+		</collector>
+	</ipfixExporter>
+
+</ipfixConfig>

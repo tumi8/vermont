@@ -1,0 +1,17 @@
+<ipfixConfig>
+	<sensorManager id="99">
+		<checkinterval>1</checkinterval>
+	</sensorManager>
+	
+	<ipfixReceiverFile id="1">
+    <packetFileDirectory>/home/phil/Documents/ipfixdata</packetFileDirectory>
+		<packetFileBasename>test</packetFileBasename>
+		<ignoreTimestamps>true</ignoreTimestamps>
+		<offlineSpeed>15</offlineSpeed>
+		<next>5</next>
+	</ipfixReceiverFile>
+
+	<ipfixPrinter id="5">
+  </ipfixPrinter>
+
+</ipfixConfig>

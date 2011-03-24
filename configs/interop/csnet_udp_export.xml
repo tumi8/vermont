@@ -120,9 +120,9 @@
 	
 	<ipfixExporter id="8">
 		<collector>
-			<ipAddress>195.113.231.139</ipAddress>
-			<transportProtocol>SCTP</transportProtocol>
-			<port>4711</port>
+			<ipAddress>195.113.187.25</ipAddress>
+			<transportProtocol>UDP</transportProtocol>
+			<port>6002</port>
 		</collector>
 	</ipfixExporter>
 </ipfixConfig>

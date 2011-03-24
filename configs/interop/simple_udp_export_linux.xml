@@ -120,9 +120,9 @@
 	
 	<ipfixExporter id="8">
 		<collector>
-			<ipAddress>131.159.20.24</ipAddress>
+			<ipAddress>195.113.231.139</ipAddress>
 			<transportProtocol>UDP</transportProtocol>
-			<port>4433</port>
+			<port>4711</port>
 		</collector>
 	</ipfixExporter>
 </ipfixConfig>
