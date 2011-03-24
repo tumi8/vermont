@@ -1,3 +1,4 @@
+
 <ipfixConfig>
 	<observer id="1">
 		<filename>interop.pcap</filename>
@@ -58,9 +59,9 @@
 
 	<ipfixExporter id="8">
 		<collector>
-			<ipAddress>195.113.231.146</ipAddress>
+			<ipAddress>195.113.231.139</ipAddress>
 			<transportProtocol>SCTP</transportProtocol>
-			<port>4739</port>
+			<port>4711</port>
 		</collector>
 	</ipfixExporter>
 
