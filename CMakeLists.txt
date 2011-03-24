@@ -186,6 +186,14 @@ ADD_DEFINITIONS(-DIP_HEADER_OFFSET=${IP_HEADER_OFFSET})
 SET(PCAP_MAX_CAPTURE_LENGTH 128 CACHE STRING "Maximum PCAP packet capture length (this amount of bytes is always allocated for each packet, the smaller the better!)")
 ADD_DEFINITIONS(-DPCAP_MAX_CAPTURE_LENGTH=${PCAP_MAX_CAPTURE_LENGTH})
 
+# TODO: there is a bug in the code that occurs then the MAX_CAPTURE_LENGTH is > 65000
+#	that occurs in the offset calucation in PacketHashTable (the offset is a uint16_t that
+#	overflows when MAX_CAPTURE_LENGTH is too big.
+#	until we fixted the bug, we restrict ourselfs on on teh maximum capture length
+IF (PCAP_MAX_CAPTURE_LENGTH GREATER 65000) 
+	MESSAGE(FATAL_ERROR "PCAP_MAX_CAPTURE_LENGTH is too big. Make it <= 65000 or fix the bug described in CMakeLists.txt")
+ENDIF(PCAP_MAX_CAPTURE_LENGTH GREATER 65000)
+
 ### PCAP_DEFAULT_CAPTURE_LENGTH
 
 SET(PCAP_DEFAULT_CAPTURE_LENGTH 128 CACHE STRING "Default PCAP packet capture length (default value for PCAP snaplen if not defined in configuration)")
