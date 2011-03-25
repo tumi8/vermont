@@ -29,10 +29,10 @@
 				<ieName>destinationTransportPort</ieName>
 			</flowKey>
 			<nonFlowKey>
-				<ieName>flowStartMilliSeconds</ieName>
+				<ieName>flowStartSeconds</ieName>
 			</nonFlowKey>
 			<nonFlowKey>
-				<ieName>flowEndMilliSeconds</ieName>
+				<ieName>flowEndSeconds</ieName>
 			</nonFlowKey>
 			<nonFlowKey>
 				<ieName>octetDeltaCount</ieName>

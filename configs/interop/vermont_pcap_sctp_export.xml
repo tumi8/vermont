@@ -30,11 +30,19 @@
 				<ieName>destinationTransportPort</ieName>
 			</flowKey>
 			<nonFlowKey>
+				<ieName>flowStartSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>flowEndSeconds</ieName>
+			</nonFlowKey>
+<!--
+			<nonFlowKey>
 				<ieName>flowStartMilliSeconds</ieName>
 			</nonFlowKey>
 			<nonFlowKey>
 				<ieName>flowEndMilliSeconds</ieName>
 			</nonFlowKey>
+-->
 			<nonFlowKey>
 				<ieName>octetDeltaCount</ieName>
 			</nonFlowKey>
@@ -59,7 +67,7 @@
 
 	<ipfixExporter id="8">
 		<collector>
-			<ipAddress>195.113.231.139</ipAddress>
+			<ipAddress>195.113.231.144</ipAddress>
 			<transportProtocol>SCTP</transportProtocol>
 			<port>4711</port>
 		</collector>

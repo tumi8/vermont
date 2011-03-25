@@ -1,6 +1,6 @@
 <ipfixConfig>
 	<observer id="1">
-		<filename>/home/braun/interop.pcap</filename>
+		<filename>interop.pcap</filename>
 		<pcap_filter>ip</pcap_filter>
 		<next>2</next>
 	</observer>
