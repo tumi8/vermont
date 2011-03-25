@@ -80,6 +80,7 @@ ADD_LIBRARY(modules
     ipfix/IpfixReceiverDtlsSctpIpV4.cpp
     ipfix/IpfixReceiverFile.cpp
     ipfix/IpfixReceiverFileCfg.cpp
+    ipfix/IpfixReceiverTcpIpV4.cpp
     ipfix/IpfixRawdirReader.cpp
     ipfix/IpfixReceiver.cpp
     ipfix/IpfixRecord.cpp
