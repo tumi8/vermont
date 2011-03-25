@@ -182,7 +182,8 @@ void PrintHelpers::printLocaltime(InformationElement::IeInfo type, IpfixRecord::
 		fprintf(fh, "%u (%s)", (uint32_t)tmp, str);
 		return;
 	case 8:
-		tmp = (time_t)ntohll(*(uint64_t*)data);
+		// we expect 8 byte timestamps to be milliseconds
+		tmp = (time_t)(ntohll(*(uint64_t*)data) / 1000);
 		ctime_r(&tmp, str);
 		// remove new line
 		str[24] = '\0';
@@ -255,8 +256,8 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 					return;
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
-        case IPFIX_TYPEID_flowStartMilliSeconds:
-        case IPFIX_TYPEID_flowEndMilliSeconds:
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+				case IPFIX_TYPEID_flowEndMilliSeconds:
 				case PSAMP_TYPEID_observationTimeSeconds:
 					printLocaltime(type, pattern);
 					return;
