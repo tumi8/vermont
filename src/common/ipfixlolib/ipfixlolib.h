@@ -200,8 +200,20 @@ extern "C" {
 /*
  * Stevens: The maximum size of an IPv4 datagram is 65535 bytes, including
  * the IPv4 header. This is because of the 16-bit total length field.
+ * TODO: Potential bug: If we use #define IPFIX_MTU_MAX UINT16_MAX, the 
+ * code will work as expected: it will find the maximum IPFIX message size
+ * which is nearly UINT16_MAX for SCTP and can potentially be big for UDP
+ * (e.g. if sending on the loopback interface, which defaults to 16k). 
+ * If this happens, we get problems with different IPFIX implementation, 
+ * as they have problems parsing such big messages. Furthermore, we are
+ * are limited in our maximum number of sets for a single message.
+ * Hence, we reduce IPFIX_MTU_MAX to 1500, which will always work, but
+ * restrict the maximum size of the messages
  */
-#define IPFIX_MTU_MAX UINT16_MAX
+//#define IPFIX_MTU_MAX UINT16_MAX
+#define IPFIX_MTU_MAX 1500
+
+
 /* Use a very conservative default MTU so that it even works with IPSec over PPPoE */
 #define IPFIX_MTU_CONSERVATIVE_DEFAULT 1400
 
