@@ -150,55 +150,69 @@ void IpfixReceiverTcpIpV4::run() {
 		for (rfd = listen_socket + 1; rfd <= maxfd; ++rfd) {
       			if (FD_ISSET(rfd, &readfds)) {
 				boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
-      				ret = recvfrom(rfd, data.get(), sizeof(IpfixParser::IpfixHeader), 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
-				if (ret < 0) { // error
-					msg(MSG_ERROR, "IpfixReceiverTcpIpV4: Client error (%s), close connection.", inet_ntoa(clientAddress.sin_addr));
-					close(rfd);
-					// we treat an error like a shut down, so overwrite return value to zero
-					ret = 0;
+				uint16_t expected_read = sizeof(IpfixParser::IpfixHeader);
+				uint16_t read_so_far = 0;
+				ret = 1;
+				while (read_so_far < expected_read && ret > 0) {
+	      				ret = recvfrom(rfd, data.get() + read_so_far, expected_read - read_so_far, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
+					if (ret < 0) { // error
+						msg(MSG_ERROR, "IpfixReceiverTcpIpV4: Client error (%s), close connection.", inet_ntoa(clientAddress.sin_addr));
+						close(rfd);
+						// we treat an error like a shut down, so overwrite return value to zero
+						ret = 0;
+					} else if (ret == 0) {
+						msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client closed connection");
+					}
+					read_so_far += ret;
+					
 				}
-				if (ret != sizeof(IpfixParser::IpfixHeader)) {
+				if (expected_read != read_so_far && ret > 0) {
 					msg(MSG_ERROR, "IpfixReceiverTcpIpV4: Damn it. TCP didn't read enough. And we did not handle that in the code!");
 					close(rfd);
 					ret = 0;
 				}
 				IpfixParser::IpfixHeader* header = (IpfixParser::IpfixHeader*)data.get();
-				if (ntohs(header->version) != 0x000a)  {
+				if (ret > 0 && ntohs(header->version) != 0x000a)  {
 					msg(MSG_ERROR, "IpfixReceiverTcpIpV4: We do not support anything but IPFIX in TCPReceiver");
 					close(rfd);
 					ret = 0;
 				}
-				uint16_t expected_read = ntohs(header->length);
-				uint16_t read_so_far = sizeof(IpfixParser::IpfixHeader);
-				while (read_so_far < expected_read) {
+
+				expected_read = ntohs(header->length);
+				while (ret > 0 && read_so_far < expected_read) {
 					ret = recvfrom(rfd, data.get() + read_so_far, expected_read - read_so_far, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
 					if (ret + read_so_far > expected_read) {
 						msg(MSG_ERROR,"IpfixReceiverTcpIpV4: This is way to much content!");
 						close(rfd);
 						ret = 0;
+					} else if (ret == 0) {
+						msg(MSG_ERROR, "IpfixReceiverTcpIpV4: Client closed connection after sending the IPFIX message header!");
 					}
+ 
 					read_so_far += ret;
 				}
-				if (read_so_far != expected_read) {
+				if (ret > 0 && read_so_far != expected_read) {
 					msg(MSG_ERROR, "IpfixReceiverTcpIpV4: This is weird. We have read more than we excpected!");
 					close(rfd);
 					ret = 0;
 				}
 
-				// create sourceId
-				boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
-				memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
-				sourceID->exporterAddress.len = 4;
-				sourceID->exporterPort = ntohs(clientAddress.sin_port);
-				sourceID->protocol = IPFIX_protocolIdentifier_TCP;
-				sourceID->receiverPort = receiverPort;
-				sourceID->fileDescriptor = rfd;
-				// send packet to all packet processors
-				mutex.lock();
-				for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
-					(*i)->processPacket(data, expected_read, sourceID);
+				if (ret > 0) {
+					// create sourceId
+					boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
+					memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
+					sourceID->exporterAddress.len = 4;
+					sourceID->exporterPort = ntohs(clientAddress.sin_port);
+					sourceID->protocol = IPFIX_protocolIdentifier_TCP;
+					sourceID->receiverPort = receiverPort;
+					sourceID->fileDescriptor = rfd;
+					// send packet to all packet processors
+					mutex.lock();
+					for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
+						(*i)->processPacket(data, expected_read, sourceID);
+					}
+					mutex.unlock();
 				}
-				mutex.unlock();
 				if (ret == 0) { // this was a shut down (or error)
 					FD_CLR(rfd, &fd_array); // delete dead client
 					msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client %s disconnected", inet_ntoa(clientAddress.sin_addr));
