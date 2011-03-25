@@ -64,7 +64,6 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 			templateLifetime = time;
 		}
 
-	protected:
 		/**
 		 * IPFIX header helper.
 		 * Constitutes the first 16 bytes of every IPFIX Message
@@ -77,6 +76,7 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 			uint32_t observationDomainId;
 			uint8_t data;
 		} IpfixHeader;
+	protected:
 
 		/**
 		 * NetflowV9 header helper.

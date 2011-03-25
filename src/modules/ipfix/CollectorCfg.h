@@ -28,6 +28,7 @@
 #include <modules/ipfix/IpfixReceiverSctpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverDtlsUdpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverDtlsSctpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverTcpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverFile.hpp>
 
 #include <common/ipfixlolib/ipfixlolib.h>
@@ -74,7 +75,10 @@ public:
 				} else if (prot=="DTLS_OVER_SCTP") {
 					protocol = DTLS_OVER_SCTP;
 					defaultPort = 4740;
-				} else 
+				} else if (prot=="TCP") {
+					protocol = TCP;
+					defaultPort = 4740;
+				} else
 					THROWEXCEPTION("Invalid configuration parameter for transportProtocol (%s)", prot.c_str());
 			} else if (e->matches("port")) {
 				port = (uint16_t)atoi(e->getContent().c_str());
@@ -111,7 +115,9 @@ public:
 			ipfixReceiver = new IpfixReceiverDtlsSctpIpV4(port,
 				ipAddress, certificateChainFile,
 				privateKeyFile, caFile, caPath, peerFqdns);
-		else 
+		else if (protocol == TCP)
+			ipfixReceiver = new IpfixReceiverTcpIpV4(port, ipAddress);
+		else
 			ipfixReceiver = new IpfixReceiverUdpIpV4(port, ipAddress);	
 
 		if (!ipfixReceiver) {

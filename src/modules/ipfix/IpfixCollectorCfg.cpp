@@ -72,10 +72,11 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 		THROWEXCEPTION("collectingProcess has to listen on one address!");
 
 	if (listener->getProtocol() != UDP &&
+			listener->getProtocol() != TCP && 
 			listener->getProtocol() != SCTP &&
 			listener->getProtocol() != DTLS_OVER_UDP &&
 			listener->getProtocol() != DTLS_OVER_SCTP)
-		THROWEXCEPTION("collectingProcess can handle only UDP or SCTP!");
+		THROWEXCEPTION("collectingProcess can handle only UDP, TCP, or SCTP!");
 	
 	msg(MSG_INFO, "IpfixCollectorCfg: Successfully parsed collectingProcess section");
 }
