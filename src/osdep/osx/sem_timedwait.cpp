@@ -6,25 +6,31 @@
 #include <time.h>
 
 // Mac OS X timedwait wrapper
-int sem_timedwait_mach(semaphore_t* sem, const struct timespec* ts) {
+int sem_timedwait_mach(semaphore_t* sem, long timeout_ms) {
+	int retval = 0;
 	mach_timespec_t mts;
-	mts.tv_sec = ts->tv_sec;
-	mts.tv_nsec = ts->tv_nsec;
-	//msg(MSG_FATAL, "Waiting for %lu sec %lu nsec", ts->tv_sec, ts->tv_nsec);
-	int retval = semaphore_timedwait(*sem, mts);
+	if (timeout_ms >= 0) {
+		mts.tv_sec = timeout_ms / 1000;
+		mts.tv_nsec = (timeout_ms % 1000) * 1000000;
+	} else {
+		// FIX: If we really wait forever, we cannot shut down VERMONT
+		// this is mac os x specific and does not happen on linux
+		// hence, we just add a small timeout instead of blocking
+		// indefinately
+		mts.tv_sec = 1;
+		mts.tv_nsec = 0;
+	}
+	retval = semaphore_timedwait(*sem, mts);
 	switch (retval) {
 	case KERN_SUCCESS:
 		return 0;
 	case KERN_OPERATION_TIMED_OUT:
 		errno = ETIMEDOUT;
-		//msg(MSG_FATAL, "Got a timeout: %lu %lu", ts->tv_sec, ts->tv_nsec);
 		break;
 	case KERN_ABORTED:
 		errno = EINTR;
-		//msg(MSG_FATAL, "interrupted");
 		break;
 	default:
-		//msg(MSG_FATAL, "Got unknown mach_semaphore condition %d (%s)", retval, mach_error_string(retval));
 		errno =  EINVAL;
 		break;
 	}

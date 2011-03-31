@@ -95,7 +95,7 @@ public:
 			// wait until timeout
 			addToCurTime(&ts, timeout_ms);
 #ifdef __APPLE__
-			retval = sem_timedwait_mach(sem, &ts);
+			retval = sem_timedwait_mach(sem, timeout_ms);
 #else
 			retval = sem_timedwait(sem, &ts);
 #endif
@@ -107,19 +107,15 @@ public:
 						break;
 					default:
 						// semaphore could not be aquired because of several reasons, but none are fatal
-						DPRINTFL(MSG_VDEBUG, "timedwait (<0) returned with %d", errno);
+						DPRINTFL(MSG_VDEBUG, "timedwait (<0) returned with %d (%s)", errno, strerror(errno));
 						return false;
 				}
 			}
 		} else {
 		    // wait and check the exitFlag regularly
 		    do {
-				if (timeout.tv_nsec >= 1000000000) {
-					msg(MSG_FATAL, "You have just seen a bug. in TimeoutSemarphore:wait(): timeout.tv_nsec is too big: %lu. Please fix this! I will perform some sanatation, but this does not fix the real error!", timeout.tv_nsec);
-					timeout.tv_nsec = 999999999;
-				}
 #ifdef __APPLE__
-				retval = sem_timedwait_mach(sem, &timeout);
+				retval = sem_timedwait_mach(sem, timeout_ms);
 #else
 				retval = sem_timedwait(sem, &timeout);
 #endif
@@ -193,7 +189,20 @@ public:
 
 		// wait until timeout
 #ifdef __APPLE__
-		retval = sem_timedwait_mach(sem, &ts);
+		// well, apples semaphore_timedwait need to have a realtive wait time
+		// hence, we must calculate how long to sleep ...
+		struct timeval tv;
+		long timeout_ms = 0;
+		gettimeofday(&tv, 0);
+		if (tv.tv_usec >= 1000000) {
+			tv.tv_sec ++;
+			tv.tv_usec -= 1000000;
+		}
+		if (ts.tv_sec > tv.tv_sec) 
+			timeout_ms += (ts.tv_sec - tv.tv_sec) * 1000;
+		if (tv.tv_usec >  (ts.tv_nsec / 1000)) 
+			timeout_ms += (ts.tv_nsec / 1000)  - tv.tv_usec;
+		retval = sem_timedwait_mach(sem, timeout_ms);
 #else
 		retval = sem_timedwait(sem, &ts);
 #endif 
@@ -212,6 +221,7 @@ public:
 		}
 
 		// this statement should not be reached
+		THROWEXCEPTION("waitAbs reached non-reachable code!!!");
 		return false;
 	}
 

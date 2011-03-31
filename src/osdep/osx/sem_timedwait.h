@@ -10,7 +10,7 @@
 #include <mach/task.h>
 
 // Mac OS X timedwait wrapper
-int sem_timedwait_mach(semaphore_t* sem, const struct timespec* ts);
+int sem_timedwait_mach(semaphore_t* sem, long timeout_ms);
 
 #endif
 #endif
