@@ -15,7 +15,13 @@
 #include <time.h>
 #include <sys/time.h>
 #include <errno.h>
+
+#ifdef __APPLE__
+#include <osdep/osx/sem_timedwait.h>
+#else
 #include <semaphore.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 
@@ -26,34 +32,47 @@ class TimeoutSemaphore
 {
 private:
 	static const int STANDARD_TIMEOUT = 100; // when no timeout is given by calling function, this amount of ms will be waited until the exitFlag is checked
+#ifdef __APPLE__
+	semaphore_t* sem;
+#else
 	sem_t* sem;
+#endif
 
 	bool exitFlag;	/**< is set to true when semaphore is to be fshut down **/
 	
 	struct timespec timeout;  /** used by wait to limit access to time-functions */
 
-	sem_t last_sem;
 public:
 	TimeoutSemaphore(int initialValue = 0)
 		: exitFlag(false)
 	{
+#ifdef __APPLE__
+		sem = new semaphore_t;
+		int retval = semaphore_create(mach_task_self(), sem, SYNC_POLICY_FIFO, initialValue);
+#else 
 		sem = new sem_t;
+		int retval = sem_init(sem, 0, initialValue);
+#endif
 
 		timeout.tv_sec = 0;
 		timeout.tv_nsec = 0;
 
-		int retval = sem_init(sem, 0, initialValue);
 
 		if (retval != 0) {
-			THROWEXCEPTION("failed to initialize semaphore, sem_init exited with code %d", errno);
+			THROWEXCEPTION("failed to initialize semaphore, sem_init exited with code %d (%s)", errno, strerror(errno));
 		}
 
 	};
 
 	virtual ~TimeoutSemaphore()
 	{
+#ifdef __APPLE__
+		int retval = semaphore_destroy(mach_task_self(), *sem);
+		if (retval != KERN_SUCCESS) {
+#else
 		int retval = sem_destroy(sem);
 		if (retval != 0) {
+#endif
 			THROWEXCEPTION("given semaphore is not valid, failed to destroy it");	
 		}
 		delete sem;
@@ -75,7 +94,11 @@ public:
 		if (timeout_ms >= 0) {
 			// wait until timeout
 			addToCurTime(&ts, timeout_ms);
+#ifdef __APPLE__
+			retval = sem_timedwait_mach(sem, timeout_ms);
+#else
 			retval = sem_timedwait(sem, &ts);
+#endif
 			if (retval != 0) {
 				switch (errno) {
 					case EINVAL:
@@ -84,18 +107,18 @@ public:
 						break;
 					default:
 						// semaphore could not be aquired because of several reasons, but none are fatal
-						DPRINTFL(MSG_VDEBUG, "timedwait (<0) returned with %d", errno);
+						DPRINTFL(MSG_VDEBUG, "timedwait (<0) returned with %d (%s)", errno, strerror(errno));
 						return false;
 				}
 			}
 		} else {
 		    // wait and check the exitFlag regularly
 		    do {
-				if (timeout.tv_nsec >= 1000000000) {
-					msg(MSG_FATAL, "You have just seen a bug. in TimeoutSemarphore:wait(): timeout.tv_nsec is too big: %lu. Please fix this! I will perform some sanatation, but this does not fix the real error!", timeout.tv_nsec);
-					timeout.tv_nsec = 999999999;
-				}
+#ifdef __APPLE__
+				retval = sem_timedwait_mach(sem, timeout_ms);
+#else
 				retval = sem_timedwait(sem, &timeout);
+#endif
 				if (retval != 0 && errno != ETIMEDOUT) {
 					DPRINTFL(MSG_VDEBUG, "timedwait (>=0) returned with %d: %s", errno, strerror(errno));
 					switch (errno) {
@@ -165,7 +188,24 @@ public:
 		if (exitFlag) return false;
 
 		// wait until timeout
+#ifdef __APPLE__
+		// well, apples semaphore_timedwait need to have a realtive wait time
+		// hence, we must calculate how long to sleep ...
+		struct timeval tv;
+		long timeout_ms = 0;
+		gettimeofday(&tv, 0);
+		if (tv.tv_usec >= 1000000) {
+			tv.tv_sec ++;
+			tv.tv_usec -= 1000000;
+		}
+		if (ts.tv_sec > tv.tv_sec) 
+			timeout_ms += (ts.tv_sec - tv.tv_sec) * 1000;
+		if (tv.tv_usec >  (ts.tv_nsec / 1000)) 
+			timeout_ms += (ts.tv_nsec / 1000)  - tv.tv_usec;
+		retval = sem_timedwait_mach(sem, timeout_ms);
+#else
 		retval = sem_timedwait(sem, &ts);
+#endif 
 		switch (retval) {
 			case 0:
 				return true;
@@ -181,6 +221,7 @@ public:
 		}
 
 		// this statement should not be reached
+		THROWEXCEPTION("waitAbs reached non-reachable code!!!");
 		return false;
 	}
 
@@ -190,7 +231,11 @@ public:
 	 */
 	inline void post()
 	{
+#ifdef __APPLE__
+	    int retval = semaphore_signal(*sem);
+#else
 	    int retval = sem_post(sem);
+#endif
 
 	    if (retval != 0) {
 		THROWEXCEPTION("semaphore is invalid, sem_post returned with %d", errno);
@@ -202,6 +247,11 @@ public:
 	 */
 	inline int getCount()
 	{
+#ifdef __APPLE__
+	    // Damn you Apple. Why did you not implement the f*** interface.
+	    // Mach semaphores do not have a getvalues ... hence we return 0 and hope we don't break anything...
+	    return 0;
+#else
 	    int val;
 	    int retval = sem_getvalue(sem, &val);
 
@@ -210,6 +260,7 @@ public:
 	    }
 	
 	    return val;
+#endif
 	}
 
 

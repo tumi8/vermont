@@ -17,6 +17,10 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-SUBDIRS(
-	linux
+ADD_LIBRARY(osdep
+	linux/sysinfo.cpp
+	linux/ThreadCPUInterface.cpp
+	osx/sem_timedwait.cpp
 )
+
+

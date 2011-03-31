@@ -187,6 +187,7 @@ void IpfixReceiverFile::run()
 				continue;
 			}
 
+			// FIXME: The received ip address will be 1.0.0.127
 			uint32_t ip = 0x7F000001; // 127.0.0.1
 			memcpy(sourceID->exporterAddress.ip, &ip, 4);
 			sourceID->exporterAddress.len = 4;

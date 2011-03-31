@@ -28,7 +28,7 @@
 #include <string>
 #include <pcap.h>
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__APPLE__)
 // FreeBSD does not have a struct iphdr. Furthermore, the struct members in
 // struct udphdr and tcphdr differ from the linux version. We therefore need
 // to define them

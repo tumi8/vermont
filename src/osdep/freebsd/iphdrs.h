@@ -24,7 +24,7 @@
 #ifndef _FREEBSD_IPHDR_
 #define _FREEBSD_IPHDR_
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__APPLE__)
 struct iphdr
   {
 #if __BYTE_ORDER == __LITTLE_ENDIAN

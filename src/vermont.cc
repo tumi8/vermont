@@ -97,7 +97,11 @@ int main(int ac, char **dc)
 		return -1;
 	}
 
+#ifdef __APPLE__
+	if (semaphore_create(mach_task_self(), &mainSemaphore, SYNC_POLICY_FIFO, 0) != KERN_SUCCESS) {
+#else
 	if (sem_init(&mainSemaphore, 0, 0) == -1) {
+#endif
 		THROWEXCEPTION("failed to setup semaphore");
 	}
 

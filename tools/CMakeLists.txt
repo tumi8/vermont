@@ -27,6 +27,9 @@ TARGET_LINK_LIBRARIES(testCollector
 	ipfixlolib
 	common
 	osdep
+	${Boost_REGEX_LIBRARY}
+	${Boost_FILESYSTEM_LIBRARY}
+	${Boost_SYSTEM_LIBRARY}
 	${CMAKE_THREAD_LIBS_INIT}
 	${PCAP_LIBRARY}
 )
