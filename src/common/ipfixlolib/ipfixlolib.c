@@ -893,7 +893,7 @@ int ipfix_init_exporter(uint32_t observation_domain_id, ipfix_exporter **exporte
         tmp->sn_increment = 0;
         tmp->observation_domain_id=observation_domain_id;
 
-	tmp->max_message_size = IPFIX_MTU_MAX;
+	tmp->max_message_size = IPFIX_MTU_CONSERVATIVE_DEFAULT;
 
         tmp->collector_max_num = 0;
 #ifdef SUPPORT_DTLS
@@ -1021,7 +1021,7 @@ static void update_exporter_max_message_size(ipfix_exporter *exporter) {
     ipfix_receiving_collector *col;
     int i;
     uint16_t max_message_size;
-    max_message_size = IPFIX_MTU_MAX;
+    max_message_size = exporter->max_message_size;
     for(i=0;i<exporter->collector_max_num;i++) {
 	col = &exporter->collector_arr[i];
 	if(col->state != C_UNUSED &&
