@@ -94,6 +94,7 @@ class GenNode {
 		rule
 	};
 	static GenType order[6];
+	static uint32_t treeElements;
 	static GenNode* newNode(int depth);
 	static void parse_order(string order);
 	virtual void findRule(Connection* conn, set<IdsRule*>& rules)=0;
@@ -197,6 +198,7 @@ class FlowSigMatcher
 		virtual ~FlowSigMatcher();
 
 		virtual void onDataRecord(IpfixDataRecord* record);
+		std::string getStatisticsXML(double);
 
 	private:
                 ifstream infile;
@@ -205,6 +207,8 @@ class FlowSigMatcher
 		string analyzerId;	/**< analyzer id for IDMEF messages */
 		string idmefTemplate;	/**< template file for IDMEF messages */
 		uint64_t flagsTimeout;
+		uint64_t matchedRules;
+		uint64_t statTotalRecvRecords;
 
 
 		// idmef parameters

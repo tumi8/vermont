@@ -26,6 +26,7 @@
 #include <iostream>
 
 GenNode::GenType GenNode::order[6]={ proto, srcIP, dstIP, srcPort, dstPort, rule };
+uint32_t GenNode::treeElements=0;
 const char* FlowSigMatcher::PAR_SOURCE_PORT = "SOURCE_PORT";
 const char* FlowSigMatcher::PAR_TARGET_PORT = "TARGET_PORT";
 const char* FlowSigMatcher::PAR_SOURCE = "SOURCE";
@@ -36,6 +37,14 @@ const char* FlowSigMatcher::PAR_MSG = "MSG";
 
 InstanceManager<IDMEFMessage> FlowSigMatcher::idmefManager("FlowSigMatcherIDMEFMessage", 0);
 
+std::string FlowSigMatcher::getStatisticsXML(double interval)
+{
+		ostringstream oss;
+		oss << "<treeElements>" << GenNode::treeElements << "</treeElements>";
+		oss << "<matchedRules>" << matchedRules << "</matchedRules>";
+		oss << "<totalReceived type=\"records\">" << statTotalRecvRecords << "</totalReceived>";
+	return oss.str();
+}
 /**
  * attention: parameter idmefexporter must be free'd by the creating instance, FlowSigMatcher
  * does not dare to delete it, in case it's used
@@ -45,7 +54,9 @@ FlowSigMatcher::FlowSigMatcher(string homenet, string rulesfile, string rulesord
 	  rulesfile(rulesfile),
 	  analyzerId(analyzerid),
 	  idmefTemplate(idmeftemplate),
-	  flagsTimeout(10000)
+	  flagsTimeout(10000),
+	  matchedRules(0),
+	  statTotalRecvRecords(0)
 {
 	const boost::regex exp_valid_homenet("(\\[.*\\]|(!?\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})(?:/(\\d+))*)");
 	boost::cmatch what;
@@ -99,7 +110,7 @@ void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
 		record->removeReference();
 		return;
 	}
-
+	statTotalRecvRecords++;
 	// convert ipfixrecord to connection struct
 	Connection conn(record);
 
@@ -167,6 +178,7 @@ void FlowSigMatcher::onDataRecord(IpfixDataRecord* record)
 
 void FlowSigMatcher::sendMessage(Connection& conn,uint8_t source, uint8_t type, uint32_t uid, string message) 
 {
+	matchedRules++;
 	msg(MSG_DIALOG, "intruder detected:");
 	msg(MSG_DIALOG, "srcIP: %s, dstIP: %s, srcPort: %i dstPort: %i", IPToString(conn.srcIP).c_str(),
 			IPToString(conn.dstIP).c_str(), ntohs(conn.srcPort), ntohs(conn.dstPort));
@@ -1225,6 +1237,7 @@ RuleNode::~RuleNode(){}
 
 GenNode* GenNode::newNode(int depth) 
 {
+	treeElements++;
         if(order[depth]==0) return new ProtoNode;
 	else if(order[depth]==1) return new SrcIpNode;
 	else if(order[depth]==2) return new DstIpNode;
