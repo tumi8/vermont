@@ -39,7 +39,11 @@
 
 IpfixRawdirReader::IpfixRawdirReader(std::string packet_directory_path) : packet_directory_path(packet_directory_path) {
 	boost::filesystem::path //full_path(boost::filesystem::initial_path<boost::filesystem::path>());
+#if BOOST_FILESYSTEM_VERSION == 3
+	full_path = boost::filesystem::system_complete(boost::filesystem::path(packet_directory_path));
+#else
 	full_path = boost::filesystem::system_complete(boost::filesystem::path(packet_directory_path, boost::filesystem::native));
+#endif
 
 	if (!boost::filesystem::exists(full_path)) THROWEXCEPTION("Packet directory path does not exist");
 	if (!boost::filesystem::is_directory(full_path)) THROWEXCEPTION("Packet directory path is not a directory");
@@ -66,8 +70,11 @@ void IpfixRawdirReader::run() {
 			break;
 		}
 
+#if BOOST_FILESYSTEM_VERSION == 3
+		std::string fname = packet_directory_path+"/"+dir_iterator->path().filename().string();
+#else
 		std::string fname = packet_directory_path+"/"+dir_iterator->leaf();
-
+#endif
 		if (boost::filesystem::is_directory(*dir_iterator)) {
 			msg(MSG_DEBUG, "Skipping directory \"%s\"", fname.c_str());
 			dir_iterator++;
