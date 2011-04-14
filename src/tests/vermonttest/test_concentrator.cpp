@@ -256,12 +256,12 @@ void test_ipfixlolib_rawdir() {
 		// perform test	
 		for (uint8_t magic_number = 0; magic_number < 16; magic_number++) {
 			ipfixRawdirWriter.receive(testDataRecords[magic_number]);
-			ipfixRawdirWriter.flushPacket();
+			//ipfixRawdirWriter.flushPacket();
 		}
 
 		// be nice
 		for (uint8_t magic_number = 0; magic_number < 16; magic_number++) {
-			ipfixRawdirWriter.receive(createTestDataTemplateDestructionRecord(magic_number, testDataRecords[magic_number]->dataTemplateInfo));
+			ipfixRawdirWriter.receive(createTestDataTemplateDestructionRecord(magic_number, testDataRecords[magic_number]->templateInfo));
 		}
 
 		// give modules a chance to process their queues
