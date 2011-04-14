@@ -465,7 +465,11 @@ void PCAPExporterPipe::kill_all(int ppid)
 #endif
 		   )
 		{
+#if BOOST_FILESYSTEM_VERSION == 3
 			std::string filename = dir_iterator->path().filename().string() + "/stat";
+#else
+			std::string filename = dir_iterator->leaf() + "/stat";
+#endif
 			std::ifstream myfile(filename.c_str());
 			if (myfile.is_open()) {
 				getline (myfile,line);
