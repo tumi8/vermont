@@ -1139,7 +1139,7 @@ static int add_collector_datafile(ipfix_receiving_collector *collector, const ch
 }
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
-static int add_collector_rawdir(ipfix_receiving_collector *collector,char *path) {
+static int add_collector_rawdir(ipfix_receiving_collector *collector, const char *path) {
     collector->ipv4address[0] = '\0';
     collector->port_number = 0;
     collector->data_socket = -1;
@@ -1147,7 +1147,7 @@ static int add_collector_rawdir(ipfix_receiving_collector *collector,char *path)
     collector->last_reconnect_attempt_time = 0;
 
 
-    collector->packet_directory_path = strdup(coll_ip4_addr);
+    collector->packet_directory_path = strdup(path);
     collector->packets_written = 0;
     collector->state = C_CONNECTED;
     return 0;
@@ -1764,7 +1764,7 @@ static int ipfix_init_collector_array(ipfix_receiving_collector **col, int col_c
 		c->data_socket = -1;
 		c->last_reconnect_attempt_time = 0;
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
-		c->packet_directory_path = NULL:
+		c->packet_directory_path = NULL;
 		c->packets_written = 0;
 #endif
 #ifdef SUPPORT_DTLS

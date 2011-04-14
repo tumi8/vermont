@@ -33,7 +33,7 @@
 class IpfixRawdirWriter : public IpfixSender
 {
 public:
-	IpfixRawdirWriter(uint16_t observationDomainId, std::string packetDirectoryName = "");
+	IpfixRawdirWriter(uint32_t observationDomainId, std::string packetDirectoryName = "");
 	~IpfixRawdirWriter();
 
 	int addCollector(std::string packetDirectoryName);
