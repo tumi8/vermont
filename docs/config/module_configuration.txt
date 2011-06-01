@@ -200,7 +200,7 @@ Output type: IpfixRecord
 |match |  0  |Optional flow key filter for protocol identifier ("TCP", "UDP", "ICMP", or IANA number), IP addresses ("A.B.C.D/M"), port numbers (separated by ",", port range "A:B"), TCP control bits ("FIN", "SYN", "RST", "PSH", "ACK", "URG", separated by ","). |
 |inactiveTimeout |  0  |Expiration timeout for idle/inactive flows. |
 |activeTimeout |  0  |Periodic expiration timeout for long-lasting flows (typically larger than inactiveTimeout). |
-|pollInterval |  0  |Length of interval when flows should be exported to next module. |
+|pollInterval |  10s  |Length of interval when flows should be exported to next module. |
 |hashtableBits |  17  |Length of hashtable used for aggregation in bits. The resulting hashtable will have a size of ''2^hashtableBits''. |
 
 == IpfixCollector ==
@@ -749,7 +749,7 @@ Output type: IpfixRecord
 |match |  0  |Optional flow key filter for protocol identifier ("TCP", "UDP", "ICMP", or IANA number), IP addresses ("A.B.C.D/M"), port numbers (separated by ",", port range "A:B"), TCP control bits ("FIN", "SYN", "RST", "PSH", "ACK", "URG", separated by ","). |
 |inactiveTimeout |  0  |Expiration timeout for idle/inactive flows. |
 |activeTimeout |  0  |Periodic expiration timeout for long-lasting flows (typically larger than inactiveTimeout). |
-|pollInterval |  0  |Length of interval when flows should be exported to next module. |
+|pollInterval |  10s  |Length of interval when flows should be exported to next module. |
 |hashtableBits |  17  |Length of hashtable used for aggregation in bits. The resulting hashtable will have a size of 2%%^%%{hashtableBits}. |
 
 == PacketIdmefReporter ==
