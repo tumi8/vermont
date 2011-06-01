@@ -198,6 +198,7 @@ void IpfixSender::addCollector(const char *ip, uint16_t port,
 	    case TCP:
 	        msg(MSG_INFO, "IpfixSender: adding TCP://%s:%d to exporter",
 				ip, port);
+		break;
 	    default:
 	    	THROWEXCEPTION("invalid protocol (%d) given!", proto);
 	    	break;

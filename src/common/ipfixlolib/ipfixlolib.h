@@ -44,6 +44,7 @@ See ipfixlolib.h for details on how to use this library.
     protocols
      - UDP
      - SCTP
+     - TCP
      - DTLS over UDP
      - DTLS over SCTP
 
@@ -73,7 +74,7 @@ See ipfixlolib.h for details on how to use this library.
     only for a specific Collector.
     - ipfix_remove_template_set() removes previously defined Templates that are
     no longer needed. A corresponding withdrawal message is sent to all
-    Collectors using SCTP.
+    Collectors using SCTP or TCP.
     - The functions ipfix_start_data_set(), ipfix_put_data_field(),
     ipfix_end_data_set() are used to append Data Sets to the send buffer. Again,
     there is only a single send buffer per exporter. As soon as ipfix_send() is
@@ -166,6 +167,12 @@ extern "C" {
  * can be specified by user
 */
 #define IPFIX_DEFAULT_SCTP_RECONNECT_TIMER 300
+/* Default time, until a new TCP retransmission attempt 
+ * takes place
+ * 5 minutes = 400 seconds
+ * can be specified by user
+*/
+#define IPFIX_DEFAULT_TCP_RECONNECT_TIMER 300
 /*
  * Default reliability for sending IPFIX-data-records
  * 0 = reliable
@@ -328,7 +335,7 @@ enum ipfix_transport_protocol {
 	DATAFILE,
 	SCTP, /*!< SCTP, most favorable */
 	UDP, /*!< UDP, available on all platforms, may result in MTU issues */
-	TCP, /*!< TCP, currently unsupported by ipfixlolib */
+	TCP, /*!< TCP, available on all platformsdb */
 	DTLS_OVER_UDP, /*!< DTLS over UDP, requires OpenSSL */
 	DTLS_OVER_SCTP /*!< DTLS over SCTP, requires OpenSSL w/ SCTP patches from sctp.fh-muenster.de and recent version of FreeBSD */
 };
@@ -375,7 +382,7 @@ typedef struct {
  * These indicate, if a field is committed (i.e. can be used)
  * unused or unclean (i.e. data is not complete yet)
  * T_SENT (Template was sent) and T_WITHDRAWN (Template destroyed) 
- * are used with SCTP, since Templates are sent only once
+ * are used with SCTP and TCP, since Templates are sent only once
  * T_TOBEDELETED templates will be deleted the next time when the buffer is updated
  */
 enum template_state {T_UNUSED, T_UNCLEAN, T_COMMITED, T_SENT, T_WITHDRAWN, T_TOBEDELETED};
@@ -497,7 +504,7 @@ typedef struct {
 	int data_socket; // socket data and templates are sent to
 	/* data_socket is NOT used for DTLS connections */
 	struct sockaddr_in addr;
-	uint32_t last_reconnect_attempt_time; // applies only to SCTP and DTLS at the moment
+	uint32_t last_reconnect_attempt_time; // applies only to SCTP, TCP and DTLS at the moment
 	enum collector_state state;
 	char *basename;  /**< for protocol==DATAFILE, this variable contains the basename for the filename */
 	int fh; /**< for protocol==DATAFILE, this variable contains the file handle */
@@ -575,6 +582,7 @@ typedef struct {
 		       * longer than that. That's a TODO */
 	ipfix_sendbuffer *template_sendbuffer;
 	ipfix_sendbuffer *sctp_template_sendbuffer;
+	ipfix_sendbuffer *tcp_template_sendbuffer;
 	ipfix_sendbuffer *data_sendbuffer;
 	int collector_max_num; // maximum available collector
 	ipfix_receiving_collector *collector_arr; // array of (collector_max_num) collectors
@@ -593,9 +601,10 @@ typedef struct {
 	uint32_t template_transmission_timer;
 	// lifetime of an SCTP data packet
 	uint32_t sctp_lifetime;
-	// time, after new sctp reconnection will be initiated (default = 5 min)
+	// time, after new sctp or tcp reconnection will be initiated (default = 5 min)
 	// (0 ==> no reconnection -> destroy collector)
 	uint32_t sctp_reconnect_timer;
+	uint32_t tcp_reconnect_timer;
 	int ipfix_lo_template_maxsize;
 	ipfix_lo_template *template_arr;
 #ifdef SUPPORT_DTLS
@@ -634,6 +643,7 @@ int ipfix_send(ipfix_exporter *exporter);
 int ipfix_set_template_transmission_timer(ipfix_exporter *exporter, uint32_t timer); 	 
 int ipfix_set_sctp_lifetime(ipfix_exporter *exporter, uint32_t lifetime);
 int ipfix_set_sctp_reconnect_timer(ipfix_exporter *exporter, uint32_t timer);
+int ipfix_set_tcp_reconnect_timer(ipfix_exporter *exporter, uint32_t timer);
 
 int ipfix_set_dtls_certificate(ipfix_exporter *exporter, const char *certificate_chain_file, const char *private_key_file);
 int ipfix_set_ca_locations(ipfix_exporter *exporter, const char *ca_file, const char *ca_path);

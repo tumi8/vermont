@@ -5,6 +5,9 @@
 
  Header for encoding functions suitable for IPFIX
 
+ Changes by Lothar Braun: 2011-4
+   Added support for TCP
+
  Changes by Daniel Mentz, 2009-01
    Added support for DTLS over UDP and DTLS over SCTP
 
@@ -73,6 +76,7 @@ static void handle_sctp_event(BIO *bio, void *context, void *buf);
 #endif
 #endif
 static int init_send_udp_socket(struct sockaddr_in serv_addr);
+static int init_send_tcp_socket(struct sockaddr_in serv_addr);
 static int enable_pmtu_discovery(int s);
 static int ipfix_find_template(ipfix_exporter *exporter, uint16_t template_id);
 static void ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipfix_sendbuffer *sendbuf);
@@ -703,6 +707,41 @@ static int init_send_udp_socket(struct sockaddr_in serv_addr){
 	return s;
 }
 
+/*
+ * Initializes a TCP-socket to send data to.
+ * Parameters:
+ * char* serv_ip4_addr IP-Address of the recipient (e.g. "123.123.123.123")
+ * serv_port the TCP port number of the server.
+ * Returns: a socket to write to. -1 on failure
+ */
+static int init_send_tcp_socket(struct sockaddr_in serv_addr){
+        int s;
+        // create socket
+        if((s = socket(AF_INET, SOCK_STREAM, 0)) < 0 ) {
+                msg(MSG_FATAL, "error opening TCP socket, %s", strerror(errno));
+                return -1;
+        }
+	// set non-blocking
+	int flags;
+	flags = fcntl(s, F_GETFL);
+	flags |= O_NONBLOCK;
+	if(fcntl(s, F_SETFL, flags) == -1) {
+		msg(MSG_FATAL, "could not set socket non-blocking");
+		close(s);
+		return -1;
+	}
+	// connect (non-blocking, i.e. handshake is initiated, not terminated)
+	if((connect(s, (struct sockaddr*)&serv_addr, sizeof(serv_addr) ) == -1) && (errno != EINPROGRESS)) {
+		msg(MSG_ERROR, "TCP connect failed, %s", strerror(errno));
+		close(s);
+		return -1;
+	    }
+	DPRINTFL(MSG_DEBUG, "TCP Socket created");
+
+	return s;
+
+}
+
 static int enable_pmtu_discovery(int s) {
 #ifdef IP_MTU_DISCOVER
     // Linux
@@ -920,27 +959,34 @@ int ipfix_init_exporter(uint32_t observation_domain_id, ipfix_exporter **exporte
 	ret=ipfix_init_sendbuffer(&(tmp->sctp_template_sendbuffer));
         if (ret != 0) {
                 msg(MSG_FATAL, "initializing sctp template sendbuffer failed");
-                goto out5;
+                goto out3;
         }
-	
+
+	ret=ipfix_init_sendbuffer(&(tmp->tcp_template_sendbuffer));
+        if (ret != 0) {
+                msg(MSG_FATAL, "initializing tcp template sendbuffer failed");
+                goto out4;
+        }
+		
         // initialize the collectors to zero
         ret=ipfix_init_collector_array( &(tmp->collector_arr), IPFIX_MAX_COLLECTORS);
         if (ret !=0) {
                 msg(MSG_FATAL, "initializing collectors failed");
-                goto out3;
+                goto out5;
         }
 
         tmp->collector_max_num = IPFIX_MAX_COLLECTORS;
 
         // initialize an array to hold the templates.
         if(ipfix_init_template_array(tmp, IPFIX_MAX_TEMPLATES)) {
-                goto out4;
+                goto out6;
         }
 	
         // we have not transmitted any templates yet!
         tmp->last_template_transmission_time=0;
         tmp->template_transmission_timer=IPFIX_DEFAULT_TEMPLATE_TIMER;
 	tmp->sctp_reconnect_timer=IPFIX_DEFAULT_SCTP_RECONNECT_TIMER;
+	tmp->tcp_reconnect_timer=IPFIX_DEFAULT_TCP_RECONNECT_TIMER;
 	tmp->sctp_lifetime=IPFIX_DEFAULT_SCTP_DATA_LIFETIME;
 	
         /* finally attach new exporter to the pointer we were given */
@@ -948,14 +994,16 @@ int ipfix_init_exporter(uint32_t observation_domain_id, ipfix_exporter **exporte
 
         return 0;
 
-out5:
-        ipfix_deinit_sendbuffer(&(tmp->sctp_template_sendbuffer));
-out4:
+out6:
         ipfix_deinit_collector_array(&(tmp->collector_arr));
+out5:
+        ipfix_deinit_sendbuffer(&(tmp->tcp_template_sendbuffer));
+out4:
+        ipfix_deinit_sendbuffer(&(tmp->sctp_template_sendbuffer));
 out3:
-        ipfix_deinit_sendbuffer(&(tmp->data_sendbuffer));
-out2:
         ipfix_deinit_sendbuffer(&(tmp->template_sendbuffer));
+out2:
+        ipfix_deinit_sendbuffer(&(tmp->data_sendbuffer));
 out1:
         free(tmp);
 out:
@@ -992,6 +1040,7 @@ int ipfix_deinit_exporter(ipfix_exporter *exporter) {
         ret=ipfix_deinit_sendbuffer(&(exporter->data_sendbuffer));
         ret=ipfix_deinit_sendbuffer(&(exporter->template_sendbuffer));
 	ret=ipfix_deinit_sendbuffer(&(exporter->sctp_template_sendbuffer));
+	ret=ipfix_deinit_sendbuffer(&(exporter->tcp_template_sendbuffer));
 
         // find the collector in the exporter
         int i=0;
@@ -1301,8 +1350,6 @@ static int valid_transport_protocol(enum ipfix_transport_protocol p) {
 #endif 
 
 	case TCP:
-	    msg(MSG_FATAL, "Transport Protocol TCP not implemented");
-	    return 0;
 	case UDP:
 	case DATAFILE:
 	    return 1;
@@ -1336,6 +1383,7 @@ static int valid_transport_protocol(enum ipfix_transport_protocol p) {
  * <tr><td>RAWDIR</td><td>NULL</td></tr>
  * <tr><td>SCTP</td><td>NULL</td></tr>
  * <tr><td>UDP</td><td>ipfix_aux_config_udp</td></tr>
+ * <tr><td>TCP</td><td>NULL</td></tr>
  * <tr><td>DTLS_OVER_UDP</td><td>ipfix_aux_config_dtls_over_udp</td></tr>
  * <tr><td>DTLS_OVER_SCTP</td><td>ipfix_aux_config_dtls_over_sctp</td></tr>
  * </table>
@@ -1819,6 +1867,9 @@ static int ipfix_init_send_socket(struct sockaddr_in serv_addr, enum ipfix_trans
 	    sock= init_send_sctp_socket( serv_addr );
 	    break;
 #endif
+	case TCP:
+	    sock = init_send_tcp_socket( serv_addr);
+	    break;
 	default:
 	    return -1; /* Should not occur since we check the transport
 			  protocol in valid_transport_protocol()*/
@@ -1900,7 +1951,7 @@ static int ipfix_deinit_template_array(ipfix_exporter *exporter)
  * transition takes place.
  * So if you call this function and do not send out sctp_sendbuf afterwards
  * the affected templates will never be sent because this state transition
- * takes place only once.
+ * takes place only once. The same happens for TCP.
  */
 static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 {
@@ -1908,10 +1959,12 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 
         ipfix_sendbuffer* t_sendbuf = exporter->template_sendbuffer;
 	ipfix_sendbuffer* sctp_sendbuf = exporter->sctp_template_sendbuffer;
+	ipfix_sendbuffer* tcp_sendbuf = exporter->tcp_template_sendbuffer;
 
         // clean the template sendbuffers
         ipfix_reset_sendbuffer(t_sendbuf);
 	ipfix_reset_sendbuffer(sctp_sendbuf);
+	ipfix_reset_sendbuffer(tcp_sendbuf);
 
         // place all valid templates into the template sendbuffer
         // could be done just like put_data_field:
@@ -1922,12 +1975,16 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 				// free memory and mark T_UNUSED
 				ipfix_deinit_template(exporter, &(exporter->template_arr[i]) );
 				break;
-			case (T_COMMITED): // send to SCTP and UDP collectors and mark as T_SENT
+			case (T_COMMITED): // send to SCTP, TCP and UDP collectors and mark as T_SENT
 				if (sctp_sendbuf->current >= IPFIX_MAX_SENDBUFSIZE-2 ) {
 					msg(MSG_ERROR, "SCTP template sendbuffer too small to handle more than %i entries", sctp_sendbuf->current);
 					return -1;
                         	}
-                        	if (t_sendbuf->current >= IPFIX_MAX_SENDBUFSIZE-2 ) {
+       				if (tcp_sendbuf->current >= IPFIX_MAX_SENDBUFSIZE-2 ) {
+					msg(MSG_ERROR, "TCP template sendbuffer too small to handle more than %i entries", tcp_sendbuf->current);
+					return -1;
+                        	}
+               	                if (t_sendbuf->current >= IPFIX_MAX_SENDBUFSIZE-2 ) {
 					msg(MSG_ERROR, "UDP template sendbuffer too small to handle more than %i entries", t_sendbuf->current);
 					return -1;
                         	}
@@ -1935,7 +1992,12 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
                         	sctp_sendbuf->entries[ sctp_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
                         	sctp_sendbuf->current++;
                         	sctp_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
-				
+
+				tcp_sendbuf->entries[ tcp_sendbuf->current ].iov_base = exporter->template_arr[i].template_fields;
+                        	tcp_sendbuf->entries[ tcp_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
+                        	tcp_sendbuf->current++;
+                        	tcp_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
+					
 				t_sendbuf->entries[ t_sendbuf->current ].iov_base = exporter->template_arr[i].template_fields;
 				t_sendbuf->entries[ t_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
 				t_sendbuf->current++;
@@ -1953,7 +2015,7 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 				t_sendbuf->current++;
 				t_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
 				break;
-                	case (T_WITHDRAWN): // put the SCTP withdrawal message and mark T_TOBEDELETED
+                	case (T_WITHDRAWN): // put the TCP/SCTP withdrawal message and mark T_TOBEDELETED
                 		if (sctp_sendbuf->current >= IPFIX_MAX_SENDBUFSIZE-2 ) {
 					msg(MSG_ERROR, "SCTP template sendbuffer too small to handle more than %i entries", sctp_sendbuf->current);
 					return -1;
@@ -1962,10 +2024,19 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 				sctp_sendbuf->entries[ sctp_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
 				sctp_sendbuf->current++;
 				sctp_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
-				
+
+                		if (tcp_sendbuf->current >= IPFIX_MAX_SENDBUFSIZE-2 ) {
+					msg(MSG_ERROR, "SCTP template sendbuffer too small to handle more than %i entries", sctp_sendbuf->current);
+					return -1;
+				}
+				tcp_sendbuf->entries[ tcp_sendbuf->current ].iov_base = exporter->template_arr[i].template_fields;
+				tcp_sendbuf->entries[ tcp_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
+				tcp_sendbuf->current++;
+				tcp_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
+					
 				/* ASK: Why don't we just delete the template? */
 				exporter->template_arr[i].state = T_TOBEDELETED;
-				DPRINTFL(MSG_VDEBUG, "Withdrawal for template ID: %d added to sctp_sendbuffer", exporter->template_arr[i].template_id);
+				DPRINTFL(MSG_VDEBUG, "Withdrawal for template ID: %d added to tcp_sendbuffer", exporter->template_arr[i].template_id);
 				break;
 			default : // Do nothing : T_UNUSED or T_UNCLEAN
 				break;
@@ -1974,6 +2045,84 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 
         // that's it!
         return 0;
+}
+
+/*
+ * function used by TCP to reconnect to a collector, if connection
+ * was lost. After successful reconnection resend all active templates.
+ * i: index of the collector in the exporters collector_arr
+ */
+static int tcp_reconnect(ipfix_exporter *exporter , int i){
+	int bytes_sent, ret, error;
+	socklen_t len;
+	fd_set readfds;
+	struct timeval timeout;
+	time_t time_now = time(NULL);
+	struct iovec iv;
+	ssize_t r;
+
+	exporter->collector_arr[i].last_reconnect_attempt_time = time_now;
+	// error occurred while being connected?
+	if(exporter->collector_arr[i].state == C_CONNECTED) {
+		// the socket has not yet been closed
+		close(exporter->collector_arr[i].data_socket);
+		exporter->collector_arr[i].data_socket = -1;
+	}
+	    
+	// create new socket if not yet done
+	if(exporter->collector_arr[i].data_socket < 0) {
+		exporter->collector_arr[i].data_socket = init_send_tcp_socket( exporter->collector_arr[i].addr );
+		if( exporter->collector_arr[i].data_socket < 0) {
+			msg(MSG_ERROR, "TCP socket creation in reconnect failed, %s", strerror(errno));
+			exporter->collector_arr[i].state = C_DISCONNECTED;
+			return -1;
+		}
+		exporter->collector_arr[i].state = C_NEW;
+	}
+
+	// check if we are already connected
+	ret = connect(exporter->collector_arr[i].data_socket, (struct sockaddr*)&exporter->collector_arr[i].addr, sizeof(exporter->collector_arr[i].addr) );
+	if (ret == 0) {
+		// connected 
+		msg(MSG_DEBUG, "connection sucessfully established");
+	} else {
+		if (errno == EINPROGRESS || errno == EALREADY) {
+			// connection attempt not yet finished
+			msg(MSG_DEBUG, "waiting for socket to become readable...");
+			exporter->collector_arr[i].state = C_NEW;
+			return -1;
+		} else if (errno == EISCONN) {
+			// connected 
+			msg(MSG_DEBUG, "connection sucessfully established");
+		} else {
+			// some other error
+			msg(MSG_ERROR, "connect() failed: %s", strerror(errno));
+			close(exporter->collector_arr[i].data_socket);
+			exporter->collector_arr[i].data_socket = -1;
+			exporter->collector_arr[i].state = C_DISCONNECTED;
+			return -1;
+		} 
+	}
+
+	//reconnected -> resend all active templates
+	ipfix_prepend_header(exporter,
+		exporter->template_sendbuffer->committed_data_length,
+		exporter->template_sendbuffer);
+
+	if((bytes_sent = writev(exporter->collector_arr[i].data_socket,
+		exporter->template_sendbuffer->entries,
+		exporter->template_sendbuffer->current)) == -1) {
+			msg(MSG_ERROR, "TCP sending templates after reconnection failed, %s", strerror(errno));
+			close(exporter->collector_arr[i].data_socket);
+		exporter->collector_arr[i].data_socket = -1;
+			exporter->collector_arr[i].state = C_DISCONNECTED;
+			return -1;
+	}
+	msg(MSG_DEBUG, "%d template bytes sent to TCP collector",bytes_sent);
+
+	// we are done
+	exporter->collector_arr[i].state = C_CONNECTED;
+	return 0;
 }
 
 #ifdef SUPPORT_SCTP
@@ -2334,6 +2483,47 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 				}
 			break;
 #endif
+			case TCP:
+				switch (col->state){
+				
+				case C_NEW:	// try to connect to the new collector once per second
+					// once per second is not useful here, new collectors must be connected quickly
+					//if (time_now > col->last_reconnect_attempt_time) {
+						tcp_reconnect(exporter, i);
+					//}
+					break;
+				case C_DISCONNECTED: //reconnect attempt if reconnection time reached
+					if(exporter->tcp_reconnect_timer == 0) { // 0 = no more reconnection attempts
+						msg(MSG_ERROR, "reconnect failed, removing collector %s:%d (SCTP)", col->ipv4address, col->port_number);
+						remove_collector(col);
+					} else if ((time_now - col->last_reconnect_attempt_time) >  exporter->tcp_reconnect_timer) {
+						tcp_reconnect(exporter, i);
+					}
+					break;
+				case C_CONNECTED:
+					if (exporter->tcp_template_sendbuffer->committed_data_length > 0) {
+						// update the sendbuffer header, as we must set the export time & sequence number!
+						ipfix_prepend_header(exporter,
+							exporter->tcp_template_sendbuffer->committed_data_length,
+							exporter->tcp_template_sendbuffer);
+						if((bytes_sent = writev(col->data_socket,
+							exporter->tcp_template_sendbuffer->entries,
+							exporter->tcp_template_sendbuffer->current
+							)) == -1) {
+							// send failed
+							msg(MSG_ERROR, "could not send to %s:%d errno: %s  (TCP)",col->ipv4address, col->port_number, strerror(errno));
+							tcp_reconnect(exporter, i); //1st reconnect attempt 
+							// if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
+							// be removed on the next call of ipfix_send_templates()
+						} else {
+							// send was successful
+							msg(MSG_VDEBUG, "%d template bytes sent to TCP collector %s:%d",
+								bytes_sent, col->ipv4address, col->port_number);
+						}
+					} else DPRINTF("No Template to send to TCP collector");
+					break;	
+				}
+			break;
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 			case RAWDIR:
@@ -2505,6 +2695,21 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 						bytes_sent, col->ipv4address, col->port_number);
 					break;
 #endif
+				case TCP:
+					if((bytes_sent = writev(col->data_socket,
+						exporter->data_sendbuffer->entries,
+						exporter->data_sendbuffer->committed
+						)) == -1) {
+						// send failed
+						msg(MSG_ERROR, "could not send to %s:%d errno: %s  (TCP))",col->ipv4address, col->port_number, strerror(errno));
+						// drop data and call tcp_reconnect
+						tcp_reconnect(exporter, i);
+						// if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
+						// be removed on the next call of ipfix_send_templates()
+						}
+						msg(MSG_VDEBUG, "%d data bytes sent to TCP collector %s:%d",
+						bytes_sent, col->ipv4address, col->port_number);
+					break;
 #ifdef SUPPORT_DTLS
 				case DTLS_OVER_UDP:
 					if((bytes_sent=dtls_send( exporter, col,
@@ -3401,6 +3606,22 @@ int ipfix_set_sctp_reconnect_timer(ipfix_exporter *exporter, uint32_t timer) {
     exporter->sctp_reconnect_timer = timer;
     return 0;
 }
+
+/*!
+ * \brief Set up TCP reconnect timer
+ *
+ * Time after which a reconnection attempt is made in case the connection to
+ * the Collector is lost.
+ *
+ * \param exporter pointer to previously initialized exporter struct
+ * \param timer timeout value in seconds
+ * \return 0 This value is always returned.
+ */
+int ipfix_set_tcp_reconnect_timer(ipfix_exporter *exporter, uint32_t timer) {
+    exporter->tcp_reconnect_timer = timer;
+    return 0;
+}
+
 
 /*!
  * \brief Setup X.509 certificate used for authentication

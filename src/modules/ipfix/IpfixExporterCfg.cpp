@@ -106,6 +106,8 @@ IpfixSender* IpfixExporterCfg::createInstance()
 				protocol = "DTLS_OVER_SCTP"; break;
 			case UDP:
 				protocol = "UDP"; break;
+			case TCP:
+				protocol = "TCP"; break;
 			default:
 				protocol = "unknown protocol"; break;
 		}

@@ -30,6 +30,7 @@
 #include "modules/ipfix/IpfixReceiverUdpIpV4.hpp"
 #include "modules/ipfix/IpfixReceiverDtlsUdpIpV4.hpp"
 #include "modules/ipfix/IpfixReceiverSctpIpV4.hpp"
+#include "modules/ipfix/IpfixReceiverTcpIpV4.hpp"
 #include "modules/ipfix/IpfixPrinter.hpp"
 #include "core/ConnectionQueue.h"
 #include "common/msg.h"
@@ -47,7 +48,7 @@ void usage(const char *argv0)
 {
 	fprintf(stderr,"Usage: %s\n",argv0);
 	fprintf(stderr," --port,-p       Port number to use\n");
-	fprintf(stderr," --protocol      Either udp, sctp or dtls_over_udp\n");
+	fprintf(stderr," --protocol      Either udp, tcp, sctp or dtls_over_udp\n");
 	fprintf(stderr," --cert          The certificate to use\n");
 	fprintf(stderr," --key           The private key to use\n");
 	fprintf(stderr," --CAfile        A file containing trusted "
@@ -160,6 +161,8 @@ int main(int argc, char *argv[]) {
 		msg(MSG_FATAL, "testcollector has been compiled without sctp support");
 		return -1;
 #endif
+	} else if (proto == "tcp") {
+		ipfixReceiver = new IpfixReceiverTcpIpV4(lport);
 	} else {
 		msg(MSG_FATAL, "Protocol %s is not supported as a transport protocol for IPFIX data", proto.c_str()); 
 		return -1;

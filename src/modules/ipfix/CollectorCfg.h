@@ -75,7 +75,7 @@ public:
 				} else if (prot=="DTLS_OVER_SCTP") {
 					protocol = DTLS_OVER_SCTP;
 					defaultPort = 4740;
-				} else if (prot=="TCP") {
+				} else if (prot == "6" || prot=="TCP") {
 					protocol = TCP;
 					defaultPort = 4740;
 				} else
