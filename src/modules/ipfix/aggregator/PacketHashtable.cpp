@@ -171,6 +171,7 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, Hashtable
 	// DPA logic
 	if (efd->typeSpecData.frontPayload.dpa && plen>0) {
 		DpaPrivateData* dpd = reinterpret_cast<DpaPrivateData*>(bucket+efd->typeSpecData.frontPayload.dpaPrivDataOffset);
+		DPRINTFL(MSG_VDEBUG, "dpaprivatedata: datarecv: %hhu, revstart: %hhu, revdata: %hhu", dpd->datarecv, dpd->revstart, dpd->revdata);
 		bool revdir = efd->typeId.isReverseField();
 		DPRINTFL(MSG_VDEBUG, "pkt revdir=%hhu, plen=%u, datarecv=%hhu, dpd=%u, buckdata=%X, dparevstartoffset=%u\n", revdir, plen, dpd->datarecv, dpd, bucket, efd->typeSpecData.frontPayload.dpaRevStartOffset);
 		if (!dpd->datarecv) {
@@ -890,6 +891,7 @@ void PacketHashtable::buildExpHelperTable()
 			efd->typeSpecData.frontPayload.pktCountOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont));
 			efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont));
 			efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaReverseStart, IPFIX_PEN_vermont));
+			efd->typeSpecData.frontPayload.dpa = expHelperTable.useDPA;
 			efd->typeSpecData.frontPayload.dpaPrivDataOffset = ExpHelperTable::UNUSED;
 			if (expHelperTable.useDPA) {
 				for (uint32_t i=0; i<expHelperTable.noAggFields; i++) {
@@ -907,8 +909,8 @@ void PacketHashtable::buildExpHelperTable()
 		if (efd->typeId == IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
 			efd->typeSpecData.frontPayload.fpaLenOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_frontPayloadLen, IPFIX_PEN_vermont|IPFIX_PEN_reverse));
 			efd->typeSpecData.frontPayload.pktCountOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont|IPFIX_PEN_reverse));
-			efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont|IPFIX_PEN_reverse));
-			efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaReverseStart, IPFIX_PEN_vermont|IPFIX_PEN_reverse));
+			efd->typeSpecData.frontPayload.dpaForcedExportOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont));
+			efd->typeSpecData.frontPayload.dpaRevStartOffset = getDstOffset(IeInfo(IPFIX_ETYPEID_dpaReverseStart, IPFIX_PEN_vermont));
 			efd->typeSpecData.frontPayload.dpa = expHelperTable.useDPA;
 			efd->typeSpecData.frontPayload.dpaPrivDataOffset = ExpHelperTable::UNUSED;
 			if (expHelperTable.useDPA) {
