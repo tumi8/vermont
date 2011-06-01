@@ -118,58 +118,59 @@ void PythonFlowAnalyzer::onDataRecord(IpfixDataRecord* record)
 		if (fi->type.enterprise==0) {
 			uint64_t time;
 			switch (fi->type.id) {
+				// TODO: call Py_DECREF for each passed value to PyDict_SetItemString
 				case IPFIX_TYPEID_sourceIPv4Address:
-					PyDict_SetItem(pydict, PyString_FromString("sourceIPv4Address"),
+					PyDict_SetItemString(pydict, "sourceIPv4Address",
 							PyLong_FromLong(ntohl(*(uint32_t*)(record->data + fi->offset))));
 					break;
 				case IPFIX_TYPEID_destinationIPv4Address:
-					PyDict_SetItem(pydict, PyString_FromString("destinationIPv4Address"),
+					PyDict_SetItemString(pydict, "destinationIPv4Address",
 							PyLong_FromLong(ntohl(*(uint32_t*)(record->data + fi->offset))));
 					break;
 				case IPFIX_TYPEID_sourceTransportPort:
-					PyDict_SetItem(pydict, PyString_FromString("sourceTransportPort"),
+					PyDict_SetItemString(pydict, "sourceTransportPort",
 							PyLong_FromLong(ntohs(*(uint16_t*)(record->data + fi->offset))));
 					break;
 				case IPFIX_TYPEID_destinationTransportPort:
-					PyDict_SetItem(pydict, PyString_FromString("destinationTransportPort"),
+					PyDict_SetItemString(pydict, "destinationTransportPort",
 							PyLong_FromLong(ntohs(*(uint16_t*)(record->data + fi->offset))));
 					break;
 				case IPFIX_TYPEID_protocolIdentifier:
-					PyDict_SetItem(pydict, PyString_FromString("protocolIdentifier"),
+					PyDict_SetItemString(pydict, "protocolIdentifier",
 							PyLong_FromLong(*(uint8_t*)(record->data + fi->offset)));
 					break;
 				case IPFIX_TYPEID_flowStartNanoSeconds:
 					flowstart = nSEC;
 					convertNtp64(*(uint64_t*)(record->data + fi->offset), time);
-					PyDict_SetItem(pydict, PyString_FromString("flowStartMilliSeconds"), PyLong_FromUnsignedLongLong(time));
+					PyDict_SetItemString(pydict, "flowStartMilliSeconds", PyLong_FromUnsignedLongLong(time));
 					break;
 				case IPFIX_TYPEID_flowStartMilliSeconds:
 					if (flowstart>=mSEC) break;
 					flowstart = mSEC;
-					PyDict_SetItem(pydict, PyString_FromString("flowStartMilliSeconds"),
+					PyDict_SetItemString(pydict, "flowStartMilliSeconds",
 							PyLong_FromUnsignedLongLong(ntohll(*(uint64_t*)(record->data + fi->offset))));
 					break;
 				case IPFIX_TYPEID_flowStartSeconds:
 					if (flowstart>=SEC) break;
 					flowstart = SEC;
-					PyDict_SetItem(pydict, PyString_FromString("flowStartMilliSeconds"),
+					PyDict_SetItemString(pydict, "flowStartMilliSeconds",
 							PyLong_FromLong(ntohl(*(uint32_t*)(record->data + fi->offset))));
 					break;
 				case IPFIX_TYPEID_flowEndNanoSeconds:
 					flowend = nSEC;
 					convertNtp64(*(uint64_t*)(record->data + fi->offset), time);
-					PyDict_SetItem(pydict, PyString_FromString("flowEndMilliSeconds"), PyLong_FromUnsignedLongLong(time));
+					PyDict_SetItemString(pydict, "flowEndMilliSeconds", PyLong_FromUnsignedLongLong(time));
 					break;
 				case IPFIX_TYPEID_flowEndMilliSeconds:
 					if (flowend>=mSEC) break;
 					flowend = mSEC;
-					PyDict_SetItem(pydict, PyString_FromString("flowEndMilliSeconds"),
+					PyDict_SetItemString(pydict, "flowEndMilliSeconds",
 							PyLong_FromUnsignedLongLong(ntohll(*(uint64_t*)(record->data + fi->offset))));
 					break;
 				case IPFIX_TYPEID_flowEndSeconds:
 					if (flowend>=SEC) break;
 					flowend = SEC;
-					PyDict_SetItem(pydict, PyString_FromString("flowEndMilliSeconds"),
+					PyDict_SetItemString(pydict, "flowEndMilliSeconds",
 							PyLong_FromLong(ntohl(*(uint32_t*)(record->data + fi->offset))));
 					break;
 			}
@@ -179,35 +180,35 @@ void PythonFlowAnalyzer::onDataRecord(IpfixDataRecord* record)
 				case IPFIX_TYPEID_flowStartNanoSeconds:
 					revflowstart = nSEC;
 					convertNtp64(*(uint64_t*)(record->data + fi->offset), time);
-					PyDict_SetItem(pydict, PyString_FromString("revFlowStartMilliSeconds"), PyLong_FromUnsignedLongLong(time));
+					PyDict_SetItemString(pydict, "revFlowStartMilliSeconds", PyLong_FromUnsignedLongLong(time));
 					break;
 				case IPFIX_TYPEID_flowStartMilliSeconds:
 					if (revflowstart>=mSEC) break;
 					revflowstart = mSEC;
-					PyDict_SetItem(pydict, PyString_FromString("revFlowStartMilliSeconds"),
+					PyDict_SetItemString(pydict, "revFlowStartMilliSeconds",
 							PyLong_FromUnsignedLongLong(ntohll(*(uint64_t*)(record->data + fi->offset))));
 					break;
 				case IPFIX_TYPEID_flowStartSeconds:
 					if (revflowstart>=SEC) break;
 					revflowstart = SEC;
-					PyDict_SetItem(pydict, PyString_FromString("revFlowStartMilliSeconds"),
+					PyDict_SetItemString(pydict, "revFlowStartMilliSeconds",
 							PyLong_FromLong(ntohl(*(uint32_t*)(record->data + fi->offset))));
 					break;
 				case IPFIX_TYPEID_flowEndNanoSeconds:
 					revflowend = nSEC;
 					convertNtp64(*(uint64_t*)(record->data + fi->offset), time);
-					PyDict_SetItem(pydict, PyString_FromString("revFlowEndMilliSeconds"), PyLong_FromUnsignedLongLong(time));
+					PyDict_SetItemString(pydict, "revFlowEndMilliSeconds", PyLong_FromUnsignedLongLong(time));
 					break;
 				case IPFIX_TYPEID_flowEndMilliSeconds:
 					if (revflowend>=mSEC) break;
 					revflowend = mSEC;
-					PyDict_SetItem(pydict, PyString_FromString("revFlowEndMilliSeconds"),
+					PyDict_SetItemString(pydict, "revFlowEndMilliSeconds",
 							PyLong_FromUnsignedLongLong(ntohll(*(uint64_t*)(record->data + fi->offset))));
 					break;
 				case IPFIX_TYPEID_flowEndSeconds:
 					if (revflowend>=SEC) break;
 					revflowend = SEC;
-					PyDict_SetItem(pydict, PyString_FromString("revFlowEndMilliSeconds"),
+					PyDict_SetItemString(pydict, "revFlowEndMilliSeconds",
 							PyLong_FromLong(ntohl(*(uint32_t*)(record->data + fi->offset))));
 					break;
 			}
@@ -231,6 +232,7 @@ void PythonFlowAnalyzer::onDataRecord(IpfixDataRecord* record)
 		PyErr_Print();
 		THROWEXCEPTION("PythonFlowAnalyzer: failed to instantiate class 'FlowRecord'");
 	}
+	Py_DECREF(t);
 	t = PyTuple_New(1);
 	PyTuple_SetItem(t, 0, instance);
 	PyObject* r = PyObject_CallObject(pyFunc, t);
@@ -238,6 +240,8 @@ void PythonFlowAnalyzer::onDataRecord(IpfixDataRecord* record)
 		PyErr_Print();
 		THROWEXCEPTION("PythonFlowAnalyzer: failed to execute function 'onDataRecord'");
 	}
+	Py_DECREF(t);
+	Py_DECREF(r);
 
 	record->removeReference();
 }
