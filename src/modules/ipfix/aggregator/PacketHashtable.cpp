@@ -830,6 +830,7 @@ void PacketHashtable::buildExpHelperTable()
 	DPRINTF("got %u key fields", expHelperTable.noKeyFields);
 
 	// reversed aggregatable fields
+	expHelperTable.noRevAggFields = 0;
 
 	// special treatment of IPFIX_ETYPEID_frontPayload: for DPA, it must be the first element in the field
 	// reason: it may cause forced export of data records
@@ -841,7 +842,6 @@ void PacketHashtable::buildExpHelperTable()
 		}
 	}
 	// now the other fields
-	expHelperTable.noRevAggFields = 0;
 	for (int i=0; i<dataTemplate->fieldCount; i++) {
 		TemplateInfo::FieldInfo hfi = dataTemplate->fieldInfo[i];
 		if ((hfi.type.enterprise & IPFIX_PEN_reverse) == 0) continue;
