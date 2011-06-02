@@ -55,6 +55,9 @@ class IpfixReceiver
 		virtual void run() = 0;
 
 	protected:
+		enum receiver_address_type { IPv4_ADDRESS, IPv6_ADDRESS, HOSTNAME, INVALID };
+		enum receiver_address_type getAddressType(const std::string& addr);
+
 		std::list<IpfixPacketProcessor*> packetProcessors; /**< Authorized incoming packets are forwarded to the packetProcessors. The list of packetProcessor must be created, managed and destroyed by an superior instance. The IpfixReceiver will only work with the given list */
 		bool exitFlag;
 	

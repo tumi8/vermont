@@ -178,3 +178,35 @@ void IpfixReceiver::setVModule(Module* m)
 {
 	vmodule = m;
 }
+
+
+enum IpfixReceiver::receiver_address_type IpfixReceiver::getAddressType(const std::string& addr)
+{
+	struct addrinfo hint, *res = NULL;
+	enum receiver_address_type ret = INVALID;
+	int addRet;
+	
+	memset(&hint, '\0', sizeof hint);
+	
+	hint.ai_family = PF_UNSPEC;
+	hint.ai_flags = AI_NUMERICHOST;
+	
+	addRet = getaddrinfo(addr.c_str(), NULL, &hint, &res);
+	if (addRet) {
+		msg(MSG_FATAL, "Invalid address: %s", gai_strerror(ret));
+	        ret = INVALID;
+	}
+	if(res->ai_family == AF_INET) {
+		msg(MSG_DEBUG, "Collector IP \"%s\" is an IPv4 address", addr.c_str());
+		ret = IPv4_ADDRESS;
+	} else if (res->ai_family == AF_INET6) {
+		msg(MSG_DEBUG, "Collector IP \"%s\": is an IPv6 address", addr.c_str());
+		ret = IPv6_ADDRESS;
+	} else {
+		msg(MSG_DEBUG, "Collector IP \"%s\" is an is unsupported address format: %d\n", addr.c_str(), res->ai_family);
+		ret = INVALID;
+	}
+   	freeaddrinfo(res);
+
+	return ret;
+}
