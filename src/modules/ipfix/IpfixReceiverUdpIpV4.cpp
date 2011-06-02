@@ -48,57 +48,26 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
 {
 	receiverPort = port;
 
-	enum receiver_address_type addrType;
-	if (ipAddr == "") 
-		addrType = IPv6_ADDRESS;
-	 else 
-		addrType = getAddressType(ipAddr);
-
-	// if ipAddr set: listen on a specific interface 
-	// else: listen on all interfaces
-	if(addrType == IPv4_ADDRESS) {
-		struct sockaddr_in serverAddress;
-		listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
-		if(listen_socket < 0) {
-			THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed: %s", strerror(errno));
-		}
-		if (inet_pton(AF_INET, ipAddr.c_str(), &serverAddress) <= 0) {
-			THROWEXCEPTION("Could not convert Collector \"%s\" to IPv4 address: %s", ipAddr.c_str(), strerror(errno));
-		}
-
-		serverAddress.sin_family = AF_INET;
-		serverAddress.sin_port = htons(port);
-		if(bind(listen_socket, (struct sockaddr*)&serverAddress, sizeof(struct sockaddr_in)) < 0) {
-			THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4 %s:%d",ipAddr.c_str(), port );
-		}
-	} else if (addrType == IPv6_ADDRESS) {
-		struct sockaddr_in6 serverAddress;
-		
-		listen_socket = socket(AF_INET6, SOCK_DGRAM, 0);
-		if(listen_socket < 0) {
-			THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed: %s", strerror(errno));
-		}
-		if (ipAddr == "") {
-			serverAddress.sin6_addr = in6addr_any;
-		} else {
-			if (inet_pton(AF_INET6, ipAddr.c_str(), &serverAddress) <= 0) {
-				THROWEXCEPTION("Could not convert Collector \"%s\" to IPv6 address: %s", ipAddr.c_str(), strerror(errno));
-			}
-		}
-		serverAddress.sin6_family = AF_INET6;
-		serverAddress.sin6_port = htons(port);
-		if(bind(listen_socket, (struct sockaddr*)&serverAddress, sizeof(struct sockaddr_in6)) < 0) {
-			THROWEXCEPTION("Could not bind socket: %s", strerror(errno));
-		}
+	if (ipAddr == "") {
+		createIPv4Socket(ipAddr, SOCK_DGRAM, 0, port);
+		createIPv6Socket(ipAddr, SOCK_DGRAM, 0, port);
 	} else {
-		THROWEXCEPTION("Protocol for Collector \"%s\" not supported", ipAddr.c_str());
+		enum receiver_address_type addrType;
+		addrType = getAddressType(ipAddr);
+		if (addrType == IPv4_ADDRESS) {
+			createIPv4Socket(ipAddr, SOCK_DGRAM, 0, port);
+		} else if (addrType == IPv6_ADDRESS) {
+			createIPv6Socket(ipAddr, SOCK_DGRAM, 0, port);
+		} else {
+			THROWEXCEPTION("Protocol for Collector \"%s\" not supported", ipAddr.c_str());
+		}
 	}
 
 	SensorManager::getInstance().addSensor(this, "IpfixReceiverUdpIpV4", 0);
 
-	msg(MSG_INFO, "UDP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
+	msg(MSG_INFO, "UDP Receiver listening on %s:%d, FDv4=%d, FDv6=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
-								listen_socket);
+								socket4, socket6);
 }
 
 
@@ -106,7 +75,6 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
  * Does UDP/IPv4 specific cleanup
  */
 IpfixReceiverUdpIpV4::~IpfixReceiverUdpIpV4() {
-	close(listen_socket);
 	SensorManager::getInstance().removeSensor(this);
 }
 
@@ -115,9 +83,11 @@ IpfixReceiverUdpIpV4::~IpfixReceiverUdpIpV4() {
  * UDP specific listener function. This function is called by @c listenerThread()
  */
 void IpfixReceiverUdpIpV4::run() {
-	struct sockaddr_in clientAddress;
-	socklen_t clientAddressLen;
-	clientAddressLen = sizeof(struct sockaddr_in);
+	struct sockaddr_in clientAddress4;
+	struct sockaddr_in6 clientAddress6;
+	socklen_t clientAddressLen4, clientAddressLen6;
+	clientAddressLen4 = sizeof(struct sockaddr_in);
+	clientAddressLen6 = sizeof(struct sockaddr_in6);
 	
 	fd_set fd_array; //all active filedescriptors
 	fd_set readfds;  //parameter for for pselect
@@ -126,7 +96,10 @@ void IpfixReceiverUdpIpV4::run() {
 	struct timespec timeOut;
 
 	FD_ZERO(&fd_array);
-	FD_SET(listen_socket, &fd_array);
+	if (socket4 != -1) 
+		FD_SET(socket4, &fd_array);
+	if (socket6 != -1)
+		FD_SET(socket6, &fd_array);
 
 	/* set a 400ms time-out on the pselect */
 	timeOut.tv_sec = 0L;
@@ -134,7 +107,7 @@ void IpfixReceiverUdpIpV4::run() {
 	
 	while(!exitFlag) {
 		readfds = fd_array; // because select() changes readfds
-		ret = pselect(listen_socket + 1, &readfds, NULL, NULL, &timeOut, NULL);
+		ret = pselect(std::max(socket4, socket6) + 1, &readfds, NULL, NULL, &timeOut, NULL);
 		if (ret == 0) {
 			/* Timeout */
 			continue;
@@ -151,30 +124,57 @@ void IpfixReceiverUdpIpV4::run() {
 
 		boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
 
-		ret = recvfrom(listen_socket, data.get(), MAX_MSG_LEN,
-			     0, (struct sockaddr*)&clientAddress, &clientAddressLen);
-		if (ret < 0) {
-			msg(MSG_FATAL, "recvfrom returned without data, terminating listener thread");
-			break;
-		}
-		
-		if (isHostAuthorized(&clientAddress.sin_addr, sizeof(clientAddress.sin_addr))) {
-			statReceivedPackets++;
-// 			uint32_t ip = clientAddress.sin_addr.s_addr;
-			boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
-			memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
-			sourceID->exporterAddress.len = 4;
-			sourceID->exporterPort = ntohs(clientAddress.sin_port);
-			sourceID->protocol = IPFIX_protocolIdentifier_UDP;
-			sourceID->receiverPort = receiverPort;
-			sourceID->fileDescriptor = listen_socket;
-			mutex.lock();
-			for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
-				(*i)->processPacket(data, ret, sourceID);
+		if (FD_ISSET(socket4, &fd_array)) {
+			ret = recvfrom(socket4, data.get(), MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress4, &clientAddressLen4);
+			if (ret < 0) {
+				msg(MSG_FATAL, "recvfrom from IPv4 socket returned without data, terminating listener thread");
+				break;
 			}
-			mutex.unlock();
-		} else {
-			msg(MSG_VDEBUG, "IpfixReceiverUdpIpv4: packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
+		
+			if (isHostAuthorized(&clientAddress4.sin_addr, sizeof(clientAddress4.sin_addr))) {
+				statReceivedPackets++;
+// 				uint32_t ip = clientAddress.sin_addr.s_addr;
+				boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
+				memcpy(sourceID->exporterAddress.ip, &clientAddress4.sin_addr.s_addr, 4);
+				sourceID->exporterAddress.len = 4;
+				sourceID->exporterPort = ntohs(clientAddress4.sin_port);
+				sourceID->protocol = IPFIX_protocolIdentifier_UDP;
+				sourceID->receiverPort = receiverPort;
+				sourceID->fileDescriptor = socket4;
+				mutex.lock();
+				for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
+					(*i)->processPacket(data, ret, sourceID);
+				}
+				mutex.unlock();
+			} else {
+				msg(MSG_VDEBUG, "IpfixReceiverUdpIpv4: packet from unauthorized host %s discarded", inet_ntoa(clientAddress4.sin_addr));
+			}
+		}
+		if (FD_ISSET(socket6, &fd_array)) {
+			ret = recvfrom(socket6, data.get(), MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress6, &clientAddressLen6);
+			if (ret < 0) {
+				msg(MSG_FATAL, "recvfrom from IPv6 socket returned without data, terminating listener thread");
+				break;
+			}
+			if (isHostAuthorized(&clientAddress6.sin6_addr, sizeof(clientAddress6.sin6_addr))) {
+				statReceivedPackets++;
+				boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
+				memcpy(sourceID->exporterAddress.ip, &clientAddress6.sin6_addr, 16);
+				sourceID->exporterAddress.len = 16;
+				sourceID->exporterPort = ntohs(clientAddress6.sin6_port);
+				sourceID->protocol = IPFIX_protocolIdentifier_UDP;
+				sourceID->receiverPort = receiverPort;
+				sourceID->fileDescriptor = socket6;
+				mutex.lock();
+				for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
+					(*i)->processPacket(data, ret, sourceID);
+				}
+				mutex.unlock();
+			} else {
+				char address[INET6_ADDRSTRLEN];
+				inet_ntop(AF_INET6, &clientAddress6.sin6_addr, address, INET6_ADDRSTRLEN);
+				msg(MSG_VDEBUG, "IpfixReceiverUdpIpv4: packet from unauthorized host %s discarded", address);
+			}
 		}
 	}
 	msg(MSG_DEBUG, "IpfixReceiverUdpIpV4: Exiting");

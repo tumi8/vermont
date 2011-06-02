@@ -145,7 +145,7 @@ class IpfixRecord
 // 					(receiverPort == x.receiverPort) &&
 // 					(protocol == x.protocol) &&
 					(fileDescriptor == x.fileDescriptor);
-				else /* UDP: fileDescriptor only specifies the Collector endpoint*/
+				else /* UDP/TCP: fileDescriptor only specifies the Collector endpoint*/
 					return (observationDomainId == x.observationDomainId) &&
 					(exporterPort == x.exporterPort) &&
 					//(receiverPort == x.receiverPort) &&

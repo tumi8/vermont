@@ -38,14 +38,18 @@
 IpfixReceiver::IpfixReceiver()
 	: exitFlag(true),
 	  vmodule(NULL),
-	  thread(threadWrapper)
+	  thread(threadWrapper),
+	  socket4(-1),
+	  socket6(-1)
 {
 }
 
 IpfixReceiver::IpfixReceiver(int port)
 	: exitFlag(true),
 	  receiverPort(port),
-	  thread(threadWrapper)
+	  thread(threadWrapper),
+	  socket4(-1),
+	  socket6(-1)
 	  
 {
 }
@@ -55,7 +59,8 @@ IpfixReceiver::IpfixReceiver(int port)
  */
 IpfixReceiver::~IpfixReceiver() 
 {
-
+	close(socket4);
+	close(socket6);
 }
 
 
@@ -116,7 +121,7 @@ bool IpfixReceiver::hasPacketProcessor()
 }
 
 /**
- * Adds a struct in_addr to the list of hosts we accept packets from
+ * Adds a struct in_addr or in_addr6 to the list of hosts we accept packets from
  * @param ipfixReceiver IpfixReceiver to set the callback function for
  * @param host address to add to the list
  * @return 0 on success, non-zero on error
@@ -124,14 +129,49 @@ bool IpfixReceiver::hasPacketProcessor()
 int IpfixReceiver::addAuthorizedHost(const char* host) 
 {
 	struct in_addr inaddr;
+	struct in6_addr inaddr6;
 
-	if (inet_aton(host, &inaddr) == 0) {
-		msg(MSG_ERROR, "Invalid host address: %s", host);
+	enum receiver_address_type addrType = getAddressType(host);
+	if (addrType == IPv4_ADDRESS) {
+		if (inet_aton(host, &inaddr) == 0) {
+			// This may not happen. We checked previously 
+			// that this IP address is an IPv4 address
+			THROWEXCEPTION("Could not convert %s to in_addr. This is a bug. Please report it!", host);
+		}
+		authHosts4.push_back(inaddr);
+	} else if (addrType == IPv6_ADDRESS) {
+		if (inet_pton(AF_INET6, host, &inaddr6) == 0) {
+			// This may not happen. We checked previously 
+			// that this IP address is an IPv6 address
+			THROWEXCEPTION("Could not convert %s to in_addr6. This is a bug. Please report it!", host);
+		}
+		authHosts6.push_back(inaddr6);
+	} else {
+		msg(MSG_ERROR, "Cannot add host to authorized host list. Invalid address type: %s", host);
 		return -1;
 	}
-
-	authHosts.push_back(inaddr);
 	return 0;
+}
+
+/**
+ * Checks if a given host is a member of the list of authorized hosts
+ * @param ipfixReceiver handle to an IpfixReceiver
+ * @param inaddr Ipv4 Address of the host to check
+ * @param addrlen Length of inaddr
+ * @return 0 if host is NOT in list, non-zero otherwise
+ */
+int IpfixReceiver::isHostAuthorized(struct in_addr* inaddr, int addrlen) 
+{
+	/* if we have a list of authorized hosts, discard message if sender is not in this list */
+	if (!authHosts4.empty()) {
+		for (unsigned i=0; i < authHosts4.size(); ++i) {
+			if (memcmp(inaddr, &authHosts4[i], addrlen) == 0)
+				return 1;
+		}
+		/* isn't in list */
+		return 0;
+	}
+	return 1;
 }
 
 /**
@@ -141,12 +181,12 @@ int IpfixReceiver::addAuthorizedHost(const char* host)
  * @param addrlen Length of inaddr
  * @return 0 if host is NOT in list, non-zero otherwise
  */
-int IpfixReceiver::isHostAuthorized(struct in_addr* inaddr, int addrlen) 
+int IpfixReceiver::isHostAuthorized(struct in6_addr* inaddr, int addrlen) 
 {
 	/* if we have a list of authorized hosts, discard message if sender is not in this list */
-	if (!authHosts.empty()) {
-		for (unsigned i=0; i < authHosts.size(); ++i) {
-			if (memcmp(inaddr, &authHosts[i], addrlen) == 0)
+	if (!authHosts6.empty()) {
+		for (unsigned i=0; i < authHosts6.size(); ++i) {
+			if (memcmp(inaddr, &authHosts6[i], addrlen) == 0)
 				return 1;
 		}
 		/* isn't in list */
@@ -210,3 +250,48 @@ enum IpfixReceiver::receiver_address_type IpfixReceiver::getAddressType(const st
 
 	return ret;
 }
+
+void IpfixReceiver::createIPv4Socket(const std::string& ipAddr, int type, int subtype, uint16_t port)
+{
+	struct sockaddr_in serverAddress;
+	socket4 = socket(AF_INET, type, subtype);
+	if(socket4 < 0) {
+		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed: %s", strerror(errno));
+	}
+	if (ipAddr == "") {
+		serverAddress.sin_addr.s_addr = INADDR_ANY;
+	} else {
+		if (inet_pton(AF_INET, ipAddr.c_str(), &serverAddress) <= 0) {
+			THROWEXCEPTION("Could not convert Collector \"%s\" to IPv4 address: %s", ipAddr.c_str(), strerror(errno));
+		}
+	}
+
+	serverAddress.sin_family = AF_INET;
+	serverAddress.sin_port = htons(port);
+	if(bind(socket4, (struct sockaddr*)&serverAddress, sizeof(struct sockaddr_in)) < 0) {
+		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4 %s:%d",ipAddr.c_str(), port );
+	}
+}
+
+void IpfixReceiver::createIPv6Socket(const std::string& ipAddr, int type, int subtype, uint16_t port)
+{
+	struct sockaddr_in6 serverAddress;
+		
+	socket6 = socket(AF_INET6, type, subtype);
+	if(socket6 < 0) {
+		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed: %s", strerror(errno));
+	}
+	if (ipAddr == "") {
+		serverAddress.sin6_addr = in6addr_any;
+	} else {
+		if (inet_pton(AF_INET6, ipAddr.c_str(), &serverAddress) <= 0) {
+			THROWEXCEPTION("Could not convert Collector \"%s\" to IPv6 address: %s", ipAddr.c_str(), strerror(errno));
+		}
+	}
+	serverAddress.sin6_family = AF_INET6;
+	serverAddress.sin6_port = htons(port);
+	if(bind(socket6, (struct sockaddr*)&serverAddress, sizeof(struct sockaddr_in6)) < 0) {
+		THROWEXCEPTION("Could not bind socket: %s", strerror(errno));
+	}
+}
+ 

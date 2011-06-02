@@ -40,7 +40,6 @@ class IpfixReceiverUdpIpV4 : public IpfixReceiver, Sensor {
 		virtual std::string getStatisticsXML(double interval);
 		
 	private:
-		int listen_socket;
 		uint32_t statReceivedPackets;  /**< number of received packets */ 
 };
 
