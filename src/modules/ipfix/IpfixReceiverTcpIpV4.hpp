@@ -38,8 +38,6 @@ class IpfixReceiverTcpIpV4 : public IpfixReceiver, Sensor {
 		virtual ~IpfixReceiverTcpIpV4();
 
 		virtual void run();
-	private:
-		int listen_socket;
 };
 
 #endif

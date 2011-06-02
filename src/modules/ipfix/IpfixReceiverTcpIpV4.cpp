@@ -36,6 +36,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <map>
 
 /** 
  * Does TCP/IPv4 specific initialization.
@@ -43,45 +44,51 @@
  */
 IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr) {
 	receiverPort = port;
-	
-	struct sockaddr_in serverAddress;
-	
-	listen_socket = socket(AF_INET, SOCK_STREAM, 0);
-	if(listen_socket < 0) {
-		perror("Could not create TCP socket");
-		THROWEXCEPTION("Cannot create IpfixReceiverTcpIpV4");
-	}
-	
-	// if ipAddr set: listen on a specific interface 
-	// else: listen on all interfaces
-	if(ipAddr == "")
-		serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-	else
-		serverAddress.sin_addr.s_addr = inet_addr(ipAddr.c_str());
 
-	serverAddress.sin_family = AF_INET;
-	serverAddress.sin_port = htons(port);
-	if(bind(listen_socket, (struct sockaddr*)&serverAddress, 
-		sizeof(struct sockaddr_in)) < 0) {
-		perror("Could not bind TCP socket");
-		THROWEXCEPTION("Cannot create IpfixReceiverTcpIpV4 %s:%d",ipAddr.c_str(), port );
+	bool listen4 = false;
+	bool listen6 = false;
+	if (ipAddr == "") {
+		createIPv4Socket(ipAddr, SOCK_STREAM, 0, port);
+		createIPv6Socket(ipAddr, SOCK_STREAM, 0, port);
+		listen4 = listen6 = true;
+	} else {
+		enum receiver_address_type addrType;
+		addrType = getAddressType(ipAddr);
+		if (addrType == IPv4_ADDRESS) {
+			createIPv4Socket(ipAddr, SOCK_STREAM, 0, port);
+			listen4 = true;
+		} else if (addrType == IPv6_ADDRESS) {
+			createIPv6Socket(ipAddr, SOCK_STREAM, 0, port);
+			listen6 = true;
+		} else {
+			THROWEXCEPTION("Protocol for Collector \"%s\" not supported", ipAddr.c_str());
+		}
 	}
-	if(listen(listen_socket, TCP_MAX_BACKLOG) < 0 ) {
-		msg(MSG_ERROR ,"Could not listen on TCP socket %i", listen_socket);
-		THROWEXCEPTION("Cannot create IpfixReceiverTcpIpV4");
+
+	if (listen4) {
+		if(listen(socket4, TCP_MAX_BACKLOG) < 0 ) {
+			msg(MSG_ERROR ,"Could not listen on TCP/IPv4 socket %i", socket4);
+			THROWEXCEPTION("Cannot create IpfixReceiverTcpIpV4");
+		}
 	}
-	msg(MSG_INFO, "TCP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
+	if (listen6) {
+		if(listen(socket6, TCP_MAX_BACKLOG) < 0 ) {
+			msg(MSG_ERROR ,"Could not listen on TCP/IPv6 socket %i", socket6);
+			THROWEXCEPTION("Cannot create IpfixReceiverTcpIpV4");
+		}
+	}
+
+	msg(MSG_INFO, "TCP Receiver listening on %s:%d, FDv4=%d FDv6=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
-								listen_socket);
+								socket4, socket6);
 	return;
 }
 
 
 /**
- * Does TCP/IPv4 specific cleanup
+ * Does TCP specific cleanup
  */
 IpfixReceiverTcpIpV4::~IpfixReceiverTcpIpV4() {
-	close(listen_socket);
 }
 
 
@@ -90,21 +97,30 @@ IpfixReceiverTcpIpV4::~IpfixReceiverTcpIpV4() {
  */
 void IpfixReceiverTcpIpV4::run() {
 
-	struct sockaddr_in clientAddress;
-	socklen_t clientAddressLen;
-	clientAddressLen = sizeof(struct sockaddr_in);
+	struct sockaddr_in clientAddress4;
+	struct sockaddr_in6 clientAddress6;
+	socklen_t clientAddressLen4, clientAddressLen6;
+	clientAddressLen4 = sizeof(struct sockaddr_in);
+	clientAddressLen6 = sizeof(struct sockaddr_in6);
+
+	std::map<int, int> fd_layer3_map;
 	
 	fd_set fd_array; //all active filedescriptors
 	fd_set readfds;  //parameter for for pselect
 	int maxfd;
+	int firstNoneControl; // stores the maximum of socket4, socket6 as we need it as base for looping over the accepted sockets
 	
 	int ret;
 	int rfd;
 	struct timespec timeOut;
 	
 	FD_ZERO(&fd_array);
-	FD_SET(listen_socket, &fd_array); // add listensocket
-	maxfd = listen_socket;
+	if (socket4 != -1) 
+		FD_SET(socket4, &fd_array); // add listensocket
+	if (socket6 != -1)
+		FD_SET(socket6, &fd_array);
+	firstNoneControl, maxfd = std::max(socket4, socket6);
+	firstNoneControl += 1;
 	
 	/* set a 400ms time-out on the pselect */
 	timeOut.tv_sec = 0L;
@@ -126,37 +142,72 @@ void IpfixReceiverTcpIpV4::run() {
 			THROWEXCEPTION("IpfixReceiverTcpIpV4: terminating listener thread");
 			break;
 		}
-		// looking for a new client to connect at listen_socket
-		if (FD_ISSET(listen_socket, &readfds)){
-			rfd = accept(listen_socket, (struct sockaddr*)&clientAddress, &clientAddressLen);
+		// looking for a new client to connect at IPv4 socket
+		if (FD_ISSET(socket4, &readfds)){
+			rfd = accept(socket4, (struct sockaddr*)&clientAddress4, &clientAddressLen4);
 			
 			if (rfd >= 0){
-				if (isHostAuthorized(&clientAddress.sin_addr, sizeof(clientAddress.sin_addr))) {
+				if (isHostAuthorized(&clientAddress4.sin_addr, sizeof(clientAddress4.sin_addr))) {
 					FD_SET(rfd, &fd_array); // add new client to fd_array
-					msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
+					msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress4.sin_addr), ntohs(clientAddress4.sin_port), rfd);
 					if (rfd > maxfd){
 						maxfd = rfd;
 					}
+					fd_layer3_map[rfd] = AF_INET;
 				} else {
-					msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Connection from unwanted client %s:%d, FD=%d rejected.", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
+					msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Connection from unwanted client %s:%d, FD=%d rejected.", inet_ntoa(clientAddress4.sin_addr), ntohs(clientAddress4.sin_port), rfd);
 					close(rfd);
 				}
-			}else{
-				msg(MSG_ERROR ,"accept() in IpfixReceiverTcpIpV4 failed");
-				THROWEXCEPTION("IpfixReceiverTcpIpV4: unable to accept new connection");
+			} else {
+				msg(MSG_ERROR ,"accept() on IPv4 socket in IpfixReceiverTcpIpV4 failed");
+				THROWEXCEPTION("IpfixReceiverTcpIpV4: unable to accept new connection on IPv4 socket");
 			}
 		}
+		// looking for a new client to connect at a IPv6 socket
+		if (FD_ISSET(socket6, &readfds)) {
+			rfd = accept(socket6, (struct sockaddr*)&clientAddress6, &clientAddressLen6);
+			if (rfd >= 0) {
+				if (isHostAuthorized(&clientAddress6.sin6_addr, sizeof(clientAddress6.sin6_addr))) {
+					FD_SET(rfd, &fd_array); // add new client to fd_array
+					char address[INET6_ADDRSTRLEN];
+					inet_ntop(AF_INET6, &clientAddress6.sin6_addr, address, INET6_ADDRSTRLEN);
+					msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client connected from %s:%d, FD=%d", address, ntohs(clientAddress6.sin6_port), rfd);
+					if (rfd > maxfd){
+						maxfd = rfd;
+					}
+					fd_layer3_map[rfd] = AF_INET6;
+				} else {
+					char address[INET6_ADDRSTRLEN];
+					inet_ntop(AF_INET6, &clientAddress6.sin6_addr, address, INET6_ADDRSTRLEN);
+					msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Connection from unwanted client %s:%d, FD=%d rejected.", address, ntohs(clientAddress6.sin6_port), rfd);
+					close(rfd);
+				}
+			} else {
+				msg(MSG_ERROR ,"accept() on IPv4 socket in IpfixReceiverTcpIpV4 failed");
+				THROWEXCEPTION("IpfixReceiverTcpIpV4: unable to accept new connection on IPv4 socket");
+			} 
+		}
 		// check all connected sockets for new available data
-		for (rfd = listen_socket + 1; rfd <= maxfd; ++rfd) {
+		for (rfd = firstNoneControl; rfd <= maxfd; ++rfd) {
       			if (FD_ISSET(rfd, &readfds)) {
 				boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
 				uint16_t expected_read = sizeof(IpfixParser::IpfixHeader);
 				uint16_t read_so_far = 0;
 				ret = 1;
 				while (read_so_far < expected_read && ret > 0) {
-	      				ret = recvfrom(rfd, data.get() + read_so_far, expected_read - read_so_far, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
+					if (fd_layer3_map[rfd] == AF_INET) 
+		      				ret = recvfrom(rfd, data.get() + read_so_far, expected_read - read_so_far, 0, (struct sockaddr*)&clientAddress4, &clientAddressLen4);
+					else 
+		      				ret = recvfrom(rfd, data.get() + read_so_far, expected_read - read_so_far, 0, (struct sockaddr*)&clientAddress6, &clientAddressLen6);
 					if (ret < 0) { // error
-						msg(MSG_ERROR, "IpfixReceiverTcpIpV4: Client error (%s), close connection.", inet_ntoa(clientAddress.sin_addr));
+						if (fd_layer3_map[rfd] == AF_INET) {
+							msg(MSG_ERROR, "IpfixReceiverTcpIpV4: Client error (%s), close connection.", inet_ntoa(clientAddress4.sin_addr));
+						} else {
+							char address[INET6_ADDRSTRLEN];
+							inet_ntop(AF_INET6, &clientAddress6.sin6_addr, address, INET6_ADDRSTRLEN);
+							msg(MSG_ERROR, "IpfixReceiverTcpIpV4: Client error (%s), close connection.", address);
+						}
+						fd_layer3_map.erase(rfd);
 						close(rfd);
 						// we treat an error like a shut down, so overwrite return value to zero
 						ret = 0;
@@ -164,25 +215,31 @@ void IpfixReceiverTcpIpV4::run() {
 						msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client closed connection");
 					}
 					read_so_far += ret;
-					
 				}
 				if (expected_read != read_so_far && ret > 0) {
 					msg(MSG_ERROR, "IpfixReceiverTcpIpV4: Damn it. TCP didn't read enough. And we did not handle that in the code!");
+					fd_layer3_map.erase(rfd);
 					close(rfd);
 					ret = 0;
 				}
 				IpfixParser::IpfixHeader* header = (IpfixParser::IpfixHeader*)data.get();
 				if (ret > 0 && ntohs(header->version) != 0x000a)  {
 					msg(MSG_ERROR, "IpfixReceiverTcpIpV4: We do not support anything but IPFIX in TCPReceiver");
+					fd_layer3_map.erase(rfd);
 					close(rfd);
 					ret = 0;
 				}
 
 				expected_read = ntohs(header->length);
 				while (ret > 0 && read_so_far < expected_read) {
-					ret = recvfrom(rfd, data.get() + read_so_far, expected_read - read_so_far, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
+					if (fd_layer3_map[rfd] == AF_INET) 
+						ret = recvfrom(rfd, data.get() + read_so_far, expected_read - read_so_far, 0, (struct sockaddr*)&clientAddress4, &clientAddressLen4);
+					else 
+						ret = recvfrom(rfd, data.get() + read_so_far, expected_read - read_so_far, 0, (struct sockaddr*)&clientAddress6, &clientAddressLen6);
+
 					if (ret + read_so_far > expected_read) {
 						msg(MSG_ERROR,"IpfixReceiverTcpIpV4: This is way to much content!");
+						fd_layer3_map.erase(rfd);
 						close(rfd);
 						ret = 0;
 					} else if (ret == 0) {
@@ -193,6 +250,7 @@ void IpfixReceiverTcpIpV4::run() {
 				}
 				if (ret > 0 && read_so_far != expected_read) {
 					msg(MSG_ERROR, "IpfixReceiverTcpIpV4: This is weird. We have read more than we excpected!");
+					fd_layer3_map.erase(rfd);
 					close(rfd);
 					ret = 0;
 				}
@@ -200,9 +258,15 @@ void IpfixReceiverTcpIpV4::run() {
 				if (ret > 0) {
 					// create sourceId
 					boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
-					memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
-					sourceID->exporterAddress.len = 4;
-					sourceID->exporterPort = ntohs(clientAddress.sin_port);
+					if (fd_layer3_map[rfd] == AF_INET) {
+						memcpy(sourceID->exporterAddress.ip, &clientAddress4.sin_addr.s_addr, 4);
+						sourceID->exporterAddress.len = 4;
+						sourceID->exporterPort = ntohs(clientAddress4.sin_port);
+					} else {
+						memcpy(sourceID->exporterAddress.ip, &clientAddress6.sin6_addr, 16);
+						sourceID->exporterAddress.len = 16;
+						sourceID->exporterPort = ntohs(clientAddress6.sin6_port);
+					}
 					sourceID->protocol = IPFIX_protocolIdentifier_TCP;
 					sourceID->receiverPort = receiverPort;
 					sourceID->fileDescriptor = rfd;
@@ -215,7 +279,13 @@ void IpfixReceiverTcpIpV4::run() {
 				}
 				if (ret == 0) { // this was a shut down (or error)
 					FD_CLR(rfd, &fd_array); // delete dead client
-					msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client %s disconnected", inet_ntoa(clientAddress.sin_addr));
+					if (fd_layer3_map[rfd] == AF_INET) {
+						msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client %s disconnected", inet_ntoa(clientAddress4.sin_addr));
+					} else {
+						char address[INET6_ADDRSTRLEN];
+						inet_ntop(AF_INET6, &clientAddress6.sin6_addr, address, INET6_ADDRSTRLEN);
+						msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client %s disconnected", address);
+					}
 				}
       			}
       		}
