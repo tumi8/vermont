@@ -119,7 +119,7 @@ void IpfixReceiverTcp::run() {
 		FD_SET(socket4, &fd_array); // add listensocket
 	if (socket6 != -1)
 		FD_SET(socket6, &fd_array);
-	firstNoneControl, maxfd = std::max(socket4, socket6);
+	firstNoneControl = maxfd = std::max(socket4, socket6);
 	firstNoneControl += 1;
 	
 	/* set a 400ms time-out on the pselect */
