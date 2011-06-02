@@ -254,10 +254,14 @@ enum IpfixReceiver::receiver_address_type IpfixReceiver::getAddressType(const st
 void IpfixReceiver::createIPv4Socket(const std::string& ipAddr, int type, int subtype, uint16_t port)
 {
 	struct sockaddr_in serverAddress;
+
 	socket4 = socket(AF_INET, type, subtype);
 	if(socket4 < 0) {
 		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed: %s", strerror(errno));
 	}
+
+	memset(&serverAddress, 0, sizeof(serverAddress));
+
 	if (ipAddr == "") {
 		serverAddress.sin_addr.s_addr = INADDR_ANY;
 	} else {
@@ -281,10 +285,13 @@ void IpfixReceiver::createIPv6Socket(const std::string& ipAddr, int type, int su
 	if(socket6 < 0) {
 		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed: %s", strerror(errno));
 	}
+
+	memset(&serverAddress, 0, sizeof(serverAddress));
 	if (ipAddr == "") {
 		serverAddress.sin6_addr = in6addr_any;
 	} else {
-		if (inet_pton(AF_INET6, ipAddr.c_str(), &serverAddress) <= 0) {
+		msg(MSG_ERROR, "Binding IPv6: %s", ipAddr.c_str());
+		if (inet_pton(AF_INET6, ipAddr.c_str(), &serverAddress.sin6_addr) <= 0) {
 			THROWEXCEPTION("Could not convert Collector \"%s\" to IPv6 address: %s", ipAddr.c_str(), strerror(errno));
 		}
 	}
