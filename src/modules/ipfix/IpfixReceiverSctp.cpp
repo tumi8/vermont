@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <map>
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -65,13 +66,13 @@ IpfixReceiverSctp::IpfixReceiverSctp(int port, std::string ipAddr) {
 	}
 
 	if (listen4) {
-		if(listen(socket4, TCP_MAX_BACKLOG) < 0 ) {
+		if(listen(socket4, SCTP_MAX_BACKLOG) < 0 ) {
 			msg(MSG_ERROR ,"Could not listen on SCTP/IPv4 socket %i", socket4);
 			THROWEXCEPTION("Cannot create IpfixReceiverSctp");
 		}
 	}
 	if (listen6) {
-		if(listen(socket6, TCP_MAX_BACKLOG) < 0 ) {
+		if(listen(socket6, SCTP_MAX_BACKLOG) < 0 ) {
 			msg(MSG_ERROR ,"Could not listen on SCTP/IPv6 socket %i", socket6);
 			THROWEXCEPTION("Cannot create IpfixReceiverSctp");
 		}
@@ -99,13 +100,16 @@ void IpfixReceiverSctp::run()
 	struct sockaddr_in clientAddress4;
 	struct sockaddr_in6 clientAddress6;
 	socklen_t clientAddressLen4, clientAddressLen6;
-	clientAddressLen = sizeof(struct sockaddr_in);
+	clientAddressLen4 = sizeof(struct sockaddr_in);
 	clientAddressLen6 = sizeof(struct sockaddr_in6);
 	
+	std::map<int, int> fd_layer3_map;
+
 	fd_set fd_array; //all active filedescriptors
 	fd_set readfds;  //parameter for for pselect
 	int maxfd;
-	
+	int firstNoneControl; // stores the maximum of socket4, socket6 as we need it as base for looping over the accepted sockets	
+
 	int ret;
 	int rfd;
 	struct timespec timeOut;
@@ -116,6 +120,7 @@ void IpfixReceiverSctp::run()
 	if (socket6 != -1)
 		FD_SET(socket6, &fd_array); // add listensocket
 	maxfd = std::max(socket4, socket6);
+	firstNoneControl = maxfd + 1;
 	
 	/* set a 400ms time-out on the pselect */
 	timeOut.tv_sec = 0L;
@@ -138,18 +143,43 @@ void IpfixReceiverSctp::run()
 			break;
 		}
 		// looking for a new client to connect at listen_socket
-		if (FD_ISSET(listen_socket, &readfds)){
-			rfd = accept(listen_socket, (struct sockaddr*)&clientAddress, &clientAddressLen);
+		if (FD_ISSET(socket4, &readfds)){
+			rfd = accept(socket4, (struct sockaddr*)&clientAddress4, &clientAddressLen4);
 			
 			if (rfd >= 0){
-				if (isHostAuthorized(&clientAddress.sin_addr, sizeof(clientAddress.sin_addr))) {
+				if (isHostAuthorized(&clientAddress4.sin_addr, sizeof(clientAddress4.sin_addr))) {
 					FD_SET(rfd, &fd_array); // add new client to fd_array
-					msg(MSG_DEBUG, "IpfixReceiverSctp: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
+					fd_layer3_map[rfd] = AF_INET;
+					msg(MSG_DEBUG, "IpfixReceiverSctp: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress4.sin_addr), ntohs(clientAddress4.sin_port), rfd);
 					if (rfd > maxfd){
 						maxfd = rfd;
 					}
 				} else {
-					msg(MSG_DEBUG, "IpfixReceiverSctp: Connection from unwanted client %s:%d, FD=%d rejected.", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
+					msg(MSG_DEBUG, "IpfixReceiverSctp: Connection from unwanted client %s:%d, FD=%d rejected.", inet_ntoa(clientAddress4.sin_addr), ntohs(clientAddress4.sin_port), rfd);
+					close(rfd);
+				}
+			}else{
+				msg(MSG_ERROR ,"accept() in ipfixReceiver failed");
+				THROWEXCEPTION("IpfixReceiverSctp: unable to accept new connection");
+			}
+		}
+		if (FD_ISSET(socket6, &readfds)){
+			rfd = accept(socket6, (struct sockaddr*)&clientAddress6, &clientAddressLen6);
+			
+			if (rfd >= 0){
+				if (isHostAuthorized(&clientAddress6.sin6_addr, sizeof(clientAddress6.sin6_addr))) {
+					FD_SET(rfd, &fd_array); // add new client to fd_array
+					fd_layer3_map[rfd] = AF_INET6;
+					char address[INET6_ADDRSTRLEN];
+					inet_ntop(AF_INET6, &clientAddress6.sin6_addr, address, INET6_ADDRSTRLEN);
+					msg(MSG_DEBUG, "IpfixReceiverSctp: Client connected from %s:%d, FD=%d", address, ntohs(clientAddress6.sin6_port), rfd);
+					if (rfd > maxfd){
+						maxfd = rfd;
+					}
+				} else {
+					char address[INET6_ADDRSTRLEN];
+					inet_ntop(AF_INET6, &clientAddress6.sin6_addr, address, INET6_ADDRSTRLEN);
+					msg(MSG_DEBUG, "IpfixReceiverSctp: Connection from unwanted client %s:%d, FD=%d rejected.", address, ntohs(clientAddress6.sin6_port), rfd);
 					close(rfd);
 				}
 			}else{
@@ -158,21 +188,48 @@ void IpfixReceiverSctp::run()
 			}
 		}
 		// check all connected sockets for new available data
-		for (rfd = listen_socket + 1; rfd <= maxfd; ++rfd) {
+		for (rfd = firstNoneControl; rfd <= maxfd; ++rfd) {
       			if (FD_ISSET(rfd, &readfds)) {
 				boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
-      				ret = recvfrom(rfd, data.get(), MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
+				if (fd_layer3_map[rfd] == AF_INET) 
+	      				ret = recvfrom(rfd, data.get(), MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress4, &clientAddressLen4);
+				else
+					ret = recvfrom(rfd, data.get(), MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress6, &clientAddressLen6);
+				if (ret == 0) { // this was a shut down (or error)
+					FD_CLR(rfd, &fd_array); // delete dead client
+
+					if (fd_layer3_map[rfd] == AF_INET) {
+						msg(MSG_DEBUG, "IpfixReceiverSctp: Client %s disconnected", inet_ntoa(clientAddress4.sin_addr));
+					} else {
+						char address[INET6_ADDRSTRLEN];
+						inet_ntop(AF_INET6, &clientAddress6.sin6_addr, address, INET6_ADDRSTRLEN);
+						msg(MSG_DEBUG, "IpfixReceiverSctp: Client %s disconnected", address);
+					}
+				}
 				if (ret < 0) { // error
-					msg(MSG_ERROR, "IpfixReceiverSctp: Client error (%s), close connection.", inet_ntoa(clientAddress.sin_addr));
+					if (fd_layer3_map[rfd] == AF_INET) {
+						msg(MSG_ERROR, "IpfixReceiverSctp: Client error (%s), close connection.", inet_ntoa(clientAddress4.sin_addr));
+					} else {
+						char address[INET6_ADDRSTRLEN];
+						inet_ntop(AF_INET6, &clientAddress6.sin6_addr, address, INET6_ADDRSTRLEN);
+						msg(MSG_ERROR, "IpfixReceiverSctp: Client error (%s), close connection.", address);
+					}
+					fd_layer3_map.erase(rfd);
 					close(rfd);
 					// we treat an error like a shut down, so overwrite return value to zero
 					ret = 0;
 				}
 				// create sourceId
 				boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
-				memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
-				sourceID->exporterAddress.len = 4;
-				sourceID->exporterPort = ntohs(clientAddress.sin_port);
+				if (fd_layer3_map[rfd] == AF_INET) {
+					memcpy(sourceID->exporterAddress.ip, &clientAddress4.sin_addr.s_addr, 4);
+					sourceID->exporterAddress.len = 4;
+					sourceID->exporterPort = ntohs(clientAddress4.sin_port);
+				} else {
+					memcpy(sourceID->exporterAddress.ip, &clientAddress6.sin6_addr, 16);
+					sourceID->exporterAddress.len = 16;
+					sourceID->exporterPort = ntohs(clientAddress6.sin6_port);
+				}
 				sourceID->protocol = IPFIX_protocolIdentifier_SCTP;
 				sourceID->receiverPort = receiverPort;
 				sourceID->fileDescriptor = rfd;
@@ -182,10 +239,6 @@ void IpfixReceiverSctp::run()
 					(*i)->processPacket(data, ret, sourceID);
 				}
 				mutex.unlock();
-				if (ret == 0) { // this was a shut down (or error)
-					FD_CLR(rfd, &fd_array); // delete dead client
-					msg(MSG_DEBUG, "IpfixReceiverSctp: Client %s disconnected", inet_ntoa(clientAddress.sin_addr));
-				}
       			}
       		}
 	}
