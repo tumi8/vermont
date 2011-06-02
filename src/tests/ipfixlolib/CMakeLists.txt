@@ -7,8 +7,8 @@ ADD_EXECUTABLE(mtutest
 )
 
 TARGET_LINK_LIBRARIES(mtutest
-	common
 	ipfixlolib
+	common
 )
 SET_TARGET_PROPERTIES(mtutest
 	PROPERTIES
