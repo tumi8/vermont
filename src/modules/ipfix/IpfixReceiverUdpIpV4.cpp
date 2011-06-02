@@ -124,7 +124,7 @@ void IpfixReceiverUdpIpV4::run() {
 
 		boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
 
-		if (FD_ISSET(socket4, &fd_array)) {
+		if (FD_ISSET(socket4, &readfds)) {
 			ret = recvfrom(socket4, data.get(), MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress4, &clientAddressLen4);
 			if (ret < 0) {
 				msg(MSG_FATAL, "recvfrom from IPv4 socket returned without data, terminating listener thread");
@@ -150,7 +150,7 @@ void IpfixReceiverUdpIpV4::run() {
 				msg(MSG_VDEBUG, "IpfixReceiverUdpIpv4: packet from unauthorized host %s discarded", inet_ntoa(clientAddress4.sin_addr));
 			}
 		}
-		if (FD_ISSET(socket6, &fd_array)) {
+		if (FD_ISSET(socket6, &readfds)) {
 			ret = recvfrom(socket6, data.get(), MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress6, &clientAddressLen6);
 			if (ret < 0) {
 				msg(MSG_FATAL, "recvfrom from IPv6 socket returned without data, terminating listener thread");
