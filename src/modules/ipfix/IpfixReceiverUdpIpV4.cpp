@@ -48,30 +48,50 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
 {
 	receiverPort = port;
 
-	struct sockaddr_in serverAddress;
+	enum receiver_address_type addrType;
+	if (ipAddr == "") 
+		addrType = IPv6_ADDRESS;
+	 else 
+		addrType = getAddressType(ipAddr);
 
-	listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
-	if(listen_socket < 0) {
-		/* ASK: error should be written to log file */
-		perror("Could not create socket");
-		/* ASK: Why not throw? printf format */
-		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed");
-	}
-	
 	// if ipAddr set: listen on a specific interface 
 	// else: listen on all interfaces
-	if(ipAddr == "")
-		serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
-	else
-		/* ASK: check return value. inet_addr() is obsolete. inet_aton should be used. */
-		serverAddress.sin_addr.s_addr = inet_addr(ipAddr.c_str());
-	
-	serverAddress.sin_family = AF_INET;
-	serverAddress.sin_port = htons(port);
-	if(bind(listen_socket, (struct sockaddr*)&serverAddress, 
-		sizeof(struct sockaddr_in)) < 0) {
-		perror("Could not bind socket");
-		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4 %s:%d",ipAddr.c_str(), port );
+	if(addrType == IPv4_ADDRESS) {
+		struct sockaddr_in serverAddress;
+		listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
+		if(listen_socket < 0) {
+			THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed: %s", strerror(errno));
+		}
+		if (inet_pton(AF_INET, ipAddr.c_str(), &serverAddress) <= 0) {
+			THROWEXCEPTION("Could not convert Collector \"%s\" to IPv4 address: %s", ipAddr.c_str(), strerror(errno));
+		}
+
+		serverAddress.sin_family = AF_INET;
+		serverAddress.sin_port = htons(port);
+		if(bind(listen_socket, (struct sockaddr*)&serverAddress, sizeof(struct sockaddr_in)) < 0) {
+			THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4 %s:%d",ipAddr.c_str(), port );
+		}
+	} else if (addrType == IPv6_ADDRESS) {
+		struct sockaddr_in6 serverAddress;
+		
+		listen_socket = socket(AF_INET6, SOCK_DGRAM, 0);
+		if(listen_socket < 0) {
+			THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed: %s", strerror(errno));
+		}
+		if (ipAddr == "") {
+			serverAddress.sin6_addr = in6addr_any;
+		} else {
+			if (inet_pton(AF_INET6, ipAddr.c_str(), &serverAddress) <= 0) {
+				THROWEXCEPTION("Could not convert Collector \"%s\" to IPv6 address: %s", ipAddr.c_str(), strerror(errno));
+			}
+		}
+		serverAddress.sin6_family = AF_INET6;
+		serverAddress.sin6_port = htons(port);
+		if(bind(listen_socket, (struct sockaddr*)&serverAddress, sizeof(struct sockaddr_in6)) < 0) {
+			THROWEXCEPTION("Could not bind socket: %s", strerror(errno));
+		}
+	} else {
+		THROWEXCEPTION("Protocol for Collector \"%s\" not supported", ipAddr.c_str());
 	}
 
 	SensorManager::getInstance().addSensor(this, "IpfixReceiverUdpIpV4", 0);

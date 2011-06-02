@@ -186,14 +186,14 @@ enum IpfixReceiver::receiver_address_type IpfixReceiver::getAddressType(const st
 	enum receiver_address_type ret = INVALID;
 	int addRet;
 	
-	memset(&hint, '\0', sizeof hint);
-	
+	memset(&hint, 0, sizeof hint);
+
 	hint.ai_family = PF_UNSPEC;
-	hint.ai_flags = AI_NUMERICHOST;
+	hint.ai_flags |= AI_NUMERICHOST;
 	
 	addRet = getaddrinfo(addr.c_str(), NULL, &hint, &res);
 	if (addRet) {
-		msg(MSG_FATAL, "Invalid address: %s", gai_strerror(ret));
+		msg(MSG_FATAL, "Invalid address: %s", gai_strerror(addRet));
 	        ret = INVALID;
 	}
 	if(res->ai_family == AF_INET) {
