@@ -20,9 +20,9 @@
 
 #include "IpfixCollectorCfg.h"
 #include "CollectorCfg.h"
-#include <modules/ipfix/IpfixReceiverUdpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverUdp.hpp>
 #include <modules/ipfix/IpfixReceiverDtlsUdpIpV4.hpp>
-#include <modules/ipfix/IpfixReceiverSctpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverSctp.hpp>
 #include <modules/ipfix/IpfixReceiverDtlsSctpIpV4.hpp>
 
 IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)

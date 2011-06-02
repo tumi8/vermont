@@ -18,8 +18,8 @@
  *
  */
 
-#ifndef _IPFIX_RECEIVER_UDPIPV4_H_
-#define _IPFIX_RECEIVER_UDPIPV4_H_
+#ifndef _IPFIX_RECEIVER_UDP_H_
+#define _IPFIX_RECEIVER_UDP_H_
 
 #include <pthread.h>
 #include <stdint.h>
@@ -31,10 +31,10 @@
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
 
-class IpfixReceiverUdpIpV4 : public IpfixReceiver, Sensor {
+class IpfixReceiverUdp : public IpfixReceiver, Sensor {
 	public:
-		IpfixReceiverUdpIpV4(int port, std::string ipAddr = "");
-		virtual ~IpfixReceiverUdpIpV4();
+		IpfixReceiverUdp(int port, std::string ipAddr = "");
+		virtual ~IpfixReceiverUdp();
 
 		virtual void run();
 		virtual std::string getStatisticsXML(double interval);

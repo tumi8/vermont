@@ -18,7 +18,7 @@
  *
  */
 
-#include "IpfixReceiverUdpIpV4.hpp"
+#include "IpfixReceiverUdp.hpp"
 
 #include "IpfixPacketProcessor.hpp"
 #include "common/ipfixlolib/ipfix.h"
@@ -39,11 +39,11 @@
 using namespace std;
 
 /** 
- * Does UDP/IPv4 specific initialization.
+ * Does UDP specific initialization.
  * @param port Port to listen on
  * @param ipAddr interface to use, if equals "", all interfaces will be used
  */
-IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
+IpfixReceiverUdp::IpfixReceiverUdp(int port, std::string ipAddr)
 	: statReceivedPackets(0)
 {
 	receiverPort = port;
@@ -63,7 +63,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
 		}
 	}
 
-	SensorManager::getInstance().addSensor(this, "IpfixReceiverUdpIpV4", 0);
+	SensorManager::getInstance().addSensor(this, "IpfixReceiverUdp", 0);
 
 	msg(MSG_INFO, "UDP Receiver listening on %s:%d, FDv4=%d, FDv6=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
@@ -74,7 +74,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
 /**
  * Does UDP/IPv4 specific cleanup
  */
-IpfixReceiverUdpIpV4::~IpfixReceiverUdpIpV4() {
+IpfixReceiverUdp::~IpfixReceiverUdp() {
 	SensorManager::getInstance().removeSensor(this);
 }
 
@@ -82,7 +82,7 @@ IpfixReceiverUdpIpV4::~IpfixReceiverUdpIpV4() {
 /**
  * UDP specific listener function. This function is called by @c listenerThread()
  */
-void IpfixReceiverUdpIpV4::run() {
+void IpfixReceiverUdp::run() {
 	struct sockaddr_in clientAddress4;
 	struct sockaddr_in6 clientAddress6;
 	socklen_t clientAddressLen4, clientAddressLen6;
@@ -118,7 +118,7 @@ void IpfixReceiverUdpIpV4::run() {
     		}
     		if (ret < 0) {
     			msg(MSG_ERROR ,"select() returned with an error");
-			THROWEXCEPTION("IpfixReceiverUdpIpV4: terminating listener thread");
+			THROWEXCEPTION("IpfixReceiverUdp: terminating listener thread");
 			break;
 		}
 
@@ -147,7 +147,7 @@ void IpfixReceiverUdpIpV4::run() {
 				}
 				mutex.unlock();
 			} else {
-				msg(MSG_VDEBUG, "IpfixReceiverUdpIpv4: packet from unauthorized host %s discarded", inet_ntoa(clientAddress4.sin_addr));
+				msg(MSG_VDEBUG, "IpfixReceiverUdp: packet from unauthorized host %s discarded", inet_ntoa(clientAddress4.sin_addr));
 			}
 		}
 		if (FD_ISSET(socket6, &readfds)) {
@@ -173,17 +173,17 @@ void IpfixReceiverUdpIpV4::run() {
 			} else {
 				char address[INET6_ADDRSTRLEN];
 				inet_ntop(AF_INET6, &clientAddress6.sin6_addr, address, INET6_ADDRSTRLEN);
-				msg(MSG_VDEBUG, "IpfixReceiverUdpIpv4: packet from unauthorized host %s discarded", address);
+				msg(MSG_VDEBUG, "IpfixReceiverUdp: packet from unauthorized host %s discarded", address);
 			}
 		}
 	}
-	msg(MSG_DEBUG, "IpfixReceiverUdpIpV4: Exiting");
+	msg(MSG_DEBUG, "IpfixReceiverUdp: Exiting");
 }
 
 /**
  * statistics function called by StatisticsManager
  */
-std::string IpfixReceiverUdpIpV4::getStatisticsXML(double interval)
+std::string IpfixReceiverUdp::getStatisticsXML(double interval)
 {
 	ostringstream oss;
 	

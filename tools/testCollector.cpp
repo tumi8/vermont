@@ -27,10 +27,10 @@
 #include "modules/ipfix/IpfixCollector.hpp"
 #include "modules/ipfix/IpfixParser.hpp"
 #include "modules/ipfix/IpfixPacketProcessor.hpp"
-#include "modules/ipfix/IpfixReceiverUdpIpV4.hpp"
+#include "modules/ipfix/IpfixReceiverUdp.hpp"
 #include "modules/ipfix/IpfixReceiverDtlsUdpIpV4.hpp"
-#include "modules/ipfix/IpfixReceiverSctpIpV4.hpp"
-#include "modules/ipfix/IpfixReceiverTcpIpV4.hpp"
+#include "modules/ipfix/IpfixReceiverSctp.hpp"
+#include "modules/ipfix/IpfixReceiverTcp.hpp"
 #include "modules/ipfix/IpfixPrinter.hpp"
 #include "core/ConnectionQueue.h"
 #include "common/msg.h"
@@ -145,7 +145,7 @@ int main(int argc, char *argv[]) {
 	IpfixReceiver* ipfixReceiver = 0;
 	if (proto == "udp") {
 		msg(MSG_INFO, "Creating UDP listener on port %i", lport);
-		ipfixReceiver = new IpfixReceiverUdpIpV4(lport);
+		ipfixReceiver = new IpfixReceiverUdp(lport);
 	} else if (proto == "dtls_over_udp") {
 #ifdef SUPPORT_DTLS
 		msg(MSG_INFO, "Creating DTLS over UDP listener on port %i", lport);
@@ -156,13 +156,13 @@ int main(int argc, char *argv[]) {
 #endif
 	} else if (proto == "sctp") {
 #ifdef SUPPORT_SCTP
-		ipfixReceiver = new IpfixReceiverSctpIpV4(lport, "127.0.0.1");
+		ipfixReceiver = new IpfixReceiverSctp(lport, "127.0.0.1");
 #else
 		msg(MSG_FATAL, "testcollector has been compiled without sctp support");
 		return -1;
 #endif
 	} else if (proto == "tcp") {
-		ipfixReceiver = new IpfixReceiverTcpIpV4(lport);
+		ipfixReceiver = new IpfixReceiverTcp(lport);
 	} else {
 		msg(MSG_FATAL, "Protocol %s is not supported as a transport protocol for IPFIX data", proto.c_str()); 
 		return -1;

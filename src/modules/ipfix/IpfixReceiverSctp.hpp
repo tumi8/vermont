@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-#ifndef _IPFIX_RECEIVER_SCTPIPV4_H_
-#define _IPFIX_RECEIVER_SCTPIPV4_H_
+#ifndef _IPFIX_RECEIVER_SCTP_H_
+#define _IPFIX_RECEIVER_SCTP_H_
 
 #include <pthread.h>
 #include <stdint.h>
@@ -38,22 +38,20 @@
 #define SCTP_MAX_BACKLOG 5
 
 
-class IpfixReceiverSctpIpV4 : public IpfixReceiver, Sensor {
+class IpfixReceiverSctp : public IpfixReceiver, Sensor {
 #ifdef SUPPORT_SCTP
 	public:
-		IpfixReceiverSctpIpV4(int port, std::string ipAddr = "");
-		virtual ~IpfixReceiverSctpIpV4();
+		IpfixReceiverSctp(int port, std::string ipAddr = "");
+		virtual ~IpfixReceiverSctp();
 
 		virtual void run();
-	private:
-		int listen_socket;
 #else
 	public:
-		IpfixReceiverSctpIpV4(int port, std::string ipAddr) {
+		IpfixReceiverSctp(int port, std::string ipAddr) {
 			THROWEXCEPTION("SCTP not supported!");
 		}
 		
-		virtual ~IpfixReceiverSctpIpV4() {}
+		virtual ~IpfixReceiverSctp() {}
 
 		virtual void run() {}
 

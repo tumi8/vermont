@@ -24,11 +24,11 @@
 #include "core/Cfg.h"
 
 #include <modules/ipfix/IpfixCollectorCfg.h>
-#include <modules/ipfix/IpfixReceiverUdpIpV4.hpp>
-#include <modules/ipfix/IpfixReceiverSctpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverUdp.hpp>
+#include <modules/ipfix/IpfixReceiverSctp.hpp>
 #include <modules/ipfix/IpfixReceiverDtlsUdpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverDtlsSctpIpV4.hpp>
-#include <modules/ipfix/IpfixReceiverTcpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverTcp.hpp>
 #include <modules/ipfix/IpfixReceiverFile.hpp>
 
 #include <common/ipfixlolib/ipfixlolib.h>
@@ -106,7 +106,7 @@ public:
 			const std::string &caPath) {
 		IpfixReceiver* ipfixReceiver;
 		if (protocol == SCTP)
-			ipfixReceiver = new IpfixReceiverSctpIpV4(port, ipAddress);	
+			ipfixReceiver = new IpfixReceiverSctp(port, ipAddress);	
 		else if (protocol == DTLS_OVER_UDP)
 			ipfixReceiver = new IpfixReceiverDtlsUdpIpV4(port,
 				ipAddress, certificateChainFile,
@@ -116,9 +116,9 @@ public:
 				ipAddress, certificateChainFile,
 				privateKeyFile, caFile, caPath, peerFqdns);
 		else if (protocol == TCP)
-			ipfixReceiver = new IpfixReceiverTcpIpV4(port, ipAddress);
+			ipfixReceiver = new IpfixReceiverTcp(port, ipAddress);
 		else
-			ipfixReceiver = new IpfixReceiverUdpIpV4(port, ipAddress);	
+			ipfixReceiver = new IpfixReceiverUdp(port, ipAddress);	
 
 		if (!ipfixReceiver) {
 			THROWEXCEPTION("Could not create IpfixReceiver");

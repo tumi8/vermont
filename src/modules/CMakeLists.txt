@@ -74,13 +74,13 @@ ADD_LIBRARY(modules
     ipfix/IpfixSamplerCfg.cpp
     ipfix/NetflowV9ConverterCfg.cpp
     ipfix/Connection.cpp
-    ipfix/IpfixReceiverUdpIpV4.cpp
-    ipfix/IpfixReceiverSctpIpV4.cpp
+    ipfix/IpfixReceiverUdp.cpp
+    ipfix/IpfixReceiverSctp.cpp
     ipfix/IpfixReceiverDtlsUdpIpV4.cpp
     ipfix/IpfixReceiverDtlsSctpIpV4.cpp
     ipfix/IpfixReceiverFile.cpp
     ipfix/IpfixReceiverFileCfg.cpp
-    ipfix/IpfixReceiverTcpIpV4.cpp
+    ipfix/IpfixReceiverTcp.cpp
     ipfix/IpfixRawdirReader.cpp
     ipfix/IpfixReceiver.cpp
     ipfix/IpfixRecord.cpp

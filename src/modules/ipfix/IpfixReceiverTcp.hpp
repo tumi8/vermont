@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-#ifndef _IPFIX_RECEIVER_TCPIPV4_H_
-#define _IPFIX_RECEIVER_TCPIPV4_H_
+#ifndef _IPFIX_RECEIVER_TCP_H_
+#define _IPFIX_RECEIVER_TCP_H_
 
 #include <pthread.h>
 #include <stdint.h>
@@ -32,10 +32,10 @@
 
 #define TCP_MAX_BACKLOG 5
 
-class IpfixReceiverTcpIpV4 : public IpfixReceiver, Sensor {
+class IpfixReceiverTcp : public IpfixReceiver, Sensor {
 	public:
-		IpfixReceiverTcpIpV4(int port, std::string ipAddr = "");
-		virtual ~IpfixReceiverTcpIpV4();
+		IpfixReceiverTcp(int port, std::string ipAddr = "");
+		virtual ~IpfixReceiverTcp();
 
 		virtual void run();
 };
