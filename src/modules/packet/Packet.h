@@ -212,8 +212,8 @@ public:
 
 		// calculate time since 1970 in milliseconds according to IPFIX standard
 		time_msec_nbo = htonll(((uint64_t)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
-		DPRINTF(MSG_VDEBUG, "timestamp.tv_sec is %d, timestamp.tv_usec is %d, Human readable: %s", timestamp.tv_sec, timestamp.tv_usec, ctime(&timestamp.tv_sec));
-		DPRINTF(MSG_VDEBUG, "time_msec_ipfix is %llu", time_msec_nbo);
+		DPRINTFL(MSG_VDEBUG, "timestamp.tv_sec is %d, timestamp.tv_usec is %d, Human readable: %s", timestamp.tv_sec, timestamp.tv_usec, ctime(&timestamp.tv_sec));
+		DPRINTFL(MSG_VDEBUG, "time_msec_ipfix is %llu", time_msec_nbo);
 
 		totalPacketsReceived++;
 
