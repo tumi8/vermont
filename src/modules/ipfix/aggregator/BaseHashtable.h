@@ -165,6 +165,7 @@ protected:
 	void genBiflowStructs();
 	void reverseFlowBucket(HashtableBucket* bucket);
 	void removeBucket(HashtableBucket* bucket);
+        void informPlugins(const HashtableBucket* bucket);
 
 };
 

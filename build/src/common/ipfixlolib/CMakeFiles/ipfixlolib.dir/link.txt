@@ -1,0 +1,2 @@
+/usr/bin/ar cr libipfixlolib.a  CMakeFiles/ipfixlolib.dir/encoding.o CMakeFiles/ipfixlolib.dir/ipfixlolib.o CMakeFiles/ipfixlolib.dir/ipfix_names.o
+/usr/bin/ranlib libipfixlolib.a

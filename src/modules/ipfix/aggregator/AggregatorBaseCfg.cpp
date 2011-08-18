@@ -23,6 +23,8 @@
 #include "Rules.hpp"
 #include "core/XMLElement.h"
 #include "core/InfoElementCfg.h"
+#include "BasePluginHost.h"
+#include "plugins/OSFPPlugin.h"
 
 AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 	: CfgBase(elem), pollInterval(0)
@@ -52,6 +54,8 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 			pollInterval = getTimeInUnit("pollInterval", mSEC, AGG_DEFAULT_POLLING_TIME);
 		} else if (e->matches("hashtableBits")) {
 			htableBits = getInt("hashtableBits", HT_DEFAULT_BITSIZE);
+                } else if (e->matches("plugin")) {
+                        readPlugin(e);
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unkown Aggregator config entry %s\n", e->getName().c_str());
@@ -224,3 +228,38 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 
 	return ruleField;
 }
+
+void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
+
+    std::string pluginName = "";
+    std::string pluginVersion = "";
+    u_int32_t maxConnections = 0;
+    std::string dumpFile = "dump.csv";
+
+    XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
+
+    for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin(); it != set.end(); it++) {
+        XMLElement* e = *it;
+        if (e->matches("name")) {
+            pluginName = get("name", e);
+        }else if(e->matches("version")){
+            pluginVersion = get("version", e);
+        }else if(e->matches("maxconnections")){
+            maxConnections = (u_int32_t) getInt("maxconnections", 0, e);
+        }else if(e->matches("dumpfile")){
+            dumpFile = get("dumpfile", e);
+        }
+    }
+    if (pluginVersion == "" || pluginName == ""){
+        msg(MSG_ERROR, "Plugin information missing! At least name and version must be given. Information found: Name:\"%s\", Version: \"%s\"", pluginName.c_str(), pluginVersion.c_str());
+    } else {
+        msg(MSG_INFO, "Found Plugin: \"%s\" \"%s\"", pluginName.c_str(), pluginVersion.c_str());
+        BasePluginHost* host = BasePluginHost::getInstance();
+        if(pluginName == "osfp"){
+            OSFPPlugin* plugin = new OSFPPlugin(maxConnections, dumpFile);
+            host->registerPlugin(plugin);
+            msg(MSG_INFO, "Plugin loaded!");
+        }
+    }
+}
+

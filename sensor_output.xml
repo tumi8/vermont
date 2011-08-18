@@ -1,0 +1,129 @@
+<vermont>
+	<sensorData time="Sat Aug 13 23:12:43 2011" epochtime="1313269963.791" host="t400">
+		<pid>12107</pid>
+		<lastTime>Sat Aug 13 23:12:41 2011</lastTime>
+		<jiffyFrequency>1024</jiffyFrequency>
+		<processorAmount>2</processorAmount>
+		<processor id="0"><util type="system">0.20</util><util type="user">0.24</util></processor>
+		<processor id="1"><util type="system">0.20</util><util type="user">0.05</util></processor>
+		<memory><free type="bytes">2417795072</free><total type="bytes">4086312960</total></memory>
+		<sensor type="module" id="99" name="sensorManager">
+			<memUsage>1064</memUsage>
+			<thread tid="12108"><util type="system">0.00</util><util type="user">0.00</util><totalJiffies type="system">1</totalJiffies><totalJiffies type="user">0</totalJiffies><contextSwitches type="non-voluntary">2</contextSwitches><contextSwitches type="voluntary">2</contextSwitches></thread>
+		</sensor>
+		<sensor type="module" id="1" name="observer">
+			<memUsage>729</memUsage>
+			<thread tid="12113"><util type="system">0.00</util><util type="user">0.00</util><totalJiffies type="system">0</totalJiffies><totalJiffies type="user">0</totalJiffies><contextSwitches type="non-voluntary">0</contextSwitches><contextSwitches type="voluntary">0</contextSwitches></thread>
+			<addInfo><pcap><received type="packets">0</received><dropped type="packets">0</dropped><totalReceived type="packets">130</totalReceived><totalDropped type="packets">0</totalDropped></pcap><observer><processed type="bytes">0</processed><processed type="packets">0</processed><totalProcessed type="packets">130</totalProcessed></observer></addInfo>
+			<next>2</next>
+		</sensor>
+		<sensor type="module" id="2" name="packetQueue">
+			<memUsage>0</memUsage>
+			<thread tid="12112"><util type="system">0.00</util><util type="user">0.00</util><totalJiffies type="system">0</totalJiffies><totalJiffies type="user">0</totalJiffies><contextSwitches type="non-voluntary">2</contextSwitches><contextSwitches type="voluntary">2</contextSwitches></thread>
+			<addInfo><entries>0</entries><totalReceived>130</totalReceived></addInfo>
+			<next>6</next>
+		</sensor>
+		<sensor type="module" id="6" name="packetAggregator">
+			<memUsage>0</memUsage>
+			<thread tid="12111"><util type="system">0.00</util><util type="user">0.00</util><totalJiffies type="system">0</totalJiffies><totalJiffies type="user">0</totalJiffies><contextSwitches type="non-voluntary">0</contextSwitches><contextSwitches type="voluntary">0</contextSwitches></thread>
+			<addInfo><totalReceivedPackets>130</totalReceivedPackets><ignoredPackets>0</ignoredPackets><hashtable rule="0"><entries>0</entries><emptyBuckets>0</emptyBuckets><multientryBuckets>0</multientryBuckets><exportedEntries>4</exportedEntries></hashtable></addInfo>
+			<next>4</next>
+		</sensor>
+		<sensor type="module" id="4" name="ipfixAggregator">
+			<memUsage>0</memUsage>
+			<thread tid="12110"><util type="system">0.00</util><util type="user">0.00</util><totalJiffies type="system">0</totalJiffies><totalJiffies type="user">0</totalJiffies><contextSwitches type="non-voluntary">4</contextSwitches><contextSwitches type="voluntary">4</contextSwitches></thread>
+			<addInfo><hashtable rule="0"><entries>4294967287</entries><emptyBuckets>9</emptyBuckets><multientryBuckets>0</multientryBuckets><exportedEntries>0</exportedEntries></hashtable></addInfo>
+			<next>7</next>
+		</sensor>
+		<sensor type="module" id="7" name="ipfixQueue">
+			<memUsage>0</memUsage>
+			<thread tid="12109"><util type="system">0.00</util><util type="user">0.00</util><totalJiffies type="system">0</totalJiffies><totalJiffies type="user">0</totalJiffies><contextSwitches type="non-voluntary">0</contextSwitches><contextSwitches type="voluntary">0</contextSwitches></thread>
+			<addInfo><entries>0</entries><totalReceived>10</totalReceived></addInfo>
+			<next>8</next>
+		</sensor>
+		<sensor type="module" id="8" name="ipfixExporter">
+			<memUsage>0</memUsage>
+			<addInfo><totalSentDataRecords>9</totalSentDataRecords><totalSentUDPDataRecordPackets>4</totalSentUDPDataRecordPackets><totalPacketsInFlows>118</totalPacketsInFlows></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (RecordAnonymizerIpfixDataRecord)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (ParserIpfixTemplateRecord)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (ParserIpfixDataRecord)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (ParserIpfixTemplateDestructionRecord)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (Packet)">
+			<memUsage>276216</memUsage>
+			<addInfo><createdInstances>1000</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (TRWPortscanIDMEFMessage)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (RBSWormIDMEFMessage)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (P2PIDMEFMessage)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (ReporterIDMEFMessage)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (NetflowConverterIpfixDataRecord)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (NetflowConverterIpfixTemplateRecord)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (NetflowConverterIpfixTemplateDestructionRecord)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (IpfixDataDataRecord)">
+			<memUsage>308</memUsage>
+			<addInfo><createdInstances>1</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (IpfixDataTemplateRecord)">
+			<memUsage>276</memUsage>
+			<addInfo><createdInstances>1</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (IpfixTemplateDestructionRecord)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (BucketListElement)">
+			<memUsage>656</memUsage>
+			<addInfo><createdInstances>10</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (IpfixDataDataRecord)">
+			<memUsage>676</memUsage>
+			<addInfo><createdInstances>5</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (IpfixDataTemplateRecord)">
+			<memUsage>276</memUsage>
+			<addInfo><createdInstances>1</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (IpfixTemplateDestructionRecord)">
+			<memUsage>216</memUsage>
+			<addInfo><createdInstances>0</createdInstances></addInfo>
+		</sensor>
+		<sensor type="simple" id="0" name="InstanceManager (BucketListElement)">
+			<memUsage>436</memUsage>
+			<addInfo><createdInstances>5</createdInstances></addInfo>
+		</sensor>
+	</sensorData>
+</vermont>

@@ -1,0 +1,1 @@
+/usr/bin/c++   -g    CMakeFiles/mtutest.dir/mtutest.o  -o mtutest -rdynamic ../../common/ipfixlolib/libipfixlolib.a ../../common/libcommon.a 

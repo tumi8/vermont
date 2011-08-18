@@ -37,6 +37,7 @@ public:
 
 protected:
 	Rule* readRule(XMLElement* elem);
+        void readPlugin(XMLElement* e);
 	
 	static Rule::Field* readFlowKeyRule(XMLElement* e);
 	static Rule::Field* readNonFlowKeyRule(XMLElement* e);

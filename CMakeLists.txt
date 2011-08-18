@@ -44,6 +44,7 @@ SUBDIRS(
 if(COMMAND cmake_policy)
     cmake_policy(SET CMP0003 OLD)
     cmake_policy(SET CMP0002 OLD)
+    cmake_policy(SET CMP0017 OLD)
 endif(COMMAND cmake_policy)
 
 

@@ -4,7 +4,7 @@
 	</sensorManager>
 	<observer id="1">
 		<interface>eth0</interface>
-		<pcap_filter>ip</pcap_filter>
+		<pcap_filter>tcp</pcap_filter>
 		<next>2</next>
 	</observer>
 	
@@ -110,6 +110,10 @@
 			<activeTimeout unit="sec">10</activeTimeout>
 		</expiration>
 		<pollInterval unit="msec">1000</pollInterval>
+		<plugin>
+		  <name>osfp</name>
+		  <version>1.0</version>
+		</plugin>
 		<next>7</next>
 	</ipfixAggregator>
 

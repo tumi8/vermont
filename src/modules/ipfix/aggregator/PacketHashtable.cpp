@@ -29,6 +29,8 @@
 #include "common/Time.h"
 #include "HashtableBuckets.h"
 
+#include "BasePluginHost.h"
+
 using namespace InformationElement;
 
 const uint32_t PacketHashtable::ExpHelperTable::UNUSED = 0xFFFFFFFF;
@@ -1396,102 +1398,117 @@ void PacketHashtable::updateBucketData(HashtableBucket* bucket)
  */
 void PacketHashtable::aggregatePacket(const Packet* p)
 {
-	// the following lock should almost never block (only during reconfiguration)
-	while (atomic_lock(&aggInProgress)) {
-		timespec req;
-		req.tv_sec = 0;
-		req.tv_nsec = 50000000;
-		nanosleep(&req, &req);
-	}
+        // the following lock should almost never block (only during reconfiguration)
+        while (atomic_lock(&aggInProgress)) {
+                timespec req;
+                req.tv_sec = 0;
+                req.tv_nsec = 50000000;
+                nanosleep(&req, &req);
+        }
 
+        // plugin initialization
+        BasePluginHost* host = BasePluginHost::getInstance();
+        list<BasePlugin*> plugins = host->getPlugins();
+        list<BasePlugin*>::iterator i;
 
-	DPRINTF("PacketHashtable::aggregatePacket()");
-	updatePointers(p);
-	createMaskedFields(p);
+        for(i=plugins.begin(); i != plugins.end(); ++i){
+            (*i)->newPacketReceived(p);
+        }
 
-	uint32_t hash = calculateHash(p->netHeader);
-	DPRINTFL(MSG_VDEBUG, "packet hash=%u", hash);
+        DPRINTF("PacketHashtable::aggregatePacket()");
+        updatePointers(p);
+        createMaskedFields(p);
 
-	// search bucket inside hashtable
-	HashtableBucket* bucket = buckets[hash];
-	HashtableBucket* appendbucket = NULL;
-	uint32_t* oldflowcount = NULL;
-	bool flowfound = false;
-	bool expiryforced = false;
-	if (bucket != 0) {
-		// This slot is already used, search spill chain for equal flow
-		while (1) {
-			if (equalFlow(bucket->data.get(), p)) {
-				DPRINTF("aggregate flow in normal direction");
-				aggregateFlow(bucket, p, 0);
-				if (!bucket->forceExpiry) {
-					flowfound = true;
-				} else {
-					DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
-					removeBucket(bucket);
-					expiryforced = true;
-					if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
-						oldflowcount = reinterpret_cast<uint32_t*>(bucket->data.get()+expHelperTable.dpaFlowCountOffset);
-					bucket = NULL;
-				}
-				break;
-			}
+        uint32_t hash = calculateHash(p->netHeader);
+        DPRINTFL(MSG_VDEBUG, "packet hash=%u", hash);
 
-			if (bucket->next==NULL) {
-				appendbucket = bucket;
-				break;
-			}
-			bucket = (HashtableBucket*)bucket->next;
-		}
-	}
-	if (biflowAggregation && !flowfound && !expiryforced) {
-		// search for reverse direction
-		uint32_t rhash = calculateHashRev(p->netHeader);
-		DPRINTFL(MSG_VDEBUG, "rev packet hash=%u", rhash);
-		HashtableBucket* bucket = buckets[rhash];
+        // search bucket inside hashtable
+        HashtableBucket* bucket = buckets[hash];
+        HashtableBucket* appendbucket = NULL;
+        uint32_t* oldflowcount = NULL;
+        bool flowfound = false;
+        bool expiryforced = false;
+        if (bucket != 0) {
+                // This slot is already used, search spill chain for equal flow
+                while (1) {
+                        if (equalFlow(bucket->data.get(), p)) {
+                                DPRINTF("aggregate flow in normal direction");
+                                aggregateFlow(bucket, p, 0);
+                                if (!bucket->forceExpiry) {
+                                        flowfound = true;
+                                } else {
+                                        DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
+                                        removeBucket(bucket);
+                                        expiryforced = true;
+                                        if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
+                                                oldflowcount = reinterpret_cast<uint32_t*>(bucket->data.get()+expHelperTable.dpaFlowCountOffset);
+                                        bucket = NULL;
+                                }
+                                break;
+                        }
 
-		while (bucket!=0) {
-			if (equalFlowRev(bucket->data.get(), p)) {
-				DPRINTF("aggregate flow in reverse direction");
-				aggregateFlow(bucket, p, 1);
-				if (!bucket->forceExpiry) {
-					flowfound = true;
-				} else {
-					DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
-					removeBucket(bucket);
-					expiryforced = true;
-					if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
-						oldflowcount = reinterpret_cast<uint32_t*>(bucket->data.get()+expHelperTable.dpaFlowCountOffset);
-					bucket = NULL;
-				}
-				break;
-			}
-			bucket = (HashtableBucket*)bucket->next;
-		}
-	}
+                        if (bucket->next==NULL) {
+                                appendbucket = bucket;
+                                break;
+                        }
+                        bucket = (HashtableBucket*)bucket->next;
+                }
+        }
+        if (biflowAggregation && !flowfound && !expiryforced) {
+                // search for reverse direction
+                uint32_t rhash = calculateHashRev(p->netHeader);
+                DPRINTFL(MSG_VDEBUG, "rev packet hash=%u", rhash);
+                HashtableBucket* bucket = buckets[rhash];
 
-	if (!flowfound || expiryforced) {
-		// create new flow
-		DPRINTF("creating new bucket");
-		HashtableBucket* firstbucket = buckets[hash];
-		buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID, firstbucket, 0, hash);
-		if (firstbucket) {
-			firstbucket->prev = buckets[hash];
-			statMultiEntries++;
-		} else {
-			statEmptyBuckets--;
-		}
-		buckets[hash]->inTable = true;
+                while (bucket!=0) {
+                        if (equalFlowRev(bucket->data.get(), p)) {
+                                DPRINTF("aggregate flow in reverse direction");
+                                aggregateFlow(bucket, p, 1);
+                                if (!bucket->forceExpiry) {
+                                        flowfound = true;
+                                } else {
+                                        DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
+                                        removeBucket(bucket);
+                                        expiryforced = true;
+                                        if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
+                                                oldflowcount = reinterpret_cast<uint32_t*>(bucket->data.get()+expHelperTable.dpaFlowCountOffset);
+                                        bucket = NULL;
+                                }
+                                break;
+                        }
+                        bucket = (HashtableBucket*)bucket->next;
+                }
+        }
 
-		if (oldflowcount) {
-			DPRINTFL(MSG_VDEBUG, "oldflowcount: %u", ntohl(*oldflowcount));
-			*reinterpret_cast<uint32_t*>(buckets[hash]->data.get()+expHelperTable.dpaFlowCountOffset) = htonl(ntohl(*oldflowcount)+1);
-		}
-		updateBucketData(buckets[hash]);
-	}
-	//if (!snapshotWritten && (time(0)- 300 > starttime)) writeHashtable();
-	// FIXME: enable snapshots again by configuration
-	atomic_release(&aggInProgress);
+        if (!flowfound || expiryforced) {
+                // create new flow
+
+                DPRINTF("creating new bucket");
+                HashtableBucket* firstbucket = buckets[hash];
+                buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID, firstbucket, 0, hash);
+                if (firstbucket) {
+                        firstbucket->prev = buckets[hash];
+                        statMultiEntries++;
+                } else {
+                    for(i=plugins.begin(); i != plugins.end(); ++i){
+                        (*i)->newFlowReceived(buckets[hash]);
+                    }
+                        statEmptyBuckets--;
+                }
+                buckets[hash]->inTable = true;
+
+                if (oldflowcount) {
+                        DPRINTFL(MSG_VDEBUG, "oldflowcount: %u", ntohl(*oldflowcount));
+                        *reinterpret_cast<uint32_t*>(buckets[hash]->data.get()+expHelperTable.dpaFlowCountOffset) = htonl(ntohl(*oldflowcount)+1);
+                }
+                updateBucketData(buckets[hash]);
+                for(i=plugins.begin(); i != plugins.end(); ++i){
+                    (*i)->newFlowReceived(buckets[hash]);
+                }
+        }
+        //if (!snapshotWritten && (time(0)- 300 > starttime)) writeHashtable();
+        // FIXME: enable snapshots again by configuration
+        atomic_release(&aggInProgress);
 }
 
 void PacketHashtable::snapshotHashtable()

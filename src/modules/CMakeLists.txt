@@ -109,6 +109,11 @@ ADD_LIBRARY(modules
     ipfix/aggregator/PacketAggregator.cpp
     ipfix/aggregator/Rules.cpp
     ipfix/aggregator/Rule.cpp
+    ipfix/aggregator/BasePlugin.cpp
+    ipfix/aggregator/PluginState.cpp
+    ipfix/aggregator/BasePluginHost.cpp
+
+    ipfix/aggregator/plugins/OSFPPlugin.cpp
 )
 
 
