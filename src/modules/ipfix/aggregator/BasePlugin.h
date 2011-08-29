@@ -48,7 +48,7 @@ public:
     virtual void flowDeleted(const HashtableBucket* bucket){
         msg(MSG_ERROR, "virtual method called flow");
     }
-    virtual void newPacketReceived(const Packet* p){
+    virtual void newPacketReceived(const Packet* p, uint32_t hash){
         msg(MSG_ERROR, "virtual method called packet");
     }
 };

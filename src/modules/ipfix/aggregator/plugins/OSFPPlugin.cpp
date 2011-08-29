@@ -20,12 +20,27 @@
 
 #include "OSFPPlugin.h"
 #include "common/msg.h"
-#include <netinet/tcp.h>
-#include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <iostream>
 #include <fstream>
+#include <features.h>
+#include "modules/ipfix/aggregator/PacketHashtable.h"
+
+
+#if defined(__FreeBSD__) || defined(__APPLE__)
+// FreeBSD does not have a struct iphdr. Furthermore, the struct members in
+// struct udphdr and tcphdr differ from the linux version. We therefore need
+// to define them
+#include <osdep/freebsd/iphdrs.h>
+#else
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
+#include <netinet/udp.h>
+#endif
+
 using namespace std;
+
+#define TCP_HEADER_WITHOUT_OPTIONS 20
 
 OSFPPlugin::OSFPPlugin(){
     OSFPPlugin(0,(char*) "dump.csv");
@@ -40,15 +55,41 @@ OSFPPlugin::OSFPPlugin(const u_int32_t maxConns, std::string file){
     msg(MSG_INFO, "  - max connections: %i", maxConnections);
 }
 
+
+/**
+ * gets called when a flow has been deleted
+ */
 void OSFPPlugin::flowDeleted(const HashtableBucket* bucket){
-    msg(MSG_INFO, "flow deleted");
+    map.erase(bucket->hash);
 }
 
+
+/**
+ * gets called when a new flow has been generated
+ */
 void OSFPPlugin::newFlowReceived(const HashtableBucket* bucket){
-    msg(MSG_INFO, "new flow");
+    map[bucket->hash] = 0;
 }
 
-void OSFPPlugin::newPacketReceived(const Packet* p){
+
+/**
+ * gets called when a new packet has been received
+ */
+void OSFPPlugin::newPacketReceived(const Packet* p, uint32_t hash){
+    /* is connection tracking needed?
+       if yes, check if not more than maxConnections */
+    if (maxConnections > 0){
+        if (map.find(hash) != map.end()){
+            ++map[hash];
+        }
+        else{
+            map[hash] = 1;
+        }
+        if (map[hash] > maxConnections){
+            return;
+        }
+    }
+    //start processing the packet
     processPacket(p);
 }
 
@@ -69,99 +110,104 @@ void OSFPPlugin::processPacket(const Packet* p){
         options.has_options = 1;
 
         /*parse option fields:*/
-        optionsCnt = parseTCPOptions(options, p);
+        optionsCnt = parseTCPOptions(options, p, doffval*4);
 
     }
-
-    /*u_int16_t window = ntohs(tcpheader->window);
-    if (mss && window && !(window % mss)) printf("S%d", window/mss); else
-        if (window && !(window % 1460)) printf("S%d", window/1460); else
-            if (mss && window && !(window % (mss+40))) printf("T%d", window/(mss+40)); else
-                if (window && !(window % 1500)) printf("T%d", window/1500); else
-                    if (window == 12345) printf("*(12345)"); else printf("%d", window);
-    */
     writeToFile(options, p);
 }
 
-int OSFPPlugin::parseTCPOptions(struct TCPOptions &options, const Packet* p){
+int OSFPPlugin::parseTCPOptions(struct TCPOptions &options, const Packet* p, const u_int32_t dataOffset){
     int optionsCnt = 0;
     short lastFound = 0;
-    u_char len;
-    u_char op;
-    const u_char *option_ptr = p->transportHeader + sizeof(struct tcphdr);
+    u_int8_t len = 0;
+    u_int8_t* len_ptr = &len;
+    u_char op = 255;
+    const u_char *option_ptr = p->transportHeader + TCP_HEADER_WITHOUT_OPTIONS;
+    const u_char *endOfOptions = p->transportHeader + dataOffset;
 
-    while(!lastFound && optionsCnt<100)
+    while(!lastFound && option_ptr < endOfOptions)
     {
         op = (u_char) *option_ptr;
         switch(op)
         {
         case TCPOPT_NOP:
             options.nop_set += 1;
-            option_ptr++;
+            pkt_ignore_u8(&option_ptr);
             optionsCnt++;
             break;
         case TCPOPT_WINDOW:
             options.window_set = 1;
-            if (optionsCnt>1){
-                option_ptr++;
-                len = *option_ptr;
-                option_ptr++;
-                memcpy(&options.window_scale, option_ptr, 1);
-                //options.window_scale = ntohs(options.window_scale);
-                option_ptr += len-2;;
+            if (option_ptr + 3 <= endOfOptions){
+                pkt_ignore_u16(&option_ptr);
+                pkt_get_u8(&option_ptr, &options.window_scale);
+            } else {
+                // TCP Options corrupt, stopping this
+                lastFound = 1;
+                options.options_corrupt = 1;
             }
             optionsCnt++;
             break;
         case TCPOPT_MAXSEG:
             options.mss_set = 1;
-            if (optionsCnt>1){
-                option_ptr++;
-                len = *option_ptr;
-                option_ptr++;
-                memcpy(&options.mss, option_ptr, 2);
-                options.mss = ntohs(options.mss);
-                //options.mss -= tcphdr_size;
-                option_ptr += len-2;
+            if (option_ptr + 4 <= endOfOptions){
+                pkt_ignore_u16(&option_ptr);
+                pkt_get_u16(&option_ptr, &options.mss);
+            } else {
+                // TCP Options corrupt, stopping this
+                lastFound = 1;
+                options.options_corrupt = 1;
             }
             optionsCnt++;
             break;
         case TCPOPT_TIMESTAMP:
             options.timestamp_set = 1;
-            if (optionsCnt>1){
-                option_ptr++;
-                len = *option_ptr;
-                option_ptr++;
-                memcpy(&options.tstamp, option_ptr, 4);
-                options.tstamp = ntohl(options.tstamp);
-                memcpy(&options.tsecr, option_ptr+4, 4);
-                options.tsecr = ntohl(options.tsecr);
-                option_ptr += len -2;;
+            if (option_ptr + 10 <= endOfOptions){
+                pkt_ignore_u16(&option_ptr);
+                pkt_get_u32(&option_ptr, &options.tstamp);
+                pkt_get_u32(&option_ptr, &options.tsecr);
+            } else {
+                // TCP Options corrupt, stopping this
+                lastFound = 1;
+                options.options_corrupt = 1;
             }
             optionsCnt++;
             break;
         case TCPOPT_SACK_PERMITTED:
             options.sack_set = 1;
-            if (optionsCnt>1){
-                option_ptr++;
-                len = *option_ptr;
-                option_ptr++;
-                option_ptr += len -2;
+            if (option_ptr + 2 <= endOfOptions){
+                pkt_ignore_u16(&option_ptr);
+            } else {
+                // TCP Options corrupt, stopping this
+                lastFound = 1;
+                options.options_corrupt = 1;
             }
             optionsCnt++;
             break;
-            //case TCPOLEN_TIMESTAMP: printf("TSLEN, value: %d", ntohs(options[++offset])); optionsCnt++; break;
+//        case TCPOPT_SACK:
+//            break;
         case TCPOPT_EOL:
             options.eol_set = 1;
+            pkt_ignore_u8(&option_ptr);
             optionsCnt++;
             lastFound = 1;
             break;
         default:
             options.unkown_option_set = 1;
-            if (optionsCnt>1){
-                option_ptr++;
-                len = *option_ptr;
-                option_ptr++;
-                option_ptr += len -2;
+            if (option_ptr + 1 <= endOfOptions){
+                pkt_ignore_u8(&option_ptr);
+                pkt_get_u8(&option_ptr, len_ptr);
+                if (option_ptr + (len-2) <= endOfOptions){
+                    option_ptr += len-2;
+                }
+                else{
+                    // TCP Options corrupt, stopping this
+                    lastFound = 1;
+                    options.options_corrupt = 1;
+                }
+            } else {
+                // TCP Options corrupt, stopping this
+                lastFound = 1;
+                options.options_corrupt = 1;
             }
             optionsCnt++;
             break;
@@ -172,8 +218,8 @@ int OSFPPlugin::parseTCPOptions(struct TCPOptions &options, const Packet* p){
 
 void OSFPPlugin::writeToFile(struct TCPOptions &options, const Packet* p){
     bool test = false;
-    const struct ip* ipheader;
-    const struct tcphdr* tcpheader;
+    const iphdr* ipheader;
+    const tcphdr* tcpheader;
     ofstream myfile;
 
     if (writeHeaderFlag == 1){
@@ -184,13 +230,13 @@ void OSFPPlugin::writeToFile(struct TCPOptions &options, const Packet* p){
                   "IP Protocol : IP Dont Fragment : IP TTL : TCP Window Size : TCP MSS : TCP Window Scale : TCP SACK permitted Option : "<<
                   "TCP NOP Option : TCP Timestamp set : TCP Timestamp : TCP Timestamp Secr : TCP Urgent Flag : "<<
                   "TCP Push Flag : TCP Reset Flag : TCP FIN Flag : TCP Urgent Pointer : TCP EOL Option set : TCP Data Offset : " <<
-                  "TCP Reserved 1 : TCP Reserved 2 : TCP Syn ACK None : LEN\n";
+                  "TCP Sequence Number : TCP Acknowlegment Number : TCP Reserved 1 : TCP Reserved 2 : TCP Syn ACK None : LEN : Options Corrupt\n";
         myfile.close();
     }
 
 
-    ipheader = (struct ip*) p->netHeader;
-    tcpheader = (struct tcphdr*) p->transportHeader;
+    ipheader = (iphdr*) p->netHeader;
+    tcpheader = (tcphdr*) p->transportHeader;
 
     myfile.open(dumpFile.c_str(), ios_base::app);
 
@@ -198,25 +244,29 @@ void OSFPPlugin::writeToFile(struct TCPOptions &options, const Packet* p){
     myfile << to_string<long>(p->timestamp.tv_sec, std::dec) << ".";
     myfile << to_string<long>(p->timestamp.tv_usec, std::dec) << ":";
     /* IP Source */
-    myfile << inet_ntoa(ipheader->ip_src) << ":";
+    struct in_addr saddr;
+    saddr.s_addr = ipheader->saddr;
+    myfile << inet_ntoa(saddr) << ":";
     /* TCP Source Port */
     myfile << to_string<u_int16_t>(ntohs(tcpheader->source), std::dec) << ":";
     /* IP Dest */
-    myfile << inet_ntoa(ipheader->ip_dst) << ":";
+    struct in_addr daddr;
+    daddr.s_addr = (in_addr_t) ipheader->daddr;
+    myfile << inet_ntoa(daddr) << ":";
     /* TCP Dest Port */
     myfile << to_string<u_int16_t>(ntohs(tcpheader->dest), std::dec) << ":";
     /* IP IHL */
-    myfile << to_string<u_int16_t>(ipheader->ip_hl * 4, std::dec) << ":";
+    myfile << to_string<u_int16_t>(ipheader->ihl * 4, std::dec) << ":";
     /* IP TOS */
-    myfile << to_string<u_int16_t>(ipheader->ip_tos, std::dec) << ":";
+    myfile << to_string<u_int16_t>(ipheader->tos, std::dec) << ":";
     /* IP ID */
-    myfile << to_string<u_short>(ntohs(ipheader->ip_id), std::dec) << ":";
+    myfile << to_string<u_short>(ntohs(ipheader->id), std::dec) << ":";
     /* IP Protocol */
-    myfile << to_string<u_int16_t>(ipheader->ip_p, std::dec) << ":";
+    myfile << to_string<u_int16_t>(ipheader->protocol, std::dec) << ":";
     /* IP Don't Fragment */
     myfile << to_string<bool>((bool) ntohs(IP_DF), std::dec) << ":";
     /* IP TTL */
-    myfile << to_string<u_int16_t>(ipheader->ip_ttl, std::dec) << ":";
+    myfile << to_string<u_int16_t>(ipheader->ttl, std::dec) << ":";
     /* TCP Window Size */
     myfile << to_string<u_int16_t>(ntohs(tcpheader->window), std::dec) << ":";
     /* TCP MSS */
@@ -247,6 +297,10 @@ void OSFPPlugin::writeToFile(struct TCPOptions &options, const Packet* p){
     myfile << to_string<bool>(options.eol_set, std::dec) << ":";
     /* TCP Data Offset */
     myfile << to_string<u_int16_t>(ntohs(tcpheader->doff), std::dec) << ":";
+    /* TCP Sequence Number */
+    myfile << to_string<u_int32_t>(ntohl(tcpheader->seq), std::dec) << ":";
+    /* TCP Acknowlegment Number */
+    myfile << to_string<u_int32_t>(ntohl(tcpheader->ack_seq), std::dec) << ":";
     /* TCP Reserved 1 */
     myfile << to_string<u_int16_t>(ntohs(tcpheader->res1), std::dec) << ":";
     /* TCP Reserved 2 */
@@ -264,7 +318,9 @@ void OSFPPlugin::writeToFile(struct TCPOptions &options, const Packet* p){
         myfile << ("A:");
     }
     /*TCP Packet Length*/
-    myfile << to_string<u_int32_t>(p->data_length*4, std::dec) << "\n";
+    myfile << to_string<u_int32_t>(p->data_length, std::dec) << ":";
+    /* Options Corrupt */
+    myfile << to_string<bool>((bool) options.options_corrupt, std::dec) << "\n";
     //myfile << ("UnkownSystem\n");
     myfile.close();
 }

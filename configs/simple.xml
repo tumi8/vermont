@@ -113,6 +113,8 @@
 		<plugin>
 		  <name>osfp</name>
 		  <version>1.0</version>
+		  <dumpfile>/home/ferdi/Studium/Masterarbeit/vermont/build/dump.csv</dumpfile>
+		  <maxconnections>3</maxconnections>
 		</plugin>
 		<next>7</next>
 	</ipfixAggregator>

@@ -1406,18 +1406,14 @@ void PacketHashtable::aggregatePacket(const Packet* p)
                 nanosleep(&req, &req);
         }
 
+        DPRINTF("PacketHashtable::aggregatePacket()");
+        updatePointers(p);
+        createMaskedFields(p);
+
         // plugin initialization
         BasePluginHost* host = BasePluginHost::getInstance();
         list<BasePlugin*> plugins = host->getPlugins();
         list<BasePlugin*>::iterator i;
-
-        for(i=plugins.begin(); i != plugins.end(); ++i){
-            (*i)->newPacketReceived(p);
-        }
-
-        DPRINTF("PacketHashtable::aggregatePacket()");
-        updatePointers(p);
-        createMaskedFields(p);
 
         uint32_t hash = calculateHash(p->netHeader);
         DPRINTFL(MSG_VDEBUG, "packet hash=%u", hash);
@@ -1490,9 +1486,6 @@ void PacketHashtable::aggregatePacket(const Packet* p)
                         firstbucket->prev = buckets[hash];
                         statMultiEntries++;
                 } else {
-                    for(i=plugins.begin(); i != plugins.end(); ++i){
-                        (*i)->newFlowReceived(buckets[hash]);
-                    }
                         statEmptyBuckets--;
                 }
                 buckets[hash]->inTable = true;
@@ -1502,9 +1495,14 @@ void PacketHashtable::aggregatePacket(const Packet* p)
                         *reinterpret_cast<uint32_t*>(buckets[hash]->data.get()+expHelperTable.dpaFlowCountOffset) = htonl(ntohl(*oldflowcount)+1);
                 }
                 updateBucketData(buckets[hash]);
+
                 for(i=plugins.begin(); i != plugins.end(); ++i){
                     (*i)->newFlowReceived(buckets[hash]);
                 }
+        }
+        // tell plugins that a new packet has captured
+        for(i=plugins.begin(); i != plugins.end(); ++i){
+            (*i)->newPacketReceived(p, hash);
         }
         //if (!snapshotWritten && (time(0)- 300 > starttime)) writeHashtable();
         // FIXME: enable snapshots again by configuration
