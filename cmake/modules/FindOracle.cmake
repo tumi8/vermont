@@ -22,18 +22,17 @@ else(ORACLE_INCLUDE_DIR AND ORACLE_LIBRARIES)
 	  /usr/include/oracle/*/client
     )
 
-  find_library(ORACLE_LIBRARIES NAMES occi libocci
-    PATHS
-    /usr/lib/oracle/xe/app/oracle/product/*/client/lib
-    /usr/lib/oracle/*/client/lib
-    )
-
   find_library(ORACLE_LIBRARIES NAMES clntsh libclntsh
     PATHS
     /usr/lib/oracle/xe/app/oracle/product/*/client/lib
     /usr/lib/oracle/*/client/lib
     )
 
+  find_library(ORACLE_LIBRARIES NAMES occi libocci
+    PATHS
+    /usr/lib/oracle/xe/app/oracle/product/*/client/lib
+    /usr/lib/oracle/*/client/lib
+    )
       
   if(ORACLE_INCLUDE_DIR AND ORACLE_LIBRARIES)
     set(ORACLE_FOUND TRUE)

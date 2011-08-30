@@ -78,10 +78,10 @@
 	
 	<ipfixOracleDbWriter id="4">
     	<host>127.0.0.1</host>
-  		<port>3306</port>
+  		<port>1521</port>
   		<dbname>flows_vermont</dbname>
-  		<username>nastyWriter</username>
-  		<password>write@ccess</password>
+  		<username>vermont</username>
+  		<password>vermont</password>
   		<bufferrecords>5</bufferrecords>
     <rows>
       <name>dstIP</name>
@@ -98,7 +98,7 @@
       <name>lastSwitchedMillis</name>
       <name>exporterID</name>
     </rows>
-	</ipfixFbWriter>
+	</ipfixOracleDbWriter>
 			
 	<ipfixPrinter id="5">
 	</ipfixPrinter>
