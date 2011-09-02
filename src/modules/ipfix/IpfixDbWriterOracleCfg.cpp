@@ -20,7 +20,7 @@
 
 #ifdef ORACLE_SUPPORT_ENABLED
 
-#include "IpfixDbWriterOracleCfg.h"
+#include "IpfixDbWriterOracleCfg.hpp"
 
 
 IpfixDbWriterOracleCfg* IpfixDbWriterOracleCfg::create(XMLElement* e)
