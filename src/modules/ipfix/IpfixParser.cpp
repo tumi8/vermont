@@ -76,7 +76,7 @@ uint32_t IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 		ti->templateId = ntohs(th->templateId);
 		ti->setId = setId;
 		ti->fieldCount = ntohs(th->fieldCount);
-		ti->fieldInfo = (TemplateInfo::FieldInfo*)malloc(ti->fieldCount * sizeof(TemplateInfo::FieldInfo));
+		ti->fieldInfo = TemplateInfo::allocateFieldInfoArray(ti->fieldCount);
 		int isLengthVarying = 0;
 		uint16_t fieldNo;
 		for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
@@ -179,9 +179,9 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 		ti->templateId = ntohs(oth->templateId);
 		ti->setId = setId;
 		ti->scopeCount = ntohs(oth->scopeCount);
-		ti->scopeInfo = (TemplateInfo::FieldInfo*)malloc(ti->scopeCount * sizeof(TemplateInfo::FieldInfo));
+		ti->scopeInfo = TemplateInfo::allocateFieldInfoArray(ti->scopeCount);
 		ti->fieldCount = ntohs(oth->fieldCount)-ntohs(oth->scopeCount);
-		ti->fieldInfo = (TemplateInfo::FieldInfo*)malloc(ti->fieldCount * sizeof(TemplateInfo::FieldInfo));
+		ti->fieldInfo = TemplateInfo::allocateFieldInfoArray(ti->fieldCount);
 		int isLengthVarying = 0;
 		uint16_t scopeNo = 0;
 		//for loop works for IPFIX, but in the case of NetflowV9, scopeCount is the length of all fields in bytes
@@ -341,7 +341,7 @@ uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::Sour
 		ti->preceding = ntohs(dth->precedingRule);
 		ti->fieldCount = ntohs(dth->fieldCount);
 		ti->dataCount = ntohs(dth->dataCount);
-		ti->fieldInfo = (TemplateInfo::FieldInfo*)malloc(ti->fieldCount * sizeof(TemplateInfo::FieldInfo));
+		ti->fieldInfo = TemplateInfo::allocateFieldInfoArray(ti->fieldCount);
 		int isLengthVarying = 0;
 		uint16_t fieldNo;
 		for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
@@ -504,7 +504,26 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 #endif
 
 		boost::shared_ptr<TemplateInfo> ti = bt->templateInfo;
-        
+		bool hasStructuredData = false;
+		bool hasStructuredDataInScopeField = false;
+
+		// Determine if the template has any structured data elements - if it has
+		// even in the case of a fixed length template a copy of the TemplateInfo
+		// object has to be created for every entry.
+		for (uint16_t i = 0; i < ti->fieldCount; i++) {
+			if (ti->fieldInfo[i].type.isStructuredData()) {
+				hasStructuredData = true;
+				break;
+			}
+		}
+
+		for (uint16_t i = 0; i < ti->scopeCount; i++) {
+			if (ti->scopeInfo[i].type.isStructuredData()) {
+				hasStructuredDataInScopeField = true;
+				break;
+			}
+		}
+
 		if (bt->recordLength < 65535) {
 			if (record + bt->recordLength > endOfSet) {
 				msg(MSG_ERROR, "IpfixParser: Got a Data Set that contained not a single full record");
@@ -512,6 +531,43 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 			else
 			/* We stop processing when no full record is left */
 			while (record + bt->recordLength <= endOfSet) {
+				if (hasStructuredDataInScopeField || hasStructuredData) {
+					// In case the template contains structured data the TemplateInfo
+					// instance has to be copied as its FieldInfo entries will be
+					// modified.
+					ti = boost::shared_ptr<TemplateInfo>(bt->templateInfo.get());
+				}
+
+				bool error = false;
+
+				if (hasStructuredData) {
+					for (uint16_t i = 0; i < ti->fieldCount; i++) {
+						if (!ti->fieldInfo[i].type.isStructuredData())
+							continue;
+
+						if (!processStructuredData(sourceId, &ti->fieldInfo[i], record + ti->fieldInfo[i].offset)) {
+							error = true;
+							break;
+						}
+					}
+				}
+
+				if (hasStructuredDataInScopeField) {
+					for (uint16_t i = 0; i < ti->scopeCount; i++) {
+						if (!ti->scopeInfo[i].type.isStructuredData())
+							continue;
+
+						if (!processStructuredData(sourceId, &ti->scopeInfo[i], record + ti->scopeInfo[i].offset)) {
+							error = true;
+
+							break;
+						}
+					}
+				}
+
+				if (error)
+					break;
+
 				IpfixDataRecord* ipfixRecord = dataRecordIM.getNewInstance();
 				ipfixRecord->sourceID = sourceId;
 				ipfixRecord->templateInfo = ti;
@@ -561,6 +617,14 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 					DPRINTF("Scope field: original length %u, offset %u", ti->fieldInfo[i].type.length, ti->fieldInfo[i].offset);
 					ti->scopeInfo[i].offset = recordLength;
 					ti->scopeInfo[i].type.length = fieldLength;
+
+					// Handle structured data types
+					if (ti->scopeInfo[i].type.isStructuredData())
+						if (!processStructuredData(sourceId, &ti->scopeInfo[i], record + ti->scopeInfo[i].offset)) {
+							incomplete = true;
+							break;
+						}
+
 					recordLength += fieldLength;
 				}
 
@@ -595,6 +659,14 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 					DPRINTF("Non-scope field: original length %u, offset %u", ti->fieldInfo[i].type.length, ti->fieldInfo[i].offset);
 					ti->fieldInfo[i].offset = recordLength;
 					ti->fieldInfo[i].type.length = fieldLength;
+
+					// Handle structured data types
+					if (ti->fieldInfo[i].type.isStructuredData())
+						if (!processStructuredData(sourceId, &ti->fieldInfo[i], record + ti->fieldInfo[i].offset)) {
+							incomplete = true;
+							break;
+						}
+
 					recordLength += fieldLength;
 				}
 
@@ -619,6 +691,470 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 	    msg(MSG_FATAL, "Data Set based on known but unhandled Template type %d", bt->templateInfo->setId);
 	}
 	return numberOfRecords;
+}
+
+/**
+  * Processes a structured data field, invoking the corresponding parsing function.
+  *
+  * \param sourceId The template scope.
+  * \param field The FieldInfo element to which this structured data element belongs.
+  * \param data Pointer to the beginning of the structured data (e.g. the memory location at which the semantics field is located).
+  * \returns True, if the structured data could be successfully parsed or if an unsupported type was found.
+  *          If the structured data element was syntactically incorrect false is returned.
+  */
+bool IpfixParser::processStructuredData(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::FieldInfo *field, IpfixRecord::Data *data) {
+	IpfixRecord::Data * const endOfData = data + field->type.length;
+
+	if (data + sizeof(uint8_t) > endOfData) {
+		DPRINTF("Structured data element too short to contain semantic field.");
+		return false;
+	}
+
+	field->semantic = *data;
+
+	switch (field->type.id) {
+	case IPFIX_TYPEID_basicList:
+		return processStructuredDataBasicList(sourceId, field, data, endOfData);
+	case IPFIX_TYPEID_subTemplateList:
+		return processStructuredDataSubTemplateList(sourceId, field, data, endOfData);
+	case IPFIX_TYPEID_subTemplateMultiList:
+		return processStructuredDataSetSubTemplateMultiList(sourceId, field, data, endOfData);
+	}
+
+	return true;
+}
+
+
+/**
+  * Processes a subTemplateList structured data element storing meta-information about it
+  * in its associated \a field.
+  *
+  * After this function finishes successfully the rows and rowInfo property of the given
+  * \field is updated containing offsets (relative to the IpfixRecord's data property)
+  * to the fields of the structured data.
+  *
+  * \param sourceId The template scope.
+  * \param field The FieldInfo element to which this subTemplateList belongs.
+  * \param data Pointer to the beginning of the subTemplateList (e.g. the memory location at which the semantics field is located).
+  * \param endOfData Pointer to the end of the subTemplateList.
+  * \returns True, if the subTemplateList could be successfully parsed, false otherwise.
+  */
+bool IpfixParser::processStructuredDataSubTemplateList(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::FieldInfo *field, IpfixRecord::Data *data, IpfixRecord::Data *endOfData) {
+	// Minimum size of subTemplateList header is 3 bytes
+	if (data + 3 > endOfData) {
+		DPRINTF("Structured data element too short to contain subTemplateList header.");
+		return false;
+	}
+
+	IpfixRecord::Data *const startOfList = data;
+
+	// Skip semantics field
+	data++;
+
+	TemplateInfo::TemplateId templateId = ntohs(*((uint16_t *) data));
+	data += sizeof(uint16_t);
+
+	TemplateBuffer::BufferedTemplate *bt = templateBuffer->getBufferedTemplate(sourceId, templateId);
+
+	if (bt == NULL) {
+		DPRINTF("Could not find template with id %d for subTemplateList.", templateId);
+		return false;
+	}
+
+	boost::shared_ptr<TemplateInfo> ti = bt->templateInfo;
+	TemplateInfo::FieldInfo *const lastField = ti->fieldInfo + ti->fieldCount;
+
+	// Count the number of rows in this subTemplateList
+	IpfixRecord::Data *const startOfListContent = data;
+	field->rowCount = 0;
+
+	while (data < endOfData) {
+		TemplateInfo::FieldInfo *currentField = ti->fieldInfo;
+
+		while (currentField < lastField) {
+			uint16_t elementLength = currentField->type.length;
+
+			if (currentField->isVariableLength) {
+				// Parse variable length
+				if (data + sizeof(uint8_t) > endOfData) {
+					DPRINTF("Structured data element too short to contain variable length information");
+					break;
+				}
+
+				elementLength = *data;
+				data++;
+
+				if (elementLength == 0xff) {
+					if (data + sizeof(uint16_t) > endOfData) {
+						DPRINTF("Structured data element too short to contain extended variable length information");
+						return false;
+					}
+
+					elementLength = ntohs(*((uint16_t *) data));
+					data += sizeof(uint16_t);
+				}
+
+			}
+
+			if (data + elementLength > endOfData) {
+				DPRINTF("Structured data element too short to contain a field of length %d.", elementLength);
+				return false;
+			}
+
+			data += elementLength;
+			currentField++;
+		}
+
+		field->rowCount++;
+	}
+
+
+	field->rows = TemplateInfo::allocateStructuredDataRowArray(field->rowCount);
+
+	if (field->rows == NULL) {
+		msg(MSG_ERROR, "Failed to allocate memory for structured data rows.");
+		return true;
+	}
+
+	TemplateInfo::StructuredDataRow *currentRow = field->rows;
+	TemplateInfo::StructuredDataRow *const endOfRows = field->rows + field->rowCount;
+	data = startOfListContent;
+
+	while (currentRow < endOfRows) {
+		currentRow->fieldCount = ti->fieldCount;
+		currentRow->fields = TemplateInfo::allocateFieldInfoArray(currentRow->fieldCount);
+		currentRow->templateId = ti->templateId;
+
+		if (currentRow->fields == NULL)
+			continue;
+
+		TemplateInfo::FieldInfo *currentField = ti->fieldInfo;
+		TemplateInfo::FieldInfo *currentTargetField = currentRow->fields;
+
+		while (currentField < lastField) {
+			// Copy template FieldInfo values into target
+			memcpy(currentTargetField, currentField, sizeof(TemplateInfo::FieldInfo));
+
+			uint16_t elementLength = currentField->type.length;
+
+			if (currentField->isVariableLength) {
+				elementLength = *data;
+				data++;
+
+				if (elementLength == 0xff) {
+					elementLength = ntohs(*((uint16_t *) data));
+					data += sizeof(uint16_t);
+				}
+
+				currentTargetField->type.length = elementLength;
+			}
+
+			currentTargetField->offset = field->offset + data - startOfList;
+
+			if (currentTargetField->type.isStructuredData())
+				processStructuredData(sourceId, currentTargetField, data);
+
+			data += elementLength;
+
+			currentField++;
+			currentTargetField++;
+		}
+
+		currentRow++;
+	}
+
+	return true;
+}
+
+/**
+  * Processes a subTemplateMultiList structured data element storing meta-information about it
+  * in its associated \a field.
+  *
+  * \param sourceId The template scope.
+  * \param field The FieldInfo element to which this subTemplateMultiList belongs.
+  * \param data Pointer to the beginning of the subTemplateMultiList (e.g. the memory location at which the semantics field is located).
+  * \param endOfData Pointer to the end of the subTemplateMultiList.
+  * \returns True, if the subTemplateMultiList could be successfully parsed, false otherwise.
+  */
+bool IpfixParser::processStructuredDataSetSubTemplateMultiList(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::FieldInfo *field, IpfixRecord::Data *data, IpfixRecord::Data * const endOfData) {
+	// Minimum size of subTemplateMultiList header is 3 bytes
+	if (data + 3 > endOfData) {
+		DPRINTF("Structured data element too short to contain subTemplateMultiList header.");
+		return false;
+	}
+
+	IpfixRecord::Data *const startOfList = data;
+
+	// Skip semantics field
+	data++;
+
+	// Count the number of rows in this subTemplateMultiList
+	field->rowCount = 0;
+
+	while (data < endOfData) {
+		if (data + 4 > endOfData) {
+			DPRINTF("Structured data element too short to contain template id and sub template length.");
+			return false;
+		}
+
+		TemplateInfo::TemplateId templateId = ntohs(*((uint16_t *) data));
+		data += sizeof(uint16_t);
+		uint16_t subTemplateLength = ntohs(*((uint16_t *) data));
+		data += sizeof(uint16_t);
+
+		IpfixRecord::Data *const endOfTemplate = data - 4 + subTemplateLength; // Subtract 4 bytes for the templateId and the subTemplateLength field
+
+		if (endOfTemplate > endOfData) {
+			DPRINTF("Sub template entry points beyond end of packet.");
+			return false;
+		}
+
+		TemplateBuffer::BufferedTemplate *bt = templateBuffer->getBufferedTemplate(sourceId, templateId);
+
+		if (bt == NULL) {
+			DPRINTF("Could not find template with id %d for subTemplateList.", templateId);
+			return false;
+		}
+
+		boost::shared_ptr<TemplateInfo> ti = bt->templateInfo;
+		TemplateInfo::FieldInfo *const lastField = ti->fieldInfo + ti->fieldCount;
+
+		while (data < endOfTemplate) {
+			TemplateInfo::FieldInfo *currentField = ti->fieldInfo;
+
+			while (currentField < lastField) {
+				uint16_t elementLength = currentField->type.length;
+
+				if (currentField->isVariableLength) {
+					// Parse variable length
+					if (data + sizeof(uint8_t) > endOfData) {
+						DPRINTF("Structured data element too short to contain variable length information");
+						return false;
+					}
+
+					elementLength = *data;
+					data++;
+
+					if (elementLength == 0xff) {
+						if (data + sizeof(uint16_t) > endOfData) {
+							DPRINTF("Structured data element too short to contain extended variable length information");
+							return false;
+						}
+
+						elementLength = ntohs(*((uint16_t *) data));
+						data += sizeof(uint16_t);
+					}
+
+				}
+
+				if (data + elementLength > endOfData) {
+					DPRINTF("Structured data element too short to contain a field of length %d.", elementLength);
+					return false;
+				}
+
+				data += elementLength;
+				currentField++;
+			}
+
+			field->rowCount++;
+		}
+	}
+
+
+	field->rows = TemplateInfo::allocateStructuredDataRowArray(field->rowCount);
+
+	if (field->rows == NULL) {
+		msg(MSG_ERROR, "Failed to allocate memory for structured data rows.");
+		return true;
+	}
+
+	TemplateInfo::StructuredDataRow *currentRow = field->rows;
+	data = startOfList + 1;
+
+	while (data < endOfData) {
+		TemplateInfo::TemplateId templateId = ntohs(*((uint16_t *) data));
+		data += sizeof(uint16_t);
+		uint16_t subTemplateLength = ntohs(*((uint16_t *) data));
+		data += sizeof(uint16_t);
+
+		TemplateBuffer::BufferedTemplate *bt = templateBuffer->getBufferedTemplate(sourceId, templateId);
+		boost::shared_ptr<TemplateInfo> ti = bt->templateInfo;
+		TemplateInfo::FieldInfo *const lastField = ti->fieldInfo + ti->fieldCount;
+		IpfixRecord::Data *const endOfTemplate = data - 4 + subTemplateLength;
+
+		while (data < endOfTemplate) {
+			currentRow->templateId = ti->templateId;
+			currentRow->fieldCount = ti->fieldCount;
+			currentRow->fields = TemplateInfo::allocateFieldInfoArray(currentRow->fieldCount);
+			if (currentRow->fields == NULL)
+				continue;
+
+			TemplateInfo::FieldInfo *currentField = ti->fieldInfo;
+			TemplateInfo::FieldInfo *currentTargetField = currentRow->fields;
+
+			while (currentField < lastField) {
+				memcpy(currentTargetField, currentField, sizeof(TemplateInfo::FieldInfo));
+
+				uint16_t elementLength = currentField->type.length;
+
+				if (currentField->isVariableLength) {
+					elementLength = *data;
+					data++;
+
+					if (elementLength == 0xff) {
+						elementLength = ntohs(*((uint16_t *) data));
+						data += sizeof(uint16_t);
+					}
+
+					currentTargetField->type.length = elementLength;
+				}
+
+				currentTargetField->offset = field->offset + data - startOfList;
+
+				if (currentTargetField->type.isStructuredData())
+					processStructuredData(sourceId, currentTargetField, data);
+
+				data += elementLength;
+				currentField++;
+				currentTargetField++;
+			}
+
+			currentRow++;
+		}
+	}
+
+	return true;
+}
+
+
+/**
+  * Processes a basicList structured data element storing meta-information about it
+  * in its associated \a field.
+  *
+  * \param sourceId The template scope.
+  * \param field The FieldInfo element to which this basicList belongs.
+  * \param data Pointer to the beginning of the basicList (e.g. the memory location at which the semantics field is located).
+  * \param endOfData Pointer to the end of the basicList.
+  * \returns True, if the basic list could be successfully parsed, false otherwise.
+  */
+bool IpfixParser::processStructuredDataBasicList(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::FieldInfo *field, IpfixRecord::Data *data, IpfixRecord::Data * const endOfData) {
+	// Minimum size of basicList header is 5 bytes
+	if (data + 5 > endOfData) {
+		DPRINTF("Structured data element too short to contain basicList header.");
+		return false;
+	}
+
+	IpfixRecord::Data *const startOfList = data;
+
+	// Skip semantics field
+	data++;
+
+	uint32_t enterpriseNumber = 0;
+	uint16_t informationElementId = ntohs(*((uint16_t *) data));
+	data += sizeof(uint16_t);
+
+	uint16_t elementLength = ntohs(*((uint16_t *) data));
+	data += sizeof(uint16_t);
+
+	bool isVariableLength = elementLength == 0xffff;
+
+	if (informationElementId & IPFIX_ENTERPRISE_TYPE) {
+		if (data + sizeof(uint32_t) > endOfData) {
+			DPRINTF("Structured data element too short to contain enterprise number.");
+			return false;
+		}
+
+		enterpriseNumber = ntohl(*((uint32_t *) data));
+		data += sizeof(uint32_t);
+
+		informationElementId &= ~IPFIX_ENTERPRISE_TYPE;
+	}
+
+	IpfixRecord::Data *const startOfListContent = data;
+
+	field->rowCount = 0;
+
+	// Count number of rows and perform sanity checking
+	while (data < endOfData) {
+		if (isVariableLength) {
+			if (data + sizeof(uint8_t) > endOfData) {
+				DPRINTF("Structured data element too short to contain variable length information");
+				return false;
+			}
+
+			elementLength = *data;
+			data++;
+
+			if (elementLength == 0xff) {
+				if (data + sizeof(uint16_t) > endOfData) {
+					DPRINTF("Structured data element too short to contain extended variable length information");
+					return false;
+				}
+
+				elementLength = ntohs(*((uint16_t *) data));
+				data += sizeof(uint16_t);
+			}
+		}
+
+		if (data + elementLength > endOfData) {
+			DPRINTF("Structured data element too short to contain a field of length %d.", elementLength);
+			return false;
+		}
+
+		data += elementLength;
+		field->rowCount++;
+	}
+
+	field->rows = TemplateInfo::allocateStructuredDataRowArray(field->rowCount);
+
+	if (field->rows == NULL) {
+		field->rowCount = 0;
+
+		msg(MSG_ERROR, "Failed to allocate memory for structured data rows.");
+		return false;
+	}
+
+	TemplateInfo::StructuredDataRow *currentRow = field->rows;
+	TemplateInfo::StructuredDataRow *const endOfRows = field->rows + field->rowCount;
+	data = startOfListContent;
+
+	while (currentRow < endOfRows) {
+		currentRow->fieldCount = 1;
+		currentRow->fields = TemplateInfo::allocateFieldInfoArray(1);
+
+		if (currentRow->fields == NULL) {
+			return false;
+		}
+
+		if (isVariableLength) {
+			elementLength = *data;
+			data++;
+
+			if (elementLength == 0xff) {
+				elementLength = ntohs(*((uint16_t *) data));
+				data += sizeof(uint16_t);
+			}
+		}
+
+		TemplateInfo::FieldInfo *fieldInfo = currentRow->fields;
+
+		fieldInfo->isVariableLength = isVariableLength;
+		fieldInfo->offset = field->offset + (data - startOfList);
+		fieldInfo->type.enterprise = enterpriseNumber;
+		fieldInfo->type.id = informationElementId;
+		fieldInfo->type.length = elementLength;
+
+		if (fieldInfo->type.isStructuredData())
+			if (!processStructuredData(sourceId, fieldInfo, data))
+				return false;
+
+		data += elementLength;
+
+		currentRow++;
+	}
+
+	return true;
+
 }
 
         

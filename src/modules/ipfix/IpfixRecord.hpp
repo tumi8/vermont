@@ -85,6 +85,7 @@ namespace InformationElement {
 		const Packet::IPProtocolType getValidProtocols();
 		string toString() const;
 		bool existsReverseDirection();
+		bool isStructuredData() const;
 	};
 
 
@@ -250,6 +251,14 @@ class TemplateInfo {
 			IpfixDataTemplate = 4
 		};
 
+		struct FieldInfo;
+
+		struct StructuredDataRow {
+			uint16_t fieldCount;
+			FieldInfo *fields;
+			TemplateId templateId;
+		};
+
 		/**
 		 * Information describing a single field in the Template
 		 */
@@ -258,6 +267,10 @@ class TemplateInfo {
 			int32_t offset; 	/**< offset in bytes from a data start pointer. For internal purposes 0xFFFFFFFF is defined as yet unknown */
 			int32_t privDataOffset; /**< offset in bytes from data start pointer for internal private data which is not exported via IPFIX */
 			bool isVariableLength; 	/**< true if this field's length might change from record to record, false otherwise */
+			// The following fields add support for structured data (see RFC 6313)
+			uint8_t semantic; /** The semantic of the structured data element. See the RFC for more information */
+			uint16_t rowCount; /** Due to the IPFix maximum message size there cannot be more than 2^16 - 1 rows. The value of this field must be ignored if \a rows is NULL. */
+			StructuredDataRow *rows; /** Array of structured data rows */
 		};
 
 		TemplateInfo();
@@ -294,6 +307,20 @@ class TemplateInfo {
 		uint16_t dataLength;
 		IpfixRecord::Data* data; /**< data start pointer for fixed-value fields */
 
+		/**
+		  * Allocates and initializes a FieldInfo array with the capacity \a numberOfRecrods.
+		  *
+		  * \returns A pointer to the beginning of the allocated memory region or NULL if the
+		  *          memory could not be allocated.
+		  */
+		static FieldInfo *allocateFieldInfoArray(size_t numberOfRecords);
+		/**
+		  * Allocates and initializes a StructuredDataRow array with the capacity \a numberOfRecrods.
+		  *
+		  * \returns A pointer to the beginning of the allocated memory region or NULL if the
+		  *          memory could not be allocated.
+		  */
+		static StructuredDataRow *allocateStructuredDataRowArray(size_t numberOfRecords);
 	private:
 		/* uniqueId:
 		 * - uniqueId>0 is a Vermont-wide unique identifier for a Template
@@ -324,6 +351,16 @@ class TemplateInfo {
 			static Mutex* theOnlyMutex = new Mutex;
 			return *theOnlyMutex;
 		}
+
+		/**
+		  * Frees the memory allocated by the given \a fields array.
+		  */
+		void freeFieldInfo(uint16_t fieldCount, TemplateInfo::FieldInfo *fields) const;
+
+		/**
+		  * Frees the memory allocated by the given \a rows array.
+		  */
+		void freeStructuredDataRows(uint16_t rowCount, TemplateInfo::StructuredDataRow *rows) const;
 
 };
 

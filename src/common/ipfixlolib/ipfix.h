@@ -148,6 +148,10 @@ extern "C" {
 #define IPFIX_TYPEID_tcpUrgentPointer               187
 #define IPFIX_TYPEID_totalLengthIPv4                190
 
+#define IPFIX_TYPEID_basicList                      291
+#define IPFIX_TYPEID_subTemplateList                292
+#define IPFIX_TYPEID_subTemplateMultiList           293
+
 #define PSAMP_TYPEID_ipHeaderPacketSection          313
 #define PSAMP_TYPEID_ipPayloadPacketSection         314
 #define PSAMP_TYPEID_observationTimeSeconds         322

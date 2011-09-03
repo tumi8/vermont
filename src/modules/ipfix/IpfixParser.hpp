@@ -151,8 +151,12 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		
 		virtual void push(IpfixRecord* ipfixRecord);
 
-
 	private:
+		bool processStructuredData(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::FieldInfo *field, IpfixRecord::Data *data);
+		bool processStructuredDataBasicList(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::FieldInfo *field, IpfixRecord::Data *data, IpfixRecord::Data * const endOfData);
+		bool processStructuredDataSubTemplateList(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::FieldInfo *field, IpfixRecord::Data *data, IpfixRecord::Data *endOfData);
+		bool processStructuredDataSetSubTemplateMultiList(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::FieldInfo *field, IpfixRecord::Data *data, IpfixRecord::Data * const endOfData);
+
 		uint64_t statTotalDataRecords; /**< number of data records processed by parser */
 		uint64_t statTotalTemplateRecords; /**< number of template records processed by parser */
 		uint64_t statTotalMessages; /**< number of IPFIX/Netflow messages successfully processed by parser */

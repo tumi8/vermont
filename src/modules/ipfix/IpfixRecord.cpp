@@ -152,6 +152,24 @@ namespace InformationElement {
 		return buffer;
 	}
 
+	/**
+	  * Returns whether this Information Element type is a structured data type
+	  * (e.g. basicList, subTemplateList, multiSubTemplateList)
+	  */
+	bool IeInfo::isStructuredData() const {
+		if (enterprise != 0)
+			return false;
+
+		switch (id) {
+		case IPFIX_TYPEID_basicList:
+		case IPFIX_TYPEID_subTemplateList:
+		case IPFIX_TYPEID_subTemplateMultiList:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 }
 
 
@@ -206,7 +224,7 @@ TemplateInfo::TemplateInfo(const TemplateInfo& t)
 TemplateInfo::~TemplateInfo() {
 	if (freePointers)
 	{
-		free(fieldInfo);
+		freeFieldInfo(fieldCount, fieldInfo);
 		free(scopeInfo);
 		free(dataInfo);
 		free(data);
@@ -218,6 +236,78 @@ TemplateInfo::~TemplateInfo() {
 		THROWEXCEPTION("TemplateInfo destructor: uniqueIdUseCount is corrupt (uniqueId=%u, useCount=%u), this should never happen!", uniqueId, uniqueIdUseCount()[uniqueId-1]);
 	uniqueIdUseCount()[uniqueId-1]--;
 	mutex().unlock();
+}
+
+TemplateInfo::FieldInfo *TemplateInfo::allocateFieldInfoArray(size_t numberOfRecords) {
+	FieldInfo *array = (FieldInfo *) malloc(sizeof(FieldInfo) * numberOfRecords);
+
+	if (array == NULL)
+		return NULL;
+
+	FieldInfo *currentField = array;
+	FieldInfo *const endOfArray = array + numberOfRecords;
+
+	while (currentField < endOfArray) {
+		currentField->rows = NULL;
+		currentField->rowCount = 0;
+
+		currentField++;
+	}
+
+	return array;
+}
+
+TemplateInfo::StructuredDataRow *TemplateInfo::allocateStructuredDataRowArray(size_t numberOfRecords) {
+	StructuredDataRow *array = (StructuredDataRow *) malloc(sizeof(StructuredDataRow) * numberOfRecords);
+
+	if (array == NULL)
+		return NULL;
+
+	StructuredDataRow *currentRow = array;
+	StructuredDataRow *const endOfArray = array + numberOfRecords;
+
+	while (currentRow < endOfArray) {
+		currentRow->fields = NULL;
+		currentRow->fieldCount = 0;
+
+		currentRow++;
+	}
+
+	return array;
+}
+
+void TemplateInfo::freeFieldInfo(uint16_t fieldCount, TemplateInfo::FieldInfo *fields) const {
+	TemplateInfo::FieldInfo *currentField = fields;
+	TemplateInfo::FieldInfo *const endOfFields = fields + fieldCount;
+
+	while (currentField < endOfFields) {
+		if (currentField->type.isStructuredData()) {
+			freeStructuredDataRows(currentField->rowCount, currentField->rows);
+		}
+
+		currentField++;
+	}
+
+	free(fields);
+}
+
+void TemplateInfo::freeStructuredDataRows(uint16_t rowCount, TemplateInfo::StructuredDataRow *rows) const {
+	if (rows == NULL)
+		return;
+
+	TemplateInfo::StructuredDataRow *currentRow = rows;
+	TemplateInfo::StructuredDataRow *const endOfRows = rows + rowCount;
+
+	while (currentRow < endOfRows) {
+		if (currentRow->fieldCount == 0)
+			continue;
+
+		freeFieldInfo(currentRow->fieldCount, currentRow->fields);
+
+		currentRow++;
+	}
+
+	free(rows);
 }
 
 void TemplateInfo::setUniqueId()
