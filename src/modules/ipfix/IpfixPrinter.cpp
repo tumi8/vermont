@@ -682,8 +682,38 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 		fprintf(fh, " '   `- ");
 		printFieldData(record->templateInfo->fieldInfo[i].type, (record->data + record->templateInfo->fieldInfo[i].offset));
 		fprintf(fh, "\n");
+		if (record->templateInfo->fieldInfo[i].type.isStructuredData())
+			printStructuredData(record->data, record->templateInfo->fieldInfo[i]);
+
 	}
 	fprintf(fh, " `---\n\n");
+}
+
+void IpfixPrinter::printStructuredData(IpfixRecord::Data *data, const TemplateInfo::FieldInfo &fieldInfo, uint16_t indentLevel) {
+
+	TemplateInfo::StructuredDataRow *row = fieldInfo.rows;
+	TemplateInfo::StructuredDataRow *const endOfRows = row + fieldInfo.rowCount;
+
+	while (row < endOfRows) {
+		TemplateInfo::FieldInfo *field = row->fields;
+		TemplateInfo::FieldInfo *endOfFields = field + row->fieldCount;
+
+		while (field < endOfFields) {
+			fprintf(fh, " '   `");
+			for (uint16_t i = 0; i < indentLevel; i++)
+				fprintf(fh, "---");
+
+			fprintf(fh, " ");
+			printFieldData(field->type, data + field->offset);
+			fprintf(fh, "\n", field->offset);
+
+			if (field->type.isStructuredData())
+				printStructuredData(data, *field, indentLevel + 1);
+			field++;
+		}
+
+		row++;
+	}
 }
 
 /**

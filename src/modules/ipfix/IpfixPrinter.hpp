@@ -73,6 +73,8 @@ class IpfixPrinter : public Module, public IpfixRecordDestination, public Source
 		void printOneLineRecord(IpfixDataRecord* record);
 		void printTreeRecord(IpfixDataRecord* record);
 		void printTableRecord(IpfixDataRecord* record);
+
+		void printStructuredData(IpfixRecord::Data *data, const TemplateInfo::FieldInfo &fieldInfo, uint16_t indentLevel = 1);
 };
 
 #endif
