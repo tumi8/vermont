@@ -27,6 +27,7 @@ ADD_EXECUTABLE(vermonttest
 	ConnectionFilterTest.cpp
 	ConfigTester.cpp
 	PrinterModule.cpp
+	StructuredDataTest.cpp
 )
 
 TARGET_LINK_LIBRARIES(vermonttest
