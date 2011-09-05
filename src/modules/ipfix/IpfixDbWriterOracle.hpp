@@ -21,8 +21,8 @@
 /* Some constants that are common to IpfixDbWriter and IpfixDbReader */
 #ifdef ORACLE_SUPPORT_ENABLED
 
-#ifndef IPFIXDBWRITERORACLE_H
-#define IPFIXDBWRITERORACLE_H
+#ifndef IPFIXDBWRITERORACLE_H_
+#define IPFIXDBWRITERORACLE_H_
 
 #include "IpfixDbCommon.hpp"
 #include "IpfixRecordDestination.h"
@@ -37,7 +37,6 @@
 #include <time.h>
 #include <sstream>
 
-using namespace oracle::occi;
 using namespace std;
 
 #define EXPORTERID 0
@@ -109,8 +108,8 @@ class IpfixDbWriterOracle
 		// database data
 		string dbHost, dbName, dbUser, dbPassword;
 		unsigned dbPort;
-		Environment *env;
-		Connection *con;
+		oracle::occi::Environment *env;
+		oracle::occi::Connection *con;
 
 		int createDB();
 		int setCurrentTable(time_t flowstartsec);
@@ -129,7 +128,6 @@ class IpfixDbWriterOracle
 
 
 #endif
-
 
 #endif
 

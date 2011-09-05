@@ -72,28 +72,150 @@ int IpfixDbWriterOracle::connectToDB()
 	if (con) env->terminateConnection(con);
 
 	/** get the initial environment and connect */
-	env = Environment::createEnvironment(Environment::DEFAULT);
+	env = oracle::occi::Environment::createEnvironment(oracle::occi::Environment::DEFAULT);
 	try {
 		char dbLogon[128];
-		sprintf(server, "%s:%u/", dbHost, dbPort);
-		con = env->createConnection(dbUser, dbPassword, dbLogon)
-	} catch (SQLException& ex)
-		msg(MSG_FATAL,"IpfixDbWriterOracle: Oracle connect failed. Error: %s", ex.getMessage());
+		sprintf(dbLogon, "%s:%u/", dbHost.c_str(), dbPort);
+		con = env->createConnection(dbUser, dbPassword, dbLogon);
+	} catch (oracle::occi::SQLException& ex) {
+		msg(MSG_FATAL,"IpfixDbWriterOracle: Oracle connect failed. Error: %s", ex.getMessage().c_str());
 		return 1;
 	}
 	msg(MSG_DEBUG,"IpfixDbWriterOracle: Oracle connection successful");
+	
+	// FIXME Need to create exporter table
 
 	return 0;
 }
 
 /**
+ * save record to database
+ */
+void IpfixDbWriterOracle::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
+		TemplateInfo& dataTemplateInfo, uint16_t length,
+		IpfixRecord::Data* data)
+{
+	
+	// FIXME Missing
+	
+}
+
+
+/**
+ *	loop over table columns and template to get the IPFIX values in correct order to store in database
+ *	The result is written into row, the firstSwitched time is returned in flowstartsec
+ */
+string& IpfixDbWriterOracle::getInsertString(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
+		TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data)
+{
+	// FIXME Missing
+	return row;
+}
+
+
+/*
+ * Write insertStatement to database
+ */
+int IpfixDbWriterOracle::writeToDb()
+{
+	// FIXME Missing
+	return 0; // error
+}
+
+
+/**
+ *	Returns the id of the exporter table entry or 0 in the case of an error
+ */
+int IpfixDbWriterOracle::getExporterID(const IpfixRecord::SourceID& sourceID)
+{
+	// FIXME Missing
+	return 0; // error
+}
+
+/**
+ *	Get data of the record is given by the IPFIX_TYPEID
+ */
+uint64_t IpfixDbWriterOracle::getData(InformationElement::IeInfo type, IpfixRecord::Data* data)
+{
+	return 0; // error
+}
+
+/***** Public Methods ****************************************************/
+
+/**
+ * called on Data Record arrival
+ */
+void IpfixDbWriterOracle::onDataRecord(IpfixDataRecord* record)
+{
+	
+}
+
+/**
+ * Constructor
+ */
+IpfixDbWriterOracle::IpfixDbWriterOracle(const string& hostname, const string& dbname,
+		const string& username, const string& password,
+		unsigned port, uint32_t observationDomainId, unsigned maxStatements,
+		const vector<string>& columns)
+	: currentExporter(NULL), numberOfInserts(0), maxInserts(maxStatements),
+	dbHost(hostname), dbName(dbname), dbUser(username), dbPassword(password), dbPort(port), con(0)
+{
+	int i;
+
+	// set default source id
+	srcId.exporterAddress.len = 0;
+	srcId.observationDomainId = observationDomainId;
+	srcId.exporterPort = 0;
+	srcId.receiverPort = 0;
+	srcId.protocol = 0;
+	srcId.fileDescriptor = 0;
+
+	// invalide start settings for current table (to enforce table create)
+	currentTable.startTime = 1;
+	currentTable.endTime = 0;
+
+	if(columns.empty())
+		THROWEXCEPTION("IpfixDbWriter: cannot initiate with no columns");
+
+	/* get columns */
+	bool first = true;
+	for(vector<string>::const_iterator col = columns.begin(); col != columns.end(); col++) {
+		i = 0;
+		while(identify[i].columnName != 0) {
+			if(col->compare(identify[i].columnName) == 0) {
+				Column c = identify[i];
+				tableColumns.push_back(c);
+				// update tableColumnsString
+				if(!first)
+					tableColumnsString.append(",");
+				tableColumnsString.append(identify[i].columnName);
+				// update tableColumnsCreateString
+				if(!first)
+					tableColumnsCreateString.append(", ");
+				tableColumnsCreateString.append(identify[i].columnName);
+				tableColumnsCreateString.append(" ");
+				tableColumnsCreateString.append(identify[i].columnType);
+				first = false;
+				break;
+			}
+			i++;
+		}
+	}
+	msg(MSG_INFO, "IpfixDbWriter: columns are %s", tableColumnsString.c_str());
+
+	if(connectToDB() != 0)
+		THROWEXCEPTION("IpfixDbWriter creation failed");
+}
+
+
+/**
  * Destructor
  */
-IpfixDbWriterOracle::~IpfixDbWriter()
+IpfixDbWriterOracle::~IpfixDbWriterOracle()
 {
 	writeToDb();
 	env->terminateConnection(con);
-	Environment::terminateEnvironment(env);
+	oracle::occi::Environment::terminateEnvironment(env);
 }
 
 

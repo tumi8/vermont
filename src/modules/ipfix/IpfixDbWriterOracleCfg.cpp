@@ -20,7 +20,7 @@
 
 #ifdef ORACLE_SUPPORT_ENABLED
 
-#include "IpfixDbWriterOracleCfg.hpp"
+#include "IpfixDbWriterOracleCfg.h"
 
 
 IpfixDbWriterOracleCfg* IpfixDbWriterOracleCfg::create(XMLElement* e)
@@ -32,17 +32,13 @@ IpfixDbWriterOracleCfg* IpfixDbWriterOracleCfg::create(XMLElement* e)
 
 
 IpfixDbWriterOracleCfg::IpfixDbWriterOracleCfg(XMLElement* elem)
-    : CfgHelper<IpfixDbWriterOracle, IpfixDbWriterOracleCfg>(elem, "ipfixDbWriter"),
-      port(0), bufferRecords(30), observationDomainId(0)
+  : CfgHelper<IpfixDbWriterOracle, IpfixDbWriterOracleCfg>(elem, "ipfixDbWriterOracle"),
+    port(0), bufferRecords(30), observationDomainId(0)
 {
-    if (!elem) return;
-
-    XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
-	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
-	     it != set.end();
-	     it++) {
+	if (!elem) return;
+	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
+	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin(); it != set.end(); it++) {
 		XMLElement* e = *it;
-
 		if (e->matches("host")) {
 			hostname = e->getFirstText();
 		} else if (e->matches("port")) {
@@ -57,8 +53,6 @@ IpfixDbWriterOracleCfg::IpfixDbWriterOracleCfg(XMLElement* elem)
 			bufferRecords = getInt("bufferrecords");
 		} else if (e->matches("columns")) {
 			readColumns(e);
-		} else if (e->matches("observationDomainId")) {
-			observationDomainId = getInt("observationDomainId");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixDbWriterOracle config statement %s\n", e->getName().c_str());
@@ -69,6 +63,7 @@ IpfixDbWriterOracleCfg::IpfixDbWriterOracleCfg(XMLElement* elem)
 	if (port==0) THROWEXCEPTION("IpfixDbWriterOracleCfg: port not set in configuration!");
 	if (dbname=="") THROWEXCEPTION("IpfixDbWriterOracleCfg: dbname not set in configuration!");
 	if (user=="") THROWEXCEPTION("IpfixDbWriterOracleCfg: username not set in configuration!");
+	if (password=="") THROWEXCEPTION("IpfixDbWriterOracleCfg: password not set in configuration!");
 }
 
 void IpfixDbWriterOracleCfg::readColumns(XMLElement* elem) {
@@ -82,7 +77,7 @@ void IpfixDbWriterOracleCfg::readColumns(XMLElement* elem) {
 		if (e->matches("name")) {
 			colNames.push_back(e->getFirstText());
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixDbWriterOracle config statement %s\n", e->getName().c_str());
+			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
 			continue;
 		}		
 	}
@@ -94,10 +89,10 @@ IpfixDbWriterOracleCfg::~IpfixDbWriterOracleCfg()
 }
 
 
-IpfixDbWriter* IpfixDbWriterOracleCfg::createInstance()
+IpfixDbWriterOracle* IpfixDbWriterOracleCfg::createInstance()
 {
-    instance = new IpfixDbWriter(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
-    return instance;
+	instance = new IpfixDbWriterOracle(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
+  return instance;
 }
 
 
@@ -106,4 +101,4 @@ bool IpfixDbWriterOracleCfg::deriveFrom(IpfixDbWriterOracleCfg* old)
     return false;
 }
 
-#endif /*DB_SUPPORT_ENABLED*/
+#endif /* ORACLE_SUPPORT_ENABLED */
