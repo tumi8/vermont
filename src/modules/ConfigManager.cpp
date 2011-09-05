@@ -42,6 +42,7 @@
 #include "modules/ipfix/IpfixNetflowExporterCfg.h"
 #include "modules/ipfix/IpfixReceiverFileCfg.h"
 #include "modules/ipfix/IpfixDbWriterPgCfg.h"
+#include "modules/ipfix/IpfixDbWriterOracleCfg.h"
 #include "modules/ipfix/IpfixPayloadWriterCfg.h"
 #include "modules/ipfix/IpfixSamplerCfg.h"
 #include "modules/ipfix/IpfixCsExporterCfg.hpp"
@@ -102,6 +103,9 @@ Cfg* ConfigManager::configModules[] = {
 #endif
 #ifdef PG_SUPPORT_ENABLED
 	new IpfixDbWriterPgCfg(NULL),
+#endif
+#ifdef ORACLE_SUPPORT_ENABLED
+	// new IpfixDbWriterOracleCfg(NULL),
 #endif
 };
 
