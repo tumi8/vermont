@@ -72,18 +72,18 @@
 			<activeTimeout unit="sec">10</activeTimeout>
 		</expiration>
 		<pollInterval unit="msec">1000</pollInterval>
-		<next>4</next>
+    <next>4</next>
 		<next>5</next>
 	</ipfixAggregator>
 	
-	<ipfixOracleDbWriter id="4">
-    	<host>127.0.0.1</host>
-  		<port>1521</port>
-  		<dbname>oex</dbname>
-  		<username>vermont</username>
-  		<password>vermont</password>
-  		<bufferrecords>5</bufferrecords>
-    <rows>
+	<ipfixDbWriterOracle id="4">
+    <host>127.0.0.1</host>
+  	<port>1521</port>
+  	<dbname>oex</dbname>
+  	<username>vermont</username>
+  	<password>vermont</password>
+  	<bufferrecords>5</bufferrecords>
+    <column>
       <name>dstIP</name>
       <name>srcIP</name>
       <name>srcPort</name>
@@ -97,8 +97,8 @@
       <name>firstSwitchedMillis</name>
       <name>lastSwitchedMillis</name>
       <name>exporterID</name>
-    </rows>
-	</ipfixOracleDbWriter>
+    </column>
+	</ipfixDbWriterOracle>
 			
 	<ipfixPrinter id="5">
 	</ipfixPrinter>

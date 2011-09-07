@@ -105,7 +105,7 @@ Cfg* ConfigManager::configModules[] = {
 	new IpfixDbWriterPgCfg(NULL),
 #endif
 #ifdef ORACLE_SUPPORT_ENABLED
-	// new IpfixDbWriterOracleCfg(NULL),
+  new IpfixDbWriterOracleCfg(NULL),
 #endif
 };
 

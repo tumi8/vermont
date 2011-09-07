@@ -35,23 +35,30 @@ IpfixDbWriterOracleCfg::IpfixDbWriterOracleCfg(XMLElement* elem)
   : CfgHelper<IpfixDbWriterOracle, IpfixDbWriterOracleCfg>(elem, "ipfixDbWriterOracle"),
     port(0), bufferRecords(30), observationDomainId(0)
 {
+	msg(MSG_DEBUG, "Starting configuration for Oracle connection");
 	if (!elem) return;
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin(); it != set.end(); it++) {
 		XMLElement* e = *it;
 		if (e->matches("host")) {
 			hostname = e->getFirstText();
+			msg(MSG_DEBUG, "Host: %s", hostname.c_str());
 		} else if (e->matches("port")) {
 			port = getInt("port");
+			msg(MSG_DEBUG, "Port: %i", port);
 		} else if (e->matches("dbname")) {
 			dbname = e->getFirstText();
+			msg(MSG_DEBUG, "DB: %s", dbname.c_str());
 		} else if (e->matches("username")) {
 			user = e->getFirstText();
+			msg(MSG_DEBUG, "User: %s", user.c_str());
 		} else if (e->matches("password")) {
 			password = e->getFirstText();
+			msg(MSG_DEBUG, "Password: %s", password.c_str());
 		} else if (e->matches("bufferrecords")) {
 			bufferRecords = getInt("bufferrecords");
-		} else if (e->matches("columns")) {
+			msg(MSG_DEBUG, "Bufferrecords: %i", bufferRecords);
+		} else if (e->matches("column")) {
 			readColumns(e);
 		} else if (e->matches("next")) { // ignore next
 		} else {
@@ -76,6 +83,7 @@ void IpfixDbWriterOracleCfg::readColumns(XMLElement* elem) {
 
 		if (e->matches("name")) {
 			colNames.push_back(e->getFirstText());
+			msg(MSG_DEBUG, "Row: %s", e->getFirstText().c_str());
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
 			continue;
