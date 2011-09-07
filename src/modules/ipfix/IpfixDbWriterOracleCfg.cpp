@@ -42,22 +42,16 @@ IpfixDbWriterOracleCfg::IpfixDbWriterOracleCfg(XMLElement* elem)
 		XMLElement* e = *it;
 		if (e->matches("host")) {
 			hostname = e->getFirstText();
-			msg(MSG_DEBUG, "Host: %s", hostname.c_str());
 		} else if (e->matches("port")) {
 			port = getInt("port");
-			msg(MSG_DEBUG, "Port: %i", port);
 		} else if (e->matches("dbname")) {
 			dbname = e->getFirstText();
-			msg(MSG_DEBUG, "DB: %s", dbname.c_str());
 		} else if (e->matches("username")) {
 			user = e->getFirstText();
-			msg(MSG_DEBUG, "User: %s", user.c_str());
 		} else if (e->matches("password")) {
 			password = e->getFirstText();
-			msg(MSG_DEBUG, "Password: %s", password.c_str());
 		} else if (e->matches("bufferrecords")) {
 			bufferRecords = getInt("bufferrecords");
-			msg(MSG_DEBUG, "Bufferrecords: %i", bufferRecords);
 		} else if (e->matches("column")) {
 			readColumns(e);
 		} else if (e->matches("next")) { // ignore next
@@ -100,6 +94,8 @@ IpfixDbWriterOracleCfg::~IpfixDbWriterOracleCfg()
 IpfixDbWriterOracle* IpfixDbWriterOracleCfg::createInstance()
 {
 	instance = new IpfixDbWriterOracle(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
+	msg(MSG_DEBUG, "IpfixDbWriterOracle configuration host %s db %s user %s password %s port %i observationDomainId %i bufferRecords %i\n", 
+	hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords);
   return instance;
 }
 
