@@ -21,10 +21,9 @@
 #include "OSFPPlugin.h"
 #include "common/msg.h"
 #include <arpa/inet.h>
-#include <iostream>
-#include <fstream>
 #include <features.h>
 #include "modules/ipfix/aggregator/PacketHashtable.h"
+#include "modules/ipfix/aggregator/plugins/PacketFunctions.h"
 
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
@@ -43,16 +42,25 @@ using namespace std;
 #define TCP_HEADER_WITHOUT_OPTIONS 20
 
 OSFPPlugin::OSFPPlugin(){
-    OSFPPlugin(0,(char*) "dump.csv");
+    OSFPPlugin(0, (char*) "dump.csv");
 }
 
-OSFPPlugin::OSFPPlugin(const u_int32_t maxConns, std::string file){
-    writeHeaderFlag = 1;
-    maxConnections = maxConns;
+OSFPPlugin::OSFPPlugin(const u_int32_t maxPckts, std::string file){
+    maxPackets = maxPckts;
     dumpFile = file;
     msg(MSG_INFO, "OSFPPlugin instantiated");
     msg(MSG_INFO, "  - dump file: %s", dumpFile.c_str());
-    msg(MSG_INFO, "  - max connections: %i", maxConnections);
+    msg(MSG_INFO, "  - max connections: %i", maxPackets);
+    myfile.open(dumpFile.c_str(), ios_base::out);
+    myfile << "PCAP Timestamp : IP Source : TCP Source Port : IP Dest : TCP Dest Port : IP IHL : IP TOS : IP ID : "<<
+              "IP Protocol : IP Dont Fragment : IP TTL : TCP Window Size : TCP MSS : TCP Window Scale : TCP SACK permitted Option : "<<
+              "TCP NOP Option : TCP Timestamp set : TCP Timestamp : TCP Timestamp Secr : TCP Urgent Flag : "<<
+              "TCP Push Flag : TCP Reset Flag : TCP FIN Flag : TCP Urgent Pointer : TCP EOL Option set : TCP Data Offset : " <<
+              "TCP Sequence Number : TCP Acknowlegment Number : TCP Reserved 1 : TCP Reserved 2 : TCP Syn ACK None : LEN : Options Corrupt" << endl;
+}
+
+OSFPPlugin::~OSFPPlugin(){
+    myfile.close();
 }
 
 
@@ -76,16 +84,21 @@ void OSFPPlugin::newFlowReceived(const HashtableBucket* bucket){
  * gets called when a new packet has been received
  */
 void OSFPPlugin::newPacketReceived(const Packet* p, uint32_t hash){
-    /* is connection tracking needed?
-       if yes, check if not more than maxConnections */
-    if (maxConnections > 0){
+    // This plugin only works with TCP Packets
+    if (p->ipProtocolType != Packet::TCP){
+        return;
+    }
+
+    /* is packet tracking needed?
+       if yes, check if not more than maxPackets */
+    if (maxPackets > 0){
         if (map.find(hash) != map.end()){
             ++map[hash];
         }
         else{
             map[hash] = 1;
         }
-        if (map[hash] > maxConnections){
+        if (map[hash] > maxPackets){
             return;
         }
     }
@@ -98,7 +111,6 @@ void OSFPPlugin::processPacket(const Packet* p){
     /*initialize values*/
     memset(&options, 0, sizeof(struct TCPOptions));
     options.mss = 1460;
-    int optionsCnt = 0;
     unsigned char *doff;
     u_int16_t doffval;
 
@@ -110,7 +122,7 @@ void OSFPPlugin::processPacket(const Packet* p){
         options.has_options = 1;
 
         /*parse option fields:*/
-        optionsCnt = parseTCPOptions(options, p, doffval*4);
+        parseTCPOptions(options, p, doffval*4);
 
     }
     writeToFile(options, p);
@@ -118,12 +130,12 @@ void OSFPPlugin::processPacket(const Packet* p){
 
 int OSFPPlugin::parseTCPOptions(struct TCPOptions &options, const Packet* p, const u_int32_t dataOffset){
     int optionsCnt = 0;
-    short lastFound = 0;
+    bool lastFound = 0;
     u_int8_t len = 0;
     u_int8_t* len_ptr = &len;
     u_char op = 255;
     const u_char *option_ptr = p->transportHeader + TCP_HEADER_WITHOUT_OPTIONS;
-    const u_char *endOfOptions = p->transportHeader + dataOffset;
+    const u_char *const endOfOptions = p->transportHeader + dataOffset;
 
     while(!lastFound && option_ptr < endOfOptions)
     {
@@ -183,8 +195,6 @@ int OSFPPlugin::parseTCPOptions(struct TCPOptions &options, const Packet* p, con
             }
             optionsCnt++;
             break;
-//        case TCPOPT_SACK:
-//            break;
         case TCPOPT_EOL:
             options.eol_set = 1;
             pkt_ignore_u8(&option_ptr);
@@ -193,13 +203,12 @@ int OSFPPlugin::parseTCPOptions(struct TCPOptions &options, const Packet* p, con
             break;
         default:
             options.unkown_option_set = 1;
-            if (option_ptr + 1 <= endOfOptions){
+            if (option_ptr + 2 <= endOfOptions){
                 pkt_ignore_u8(&option_ptr);
                 pkt_get_u8(&option_ptr, len_ptr);
                 if (option_ptr + (len-2) <= endOfOptions){
                     option_ptr += len-2;
-                }
-                else{
+                } else {
                     // TCP Options corrupt, stopping this
                     lastFound = 1;
                     options.options_corrupt = 1;
@@ -220,91 +229,80 @@ void OSFPPlugin::writeToFile(struct TCPOptions &options, const Packet* p){
     bool test = false;
     const iphdr* ipheader;
     const tcphdr* tcpheader;
-    ofstream myfile;
 
-    if (writeHeaderFlag == 1){
-        writeHeaderFlag = 0;
-        /* print file header */
-        myfile.open(dumpFile.c_str(), ios_base::out);
-        myfile << "PCAP Timestamp : IP Source : TCP Source Port : IP Dest : TCP Dest Port : IP IHL : IP TOS : IP ID : "<<
-                  "IP Protocol : IP Dont Fragment : IP TTL : TCP Window Size : TCP MSS : TCP Window Scale : TCP SACK permitted Option : "<<
-                  "TCP NOP Option : TCP Timestamp set : TCP Timestamp : TCP Timestamp Secr : TCP Urgent Flag : "<<
-                  "TCP Push Flag : TCP Reset Flag : TCP FIN Flag : TCP Urgent Pointer : TCP EOL Option set : TCP Data Offset : " <<
-                  "TCP Sequence Number : TCP Acknowlegment Number : TCP Reserved 1 : TCP Reserved 2 : TCP Syn ACK None : LEN : Options Corrupt\n";
-        myfile.close();
+    if (!myfile.is_open()){
+        myfile.open(dumpFile.c_str(), ios_base::app);
     }
 
 
     ipheader = (iphdr*) p->netHeader;
     tcpheader = (tcphdr*) p->transportHeader;
 
-    myfile.open(dumpFile.c_str(), ios_base::app);
-
     /* PCAP Timestamp */
-    myfile << to_string<long>(p->timestamp.tv_sec, std::dec) << ".";
-    myfile << to_string<long>(p->timestamp.tv_usec, std::dec) << ":";
+    myfile << p->timestamp.tv_sec << ".";
+    myfile << p->timestamp.tv_usec << ":";
     /* IP Source */
     struct in_addr saddr;
     saddr.s_addr = ipheader->saddr;
     myfile << inet_ntoa(saddr) << ":";
     /* TCP Source Port */
-    myfile << to_string<u_int16_t>(ntohs(tcpheader->source), std::dec) << ":";
+    myfile << ntohs(tcpheader->source) << ":";
     /* IP Dest */
     struct in_addr daddr;
     daddr.s_addr = (in_addr_t) ipheader->daddr;
     myfile << inet_ntoa(daddr) << ":";
     /* TCP Dest Port */
-    myfile << to_string<u_int16_t>(ntohs(tcpheader->dest), std::dec) << ":";
+    myfile << ntohs(tcpheader->dest) << ":";
     /* IP IHL */
-    myfile << to_string<u_int16_t>(ipheader->ihl * 4, std::dec) << ":";
+    myfile << ipheader->ihl * 4 << ":";
     /* IP TOS */
-    myfile << to_string<u_int16_t>(ipheader->tos, std::dec) << ":";
+    myfile << (u_int16_t) ipheader->tos << ":";
     /* IP ID */
-    myfile << to_string<u_short>(ntohs(ipheader->id), std::dec) << ":";
+    myfile << ntohs(ipheader->id) << ":";
     /* IP Protocol */
-    myfile << to_string<u_int16_t>(ipheader->protocol, std::dec) << ":";
+    myfile << (u_int16_t) ipheader->protocol << ":";
     /* IP Don't Fragment */
-    myfile << to_string<bool>((bool) ntohs(IP_DF), std::dec) << ":";
+    myfile << (bool) ntohs(IP_DF) << ":";
     /* IP TTL */
-    myfile << to_string<u_int16_t>(ipheader->ttl, std::dec) << ":";
+    myfile << (u_int16_t) ipheader->ttl << ":";
     /* TCP Window Size */
-    myfile << to_string<u_int16_t>(ntohs(tcpheader->window), std::dec) << ":";
+    myfile << ntohs(tcpheader->window) << ":";
     /* TCP MSS */
-    myfile << to_string<u_int16_t>(options.mss, std::dec) << ":";
+    myfile << options.mss << ":";
     /* TCP Window Scale */
-    myfile << to_string<u_int16_t>(options.window_scale, std::dec) << ":";
+    myfile << (u_int16_t) options.window_scale << ":";
     /* TCP SACK permitted Option */
-    myfile << to_string<bool>(options.sack_set, std::dec) << ":";
+    myfile << (bool) options.sack_set << ":";
     /* TCP NOP Option */
-    myfile << to_string<u_int32_t>(options.nop_set, std::dec) << ":";
+    myfile << options.nop_set << ":";
     /* TCP Timestamp set */
-    myfile << to_string<bool>(options.timestamp_set, std::dec) << ":";
+    myfile << (bool) options.timestamp_set << ":";
     /* TCP Timestamp */
-    myfile << to_string<u_int32_t>(options.tstamp, std::dec) << ":";
+    myfile << options.tstamp << ":";
     /* TCP Timestamp Secr */
-    myfile << to_string<u_int32_t>(options.tsecr, std::dec) << ":";
+    myfile << options.tsecr << ":";
     /* TCP Urgent Flag */
-    myfile << to_string<bool>(tcpheader->urg, std::dec) << ":";
+    myfile << (bool) tcpheader->urg << ":";
     /* TCP Push Flag */
-    myfile << to_string<bool>(tcpheader->psh, std::dec) << ":";
+    myfile << (bool) tcpheader->psh << ":";
     /* TCP Reset Flag */
-    myfile << to_string<bool>(tcpheader->rst, std::dec) << ":";
+    myfile << (bool) tcpheader->rst << ":";
     /* TCP FIN Flag */
-    myfile << to_string<bool>(tcpheader->fin, std::dec) << ":";
+    myfile << (bool) tcpheader->fin << ":";
     /* TCP Urgent Pointer */
-    myfile << to_string<u_int16_t>(tcpheader->urg_ptr, std::dec) << ":";
+    myfile << (bool) tcpheader->urg_ptr << ":";
     /* TCP EOL Option set */
-    myfile << to_string<bool>(options.eol_set, std::dec) << ":";
+    myfile << (bool) options.eol_set << ":";
     /* TCP Data Offset */
-    myfile << to_string<u_int16_t>(ntohs(tcpheader->doff), std::dec) << ":";
+    myfile << ntohs(tcpheader->doff) << ":";
     /* TCP Sequence Number */
-    myfile << to_string<u_int32_t>(ntohl(tcpheader->seq), std::dec) << ":";
+    myfile << ntohl(tcpheader->seq) << ":";
     /* TCP Acknowlegment Number */
-    myfile << to_string<u_int32_t>(ntohl(tcpheader->ack_seq), std::dec) << ":";
+    myfile << ntohl(tcpheader->ack_seq) << ":";
     /* TCP Reserved 1 */
-    myfile << to_string<u_int16_t>(ntohs(tcpheader->res1), std::dec) << ":";
+    myfile << ntohs(tcpheader->res1) << ":";
     /* TCP Reserved 2 */
-    myfile << to_string<u_int16_t>(ntohs(tcpheader->res2), std::dec) << ":";
+    myfile << ntohs(tcpheader->res2) << ":";
 
     if((bool)tcpheader->syn == true && (bool)tcpheader->ack == true){
         test = 1;
@@ -318,9 +316,8 @@ void OSFPPlugin::writeToFile(struct TCPOptions &options, const Packet* p){
         myfile << ("A:");
     }
     /*TCP Packet Length*/
-    myfile << to_string<u_int32_t>(p->data_length, std::dec) << ":";
+    myfile << p->data_length << ":";
     /* Options Corrupt */
-    myfile << to_string<bool>((bool) options.options_corrupt, std::dec) << "\n";
-    //myfile << ("UnkownSystem\n");
-    myfile.close();
+    myfile << (bool) options.options_corrupt;
+    myfile << endl;
 }

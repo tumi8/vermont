@@ -25,6 +25,7 @@
 #include "core/InfoElementCfg.h"
 #include "BasePluginHost.h"
 #include "plugins/OSFPPlugin.h"
+#include "plugins/BannerGrabbingPlugin.h"
 
 AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 	: CfgBase(elem), pollInterval(0)
@@ -233,7 +234,7 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
 
     std::string pluginName = "";
     std::string pluginVersion = "";
-    u_int32_t maxConnections = 0;
+    u_int32_t maxPackets = 0;
     std::string dumpFile = "dump.csv";
 
     XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
@@ -244,8 +245,8 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
             pluginName = get("name", e);
         }else if(e->matches("version")){
             pluginVersion = get("version", e);
-        }else if(e->matches("maxconnections")){
-            maxConnections = (u_int32_t) getInt("maxconnections", 0, e);
+        }else if(e->matches("maxpackets")){
+            maxPackets = (u_int32_t) getInt("maxpackets", 0, e);
         }else if(e->matches("dumpfile")){
             dumpFile = get("dumpfile", e);
         }
@@ -256,7 +257,12 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
         msg(MSG_INFO, "Found Plugin: \"%s\" \"%s\"", pluginName.c_str(), pluginVersion.c_str());
         BasePluginHost* host = BasePluginHost::getInstance();
         if(pluginName == "osfp"){
-            OSFPPlugin* plugin = new OSFPPlugin(maxConnections, dumpFile);
+            OSFPPlugin* plugin = new OSFPPlugin(maxPackets, dumpFile);
+            host->registerPlugin(plugin);
+            msg(MSG_INFO, "Plugin loaded!");
+        }
+        if(pluginName == "bannergrabbing"){
+            BannerGrabbingPlugin* plugin = new BannerGrabbingPlugin(maxPackets, dumpFile);
             host->registerPlugin(plugin);
             msg(MSG_INFO, "Plugin loaded!");
         }

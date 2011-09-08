@@ -5,6 +5,7 @@
 	<observer id="1">
 		<interface>eth0.47</interface>
 		<pcap_filter>tcp</pcap_filter>
+		<captureLength>1024</captureLength>
 		<next>2</next>
 	</observer>
 	
@@ -113,8 +114,14 @@
 		<plugin>
 		  <name>osfp</name>
 		  <version>1.0</version>
-		  <dumpfile>/home/ferdi/Studium/Masterarbeit/vermont/build/dump1.csv</dumpfile>
-		  <maxconnections>3</maxconnections>
+		  <dumpfile>/home/ferdi/tmp/build/vermont/dump.csv</dumpfile>
+		  <maxpackets>3</maxpackets>
+		</plugin>
+		<plugin>
+		  <name>bannergrabbing</name>
+		  <version>1.0</version>
+		  <dumpfile>/home/ferdi/tmp/build/vermont/dump_http.csv</dumpfile>
+		  <maxpackets>1</maxpackets>
 		</plugin>
 		<next>7</next>
 	</ipfixAggregator>

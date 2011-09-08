@@ -22,18 +22,26 @@
 #define BANNERGRABBINGPLUGIN_H_
 
 #include "modules/ipfix/aggregator/BasePlugin.h"
+#include <boost/unordered_map.hpp>
+#include <iostream>
+#include <fstream>
+
+typedef boost::unordered_map<u_int32_t, u_int32_t> hashmap_t;
 
 class BannerGrabbingPlugin : public BasePlugin{
 public:
     BannerGrabbingPlugin();
-    BannerGrabbingPlugin(std::string file);
+    BannerGrabbingPlugin(const u_int32_t maxPckts, std::string file);
+    ~BannerGrabbingPlugin();
     void flowDeleted(const HashtableBucket* bucket);
     void newFlowReceived(const HashtableBucket* bucket);
     void newPacketReceived(const Packet* p, uint32_t hash);
 
 private:
-    bool writeHeaderFlag;
+    u_int32_t maxPackets;
+    ofstream myfile;
     std::string dumpFile;
+    hashmap_t map;
     void processPacket(const Packet* p);
     void saveResult(const Packet* p, std::string* result_ptr);
 };

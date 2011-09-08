@@ -113,8 +113,13 @@
 		<plugin>
 		  <name>osfp</name>
 		  <version>1.0</version>
-		  <dumpfile>/home/ferdi/Studium/Masterarbeit/vermont/build/dump.csv</dumpfile>
+		  <dumpfile>/home/ferdi/tmp/build/vermont/dump.csv</dumpfile>
 		  <maxconnections>3</maxconnections>
+		</plugin>
+		<plugin>
+		  <name>bannergrabbing</name>
+		  <version>1.0</version>
+		  <dumpfile>/home/ferdi/tmp/build/vermont/dump_http.csv</dumpfile>
 		</plugin>
 		<next>7</next>
 	</ipfixAggregator>

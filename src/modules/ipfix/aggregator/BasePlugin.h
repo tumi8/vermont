@@ -42,15 +42,9 @@ public:
     PluginState pluginState;
     string pluginName;
     string pluginVersion;
-    virtual void newFlowReceived(const HashtableBucket* bucket){
-        msg(MSG_ERROR, "virtual method called flow");
-    }
-    virtual void flowDeleted(const HashtableBucket* bucket){
-        msg(MSG_ERROR, "virtual method called flow");
-    }
-    virtual void newPacketReceived(const Packet* p, uint32_t hash){
-        msg(MSG_ERROR, "virtual method called packet");
-    }
+    virtual void newFlowReceived(const HashtableBucket* bucket) = 0;
+    virtual void flowDeleted(const HashtableBucket* bucket) = 0;
+    virtual void newPacketReceived(const Packet* p, uint32_t hash) = 0;
 };
 
 #endif

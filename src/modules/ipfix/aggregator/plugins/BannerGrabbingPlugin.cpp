@@ -23,8 +23,6 @@
 #include "modules/ipfix/aggregator/PacketHashtable.h"
 #include "modules/ipfix/aggregator/plugins/PacketFunctions.h"
 #include <arpa/inet.h>
-#include <iostream>
-#include <fstream>
 #include <features.h>
 #include <boost/regex.hpp>
 
@@ -43,29 +41,51 @@
 using namespace std;
 
 BannerGrabbingPlugin::BannerGrabbingPlugin(){
-    BannerGrabbingPlugin((char*) "dump_http.csv");
+    BannerGrabbingPlugin(0, (char*) "dump_http.csv");
 }
 
 
-BannerGrabbingPlugin::BannerGrabbingPlugin(std::string file){
-    writeHeaderFlag = 1;
+BannerGrabbingPlugin::BannerGrabbingPlugin(const u_int32_t maxPckts, std::string file){
+    maxPackets = maxPckts;
     dumpFile = file;
     msg(MSG_INFO, "BannerGrabbingPlugin instantiated");
     msg(MSG_INFO, "  - dump file: %s", dumpFile.c_str());
+
+    myfile.open(dumpFile.c_str(), ios_base::out);
+    myfile << "PCAP Timestamp : IP : Banner\n";
+}
+
+BannerGrabbingPlugin::~BannerGrabbingPlugin(){
+    myfile.close();
 }
 
 
 void BannerGrabbingPlugin::flowDeleted(const HashtableBucket* bucket){
-
+    map.erase(bucket->hash);
 }
 
 
 void BannerGrabbingPlugin::newFlowReceived(const HashtableBucket* bucket){
-
+    map[bucket->hash] = 0;
 }
 
 
 void BannerGrabbingPlugin::newPacketReceived(const Packet* p, uint32_t hash){
+
+    /* is packet tracking needed?
+       if yes, check if not more than maxPackets */
+    if (maxPackets > 0){
+        if (map.find(hash) != map.end()){
+            ++map[hash];
+        }
+        else{
+            map[hash] = 1;
+        }
+        if (map[hash] > maxPackets){
+            return;
+        }
+    }
+
     processPacket(p);
 }
 
@@ -120,34 +140,26 @@ void BannerGrabbingPlugin::processPacket(const Packet *p){
  * save results into a csv file
  */
 void BannerGrabbingPlugin::saveResult(const Packet* p, std::string* result_ptr){
-    ofstream myfile;
     const iphdr* ipheader;
 
     std::string result = *result_ptr;
 
-    if (result != ""){
-
-        if (writeHeaderFlag == 1){
-            writeHeaderFlag = 0;
-            /* print file header */
-            myfile.open(dumpFile.c_str(), ios_base::out);
-            myfile << "PCAP Timestamp : IP : Banner\n";
-            myfile.close();
-        }
-
+    if (!myfile.is_open()){
         myfile.open(dumpFile.c_str(), ios_base::app);
+    }
+
+    if (result != ""){
         ipheader = (iphdr*) p->netHeader;
 
         /* PCAP Timestamp */
-        myfile << to_string<long>(p->timestamp.tv_sec, std::dec) << ".";
-        myfile << to_string<long>(p->timestamp.tv_usec, std::dec) << ":";
+        myfile << p->timestamp.tv_sec << ".";
+        myfile << p->timestamp.tv_usec << ":";
         /* IP Source */
         struct in_addr saddr;
         saddr.s_addr = ipheader->saddr;
         myfile << inet_ntoa(saddr) << ":";
         /*Banner*/
         myfile << result;
-        myfile << "\n";
-        myfile.close();
+        myfile << endl;
     }
 }
