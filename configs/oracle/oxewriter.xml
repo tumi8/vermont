@@ -79,7 +79,7 @@
 	<ipfixDbWriterOracle id="4">
     <host>127.0.0.1</host>
   	<port>1521</port>
-  	<dbname>oex</dbname>
+  	<dbname>OEX</dbname>
   	<username>vermont</username>
   	<password>vermont</password>
   	<bufferrecords>5</bufferrecords>
