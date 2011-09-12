@@ -73,20 +73,108 @@ int IpfixDbWriterOracle::connectToDB()
 
 	/** get the initial environment and connect */
 	env = oracle::occi::Environment::createEnvironment(oracle::occi::Environment::DEFAULT);
-	try {
+	try 
+	{
 		char dbLogon[128];
 		sprintf(dbLogon, "%s:%u/", dbHost.c_str(), dbPort);
 		con = env->createConnection(dbUser, dbPassword, dbLogon);
-	} catch (oracle::occi::SQLException& ex) {
+	} catch (oracle::occi::SQLException& ex) 
+	{
 		msg(MSG_FATAL,"IpfixDbWriterOracle: Oracle connect failed. Error: %s", ex.getMessage().c_str());
 		return 1;
 	}
 	msg(MSG_DEBUG,"IpfixDbWriterOracle: Oracle connection successful");
 	
-	// FIXME Need to create exporter table
-
+	if (createExporterTable()!=0) return 1;
+	
 	return 0;
 }
+
+int IpfixDbWriterOracle::createExporterTable()
+{
+	/** create table exporter*/
+	ostringstream sql, sql2;
+	oracle::occi::Statement *stmt = NULL;
+	oracle::occi::Statement *stmt2 = NULL;
+	oracle::occi::ResultSet *rs = NULL;
+	oracle::occi::ResultSet *rs2 = NULL;
+	sql << "SELECT COUNT(table_name) FROM user_tables WHERE table_name='EXPORTER'";
+	try 
+	{
+		stmt = con->createStatement(sql.str());
+	}
+	catch (oracle::occi::SQLException& ex)
+	{
+		msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+		return 1;
+	}
+	if (stmt)
+	{
+		try 
+		{
+			stmt->setPrefetchRowCount(1);
+			rs = stmt->executeQuery();
+		}
+		catch (oracle::occi::SQLException& ex)
+		{
+			stmt->closeResultSet(rs);
+			con->terminateStatement(stmt);
+			msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+			return 1;
+		}
+		if (rs)
+		{
+			while(rs->next())
+			{
+				if (rs->getInt(1) == 0)
+				{
+					sql2 << "CREATE TABLE exporter ( id NUMERIC(10) NOT NULL, sourceID NUMERIC(10), srcIP NUMERIC(10), CONSTRAINT exporter_pk PRIMARY KEY (id) ) TABLESPACE " << dbName;
+					try 
+					{
+						stmt2 = con->createStatement(sql2.str());
+					}
+					catch (oracle::occi::SQLException& ex)
+					{
+						stmt->closeResultSet(rs);
+						con->terminateStatement(stmt);
+						msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+						return 1;
+					}
+					if (stmt2)
+					{						
+						try 
+						{
+							stmt2->setPrefetchRowCount(1);
+							rs2 = stmt2->executeQuery();
+						}
+						catch (oracle::occi::SQLException& ex)
+						{
+							msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+							stmt->closeResultSet(rs);
+							con->terminateStatement(stmt);
+							stmt2->closeResultSet(rs2);
+							con->terminateStatement(stmt2);
+							return 1;
+						}
+						msg(MSG_DEBUG, "Exporter table created");
+						stmt2->closeResultSet(rs2);
+						con->terminateStatement(stmt2);												
+					}
+				}
+				else 
+				{
+					msg(MSG_DEBUG,"IpfixDbWriterOracle: exporter table does exist");				
+				}			
+			}
+			stmt->closeResultSet(rs);
+		}
+		con->terminateStatement(stmt);
+	}
+	return 0;
+}
+
+
+
 
 /**
  * save record to database

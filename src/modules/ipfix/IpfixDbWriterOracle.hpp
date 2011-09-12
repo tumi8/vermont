@@ -118,6 +118,7 @@ class IpfixDbWriterOracle
 		int writeToDb();
 		int getExporterID(const IpfixRecord::SourceID& sourceID);
 		int connectToDB();
+		int createExporterTable();
 		void processDataDataRecord(const IpfixRecord::SourceID& sourceID, 
 				TemplateInfo& dataTemplateInfo, uint16_t length, 
 				IpfixRecord::Data* data);
