@@ -151,6 +151,7 @@ void BannerGrabbingPlugin::saveResult(const Packet* p, std::string* result_ptr){
     if (result != ""){
         ipheader = (iphdr*) p->netHeader;
 
+
         /* PCAP Timestamp */
         myfile << p->timestamp.tv_sec << ".";
         myfile << p->timestamp.tv_usec << ":";
@@ -158,6 +159,14 @@ void BannerGrabbingPlugin::saveResult(const Packet* p, std::string* result_ptr){
         struct in_addr saddr;
         saddr.s_addr = ipheader->saddr;
         myfile << inet_ntoa(saddr) << ":";
+        if (p->ipProtocolType == Packet::TCP){
+            const tcphdr* tcpheader;
+            tcpheader = (tcphdr*) p->transportHeader;
+            myfile << ntohs(tcpheader->source) << ":";
+        } else {
+            myfile << "unknown:";
+        }
+
         /*Banner*/
         myfile << result;
         myfile << endl;
