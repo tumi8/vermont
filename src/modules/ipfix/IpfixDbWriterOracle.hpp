@@ -110,6 +110,7 @@ class IpfixDbWriterOracle
 		unsigned dbPort;
 		oracle::occi::Environment *env;
 		oracle::occi::Connection *con;
+		bool dbError;			// db error flag
 
 		int createDB();
 		int setCurrentTable(time_t flowstartsec);
