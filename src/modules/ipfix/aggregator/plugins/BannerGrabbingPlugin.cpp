@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-
+#ifdef PLUGIN_SUPPORT_ENABLED
 #include "BannerGrabbingPlugin.h"
 #include "common/msg.h"
 #include "modules/ipfix/aggregator/PacketHashtable.h"
@@ -172,3 +172,4 @@ void BannerGrabbingPlugin::saveResult(const Packet* p, std::string* result_ptr){
         myfile << endl;
     }
 }
+#endif

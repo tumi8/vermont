@@ -17,7 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-
+#ifdef PLUGIN_SUPPORT_ENABLED
 #include "BasePlugin.h"
 #include "common/msg.h"
 
+#endif

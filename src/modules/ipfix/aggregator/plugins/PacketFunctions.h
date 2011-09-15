@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-
+#ifdef PLUGIN_SUPPORT_ENABLED
 #ifndef PACKETFUNCTIONS_H_
 #define PACKETFUNCTIONS_H_
 
@@ -92,4 +92,5 @@ pkt_ignore_s32(const uint8_t ** p)
 {
     *p += sizeof(int32_t);
 }
+#endif
 #endif

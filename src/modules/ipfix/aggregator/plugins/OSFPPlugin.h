@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-
+#ifdef PLUGIN_SUPPORT_ENABLED
 #ifndef OSFPPLUGIN_H_
 #define OSFPPLUGIN_H_
 
@@ -64,4 +64,5 @@ private:
     ofstream myfile;
 };
 
+#endif
 #endif

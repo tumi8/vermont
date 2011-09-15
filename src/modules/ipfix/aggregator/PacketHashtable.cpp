@@ -28,8 +28,9 @@
 #include "common/Misc.h"
 #include "common/Time.h"
 #include "HashtableBuckets.h"
-
+#ifdef PLUGIN_SUPPORT_ENABLED
 #include "BasePluginHost.h"
+#endif
 
 using namespace InformationElement;
 
@@ -1410,11 +1411,12 @@ void PacketHashtable::aggregatePacket(const Packet* p)
         updatePointers(p);
         createMaskedFields(p);
 
+#ifdef PLUGIN_SUPPORT_ENABLED
         // plugin initialization
         BasePluginHost* host = BasePluginHost::getInstance();
         list<BasePlugin*> plugins = host->getPlugins();
         list<BasePlugin*>::iterator i;
-
+#endif
         uint32_t hash = calculateHash(p->netHeader);
         DPRINTFL(MSG_VDEBUG, "packet hash=%u", hash);
 
@@ -1495,15 +1497,18 @@ void PacketHashtable::aggregatePacket(const Packet* p)
                         *reinterpret_cast<uint32_t*>(buckets[hash]->data.get()+expHelperTable.dpaFlowCountOffset) = htonl(ntohl(*oldflowcount)+1);
                 }
                 updateBucketData(buckets[hash]);
-
+#ifdef PLUGIN_SUPPORT_ENABLED
                 for(i=plugins.begin(); i != plugins.end(); ++i){
                     (*i)->newFlowReceived(buckets[hash]);
                 }
+#endif
         }
+#ifdef PLUGIN_SUPPORT_ENABLED
         // tell plugins that a new packet has captured
         for(i=plugins.begin(); i != plugins.end(); ++i){
             (*i)->newPacketReceived(p, hash);
         }
+#endif
         //if (!snapshotWritten && (time(0)- 300 > starttime)) writeHashtable();
         // FIXME: enable snapshots again by configuration
         atomic_release(&aggInProgress);

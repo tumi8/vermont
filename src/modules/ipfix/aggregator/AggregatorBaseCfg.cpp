@@ -23,9 +23,11 @@
 #include "Rules.hpp"
 #include "core/XMLElement.h"
 #include "core/InfoElementCfg.h"
+#ifdef PLUGIN_SUPPORT_ENABLED
 #include "BasePluginHost.h"
 #include "plugins/OSFPPlugin.h"
 #include "plugins/BannerGrabbingPlugin.h"
+#endif
 
 AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 	: CfgBase(elem), pollInterval(0)
@@ -55,8 +57,10 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 			pollInterval = getTimeInUnit("pollInterval", mSEC, AGG_DEFAULT_POLLING_TIME);
 		} else if (e->matches("hashtableBits")) {
 			htableBits = getInt("hashtableBits", HT_DEFAULT_BITSIZE);
+#ifdef PLUGIN_SUPPORT_ENABLED
                 } else if (e->matches("plugin")) {
                         readPlugin(e);
+#endif
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unkown Aggregator config entry %s\n", e->getName().c_str());
@@ -229,7 +233,7 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 
 	return ruleField;
 }
-
+#ifdef PLUGIN_SUPPORT_ENABLED
 void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
 
     std::string pluginName = "";
@@ -268,4 +272,5 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
         }
     }
 }
+#endif
 

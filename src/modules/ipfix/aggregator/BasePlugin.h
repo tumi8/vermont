@@ -18,6 +18,8 @@
  *
  */
 
+#ifdef PLUGIN_SUPPORT_ENABLED
+
 #ifndef BASEPLUGIN_H_
 #define BASEPLUGIN_H_
 
@@ -47,4 +49,5 @@ public:
     virtual void newPacketReceived(const Packet* p, uint32_t hash) = 0;
 };
 
+#endif
 #endif

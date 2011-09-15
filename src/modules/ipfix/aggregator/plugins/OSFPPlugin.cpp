@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-
+#ifdef PLUGIN_SUPPORT_ENABLED
 #include "OSFPPlugin.h"
 #include "common/msg.h"
 #include <arpa/inet.h>
@@ -321,3 +321,4 @@ void OSFPPlugin::writeToFile(struct TCPOptions &options, const Packet* p){
     myfile << (bool) options.options_corrupt;
     myfile << endl;
 }
+#endif

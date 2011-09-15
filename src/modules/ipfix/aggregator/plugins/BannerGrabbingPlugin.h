@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-
+#ifdef PLUGIN_SUPPORT_ENABLED
 #ifndef BANNERGRABBINGPLUGIN_H_
 #define BANNERGRABBINGPLUGIN_H_
 
@@ -46,4 +46,5 @@ private:
     void saveResult(const Packet* p, std::string* result_ptr);
 };
 
+#endif
 #endif

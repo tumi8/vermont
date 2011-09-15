@@ -23,7 +23,9 @@
 #include <sstream>
 #include <stdint.h>
 #include <iostream>
+#ifdef PLUGIN_SUPPORT_ENABLED
 #include "modules/ipfix/aggregator/BasePluginHost.h"
+#endif
 
 using namespace std;
 
@@ -264,7 +266,9 @@ void BaseHashtable::exportBucket(HashtableBucket* bucket)
  */
 void BaseHashtable::destroyBucket(HashtableBucket* bucket)
 {
+#ifdef PLUGIN_SUPPORT_ENABLED
     informPlugins(bucket);
+#endif
     delete bucket;
 }
 
@@ -274,7 +278,9 @@ void BaseHashtable::destroyBucket(HashtableBucket* bucket)
  */
 void BaseHashtable::removeBucket(HashtableBucket* bucket)
 {
+#ifdef PLUGIN_SUPPORT_ENABLED
     informPlugins(bucket);
+#endif
 
     if (bucket->next || bucket->prev)
         statMultiEntries--;
@@ -633,7 +639,7 @@ void BaseHashtable::reverseFlowBucket(HashtableBucket* bucket)
         }
     }
 }
-
+#ifdef PLUGIN_SUPPORT_ENABLED
 /**
  * informs all plugins about deletion of buckets
  */
@@ -646,3 +652,4 @@ void BaseHashtable::informPlugins(const HashtableBucket* bucket){
         (*i)->flowDeleted(bucket);
     }
 }
+#endif
