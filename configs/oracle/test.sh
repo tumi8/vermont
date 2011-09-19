@@ -29,7 +29,11 @@ WRC='oxewriter.xml'
 
 print_output(){
   # Show the output
-  echo "\n\nOUTPUT:\n\n"
+	echo ""
+	echo ""
+  echo "OUTPUT:"
+	echo ""
+	echo ""
   tail -f /tmp/temp_out.$$ 
   TPID=$(pidof tail)
 }
@@ -39,7 +43,7 @@ test_exporter() {
   echo "testing exporter"
   $VMT -ddd -f $EXC >> /tmp/temp_out.$$ 2>&1 &
   XPPID=$(pidof $VMT)
-  echo "done (pid $XPPID)"
+	sleep 3
   print_output
 }
 
@@ -47,12 +51,16 @@ test_writer() {
   echo "testing writer"
   $VMT -ddd -f $WRC >> /tmp/temp_out.$$ 2>&1 &
   WRPID=$(pidof -o $XPPID $VMT)
-  echo "done (pid $WRPID)"
+	sleep 3
   print_output
 }
 
-test_to_db() {
+test_db() {
   echo "testing write to db"
+  $VMT -ddd -f $EXC >> /tmp/temp_out.$$ 2>&1 &
+  $VMT -ddd -f $WRC >> /tmp/temp_out.$$ 2>&1 &
+	sleep 3
+  print_output	
 }
 
 # Run
@@ -69,6 +77,7 @@ done
 case $testcase in
   exp) test_exporter;;
   wr) test_writer;;
+	db) test_db;;
 esac
 
 
