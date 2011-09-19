@@ -203,10 +203,8 @@ int IpfixDbWriterOracle::createExporterTable()
 
 	// create trigger
 	sql.str("");	
-	sql << "CREATE TRIGGER trigger_for_id_exporter BEFORE INSERT ON exporter REFERENCING NEW AS NEW OLD AS OLD FOR EACH ROW\n";
-	sql << "Begin\n";
-	sql << "SELECT counter_for_exporter.NEXTVAL INTO :NEW.id FROM DUAL;\n";
-	sql << "End";
+	sql << "CREATE OR REPLACE TRIGGER trigger_for_id_exporter BEFORE INSERT ON exporter REFERENCING NEW AS NEW OLD AS OLD FOR EACH ROW Begin SELECT counter_for_exporter.NEXTVAL INTO :NEW.id FROM DUAL; End;";
+	msg(MSG_DEBUG, "IpfixDbWriterOracle: SQL Query: %s", sql.str().c_str());
 	try
 	{
 		stmt = con->createStatement(sql.str());
@@ -246,10 +244,10 @@ void IpfixDbWriterOracle::processDataDataRecord(const IpfixRecord::SourceID& sou
 {
 	string rowString;
 	time_t flowStartSeconds;
-
-	DPRINTF("Processing data record");
+	msg(MSG_DEBUG, "IpfixDbWriter: Processing data record");
 
 	if (dbError) {
+		msg(MSG_DEBUG, "IpfixDbWriter: reconnecting to DB");
 		connectToDB();
 		if (dbError) return;
 	}
@@ -261,6 +259,8 @@ void IpfixDbWriterOracle::processDataDataRecord(const IpfixRecord::SourceID& sou
 	} else {
 		rowString = getInsertString(rowString, flowStartSeconds, sourceID, dataTemplateInfo, length, data);
 	}
+	msg(MSG_DEBUG, "IpfixDbWriter: Row: %s", rowString.c_str());
+	
 
 	// if current table is not ok, write to db and get new table name
 	if(!(flowStartSeconds >= currentTable.startTime && flowStartSeconds <= currentTable.endTime)) {
@@ -555,13 +555,14 @@ int IpfixDbWriterOracle::setCurrentTable(time_t flowstartsec)
 	}
 	currentTable.endTime = currentTable.startTime + 1799;
 
-	DPRINTF("flowstartsec: %d, table name: %s, start time: %d, end time: %d", flowstartsec, currentTable.name.c_str(), currentTable.startTime, currentTable.endTime);
+	msg(MSG_DEBUG, "IpfixDbWriterOracle: flowstartsec: %d, table name: %s, start time: %d, end time: %d", flowstartsec, currentTable.name.c_str(), currentTable.startTime, currentTable.endTime);
 
 	// check if table exists
 	ostringstream sql;
 	oracle::occi::Statement *stmt = NULL;
 	oracle::occi::ResultSet *rs = NULL;
 	sql << "SELECT COUNT(table_name) FROM user_tables WHERE table_name='" << currentTable.name << "'";
+	msg(MSG_DEBUG, "IpfixDbWriterOracle: SQL Query: %s", sql.str().c_str());
 	try
 	{
 		stmt = con->createStatement(sql.str());
@@ -592,7 +593,7 @@ int IpfixDbWriterOracle::setCurrentTable(time_t flowstartsec)
 			{
 				if (rs->getInt(1)!= 0) 
 				{
-					msg(MSG_DEBUG,"IpfixDbWriterOracle: exporter table does exist");
+					msg(MSG_DEBUG,"IpfixDbWriterOracle: table does exist");
 					stmt->closeResultSet(rs);
 					con->terminateStatement(stmt);
 					return 0;	
@@ -606,6 +607,7 @@ int IpfixDbWriterOracle::setCurrentTable(time_t flowstartsec)
 	// create table
 	sql.str("");	
 	sql << "CREATE TABLE " << currentTable.name << " ( " << tableColumnsCreateString << " ) TABLESPACE " << dbName;
+	msg(MSG_DEBUG, "IpfixDbWriterOracle: SQL Query: %s", sql.str().c_str());
 	try
 	{
 		stmt = con->createStatement(sql.str());
@@ -670,8 +672,7 @@ int IpfixDbWriterOracle::getExporterID(const IpfixRecord::SourceID& sourceID)
 
 	// search exporter table
 	sql << "SELECT id FROM exporter WHERE sourceID=" << sourceID.observationDomainId << " AND srcIp=" << expIp;
-	DPRINTF("SQL Query: %s", sql.str().c_str());
-	
+	msg(MSG_DEBUG, "IpfixDbWriterOracle: SQL Query: %s", sql.str().c_str());
 	try 
 	{
 		stmt = con->createStatement(sql.str());
@@ -691,8 +692,8 @@ int IpfixDbWriterOracle::getExporterID(const IpfixRecord::SourceID& sourceID)
 			{
 				while(rs->next())
 				{
-					id = rs->getInt(1)
-					DPRINTF("ExporterID %d is in exporter table", id);
+					id = rs->getInt(1);
+					msg(MSG_DEBUG, "IpfixDbWriterOracle: ExporterID %d is in exporter table", id);					
 				}
 				stmt->closeResultSet(rs);
 			}
@@ -710,7 +711,7 @@ int IpfixDbWriterOracle::getExporterID(const IpfixRecord::SourceID& sourceID)
 	{
 		sql.str("");
 		sql << "INSERT INTO exporter (ID,sourceID,srcIP) VALUES ( 0 ,'" << sourceID.observationDomainId << "','" << expIp << "')";
-		DPRINTF("SQL Query: %s", sql.str().c_str());
+		msg(MSG_DEBUG, "IpfixDbWriterOracle: SQL Query: %s", sql.str().c_str());
 		try
 		{
 			stmt = con->createStatement(sql.str());
@@ -739,7 +740,7 @@ int IpfixDbWriterOracle::getExporterID(const IpfixRecord::SourceID& sourceID)
 
 		sql.str("");
 		sql << "SELECT counter_for_exporter.CURRVAL FROM DUAL";
-		DPRINTF("SQL Query: %s", sql.str().c_str());
+		msg(MSG_DEBUG, "IpfixDbWriterOracle: SQL Query: %s", sql.str().c_str());
 		try 
 		{
 			stmt = con->createStatement(sql.str());
