@@ -28,29 +28,29 @@
 #include "common/msg.h"
 
 IpfixDbWriterOracle::Column identify [] = {
-	{CN_dstIP, 		"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_destinationIPv4Address, 0},
-	{CN_srcIP, 		"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_sourceIPv4Address, 0},
-	{CN_srcPort, 		"SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_sourceTransportPort, 0},
-	{CN_dstPort, 		"SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_destinationTransportPort, 0},
-	{CN_proto, 		"TINYINT(3) UNSIGNED", 		0, IPFIX_TYPEID_protocolIdentifier, 0 },
-	{CN_dstTos, 		"TINYINT(3) UNSIGNED", 		0, IPFIX_TYPEID_classOfServiceIPv4, 0},
-	{CN_bytes, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_TYPEID_octetDeltaCount, 0},
-	{CN_pkts, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_TYPEID_packetDeltaCount, 0},
-	{CN_firstSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_flowStartSeconds, 0}, // default value is invalid/not used for this ent
-	{CN_lastSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_flowEndSeconds, 0}, // default value is invalid/not used for this entry
-	{CN_firstSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_flowStartMilliSeconds, 0},
-	{CN_lastSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_flowEndMilliSeconds, 0},
-	{CN_tcpControlBits,  	"SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_tcpControlBits, 0},
+	{CN_dstIP, 		"NUMBER(10)", 	0, IPFIX_TYPEID_destinationIPv4Address, 0},
+	{CN_srcIP, 		"NUMBER(10)", 	0, IPFIX_TYPEID_sourceIPv4Address, 0},
+	{CN_srcPort, 		"NUMBER(5)", 	0, IPFIX_TYPEID_sourceTransportPort, 0},
+	{CN_dstPort, 		"NUMBER(5)", 	0, IPFIX_TYPEID_destinationTransportPort, 0},
+	{CN_proto, 		"NUMBER(3)", 		0, IPFIX_TYPEID_protocolIdentifier, 0 },
+	{CN_dstTos, 		"NUMBER(3)", 		0, IPFIX_TYPEID_classOfServiceIPv4, 0},
+	{CN_bytes, 		"NUMBER(20)", 		0, IPFIX_TYPEID_octetDeltaCount, 0},
+	{CN_pkts, 		"NUMBER(20)", 		0, IPFIX_TYPEID_packetDeltaCount, 0},
+	{CN_firstSwitched, 	"NUMBER(10)", 	0, IPFIX_TYPEID_flowStartSeconds, 0}, // default value is invalid/not used for this ent
+	{CN_lastSwitched, 	"NUMBER(10)", 	0, IPFIX_TYPEID_flowEndSeconds, 0}, // default value is invalid/not used for this entry
+	{CN_firstSwitchedMillis, "NUMBER(5)", 	0, IPFIX_TYPEID_flowStartMilliSeconds, 0},
+	{CN_lastSwitchedMillis, "NUMBER(5)", 	0, IPFIX_TYPEID_flowEndMilliSeconds, 0},
+	{CN_tcpControlBits,  	"NUMBER(5)", 	0, IPFIX_TYPEID_tcpControlBits, 0},
 	//TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
-	{CN_revbytes, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_TYPEID_octetDeltaCount, IPFIX_PEN_reverse},
-	{CN_revpkts, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_TYPEID_packetDeltaCount, IPFIX_PEN_reverse},
-	{CN_revFirstSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
-	{CN_revLastSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
-	{CN_revFirstSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse},
-	{CN_revLastSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse},
-	{CN_revTcpControlBits,  "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse},
-	{CN_maxPacketGap,  	"BIGINT(20) UNSIGNED", 		0, IPFIX_ETYPEID_maxPacketGap, IPFIX_PEN_vermont|IPFIX_PEN_reverse},
-	{CN_exporterID, 	"SMALLINT(5) UNSIGNED", 	0, EXPORTERID, 0},
+	{CN_revbytes, 		"NUMBER(20)", 		0, IPFIX_TYPEID_octetDeltaCount, IPFIX_PEN_reverse},
+	{CN_revpkts, 		"NUMBER(20)", 		0, IPFIX_TYPEID_packetDeltaCount, IPFIX_PEN_reverse},
+	{CN_revFirstSwitched, 	"NUMBER(10)", 	0, IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
+	{CN_revLastSwitched, 	"NUMBER(10)", 	0, IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
+	{CN_revFirstSwitchedMillis, "NUMBER(5)", 	0, IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse},
+	{CN_revLastSwitchedMillis, "NUMBER(5)", 	0, IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse},
+	{CN_revTcpControlBits,  "NUMBER(5)", 	0, IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse},
+	{CN_maxPacketGap,  	"NUMBER(20)", 		0, IPFIX_ETYPEID_maxPacketGap, IPFIX_PEN_vermont|IPFIX_PEN_reverse},
+	{CN_exporterID, 	"NUMBER(5)", 	0, EXPORTERID, 0},
 	{0} // last entry must be 0
 };
 
@@ -266,6 +266,7 @@ void IpfixDbWriterOracle::processDataDataRecord(const IpfixRecord::SourceID& sou
 	if(!(flowStartSeconds >= currentTable.startTime && flowStartSeconds <= currentTable.endTime)) {
 		if(numberOfInserts > 0) {
 			msg(MSG_DEBUG, "IpfixDbWriter: Writing buffered records to database");
+			insertStatement << " SELECT * FROM dual";
 			writeToDb();
 			numberOfInserts = 0;
 		}
@@ -280,17 +281,18 @@ void IpfixDbWriterOracle::processDataDataRecord(const IpfixRecord::SourceID& sou
 		// start insert statement
 		insertStatement.str("");
 		insertStatement.clear();
-		insertStatement << "INSERT INTO " << currentTable.name << " (" << tableColumnsString << ") VALUES " << rowString;
+		insertStatement << "INSERT ALL INTO " << currentTable.name << " (" << tableColumnsString << ") VALUES " << rowString;
 		numberOfInserts = 1;
 	} else {
 		// append insert statement
-		insertStatement << "," << rowString;
+		insertStatement << " INTO " << currentTable.name << " (" << tableColumnsString << ") VALUES " << rowString;
 		numberOfInserts++;
 	}
 
 	// write to db if maxInserts is reached
 	if(numberOfInserts == maxInserts) {
 		msg(MSG_DEBUG, "IpfixDbWriter: Writing buffered records to database");
+		insertStatement << " SELECT * FROM dual";
 		writeToDb();
 		numberOfInserts = 0;
 	}
@@ -493,7 +495,7 @@ string& IpfixDbWriterOracle::getInsertString(string& row, time_t& flowstartsec, 
  */
 int IpfixDbWriterOracle::writeToDb()
 {
-	DPRINTF("SQL Query: %s", insertStatement.str().c_str());
+	msg(MSG_DEBUG, "SQL Query: %s", insertStatement.str().c_str());
 	oracle::occi::Statement *stmt = NULL;
 	oracle::occi::ResultSet *rs = NULL;
 	try
@@ -535,7 +537,7 @@ int IpfixDbWriterOracle::setCurrentTable(time_t flowstartsec)
 	ostringstream tableStream;
 	struct tm* flowStartTime = gmtime(&flowstartsec);
 
-	tableStream << "h_" << (flowStartTime->tm_year+1900)
+	tableStream << "H_" << (flowStartTime->tm_year+1900)
 		<< setfill('0') << setw(2) << (flowStartTime->tm_mon+1)
 		<< setfill('0') << setw(2) << (flowStartTime->tm_mday) << "_"
 		<< setfill('0') << setw(2) << (flowStartTime->tm_hour) << "_"
