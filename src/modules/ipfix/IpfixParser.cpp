@@ -852,7 +852,8 @@ bool IpfixParser::processStructuredDataSubTemplateList(boost::shared_ptr<IpfixRe
 			currentTargetField->offset = field->offset + data - startOfList;
 
 			if (currentTargetField->type.isStructuredData())
-				processStructuredData(sourceId, currentTargetField, data);
+				if (!processStructuredData(sourceId, currentTargetField, data))
+					return false;
 
 			data += elementLength;
 
@@ -1012,7 +1013,8 @@ bool IpfixParser::processStructuredDataSetSubTemplateMultiList(boost::shared_ptr
 				currentTargetField->offset = field->offset + data - startOfList;
 
 				if (currentTargetField->type.isStructuredData())
-					processStructuredData(sourceId, currentTargetField, data);
+					if(!processStructuredData(sourceId, currentTargetField, data))
+						return false;
 
 				data += elementLength;
 				currentField++;
