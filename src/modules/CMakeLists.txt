@@ -72,6 +72,8 @@ ADD_LIBRARY(modules
     ipfix/IpfixPayloadWriterCfg.cpp
     ipfix/IpfixPrinterCfg.cpp
     ipfix/IpfixSamplerCfg.cpp
+	ipfix/IpfixSimpleTcpExporter.cpp
+	ipfix/IpfixSimpleTcpExporterCfg.cpp
     ipfix/NetflowV9ConverterCfg.cpp
     ipfix/Connection.cpp
     ipfix/IpfixReceiverUdpIpV4.cpp
