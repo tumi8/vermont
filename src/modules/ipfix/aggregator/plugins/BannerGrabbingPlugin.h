@@ -22,28 +22,37 @@
 #define BANNERGRABBINGPLUGIN_H_
 
 #include "modules/ipfix/aggregator/BasePlugin.h"
+#include "BannerOSMapping.h"
+#include "OSResultAggregator.h"
 #include <boost/unordered_map.hpp>
 #include <iostream>
 #include <fstream>
+#include <map>
 
-typedef boost::unordered_map<u_int32_t, u_int32_t> hashmap_t;
+typedef boost::unordered_map<uint32_t, uint32_t> hashmap_t;
+typedef pair<std::string, std::string> banner_pair_t;
 
 class BannerGrabbingPlugin : public BasePlugin{
 public:
     BannerGrabbingPlugin();
-    BannerGrabbingPlugin(const u_int32_t maxPckts, std::string file);
+    BannerGrabbingPlugin(const uint32_t maxPckts, std::string file, std::string bannerfile);
     ~BannerGrabbingPlugin();
     void flowDeleted(const HashtableBucket* bucket);
     void newFlowReceived(const HashtableBucket* bucket);
     void newPacketReceived(const Packet* p, uint32_t hash);
 
 private:
-    u_int32_t maxPackets;
+    uint32_t maxPackets;
     ofstream myfile;
     std::string dumpFile;
     hashmap_t map;
+    list<BannerOSMapping> banners;
+    bool performOSGuessing;
+    OSResultAggregator osAggregator;
     void processPacket(const Packet* p);
     void saveResult(const Packet* p, std::string* result_ptr);
+    void guessOS(const Packet* p, std::string* grabbedString, e_bannerType type);
+    void processMsg(string message);
 };
 
 #endif

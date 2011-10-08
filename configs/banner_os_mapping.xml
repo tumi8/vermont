@@ -1,0 +1,745 @@
+<bannerOSMapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.7.1</osVersion>
+    <banner>Mac OS X 10_7_1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.7.1</osVersion>
+    <banner>MacOSX/10.7.1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.7.0</osVersion>
+    <banner>Mac OS X 10_7_0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.7</osVersion>
+    <banner>Mac OS X 10_7</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.7</osVersion>
+    <banner>Mac OS X 10.7</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.6.8</osVersion>
+    <banner>Mac OS X 10_6_8</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.6.6</osVersion>
+    <banner>Mac OS X 10_6_6</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.6.5</osVersion>
+    <banner>Mac OS X 10_6_5</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.6.4</osVersion>
+    <banner>Mac OS X 10_6_4</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.6.2</osVersion>
+    <banner>Mac OS X 10_6_2</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.6</osVersion>
+    <banner>Mac OS X 10.6</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.5.8</osVersion>
+    <banner>Mac OS X 10_5_8</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.5.6</osVersion>
+    <banner>Mac OS X 10_5_6</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.5</osVersion>
+    <banner>Mac OS X 10.5</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+ <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Darwin 10.8.0, Mac OS X 10.6.8</osVersion>
+    <banner>Darwin/10.8.0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Darwin 11.1.0, Mac OS X 10.7</osVersion>
+    <banner>Darwin/11.1.0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Darwin 11.0.0, Mac OS X 10.7</osVersion>
+    <banner>Darwin/11.0.0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X Mach</osVersion>
+    <banner>Mac OS X Mach-O</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.5 PPC</osVersion>
+    <banner>PPC Mac OS X 10.5</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X PPC</osVersion>
+    <banner>Mac_PowerPC</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X 10.2 PPC</osVersion>
+    <banner>PPC Mac OS X 10.2</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>Mac OS X Mach</osVersion>
+    <banner>PPC Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Windows</osType>
+    <osVersion>Windows 8</osVersion>
+    <banner>Windows NT 6.2</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Windows</osType>
+    <osVersion>Windows 7, Windows Server 2008 R2</osVersion>
+    <banner>Windows NT 6.1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Windows</osType>
+    <osVersion>Windows Vista, Windows Server 2008</osVersion>
+    <banner>Windows NT 6.0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Windows</osType>
+    <osVersion>Windows XP Prof. x64, Windows Server 2003</osVersion>
+    <banner>Windows NT 5.2</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Windows</osType>
+    <osVersion>Windows XP</osVersion>
+    <banner>Windows NT 5.1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Windows</osType>
+    <osVersion>Windows 2000</osVersion>
+    <banner>Windows NT 5.0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Ubuntu 11.04</osVersion>
+    <banner>Ubuntu/11.04</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Ubuntu 10.10</osVersion>
+    <banner>Ubuntu/10.10</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Ubuntu 10.04</osVersion>
+    <banner>Ubuntu/10.04</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Ubuntu 9.25</osVersion>
+    <banner>Ubuntu/9.25</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Ubuntu 8.04</osVersion>
+    <banner>Ubuntu/8.04</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Ubuntu 7.10</osVersion>
+    <banner>Ubuntu/7.10</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Ubuntu 9.10</osVersion>
+    <banner>Ubuntu/9.10</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Ubuntu 9.04</osVersion>
+    <banner>Ubuntu/9.04</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+   <mapping>
+    <osType>Linux</osType>
+    <osVersion>Ubuntu 2.0.6-2</osVersion>
+    <banner>Ubuntu 2.0.6-2</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Kubuntu</osVersion>
+    <banner>Kubuntu</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Mint 8</osVersion>
+    <banner>Mint/8</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Mint</osVersion>
+    <banner>Mint</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>gentoo-r3</osVersion>
+    <banner>gentoo-r3</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian 1.6-7</osVersion>
+    <banner>Debian/1.6-7</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian 1.1.9-5</osVersion>
+    <banner>Debian-1.1.9-5</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian 0.9.3</osVersion>
+    <banner>Debian-0.0.3</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Ubuntu 4.1</osVersion>
+    <banner>ubuntu4.1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Kanotix 8</osVersion>
+    <banner>kanotix-8</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>BSD</osType>
+    <osVersion>FreeBSD 5.3</osVersion>
+    <banner>FreeBSD 5.3-RELEASE</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <!--mapping>
+    <osType>BSD</osType>
+    <osVersion>FreeBSD</osVersion>
+    <banner>FreeBSD</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping-->
+  
+  <mapping>
+    <osType>BSD</osType>
+    <osVersion>OpenBSD</osVersion>
+    <banner>OpenBSD</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>BSD</osType>
+    <osVersion>NetBSD 5.0.2</osVersion>
+    <banner>NetBSD 5.0.2</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>BSD</osType>
+    <osVersion>NetBSD</osVersion>
+    <banner>NetBSD</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>SunOS</osType>
+    <osVersion>SunOS 4m</osVersion>
+    <banner>SunOS sun4m</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>SunOS</osType>
+    <osVersion>SunOS 5.7</osVersion>
+    <banner>5.7 sun4u</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>SunOS</osType>
+    <osVersion>SunOS i86pc</osVersion>
+    <banner>SunOS i86pc</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>DragonFly</osType>
+    <osVersion>DragonFly</osVersion>
+    <banner>DragonFly</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Irix</osType>
+    <osVersion>Irix</osVersion>
+    <banner>Irix</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>webOS</osType>
+    <osVersion>hpwOS 3.0.2</osVersion>
+    <banner>hpwOS/3.0.2</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>webOS</osType>
+    <osVersion>webOS 1.3</osVersion>
+    <banner>webOS/1.3</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 3.1</osVersion>
+    <banner>Android 3.1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 3.0.1</osVersion>
+    <banner>Android 3.0.1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 3.0</osVersion>
+    <banner>Android 3.0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 2.3.4"</osVersion>
+    <banner>Android 2.3.4"</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 2.3.3</osVersion>
+    <banner>Android 2.3.3</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 2.2.1</osVersion>
+    <banner>Android 2.2.1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 2.2</osVersion>
+    <banner>Android 2.2</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 2.0.1</osVersion>
+    <banner>Android 2.0.1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 2.0</osVersion>
+    <banner>Android 2.0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 1.6</osVersion>
+    <banner>Android 1.6</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 1.5</osVersion>
+    <banner>Android 1.5</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 1.1</osVersion>
+    <banner>Android 1.1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Android</osType>
+    <osVersion>Android 0.5</osVersion>
+    <banner>Android 0.5</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Windows CE</osType>
+    <osVersion>Windows CE</osVersion>
+    <banner>Windows CE 6.0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Windows CE</osType>
+    <osVersion>Windows CE</osVersion>
+    <banner>Windows CE 5.1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Maemo</osVersion>
+    <banner>Maemo; Linux armv7l</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>PalmOS 1.1.54</osVersion>
+    <banner>PalmOS/sony/model prmr/Revision:1.1.54</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Symbian</osType>
+    <osVersion>SymbianOS S60</osVersion>
+    <banner>S60; SymbOS</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Symbian</osType>
+    <osVersion>SymbianOS 7.0s</osVersion>
+    <banner>SymbianOS/7.0s</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Symbian</osType>
+    <osVersion>SymbianOS 9.4</osVersion>
+    <banner>SymbianOS/9.4</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Symbian</osType>
+    <osVersion>SymbianOS 9.2</osVersion>
+    <banner>SymbianOS/9.2</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+   <mapping>
+    <osType>Symbian</osType>
+    <osVersion>SymbianOS 9.1</osVersion>
+    <banner>SymbianOS/9.1</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Symbian</osType>
+    <osVersion>SymbianOS 8.0</osVersion>
+    <banner>SymbianOS/8.0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+   <mapping>
+    <osType>Symbian</osType>
+    <osVersion>SymbianOS 3</osVersion>
+    <banner>SymbianOS/3</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 4.3 (iPhone)</osVersion>
+    <banner>iPhone OS 4_3 like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 4.3 (iPad)</osVersion>
+    <banner>iPad; U; CPU OS 4_3 like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 4.2.1 (iPad)</osVersion>
+    <banner>iPad; U; CPU OS 4_2_1 like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 4.2.1 (iPhone)</osVersion>
+    <banner>iPhone OS 4_2_1 like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 4.0 (iPhone)</osVersion>
+    <banner>iPhone; U; CPU iPhone OS 4_0 like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 3.2 (iPad)</osVersion>
+    <banner>iPad; U; CPU OS 3_2 like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 3.0 (iPhone)</osVersion>
+    <banner>iPhone; U; CPU iPhone OS 3_0 like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 2.2.1 (iPhone)</osVersion>
+    <banner>iPhone; U; CPU iPhone OS 2_2_1 like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 2.0 (iPhone)</osVersion>
+    <banner>iPhone; U; CPU iPhone OS 2_0 like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 1.0 (iPhone)</osVersion>
+    <banner>iPhone; U; CPU like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 2.2.1 (iPodTouch)</osVersion>
+    <banner>iPod; U; CPU iPhone OS 2_2_1 like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Macintosh</osType>
+    <osVersion>iOS 3.1.1 (iPodTouch)</osVersion>
+    <banner>iPod; U; CPU iPhone OS 3_1_1 like Mac OS X</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Blackberry</osType>
+    <osVersion>Blackberry</osVersion>
+    <banner>Blackberry</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>KindleOS</osType>
+    <osVersion>Kindle 2.0</osVersion>
+    <banner>Kindle/2.0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>KindleOS</osType>
+    <osVersion>Kindle 3.0</osVersion>
+    <banner>Kindle/3.0</banner>
+    <bannerType>HTTP</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian-1ubuntu3</osVersion>
+    <banner>Debian-1ubuntu3</banner>
+    <bannerType>SSH</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian-8ubuntu1.2</osVersion>
+    <banner>Debian-8ubuntu1.2</banner>
+    <bannerType>SSH</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian-6</osVersion>
+    <banner>Debian-6</banner>
+    <bannerType>SSH</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian-5</osVersion>
+    <banner>Debian-5</banner>
+    <bannerType>SSH</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian-4</osVersion>
+    <banner>Debian-4</banner>
+    <bannerType>SSH</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian-3</osVersion>
+    <banner>Debian-3</banner>
+    <bannerType>SSH</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian-3ubuntu5</osVersion>
+    <banner>Debian-3ubuntu5</banner>
+    <bannerType>SSH</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian-3ubuntu7</osVersion>
+    <banner>Debian-3ubuntu7</banner>
+    <bannerType>SSH</bannerType>
+  </mapping>
+  
+  <mapping>
+    <osType>Linux</osType>
+    <osVersion>Debian-2</osVersion>
+    <banner>Debian-2</banner>
+    <bannerType>SSH</bannerType>
+  </mapping>
+  
+</bannerOSMapping>

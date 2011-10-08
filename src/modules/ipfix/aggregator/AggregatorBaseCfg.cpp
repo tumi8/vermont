@@ -240,6 +240,7 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
     std::string pluginVersion = "";
     u_int32_t maxPackets = 0;
     std::string dumpFile = "dump.csv";
+    std::string bannerFile = "";
 
     XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 
@@ -253,6 +254,8 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
             maxPackets = (u_int32_t) getInt("maxpackets", 0, e);
         }else if(e->matches("dumpfile")){
             dumpFile = get("dumpfile", e);
+        }else if(e->matches("bannerfile")){
+            bannerFile = get("bannerfile", e);
         }
     }
     if (pluginVersion == "" || pluginName == ""){
@@ -266,7 +269,7 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
             msg(MSG_INFO, "Plugin loaded!");
         }
         if(pluginName == "bannergrabbing"){
-            BannerGrabbingPlugin* plugin = new BannerGrabbingPlugin(maxPackets, dumpFile);
+            BannerGrabbingPlugin* plugin = new BannerGrabbingPlugin(maxPackets, dumpFile, bannerFile);
             host->registerPlugin(plugin);
             msg(MSG_INFO, "Plugin loaded!");
         }

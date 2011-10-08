@@ -17,35 +17,34 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  */
-
 #ifdef PLUGIN_SUPPORT_ENABLED
+#ifndef BANNEROSMAPPING_H_
+#define BANNEROSMAPPING_H_
 
-#ifndef BASEPLUGIN_H_
-#define BASEPLUGIN_H_
-
-#include "PluginState.h"
 #include <string>
-#include "modules/packet/Packet.h"
-#include "HashtableBuckets.h"
+#include <list>
+#include "core/XMLDocument.h"
 
-using namespace std;
+enum e_bannerType {HTTP=0, SSH};
 
-class BasePlugin{
+class BannerOSMapping{
 
 public:
-    bool operator== (const BasePlugin &other) const{
-        if (pluginName.compare(other.pluginName) == 0 && pluginVersion.compare(other.pluginVersion) == 0){
-            return true;
-        }
-        return false;
-    }
+    BannerOSMapping();
+    BannerOSMapping(const std::string osType, const std::string osVersion, const std::string banner, const e_bannerType bannertype);
+    std::string osType;
+    std::string osVersion;
+    std::string banner;
+    e_bannerType bannertype;
 
-    PluginState pluginState;
-    string pluginName;
-    string pluginVersion;
-    virtual void newFlowReceived(const HashtableBucket* bucket) = 0;
-    virtual void flowDeleted(const HashtableBucket* bucket) = 0;
-    virtual void newPacketReceived(const Packet* p, uint32_t hash) = 0;
+    bool osTypeMatches(std::string other) const;
+    bool osVersionMatches(std::string other) const;
+    static std::list<BannerOSMapping> getBanners(std::string fileName);
+    std::string findArchitecture(std::string other) const;
+    double computeStringSimilarity(const std::string source, const std::string target) const;
+
+private:
+    static BannerOSMapping* readMapping(XMLElement* elem);
 };
 
 #endif

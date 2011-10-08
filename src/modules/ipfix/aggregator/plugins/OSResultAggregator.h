@@ -19,34 +19,37 @@
  */
 
 #ifdef PLUGIN_SUPPORT_ENABLED
+#ifndef OSANALYSER_H_
+#define OSANALYSER_H_
 
-#ifndef BASEPLUGIN_H_
-#define BASEPLUGIN_H_
+#include "OSDetail.h"
+#include "common/Thread.h"
+#include <boost/unordered_map.hpp>
+#include <list>
 
-#include "PluginState.h"
-#include <string>
-#include "modules/packet/Packet.h"
-#include "HashtableBuckets.h"
+typedef boost::unordered_map< uint32_t, std::list<OSDetail> > os_result_map_t;
+typedef boost::unordered_map< uint32_t, uint32_t > expiry_map_t;
 
-using namespace std;
 
-class BasePlugin{
+class OSResultAggregator{
 
 public:
-    bool operator== (const BasePlugin &other) const{
-        if (pluginName.compare(other.pluginName) == 0 && pluginVersion.compare(other.pluginVersion) == 0){
-            return true;
-        }
-        return false;
-    }
+    OSResultAggregator();
+    ~OSResultAggregator();
+    void insertResult(uint32_t ip, OSDetail details);
+    void removeResult(uint32_t ip);
+    void analyseResults(uint32_t ip);
+    void exporterThread();
 
-    PluginState pluginState;
-    string pluginName;
-    string pluginVersion;
-    virtual void newFlowReceived(const HashtableBucket* bucket) = 0;
-    virtual void flowDeleted(const HashtableBucket* bucket) = 0;
-    virtual void newPacketReceived(const Packet* p, uint32_t hash) = 0;
+private:
+    os_result_map_t results;
+    expiry_map_t expired;
+    Thread thread;
+    bool exitFlag;
+    uint32_t pollInterval; /**< polling interval in milliseconds */
+    static void* threadWrapper(void* instance);
 };
 
 #endif
 #endif
+

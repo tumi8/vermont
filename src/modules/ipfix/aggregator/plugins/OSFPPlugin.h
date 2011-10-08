@@ -22,45 +22,32 @@
 #define OSFPPLUGIN_H_
 
 #include "modules/ipfix/aggregator/BasePlugin.h"
+#include "OSFingerprint.h"
+#include "OSResultAggregator.h"
 #include <boost/unordered_map.hpp>
 #include <iostream>
 #include <fstream>
 
-// TCP Options structure
-struct TCPOptions{
-    bool has_options;
-    bool sack_set;
-    bool timestamp_set;
-    bool mss_set;
-    bool window_set;
-    bool eol_set;
-    bool unkown_option_set;
-    bool options_corrupt;
-    u_int32_t nop_set;
-    u_int32_t tstamp;
-    u_int32_t tsecr;
-    u_int8_t window_scale;
-    u_int16_t mss;
-};
 
-typedef boost::unordered_map<u_int32_t, u_int32_t> hashmap_t;
+typedef boost::unordered_map<uint32_t, uint32_t> hashmap_t;
 
 class OSFPPlugin : public BasePlugin{
 public:
     OSFPPlugin();
-    OSFPPlugin(const u_int32_t maxPckts, std::string file);
+    OSFPPlugin(const uint32_t maxPckts, std::string file);
     ~OSFPPlugin();
     void flowDeleted(const HashtableBucket* bucket);
     void newFlowReceived(const HashtableBucket* bucket);
     void newPacketReceived(const Packet* p, uint32_t hash);
 
 private:
-    u_int32_t maxPackets;
+    uint32_t maxPackets;
     std::string dumpFile;
     hashmap_t map;
+    OSResultAggregator osAggregator;
     void processPacket(const Packet* p);
-    int parseTCPOptions(struct TCPOptions &options, const Packet* p, const u_int32_t dataOffset);
-    void writeToFile(struct TCPOptions &options, const Packet* p);
+    string parseTCPOptions(struct TCPOptions &options, const Packet* p, const uint32_t dataOffset);
+    void writeToFile(OSFingerprint* fingerprint);
     ofstream myfile;
 };
 

@@ -26,7 +26,6 @@
 #include <features.h>
 #include <boost/regex.hpp>
 
-
 #if defined(__FreeBSD__) || defined(__APPLE__)
 // FreeBSD does not have a struct iphdr. Furthermore, the struct members in
 // struct udphdr and tcphdr differ from the linux version. We therefore need
@@ -41,11 +40,11 @@
 using namespace std;
 
 BannerGrabbingPlugin::BannerGrabbingPlugin(){
-    BannerGrabbingPlugin(0, (char*) "dump_http.csv");
+    BannerGrabbingPlugin(0, (char*) "dump_http.csv", "");
 }
 
 
-BannerGrabbingPlugin::BannerGrabbingPlugin(const u_int32_t maxPckts, std::string file){
+BannerGrabbingPlugin::BannerGrabbingPlugin(const uint32_t maxPckts, std::string file, std::string bannerfile):performOSGuessing(false){
     maxPackets = maxPckts;
     dumpFile = file;
     msg(MSG_INFO, "BannerGrabbingPlugin instantiated");
@@ -53,6 +52,10 @@ BannerGrabbingPlugin::BannerGrabbingPlugin(const u_int32_t maxPckts, std::string
 
     myfile.open(dumpFile.c_str(), ios_base::out);
     myfile << "PCAP Timestamp : IP : Banner\n";
+    if (!bannerfile.empty()){
+        banners = BannerOSMapping::getBanners(bannerfile);
+        performOSGuessing = true;
+    }
 }
 
 BannerGrabbingPlugin::~BannerGrabbingPlugin(){
@@ -105,7 +108,7 @@ void BannerGrabbingPlugin::processPacket(const Packet *p){
     //SSH Regex
     static const boost::regex exSSH("SSH.*");
 
-    u_int32_t payload_len = PCAP_MAX_CAPTURE_LENGTH - p->payloadOffset;
+    uint32_t payload_len = PCAP_MAX_CAPTURE_LENGTH - p->payloadOffset;
     std::string inputStr(payload, payload_len);
     std::string::const_iterator start, end;
     start = inputStr.begin();
@@ -122,6 +125,7 @@ void BannerGrabbingPlugin::processPacket(const Packet *p){
         {
             std::string result_stringHTTP(what[1].str());
             saveResult(p, &result_stringHTTP);
+            if (performOSGuessing) guessOS(p, &result_stringHTTP, HTTP);
         }
 
         //if ssh regex found --> save result
@@ -129,6 +133,7 @@ void BannerGrabbingPlugin::processPacket(const Packet *p){
         {
             std::string result_stringSSH(what[0].str());
             saveResult(p, &result_stringSSH);
+            if (performOSGuessing) guessOS(p, &result_stringSSH, SSH);
         }
     }
     catch(std::runtime_error& e){
@@ -172,4 +177,43 @@ void BannerGrabbingPlugin::saveResult(const Packet* p, std::string* result_ptr){
         myfile << endl;
     }
 }
+
+void BannerGrabbingPlugin::guessOS(const Packet* p, std::string* grabbedString, e_bannerType type){
+    std::list<BannerOSMapping>::iterator it;
+    const iphdr* ipheader;
+    ipheader = (iphdr*) p->netHeader;
+    struct in_addr saddr;
+    saddr.s_addr = ipheader->saddr;
+
+    std::string searchString = *grabbedString;
+
+    switch (type) {
+    case HTTP:
+    case SSH:
+        for ( it=banners.begin() ; it != banners.end(); it++ ){
+            BannerOSMapping banner = *it;
+
+            if ( banner.osVersionMatches(searchString) ){
+                osAggregator.insertResult(ipheader->saddr, OSDetail(banner.osType, banner.osVersion, banner.findArchitecture(searchString), BANNER));
+                return;
+            }
+        }
+        for ( it=banners.begin() ; it != banners.end(); it++ ){
+            BannerOSMapping banner = *it;
+
+            if ( banner.osTypeMatches(searchString) ){
+                osAggregator.insertResult(ipheader->saddr, OSDetail(banner.osType, "", banner.findArchitecture(searchString), BANNER));
+                return;
+            }
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void BannerGrabbingPlugin::processMsg(string message){
+    printf(message.c_str());
+}
+
 #endif

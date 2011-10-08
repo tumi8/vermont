@@ -19,34 +19,17 @@
  */
 
 #ifdef PLUGIN_SUPPORT_ENABLED
+#include "OSDetail.h"
 
-#ifndef BASEPLUGIN_H_
-#define BASEPLUGIN_H_
+OSDetail::OSDetail(){
+    OSDetail("","","",FINGERPRINT);
+}
 
-#include "PluginState.h"
-#include <string>
-#include "modules/packet/Packet.h"
-#include "HashtableBuckets.h"
+OSDetail::OSDetail(std::string os_type, std::string os_version, std::string architecture, e_origin origin){
+    this->os_type = os_type;
+    this->os_version = os_version;
+    this->architecture = architecture;
+    this->origin = origin;
+}
 
-using namespace std;
-
-class BasePlugin{
-
-public:
-    bool operator== (const BasePlugin &other) const{
-        if (pluginName.compare(other.pluginName) == 0 && pluginVersion.compare(other.pluginVersion) == 0){
-            return true;
-        }
-        return false;
-    }
-
-    PluginState pluginState;
-    string pluginName;
-    string pluginVersion;
-    virtual void newFlowReceived(const HashtableBucket* bucket) = 0;
-    virtual void flowDeleted(const HashtableBucket* bucket) = 0;
-    virtual void newPacketReceived(const Packet* p, uint32_t hash) = 0;
-};
-
-#endif
 #endif

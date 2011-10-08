@@ -114,8 +114,12 @@ ADD_LIBRARY(modules
     ipfix/aggregator/BasePluginHost.cpp
 
     ipfix/aggregator/plugins/PacketFunctions.h
+    ipfix/aggregator/plugins/OSFingerprint.cpp
     ipfix/aggregator/plugins/OSFPPlugin.cpp
     ipfix/aggregator/plugins/BannerGrabbingPlugin.cpp
+    ipfix/aggregator/plugins/BannerOSMapping.cpp
+    ipfix/aggregator/plugins/OSResultAggregator.cpp
+    ipfix/aggregator/plugins/OSDetail.cpp
 )
 
 
