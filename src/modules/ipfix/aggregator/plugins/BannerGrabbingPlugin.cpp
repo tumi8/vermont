@@ -39,52 +39,53 @@
 
 using namespace std;
 
-BannerGrabbingPlugin::BannerGrabbingPlugin(){
+BannerGrabbingPlugin::BannerGrabbingPlugin() {
     BannerGrabbingPlugin(0, (char*) "dump_http.csv", "");
 }
 
 
-BannerGrabbingPlugin::BannerGrabbingPlugin(const uint32_t maxPckts, std::string file, std::string bannerfile):performOSGuessing(false){
+BannerGrabbingPlugin::BannerGrabbingPlugin(const uint32_t maxPckts, std::string file, std::string bannerfile):
+    performOSGuessing(false) {
     maxPackets = maxPckts;
     dumpFile = file;
     msg(MSG_INFO, "BannerGrabbingPlugin instantiated");
     msg(MSG_INFO, "  - dump file: %s", dumpFile.c_str());
 
-    myfile.open(dumpFile.c_str(), ios_base::out);
-    myfile << "PCAP Timestamp : IP : Banner\n";
+    filestream.open(dumpFile.c_str(), ios_base::out);
+    filestream << "PCAP Timestamp : IP : Banner\n";
     if (!bannerfile.empty()){
         banners = BannerOSMapping::getBanners(bannerfile);
         performOSGuessing = true;
     }
 }
 
-BannerGrabbingPlugin::~BannerGrabbingPlugin(){
-    myfile.close();
+BannerGrabbingPlugin::~BannerGrabbingPlugin() {
+    filestream.close();
 }
 
 
-void BannerGrabbingPlugin::flowDeleted(const HashtableBucket* bucket){
+void BannerGrabbingPlugin::flowDeleted(const HashtableBucket* bucket) {
     map.erase(bucket->hash);
 }
 
 
-void BannerGrabbingPlugin::newFlowReceived(const HashtableBucket* bucket){
+void BannerGrabbingPlugin::newFlowReceived(const HashtableBucket* bucket) {
     map[bucket->hash] = 0;
 }
 
 
-void BannerGrabbingPlugin::newPacketReceived(const Packet* p, uint32_t hash){
+void BannerGrabbingPlugin::newPacketReceived(const Packet* p, uint32_t hash) {
 
     /* is packet tracking needed?
        if yes, check if not more than maxPackets */
     if (maxPackets > 0){
-        if (map.find(hash) != map.end()){
+        if (map.find(hash) != map.end()) {
             ++map[hash];
         }
-        else{
+        else {
             map[hash] = 1;
         }
-        if (map[hash] > maxPackets){
+        if (map[hash] > maxPackets) {
             return;
         }
     }
@@ -95,11 +96,11 @@ void BannerGrabbingPlugin::newPacketReceived(const Packet* p, uint32_t hash){
 /*
  * process the Packet, ie. search for a banner in the payload of the packet
  */
-void BannerGrabbingPlugin::processPacket(const Packet *p){
+void BannerGrabbingPlugin::processPacket(const Packet *p) {
     const char* payload;
     payload = (const char*) p->payload;
 
-    if (payload == NULL){
+    if (payload == NULL) {
         return;
     }
 
@@ -121,22 +122,20 @@ void BannerGrabbingPlugin::processPacket(const Packet *p){
         boost::match_flag_type flags = boost::match_not_dot_newline;
 
         //if http regex found --> save result
-        if(boost::regex_search(start, end, what, ex, flags))
-        {
+        if(boost::regex_search(start, end, what, ex, flags)) {
             std::string result_stringHTTP(what[1].str());
             saveResult(p, &result_stringHTTP);
-            if (performOSGuessing) guessOS(p, &result_stringHTTP, HTTP);
+            if (performOSGuessing) guessOS(p, &result_stringHTTP, BannerOSMapping::HTTP);
         }
 
         //if ssh regex found --> save result
-        if(boost::regex_search(start, end, what, exSSH, flags))
-        {
+        if(boost::regex_search(start, end, what, exSSH, flags)) {
             std::string result_stringSSH(what[0].str());
             saveResult(p, &result_stringSSH);
-            if (performOSGuessing) guessOS(p, &result_stringSSH, SSH);
+            if (performOSGuessing) guessOS(p, &result_stringSSH, BannerOSMapping::SSH);
         }
     }
-    catch(std::runtime_error& e){
+    catch(std::runtime_error& e) {
         printf("%s", e.what());
     }
 }
@@ -144,41 +143,41 @@ void BannerGrabbingPlugin::processPacket(const Packet *p){
 /*
  * save results into a csv file
  */
-void BannerGrabbingPlugin::saveResult(const Packet* p, std::string* result_ptr){
+void BannerGrabbingPlugin::saveResult(const Packet* p, std::string* result_ptr) {
     const iphdr* ipheader;
 
     std::string result = *result_ptr;
 
-    if (!myfile.is_open()){
-        myfile.open(dumpFile.c_str(), ios_base::app);
+    if (!filestream.is_open()) {
+        filestream.open(dumpFile.c_str(), ios_base::app);
     }
 
-    if (result != ""){
+    if (result != "") {
         ipheader = (iphdr*) p->netHeader;
 
 
         /* PCAP Timestamp */
-        myfile << p->timestamp.tv_sec << ".";
-        myfile << p->timestamp.tv_usec << ":";
+        filestream << p->timestamp.tv_sec << ".";
+        filestream << p->timestamp.tv_usec << ":";
         /* IP Source */
         struct in_addr saddr;
         saddr.s_addr = ipheader->saddr;
-        myfile << inet_ntoa(saddr) << ":";
-        if (p->ipProtocolType == Packet::TCP){
+        filestream << inet_ntoa(saddr) << ":";
+        if (p->ipProtocolType == Packet::TCP) {
             const tcphdr* tcpheader;
             tcpheader = (tcphdr*) p->transportHeader;
-            myfile << ntohs(tcpheader->source) << ":";
+            filestream << ntohs(tcpheader->source) << ":";
         } else {
-            myfile << "unknown:";
+            filestream << "unknown:";
         }
 
         /*Banner*/
-        myfile << result;
-        myfile << endl;
+        filestream << result;
+        filestream << endl;
     }
 }
 
-void BannerGrabbingPlugin::guessOS(const Packet* p, std::string* grabbedString, e_bannerType type){
+void BannerGrabbingPlugin::guessOS(const Packet* p, std::string* grabbedString, BannerOSMapping::e_bannerType type) {
     std::list<BannerOSMapping>::iterator it;
     const iphdr* ipheader;
     ipheader = (iphdr*) p->netHeader;
@@ -188,21 +187,23 @@ void BannerGrabbingPlugin::guessOS(const Packet* p, std::string* grabbedString, 
     std::string searchString = *grabbedString;
 
     switch (type) {
-    case HTTP:
-    case SSH:
-        for ( it=banners.begin() ; it != banners.end(); it++ ){
+    case BannerOSMapping::HTTP:
+    case BannerOSMapping::SSH:
+        for ( it=banners.begin() ; it != banners.end(); it++ ) {
             BannerOSMapping banner = *it;
 
-            if ( banner.osVersionMatches(searchString) ){
-                osAggregator.insertResult(ipheader->saddr, OSDetail(banner.osType, banner.osVersion, banner.findArchitecture(searchString), BANNER));
+            if ( banner.osVersionMatches(searchString) ) {
+                OSDetail detail = OSDetail(banner.osType, banner.osVersion, banner.findArchitecture(searchString), OSDetail::BANNER);
+                osAggregator.insertResult(ipheader->saddr, detail);
                 return;
             }
         }
-        for ( it=banners.begin() ; it != banners.end(); it++ ){
+        for ( it=banners.begin() ; it != banners.end(); it++ ) {
             BannerOSMapping banner = *it;
 
-            if ( banner.osTypeMatches(searchString) ){
-                osAggregator.insertResult(ipheader->saddr, OSDetail(banner.osType, "", banner.findArchitecture(searchString), BANNER));
+            if ( banner.osTypeMatches(searchString) ) {
+                OSDetail detail = OSDetail(banner.osType, "", banner.findArchitecture(searchString), OSDetail::BANNER);
+                osAggregator.insertResult(ipheader->saddr, detail);
                 return;
             }
         }
@@ -212,8 +213,38 @@ void BannerGrabbingPlugin::guessOS(const Packet* p, std::string* grabbedString, 
     }
 }
 
-void BannerGrabbingPlugin::processMsg(string message){
+void BannerGrabbingPlugin::processMsg(string message) {
     printf(message.c_str());
+}
+
+void BannerGrabbingPlugin::initializeAggregator(uint32_t interval, std::string mode, std::string outputfile) {
+    // the interval is mandatory for the OSResultAggregator
+    if (interval > 0){
+
+        osAggregator.setInterval(interval);
+
+        // if the output mode is set to file, set mode and file
+        if (mode == "file") {
+
+            osAggregator.setOutputMode(OSResultAggregator::File);
+
+            if (!outputfile.empty()) {
+                osAggregator.setOuputFile(outputfile);
+            } else {
+                msg(MSG_ERROR, "OSResultAggregator output file is missing. Using console mode instead");
+
+                osAggregator.setOutputMode(OSResultAggregator::Console);
+            }
+
+        } else {
+            osAggregator.setOutputMode(OSResultAggregator::Console);
+        }
+    } else {
+        msg(MSG_ERROR, "Unable to instantiate OSResultAggregator. Please provide a interval. Skipping aggregation!");
+        return;
+    }
+
+    osAggregator.startExporterThread();
 }
 
 #endif

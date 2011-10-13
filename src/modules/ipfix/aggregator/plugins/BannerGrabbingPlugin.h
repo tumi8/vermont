@@ -41,9 +41,11 @@ public:
     void newFlowReceived(const HashtableBucket* bucket);
     void newPacketReceived(const Packet* p, uint32_t hash);
 
+    void initializeAggregator(uint32_t interval, std::string mode, std::string outputfile);
+
 private:
     uint32_t maxPackets;
-    ofstream myfile;
+    ofstream filestream;
     std::string dumpFile;
     hashmap_t map;
     list<BannerOSMapping> banners;
@@ -51,7 +53,7 @@ private:
     OSResultAggregator osAggregator;
     void processPacket(const Packet* p);
     void saveResult(const Packet* p, std::string* result_ptr);
-    void guessOS(const Packet* p, std::string* grabbedString, e_bannerType type);
+    void guessOS(const Packet* p, std::string* grabbedString, BannerOSMapping::e_bannerType type);
     void processMsg(string message);
 };
 

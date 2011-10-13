@@ -24,6 +24,7 @@
 
 #include "OSDetail.h"
 #include "common/Thread.h"
+#include <fstream>
 #include <boost/unordered_map.hpp>
 #include <list>
 
@@ -34,19 +35,33 @@ typedef boost::unordered_map< uint32_t, uint32_t > expiry_map_t;
 class OSResultAggregator{
 
 public:
+    enum e_mode {
+        Console = 1,
+        File
+    };
+
     OSResultAggregator();
     ~OSResultAggregator();
     void insertResult(uint32_t ip, OSDetail details);
     void removeResult(uint32_t ip);
     void analyseResults(uint32_t ip);
     void exporterThread();
+    void startExporterThread();
+
+    void setInterval(uint32_t interval);
+    void setOutputMode(e_mode mode);
+    void setOuputFile(std::string file);
 
 private:
     os_result_map_t results;
     expiry_map_t expired;
     Thread thread;
     bool exitFlag;
+    e_mode outputMode;
+    std::string aggregationFile;
+    std::ofstream filestream;
     uint32_t pollInterval; /**< polling interval in milliseconds */
+
     static void* threadWrapper(void* instance);
 };
 

@@ -24,6 +24,7 @@
 #include "modules/ipfix/aggregator/BasePlugin.h"
 #include "OSFingerprint.h"
 #include "OSResultAggregator.h"
+#include "OSSamples.h"
 #include <boost/unordered_map.hpp>
 #include <iostream>
 #include <fstream>
@@ -40,15 +41,18 @@ public:
     void newFlowReceived(const HashtableBucket* bucket);
     void newPacketReceived(const Packet* p, uint32_t hash);
 
+    void initializeAggregator(uint32_t interval, std::string mode, std::string outputfile);
+
 private:
     uint32_t maxPackets;
     std::string dumpFile;
     hashmap_t map;
     OSResultAggregator osAggregator;
+    OSSamples osSamples;
     void processPacket(const Packet* p);
     string parseTCPOptions(struct TCPOptions &options, const Packet* p, const uint32_t dataOffset);
     void writeToFile(OSFingerprint* fingerprint);
-    ofstream myfile;
+    ofstream filestream;
 };
 
 #endif

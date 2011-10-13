@@ -23,8 +23,6 @@
 #define OSDETAIL_H_
 #include <boost/functional/hash.hpp>
 
-enum e_origin{FINGERPRINT, BANNER};
-
 class OSDetail{
     friend std::size_t hash_value(OSDetail const& detail){
         std::size_t seed = 0;
@@ -37,6 +35,11 @@ class OSDetail{
     }
 
 public:
+    enum e_origin{
+        FINGERPRINT=1,
+        BANNER
+    };
+
     OSDetail();
     OSDetail(std::string os_type, std::string os_version, std::string architecture, e_origin origin);
     bool operator==(OSDetail const& other) const{

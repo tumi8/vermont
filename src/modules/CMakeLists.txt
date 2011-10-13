@@ -120,6 +120,7 @@ ADD_LIBRARY(modules
     ipfix/aggregator/plugins/BannerOSMapping.cpp
     ipfix/aggregator/plugins/OSResultAggregator.cpp
     ipfix/aggregator/plugins/OSDetail.cpp
+    ipfix/aggregator/plugins/OSSamples.cpp
 )
 
 

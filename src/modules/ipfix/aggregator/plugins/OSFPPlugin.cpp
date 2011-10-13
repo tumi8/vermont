@@ -51,8 +51,8 @@ OSFPPlugin::OSFPPlugin(const uint32_t maxPckts, std::string file){
     msg(MSG_INFO, "OSFPPlugin instantiated");
     msg(MSG_INFO, "  - dump file: %s", dumpFile.c_str());
     msg(MSG_INFO, "  - max connections: %i", maxPackets);
-    myfile.open(dumpFile.c_str(), ios_base::out);
-    myfile << "PCAP Timestamp : IP Source : TCP Source Port : IP Dest : TCP Dest Port : IP IHL : IP TOS : IP ID : "<<
+    filestream.open(dumpFile.c_str(), ios_base::out);
+    filestream << "PCAP Timestamp : IP Source : TCP Source Port : IP Dest : TCP Dest Port : IP IHL : IP TOS : IP ID : "<<
               "IP Protocol : IP Dont Fragment : IP TTL : TCP Window Size : TCP MSS : TCP Window Scale : TCP SACK permitted Option : "<<
               "TCP NOP Option : TCP Timestamp set : TCP Timestamp : TCP Timestamp Secr : TCP Urgent Flag : "<<
               "TCP Push Flag : TCP Reset Flag : TCP FIN Flag : TCP Urgent Pointer : TCP EOL Option set : TCP Data Offset : " <<
@@ -61,7 +61,7 @@ OSFPPlugin::OSFPPlugin(const uint32_t maxPckts, std::string file){
 }
 
 OSFPPlugin::~OSFPPlugin(){
-    myfile.close();
+    filestream.close();
 }
 
 
@@ -167,8 +167,9 @@ void OSFPPlugin::processPacket(const Packet* p){
 
     writeToFile(&fingerprint);
     fingerprint.detectOS();
-    OSDetail detail = OSDetail(fingerprint.m_OS_Type, fingerprint.m_OS_Version, "", FINGERPRINT);
+    OSDetail detail = OSDetail(fingerprint.m_OS_Type, fingerprint.m_OS_Version, "", OSDetail::FINGERPRINT);
     osAggregator.insertResult(ipheader->saddr, detail);
+    //osSamples.addToSample(ipheader->saddr, fingerprint.m_TCP_Options.tstamp, p->timestamp, fingerprint.m_IP_ID, fingerprint.m_TCP_SEQ);
 }
 
 string OSFPPlugin::parseTCPOptions(struct TCPOptions &options, const Packet* p, const uint32_t dataOffset){
@@ -282,10 +283,40 @@ string OSFPPlugin::parseTCPOptions(struct TCPOptions &options, const Packet* p, 
 
 void OSFPPlugin::writeToFile(OSFingerprint* fingerprint){
 
-    if (!myfile.is_open()){
-        myfile.open(dumpFile.c_str(), ios_base::app);
+    if (!filestream.is_open()){
+        filestream.open(dumpFile.c_str(), ios_base::app);
     }
-    myfile << fingerprint->toString().c_str();
+    filestream << fingerprint->toString().c_str();
+}
+
+void OSFPPlugin::initializeAggregator(uint32_t interval, std::string mode, std::string outputfile) {
+    // the interval is mandatory for the OSResultAggregator
+    if (interval > 0){
+
+        osAggregator.setInterval(interval);
+
+        // if the output mode is set to file, set mode and file
+        if (mode == "file") {
+
+            osAggregator.setOutputMode(OSResultAggregator::File);
+
+            if (!outputfile.empty()) {
+                osAggregator.setOuputFile(outputfile);
+            } else {
+                msg(MSG_ERROR, "OSResultAggregator output file is missing. Using console mode instead");
+
+                osAggregator.setOutputMode(OSResultAggregator::Console);
+            }
+
+        } else {
+            osAggregator.setOutputMode(OSResultAggregator::Console);
+        }
+    } else {
+        msg(MSG_ERROR, "Unable to instantiate OSResultAggregator. Please provide a interval. Skipping aggregation!");
+        return;
+    }
+
+    osAggregator.startExporterThread();
 }
 
 #endif

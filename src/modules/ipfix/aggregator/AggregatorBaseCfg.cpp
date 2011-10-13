@@ -238,24 +238,39 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
 
     std::string pluginName = "";
     std::string pluginVersion = "";
-    u_int32_t maxPackets = 0;
+    uint32_t maxPackets = 0;
     std::string dumpFile = "dump.csv";
     std::string bannerFile = "";
+    uint32_t osResultAggregatorInterval = 0;
+    std::string osResultAggregatorMode = "print";
+    std::string osResultAggregatorFile = "";
 
     XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 
     for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin(); it != set.end(); it++) {
         XMLElement* e = *it;
-        if (e->matches("name")) {
+        if ( e->matches("name") ) {
             pluginName = get("name", e);
-        }else if(e->matches("version")){
+        } else if ( e->matches("version") ){
             pluginVersion = get("version", e);
-        }else if(e->matches("maxpackets")){
-            maxPackets = (u_int32_t) getInt("maxpackets", 0, e);
-        }else if(e->matches("dumpfile")){
+        } else if ( e->matches("maxpackets") ){
+            maxPackets = (uint32_t) getInt("maxpackets", 0, e);
+        } else if ( e->matches("dumpfile") ){
             dumpFile = get("dumpfile", e);
-        }else if(e->matches("bannerfile")){
+        } else if ( e->matches("bannerfile") ){
             bannerFile = get("bannerfile", e);
+        } else if(e->matches("osResultAggregator")){
+            XMLNode::XMLSet<XMLElement*> children = e->getElementChildren();
+            for (XMLNode::XMLSet<XMLElement*>::iterator child_it = children.begin(); child_it != children.end(); child_it++) {
+                XMLElement* child = *child_it;
+                if ( child->matches("interval") ) {
+                    osResultAggregatorInterval = (uint32_t) getTimeInUnit("interval", mSEC, 0, e);
+                } else if (child->matches("output")){
+                    osResultAggregatorFile = get("output", child);
+                    XMLAttribute* mode = child->getAttribute("mode");
+                    osResultAggregatorMode = mode->getValue();
+                }
+            }
         }
     }
     if (pluginVersion == "" || pluginName == ""){
@@ -265,11 +280,13 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
         BasePluginHost* host = BasePluginHost::getInstance();
         if(pluginName == "osfp"){
             OSFPPlugin* plugin = new OSFPPlugin(maxPackets, dumpFile);
+            plugin->initializeAggregator(osResultAggregatorInterval, osResultAggregatorMode, osResultAggregatorFile);
             host->registerPlugin(plugin);
             msg(MSG_INFO, "Plugin loaded!");
         }
         if(pluginName == "bannergrabbing"){
             BannerGrabbingPlugin* plugin = new BannerGrabbingPlugin(maxPackets, dumpFile, bannerFile);
+            plugin->initializeAggregator(osResultAggregatorInterval, osResultAggregatorMode, osResultAggregatorFile);
             host->registerPlugin(plugin);
             msg(MSG_INFO, "Plugin loaded!");
         }

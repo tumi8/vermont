@@ -30,21 +30,19 @@ using namespace std;
 typedef boost::unordered_map< OSDetail, int > os_count_map_t;
 
 OSResultAggregator::OSResultAggregator()
-    :thread(OSResultAggregator::threadWrapper), pollInterval(1800000), exitFlag(false)
-{
-    thread.run(this);
+    :thread(OSResultAggregator::threadWrapper), pollInterval(0), exitFlag(false), filestream(NULL) {
 }
 
-OSResultAggregator::~OSResultAggregator(){
+OSResultAggregator::~OSResultAggregator() {
     exitFlag = true;
     thread.join();
+    filestream.close();
 }
 
 /**
  * thread which regularly checks for expired results
  */
-void OSResultAggregator::exporterThread()
-{
+void OSResultAggregator::exporterThread() {
     struct timeval inttimer;
     gettimeofday(&inttimer, 0);
     while (!exitFlag) {
@@ -105,7 +103,7 @@ void* OSResultAggregator::threadWrapper(void* instance){
 /**
   * Add new OSDetails to the list of results
   **/
-void OSResultAggregator::insertResult(uint32_t ip, OSDetail details){
+void OSResultAggregator::insertResult(uint32_t ip, OSDetail details) {
     if (results.find(ip) == results.end()){
         results[ip] = list<OSDetail>();
         expired[ip] = time(0);
@@ -123,7 +121,7 @@ void OSResultAggregator::removeResult(uint32_t ip){
 /**
   * Analyse all OSDetails of a given IP
   **/
-void OSResultAggregator::analyseResults(uint32_t ip){
+void OSResultAggregator::analyseResults(uint32_t ip) {
     if (results.find(ip) == results.end()) return;
     OSDetail detail;
     os_count_map_t map;
@@ -146,16 +144,55 @@ void OSResultAggregator::analyseResults(uint32_t ip){
     struct in_addr saddr;
     saddr.s_addr = ip;
 
-    printf("------------------------------------------\n");
-    printf("STATISTICS for IP: %s\n\n", inet_ntoa(saddr));
-    for (os_count_map_t::iterator it = map.begin(); it != map.end(); it++){
-        detail = (OSDetail)(it->first);
-        printf("OS detected via: %s (%i)\n", detail.origin == FINGERPRINT ? "Fingerprint" : "Banner Grabbing", total_results);
-        printf("OS Type: %s\n", detail.os_type.c_str());
-        printf("OS Version: %s\n", detail.os_version.c_str());
-        printf("OS Architecture: %s\n", detail.architecture.c_str());
-        printf("OS Success Ratio: %g%\n\n", 100 * (map[detail] / (double) total_results));
+    if (outputMode == Console) {
+        printf("------------------------------------------\n");
+        printf("STATISTICS for IP: %s\n\n", inet_ntoa(saddr));
+        for (os_count_map_t::iterator it = map.begin(); it != map.end(); it++){
+            detail = (OSDetail)(it->first);
+            printf("OS detected via: %s (%i)\n", detail.origin == OSDetail::FINGERPRINT ? "Fingerprint" : "Banner Grabbing", total_results);
+            printf("OS Type: %s\n", detail.os_type.c_str());
+            printf("OS Version: %s\n", detail.os_version.c_str());
+            printf("OS Architecture: %s\n", detail.architecture.c_str());
+            printf("OS Success Ratio: %g%\n\n", 100 * (map[detail] / (double) total_results));
+        }
+        printf("------------------------------------------\n");
     }
-    printf("------------------------------------------\n");
+    if (outputMode == File) {
+        filestream << "------------------------------------------" << endl;
+        filestream << "STATISTICS for IP: " << inet_ntoa(saddr) << endl << endl;
+        for (os_count_map_t::iterator it = map.begin(); it != map.end(); it++){
+            detail = (OSDetail)(it->first);
+            filestream << "OS detected via: " << (detail.origin == OSDetail::FINGERPRINT ? "Fingerprint" : "Banner Grabbing") << total_results << endl;
+            filestream << "OS Type: " << detail.os_type << endl;
+            filestream << "OS Version: " << detail.os_version << endl;
+            filestream << "OS Architecture: " << detail.architecture << endl;
+            filestream << "OS Success Ratio: " << 100 * (map[detail] / (double) total_results) << endl << endl;
+        }
+        filestream << "------------------------------------------" << endl;
+    }
+}
+
+void OSResultAggregator::setInterval(uint32_t interval) {
+    pollInterval = interval;
+}
+
+void OSResultAggregator::setOutputMode(OSResultAggregator::e_mode mode) {
+    outputMode = mode;
+}
+
+void OSResultAggregator::setOuputFile(std::string file) {
+    aggregationFile = file;
+}
+
+void OSResultAggregator::startExporterThread()
+{
+    if (outputMode == File && !aggregationFile.empty()) {
+        filestream.open(aggregationFile.c_str(), ios_base::out);
+    }
+    if (pollInterval > 0) {
+        thread.run(this);
+    } else {
+        msg(MSG_ERROR, "OSResultAggregator pollinterval has to > 0!");
+    }
 }
 #endif

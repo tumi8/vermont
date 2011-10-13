@@ -25,11 +25,14 @@
 #include <list>
 #include "core/XMLDocument.h"
 
-enum e_bannerType {HTTP=0, SSH};
-
 class BannerOSMapping{
 
 public:
+    enum e_bannerType {
+        HTTP=1,
+        SSH
+    };
+
     BannerOSMapping();
     BannerOSMapping(const std::string osType, const std::string osVersion, const std::string banner, const e_bannerType bannertype);
     std::string osType;

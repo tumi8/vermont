@@ -116,13 +116,24 @@
 		  <version>1.0</version>
 		  <dumpfile>/home/ferdi/tmp/build/vermont/dump.csv</dumpfile>
 		  <maxpackets>3</maxpackets>
+		  <!-- The following lines are needed if a aggregation of the results should be performed -->
+		  <!--osResultAggregator>
+		    <interval unit="sec">120</interval>
+		    <output mode="file">/home/ferdi/tmp/build/vermont/fingerprintAggregation.txt</output>
+		  </osResultAggregator-->
 		</plugin>
 		<plugin>
 		  <name>bannergrabbing</name>
 		  <version>1.0</version>
 		  <dumpfile>/home/ferdi/tmp/build/vermont/dump_http.csv</dumpfile>
-		  <bannerfile>/home/ferdi/AeroFS/Masterarbeit/vermont/configs/banner_os_mapping.xml</bannerfile>
-		  <maxpackets>1</maxpackets>
+		  <maxpackets>3</maxpackets>
+		  <!-- uncomment if banner -> os mapping should be performed -->
+		  <!--bannerfile>/home/ferdi/AeroFS/Masterarbeit/vermont/configs/banner_os_mapping.xml</bannerfile-->
+		  <!-- The following lines are needed if a aggregation of the results should be performed -->
+		  <!--osResultAggregator>
+		    <interval unit="sec">120</interval>
+		    <output mode="console">/home/ferdi/tmp/build/vermont/bannerAggregation.txt</output>
+		  </osResultAggregator-->
 		</plugin>
 		<next>7</next>
 	</ipfixAggregator>
