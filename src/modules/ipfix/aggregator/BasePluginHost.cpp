@@ -63,4 +63,5 @@ int BasePluginHost::unregisterPlugin(BasePlugin* plugin){
     }
     return 0;
 }
+
 #endif

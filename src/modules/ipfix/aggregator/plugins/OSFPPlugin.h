@@ -35,7 +35,7 @@ typedef boost::unordered_map<uint32_t, uint32_t> hashmap_t;
 class OSFPPlugin : public BasePlugin{
 public:
     OSFPPlugin();
-    OSFPPlugin(const uint32_t maxPckts, std::string file);
+    OSFPPlugin(const uint32_t maxPckts, std::string file, bool synackmode = false);
     ~OSFPPlugin();
     void flowDeleted(const HashtableBucket* bucket);
     void newFlowReceived(const HashtableBucket* bucket);
@@ -46,10 +46,11 @@ public:
 private:
     uint32_t maxPackets;
     std::string dumpFile;
+    bool syn_ack_mode;
     hashmap_t map;
     OSResultAggregator osAggregator;
     OSSamples osSamples;
-    void processPacket(const Packet* p);
+    void processPacket(const Packet* p, uint32_t hash);
     string parseTCPOptions(struct TCPOptions &options, const Packet* p, const uint32_t dataOffset);
     void writeToFile(OSFingerprint* fingerprint);
     ofstream filestream;

@@ -22,6 +22,7 @@
 #define OSSAMPLES_H_
 #include <boost/unordered_map.hpp>
 #include <vector>
+#include <set>
 #include "common/Time.h"
 #include <time.h>
 
@@ -40,7 +41,6 @@
 #define TS_SEQ_ZERO 1 /* At least one of the timestamps we received back was 0 */
 #define TS_SEQ_2HZ 2
 #define TS_SEQ_100HZ 3
-#define TS_SEQ_300HZ 4
 #define TS_SEQ_1000HZ 5
 #define TS_SEQ_OTHER_NUM 6
 #define TS_SEQ_UNSUPPORTED 7 /* System didn't send back a timestamp */
@@ -56,30 +56,43 @@
 #define IPID_SEQ_ZERO 6 /* Every packet that comes back has an IP.ID of 0 (eg Linux 2.4 does this) */
 
 /* Maximum number of samples stored in the maps */
-#define NUM_MAX_SAMPLES 20
+#define NUM_MAX_SAMPLES 3
 
 struct seq_info{
     uint32_t ts_seq_class;
     uint32_t ipid_class;
     int index;
-    uint32_t timestamps[NUM_MAX_SAMPLES];
+    int timestamps[NUM_MAX_SAMPLES];
     timeval capturetimes[NUM_MAX_SAMPLES];
     int ipids[NUM_MAX_SAMPLES];
     uint32_t seq_numbers[NUM_MAX_SAMPLES];
+    std::set<uint32_t> ips;
+};
+
+struct rr_info{
+    uint32_t syn_ack_seq_number;
+    uint32_t syn_seq_number;
 };
 
 typedef boost::unordered_map< uint32_t, struct seq_info > ts_map;
+typedef boost::unordered_map< std::size_t, struct rr_info > rr_map;
+
+class OSFingerprint;
+
 
 class OSSamples{
 
 public:
-    void addToSample(uint32_t ip, uint32_t timestamp, timeval capturetime, uint16_t ipid, uint32_t seq_number);
-    void predictSequences(uint32_t ip);
-    uint32_t gcd_n_uint(int nvals, unsigned int *val);
-    int get_ipid_sequence(int numSamples, int *ipids, int islocalhost);
+    void addToSample(uint32_t hash, OSFingerprint* fingerprint, timeval capturetime);
+    void predictSequences(uint32_t ip, uint32_t hash);
+    void forceOSSamplePrediction(uint32_t hash);
 
 private:
+    uint32_t gcd_n_uint(int nvals, unsigned int *val);
+    int get_ipid_sequence(int numSamples, int *ipids, int islocalhost);
+    std::size_t generateBiFlowHash(OSFingerprint* fp) const;
     ts_map tsMap;
+    rr_map rrMap;
 
 };
 

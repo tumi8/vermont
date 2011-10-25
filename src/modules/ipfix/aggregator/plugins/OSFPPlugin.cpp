@@ -45,9 +45,8 @@ OSFPPlugin::OSFPPlugin(){
     OSFPPlugin(0, (char*) "dump.csv");
 }
 
-OSFPPlugin::OSFPPlugin(const uint32_t maxPckts, std::string file){
-    maxPackets = maxPckts;
-    dumpFile = file;
+OSFPPlugin::OSFPPlugin(const uint32_t maxPckts, std::string file, bool synackmode)
+    : maxPackets(maxPckts), dumpFile(file), syn_ack_mode(synackmode) {
     msg(MSG_INFO, "OSFPPlugin instantiated");
     msg(MSG_INFO, "  - dump file: %s", dumpFile.c_str());
     msg(MSG_INFO, "  - max connections: %i", maxPackets);
@@ -89,6 +88,12 @@ void OSFPPlugin::newPacketReceived(const Packet* p, uint32_t hash){
     if (p->ipProtocolType != Packet::TCP){
         return;
     }
+    //in syn_ack_mode only SYN and SYN-ACK packets are accepted
+    if (syn_ack_mode) {
+        const tcphdr* tcpheader;
+        tcpheader = (tcphdr*) p->transportHeader;
+        if (!(bool)tcpheader->syn) return;
+    }
 
     /* is packet tracking needed?
        if yes, check if not more than maxPackets */
@@ -104,29 +109,29 @@ void OSFPPlugin::newPacketReceived(const Packet* p, uint32_t hash){
         }
     }
     //start processing the packet
-    processPacket(p);
+    processPacket(p, hash);
 }
 
-void OSFPPlugin::processPacket(const Packet* p){
-    struct TCPOptions options;
-    /*initialize values*/
-    memset(&options, 0, sizeof(struct TCPOptions));
-    options.mss = 1460;
+/**
+  * Start processing a packet (parse TCP Options) and create a fingerprint.
+  * optionally start fingerprint aggregation or sampling
+  **/
+void OSFPPlugin::processPacket(const Packet* p, uint32_t hash){
     unsigned char *doff;
     uint16_t doffval;
     const iphdr* ipheader;
     const tcphdr* tcpheader;
-    OSFingerprint fingerprint;
+    OSFingerprint* fp = new OSFingerprint();
 
     doff = p->transportHeader + 12;
     doffval = (uint16_t)((*doff) >> 4);
 
     if (doffval > 5){
-        options.mss = 1500 - (doffval * 4 + sizeof(p->netHeader));
-        options.has_options = 1;
+        fp->m_TCP_Options.mss = 1500 - (doffval * 4 + sizeof(p->netHeader));
+        fp->m_TCP_Options.has_options = 1;
 
         /*parse option fields:*/
-        fingerprint.ordered_options = parseTCPOptions(options, p, doffval*4);
+        fp->ordered_options = parseTCPOptions(fp->m_TCP_Options, p, doffval*4);
 
     }
 
@@ -134,44 +139,46 @@ void OSFPPlugin::processPacket(const Packet* p){
     ipheader = (iphdr*) p->netHeader;
     tcpheader = (tcphdr*) p->transportHeader;
 
-    fingerprint.m_Pcap_Timestamp = p->timestamp;
-    fingerprint.m_TCP_Options = options;
+    fp->m_Pcap_Timestamp = p->timestamp;
     struct in_addr saddr;
     saddr.s_addr = ipheader->saddr;
-    fingerprint.m_IP_Source = saddr;
-    fingerprint.m_TCP_SourcePort = ntohs(tcpheader->source);
+    fp->m_IP_Source = saddr;
+    fp->m_TCP_SourcePort = ntohs(tcpheader->source);
     struct in_addr daddr;
     daddr.s_addr = (in_addr_t) ipheader->daddr;
-    fingerprint.m_IP_Dest = daddr;
-    fingerprint.m_TCP_DestPort = ntohs(tcpheader->dest);
-    fingerprint.m_IP_IHL = ipheader->ihl;
-    fingerprint.m_IP_TOS = (uint16_t) ipheader->tos;
-    fingerprint.m_IP_ID = ntohs(ipheader->id);
-    fingerprint.m_IP_Protocol = (uint16_t) ipheader->protocol;
-    fingerprint.m_IP_DF = (bool) ntohs(IP_DF);
-    fingerprint.m_IP_TTL = fingerprint.guessInitialTTL(ipheader->ttl);
-    fingerprint.m_TCP_Window_Size = ntohs(tcpheader->window);
-    fingerprint.m_TCP_URG = (bool) tcpheader->urg;
-    fingerprint.m_TCP_PSH = (bool) tcpheader->psh;
-    fingerprint.m_TCP_RST = (bool) tcpheader->rst;
-    fingerprint.m_TCP_FIN = (bool) tcpheader->fin;
-    fingerprint.m_TCP_URG_PTR = (bool) tcpheader->urg_ptr;
-    fingerprint.m_TCP_DOFF = ntohs(tcpheader->doff);
-    fingerprint.m_TCP_SEQ = ntohl(tcpheader->seq);
-    fingerprint.m_TCP_ACK_SEQ = ntohl(tcpheader->ack_seq);
-    fingerprint.m_TCP_RES1 = ntohs(tcpheader->res1);
-    fingerprint.m_TCP_RES2 = ntohs(tcpheader->res2);
-    fingerprint.m_TCP_SYN = (bool)tcpheader->syn;
-    fingerprint.m_TCP_ACK = (bool)tcpheader->ack;
-    fingerprint.m_Data_Length = p->data_length;
+    fp->m_IP_Dest = daddr;
+    fp->m_TCP_DestPort = ntohs(tcpheader->dest);
+    fp->m_IP_IHL = ipheader->ihl;
+    fp->m_IP_TOS = (uint16_t) ipheader->tos;
+    fp->m_IP_ID = ntohs(ipheader->id);
+    fp->m_IP_Protocol = (uint16_t) ipheader->protocol;
+    fp->m_IP_DF = (bool) ntohs(IP_DF);
+    fp->m_IP_TTL = fp->guessInitialTTL(ipheader->ttl);
+    fp->m_TCP_Window_Size = ntohs(tcpheader->window);
+    fp->m_TCP_URG = (bool) tcpheader->urg;
+    fp->m_TCP_PSH = (bool) tcpheader->psh;
+    fp->m_TCP_RST = (bool) tcpheader->rst;
+    fp->m_TCP_FIN = (bool) tcpheader->fin;
+    fp->m_TCP_URG_PTR = (bool) tcpheader->urg_ptr;
+    fp->m_TCP_DOFF = ntohs(tcpheader->doff);
+    fp->m_TCP_SEQ = ntohl(tcpheader->seq);
+    fp->m_TCP_ACK_SEQ = ntohl(tcpheader->ack_seq);
+    fp->m_TCP_RES1 = ntohs(tcpheader->res1);
+    fp->m_TCP_RES2 = ntohs(tcpheader->res2);
+    fp->m_TCP_SYN = (bool)tcpheader->syn;
+    fp->m_TCP_ACK = (bool)tcpheader->ack;
+    fp->m_Data_Length = p->data_length;
 
-    writeToFile(&fingerprint);
-    fingerprint.detectOS();
-    OSDetail detail = OSDetail(fingerprint.m_OS_Type, fingerprint.m_OS_Version, "", OSDetail::FINGERPRINT);
-    osAggregator.insertResult(ipheader->saddr, detail);
-    //osSamples.addToSample(ipheader->saddr, fingerprint.m_TCP_Options.tstamp, p->timestamp, fingerprint.m_IP_ID, fingerprint.m_TCP_SEQ);
+    writeToFile(fp);
+    //fp->detectOS();
+    //OSDetail detail = OSDetail(fp->m_OS_Type, fp->m_OS_Version, "", OSDetail::FINGERPRINT);
+    //osAggregator.insertResult(ipheader->saddr, detail);
+    //osSamples.addToSample(hash, fp, p->timestamp);
 }
 
+/**
+  * Parse TCP Options
+  **/
 string OSFPPlugin::parseTCPOptions(struct TCPOptions &options, const Packet* p, const uint32_t dataOffset){
     int optionsCnt = 0;
     bool lastFound = 0;
@@ -198,10 +205,7 @@ string OSFPPlugin::parseTCPOptions(struct TCPOptions &options, const Packet* p, 
             if (option_ptr + 3 <= endOfOptions){
                 pkt_ignore_u16(&option_ptr);
                 pkt_get_u8(&option_ptr, &options.window_scale);
-                optionsStream << "W";
-                if (options.window_scale == 0){
-                    optionsStream << "@0";
-                }
+                optionsStream << "W@" << (uint16_t) options.window_scale;
             } else {
                 // TCP Options corrupt, stopping this
                 lastFound = 1;

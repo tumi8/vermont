@@ -35,7 +35,7 @@ typedef pair<std::string, std::string> banner_pair_t;
 class BannerGrabbingPlugin : public BasePlugin{
 public:
     BannerGrabbingPlugin();
-    BannerGrabbingPlugin(const uint32_t maxPckts, std::string file, std::string bannerfile);
+    BannerGrabbingPlugin(const uint32_t maxPckts, std::string file, std::string bannerfile, bool synackmode = false);
     ~BannerGrabbingPlugin();
     void flowDeleted(const HashtableBucket* bucket);
     void newFlowReceived(const HashtableBucket* bucket);
@@ -47,6 +47,7 @@ private:
     uint32_t maxPackets;
     ofstream filestream;
     std::string dumpFile;
+    bool syn_ack_mode;
     hashmap_t map;
     list<BannerOSMapping> banners;
     bool performOSGuessing;

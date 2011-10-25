@@ -44,10 +44,9 @@ BannerGrabbingPlugin::BannerGrabbingPlugin() {
 }
 
 
-BannerGrabbingPlugin::BannerGrabbingPlugin(const uint32_t maxPckts, std::string file, std::string bannerfile):
-    performOSGuessing(false) {
-    maxPackets = maxPckts;
-    dumpFile = file;
+BannerGrabbingPlugin::BannerGrabbingPlugin(const uint32_t maxPckts, std::string file, std::string bannerfile, bool synackmode):
+    performOSGuessing(false), maxPackets(maxPckts), dumpFile(file), syn_ack_mode(synackmode) {
+
     msg(MSG_INFO, "BannerGrabbingPlugin instantiated");
     msg(MSG_INFO, "  - dump file: %s", dumpFile.c_str());
 
@@ -75,6 +74,12 @@ void BannerGrabbingPlugin::newFlowReceived(const HashtableBucket* bucket) {
 
 
 void BannerGrabbingPlugin::newPacketReceived(const Packet* p, uint32_t hash) {
+    //in syn_ack_mode only SYN and SYN-ACK packets are accepted
+    if (syn_ack_mode) {
+        const tcphdr* tcpheader;
+        tcpheader = (tcphdr*) p->transportHeader;
+        if (!(bool)tcpheader->syn) return;
+    }
 
     /* is packet tracking needed?
        if yes, check if not more than maxPackets */
@@ -181,10 +186,11 @@ void BannerGrabbingPlugin::guessOS(const Packet* p, std::string* grabbedString, 
     std::list<BannerOSMapping>::iterator it;
     const iphdr* ipheader;
     ipheader = (iphdr*) p->netHeader;
-    struct in_addr saddr;
-    saddr.s_addr = ipheader->saddr;
 
     std::string searchString = *grabbedString;
+    if (ipheader->saddr != 2281613504){
+        printf("\ngrabbed: %s %u\n", searchString.c_str(), ipheader->saddr);
+    }
 
     switch (type) {
     case BannerOSMapping::HTTP:

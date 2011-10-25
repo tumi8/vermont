@@ -241,6 +241,8 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
     uint32_t maxPackets = 0;
     std::string dumpFile = "dump.csv";
     std::string bannerFile = "";
+    bool osResultAggregatorFound = false;
+    bool synackmode = false;
     uint32_t osResultAggregatorInterval = 0;
     std::string osResultAggregatorMode = "print";
     std::string osResultAggregatorFile = "";
@@ -251,16 +253,21 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
         XMLElement* e = *it;
         if ( e->matches("name") ) {
             pluginName = get("name", e);
-        } else if ( e->matches("version") ){
+        } else if ( e->matches("version") ) {
             pluginVersion = get("version", e);
-        } else if ( e->matches("maxpackets") ){
+        } else if ( e->matches("maxpackets") ) {
             maxPackets = (uint32_t) getInt("maxpackets", 0, e);
-        } else if ( e->matches("dumpfile") ){
+        } else if ( e->matches("dumpfile") ) {
             dumpFile = get("dumpfile", e);
-        } else if ( e->matches("bannerfile") ){
+        } else if ( e->matches("bannerfile") ) {
             bannerFile = get("bannerfile", e);
-        } else if(e->matches("osResultAggregator")){
+        } else if ( e->matches("synackmode") ) {
+            std::string samode = get("synackmode", e);
+            synackmode = !samode.empty () && (strcasecmp (samode.c_str (), "true") == 0 || atoi (samode.c_str ()) != 0);
+        } else if(e->matches("osResultAggregator")) {
+            osResultAggregatorFound = true;
             XMLNode::XMLSet<XMLElement*> children = e->getElementChildren();
+
             for (XMLNode::XMLSet<XMLElement*>::iterator child_it = children.begin(); child_it != children.end(); child_it++) {
                 XMLElement* child = *child_it;
                 if ( child->matches("interval") ) {
@@ -273,20 +280,24 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
             }
         }
     }
-    if (pluginVersion == "" || pluginName == ""){
+    if (pluginVersion == "" || pluginName == "") {
         msg(MSG_ERROR, "Plugin information missing! At least name and version must be given. Information found: Name:\"%s\", Version: \"%s\"", pluginName.c_str(), pluginVersion.c_str());
     } else {
         msg(MSG_INFO, "Found Plugin: \"%s\" \"%s\"", pluginName.c_str(), pluginVersion.c_str());
         BasePluginHost* host = BasePluginHost::getInstance();
-        if(pluginName == "osfp"){
-            OSFPPlugin* plugin = new OSFPPlugin(maxPackets, dumpFile);
-            plugin->initializeAggregator(osResultAggregatorInterval, osResultAggregatorMode, osResultAggregatorFile);
+        if(pluginName == "osfp") {
+            OSFPPlugin* plugin = new OSFPPlugin(maxPackets, dumpFile, synackmode);
+            if (osResultAggregatorFound) {
+                plugin->initializeAggregator(osResultAggregatorInterval, osResultAggregatorMode, osResultAggregatorFile);
+            }
             host->registerPlugin(plugin);
             msg(MSG_INFO, "Plugin loaded!");
         }
-        if(pluginName == "bannergrabbing"){
-            BannerGrabbingPlugin* plugin = new BannerGrabbingPlugin(maxPackets, dumpFile, bannerFile);
-            plugin->initializeAggregator(osResultAggregatorInterval, osResultAggregatorMode, osResultAggregatorFile);
+        if(pluginName == "bannergrabbing") {
+            BannerGrabbingPlugin* plugin = new BannerGrabbingPlugin(maxPackets, dumpFile, bannerFile, synackmode);
+            if (osResultAggregatorFound) {
+                plugin->initializeAggregator(osResultAggregatorInterval, osResultAggregatorMode, osResultAggregatorFile);
+            }
             host->registerPlugin(plugin);
             msg(MSG_INFO, "Plugin loaded!");
         }
