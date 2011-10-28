@@ -44,13 +44,13 @@ public:
     void initializeAggregator(uint32_t interval, std::string mode, std::string outputfile);
 
 private:
+    bool performOSGuessing;
     uint32_t maxPackets;
     ofstream filestream;
     std::string dumpFile;
     bool syn_ack_mode;
     hashmap_t map;
     list<BannerOSMapping> banners;
-    bool performOSGuessing;
     OSResultAggregator osAggregator;
     void processPacket(const Packet* p);
     void saveResult(const Packet* p, std::string* result_ptr);

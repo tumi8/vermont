@@ -19,51 +19,45 @@
  */
 
 #ifdef PLUGIN_SUPPORT_ENABLED
-#ifndef OSANALYSER_H_
-#define OSANALYSER_H_
-
-#include "OSDetail.h"
-#include "common/Thread.h"
-#include <fstream>
+#ifndef OSFINGERPRINTDETECTION_H_
+#define OSFINGERPRINTDETECTION_H_
+#include "OSFingerprint.h"
 #include <boost/unordered_map.hpp>
-#include <list>
+#include "common/Thread.h"
 
-typedef boost::unordered_map< uint32_t, std::list<OSDetail> > os_result_map_t;
-typedef boost::unordered_map< uint32_t, uint32_t > expiry_map_t;
+typedef boost::unordered_map <std::size_t, std::vector<OSFingerprint> > flowmap_t;
+typedef boost::unordered_map <std::size_t, uint32_t> expirymap_t;
 
-
-class OSResultAggregator{
+/**
+  * TCP/IP Fingerprint Detection
+  **/
+class OSFingerprintDetection{
 
 public:
-    enum e_mode {
-        Console = 1,
-        File
+    enum e_fp_type{
+        SYN = 1,
+        SYNACK,
+        ACK
     };
+    OSFingerprintDetection();
+    ~OSFingerprintDetection();
 
-    OSResultAggregator();
-    ~OSResultAggregator();
-    void insertResult(uint32_t ip, OSDetail details);
-    void removeResult(uint32_t ip);
-    void analyseResults(uint32_t ip);
-    void exporterThread();
-    void startExporterThread();
-
-    void setInterval(uint32_t interval);
-    void setOutputMode(e_mode mode);
-    void setOuputFile(std::string file);
+    void detectSinglePacket(OSFingerprint *fp);
+    void addFingerprintToFlow(OSFingerprint *fp);
 
 private:
-    os_result_map_t results;
-    expiry_map_t expired;
+    flowmap_t flowmap;
+    expirymap_t expirymap;
+    std::size_t generateFlowKeyHash(OSFingerprint *fp);
+    bool getFingerprint(std::size_t hash, e_fp_type type, OSFingerprint &fp);
+    void detectPacketFlow(OSFingerprint fpSyn, OSFingerprint fpSynAck, OSFingerprint fpAck);
     Thread thread;
     uint32_t pollInterval; /**< polling interval in milliseconds */
-    bool exitFlag;
-    e_mode outputMode;
-    std::string aggregationFile;
-    std::ofstream filestream;
+    uint32_t flowexpiry;
     static void* threadWrapper(void* instance);
+    void gcThread();
 };
+#endif
+#endif
 
-#endif
-#endif
 

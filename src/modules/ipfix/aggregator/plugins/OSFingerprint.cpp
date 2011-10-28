@@ -107,15 +107,15 @@ string OSFingerprint::toString() const{
     /* TCP Reserved 2 */
     strm << m_TCP_RES2 << ":";
 
-    if(m_TCP_SYN == true && m_TCP_ACK == true){
+    if(m_TCP_SYN && m_TCP_ACK){
         test = true;
         san_flag = "SA";
     }
-    if(m_TCP_SYN == true && m_TCP_ACK == false){
+    if(m_TCP_SYN && !m_TCP_ACK){
         test = true;
         san_flag = "S";
     }
-    if(test == false){
+    if(!test){
         san_flag = "A";
     }
     strm << san_flag << ":";
@@ -129,7 +129,6 @@ string OSFingerprint::toString() const{
     } else {
         strm << "?";
     }
-    strm << endl;
 
     return strm.str();
 }

@@ -71,7 +71,7 @@ void OSResultAggregator::exporterThread() {
         {
             //print and delete all expired results
             uint32_t now = time(0);
-            if (expired[itBegin->first] < now)
+            if (expired[itBegin->first] < now - (pollInterval/1000))
             {
                 //reset expiry
                 expired.erase(itBegin->first);
@@ -153,7 +153,7 @@ void OSResultAggregator::analyseResults(uint32_t ip) {
             printf("OS Type: %s\n", detail.os_type.c_str());
             printf("OS Version: %s\n", detail.os_version.c_str());
             printf("OS Architecture: %s\n", detail.architecture.c_str());
-            printf("OS Success Ratio: %g%\n\n", 100 * (map[detail] / (double) total_results));
+            printf("OS Success Ratio: %g\n\n", 100 * (map[detail] / (double) total_results));
         }
         printf("------------------------------------------\n");
     }

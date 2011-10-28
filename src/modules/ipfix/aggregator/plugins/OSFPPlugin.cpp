@@ -68,7 +68,7 @@ OSFPPlugin::~OSFPPlugin(){
  * gets called when a flow has been deleted
  */
 void OSFPPlugin::flowDeleted(const HashtableBucket* bucket){
-    map.erase(bucket->hash);
+    packetcountmap.erase(bucket->hash);
 }
 
 
@@ -76,7 +76,7 @@ void OSFPPlugin::flowDeleted(const HashtableBucket* bucket){
  * gets called when a new flow has been generated
  */
 void OSFPPlugin::newFlowReceived(const HashtableBucket* bucket){
-    map[bucket->hash] = 0;
+    packetcountmap[bucket->hash] = 0;
 }
 
 
@@ -98,13 +98,13 @@ void OSFPPlugin::newPacketReceived(const Packet* p, uint32_t hash){
     /* is packet tracking needed?
        if yes, check if not more than maxPackets */
     if (maxPackets > 0){
-        if (map.find(hash) != map.end()){
-            ++map[hash];
+        if (packetcountmap.find(hash) != packetcountmap.end()){
+            packetcountmap[hash] += 1;
         }
         else{
-            map[hash] = 1;
+            packetcountmap[hash] = 1;
         }
-        if (map[hash] > maxPackets){
+        if (packetcountmap[hash] > maxPackets){
             return;
         }
     }
@@ -168,6 +168,8 @@ void OSFPPlugin::processPacket(const Packet* p, uint32_t hash){
     fp->m_TCP_SYN = (bool)tcpheader->syn;
     fp->m_TCP_ACK = (bool)tcpheader->ack;
     fp->m_Data_Length = p->data_length;
+
+    detector.addFingerprintToFlow(fp);
 
     writeToFile(fp);
     //fp->detectOS();
@@ -290,7 +292,7 @@ void OSFPPlugin::writeToFile(OSFingerprint* fingerprint){
     if (!filestream.is_open()){
         filestream.open(dumpFile.c_str(), ios_base::app);
     }
-    filestream << fingerprint->toString().c_str();
+    filestream << fingerprint->toString().c_str() << endl;
 }
 
 void OSFPPlugin::initializeAggregator(uint32_t interval, std::string mode, std::string outputfile) {

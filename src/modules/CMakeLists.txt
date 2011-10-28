@@ -121,6 +121,7 @@ ADD_LIBRARY(modules
     ipfix/aggregator/plugins/OSResultAggregator.cpp
     ipfix/aggregator/plugins/OSDetail.cpp
     ipfix/aggregator/plugins/OSSamples.cpp
+    ipfix/aggregator/plugins/OSFingerprintDetection.cpp
 )
 
 

@@ -266,9 +266,6 @@ void BaseHashtable::exportBucket(HashtableBucket* bucket)
  */
 void BaseHashtable::destroyBucket(HashtableBucket* bucket)
 {
-#ifdef PLUGIN_SUPPORT_ENABLED
-    informPlugins(bucket);
-#endif
     delete bucket;
 }
 
