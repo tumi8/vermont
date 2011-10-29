@@ -43,7 +43,7 @@ NetflowV9ConverterCfg::NetflowV9ConverterCfg(XMLElement* elem)
 		if (e->matches("copyMode")) {
 			copyMode = getBool("copyMode");
 		} else if (e->matches("keepFlowSysUpTime")) {
-			keepFlowSysUpTime = getBool("copyMode");
+			keepFlowSysUpTime = getBool("keepFlowSysUpTime");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown NetflowV9Converter config statement %s\n", e->getName().c_str());
