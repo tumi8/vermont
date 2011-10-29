@@ -116,16 +116,17 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 		// check if we have to append new fields
 		if (myConvInfo.newFields.size() > 0) {
 			// ok, append the new fields to the data record
-			TemplateInfo::FieldInfo* fi = newTemplateInfo->fieldInfo;
-			fi = (TemplateInfo::FieldInfo*)realloc(fi, (newTemplateInfo->fieldCount + myConvInfo.newFields.size()) * sizeof(TemplateInfo::FieldInfo));
+			newTemplateInfo->fieldInfo = (TemplateInfo::FieldInfo*)realloc(newTemplateInfo->fieldInfo, (newTemplateInfo->fieldCount + myConvInfo.newFields.size()) * sizeof(TemplateInfo::FieldInfo));
 			if (newTemplateInfo->fieldInfo == NULL) {
 				THROWEXCEPTION("Could not allocate memory of new fields!");
 			}
+
 			// append the new fields to TemplateInfo
 			for (std::list<TemplateInfo::FieldInfo>::const_iterator i = myConvInfo.newFields.begin(); i != myConvInfo.newFields.end(); ++i) {
-				memcpy(fi + (newTemplateInfo->fieldCount*sizeof(TemplateInfo::FieldInfo)), &*i, sizeof(TemplateInfo::FieldInfo));
+				memcpy(newTemplateInfo->fieldInfo + newTemplateInfo->fieldCount, &*i, sizeof(TemplateInfo::FieldInfo));
 				newTemplateInfo->fieldCount++;
 			}
+
 		}
 
 		// Save conversion info in map
