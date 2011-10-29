@@ -46,6 +46,7 @@ public:
 protected:
 
 	bool copyMode;
+	bool keepFlowSysUpTime;
 
 	NetflowV9ConverterCfg(XMLElement*);
 };
