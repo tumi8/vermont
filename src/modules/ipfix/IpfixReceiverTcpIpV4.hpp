@@ -38,7 +38,7 @@ class IpfixReceiverTcpIpV4 : public IpfixReceiver, Sensor {
 		virtual ~IpfixReceiverTcpIpV4();
 
 		virtual void run();
-		std::string getStatisticsXML(double interval);
+		virtual std::string getStatisticsXML(double interval);
 	private:
 		int listen_socket;
 		uint32_t statReceivedMessages;  /**< number of received messages */
