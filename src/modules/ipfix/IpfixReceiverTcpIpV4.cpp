@@ -41,7 +41,9 @@
  * Does TCP/IPv4 specific initialization.
  * @param port Port to listen on
  */
-IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr) {
+IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr)
+	: statReceivedMessages(0) 
+{
 	receiverPort = port;
 	
 	struct sockaddr_in serverAddress;
@@ -70,6 +72,9 @@ IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr) {
 		msg(MSG_ERROR ,"Could not listen on TCP socket %i", listen_socket);
 		THROWEXCEPTION("Cannot create IpfixReceiverTcpIpV4");
 	}
+
+	SensorManager::getInstance().addSensor(this, "IpfixReceiverTCPIpV4", 0);
+
 	msg(MSG_INFO, "TCP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
 								listen_socket);
@@ -198,6 +203,8 @@ void IpfixReceiverTcpIpV4::run() {
 				}
 
 				if (ret > 0) {
+					statReceivedMessages++;
+
 					// create sourceId
 					boost::shared_ptr<IpfixRecord::SourceID> sourceID(new IpfixRecord::SourceID);
 					memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
@@ -223,3 +230,14 @@ void IpfixReceiverTcpIpV4::run() {
 	msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Exiting");
 }
 
+/**
+ * statistics function called by StatisticsManager
+ */
+std::string IpfixReceiverTcpIpV4::getStatisticsXML(double interval)
+{
+	ostringstream oss;
+	
+	oss << "<receivedPackets>" << statReceivedMessages << "</receivedPackets>" << endl;	
+
+	return oss.str();
+}
