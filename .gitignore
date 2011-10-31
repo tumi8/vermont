@@ -1,0 +1,19 @@
+# ignore macosx specific files
+.DS_Store
+# ignore compiled libs
+*.a
+# ignore cmake generated files
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+Makefile
+# ignore compiled binaries
+vermont
+tools/testCollector
+src/tests/vermonttest/vermonttest
+src/tests/ipfixlolib/test_everything
+src/tests/ipfixlolib/mtutest
+src/tests/ipfixlolib/example_code_2
+src/tests/ipfixlolib/example_code
+# ignore vermont generated files
+sensor_output.xml
