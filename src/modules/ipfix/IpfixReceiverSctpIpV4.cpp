@@ -41,7 +41,9 @@
  * Does SCTP/IPv4 specific initialization.
  * @param port Port to listen on
  */
-IpfixReceiverSctpIpV4::IpfixReceiverSctpIpV4(int port, std::string ipAddr) {
+IpfixReceiverSctpIpV4::IpfixReceiverSctpIpV4(int port, std::string ipAddr) 
+	: statReceivedPackets(0)
+{
 	receiverPort = port;
 	
 	struct sockaddr_in serverAddress;
@@ -179,6 +181,18 @@ void IpfixReceiverSctpIpV4::run() {
       		}
 	}
 	msg(MSG_DEBUG, "IpfixReceiverSctpIpV4: Exiting");
+}
+
+/**
+ * statistics function called by StatisticsManager
+ */
+std::string IpfixReceiverSctpIpV4::getStatisticsXML(double interval)
+{
+	ostringstream oss;
+	
+	oss << "<receivedPackets>" << statReceivedPackets << "</receivedPackets>" << endl;	
+
+	return oss.str();
 }
 
 #endif /*SUPPORT_SCTP*/
