@@ -63,6 +63,6 @@
 #define CN_maxPacketGap		"maxPacketGap"
 
 #define CN_flowStartSysUpTime	"flowStartSysUpTime"
-#define CN_flowEndSysUpTime	"flowEndSysUptim"
+#define CN_flowEndSysUpTime	"flowEndSysUpTime"
 
 #endif
