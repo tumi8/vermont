@@ -20,18 +20,21 @@ else(ORACLE_INCLUDE_DIR AND ORACLE_CLIENT_LIBRARIES AND ORACLE_CONNECTION_LIBRAR
 	find_path(ORACLE_INCLUDE_DIR occi.h
 	  /usr/lib/oracle/xe/app/oracle/product/*/client/rdbms/public
 	  /usr/include/oracle/*/client
+	  /opt/oracle/product/*/client/rdbms/public
     )
 
   find_library(ORACLE_CLIENT_LIBRARIES NAMES clntsh libclntsh
     PATHS
     /usr/lib/oracle/xe/app/oracle/product/*/client/lib
     /usr/lib/oracle/*/client/lib
+    /opt/oracle/product/*/client/lib
     )
 
   find_library(ORACLE_CONNECTION_LIBRARIES NAMES occi libocci
     PATHS
     /usr/lib/oracle/xe/app/oracle/product/*/client/lib
     /usr/lib/oracle/*/client/lib
+    /opt/oracle/product/*/client/lib
     )
       
   if(ORACLE_INCLUDE_DIR AND ORACLE_CLIENT_LIBRARIES AND ORACLE_CONNECTION_LIBRARIES)
