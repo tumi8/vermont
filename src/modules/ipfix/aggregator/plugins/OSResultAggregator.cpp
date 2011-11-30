@@ -47,7 +47,6 @@ void OSResultAggregator::exporterThread() {
     gettimeofday(&inttimer, 0);
     while (!exitFlag) {
         addToCurTime(&inttimer, pollInterval);
-
         struct timeval curtime;
         gettimeofday(&curtime, 0);
 
@@ -144,12 +143,16 @@ void OSResultAggregator::analyseResults(uint32_t ip) {
     struct in_addr saddr;
     saddr.s_addr = ip;
 
+    struct timeval curtime;
+    gettimeofday(&curtime, 0);
+
     if (outputMode == Console) {
         printf("------------------------------------------\n");
+        printf("Timestamp: %ld,%ld\n", curtime.tv_sec, curtime.tv_usec);
         printf("STATISTICS for IP: %s\n\n", inet_ntoa(saddr));
         for (os_count_map_t::iterator it = map.begin(); it != map.end(); it++){
             detail = (OSDetail)(it->first);
-            printf("OS detected via: %s (%i)\n", detail.origin == OSDetail::FINGERPRINT ? "Fingerprint" : "Banner Grabbing", total_results);
+            printf("OS detected via: %s (%i)\n", detail.getOriginName().c_str(), total_results);
             printf("OS Type: %s\n", detail.os_type.c_str());
             printf("OS Version: %s\n", detail.os_version.c_str());
             printf("OS Architecture: %s\n", detail.architecture.c_str());
@@ -159,10 +162,11 @@ void OSResultAggregator::analyseResults(uint32_t ip) {
     }
     if (outputMode == File) {
         filestream << "------------------------------------------" << endl;
+        filestream << "Timestamp: " << curtime.tv_sec <<","<< curtime.tv_usec << endl;
         filestream << "STATISTICS for IP: " << inet_ntoa(saddr) << endl << endl;
         for (os_count_map_t::iterator it = map.begin(); it != map.end(); it++){
             detail = (OSDetail)(it->first);
-            filestream << "OS detected via: " << (detail.origin == OSDetail::FINGERPRINT ? "Fingerprint" : "Banner Grabbing") << total_results << endl;
+            filestream << "OS detected via: " << detail.getOriginName() << " (" << total_results << ")" << endl;
             filestream << "OS Type: " << detail.os_type << endl;
             filestream << "OS Version: " << detail.os_version << endl;
             filestream << "OS Architecture: " << detail.architecture << endl;

@@ -22,10 +22,11 @@
 #ifndef OSFINGERPRINTDETECTION_H_
 #define OSFINGERPRINTDETECTION_H_
 #include "OSFingerprint.h"
+#include "OSResultAggregator.h"
 #include <boost/unordered_map.hpp>
 #include "common/Thread.h"
 
-typedef boost::unordered_map <std::size_t, std::vector<OSFingerprint> > flowmap_t;
+typedef boost::unordered_map <std::size_t, std::vector<OSFingerprint::Ptr> > flowmap_t;
 typedef boost::unordered_map <std::size_t, uint32_t> expirymap_t;
 
 /**
@@ -42,15 +43,18 @@ public:
     OSFingerprintDetection();
     ~OSFingerprintDetection();
 
-    void detectSinglePacket(OSFingerprint *fp);
-    void addFingerprintToFlow(OSFingerprint *fp);
+    void detectSinglePacket(OSFingerprint::Ptr fp);
+    void addFingerprintToFlow(OSFingerprint::Ptr fp);
+
+    void initializeAggregator(uint32_t interval, std::string mode, std::string outputfile);
 
 private:
+    OSResultAggregator osAggregator;
     flowmap_t flowmap;
     expirymap_t expirymap;
-    std::size_t generateFlowKeyHash(OSFingerprint *fp);
-    bool getFingerprint(std::size_t hash, e_fp_type type, OSFingerprint &fp);
-    void detectPacketFlow(OSFingerprint fpSyn, OSFingerprint fpSynAck, OSFingerprint fpAck);
+    std::size_t generateFlowKeyHash(OSFingerprint::Ptr fp);
+    bool getFingerprint(std::size_t hash, e_fp_type type, OSFingerprint::Ptr &fp);
+    void detectPacketFlow(OSFingerprint &fpSyn, OSFingerprint &fpSynAck, OSFingerprint &fpAck);
     Thread thread;
     uint32_t pollInterval; /**< polling interval in milliseconds */
     uint32_t flowexpiry;

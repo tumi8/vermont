@@ -25,6 +25,9 @@
 #include <set>
 #include "common/Time.h"
 #include <time.h>
+#include <iostream>
+#include <fstream>
+#include "OSFingerprint.h"
 
 /* Based on NMAP utils.h */
 /* Arithmatic difference modulo 2^32 */
@@ -77,22 +80,24 @@ struct rr_info{
 typedef boost::unordered_map< uint32_t, struct seq_info > ts_map;
 typedef boost::unordered_map< std::size_t, struct rr_info > rr_map;
 
-class OSFingerprint;
-
 
 class OSSamples{
 
 public:
-    void addToSample(uint32_t hash, OSFingerprint* fingerprint, timeval capturetime);
+    OSSamples();
+    OSSamples(std::string dumpFile);
+    ~OSSamples();
+    void addToSample(uint32_t hash, OSFingerprint::Ptr fingerprint, timeval capturetime);
     void predictSequences(uint32_t ip, uint32_t hash);
     void forceOSSamplePrediction(uint32_t hash);
 
 private:
     uint32_t gcd_n_uint(int nvals, unsigned int *val);
     int get_ipid_sequence(int numSamples, int *ipids, int islocalhost);
-    std::size_t generateBiFlowHash(OSFingerprint* fp) const;
+    std::size_t generateBiFlowHash(OSFingerprint::Ptr fp) const;
     ts_map tsMap;
     rr_map rrMap;
+    std::ofstream filestream;
 
 };
 

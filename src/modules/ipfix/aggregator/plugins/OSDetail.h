@@ -37,6 +37,7 @@ class OSDetail{
 public:
     enum e_origin{
         FINGERPRINT=1,
+        FINGERPRINT_FLOW,
         BANNER
     };
 
@@ -49,6 +50,8 @@ public:
     std::string os_version;
     std::string architecture;
     e_origin origin;
+
+    std::string getOriginName();
 };
 
 #endif

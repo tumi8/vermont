@@ -243,6 +243,7 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
     std::string bannerFile = "";
     bool osResultAggregatorFound = false;
     bool synackmode = false;
+    bool osdetection = false;
     uint32_t osResultAggregatorInterval = 0;
     std::string osResultAggregatorMode = "print";
     std::string osResultAggregatorFile = "";
@@ -261,6 +262,9 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
             dumpFile = get("dumpfile", e);
         } else if ( e->matches("bannerfile") ) {
             bannerFile = get("bannerfile", e);
+        } else if ( e->matches("osdetection") ) {
+            std::string osdet = get("osdetection", e);
+            osdetection = !osdet.empty () && (strcasecmp (osdet.c_str (), "true") == 0 || atoi (osdet.c_str ()) != 0);
         } else if ( e->matches("synackmode") ) {
             std::string samode = get("synackmode", e);
             synackmode = !samode.empty () && (strcasecmp (samode.c_str (), "true") == 0 || atoi (samode.c_str ()) != 0);
@@ -286,7 +290,7 @@ void AggregatorBaseCfg::readPlugin(XMLElement* elem) {
         msg(MSG_INFO, "Found Plugin: \"%s\" \"%s\"", pluginName.c_str(), pluginVersion.c_str());
         BasePluginHost* host = BasePluginHost::getInstance();
         if(pluginName == "osfp") {
-            OSFPPlugin* plugin = new OSFPPlugin(maxPackets, dumpFile, synackmode);
+            OSFPPlugin* plugin = new OSFPPlugin(maxPackets, dumpFile, synackmode, osdetection);
             if (osResultAggregatorFound) {
                 plugin->initializeAggregator(osResultAggregatorInterval, osResultAggregatorMode, osResultAggregatorFile);
             }

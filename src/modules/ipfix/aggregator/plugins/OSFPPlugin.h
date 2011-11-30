@@ -24,7 +24,6 @@
 #include "modules/ipfix/aggregator/BasePlugin.h"
 #include "OSFingerprint.h"
 #include "OSFingerprintDetection.h"
-#include "OSResultAggregator.h"
 #include "OSSamples.h"
 #include <boost/unordered_map.hpp>
 #include <iostream>
@@ -36,7 +35,7 @@ typedef boost::unordered_map <uint32_t, uint32_t> hashmap_t;
 class OSFPPlugin : public BasePlugin{
 public:
     OSFPPlugin();
-    OSFPPlugin(const uint32_t maxPckts, std::string file, bool synackmode = false);
+    OSFPPlugin(const uint32_t maxPckts, std::string file, bool synackmode = false, bool osdetection = false);
     ~OSFPPlugin();
     void flowDeleted(const HashtableBucket* bucket);
     void newFlowReceived(const HashtableBucket* bucket);
@@ -49,13 +48,13 @@ private:
     std::string dumpFile;
     bool syn_ack_mode;
     hashmap_t packetcountmap;
-    OSResultAggregator osAggregator;
-    OSSamples osSamples;
+    OSSamples* osSamples;
     ofstream filestream;
     OSFingerprintDetection detector;
+    bool os_detection;
     void processPacket(const Packet* p, uint32_t hash);
     string parseTCPOptions(struct TCPOptions &options, const Packet* p, const uint32_t dataOffset);
-    void writeToFile(OSFingerprint* fingerprint);
+    void writeToFile(OSFingerprint::Ptr fingerprint);
     void expireFlow(uint32_t hash);
 };
 

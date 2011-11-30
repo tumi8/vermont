@@ -45,8 +45,12 @@ OSFPPlugin::OSFPPlugin(){
     OSFPPlugin(0, (char*) "dump.csv");
 }
 
-OSFPPlugin::OSFPPlugin(const uint32_t maxPckts, std::string file, bool synackmode)
-    : maxPackets(maxPckts), dumpFile(file), syn_ack_mode(synackmode) {
+OSFPPlugin::OSFPPlugin(const uint32_t maxPckts, std::string file, bool synackmode, bool osdetection)
+    : maxPackets(maxPckts),
+      dumpFile(file),
+      syn_ack_mode(synackmode),
+      os_detection(osdetection)
+{
     msg(MSG_INFO, "OSFPPlugin instantiated");
     msg(MSG_INFO, "  - dump file: %s", dumpFile.c_str());
     msg(MSG_INFO, "  - max connections: %i", maxPackets);
@@ -57,6 +61,11 @@ OSFPPlugin::OSFPPlugin(const uint32_t maxPckts, std::string file, bool synackmod
               "TCP Push Flag : TCP Reset Flag : TCP FIN Flag : TCP Urgent Pointer : TCP EOL Option set : TCP Data Offset : " <<
               "TCP Sequence Number : TCP Acknowlegment Number : TCP Reserved 1 : TCP Reserved 2 : TCP Syn ACK None : LEN : " <<
               "Options Corrupt : Ordered Options" << endl;
+
+    size_t position = dumpFile.rfind(".");
+    string extractName = (string::npos == position)? dumpFile : dumpFile.substr(0, position);
+    extractName += "_ossamples.txt";
+    osSamples = new OSSamples(extractName);
 }
 
 OSFPPlugin::~OSFPPlugin(){
@@ -121,7 +130,7 @@ void OSFPPlugin::processPacket(const Packet* p, uint32_t hash){
     uint16_t doffval;
     const iphdr* ipheader;
     const tcphdr* tcpheader;
-    OSFingerprint* fp = new OSFingerprint();
+    OSFingerprint::Ptr fp = OSFingerprint::Ptr(new OSFingerprint());
 
     doff = p->transportHeader + 12;
     doffval = (uint16_t)((*doff) >> 4);
@@ -169,13 +178,17 @@ void OSFPPlugin::processPacket(const Packet* p, uint32_t hash){
     fp->m_TCP_ACK = (bool)tcpheader->ack;
     fp->m_Data_Length = p->data_length;
 
-    detector.addFingerprintToFlow(fp);
+    if (!syn_ack_mode && os_detection) {
+        detector.addFingerprintToFlow(fp);
+    }
 
-    writeToFile(fp);
-    //fp->detectOS();
-    //OSDetail detail = OSDetail(fp->m_OS_Type, fp->m_OS_Version, "", OSDetail::FINGERPRINT);
-    //osAggregator.insertResult(ipheader->saddr, detail);
-    //osSamples.addToSample(hash, fp, p->timestamp);
+    if (os_detection) {
+        detector.detectSinglePacket(fp);
+        osSamples->addToSample(hash, fp, p->timestamp);
+        writeToFile(fp);
+    } else {
+        writeToFile(fp);
+    }
 }
 
 /**
@@ -287,7 +300,7 @@ string OSFPPlugin::parseTCPOptions(struct TCPOptions &options, const Packet* p, 
     return optionsStream.str();
 }
 
-void OSFPPlugin::writeToFile(OSFingerprint* fingerprint){
+void OSFPPlugin::writeToFile(OSFingerprint::Ptr fingerprint){
 
     if (!filestream.is_open()){
         filestream.open(dumpFile.c_str(), ios_base::app);
@@ -296,33 +309,7 @@ void OSFPPlugin::writeToFile(OSFingerprint* fingerprint){
 }
 
 void OSFPPlugin::initializeAggregator(uint32_t interval, std::string mode, std::string outputfile) {
-    // the interval is mandatory for the OSResultAggregator
-    if (interval > 0){
-
-        osAggregator.setInterval(interval);
-
-        // if the output mode is set to file, set mode and file
-        if (mode == "file") {
-
-            osAggregator.setOutputMode(OSResultAggregator::File);
-
-            if (!outputfile.empty()) {
-                osAggregator.setOuputFile(outputfile);
-            } else {
-                msg(MSG_ERROR, "OSResultAggregator output file is missing. Using console mode instead");
-
-                osAggregator.setOutputMode(OSResultAggregator::Console);
-            }
-
-        } else {
-            osAggregator.setOutputMode(OSResultAggregator::Console);
-        }
-    } else {
-        msg(MSG_ERROR, "Unable to instantiate OSResultAggregator. Please provide a interval. Skipping aggregation!");
-        return;
-    }
-
-    osAggregator.startExporterThread();
+    detector.initializeAggregator(interval, mode, outputfile);
 }
 
 #endif

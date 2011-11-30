@@ -21,15 +21,22 @@
 #ifdef PLUGIN_SUPPORT_ENABLED
 #include "OSDetail.h"
 
-OSDetail::OSDetail(){
+OSDetail::OSDetail() {
     OSDetail("","","",FINGERPRINT);
 }
 
-OSDetail::OSDetail(std::string os_type, std::string os_version, std::string architecture, e_origin origin){
+OSDetail::OSDetail(std::string os_type, std::string os_version, std::string architecture, e_origin origin) {
     this->os_type = os_type;
     this->os_version = os_version;
     this->architecture = architecture;
     this->origin = origin;
+}
+
+std::string OSDetail::getOriginName() {
+    if (origin == FINGERPRINT) return "Fingerprint";
+    if (origin == FINGERPRINT_FLOW) return "Fingerprint Flow";
+    if (origin == BANNER) return "Banner Grabbing";
+    return "unknown";
 }
 
 #endif

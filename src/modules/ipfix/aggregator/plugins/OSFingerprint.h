@@ -22,7 +22,7 @@
 #ifndef OSFINGERPRINT_H_
 #define OSFINGERPRINT_H_
 #include "modules/packet/Packet.h"
-
+#include <boost/shared_ptr.hpp>
 // TCP Options structure
 struct TCPOptions{
     bool has_options;
@@ -80,6 +80,8 @@ public:
     string m_OS_Type;
     string m_OS_Version;
     string ordered_options;
+public:
+    typedef boost::shared_ptr<OSFingerprint> Ptr;
 };
 
 #endif

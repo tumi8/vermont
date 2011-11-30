@@ -5,11 +5,21 @@
 using namespace std;
 
 
+OSSamples::OSSamples() {
+    OSSamples("ossamples.txt");
+}
+
+OSSamples::OSSamples(string dumpFile) {
+    filestream.open(dumpFile.c_str(), ios_base::out);
+}
+OSSamples::~OSSamples() {
+    filestream.close();
+}
 /**
   * add a new sample to the hash map and start prediction if num_samples is
   * reached
   */
-void OSSamples::addToSample(uint32_t hash, OSFingerprint* fp, timeval capturetime){
+void OSSamples::addToSample(uint32_t hash, OSFingerprint::Ptr fp, timeval capturetime){
     // grab data for request/response test
 //    if (fp->m_TCP_SYN || (fp->m_TCP_SYN && fp->m_TCP_ACK)){
 //        std::size_t biFlowHash = generateBiFlowHash(fp);
@@ -67,7 +77,7 @@ void OSSamples::forceOSSamplePrediction(uint32_t hash) {
     }
 }
 
-std::size_t OSSamples::generateBiFlowHash(OSFingerprint* fp) const {
+std::size_t OSSamples::generateBiFlowHash(OSFingerprint::Ptr fp) const {
     in_addr_t ip1;
     u_int16_t port1;
     in_addr_t ip2;
@@ -123,6 +133,12 @@ void OSSamples::predictSequences(uint32_t ip, uint32_t hash){
     uint32_t seq_rates[num_samples];
     uint32_t seq_diffs[num_samples];
     unsigned long time_usec_diffs[num_samples];
+
+    struct timeval curtime;
+    gettimeofday(&curtime, 0);
+    filestream << "Timestamp: " << curtime.tv_sec <<","<< curtime.tv_usec << endl;
+
+
     for(i=1; i < num_samples; i++) {
         //calculate sequence differences
         seq_diffs[i - 1] = MOD_DIFF(tsMap[hash].seq_numbers[i], tsMap[hash].seq_numbers[i - 1]);
@@ -207,7 +223,8 @@ void OSSamples::predictSequences(uint32_t ip, uint32_t hash){
     }
     /* Variables: TCP ISN greatest common divisor (GCD), TCP ISN sequence predictability index (SP),
         TCP ISN counter rate (ISR)*/
-    printf("SP %i, GCD %i, ISR %i \n", index, seq_gcd, (uint32_t) seq_rate);
+    //printf("SP %i, GCD %i, ISR %i \n", index, seq_gcd, (uint32_t) seq_rate);
+    filestream << "SP " << index << " GCD " << seq_gcd << " ISR " << (uint32_t) seq_rate << endl;
 
 
     /* Now it is time to deal with IPIDs */
@@ -228,7 +245,8 @@ void OSSamples::predictSequences(uint32_t ip, uint32_t hash){
         tcp_ipid_seqclass = IPID_SEQ_UNKNOWN;
     }
 
-    printf("IPID_SEQC %i \n", tcp_ipid_seqclass);
+    //printf("IPID_SEQC %i \n", tcp_ipid_seqclass);
+    filestream << "IPID_SEQC " << tcp_ipid_seqclass << endl;
 
     /**
       * Begin TCP Sequence prediction
@@ -259,10 +277,12 @@ void OSSamples::predictSequences(uint32_t ip, uint32_t hash){
     }
     struct in_addr sip;
     sip.s_addr = (in_addr_t) ip;
-    printf("SEQ %i AVG %f IP %s\n\n", ts_seqclass, avg_ts_hz, inet_ntoa(sip));
+    //printf("SEQ %i AVG %f IP %s\n\n", ts_seqclass, avg_ts_hz, inet_ntoa(sip));
+    filestream << "SEQ " << (int)ts_seqclass << " AVG " << avg_ts_hz << " IP " << inet_ntoa(sip) << endl << endl;
 
     if (ts_seqclass == TS_SEQ_UNKNOWN && avg_ts_hz == 0.0){
-        printf("--> Must be Windows\n\n");
+        //printf("--> Must be Windows\n\n");
+        filestream << "--> Must be Windows" << endl << endl;
     }
     tsMap.erase(hash);
 }
