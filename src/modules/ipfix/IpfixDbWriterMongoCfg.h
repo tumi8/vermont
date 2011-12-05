@@ -49,12 +49,12 @@ protected:
 	
 	string hostname; /**< hostname of database host */
 	uint16_t port;	/**< port of database */
-	string dbname; /**< database name */
+	string collection; /**< mongo collection name */
 	string user;	/**< user name for login to database */
 	string password;	/**< password for login to database */
 	uint16_t bufferRecords;	/**< amount of records to buffer until they are written to database */
 	uint32_t observationDomainId;	/**< default observation domain id (overrides the one received in the records */
-	vector<string> colNames; /**< column names */
+	vector<string> propNames; /**< property names */
 
 	void readColumns(XMLElement* elem);
 	IpfixDbWriterMongoCfg(XMLElement*);
