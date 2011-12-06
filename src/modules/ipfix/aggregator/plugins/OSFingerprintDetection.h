@@ -50,6 +50,7 @@ public:
 
 private:
     OSResultAggregator osAggregator;
+    OSResultAggregator osAggregatorFlow;
     flowmap_t flowmap;
     expirymap_t expirymap;
     std::size_t generateFlowKeyHash(OSFingerprint::Ptr fp);
@@ -60,6 +61,7 @@ private:
     uint32_t flowexpiry;
     static void* threadWrapper(void* instance);
     void gcThread();
+    alock_t writeInProgress;
 };
 #endif
 #endif
