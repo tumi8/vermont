@@ -29,29 +29,29 @@
 #include "common/msg.h"
 
 IpfixDbWriterMongo::Property identify [] = {
-	{CN_dstIP, 		"NUMBER(10)", 	0, IPFIX_TYPEID_destinationIPv4Address, 0},
-	{CN_srcIP, 		"NUMBER(10)", 	0, IPFIX_TYPEID_sourceIPv4Address, 0},
-	{CN_srcPort, 		"NUMBER(5)", 	0, IPFIX_TYPEID_sourceTransportPort, 0},
-	{CN_dstPort, 		"NUMBER(5)", 	0, IPFIX_TYPEID_destinationTransportPort, 0},
-	{CN_proto, 		"NUMBER(3)", 		0, IPFIX_TYPEID_protocolIdentifier, 0 },
-	{CN_dstTos, 		"NUMBER(3)", 		0, IPFIX_TYPEID_classOfServiceIPv4, 0},
-	{CN_bytes, 		"NUMBER(20)", 		0, IPFIX_TYPEID_octetDeltaCount, 0},
-	{CN_pkts, 		"NUMBER(20)", 		0, IPFIX_TYPEID_packetDeltaCount, 0},
-	{CN_firstSwitched, 	"NUMBER(10)", 	0, IPFIX_TYPEID_flowStartSeconds, 0}, // default value is invalid/not used for this ent
-	{CN_lastSwitched, 	"NUMBER(10)", 	0, IPFIX_TYPEID_flowEndSeconds, 0}, // default value is invalid/not used for this entry
-	{CN_firstSwitchedMillis, "NUMBER(5)", 	0, IPFIX_TYPEID_flowStartMilliSeconds, 0},
-	{CN_lastSwitchedMillis, "NUMBER(5)", 	0, IPFIX_TYPEID_flowEndMilliSeconds, 0},
-	{CN_tcpControlBits,  	"NUMBER(5)", 	0, IPFIX_TYPEID_tcpControlBits, 0},
+	{CN_dstIP, 		"number", 	0, IPFIX_TYPEID_destinationIPv4Address, 0},
+	{CN_srcIP, 		"number", 	0, IPFIX_TYPEID_sourceIPv4Address, 0},
+	{CN_srcPort, 		"number", 	0, IPFIX_TYPEID_sourceTransportPort, 0},
+	{CN_dstPort, 		"number", 	0, IPFIX_TYPEID_destinationTransportPort, 0},
+	{CN_proto, 		"number", 		0, IPFIX_TYPEID_protocolIdentifier, 0 },
+	{CN_dstTos, 		"number", 		0, IPFIX_TYPEID_classOfServiceIPv4, 0},
+	{CN_bytes, 		"number", 		0, IPFIX_TYPEID_octetDeltaCount, 0},
+	{CN_pkts, 		"number", 		0, IPFIX_TYPEID_packetDeltaCount, 0},
+	{CN_firstSwitched, 	"number", 	0, IPFIX_TYPEID_flowStartSeconds, 0}, // default value is invalid/not used for this ent
+	{CN_lastSwitched, 	"number", 	0, IPFIX_TYPEID_flowEndSeconds, 0}, // default value is invalid/not used for this entry
+	{CN_firstSwitchedMillis, "number", 	0, IPFIX_TYPEID_flowStartMilliSeconds, 0},
+	{CN_lastSwitchedMillis, "number", 	0, IPFIX_TYPEID_flowEndMilliSeconds, 0},
+	{CN_tcpControlBits,  	"number", 	0, IPFIX_TYPEID_tcpControlBits, 0},
 	//TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
-	{CN_revbytes, 		"NUMBER(20)", 		0, IPFIX_TYPEID_octetDeltaCount, IPFIX_PEN_reverse},
-	{CN_revpkts, 		"NUMBER(20)", 		0, IPFIX_TYPEID_packetDeltaCount, IPFIX_PEN_reverse},
-	{CN_revFirstSwitched, 	"NUMBER(10)", 	0, IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
-	{CN_revLastSwitched, 	"NUMBER(10)", 	0, IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
-	{CN_revFirstSwitchedMillis, "NUMBER(5)", 	0, IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse},
-	{CN_revLastSwitchedMillis, "NUMBER(5)", 	0, IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse},
-	{CN_revTcpControlBits,  "NUMBER(5)", 	0, IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse},
-	{CN_maxPacketGap,  	"NUMBER(20)", 		0, IPFIX_ETYPEID_maxPacketGap, IPFIX_PEN_vermont|IPFIX_PEN_reverse},
-	{CN_exporterID, 	"NUMBER(5)", 	0, EXPORTERID, 0},
+	{CN_revbytes, 		"number", 		0, IPFIX_TYPEID_octetDeltaCount, IPFIX_PEN_reverse},
+	{CN_revpkts, 		"number", 		0, IPFIX_TYPEID_packetDeltaCount, IPFIX_PEN_reverse},
+	{CN_revFirstSwitched, 	"number", 	0, IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
+	{CN_revLastSwitched, 	"number", 	0, IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
+	{CN_revFirstSwitchedMillis, "number", 	0, IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse},
+	{CN_revLastSwitchedMillis, "number", 	0, IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse},
+	{CN_revTcpControlBits,  "number", 	0, IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse},
+	{CN_maxPacketGap,  	"number", 		0, IPFIX_ETYPEID_maxPacketGap, IPFIX_PEN_vermont|IPFIX_PEN_reverse},
+	{CN_exporterID, 	"number", 	0, EXPORTERID, 0},
 	{0} // last entry must be 0
 };
 
@@ -79,8 +79,7 @@ int IpfixDbWriterMongo::connectToDB()
   mongo::HostAndPort dbLogon;
   dbLogon = mongo::HostAndPort::HostAndPort(dbHost, dbPort);
   msg(MSG_INFO,"IpfixDbWriterMongo: Connection details: %s", dbLogon.toString().c_str());
-  con.connect(dbLogon, &err);
-  if(err)
+  if(!con.connect(dbLogon, &err)
 	{
 		msg(MSG_FATAL,"IpfixDbWriterMongo: Mongo connect failed. Error: %s", err.c_str());
 		return 1;
@@ -89,20 +88,18 @@ int IpfixDbWriterMongo::connectToDB()
   if(dbUser && dbPassword) 
   {
     // we need to authenticate
-    con.auth(dbName, dbUser, dbPassword, &err);
-    if(err)
+    if(!con.auth(dbName, dbUser, dbPassword, &err))
 	  {
 		  msg(MSG_FATAL,"IpfixDbWriterMongo: Mongo authentication failed. Error: %s", err.c_str());
 		  return 1;
 	  }
   }
 
-	msg(MSG_DEBUG,"IpfixDbWriterMongo: Oracle connection successful");
+	msg(MSG_DEBUG,"IpfixDbWriterMongo: Mongo connection successful");
 	dbError = false;
 	return 0;
 }
 
-// FIXME 
 /**
  * save record to database
  */
@@ -110,7 +107,7 @@ void IpfixDbWriterMongo::processDataDataRecord(const IpfixRecord::SourceID& sour
 		TemplateInfo& dataTemplateInfo, uint16_t length,
 		IpfixRecord::Data* data)
 {
-	string rowString;
+  mongo::BSONObj obj;
 	time_t flowStartSeconds;
 	msg(MSG_DEBUG, "IpfixDbWriter: Processing data record");
 
@@ -123,71 +120,50 @@ void IpfixDbWriterMongo::processDataDataRecord(const IpfixRecord::SourceID& sour
 	/* get new insert */
 	if(srcId.observationDomainId != 0) {
 		// use default source id
-		rowString = getInsertString(rowString, flowStartSeconds, srcId, dataTemplateInfo, length, data);
+		obj = getInsertObj(flowStartSeconds, srcId, dataTemplateInfo, length, data);
 	} else {
-		rowString = getInsertString(rowString, flowStartSeconds, sourceID, dataTemplateInfo, length, data);
+		obj = getInsertObj(flowStartSeconds, sourceID, dataTemplateInfo, length, data);
 	}
-	msg(MSG_DEBUG, "IpfixDbWriter: Row: %s", rowString.c_str());
-	
-
-	// if current table is not ok, write to db and get new table name
-	if(!(flowStartSeconds >= currentTable.startTime && flowStartSeconds <= currentTable.endTime)) {
-		if(numberOfInserts > 0) {
-			msg(MSG_DEBUG, "IpfixDbWriter: Writing buffered records to database");
-			insertStatement << " SELECT * FROM dual";
-			writeToDb();
-			numberOfInserts = 0;
-		}
-		if (setCurrentTable(flowStartSeconds) != 0) {
-			return;
-		}
-	}
-
 
 	// start new insert statement if necessary
 	if (numberOfInserts == 0) {
 		// start insert statement
-		insertStatement.str("");
-		insertStatement.clear();
-		insertStatement << "INSERT ALL INTO " << currentTable.name << " (" << documentPropertiesString << ") VALUES " << rowString;
+		bufferedObjects.clear();
+    bufferedObjects.push_back(obj);
 		numberOfInserts = 1;
 	} else {
-		// append insert statement
-		insertStatement << " INTO " << currentTable.name << " (" << documentPropertiesString << ") VALUES " << rowString;
+		// append object
+    bufferedObjects.push_back(obj);
 		numberOfInserts++;
 	}
 
 	// write to db if maxInserts is reached
 	if(numberOfInserts == maxInserts) {
 		msg(MSG_DEBUG, "IpfixDbWriter: Writing buffered records to database");
-		insertStatement << " SELECT * FROM dual";
 		writeToDb();
 		numberOfInserts = 0;
 	}
 }
 
-// FIXME
 /**
- *	loop over table columns and template to get the IPFIX values in correct order to store in database
- *	The result is written into row, the firstSwitched time is returned in flowstartsec
+ *	loop over properties and template to get the IPFIX values in correct order to store in database
+ *	The result is written to BSON Object, and flowstart is returned
  */
-mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
+mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
 		TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data)
 {
 	uint64_t intdata = 0;
 	uint64_t intdata2 = 0;
 	uint32_t k;
 	bool notfound, notfound2;
-	bool first = true;
-	ostringstream rowStream(row);
+  mongo::BSONObjBuilder obj;
 
 	flowstartsec = 0;
-	rowStream << "(";
 
-	/**loop over the columname and loop over the IPFIX_TYPEID of the record
+	/**loop over the properties and loop over the IPFIX_TYPEID of the record
 	 to get the corresponding data to store and make insert statement*/
-	for(vector<Column>::iterator col = documentProperties.begin(); col != documentProperties.end(); col++) {
-		if (col->ipfixId == EXPORTERID) {
+	for(vector<Property>::iterator prop = documentProperties.begin(); prop != documentProperties.end(); prop++) {
+		if (prop->ipfixId == EXPORTERID) {
 			// if this is the same source ID as last time, we get the exporter id from currentExporter
 			if ((currentExporter != NULL) && equalExporter(sourceID, currentExporter->sourceID)) {
 				DPRINTF("Exporter is same as last time (ODID=%d, id=%d)", sourceID.observationDomainId, currentExporter->id);
@@ -202,10 +178,10 @@ mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(string& row, time_t& flowstarts
 			if(dataTemplateInfo.fieldCount > 0) {
 				// look inside the ipfix record
 				for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-					if(dataTemplateInfo.fieldInfo[k].type.enterprise ==  col->enterprise && dataTemplateInfo.fieldInfo[k].type.id == col->ipfixId) {
+					if(dataTemplateInfo.fieldInfo[k].type.enterprise ==  prop->enterprise && dataTemplateInfo.fieldInfo[k].type.id == prop->ipfixId) {
 						notfound = false;
 						intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-						DPRINTF("IpfixDbWriterMongo::getData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X", col->ipfixId, intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length, dataTemplateInfo.fieldInfo[k].offset);
+						DPRINTF("IpfixDbWriterMongo::getData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X", prop->ipfixId, intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length, dataTemplateInfo.fieldInfo[k].offset);
 						break;
 					}
 				}
@@ -213,7 +189,7 @@ mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(string& row, time_t& flowstarts
 			if( dataTemplateInfo.dataCount > 0 && notfound) {
 				// look in static data fields of template for data
 				for(k=0; k < dataTemplateInfo.dataCount; k++) {
-					if(dataTemplateInfo.fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo.dataInfo[k].type.id == col->ipfixId) {
+					if(dataTemplateInfo.fieldInfo[k].type.enterprise == prop->enterprise && dataTemplateInfo.dataInfo[k].type.id == prop->ipfixId) {
 						notfound = false;
 						intdata = getData(dataTemplateInfo.dataInfo[k].type,(dataTemplateInfo.data+dataTemplateInfo.dataInfo[k].offset));
 						break;
@@ -223,8 +199,8 @@ mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(string& row, time_t& flowstarts
 			if(notfound) {
 				notfound2 = true;
 				// for some Ids, we have an alternative
-				if(col->enterprise == 0) {
-					switch (col->ipfixId) {
+				if(prop->enterprise == 0) {
+					switch (prop->ipfixId) {
 						case IPFIX_TYPEID_flowStartSeconds:
 							if(dataTemplateInfo.fieldCount > 0) {
 								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
@@ -270,8 +246,8 @@ mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(string& row, time_t& flowstarts
 							}
 							break;
 					}
-				} else if (col->enterprise==IPFIX_PEN_reverse) {
-					switch (col->ipfixId) {
+				} else if (prop->enterprise==IPFIX_PEN_reverse) {
+					switch (prop->ipfixId) {
 						case IPFIX_TYPEID_flowStartSeconds:
 							// look for alternative (revFlowStartMilliSeconds/1000)
 							if(dataTemplateInfo.fieldCount > 0) {
@@ -301,12 +277,12 @@ mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(string& row, time_t& flowstarts
 				}
 				// if still not found, get default value
 				if(notfound)
-					intdata = col->defaultValue;
+					intdata = prop->defaultValue;
 			}
 
 			// we need extra treatment for timing related fields
-			if(col->enterprise == 0 ) {
-				switch (col->ipfixId) {
+			if(prop->enterprise == 0 ) {
+				switch (prop->ipfixId) {
 					case IPFIX_TYPEID_flowStartSeconds:
 						// save time for table access
 						if (flowstartsec==0) flowstartsec = intdata;
@@ -327,8 +303,8 @@ mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(string& row, time_t& flowstarts
 						intdata %= 1000;
 						break;
 				}
-			} else if (col->enterprise==IPFIX_PEN_reverse)
-				switch (col->ipfixId) {
+			} else if (prop->enterprise==IPFIX_PEN_reverse)
+				switch (prop->ipfixId) {
 					case IPFIX_TYPEID_flowStartMilliSeconds:
 					case IPFIX_TYPEID_flowEndMilliSeconds:
 						// in the database the millisecond entry is counted from last second
@@ -337,34 +313,30 @@ mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(string& row, time_t& flowstarts
 				}
 		}
 
-		DPRINTF("saw ipfix id %d in packet with intdata %llX", col->ipfixId, intdata);
+		DPRINTF("saw ipfix id %d in packet with intdata %llX", prop->ipfixId, intdata);
 
-		if(first)
-			rowStream << intdata;
-		else
-			rowStream << "," << intdata;
-		first = false;
+		obj << prop->propertyName << intdata;
 	}
-
-	rowStream << ")";
 
 	if (flowstartsec == 0) {
 		msg(MSG_ERROR, "IpfixDbWriterMongo: Failed to get timing data from record. Will be saved in default table.");
 	}
 
-	row = rowStream.str();
-	DPRINTF("Insert row: %s", row.c_str());
-	return row;
+	return obj.obj();
 }
 
 
-// FIXME
 /*
  * Write Objects to database
  */
 int IpfixDbWriterMongo::writeToDb()
 {
-	return 1; //error
+  con.insert(dbCollectionFlows, bufferedObjects);
+  if(con.getLastError() != ""){
+		msg(MSG_FATAL, "IpfixDbWriterMongo: Failed to write to DB.");
+    return 1
+  }
+	return 0; 
 }
 
 // FIXME
@@ -481,6 +453,10 @@ IpfixDbWriterMongo::IpfixDbWriterMongo(const string& hostname, const string& dat
 	srcId.receiverPort = 0;
 	srcId.protocol = 0;
 	srcId.fileDescriptor = 0;
+
+  // Set Values for Collections
+  dbCollectionFlows.append(dbName).append(".flows");
+  dbCollectionExporter.append(dbName).append(".exporter");
 
 	if(propertyNames.empty())
 		THROWEXCEPTION("IpfixDbWriterMongo: cannot initiate with no properties");

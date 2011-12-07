@@ -94,7 +94,7 @@ class IpfixDbWriterMongo
 		vector<Property> documentProperties;			// Properties of inserted objects 
 
 		// database data
-		string dbHost, dbName, dbUser, dbPassword;
+		string dbHost, dbName, dbUser, dbPassword, dbCollectionFlows, dbCollectionExporter;
 		unsigned dbPort;
     mongo::DBClientConnection con;
 		bool dbError;			// db error flag
