@@ -37,6 +37,7 @@ Mongo  *
 #include <sstream>
 #include <vector>
 #include "client/dbclient.h"
+#include "util/hostandport.h"
 
 using namespace std;
 
@@ -50,7 +51,7 @@ class IpfixDbWriterMongo
 	: public IpfixRecordDestination, public Module, public Source<NullEmitable*>
 {
 	public:
-		IpfixDbWriterMongo(const string& hostname, const string& collection,
+		IpfixDbWriterMongo(const string& hostname, const string& database,
 				const string& username, const string& password,
 				unsigned port, uint32_t observationDomainId,
 				const vector<string>& properties);
@@ -86,24 +87,22 @@ class IpfixDbWriterMongo
 		ExporterCacheEntry* currentExporter;			// pointer to current exporter in exporterCache
 
 		IpfixRecord::SourceID srcId;           			// default source ID
-    vector<mongo::BSONObj> insertStatement; // Bulk insert via BSONObj vector 
+    vector<mongo::BSONObj> bufferdObjects; // Bulk insert via BSONObj vector 
 		int numberOfInserts;					// number of inserts in statement
 		int maxInserts;						// maximum number of inserts per statement
 
-		vector<Property> documentProperties;			// table columns
+		vector<Property> documentProperties;			// Properties of inserted objects 
 
 		// database data
 		string dbHost, dbName, dbUser, dbPassword;
 		unsigned dbPort;
     mongo::DBClientConnection con;
 		bool dbError;			// db error flag
-//// TOBECONTINUED
-		string& getInsertString(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
+    mongo::BSONObj& getInsertObj(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
 				TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data);
 		int writeToDb();
 		int getExporterID(const IpfixRecord::SourceID& sourceID);
 		int connectToDB();
-		int createExporterTable();
 		void processDataDataRecord(const IpfixRecord::SourceID& sourceID, 
 				TemplateInfo& dataTemplateInfo, uint16_t length, 
 				IpfixRecord::Data* data);

@@ -47,31 +47,30 @@ IpfixDbWriterMongoCfg::IpfixDbWriterMongoCfg(XMLElement* elem)
 			hostname = e->getFirstText();
 		} else if (e->matches("port")) {
 			port = getInt("port");
-		} else if (e->matches("collection")) {
-			dbname = e->getFirstText();
+		} else if (e->matches("database")) {
+			database = e->getFirstText();
 		} else if (e->matches("username")) {
 			user = e->getFirstText();
 		} else if (e->matches("password")) {
 			password = e->getFirstText();
-		} else if (e->matches("bufferrecords")) {
-			bufferRecords = getInt("bufferrecords");
+		} else if (e->matches("bufferobjects")) {
+			bufferObjects = getInt("bufferobjects");
 		} else if (e->matches("properties")) {
-			readColumns(e);
+			readProperties(e);
 		} else if (e->matches("observationDomainId")) {
 			observationDomainId = getInt("observationDomainId");
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
+			msg(MSG_FATAL, "Unknown IpfixDbWriterMongo config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
 	if (hostname=="") THROWEXCEPTION("IpfixDbWriterMongoCfg: host not set in configuration!");
-	if (dbname=="") THROWEXCEPTION("IpfixDbWriterMongoCfg: dbname not set in configuration!");
-	if (user=="") THROWEXCEPTION("IpfixDbWriterMongoCfg: username not set in configuration!");
+	if (database=="") THROWEXCEPTION("IpfixDbWriterMongoCfg: dbname not set in configuration!");
 }
 
-void IpfixDbWriterMongoCfg::readColumns(XMLElement* elem) {
-	propNames.clear();
+void IpfixDbWriterMongoCfg::readProperties(XMLElement* elem) {
+	properties.clear();
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
 	     it != set.end();
@@ -79,7 +78,7 @@ void IpfixDbWriterMongoCfg::readColumns(XMLElement* elem) {
 		XMLElement* e = *it;
 
 		if (e->matches("name")) {
-			propNames.push_back(e->getFirstText());
+			properties.push_back(e->getFirstText());
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixDbWriterMongo config statement %s\n", e->getName().c_str());
 			continue;
@@ -95,9 +94,9 @@ IpfixDbWriterMongoCfg::~IpfixDbWriterMongoCfg()
 
 IpfixDbWriter* IpfixDbWriterMongoCfg::createInstance()
 {
-  instance = new IpfixDbWriterMongo(hostname, collection, user, password, port, observationDomainId, bufferRecords, propNames);
+  instance = new IpfixDbWriterMongo(hostname, database, user, password, port, observationDomainId, bufferObjects, properties);
 	msg(MSG_DEBUG, "IpfixDbWriterMongo configuration host %s collection %s user %s password %s port %i observationDomainId %i bufferRecords %i\n", 
-	  hostname.c_str(), collection.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords);
+	  hostname.c_str(), database.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferObjects);
   return instance;
 }
 
