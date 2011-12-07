@@ -52,11 +52,11 @@ protected:
 	string collection; /**< mongo collection name */
 	string user;	/**< user name for login to database */
 	string password;	/**< password for login to database */
-	uint16_t bufferRecords;	/**< amount of records to buffer until they are written to database */
+	uint16_t bufferObjects;	/**< amount of records to buffer until they are written to database */
 	uint32_t observationDomainId;	/**< default observation domain id (overrides the one received in the records */
-	vector<string> propNames; /**< property names */
+	vector<string> properties; /**< property names */
 
-	void readColumns(XMLElement* elem);
+	void readProperties(XMLElement* elem);
 	IpfixDbWriterMongoCfg(XMLElement*);
 };
 

@@ -28,7 +28,7 @@
 #include "IpfixDbWriterMongo.hpp"
 #include "common/msg.h"
 
-IpfixDbWriterMongo::Column identify [] = {
+IpfixDbWriterMongo::Property identify [] = {
 	{CN_dstIP, 		"NUMBER(10)", 	0, IPFIX_TYPEID_destinationIPv4Address, 0},
 	{CN_srcIP, 		"NUMBER(10)", 	0, IPFIX_TYPEID_sourceIPv4Address, 0},
 	{CN_srcPort, 		"NUMBER(5)", 	0, IPFIX_TYPEID_sourceTransportPort, 0},
@@ -64,7 +64,6 @@ bool IpfixDbWriterMongo::equalExporter(const IpfixRecord::SourceID& a, const Ipf
 		(memcmp(a.exporterAddress.ip, b.exporterAddress.ip, a.exporterAddress.len) == 0 );
 }
 
-//// TOBECONTINUED
 /**
  * (re)connect to database
  */
@@ -72,171 +71,38 @@ int IpfixDbWriterMongo::connectToDB()
 {
 	dbError = true;
 	
-	// close (in the case that it was already connected)
-	if (con) env->terminateConnection(con);
-
-	/** get the initial environment and connect */
-	env = oracle::occi::Environment::createEnvironment(oracle::occi::Environment::DEFAULT);
-	try 
+	// If a connection exists don't reconnect
+	if (con) return 0;
+  
+  // Connect
+  string err;
+  mongo::HostAndPort dbLogon;
+  dbLogon = mongo::HostAndPort::HostAndPort(dbHost, dbPort);
+  msg(MSG_INFO,"IpfixDbWriterMongo: Connection details: %s", dbLogon.toString().c_str());
+  con.connect(dbLogon, &err);
+  if(err)
 	{
-		char dbLogon[128];
-		sprintf(dbLogon, "%s:%u/", dbHost.c_str(), dbPort);
-		con = env->createConnection(dbUser, dbPassword, dbLogon);
-	} catch (oracle::occi::SQLException& ex) 
-	{
-		msg(MSG_FATAL,"IpfixDbWriterMongo: Oracle connect failed. Error: %s", ex.getMessage().c_str());
+		msg(MSG_FATAL,"IpfixDbWriterMongo: Mongo connect failed. Error: %s", err.c_str());
 		return 1;
 	}
+    
+  if(dbUser && dbPassword) 
+  {
+    // we need to authenticate
+    con.auth(dbName, dbUser, dbPassword, &err);
+    if(err)
+	  {
+		  msg(MSG_FATAL,"IpfixDbWriterMongo: Mongo authentication failed. Error: %s", err.c_str());
+		  return 1;
+	  }
+  }
+
 	msg(MSG_DEBUG,"IpfixDbWriterMongo: Oracle connection successful");
-	
-	if (createExporterTable()!=0) return 1;
-	
 	dbError = false;
-	
 	return 0;
 }
 
-int IpfixDbWriterMongo::createExporterTable()
-{
-	// check if table exists
-	ostringstream sql;
-	oracle::occi::Statement *stmt = NULL;
-	oracle::occi::ResultSet *rs = NULL;
-	sql << "SELECT COUNT(table_name) FROM user_tables WHERE table_name='EXPORTER'";
-	try
-	{
-		stmt = con->createStatement(sql.str());
-	}
-	catch (oracle::occi::SQLException& ex)
-	{
-		msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-		return 1;		
-	}
-	if (stmt)
-	{
-		try 
-		{
-			stmt->setPrefetchRowCount(1);
-			rs = stmt->executeQuery();			
-		}
-		catch (oracle::occi::SQLException& ex)
-		{
-			msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-			con->terminateStatement(stmt);
-			return 1;					
-		}
-		if (rs)
-		{
-			while(rs->next())
-			{
-				if (rs->getInt(1)!= 0) 
-				{
-					msg(MSG_DEBUG,"IpfixDbWriterMongo: exporter table does exist");
-					stmt->closeResultSet(rs);
-					con->terminateStatement(stmt);
-					return 0;	
-				}
-			}
-			stmt->closeResultSet(rs);
-		}
-		con->terminateStatement(stmt);
-	}
-
-	// create table
-	sql.str("");	
-	sql << "CREATE TABLE exporter ( id NUMERIC(10) NOT NULL, sourceID NUMERIC(10), srcIP NUMERIC(10), CONSTRAINT exporter_pk PRIMARY KEY (id) ) TABLESPACE " << dbName;
-	try
-	{
-		stmt = con->createStatement(sql.str());
-	}
-	catch (oracle::occi::SQLException& ex)
-	{
-		msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-		return 1;		
-	}
-	if (stmt)
-	{
-		try 
-		{
-			stmt->setPrefetchRowCount(1);
-			rs = stmt->executeQuery();			
-		}
-		catch (oracle::occi::SQLException& ex)
-		{
-			msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-			con->terminateStatement(stmt);
-			return 1;					
-		}
-		msg(MSG_DEBUG,"IpfixDbWriterMongo: exporter table created");
-		stmt->closeResultSet(rs);
-		con->terminateStatement(stmt);
-	}
-	
-	// create counter
-	// clear vars for reuse
-	sql.str("");	
-	sql << "CREATE sequence counter_for_exporter increment BY 1 start WITH 1 cache 2";
-	try
-	{
-		stmt = con->createStatement(sql.str());
-	}
-	catch (oracle::occi::SQLException& ex)
-	{
-		msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-		return 1;		
-	}
-	if (stmt)
-	{
-		try 
-		{
-			stmt->setPrefetchRowCount(1);
-			rs = stmt->executeQuery();			
-		}
-		catch (oracle::occi::SQLException& ex)
-		{
-			msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-			con->terminateStatement(stmt);
-			return 1;					
-		}
-		msg(MSG_DEBUG,"IpfixDbWriterMongo: exporter table counter created");
-		stmt->closeResultSet(rs);
-		con->terminateStatement(stmt);
-	}
-
-	// create trigger
-	sql.str("");	
-	sql << "CREATE OR REPLACE TRIGGER trigger_for_id_exporter BEFORE INSERT ON exporter REFERENCING NEW AS NEW OLD AS OLD FOR EACH ROW Begin SELECT counter_for_exporter.NEXTVAL INTO :NEW.id FROM DUAL; End;";
-	msg(MSG_DEBUG, "IpfixDbWriterMongo: SQL Query: %s", sql.str().c_str());
-	try
-	{
-		stmt = con->createStatement(sql.str());
-	}
-	catch (oracle::occi::SQLException& ex)
-	{
-		msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-		return 1;		
-	}
-	if (stmt)
-	{
-		try 
-		{
-			stmt->setPrefetchRowCount(1);
-			rs = stmt->executeQuery();			
-		}
-		catch (oracle::occi::SQLException& ex)
-		{
-			msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-			con->terminateStatement(stmt);
-			return 1;					
-		}
-		msg(MSG_DEBUG,"IpfixDbWriterMongo: exporter table insert trigger created");
-		stmt->closeResultSet(rs);
-		con->terminateStatement(stmt);
-	}	
-	msg(MSG_DEBUG, "Exporter table creation done");
-	return 0;
-}
-
+// FIXME 
 /**
  * save record to database
  */
@@ -283,11 +149,11 @@ void IpfixDbWriterMongo::processDataDataRecord(const IpfixRecord::SourceID& sour
 		// start insert statement
 		insertStatement.str("");
 		insertStatement.clear();
-		insertStatement << "INSERT ALL INTO " << currentTable.name << " (" << tableColumnsString << ") VALUES " << rowString;
+		insertStatement << "INSERT ALL INTO " << currentTable.name << " (" << documentPropertiesString << ") VALUES " << rowString;
 		numberOfInserts = 1;
 	} else {
 		// append insert statement
-		insertStatement << " INTO " << currentTable.name << " (" << tableColumnsString << ") VALUES " << rowString;
+		insertStatement << " INTO " << currentTable.name << " (" << documentPropertiesString << ") VALUES " << rowString;
 		numberOfInserts++;
 	}
 
@@ -300,12 +166,12 @@ void IpfixDbWriterMongo::processDataDataRecord(const IpfixRecord::SourceID& sour
 	}
 }
 
-
+// FIXME
 /**
  *	loop over table columns and template to get the IPFIX values in correct order to store in database
  *	The result is written into row, the firstSwitched time is returned in flowstartsec
  */
-string& IpfixDbWriterMongo::getInsertString(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
+mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
 		TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data)
 {
 	uint64_t intdata = 0;
@@ -320,7 +186,7 @@ string& IpfixDbWriterMongo::getInsertString(string& row, time_t& flowstartsec, c
 
 	/**loop over the columname and loop over the IPFIX_TYPEID of the record
 	 to get the corresponding data to store and make insert statement*/
-	for(vector<Column>::iterator col = tableColumns.begin(); col != tableColumns.end(); col++) {
+	for(vector<Column>::iterator col = documentProperties.begin(); col != documentProperties.end(); col++) {
 		if (col->ipfixId == EXPORTERID) {
 			// if this is the same source ID as last time, we get the exporter id from currentExporter
 			if ((currentExporter != NULL) && equalExporter(sourceID, currentExporter->sourceID)) {
@@ -492,170 +358,24 @@ string& IpfixDbWriterMongo::getInsertString(string& row, time_t& flowstartsec, c
 }
 
 
+// FIXME
 /*
- * Write insertStatement to database
+ * Write Objects to database
  */
 int IpfixDbWriterMongo::writeToDb()
 {
-	msg(MSG_DEBUG, "SQL Query: %s", insertStatement.str().c_str());
-	oracle::occi::Statement *stmt = NULL;
-	oracle::occi::ResultSet *rs = NULL;
-	try
-	{
-		stmt = con->createStatement(insertStatement.str());
-	}
-	catch (oracle::occi::SQLException& ex)
-	{
-		msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-		return 1;		
-	}
-	if (stmt)
-	{
-		try 
-		{
-			stmt->setPrefetchRowCount(1);
-			rs = stmt->executeQuery();			
-		}
-		catch (oracle::occi::SQLException& ex)
-		{
-			msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-			con->terminateStatement(stmt);
-			return 1;					
-		}
-		stmt->closeResultSet(rs);
-		con->terminateStatement(stmt);
-		msg(MSG_DEBUG,"IpfixDbWriterMongo: Write to database is complete");
-		return 0;
-	}
-	return 1;
+	return 1; //error
 }
 
-/*
- * Sets the current table information and creates the table in the database if necessary
- */
-int IpfixDbWriterMongo::setCurrentTable(time_t flowstartsec)
-{
-	// generate table name
-	ostringstream tableStream;
-	struct tm* flowStartTime = gmtime(&flowstartsec);
-
-	tableStream << "H_" << (flowStartTime->tm_year+1900)
-		<< setfill('0') << setw(2) << (flowStartTime->tm_mon+1)
-		<< setfill('0') << setw(2) << (flowStartTime->tm_mday) << "_"
-		<< setfill('0') << setw(2) << (flowStartTime->tm_hour) << "_"
-		<< setw(1) << (flowStartTime->tm_min<30?0:1);
-
-	currentTable.name = tableStream.str();
-
-	// calculate table boundaries
-	if(flowStartTime->tm_min < 30) {
-		flowStartTime->tm_min = 0;
-		flowStartTime->tm_sec = 0;
-		currentTable.startTime = timegm(flowStartTime);
-	} else {
-		flowStartTime->tm_min = 30;
-		flowStartTime->tm_sec = 0;
-		currentTable.startTime = timegm(flowStartTime);
-	}
-	currentTable.endTime = currentTable.startTime + 1799;
-
-	msg(MSG_DEBUG, "IpfixDbWriterMongo: flowstartsec: %d, table name: %s, start time: %d, end time: %d", flowstartsec, currentTable.name.c_str(), currentTable.startTime, currentTable.endTime);
-
-	// check if table exists
-	ostringstream sql;
-	oracle::occi::Statement *stmt = NULL;
-	oracle::occi::ResultSet *rs = NULL;
-	sql << "SELECT COUNT(table_name) FROM user_tables WHERE table_name='" << currentTable.name << "'";
-	msg(MSG_DEBUG, "IpfixDbWriterMongo: SQL Query: %s", sql.str().c_str());
-	try
-	{
-		stmt = con->createStatement(sql.str());
-	}
-	catch (oracle::occi::SQLException& ex)
-	{
-		msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-		dbError = true;
-		return 1;		
-	}
-	if (stmt)
-	{
-		try 
-		{
-			stmt->setPrefetchRowCount(1);
-			rs = stmt->executeQuery();			
-		}
-		catch (oracle::occi::SQLException& ex)
-		{
-			msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-			con->terminateStatement(stmt);
-			dbError = true;
-			return 1;					
-		}
-		if (rs)
-		{
-			while(rs->next())
-			{
-				if (rs->getInt(1)!= 0) 
-				{
-					msg(MSG_DEBUG,"IpfixDbWriterMongo: table does exist");
-					stmt->closeResultSet(rs);
-					con->terminateStatement(stmt);
-					return 0;	
-				}
-			}
-			stmt->closeResultSet(rs);
-		}
-		con->terminateStatement(stmt);
-	}
-
-	// create table
-	sql.str("");	
-	sql << "CREATE TABLE " << currentTable.name << " ( " << tableColumnsCreateString << " ) TABLESPACE " << dbName;
-	msg(MSG_DEBUG, "IpfixDbWriterMongo: SQL Query: %s", sql.str().c_str());
-	try
-	{
-		stmt = con->createStatement(sql.str());
-	}
-	catch (oracle::occi::SQLException& ex)
-	{
-		msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-		dbError = true;
-		return 1;		
-	}
-	if (stmt)
-	{
-		try 
-		{
-			stmt->setPrefetchRowCount(1);
-			rs = stmt->executeQuery();			
-		}
-		catch (oracle::occi::SQLException& ex)
-		{
-			msg(MSG_FATAL,"IpfixDbWriterMongo: %s", ex.getMessage().c_str());	
-			con->terminateStatement(stmt);
-			dbError = true;
-			return 1;					
-		}
-		msg(MSG_DEBUG,"IpfixDbWriterMongo: exporter table created");
-		stmt->closeResultSet(rs);
-		con->terminateStatement(stmt);
-	}
-	msg(MSG_DEBUG, "IpfixDbWriterMongo: Table %s created ", currentTable.name.c_str());
-	return 0;
-}
-
-
+// FIXME
 /**
- *	Returns the id of the exporter table entry or 0 in the case of an error
+ *	Returns the id of the exporter collection entry or 0 in the case of an error
  */
 int IpfixDbWriterMongo::getExporterID(const IpfixRecord::SourceID& sourceID)
 {
 	list<ExporterCacheEntry>::iterator iter;
-	oracle::occi::Statement* stmt = NULL;
-	oracle::occi::ResultSet* rs = NULL;
 	int id = -1;
 	uint32_t expIp = 0;
-	ostringstream sql;
 
 	iter = exporterCache.begin();
 	while(iter != exporterCache.end()) {
@@ -674,111 +394,15 @@ int IpfixDbWriterMongo::getExporterID(const IpfixRecord::SourceID& sourceID)
 	// convert IP address (correct host byte order since 07/2010)
 	expIp = sourceID.exporterAddress.toUInt32();
 
-	// search exporter table
-	sql << "SELECT id FROM exporter WHERE sourceID=" << sourceID.observationDomainId << " AND srcIp=" << expIp;
-	msg(MSG_DEBUG, "IpfixDbWriterMongo: SQL Query: %s", sql.str().c_str());
-	try 
-	{
-		stmt = con->createStatement(sql.str());
-	}
-	catch (oracle::occi::SQLException &ex)
-	{
-		msg(MSG_ERROR,"IpfixDbWriterMongo: Select on exporter table failed. Error: %s", ex.getMessage().c_str());	
-		return 0;// If a failure occurs, return 0
-	}
-	if(stmt)
-	{
-		try 
-		{
-			stmt->setPrefetchRowCount(1);
-			rs = stmt->executeQuery();
-			if (rs)
-			{
-				while(rs->next())
-				{
-					id = rs->getInt(1);
-					msg(MSG_DEBUG, "IpfixDbWriterMongo: ExporterID %d is in exporter table", id);					
-				}
-				stmt->closeResultSet(rs);
-			}
-			con->terminateStatement(stmt);
-		}
-		catch (oracle::occi::SQLException &ex)
-		{
-			msg(MSG_ERROR,"IpfixDbWriterMongo: Select on exporter table failed. Error: %s", ex.getMessage().c_str());	
-			con->terminateStatement(stmt);
-			return 0;// If a failure occurs, return 0			
-		}
-	}
-	// insert new entry in exporter table since it is not found
+	// search exporter collection
+	// sql << "SELECT id FROM exporter WHERE sourceID=" << sourceID.observationDomainId << " AND srcIp=" << expIp;
+	// msg(MSG_DEBUG, "IpfixDbWriterMongo: SQL Query: %s", sql.str().c_str());
+	
+  // insert new entry in exporter table since it is not found
 	if(id == -1)
 	{
-		sql.str("");
-		sql << "INSERT INTO exporter (ID,sourceID,srcIP) VALUES ( 0 ,'" << sourceID.observationDomainId << "','" << expIp << "')";
-		msg(MSG_DEBUG, "IpfixDbWriterMongo: SQL Query: %s", sql.str().c_str());
-		try
-		{
-			stmt = con->createStatement(sql.str());
-		}
-		catch (oracle::occi::SQLException& ex)
-		{
-			msg(MSG_ERROR,"IpfixDbWriterMongo: Insert in exporter table failed. Error: %s", ex.getMessage().c_str());	
-			return 0;		
-		}
-		if (stmt)
-		{
-			try 
-			{
-				stmt->setPrefetchRowCount(1);
-				rs = stmt->executeQuery();			
-			}
-			catch (oracle::occi::SQLException& ex)
-			{
-				msg(MSG_FATAL,"IpfixDbWriterMongo: Insert in exporter table failed. Error: %s", ex.getMessage().c_str());	
-				con->terminateStatement(stmt);
-				return 0;					
-			}
-			stmt->closeResultSet(rs);
-			con->terminateStatement(stmt);
-		}
-
-		sql.str("");
-		sql << "SELECT counter_for_exporter.CURRVAL FROM DUAL";
-		msg(MSG_DEBUG, "IpfixDbWriterMongo: SQL Query: %s", sql.str().c_str());
-		try 
-		{
-			stmt = con->createStatement(sql.str());
-		}
-		catch (oracle::occi::SQLException &ex)
-		{
-			msg(MSG_ERROR,"IpfixDbWriterMongo: Select on counter_for_exporter sequence failed. Error: %s", ex.getMessage().c_str());	
-			return 0;// If a failure occurs, return 0
-		}
-		if(stmt)
-		{
-			try 
-			{
-				stmt->setPrefetchRowCount(1);
-				rs = stmt->executeQuery();
-				if (rs)
-				{
-					while(rs->next())
-					{
-						id = rs->getInt(1)
-						DPRINTF("ExporterID %d is in exporter table", id);
-					}
-					stmt->closeResultSet(rs);
-				}
-				con->terminateStatement(stmt);
-			}
-			catch (oracle::occi::SQLException &ex)
-			{
-				msg(MSG_ERROR,"IpfixDbWriterMongo: Select on counter_for_exporter sequence failed. Error: %s", ex.getMessage().c_str());	
-				con->terminateStatement(stmt);
-				return 0;// If a failure occurs, return 0			
-			}
-			msg(MSG_INFO,"IpfixDbWriter: new exporter (ODID=%d, id=%d) inserted in exporter table", sourceID.observationDomainId, id);		
-		}
+		//sql << "INSERT INTO exporter (ID,sourceID,srcIP) VALUES ( 0 ,'" << sourceID.observationDomainId << "','" << expIp << "')";
+		//msg(MSG_DEBUG, "IpfixDbWriterMongo: SQL Query: %s", sql.str().c_str());
 	}
 	// insert exporter in cache
 	ExporterCacheEntry tmp = {sourceID, id};
@@ -841,12 +465,12 @@ void IpfixDbWriterMongo::onDataRecord(IpfixDataRecord* record)
 /**
  * Constructor
  */
-IpfixDbWriterMongo::IpfixDbWriterMongo(const string& hostname, const string& dbname,
+IpfixDbWriterMongo::IpfixDbWriterMongo(const string& hostname, const string& database,
 		const string& username, const string& password,
 		unsigned port, uint32_t observationDomainId, unsigned maxStatements,
-		const vector<string>& columns)
+		const vector<string>& propertyNames)
 	: currentExporter(NULL), numberOfInserts(0), maxInserts(maxStatements),
-	dbHost(hostname), dbName(dbname), dbUser(username), dbPassword(password), dbPort(port), con(0)
+	dbHost(hostname), dbName(database), dbUser(username), dbPassword(password), dbPort(port), con(0)
 {
 	int i;
 
@@ -858,41 +482,37 @@ IpfixDbWriterMongo::IpfixDbWriterMongo(const string& hostname, const string& dbn
 	srcId.protocol = 0;
 	srcId.fileDescriptor = 0;
 
-	// invalide start settings for current table (to enforce table create)
-	currentTable.startTime = 1;
-	currentTable.endTime = 0;
+	if(propertyNames.empty())
+		THROWEXCEPTION("IpfixDbWriterMongo: cannot initiate with no properties");
 
-	if(columns.empty())
-		THROWEXCEPTION("IpfixDbWriter: cannot initiate with no columns");
-
-	/* get columns */
+	/* get properties */
 	bool first = true;
-	for(vector<string>::const_iterator col = columns.begin(); col != columns.end(); col++) {
+	for(vector<string>::const_iterator prop = propertyNames.begin(); prop != propertyNames.end(); prop++) {
 		i = 0;
-		while(identify[i].columnName != 0) {
-			if(col->compare(identify[i].columnName) == 0) {
+		while(identify[i].propertyName != 0) {
+			if(prop->compare(identify[i].propertyName) == 0) {
 				Column c = identify[i];
-				tableColumns.push_back(c);
-				// update tableColumnsString
+				documentProperties.push_back(c);
+				// update documentPropertiesString
 				if(!first)
-					tableColumnsString.append(",");
-				tableColumnsString.append(identify[i].columnName);
-				// update tableColumnsCreateString
+					documentPropertiesString.append(",");
+				documentPropertiesString.append(identify[i].propertyName);
+				// update documentPropertiesCreateString
 				if(!first)
-					tableColumnsCreateString.append(", ");
-				tableColumnsCreateString.append(identify[i].columnName);
-				tableColumnsCreateString.append(" ");
-				tableColumnsCreateString.append(identify[i].columnType);
+					documentPropertiesCreateString.append(", ");
+				documentPropertiesCreateString.append(identify[i].propertyName);
+				documentPropertiesCreateString.append(" ");
+				documentPropertiesCreateString.append(identify[i].propertyType);
 				first = false;
 				break;
 			}
 			i++;
 		}
 	}
-	msg(MSG_INFO, "IpfixDbWriter: columns are %s", tableColumnsString.c_str());
+	msg(MSG_INFO, "IpfixDbWriterMongo: properties are %s", .c_str());
 
 	if(connectToDB() != 0)
-		THROWEXCEPTION("IpfixDbWriter creation failed");
+		THROWEXCEPTION("IpfixDbWriterMongo creation failed");
 }
 
 
@@ -902,8 +522,6 @@ IpfixDbWriterMongo::IpfixDbWriterMongo(const string& hostname, const string& dbn
 IpfixDbWriterMongo::~IpfixDbWriterMongo()
 {
 	writeToDb();
-	env->terminateConnection(con);
-	oracle::occi::Environment::terminateEnvironment(env);
 }
 
 
