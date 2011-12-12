@@ -24,6 +24,12 @@ Mongo  *
 #ifndef IPFIXDBWRITERMONGO_H_
 #define IPFIXDBWRITERMONGO_H_
 
+/* Mongo dbclient.h also defines and uses msg Macro */
+#undef msg
+#include "client/dbclient.h"
+#define msg(lvl, fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
+
+
 #include "IpfixDbCommon.hpp"
 #include "IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfix.h"
@@ -36,7 +42,6 @@ Mongo  *
 #include <time.h>
 #include <sstream>
 #include <vector>
-#include "client/dbclient.h"
 #include "util/hostandport.h"
 
 using namespace std;
@@ -53,7 +58,7 @@ class IpfixDbWriterMongo
 	public:
 		IpfixDbWriterMongo(const string& hostname, const string& database,
 				const string& username, const string& password,
-				unsigned port, uint32_t observationDomainId,
+				unsigned port, uint32_t observationDomainId, uint16_t maxStatements,
 				const vector<string>& properties);
 		~IpfixDbWriterMongo();
 

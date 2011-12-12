@@ -49,7 +49,7 @@ protected:
 	
 	string hostname; /**< hostname of database host */
 	uint16_t port;	/**< port of database */
-	string collection; /**< mongo collection name */
+	string database; /**< mongo database name */
 	string user;	/**< user name for login to database */
 	string password;	/**< password for login to database */
 	uint16_t bufferObjects;	/**< amount of records to buffer until they are written to database */

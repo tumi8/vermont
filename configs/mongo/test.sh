@@ -25,7 +25,7 @@ cleanup() {
 # Vars
 VMT='../../vermont'
 EXC='udpexp.xml'
-WRC='oxewriter.xml'
+WRC='mongow.xml'
 
 print_output(){
   # Show the output

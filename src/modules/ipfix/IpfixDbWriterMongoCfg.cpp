@@ -21,6 +21,7 @@
 #ifdef MONGO_SUPPORT_ENABLED
 
 #include "IpfixDbWriterMongoCfg.h"
+#include <cassert>
 
 
 IpfixDbWriterMongoCfg* IpfixDbWriterMongoCfg::create(XMLElement* e)
@@ -32,16 +33,16 @@ IpfixDbWriterMongoCfg* IpfixDbWriterMongoCfg::create(XMLElement* e)
 
 
 IpfixDbWriterMongoCfg::IpfixDbWriterMongoCfg(XMLElement* elem)
-    : CfgHelper<IpfixDbWriter, IpfixDbWriterMongoCfg>(elem, "ipfixDbWriter"),
-      port(27017), bufferRecords(30), observationDomainId(0)
+    : CfgHelper<IpfixDbWriterMongo, IpfixDbWriterMongoCfg>(elem, "ipfixDbWriter"),
+      port(27017), bufferObjects(30), observationDomainId(0)
 {
-    if (!elem) return;
+  if (!elem) return;
 
-    XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
-	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
-	     it != set.end();
-	     it++) {
-		XMLElement* e = *it;
+  XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
+	for ( XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
+        it != set.end();
+	      it++) {
+	  XMLElement* e = *it;
 
 		if (e->matches("host")) {
 			hostname = e->getFirstText();
@@ -92,7 +93,7 @@ IpfixDbWriterMongoCfg::~IpfixDbWriterMongoCfg()
 }
 
 
-IpfixDbWriter* IpfixDbWriterMongoCfg::createInstance()
+IpfixDbWriterMongo* IpfixDbWriterMongoCfg::createInstance()
 {
   instance = new IpfixDbWriterMongo(hostname, database, user, password, port, observationDomainId, bufferObjects, properties);
 	msg(MSG_DEBUG, "IpfixDbWriterMongo configuration host %s collection %s user %s password %s port %i observationDomainId %i bufferRecords %i\n", 
