@@ -72,23 +72,23 @@ int IpfixDbWriterMongo::connectToDB()
 	dbError = true;
 	
 	// If a connection exists don't reconnect
-	if (con) return 0;
+	if (con.isFailed()) return 0;
   
   // Connect
   string err;
   mongo::HostAndPort dbLogon;
-  dbLogon = mongo::HostAndPort::HostAndPort(dbHost, dbPort);
+  dbLogon = mongo::HostAndPort(dbHost, dbPort);
   msg(MSG_INFO,"IpfixDbWriterMongo: Connection details: %s", dbLogon.toString().c_str());
-  if(!con.connect(dbLogon, &err)
+  if(!con.connect(dbLogon, err))
 	{
 		msg(MSG_FATAL,"IpfixDbWriterMongo: Mongo connect failed. Error: %s", err.c_str());
 		return 1;
 	}
     
-  if(dbUser && dbPassword) 
+  if(!dbUser.empty() && !dbPassword.empty()) 
   {
     // we need to authenticate
-    if(!con.auth(dbName, dbUser, dbPassword, &err))
+    if(!con.auth(dbName, dbUser, dbPassword, err))
 	  {
 		  msg(MSG_FATAL,"IpfixDbWriterMongo: Mongo authentication failed. Error: %s", err.c_str());
 		  return 1;
@@ -149,7 +149,7 @@ void IpfixDbWriterMongo::processDataDataRecord(const IpfixRecord::SourceID& sour
  *	loop over properties and template to get the IPFIX values in correct order to store in database
  *	The result is written to BSON Object, and flowstart is returned
  */
-mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
+mongo::BSONObj IpfixDbWriterMongo::getInsertObj(time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
 		TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data)
 {
 	uint64_t intdata = 0;
@@ -314,8 +314,10 @@ mongo::BSONObj& IpfixDbWriterMongo::getInsertObj(time_t& flowstartsec, const Ipf
 		}
 
 		DPRINTF("saw ipfix id %d in packet with intdata %llX", prop->ipfixId, intdata);
-
-		obj << prop->propertyName << intdata;
+    std::ostringstream o;
+    o << intdata;
+		obj << prop->propertyName << o.str();
+    o.str("");
 	}
 
 	if (flowstartsec == 0) {
@@ -334,7 +336,7 @@ int IpfixDbWriterMongo::writeToDb()
   con.insert(dbCollectionFlows, bufferedObjects);
   if(con.getLastError() != ""){
 		msg(MSG_FATAL, "IpfixDbWriterMongo: Failed to write to DB.");
-    return 1
+    return 1;
   }
 	return 0; 
 }
@@ -439,7 +441,7 @@ void IpfixDbWriterMongo::onDataRecord(IpfixDataRecord* record)
  */
 IpfixDbWriterMongo::IpfixDbWriterMongo(const string& hostname, const string& database,
 		const string& username, const string& password,
-		unsigned port, uint32_t observationDomainId, unsigned maxStatements,
+		unsigned port, uint32_t observationDomainId, uint16_t maxStatements,
 		const vector<string>& propertyNames)
 	: currentExporter(NULL), numberOfInserts(0), maxInserts(maxStatements),
 	dbHost(hostname), dbName(database), dbUser(username), dbPassword(password), dbPort(port), con(0)
@@ -460,32 +462,6 @@ IpfixDbWriterMongo::IpfixDbWriterMongo(const string& hostname, const string& dat
 
 	if(propertyNames.empty())
 		THROWEXCEPTION("IpfixDbWriterMongo: cannot initiate with no properties");
-
-	/* get properties */
-	bool first = true;
-	for(vector<string>::const_iterator prop = propertyNames.begin(); prop != propertyNames.end(); prop++) {
-		i = 0;
-		while(identify[i].propertyName != 0) {
-			if(prop->compare(identify[i].propertyName) == 0) {
-				Column c = identify[i];
-				documentProperties.push_back(c);
-				// update documentPropertiesString
-				if(!first)
-					documentPropertiesString.append(",");
-				documentPropertiesString.append(identify[i].propertyName);
-				// update documentPropertiesCreateString
-				if(!first)
-					documentPropertiesCreateString.append(", ");
-				documentPropertiesCreateString.append(identify[i].propertyName);
-				documentPropertiesCreateString.append(" ");
-				documentPropertiesCreateString.append(identify[i].propertyType);
-				first = false;
-				break;
-			}
-			i++;
-		}
-	}
-	msg(MSG_INFO, "IpfixDbWriterMongo: properties are %s", .c_str());
 
 	if(connectToDB() != 0)
 		THROWEXCEPTION("IpfixDbWriterMongo creation failed");
