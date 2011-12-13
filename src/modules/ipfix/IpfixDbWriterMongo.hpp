@@ -25,9 +25,6 @@ Mongo  *
 #define IPFIXDBWRITERMONGO_H_
 
 /* Mongo dbclient.h also defines and uses msg Macro */
-#undef msg
-#include "client/dbclient.h"
-#define msg(lvl, fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
 
 
 #include "IpfixDbCommon.hpp"
@@ -42,7 +39,11 @@ Mongo  *
 #include <time.h>
 #include <sstream>
 #include <vector>
+
+#undef msg
+#include "client/dbclient.h"
 #include "util/hostandport.h"
+#define msg(lvl, fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
 
 using namespace std;
 
@@ -92,7 +93,7 @@ class IpfixDbWriterMongo
 		ExporterCacheEntry* currentExporter;			// pointer to current exporter in exporterCache
 
 		IpfixRecord::SourceID srcId;           			// default source ID
-    vector<mongo::BSONObj> bufferdObjects; // Bulk insert via BSONObj vector 
+    vector<mongo::BSONObj> bufferedObjects; // Bulk insert via BSONObj vector 
 		int numberOfInserts;					// number of inserts in statement
 		int maxInserts;						// maximum number of inserts per statement
 
@@ -103,7 +104,7 @@ class IpfixDbWriterMongo
 		unsigned dbPort;
     mongo::DBClientConnection con;
 		bool dbError;			// db error flag
-    mongo::BSONObj& getInsertObj(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
+    mongo::BSONObj getInsertObj(time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
 				TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data);
 		int writeToDb();
 		int getExporterID(const IpfixRecord::SourceID& sourceID);
