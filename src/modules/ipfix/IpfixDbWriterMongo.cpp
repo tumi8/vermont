@@ -28,8 +28,6 @@
 #include "IpfixDbWriterMongo.hpp"
 #include "common/msg.h"
 
-int IpfixDbWriterMongo::GEID = 0;
-
 IpfixDbWriterMongo::Property identify [] = {
 	{CN_dstIP, 0, IPFIX_TYPEID_destinationIPv4Address, 0},
 	{CN_srcIP, 0, IPFIX_TYPEID_sourceIPv4Address, 0},
@@ -99,17 +97,15 @@ int IpfixDbWriterMongo::connectToDB()
 	  }
   }
 
-  //FIXME We need to identify the max Global Exporter Counter to insert new exporters with higher ID
-/*  mongo::BSONObj info;
-  ostringstream command;
-  command << "find_max = [];";
-  command << dbCollectionExporter << ".find([], {id : 1}).map(function(item){ ";
-  command << "if(item.id){ find_max.push(parseFloat(item.id)); }});";
-  command << "return Math.max.apply(Math, find_max);";
-  string cmd = command.str();
-  con.simpleCommand(dbCollectionExporter, &info, cmd);
-  GEID = info.getIntField("retval");
-*/
+  // create couter to support incrementing Exporter IDs
+  if(con.findOne(dbCollectionCounters, QUERY("_id" << "exporterCounter")).isEmpty())
+  {
+    mongo::BSONObjBuilder b;
+    b << "_id" << "exporterCounter" << "c" << 0;
+    mongo::BSONObj obj = b.obj();
+    con.insert(dbCollectionCounters, obj);
+  }
+
 	msg(MSG_DEBUG,"IpfixDbWriterMongo: Mongo connection successful");
 	dbError = false;
 	return 0;
@@ -382,14 +378,20 @@ int IpfixDbWriterMongo::getExporterID(const IpfixRecord::SourceID& sourceID)
 
 	// convert IP address (correct host byte order since 07/2010)
 	expIp = sourceID.exporterAddress.toUInt32();
-  mongo::BSONObj exporter = con.findOne(dbCollectionExporter, QUERY("sourceID" << sourceID.observationDomainId << "srcIp" << expIp));
+  mongo::BSONObj exporter = con.findOne(dbCollectionExporters, QUERY("sourceID" << sourceID.observationDomainId << "srcIp" << expIp));
 	// search exporter collection
   if(exporter.isEmpty()){
+    mongo::BSONObj exporterCounter;
+    mongo::BSONObjBuilder cmd;
+    cmd << "findAndModify" << dbCollectionCounters;
+    cmd << "query" << QUERY("_id" << "exporterCounter");
+    cmd << "update" << "$inc" << "c" << 1;
+    con.runCommand(dbName, cmd.obj(), exporterCounter);
     mongo::BSONObjBuilder b;
-    id = GEID++;
-    b << "sourceID" << sourceID.observationDomainId << "srcIP" << expIp << "id" << id;
+    id = exporterCounter.getIntField("c");
+    b << "sourceID" << sourceID.observationDomainId << "srcIP" << expIp << "id" <<  id;
     mongo::BSONObj obj = b.obj();
-    con.insert(dbCollectionExporter, obj);
+    con.insert(dbCollectionExporters, obj);
   } else {
     id = exporter.getIntField("id");
   }
@@ -474,7 +476,8 @@ IpfixDbWriterMongo::IpfixDbWriterMongo(const string& hostname, const string& dat
 
   // Set Values for Collections
   dbCollectionFlows.append(dbName).append(".flows");
-  dbCollectionExporter.append(dbName).append(".exporter");
+  dbCollectionExporters.append(dbName).append(".exporters");
+  dbCollectionCounters.append(dbName).append(".counters");
 
 	/* get properties */
 	for(vector<string>::const_iterator prop = propertyNames.begin(); prop != propertyNames.end(); prop++) {

@@ -83,7 +83,6 @@ class IpfixDbWriterMongo
 	private:
 		static const unsigned MAX_EXPORTER = 10;    // maximum numbers of cached exporters
   
-    static int GEID;
 		/**
 		 * Struct buffers ODID, IP address and row index of an exporter
 		 */
@@ -104,7 +103,7 @@ class IpfixDbWriterMongo
 		vector<Property> documentProperties;			// Properties of inserted objects 
 
 		// database data
-		string dbHost, dbName, dbUser, dbPassword, dbCollectionFlows, dbCollectionExporter;
+		string dbHost, dbName, dbUser, dbPassword, dbCollectionFlows, dbCollectionExporters, dbCollectionCounters;
 		unsigned dbPort;
     mongo::DBClientConnection con;
 		bool dbError;			// db error flag
