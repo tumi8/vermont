@@ -92,6 +92,41 @@ TARGET_LINK_LIBRARIES(vermont
 	${CMAKE_THREAD_LIBS_INIT}
 )
 
+### MongoDB
+
+OPTION(SUPPORT_MONGO "Enable MongoDB support" OFF)
+IF (SUPPORT_MONGO)
+	FIND_PACKAGE(MONGO REQUIRED)
+	IF (NOT MONGO_FOUND)
+    MESSAGE(FATAL_ERROR "Could not find MongoDB libraries.")
+	ENDIF (NOT MONGO_FOUND)
+ENDIF (SUPPORT_MONGO)
+IF (MONGO_FOUND)
+	MESSAGE(STATUS "Found MongoDB libraries")
+	ADD_DEFINITIONS(-DMONGO_SUPPORT_ENABLED)
+	### Mongo is currently forcing BOOST_FILE_SYSTEM v2 when its 
+	### headers are included. If we use version v3 in the rest of
+	### vermont, we will get compile time errors because of
+	### redefinitions of certain boost internals. If we support
+	### mongo, we therefore force v2 on the complete vermont
+	### compile process. Remove this if v2 is dropped by the boost
+	### people and mongo switched to v3
+	ADD_DEFINITIONS(-DBOOST_FILESYSTEM_VERSION=2)
+
+	IF (MONGO_VERSION_2)
+	   ADD_DEFINITIONS(-DMONGO_VERSION_2)
+	ENDIF (MONGO_VERSION_2)
+
+	INCLUDE_DIRECTORIES(${MONGO_INCLUDE_DIR})
+	TARGET_LINK_LIBRARIES(vermont
+		${MONGO_LIBRARIES}
+	)
+ELSE (MONGO_FOUND)
+	REMOVE_DEFINITIONS(-DMONGO_SUPPORT_ENABLED)
+	REMOVE_DEFINITIONS(-DMONGO_VERSION_2)
+	REMOVE_DEFINITIONS(-DBOOST_FILESYSTEM_VERSION)
+ENDIF (MONGO_FOUND)
+
 ### boost
 
 FIND_PACKAGE(Boost REQUIRED)
@@ -278,41 +313,6 @@ IF (ORACLE_FOUND)
 ELSE (ORACLE_FOUND)
 	REMOVE_DEFINITIONS(-DORACLE_SUPPORT_ENABLED)
 ENDIF (ORACLE_FOUND)
-
-### MongoDB
-
-OPTION(SUPPORT_MONGO "Enable MongoDB support" OFF)
-IF (SUPPORT_MONGO)
-	FIND_PACKAGE(MONGO REQUIRED)
-	IF (NOT MONGO_FOUND)
-    MESSAGE(FATAL_ERROR "Could not find MongoDB libraries.")
-	ENDIF (NOT MONGO_FOUND)
-ENDIF (SUPPORT_MONGO)
-IF (MONGO_FOUND)
-	MESSAGE(STATUS "Found MongoDB libraries")
-	ADD_DEFINITIONS(-DMONGO_SUPPORT_ENABLED)
-	### Mongo is currently forcing BOOST_FILE_SYSTEM v2 when its 
-	### headers are included. If we use version v3 in the rest of
-	### vermont, we will get compile time errors because of
-	### redefinitions of certain boost internals. If we support
-	### mongo, we therefore force v2 on the complete vermont
-	### compile process. Remove this if v2 is dropped by the boost
-	### people and mongo switched to v3
-	ADD_DEFINITIONS(-DBOOST_FILESYSTEM_VERSION=2)
-
-	IF (MONGO_VERSION_2)
-	   ADD_DEFINITIONS(-DMONGO_VERSION_2)
-	ENDIF (MONGO_VERSION_2)
-
-	INCLUDE_DIRECTORIES(${MONGO_INCLUDE_DIR})
-	TARGET_LINK_LIBRARIES(vermont
-		${MONGO_LIBRARIES}
-	)
-ELSE (MONGO_FOUND)
-	REMOVE_DEFINITIONS(-DMONGO_SUPPORT_ENABLED)
-	REMOVE_DEFINITIONS(-DMONGO_VERSION_2)
-	REMOVE_DEFINITIONS(-DBOOST_FILESYSTEM_VERSION)
-ENDIF (MONGO_FOUND)
 
 ### libpcap-mmap
 
