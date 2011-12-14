@@ -295,8 +295,18 @@ IF (SUPPORT_MONGO)
 	ENDIF (NOT MONGO_FOUND)
 ENDIF (SUPPORT_MONGO)
 IF (MONGO_FOUND)
-  MESSAGE(STATUS "Found MongoDB libraries")
+	MESSAGE(STATUS "Found MongoDB libraries")
 	ADD_DEFINITIONS(-DMONGO_SUPPORT_ENABLED)
+	### Mongo is currently forcing BOOST_FILE_SYSTEM v2 when its 
+	### headers are included. If we use version v3 in the rest of
+	### vermont, we will get compile time errors because of
+	### redefinitions of certain boost internals. If we support
+	### mongo, we therefore force v2 on the complete vermont
+	### compile process. Remove this if v2 is dropped by the boost
+	### people and mongo switched to v3
+	ADD_DEFINITIONS(-DBOOST_FILESYSTEM_VERSION=2)
+
+
 	INCLUDE_DIRECTORIES(${MONGO_INCLUDE_DIR})
 	TARGET_LINK_LIBRARIES(vermont
 		${MONGO_LIBRARIES}
