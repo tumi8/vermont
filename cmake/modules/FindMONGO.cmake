@@ -20,11 +20,13 @@ else(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
 
 	find_path(MONGO_INCLUDE_DIR client/dbclient.h
 	  /usr/include/mongo
+	  /opt/local/include/mongo
     )
 
   find_library(MONGO_LIBRARIES NAMES mongoclient  libmongoclient 
     PATHS
     /usr/lib
+    /opt/local/lib
     )
 
   if(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
