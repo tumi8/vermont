@@ -42,7 +42,11 @@ Mongo  *
 
 #undef msg
 #include "client/dbclient.h"
+#ifdef MONGO_VERSION_2
+#include "util/net/hostandport.h"
+#else
 #include "util/hostandport.h"
+#endif
 #define msg(lvl, fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
 
 using namespace std;
