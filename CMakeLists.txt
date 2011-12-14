@@ -134,6 +134,7 @@ FIND_PACKAGE(Boost REQUIRED)
 MARK_AS_ADVANCED(
 	Boost_INCLUDE_DIR
 	Boost_REGEX_LIBRARY
+  Boost_THREAD_LIBRARY
 	Boost_FILESYSTEM_LIBRARY
 	Boost_UNIT_TEST_FRAMEWORK_LIBRARY
 )
@@ -145,7 +146,11 @@ IF (Boost_FOUND)
 	IF (NOT Boost_REGEX_LIBRARY)
 		MESSAGE(FATAL_ERROR "Could not find boost regex library")
 	ENDIF(NOT Boost_REGEX_LIBRARY)
-	FIND_LIBRARY(Boost_FILESYSTEM_LIBRARY NAMES boost_filesystem-mt boost_filesystem PATHS ${Boost_LIBRARY_DIRS})
+  FIND_LIBRARY(Boost_THREAD_LIBRARY NAMES boost_thread-mt boost_thread PATHS ${Boost_LIBRARY_DIRS})
+  IF (NOT Boost_THREAD_LIBRARY)
+		MESSAGE(FATAL_ERROR "Could not find boost thread library")
+  ENDIF(NOT Boost_THREAD_LIBRARY)
+  FIND_LIBRARY(Boost_FILESYSTEM_LIBRARY NAMES boost_filesystem-mt boost_filesystem PATHS ${Boost_LIBRARY_DIRS})
 	IF (NOT Boost_FILESYSTEM_LIBRARY)
 		MESSAGE(FATAL_ERROR "Could not find boost filesystem library")
 	ENDIF(NOT Boost_FILESYSTEM_LIBRARY)
@@ -162,6 +167,12 @@ IF (Boost_FOUND)
 		${Boost_FILESYSTEM_LIBRARY}
 		${Boost_SYSTEM_LIBRARY}
 	)
+  IF (SUPPORT_MONGO) 
+	  TARGET_LINK_LIBRARIES(vermont
+		  ${Boost_THREAD_LIBRARY}
+    )
+  ENDIF (SUPPORT_MONGO)
+
 ELSE (Boost_FOUND)
 	MESSAGE(FATAL_ERROR "Could not find boost libraries")
 	REMOVE_DEFINITIONS(-DHAVE_BOOST_FILESYSTEM)
