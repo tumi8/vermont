@@ -73,14 +73,14 @@
 		</expiration>
 		<pollInterval unit="msec">1000</pollInterval>
     <next>4</next>
-		<next>5</next>
 	</ipfixAggregator>
 	
 	<ipfixDbWriterMongo id="4">
     <host>127.0.0.1</host>
-    <collection>flows<collection>
-  	<bufferrecords>5</bufferrecords>
-    <column>
+    <database>nasty</database>
+  	<bufferobjects>5</bufferobjects>
+  	<port>27017</port>
+    <properties>
       <name>dstIP</name>
       <name>srcIP</name>
       <name>srcPort</name>
@@ -94,10 +94,7 @@
       <name>firstSwitchedMillis</name>
       <name>lastSwitchedMillis</name>
       <name>exporterID</name>
-    </column>
+    </properties>
 	</ipfixDbWriterMongo>
 			
-	<ipfixPrinter id="5">
-	</ipfixPrinter>
-	
 </ipfixConfig>

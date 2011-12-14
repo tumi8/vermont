@@ -33,7 +33,7 @@ IpfixDbWriterMongoCfg* IpfixDbWriterMongoCfg::create(XMLElement* e)
 
 
 IpfixDbWriterMongoCfg::IpfixDbWriterMongoCfg(XMLElement* elem)
-    : CfgHelper<IpfixDbWriterMongo, IpfixDbWriterMongoCfg>(elem, "ipfixDbWriter"),
+    : CfgHelper<IpfixDbWriterMongo, IpfixDbWriterMongoCfg>(elem, "ipfixDbWriterMongo"),
       port(27017), bufferObjects(30), observationDomainId(0)
 {
   if (!elem) return;

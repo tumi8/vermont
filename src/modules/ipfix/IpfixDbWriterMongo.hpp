@@ -75,7 +75,6 @@ class IpfixDbWriterMongo
 		 */
 		struct Property {
 			const char* propertyName; 	/** column name */
-			const char* propertyType;		/** column data type in database */
 			uint64_t defaultValue;       	/** default value */
 			InformationElement::IeId ipfixId; /** IPFIX_TYPEID */
 			InformationElement::IeEnterpriseNumber enterprise; /** enterprise number */
@@ -83,13 +82,14 @@ class IpfixDbWriterMongo
 
 	private:
 		static const unsigned MAX_EXPORTER = 10;    // maximum numbers of cached exporters
-
+  
+    static int GEID;
 		/**
 		 * Struct buffers ODID, IP address and row index of an exporter
 		 */
 		struct ExporterCacheEntry {
 			IpfixRecord::SourceID sourceID;/** source id of the exporter */
-			int id;                        /** Id entry of sourcID and expIP in the ExporterTable */
+      int id;                        /** Id entry of sourcID and expIP in the ExporterTable */
 		};
 
 
@@ -108,7 +108,7 @@ class IpfixDbWriterMongo
 		unsigned dbPort;
     mongo::DBClientConnection con;
 		bool dbError;			// db error flag
-    mongo::BSONObj getInsertObj(time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
+    mongo::BSONObj getInsertObj(const IpfixRecord::SourceID& sourceID,
 				TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data);
 		int writeToDb();
 		int getExporterID(const IpfixRecord::SourceID& sourceID);
