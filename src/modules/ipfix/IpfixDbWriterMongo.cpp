@@ -382,13 +382,12 @@ int IpfixDbWriterMongo::getExporterID(const IpfixRecord::SourceID& sourceID)
 	// search exporter collection
   if(exporter.isEmpty()){
     mongo::BSONObj exporterCounter;
-    mongo::BSONObjBuilder cmd;
-    cmd << "findAndModify" << dbCollectionCounters;
-    cmd << "query" << QUERY("_id" << "exporterCounter");
-    cmd << "update" << "$inc" << "c" << 1;
-    con.runCommand(dbName, cmd.obj(), exporterCounter);
+    mongo::BSONObj cmd;
+    cmd = BSON( "findAndModify" << "counters" << "query" << BSON("_id" << "exporterCounter") << "update" << BSON("$inc" << BSON("c" << 1)));
+    msg(MSG_DEBUG, "FIND AND MODIFY: %s", cmd.toString().c_str());
+    con.runCommand(dbName, cmd, exporterCounter);
     mongo::BSONObjBuilder b;
-    id = exporterCounter.getIntField("c");
+    id = exporterCounter.getObjectField("value").getIntField("c");
     b << "sourceID" << sourceID.observationDomainId << "srcIP" << expIp << "id" <<  id;
     mongo::BSONObj obj = b.obj();
     con.insert(dbCollectionExporters, obj);
