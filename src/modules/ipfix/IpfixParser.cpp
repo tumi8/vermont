@@ -842,8 +842,6 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
   uint32_t currentTime, exportTime;
   exportTime = ntohl(header->exportTime);
   currentTime = static_cast<uint32_t>(time(NULL));  
-  msg(MSG_VDEBUG, "current time was %u", currentTime);
-  msg(MSG_VDEBUG, "time in header was %u", exportTime);
   /* If either the flow is more than 1h in the futur, or older than 1 day on arrival 
    * it is probably a bad exporter so reject it
    */
