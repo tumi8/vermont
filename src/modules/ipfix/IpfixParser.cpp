@@ -838,6 +838,23 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
 		return 0;
 	}
 	IpfixHeader* header = (IpfixHeader*)message.get();
+#ifdef EXPORT_TIME_SANITY_CHECK
+  uint32_t currentTime, exportTime;
+  exportTime = ntohl(header->exportTime);
+  currentTime = static_cast<uint32_t>(time(NULL));  
+  msg(MSG_VDEBUG, "current time was %u", currentTime);
+  msg(MSG_VDEBUG, "time in header was %u", exportTime);
+  /* If either the flow is more than 1h in the futur, or older than 1 day on arrival 
+   * it is probably a bad exporter so reject it
+   */
+  if( ((currentTime - exportTime + 3600 ) < 0) ||
+      ((currentTime - exportTime) > 86400) ) 
+  {
+    pthread_mutex_unlock(&mutex);
+    msg(MSG_VDEBUG, "Flow rejected due to sanity check, difference between current and export time was %u", currentTime - exportTime);
+    return -1;
+  }
+#endif
 	if (ntohs(header->version) == 0x000a) {
 		int r = processIpfixPacket(message, length, sourceId);
 		pthread_mutex_unlock(&mutex);

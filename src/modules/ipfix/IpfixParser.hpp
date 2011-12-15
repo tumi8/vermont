@@ -30,6 +30,9 @@
 #include <boost/smart_ptr.hpp>
 #include <map>
 
+#ifdef EXPORT_TIME_SANITY_CHECK
+#include <time.h>
+#endif
 
 class TemplateBuffer;
 
