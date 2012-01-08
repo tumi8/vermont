@@ -180,11 +180,11 @@ void ConfigManager::parseConfig(std::string fileName)
 		Connector connector;
 		graph->accept(&connector);
 	} else {
-		// first, connect the nodes on the new graph (but NOT the modules
+		// first, connect the nodes on the new graph (but NOT the modules)
 		Connector connector(true, false);
 		graph->accept(&connector);
 		// now connect the modules reusing those from the old graph
-        graph = reconnect(graph, oldGraph);
+		graph = reconnect(graph, oldGraph);
 	}
 
 	// start the instances if not already running
