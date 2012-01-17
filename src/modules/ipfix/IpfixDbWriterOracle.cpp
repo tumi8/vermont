@@ -115,7 +115,7 @@ int IpfixDbWriterOracle::createExporterTable()
 	}
 	catch (oracle::occi::SQLException& ex)
 	{
-		msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+		msg(MSG_FATAL,"IpfixDbWriterOracle: Error creating statement: %s", ex.getMessage().c_str());	
 		return 1;		
 	}
 	if (stmt)
@@ -127,7 +127,7 @@ int IpfixDbWriterOracle::createExporterTable()
 		}
 		catch (oracle::occi::SQLException& ex)
 		{
-			msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+			msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing statement: %s", ex.getMessage().c_str());	
 			con->terminateStatement(stmt);
 			return 1;					
 		}
@@ -157,7 +157,7 @@ int IpfixDbWriterOracle::createExporterTable()
 	}
 	catch (oracle::occi::SQLException& ex)
 	{
-		msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+		msg(MSG_FATAL,"IpfixDbWriterOracle: Error creating exporter table statement: %s", ex.getMessage().c_str());	
 		return 1;		
 	}
 	if (stmt)
@@ -169,7 +169,7 @@ int IpfixDbWriterOracle::createExporterTable()
 		}
 		catch (oracle::occi::SQLException& ex)
 		{
-			msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+			msg(MSG_FATAL,"IpfixDbWriterOracle: Error creating exporter table: %s", ex.getMessage().c_str());	
 			con->terminateStatement(stmt);
 			return 1;					
 		}
@@ -188,7 +188,7 @@ int IpfixDbWriterOracle::createExporterTable()
 	}
 	catch (oracle::occi::SQLException& ex)
 	{
-		msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+		msg(MSG_FATAL,"IpfixDbWriterOracle: Error creating sequence counter statement: %s", ex.getMessage().c_str());	
 		return 1;		
 	}
 	if (stmt)
@@ -200,7 +200,7 @@ int IpfixDbWriterOracle::createExporterTable()
 		}
 		catch (oracle::occi::SQLException& ex)
 		{
-			msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+			msg(MSG_FATAL,"IpfixDbWriterOracle: Error creating squence counter table:  %s", ex.getMessage().c_str());	
 			con->terminateStatement(stmt);
 			return 1;					
 		}
@@ -219,7 +219,7 @@ int IpfixDbWriterOracle::createExporterTable()
 	}
 	catch (oracle::occi::SQLException& ex)
 	{
-		msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+		msg(MSG_FATAL,"IpfixDbWriterOracle: Error creating statement: %s", ex.getMessage().c_str());	
 		return 1;		
 	}
 	if (stmt)
@@ -231,7 +231,7 @@ int IpfixDbWriterOracle::createExporterTable()
 		}
 		catch (oracle::occi::SQLException& ex)
 		{
-			msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+			msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing statement: %s", ex.getMessage().c_str());	
 			con->terminateStatement(stmt);
 			return 1;					
 		}
@@ -770,7 +770,7 @@ int IpfixDbWriterOracle::getExporterID(const IpfixRecord::SourceID& sourceID)
 				{
 					while(rs->next())
 					{
-						id = rs->getInt(1)
+						id = rs->getInt(1);
 						DPRINTF("ExporterID %d is in exporter table", id);
 					}
 					stmt->closeResultSet(rs);
