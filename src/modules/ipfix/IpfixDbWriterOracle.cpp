@@ -150,7 +150,7 @@ int IpfixDbWriterOracle::createExporterTable()
 
 	// create table
 	sql.str("");	
-	sql << "CREATE TABLE exporter ( id NUMERIC(10) NOT NULL, sourceID NUMERIC(10), srcIP NUMERIC(10), CONSTRAINT exporter_pk PRIMARY KEY (id) ) TABLESPACE " << dbName;
+	sql << "CREATE TABLE exporter ( id NUMERIC(10) NOT NULL, sourceID NUMERIC(10), srcIP NUMERIC(10), CONSTRAINT exporter_pk PRIMARY KEY (id) )"; 
 	try
 	{
 		stmt = con->createStatement(sql.str());
@@ -503,7 +503,7 @@ string& IpfixDbWriterOracle::getInsertString(string& row, time_t& flowstartsec, 
  */
 int IpfixDbWriterOracle::writeToDb()
 {
-	msg(MSG_DEBUG, "SQL Query: %s", insertStatement.str().c_str());
+	//msg(MSG_DEBUG, "SQL Query: %s", insertStatement.str().c_str());
 	oracle::occi::Statement *stmt = NULL;
 	oracle::occi::ResultSet *rs = NULL;
 	try
@@ -512,7 +512,7 @@ int IpfixDbWriterOracle::writeToDb()
 	}
 	catch (oracle::occi::SQLException& ex)
 	{
-		msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+		msg(MSG_FATAL,"IpfixDbWriterOracle: Error creating statement: %s", ex.getMessage().c_str());	
 		return 1;		
 	}
 	if (stmt)
@@ -524,7 +524,7 @@ int IpfixDbWriterOracle::writeToDb()
 		}
 		catch (oracle::occi::SQLException& ex)
 		{
-			msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+			msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing statement: %s", ex.getMessage().c_str());	
 			con->terminateStatement(stmt);
 			return 1;					
 		}
@@ -616,7 +616,7 @@ int IpfixDbWriterOracle::setCurrentTable(time_t flowstartsec)
 
 	// create table
 	sql.str("");	
-	sql << "CREATE TABLE " << currentTable.name << " ( " << tableColumnsCreateString << " ) TABLESPACE " << dbName;
+	sql << "CREATE TABLE " << currentTable.name << " ( " << tableColumnsCreateString << ")";
 	msg(MSG_DEBUG, "IpfixDbWriterOracle: SQL Query: %s", sql.str().c_str());
 	try
 	{
