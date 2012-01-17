@@ -244,10 +244,10 @@ void IpfixDbWriterOracle::processDataDataRecord(const IpfixRecord::SourceID& sou
 {
 	string rowString;
 	time_t flowStartSeconds;
-	msg(MSG_DEBUG, "IpfixDbWriter: Processing data record");
+	msg(MSG_DEBUG, "IpfixDbWriterOracle: Processing data record");
 
 	if (dbError) {
-		msg(MSG_DEBUG, "IpfixDbWriter: reconnecting to DB");
+		msg(MSG_DEBUG, "IpfixDbWriterOracle: reconnecting to DB");
 		connectToDB();
 		if (dbError) return;
 	}
@@ -259,13 +259,13 @@ void IpfixDbWriterOracle::processDataDataRecord(const IpfixRecord::SourceID& sou
 	} else {
 		rowString = getInsertString(rowString, flowStartSeconds, sourceID, dataTemplateInfo, length, data);
 	}
-	msg(MSG_DEBUG, "IpfixDbWriter: Row: %s", rowString.c_str());
+	msg(MSG_DEBUG, "IpfixDbWriterOracle: Row: %s", rowString.c_str());
 	
 
 	// if current table is not ok, write to db and get new table name
 	if(!(flowStartSeconds >= currentTable.startTime && flowStartSeconds <= currentTable.endTime)) {
 		if(numberOfInserts > 0) {
-			msg(MSG_DEBUG, "IpfixDbWriter: Writing buffered records to database");
+			msg(MSG_DEBUG, "IpfixDbWriterOracle: Writing buffered records to database");
 			insertStatement << " SELECT * FROM dual";
 			writeToDb();
 			numberOfInserts = 0;
@@ -291,7 +291,7 @@ void IpfixDbWriterOracle::processDataDataRecord(const IpfixRecord::SourceID& sou
 
 	// write to db if maxInserts is reached
 	if(numberOfInserts == maxInserts) {
-		msg(MSG_DEBUG, "IpfixDbWriter: Writing buffered records to database");
+		msg(MSG_DEBUG, "IpfixDbWriterOracle: Writing buffered records to database");
 		insertStatement << " SELECT * FROM dual";
 		writeToDb();
 		numberOfInserts = 0;
@@ -775,7 +775,7 @@ int IpfixDbWriterOracle::getExporterID(const IpfixRecord::SourceID& sourceID)
 				con->terminateStatement(stmt);
 				return 0;// If a failure occurs, return 0			
 			}
-			msg(MSG_INFO,"IpfixDbWriter: new exporter (ODID=%d, id=%d) inserted in exporter table", sourceID.observationDomainId, id);		
+			msg(MSG_INFO,"IpfixDbWriterOracle: new exporter (ODID=%d, id=%d) inserted in exporter table", sourceID.observationDomainId, id);		
 		}
 	}
 	// insert exporter in cache
@@ -861,7 +861,7 @@ IpfixDbWriterOracle::IpfixDbWriterOracle(const string& hostname, const string& d
 	currentTable.endTime = 0;
 
 	if(columns.empty())
-		THROWEXCEPTION("IpfixDbWriter: cannot initiate with no columns");
+		THROWEXCEPTION("IpfixDbWriterOracle: cannot initiate with no columns");
 
 	/* get columns */
 	bool first = true;
@@ -887,10 +887,10 @@ IpfixDbWriterOracle::IpfixDbWriterOracle(const string& hostname, const string& d
 			i++;
 		}
 	}
-	msg(MSG_INFO, "IpfixDbWriter: columns are %s", tableColumnsString.c_str());
+	msg(MSG_INFO, "IpfixDbWriterOracle: columns are %s", tableColumnsString.c_str());
 
 	if(connectToDB() != 0)
-		THROWEXCEPTION("IpfixDbWriter creation failed");
+		THROWEXCEPTION("IpfixDbWriterOracle creation failed");
 }
 
 

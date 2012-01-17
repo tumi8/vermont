@@ -52,7 +52,7 @@ IpfixDbWriterOracleCfg::IpfixDbWriterOracleCfg(XMLElement* elem)
 			password = e->getFirstText();
 		} else if (e->matches("bufferrecords")) {
 			bufferRecords = getInt("bufferrecords");
-		} else if (e->matches("column")) {
+		} else if (e->matches("columns")) {
 			readColumns(e);
 		} else if (e->matches("next")) { // ignore next
 		} else {
@@ -79,7 +79,7 @@ void IpfixDbWriterOracleCfg::readColumns(XMLElement* elem) {
 			colNames.push_back(e->getFirstText());
 			msg(MSG_DEBUG, "Row: %s", e->getFirstText().c_str());
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
+			msg(MSG_FATAL, "Unknown IpfixDbWriterOracle config statement %s\n", e->getName().c_str());
 			continue;
 		}		
 	}
@@ -96,7 +96,7 @@ IpfixDbWriterOracle* IpfixDbWriterOracleCfg::createInstance()
 	instance = new IpfixDbWriterOracle(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
 	msg(MSG_DEBUG, "IpfixDbWriterOracle configuration host %s db %s user %s password %s port %i observationDomainId %i bufferRecords %i\n", 
 	hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords);
-  return instance;
+ 	return instance;
 }
 
 
