@@ -74,11 +74,19 @@ int IpfixDbWriterOracle::connectToDB()
 	if (con) env->terminateConnection(con);
 
 	/** get the initial environment and connect */
-	env = oracle::occi::Environment::createEnvironment(oracle::occi::Environment::DEFAULT);
+	msg(MSG_DEBUG, "IpfixDbWriterOracle: Creating environment.");
+	try {
+		env = oracle::occi::Environment::createEnvironment(oracle::occi::Environment::DEFAULT);
+	} catch (oracle::occi::SQLException& ex) {
+		msg(MSG_FATAL, "IpfixDbWriterOracle: Error while creating environment: %s.", ex.getMessage().c_str());
+		msg(MSG_FATAL, "IpfixDbWriterOracle: Did you configure your Oracle environment?");
+		return -1;
+	}
+	msg(MSG_DEBUG, "IpfixDbWriterOracle: Trying to connect to database ...");
 	try 
 	{
-		char dbLogon[128];
-		sprintf(dbLogon, "%s:%u/", dbHost.c_str(), dbPort);
+		char dbLogon[256];
+		sprintf(dbLogon, "%s:%u/%s", dbHost.c_str(), dbPort, dbName.c_str());
 		con = env->createConnection(dbUser, dbPassword, dbLogon);
 	} catch (oracle::occi::SQLException& ex) 
 	{
