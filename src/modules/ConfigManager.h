@@ -35,14 +35,14 @@
 #include <string>
 #include <ctime>
 typedef struct deleter_list_item {
-    Cfg* c;
-    time_t delete_after;
+	Cfg* c;
+	time_t delete_after;
 } deleter_list_item;
 
 class ConfigManager
 	: GraphInstanceSupplier
 {
-    friend class Reconnector;
+	friend class Reconnector;
 public:
 	ConfigManager();
 
@@ -50,7 +50,7 @@ public:
 	
 	void parseConfig(std::string fileName);
 
-    void onTimeout2();	
+	void onTimeout2();	
 	void shutdown();
 	Graph* getGraph();
 	Graph* reconnect(Graph *g, Graph *o);
@@ -65,7 +65,7 @@ private:
 	SensorManager* sensorManager;
 	
 	void readGlobalConfig(XMLElement* e);
-    std::list<deleter_list_item> deleter_list;
+	std::list<deleter_list_item> deleter_list;
 };
 
 #endif /*CONFIGMANAGER_H_*/

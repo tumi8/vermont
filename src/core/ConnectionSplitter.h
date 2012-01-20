@@ -20,7 +20,18 @@ class ConnectionSplitter
 	: public Adapter<T>
 {
 public:
-	ConnectionSplitter(): size(0) { }
+	ConnectionSplitter(): size(0) { 
+		/* Since we are an Adapter, we need to have a single
+		   proper destination (because each Adapter has one). 
+		   However, since this class is designed to have multiple
+		   successors, we cannot find a single destination class.
+		   Therefore, we notify our base classes that we consider
+		   ourself as the apropriate destination and forwards each
+		   request to a Destination<T> object to our registered
+		   sub-classes.
+		*/
+		Source<T>::connectTo(this);
+	}
 
 	virtual ~ConnectionSplitter() { }
 
@@ -54,7 +65,8 @@ public:
 		// the packets in an own thread; for now, I think this is not needed
 		process(packet);
 	}
-	virtual void sendQueueRunningNotification() {
+
+	virtual void notifyQueueRunning() {
 		for (size_t i = 0; i < size; i++) {
 			destinations[i]->notifyQueueRunning();
 		}
