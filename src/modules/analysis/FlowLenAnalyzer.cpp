@@ -19,3 +19,37 @@
 
 #include "FlowLenAnalyzer.h"
 
+#include <errno.h>
+#include <string.h>
+
+FlowLenAnalyzer::FlowLenAnalyzer(std::string& f)
+	: filename(f)
+{
+	outstream.open(filename.c_str(), ios_base::out | ios_base::trunc);
+	if (not outstream) {
+		msg(MSG_FATAL, "FlowLenAnalyzer: Could not open output file \"%s\" for writing: %s", filename.c_str(), strerror(errno));
+		THROWEXCEPTION("FlowLenAnalyzer: Could not open output file \"%s\" for writing: %s", filename.c_str(), strerror(errno));
+
+	}
+}
+
+FlowLenAnalyzer::~FlowLenAnalyzer()
+{
+	
+}
+
+void FlowLenAnalyzer::onDataRecord(IpfixDataRecord* record)
+{
+
+}
+
+
+std::string FlowLenAnalyzer::getStatistics()
+{
+	return "";
+}
+
+std::string FlowLenAnalyzer::getStatisticsXML()
+{
+	return "";
+}

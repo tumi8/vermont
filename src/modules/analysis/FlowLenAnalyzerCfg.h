@@ -17,26 +17,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef _FLOWLEN_ANALYZER_H_
-#define _FLOWLEN_ANALYZER_H_
+#ifndef _FLOWLENALYZER_CFG_H_
+#define _FLOWLENALYZER_CFG_H_
 
-#include "modules/ipfix/IpfixRecordDestination.h"
+#include <core/XMLElement.h>
+#include <core/Cfg.h>
 
-#include <fstream>
+#include "FlowLenAnalyzer.h"
 
-class FlowLenAnalyzer : public Module, public Source<NullEmitable*>, public IpfixRecordDestination {
+class FlowLenAnalyzerCfg
+	: public CfgHelper<FlowLenAnalyzer, FlowLenAnalyzerCfg>
+{
 public:
-	FlowLenAnalyzer(std::string& filename);
-	virtual ~FlowLenAnalyzer();
-
-	virtual void onDataRecord(IpfixDataRecord* record);
-
-private:
-	virtual std::string getStatistics();
-	virtual std::string getStatisticsXML();
-
+	friend class ConfigManager;
+	
+	virtual FlowLenAnalyzerCfg* create(XMLElement* e);
+	virtual ~FlowLenAnalyzerCfg();
+	
+	virtual FlowLenAnalyzer* createInstance();
+	virtual bool deriveFrom(FlowLenAnalyzerCfg* old);
+	
+protected:
 	std::string filename;
-	std::ofstream outstream;
+
+	FlowLenAnalyzerCfg(XMLElement*);
 };
 
-#endif
+
+#endif 
