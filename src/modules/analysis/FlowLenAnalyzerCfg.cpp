@@ -19,6 +19,10 @@
 
 #include "FlowLenAnalyzerCfg.h"
 
+#include <sstream>
+#include <vector>
+
+
 FlowLenAnalyzerCfg* FlowLenAnalyzerCfg::create(XMLElement* e)
 {
     assert(e);
@@ -37,8 +41,24 @@ FlowLenAnalyzerCfg::FlowLenAnalyzerCfg(XMLElement* elem)
 	     it++) {
 		XMLElement* e = *it;
 
-		if (e->matches("filename")) {
-			filename = get("filename");
+		if (e->matches("flowFilename")) {
+			flowFilename = get("flowFilename");
+		} else if (e->matches("binFilename")) {
+			binFilename = get("binFilename");
+		} else if (e->matches("bins")) {
+			// we expect a list of comma seperated numbers
+			std::stringstream ss(get("bins"));
+			uint64_t i; 
+			while (ss >> i) {
+				bins.push_back(i);
+				if (ss.peek() == ',') {
+					ss.ignore();
+				}
+			}
+			msg(MSG_INFO, "FlowLenAnalyzer: Using bins: ");
+			for (std::vector<uint64_t>::const_iterator j = bins.begin(); j != bins.end(); ++j) {
+				msg(MSG_INFO, "%lu", *j);
+			}
 		} else if (e->matches("next")) { 
 			// ignore next
 		} else {
@@ -46,7 +66,9 @@ FlowLenAnalyzerCfg::FlowLenAnalyzerCfg(XMLElement* elem)
 			continue;
 		}
 	}
-	if (filename == "") THROWEXCEPTION("FlowLenAnalyzer: Missing filename.");
+	if (flowFilename == "") THROWEXCEPTION("FlowLenAnalyzer: Missing flowFilename statement.");
+	if (binFilename == "") THROWEXCEPTION("FlowLenAnalyzer: Missing binFilename statement.");
+	if (bins.empty()) THROWEXCEPTION("FlowLenAnalyzer: Missing bins statement. ");
 }
 
 FlowLenAnalyzerCfg::~FlowLenAnalyzerCfg()
@@ -55,7 +77,7 @@ FlowLenAnalyzerCfg::~FlowLenAnalyzerCfg()
 
 FlowLenAnalyzer* FlowLenAnalyzerCfg::createInstance()
 {
-	instance = new FlowLenAnalyzer(filename);
+	instance = new FlowLenAnalyzer(flowFilename, binFilename, bins);
 	return instance;
 }
 

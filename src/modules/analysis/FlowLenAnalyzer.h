@@ -23,10 +23,11 @@
 #include "modules/ipfix/IpfixRecordDestination.h"
 
 #include <fstream>
+#include <map>
 
 class FlowLenAnalyzer : public Module, public Source<NullEmitable*>, public IpfixRecordDestination {
 public:
-	FlowLenAnalyzer(std::string& filename);
+	FlowLenAnalyzer(std::string& flowFilename, std::string& binFilename, std::vector<uint64_t>& bins);
 	virtual ~FlowLenAnalyzer();
 
 	virtual void onDataRecord(IpfixDataRecord* record);
@@ -35,8 +36,12 @@ private:
 	virtual std::string getStatistics();
 	virtual std::string getStatisticsXML();
 
-	std::string filename;
-	std::ofstream outstream;
+	std::string flowFilename;
+	std::ofstream flowOutstream;
+	std::string binsFilename;
+	std::ofstream binsOutstream;
+	std::vector<uint64_t> bins;
+	std::map<uint64_t, uint64_t> binStats;
 };
 
 #endif

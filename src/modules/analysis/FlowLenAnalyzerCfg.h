@@ -38,7 +38,9 @@ public:
 	virtual bool deriveFrom(FlowLenAnalyzerCfg* old);
 	
 protected:
-	std::string filename;
+	std::string flowFilename;
+	std::string binFilename;
+	std::vector<uint64_t> bins;
 
 	FlowLenAnalyzerCfg(XMLElement*);
 };
