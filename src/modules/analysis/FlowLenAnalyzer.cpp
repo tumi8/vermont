@@ -80,11 +80,6 @@ void FlowLenAnalyzer::onDataRecord(IpfixDataRecord* record)
 		} else {
 			binStats[bins[i]] += std::min(byteCount, bins[i]);
 		}
-		if (bins[i] >= byteCount) {
-			// ok, we found the the last bin that this flow will contribute to. 
-			// stop the loop
-			break;
-		}
 	}
  out:
 	// release this record
