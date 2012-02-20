@@ -33,6 +33,7 @@ MARK_AS_ADVANCED(
 	CMAKE_INSTALL_PREFIX
 	EXECUTABLE_OUTPUT_PATH
 	LIBRARY_OUTPUT_PATH
+  EXPORT_TIME_SANITY_CHECK
 )
 
 ### basic modules
@@ -92,12 +93,48 @@ TARGET_LINK_LIBRARIES(vermont
 	${CMAKE_THREAD_LIBS_INIT}
 )
 
+### MongoDB
+
+OPTION(SUPPORT_MONGO "Enable MongoDB support" OFF)
+IF (SUPPORT_MONGO)
+	FIND_PACKAGE(MONGO REQUIRED)
+	IF (NOT MONGO_FOUND)
+    MESSAGE(FATAL_ERROR "Could not find MongoDB libraries.")
+	ENDIF (NOT MONGO_FOUND)
+ENDIF (SUPPORT_MONGO)
+IF (MONGO_FOUND)
+	MESSAGE(STATUS "Found MongoDB libraries")
+	ADD_DEFINITIONS(-DMONGO_SUPPORT_ENABLED)
+	### Mongo is currently forcing BOOST_FILE_SYSTEM v2 when its 
+	### headers are included. If we use version v3 in the rest of
+	### vermont, we will get compile time errors because of
+	### redefinitions of certain boost internals. If we support
+	### mongo, we therefore force v2 on the complete vermont
+	### compile process. Remove this if v2 is dropped by the boost
+	### people and mongo switched to v3
+	ADD_DEFINITIONS(-DBOOST_FILESYSTEM_VERSION=2)
+
+	IF (MONGO_VERSION_2)
+	   ADD_DEFINITIONS(-DMONGO_VERSION_2)
+	ENDIF (MONGO_VERSION_2)
+
+	INCLUDE_DIRECTORIES(${MONGO_INCLUDE_DIR})
+	TARGET_LINK_LIBRARIES(vermont
+		${MONGO_LIBRARIES}
+	)
+ELSE (MONGO_FOUND)
+	REMOVE_DEFINITIONS(-DMONGO_SUPPORT_ENABLED)
+	REMOVE_DEFINITIONS(-DMONGO_VERSION_2)
+	REMOVE_DEFINITIONS(-DBOOST_FILESYSTEM_VERSION)
+ENDIF (MONGO_FOUND)
+
 ### boost
 
 FIND_PACKAGE(Boost REQUIRED)
 MARK_AS_ADVANCED(
 	Boost_INCLUDE_DIR
 	Boost_REGEX_LIBRARY
+  Boost_THREAD_LIBRARY
 	Boost_FILESYSTEM_LIBRARY
 	Boost_UNIT_TEST_FRAMEWORK_LIBRARY
 )
@@ -109,7 +146,11 @@ IF (Boost_FOUND)
 	IF (NOT Boost_REGEX_LIBRARY)
 		MESSAGE(FATAL_ERROR "Could not find boost regex library")
 	ENDIF(NOT Boost_REGEX_LIBRARY)
-	FIND_LIBRARY(Boost_FILESYSTEM_LIBRARY NAMES boost_filesystem-mt boost_filesystem PATHS ${Boost_LIBRARY_DIRS})
+  FIND_LIBRARY(Boost_THREAD_LIBRARY NAMES boost_thread-mt boost_thread PATHS ${Boost_LIBRARY_DIRS})
+  IF (NOT Boost_THREAD_LIBRARY)
+		MESSAGE(FATAL_ERROR "Could not find boost thread library")
+  ENDIF(NOT Boost_THREAD_LIBRARY)
+  FIND_LIBRARY(Boost_FILESYSTEM_LIBRARY NAMES boost_filesystem-mt boost_filesystem PATHS ${Boost_LIBRARY_DIRS})
 	IF (NOT Boost_FILESYSTEM_LIBRARY)
 		MESSAGE(FATAL_ERROR "Could not find boost filesystem library")
 	ENDIF(NOT Boost_FILESYSTEM_LIBRARY)
@@ -126,6 +167,12 @@ IF (Boost_FOUND)
 		${Boost_FILESYSTEM_LIBRARY}
 		${Boost_SYSTEM_LIBRARY}
 	)
+  IF (SUPPORT_MONGO) 
+	  TARGET_LINK_LIBRARIES(vermont
+		  ${Boost_THREAD_LIBRARY}
+    )
+  ENDIF (SUPPORT_MONGO)
+
 ELSE (Boost_FOUND)
 	MESSAGE(FATAL_ERROR "Could not find boost libraries")
 	REMOVE_DEFINITIONS(-DHAVE_BOOST_FILESYSTEM)
@@ -149,6 +196,11 @@ ELSE (LIBXML2_INCLUDE_DIR AND LIBXML2_LIBRARIES)
 	MESSAGE(FATAL_ERROR "Could not find libxml2 libraries")
 ENDIF (LIBXML2_INCLUDE_DIR AND LIBXML2_LIBRARIES)
 
+### export time sanity checks
+OPTION(EXPORT_TIME_SANITY_CHECK "Enable sanity checks on arrival of flows base on export time" OFF)
+IF(EXPORT_TIME_SANITY_CHECK)
+  ADD_DEFINITIONS(-DEXPORT_TIME_SANITY_CHECK)
+ENDIF(EXPORT_TIME_SANITY_CHECK)
 
 ### debug
 

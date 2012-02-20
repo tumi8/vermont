@@ -43,6 +43,7 @@
 #include "modules/ipfix/IpfixReceiverFileCfg.h"
 #include "modules/ipfix/IpfixDbWriterPgCfg.h"
 #include "modules/ipfix/IpfixDbWriterOracleCfg.h"
+#include "modules/ipfix/IpfixDbWriterMongoCfg.h"
 #include "modules/ipfix/IpfixPayloadWriterCfg.h"
 #include "modules/ipfix/IpfixSamplerCfg.h"
 #include "modules/ipfix/IpfixCsExporterCfg.hpp"
@@ -106,6 +107,9 @@ Cfg* ConfigManager::configModules[] = {
 #endif
 #ifdef ORACLE_SUPPORT_ENABLED
   new IpfixDbWriterOracleCfg(NULL),
+#endif
+#ifdef MONGO_SUPPORT_ENABLED
+  new IpfixDbWriterMongoCfg(NULL),
 #endif
 };
 
