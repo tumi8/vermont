@@ -1,6 +1,10 @@
-module_configuration.txt contains Vermont's module configuration in the Creole Markup language (mixed a bit with Dokuwiki's features for displaying code).
+wiki/ModuleConfiguration.md contains Vermont's module configuration in
+the Markdown Markup language.
 
-When this file is changed in vermont-dynamic-config (later directly in trunk), please also update the module configuration page in the wiki on vermont.berlios.de.
+Update this page whenever you make any changes to the configuration
+subsystem of vermont.  The directory wiki is a git submodule that
+points directly to the wiki on the website, so you do not have to
+update both places.
 
 
-Tobias Limmer, 10.3.2009
+Lothar Braun, 20.02.2012
