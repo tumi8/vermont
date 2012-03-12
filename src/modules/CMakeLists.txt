@@ -62,6 +62,8 @@ ADD_LIBRARY(modules
     ipfix/IpfixCsExporter.cpp
     ipfix/IpfixCsExporterCfg.cpp
     ipfix/IpfixDbReaderCfg.cpp
+    ipfix/IpfixDbReaderOracle.cpp
+    ipfix/IpfixDbReaderOracleCfg.cpp
     ipfix/IpfixDbWriterCfg.cpp
     ipfix/IpfixDbWriterPgCfg.cpp
     ipfix/IpfixDbWriterOracleCfg.cpp

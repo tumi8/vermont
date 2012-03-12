@@ -133,8 +133,10 @@ void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, InformationElement
 
 int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName)
 {
-	MYSQL_RES* dbResult = NULL;
-	MYSQL_ROW dbRow = NULL;
+	std::ostringstream sql;
+	oracle::occi::Statement *stmt = NULL;
+	oracle::occi::ResultSet *rs = NULL;
+
 	unsigned offset = 0;
 	uint64_t delta = 0;		// 64 bit to avoid castings in the case of flowStartMilliseconds
 	uint32_t flowTime = 0;		// in seconds, so 32 bit are sufficient
@@ -143,19 +145,28 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 	bool first = true; 
 	unsigned j = 0;
 	
-	string query = "SELECT " + columnNames + " FROM " + tableName;
-	
+	sql << "SELECT " << columnNames << " FROM "<< tableName;
 	// at full speed, we do not make time shifts or reorder
 	if(fullspeed)
 		timeshift = false; // timeshift disabled in fullspeed mode
 	else
-		query = query + orderBy;
+		sql << orderBy;
 
-	msg(MSG_VDEBUG, "IpfixDbReaderOracle: SQL query: %s", query.c_str());
-	if(mysql_query(conn, query.c_str()) != 0) {
-		msg(MSG_ERROR,"IpfixDbReaderOracle: Select on table failed. Error: %s",
-		    mysql_error(conn));
+	// create the oracle statement
+	try {
+		stmt = con->createStatement(sql.str());
+	} catch (oracle:occi::SQLExpection& ex) {
+		msg(MSG_FATAL, "IpfixDbReaderOracle: Error creating statement: %s", ex.getMessage().c_str());
 		return 1;
+	}
+	
+	//msg(MSG_VDEBUG, "IpfixDbReaderOracle: SQL query: %s", query.c_str());
+	try {
+		stmt->setPrefetchRowCount(1);
+		rs = stmt->executeQuery();
+	} catch (oracle::occi:SQLException& ex) {
+		msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing statement: %s", ex.getMessage().c_str());
+		con->terminateStatement(stmt);
 	}
 
 	dbResult = mysql_store_result(conn);
@@ -433,33 +444,34 @@ int IpfixDbReaderOracle::connectToDb(
 		const string& userName, const string& password,
 		unsigned int port)
 {
-	/** get the mysl init handle*/
-	conn = mysql_init(0); 
-	if(conn == 0) {
-		msg(MSG_FATAL,"IpfixDbReaderOracle: Get MySQL connect handle failed. Error: %s",
-		    mysql_error(conn));
-		return 1;
-	} else {
-		msg(MSG_DEBUG,"IpfixDbReaderOracle: mysql init successful");
-	}
+	dbError = true;
 
-	/**Connect to Database*/
-	if (!mysql_real_connect(conn, hostName.c_str(), userName.c_str(),password.c_str(),
-				0, port, 0, 0)) {
-		msg(MSG_FATAL,"IpfixDbReaderOracle: Connection to database failed. Error: %s",
-		    mysql_error(conn));
-		return 1;
-	} else {
-		msg(MSG_DEBUG,"IpfixDbReaderOracle: successfully connected to database");
-	}
+	// try to close connection in case we still have one
+	// from a previous try
+	if (con) {
+		env->terminateConnection(con);
+	}	
 
-	/** use database with dbName **/	
-	if(mysql_select_db(conn, dbName.c_str()) !=0) {
-		msg(MSG_FATAL,"IpfixDbReaderOracle: Database %s not selectable", dbName.c_str());	
-		return 1;
-	} else {
-		msg(MSG_DEBUG,"IpfixDbReaderOracle: Database %s selected", dbName.c_str());
+	msg(MSG_DEBUG, "IpfixDbReaderOracle: Creating environment.");
+	try {
+		env = oracle::occi:Environment::createEnvironment(oracle::occi::Environment::DEFAULT);
+	} catch (oracle:occi:SQLException& ex) {
+		msg(MSG_FATAL, "IpfixDbReaderOracle: Error while creating environment: %s.", ex.getMessage().c_str());
+		msg(MSG_FATAL, "IpfixDbReaderOracle: Did you configure your Oracle environment?");
+		return -1;
 	}
+	msg(MSG_DEBUG, "IpfixDbReaderOracle: Trying to connect to database ...");
+	try 
+	{
+		char dbLogon[256];
+		sprintf(dbLogon, "%s:%u/%s", hostName.c_str(), port, dbName.c_str());
+		con = env->createConnection(userName, password, dbLogon);
+	} catch (oracle::occi::SQLException& ex) 
+	{
+		msg(MSG_FATAL,"IpfixDbReaderOracle: Oracle connect failed. Error: %s", ex.getMessage().c_str());
+		return 1;
+	}
+	msg(MSG_DEBUG,"IpfixDbReaderOracle: Oracle connection successful");
 
 	return 0;
 }
@@ -468,7 +480,7 @@ int IpfixDbReaderOracle::connectToDb(
 
 /**
  * Starts or resumes database
- * @param ipfixDbReader handle obtained by calling @c createipfixDbReader()
+ * @param ipfixDbReaderOracle handle obtained by calling @c createipfixDbReader()
  */
 void IpfixDbReaderOracle::performStart() 
 {
@@ -489,7 +501,8 @@ void IpfixDbReaderOracle::performShutdown()
  * @param ipfixDbWriter handle obtained by calling @c createipfixDbReader()
  */
 IpfixDbReaderOracle::~IpfixDbReaderOracle() {
-	mysql_close(conn);
+	env->terminateConnection(con);
+	oracle::occi:Environment::terminateEnvironment(env);
 }
 
 /**

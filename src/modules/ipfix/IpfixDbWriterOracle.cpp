@@ -689,7 +689,7 @@ int IpfixDbWriterOracle::getExporterID(const IpfixRecord::SourceID& sourceID)
 	}
 	catch (oracle::occi::SQLException &ex)
 	{
-		msg(MSG_ERROR,"IpfixDbWriterOracle: Select on exporter table failed. Error: %s", ex.getMessage().c_str());	
+ 		msg(MSG_ERROR,"IpfixDbWriterOracle: Select on exporter table failed. Error: %s", ex.getMessage().c_str());	
 		return 0;// If a failure occurs, return 0
 	}
 	if(stmt)

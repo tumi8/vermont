@@ -43,46 +43,48 @@
  */
 class IpfixDbReaderOracle : public Module, public Source<IpfixRecord*>, public Destination<NullEmitable*> 
 {
-	public:
-		IpfixDbReaderOracle(const string& hostname, const string& dbname,
-				const string& username, const string& password,
-				unsigned port, uint16_t observationDomainId, 
-				bool timeshift, bool fullspeed);
-		~IpfixDbReaderOracle();
-
-		virtual void performStart();
-		virtual void performShutdown();
-
-		boost::shared_ptr<IpfixRecord::SourceID> srcId;
-
-	protected:
-		typedef struct {
-			uint16_t ipfixId;  /**IPFIX_TYPEID*/
-			uint8_t length;    /**IPFIX length*/
-		} columnDB;
-
-		vector<string> tables;
-		vector<columnDB> columns;
-		string columnNames; 
-		string orderBy; 
-		unsigned recordLength;
-		bool timeshift, fullspeed;
-
-		oracle::occi::Environment *env;
-		oracle::occi::Connection *con;
-		Thread thread;
-		
-		static InstanceManager<IpfixTemplateRecord> templateRecordIM;
-		static InstanceManager<IpfixDataRecord> dataRecordIM;
-		static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
-
-		int getTables();
-		int getColumns(const string& tableName);
-		static void* readFromDB(void* ipfixDbReader_);
-		int dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
-		int dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
-		int dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templateInfo);
-		int connectToDb( const string& hostName, const string& dbName, const string& userName, const string& password, unsigned int port);
+public:
+	IpfixDbReaderOracle(const string& hostname, const string& dbname,
+			    const string& username, const string& password,
+			    unsigned port, uint16_t observationDomainId, 
+			    bool timeshift, bool fullspeed);
+	~IpfixDbReaderOracle();
+	
+	virtual void performStart();
+	virtual void performShutdown();
+	
+	boost::shared_ptr<IpfixRecord::SourceID> srcId;
+	
+protected:
+	typedef struct {
+		uint16_t ipfixId;  /**IPFIX_TYPEID*/
+		uint8_t length;    /**IPFIX length*/
+	} columnDB;
+	
+	vector<string> tables;
+	vector<columnDB> columns;
+	string columnNames; 
+	string orderBy; 
+	unsigned recordLength;
+	bool timeshift, fullspeed;
+	
+	bool dbError; // error flag 
+	oracle::occi::Environment *env;
+	oracle::occi::Connection *con;
+	
+	Thread thread;
+	
+	static InstanceManager<IpfixTemplateRecord> templateRecordIM;
+	static InstanceManager<IpfixDataRecord> dataRecordIM;
+	static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
+	
+	int getTables();
+	int getColumns(const string& tableName);
+	static void* readFromDB(void* ipfixDbReader_);
+	int dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
+	int dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
+	int dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templateInfo);
+	int connectToDb( const string& hostName, const string& dbName, const string& userName, const string& password, unsigned int port);
 };
 
 #endif
