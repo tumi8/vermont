@@ -251,14 +251,14 @@ string Connection::toString()
 	oss << "connection: " << endl;
 	if (srcIP) oss << "srcIP: " << IPToString(srcIP) << endl;
 	if (dstIP) oss << "dstIP: " << IPToString(dstIP) << endl;
-	if (srcPort) oss << "srcPort: " << srcPort << endl;
-	if (dstPort) oss << "dstPort: " << dstPort << endl;
+	if (srcPort) oss << "srcPort: " << ntohs(srcPort) << endl;
+	if (dstPort) oss << "dstPort: " << ntohs(dstPort) << endl;
 	if (srcTimeStart) oss << "srcTimeStart: " << srcTimeStart << endl;
 	if (srcTimeEnd) oss << "srcTimeEnd: " << srcTimeEnd << endl;
 	if (dstTimeStart) oss << "dstTimeStart: " << dstTimeStart << endl;
 	if (dstTimeEnd) oss << "dstTimeEnd: " << dstTimeEnd << endl;
-	oss << "srcOctets: " << htonll(srcOctets) << ", dstOctets: " << htonll(dstOctets) << endl;
-	oss << "srcPackets: " << htonll(srcPackets) << ", dstPackets: " << htonll(dstPackets) << endl;
+	oss << "srcOctets: " << ntohll(srcOctets) << ", dstOctets: " << ntohll(dstOctets) << endl;
+	oss << "srcPackets: " << ntohll(srcPackets) << ", dstPackets: " << ntohll(dstPackets) << endl;
 	if (srcTcpControlBits || dstTcpControlBits) oss << "srcTcpControlBits: " << printTcpControlBits(srcTcpControlBits)
 													<< ", dstTcpControlBits: " << printTcpControlBits(dstTcpControlBits) << endl;
 	if (protocol) oss << "protocol: " << static_cast<uint32_t>(protocol) << endl;
