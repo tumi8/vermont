@@ -45,6 +45,8 @@ class IpfixReceiverSctpIpV4 : public IpfixReceiver, Sensor {
 		virtual ~IpfixReceiverSctpIpV4();
 
 		virtual void run();
+		std::string getStatisticsXML(double interval);
+
 	private:
 		int listen_socket;
 		uint32_t statReceivedPackets;  /**< number of received packets */ 
