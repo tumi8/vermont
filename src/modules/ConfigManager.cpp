@@ -55,6 +55,7 @@
 #include "modules/analysis/RBSWormDetectorCfg.h"
 #include "modules/analysis/FrontPayloadSigMatcherCfg.h"
 #include "modules/analysis/AutoFocusCfg.h"
+#include "modules/analysis/FlowLenAnalyzerCfg.h"
 #include "modules/idmef/IDMEFExporterCfg.h"
 #include "modules/idmef//PacketIDMEFReporterCfg.h"
 #include "modules/analysis/P2PDetectorCfg.h"
@@ -106,11 +107,12 @@ Cfg* ConfigManager::configModules[] = {
 	new IpfixDbWriterPgCfg(NULL),
 #endif
 #ifdef ORACLE_SUPPORT_ENABLED
-  new IpfixDbWriterOracleCfg(NULL),
+	new IpfixDbWriterOracleCfg(NULL),
 #endif
 #ifdef MONGO_SUPPORT_ENABLED
-  new IpfixDbWriterMongoCfg(NULL),
+	new IpfixDbWriterMongoCfg(NULL),
 #endif
+	new FlowLenAnalyzerCfg(NULL),
 };
 
 ConfigManager::ConfigManager()
@@ -180,7 +182,7 @@ void ConfigManager::parseConfig(std::string fileName)
 		}
 
 		if (!found) {
-			msg(MSG_INFO, "Unknown cfg entry %s found", (*it)->getName().c_str());
+			msg(MSG_ERROR, "Unknown cfg entry %s found", (*it)->getName().c_str());
 		}
 	}
 

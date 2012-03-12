@@ -23,6 +23,8 @@ ADD_LIBRARY(modules
     analysis/TRWPortscanDetectorCfg.cpp
     analysis/HostStatistics.cpp
     analysis/HostStatisticsCfg.cpp
+    analysis/FlowLenAnalyzer.cpp
+    analysis/FlowLenAnalyzerCfg.cpp
     # support files for FrontPayloadSigMatcher
     analysis/fpsigmatcher/KTree.c
     analysis/fpsigmatcher/Matcher.c
