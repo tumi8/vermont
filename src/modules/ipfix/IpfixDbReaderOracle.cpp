@@ -178,7 +178,7 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 
 	while((rs->next()) && !exitFlag) {
 		if (first) {
-			j = 0;
+			j = 1;
 			for(vector<columnDB>::iterator i = columns.begin(); i != columns.end(); ++i) {
 				if(i->ipfixId == IPFIX_TYPEID_flowEndSeconds) {
 					delta = time(NULL) - atoll(rs->getString(j).c_str());
@@ -209,9 +209,9 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 		for(vector<columnDB>::iterator i = columns.begin(); i != columns.end(); ++i) {
 			switch(i->ipfixId) {
 			case IPFIX_TYPEID_flowEndSeconds:
-			        flowTime = atoll(rs->getString(j).c_str()) + delta;
+			        flowTime = atoll(rs->getString(j + 1).c_str()) + delta;
 			case IPFIX_TYPEID_flowStartSeconds:
-				tmp = atoll(rs->getString(j).c_str());
+				tmp = atoll(rs->getString(j + 1).c_str());
 				// do time shift if required
 				if(timeshift)
 					tmp += delta;
@@ -221,9 +221,9 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 				offset += templateInfo->fieldInfo[j].type.length;
 				break;
 			case IPFIX_TYPEID_flowEndMilliSeconds:
-			        flowTime = atoll(rs->getString(j).c_str())/1000 + delta;
+			        flowTime = atoll(rs->getString(j + 1).c_str())/1000 + delta;
 			case IPFIX_TYPEID_flowStartMilliSeconds:
-				tmp = atoll(rs->getString(j).c_str());
+				tmp = atoll(rs->getString(j + 1).c_str());
 				// do time shift if required
 				if(timeshift)
 					tmp += 1000*delta;
@@ -240,7 +240,7 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 			case IPFIX_TYPEID_destinationTransportPort:
 			case IPFIX_TYPEID_protocolIdentifier:
 			case IPFIX_TYPEID_classOfServiceIPv4:
-				tmp = atoll(rs->getString(j).c_str());
+				tmp = atoll(rs->getString(j + 1).c_str());
 				copyUintNetByteOrder(data.get() + templateInfo->fieldInfo[j].offset,
 						     (char*)&tmp,
 						     templateInfo->fieldInfo[j].type);
@@ -306,7 +306,7 @@ int IpfixDbReaderOracle::getTables()
         oracle::occi::ResultSet *rs = NULL;
 
 
-        sql << "SELECT table_name FROM user_tables WHERE table_name LIKE 'H_%'";
+        sql << "SELECT table_name FROM user_tables WHERE table_name LIKE 'H_%' ORDER BY table_name ASC";
         // create the oracle statement
         try {
                 stmt = con->createStatement(sql.str());
@@ -330,7 +330,7 @@ int IpfixDbReaderOracle::getTables()
         }
 
         while((rs->next()) && !exitFlag) {
-		tables.push_back(rs->getString(0));
+		tables.push_back(rs->getString(1));
 		msg(MSG_VDEBUG, "IpfixDbReaderOracle: table %s", tables.back().c_str());
 	}
 
@@ -380,58 +380,58 @@ int IpfixDbReaderOracle::getColumns(const string& tableName)
 
         while((rs->next()) && !exitFlag) {
 		bool found = true;
-		if(strcmp(rs->getString(0).c_str(), CN_dstIP) == 0) {
+		if(strcasecmp(rs->getString(1).c_str(), CN_dstIP) == 0) {
 			columnNames = columnNames + ", " + CN_dstIP;
 			columnDB tmp = {IPFIX_TYPEID_destinationIPv4Address, IPFIX_LENGTH_destinationIPv4Address};
 			columns.push_back(tmp);
-		} else if(strcmp(rs->getString(0).c_str(), CN_srcIP) == 0) {
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_srcIP) == 0) {
 			columnNames = columnNames + ", " + CN_srcIP;
 			columnDB tmp = {IPFIX_TYPEID_sourceIPv4Address, IPFIX_LENGTH_sourceIPv4Address};
 			columns.push_back(tmp);
-		} else if(strcmp(rs->getString(0).c_str(), CN_dstPort) == 0) {
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_dstPort) == 0) {
 			columnNames = columnNames + ", " + CN_dstPort;
 			columnDB tmp = {IPFIX_TYPEID_destinationTransportPort, IPFIX_LENGTH_destinationTransportPort};
 			columns.push_back(tmp);
-		} else if(strcmp(rs->getString(0).c_str(), CN_srcPort) == 0) {
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_srcPort) == 0) {
 			columnNames = columnNames + ", " + CN_srcPort;
 			columnDB tmp = {IPFIX_TYPEID_sourceTransportPort, IPFIX_LENGTH_sourceTransportPort};
 			columns.push_back(tmp);
-		} else if(strcmp(rs->getString(0).c_str(), CN_proto) == 0) {
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_proto) == 0) {
 			columnNames = columnNames + ", " + CN_proto;
 			columnDB tmp = {IPFIX_TYPEID_protocolIdentifier, IPFIX_LENGTH_protocolIdentifier};
 			columns.push_back(tmp);
-		} else if(strcmp(rs->getString(0).c_str(), CN_dstTos) == 0) {
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_dstTos) == 0) {
 			columnNames = columnNames + ", " + CN_dstTos;
 			columnDB tmp = {IPFIX_TYPEID_classOfServiceIPv4, IPFIX_LENGTH_classOfServiceIPv4};
 			columns.push_back(tmp);
-		} else if(strcmp(rs->getString(0).c_str(), CN_bytes) == 0) {
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_bytes) == 0) {
 			columnNames = columnNames + ", " + CN_bytes;
 			columnDB tmp = {IPFIX_TYPEID_octetDeltaCount, IPFIX_LENGTH_octetDeltaCount};
 			columns.push_back(tmp);
-		} else if(strcmp(rs->getString(0).c_str(), CN_pkts) == 0) {
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_pkts) == 0) {
 			columnNames = columnNames + ", " + CN_pkts;
 			columnDB tmp = {IPFIX_TYPEID_packetDeltaCount, IPFIX_LENGTH_packetDeltaCount};
 			columns.push_back(tmp);
-		} else if(strcmp(rs->getString(0).c_str(), CN_firstSwitched) == 0) {
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_firstSwitched) == 0) {
 			columnNames = columnNames + ", " + CN_firstSwitched;
 			columnDB tmp = {IPFIX_TYPEID_flowStartSeconds, IPFIX_LENGTH_flowStartSeconds};
 			columns.push_back(tmp);
-		} else if(strcmp(rs->getString(0).c_str(), CN_lastSwitched) == 0) {
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_lastSwitched) == 0) {
 			columnNames = columnNames + ", " + CN_lastSwitched;
 			columnDB tmp = {IPFIX_TYPEID_flowEndSeconds, IPFIX_LENGTH_flowEndSeconds};
 			columns.push_back(tmp);
 			orderBy = " ORDER BY ";
 			orderBy.append(CN_lastSwitched);
-		} else if(strcmp(rs->getString(0).c_str(), CN_firstSwitchedMillis) == 0) {
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_firstSwitchedMillis) == 0) {
 			haveFirstMillis = true;
-		} else if(strcmp(rs->getString(0).c_str(), CN_lastSwitchedMillis) == 0) {
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_lastSwitchedMillis) == 0) {
 			haveLastMillis = true;
-		} else if(strcmp(rs->getString(0).c_str(), CN_exporterID) != 0) { 
-			msg(MSG_INFO, "IpfixDbReaderOracle: Unsupported column: %s", rs->getString(0).c_str());
+		} else if(strcasecmp(rs->getString(1).c_str(), CN_exporterID) != 0) { 
+			msg(MSG_INFO, "IpfixDbReaderOracle: Unsupported column: %s", rs->getString(1).c_str());
 			found = false;
 		}
 		if(found)
-			msg(MSG_VDEBUG, "IpfixDbReaderOracle: column %s (%d)", rs->getString(0).c_str(), columns.back().ipfixId);
+			msg(MSG_VDEBUG, "IpfixDbReaderOracle: column %s (%d)", rs->getString(1).c_str(), columns.back().ipfixId);
 	}
 	
 	// if we have found seconds and milliseconds, forge the columns to get flowStart/EndMilliseconds
@@ -506,7 +506,7 @@ int IpfixDbReaderOracle::connectToDb(
 		msg(MSG_FATAL,"IpfixDbReaderOracle: Oracle connect failed. Error: %s", ex.getMessage().c_str());
 		return 1;
 	}
-	msg(MSG_DEBUG,"IpfixDbReaderOracle: Oracle connection successful");
+	msg(MSG_DEBUG,"IpfixDbReaderOracle: Successfully connected to Oracle DB");
 
 	return 0;
 }

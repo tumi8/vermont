@@ -29,6 +29,8 @@ typedef void (*LOGFUNCTION)(void *);
 	/** print 'short version' of class + function name by printing filename:function name */
 	//#define PRINT_NICELOCATION
 
+#else
+	//#define PRINT_WHOLEFUNCTIONNAME
 #endif
 
 /* defines for the message system */
