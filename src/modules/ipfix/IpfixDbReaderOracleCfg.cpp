@@ -23,7 +23,7 @@
 #include "IpfixDbReaderOracleCfg.h"
 
 
-IpfixDbReaderOracleCfg* IpfixDbReaderCfg::create(XMLElement* e)
+IpfixDbReaderOracleCfg* IpfixDbReaderOracleCfg::create(XMLElement* e)
 {
     assert(e);
     assert(e->getName() == getName());
