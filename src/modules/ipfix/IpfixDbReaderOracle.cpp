@@ -558,6 +558,10 @@ IpfixDbReaderOracle::IpfixDbReaderOracle(const string& hostname, const string& d
 	srcId->protocol = 0;
 	srcId->fileDescriptor = 0;
 
+	if (fullspeed) {
+		msg(MSG_DEBUG, "IpfixDbReaderOracle: found fullspeed in configuration. Pushing flows as fast as possible.");
+	}
+
 	if (connectToDb(hostname, dbname, username, password, port)) {
 		THROWEXCEPTION("IpfixDbReaderOracle creation failed");
 	}
