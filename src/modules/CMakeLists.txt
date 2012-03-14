@@ -22,6 +22,7 @@ ADD_LIBRARY(modules
     analysis/RBSWormDetectorCfg.cpp
     analysis/TRWPortscanDetectorCfg.cpp
     analysis/HostStatistics.cpp
+    analysis/Host.cpp
     analysis/HostStatisticsCfg.cpp
     analysis/FlowLenAnalyzer.cpp
     analysis/FlowLenAnalyzerCfg.cpp
