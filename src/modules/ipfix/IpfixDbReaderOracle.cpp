@@ -144,6 +144,8 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 	uint64_t tmp;
 	bool first = true; 
 	unsigned j = 0;
+
+	msg(MSG_VDEBUG, "IpfixDbReaderOracle: Sending table %s", tableName.c_str());
 	
 	sql << "SELECT " << columnNames << " FROM "<< tableName;
 	// at full speed, we do not make time shifts or reorder
@@ -176,6 +178,7 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 
 	msg(MSG_INFO,"IpfixDbReaderOracle:  Start sending records from table %s", tableName.c_str());
 
+	try {
 	while((rs->next()) && !exitFlag) {
 		if (first) {
 			j = 1;
@@ -270,11 +273,15 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 		ipfixRecord->message = data;
 		ipfixRecord->data = data.get();
 		send(ipfixRecord);
-		msg(MSG_VDEBUG,"IpfixDbReaderOracle: Record sent");
 	}
 	stmt->closeResultSet(rs);
 	con->terminateStatement(stmt);
 	
+	} catch (oracle::occi::SQLException& ex) {
+		msg(MSG_ERROR, "Caught generic SQL exception");
+		return 1;
+	}
+
 	if(!exitFlag)
 		msg(MSG_INFO,"IpfixDbReaderOracle: Sending from table %s done", tableName.c_str());
 	else
@@ -329,6 +336,7 @@ int IpfixDbReaderOracle::getTables()
                 return 1;
         }
 
+	try {
         while((rs->next()) && !exitFlag) {
 		tables.push_back(rs->getString(1));
 		msg(MSG_VDEBUG, "IpfixDbReaderOracle: table %s", tables.back().c_str());
@@ -336,6 +344,11 @@ int IpfixDbReaderOracle::getTables()
 
         stmt->closeResultSet(rs);
         con->terminateStatement(stmt);
+
+        } catch (oracle::occi::SQLException& ex) {
+                msg(MSG_ERROR, "Caught generic SQL exception");
+                return 1;
+        }
 	
 	return 0;
 }
@@ -378,6 +391,7 @@ int IpfixDbReaderOracle::getColumns(const string& tableName)
 	bool haveFirstMillis = false;
 	bool haveLastMillis = false;
 
+	try {
         while((rs->next()) && !exitFlag) {
 		bool found = true;
 		if(strcasecmp(rs->getString(1).c_str(), CN_dstIP) == 0) {
@@ -469,6 +483,10 @@ int IpfixDbReaderOracle::getColumns(const string& tableName)
 
         stmt->closeResultSet(rs);
         con->terminateStatement(stmt);
+        } catch (oracle::occi::SQLException& ex) {
+                msg(MSG_ERROR, "Caught generic SQL exception");
+                return 1;
+        }
 
 	return 0;
 }
