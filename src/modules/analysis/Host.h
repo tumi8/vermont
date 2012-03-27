@@ -21,11 +21,13 @@
 #define _HOST_H_
 
 #include "modules/ipfix/Connection.h"
+#include "common/ManagedInstance.h"
 
-class Host {
+class Host : public ManagedInstance<Host> {
 public:
-	Host(uint32_t ip);
+	Host(InstanceManager<Host>* im);
 	~Host();
+	void setIP(uint32_t address) { ip = address; }
 
 	void addConnection(Connection* c);
 
@@ -43,6 +45,8 @@ public:
 	uint64_t sentHighPorts;
 	uint64_t recLowPorts;
 	uint64_t sentLowPorts;
+
+	uint64_t lastSeen;
 };
 
 #endif

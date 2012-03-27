@@ -20,10 +20,10 @@
 #include "Host.h"
 
 
-Host::Host(uint32_t ipAddress)
-	: ip(ipAddress), answeredFlows(0), unansweredFlows(0), sentBytes(0),
+Host::Host(InstanceManager<Host>* im)
+	: ManagedInstance<Host>(im), ip(0), answeredFlows(0), unansweredFlows(0), sentBytes(0),
 	  sentPackets(0), recBytes(0), recPackets(0), recHighPorts(0),
-	  sentHighPorts(0), recLowPorts(0), sentLowPorts(0)
+	  sentHighPorts(0), recLowPorts(0), sentLowPorts(0), lastSeen(0)
 {
 
 }
@@ -48,6 +48,7 @@ void Host::addConnection(Connection* c)
 	}
 	
 	if (c->srcIP == ip) {
+		// host is a client
 		sentPackets += ntohll(c->srcPackets);
 		sentBytes   += ntohll(c->srcOctets);
 		recPackets  += ntohll(c->dstPackets);
@@ -63,6 +64,7 @@ void Host::addConnection(Connection* c)
 		} else {
 			recHighPorts++;
 		}
+		lastSeen = c->srcTimeEnd;
 	} else {
 		sentPackets += ntohll(c->dstPackets);
 		sentBytes   += ntohll(c->dstOctets);
@@ -79,5 +81,6 @@ void Host::addConnection(Connection* c)
 		} else {
 			sentHighPorts++;
 		}
+		lastSeen = c->dstTimeEnd;
 	}
 }

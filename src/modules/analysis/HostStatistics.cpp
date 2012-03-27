@@ -25,6 +25,7 @@
 #include <netdb.h>
 #include <fstream>
 
+InstanceManager<Host> HostStatistics::hostManager("Host");
 
 HostStatistics::HostStatistics(std::string ipSubnet, std::string addrFilter, std::string logPath, uint16_t logInt)
 	: ipSubnet(ipSubnet), addrFilter(addrFilter), logPath(logPath), logInt(logInt)
@@ -54,23 +55,27 @@ void HostStatistics::onDataRecord(IpfixDataRecord* record)
 	}
 	
 	Connection conn(record);
-	std::map<uint32_t, Host>::iterator it;
+	HostMap::iterator it;
 
 //	FILE* logFile = fopen("host_stats.log", "a");
 
 	if ((addrFilter == "src" || addrFilter == "both") && ((conn.srcIP&netAddr) == netAddr)) {
 		it = hostMap.find(conn.srcIP);
 		if (it == hostMap.end())	{
-			it = hostMap.insert(pair<uint32_t, Host>(conn.srcIP, Host(conn.srcIP))).first;
+			Host* h = hostManager.getNewInstance();
+			h->setIP(conn.srcIP);
+			it = hostMap.insert(pair<uint32_t, Host*>(conn.srcIP, h)).first;
 		}
-		it->second.addConnection(&conn);
+		it->second->addConnection(&conn);
 	} 
 	if ((addrFilter == "dst" || addrFilter == "both") && ((conn.dstIP&netAddr) == netAddr)) {
 		it = hostMap.find(conn.dstIP);
 		if (it == hostMap.end()) {
-			it = hostMap.insert(pair<uint32_t, Host>(conn.dstIP, Host(conn.dstIP))).first;
+			Host* h = hostManager.getNewInstance();
+			h->setIP(conn.dstIP);
+			it = hostMap.insert(pair<uint32_t, Host*>(conn.dstIP, h)).first;
 		} 
-		it->second.addConnection(&conn);
+		it->second->addConnection(&conn);
 	}
 }
 
@@ -81,13 +86,13 @@ void HostStatistics::onReconfiguration1()
 
 void HostStatistics::dumpStatistics()
 {
-	std::map<uint32_t, Host>::iterator it;
+	HostMap::iterator it;
 	std::fstream outfile(logPath.c_str(), fstream::out);
 	outfile << "# ip answeredFlows unansweredFlows sentBytes sentPackets recBytes recPackets recHighPorts sentHighports recLowPorts sentLowPorts" << std::endl;
 
 	// for each element in ipList, write an entry like: IP:Bytesum
 	for (it = hostMap.begin(); it != hostMap.end(); it++) {
-		Host* h = &it->second;
+		Host* h = it->second;
 		outfile << IPToString(it->first).c_str() << " "
 			<< h->answeredFlows << " "
 			<< h->unansweredFlows << " "

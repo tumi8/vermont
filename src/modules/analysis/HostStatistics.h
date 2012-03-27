@@ -39,6 +39,7 @@ public:
 private:
 	void dumpStatistics();
 
+	static InstanceManager<Host> hostManager;
 
 	std::string ipSubnet;
 	std::string addrFilter;
@@ -47,7 +48,8 @@ private:
 	uint32_t netAddr;
 	uint8_t netSize;
 	time_t logTimer;
-	std::map<uint32_t, Host> hostMap;
+	typedef std::map<uint32_t, Host*> HostMap;
+	HostMap hostMap;
 };
 
 #endif /* HOSTSTATISTICS_H_ */
