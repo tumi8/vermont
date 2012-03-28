@@ -52,6 +52,8 @@ protected:
 	bool timeshift; /**< shift time stamps */
 	bool fullspeed;  /**< reading in full speed */
 	uint32_t observationDomainId;	/**< observation domain id */
+	uint32_t startTime; /** FirstSwitchedTime of first flow that should be read from the DB */
+	uint32_t endTime; /** FirstSwitchedTime of last flow that should be read form the DB */
 	
 	IpfixDbReaderOracleCfg(XMLElement*);
 };

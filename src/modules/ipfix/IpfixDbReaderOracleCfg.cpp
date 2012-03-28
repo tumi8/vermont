@@ -33,7 +33,7 @@ IpfixDbReaderOracleCfg* IpfixDbReaderOracleCfg::create(XMLElement* e)
 
 IpfixDbReaderOracleCfg::IpfixDbReaderOracleCfg(XMLElement* elem)
     : CfgHelper<IpfixDbReaderOracle, IpfixDbReaderOracleCfg>(elem, "ipfixDbReaderOracle"),
-      port(0), timeshift(false), fullspeed(false), observationDomainId(0)
+      port(0), timeshift(false), fullspeed(false), observationDomainId(0), startTime(0), endTime(0)
 {
     if (!elem) return;
 
@@ -59,6 +59,10 @@ IpfixDbReaderOracleCfg::IpfixDbReaderOracleCfg(XMLElement* elem)
 			fullspeed = getBool("fullspeed", fullspeed);
 		} else if (e->matches("observationDomainId")) {
 			observationDomainId = getInt("observationDomainId");
+		} else if (e->matches("startTime")) {
+			startTime = getInt("startTime");
+		} else if (e->matches("endTime")) {
+			endTime = getInt("endTime");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixDbReaderOracle config statement %s\n", e->getName().c_str());
@@ -70,6 +74,7 @@ IpfixDbReaderOracleCfg::IpfixDbReaderOracleCfg(XMLElement* elem)
 	if (dbname=="") THROWEXCEPTION("IpfixDbReaderOracleCfg: dbname not set in configuration!");
 	if (user=="") THROWEXCEPTION("IpfixDbReaderOracleCfg: username not set in configuration!");
 	if (password=="") THROWEXCEPTION("IpfixDbReaderOracleCfg: password not set in configuration!");
+	if (endTime != 0 && endTime < startTime) THROWEXCEPTION("IpfixDbReaderOracleCfg: endTime must be greater than startTime");
 }
 
 
@@ -80,7 +85,7 @@ IpfixDbReaderOracleCfg::~IpfixDbReaderOracleCfg()
 
 IpfixDbReaderOracle* IpfixDbReaderOracleCfg::createInstance()
 {
-    instance = new IpfixDbReaderOracle(hostname, dbname, user, password, port, observationDomainId, timeshift, fullspeed);
+    instance = new IpfixDbReaderOracle(hostname, dbname, user, password, port, observationDomainId, timeshift, fullspeed, startTime, endTime);
     return instance;
 }
 

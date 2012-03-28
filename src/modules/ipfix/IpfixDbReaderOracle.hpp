@@ -47,7 +47,7 @@ public:
 	IpfixDbReaderOracle(const string& hostname, const string& dbname,
 			    const string& username, const string& password,
 			    unsigned port, uint16_t observationDomainId, 
-			    bool timeshift, bool fullspeed);
+			    bool timeshift, bool fullspeed, uint32_t firstFlow, uint32_t lastFlow);
 	~IpfixDbReaderOracle();
 	
 	virtual void performStart();
@@ -65,8 +65,10 @@ protected:
 	vector<columnDB> columns;
 	string columnNames; 
 	string orderBy; 
+	string whereClause;
 	unsigned recordLength;
 	bool timeshift, fullspeed;
+	uint32_t firstFlowTime, lastFlowTime;
 	
 	bool dbError; // error flag 
 	oracle::occi::Environment *env;
@@ -85,6 +87,7 @@ protected:
 	int dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
 	int dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templateInfo);
 	int connectToDb( const string& hostName, const string& dbName, const string& userName, const string& password, unsigned int port);
+	bool isTableBetweenTimestamps(const string& tablename, uint32_t start, uint32_t end);
 };
 
 #endif

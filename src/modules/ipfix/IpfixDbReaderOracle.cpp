@@ -25,6 +25,7 @@
 #include <stdexcept>
 #include <string.h>
 #include <stdlib.h>
+#include <sstream>
 #include "IpfixDbReaderOracle.hpp"
 #include "IpfixDbCommon.hpp"
 #include "common/msg.h"
@@ -50,6 +51,17 @@ void* IpfixDbReaderOracle::readFromDB(void* ipfixDbReader_)
 
 	msg(MSG_DIALOG, "IpfixDbReaderOracle: Start sending tables");
 	for(vector<string>::iterator i = ipfixDbReader->tables.begin(); i != ipfixDbReader->tables.end() && !ipfixDbReader->exitFlag; i++) {
+		// check if table can contain flows between firstFlowTime 
+		// and lastFlowTime (in case these are set).
+		// Only replay traffic from tables that potentially contain flows
+		// from this time interval. If startTime == 0, all flows from the
+		// beginning of the database will be read. If endTime == 0, all flows
+		// until the end of the last table will be read.
+		if (ipfixDbReader->firstFlowTime != 0 || ipfixDbReader->lastFlowTime) {
+			if (!ipfixDbReader->isTableBetweenTimestamps(*i, ipfixDbReader->firstFlowTime, ipfixDbReader->lastFlowTime)) 
+				continue;
+		}
+
 		boost::shared_ptr<TemplateInfo> templateInfo(new TemplateInfo);
 		templateInfo->setId = TemplateInfo::IpfixTemplate;
 		if(ipfixDbReader->dbReaderSendNewTemplate(templateInfo, *i) != 0)
@@ -148,6 +160,11 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 	msg(MSG_VDEBUG, "IpfixDbReaderOracle: Sending table %s", tableName.c_str());
 	
 	sql << "SELECT " << columnNames << " FROM "<< tableName;
+
+	if (firstFlowTime || lastFlowTime) {
+		sql << whereClause;
+	}
+
 	// at full speed, we do not make time shifts or reorder
 	if(fullspeed)
 		timeshift = false; // timeshift disabled in fullspeed mode
@@ -388,6 +405,7 @@ int IpfixDbReaderOracle::getColumns(const string& tableName)
 	columns.clear();
 	columnNames = "";
 	orderBy = ""; 
+	whereClause = "";
 	bool haveFirstMillis = false;
 	bool haveLastMillis = false;
 
@@ -430,6 +448,12 @@ int IpfixDbReaderOracle::getColumns(const string& tableName)
 			columnNames = columnNames + ", " + CN_firstSwitched;
 			columnDB tmp = {IPFIX_TYPEID_flowStartSeconds, IPFIX_LENGTH_flowStartSeconds};
 			columns.push_back(tmp);
+			std::stringstream out;
+			out << " WHERE " << CN_firstSwitched << " >= " << firstFlowTime;
+			if (lastFlowTime) {
+				out << " AND " << CN_firstSwitched << " <= " << lastFlowTime;
+			}
+			whereClause = out.str();
 		} else if(strcasecmp(rs->getString(1).c_str(), CN_lastSwitched) == 0) {
 			columnNames = columnNames + ", " + CN_lastSwitched;
 			columnDB tmp = {IPFIX_TYPEID_flowEndSeconds, IPFIX_LENGTH_flowEndSeconds};
@@ -565,8 +589,8 @@ IpfixDbReaderOracle::~IpfixDbReaderOracle() {
 IpfixDbReaderOracle::IpfixDbReaderOracle(const string& hostname, const string& dbname,
 				const string& username, const string& password,
 				unsigned port, uint16_t observationDomainId, 
-				bool timeshift, bool fullspeed)
-	: timeshift(timeshift), fullspeed(fullspeed), thread(readFromDB) 
+					 bool timeshift, bool fullspeed, uint32_t startTime, uint32_t endTime)
+	: timeshift(timeshift), fullspeed(fullspeed), firstFlowTime(startTime), lastFlowTime(endTime), thread(readFromDB)
 {
 	srcId.reset(new IpfixRecord::SourceID);
 	srcId->observationDomainId = observationDomainId;
@@ -592,6 +616,106 @@ IpfixDbReaderOracle::IpfixDbReaderOracle(const string& hostname, const string& d
 
 	if(fullspeed && timeshift) 
 		msg(MSG_DIALOG, "IpfixDbReaderOracle: timeshift configured, but disabled in fullspeed mode");
+}
+
+bool IpfixDbReaderOracle::isTableBetweenTimestamps(const string& tablename, uint32_t start, uint32_t end)
+{
+	uint32_t tableStartTime, tableEndTime;
+	std::stringstream str(tablename);
+	char tmp[5];
+	uint32_t timeStamp;
+	uint32_t time;
+	struct tm tableTime;
+
+	bzero(&tableTime, sizeof(struct tm));
+	// the table string lookes like H_20120202_10_0 and always
+	// matches a length of 15 bytes;
+	if (tablename.size() != 15) {
+		msg(MSG_DEBUG, "IpfixDbReaderOracle: Found a table name \"%s\" which does not match the expected table name size of 15 bytes.", tablename.c_str());
+		return false;
+	}
+	// get H_
+	str.get(tmp, 3);
+	if (std::string(tmp) != "H_") {
+		msg(MSG_ERROR, "IpfixDbReaderOracle: Found table that does not begin with static prefix \"H_\" but with prefix \"%s\": %s", tmp, tablename.c_str());
+		return false;
+	}
+
+	// get year 
+	str.get(tmp, 5);
+	time = atoi(tmp);
+	if (time < 1970) {
+		msg(MSG_ERROR, "IpfixDbReaderOracle: Found a year < 1970 in \"%s\": %d", tablename.c_str(), time);
+		return false;
+	}
+	tableTime.tm_year = time - 1900;
+
+	// get month
+	str.get(tmp, 3);
+	time = atoi(tmp);
+	if (time < 1 || time > 12) {
+		msg(MSG_ERROR, "IpfixDbReaderOracle: Found a non-valid month in \"%s\": %d", tablename.c_str(), time);
+		return false;
+	}
+	tableTime.tm_mon = time - 1;
+	
+	// get day
+	str.get(tmp, 3);
+	time = atoi(tmp);
+	if (time < 1 || time > 31) {
+		msg(MSG_ERROR, "IpfixDbReaderOracle: Found a non-valid day in \"%s\": %d", tablename.c_str(), time);
+		return false;
+	}
+	tableTime.tm_mday = time;
+
+	// get separamter "_"
+	str.get(tmp, 2);
+	if (std::string(tmp) != "_") {
+		msg(MSG_ERROR, "IpfixDbReaderOracle: Found non-valid separator in \"%s\" after day: %s", tablename.c_str(), tmp);
+		return false;
+	}
+	
+	// get hour
+	str.get(tmp, 3);
+	time = atoi(tmp);
+	if (time > 23) {
+		msg(MSG_ERROR, "IpfixDbReaderOracle: Found non-valid hour in \"%s\": %d", tablename.c_str(), time);
+		return false;
+	}
+	tableTime.tm_hour = time;
+
+	// get separator "_"
+	str.get(tmp, 2);
+	if (std::string(tmp) != "_") {
+		msg(MSG_ERROR, "IpfixDbReaderOracle: Found non-valid separator in \"%s\" after hour: %s", tablename.c_str(), tmp);
+		return false;
+	}
+
+	// get half hour
+	str.get(tmp, 3);
+	time = atoi(tmp);
+	if (time == 0) {
+		// we are within the first half hour
+		tableTime.tm_min = 0;
+	} else if (time == 1) {
+		tableTime.tm_min = 30;
+		// we are in the second half hour
+	} else {
+		msg(MSG_ERROR, "IpfixDbReaderOracle: Found non-valid half hour indicator in \"%s\": %s", tablename.c_str(), tmp);
+		return false;
+	}
+
+	tableStartTime = timegm(&tableTime);
+	tableEndTime   = tableStartTime + 30*60;
+	if (start) {
+		if (start > tableEndTime)
+			return false;
+	} 
+	if (end) {
+		if (end < tableStartTime) 
+			return false;
+	}
+	return true;
 }
 
 #endif
