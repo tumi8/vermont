@@ -30,7 +30,7 @@ NetflowV9ConverterCfg* NetflowV9ConverterCfg::create(XMLElement* e)
 
 NetflowV9ConverterCfg::NetflowV9ConverterCfg(XMLElement* elem)
     : CfgHelper<NetflowV9Converter, NetflowV9ConverterCfg>(elem, "netflowV9Converter"),
-    copyMode(true)
+    copyMode(true), keepFlowSysUpTime(false)
 {
     if (!elem) return;
 
@@ -42,11 +42,16 @@ NetflowV9ConverterCfg::NetflowV9ConverterCfg(XMLElement* elem)
 
 		if (e->matches("copyMode")) {
 			copyMode = getBool("copyMode");
+		} else if (e->matches("keepFlowSysUpTime")) {
+			keepFlowSysUpTime = getBool("keepFlowSysUpTime");
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown NetflowV9Converter config statement %s\n", e->getName().c_str());
 			continue;
 		}
+	}
+	if (keepFlowSysUpTime && !copyMode) {
+		THROWEXCEPTION("Cannot configure keepFlowSysUpTime without copyMode!");
 	}
 }
 
@@ -56,7 +61,7 @@ NetflowV9ConverterCfg::~NetflowV9ConverterCfg()
 
 NetflowV9Converter* NetflowV9ConverterCfg::createInstance()
 {
-    instance = new NetflowV9Converter(copyMode);
+    instance = new NetflowV9Converter(copyMode, keepFlowSysUpTime);
     return instance;
 }
 

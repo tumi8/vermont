@@ -24,11 +24,13 @@ InstanceManager<IpfixDataRecord> NetflowV9Converter::dataRecordIM("NetflowConver
 InstanceManager<IpfixTemplateRecord> NetflowV9Converter::templateRecordIM("NetflowConverterIpfixTemplateRecord", 0);
 InstanceManager<IpfixTemplateDestructionRecord> NetflowV9Converter::templateDestructionRecordIM("NetflowConverterIpfixTemplateDestructionRecord", 0);
 
-void NetflowV9Converter::setCopyMode(bool mode)
+NetflowV9Converter::NetflowV9Converter(bool mode, bool keepsysuptime)
+	: copyMode(mode), keepFlowSysUpTime(keepsysuptime) 
 {
-	copyMode = mode;
+	if (keepFlowSysUpTime && !copyMode) {
+		THROWEXCEPTION("Cannot instanciate NetflowV9Converter that tries to keep the SysUpTime values and does not copy packets");
+	}
 }
-
 void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> templateInfo = record->templateInfo;
@@ -43,6 +45,7 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 		 
 		// Generate new Template, starting with a copy of Netflow Template
 		boost::shared_ptr<TemplateInfo> newTemplateInfo(new TemplateInfo(*templateInfo.get()));
+
 		// Make unique
 		newTemplateInfo->setUniqueId();
 		// Change Template as needed
@@ -50,6 +53,7 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 
 		// Generate conversion info
 		ConvInfo myConvInfo;
+		myConvInfo.additionalDataLength = 0;
 		myConvInfo.templateInfo = newTemplateInfo;
 		// sysUpTime: Time in milliseconds since this device was first booted.
 		// UNIX Secs (=exportTime): Time in seconds since 0000 UTC 1970, at which the Export Packet leaves the Exporter.
@@ -64,34 +68,65 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 				if (fi->type.id == IPFIX_TYPEID_flowStartSysUpTime) {
 					// length should be 4 octets
 					if(fi->type.length == 4) {
-						// Change Template field
-						fi->type.id = IPFIX_TYPEID_flowStartSeconds;
-						// Save field index
+						if (keepFlowSysUpTime) {
+							// create new field which should contain flowStartSeconds
+							TemplateInfo::FieldInfo newField;
+							memcpy(&newField, fi, sizeof(TemplateInfo::FieldInfo));
+
+							newField.type.id = IPFIX_TYPEID_flowStartSeconds;
+							newField.offset  = newTemplateInfo->fieldInfo[newTemplateInfo->fieldCount - 1].offset + myConvInfo.additionalDataLength;
+							
+							myConvInfo.newFields.push_back(newField);
+							myConvInfo.additionalDataLength += 4;
+						} else {
+							// Change Template field
+							fi->type.id = IPFIX_TYPEID_flowStartSeconds;
+						}
+						// Save field index for future reference
 						myConvInfo.fieldIndexes.push_back(i);
 					} else
 						msg(MSG_ERROR, "NetflowV9Converter: flowStartSysUpTime has expected length 4, got %u", fi->type.length);
 				} else if (fi->type.id == IPFIX_TYPEID_flowEndSysUpTime) {
 					// length should be 4 octets
 					if(fi->type.length == 4) {
-						// Change Template field
-						fi->type.id = IPFIX_TYPEID_flowEndSeconds;
+						if (keepFlowSysUpTime) {
+							// create new field which should contain flowStartSeconds
+							TemplateInfo::FieldInfo newField;
+							memcpy(&newField, fi, sizeof(TemplateInfo::FieldInfo));
+
+							newField.type.id = IPFIX_TYPEID_flowEndSeconds;
+							newField.offset  = newTemplateInfo->fieldInfo[newTemplateInfo->fieldCount - 1].offset + myConvInfo.additionalDataLength;
+
+							myConvInfo.newFields.push_back(newField);
+							myConvInfo.additionalDataLength += 4;
+						} else {
+							// Change Template field
+							fi->type.id = IPFIX_TYPEID_flowEndSeconds;
+						} 
 						// Save field index
 						myConvInfo.fieldIndexes.push_back(i);
 					} else
 						msg(MSG_ERROR, "NetflowV9Converter: flowStartSysUpTime has expected length 4, got %u", fi->type.length);
 				}
-				/*
-				// TODO: remove this test code:	
-				else if (fi->type.id == IPFIX_TYPEID_flowStartMilliSeconds)
-				{
-					fi->type.id = IPFIX_TYPEID_flowStartSeconds;
-					fi->type.length = 4;
-				        myConvInfo.fieldIndexes.push_back(i);
-				}
-				*/
 			} else {
 				msg(MSG_ERROR, "NetflowV9Converter: Got enterprise specific IE (id=%u, enterprise=%lu, length=%u) in Netflow Template, which should not happen", fi->type.id, fi->type.enterprise, fi->type.length);
 			}
+		}
+
+		// check if we have to append new fields
+		if (myConvInfo.newFields.size() > 0) {
+			// ok, append the new fields to the data record
+			newTemplateInfo->fieldInfo = (TemplateInfo::FieldInfo*)realloc(newTemplateInfo->fieldInfo, (newTemplateInfo->fieldCount + myConvInfo.newFields.size()) * sizeof(TemplateInfo::FieldInfo));
+			if (newTemplateInfo->fieldInfo == NULL) {
+				THROWEXCEPTION("Could not allocate memory of new fields!");
+			}
+
+			// append the new fields to TemplateInfo
+			for (std::list<TemplateInfo::FieldInfo>::const_iterator i = myConvInfo.newFields.begin(); i != myConvInfo.newFields.end(); ++i) {
+				memcpy(newTemplateInfo->fieldInfo + newTemplateInfo->fieldCount, &*i, sizeof(TemplateInfo::FieldInfo));
+				newTemplateInfo->fieldCount++;
+			}
+
 		}
 
 		// Save conversion info in map
@@ -159,7 +194,7 @@ void NetflowV9Converter::onDataRecord(IpfixDataRecord* record)
 			myRecord = dataRecordIM.getNewInstance();
 			myRecord->sourceID = record->sourceID;
 			myRecord->dataLength = record->dataLength; // = recordLength
-			myRecord->message = boost::shared_array<IpfixRecord::Data>(new IpfixRecord::Data[record->dataLength]);
+			myRecord->message = boost::shared_array<IpfixRecord::Data>(new IpfixRecord::Data[record->dataLength + iter->second.additionalDataLength]);
 			memcpy(myRecord->message.get(), record->data, record->dataLength);
 			myRecord->data = myRecord->message.get();
 			// release record
@@ -170,13 +205,23 @@ void NetflowV9Converter::onDataRecord(IpfixDataRecord* record)
 		// Change Template
 		myRecord->templateInfo = iter->second.templateInfo;
 
-		// Convert time stamps
-		for (std::list<uint16_t>::iterator i = iter->second.fieldIndexes.begin(); i != iter->second.fieldIndexes.end(); i++) {
-			assert(*i < templateInfo->fieldCount);
-			uint32_t* timestamp = (uint32_t*) (myRecord->data + templateInfo->fieldInfo[*i].offset);
-			*timestamp = htonl(ntohl(*timestamp)/1000 + iter->second.sysUpUnixSeconds);
+		if (keepFlowSysUpTime) {
+			// Convert time stamps and store them into the new fields
+			std::list<TemplateInfo::FieldInfo>::const_iterator newField = iter->second.newFields.begin();
+			for (std::list<uint16_t>::iterator i = iter->second.fieldIndexes.begin(); i != iter->second.fieldIndexes.end(); i++) {
+				uint32_t* oldTimestamp = (uint32_t*) (myRecord->data + templateInfo->fieldInfo[*i].offset);
+				uint32_t* newTimestamp = (uint32_t*) (myRecord->data + newField->offset);
+				*newTimestamp = htonl(ntohl(*oldTimestamp)/1000 + iter->second.sysUpUnixSeconds);
+				newField++;
+			}
+		} else {
+			// Convert time stamps in place
+			for (std::list<uint16_t>::iterator i = iter->second.fieldIndexes.begin(); i != iter->second.fieldIndexes.end(); i++) {
+				assert(*i < templateInfo->fieldCount);
+				uint32_t* timestamp = (uint32_t*) (myRecord->data + templateInfo->fieldInfo[*i].offset);
+				*timestamp = htonl(ntohl(*timestamp)/1000 + iter->second.sysUpUnixSeconds);
+			}
 		}
-
 		// send converted record
 		send(myRecord);
 	} else {

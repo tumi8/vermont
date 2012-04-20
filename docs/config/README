@@ -1,6 +1,0 @@
-module_configuration.txt contains Vermont's module configuration in the Creole Markup language (mixed a bit with Dokuwiki's features for displaying code).
-
-When this file is changed in vermont-dynamic-config (later directly in trunk), please also update the module configuration page in the wiki on vermont.berlios.de.
-
-
-Tobias Limmer, 10.3.2009

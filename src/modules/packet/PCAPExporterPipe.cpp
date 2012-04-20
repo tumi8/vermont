@@ -460,15 +460,19 @@ void PCAPExporterPipe::kill_all(int ppid)
 		if (bfs::is_directory(dir_iterator->status())  &&
 #if BOOST_FILESYSTEM_VERSION == 3
 				this->checkint(dir_iterator->path().filename().string().c_str())
-#else
+#elif BOOST_FILESYSTEM_VERSION == 2
 				this->checkint(dir_iterator->leaf().c_str())
+#else 
+				this->checkint(dir_iterator->path().filename().c_str())
 #endif
 		   )
 		{
 #if BOOST_FILESYSTEM_VERSION == 3
 			std::string filename = dir_iterator->path().filename().string() + "/stat";
-#else
+#elif BOOST_FILESYSTEM_VERSION == 2
 			std::string filename = dir_iterator->leaf() + "/stat";
+#else
+			std::string filename = dir_iterator->path().filename() + "/stat";
 #endif
 			std::ifstream myfile(filename.c_str());
 			if (myfile.is_open()) {
@@ -483,10 +487,15 @@ void PCAPExporterPipe::kill_all(int ppid)
 								msg(MSG_DEBUG, "Pid %s is a child of %d", dir_iterator->path().filename().string().c_str(), *it );
 								my_pids.push_back(boost::lexical_cast<int>(dir_iterator->path().filename()));
 								my_ppids.push_back(boost::lexical_cast<int>(dir_iterator->path().filename()));
-#else
+#elif BOOST_FILE_SYSTEM_VERSION == 2
 								msg(MSG_DEBUG, "Pid %s is a child of %d", dir_iterator->leaf().c_str(), *it );
 								my_pids.push_back(boost::lexical_cast<int>(dir_iterator->leaf()));
 								my_ppids.push_back(boost::lexical_cast<int>(dir_iterator->leaf()));
+#else
+								msg(MSG_DEBUG, "Pid %s is a child of %d", dir_iterator->path().filename().c_str(), *it );
+								my_pids.push_back(boost::lexical_cast<int>(dir_iterator->path().filename()));
+								my_ppids.push_back(boost::lexical_cast<int>(dir_iterator->path().filename()));
+								
 #endif
 								break;
 							}

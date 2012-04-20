@@ -77,12 +77,14 @@ IpfixReceiverFile::IpfixReceiverFile(std::string packetFileBasename,
 	if (to<0){
 		int maxnum = 0;
 		boost::filesystem::path full_path =
-#if BOOST_FILESYSTEM_VERSION == 3
+#if BOOST_FILESYSTEM_VERSION == 3 
 			boost::filesystem::system_complete(boost::filesystem::path(packet_file_directory));
-#else
+#elif BOOST_FILESYSTEM_VERSION == 2 
 			boost::filesystem::system_complete(boost::filesystem::path(packet_file_directory,
 				 boost::filesystem::native));
-#endif
+#else
+			boost::filesystem::system_complete(boost::filesystem::path(packet_file_directory));
+#endif 
 
 		if (!boost::filesystem::exists(full_path)) 
 			THROWEXCEPTION("Packet file directory does not exist");
@@ -98,16 +100,24 @@ IpfixReceiverFile::IpfixReceiverFile(std::string packetFileBasename,
 			if (dir_iterator->path().filename().string().length() == strlen+10 && 
 					dir_iterator->path().filename().string().substr(0,strlen) == packetFileBasename
 						&& checkint(dir_iterator->path().filename().string().substr(strlen,10).c_str()))
-#else
+#elif BOOST_FILESYSTEM_VERSION == 2
 			if (dir_iterator->leaf().length() == strlen+10 && 
 					dir_iterator->leaf().substr(0,strlen) == packetFileBasename
 						&& checkint(dir_iterator->leaf().substr(strlen,10).c_str()))
+#else
+			if (dir_iterator->path().filename().length() == strlen+10 && 
+					dir_iterator->path().filename().substr(0,strlen) == packetFileBasename
+						&& checkint(dir_iterator->path().filename().substr(strlen,10).c_str()))
+
 #endif
 			{
 #if BOOST_FILESYSTEM_VERSION == 3
 				int filenum = boost::lexical_cast<int>(dir_iterator->path().filename().string().substr(strlen, 10));
-#else
+#elif BOOST_FILESYSTEM_VERSION == 2
 				int filenum = boost::lexical_cast<int>(dir_iterator->leaf().substr(strlen, 10));
+#else
+				int filenum = boost::lexical_cast<int>(dir_iterator->path().filename().substr(strlen, 10));
+				
 #endif
 				if (filenum > maxnum) maxnum = filenum;
 			}

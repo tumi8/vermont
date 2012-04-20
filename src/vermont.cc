@@ -120,12 +120,11 @@ int main(int ac, char **dc)
 	while (run_program) {
 		// sleep until we get a signal
         bool b;
-		while (((b=timeoutsem.wait(DELETER_PERIOD)) == true) && errno == EINTR) {}// restart when interrupted by handler
+	while (((b=timeoutsem.wait(DELETER_PERIOD)) == true) && errno == EINTR) {}// restart when interrupted by handler
 
 		if (b == false){
-            manager.onTimeout2();
-        }
-
+			manager.onTimeout2();
+		}
 
 		if (reload_config) {
 			msg(MSG_INFO, "reconfiguring vermont");
@@ -145,7 +144,7 @@ static void usage()
 		" mandatory:\n" \
 		"    -f <xmlfile>     load config\n" \
 		" optional:\n" \
-		"    -d               increase debug level (specify multiple for even more)\n"
+		"    -d               increase debug level (specify multiple for higher debug levels)\n"
 	);
 }
 

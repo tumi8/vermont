@@ -23,8 +23,9 @@
 #include "common/Misc.h"
 
 #include <netdb.h>
+#include <fstream>
 
-
+InstanceManager<Host> HostStatistics::hostManager("Host");
 
 HostStatistics::HostStatistics(std::string ipSubnet, std::string addrFilter, std::string logPath, uint16_t logInt)
 	: ipSubnet(ipSubnet), addrFilter(addrFilter), logPath(logPath), logInt(logInt)
@@ -36,12 +37,11 @@ HostStatistics::HostStatistics(std::string ipSubnet, std::string addrFilter, std
 	netSize = atoi(ipSubnet.substr(found + 1).c_str());
 	netAddr = *(uint32_t *)gethostbyname(ip_str.c_str())->h_addr;
 	logTimer = time(NULL);
+}
 
-	// DEBUG
-	FILE* logFile = fopen("host_stats.log", "a");
-	fprintf(logFile, "netAddr: %u\t", netAddr);
-	fprintf(logFile, " - %s\n", IPToString(netAddr).c_str());
-	fclose(logFile);
+HostStatistics::~HostStatistics()
+{
+	dumpStatistics();
 }
 
 void HostStatistics::onDataRecord(IpfixDataRecord* record)
@@ -55,60 +55,54 @@ void HostStatistics::onDataRecord(IpfixDataRecord* record)
 	}
 	
 	Connection conn(record);
-	std::map<uint32_t, uint64_t>::iterator it;
+	HostMap::iterator it;
 
-	FILE* logFile = fopen("host_stats.log", "a");
+//	FILE* logFile = fopen("host_stats.log", "a");
 
-	if ((addrFilter == "src") && ((conn.srcIP&netAddr) == netAddr)) {
-		it = trafficMap.find(conn.srcIP);
-		if (it == trafficMap.end())	{
-			trafficMap.insert(pair<uint32_t, uint64_t>(conn.srcIP, ntohl(conn.srcOctets)));
-		} else {
-			it->second += ntohl(conn.srcOctets);
+	if ((addrFilter == "src" || addrFilter == "both") && ((conn.srcIP&netAddr) == netAddr)) {
+		it = hostMap.find(conn.srcIP);
+		if (it == hostMap.end())	{
+			Host* h = hostManager.getNewInstance();
+			h->setIP(conn.srcIP);
+			it = hostMap.insert(pair<uint32_t, Host*>(conn.srcIP, h)).first;
 		}
-	} else if ((addrFilter == "dst") && ((conn.dstIP&netAddr) == netAddr)) {
-		it = trafficMap.find(conn.dstIP);
-		if (it == trafficMap.end()) {
-			trafficMap.insert(pair<uint32_t, uint64_t>(conn.dstIP, ntohl(conn.dstOctets)));
-		} else {
-			it->second += ntohl(conn.dstOctets);
-		}
-	} else {
-		if ((conn.srcIP&netAddr) == netAddr) {
-			fprintf(logFile, "Treffer - src\t");
-			it = trafficMap.find(conn.srcIP);
-			if (it == trafficMap.end())	{
-				fprintf(logFile, "- %s\n", IPToString(conn.srcIP).c_str());
-				trafficMap.insert(pair<uint32_t, uint64_t>(conn.srcIP, (ntohl(conn.srcOctets) + ntohl(conn.dstOctets))));
-			} else {
-				fprintf(logFile, "\n");
-				it->second += (ntohl(conn.srcOctets) + ntohl(conn.dstOctets));
-			}
-		} else if ((conn.dstIP&netAddr) == netAddr) {
-			fprintf(logFile, "Treffer - dst\t");
-			it = trafficMap.find(conn.dstIP);
-			if (it == trafficMap.end())	{
-				fprintf(logFile, "- %s\n", IPToString(conn.dstIP).c_str());
-				trafficMap.insert(pair<uint32_t, uint64_t>(conn.dstIP, (ntohl(conn.srcOctets) + ntohl(conn.dstOctets))));
-			} else {
-				fprintf(logFile, "\n");
-				it->second += (ntohl(conn.srcOctets) + ntohl(conn.dstOctets));
-			}
-		}
+		it->second->addConnection(&conn);
+	} 
+	if ((addrFilter == "dst" || addrFilter == "both") && ((conn.dstIP&netAddr) == netAddr)) {
+		it = hostMap.find(conn.dstIP);
+		if (it == hostMap.end()) {
+			Host* h = hostManager.getNewInstance();
+			h->setIP(conn.dstIP);
+			it = hostMap.insert(pair<uint32_t, Host*>(conn.dstIP, h)).first;
+		} 
+		it->second->addConnection(&conn);
 	}
-	fclose(logFile);
 }
 
 void HostStatistics::onReconfiguration1()
 {
-	std::map<uint32_t, uint64_t>::iterator it;
+	dumpStatistics();
+}
 
-	FILE* logFile = fopen(logPath.c_str(), "w");
-	// insert current timestamp
-	fprintf(logFile, "%d", (int)time(NULL));
+void HostStatistics::dumpStatistics()
+{
+	HostMap::iterator it;
+	std::fstream outfile(logPath.c_str(), fstream::out);
+	outfile << "# ip answeredFlows unansweredFlows sentBytes sentPackets recBytes recPackets recHighPorts sentHighports recLowPorts sentLowPorts" << std::endl;
+
 	// for each element in ipList, write an entry like: IP:Bytesum
-	for (it = trafficMap.begin(); it != trafficMap.end(); it++) {
-		fprintf(logFile, " %s:%u", IPToString(it->first).c_str(), (uint32_t)it->second);
+	for (it = hostMap.begin(); it != hostMap.end(); it++) {
+		Host* h = it->second;
+		outfile << IPToString(it->first).c_str() << " "
+			<< h->answeredFlows << " "
+			<< h->unansweredFlows << " "
+			<< h->sentBytes << " " 
+			<< h->sentPackets << " "
+			<< h->recBytes << " "
+			<< h->recPackets << " "
+			<< h->recHighPorts << " "
+			<< h->sentHighPorts << " "
+			<< h->recLowPorts << " " 
+			<< h->sentLowPorts << std::endl;
 	}
-	fclose(logFile);
 }

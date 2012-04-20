@@ -24,17 +24,23 @@
 #include <map>
 
 #include "modules/ipfix/IpfixRecordDestination.h"
+#include "Host.h"
 
 
 class HostStatistics : public IpfixRecordDestination, public Module, public Source<NullEmitable*>
 {
 public:
 	HostStatistics(std::string ipSubnet, std::string addrFilter, std::string logPath, uint16_t logInt);
+	virtual ~HostStatistics();
 	void onDataRecord(IpfixDataRecord* record);
 
 	virtual void onReconfiguration1();
 
 private:
+	void dumpStatistics();
+
+	static InstanceManager<Host> hostManager;
+
 	std::string ipSubnet;
 	std::string addrFilter;
 	std::string logPath;
@@ -42,7 +48,8 @@ private:
 	uint32_t netAddr;
 	uint8_t netSize;
 	time_t logTimer;
-	std::map<uint32_t, uint64_t> trafficMap; // key: IP Address, value: Bytes (sum of all packets with this IP)
+	typedef std::map<uint32_t, Host*> HostMap;
+	HostMap hostMap;
 };
 
 #endif /* HOSTSTATISTICS_H_ */

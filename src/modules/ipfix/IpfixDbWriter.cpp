@@ -59,6 +59,8 @@ IpfixDbWriter::Column identify [] = {
 	{CN_revTcpControlBits,  "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse},
 	{CN_maxPacketGap,  	"BIGINT(20) UNSIGNED", 		0, IPFIX_ETYPEID_maxPacketGap, IPFIX_PEN_vermont|IPFIX_PEN_reverse},
 	{CN_exporterID, 	"SMALLINT(5) UNSIGNED", 	0, EXPORTERID, 0},
+	{CN_flowStartSysUpTime,	"INTEGER(10) UNSIGNED",		0, IPFIX_TYPEID_flowStartSysUpTime, 0},
+	{CN_flowEndSysUpTime,	"INTEGER(10) UNSIGNED",		0, IPFIX_TYPEID_flowEndSysUpTime, 0},
 	{0} // last entry must be 0
 };
 

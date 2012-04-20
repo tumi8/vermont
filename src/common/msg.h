@@ -24,11 +24,13 @@ typedef void (*LOGFUNCTION)(void *);
 	//#define PRINT_WHOLEFUNCTIONNAME
 
 	/** should source file name and line numbers be printed in logging messages? */
-	//#define PRINT_FILELOCATION
+	#define PRINT_FILELOCATION
 
 	/** print 'short version' of class + function name by printing filename:function name */
-	#define PRINT_NICELOCATION
+	//#define PRINT_NICELOCATION
 
+#else
+	//#define PRINT_WHOLEFUNCTIONNAME
 #endif
 
 /* defines for the message system */

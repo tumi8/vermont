@@ -22,7 +22,10 @@ ADD_LIBRARY(modules
     analysis/RBSWormDetectorCfg.cpp
     analysis/TRWPortscanDetectorCfg.cpp
     analysis/HostStatistics.cpp
+    analysis/Host.cpp
     analysis/HostStatisticsCfg.cpp
+    analysis/FlowLenAnalyzer.cpp
+    analysis/FlowLenAnalyzerCfg.cpp
     # support files for FrontPayloadSigMatcher
     analysis/fpsigmatcher/KTree.c
     analysis/fpsigmatcher/Matcher.c
@@ -62,8 +65,12 @@ ADD_LIBRARY(modules
     ipfix/IpfixCsExporter.cpp
     ipfix/IpfixCsExporterCfg.cpp
     ipfix/IpfixDbReaderCfg.cpp
+    ipfix/IpfixDbReaderOracle.cpp
+    ipfix/IpfixDbReaderOracleCfg.cpp
     ipfix/IpfixDbWriterCfg.cpp
     ipfix/IpfixDbWriterPgCfg.cpp
+    ipfix/IpfixDbWriterOracleCfg.cpp
+    ipfix/IpfixDbWriterMongoCfg.cpp
     ipfix/IpfixExporterCfg.cpp
     ipfix/IpfixFileWriter.cpp
     ipfix/IpfixFileWriterCfg.cpp
@@ -93,6 +100,8 @@ ADD_LIBRARY(modules
     ipfix/IpfixDbReader.cpp
     ipfix/IpfixDbWriter.cpp
     ipfix/IpfixDbWriterPg.cpp
+    ipfix/IpfixDbWriterOracle.cpp
+    ipfix/IpfixDbWriterMongo.cpp
     ipfix/IpfixRecordDestination.cpp
     ipfix/IpfixSampler.cpp
     ipfix/IpfixPayloadWriter.cpp

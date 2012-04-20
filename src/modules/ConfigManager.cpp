@@ -42,6 +42,9 @@
 #include "modules/ipfix/IpfixNetflowExporterCfg.h"
 #include "modules/ipfix/IpfixReceiverFileCfg.h"
 #include "modules/ipfix/IpfixDbWriterPgCfg.h"
+#include "modules/ipfix/IpfixDbWriterOracleCfg.h"
+#include "modules/ipfix/IpfixDbReaderOracleCfg.h"
+#include "modules/ipfix/IpfixDbWriterMongoCfg.h"
 #include "modules/ipfix/IpfixPayloadWriterCfg.h"
 #include "modules/ipfix/IpfixSamplerCfg.h"
 #include "modules/ipfix/IpfixCsExporterCfg.hpp"
@@ -53,6 +56,7 @@
 #include "modules/analysis/RBSWormDetectorCfg.h"
 #include "modules/analysis/FrontPayloadSigMatcherCfg.h"
 #include "modules/analysis/AutoFocusCfg.h"
+#include "modules/analysis/FlowLenAnalyzerCfg.h"
 #include "modules/idmef/IDMEFExporterCfg.h"
 #include "modules/idmef//PacketIDMEFReporterCfg.h"
 #include "modules/analysis/P2PDetectorCfg.h"
@@ -103,6 +107,14 @@ Cfg* ConfigManager::configModules[] = {
 #ifdef PG_SUPPORT_ENABLED
 	new IpfixDbWriterPgCfg(NULL),
 #endif
+#ifdef ORACLE_SUPPORT_ENABLED
+	new IpfixDbWriterOracleCfg(NULL),
+	new IpfixDbReaderOracleCfg(NULL),
+#endif
+#ifdef MONGO_SUPPORT_ENABLED
+	new IpfixDbWriterMongoCfg(NULL),
+#endif
+	new FlowLenAnalyzerCfg(NULL),
 };
 
 ConfigManager::ConfigManager()
@@ -172,7 +184,7 @@ void ConfigManager::parseConfig(std::string fileName)
 		}
 
 		if (!found) {
-			msg(MSG_INFO, "Unknown cfg entry %s found", (*it)->getName().c_str());
+			msg(MSG_ERROR, "Unknown cfg entry %s found", (*it)->getName().c_str());
 		}
 	}
 
@@ -180,11 +192,11 @@ void ConfigManager::parseConfig(std::string fileName)
 		Connector connector;
 		graph->accept(&connector);
 	} else {
-		// first, connect the nodes on the new graph (but NOT the modules
+		// first, connect the nodes on the new graph (but NOT the modules)
 		Connector connector(true, false);
 		graph->accept(&connector);
 		// now connect the modules reusing those from the old graph
-        graph = reconnect(graph, oldGraph);
+		graph = reconnect(graph, oldGraph);
 	}
 
 	// start the instances if not already running

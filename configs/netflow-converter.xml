@@ -1,18 +1,16 @@
 <ipfixConfig>
-        <sensorManager id="99">
-                <checkinterval>2</checkinterval>
-        </sensorManager>
-
-	<ipfixCollector id="1">
+       	<ipfixCollector id="1">
 		<listener>
 			<transportProtocol>UDP</transportProtocol>
-			<port>1500</port>
+			<port>3000</port>
 		</listener>
-		<udpTemplateLifetime>3600</udpTemplateLifetime>
+		<udpTemplateLifetime>0</udpTemplateLifetime>
 		<next>2</next>
 	</ipfixCollector>
 
 	<netflowV9Converter id="2">
+		<keepFlowSysUpTime>true</keepFlowSysUpTime>
+		<copyMode>true</copyMode>
 		<next>3</next>
 	</netflowV9Converter>
 

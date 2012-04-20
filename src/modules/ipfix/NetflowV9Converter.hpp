@@ -27,12 +27,11 @@
 
 class NetflowV9Converter : public Source<IpfixRecord*>, public IpfixRecordDestination, public Module  {
 public:
-	NetflowV9Converter(bool mode = true) : copyMode(mode) {}
+	NetflowV9Converter(bool mode = true, bool keepsysuptime = false);
 	virtual ~NetflowV9Converter() {}
 
 	virtual void onReconfiguration2();
 
-	void setCopyMode(bool mode);
 
 protected:
 	virtual void onTemplate(IpfixTemplateRecord* record);
@@ -40,6 +39,7 @@ protected:
 	virtual void onTemplateDestruction(IpfixTemplateDestructionRecord* record);
 
 	bool copyMode;	// if false, the conversion is applied on the original data records (not a copy)
+	bool keepFlowSysUpTime; // if true, only a new field firstSwitchedSeconds is applied
 
 	static InstanceManager<IpfixDataRecord> dataRecordIM;
 	static InstanceManager<IpfixTemplateRecord> templateRecordIM;
@@ -54,6 +54,11 @@ protected:
 		uint32_t sysUpUnixSeconds; 
 		// Indexes of Template fields which contain timestamps to be converted
 		std::list<uint16_t> fieldIndexes;
+
+		// list of fields that need to be appended (only contains fields if flowSysUpTime is valid)
+		std::list<TemplateInfo::FieldInfo> newFields;
+		// store data length of the new fields
+		uint32_t additionalDataLength;
 	};
 
 	std::map<uint16_t, ConvInfo> uniqueIdToConvInfo;

@@ -405,6 +405,15 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 				fprintf(fh, "no sourceID given in template");
 			}
 
+
+			if (templateInfo->setId == TemplateInfo::IpfixTemplate) {
+				for (int i = 0; i < templateInfo->fieldCount; i++) {
+					TemplateInfo::FieldInfo* fi = &templateInfo->fieldInfo[i];
+			                fprintf(fh, " '   `- %s\n", fi->type.toString().c_str());
+
+				}
+			}
+
 			// print fixed data in the case of a data template
 			if(templateInfo->setId == TemplateInfo::IpfixDataTemplate) {
 				fprintf(fh, " `- fixed data\n");

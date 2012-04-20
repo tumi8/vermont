@@ -1,0 +1,10 @@
+wiki/ModuleConfiguration.md contains Vermont's module configuration in
+the Markdown Markup language.
+
+Update this page whenever you make any changes to the configuration
+subsystem of vermont.  The directory wiki is a git submodule that
+points directly to the wiki on the website, so you do not have to
+update both places.
+
+
+Lothar Braun, 20.02.2012

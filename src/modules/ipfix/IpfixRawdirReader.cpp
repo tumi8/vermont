@@ -72,8 +72,10 @@ void IpfixRawdirReader::run() {
 
 #if BOOST_FILESYSTEM_VERSION == 3
 		std::string fname = packet_directory_path+"/"+dir_iterator->path().filename().string();
-#else
+#elif BOOST_FILESYSTEM_VERSION == 2
 		std::string fname = packet_directory_path+"/"+dir_iterator->leaf();
+#else
+		std::string fname = packet_directory_path+"/"+dir_iterator->path().filename();
 #endif
 		if (boost::filesystem::is_directory(*dir_iterator)) {
 			msg(MSG_DEBUG, "Skipping directory \"%s\"", fname.c_str());

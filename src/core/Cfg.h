@@ -363,8 +363,9 @@ public:
 				instance->connectTo(splitter);
 			}
 			splitter->connectTo(dest);
-		} else
+		} else {
 			instance->connectTo(dest);
+		}
 	}
 
 	/** disconnect the instances and deletes an automaticly created splitter */

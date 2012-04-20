@@ -60,7 +60,7 @@ Graph::~Graph()
 CfgNode* Graph::addNode(Cfg* cfg)
 {
 	if (nodes.size() + 1  >= reserved)
-		throw std::runtime_error("can't handle that many nodes");
+		THROWEXCEPTION("Can't handle more than %d nodes", reserved);
 
 	CfgNode *n = new CfgNode(this, nodes.size());
 	n->setCfg(cfg);
@@ -132,7 +132,7 @@ void Graph::removeNode(Node* n)
 Edge* Graph::addEdge(Node* n1, Node* n2)
 {
 	if (matrix[n1->getID()][n2->getID()] != NULL)
-		 throw std::runtime_error("Nodes are already connected");
+		 THROWEXCEPTION("Nodes are already connected");
 
 	Edge* e = new Edge(this, n1->getID() << 16 | n2->getID());
 	matrix[n1->getID()][n2->getID()] = e;
