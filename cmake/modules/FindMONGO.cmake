@@ -20,12 +20,14 @@ else(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
 
 	find_path(MONGO_INCLUDE_DIR client/dbclient.h
 	  /usr/include/mongo
+	  /usr/local/include/mongo
 	  /opt/local/include/mongo
     )
 
   find_library(MONGO_LIBRARIES NAMES mongoclient  libmongoclient 
     PATHS
     /usr/lib
+    /usr/local/lib
     /opt/local/lib
     )
 
@@ -40,6 +42,7 @@ else(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
 
   find_path(MONGO_VERSION_CHECK util/net/hostandport.h
   	/usr/include/mongo/
+  	/usr/local/include/mongo/
 	/opt/local/include/mongo)
 
   if (MONGO_VERSION_CHECK)
