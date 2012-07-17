@@ -39,18 +39,20 @@ else(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
     set(MONGO_FOUND FALSE)
     message(STATUS "MongoDB not found.")
   endif(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
+  
+mark_as_advanced(MONGO_INCLUDE_DIR MONGO_LIBRARIES)
+  mark_as_advanced(MONGO_VERSION_CHECK)
 
+endif(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
+
+if (MONGO_FOUND)
   find_path(MONGO_VERSION_CHECK util/net/hostandport.h
   	/usr/include/mongo/
   	/usr/local/include/mongo/
 	/opt/local/include/mongo)
 
   if (MONGO_VERSION_CHECK)
-     MESSAGE(STATUS "Found Mongo version 2")
      set (MONGO_VERSION_2 TRUE)
   endif(MONGO_VERSION_CHECK)
+endif (MONGO_FOUND)
 
-  mark_as_advanced(MONGO_INCLUDE_DIR MONGO_LIBRARIES)
-  mark_as_advanced(MONGO_VERSION_CHECK)
-
-endif(MONGO_INCLUDE_DIR AND MONGO_LIBRARIES)
