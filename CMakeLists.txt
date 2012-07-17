@@ -105,7 +105,6 @@ IF (SUPPORT_MONGO)
 	ENDIF (NOT MONGO_FOUND)
 ENDIF (SUPPORT_MONGO)
 IF (MONGO_FOUND)
-	MESSAGE(STATUS "Found MongoDB libraries")
 	ADD_DEFINITIONS(-DMONGO_SUPPORT_ENABLED)
 	### Mongo is currently forcing BOOST_FILE_SYSTEM v2 when its 
 	### headers are included. If we use version v3 in the rest of
@@ -118,6 +117,9 @@ IF (MONGO_FOUND)
 
 	IF (MONGO_VERSION_2)
 	   ADD_DEFINITIONS(-DMONGO_VERSION_2)
+	   MESSAGE(STATUS "Found MongoDB libraries (version 2)")
+	ELSE (MONGO_VERSION_2)
+	   MESSAGE(STATUS "Found MongoDB libraries")
 	ENDIF (MONGO_VERSION_2)
 
 	INCLUDE_DIRECTORIES(${MONGO_INCLUDE_DIR})
