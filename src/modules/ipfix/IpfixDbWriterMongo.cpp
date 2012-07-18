@@ -327,9 +327,12 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 				}
 		}
 
-		msg(MSG_DEBUG, "saw ipfix id %s in packet with intdata %llX", prop->propertyName,
-        static_cast<long long int>(intdata));
-		obj << prop->propertyName << static_cast<long long int>(intdata);
+		msg(MSG_DEBUG, "saw ipfix id %s (element ID %d) in packet with intdata %llX", prop->propertyName,
+				prop->ipfixId, static_cast<long long int>(intdata));
+		if (beautyProp)
+			obj << prop->propertyName << static_cast<long long int>(intdata);
+		else
+			obj << boost::lexical_cast<std::string>(prop->ipfixId).c_str() << static_cast<long long int>(intdata);
 	}
 
 	if (flowstartsec == 0) {
@@ -459,9 +462,10 @@ void IpfixDbWriterMongo::onDataRecord(IpfixDataRecord* record)
 IpfixDbWriterMongo::IpfixDbWriterMongo(const string& hostname, const string& database,
 		const string& username, const string& password,
 		unsigned port, uint32_t observationDomainId, uint16_t maxStatements,
-		const vector<string>& propertyNames)
+		const vector<string>& propertyNames, bool beautifyProperties)
 	: currentExporter(NULL), numberOfInserts(0), maxInserts(maxStatements),
-	dbHost(hostname), dbName(database), dbUser(username), dbPassword(password), dbPort(port), con(0)
+	dbHost(hostname), dbName(database), dbUser(username), dbPassword(password), dbPort(port), con(0),
+	beautyProp(beautifyProperties)
 {
 	int i;
 

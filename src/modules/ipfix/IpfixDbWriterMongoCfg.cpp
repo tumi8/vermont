@@ -39,6 +39,7 @@ IpfixDbWriterMongoCfg::IpfixDbWriterMongoCfg(XMLElement* elem)
   if (!elem) return;
 
   XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
+  	beautifyProperties = false;
 	for ( XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
         it != set.end();
 	      it++) {
@@ -60,6 +61,8 @@ IpfixDbWriterMongoCfg::IpfixDbWriterMongoCfg(XMLElement* elem)
 			readProperties(e);
 		} else if (e->matches("observationDomainId")) {
 			observationDomainId = getInt("observationDomainId");
+		} else if (e->matches("beautifyProperties")) {
+			beautifyProperties = true;
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixDbWriterMongo config statement %s\n", e->getName().c_str());
@@ -95,7 +98,7 @@ IpfixDbWriterMongoCfg::~IpfixDbWriterMongoCfg()
 
 IpfixDbWriterMongo* IpfixDbWriterMongoCfg::createInstance()
 {
-  instance = new IpfixDbWriterMongo(hostname, database, user, password, port, observationDomainId, bufferObjects, properties);
+  instance = new IpfixDbWriterMongo(hostname, database, user, password, port, observationDomainId, bufferObjects, properties, beautifyProperties);
 	msg(MSG_DEBUG, "IpfixDbWriterMongo configuration host %s collection %s user %s password %s port %i observationDomainId %i bufferRecords %i\n", 
 	  hostname.c_str(), database.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferObjects);
   return instance;

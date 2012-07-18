@@ -64,7 +64,7 @@ class IpfixDbWriterMongo
 		IpfixDbWriterMongo(const string& hostname, const string& database,
 				const string& username, const string& password,
 				unsigned port, uint32_t observationDomainId, uint16_t maxStatements,
-				const vector<string>& properties);
+				const vector<string>& properties, bool beautifyProperties);
 		~IpfixDbWriterMongo();
 
 		void onDataRecord(IpfixDataRecord* record);
@@ -106,6 +106,7 @@ class IpfixDbWriterMongo
 		string dbHost, dbName, dbUser, dbPassword, dbCollectionFlows, dbCollectionExporters, dbCollectionCounters;
 		unsigned dbPort;
     mongo::DBClientConnection con;
+    	bool beautyProp;
 		bool dbError;			// db error flag
     mongo::BSONObj getInsertObj(const IpfixRecord::SourceID& sourceID,
 				TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data);
