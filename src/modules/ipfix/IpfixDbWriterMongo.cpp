@@ -417,6 +417,20 @@ int IpfixDbWriterMongo::getExporterID(const IpfixRecord::SourceID& sourceID)
  */
 uint64_t IpfixDbWriterMongo::getData(InformationElement::IeInfo type, IpfixRecord::Data* data)
 {
+	// TODO: workout a proper modular interpreter
+	if (type.id >= IPFIX_TYPEID_mplsLabelStackEntry1 &&
+	    type.id <= IPFIX_TYPEID_mplsLabelStackEntry10) {
+			// Properly decode MPLS Label, Experimental and S fields
+			// TODO: Provide all separated fields
+			uint32_t MPLSStruct = 0;
+			uint32_t Label = 0, Exp = 0, S = 0;
+			memcpy(&MPLSStruct, data, 3);
+			Label = MPLSStruct & 0xfffff0;
+			Exp = MPLSStruct & 0x00000e;
+			S = MPLSStruct & 0x000001;
+			return ntohl(Label);
+		}
+	
 	switch (type.length) {
 		case 1:
 			return (*(uint8_t*)data);
@@ -429,7 +443,8 @@ uint64_t IpfixDbWriterMongo::getData(InformationElement::IeInfo type, IpfixRecor
 		case 8:
 			return ntohll(*(uint64_t*)data);
 		default:
-			printf("Uint with length %d unparseable", type.length);
+			// TODO: dynamic lenght octectArray fields
+			printf("Got element %d with unparsable length(%d).\n", type.id, type.length);
 			return 0;
 	}
 }
