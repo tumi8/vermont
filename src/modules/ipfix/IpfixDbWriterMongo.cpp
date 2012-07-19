@@ -167,165 +167,198 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 	uint64_t intdata2 = 0;
 	uint32_t k;
 	bool notfound, notfound2;
-  mongo::BSONObjBuilder obj;
+	mongo::BSONObjBuilder obj;
 
 	time_t flowstartsec = 0;
 
-	/**loop over the properties and loop over the IPFIX_TYPEID of the record
-	 to get the corresponding data to store and make insert statement*/
-	for(vector<Property>::iterator prop = documentProperties.begin(); prop != documentProperties.end(); prop++) {
-		if (prop->ipfixId == EXPORTERID) {
-			// if this is the same source ID as last time, we get the exporter id from currentExporter
-			if ((currentExporter != NULL) && equalExporter(sourceID, currentExporter->sourceID)) {
-				DPRINTF("Exporter is same as last time (ODID=%d, id=%d)", sourceID.observationDomainId, currentExporter->id);
-				intdata = (uint64_t)currentExporter->id;
+	if (!allProp) {
+	/** loop over a subset of elements (selected properties) and loop over the IPFIX_TYPEID of the record
+	 *  to get the corresponding data to store and make insert statement
+	 */
+		for(vector<Property>::iterator prop = documentProperties.begin(); prop != documentProperties.end(); prop++) {
+			if (prop->ipfixId == EXPORTERID) {
+				// if this is the same source ID as last time, we get the exporter id from currentExporter
+				if ((currentExporter != NULL) && equalExporter(sourceID, currentExporter->sourceID)) {
+					DPRINTF("Exporter is same as last time (ODID=%d, id=%d)", sourceID.observationDomainId, currentExporter->id);
+					intdata = (uint64_t)currentExporter->id;
+				} else {
+				// lookup exporter buffer to get exporterID from sourcID and expIp
+					intdata = (uint64_t)getExporterID(sourceID);
+				}
 			} else {
-			// lookup exporter buffer to get exporterID from sourcID and expIp
-				intdata = (uint64_t)getExporterID(sourceID);
+				notfound = true;
+				// try to gather data required for the field
+				if(dataTemplateInfo.fieldCount > 0) {
+					// look inside the ipfix record
+					for(k=0; k < dataTemplateInfo.fieldCount; k++) {
+						if( dataTemplateInfo.fieldInfo[k].type.enterprise ==  prop->enterprise &&
+							dataTemplateInfo.fieldInfo[k].type.id == prop->ipfixId) {
+							notfound = false;
+							intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
+							DPRINTF("IpfixDbWriterMongo::getData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X",
+							  prop->ipfixId, intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length,
+							  dataTemplateInfo.fieldInfo[k].offset);
+							break;
+						}
+					}
+				}
+				if( dataTemplateInfo.dataCount > 0 && notfound) {
+					// look in static data fields of template for data
+					for(k=0; k < dataTemplateInfo.dataCount; k++) {
+						if(dataTemplateInfo.fieldInfo[k].type.enterprise == prop->enterprise && dataTemplateInfo.dataInfo[k].type.id == prop->ipfixId) {
+							notfound = false;
+							intdata = getData(dataTemplateInfo.dataInfo[k].type,(dataTemplateInfo.data+dataTemplateInfo.dataInfo[k].offset));
+							break;
+						}
+					}
+				}
+				if(notfound) {
+					notfound2 = true;
+					// for some Ids, we have an alternative
+					if(prop->enterprise == 0) {
+						switch (prop->ipfixId) {
+							case IPFIX_TYPEID_flowStartSeconds:
+								if(dataTemplateInfo.fieldCount > 0) {
+									for(k=0; k < dataTemplateInfo.fieldCount; k++) {
+										// look for alternative (flowStartMilliSeconds/1000)
+										if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowStartMilliSeconds) {
+											intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
+											notfound = false;
+											break;
+										}
+										// if no flow start time is available, maybe this is is from a netflow from Cisco
+										// then - as a last alternative - use flowStartSysUpTime as flow start time
+										if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSysUpTime) {
+											intdata2 = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
+											notfound2 = false;
+										}
+									}
+									if(notfound && !notfound2) {
+										intdata = intdata2;
+										notfound = false;
+									}
+								}
+								break;
+							case IPFIX_TYPEID_flowEndSeconds:
+								if(dataTemplateInfo.fieldCount > 0) {
+									for(k=0; k < dataTemplateInfo.fieldCount; k++) {
+										// look for alternative (flowEndMilliSeconds/1000)
+										if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowEndMilliSeconds) {
+											intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
+											notfound = false;
+											break;
+										}
+										// if no flow end time is available, maybe this is from a netflow from Cisco
+										// then use flowEndSysUpTime as flow start time
+										if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSysUpTime) {
+											intdata2 = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
+											notfound2 = false;
+										}
+									}
+									if(notfound && !notfound2) {
+										intdata = intdata2;
+										notfound = false;
+									}
+								}
+								break;
+						}
+					} else if (prop->enterprise==IPFIX_PEN_reverse) {
+						switch (prop->ipfixId) {
+							case IPFIX_TYPEID_flowStartSeconds:
+								// look for alternative (revFlowStartMilliSeconds/1000)
+								if(dataTemplateInfo.fieldCount > 0) {
+									for(k=0; k < dataTemplateInfo.fieldCount; k++) {
+										if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse)) {
+											intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
+											notfound = false;
+											break;
+										}
+									}
+								}
+								break;
+							case IPFIX_TYPEID_flowEndSeconds:
+								// look for alternative (revFlowEndMilliSeconds/1000)
+								if(dataTemplateInfo.fieldCount > 0) {
+									for(k=0; k < dataTemplateInfo.fieldCount; k++) {
+										if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse)) {
+											intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
+											notfound = false;
+											break;
+										}
+									}
+								}
+								break;
+
+						}
+					}
+					// if still not found, get default value
+					if(notfound)
+						intdata = prop->defaultValue;
+				}
+
+				// we need extra treatment for timing related fields
+				if(prop->enterprise == 0 ) {
+					switch (prop->ipfixId) {
+						case IPFIX_TYPEID_flowStartSeconds:
+							// save time for table access
+							if (flowstartsec==0) flowstartsec = intdata;
+							break;
+
+						case IPFIX_TYPEID_flowEndSeconds:
+							break;
+
+						case IPFIX_TYPEID_flowStartMilliSeconds:
+							// if flowStartSeconds is not stored in one of the columns, but flowStartMilliSeconds is,
+							// then we use flowStartMilliSeconds for table access
+							// This is realized by storing this value only if flowStartSeconds has not yet been seen.
+							// A later appearing flowStartSeconds will override this value.
+							if (flowstartsec==0)
+								flowstartsec = intdata/1000;
+						case IPFIX_TYPEID_flowEndMilliSeconds:
+							// in the database the millisecond entry is counted from last second
+							intdata %= 1000;
+							break;
+					}
+				} else if (prop->enterprise==IPFIX_PEN_reverse)
+					switch (prop->ipfixId) {
+						case IPFIX_TYPEID_flowStartMilliSeconds:
+						case IPFIX_TYPEID_flowEndMilliSeconds:
+							// in the database the millisecond entry is counted from last second
+							intdata %= 1000;
+							break;
+					}
+			}
+		msg(MSG_DEBUG, "saw ipfix id %s (element ID %d) in packet with intdata %llX", prop->propertyName,
+							prop->ipfixId, static_cast<int64_t>(intdata));
+					if (beautyProp)
+						obj << prop->propertyName << static_cast<int64_t>(intdata);
+					else
+						obj << boost::lexical_cast<std::string>(prop->ipfixId).c_str() << static_cast<int64_t>(intdata);
+						
+							if (flowstartsec == 0) {
+		msg(MSG_ERROR, "IpfixDbWriterMongo: Failed to get timing data from record. Will be saved in default table.");
+	}
 			}
 		} else {
-			notfound = true;
-			// try to gather data required for the field
+			/* Dump all elements to DB */
 			if(dataTemplateInfo.fieldCount > 0) {
-				// look inside the ipfix record
-				for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-					if( dataTemplateInfo.fieldInfo[k].type.enterprise ==  prop->enterprise && 
-					    dataTemplateInfo.fieldInfo[k].type.id == prop->ipfixId) {
-						notfound = false;
+				// look in ipfix records
+				for(int k=0; k < dataTemplateInfo.fieldCount; k++) {
 						intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-						DPRINTF("IpfixDbWriterMongo::getData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X", 
-						  prop->ipfixId, intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length, 
+						DPRINTF("IpfixDbWriterMongo::getData: dumping from packet intdata %llX, type %d, length %d and offset %X",
+						  intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length,
 						  dataTemplateInfo.fieldInfo[k].offset);
-						break;
+						obj << boost::lexical_cast<std::string>(dataTemplateInfo.fieldInfo[k].type.id).c_str() << static_cast<int64_t>(intdata);
 					}
 				}
-			}
-			if( dataTemplateInfo.dataCount > 0 && notfound) {
+			
+			if( dataTemplateInfo.dataCount > 0) {
 				// look in static data fields of template for data
-				for(k=0; k < dataTemplateInfo.dataCount; k++) {
-					if(dataTemplateInfo.fieldInfo[k].type.enterprise == prop->enterprise && dataTemplateInfo.dataInfo[k].type.id == prop->ipfixId) {
-						notfound = false;
+				for(int k=0; k < dataTemplateInfo.dataCount; k++) {
 						intdata = getData(dataTemplateInfo.dataInfo[k].type,(dataTemplateInfo.data+dataTemplateInfo.dataInfo[k].offset));
-						break;
+						obj << boost::lexical_cast<std::string>(dataTemplateInfo.fieldInfo[k].type.id).c_str() << static_cast<int64_t>(intdata);
 					}
 				}
-			}
-			if(notfound) {
-				notfound2 = true;
-				// for some Ids, we have an alternative
-				if(prop->enterprise == 0) {
-					switch (prop->ipfixId) {
-						case IPFIX_TYPEID_flowStartSeconds:
-							if(dataTemplateInfo.fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-									// look for alternative (flowStartMilliSeconds/1000)
-									if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowStartMilliSeconds) {
-										intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-									// if no flow start time is available, maybe this is is from a netflow from Cisco
-									// then - as a last alternative - use flowStartSysUpTime as flow start time
-									if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSysUpTime) {
-										intdata2 = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-										notfound2 = false;
-									}
-								}
-								if(notfound && !notfound2) {
-									intdata = intdata2;
-									notfound = false;
-								}
-							}
-							break;
-						case IPFIX_TYPEID_flowEndSeconds:
-							if(dataTemplateInfo.fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-									// look for alternative (flowEndMilliSeconds/1000)
-									if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowEndMilliSeconds) {
-										intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-									// if no flow end time is available, maybe this is is from a netflow from Cisco
-									// then use flowEndSysUpTime as flow start time
-									if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSysUpTime) {
-										intdata2 = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-										notfound2 = false;
-									}
-								}
-								if(notfound && !notfound2) {
-									intdata = intdata2;
-									notfound = false;
-								}
-							}
-							break;
-					}
-				} else if (prop->enterprise==IPFIX_PEN_reverse) {
-					switch (prop->ipfixId) {
-						case IPFIX_TYPEID_flowStartSeconds:
-							// look for alternative (revFlowStartMilliSeconds/1000)
-							if(dataTemplateInfo.fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-									if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse)) {
-										intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-								}
-							}
-							break;
-						case IPFIX_TYPEID_flowEndSeconds:
-							// look for alternative (revFlowEndMilliSeconds/1000)
-							if(dataTemplateInfo.fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-									if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse)) {
-										intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-								}
-							}
-							break;
-
-					}
-				}
-				// if still not found, get default value
-				if(notfound)
-					intdata = prop->defaultValue;
-			}
-
-			// we need extra treatment for timing related fields
-			if(prop->enterprise == 0 ) {
-				switch (prop->ipfixId) {
-					case IPFIX_TYPEID_flowStartSeconds:
-						// save time for table access
-						if (flowstartsec==0) flowstartsec = intdata;
-						break;
-
-					case IPFIX_TYPEID_flowEndSeconds:
-						break;
-
-					case IPFIX_TYPEID_flowStartMilliSeconds:
-						// if flowStartSeconds is not stored in one of the columns, but flowStartMilliSeconds is,
-						// then we use flowStartMilliSeconds for table access
-						// This is realized by storing this value only if flowStartSeconds has not yet been seen.
-						// A later appearing flowStartSeconds will override this value.
-						if (flowstartsec==0)
-							flowstartsec = intdata/1000;
-					case IPFIX_TYPEID_flowEndMilliSeconds:
-						// in the database the millisecond entry is counted from last second
-						intdata %= 1000;
-						break;
-				}
-			} else if (prop->enterprise==IPFIX_PEN_reverse)
-				switch (prop->ipfixId) {
-					case IPFIX_TYPEID_flowStartMilliSeconds:
-					case IPFIX_TYPEID_flowEndMilliSeconds:
-						// in the database the millisecond entry is counted from last second
-						intdata %= 1000;
-						break;
-				}
-		}
 
 		msg(MSG_DEBUG, "saw ipfix id %s (element ID %d) in packet with intdata %llX", prop->propertyName,
 				prop->ipfixId, static_cast<long long int>(intdata));
@@ -335,9 +368,7 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 			obj << boost::lexical_cast<std::string>(prop->ipfixId).c_str() << static_cast<long long int>(intdata);
 	}
 
-	if (flowstartsec == 0) {
-		msg(MSG_ERROR, "IpfixDbWriterMongo: Failed to get timing data from record. Will be saved in default table.");
-	}
+		}
 
 	return obj.obj();
 }
@@ -477,10 +508,10 @@ void IpfixDbWriterMongo::onDataRecord(IpfixDataRecord* record)
 IpfixDbWriterMongo::IpfixDbWriterMongo(const string& hostname, const string& database,
 		const string& username, const string& password,
 		unsigned port, uint32_t observationDomainId, uint16_t maxStatements,
-		const vector<string>& propertyNames, bool beautifyProperties)
+		const vector<string>& propertyNames, bool beautifyProperties, bool allProperties)
 	: currentExporter(NULL), numberOfInserts(0), maxInserts(maxStatements),
 	dbHost(hostname), dbName(database), dbUser(username), dbPassword(password), dbPort(port), con(0),
-	beautyProp(beautifyProperties)
+	beautyProp(beautifyProperties), allProp(allProperties)
 {
 	int i;
 
@@ -510,7 +541,7 @@ IpfixDbWriterMongo::IpfixDbWriterMongo(const string& hostname, const string& dat
 		}
 	}
 	
-  if(propertyNames.empty())
+  if(propertyNames.empty() && ! allProp)
 		THROWEXCEPTION("IpfixDbWriterMongo: cannot initiate with no properties");
 
 	if(connectToDB() != 0)
