@@ -58,7 +58,7 @@ IpfixDbWriterMongo::Property identify [] = {
 };
 
 /**
- * Compare two source IDs and check if exporter is the same (i.e., same IP address and observationDomainId
+ * Compare two source IDs and check if exporter is the same (i.e., same IP address and observationDomainId)
  */
 bool IpfixDbWriterMongo::equalExporter(const IpfixRecord::SourceID& a, const IpfixRecord::SourceID& b) {
 	return (a.observationDomainId == b.observationDomainId) &&

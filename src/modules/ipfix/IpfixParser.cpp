@@ -94,7 +94,7 @@ uint32_t IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 			if (ti->fieldInfo[fieldNo].type.length == 65535) {
 				isLengthVarying=1;
 			}
-			// IPFIX only: If hightest bit of field id is set (0x8000), we must look for an enterprise number.
+			// IPFIX only: If highest bit of field id is set (0x8000), we must look for an enterprise number.
 			if ((ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) && setId == TemplateInfo::IpfixTemplate) {
 				/* check if there are 8 bytes for this field */
 				if (record+8 > endOfSet) {
@@ -201,7 +201,7 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 			if (ti->scopeInfo[scopeNo].type.length == 65535) {
 				isLengthVarying=1;
 			}
-			// IPFIX only: If hightest bit of field id is set (0x8000), we must look for an enterprise number.
+			// IPFIX only: If highest bit of field id is set (0x8000), we must look for an enterprise number.
 			if ((ti->scopeInfo[scopeNo].type.id & IPFIX_ENTERPRISE_TYPE) && setId == TemplateInfo::IpfixOptionsTemplate) {
 				/* check if there are 8 bytes for this field */
 				if (record+8 > endOfSet) {
@@ -245,7 +245,7 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 			if (ti->fieldInfo[fieldNo].type.length == 65535) {
 				isLengthVarying=1;
 			}
-			// IPFIX only: If hightest bit of field id is set (0x8000), we must look for an enterprise number.
+			// IPFIX only: If highest bit of field id is set (0x8000), we must look for an enterprise number.
 			if ((ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) && setId == TemplateInfo::IpfixOptionsTemplate) {
 				/* check if there are 8 bytes for this field */
 				if (record+8 > endOfSet) {
@@ -629,7 +629,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId) 
 {
 	if (length < sizeof(NetflowV9Header)) {
-		msg(MSG_ERROR, "IpfixParser: Invalide NetFlowV9 message - message too short to contain header!");
+		msg(MSG_ERROR, "IpfixParser: Invalid NetFlowV9 message - message too short to contain header!");
 		return -1;
 	}
 	
