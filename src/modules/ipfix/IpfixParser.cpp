@@ -178,15 +178,21 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 		bt->templateInfo = ti;
 		ti->templateId = ntohs(oth->templateId);
 		ti->setId = setId;
-		ti->scopeCount = ntohs(oth->scopeCount);
-		ti->scopeInfo = (TemplateInfo::FieldInfo*)malloc(ti->scopeCount * sizeof(TemplateInfo::FieldInfo));
-		ti->fieldCount = ntohs(oth->fieldCount)-ntohs(oth->scopeCount);
-		ti->fieldInfo = (TemplateInfo::FieldInfo*)malloc(ti->fieldCount * sizeof(TemplateInfo::FieldInfo));
+		if (setId == TemplateInfo::IpfixOptionsTemplate) {
+			ti->scopeCount = ntohs(oth->scopeCount);
+			ti->fieldCount = ntohs(oth->fieldCount)-ntohs(oth->scopeCount);
+		} else if (setId == TemplateInfo::NetflowOptionsTemplate) {
+			/* NB: for NetflowV9, scopeCount<->fieldCount are swapped, and
+			 * contain the length of scopes/fields in bytes. Each one is
+			 * 4 bytes long. */
+			ti->scopeCount = ntohs(oth->fieldCount)/4;
+			ti->fieldCount = ntohs(oth->scopeCount)/4;
+		}
+		ti->scopeInfo = (TemplateInfo::FieldInfo*)malloc((ti->scopeCount) * sizeof(TemplateInfo::FieldInfo));
+		ti->fieldInfo = (TemplateInfo::FieldInfo*)malloc((ti->fieldCount) * sizeof(TemplateInfo::FieldInfo));
 		int isLengthVarying = 0;
 		uint16_t scopeNo = 0;
-		//for loop works for IPFIX, but in the case of NetflowV9, scopeCount is the length of all fields in bytes
-		//for (scopeNo = 0; scopeNo < ti->scopeCount; scopeNo++) {
-		while (scopeNo < ti->scopeCount) {
+		for (scopeNo = 0; scopeNo < ti->scopeCount; scopeNo++) {
 			/* check if there are at least 4 bytes for this field */
 			if (record+4 > endOfSet) {
 				msg(MSG_ERROR, "IpfixParser: Options Template record exceeds set boundary!");
@@ -217,20 +223,10 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 				ti->fieldInfo[scopeNo].type.enterprise = 0;
 				record = (uint8_t*)((uint8_t*)record+4);
 			}
-			if (setId == TemplateInfo::NetflowOptionsTemplate) {
-				scopeNo += ti->scopeInfo[scopeNo].type.length;
-				if (scopeNo > ti->scopeCount) {
-					msg(MSG_ERROR, "IpfixParser: Scope fields in Netflow Options Template exceed scope boundary!");
-					delete bt;
-					return numberOfRecords;
-				}
-			} else
-				scopeNo++;
 		}
+
 		uint16_t fieldNo = 0;
-		//for loop works for IPFIX, but in the case of NetflowV9, fieldCount is the length of all fields in bytes
-		//for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
-		while (fieldNo < ti->fieldCount) {
+		for (fieldNo = 0; fieldNo < ti->fieldCount; fieldNo++) {
 			/* check if there are at least 4 bytes for this field */
 			if (record+4 > endOfSet) {
 				msg(MSG_ERROR, "IpfixParser: Template record exceeds set boundary!");
@@ -261,16 +257,8 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 				ti->fieldInfo[fieldNo].type.enterprise = 0;
 				record = (uint8_t*)((uint8_t*)record+4);
 			}
-			if (setId == TemplateInfo::NetflowOptionsTemplate) {
-				fieldNo += ti->fieldInfo[fieldNo].type.length;
-				if (fieldNo > ti->fieldCount) {
-					msg(MSG_ERROR, "IpfixParser: Fields in Netflow Options Template exceed field boundary!");
-					delete bt;
-					return numberOfRecords;
-				}
-			} else
-				fieldNo++;
 		}
+
 		if (isLengthVarying) {
 			bt->recordLength = 65535;
 			for (fieldNo = 0; fieldNo < ti->scopeCount; fieldNo++) {
@@ -498,7 +486,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 	}
 
 #ifdef SUPPORT_NETFLOWV9
-	if ((bt->templateInfo->setId == TemplateInfo::IpfixTemplate) || (bt->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate) || (bt->templateInfo->setId == TemplateInfo::IpfixDataTemplate) || (bt->templateInfo->setId == TemplateInfo::NetflowTemplate)) {
+	if ((bt->templateInfo->setId == TemplateInfo::IpfixTemplate) || (bt->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate) || (bt->templateInfo->setId == TemplateInfo::IpfixDataTemplate) || (bt->templateInfo->setId == TemplateInfo::NetflowTemplate) || (bt->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate)) {
 #else
 	if ((bt->templateInfo->setId == TemplateInfo::IpfixTemplate) || (bt->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate) || (bt->templateInfo->setId == TemplateInfo::IpfixDataTemplate)) {
 #endif
@@ -664,7 +652,7 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 				numberOfTemplateRecords += processTemplateSet(sourceId, TemplateInfo::NetflowTemplate, message, set, endOfMessage);
 				break;
 			case NetflowV9_SetId_OptionsTemplate:
-				numberOfTemplateRecords += processOptionsTemplateSet(sourceId, TemplateInfo::IpfixOptionsTemplate, message, set, endOfMessage);
+				numberOfTemplateRecords += processOptionsTemplateSet(sourceId, TemplateInfo::NetflowOptionsTemplate, message, set, endOfMessage);
 				break;
 			default:
 				if(tmpid >= IPFIX_SetId_Data_Start) {
