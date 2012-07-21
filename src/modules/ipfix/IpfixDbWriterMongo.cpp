@@ -328,8 +328,8 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 		}
 
 		msg(MSG_DEBUG, "saw ipfix id %s in packet with intdata %llX", prop->propertyName,
-        static_cast<int64_t>(intdata));
-		obj << prop->propertyName << static_cast<int64_t>(intdata);
+        static_cast<long long int>(intdata));
+		obj << prop->propertyName << static_cast<long long int>(intdata);
 	}
 
 	if (flowstartsec == 0) {
