@@ -331,13 +331,13 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 		msg(MSG_DEBUG, "saw ipfix id %s (element ID %d) in packet with intdata %llX", prop->propertyName,
 							prop->ipfixId, static_cast<int64_t>(intdata));
 					if (beautyProp)
-						obj << prop->propertyName << static_cast<int64_t>(intdata);
+						obj << prop->propertyName << static_cast<long long int>(intdata);
 					else
-						obj << boost::lexical_cast<std::string>(prop->ipfixId).c_str() << static_cast<int64_t>(intdata);
+						obj << boost::lexical_cast<std::string>(prop->ipfixId).c_str() << static_cast<long long int>(intdata);
 						
-							if (flowstartsec == 0) {
-		msg(MSG_ERROR, "IpfixDbWriterMongo: Failed to get timing data from record. Will be saved in default table.");
-	}
+					if (flowstartsec == 0) {
+						msg(MSG_ERROR, "IpfixDbWriterMongo: Failed to get timing data from record. Will be saved in default table.");
+					}
 			}
 		} else {
 			/* Dump all elements to DB */
@@ -348,7 +348,7 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 						DPRINTF("IpfixDbWriterMongo::getData: dumping from packet intdata %llX, type %d, length %d and offset %X",
 						  intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length,
 						  dataTemplateInfo.fieldInfo[k].offset);
-						obj << boost::lexical_cast<std::string>(dataTemplateInfo.fieldInfo[k].type.id).c_str() << static_cast<int64_t>(intdata);
+						obj << boost::lexical_cast<std::string>(dataTemplateInfo.fieldInfo[k].type.id).c_str() << static_cast<long long int>(intdata);
 					}
 				}
 			
@@ -356,20 +356,10 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 				// look in static data fields of template for data
 				for(int k=0; k < dataTemplateInfo.dataCount; k++) {
 						intdata = getData(dataTemplateInfo.dataInfo[k].type,(dataTemplateInfo.data+dataTemplateInfo.dataInfo[k].offset));
-						obj << boost::lexical_cast<std::string>(dataTemplateInfo.fieldInfo[k].type.id).c_str() << static_cast<int64_t>(intdata);
+						obj << boost::lexical_cast<std::string>(dataTemplateInfo.fieldInfo[k].type.id).c_str() << static_cast<long long int>(intdata);
 					}
 				}
-
-		msg(MSG_DEBUG, "saw ipfix id %s (element ID %d) in packet with intdata %llX", prop->propertyName,
-				prop->ipfixId, static_cast<long long int>(intdata));
-		if (beautyProp)
-			obj << prop->propertyName << static_cast<long long int>(intdata);
-		else
-			obj << boost::lexical_cast<std::string>(prop->ipfixId).c_str() << static_cast<long long int>(intdata);
-	}
-
 		}
-
 	return obj.obj();
 }
 
