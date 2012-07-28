@@ -6,6 +6,7 @@
 
 
 struct ipfix_identifier ipfixids[] = {
+/* IANA registry */
  { IPFIX_TYPEID_ipVersion, IPFIX_LENGTH_ipVersion, 0, "ipVersion" },
  { IPFIX_TYPEID_sourceIPv4Address, IPFIX_LENGTH_sourceIPv4Address, 0, "sourceIPv4Address" },
  { IPFIX_TYPEID_sourceIPv6Address, IPFIX_LENGTH_sourceIPv6Address, 0, "sourceIPv6Address" },
@@ -114,6 +115,8 @@ struct ipfix_identifier ipfixids[] = {
  { PSAMP_TYPEID_observationTimeSeconds, PSAMP_LENGTH_observationTimeSeconds, 0, "observationTimeSeconds" },
  { PSAMP_TYPEID_observationTimeMilliSeconds, PSAMP_LENGTH_observationTimeMilliSeconds, 0, "observationTimeMilliSeconds" },
  { PSAMP_TYPEID_observationTimeMicroSeconds, PSAMP_LENGTH_observationTimeMicroSeconds, 0, "observationTimeMicroSeconds" },
+
+ /* Vermont PEN */
  { IPFIX_ETYPEID_frontPayload, 0, IPFIX_PEN_vermont, "frontPayload" },
  { IPFIX_ETYPEID_frontPayload, 0, IPFIX_PEN_vermont|IPFIX_PEN_reverse, "revFrontPayload" },
 //{ IPFIX_ETYPEID_frontPayload|IPFIX_ETYPE_reverse_bit, 0, IPFIX_PEN_vermont, "revFrontPayload" },

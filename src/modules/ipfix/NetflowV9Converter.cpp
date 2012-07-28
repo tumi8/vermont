@@ -28,7 +28,7 @@ NetflowV9Converter::NetflowV9Converter(bool mode, bool keepsysuptime)
 	: copyMode(mode), keepFlowSysUpTime(keepsysuptime) 
 {
 	if (keepFlowSysUpTime && !copyMode) {
-		THROWEXCEPTION("Cannot instanciate NetflowV9Converter that tries to keep the SysUpTime values and does not copy packets");
+		THROWEXCEPTION("Cannot instantiate NetflowV9Converter that tries to keep the SysUpTime values and does not copy packets");
 	}
 }
 void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)

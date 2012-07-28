@@ -215,6 +215,7 @@ class IpfixRecord
 						break;
 					default:
 						oss << " (" << protocol <<")";
+						break;
 				}
 				oss << " ODID=" << observationDomainId;
 				return oss.str();

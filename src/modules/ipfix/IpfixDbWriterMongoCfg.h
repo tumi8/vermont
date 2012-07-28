@@ -55,6 +55,8 @@ protected:
 	uint16_t bufferObjects;	/**< amount of records to buffer until they are written to database */
 	uint32_t observationDomainId;	/**< default observation domain id (overrides the one received in the records */
 	vector<string> properties; /**< property names */
+	bool beautifyProperties; /* whether to use beautified property names or raw ipfix number */
+	bool allProperties; /* whether to get all properties or just a subset of it*/
 
 	void readProperties(XMLElement* elem);
 	IpfixDbWriterMongoCfg(XMLElement*);

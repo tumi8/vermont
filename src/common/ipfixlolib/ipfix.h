@@ -218,6 +218,7 @@ extern "C" {
 #define IPFIX_LENGTH_icmpTypeCodeIPv4               IPFIX_LENGTH_unsigned16
 #define IPFIX_LENGTH_igmpType                       IPFIX_LENGTH_octet
 #define IPFIX_LENGTH_sourceMacAddress               IPFIX_LENGTH_octet
+// FIXME: MPLS should be (3*IPFIX_LENGTH_octet), and split in fields
 #define IPFIX_LENGTH_mplsLabelStackEntry1           IPFIX_LENGTH_unsigned32
 #define IPFIX_LENGTH_mplsLabelStackEntry2           IPFIX_LENGTH_unsigned32
 #define IPFIX_LENGTH_mplsLabelStackEntry3           IPFIX_LENGTH_unsigned32

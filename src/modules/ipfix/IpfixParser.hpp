@@ -133,8 +133,8 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		 */
 		typedef struct {
 			uint16_t templateId;
-			uint16_t fieldCount;
-			uint16_t scopeCount; 
+			uint16_t fieldCount; //NB: this is scopeCount in NetFlowV9
+			uint16_t scopeCount; //NB: this is fieldCount in NetFlowV9
 			uint8_t data;
 		} IpfixOptionsTemplateHeader;
 

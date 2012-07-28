@@ -76,10 +76,12 @@
 	</ipfixAggregator>
 	
 	<ipfixDbWriterMongo id="4">
+	
     <host>127.0.0.1</host>
     <database>nasty</database>
   	<bufferobjects>5</bufferobjects>
   	<port>27017</port>
+    <beautifyProperties />
     <properties>
       <name>dstIP</name>
       <name>srcIP</name>
