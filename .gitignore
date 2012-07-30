@@ -10,6 +10,7 @@ Makefile
 # ignore compiled binaries
 vermont
 tools/testCollector
+tools/injectUDPToCollector
 src/tests/vermonttest/vermonttest
 src/tests/ipfixlolib/test_everything
 src/tests/ipfixlolib/mtutest
