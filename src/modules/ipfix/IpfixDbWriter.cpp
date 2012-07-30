@@ -35,7 +35,7 @@
  *	ExporterID is no IPFIX_TYPEID, its user specified
  *      Attention: order of entries is important!
  */
-IpfixDbWriter::Column identify [] = {
+const IpfixDbWriter::Column IpfixDbWriter::identify [] = {
 	{CN_dstIP, 		"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_destinationIPv4Address, 0},
 	{CN_srcIP, 		"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_sourceIPv4Address, 0},
 	{CN_srcPort, 		"SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_sourceTransportPort, 0},

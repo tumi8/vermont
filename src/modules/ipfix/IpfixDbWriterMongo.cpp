@@ -28,7 +28,7 @@
 #include "IpfixDbWriterMongo.hpp"
 #include "common/msg.h"
 
-IpfixDbWriterMongo::Property identify [] = {
+const IpfixDbWriterMongo::Property IpfixDbWriterMongo::identify [] = {
 	{CN_dstIP, 0, IPFIX_TYPEID_destinationIPv4Address, 0},
 	{CN_srcIP, 0, IPFIX_TYPEID_sourceIPv4Address, 0},
 	{CN_srcPort, 0, IPFIX_TYPEID_sourceTransportPort, 0},

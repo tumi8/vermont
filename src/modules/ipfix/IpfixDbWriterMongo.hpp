@@ -88,7 +88,7 @@ class IpfixDbWriterMongo
 		 */
 		struct ExporterCacheEntry {
 			IpfixRecord::SourceID sourceID;/** source id of the exporter */
-      int id;                        /** Id entry of sourcID and expIP in the ExporterTable */
+			int id;                        /** Id entry of sourcID and expIP in the ExporterTable */
 		};
 
 
@@ -96,7 +96,7 @@ class IpfixDbWriterMongo
 		ExporterCacheEntry* currentExporter;			// pointer to current exporter in exporterCache
 
 		IpfixRecord::SourceID srcId;           			// default source ID
-    vector<mongo::BSONObj> bufferedObjects; // Bulk insert via BSONObj vector 
+		vector<mongo::BSONObj> bufferedObjects; // Bulk insert via BSONObj vector 
 		int numberOfInserts;					// number of inserts in statement
 		int maxInserts;						// maximum number of inserts per statement
 
@@ -105,10 +105,10 @@ class IpfixDbWriterMongo
 		// database data
 		string dbHost, dbName, dbUser, dbPassword, dbCollectionFlows, dbCollectionExporters, dbCollectionCounters;
 		unsigned dbPort;
-    mongo::DBClientConnection con;
+		mongo::DBClientConnection con;
 		bool beautyProp, allProp;
 		bool dbError;			// db error flag
-    mongo::BSONObj getInsertObj(const IpfixRecord::SourceID& sourceID,
+		mongo::BSONObj getInsertObj(const IpfixRecord::SourceID& sourceID,
 				TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data);
 		int writeToDb();
 		int getExporterID(const IpfixRecord::SourceID& sourceID);
@@ -119,6 +119,8 @@ class IpfixDbWriterMongo
 
 		uint64_t getData(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		bool equalExporter(const IpfixRecord::SourceID& a, const IpfixRecord::SourceID& b);
+
+		const static Property identify[];
 };
 
 
