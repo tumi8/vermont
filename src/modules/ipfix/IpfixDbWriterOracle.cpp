@@ -211,7 +211,7 @@ int IpfixDbWriterOracle::createExporterTable()
 
 	// create trigger
 	sql.str("");	
-	sql << "CREATE OR REPLACE TRIGGER trigger_for_id_exporter BEFORE INSERT ON exporter REFERENCING NEW AS NEW OLD AS OLD FOR EACH ROW Begin SELECT counter_for_exporter.NEXTVAL INTO :NEW.id FROM DUAL; End;";
+	sql << "CREATE OR REPLACE TRIGGER trigger_for_id_exporter BEFORE INSERT ON exporter REFERENCING NEW AS new FOR EACH ROW Begin SELECT counter_for_exporter.NEXTVAL INTO :new.id FROM DUAL; End;";
 	msg(MSG_DEBUG, "IpfixDbWriterOracle: SQL Query: %s", sql.str().c_str());
 	try
 	{
@@ -720,7 +720,7 @@ int IpfixDbWriterOracle::getExporterID(const IpfixRecord::SourceID& sourceID)
 	if(id == -1)
 	{
 		sql.str("");
-		sql << "INSERT INTO exporter (ID,sourceID,srcIP) VALUES ( 0 ,'" << sourceID.observationDomainId << "','" << expIp << "')";
+		sql << "INSERT INTO exporter (sourceID,srcIP) VALUES ('" << sourceID.observationDomainId << "','" << expIp << "')";
 		msg(MSG_DEBUG, "IpfixDbWriterOracle: SQL Query: %s", sql.str().c_str());
 		try
 		{
