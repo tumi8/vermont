@@ -55,5 +55,5 @@ ADD_EXECUTABLE(injectUDPToCollector
 )
 
 TARGET_LINK_LIBRARIES(injectUDPToCollector
-	pcap
+	${PCAP_LIBRARY}
 )
