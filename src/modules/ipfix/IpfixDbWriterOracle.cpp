@@ -27,7 +27,7 @@
 #include "IpfixDbWriterOracle.hpp"
 #include "common/msg.h"
 
-IpfixDbWriterOracle::Column identify [] = {
+const IpfixDbWriterOracle::Column IpfixDbWriterOracle::identify [] = {
 	{CN_dstIP, 		"NUMBER(10)", 	0, IPFIX_TYPEID_destinationIPv4Address, 0},
 	{CN_srcIP, 		"NUMBER(10)", 	0, IPFIX_TYPEID_sourceIPv4Address, 0},
 	{CN_srcPort, 		"NUMBER(5)", 	0, IPFIX_TYPEID_sourceTransportPort, 0},
