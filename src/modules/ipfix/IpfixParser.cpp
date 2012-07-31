@@ -41,6 +41,21 @@ InstanceManager<IpfixTemplateRecord> IpfixParser::templateRecordIM("ParserIpfixT
 InstanceManager<IpfixDataRecord> IpfixParser::dataRecordIM("ParserIpfixDataRecord", 0);
 InstanceManager<IpfixTemplateDestructionRecord> IpfixParser::templateDestructionRecordIM("ParserIpfixTemplateDestructionRecord", 0);
 
+bool IpfixParser::isWithinTimeBoundary(uint32_t exportTime)
+{
+#ifdef EXPORT_TIME_SANITY_CHECK
+	uint32_t currentTime;
+	currentTime = static_cast<uint32_t>(time(NULL));  
+	/* If either the flow is more than 1h in the future, or older than 1 day on arrival 
+	 * it is probably a bad exporter so reject it
+	*/
+	if(((currentTime - exportTime + 3600 ) < 0) ||
+		((currentTime - exportTime) > 86400) )  {
+		return false;
+	}
+#endif
+	return true;
+}
 
 /**
  * Processes an IPFIX template set.
@@ -826,27 +841,22 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
 		return 0;
 	}
 	IpfixHeader* header = (IpfixHeader*)message.get();
-#ifdef EXPORT_TIME_SANITY_CHECK
-	uint32_t currentTime, exportTime;
-	exportTime = ntohl(header->exportTime);
-	currentTime = static_cast<uint32_t>(time(NULL));  
-	/* If either the flow is more than 1h in the future, or older than 1 day on arrival 
-	 * it is probably a bad exporter so reject it
-	*/
-	if( ((currentTime - exportTime + 3600 ) < 0) ||
-		((currentTime - exportTime) > 86400) )  {
-		pthread_mutex_unlock(&mutex);
-		msg(MSG_VDEBUG, "Flow rejected due to sanity check, difference between current and export time was %u", currentTime - exportTime);
-		return -1;
-	}
-#endif
 	if (ntohs(header->version) == 0x000a) {
+		if (!isWithinTimeBoundary(ntohl(header->exportTime))) {
+			pthread_mutex_unlock(&mutex);
+			return -1;
+		}
 		int r = processIpfixPacket(message, length, sourceId);
 		pthread_mutex_unlock(&mutex);
 		return r;
 	}
 #ifdef SUPPORT_NETFLOWV9
 	if (ntohs(header->version) == 0x0009) {
+		NetflowV9Header* nfHeader = (NetflowV9Header*)message.get();
+		if (!isWithinTimeBoundary(ntohl(nfHeader->exportTime))) {
+			pthread_mutex_unlock(&mutex);
+			return -1;
+		}
 		int r = processNetflowV9Packet(message, length, sourceId);
 		pthread_mutex_unlock(&mutex);
 		return r;

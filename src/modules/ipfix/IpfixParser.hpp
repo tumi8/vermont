@@ -190,6 +190,8 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		};
 		
 		std::map<IpfixRecord::SourceID, SNInfo> snInfoMap;
+		bool isWithinTimeBoundary(uint32_t export_time);
+
 };
 
 #endif
