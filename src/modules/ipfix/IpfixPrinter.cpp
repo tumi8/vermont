@@ -591,9 +591,9 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 			srcip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
 		}
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
-		uint32_t srcport = 0;
+		uint16_t srcport = 0;
 		if (fi != NULL && fi->type.length==2) {
-			srcport = *reinterpret_cast<uint16_t*>(record->data+fi->offset);
+			srcport = ntohs(*reinterpret_cast<uint16_t*>(record->data+fi->offset));
 		}
 		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (srcip>>0)&0xFF, (srcip>>8)&0xFF, (srcip>>16)&0xFF, (srcip>>24)&0xFF, srcport);
 		fprintf(fh, "%21s ", buf);
@@ -604,9 +604,9 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 			dstip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
 		}
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
-		uint32_t dstport = 0;
+		uint16_t dstport = 0;
 		if (fi != NULL && fi->type.length==2) {
-			dstport = *reinterpret_cast<uint16_t*>(record->data+fi->offset);
+			dstport = ntohs(*reinterpret_cast<uint16_t*>(record->data+fi->offset));
 		}
 		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (dstip>>0)&0xFF, (dstip>>8)&0xFF, (dstip>>16)&0xFF, (dstip>>24)&0xFF, dstport);
 		fprintf(fh, "%21s ", buf);
