@@ -1155,7 +1155,7 @@ static int add_collector_rawdir(ipfix_receiving_collector *collector, const char
 #endif
 static void set_mtu_config(ipfix_receiving_collector *col,
 	ipfix_aux_config_udp *aux_config_udp) {
-    if (aux_config_udp->mtu>0) {
+    if (aux_config_udp && aux_config_udp->mtu>0) {
 	col->mtu_mode = IPFIX_MTU_FIXED;
 	col->mtu = aux_config_udp->mtu;
     } else {
@@ -1175,6 +1175,11 @@ static int add_collector_dtls(
 
     col->dtls_max_connection_lifetime = 0;
     col->dtls_connect_timeout = 30;
+
+    // we need aux_config for setting up a DTLS collector
+    if (!aux_config) {
+        return -1
+    }
 
     ipfix_aux_config_dtls *aux_config_dtls;
     if (col->protocol == DTLS_OVER_SCTP) {
@@ -1232,7 +1237,7 @@ static int add_collector_remaining_protocols(
 	ipfix_aux_config_udp *aux_config_udp;
 	aux_config_udp = ((ipfix_aux_config_udp*)aux_config);
 	/* Sets col->mtu_mode and col->mtu */
-	set_mtu_config(col,aux_config_udp);
+        set_mtu_config(col,aux_config_udp);
     }
     // call a separate function for opening the socket.
     // This function can handle both UDP and SCTP sockets.
