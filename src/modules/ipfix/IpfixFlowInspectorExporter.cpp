@@ -1,0 +1,294 @@
+/*
+ * IPFIX Database Writer Redis Connector
+ * Copyright (C) 2012 Lothar Braun <braun@net.in.tum.de>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
+
+#ifdef REDIS_SUPPORT_ENABLED
+
+#include <stdexcept>
+#include <string.h>
+#include <iomanip>
+#include <stdlib.h>
+#include <vector>
+#include "IpfixFlowInspectorExporter.hpp"
+#include "common/msg.h"
+#include  <hiredis/hiredis.h>
+
+const IpfixFlowInspectorExporter::Column IpfixFlowInspectorExporter::identify [] = {
+        {CN_dstIP,              "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_destinationIPv4Address, 0},
+        {CN_srcIP,              "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_sourceIPv4Address, 0},
+        {CN_srcPort,            "SMALLINT(5) UNSIGNED",         0, IPFIX_TYPEID_sourceTransportPort, 0},
+        {CN_dstPort,            "SMALLINT(5) UNSIGNED",         0, IPFIX_TYPEID_destinationTransportPort, 0},
+        {CN_proto,              "TINYINT(3) UNSIGNED",          0, IPFIX_TYPEID_protocolIdentifier, 0 },
+        {CN_dstTos,             "TINYINT(3) UNSIGNED",          0, IPFIX_TYPEID_classOfServiceIPv4, 0},
+        {CN_bytes,              "BIGINT(20) UNSIGNED",          0, IPFIX_TYPEID_octetDeltaCount, 0},
+        {CN_pkts,               "BIGINT(20) UNSIGNED",          0, IPFIX_TYPEID_packetDeltaCount, 0},
+        {CN_firstSwitched,      "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowStartSeconds, 0}, // default value is invalid/not used for this ent
+        {CN_lastSwitched,       "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowEndSeconds, 0}, // default value is invalid/not used for this entry
+        {CN_firstSwitchedMillis, "SMALLINT(5) UNSIGNED",        0, IPFIX_TYPEID_flowStartMilliSeconds, 0},
+        {CN_lastSwitchedMillis, "SMALLINT(5) UNSIGNED",         0, IPFIX_TYPEID_flowEndMilliSeconds, 0},
+        {CN_tcpControlBits,     "SMALLINT(5) UNSIGNED",         0, IPFIX_TYPEID_tcpControlBits, 0},
+        //TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
+        {CN_revbytes,           "BIGINT(20) UNSIGNED",          0, IPFIX_TYPEID_octetDeltaCount, IPFIX_PEN_reverse},
+        {CN_revpkts,            "BIGINT(20) UNSIGNED",          0, IPFIX_TYPEID_packetDeltaCount, IPFIX_PEN_reverse},
+        {CN_revFirstSwitched,   "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
+        {CN_revLastSwitched,    "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
+        {CN_revFirstSwitchedMillis, "SMALLINT(5) UNSIGNED",     0, IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse},
+        {CN_revLastSwitchedMillis, "SMALLINT(5) UNSIGNED",      0, IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse},
+        {CN_revTcpControlBits,  "SMALLINT(5) UNSIGNED",         0, IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse},
+        {CN_maxPacketGap,       "BIGINT(20) UNSIGNED",          0, IPFIX_ETYPEID_maxPacketGap, IPFIX_PEN_vermont|IPFIX_PEN_reverse},
+        {CN_exporterID,         "SMALLINT(5) UNSIGNED",         0, EXPORTERID, 0},
+        {CN_flowStartSysUpTime, "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowStartSysUpTime, 0},
+        {CN_flowEndSysUpTime,   "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowEndSysUpTime, 0},
+        {0} // last entry must be 0
+};
+
+
+/**
+ * (re)connect to database
+ */
+int IpfixFlowInspectorExporter::connectToDB()
+{
+	dbError = true;
+	
+	// If a connection exists don't reconnect
+	if (context) return 0;
+  
+	// Connect
+	std::string err;
+	context = redisConnect(dbHost.c_str(), dbPort);
+	if (context->err) {
+		msg(MSG_FATAL,"IpfixFlowInspectorExporter: Redis connect failed. Error: %s", context->errstr);
+		redisFree(context);
+		context = NULL;
+		return 1;
+	}
+
+	msg(MSG_DEBUG,"IpfixFlowInspectorExporter: Connection to Redis successful");
+	dbError = false;
+	return 0;
+}
+
+/**
+ * save record to database
+ */
+void IpfixFlowInspectorExporter::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
+		TemplateInfo& dataTemplateInfo, uint16_t length,
+		IpfixRecord::Data* data)
+{
+	std::string json_string;
+	msg(MSG_DEBUG, "IpfixFlowInspectorExporter: Processing data record");
+
+	if (dbError) {
+		msg(MSG_DEBUG, "IpfixFlowInspectorExporter: reconnecting to DB");
+		connectToDB();
+		if (dbError) return;
+	}
+
+	json_string = getInsertObj(dataTemplateInfo, length, data);
+
+	bufferedObjects.push_back(json_string);
+	
+	writeToDb();
+}
+
+std::string IpfixFlowInspectorExporter::getInsertObj(TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data)
+{
+	std::stringstream sstream;
+	const struct ipfix_identifier* identifier;
+	uint64_t intdata;
+
+	sstream << "{ ";
+
+	/* Dump all elements to DB */
+	if(dataTemplateInfo.fieldCount > 0) {
+		// look in ipfix records
+		for(int k=0; k < dataTemplateInfo.fieldCount; k++) {
+			intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
+			DPRINTF("IpfixFlowInspectorExporter::getData: dumping from packet intdata %llX, type %d, length %d and offset %X",
+				intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length,
+				dataTemplateInfo.fieldInfo[k].offset);
+
+			if (k != 0) {
+				sstream << ",";
+			}
+			
+			// try to use the old legacy names
+			bool foundLegacyName = false;
+			int i = 0;
+			while (identify[i].columnName != 0) {
+				if (identify[i].ipfixId == dataTemplateInfo.fieldInfo[k].type.id && identify[i].enterprise == dataTemplateInfo.fieldInfo[k].type.enterprise) {
+					sstream << "\"" << identify[i].columnName << "\" : ";
+					foundLegacyName = true;
+					break;
+				}
+				++i;
+			}
+
+			if (!foundLegacyName) {	
+				identifier = ipfix_id_lookup(dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.enterprise);
+				if (identifier) {
+					// push regular IPFIX name into queue 
+					sstream << "\"" << identifier->name << "\" : ";
+				} else {
+					sstream << dataTemplateInfo.fieldInfo[k].type.id;
+				}
+			}
+
+			sstream << static_cast<long long int>(intdata);
+		}
+	}
+			
+	if( dataTemplateInfo.dataCount > 0) {
+		// look in static data fields of template for data
+		for(int k=0; k < dataTemplateInfo.dataCount; k++) {
+			intdata = getData(dataTemplateInfo.dataInfo[k].type,(dataTemplateInfo.data+dataTemplateInfo.dataInfo[k].offset));
+			if (k != 0) {
+				sstream << ",";
+			}
+			
+			// try to use the old legacy names
+			bool foundLegacyName = false;
+			int i = 0;
+			while (identify[i].columnName != 0) {
+				if (identify[i].ipfixId == dataTemplateInfo.dataInfo[k].type.id && identify[i].enterprise == dataTemplateInfo.dataInfo[k].type.enterprise) {
+					sstream << "\"" << identify[i].columnName << "\" : ";
+					foundLegacyName = true;
+					break;
+				}
+				++i;
+			}
+
+			if (!foundLegacyName) {	
+				identifier = ipfix_id_lookup(dataTemplateInfo.dataInfo[k].type.id, dataTemplateInfo.dataInfo[k].type.enterprise);
+				if (identifier) {
+					// push regular IPFIX name into queue 
+					sstream << "\"" << identifier->name << "\" : ";
+				} else {
+					sstream << dataTemplateInfo.dataInfo[k].type.id;
+				}
+			}
+
+			sstream << static_cast<long long int>(intdata);
+		}
+	}
+
+	sstream << " }";
+
+	return sstream.str();
+}
+
+/*
+ * Write Objects to database
+ */
+int IpfixFlowInspectorExporter::writeToDb()
+{
+	while (!bufferedObjects.empty()) {
+		std::string& elem = bufferedObjects.front();
+		redisReply *reply;
+		reply = (redisReply*)redisCommand(context, "RPUSH %s %s", dbName.c_str(), elem.c_str());
+		if (!reply) {
+			msg(MSG_ERROR, "IpfixFlowInspectorExporter: Error while writing to redis queue: %s", reply->str);
+			freeReplyObject(reply);
+		}
+		bufferedObjects.pop_front();
+	}
+	return 0; 
+}
+
+/**
+ *	Get data of the record is given by the IPFIX_TYPEID
+ */
+uint64_t IpfixFlowInspectorExporter::getData(InformationElement::IeInfo type, IpfixRecord::Data* data)
+{
+	// TODO: workout a proper modular interpreter
+	if (type.id >= IPFIX_TYPEID_mplsLabelStackEntry1 &&
+	    type.id <= IPFIX_TYPEID_mplsLabelStackEntry10) {
+			// Properly decode MPLS Label, Experimental and S fields
+			// TODO: Provide all separated fields
+			uint32_t MPLSStruct = 0;
+			uint32_t Label = 0, Exp = 0, S = 0;
+			memcpy(&MPLSStruct, data, 3);
+			Label = MPLSStruct & 0xfffff0;
+			Exp = MPLSStruct & 0x00000e;
+			S = MPLSStruct & 0x000001;
+			return ntohl(Label);
+		}
+	
+	switch (type.length) {
+		case 1:
+			return (*(uint8_t*)data);
+		case 2:
+			return ntohs(*(uint16_t*)data);
+		case 4:
+			return ntohl(*(uint32_t*)data);
+		case 5:	// may occur in the case if IP address + mask
+			return ntohl(*(uint32_t*)data);
+		case 8:
+			return ntohll(*(uint64_t*)data);
+		default:
+			// TODO: dynamic lenght octectArray fields
+			printf("Got element %d with unparsable length(%d).\n", type.id, type.length);
+			return 0;
+	}
+}
+
+/***** Public Methods ****************************************************/
+
+/**
+ * called on Data Record arrival
+ */
+void IpfixFlowInspectorExporter::onDataRecord(IpfixDataRecord* record)
+{
+	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
+	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate)
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)
+		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
+		record->removeReference();
+		return;
+	}
+
+	msg(MSG_DEBUG, "IpfixFlowInspectorExporter: Data record received will be passed for processing");
+	processDataDataRecord(*record->sourceID.get(), *record->templateInfo.get(),
+			record->dataLength, record->data);
+
+	record->removeReference();
+}
+
+/**
+ * Constructor
+ */
+IpfixFlowInspectorExporter::IpfixFlowInspectorExporter(const string& hostname, const string& database, unsigned port)
+	: dbHost(hostname), dbName(database), dbPort(port)
+{
+	if(connectToDB() != 0)
+		THROWEXCEPTION("IpfixFlowInspectorExporter creation failed");
+}
+
+
+/**
+ * Destructor
+ */
+IpfixFlowInspectorExporter::~IpfixFlowInspectorExporter()
+{
+	writeToDb();
+}
+
+
+
+#endif /* MONGO_SUPPORT_ENABLED */

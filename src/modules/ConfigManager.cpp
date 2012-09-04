@@ -45,6 +45,7 @@
 #include "modules/ipfix/IpfixDbWriterOracleCfg.h"
 #include "modules/ipfix/IpfixDbReaderOracleCfg.h"
 #include "modules/ipfix/IpfixDbWriterMongoCfg.h"
+#include "modules/ipfix/IpfixFlowInspectorExporterCfg.h"
 #include "modules/ipfix/IpfixPayloadWriterCfg.h"
 #include "modules/ipfix/IpfixSamplerCfg.h"
 #include "modules/ipfix/IpfixCsExporterCfg.hpp"
@@ -113,6 +114,9 @@ Cfg* ConfigManager::configModules[] = {
 #endif
 #ifdef MONGO_SUPPORT_ENABLED
 	new IpfixDbWriterMongoCfg(NULL),
+#endif
+#ifdef REDIS_SUPPORT_ENABLED
+	new IpfixFlowInspectorExporterCfg(NULL),
 #endif
 	new FlowLenAnalyzerCfg(NULL),
 };
