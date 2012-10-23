@@ -32,7 +32,7 @@ IpfixDbWriterCfg* IpfixDbWriterCfg::create(XMLElement* e)
 
 
 IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
-    : CfgHelper<IpfixDbWriter, IpfixDbWriterCfg>(elem, "ipfixDbWriter"),
+    : CfgHelper<IpfixDbWriterMySQL, IpfixDbWriterCfg>(elem, "ipfixDbWriterMySQL"),
       port(0), bufferRecords(30), observationDomainId(0)
 {
     if (!elem) return;
@@ -82,7 +82,7 @@ void IpfixDbWriterCfg::readColumns(XMLElement* elem) {
 		if (e->matches("name")) {
 			colNames.push_back(e->getFirstText());
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
+			msg(MSG_FATAL, "Unknown IpfixDbWriterMySQL config statement %s\n", e->getName().c_str());
 			continue;
 		}		
 	}
@@ -94,9 +94,9 @@ IpfixDbWriterCfg::~IpfixDbWriterCfg()
 }
 
 
-IpfixDbWriter* IpfixDbWriterCfg::createInstance()
+IpfixDbWriterMySQL* IpfixDbWriterCfg::createInstance()
 {
-    instance = new IpfixDbWriter(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
+    instance = new IpfixDbWriterMySQL(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
     return instance;
 }
 

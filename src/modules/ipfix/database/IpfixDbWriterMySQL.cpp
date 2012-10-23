@@ -20,14 +20,14 @@
  *
  */
 
-/* Some constants that are common to IpfixDbWriter and IpfixDbReader */
+/* Some constants that are common to IpfixDbWriterMySQL and IpfixDbReader */
 #ifdef DB_SUPPORT_ENABLED
 
 #include <stdexcept>
 #include <string.h>
 #include <iomanip>
 #include <stdlib.h>
-#include "IpfixDbWriter.hpp"
+#include "IpfixDbWriterMySQL.hpp"
 #include "common/msg.h"
 
 /**
@@ -35,7 +35,7 @@
  *	ExporterID is no IPFIX_TYPEID, its user specified
  *      Attention: order of entries is important!
  */
-const IpfixDbWriter::Column IpfixDbWriter::identify [] = {
+const IpfixDbWriterMySQL::Column IpfixDbWriterMySQL::identify [] = {
 	{CN_dstIP, 		"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_destinationIPv4Address, 0},
 	{CN_srcIP, 		"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_sourceIPv4Address, 0},
 	{CN_srcPort, 		"SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_sourceTransportPort, 0},
@@ -69,7 +69,7 @@ const IpfixDbWriter::Column IpfixDbWriter::identify [] = {
 /**
  * Compare two source IDs and check if exporter is the same (i.e., same IP address and observationDomainId
  */
-bool IpfixDbWriter::equalExporter(const IpfixRecord::SourceID& a, const IpfixRecord::SourceID& b) {
+bool IpfixDbWriterMySQL::equalExporter(const IpfixRecord::SourceID& a, const IpfixRecord::SourceID& b) {
 	return (a.observationDomainId == b.observationDomainId) &&
 		(a.exporterAddress.len == b.exporterAddress.len) &&
 		(memcmp(a.exporterAddress.ip, b.exporterAddress.ip, a.exporterAddress.len) == 0 );
@@ -80,7 +80,7 @@ bool IpfixDbWriter::equalExporter(const IpfixRecord::SourceID& a, const IpfixRec
 /**
  * (re)connect to database
  */
-int IpfixDbWriter::connectToDB()
+int IpfixDbWriterMySQL::connectToDB()
 {
 	ostringstream statement;
 
@@ -92,20 +92,20 @@ int IpfixDbWriter::connectToDB()
 	/** get the mysl init handle*/
 	conn = mysql_init(0);
 	if(conn == 0) {
-		msg(MSG_FATAL,"IpfixDbWriter: Get MySQL connect handle failed. Error: %s",
+		msg(MSG_FATAL,"IpfixDbWriterMySQL: Get MySQL connect handle failed. Error: %s",
 				mysql_error(conn));
 		return 1;
 	}
-	msg(MSG_DEBUG,"IpfixDbWriter: mysql init successful");
+	msg(MSG_DEBUG,"IpfixDbWriterMySQL: mysql init successful");
 
 	/**Connect to Database*/
 	if (!mysql_real_connect(conn, dbHost.c_str(), dbUser.c_str(), dbPassword.c_str(),
 				0, dbPort, 0, 0)) {
-		msg(MSG_FATAL,"IpfixDbWriter: Connection to database failed. Error: %s",
+		msg(MSG_FATAL,"IpfixDbWriterMySQL: Connection to database failed. Error: %s",
 				mysql_error(conn));
 		return 1;
 	}
-	msg(MSG_DEBUG,"IpfixDbWriter: succesfully connected to database");
+	msg(MSG_DEBUG,"IpfixDbWriterMySQL: succesfully connected to database");
 
 	/** make query string to create database**/
 	statement << "CREATE DATABASE IF NOT EXISTS " << dbName;
@@ -113,19 +113,19 @@ int IpfixDbWriter::connectToDB()
 
 	/**create database*/
 	if(mysql_query(conn, statement.str().c_str()) != 0 ) {
-		msg(MSG_FATAL, "IpfixDbWriter: Creation of database %s failed. Error: %s",
+		msg(MSG_FATAL, "IpfixDbWriterMySQL: Creation of database %s failed. Error: %s",
 				dbName.c_str(), mysql_error(conn));
 		return 1;
 	}
-	msg(MSG_INFO,"IpfixDbWriter: Database %s created", dbName.c_str());
+	msg(MSG_INFO,"IpfixDbWriterMySQL: Database %s created", dbName.c_str());
 
 	/** use database with dbName**/
 	if(mysql_select_db(conn, dbName.c_str()) !=0) {
-		msg(MSG_FATAL, "IpfixDbWriter: Database %s not selectable. Error: %s",
+		msg(MSG_FATAL, "IpfixDbWriterMySQL: Database %s not selectable. Error: %s",
 				dbName.c_str(), mysql_error(conn));
 		return 1;
 	}
-	msg(MSG_DEBUG,"IpfixDbWriter: Database %s selected", dbName.c_str());
+	msg(MSG_DEBUG,"IpfixDbWriterMySQL: Database %s selected", dbName.c_str());
 
 	/**create table exporter*/
 	statement.str("");
@@ -133,11 +133,11 @@ int IpfixDbWriter::connectToDB()
 	statement << "CREATE TABLE IF NOT EXISTS exporter (id SMALLINT(5) NOT NULL AUTO_INCREMENT, sourceID INTEGER(10) UNSIGNED DEFAULT NULL, srcIP INTEGER(10) UNSIGNED DEFAULT NULL, PRIMARY KEY(id))";
 	DPRINTF("SQL Query: %s", statement.str().c_str());
 	if(mysql_query(conn, statement.str().c_str()) != 0) {
-		msg(MSG_FATAL,"IpfixDbWriter: Creation of exporter table failed. Error: %s",
+		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of exporter table failed. Error: %s",
 				mysql_error(conn));
 		return 1;
 	}
-	msg(MSG_INFO,"IpfixDbWriter: Exporter table created");
+	msg(MSG_INFO,"IpfixDbWriterMySQL: Exporter table created");
 
 	dbError = false;
 
@@ -148,7 +148,7 @@ int IpfixDbWriter::connectToDB()
 /**
  * save record to database
  */
-void IpfixDbWriter::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
+void IpfixDbWriterMySQL::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
 		TemplateInfo& dataTemplateInfo, uint16_t length,
 		IpfixRecord::Data* data)
 {
@@ -173,7 +173,7 @@ void IpfixDbWriter::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
 	// if current table is not ok, write to db and get new table name
 	if(!(flowStartSeconds >= currentTable.startTime && flowStartSeconds <= currentTable.endTime)) {
 		if(numberOfInserts > 0) {
-			msg(MSG_DEBUG, "IpfixDbWriter: Writing buffered records to database");
+			msg(MSG_DEBUG, "IpfixDbWriterMySQL: Writing buffered records to database");
 			writeToDb();
 			numberOfInserts = 0;
 		}
@@ -198,7 +198,7 @@ void IpfixDbWriter::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
 
 	// write to db if maxInserts is reached
 	if(numberOfInserts == maxInserts) {
-		msg(MSG_DEBUG, "IpfixDbWriter: Writing buffered records to database");
+		msg(MSG_DEBUG, "IpfixDbWriterMySQL: Writing buffered records to database");
 		writeToDb();
 		numberOfInserts = 0;
 	}
@@ -209,7 +209,7 @@ void IpfixDbWriter::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
  *	loop over table columns and template to get the IPFIX values in correct order to store in database
  *	The result is written into row, the firstSwitched time is returned in flowstartsec
  */
-string& IpfixDbWriter::getInsertString(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
+string& IpfixDbWriterMySQL::getInsertString(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
 		TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data)
 {
 	uint64_t intdata = 0;
@@ -243,7 +243,7 @@ string& IpfixDbWriter::getInsertString(string& row, time_t& flowstartsec, const 
 					if(dataTemplateInfo.fieldInfo[k].type.enterprise ==  col->enterprise && dataTemplateInfo.fieldInfo[k].type.id == col->ipfixId) {
 						notfound = false;
 						intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-						DPRINTF("IpfixDbWriter::getData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X", col->ipfixId, intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length, dataTemplateInfo.fieldInfo[k].offset);
+						DPRINTF("IpfixDbWriterMySQL::getData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X", col->ipfixId, intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length, dataTemplateInfo.fieldInfo[k].offset);
 						break;
 					}
 				}
@@ -387,7 +387,7 @@ string& IpfixDbWriter::getInsertString(string& row, time_t& flowstartsec, const 
 	rowStream << ")";
 
 	if (flowstartsec == 0) {
-		msg(MSG_ERROR, "IpfixDbWriter: Failed to get timing data from record. Will be saved in default table.");
+		msg(MSG_ERROR, "IpfixDbWriterMySQL: Failed to get timing data from record. Will be saved in default table.");
 	}
 
 	row = rowStream.str();
@@ -399,14 +399,14 @@ string& IpfixDbWriter::getInsertString(string& row, time_t& flowstartsec, const 
 /*
  * Write insertStatement to database
  */
-int IpfixDbWriter::writeToDb()
+int IpfixDbWriterMySQL::writeToDb()
 {
 	DPRINTF("SQL Query: %s", insertStatement.str().c_str());
 	if(mysql_query(conn, insertStatement.str().c_str()) != 0) {
-		msg(MSG_ERROR,"IpfixDbWriter: Insert of records failed. Error: %s", mysql_error(conn));
+		msg(MSG_ERROR,"IpfixDbWriterMySQL: Insert of records failed. Error: %s", mysql_error(conn));
 		return 1;
 	}
-	msg(MSG_DEBUG,"IpfixDbWriter: Write to database is complete");
+	msg(MSG_DEBUG,"IpfixDbWriterMySQL: Write to database is complete");
 	return 0;
 }
 
@@ -414,7 +414,7 @@ int IpfixDbWriter::writeToDb()
 /*
  * Sets the current table information and creates the table in the database if necessary
  */
-int IpfixDbWriter::setCurrentTable(time_t flowstartsec)
+int IpfixDbWriterMySQL::setCurrentTable(time_t flowstartsec)
 {
 	// generate table name
 	ostringstream tableStream;
@@ -447,11 +447,11 @@ int IpfixDbWriter::setCurrentTable(time_t flowstartsec)
 	createStatement << "CREATE TABLE IF NOT EXISTS " << currentTable.name << " (" << tableColumnsCreateString << ")";
 	DPRINTF("SQL Query: %s", createStatement.str().c_str());
 	if(mysql_query(conn, createStatement.str().c_str()) != 0) {
-		msg(MSG_FATAL,"IpfixDbWriter: Creation of table failed. Error: %s", mysql_error(conn));
+		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of table failed. Error: %s", mysql_error(conn));
 		dbError = true;
 		return 1;
 	}
-	msg(MSG_DEBUG, "IpfixDbWriter: Table %s created ", currentTable.name.c_str());
+	msg(MSG_DEBUG, "IpfixDbWriterMySQL: Table %s created ", currentTable.name.c_str());
 
 	return 0;
 }
@@ -459,7 +459,7 @@ int IpfixDbWriter::setCurrentTable(time_t flowstartsec)
 /**
  *	Returns the id of the exporter table entry or 0 in the case of an error
  */
-int IpfixDbWriter::getExporterID(const IpfixRecord::SourceID& sourceID)
+int IpfixDbWriterMySQL::getExporterID(const IpfixRecord::SourceID& sourceID)
 {
 	list<ExporterCacheEntry>::iterator iter;
 	MYSQL_RES* dbResult;
@@ -490,7 +490,7 @@ int IpfixDbWriter::getExporterID(const IpfixRecord::SourceID& sourceID)
 	DPRINTF("SQL Query: %s", statement.str().c_str());
 
 	if(mysql_query(conn, statement.str().c_str()) != 0) {
-		msg(MSG_ERROR,"IpfixDbWriter: Select on exporter table failed. Error: %s",
+		msg(MSG_ERROR,"IpfixDbWriterMySQL: Select on exporter table failed. Error: %s",
 				mysql_error(conn));
 		return 0;// If a failure occurs, return 0
 	}
@@ -509,12 +509,12 @@ int IpfixDbWriter::getExporterID(const IpfixRecord::SourceID& sourceID)
 		statement << "INSERT INTO exporter (ID,sourceID,srcIP) VALUES ('NULL','" << sourceID.observationDomainId << "','" << expIp << "')";
 		DPRINTF("SQL Query: %s", statement.str().c_str());
 		if(mysql_query(conn, statement.str().c_str()) != 0) {
-			msg(MSG_ERROR,"IpfixDbWriter: Insert in exporter table failed. Error: %s", conn);
+			msg(MSG_ERROR,"IpfixDbWriterMySQL: Insert in exporter table failed. Error: %s", conn);
 			return 0;
 		}
 
 		id = mysql_insert_id(conn);
-		msg(MSG_INFO,"IpfixDbWriter: new exporter (ODID=%d, id=%d) inserted in exporter table", sourceID.observationDomainId, id);
+		msg(MSG_INFO,"IpfixDbWriterMySQL: new exporter (ODID=%d, id=%d) inserted in exporter table", sourceID.observationDomainId, id);
 	}
 
 	// insert exporter in cache
@@ -534,7 +534,7 @@ int IpfixDbWriter::getExporterID(const IpfixRecord::SourceID& sourceID)
 /**
  *	Get data of the record is given by the IPFIX_TYPEID
  */
-uint64_t IpfixDbWriter::getData(InformationElement::IeInfo type, IpfixRecord::Data* data)
+uint64_t IpfixDbWriterMySQL::getData(InformationElement::IeInfo type, IpfixRecord::Data* data)
 {
 	switch (type.length) {
 		case 1:
@@ -560,7 +560,7 @@ uint64_t IpfixDbWriter::getData(InformationElement::IeInfo type, IpfixRecord::Da
 /**
  * called on Data Record arrival
  */
-void IpfixDbWriter::onDataRecord(IpfixDataRecord* record)
+void IpfixDbWriterMySQL::onDataRecord(IpfixDataRecord* record)
 {
 	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
 	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate)
@@ -580,7 +580,7 @@ void IpfixDbWriter::onDataRecord(IpfixDataRecord* record)
 /**
  * Constructor
  */
-IpfixDbWriter::IpfixDbWriter(const string& hostname, const string& dbname,
+IpfixDbWriterMySQL::IpfixDbWriterMySQL(const string& hostname, const string& dbname,
 				const string& username, const string& password,
 				unsigned port, uint32_t observationDomainId, unsigned maxStatements,
 				const vector<string>& columns)
@@ -602,7 +602,7 @@ IpfixDbWriter::IpfixDbWriter(const string& hostname, const string& dbname,
 	currentTable.endTime = 0;
 
 	if(columns.empty())
-		THROWEXCEPTION("IpfixDbWriter: cannot initiate with no columns");
+		THROWEXCEPTION("IpfixDbWriterMySQL: cannot initiate with no columns");
 
 	/* get columns */
 	bool first = true;
@@ -628,16 +628,16 @@ IpfixDbWriter::IpfixDbWriter(const string& hostname, const string& dbname,
 			i++;
 		}
 	}
-	msg(MSG_INFO, "IpfixDbWriter: columns are %s", tableColumnsString.c_str());
+	msg(MSG_INFO, "IpfixDbWriterMySQL: columns are %s", tableColumnsString.c_str());
 
 	if(connectToDB() != 0)
-		THROWEXCEPTION("IpfixDbWriter creation failed");
+		THROWEXCEPTION("IpfixDbWriterMySQL creation failed");
 }
 
 /**
  * Destructor
  */
-IpfixDbWriter::~IpfixDbWriter()
+IpfixDbWriterMySQL::~IpfixDbWriterMySQL()
 {
 	writeToDb();
 	mysql_close(conn);

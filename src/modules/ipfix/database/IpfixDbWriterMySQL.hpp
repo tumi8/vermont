@@ -20,7 +20,7 @@
  *
  */
 
-/* Some constants that are common to IpfixDbWriter and IpfixDbReader */
+/* Some constants that are common to IpfixDbWriterMySQL and IpfixDbReader */
 #ifdef DB_SUPPORT_ENABLED
 
 #ifndef IPFIXDBWRITER_H
@@ -38,18 +38,18 @@
 #define EXPORTERID 0
 
 /**
- * IpfixDbWriter powered the communication to the database server
+ * IpfixDbWriterMySQL powered the communication to the database server
  * also between the other structs
  */
-class IpfixDbWriter 
+class IpfixDbWriterMySQL 
 	: public IpfixRecordDestination, public Module, public Source<NullEmitable*>
 {
 	public:
-		IpfixDbWriter(const string& hostname, const string& dbname,
+		IpfixDbWriterMySQL(const string& hostname, const string& dbname,
 				const string& username, const string& password,
 				unsigned port, uint32_t observationDomainId, unsigned maxStatements,
 				const vector<string>& columns);
-		~IpfixDbWriter();
+		~IpfixDbWriterMySQL();
 
 		void onDataRecord(IpfixDataRecord* record);
 

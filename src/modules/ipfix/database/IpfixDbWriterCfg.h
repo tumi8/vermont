@@ -26,7 +26,7 @@
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "IpfixDbWriter.hpp"
+#include "IpfixDbWriterMySQL.hpp"
 
 #include <string>
 
@@ -34,7 +34,7 @@ using namespace std;
 
 
 class IpfixDbWriterCfg
-	: public CfgHelper<IpfixDbWriter, IpfixDbWriterCfg>
+	: public CfgHelper<IpfixDbWriterMySQL, IpfixDbWriterCfg>
 {
 public:
 	friend class ConfigManager;
@@ -42,7 +42,7 @@ public:
 	virtual IpfixDbWriterCfg* create(XMLElement* e);
 	virtual ~IpfixDbWriterCfg();
 	
-	virtual IpfixDbWriter* createInstance();
+	virtual IpfixDbWriterMySQL* createInstance();
 	virtual bool deriveFrom(IpfixDbWriterCfg* old);
 	
 protected:
