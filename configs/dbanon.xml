@@ -1,5 +1,5 @@
 <ipfixConfig>
-	<ipfixDbReader id="1">
+	<ipfixDbReaderMySQL id="1">
 		<host>10.159.5.10</host>
 		<port>3306</port>
 		<dbname>test</dbname>
@@ -8,7 +8,7 @@
 		<fullspeed>true</fullspeed>
 		<timeshift>false</timeshift>
 		<next>2</next>
-	</ipfixDbReader>
+	</ipfixDbReaderMySQL>
 
 	<ipfixQueue id="2">
 		<maxSize>1000</maxSize>

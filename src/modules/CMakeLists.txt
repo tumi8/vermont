@@ -110,7 +110,7 @@ ADD_LIBRARY(modules
     ipfix/database/IpfixDbReaderCfg.cpp
     ipfix/database/IpfixDbWriterMongo.cpp
     ipfix/database/IpfixDbWriterOracle.cpp
-    ipfix/database/IpfixDbReader.cpp
+    ipfix/database/IpfixDbReaderMySQL.cpp
     ipfix/database/IpfixDbWriter.cpp
     ipfix/database/IpfixDbWriterPg.cpp
     ipfix/database/IpfixDbReaderOracle.cpp

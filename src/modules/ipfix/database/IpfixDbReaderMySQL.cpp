@@ -25,14 +25,14 @@
 #include <stdexcept>
 #include <string.h>
 #include <stdlib.h>
-#include "IpfixDbReader.hpp"
+#include "IpfixDbReaderMySQL.hpp"
 #include "IpfixDbCommon.hpp"
 #include "common/msg.h"
 
 
-InstanceManager<IpfixTemplateRecord> IpfixDbReader::templateRecordIM("DbReaderIpfixTemplateRecord", 1);
-InstanceManager<IpfixDataRecord> IpfixDbReader::dataRecordIM("DbReaderIpfixDataRecord", 50);
-InstanceManager<IpfixTemplateDestructionRecord> IpfixDbReader::templateDestructionRecordIM("DbReaderIpfixTemplateDestructionRecord", 1);
+InstanceManager<IpfixTemplateRecord> IpfixDbReaderMySQL::templateRecordIM("DbReaderIpfixTemplateRecord", 1);
+InstanceManager<IpfixDataRecord> IpfixDbReaderMySQL::dataRecordIM("DbReaderIpfixDataRecord", 50);
+InstanceManager<IpfixTemplateDestructionRecord> IpfixDbReaderMySQL::templateDestructionRecordIM("DbReaderIpfixTemplateDestructionRecord", 1);
 
 /***** Internal Functions ****************************************************/
 
@@ -42,19 +42,19 @@ void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, InformationElement
  * First send a a new template, then send the dataTemplates for all stored
  * tables.
  */
-void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
+void* IpfixDbReaderMySQL::readFromDB(void* ipfixDbReader_)
 {
-	IpfixDbReader* ipfixDbReader = (IpfixDbReader*)ipfixDbReader_;
+	IpfixDbReaderMySQL* ipfixDbReader = (IpfixDbReaderMySQL*)ipfixDbReader_;
 
 	ipfixDbReader->registerCurrentThread();
 
-	msg(MSG_DIALOG, "IpfixDbReader: Start sending tables");
+	msg(MSG_DIALOG, "IpfixDbReaderMySQL: Start sending tables");
 	for(vector<string>::iterator i = ipfixDbReader->tables.begin(); i != ipfixDbReader->tables.end() && !ipfixDbReader->exitFlag; i++) {
 		boost::shared_ptr<TemplateInfo> templateInfo(new TemplateInfo);
 		templateInfo->setId = TemplateInfo::IpfixTemplate;
 		if(ipfixDbReader->dbReaderSendNewTemplate(templateInfo, *i) != 0)
 		{
-		    msg(MSG_ERROR, "IpfixDbReader: Template error, skip table");
+		    msg(MSG_ERROR, "IpfixDbReaderMySQL: Template error, skip table");
 		    continue;
 		}
 		ipfixDbReader->dbReaderSendTable(templateInfo, *i);
@@ -64,21 +64,21 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
 
 	ipfixDbReader->unregisterCurrentThread();
 	
-	msg(MSG_DIALOG,"IpfixDbReader: Sending from database is done");
+	msg(MSG_DIALOG,"IpfixDbReaderMySQL: Sending from database is done");
 	return 0;
 }
 /**
  * Constructs a template from the table data and sends it to all connected
  * modules.
  */
-int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName)
+int IpfixDbReaderMySQL::dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName)
 {
 	// reset record length 
 	recordLength  = 0;
 
 	/**get columnsname of the table*/
 	if(getColumns(tableName) != 0) {
-		msg(MSG_ERROR,"IpfixDbReader: Could not get columns for template");
+		msg(MSG_ERROR,"IpfixDbReaderMySQL: Could not get columns for template");
 		return 1;
 	}
 
@@ -99,7 +99,7 @@ int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templ
 	ipfixRecord->sourceID = srcId;
 	ipfixRecord->templateInfo = templateInfo;
 	send(ipfixRecord);
-	msg(MSG_DEBUG,"IpfixDbReader: sent template for table %s", tableName.c_str());
+	msg(MSG_DEBUG,"IpfixDbReaderMySQL: sent template for table %s", tableName.c_str());
 	return 0;
 }
 
@@ -119,7 +119,7 @@ void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, InformationElement
 		*(uint64_t*)dest = htonll(*(uint64_t*)src);
                 return;
         default:
-                msg(MSG_ERROR, "IpfixDbReader: Uint with length %d unparseable", type.length);
+                msg(MSG_ERROR, "IpfixDbReaderMySQL: Uint with length %d unparseable", type.length);
                 return;
         }
 }
@@ -131,7 +131,7 @@ void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, InformationElement
  * strings, therefore they must change into IPFIX format 
 */
 
-int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName)
+int IpfixDbReaderMySQL::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName)
 {
 	MYSQL_RES* dbResult = NULL;
 	MYSQL_ROW dbRow = NULL;
@@ -151,15 +151,15 @@ int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInf
 	else
 		query = query + orderBy;
 
-	msg(MSG_VDEBUG, "IpfixDbReader: SQL query: %s", query.c_str());
+	msg(MSG_VDEBUG, "IpfixDbReaderMySQL: SQL query: %s", query.c_str());
 	if(mysql_query(conn, query.c_str()) != 0) {
-		msg(MSG_ERROR,"IpfixDbReader: Select on table failed. Error: %s",
+		msg(MSG_ERROR,"IpfixDbReaderMySQL: Select on table failed. Error: %s",
 		    mysql_error(conn));
 		return 1;
 	}
 
 	dbResult = mysql_store_result(conn);
-	msg(MSG_INFO,"IpfixDbReader:  Start sending records from table %s", tableName.c_str());
+	msg(MSG_INFO,"IpfixDbReaderMySQL:  Start sending records from table %s", tableName.c_str());
 
 	while((dbRow = mysql_fetch_row(dbResult)) && !exitFlag) {
 		if (first) {
@@ -179,12 +179,12 @@ int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInf
 				j++;
 			}
 			if (first) {
-				msg(MSG_ERROR, "IpfixDbReader: no flowEndSeconds column in table");
+				msg(MSG_ERROR, "IpfixDbReaderMySQL: no flowEndSeconds column in table");
 				mysql_free_result(dbResult);
 				return 1;
 			}
 			if (timeshift)
-				msg(MSG_DEBUG, "IpfixDbReader: time shift is %d seconds", delta);
+				msg(MSG_DEBUG, "IpfixDbReaderMySQL: time shift is %d seconds", delta);
 		}
 		// build new record
 		boost::shared_array<IpfixRecord::Data> data(new IpfixRecord::Data[recordLength]);
@@ -238,7 +238,7 @@ int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInf
 		if(!fullspeed && (flowTime != lastFlowTime)) {
 			time_t t = time(NULL);
 			if (t > (int)flowTime) {
-				msg(MSG_ERROR, "IpfixDbReader: Sending flows too slowly");
+				msg(MSG_ERROR, "IpfixDbReaderMySQL: Sending flows too slowly");
 			} else {
 				sleep (flowTime - t);
 			}
@@ -254,26 +254,26 @@ int IpfixDbReader::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInf
 		ipfixRecord->message = data;
 		ipfixRecord->data = data.get();
 		send(ipfixRecord);
-		msg(MSG_VDEBUG,"IpfixDbReader: Record sent");
+		msg(MSG_VDEBUG,"IpfixDbReaderMySQL: Record sent");
 	}
 	mysql_free_result(dbResult);
 	
 	if(!exitFlag)
-		msg(MSG_INFO,"IpfixDbReader: Sending from table %s done", tableName.c_str());
+		msg(MSG_INFO,"IpfixDbReaderMySQL: Sending from table %s done", tableName.c_str());
 	else
-		msg(MSG_INFO,"IpfixDbReader: Sending from table %s aborted", tableName.c_str());
+		msg(MSG_INFO,"IpfixDbReaderMySQL: Sending from table %s aborted", tableName.c_str());
 
 	return 0;
 }
 
 
-int IpfixDbReader::dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templateInfo)
+int IpfixDbReaderMySQL::dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templateInfo)
 {
 	IpfixTemplateDestructionRecord* ipfixRecord = templateDestructionRecordIM.getNewInstance();
 	ipfixRecord->sourceID = srcId;
 	ipfixRecord->templateInfo = templateInfo;
 	send(ipfixRecord);
-	msg(MSG_DEBUG,"IpfixDbReader: Template destroyed");
+	msg(MSG_DEBUG,"IpfixDbReaderMySQL: Template destroyed");
 
 	return 0;
 }
@@ -282,7 +282,7 @@ int IpfixDbReader::dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templ
 /**
  * get all tables in database that matches with the wildcard "h\_%"
  **/
-int IpfixDbReader::getTables()
+int IpfixDbReaderMySQL::getTables()
 {
 	const char* wild = "h\\_%";
 	MYSQL_RES* dbResult = NULL;
@@ -290,11 +290,11 @@ int IpfixDbReader::getTables()
 	
 	dbResult = mysql_list_tables(conn, wild);
 	if(dbResult == 0) {
-		msg(MSG_FATAL,"IpfixDbReader: There are no flow tables in database");	
+		msg(MSG_FATAL,"IpfixDbReaderMySQL: There are no flow tables in database");	
 	} else {
 		while((dbRow = mysql_fetch_row(dbResult))) {
 			tables.push_back(string(dbRow[0]));
-			msg(MSG_VDEBUG, "IpfixDbReader: table %s", tables.back().c_str());
+			msg(MSG_VDEBUG, "IpfixDbReaderMySQL: table %s", tables.back().c_str());
 		}
 	}
 
@@ -307,15 +307,15 @@ int IpfixDbReader::getTables()
 /**
  * Get the names of columns
  */
-int IpfixDbReader::getColumns(const string& tableName)
+int IpfixDbReaderMySQL::getColumns(const string& tableName)
 {
 	MYSQL_RES* dbResult = NULL;
 	MYSQL_ROW dbRow = NULL;
 	
 	string query = "SHOW COLUMNS FROM " + tableName;
-	msg(MSG_VDEBUG, "IpfixDbReader: SQL query: %s", query.c_str());
+	msg(MSG_VDEBUG, "IpfixDbReaderMySQL: SQL query: %s", query.c_str());
 	if(mysql_query(conn, query.c_str()) != 0) {	
-		msg(MSG_ERROR,"IpfixDbReader: Show columns on table %s failed. Error: %s",
+		msg(MSG_ERROR,"IpfixDbReaderMySQL: Show columns on table %s failed. Error: %s",
 			tableName.c_str(), mysql_error(conn));
 		return 1;
 	}
@@ -323,7 +323,7 @@ int IpfixDbReader::getColumns(const string& tableName)
 	dbResult = mysql_store_result(conn);
 	
 	if(dbResult == 0) {
-		msg(MSG_FATAL,"IpfixDbReader: There are no Columns in the table");	
+		msg(MSG_FATAL,"IpfixDbReaderMySQL: There are no Columns in the table");	
 		return 1;
 	}
 	
@@ -382,11 +382,11 @@ int IpfixDbReader::getColumns(const string& tableName)
 		} else if(strcmp(dbRow[0], CN_lastSwitchedMillis) == 0) {
 			haveLastMillis = true;
 		} else if(strcmp(dbRow[0], CN_exporterID) != 0) { 
-			msg(MSG_INFO, "IpfixDbReader: Unsupported column: %s", dbRow[0]);
+			msg(MSG_INFO, "IpfixDbReaderMySQL: Unsupported column: %s", dbRow[0]);
 			found = false;
 		}
 		if(found)
-			msg(MSG_VDEBUG, "IpfixDbReader: column %s (%d)", dbRow[0], columns.back().ipfixId);
+			msg(MSG_VDEBUG, "IpfixDbReaderMySQL: column %s (%d)", dbRow[0], columns.back().ipfixId);
 	}
 	
 	// if we have found seconds and milliseconds, forge the columns to get flowStart/EndMilliseconds
@@ -428,7 +428,7 @@ int IpfixDbReader::getColumns(const string& tableName)
 }
 
 
-int IpfixDbReader::connectToDb(
+int IpfixDbReaderMySQL::connectToDb(
 		const string& hostName, const string& dbName, 
 		const string& userName, const string& password,
 		unsigned int port)
@@ -436,29 +436,29 @@ int IpfixDbReader::connectToDb(
 	/** get the mysl init handle*/
 	conn = mysql_init(0); 
 	if(conn == 0) {
-		msg(MSG_FATAL,"IpfixDbReader: Get MySQL connect handle failed. Error: %s",
+		msg(MSG_FATAL,"IpfixDbReaderMySQL: Get MySQL connect handle failed. Error: %s",
 		    mysql_error(conn));
 		return 1;
 	} else {
-		msg(MSG_DEBUG,"IpfixDbReader: mysql init successful");
+		msg(MSG_DEBUG,"IpfixDbReaderMySQL: mysql init successful");
 	}
 
 	/**Connect to Database*/
 	if (!mysql_real_connect(conn, hostName.c_str(), userName.c_str(),password.c_str(),
 				0, port, 0, 0)) {
-		msg(MSG_FATAL,"IpfixDbReader: Connection to database failed. Error: %s",
+		msg(MSG_FATAL,"IpfixDbReaderMySQL: Connection to database failed. Error: %s",
 		    mysql_error(conn));
 		return 1;
 	} else {
-		msg(MSG_DEBUG,"IpfixDbReader: successfully connected to database");
+		msg(MSG_DEBUG,"IpfixDbReaderMySQL: successfully connected to database");
 	}
 
 	/** use database with dbName **/	
 	if(mysql_select_db(conn, dbName.c_str()) !=0) {
-		msg(MSG_FATAL,"IpfixDbReader: Database %s not selectable", dbName.c_str());	
+		msg(MSG_FATAL,"IpfixDbReaderMySQL: Database %s not selectable", dbName.c_str());	
 		return 1;
 	} else {
-		msg(MSG_DEBUG,"IpfixDbReader: Database %s selected", dbName.c_str());
+		msg(MSG_DEBUG,"IpfixDbReaderMySQL: Database %s selected", dbName.c_str());
 	}
 
 	return 0;
@@ -470,7 +470,7 @@ int IpfixDbReader::connectToDb(
  * Starts or resumes database
  * @param ipfixDbReader handle obtained by calling @c createipfixDbReader()
  */
-void IpfixDbReader::performStart() 
+void IpfixDbReaderMySQL::performStart() 
 {
 	thread.run(this);
 }
@@ -479,7 +479,7 @@ void IpfixDbReader::performStart()
  * Temporarily pauses database
  * @param ipfixDbReader handle obtained by calling @c createipfixDbReader()
  */
-void IpfixDbReader::performShutdown() 
+void IpfixDbReaderMySQL::performShutdown() 
 {
 	thread.join();
 }
@@ -488,7 +488,7 @@ void IpfixDbReader::performShutdown()
  * Frees memory used by an ipfixDbReader
  * @param ipfixDbWriter handle obtained by calling @c createipfixDbReader()
  */
-IpfixDbReader::~IpfixDbReader() {
+IpfixDbReaderMySQL::~IpfixDbReaderMySQL() {
 	mysql_close(conn);
 }
 
@@ -496,7 +496,7 @@ IpfixDbReader::~IpfixDbReader() {
  * Creates a new ipfixDbReader. Do not forget to call @c startipfixDbReader() to begin reading from Database
  * @return handle to use when calling @c destroyipfixDbRreader()
  */
-IpfixDbReader::IpfixDbReader(const string& hostname, const string& dbname,
+IpfixDbReaderMySQL::IpfixDbReaderMySQL(const string& hostname, const string& dbname,
 				const string& username, const string& password,
 				unsigned port, uint16_t observationDomainId, 
 				bool timeshift, bool fullspeed)
@@ -511,17 +511,17 @@ IpfixDbReader::IpfixDbReader(const string& hostname, const string& dbname,
 	srcId->fileDescriptor = 0;
 
 	if (connectToDb(hostname, dbname, username, password, port)) {
-		THROWEXCEPTION("IpfixDbReader creation failed");
+		THROWEXCEPTION("IpfixDbReaderMySQL creation failed");
 	}
 	
 	/** get tables of the database*/
 	if(getTables() != 0) {
-		msg(MSG_ERROR,"IpfixDbReader: Error in function getTables");
-		THROWEXCEPTION("IpfixDbReader creation failed");
+		msg(MSG_ERROR,"IpfixDbReaderMySQL: Error in function getTables");
+		THROWEXCEPTION("IpfixDbReaderMySQL creation failed");
 	}
 
 	if(fullspeed && timeshift) 
-		msg(MSG_DIALOG, "IpfixDbReader: timeshift configured, but disabled in fullspeed mode");
+		msg(MSG_DIALOG, "IpfixDbReaderMySQL: timeshift configured, but disabled in fullspeed mode");
 }
 
 #endif

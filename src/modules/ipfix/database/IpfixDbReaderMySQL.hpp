@@ -19,7 +19,7 @@
  *
  */
 
-/* Some constants that are common to IpfixDbWriter and IpfixDbReader */
+/* Some constants that are common to IpfixDbWriter and IpfixDbReaderMySQL */
 #ifdef DB_SUPPORT_ENABLED
 
 #ifndef IPFIXDBREADER_H
@@ -38,17 +38,17 @@
 #include <mysql.h>
 
 /**
- *      IpfixDbReader powered the communication to the database server
+ *      IpfixDbReaderMySQL powered the communication to the database server
  *      also between the other structs
  */
-class IpfixDbReader : public Module, public Source<IpfixRecord*>, public Destination<NullEmitable*> 
+class IpfixDbReaderMySQL : public Module, public Source<IpfixRecord*>, public Destination<NullEmitable*> 
 {
 	public:
-		IpfixDbReader(const string& hostname, const string& dbname,
+		IpfixDbReaderMySQL(const string& hostname, const string& dbname,
 				const string& username, const string& password,
 				unsigned port, uint16_t observationDomainId, 
 				bool timeshift, bool fullspeed);
-		~IpfixDbReader();
+		~IpfixDbReaderMySQL();
 
 		virtual void performStart();
 		virtual void performShutdown();

@@ -32,7 +32,7 @@ IpfixDbReaderCfg* IpfixDbReaderCfg::create(XMLElement* e)
 
 
 IpfixDbReaderCfg::IpfixDbReaderCfg(XMLElement* elem)
-    : CfgHelper<IpfixDbReader, IpfixDbReaderCfg>(elem, "ipfixDbReader"),
+    : CfgHelper<IpfixDbReaderMySQL, IpfixDbReaderCfg>(elem, "ipfixDbReaderMySQL"),
       port(0), timeshift(false), fullspeed(false), observationDomainId(0)
 {
     if (!elem) return;
@@ -78,9 +78,9 @@ IpfixDbReaderCfg::~IpfixDbReaderCfg()
 }
 
 
-IpfixDbReader* IpfixDbReaderCfg::createInstance()
+IpfixDbReaderMySQL* IpfixDbReaderCfg::createInstance()
 {
-    instance = new IpfixDbReader(hostname, dbname, user, password, port, observationDomainId, timeshift, fullspeed);
+    instance = new IpfixDbReaderMySQL(hostname, dbname, user, password, port, observationDomainId, timeshift, fullspeed);
     return instance;
 }
 
