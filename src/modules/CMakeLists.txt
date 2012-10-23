@@ -107,7 +107,7 @@ ADD_LIBRARY(modules
     ipfix/aggregator/Rules.cpp
     ipfix/aggregator/Rule.cpp
 
-    ipfix/database/IpfixDbReaderCfg.cpp
+    ipfix/database/IpfixDbReaderMySQLCfg.cpp
     ipfix/database/IpfixDbWriterMongo.cpp
     ipfix/database/IpfixDbWriterOracle.cpp
     ipfix/database/IpfixDbReaderMySQL.cpp
@@ -115,7 +115,7 @@ ADD_LIBRARY(modules
     ipfix/database/IpfixDbWriterPg.cpp
     ipfix/database/IpfixDbReaderOracle.cpp
     ipfix/database/IpfixDbReaderOracleCfg.cpp
-    ipfix/database/IpfixDbWriterCfg.cpp
+    ipfix/database/IpfixDbWriterMySQLCfg.cpp
     ipfix/database/IpfixDbWriterPgCfg.cpp
     ipfix/database/IpfixDbWriterOracleCfg.cpp
     ipfix/database/IpfixDbWriterMongoCfg.cpp

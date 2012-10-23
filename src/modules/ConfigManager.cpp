@@ -45,8 +45,8 @@
 #include "modules/ipfix/NetflowV9ConverterCfg.hpp"
 #include "modules/ipfix/aggregator/IpfixAggregatorCfg.h"
 #include "modules/ipfix/aggregator/PacketAggregatorCfg.h"
-#include "modules/ipfix/database/IpfixDbReaderCfg.h"
-#include "modules/ipfix/database/IpfixDbWriterCfg.h"
+#include "modules/ipfix/database/IpfixDbReaderMySQLCfg.h"
+#include "modules/ipfix/database/IpfixDbWriterMySQLCfg.h"
 #include "modules/ipfix/database/IpfixDbWriterPgCfg.h"
 #include "modules/ipfix/database/IpfixDbWriterOracleCfg.h"
 #include "modules/ipfix/database/IpfixDbReaderOracleCfg.h"
@@ -102,8 +102,8 @@ Cfg* ConfigManager::configModules[] = {
 	new HostStatisticsCfg(NULL),
 	new IpfixCsExporterCfg(NULL),
 #ifdef DB_SUPPORT_ENABLED
-	new IpfixDbReaderCfg(NULL),
-	new IpfixDbWriterCfg(NULL),
+	new IpfixDbReaderMySQLCfg(NULL),
+	new IpfixDbWriterMySQLCfg(NULL),
 #endif
 #ifdef PG_SUPPORT_ENABLED
 	new IpfixDbWriterPgCfg(NULL),

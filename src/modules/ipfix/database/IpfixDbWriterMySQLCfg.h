@@ -33,17 +33,17 @@
 using namespace std;
 
 
-class IpfixDbWriterCfg
-	: public CfgHelper<IpfixDbWriterMySQL, IpfixDbWriterCfg>
+class IpfixDbWriterMySQLCfg
+	: public CfgHelper<IpfixDbWriterMySQL, IpfixDbWriterMySQLCfg>
 {
 public:
 	friend class ConfigManager;
 	
-	virtual IpfixDbWriterCfg* create(XMLElement* e);
-	virtual ~IpfixDbWriterCfg();
+	virtual IpfixDbWriterMySQLCfg* create(XMLElement* e);
+	virtual ~IpfixDbWriterMySQLCfg();
 	
 	virtual IpfixDbWriterMySQL* createInstance();
-	virtual bool deriveFrom(IpfixDbWriterCfg* old);
+	virtual bool deriveFrom(IpfixDbWriterMySQLCfg* old);
 	
 protected:
 	
@@ -57,7 +57,7 @@ protected:
 	vector<string> colNames; /**< column names */
 
 	void readColumns(XMLElement* elem);
-	IpfixDbWriterCfg(XMLElement*);
+	IpfixDbWriterMySQLCfg(XMLElement*);
 };
 
 

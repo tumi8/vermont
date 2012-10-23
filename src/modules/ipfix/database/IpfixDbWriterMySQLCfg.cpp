@@ -20,19 +20,19 @@
 
 #ifdef DB_SUPPORT_ENABLED
 
-#include "IpfixDbWriterCfg.h"
+#include "IpfixDbWriterMySQLCfg.h"
 
 
-IpfixDbWriterCfg* IpfixDbWriterCfg::create(XMLElement* e)
+IpfixDbWriterMySQLCfg* IpfixDbWriterMySQLCfg::create(XMLElement* e)
 {
     assert(e);
     assert(e->getName() == getName());
-    return new IpfixDbWriterCfg(e);
+    return new IpfixDbWriterMySQLCfg(e);
 }
 
 
-IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
-    : CfgHelper<IpfixDbWriterMySQL, IpfixDbWriterCfg>(elem, "ipfixDbWriterMySQL"),
+IpfixDbWriterMySQLCfg::IpfixDbWriterMySQLCfg(XMLElement* elem)
+    : CfgHelper<IpfixDbWriterMySQL, IpfixDbWriterMySQLCfg>(elem, "ipfixDbWriterMySQL"),
       port(0), bufferRecords(30), observationDomainId(0)
 {
     if (!elem) return;
@@ -65,13 +65,13 @@ IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
 			continue;
 		}
 	}
-	if (hostname=="") THROWEXCEPTION("IpfixDbWriterCfg: host not set in configuration!");
-	if (port==0) THROWEXCEPTION("IpfixDbWriterCfg: port not set in configuration!");
-	if (dbname=="") THROWEXCEPTION("IpfixDbWriterCfg: dbname not set in configuration!");
-	if (user=="") THROWEXCEPTION("IpfixDbWriterCfg: username not set in configuration!");
+	if (hostname=="") THROWEXCEPTION("IpfixDbWriterMySQLCfg: host not set in configuration!");
+	if (port==0) THROWEXCEPTION("IpfixDbWriterMySQLCfg: port not set in configuration!");
+	if (dbname=="") THROWEXCEPTION("IpfixDbWriterMySQLCfg: dbname not set in configuration!");
+	if (user=="") THROWEXCEPTION("IpfixDbWriterMySQLCfg: username not set in configuration!");
 }
 
-void IpfixDbWriterCfg::readColumns(XMLElement* elem) {
+void IpfixDbWriterMySQLCfg::readColumns(XMLElement* elem) {
 	colNames.clear();
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
@@ -89,19 +89,19 @@ void IpfixDbWriterCfg::readColumns(XMLElement* elem) {
 
 }
 
-IpfixDbWriterCfg::~IpfixDbWriterCfg()
+IpfixDbWriterMySQLCfg::~IpfixDbWriterMySQLCfg()
 {
 }
 
 
-IpfixDbWriterMySQL* IpfixDbWriterCfg::createInstance()
+IpfixDbWriterMySQL* IpfixDbWriterMySQLCfg::createInstance()
 {
     instance = new IpfixDbWriterMySQL(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
     return instance;
 }
 
 
-bool IpfixDbWriterCfg::deriveFrom(IpfixDbWriterCfg* old)
+bool IpfixDbWriterMySQLCfg::deriveFrom(IpfixDbWriterMySQLCfg* old)
 {
     return false;
 }

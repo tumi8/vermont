@@ -33,17 +33,17 @@
 using namespace std;
 
 
-class IpfixDbReaderCfg
-	: public CfgHelper<IpfixDbReaderMySQL, IpfixDbReaderCfg>
+class IpfixDbReaderMySQLCfg
+	: public CfgHelper<IpfixDbReaderMySQL, IpfixDbReaderMySQLCfg>
 {
 public:
 	friend class ConfigManager;
 	
-	virtual IpfixDbReaderCfg* create(XMLElement* e);
-	virtual ~IpfixDbReaderCfg();
+	virtual IpfixDbReaderMySQLCfg* create(XMLElement* e);
+	virtual ~IpfixDbReaderMySQLCfg();
 	
 	virtual IpfixDbReaderMySQL* createInstance();
-	virtual bool deriveFrom(IpfixDbReaderCfg* old);
+	virtual bool deriveFrom(IpfixDbReaderMySQLCfg* old);
 	
 protected:
 	
@@ -56,7 +56,7 @@ protected:
 	bool fullspeed;  /**< reading in full speed */
 	uint32_t observationDomainId;	/**< observation domain id */
 	
-	IpfixDbReaderCfg(XMLElement*);
+	IpfixDbReaderMySQLCfg(XMLElement*);
 };
 
 

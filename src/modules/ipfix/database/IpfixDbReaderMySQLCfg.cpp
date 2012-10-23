@@ -20,19 +20,19 @@
 
 #ifdef DB_SUPPORT_ENABLED
 
-#include "IpfixDbReaderCfg.h"
+#include "IpfixDbReaderMySQLCfg.h"
 
 
-IpfixDbReaderCfg* IpfixDbReaderCfg::create(XMLElement* e)
+IpfixDbReaderMySQLCfg* IpfixDbReaderMySQLCfg::create(XMLElement* e)
 {
     assert(e);
     assert(e->getName() == getName());
-    return new IpfixDbReaderCfg(e);
+    return new IpfixDbReaderMySQLCfg(e);
 }
 
 
-IpfixDbReaderCfg::IpfixDbReaderCfg(XMLElement* elem)
-    : CfgHelper<IpfixDbReaderMySQL, IpfixDbReaderCfg>(elem, "ipfixDbReaderMySQL"),
+IpfixDbReaderMySQLCfg::IpfixDbReaderMySQLCfg(XMLElement* elem)
+    : CfgHelper<IpfixDbReaderMySQL, IpfixDbReaderMySQLCfg>(elem, "ipfixDbReaderMySQL"),
       port(0), timeshift(false), fullspeed(false), observationDomainId(0)
 {
     if (!elem) return;
@@ -65,27 +65,27 @@ IpfixDbReaderCfg::IpfixDbReaderCfg(XMLElement* elem)
 			continue;
 		}
 	}
-	if (hostname=="") THROWEXCEPTION("IpfixDbReaderCfg: host not set in configuration!");
-	if (port==0) THROWEXCEPTION("IpfixDbReaderCfg: port not set in configuration!");
-	if (dbname=="") THROWEXCEPTION("IpfixDbReaderCfg: dbname not set in configuration!");
-	if (user=="") THROWEXCEPTION("IpfixDbReaderCfg: username not set in configuration!");
-	if (password=="") THROWEXCEPTION("IpfixDbReaderCfg: password not set in configuration!");
+	if (hostname=="") THROWEXCEPTION("IpfixDbReaderMySQLCfg: host not set in configuration!");
+	if (port==0) THROWEXCEPTION("IpfixDbReaderMySQLCfg: port not set in configuration!");
+	if (dbname=="") THROWEXCEPTION("IpfixDbReaderMySQLCfg: dbname not set in configuration!");
+	if (user=="") THROWEXCEPTION("IpfixDbReaderMySQLCfg: username not set in configuration!");
+	if (password=="") THROWEXCEPTION("IpfixDbReaderMySQLCfg: password not set in configuration!");
 }
 
 
-IpfixDbReaderCfg::~IpfixDbReaderCfg()
+IpfixDbReaderMySQLCfg::~IpfixDbReaderMySQLCfg()
 {
 }
 
 
-IpfixDbReaderMySQL* IpfixDbReaderCfg::createInstance()
+IpfixDbReaderMySQL* IpfixDbReaderMySQLCfg::createInstance()
 {
     instance = new IpfixDbReaderMySQL(hostname, dbname, user, password, port, observationDomainId, timeshift, fullspeed);
     return instance;
 }
 
 
-bool IpfixDbReaderCfg::deriveFrom(IpfixDbReaderCfg* old)
+bool IpfixDbReaderMySQLCfg::deriveFrom(IpfixDbReaderMySQLCfg* old)
 {
     return false;
 }
