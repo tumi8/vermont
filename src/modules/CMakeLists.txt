@@ -64,14 +64,6 @@ ADD_LIBRARY(modules
     ipfix/IpfixCollectorCfg.cpp
     ipfix/IpfixCsExporter.cpp
     ipfix/IpfixCsExporterCfg.cpp
-    ipfix/IpfixDbReaderCfg.cpp
-    ipfix/IpfixDbReaderOracle.cpp
-    ipfix/IpfixDbReaderOracleCfg.cpp
-    ipfix/IpfixDbWriterCfg.cpp
-    ipfix/IpfixDbWriterPgCfg.cpp
-    ipfix/IpfixDbWriterOracleCfg.cpp
-    ipfix/IpfixDbWriterMongoCfg.cpp
-    ipfix/IpfixFlowInspectorExporterCfg.cpp
     ipfix/IpfixExporterCfg.cpp
     ipfix/IpfixFileWriter.cpp
     ipfix/IpfixFileWriterCfg.cpp
@@ -98,12 +90,6 @@ ADD_LIBRARY(modules
     ipfix/IpfixSender.cpp
     ipfix/IpfixRawdirWriter.cpp
     ipfix/TemplateBuffer.cpp
-    ipfix/IpfixDbReader.cpp
-    ipfix/IpfixDbWriter.cpp
-    ipfix/IpfixDbWriterPg.cpp
-    ipfix/IpfixDbWriterOracle.cpp
-    ipfix/IpfixDbWriterMongo.cpp
-    ipfix/IpfixFlowInspectorExporter.cpp
     ipfix/IpfixRecordDestination.cpp
     ipfix/IpfixSampler.cpp
     ipfix/IpfixPayloadWriter.cpp
@@ -120,6 +106,21 @@ ADD_LIBRARY(modules
     ipfix/aggregator/PacketAggregator.cpp
     ipfix/aggregator/Rules.cpp
     ipfix/aggregator/Rule.cpp
+
+    ipfix/database/IpfixDbReaderCfg.cpp
+    ipfix/database/IpfixDbWriterMongo.cpp
+    ipfix/database/IpfixDbWriterOracle.cpp
+    ipfix/database/IpfixDbReader.cpp
+    ipfix/database/IpfixDbWriter.cpp
+    ipfix/database/IpfixDbWriterPg.cpp
+    ipfix/database/IpfixDbReaderOracle.cpp
+    ipfix/database/IpfixDbReaderOracleCfg.cpp
+    ipfix/database/IpfixDbWriterCfg.cpp
+    ipfix/database/IpfixDbWriterPgCfg.cpp
+    ipfix/database/IpfixDbWriterOracleCfg.cpp
+    ipfix/database/IpfixDbWriterMongoCfg.cpp
+    ipfix/database/IpfixFlowInspectorExporterCfg.cpp
+    ipfix/database/IpfixFlowInspectorExporter.cpp
 )
 
 

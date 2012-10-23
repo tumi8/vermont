@@ -18,51 +18,49 @@
  *
  */
 
-#ifndef IPFIXDBWRITERMONGOCFG_H_
-#define IPFIXDBWRITERMONGOCFG_H_
+#ifndef IPFIXDBWRITERCFG_H_
+#define IPFIXDBWRITERCFG_H_
 
-#ifdef MONGO_SUPPORT_ENABLED
+#ifdef DB_SUPPORT_ENABLED
 
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "modules/ipfix/IpfixDbWriterMongo.hpp"
+#include "IpfixDbWriter.hpp"
 
 #include <string>
 
 using namespace std;
 
 
-class IpfixDbWriterMongoCfg
-	: public CfgHelper<IpfixDbWriterMongo, IpfixDbWriterMongoCfg>
+class IpfixDbWriterCfg
+	: public CfgHelper<IpfixDbWriter, IpfixDbWriterCfg>
 {
 public:
 	friend class ConfigManager;
 	
-	virtual IpfixDbWriterMongoCfg* create(XMLElement* e);
-	virtual ~IpfixDbWriterMongoCfg();
+	virtual IpfixDbWriterCfg* create(XMLElement* e);
+	virtual ~IpfixDbWriterCfg();
 	
-	virtual IpfixDbWriterMongo* createInstance();
-	virtual bool deriveFrom(IpfixDbWriterMongoCfg* old);
+	virtual IpfixDbWriter* createInstance();
+	virtual bool deriveFrom(IpfixDbWriterCfg* old);
 	
 protected:
 	
 	string hostname; /**< hostname of database host */
 	uint16_t port;	/**< port of database */
-	string database; /**< mongo database name */
+	string dbname; /**< database name */
 	string user;	/**< user name for login to database */
 	string password;	/**< password for login to database */
-	uint16_t bufferObjects;	/**< amount of records to buffer until they are written to database */
+	uint16_t bufferRecords;	/**< amount of records to buffer until they are written to database */
 	uint32_t observationDomainId;	/**< default observation domain id (overrides the one received in the records */
-	vector<string> properties; /**< property names */
-	bool beautifyProperties; /* whether to use beautified property names or raw ipfix number */
-	bool allProperties; /* whether to get all properties or just a subset of it*/
+	vector<string> colNames; /**< column names */
 
-	void readProperties(XMLElement* elem);
-	IpfixDbWriterMongoCfg(XMLElement*);
+	void readColumns(XMLElement* elem);
+	IpfixDbWriterCfg(XMLElement*);
 };
 
 
 #endif /*DB_SUPPORT_ENABLED*/
 
-#endif /*IPFIXDBWRITERMONGOCFG_H_*/
+#endif /*IPFIXDBWRITERCFG_H_*/

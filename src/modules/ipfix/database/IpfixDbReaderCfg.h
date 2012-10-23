@@ -26,7 +26,7 @@
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "modules/ipfix/IpfixDbReader.hpp"
+#include "IpfixDbReader.hpp"
 
 #include <string>
 

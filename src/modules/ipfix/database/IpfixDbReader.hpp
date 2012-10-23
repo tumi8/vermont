@@ -25,8 +25,8 @@
 #ifndef IPFIXDBREADER_H
 #define IPFIXDBREADER_H
 
-#include "IpfixRecord.hpp"
 #include "common/ipfixlolib/ipfix.h"
+#include "../IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "core/Module.h"
 

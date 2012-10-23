@@ -26,7 +26,7 @@
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "modules/ipfix/IpfixFlowInspectorExporter.hpp"
+#include "IpfixFlowInspectorExporter.hpp"
 
 #include <string>
 

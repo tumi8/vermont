@@ -23,7 +23,7 @@
 #define IPFIX_DB_WRITER_REDIS_H_
 
 #include "IpfixDbCommon.hpp"
-#include "IpfixRecordDestination.h"
+#include "../IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include <iostream>

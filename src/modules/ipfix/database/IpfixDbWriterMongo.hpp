@@ -1,5 +1,5 @@
 /*
- * IPFIX Database Reader/Writer Oracle Connector
+ * IPFIX Database Writer Mongo Connector
  * Copyright (C) 2011 Philipp Fehre <philipp.fehre@googlemail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -15,20 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
+Mongo  *
  */
 
 /* Some constants that are common to IpfixDbWriter and IpfixDbReader */
-#ifdef ORACLE_SUPPORT_ENABLED
+#ifdef MONGO_SUPPORT_ENABLED
 
-#ifndef IPFIXDBWRITERORACLE_H_
-#define IPFIXDBWRITERORACLE_H_
+#ifndef IPFIXDBWRITERMONGO_H_
+#define IPFIXDBWRITERMONGO_H_
+
+/* Mongo dbclient.h also defines and uses msg Macro */
+
 
 #include "IpfixDbCommon.hpp"
-#include "IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
-#include <occi.h>
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
@@ -36,24 +37,34 @@
 #include <netinet/in.h>
 #include <time.h>
 #include <sstream>
+#include <vector>
+
+#undef msg
+#include "client/dbclient.h"
+#ifdef MONGO_VERSION_2
+#include "util/net/hostandport.h"
+#else
+#include "util/hostandport.h"
+#endif
+#define msg(lvl, fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
 
 using namespace std;
 
 #define EXPORTERID 0
 
 /**
- * IpfixDbWriterOracle powered the communication to the oracle database server
+ * IpfixDbWriterMongo powered the communication to the mongo database server
  * also between the other structs
  */
-class IpfixDbWriterOracle 
+class IpfixDbWriterMongo 
 	: public IpfixRecordDestination, public Module, public Source<NullEmitable*>
 {
 	public:
-		IpfixDbWriterOracle(const string& hostname, const string& dbname,
+		IpfixDbWriterMongo(const string& hostname, const string& database,
 				const string& username, const string& password,
-				unsigned port, uint32_t observationDomainId, unsigned maxStatements,
-				const vector<string>& columns);
-		~IpfixDbWriterOracle();
+				unsigned port, uint32_t observationDomainId, uint16_t maxStatements,
+				const vector<string>& properties, bool beautifyProperties, bool allProperties);
+		~IpfixDbWriterMongo();
 
 		void onDataRecord(IpfixDataRecord* record);
 
@@ -61,9 +72,8 @@ class IpfixDbWriterOracle
 		 * Struct to identify the relationship between columns names and 
 		 * IPFIX_TYPEID, column type and default value
 		 */
-		struct Column {
-			const char* columnName; 	/** column name */
-			const char* columnType;		/** column data type in database */
+		struct Property {
+			const char* propertyName; 	/** column name */
 			uint64_t defaultValue;       	/** default value */
 			InformationElement::IeId ipfixId; /** IPFIX_TYPEID */
 			InformationElement::IeEnterpriseNumber enterprise; /** enterprise number */
@@ -71,16 +81,7 @@ class IpfixDbWriterOracle
 
 	private:
 		static const unsigned MAX_EXPORTER = 10;    // maximum numbers of cached exporters
-
-		/**
-		 * Struct buffers start and end time and tablename for the different tables
-		 */
-		struct TableCacheEntry {
-			time_t startTime; // smallest flow start second timestamp in the table
-			time_t endTime;   // largest flow start second timestamp in the table
-			string name;   // name of the table
-		};
-
+  
 		/**
 		 * Struct buffers ODID, IP address and row index of an exporter
 		 */
@@ -90,36 +91,27 @@ class IpfixDbWriterOracle
 		};
 
 
-		TableCacheEntry currentTable;				// current table in tableCache
-
 		list<ExporterCacheEntry> exporterCache;		// cached tables names, key=observationDomainId
 		ExporterCacheEntry* currentExporter;			// pointer to current exporter in exporterCache
 
 		IpfixRecord::SourceID srcId;           			// default source ID
-
-		ostringstream insertStatement;			// insert statement string
+		vector<mongo::BSONObj> bufferedObjects; // Bulk insert via BSONObj vector 
 		int numberOfInserts;					// number of inserts in statement
 		int maxInserts;						// maximum number of inserts per statement
 
-		vector<Column> tableColumns;			// table columns
-		string tableColumnsString;     			// table columns as string for INSERT statements
-		string tableColumnsCreateString;  			// table columns as string for CREATE statements
+		vector<Property> documentProperties;			// Properties of inserted objects 
 
 		// database data
-		string dbHost, dbName, dbUser, dbPassword;
+		string dbHost, dbName, dbUser, dbPassword, dbCollectionFlows, dbCollectionExporters, dbCollectionCounters;
 		unsigned dbPort;
-		oracle::occi::Environment *env;
-		oracle::occi::Connection *con;
+		mongo::DBClientConnection con;
+		bool beautyProp, allProp;
 		bool dbError;			// db error flag
-
-		int createDB();
-		int setCurrentTable(time_t flowstartsec);
-		string& getInsertString(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
+		mongo::BSONObj getInsertObj(const IpfixRecord::SourceID& sourceID,
 				TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data);
 		int writeToDb();
 		int getExporterID(const IpfixRecord::SourceID& sourceID);
 		int connectToDB();
-		int createExporterTable();
 		void processDataDataRecord(const IpfixRecord::SourceID& sourceID, 
 				TemplateInfo& dataTemplateInfo, uint16_t length, 
 				IpfixRecord::Data* data);
@@ -127,7 +119,7 @@ class IpfixDbWriterOracle
 		uint64_t getData(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		bool equalExporter(const IpfixRecord::SourceID& a, const IpfixRecord::SourceID& b);
 
-		const static Column identify[];
+		const static Property identify[];
 };
 
 

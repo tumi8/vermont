@@ -28,7 +28,7 @@
 #define IPFIXDBWRITERPG_H
 
 #include "IpfixDbCommon.hpp"
-#include "IpfixRecordDestination.h"
+#include "../IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include <libpq-fe.h>
@@ -116,9 +116,9 @@ class IpfixDbWriterPg
 				TemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
 		bool writeToDb();
 		int getExporterID(IpfixRecord::SourceID* sourceID);
-        bool checkCurrentTable(uint64_t flowStart);
-        bool setCurrentTable(uint64_t flowStart);
-        string getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addfraction, uint32_t microseconds = 0);
+		bool checkCurrentTable(uint64_t flowStart);
+		bool setCurrentTable(uint64_t flowStart);
+		string getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addfraction, uint32_t microseconds = 0);
 		bool checkRelationExists(const char* relname);
 	private:
 		void connectToDB();
