@@ -48,6 +48,25 @@ class IpfixDbWriterSQL
 
 		IpfixRecord::SourceID srcId;              /**Exporter default SourceID */
 
+		/**
+		 * Identify the depency between columns names and
+		 * IPFIX_TYPEID working with a char pointer array
+		 * in this array there is also standing  the defaultvalue
+		 * of the IPFIX_TYPEID and the datatype to store in database
+		 */
+		struct Column {
+			const char* cname; /** column name */
+			uint16_t ipfixId; /** IPFIX_TYPEID */
+			const char* dataType; /** which datatype to store in database */
+			uint32_t enterprise;
+			/**
+			 *  when no IPFIX_TYPEID is stored in the record,
+			 *  use defaultvalue to store in database
+			 */
+			int defaultValue;
+		};
+
+
 	protected:
 		static const uint32_t MAX_EXP_TABLE = 10; /**< Count of buffered exporters. Increase this value if you use more exporters in parallel */
 		static const uint32_t MAX_USEDTABLES = 5; /**< Number of cached entries for used (and created tables) */
@@ -104,7 +123,6 @@ class IpfixDbWriterSQL
 		void addColumnEntry(const uint64_t insert, bool quoted, bool lastcolumn);
 		void fillInsertRow(IpfixRecord::SourceID* sourceID,
 				TemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
-		int getExporterID(IpfixRecord::SourceID* sourceID);
 		bool checkCurrentTable(uint64_t flowStart);
 		bool setCurrentTable(uint64_t flowStart);
 		string getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addfraction, uint32_t microseconds = 0);
@@ -113,17 +131,13 @@ class IpfixDbWriterSQL
 		virtual void connectToDB() = 0;
 		virtual bool writeToDb() = 0;
 		virtual int createExporterTable() = 0 ;
-		virtual string createInsertStatement() = 0;
+		//virtual string createInsertStatement() = 0;
 		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime) = 0;
-		virtual string getInsertString() = 0;
+		virtual string getInsertString(string tableName);
+		virtual int getExporterID(IpfixRecord::SourceID* sourceID) = 0;
+		virtual Column* fillColumnStructure() = 0;
+		Column* identify;
 	private:
-		// we can't use virtual function in constructor or destructor, but we have to
-		// hence we need a init and deInit() function for connecting to the db and 
-		// flushing the cache ...
-		void init();
-		void deInit();
-
-
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID,
 				TemplateInfo* dataTemplateInfo, uint16_t length,
 				IpfixRecord::Data* data);
@@ -139,25 +153,6 @@ class IpfixDbWriterSQL
 		uint32_t getipv4address(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void extractNtp64(uint64_t& intdata, uint32_t& micros);
 
-
-		/**
-		 * Identify the depency between columns names and
-		 * IPFIX_TYPEID working with a char pointer array
-		 * in this array there is also standing  the defaultvalue
-		 * of the IPFIX_TYPEID and the datatype to store in database
-		 */
-		struct Column {
-			const char* cname; /** column name */
-			uint16_t ipfixId; /** IPFIX_TYPEID */
-			const char* dataType; /** which datatype to store in database */
-			uint32_t enterprise;
-			/**
-			 *  when no IPFIX_TYPEID is stored in the record,
-			 *  use defaultvalue to store in database
-			 */
-			int defaultValue;
-		};
-		const static Column identify[];
 };
 
 

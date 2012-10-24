@@ -51,6 +51,7 @@ void IpfixDbWriterSQL::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 {
 	DPRINTF("Processing data record");
 
+
 	if (dbError) {
 		connectToDB();
 		if (dbError) return;
@@ -134,7 +135,7 @@ bool IpfixDbWriterSQL::setCurrentTable(uint64_t flowStart)
 
 	if (!createDBTable(tablename.c_str(), starttime, endtime)) return false;
 
-	string sql = getInsertString();
+	string sql = getInsertString(tablename);
 
 	strcpy(insertBuffer.sql, sql.c_str());
 	insertBuffer.bodyPtr = insertBuffer.sql + sql.size();
@@ -461,6 +462,18 @@ uint32_t IpfixDbWriterSQL::getdefaultIPFIXdata(int ipfixtype_id)
 	return 0;
 }
 
+string IpfixDbWriterSQL::getInsertString(string tableName)
+{
+	ostringstream sql;
+	sql  << "INSERT INTO " << tableName << " (";
+	for (uint32_t i = 0; i < numberOfColumns; ++i) {
+		sql << identify[i].cname;
+		if (i < numberOfColumns - 1) sql << ",";
+	}
+	sql << ") VALUES ";
+	return sql.str();
+}
+
 /***** Exported Functions ****************************************************/
 
 /**
@@ -479,6 +492,7 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* host, const char* db,
 	password = pw;
 	portNum = port;
 	socketName = 0;
+
 	flags = 0;
 	srcId.exporterAddress.len = 0;
 	srcId.observationDomainId = observationDomainId;
@@ -493,16 +507,6 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* host, const char* db,
 	curTable.name = "";
 	tablePrefix = "f"; // TODO: make this in config file configurable!
 
-	/**count columns*/
-	numberOfColumns = 0;
-	for(uint32_t i=0; identify[i].cname!=0; i++) numberOfColumns++;
-
-
-	/**Initialize structure members Statement*/
-	insertBuffer.curRows = 0;
-	insertBuffer.maxRows = maxStatements;
-	insertBuffer.sql = new char[(INS_WIDTH+3)*(numberOfColumns+1)*maxStatements+numberOfColumns*20+60+1];
-	*insertBuffer.sql = 0;
 }
 
 /**
@@ -511,16 +515,5 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* host, const char* db,
  */
 IpfixDbWriterSQL::~IpfixDbWriterSQL()
 {
-	deInit();
 	delete[] insertBuffer.sql;
 }
-
-void IpfixDbWriterSQL::init()
-{
-	connectToDB();
-}
-void IpfixDbWriterSQL::deInit()
-{
-	writeToDb();
-}
-
