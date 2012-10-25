@@ -96,7 +96,7 @@ IpfixDbWriterMySQLCfg::~IpfixDbWriterMySQLCfg()
 
 IpfixDbWriterMySQL* IpfixDbWriterMySQLCfg::createInstance()
 {
-    instance = new IpfixDbWriterMySQL(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
+    instance = new IpfixDbWriterMySQL(hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords);
     return instance;
 }
 

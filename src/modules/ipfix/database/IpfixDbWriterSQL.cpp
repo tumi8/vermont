@@ -330,6 +330,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 					// convert IPv4 address to string notation, as this is required by Postgres
 					case IPFIX_TYPEID_sourceIPv4Address:
 					case IPFIX_TYPEID_destinationIPv4Address:
+						if identify
 						insertsql << "'" << IPToString(ntohl(intdata)) << "'";
 						break;
 
@@ -399,10 +400,11 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
  */
 uint64_t IpfixDbWriterSQL::getdata(InformationElement::IeInfo type, IpfixRecord::Data* data)
 {
-	if(type.id == IPFIX_TYPEID_sourceIPv4Address || type.id == IPFIX_TYPEID_destinationIPv4Address)
-	return getipv4address(type, data);
-	else
-	return getIPFIXValue(type, data);
+	if(type.id == IPFIX_TYPEID_sourceIPv4Address || type.id == IPFIX_TYPEID_destinationIPv4Address) {
+		return getipv4address(type, data);
+	} else {
+		return getIPFIXValue(type, data);
+	}
 }
 /**
  *	determine the ipv4address of the data record

@@ -51,25 +51,25 @@ const uint16_t MAX_COL_LENGTH = 22;
  *      Attention: order of entries is important!
  */
 const static IpfixDbWriterSQL::Column identifyPg [] = {
-	{	"srcIP", IPFIX_TYPEID_sourceIPv4Address, "inet", 0, 0},
-	{	"dstIP", IPFIX_TYPEID_destinationIPv4Address, "inet", 0, 0},
-	{	"srcPort", IPFIX_TYPEID_sourceTransportPort, "integer", 0, 0},
-	{	"dstPort", IPFIX_TYPEID_destinationTransportPort, "integer",0, 0},
-	{	"proto",IPFIX_TYPEID_protocolIdentifier , "smallint", 0, 0},
-	{	"dstTos", IPFIX_TYPEID_classOfServiceIPv4, "smallint", 0, 0},
-	{	"bytes", IPFIX_TYPEID_octetDeltaCount, "bigint", 0, 0},
-	{	"pkts", IPFIX_TYPEID_packetDeltaCount, "bigint", 0, 0},
-	{	"firstSwitched", IPFIX_TYPEID_flowStartMilliSeconds, "timestamp", 0, 0}, // default value is invalid/not used for this entry
-	{	"lastSwitched", IPFIX_TYPEID_flowEndMilliSeconds, "timestamp", 0, 0}, // default value is invalid/not used for this entry
-	{	"tcpControlBits", IPFIX_TYPEID_tcpControlBits,  "smallint", 0, 0},
-	{	"revbytes", IPFIX_TYPEID_octetDeltaCount, "bigint", IPFIX_PEN_reverse, 0},
-	{	"revpkts", IPFIX_TYPEID_packetDeltaCount, "bigint", IPFIX_PEN_reverse, 0},
-	{	"revFirstSwitched", IPFIX_TYPEID_flowStartMilliSeconds, "timestamp", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	"revLastSwitched", IPFIX_TYPEID_flowEndMilliSeconds, "timestamp", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	"revTcpControlBits", IPFIX_TYPEID_tcpControlBits,  "smallint", IPFIX_PEN_reverse, 0},
-	{	"maxPacketGap", IPFIX_ETYPEID_maxPacketGap,  "bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
-	{	"revMaxPacketGap", IPFIX_ETYPEID_maxPacketGap,  "bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
-	{	"exporterID",EXPORTERID, "integer", 0},
+	{	CN_srcIP, 		IPFIX_TYPEID_sourceIPv4Address,		"inet", 0, 0},
+	{	CN_dstIP, 		IPFIX_TYPEID_destinationIPv4Address,	"inet", 0, 0},
+	{	CN_srcPort,		IPFIX_TYPEID_sourceTransportPort,	"integer", 0, 0},
+	{	CN_dstPort,		IPFIX_TYPEID_destinationTransportPort,	"integer",0, 0},
+	{	CN_proto,		IPFIX_TYPEID_protocolIdentifier,	"smallint", 0, 0},
+	{	CN_dstTos,		IPFIX_TYPEID_classOfServiceIPv4,	"smallint", 0, 0},
+	{	CN_bytes,		IPFIX_TYPEID_octetDeltaCount,		"bigint", 0, 0},
+	{	CN_pkts,		IPFIX_TYPEID_packetDeltaCount,		"bigint", 0, 0},
+	{	CN_firstSwitched,	IPFIX_TYPEID_flowStartMilliSeconds,	"timestamp", 0, 0}, // default value is invalid/not used for this entry
+	{	CN_lastSwitched,	IPFIX_TYPEID_flowEndMilliSeconds,	"timestamp", 0, 0}, // default value is invalid/not used for this entry
+	{	CN_tcpControlBits,	IPFIX_TYPEID_tcpControlBits,		"smallint", 0, 0},
+	{	CN_revbytes,		IPFIX_TYPEID_octetDeltaCount,		"bigint", IPFIX_PEN_reverse, 0},
+	{	CN_revpkts,		IPFIX_TYPEID_packetDeltaCount,		"bigint", IPFIX_PEN_reverse, 0},
+	{	CN_revFirstSwitched,	IPFIX_TYPEID_flowStartMilliSeconds,	"timestamp", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revLastSwitched,	IPFIX_TYPEID_flowEndMilliSeconds,	"timestamp", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revTcpControlBits,	IPFIX_TYPEID_tcpControlBits,		"smallint", IPFIX_PEN_reverse, 0},
+	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
+	{	CN_revMaxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
+	{	CN_exporterID,		EXPORTERID, 				"integer", 0, 0},
 	{	0} // last entry must be 0
 };
 
@@ -107,16 +107,6 @@ void IpfixDbWriterPg::connectToDB()
 
 int IpfixDbWriterPg::createExporterTable()
 {
-	/**is there already a table with the same name - drop it */
-	/* gerhard: let's keep the database, we do not want to lose data
-	 char dropExporterTab[STARTLEN];
-	 strcpy(dropExporterTab,"DROP TABLE IF EXISTS exporter");
-	 if(mysql_query(conn, dropExporterTab) != 0) {
-	 msg(MSG_FATAL,"Drop of exists exporter table failed. Error: %s",
-	 mysql_error(conn));
-	 return 1;
-	 }
-	 */
 	/** create table exporter*/
 	ostringstream oss;
 	oss << "SELECT COUNT(*) FROM pg_class where relname='exporter'";
@@ -145,27 +135,6 @@ int IpfixDbWriterPg::createExporterTable()
 	}
 
 	return 0;
-}
-
-bool IpfixDbWriterPg::checkRelationExists(const char* relname)
-{
-
-	// check if table needs to be created
-	ostringstream oss;
-	oss << "SELECT COUNT(*) FROM pg_class where relname='" << relname << "'";
-	PGresult* res = PQexec(conn, oss.str().c_str());
-	if((PQresultStatus(res) != PGRES_TUPLES_OK) || (PQntuples(res)==0)) {
-		msg(MSG_FATAL, "IpfixDbWriterPg: Failed to check if relation '%s' exists. Error: %s",
-				relname, PQerrorMessage(conn));
-		PQclear(res);
-		return false;
-	}
-	if (atoi(PQgetvalue(res, 0, 0))==1) {
-		PQclear(res);
-		return true;
-	}
-	PQclear(res);
-	return false;
 }
 
 /**
@@ -264,7 +233,6 @@ bool IpfixDbWriterPg::writeToDb()
 	insertBuffer.appendPtr[-1] = 0;
 
 	// Write rows to database
-	msg(MSG_ERROR, "%s", insertBuffer.sql);
 	PGresult* res = PQexec(conn, insertBuffer.sql);
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 		msg(MSG_ERROR,"IpfixDbWriterPg: Insert of records failed. Error: %s",
@@ -371,13 +339,29 @@ IpfixDbWriterSQL::Column* IpfixDbWriterPg::fillColumnStructure()
 	return (Column*)identifyPg;
 }
 
+bool IpfixDbWriterPg::checkRelationExists(const char* relname)
+{
+	// check if table needs to be created
+	ostringstream oss;
+	oss << "SELECT COUNT(*) FROM pg_class where relname='" << relname << "'";
+	PGresult* res = PQexec(conn, oss.str().c_str());
+	if((PQresultStatus(res) != PGRES_TUPLES_OK) || (PQntuples(res)==0)) {
+	        msg(MSG_FATAL, "IpfixDbWriterPg: Failed to check if relation '%s' exists. Error: %s",
+                        relname, PQerrorMessage(conn));
+	        PQclear(res);
+		return false;
+	}
+	
+	if (atoi(PQgetvalue(res, 0, 0))==1) {
+		PQclear(res);
+		return true;
+	}
+	PQclear(res);
+	return false;
+}
 
 /***** Exported Functions ****************************************************/
 
-/**
- * Creates a new IpfixDbWriterPg. Do not forget to call @c startipfixDbWriter() to begin writing to Database
- * @return handle to use when calling @c destroyipfixDbWriter()
- */
 IpfixDbWriterPg::IpfixDbWriterPg(const char* host, const char* db,
 		const char* user, const char* pw,
 		unsigned int port, uint16_t observationDomainId,
@@ -399,10 +383,6 @@ IpfixDbWriterPg::IpfixDbWriterPg(const char* host, const char* db,
 	connectToDB();
 }
 
-/**
- * Frees memory used by an IpfixDbWriterPg
- * @param IpfixDbWriterPg handle obtained by calling @c createipfixDbWriter()
- */
 IpfixDbWriterPg::~IpfixDbWriterPg()
 {
 	writeToDb();

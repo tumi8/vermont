@@ -35,52 +35,41 @@
  *	ExporterID is no IPFIX_TYPEID, its user specified
  *      Attention: order of entries is important!
  */
-const IpfixDbWriterMySQL::Column IpfixDbWriterMySQL::identify [] = {
-	{CN_dstIP, 		"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_destinationIPv4Address, 0},
-	{CN_srcIP, 		"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_sourceIPv4Address, 0},
-	{CN_srcPort, 		"SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_sourceTransportPort, 0},
-	{CN_dstPort, 		"SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_destinationTransportPort, 0},
-	{CN_proto, 		"TINYINT(3) UNSIGNED", 		0, IPFIX_TYPEID_protocolIdentifier, 0 },
-	{CN_dstTos, 		"TINYINT(3) UNSIGNED", 		0, IPFIX_TYPEID_classOfServiceIPv4, 0},
-	{CN_bytes, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_TYPEID_octetDeltaCount, 0},
-	{CN_pkts, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_TYPEID_packetDeltaCount, 0},
-	{CN_firstSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_flowStartSeconds, 0}, // default value is invalid/not used for this ent
-	{CN_lastSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_flowEndSeconds, 0}, // default value is invalid/not used for this entry
-	{CN_firstSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_flowStartMilliSeconds, 0},
-	{CN_lastSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_flowEndMilliSeconds, 0},
-	{CN_tcpControlBits,  	"SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_tcpControlBits, 0},
+const static IpfixDbWriterMySQL::Column identifyMySQL [] = {
+	{	CN_dstIP, 		IPFIX_TYPEID_destinationIPv4Address,	"INTEGER(10) UNSIGNED", 	0, 0},
+	{	CN_srcIP, 		IPFIX_TYPEID_sourceIPv4Address,		"INTEGER(10) UNSIGNED", 	0, 0},
+	{	CN_srcPort, 		IPFIX_TYPEID_sourceTransportPort,	"SMALLINT(5) UNSIGNED", 	0, 0},
+	{	CN_dstPort, 		IPFIX_TYPEID_destinationTransportPort,	"SMALLINT(5) UNSIGNED", 	0, 0},
+	{	CN_proto, 		IPFIX_TYPEID_protocolIdentifier,	"TINYINT(3) UNSIGNED", 		0, 0 },
+	{	CN_dstTos, 		IPFIX_TYPEID_classOfServiceIPv4,	"TINYINT(3) UNSIGNED", 		0, 0},
+	{	CN_bytes, 		IPFIX_TYPEID_octetDeltaCount,		"BIGINT(20) UNSIGNED", 		0, 0},
+	{	CN_pkts, 		IPFIX_TYPEID_packetDeltaCount,		"BIGINT(20) UNSIGNED", 		0, 0},
+	{	CN_firstSwitched, 	IPFIX_TYPEID_flowStartSeconds,		"INTEGER(10) UNSIGNED", 	0, 0}, // default value is invalid/not used for this ent
+	{	CN_lastSwitched, 	IPFIX_TYPEID_flowEndSeconds,		"INTEGER(10) UNSIGNED", 	0, 0}, // default value is invalid/not used for this entry
+	{	CN_firstSwitchedMillis, IPFIX_TYPEID_flowStartMilliSeconds,	"SMALLINT(5) UNSIGNED", 	0, 0},
+	{	CN_lastSwitchedMillis,	IPFIX_TYPEID_flowEndMilliSeconds,	"SMALLINT(5) UNSIGNED", 	0, 0},
+	{	CN_tcpControlBits,  	IPFIX_TYPEID_tcpControlBits,		"SMALLINT(5) UNSIGNED", 	0, 0},
 	//TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
-	{CN_revbytes, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_TYPEID_octetDeltaCount, IPFIX_PEN_reverse},
-	{CN_revpkts, 		"BIGINT(20) UNSIGNED", 		0, IPFIX_TYPEID_packetDeltaCount, IPFIX_PEN_reverse},
-	{CN_revFirstSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
-	{CN_revLastSwitched, 	"INTEGER(10) UNSIGNED", 	0, IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
-	{CN_revFirstSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse},
-	{CN_revLastSwitchedMillis, "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse},
-	{CN_revTcpControlBits,  "SMALLINT(5) UNSIGNED", 	0, IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse},
-	{CN_maxPacketGap,  	"BIGINT(20) UNSIGNED", 		0, IPFIX_ETYPEID_maxPacketGap, IPFIX_PEN_vermont|IPFIX_PEN_reverse},
-	{CN_exporterID, 	"SMALLINT(5) UNSIGNED", 	0, EXPORTERID, 0},
-	{CN_flowStartSysUpTime,	"INTEGER(10) UNSIGNED",		0, IPFIX_TYPEID_flowStartSysUpTime, 0},
-	{CN_flowEndSysUpTime,	"INTEGER(10) UNSIGNED",		0, IPFIX_TYPEID_flowEndSysUpTime, 0},
-	{0} // last entry must be 0
+	{	CN_revbytes, 		IPFIX_TYPEID_octetDeltaCount,		"BIGINT(20) UNSIGNED",		IPFIX_PEN_reverse, 0},
+	{	CN_revpkts, 		IPFIX_TYPEID_packetDeltaCount,		"BIGINT(20) UNSIGNED", 		IPFIX_PEN_reverse, 0},
+	{	CN_revFirstSwitched, 	IPFIX_TYPEID_flowStartSeconds,		"INTEGER(10) UNSIGNED", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revLastSwitched, 	IPFIX_TYPEID_flowEndSeconds,		"INTEGER(10) UNSIGNED", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revFirstSwitchedMillis,IPFIX_TYPEID_flowStartMilliSeconds,	"SMALLINT(5) UNSIGNED", 	IPFIX_PEN_reverse, 0},
+	{	CN_revLastSwitchedMillis, IPFIX_TYPEID_flowEndMilliSeconds,	"SMALLINT(5) UNSIGNED", 	IPFIX_PEN_reverse, 0},
+	{	CN_revTcpControlBits,  IPFIX_TYPEID_tcpControlBits,		"SMALLINT(5) UNSIGNED", 	IPFIX_PEN_reverse, 0},
+	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"BIGINT(20) UNSIGNED", 		IPFIX_PEN_vermont|IPFIX_PEN_reverse},
+	{	CN_exporterID, 		EXPORTERID,				"SMALLINT(5) UNSIGNED", 	0, 0},
+	{	CN_flowStartSysUpTime,	IPFIX_TYPEID_flowStartSysUpTime,	"INTEGER(10) UNSIGNED",		0, 0},
+	{	CN_flowEndSysUpTime,	IPFIX_TYPEID_flowEndSysUpTime,		"INTEGER(10) UNSIGNED",		0, 0},
+	{	0	} // last entry must be 0
 };
 
 
 
 /**
- * Compare two source IDs and check if exporter is the same (i.e., same IP address and observationDomainId
- */
-bool IpfixDbWriterMySQL::equalExporter(const IpfixRecord::SourceID& a, const IpfixRecord::SourceID& b) {
-	return (a.observationDomainId == b.observationDomainId) &&
-		(a.exporterAddress.len == b.exporterAddress.len) &&
-		(memcmp(a.exporterAddress.ip, b.exporterAddress.ip, a.exporterAddress.len) == 0 );
-
-}
-
-
-/**
  * (re)connect to database
  */
-int IpfixDbWriterMySQL::connectToDB()
+void IpfixDbWriterMySQL::connectToDB()
 {
 	ostringstream statement;
 
@@ -94,16 +83,16 @@ int IpfixDbWriterMySQL::connectToDB()
 	if(conn == 0) {
 		msg(MSG_FATAL,"IpfixDbWriterMySQL: Get MySQL connect handle failed. Error: %s",
 				mysql_error(conn));
-		return 1;
+		return;
 	}
 	msg(MSG_DEBUG,"IpfixDbWriterMySQL: mysql init successful");
 
 	/**Connect to Database*/
-	if (!mysql_real_connect(conn, dbHost.c_str(), dbUser.c_str(), dbPassword.c_str(),
-				0, dbPort, 0, 0)) {
+	if (!mysql_real_connect(conn, hostName, userName, password,
+				0, portNum, 0, 0)) {
 		msg(MSG_FATAL,"IpfixDbWriterMySQL: Connection to database failed. Error: %s",
 				mysql_error(conn));
-		return 1;
+		return;
 	}
 	msg(MSG_DEBUG,"IpfixDbWriterMySQL: succesfully connected to database");
 
@@ -114,18 +103,30 @@ int IpfixDbWriterMySQL::connectToDB()
 	/**create database*/
 	if(mysql_query(conn, statement.str().c_str()) != 0 ) {
 		msg(MSG_FATAL, "IpfixDbWriterMySQL: Creation of database %s failed. Error: %s",
-				dbName.c_str(), mysql_error(conn));
-		return 1;
+				dbName, mysql_error(conn));
+		return;
 	}
-	msg(MSG_INFO,"IpfixDbWriterMySQL: Database %s created", dbName.c_str());
+	msg(MSG_INFO,"IpfixDbWriterMySQL: Database %s created", dbName);
 
 	/** use database with dbName**/
-	if(mysql_select_db(conn, dbName.c_str()) !=0) {
+	if(mysql_select_db(conn, dbName) !=0) {
 		msg(MSG_FATAL, "IpfixDbWriterMySQL: Database %s not selectable. Error: %s",
-				dbName.c_str(), mysql_error(conn));
-		return 1;
+				dbName, mysql_error(conn));
+		return ;
 	}
-	msg(MSG_DEBUG,"IpfixDbWriterMySQL: Database %s selected", dbName.c_str());
+	msg(MSG_DEBUG,"IpfixDbWriterMySQL: Database %s selected", dbName);
+	if (createExporterTable() != 0) return;
+
+	dbError = false;
+	
+}
+
+
+int IpfixDbWriterMySQL::createExporterTable()
+{
+	ostringstream statement;
+
+	dbError = true;
 
 	/**create table exporter*/
 	statement.str("");
@@ -144,64 +145,57 @@ int IpfixDbWriterMySQL::connectToDB()
 	return 0;
 }
 
-
 /**
- * save record to database
+ * 	Create a table in the database
  */
-void IpfixDbWriterMySQL::processDataDataRecord(const IpfixRecord::SourceID& sourceID,
-		TemplateInfo& dataTemplateInfo, uint16_t length,
-		IpfixRecord::Data* data)
+bool IpfixDbWriterMySQL::createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime)
 {
-	string rowString;
-	time_t flowStartSeconds;
+	uint32_t i;
 
-	DPRINTF("Processing data record");
-
-	if (dbError) {
-		connectToDB();
-		if (dbError) return;
+	if (find(usedPartitions.begin(), usedPartitions.end(), partitionname)!=usedPartitions.end()) {
+		// found cached entry!
+		DPRINTF("Partition '%s' already created.", partitionname);
+		return true;
 	}
 
-	/* get new insert */
-	if(srcId.observationDomainId != 0) {
-		// use default source id
-		rowString = getInsertString(rowString, flowStartSeconds, srcId, dataTemplateInfo, length, data);
-	} else {
-		rowString = getInsertString(rowString, flowStartSeconds, sourceID, dataTemplateInfo, length, data);
-	}
+	ostringstream ctsql;
 
-	// if current table is not ok, write to db and get new table name
-	if(!(flowStartSeconds >= currentTable.startTime && flowStartSeconds <= currentTable.endTime)) {
-		if(numberOfInserts > 0) {
-			msg(MSG_DEBUG, "IpfixDbWriterMySQL: Writing buffered records to database");
-			writeToDb();
-			numberOfInserts = 0;
-		}
-		if (setCurrentTable(flowStartSeconds) != 0) {
-			return;
+	ostringstream oss;
+	ctsql << "CREATE TABLE IF NOT EXISTS " << partitionname << " (";
+	/**collect the names for columns and the dataTypes for the table in a string*/
+	for(i=0; i < numberOfColumns; i++) {
+		ctsql << identify[i].cname << " " << identify[i].dataType;
+		if (i != numberOfColumns-1) {
+			ctsql << ", ";
 		}
 	}
+	ctsql << ")";
 
 
-	// start new insert statement if necessary
-	if (numberOfInserts == 0) {
-		// start insert statement
-		insertStatement.str("");
-		insertStatement.clear();
-		insertStatement << "INSERT INTO " << currentTable.name << " (" << tableColumnsString << ") VALUES " << rowString;
-		numberOfInserts = 1;
-	} else {
-		// append insert statement
-		insertStatement << "," << rowString;
-		numberOfInserts++;
+	if(mysql_query(conn, ctsql.str().c_str()) != 0) {
+		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of exporter table failed. Error: %s",
+				mysql_error(conn));
+		dbError = true;
+		return 1;
 	}
 
-	// write to db if maxInserts is reached
-	if(numberOfInserts == maxInserts) {
-		msg(MSG_DEBUG, "IpfixDbWriterMySQL: Writing buffered records to database");
-		writeToDb();
-		numberOfInserts = 0;
+	msg(MSG_INFO, "Partition %s created ", partitionname);
+	usedPartitions.push_back(partitionname);
+	if (usedPartitions.size()>MAX_USEDTABLES) usedPartitions.pop_front();
+
+	string indexname = string(partitionname) + "_firstswitched";
+	ostringstream cisql;
+	cisql << "CREATE INDEX " << indexname <<" ON " << partitionname;
+	cisql << "(firstswitched)";
+	if(mysql_query(conn, ctsql.str().c_str()) != 0) {
+		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of index failed. Error: %s",
+			mysql_error(conn));
+		dbError = true;
+		return true;
 	}
+	msg(MSG_INFO, "Index %s_firstswitched created ", partitionname);
+
+	return true;
 }
 
 
@@ -209,287 +203,71 @@ void IpfixDbWriterMySQL::processDataDataRecord(const IpfixRecord::SourceID& sour
  *	loop over table columns and template to get the IPFIX values in correct order to store in database
  *	The result is written into row, the firstSwitched time is returned in flowstartsec
  */
-string& IpfixDbWriterMySQL::getInsertString(string& row, time_t& flowstartsec, const IpfixRecord::SourceID& sourceID,
-		TemplateInfo& dataTemplateInfo,uint16_t length, IpfixRecord::Data* data)
-{
-	uint64_t intdata = 0;
-	uint64_t intdata2 = 0;
-	uint32_t k;
-	bool notfound, notfound2;
-	bool first = true;
-	ostringstream rowStream(row);
-
-	flowstartsec = 0;
-	rowStream << "(";
-
-	/**loop over the columname and loop over the IPFIX_TYPEID of the record
-	 to get the corresponding data to store and make insert statement*/
-	for(vector<Column>::iterator col = tableColumns.begin(); col != tableColumns.end(); col++) {
-		if (col->ipfixId == EXPORTERID) {
-			// if this is the same source ID as last time, we get the exporter id from currentExporter
-			if ((currentExporter != NULL) && equalExporter(sourceID, currentExporter->sourceID)) {
-				DPRINTF("Exporter is same as last time (ODID=%d, id=%d)", sourceID.observationDomainId, currentExporter->id);
-				intdata = (uint64_t)currentExporter->id;
-			} else {
-			// lookup exporter buffer to get exporterID from sourcID and expIp
-				intdata = (uint64_t)getExporterID(sourceID);
-			}
-		} else {
-			notfound = true;
-			// try to gather data required for the field
-			if(dataTemplateInfo.fieldCount > 0) {
-				// look inside the ipfix record
-				for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-					if(dataTemplateInfo.fieldInfo[k].type.enterprise ==  col->enterprise && dataTemplateInfo.fieldInfo[k].type.id == col->ipfixId) {
-						notfound = false;
-						intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-						DPRINTF("IpfixDbWriterMySQL::getData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X", col->ipfixId, intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length, dataTemplateInfo.fieldInfo[k].offset);
-						break;
-					}
-				}
-			}
-			if( dataTemplateInfo.dataCount > 0 && notfound) {
-				// look in static data fields of template for data
-				for(k=0; k < dataTemplateInfo.dataCount; k++) {
-					if(dataTemplateInfo.fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo.dataInfo[k].type.id == col->ipfixId) {
-						notfound = false;
-						intdata = getData(dataTemplateInfo.dataInfo[k].type,(dataTemplateInfo.data+dataTemplateInfo.dataInfo[k].offset));
-						break;
-					}
-				}
-			}
-			if(notfound) {
-				notfound2 = true;
-				// for some Ids, we have an alternative
-				if(col->enterprise == 0) {
-					switch (col->ipfixId) {
-						case IPFIX_TYPEID_flowStartSeconds:
-							if(dataTemplateInfo.fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-									// look for alternative (flowStartMilliSeconds/1000)
-									if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowStartMilliSeconds) {
-										intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-									// if no flow start time is available, maybe this is is from a netflow from Cisco
-									// then - as a last alternative - use flowStartSysUpTime as flow start time
-									if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSysUpTime) {
-										intdata2 = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-										notfound2 = false;
-									}
-								}
-								if(notfound && !notfound2) {
-									intdata = intdata2;
-									notfound = false;
-								}
-							}
-							break;
-						case IPFIX_TYPEID_flowEndSeconds:
-							if(dataTemplateInfo.fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-									// look for alternative (flowEndMilliSeconds/1000)
-									if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowEndMilliSeconds) {
-										intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-									// if no flow end time is available, maybe this is is from a netflow from Cisco
-									// then use flowEndSysUpTime as flow start time
-									if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSysUpTime) {
-										intdata2 = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-										notfound2 = false;
-									}
-								}
-								if(notfound && !notfound2) {
-									intdata = intdata2;
-									notfound = false;
-								}
-							}
-							break;
-					}
-				} else if (col->enterprise==IPFIX_PEN_reverse) {
-					switch (col->ipfixId) {
-						case IPFIX_TYPEID_flowStartSeconds:
-							// look for alternative (revFlowStartMilliSeconds/1000)
-							if(dataTemplateInfo.fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-									if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse)) {
-										intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-								}
-							}
-							break;
-						case IPFIX_TYPEID_flowEndSeconds:
-							// look for alternative (revFlowEndMilliSeconds/1000)
-							if(dataTemplateInfo.fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-									if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse)) {
-										intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-								}
-							}
-							break;
-
-					}
-				}
-				// if still not found, get default value
-				if(notfound)
-					intdata = col->defaultValue;
-			}
-
-			// we need extra treatment for timing related fields
-			if(col->enterprise == 0 ) {
-				switch (col->ipfixId) {
-					case IPFIX_TYPEID_flowStartSeconds:
-						// save time for table access
-						if (flowstartsec==0) flowstartsec = intdata;
-						break;
-
-					case IPFIX_TYPEID_flowEndSeconds:
-						break;
-
-					case IPFIX_TYPEID_flowStartMilliSeconds:
-						// if flowStartSeconds is not stored in one of the columns, but flowStartMilliSeconds is,
-						// then we use flowStartMilliSeconds for table access
-						// This is realized by storing this value only if flowStartSeconds has not yet been seen.
-						// A later appearing flowStartSeconds will override this value.
-						if (flowstartsec==0)
-							flowstartsec = intdata/1000;
-					case IPFIX_TYPEID_flowEndMilliSeconds:
-						// in the database the millisecond entry is counted from last second
-						intdata %= 1000;
-						break;
-				}
-			} else if (col->enterprise==IPFIX_PEN_reverse)
-				switch (col->ipfixId) {
-					case IPFIX_TYPEID_flowStartMilliSeconds:
-					case IPFIX_TYPEID_flowEndMilliSeconds:
-						// in the database the millisecond entry is counted from last second
-						intdata %= 1000;
-						break;
-				}
-		}
-
-		DPRINTF("saw ipfix id %d in packet with intdata %llX", col->ipfixId, intdata);
-
-		if(first)
-			rowStream << intdata;
-		else
-			rowStream << "," << intdata;
-		first = false;
-	}
-
-	rowStream << ")";
-
-	if (flowstartsec == 0) {
-		msg(MSG_ERROR, "IpfixDbWriterMySQL: Failed to get timing data from record. Will be saved in default table.");
-	}
-
-	row = rowStream.str();
-	DPRINTF("Insert row: %s", row.c_str());
-	return row;
-}
-
 
 /*
  * Write insertStatement to database
  */
-int IpfixDbWriterMySQL::writeToDb()
+bool IpfixDbWriterMySQL::writeToDb()
 {
-	DPRINTF("SQL Query: %s", insertStatement.str().c_str());
-	if(mysql_query(conn, insertStatement.str().c_str()) != 0) {
+	if (insertBuffer.curRows == 0) return true;
+
+	// delete last comma from sql string, as it is always inserted by fillRowColumns
+	insertBuffer.appendPtr[-1] = 0;
+
+	DPRINTF("SQL Query: %s", insertBuffer.sql);
+
+	if(mysql_query(conn, insertBuffer.sql) != 0) {
 		msg(MSG_ERROR,"IpfixDbWriterMySQL: Insert of records failed. Error: %s", mysql_error(conn));
-		return 1;
+		goto dbwriteerror;
 	}
+
+	insertBuffer.curRows = 0;
+	insertBuffer.appendPtr = insertBuffer.bodyPtr;
+	*insertBuffer.appendPtr = 0;
+
 	msg(MSG_DEBUG,"IpfixDbWriterMySQL: Write to database is complete");
-	return 0;
-}
+	return true;
 
-
-/*
- * Sets the current table information and creates the table in the database if necessary
- */
-int IpfixDbWriterMySQL::setCurrentTable(time_t flowstartsec)
-{
-	// generate table name
-	ostringstream tableStream;
-	struct tm* flowStartTime = gmtime(&flowstartsec);
-
-	tableStream << "h_" << (flowStartTime->tm_year+1900)
-		<< setfill('0') << setw(2) << (flowStartTime->tm_mon+1)
-		<< setfill('0') << setw(2) << (flowStartTime->tm_mday) << "_"
-		<< setfill('0') << setw(2) << (flowStartTime->tm_hour) << "_"
-		<< setw(1) << (flowStartTime->tm_min<30?0:1);
-
-	currentTable.name = tableStream.str();
-
-	// calculate table boundaries
-	if(flowStartTime->tm_min < 30) {
-		flowStartTime->tm_min = 0;
-		flowStartTime->tm_sec = 0;
-		currentTable.startTime = timegm(flowStartTime);
-	} else {
-		flowStartTime->tm_min = 30;
-		flowStartTime->tm_sec = 0;
-		currentTable.startTime = timegm(flowStartTime);
-	}
-	currentTable.endTime = currentTable.startTime + 1799;
-
-	DPRINTF("flowstartsec: %d, table name: %s, start time: %d, end time: %d", flowstartsec, currentTable.name.c_str(), currentTable.startTime, currentTable.endTime);
-
-	// create table if exists
-	ostringstream createStatement;
-	createStatement << "CREATE TABLE IF NOT EXISTS " << currentTable.name << " (" << tableColumnsCreateString << ")";
-	DPRINTF("SQL Query: %s", createStatement.str().c_str());
-	if(mysql_query(conn, createStatement.str().c_str()) != 0) {
-		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of table failed. Error: %s", mysql_error(conn));
-		dbError = true;
-		return 1;
-	}
-	msg(MSG_DEBUG, "IpfixDbWriterMySQL: Table %s created ", currentTable.name.c_str());
-
-	return 0;
+dbwriteerror:
+	dbError = true;
+	return false;
 }
 
 /**
- *	Returns the id of the exporter table entry or 0 in the case of an error
+ *	Returns the exporterID
+ *  	For every different sourcID and expIp a unique ExporterID will be generated from the database
+ * 	First lookup for the ExporterID in the exporterBuffer according sourceID and expIp, is there nothing
+ *  	lookup in the ExporterTable, is there also nothing insert sourceID and expIp an return the generated
+ *      ExporterID
  */
-int IpfixDbWriterMySQL::getExporterID(const IpfixRecord::SourceID& sourceID)
+int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 {
-	list<ExporterCacheEntry>::iterator iter;
+	uint32_t i;
+	int exporterID = 0;
 	MYSQL_RES* dbResult;
 	MYSQL_ROW dbRow;
-	int id = 0;
-	uint32_t expIp = 0;
-	ostringstream statement;
 
-	iter = exporterCache.begin();
-	while(iter != exporterCache.end()) {
-		if (equalExporter(iter->sourceID, sourceID)) {
-			// found exporter in exporterCache
-			DPRINTF("Exporter (ODID=%d, id=%d) found in exporter cache", sourceID.observationDomainId, iter->id);
-			exporterCache.push_front(*iter);
-			exporterCache.erase(iter);
-			// update current exporter
-			currentExporter = &exporterCache.front();
-			return exporterCache.front().id;
-		}
-		iter++;
-	}
+	char statementStr[EXPORTER_WIDTH];
+	uint32_t expIp = 0;
 
 	// convert IP address (correct host byte order since 07/2010)
-	expIp = sourceID.exporterAddress.toUInt32();
+	expIp = sourceID->exporterAddress.toUInt32();
 
-	// search exporter table
-	statement << "SELECT id FROM exporter WHERE sourceID=" << sourceID.observationDomainId << " AND srcIp=" << expIp;
-	DPRINTF("SQL Query: %s", statement.str().c_str());
+	/** Is the exporterID already in exporterBuffer? */
+	for(i = 0; i < curExporterEntries; i++) {
+		if(exporterEntries[i].observationDomainId == sourceID->observationDomainId &&
+				exporterEntries[i].ip==expIp) {
+			DPRINTF("Exporter sourceID/IP with ID %d is in the exporterBuffer\n",
+					exporterEntries[i].Id);
+			return exporterEntries[i].Id;
+		}
+	}
 
-	if(mysql_query(conn, statement.str().c_str()) != 0) {
+
+	// it is not: try to get it from the database
+	sprintf(statementStr, "SELECT id FROM exporter WHERE sourceID=%u AND srcIp='%s'", sourceID->observationDomainId, IPToString(expIp).c_str());
+
+	if(mysql_query(conn, statementStr) != 0) {
 		msg(MSG_ERROR,"IpfixDbWriterMySQL: Select on exporter table failed. Error: %s",
 				mysql_error(conn));
 		return 0;// If a failure occurs, return 0
@@ -498,149 +276,76 @@ int IpfixDbWriterMySQL::getExporterID(const IpfixRecord::SourceID& sourceID)
 	dbResult = mysql_store_result(conn);
 	if(( dbRow = mysql_fetch_row(dbResult))) {
 		// found in table
-		id = atoi(dbRow[0]);
+		exporterID = atoi(dbRow[0]);
 		mysql_free_result(dbResult);
 		DPRINTF("ExporterID %d is in exporter table", id);
 	} else {
 		mysql_free_result(dbResult);
 		// insert new exporter table entry
-		statement.str("");
-		statement.clear();
-		statement << "INSERT INTO exporter (ID,sourceID,srcIP) VALUES ('NULL','" << sourceID.observationDomainId << "','" << expIp << "')";
-		DPRINTF("SQL Query: %s", statement.str().c_str());
-		if(mysql_query(conn, statement.str().c_str()) != 0) {
+
+		/**ExporterID is not in exporter table - insert expID and expIp and return the exporterID*/
+		sprintf(statementStr, "INSERT INTO exporter (sourceID, srcIP) VALUES ('%u','%s')",
+				sourceID->observationDomainId, IPToString(expIp).c_str());
+
+		if(mysql_query(conn, statementStr) != 0) {
 			msg(MSG_ERROR,"IpfixDbWriterMySQL: Insert in exporter table failed. Error: %s", conn);
 			return 0;
 		}
 
-		id = mysql_insert_id(conn);
-		msg(MSG_INFO,"IpfixDbWriterMySQL: new exporter (ODID=%d, id=%d) inserted in exporter table", sourceID.observationDomainId, id);
+		exporterID = mysql_insert_id(conn);
+		msg(MSG_INFO,"IpfixDbWriterMySQL: new exporter (ODID=%d, id=%d) inserted in exporter table", sourceID->observationDomainId, exporterID);
 	}
 
-	// insert exporter in cache
-	ExporterCacheEntry tmp = {sourceID, id};
-	exporterCache.push_front(tmp);
+	if (curExporterEntries==MAX_EXP_TABLE-1) {
+		// maybe here we should check how often this happens and display a severe warning if too
+		// many parallel streams are received at once
+		msg(MSG_INFO, "IpfixDbWriterPg: turnover for exporter cache occurred.");
+		curExporterEntries = 0;
+	}
 
-	// update current exporter
-	currentExporter = &exporterCache.front();
+	/**Write new exporter in the exporterBuffer*/
+	exporterEntries[curExporterEntries].Id = exporterID;
+	exporterEntries[curExporterEntries].observationDomainId = sourceID->observationDomainId;
+	exporterEntries[curExporterEntries++].ip = expIp;
 
-	// pop last element if exporter cache is to long
-	if(exporterCache.size() > MAX_EXPORTER)
-		exporterCache.pop_back();
-
-	return id;
+	return exporterID;
 }
 
-/**
- *	Get data of the record is given by the IPFIX_TYPEID
- */
-uint64_t IpfixDbWriterMySQL::getData(InformationElement::IeInfo type, IpfixRecord::Data* data)
+IpfixDbWriterSQL::Column* IpfixDbWriterMySQL::fillColumnStructure()
 {
-	switch (type.length) {
-		case 1:
-			return (*(uint8_t*)data);
-		case 2:
-			return ntohs(*(uint16_t*)data);
-		case 4:
-			return ntohl(*(uint32_t*)data);
-		case 5:	// may occur in the case if IP address + mask
-			return ntohl(*(uint32_t*)data);
-		case 8:
-			return ntohll(*(uint64_t*)data);
-		default:
-			printf("Uint with length %d unparseable", type.length);
-			return 0;
-	}
+	return (Column*)identifyMySQL;
 }
-
 
 
 /***** Public Methods ****************************************************/
 
-/**
- * called on Data Record arrival
- */
-void IpfixDbWriterMySQL::onDataRecord(IpfixDataRecord* record)
+IpfixDbWriterMySQL::IpfixDbWriterMySQL(const char* host, const char* db,
+		const char* user, const char* pw,
+		unsigned int port, uint16_t observationDomainId,
+		int maxStatements)
+	: IpfixDbWriterSQL(host, db, user, pw, port, observationDomainId, maxStatements)
 {
-	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
-	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate)
-		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)
-		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
-		record->removeReference();
-		return;
-	}
+	identify = fillColumnStructure();
 
-	processDataDataRecord(*record->sourceID.get(), *record->templateInfo.get(),
-			record->dataLength, record->data);
+	/**count columns*/
+	numberOfColumns = 0;
+	for(uint32_t i=0; identify[i].cname!=0; i++) numberOfColumns++;
 
-	record->removeReference();
+	/**Initialize structure members Statement*/
+	insertBuffer.curRows = 0;
+	insertBuffer.maxRows = maxStatements;
+	insertBuffer.sql = new char[(INS_WIDTH+3)*(numberOfColumns+1)*maxStatements+numberOfColumns*20+60+1];
+	*insertBuffer.sql = 0;
+
+	connectToDB();
 }
 
-
-/**
- * Constructor
- */
-IpfixDbWriterMySQL::IpfixDbWriterMySQL(const string& hostname, const string& dbname,
-				const string& username, const string& password,
-				unsigned port, uint32_t observationDomainId, unsigned maxStatements,
-				const vector<string>& columns)
-	: currentExporter(NULL), numberOfInserts(0), maxInserts(maxStatements),
-	dbHost(hostname), dbName(dbname), dbUser(username), dbPassword(password), dbPort(port), conn(0)
-{
-	int i;
-
-	// set default source id
-	srcId.exporterAddress.len = 0;
-	srcId.observationDomainId = observationDomainId;
-	srcId.exporterPort = 0;
-	srcId.receiverPort = 0;
-	srcId.protocol = 0;
-	srcId.fileDescriptor = 0;
-
-	// invalide start settings for current table (to enforce table create)
-	currentTable.startTime = 1;
-	currentTable.endTime = 0;
-
-	if(columns.empty())
-		THROWEXCEPTION("IpfixDbWriterMySQL: cannot initiate with no columns");
-
-	/* get columns */
-	bool first = true;
-	for(vector<string>::const_iterator col = columns.begin(); col != columns.end(); col++) {
-		i = 0;
-		while(identify[i].columnName != 0) {
-			if(col->compare(identify[i].columnName) == 0) {
-				Column c = identify[i];
-				tableColumns.push_back(c);
-				// update tableColumnsString
-				if(!first)
-					tableColumnsString.append(",");
-				tableColumnsString.append(identify[i].columnName);
-				// update tableColumnsCreateString
-				if(!first)
-					tableColumnsCreateString.append(", ");
-				tableColumnsCreateString.append(identify[i].columnName);
-				tableColumnsCreateString.append(" ");
-				tableColumnsCreateString.append(identify[i].columnType);
-				first = false;
-				break;
-			}
-			i++;
-		}
-	}
-	msg(MSG_INFO, "IpfixDbWriterMySQL: columns are %s", tableColumnsString.c_str());
-
-	if(connectToDB() != 0)
-		THROWEXCEPTION("IpfixDbWriterMySQL creation failed");
-}
-
-/**
- * Destructor
- */
 IpfixDbWriterMySQL::~IpfixDbWriterMySQL()
 {
 	writeToDb();
-	mysql_close(conn);
+	if (conn) mysql_close(conn);
 }
+
+
 
 #endif

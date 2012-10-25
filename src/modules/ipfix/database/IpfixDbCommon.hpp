@@ -61,6 +61,7 @@
 #define CN_revLastSwitchedMillis	"revLastSwitchedMillis"
 #define CN_revTcpControlBits	"revTcpControlBits"
 #define CN_maxPacketGap		"maxPacketGap"
+#define CN_revMaxPacketGap      "revMaxPacketGap"
 
 #define CN_flowStartSysUpTime	"flowStartSysUpTime"
 #define CN_flowEndSysUpTime	"flowEndSysUpTime"
