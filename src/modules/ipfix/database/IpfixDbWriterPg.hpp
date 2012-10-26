@@ -46,10 +46,10 @@ class IpfixDbWriterPg
 	: public IpfixDbWriterSQL
 {
 	public:
-		IpfixDbWriterPg(const char* host, const char* db,
+		IpfixDbWriterPg(const char* dbType, const char* host, const char* db,
 				const char* user, const char* pw,
 				unsigned int port, uint16_t observationDomainId, // FIXME: observationDomainId
-				int maxStatements);
+				int maxStatements, vector<string> columns);
 		~IpfixDbWriterPg();
 
 		virtual void connectToDB();

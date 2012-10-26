@@ -330,7 +330,6 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 					// convert IPv4 address to string notation, as this is required by Postgres
 					case IPFIX_TYPEID_sourceIPv4Address:
 					case IPFIX_TYPEID_destinationIPv4Address:
-						if identify
 						insertsql << "'" << IPToString(ntohl(intdata)) << "'";
 						break;
 
@@ -482,10 +481,10 @@ string IpfixDbWriterSQL::getInsertString(string tableName)
  * Creates a new IpfixDbWriterSQL. Do not forget to call @c startipfixDbWriter() to begin writing to Database
  * @return handle to use when calling @c destroyipfixDbWriter()
  */
-IpfixDbWriterSQL::IpfixDbWriterSQL(const char* host, const char* db,
+IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const char* db,
 		const char* user, const char* pw,
 		unsigned int port, uint16_t observationDomainId,
-		int maxStatements)
+		int maxStatements, vector<string> columns)
 {
 	/**Initialize structure members IpfixDbWriterSQL*/
 	hostName = host;

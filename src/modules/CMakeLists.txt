@@ -108,18 +108,17 @@ ADD_LIBRARY(modules
     ipfix/aggregator/Rule.cpp
 
     ipfix/database/IpfixDbWriterSQL.cpp
-    ipfix/database/IpfixDbReaderMySQLCfg.cpp
+    ipfix/database/IpfixDbWriterCfg.cpp
     ipfix/database/IpfixDbWriterMongo.cpp
+    ipfix/database/IpfixDbWriterMongoCfg.cpp
     ipfix/database/IpfixDbWriterOracle.cpp
+    ipfix/database/ipfixDbReaderMySQLCfg.cpp
     ipfix/database/IpfixDbReaderMySQL.cpp
     ipfix/database/IpfixDbWriterMySQL.cpp
     ipfix/database/IpfixDbWriterPg.cpp
     ipfix/database/IpfixDbReaderOracle.cpp
     ipfix/database/IpfixDbReaderOracleCfg.cpp
-    ipfix/database/IpfixDbWriterMySQLCfg.cpp
-    ipfix/database/IpfixDbWriterPgCfg.cpp
     ipfix/database/IpfixDbWriterOracleCfg.cpp
-    ipfix/database/IpfixDbWriterMongoCfg.cpp
     ipfix/database/IpfixFlowInspectorExporterCfg.cpp
     ipfix/database/IpfixFlowInspectorExporter.cpp
 )

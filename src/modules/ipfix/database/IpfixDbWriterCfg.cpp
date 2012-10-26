@@ -1,6 +1,6 @@
 /*
  * Vermont Configuration Subsystem
- * Copyright (C) 2009 Vermont Project
+ * Copyright (C) 2009 - 2012 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,21 +18,24 @@
  *
  */
 
-#ifdef DB_SUPPORT_ENABLED
+#if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
 
-#include "IpfixDbWriterMySQLCfg.h"
+#include "IpfixDbWriterCfg.h"
+#include "IpfixDbWriterMySQL.hpp"
+#include "IpfixDbWriterPg.hpp"
 
 
-IpfixDbWriterMySQLCfg* IpfixDbWriterMySQLCfg::create(XMLElement* e)
+
+IpfixDbWriterCfg* IpfixDbWriterCfg::create(XMLElement* e)
 {
     assert(e);
     assert(e->getName() == getName());
-    return new IpfixDbWriterMySQLCfg(e);
+    return new IpfixDbWriterCfg(e);
 }
 
 
-IpfixDbWriterMySQLCfg::IpfixDbWriterMySQLCfg(XMLElement* elem)
-    : CfgHelper<IpfixDbWriterMySQL, IpfixDbWriterMySQLCfg>(elem, "ipfixDbWriterMySQL"),
+IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
+    : CfgHelper<IpfixDbWriterSQL, IpfixDbWriterCfg>(elem, "ipfixDbWriter"),
       port(0), bufferRecords(30), observationDomainId(0)
 {
     if (!elem) return;
@@ -43,7 +46,9 @@ IpfixDbWriterMySQLCfg::IpfixDbWriterMySQLCfg(XMLElement* elem)
 	     it++) {
 		XMLElement* e = *it;
 
-		if (e->matches("host")) {
+		if (e->matches("dbType")) {
+			databaseType = e->getFirstText();
+		} else if (e->matches("host")) {
 			hostname = e->getFirstText();
 		} else if (e->matches("port")) {
 			port = getInt("port");
@@ -65,13 +70,14 @@ IpfixDbWriterMySQLCfg::IpfixDbWriterMySQLCfg(XMLElement* elem)
 			continue;
 		}
 	}
-	if (hostname=="") THROWEXCEPTION("IpfixDbWriterMySQLCfg: host not set in configuration!");
-	if (port==0) THROWEXCEPTION("IpfixDbWriterMySQLCfg: port not set in configuration!");
-	if (dbname=="") THROWEXCEPTION("IpfixDbWriterMySQLCfg: dbname not set in configuration!");
-	if (user=="") THROWEXCEPTION("IpfixDbWriterMySQLCfg: username not set in configuration!");
+	if (databaseType != "mysql" && databaseType != "postgres" && databaseType != "oracle") THROWEXCEPTION("IpfixDbWriterCfg: Incorrect value for dbType: \"%s\"", databaseType.c_str());
+	if (hostname=="") THROWEXCEPTION("IpfixDbWriterCfg: host not set in configuration!");
+	if (port==0) THROWEXCEPTION("IpfixDbWriterCfg: port not set in configuration!");
+	if (dbname=="") THROWEXCEPTION("IpfixDbWriterCfg: dbname not set in configuration!");
+	if (user=="") THROWEXCEPTION("IpfixDbWriterCfg: username not set in configuration!");
 }
 
-void IpfixDbWriterMySQLCfg::readColumns(XMLElement* elem) {
+void IpfixDbWriterCfg::readColumns(XMLElement* elem) {
 	colNames.clear();
 	XMLNode::XMLSet<XMLElement*> set = elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin();
@@ -82,26 +88,32 @@ void IpfixDbWriterMySQLCfg::readColumns(XMLElement* elem) {
 		if (e->matches("name")) {
 			colNames.push_back(e->getFirstText());
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixDbWriterMySQL config statement %s\n", e->getName().c_str());
+			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
 			continue;
 		}		
 	}
 
 }
 
-IpfixDbWriterMySQLCfg::~IpfixDbWriterMySQLCfg()
+IpfixDbWriterCfg::~IpfixDbWriterCfg()
 {
 }
 
 
-IpfixDbWriterMySQL* IpfixDbWriterMySQLCfg::createInstance()
+IpfixDbWriterSQL* IpfixDbWriterCfg::createInstance()
 {
-    instance = new IpfixDbWriterMySQL(hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords);
-    return instance;
+	if (databaseType == "mysql") {
+		instance = new IpfixDbWriterMySQL(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames);
+	} else if  (databaseType == "postgres") {
+		instance = new IpfixDbWriterPg(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames);
+	} else {
+		THROWEXCEPTION("Database type \"%s\" not yet implemented in IpfixDbWriterCfg ...", databaseType.c_str());
+	}
+	return instance;
 }
 
 
-bool IpfixDbWriterMySQLCfg::deriveFrom(IpfixDbWriterMySQLCfg* old)
+bool IpfixDbWriterCfg::deriveFrom(IpfixDbWriterCfg* old)
 {
     return false;
 }

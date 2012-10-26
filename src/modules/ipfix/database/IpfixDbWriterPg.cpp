@@ -362,11 +362,11 @@ bool IpfixDbWriterPg::checkRelationExists(const char* relname)
 
 /***** Exported Functions ****************************************************/
 
-IpfixDbWriterPg::IpfixDbWriterPg(const char* host, const char* db,
+IpfixDbWriterPg::IpfixDbWriterPg(const char* dbType, const char* host, const char* db,
 		const char* user, const char* pw,
 		unsigned int port, uint16_t observationDomainId,
-		int maxStatements)
-	: IpfixDbWriterSQL(host, db, user, pw, port, observationDomainId, maxStatements)
+		int maxStatements, vector<string> columns)
+	: IpfixDbWriterSQL(dbType, host, db, user, pw, port, observationDomainId, maxStatements, columns)
 {
 	identify = fillColumnStructure();
 

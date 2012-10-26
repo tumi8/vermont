@@ -1,6 +1,6 @@
 /*
  * Vermont Configuration Subsystem
- * Copyright (C) 2009 Vermont Project
+ * Copyright (C) 2009 - 2012 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,44 +18,46 @@
  *
  */
 
-#ifndef IPFIXDBWRITERPGCFG_H_
-#define IPFIXDBWRITERPGCFG_H_
+#ifndef IPFIXDBWRITERCFG_H_
+#define IPFIXDBWRITERCFG_H_
 
-#ifdef PG_SUPPORT_ENABLED
+#ifdef DB_SUPPORT_ENABLED
 
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "IpfixDbWriterPg.hpp"
+#include "IpfixDbWriterSQL.hpp"
 
 #include <string>
 
 using namespace std;
 
 
-class IpfixDbWriterPgCfg
-	: public CfgHelper<IpfixDbWriterPg, IpfixDbWriterPgCfg>
+class IpfixDbWriterCfg
+	: public CfgHelper<IpfixDbWriterSQL, IpfixDbWriterCfg>
 {
 public:
 	friend class ConfigManager;
 	
-	virtual IpfixDbWriterPgCfg* create(XMLElement* e);
-	virtual ~IpfixDbWriterPgCfg();
+	virtual IpfixDbWriterCfg* create(XMLElement* e);
+	virtual ~IpfixDbWriterCfg();
 	
-	virtual IpfixDbWriterPg* createInstance();
-	virtual bool deriveFrom(IpfixDbWriterPgCfg* old);
+	virtual IpfixDbWriterSQL* createInstance();
+	virtual bool deriveFrom(IpfixDbWriterCfg* old);
 	
 protected:
-	
+	string databaseType; /**< Type of database (mysql, psgl, oracle, ...) */	
 	string hostname; /**< hostname of database host */
 	uint16_t port;	/**< port of database */
 	string dbname; /**< database name */
 	string user;	/**< user name for login to database */
 	string password;	/**< password for login to database */
 	uint16_t bufferRecords;	/**< amount of records to buffer until they are written to database */
+	uint32_t observationDomainId;	/**< default observation domain id (overrides the one received in the records */
+	vector<string> colNames; /**< column names */
 
-	
-	IpfixDbWriterPgCfg(XMLElement*);
+	void readColumns(XMLElement* elem);
+	IpfixDbWriterCfg(XMLElement*);
 };
 
 
