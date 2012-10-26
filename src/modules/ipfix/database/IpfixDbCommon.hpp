@@ -31,6 +31,8 @@
 
 #if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
 
+#include "IpfixDbWriterSQL.hpp"
+
 #define STARTLEN         60
 #define TABLE_WIDTH      16
 #define COL_WIDTH        40
@@ -65,5 +67,6 @@
 
 #define CN_flowStartSysUpTime	"flowStartSysUpTime"
 #define CN_flowEndSysUpTime	"flowEndSysUpTime"
+
 
 #endif

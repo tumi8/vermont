@@ -30,40 +30,6 @@
 #include "IpfixDbWriterMySQL.hpp"
 #include "common/msg.h"
 
-/**
- *	struct to identify column names with IPFIX_TYPEID an the dataType to store in database
- *	ExporterID is no IPFIX_TYPEID, its user specified
- *      Attention: order of entries is important!
- */
-const static IpfixDbWriterMySQL::Column identifyMySQL [] = {
-	{	CN_dstIP, 		IPFIX_TYPEID_destinationIPv4Address,	"INTEGER(10) UNSIGNED", 	0, 0},
-	{	CN_srcIP, 		IPFIX_TYPEID_sourceIPv4Address,		"INTEGER(10) UNSIGNED", 	0, 0},
-	{	CN_srcPort, 		IPFIX_TYPEID_sourceTransportPort,	"SMALLINT(5) UNSIGNED", 	0, 0},
-	{	CN_dstPort, 		IPFIX_TYPEID_destinationTransportPort,	"SMALLINT(5) UNSIGNED", 	0, 0},
-	{	CN_proto, 		IPFIX_TYPEID_protocolIdentifier,	"TINYINT(3) UNSIGNED", 		0, 0 },
-	{	CN_dstTos, 		IPFIX_TYPEID_classOfServiceIPv4,	"TINYINT(3) UNSIGNED", 		0, 0},
-	{	CN_bytes, 		IPFIX_TYPEID_octetDeltaCount,		"BIGINT(20) UNSIGNED", 		0, 0},
-	{	CN_pkts, 		IPFIX_TYPEID_packetDeltaCount,		"BIGINT(20) UNSIGNED", 		0, 0},
-	{	CN_firstSwitched, 	IPFIX_TYPEID_flowStartSeconds,		"INTEGER(10) UNSIGNED", 	0, 0}, // default value is invalid/not used for this ent
-	{	CN_lastSwitched, 	IPFIX_TYPEID_flowEndSeconds,		"INTEGER(10) UNSIGNED", 	0, 0}, // default value is invalid/not used for this entry
-	{	CN_firstSwitchedMillis, IPFIX_TYPEID_flowStartMilliSeconds,	"SMALLINT(5) UNSIGNED", 	0, 0},
-	{	CN_lastSwitchedMillis,	IPFIX_TYPEID_flowEndMilliSeconds,	"SMALLINT(5) UNSIGNED", 	0, 0},
-	{	CN_tcpControlBits,  	IPFIX_TYPEID_tcpControlBits,		"SMALLINT(5) UNSIGNED", 	0, 0},
-	//TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
-	{	CN_revbytes, 		IPFIX_TYPEID_octetDeltaCount,		"BIGINT(20) UNSIGNED",		IPFIX_PEN_reverse, 0},
-	{	CN_revpkts, 		IPFIX_TYPEID_packetDeltaCount,		"BIGINT(20) UNSIGNED", 		IPFIX_PEN_reverse, 0},
-	{	CN_revFirstSwitched, 	IPFIX_TYPEID_flowStartSeconds,		"INTEGER(10) UNSIGNED", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	CN_revLastSwitched, 	IPFIX_TYPEID_flowEndSeconds,		"INTEGER(10) UNSIGNED", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	CN_revFirstSwitchedMillis,IPFIX_TYPEID_flowStartMilliSeconds,	"SMALLINT(5) UNSIGNED", 	IPFIX_PEN_reverse, 0},
-	{	CN_revLastSwitchedMillis, IPFIX_TYPEID_flowEndMilliSeconds,	"SMALLINT(5) UNSIGNED", 	IPFIX_PEN_reverse, 0},
-	{	CN_revTcpControlBits,  IPFIX_TYPEID_tcpControlBits,		"SMALLINT(5) UNSIGNED", 	IPFIX_PEN_reverse, 0},
-	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"BIGINT(20) UNSIGNED", 		IPFIX_PEN_vermont|IPFIX_PEN_reverse},
-	{	CN_exporterID, 		EXPORTERID,				"SMALLINT(5) UNSIGNED", 	0, 0},
-	{	CN_flowStartSysUpTime,	IPFIX_TYPEID_flowStartSysUpTime,	"INTEGER(10) UNSIGNED",		0, 0},
-	{	CN_flowEndSysUpTime,	IPFIX_TYPEID_flowEndSysUpTime,		"INTEGER(10) UNSIGNED",		0, 0},
-	{	0	} // last entry must be 0
-};
-
 
 
 /**
@@ -164,7 +130,7 @@ bool IpfixDbWriterMySQL::createDBTable(const char* partitionname, uint64_t start
 	ctsql << "CREATE TABLE IF NOT EXISTS " << partitionname << " (";
 	/**collect the names for columns and the dataTypes for the table in a string*/
 	for(i=0; i < numberOfColumns; i++) {
-		ctsql << identify[i].cname << " " << identify[i].dataType;
+		ctsql << tableColumns[i].cname << " " << tableColumns[i].dataType;
 		if (i != numberOfColumns-1) {
 			ctsql << ", ";
 		}
@@ -278,7 +244,7 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 		// found in table
 		exporterID = atoi(dbRow[0]);
 		mysql_free_result(dbResult);
-		DPRINTF("ExporterID %d is in exporter table", id);
+		DPRINTF("ExporterID %d is in exporter table", exporterID);
 	} else {
 		mysql_free_result(dbResult);
 		// insert new exporter table entry
@@ -311,11 +277,6 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 	return exporterID;
 }
 
-IpfixDbWriterSQL::Column* IpfixDbWriterMySQL::fillColumnStructure()
-{
-	return (Column*)identifyMySQL;
-}
-
 
 /***** Public Methods ****************************************************/
 
@@ -323,20 +284,8 @@ IpfixDbWriterMySQL::IpfixDbWriterMySQL(const char* dbType, const char* host, con
 		const char* user, const char* pw,
 		unsigned int port, uint16_t observationDomainId,
 		int maxStatements, vector<string> columns)
-	: IpfixDbWriterSQL(dbType, host, db, user, pw, port, observationDomainId, maxStatements, columns)
+	: IpfixDbWriterSQL(dbType, host, db, user, pw, port, observationDomainId, maxStatements, columns), conn(0)
 {
-	identify = fillColumnStructure();
-
-	/**count columns*/
-	numberOfColumns = 0;
-	for(uint32_t i=0; identify[i].cname!=0; i++) numberOfColumns++;
-
-	/**Initialize structure members Statement*/
-	insertBuffer.curRows = 0;
-	insertBuffer.maxRows = maxStatements;
-	insertBuffer.sql = new char[(INS_WIDTH+3)*(numberOfColumns+1)*maxStatements+numberOfColumns*20+60+1];
-	*insertBuffer.sql = 0;
-
 	connectToDB();
 }
 

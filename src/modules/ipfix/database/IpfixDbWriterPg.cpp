@@ -45,34 +45,6 @@ using namespace std;
  */
 const uint16_t MAX_COL_LENGTH = 22;
 
-/**
- *	struct to identify column names with IPFIX_TYPEID an the dataType to store in database
- *	ExporterID is no IPFIX_TYPEID, its user specified
- *      Attention: order of entries is important!
- */
-const static IpfixDbWriterSQL::Column identifyPg [] = {
-	{	CN_srcIP, 		IPFIX_TYPEID_sourceIPv4Address,		"inet", 0, 0},
-	{	CN_dstIP, 		IPFIX_TYPEID_destinationIPv4Address,	"inet", 0, 0},
-	{	CN_srcPort,		IPFIX_TYPEID_sourceTransportPort,	"integer", 0, 0},
-	{	CN_dstPort,		IPFIX_TYPEID_destinationTransportPort,	"integer",0, 0},
-	{	CN_proto,		IPFIX_TYPEID_protocolIdentifier,	"smallint", 0, 0},
-	{	CN_dstTos,		IPFIX_TYPEID_classOfServiceIPv4,	"smallint", 0, 0},
-	{	CN_bytes,		IPFIX_TYPEID_octetDeltaCount,		"bigint", 0, 0},
-	{	CN_pkts,		IPFIX_TYPEID_packetDeltaCount,		"bigint", 0, 0},
-	{	CN_firstSwitched,	IPFIX_TYPEID_flowStartMilliSeconds,	"timestamp", 0, 0}, // default value is invalid/not used for this entry
-	{	CN_lastSwitched,	IPFIX_TYPEID_flowEndMilliSeconds,	"timestamp", 0, 0}, // default value is invalid/not used for this entry
-	{	CN_tcpControlBits,	IPFIX_TYPEID_tcpControlBits,		"smallint", 0, 0},
-	{	CN_revbytes,		IPFIX_TYPEID_octetDeltaCount,		"bigint", IPFIX_PEN_reverse, 0},
-	{	CN_revpkts,		IPFIX_TYPEID_packetDeltaCount,		"bigint", IPFIX_PEN_reverse, 0},
-	{	CN_revFirstSwitched,	IPFIX_TYPEID_flowStartMilliSeconds,	"timestamp", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	CN_revLastSwitched,	IPFIX_TYPEID_flowEndMilliSeconds,	"timestamp", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	CN_revTcpControlBits,	IPFIX_TYPEID_tcpControlBits,		"smallint", IPFIX_PEN_reverse, 0},
-	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
-	{	CN_revMaxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
-	{	CN_exporterID,		EXPORTERID, 				"integer", 0, 0},
-	{	0} // last entry must be 0
-};
-
 
 
 /**
@@ -90,7 +62,7 @@ void IpfixDbWriterPg::connectToDB()
     ostringstream conninfo;
     conninfo << "host='" << hostName << "' port='" << portNum << "' ";
     conninfo << "dbname='" << dbName << "' user='" << userName<< "' ";
-    conninfo << "password='" << password << "' sslmode=require";
+    conninfo << "password='" << password << "'";// sslmode=require";
     DPRINTF("using connection string '%s'", conninfo.str().c_str());
     conn = PQconnectdb(conninfo.str().c_str());
     if (PQstatus(conn) != CONNECTION_OK) {
@@ -158,7 +130,7 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 		ctsql << "CREATE TABLE " << tablePrefix << " (";
 		/**collect the names for columns and the dataTypes for the table in a string*/
 		for(i=0; i < numberOfColumns; i++) {
-			ctsql << identify[i].cname << " " << identify[i].dataType;
+			ctsql << tableColumns[i].cname << " " << tableColumns[i].dataType;
 			if (i != numberOfColumns-1) {
 				ctsql << ", ";
 			}
@@ -183,8 +155,9 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 		ostringstream cpsql;
 
 		cpsql << "CREATE TABLE " << partitionname << " (CHECK (firstswitched>='";
-		cpsql << getTimeAsString(starttime, "%Y-%m-%d %H:%M:%S", true);
-		cpsql << "' AND firstswitched<'" << getTimeAsString(endtime, "%Y-%m-%d %H:%M:%S", true);
+		//cpsql << getTimeAsString(starttime, "%Y-%m-%d %H:%M:%S", true);
+		cpsql << starttime;
+		cpsql << "' AND firstswitched<'" << endtime; //getTimeAsString(endtime, "%Y-%m-%d %H:%M:%S", true);
 		cpsql << "')) INHERITS (" << tablePrefix << ")";
 
 		PGresult* res = PQexec(conn, cpsql.str().c_str());
@@ -233,6 +206,7 @@ bool IpfixDbWriterPg::writeToDb()
 	insertBuffer.appendPtr[-1] = 0;
 
 	// Write rows to database
+	msg(MSG_FATAL, "%s", insertBuffer.sql);
 	PGresult* res = PQexec(conn, insertBuffer.sql);
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 		msg(MSG_ERROR,"IpfixDbWriterPg: Insert of records failed. Error: %s",
@@ -334,11 +308,6 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 	return exporterID;
 }
 
-IpfixDbWriterSQL::Column* IpfixDbWriterPg::fillColumnStructure()
-{
-	return (Column*)identifyPg;
-}
-
 bool IpfixDbWriterPg::checkRelationExists(const char* relname)
 {
 	// check if table needs to be created
@@ -366,20 +335,8 @@ IpfixDbWriterPg::IpfixDbWriterPg(const char* dbType, const char* host, const cha
 		const char* user, const char* pw,
 		unsigned int port, uint16_t observationDomainId,
 		int maxStatements, vector<string> columns)
-	: IpfixDbWriterSQL(dbType, host, db, user, pw, port, observationDomainId, maxStatements, columns)
+	: IpfixDbWriterSQL(dbType, host, db, user, pw, port, observationDomainId, maxStatements, columns), conn(0)
 {
-	identify = fillColumnStructure();
-
-	/**count columns*/
-	numberOfColumns = 0;
-	for(uint32_t i=0; identify[i].cname!=0; i++) numberOfColumns++;
-
-	/**Initialize structure members Statement*/
-	insertBuffer.curRows = 0;
-	insertBuffer.maxRows = maxStatements;
-	insertBuffer.sql = new char[(INS_WIDTH+3)*(numberOfColumns+1)*maxStatements+numberOfColumns*20+60+1];
-	*insertBuffer.sql = 0;
-
 	connectToDB();
 }
 

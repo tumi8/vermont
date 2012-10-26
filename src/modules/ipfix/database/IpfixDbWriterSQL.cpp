@@ -35,6 +35,74 @@ using namespace std;
 
 #define EXPORTERID 0
 
+
+/***** Structs for SQL databases *********************************************/
+
+
+/** MySQL **/
+
+/**
+ *	struct to identify column names with IPFIX_TYPEID an the dataType to store in database
+ *	ExporterID is no IPFIX_TYPEID, its user specified
+ *      Attention: order of entries is important!
+ */
+const static IpfixDbWriterSQL::Column identifyMySQL [] = {
+	{	CN_dstIP, 		IPFIX_TYPEID_destinationIPv4Address,	"INTEGER(10) UNSIGNED", 	0, 0},
+	{	CN_srcIP, 		IPFIX_TYPEID_sourceIPv4Address,		"INTEGER(10) UNSIGNED", 	0, 0},
+	{	CN_srcPort, 		IPFIX_TYPEID_sourceTransportPort,	"SMALLINT(5) UNSIGNED", 	0, 0},
+	{	CN_dstPort, 		IPFIX_TYPEID_destinationTransportPort,	"SMALLINT(5) UNSIGNED", 	0, 0},
+	{	CN_proto, 		IPFIX_TYPEID_protocolIdentifier,	"TINYINT(3) UNSIGNED", 		0, 0 },
+	{	CN_dstTos, 		IPFIX_TYPEID_classOfServiceIPv4,	"TINYINT(3) UNSIGNED", 		0, 0},
+	{	CN_bytes, 		IPFIX_TYPEID_octetDeltaCount,		"BIGINT(20) UNSIGNED", 		0, 0},
+	{	CN_pkts, 		IPFIX_TYPEID_packetDeltaCount,		"BIGINT(20) UNSIGNED", 		0, 0},
+	{	CN_firstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"BIGINT(15) UNSIGNED", 	0, 0}, // default value is invalid/not used for this ent
+	{	CN_lastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"BIGINT(15) UNSIGNED", 	0, 0}, // default value is invalid/not used for this entry
+	{	CN_tcpControlBits,  	IPFIX_TYPEID_tcpControlBits,		"SMALLINT(5) UNSIGNED", 	0, 0},
+	//TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
+	{	CN_revbytes, 		IPFIX_TYPEID_octetDeltaCount,		"BIGINT(20) UNSIGNED",		IPFIX_PEN_reverse, 0},
+	{	CN_revpkts, 		IPFIX_TYPEID_packetDeltaCount,		"BIGINT(20) UNSIGNED", 		IPFIX_PEN_reverse, 0},
+	{	CN_revFirstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"BIGINT(15) UNSIGNED", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revLastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"BITINT(15 UNSIGNED", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revTcpControlBits,  IPFIX_TYPEID_tcpControlBits,		"SMALLINT(5) UNSIGNED", 	IPFIX_PEN_reverse, 0},
+	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"BIGINT(20) UNSIGNED", 		IPFIX_PEN_vermont|IPFIX_PEN_reverse},
+	{	CN_exporterID, 		EXPORTERID,				"SMALLINT(5) UNSIGNED", 	0, 0},
+	{	CN_flowStartSysUpTime,	IPFIX_TYPEID_flowStartSysUpTime,	"INTEGER(10) UNSIGNED",		0, 0},
+	{	CN_flowEndSysUpTime,	IPFIX_TYPEID_flowEndSysUpTime,		"INTEGER(10) UNSIGNED",		0, 0},
+	{	0	} // last entry must be 0
+};
+
+/** Postgres **/
+
+/**
+ *	struct to identify column names with IPFIX_TYPEID an the dataType to store in database
+ *	ExporterID is no IPFIX_TYPEID, its user specified
+ *      Attention: order of entries is important!
+ */
+const static IpfixDbWriterSQL::Column identifyPg [] = {
+	{	CN_srcIP, 		IPFIX_TYPEID_sourceIPv4Address,		"bigint", 0, 0},
+	{	CN_dstIP, 		IPFIX_TYPEID_destinationIPv4Address,	"bigint", 0, 0},
+	{	CN_srcPort,		IPFIX_TYPEID_sourceTransportPort,	"integer", 0, 0},
+	{	CN_dstPort,		IPFIX_TYPEID_destinationTransportPort,	"integer",0, 0},
+	{	CN_proto,		IPFIX_TYPEID_protocolIdentifier,	"smallint", 0, 0},
+	{	CN_dstTos,		IPFIX_TYPEID_classOfServiceIPv4,	"smallint", 0, 0},
+	{	CN_bytes,		IPFIX_TYPEID_octetDeltaCount,		"bigint", 0, 0},
+	{	CN_pkts,		IPFIX_TYPEID_packetDeltaCount,		"bigint", 0, 0},
+	{	CN_firstSwitched,	IPFIX_TYPEID_flowStartMilliSeconds,	"bigint", 0, 0}, // default value is invalid/not used for this entry
+	{	CN_lastSwitched,	IPFIX_TYPEID_flowEndMilliSeconds,	"bigint", 0, 0}, // default value is invalid/not used for this entry
+	{	CN_tcpControlBits,	IPFIX_TYPEID_tcpControlBits,		"smallint", 0, 0},
+	{	CN_revbytes,		IPFIX_TYPEID_octetDeltaCount,		"bigint", IPFIX_PEN_reverse, 0},
+	{	CN_revpkts,		IPFIX_TYPEID_packetDeltaCount,		"bigint", IPFIX_PEN_reverse, 0},
+	{	CN_revFirstSwitched,	IPFIX_TYPEID_flowStartMilliSeconds,	"bigint", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revLastSwitched,	IPFIX_TYPEID_flowEndMilliSeconds,	"bigint", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revTcpControlBits,	IPFIX_TYPEID_tcpControlBits,		"smallint", IPFIX_PEN_reverse, 0},
+	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
+	{	CN_revMaxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
+	{	CN_exporterID,		EXPORTERID, 				"integer", 0, 0},
+	{	0} // last entry must be 0
+};
+
+
+
 /***** Global Variables ******************************************************/
 
 /**
@@ -168,115 +236,115 @@ void IpfixDbWriterSQL::extractNtp64(uint64_t& intdata, uint32_t& micros)
 void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		TemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data)
 {
-	uint32_t j, k;
 	uint64_t intdata = 0;
-	ostringstream insertsql;
 	uint64_t flowstart = 0;
+	uint64_t intdata2 = 0;
+	uint32_t k;
+	bool notfound, notfound2;
+	bool first = true;
+	ostringstream rowStream;
 
-	insertsql << "(";
+	rowStream << "(";
 
 	/**loop over the columname and loop over the IPFIX_TYPEID of the record
-	 to get the corresponding data to store */
-	for( j=0; j<numberOfColumns; j++) {
-		bool notfound = true;
-		uint32_t microseconds = 0; // special case for handle of microseconds (will not be contained in intdata)
-
-		if (identify[j].ipfixId == EXPORTERID) {
-			/**lookup exporter buffer to get exporterID from sourcID and expIp**/
-			uint32_t expID = getExporterID(sourceID);
-			intdata = expID;
-			notfound = false;
+	 to get the corresponding data to store and make insert statement*/
+	for(vector<Column>::iterator col = tableColumns.begin(); col != tableColumns.end(); col++) {
+		if (col->ipfixId == EXPORTERID) {
+			intdata = (uint64_t)getExporterID(sourceID);
 		} else {
+			notfound = true;
 			// try to gather data required for the field
 			if(dataTemplateInfo->fieldCount > 0) {
-				// look inside the ipfix data packet
+				// look inside the ipfix record
 				for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-					if(dataTemplateInfo->fieldInfo[k].type.id == identify[j].ipfixId) {
+					if(dataTemplateInfo->fieldInfo[k].type.enterprise ==  col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
 						notfound = false;
 						intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-						DPRINTF("IpfixDbWriterSQL::getRecData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X", identify[j].ipfixId, intdata, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
+						DPRINTF("IpfixDbWriter::getdata: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X", col->ipfixId, intdata, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
+						break;
 					}
 				}
 			}
 			if( dataTemplateInfo->dataCount > 0 && notfound) {
 				// look in static data fields of template for data
 				for(k=0; k < dataTemplateInfo->dataCount; k++) {
-					if(dataTemplateInfo->dataInfo[k].type.id == identify[j].ipfixId) {
+					if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->dataInfo[k].type.id == col->ipfixId) {
 						notfound = false;
 						intdata = getdata(dataTemplateInfo->dataInfo[k].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[k].offset));
+						break;
 					}
 				}
 			}
 			if(notfound) {
+				notfound2 = true;
 				// for some Ids, we have an alternative
-				if (identify[j].enterprise==0) {
-					switch (identify[j].ipfixId) {
-						case IPFIX_TYPEID_flowStartMilliSeconds:
-							// look for alternative (flowStartMilliSeconds/1000)
+				if(col->enterprise == 0) {
+					switch (col->ipfixId) {
+						case IPFIX_TYPEID_flowStartSeconds:
 							if(dataTemplateInfo->fieldCount > 0) {
 								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartSeconds, 0)) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-										notfound = false;
-										break;
-									} else if (dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0)) {
+									// look for alternative (flowStartMilliSeconds/1000)
+									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartMilliSeconds) {
 										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-										extractNtp64(intdata, microseconds);
 										notfound = false;
 										break;
 									}
+									// if no flow start time is available, maybe this is is from a netflow from Cisco
+									// then - as a last alternative - use flowStartSysUpTime as flow start time
+									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSysUpTime) {
+										intdata2 = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
+										notfound2 = false;
+									}
+								}
+								if(notfound && !notfound2) {
+									intdata = intdata2;
+									notfound = false;
 								}
 							}
 							break;
-						case IPFIX_TYPEID_flowEndMilliSeconds:
-							// look for alternative (flowEndMilliSeconds/1000)
+						case IPFIX_TYPEID_flowEndSeconds:
 							if(dataTemplateInfo->fieldCount > 0) {
 								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndSeconds, 0)) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-										notfound = false;
-										break;
-									} else if (dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndNanoSeconds, 0)) {
+									// look for alternative (flowEndMilliSeconds/1000)
+									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndMilliSeconds) {
 										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-										extractNtp64(intdata, microseconds);
 										notfound = false;
 										break;
 									}
+									// if no flow end time is available, maybe this is is from a netflow from Cisco
+									// then use flowEndSysUpTime as flow start time
+									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSysUpTime) {
+										intdata2 = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
+										notfound2 = false;
+									}
+								}
+								if(notfound && !notfound2) {
+									intdata = intdata2;
+									notfound = false;
 								}
 							}
 							break;
 					}
-				} else if (identify[j].enterprise==IPFIX_PEN_reverse) {
-					switch (identify[j].ipfixId) {
-						case IPFIX_TYPEID_flowStartMilliSeconds:
+				} else if (col->enterprise==IPFIX_PEN_reverse) {
+					switch (col->ipfixId) {
+						case IPFIX_TYPEID_flowStartSeconds:
 							// look for alternative (revFlowStartMilliSeconds/1000)
 							if(dataTemplateInfo->fieldCount > 0) {
 								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse)) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-										notfound = false;
-										break;
-									} else if (dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartNanoSeconds, IPFIX_PEN_reverse)) {
+									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse)) {
 										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-										extractNtp64(intdata, microseconds);
 										notfound = false;
 										break;
 									}
 								}
 							}
 							break;
-
-						case IPFIX_TYPEID_flowEndMilliSeconds:
+						case IPFIX_TYPEID_flowEndSeconds:
 							// look for alternative (revFlowEndMilliSeconds/1000)
 							if(dataTemplateInfo->fieldCount > 0) {
 								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse)) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-										notfound = false;
-										break;
-									} else if (dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndNanoSeconds, IPFIX_PEN_reverse)) {
+									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse)) {
 										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-										extractNtp64(intdata, microseconds);
 										notfound = false;
 										break;
 									}
@@ -285,94 +353,55 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 							break;
 
 					}
-
 				}
 				// if still not found, get default value
 				if(notfound)
-					intdata = getdefaultIPFIXdata(identify[j].ipfixId);
+					intdata = col->defaultValue;
 			}
 
 			// we need extra treatment for timing related fields
-			switch (identify[j].ipfixId) {
-				case IPFIX_TYPEID_flowStartMilliSeconds:
-					if(intdata==0) {
-						// if no flow start time is available, maybe this is is from a netflow from Cisco
-						// then use flowStartSysUpTime as flow start time
-						for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-							if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSysUpTime) {
-								intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset))*1000;
-							}
-						}
-					}
-
-					break;
-
-				case IPFIX_TYPEID_flowEndMilliSeconds:
-					if(intdata==0) {
-						// if no flow end time is available, maybe this is is from a netflow from Cisco
-						// then use flowEndSysUpTime as flow start time
-						for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-							if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSysUpTime) {
-								intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset))*1000;
-							}
-						}
-					}
-					break;
-			}
-		}
-
-
-		DPRINTF("saw ipfix id %d in packet with intdata %llX", identify[j].ipfixId, intdata);
-
-		switch (identify[j].enterprise) {
-			case 0:
-				switch (identify[j].ipfixId) {
-					// convert IPv4 address to string notation, as this is required by Postgres
-					case IPFIX_TYPEID_sourceIPv4Address:
-					case IPFIX_TYPEID_destinationIPv4Address:
-						insertsql << "'" << IPToString(ntohl(intdata)) << "'";
-						break;
-
-					// convert integer to timestamps
-					case IPFIX_TYPEID_flowStartMilliSeconds:
+			if(col->enterprise == 0 ) {
+				switch (col->ipfixId) {
+					case IPFIX_TYPEID_flowStartSeconds:
 						// save time for table access
 						if (flowstart==0) flowstart = intdata;
-					case IPFIX_TYPEID_flowEndMilliSeconds:
-						insertsql << "'" << getTimeAsString(intdata, "%Y-%m-%d %H:%M:%S", true, microseconds) << "'";
 						break;
 
-					// all other integer data is directly converted to a string
-					default:
-						insertsql << intdata;
+					case IPFIX_TYPEID_flowEndSeconds:
+						break;
+
+					case IPFIX_TYPEID_flowStartMilliSeconds:
+						// if flowStartSeconds is not stored in one of the columns, but flowStartMilliSeconds is,
+						// then we use flowStartMilliSeconds for table access
+						// This is realized by storing this value only if flowStartSeconds has not yet been seen.
+						// A later appearing flowStartSeconds will override this value.
+						if (flowstart==0)
+							flowstart = intdata;
+					case IPFIX_TYPEID_flowEndMilliSeconds:
+						// in the database the millisecond entry is counted from last second
+						//intdata %= 1000;
 						break;
 				}
-				break;
-
-			case IPFIX_PEN_reverse:
-				switch (identify[j].ipfixId) {
+			} else if (col->enterprise==IPFIX_PEN_reverse)
+				switch (col->ipfixId) {
 					case IPFIX_TYPEID_flowStartMilliSeconds:
 					case IPFIX_TYPEID_flowEndMilliSeconds:
-						insertsql << "'" << getTimeAsString(intdata, "%Y-%m-%d %H:%M:%S", true, microseconds) << "'";
-						break;
-
-					// all other integer data is directly converted to a string
-					default:
-						insertsql << intdata;
+						// in the database the millisecond entry is counted from last second
+						//intdata %= 1000;
 						break;
 				}
-				break;
-
-			// all other integer data is directly converted to a string
-			default:
-				insertsql << intdata;
-				break;
 		}
-		if (j!=numberOfColumns-1) insertsql << ",";
 
+		DPRINTF("saw ipfix id %d in packet with intdata %llX", col->ipfixId, intdata);
+
+		if(first)
+			rowStream << intdata;
+		else
+			rowStream << "," << intdata;
+		first = false;
 	}
 
-	insertsql << "),";
-
+	rowStream << "),";
 
 	// if this flow belongs to a different table, flush all cached entries now
 	// and get new table
@@ -387,9 +416,8 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		}
 	}
 
-
-	strcat(insertBuffer.appendPtr, insertsql.str().c_str());
-	insertBuffer.appendPtr += insertsql.str().size();
+	strcat(insertBuffer.appendPtr, rowStream.str().c_str());
+	insertBuffer.appendPtr += rowStream.str().size();
 	insertBuffer.curRows++;
 }
 
@@ -455,9 +483,9 @@ uint64_t IpfixDbWriterSQL::getIPFIXValue(InformationElement::IeInfo type, IpfixR
 uint32_t IpfixDbWriterSQL::getdefaultIPFIXdata(int ipfixtype_id)
 {
 	int i;
-	for( i=0; identify[i].cname != 0; i++) {
-		if(ipfixtype_id == identify[i].ipfixId) {
-			return identify[i].defaultValue;
+	for( i=0; tableColumns[i].cname != 0; i++) {
+		if(ipfixtype_id == tableColumns[i].ipfixId) {
+			return tableColumns[i].defaultValue;
 		}
 	}
 	return 0;
@@ -468,7 +496,7 @@ string IpfixDbWriterSQL::getInsertString(string tableName)
 	ostringstream sql;
 	sql  << "INSERT INTO " << tableName << " (";
 	for (uint32_t i = 0; i < numberOfColumns; ++i) {
-		sql << identify[i].cname;
+		sql << tableColumns[i].cname;
 		if (i < numberOfColumns - 1) sql << ",";
 	}
 	sql << ") VALUES ";
@@ -492,6 +520,7 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 	userName = user;
 	password = pw;
 	portNum = port;
+	dbType = dbtype;
 	socketName = 0;
 
 	flags = 0;
@@ -507,7 +536,53 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 	curTable.timeEnd = 0;
 	curTable.name = "";
 	tablePrefix = "f"; // TODO: make this in config file configurable!
+	
+	if (dbType == "mysql") {
+		identify = (Column*)identifyMySQL;
+	} else if (dbType == "postgres") {
+		identify = (Column*)identifyPg;
+	} else {
+		THROWEXCEPTION("IpfixDbWriter: dbType \"%s\" is not implemented!", dbType.c_str());
+	}
 
+	if(columns.empty())
+		THROWEXCEPTION("IpfixDbWriter: cannot initiate with no columns");
+	
+	/* get columns */
+	bool first = true;
+	for(vector<string>::const_iterator col = columns.begin(); col != columns.end(); col++) {
+		int i = 0;
+		while(identify[i].cname != 0) {
+			if(col->compare(identify[i].cname) == 0) {
+				Column c = identify[i];
+				tableColumns.push_back(c);
+				// update tableColumnsString
+				if(!first)
+					tableColumnsString.append(",");
+				tableColumnsString.append(identify[i].cname);
+				// update tableColumnsCreateString
+				if(!first)
+					tableColumnsCreateString.append(", ");
+				tableColumnsCreateString.append(identify[i].cname);
+				tableColumnsCreateString.append(" ");
+				tableColumnsCreateString.append(identify[i].dataType);
+				first = false;
+				break;
+			}
+			i++;
+		}
+	}
+	msg(MSG_INFO, "IpfixDbWriter: columns are %s", tableColumnsString.c_str());
+
+
+	/**count columns*/
+	numberOfColumns = tableColumns.size();
+
+	/**Initialize structure members Statement*/
+	insertBuffer.curRows = 0;
+	insertBuffer.maxRows = maxStatements;
+	insertBuffer.sql = new char[(INS_WIDTH+3)*(numberOfColumns+1)*maxStatements+numberOfColumns*20+60+1];
+	*insertBuffer.sql = 0;
 }
 
 /**

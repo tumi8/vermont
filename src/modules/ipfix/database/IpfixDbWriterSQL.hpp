@@ -118,6 +118,11 @@ class IpfixDbWriterSQL
 		int dbError;
 		Table curTable;			/** table name for currently cached entries in insertBuffer */
 		string tablePrefix;			/** prefix for all tables */
+		string dbType;
+
+		vector<Column> tableColumns;			// table columns
+		string tableColumnsString;     			// table columns as string for INSERT statements
+		string tableColumnsCreateString;  		// table create string
 
 		void addColumnEntry(const char* insert, bool quoted, bool lastcolumn);
 		void addColumnEntry(const uint64_t insert, bool quoted, bool lastcolumn);
@@ -135,7 +140,6 @@ class IpfixDbWriterSQL
 		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime) = 0;
 		virtual string getInsertString(string tableName);
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID) = 0;
-		virtual Column* fillColumnStructure() = 0;
 		Column* identify;
 	private:
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID,
@@ -154,6 +158,5 @@ class IpfixDbWriterSQL
 		void extractNtp64(uint64_t& intdata, uint32_t& micros);
 
 };
-
 
 #endif

@@ -57,7 +57,6 @@ class IpfixDbWriterMySQL
 		virtual int createExporterTable();
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID);
 		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime);
-		virtual Column* fillColumnStructure();
 
 	private:
 		MYSQL* conn;
