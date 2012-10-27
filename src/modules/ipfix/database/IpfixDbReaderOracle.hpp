@@ -25,7 +25,7 @@
 #ifndef IPFIXDBREADERORACLE_H
 #define IPFIXDBREADERORACLE_H
 
-#include "IpfixRecord.hpp"
+#include "../IpfixRecord.hpp"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "core/Module.h"

@@ -23,7 +23,7 @@
 #include "IpfixDbWriterCfg.h"
 #include "IpfixDbWriterMySQL.hpp"
 #include "IpfixDbWriterPg.hpp"
-
+#include "IpfixDbWriterOracle.hpp"
 
 
 IpfixDbWriterCfg* IpfixDbWriterCfg::create(XMLElement* e)
@@ -106,6 +106,8 @@ IpfixDbWriterSQL* IpfixDbWriterCfg::createInstance()
 		instance = new IpfixDbWriterMySQL(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames);
 	} else if  (databaseType == "postgres") {
 		instance = new IpfixDbWriterPg(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames);
+	} else if (databaseType == "oracle") {
+		instance = new IpfixDbWriterOracle(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames);
 	} else {
 		THROWEXCEPTION("Database type \"%s\" not yet implemented in IpfixDbWriterCfg ...", databaseType.c_str());
 	}

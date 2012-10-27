@@ -118,7 +118,6 @@ ADD_LIBRARY(modules
     ipfix/database/IpfixDbWriterPg.cpp
     ipfix/database/IpfixDbReaderOracle.cpp
     ipfix/database/IpfixDbReaderOracleCfg.cpp
-    ipfix/database/IpfixDbWriterOracleCfg.cpp
     ipfix/database/IpfixFlowInspectorExporterCfg.cpp
     ipfix/database/IpfixFlowInspectorExporter.cpp
 )

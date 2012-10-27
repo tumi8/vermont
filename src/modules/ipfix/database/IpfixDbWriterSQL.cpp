@@ -101,6 +101,33 @@ const static IpfixDbWriterSQL::Column identifyPg [] = {
 	{	0} // last entry must be 0
 };
 
+/** Oracle **/
+
+const IpfixDbWriterSQL::Column identifyOracle [] = {
+	{	CN_dstIP, 		IPFIX_TYPEID_destinationIPv4Address,	"NUMBER(10)", 	0, 0},
+	{	CN_srcIP, 		IPFIX_TYPEID_sourceIPv4Address,		"NUMBER(10)", 	0, 0},
+	{	CN_srcPort, 		IPFIX_TYPEID_sourceTransportPort,	"NUMBER(5)", 	0, 0},
+	{	CN_dstPort, 		IPFIX_TYPEID_destinationTransportPort,	"NUMBER(5)", 	0, 0},
+	{	CN_proto, 		IPFIX_TYPEID_protocolIdentifier,	"NUMBER(3)", 		0, 0 },
+	{	CN_dstTos, 		IPFIX_TYPEID_classOfServiceIPv4,	"NUMBER(3)", 		0, 0},
+	{	CN_bytes, 		IPFIX_TYPEID_octetDeltaCount,		"NUMBER(20)", 		0, 0},
+	{	CN_pkts, 		IPFIX_TYPEID_packetDeltaCount,		"NUMBER(20)", 		0, 0},
+	{	CN_firstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"NUMBER(15)", 	0, 0}, // default value is invalid/not used for this ent
+	{	CN_lastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"NUMBER(15)", 	0, 0}, // default value is invalid/not used for this entry
+	{	CN_tcpControlBits,  	IPFIX_TYPEID_tcpControlBits,		"NUMBER(5)", 	0, 0},
+	//TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
+	{	CN_revbytes, 		IPFIX_TYPEID_octetDeltaCount,		"NUMBER(20)",		IPFIX_PEN_reverse, 0},
+	{	CN_revpkts, 		IPFIX_TYPEID_packetDeltaCount,		"NUMBER(20)", 		IPFIX_PEN_reverse, 0},
+	{	CN_revFirstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"NUMBER(15)", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revLastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"NUMBER(15)", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revTcpControlBits,  IPFIX_TYPEID_tcpControlBits,		"NUMBER(5)", 	IPFIX_PEN_reverse, 0},
+	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"NUMBER(20)", 		IPFIX_PEN_vermont|IPFIX_PEN_reverse},
+	{	CN_exporterID, 		EXPORTERID,				"NUMBER(5)", 	0, 0},
+	{	CN_flowStartSysUpTime,	IPFIX_TYPEID_flowStartSysUpTime,	"NUMBER(10)",		0, 0},
+	{	CN_flowEndSysUpTime,	IPFIX_TYPEID_flowEndSysUpTime,		"NUMBER(10)",		0, 0},
+	{	0	} // last entry must be 0
+};
+
 
 
 /***** Global Variables ******************************************************/

@@ -46,7 +46,6 @@
 #include "modules/ipfix/aggregator/IpfixAggregatorCfg.h"
 #include "modules/ipfix/aggregator/PacketAggregatorCfg.h"
 #include "modules/ipfix/database/IpfixDbReaderMySQLCfg.h"
-#include "modules/ipfix/database/IpfixDbWriterOracleCfg.h"
 #include "modules/ipfix/database/IpfixDbWriterCfg.h"
 #include "modules/ipfix/database/IpfixDbReaderOracleCfg.h"
 #include "modules/ipfix/database/IpfixDbWriterMongoCfg.h"
@@ -100,11 +99,10 @@ Cfg* ConfigManager::configModules[] = {
 	new P2PDetectorCfg(NULL),
 	new HostStatisticsCfg(NULL),
 	new IpfixCsExporterCfg(NULL),
-#if defined(DB_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED)
+#if defined(DB_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED)
 	new IpfixDbWriterCfg(NULL),
 #endif
 #ifdef ORACLE_SUPPORT_ENABLED
-	new IpfixDbWriterOracleCfg(NULL),
 	new IpfixDbReaderOracleCfg(NULL),
 #endif
 #ifdef MONGO_SUPPORT_ENABLED
