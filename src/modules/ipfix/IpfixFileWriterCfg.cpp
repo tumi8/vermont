@@ -1,6 +1,6 @@
 /*
  * Vermont Configuration Subsystem
- * Copyright (C) 2009 Vermont Project
+ * Copyright (C) 2009-2012 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
