@@ -103,15 +103,33 @@ IpfixDbWriterCfg::~IpfixDbWriterCfg()
 IpfixDbWriterSQL* IpfixDbWriterCfg::createInstance()
 {
 	if (databaseType == "mysql") {
+#if defined(DB_SUPPORT_ENABLED)
+	
 		instance = new IpfixDbWriterMySQL(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames);
+#else
+		goto except;
+#endif
 	} else if  (databaseType == "postgres") {
+
+#if defined(PG_SUPPORT_ENABLED)
 		instance = new IpfixDbWriterPg(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames);
+#else
+		goto except;
+#endif
 	} else if (databaseType == "oracle") {
+#if defined(ORACLE_SUPPORT_ENABLED)
 		instance = new IpfixDbWriterOracle(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames);
+#else
+		goto except;
+#endif
 	} else {
-		THROWEXCEPTION("Database type \"%s\" not yet implemented in IpfixDbWriterCfg ...", databaseType.c_str());
+		goto except;
 	}
 	return instance;
+except:
+	THROWEXCEPTION("IpfixDbWriterCfg: Database type \"%s\" not yet implemented or support in vermont is not compiled in ...", databaseType.c_str());
+	// this is only to surpress compiler warnings. we should never get here ...
+	return 0;
 }
 
 
