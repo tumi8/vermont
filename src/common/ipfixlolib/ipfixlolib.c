@@ -1127,6 +1127,7 @@ static int add_collector_datafile(ipfix_receiving_collector *collector, const ch
     collector->ipv4address[0] = '\0';
     collector->port_number = 0;
     collector->data_socket = -1;
+    collector->protocol = DATAFILE;
     memset(&(collector->addr), 0, sizeof(collector->addr));
     collector->last_reconnect_attempt_time = 0;
 
@@ -1145,7 +1146,7 @@ static int add_collector_rawdir(ipfix_receiving_collector *collector, const char
     collector->data_socket = -1;
     memset(&(collector->addr), 0, sizeof(collector->addr));
     collector->last_reconnect_attempt_time = 0;
-
+    collector->protocol = RAWDIR;
 
     collector->packet_directory_path = strdup(path);
     collector->packets_written = 0;
@@ -1375,6 +1376,7 @@ int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr,
 	   );
 	return -1;
     }
+
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
     /* It is the duty of add_collector_rawdir to set collector->state */
     if (proto==RAWDIR) return add_collector_rawdir(collector,coll_ip4_addr);
