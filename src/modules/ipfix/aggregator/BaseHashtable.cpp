@@ -353,9 +353,11 @@ int BaseHashtable::isToBeAggregated(InformationElement::IeInfo& type)
 				case IPFIX_TYPEID_flowEndMilliSeconds:
 				case IPFIX_TYPEID_flowEndMicroSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_postOctetDeltaCount:
 				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_packetTotalCount:
 				case IPFIX_TYPEID_postPacketDeltaCount:
 				case IPFIX_TYPEID_droppedOctetDeltaCount:
 				case IPFIX_TYPEID_droppedPacketDeltaCount:
@@ -373,7 +375,9 @@ int BaseHashtable::isToBeAggregated(InformationElement::IeInfo& type)
 				case IPFIX_TYPEID_flowEndMilliSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
 				case IPFIX_TYPEID_octetDeltaCount:
+				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_packetTotalCount:
 				case IPFIX_TYPEID_tcpControlBits:
 					return 1;
 			}
