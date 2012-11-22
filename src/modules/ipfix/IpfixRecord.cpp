@@ -96,6 +96,8 @@ namespace InformationElement {
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
+				case IPFIX_TYPEID_bgpSourceAsNumber:
+				case IPFIX_TYPEID_bgpDestinationAsNumber:
 				case IPFIX_ETYPEID_maxPacketGap:
 					return Packet::IPProtocolType(Packet::TCP|Packet::UDP|Packet::ICMP);
 
