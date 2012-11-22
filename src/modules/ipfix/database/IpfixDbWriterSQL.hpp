@@ -26,7 +26,6 @@
 #include "../IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
-#include <libpq-fe.h>
 #include <netinet/in.h>
 #include <time.h>
 
