@@ -21,7 +21,7 @@
 #ifndef IPFIXDBWRITERCFG_H_
 #define IPFIXDBWRITERCFG_H_
 
-#ifdef DB_SUPPORT_ENABLED
+#if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
 
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
