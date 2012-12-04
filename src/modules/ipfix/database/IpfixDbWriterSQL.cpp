@@ -295,14 +295,14 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
 									// look for alternative (flowStartMilliSeconds/1000)
 									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartMilliSeconds) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
 										notfound = false;
 										break;
 									}
 									// if no flow start time is available, maybe this is is from a netflow from Cisco
 									// then - as a last alternative - use flowStartSysUpTime as flow start time
 									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSysUpTime) {
-										intdata2 = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
+										intdata2 = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
 										notfound2 = false;
 									}
 								}
@@ -317,14 +317,14 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
 									// look for alternative (flowEndMilliSeconds/1000)
 									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndMilliSeconds) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
 										notfound = false;
 										break;
 									}
 									// if no flow end time is available, maybe this is is from a netflow from Cisco
 									// then use flowEndSysUpTime as flow start time
 									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSysUpTime) {
-										intdata2 = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
+										intdata2 = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
 										notfound2 = false;
 									}
 								}
@@ -342,7 +342,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 							if(dataTemplateInfo->fieldCount > 0) {
 								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
 									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse)) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
 										notfound = false;
 										break;
 									}
@@ -354,7 +354,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 							if(dataTemplateInfo->fieldCount > 0) {
 								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
 									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse)) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
 										notfound = false;
 										break;
 									}
@@ -374,7 +374,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 				switch (col->ipfixId) {
 					case IPFIX_TYPEID_flowStartSeconds:
 						// save time for table access
-						if (flowstart==0) flowstart = intdata;
+						if (flowstart==0) flowstart = intdata * 1000;
 						break;
 
 					case IPFIX_TYPEID_flowEndSeconds:
