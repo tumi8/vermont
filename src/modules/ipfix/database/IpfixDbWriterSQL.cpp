@@ -94,7 +94,7 @@ std::string IpfixDbWriterSQL::getDBDataType(uint16_t ipfixTypeLength)
 		default:
 			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixTypeLength);
 		}
-	} else if (dbType == "postgres" || dbType == "oracle") {
+	} else if (dbType == "postgres") {
 		// TODO: postgres does not do unsigned types. we therefore use the bigger field. this wastes 
 		/// disk space. Optimize! (except bigints ...)
 		switch (ipfixTypeLength) {
@@ -112,7 +112,26 @@ std::string IpfixDbWriterSQL::getDBDataType(uint16_t ipfixTypeLength)
 		default:
 			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixTypeLength);
 		}	
+	} else if (dbType == "oracle") {
+		// TODO: someone should think about proper type lengths ...
+		switch (ipfixTypeLength) {
+		case 1:
+			return "NUMBER(10)";
+		case 2:
+			return "NUMBER(10)";
+		case 4:
+			return "NUMBER(10)";
+		case 8:
+			return "NUMBER(10)";
+		case 65535:
+			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
+			return "VARCHAR(100)";
+		default:
+			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixTypeLength);
+		}	
 	}
+
+ 
 
 	THROWEXCEPTION("IpfixDbWriter: Found unsupported database backend \"%s\". This is a programming error! Please contact vermont-dev@berlios.de!", dbType.c_str()); 
 	// make compiler happy. we should never get here
@@ -253,6 +272,10 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 	bool notfound, notfound2;
 	bool first = true;
 	ostringstream rowStream;
+
+	if (insertBuffer.curRows > 0) {
+		rowStream << ",";
+	}
 
 	rowStream << "(";
 
@@ -411,12 +434,12 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		first = false;
 	}
 
-	rowStream << "),";
+	rowStream << ")";
 
 	// if this flow belongs to a different table, flush all cached entries now
 	// and get new table
 	if (!checkCurrentTable(flowstart)) {
-		if (!writeToDb()) {
+		if (insertBuffer.curRows != 0 && !writeToDb()) {
 			msg(MSG_ERROR, "failed to flush table, dropping record");
 			return;
 		}

@@ -90,7 +90,7 @@ int IpfixDbWriterOracle::createExporterTable()
 		}
 		catch (oracle::occi::SQLException& ex)
 		{
-			msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing statement: %s", ex.getMessage().c_str());	
+			msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing create exporter table: %s", ex.getMessage().c_str());	
 			con->terminateStatement(stmt);
 			return 1;					
 		}
@@ -194,7 +194,7 @@ int IpfixDbWriterOracle::createExporterTable()
 		}
 		catch (oracle::occi::SQLException& ex)
 		{
-			msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing statement: %s", ex.getMessage().c_str());	
+			msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing trigger creation \"%s\": %s", sql.str().c_str(), ex.getMessage().c_str());	
 			con->terminateStatement(stmt);
 			return 1;					
 		}
@@ -212,6 +212,12 @@ int IpfixDbWriterOracle::createExporterTable()
  */
 bool IpfixDbWriterOracle::writeToDb()
 {
+	if (insertBuffer.curRows == 0) {
+		// nothing to write
+		return 1;
+	}
+
+
 	oracle::occi::Statement *stmt = NULL;
 	oracle::occi::ResultSet *rs = NULL;
 	try
@@ -221,7 +227,7 @@ bool IpfixDbWriterOracle::writeToDb()
 	catch (oracle::occi::SQLException& ex)
 	{
 		msg(MSG_FATAL,"IpfixDbWriterOracle: Error creating statement: %s", ex.getMessage().c_str());	
-		return 1;		
+		return 0;		
 	}
 	if (stmt)
 	{
@@ -232,9 +238,9 @@ bool IpfixDbWriterOracle::writeToDb()
 		}
 		catch (oracle::occi::SQLException& ex)
 		{
-			msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing statement: %s", ex.getMessage().c_str());	
+			msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing flow db insert \"%s\": %s", insertBuffer.sql, ex.getMessage().c_str());	
 			con->terminateStatement(stmt);
-			return 1;					
+			return 0;					
 		}
 		stmt->closeResultSet(rs);
 		con->terminateStatement(stmt);
@@ -320,7 +326,7 @@ bool IpfixDbWriterOracle::createDBTable(const char* partitionname, uint64_t star
 	}
 	catch (oracle::occi::SQLException& ex)
 	{
-		msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+		msg(MSG_FATAL,"IpfixDbWriterOracle: Failed to prepare CREATE flow table statement \"%s: %s", sql.str().c_str(), ex.getMessage().c_str());	
 		dbError = true;
 		return 1;		
 	}
@@ -333,7 +339,7 @@ bool IpfixDbWriterOracle::createDBTable(const char* partitionname, uint64_t star
 		}
 		catch (oracle::occi::SQLException& ex)
 		{
-			msg(MSG_FATAL,"IpfixDbWriterOracle: %s", ex.getMessage().c_str());	
+			msg(MSG_FATAL,"IpfixDbWriterOracle: Failed to execute CREATE flow statement \"%s\":  %s", sql.str().c_str(), ex.getMessage().c_str());	
 			con->terminateStatement(stmt);
 			dbError = true;
 			return 1;					
