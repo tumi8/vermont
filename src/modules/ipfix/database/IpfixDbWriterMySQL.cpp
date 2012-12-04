@@ -277,14 +277,35 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 	return exporterID;
 }
 
+std::string IpfixDbWriterMySQL::getDBDataType(uint16_t ipfixTypeLength)
+{
+	switch (ipfixTypeLength) {
+	case 1:
+		return "TINYINT UNSIGNED";
+	case 2:
+                return "SMALLINT UNSIGNED";
+        case 4:
+                return "INT UNSIGNED";
+        case 8:
+                return "BIGINT UNSIGNED";
+	case 65535:
+		// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
+		return "VARCHAR(100)";
+        default:
+                THROWEXCEPTION("IpfixDbReaderMySQL: Type with non matching length %d ", ipfixTypeLength);
+	}
+	// make compiler happy. we should never get here
+	return "";
+}
+
 
 /***** Public Methods ****************************************************/
 
 IpfixDbWriterMySQL::IpfixDbWriterMySQL(const char* dbType, const char* host, const char* db,
 		const char* user, const char* pw,
 		unsigned int port, uint16_t observationDomainId,
-		int maxStatements, vector<string> columns)
-	: IpfixDbWriterSQL(dbType, host, db, user, pw, port, observationDomainId, maxStatements, columns), conn(0)
+		int maxStatements, vector<string> columns, bool legacyNames)
+	: IpfixDbWriterSQL(dbType, host, db, user, pw, port, observationDomainId, maxStatements, columns, legacyNames), conn(0)
 {
 	connectToDB();
 }

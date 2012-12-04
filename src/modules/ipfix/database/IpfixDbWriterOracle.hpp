@@ -52,7 +52,7 @@ class IpfixDbWriterOracle
 		IpfixDbWriterOracle(const char* dbType, const char* host, const char* db,
 				const char* user, const char* pw,
 				unsigned int port, uint16_t observationDomainId, // FIXME: observationDomainId
-				int maxStatements, vector<string> columns);
+				int maxStatements, vector<string> columns, bool legacyNames);
 		~IpfixDbWriterOracle();
 
 		virtual void connectToDB();
@@ -60,6 +60,7 @@ class IpfixDbWriterOracle
 		virtual int createExporterTable();
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID);
 		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime);
+		virtual std::string getDBDataType(uint16_t ipfixTypeLength);
 
 	private:
 		oracle::occi::Environment *env;

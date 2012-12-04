@@ -539,7 +539,7 @@ string IpfixDbWriterSQL::getInsertString(string tableName)
 IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const char* db,
 		const char* user, const char* pw,
 		unsigned int port, uint16_t observationDomainId,
-		int maxStatements, vector<string> columns)
+		int maxStatements, vector<string> columns, bool legacyNames)
 {
 	/**Initialize structure members IpfixDbWriterSQL*/
 	hostName = host;
@@ -549,6 +549,7 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 	portNum = port;
 	dbType = dbtype;
 	socketName = 0;
+	useLegacyNames = legacyNames;
 
 	flags = 0;
 	srcId.exporterAddress.len = 0;

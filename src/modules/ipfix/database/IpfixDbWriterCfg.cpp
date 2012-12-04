@@ -36,7 +36,7 @@ IpfixDbWriterCfg* IpfixDbWriterCfg::create(XMLElement* e)
 
 IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
     : CfgHelper<IpfixDbWriterSQL, IpfixDbWriterCfg>(elem, "ipfixDbWriter"),
-      port(0), bufferRecords(30), observationDomainId(0)
+      port(0), bufferRecords(30), observationDomainId(0), useLegacyNames(false)
 {
     if (!elem) return;
 
@@ -48,6 +48,8 @@ IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
 
 		if (e->matches("dbType")) {
 			databaseType = e->getFirstText();
+		} else if (e->matches("useLegacyNames")) {
+			useLegacyNames = getBool("useLegacyNames");
 		} else if (e->matches("host")) {
 			hostname = e->getFirstText();
 		} else if (e->matches("port")) {
@@ -105,20 +107,20 @@ IpfixDbWriterSQL* IpfixDbWriterCfg::createInstance()
 	if (databaseType == "mysql") {
 #if defined(DB_SUPPORT_ENABLED)
 	
-		instance = new IpfixDbWriterMySQL(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames);
+		instance = new IpfixDbWriterMySQL(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames);
 #else
 		goto except;
 #endif
 	} else if  (databaseType == "postgres") {
 
 #if defined(PG_SUPPORT_ENABLED)
-		instance = new IpfixDbWriterPg(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames);
+		instance = new IpfixDbWriterPg(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames);
 #else
 		goto except;
 #endif
 	} else if (databaseType == "oracle") {
 #if defined(ORACLE_SUPPORT_ENABLED)
-		instance = new IpfixDbWriterOracle(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames);
+		instance = new IpfixDbWriterOracle(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames);
 #else
 		goto except;
 #endif

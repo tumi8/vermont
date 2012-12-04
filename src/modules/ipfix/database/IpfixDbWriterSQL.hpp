@@ -40,7 +40,7 @@ class IpfixDbWriterSQL
 		IpfixDbWriterSQL(const char* dbType, const char* host, const char* db,
 				const char* user, const char* pw,
 				unsigned int port, uint16_t observationDomainId, // FIXME: observationDomainId
-				int maxStatements, vector<string> columns);
+				int maxStatements, vector<string> columns, bool useLegacyNames);
 		~IpfixDbWriterSQL();
 
 		void onDataRecord(IpfixDataRecord* record);
@@ -70,7 +70,6 @@ class IpfixDbWriterSQL
 		static const uint32_t MAX_EXP_TABLE = 10; /**< Count of buffered exporters. Increase this value if you use more exporters in parallel */
 		static const uint32_t MAX_USEDTABLES = 5; /**< Number of cached entries for used (and created tables) */
 		static const uint64_t TABLE_INTERVAL = 1000*24*3600; /**< Interval, in which new tables should be created (milliseconds).*/
-
 
 		/**
 		 * Buffer for insert statements
@@ -118,6 +117,7 @@ class IpfixDbWriterSQL
 		Table curTable;			/** table name for currently cached entries in insertBuffer */
 		string tablePrefix;			/** prefix for all tables */
 		string dbType;
+		bool useLegacyNames;
 
 		vector<Column> tableColumns;			// table columns
 		string tableColumnsString;     			// table columns as string for INSERT statements
@@ -139,6 +139,7 @@ class IpfixDbWriterSQL
 		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime) = 0;
 		virtual string getInsertString(string tableName);
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID) = 0;
+		virtual std::string getDBDataType(uint16_t ipfixTypeLength) = 0;
 		Column* identify;
 	private:
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID,
