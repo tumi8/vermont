@@ -22,6 +22,8 @@
 #ifndef _IPFIX_DB_WRITER_SQL_H_
 #define _IPFIX_DB_WRITER_SQL_H_
 
+#if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
+
 #include "IpfixDbCommon.hpp"
 #include "../IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfix.h"
@@ -54,9 +56,9 @@ class IpfixDbWriterSQL
 		 * of the IPFIX_TYPEID and the datatype to store in database
 		 */
 		struct Column {
-			const char* cname; /** column name */
+			std::string cname; /** column name */
 			uint16_t ipfixId; /** IPFIX_TYPEID */
-			const char* dataType; /** which datatype to store in database */
+			std::string dataType; /** which datatype to store in database */
 			uint32_t enterprise;
 			/**
 			 *  when no IPFIX_TYPEID is stored in the record,
@@ -139,8 +141,8 @@ class IpfixDbWriterSQL
 		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime) = 0;
 		virtual string getInsertString(string tableName);
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID) = 0;
-		virtual std::string getDBDataType(uint16_t ipfixTypeLength) = 0;
-		Column* identify;
+		std::string getDBDataType(uint16_t ipfixTypeLength);
+		Column* legacyNamesMap;
 	private:
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID,
 				TemplateInfo* dataTemplateInfo, uint16_t length,
@@ -158,5 +160,7 @@ class IpfixDbWriterSQL
 		void extractNtp64(uint64_t& intdata, uint32_t& micros);
 
 };
+
+#endif
 
 #endif

@@ -137,9 +137,10 @@ bool IpfixDbWriterMySQL::createDBTable(const char* partitionname, uint64_t start
 	}
 	ctsql << ")";
 
+	msg(MSG_FATAL, "SQL Query: %s", ctsql.str().c_str());
 
 	if(mysql_query(conn, ctsql.str().c_str()) != 0) {
-		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of exporter table failed. Error: %s",
+		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of flow table failed. Error: %s",
 				mysql_error(conn));
 		dbError = true;
 		return 1;
@@ -275,27 +276,6 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 	exporterEntries[curExporterEntries++].ip = expIp;
 
 	return exporterID;
-}
-
-std::string IpfixDbWriterMySQL::getDBDataType(uint16_t ipfixTypeLength)
-{
-	switch (ipfixTypeLength) {
-	case 1:
-		return "TINYINT UNSIGNED";
-	case 2:
-                return "SMALLINT UNSIGNED";
-        case 4:
-                return "INT UNSIGNED";
-        case 8:
-                return "BIGINT UNSIGNED";
-	case 65535:
-		// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
-		return "VARCHAR(100)";
-        default:
-                THROWEXCEPTION("IpfixDbReaderMySQL: Type with non matching length %d ", ipfixTypeLength);
-	}
-	// make compiler happy. we should never get here
-	return "";
 }
 
 

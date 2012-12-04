@@ -496,29 +496,6 @@ int IpfixDbWriterOracle::getExporterID(IpfixRecord::SourceID* sourceID)
 	return exporterID;
 }
 
-std::string IpfixDbWriterOracle::getDBDataType(uint16_t ipfixTypeLength)
-{
-	// TODO: postgres does not do unsigned types. we therefore use the bigger field. this wastes 
-	/// disk space. Optimize! (except bigints ...)
-	switch (ipfixTypeLength) {
-	case 1:
-		return "smallint";
-	case 2:
-                return "integer";
-        case 4:
-                return "bigint";
-        case 8:
-                return "bigint";
-	case 65535:
-		// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
-		return "VARCHAR(100)";
-        default:
-                THROWEXCEPTION("IpfixDbReaderOracle: Type with non matching length %d ", ipfixTypeLength);
-	}
-	// make compiler happy. we should never get here
-	return "";
-}
-
 /***** Public Methods ****************************************************/
 
 

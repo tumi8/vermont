@@ -20,6 +20,8 @@
 
 /* Some constants that are common to IpfixDbWriterSQL and IpfixDbReader */
 
+#if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
+
 #include "IpfixDbWriterSQL.hpp"
 #include "common/msg.h"
 #include "common/Misc.h"
@@ -38,96 +40,30 @@ using namespace std;
 
 /***** Structs for SQL databases *********************************************/
 
-
-/** MySQL **/
-
-/**
- *	struct to identify column names with IPFIX_TYPEID an the dataType to store in database
- *	ExporterID is no IPFIX_TYPEID, its user specified
- *      Attention: order of entries is important!
- */
-const static IpfixDbWriterSQL::Column identifyMySQL [] = {
-	{	CN_dstIP, 		IPFIX_TYPEID_destinationIPv4Address,	"INTEGER(10) UNSIGNED", 	0, 0},
-	{	CN_srcIP, 		IPFIX_TYPEID_sourceIPv4Address,		"INTEGER(10) UNSIGNED", 	0, 0},
-	{	CN_srcPort, 		IPFIX_TYPEID_sourceTransportPort,	"SMALLINT(5) UNSIGNED", 	0, 0},
-	{	CN_dstPort, 		IPFIX_TYPEID_destinationTransportPort,	"SMALLINT(5) UNSIGNED", 	0, 0},
-	{	CN_proto, 		IPFIX_TYPEID_protocolIdentifier,	"TINYINT(3) UNSIGNED", 		0, 0 },
-	{	CN_dstTos, 		IPFIX_TYPEID_classOfServiceIPv4,	"TINYINT(3) UNSIGNED", 		0, 0},
-	{	CN_bytes, 		IPFIX_TYPEID_octetDeltaCount,		"BIGINT(20) UNSIGNED", 		0, 0},
-	{	CN_pkts, 		IPFIX_TYPEID_packetDeltaCount,		"BIGINT(20) UNSIGNED", 		0, 0},
-	{	CN_firstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"BIGINT(15) UNSIGNED", 	0, 0}, // default value is invalid/not used for this ent
-	{	CN_lastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"BIGINT(15) UNSIGNED", 	0, 0}, // default value is invalid/not used for this entry
-	{	CN_tcpControlBits,  	IPFIX_TYPEID_tcpControlBits,		"SMALLINT(5) UNSIGNED", 	0, 0},
+const static IpfixDbWriterSQL::Column legacyNames [] = {
+	{	CN_dstIP, 		IPFIX_TYPEID_destinationIPv4Address,	"", 0, 0},
+	{	CN_srcIP, 		IPFIX_TYPEID_sourceIPv4Address,		"", 0, 0},
+	{	CN_srcPort, 		IPFIX_TYPEID_sourceTransportPort,	"", 0, 0},
+	{	CN_dstPort, 		IPFIX_TYPEID_destinationTransportPort,	"", 0, 0},
+	{	CN_proto, 		IPFIX_TYPEID_protocolIdentifier,	"", 0, 0 },
+	{	CN_dstTos, 		IPFIX_TYPEID_classOfServiceIPv4,	"", 0, 0},
+	{	CN_bytes, 		IPFIX_TYPEID_octetDeltaCount,		"", 0, 0},
+	{	CN_pkts, 		IPFIX_TYPEID_packetDeltaCount,		"", 0, 0},
+	{	CN_firstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"", 0, 0}, // default value is invalid/not used for this ent
+	{	CN_lastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"", 0, 0}, // default value is invalid/not used for this entry
+	{	CN_tcpControlBits,  	IPFIX_TYPEID_tcpControlBits,		"", 0, 0},
 	//TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
-	{	CN_revbytes, 		IPFIX_TYPEID_octetDeltaCount,		"BIGINT(20) UNSIGNED",		IPFIX_PEN_reverse, 0},
-	{	CN_revpkts, 		IPFIX_TYPEID_packetDeltaCount,		"BIGINT(20) UNSIGNED", 		IPFIX_PEN_reverse, 0},
-	{	CN_revFirstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"BIGINT(15) UNSIGNED", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	CN_revLastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"BITINT(15 UNSIGNED", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	CN_revTcpControlBits,  IPFIX_TYPEID_tcpControlBits,		"SMALLINT(5) UNSIGNED", 	IPFIX_PEN_reverse, 0},
-	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"BIGINT(20) UNSIGNED", 		IPFIX_PEN_vermont|IPFIX_PEN_reverse},
-	{	CN_exporterID, 		EXPORTERID,				"SMALLINT(5) UNSIGNED", 	0, 0},
-	{	CN_flowStartSysUpTime,	IPFIX_TYPEID_flowStartSysUpTime,	"INTEGER(10) UNSIGNED",		0, 0},
-	{	CN_flowEndSysUpTime,	IPFIX_TYPEID_flowEndSysUpTime,		"INTEGER(10) UNSIGNED",		0, 0},
-	{	0	} // last entry must be 0
+	{	CN_revbytes, 		IPFIX_TYPEID_octetDeltaCount,		"", IPFIX_PEN_reverse, 0},
+	{	CN_revpkts, 		IPFIX_TYPEID_packetDeltaCount,		"", IPFIX_PEN_reverse, 0},
+	{	CN_revFirstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revLastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revTcpControlBits,  IPFIX_TYPEID_tcpControlBits,		"", IPFIX_PEN_reverse, 0},
+	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
+	{	CN_exporterID, 		EXPORTERID,				"", 0, 0},
+	{	CN_flowStartSysUpTime,	IPFIX_TYPEID_flowStartSysUpTime,	"", 0, 0},
+	{	CN_flowEndSysUpTime,	IPFIX_TYPEID_flowEndSysUpTime,		"", 0, 0},
+	{	"", 0, "", 0, 0	} // last entry must be 0
 };
-
-/** Postgres **/
-
-/**
- *	struct to identify column names with IPFIX_TYPEID an the dataType to store in database
- *	ExporterID is no IPFIX_TYPEID, its user specified
- *      Attention: order of entries is important!
- */
-const static IpfixDbWriterSQL::Column identifyPg [] = {
-	{	CN_srcIP, 		IPFIX_TYPEID_sourceIPv4Address,		"bigint", 0, 0},
-	{	CN_dstIP, 		IPFIX_TYPEID_destinationIPv4Address,	"bigint", 0, 0},
-	{	CN_srcPort,		IPFIX_TYPEID_sourceTransportPort,	"integer", 0, 0},
-	{	CN_dstPort,		IPFIX_TYPEID_destinationTransportPort,	"integer",0, 0},
-	{	CN_proto,		IPFIX_TYPEID_protocolIdentifier,	"smallint", 0, 0},
-	{	CN_dstTos,		IPFIX_TYPEID_classOfServiceIPv4,	"smallint", 0, 0},
-	{	CN_bytes,		IPFIX_TYPEID_octetDeltaCount,		"bigint", 0, 0},
-	{	CN_pkts,		IPFIX_TYPEID_packetDeltaCount,		"bigint", 0, 0},
-	{	CN_firstSwitched,	IPFIX_TYPEID_flowStartMilliSeconds,	"bigint", 0, 0}, // default value is invalid/not used for this entry
-	{	CN_lastSwitched,	IPFIX_TYPEID_flowEndMilliSeconds,	"bigint", 0, 0}, // default value is invalid/not used for this entry
-	{	CN_tcpControlBits,	IPFIX_TYPEID_tcpControlBits,		"smallint", 0, 0},
-	{	CN_revbytes,		IPFIX_TYPEID_octetDeltaCount,		"bigint", IPFIX_PEN_reverse, 0},
-	{	CN_revpkts,		IPFIX_TYPEID_packetDeltaCount,		"bigint", IPFIX_PEN_reverse, 0},
-	{	CN_revFirstSwitched,	IPFIX_TYPEID_flowStartMilliSeconds,	"bigint", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	CN_revLastSwitched,	IPFIX_TYPEID_flowEndMilliSeconds,	"bigint", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	CN_revTcpControlBits,	IPFIX_TYPEID_tcpControlBits,		"smallint", IPFIX_PEN_reverse, 0},
-	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
-	{	CN_revMaxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"bigint", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
-	{	CN_exporterID,		EXPORTERID, 				"integer", 0, 0},
-	{	0} // last entry must be 0
-};
-
-/** Oracle **/
-
-const IpfixDbWriterSQL::Column identifyOracle [] = {
-	{	CN_dstIP, 		IPFIX_TYPEID_destinationIPv4Address,	"NUMBER(10)", 	0, 0},
-	{	CN_srcIP, 		IPFIX_TYPEID_sourceIPv4Address,		"NUMBER(10)", 	0, 0},
-	{	CN_srcPort, 		IPFIX_TYPEID_sourceTransportPort,	"NUMBER(5)", 	0, 0},
-	{	CN_dstPort, 		IPFIX_TYPEID_destinationTransportPort,	"NUMBER(5)", 	0, 0},
-	{	CN_proto, 		IPFIX_TYPEID_protocolIdentifier,	"NUMBER(3)", 		0, 0 },
-	{	CN_dstTos, 		IPFIX_TYPEID_classOfServiceIPv4,	"NUMBER(3)", 		0, 0},
-	{	CN_bytes, 		IPFIX_TYPEID_octetDeltaCount,		"NUMBER(20)", 		0, 0},
-	{	CN_pkts, 		IPFIX_TYPEID_packetDeltaCount,		"NUMBER(20)", 		0, 0},
-	{	CN_firstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"NUMBER(15)", 	0, 0}, // default value is invalid/not used for this ent
-	{	CN_lastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"NUMBER(15)", 	0, 0}, // default value is invalid/not used for this entry
-	{	CN_tcpControlBits,  	IPFIX_TYPEID_tcpControlBits,		"NUMBER(5)", 	0, 0},
-	//TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
-	{	CN_revbytes, 		IPFIX_TYPEID_octetDeltaCount,		"NUMBER(20)",		IPFIX_PEN_reverse, 0},
-	{	CN_revpkts, 		IPFIX_TYPEID_packetDeltaCount,		"NUMBER(20)", 		IPFIX_PEN_reverse, 0},
-	{	CN_revFirstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"NUMBER(15)", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	CN_revLastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"NUMBER(15)", 	IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	CN_revTcpControlBits,  IPFIX_TYPEID_tcpControlBits,		"NUMBER(5)", 	IPFIX_PEN_reverse, 0},
-	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"NUMBER(20)", 		IPFIX_PEN_vermont|IPFIX_PEN_reverse},
-	{	CN_exporterID, 		EXPORTERID,				"NUMBER(5)", 	0, 0},
-	{	CN_flowStartSysUpTime,	IPFIX_TYPEID_flowStartSysUpTime,	"NUMBER(10)",		0, 0},
-	{	CN_flowEndSysUpTime,	IPFIX_TYPEID_flowEndSysUpTime,		"NUMBER(10)",		0, 0},
-	{	0	} // last entry must be 0
-};
-
 
 
 /***** Global Variables ******************************************************/
@@ -136,6 +72,53 @@ const IpfixDbWriterSQL::Column identifyOracle [] = {
  * maximum length of one item in a SQL statement
  */
 const uint16_t MAX_COL_LENGTH = 22;
+
+
+/****** Methods **************************************************************/
+
+std::string IpfixDbWriterSQL::getDBDataType(uint16_t ipfixTypeLength)
+{
+	if  (dbType == "mysql") {
+		switch (ipfixTypeLength) {
+		case 1:
+			return "TINYINT UNSIGNED";
+		case 2:
+			return "SMALLINT UNSIGNED";
+		case 4:
+			return "INT UNSIGNED";
+		case 8:
+			return "BIGINT UNSIGNED";
+		case 65535:
+			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
+			return "VARCHAR(100)";
+		default:
+			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixTypeLength);
+		}
+	} else if (dbType == "postgres" || dbType == "oracle") {
+		// TODO: postgres does not do unsigned types. we therefore use the bigger field. this wastes 
+		/// disk space. Optimize! (except bigints ...)
+		switch (ipfixTypeLength) {
+		case 1:
+			return "smallint";
+		case 2:
+			return "integer";
+		case 4:
+			return "bigint";
+		case 8:
+			return "bigint";
+		case 65535:
+			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
+			return "VARCHAR(100)";
+		default:
+			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixTypeLength);
+		}	
+	}
+
+	THROWEXCEPTION("IpfixDbWriter: Found unsupported database backend \"%s\". This is a programming error! Please contact vermont-dev@berlios.de!", dbType.c_str()); 
+	// make compiler happy. we should never get here
+	return "";
+}
+
 
 /**
  * save given elements of record to database
@@ -510,7 +493,7 @@ uint64_t IpfixDbWriterSQL::getIPFIXValue(InformationElement::IeInfo type, IpfixR
 uint32_t IpfixDbWriterSQL::getdefaultIPFIXdata(int ipfixtype_id)
 {
 	int i;
-	for( i=0; tableColumns[i].cname != 0; i++) {
+	for( i=0; i != tableColumns.size(); i++) {
 		if(ipfixtype_id == tableColumns[i].ipfixId) {
 			return tableColumns[i].defaultValue;
 		}
@@ -565,13 +548,7 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 	curTable.name = "";
 	tablePrefix = "f"; // TODO: make this in config file configurable!
 	
-	if (dbType == "mysql") {
-		identify = (Column*)identifyMySQL;
-	} else if (dbType == "postgres") {
-		identify = (Column*)identifyPg;
-	} else {
-		THROWEXCEPTION("IpfixDbWriter: dbType \"%s\" is not implemented!", dbType.c_str());
-	}
+	legacyNamesMap = (Column*)::legacyNames;
 
 	if(columns.empty())
 		THROWEXCEPTION("IpfixDbWriter: cannot initiate with no columns");
@@ -579,26 +556,72 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 	/* get columns */
 	bool first = true;
 	for(vector<string>::const_iterator col = columns.begin(); col != columns.end(); col++) {
-		int i = 0;
-		while(identify[i].cname != 0) {
-			if(col->compare(identify[i].cname) == 0) {
-				Column c = identify[i];
-				tableColumns.push_back(c);
-				// update tableColumnsString
-				if(!first)
-					tableColumnsString.append(",");
-				tableColumnsString.append(identify[i].cname);
-				// update tableColumnsCreateString
-				if(!first)
-					tableColumnsCreateString.append(", ");
-				tableColumnsCreateString.append(identify[i].cname);
-				tableColumnsCreateString.append(" ");
-				tableColumnsCreateString.append(identify[i].dataType);
-				first = false;
-				break;
+		std::string columnName = *col;
+		std::string dataType = "";
+		uint16_t ipfixId;
+		uint32_t enterpriseId;
+		if (useLegacyNames) {
+			bool found = false;
+			int i = 0;
+			while(legacyNamesMap[i].cname != "") {
+				if(col->compare(legacyNamesMap[i].cname) == 0) {
+					found = true;
+					columnName = legacyNamesMap[i].cname;
+					ipfixId = legacyNamesMap[i].ipfixId;
+					enterpriseId = legacyNamesMap[i].enterprise;
+					const struct ipfix_identifier* identifier = ipfix_id_lookup(ipfixId, enterpriseId);
+					// special handling for ht exporter field
+					if (ipfixId == 0) {
+						dataType = getDBDataType(2);
+					} else {
+						if (NULL == identifier) {
+							THROWEXCEPTION("Programming error: Legacy Type name \"%s (id: %u)\" does not have a entry in ipfixlolib!", columnName.c_str(), ipfixId);
+						}
+						dataType = getDBDataType(identifier->length);
+					}
+				}
+				i++;
 			}
-			i++;
+			if (!found) {
+				THROWEXCEPTION("IpfixDbWriter: useLegacyNames was activated but name \"%s\" does not match any legacy name!", col->c_str());
+			}
+		} else {
+			const struct ipfix_identifier* identifier = ipfix_name_lookup(col->c_str());
+			if (NULL == identifier) {
+				// only identifier that is not part of the standard IPFIX or VERMONT IPFIX name space is 
+				// the exporterID field. We need to handle this manuallly.
+				if (col->compare(CN_exporterID) == 0) {
+					ipfixId = EXPORTERID;
+					enterpriseId = 0;
+					dataType = getDBDataType(2);
+				} else {
+					THROWEXCEPTION("IpfixDbWriter: Could not find a matching IPFIX type for \"%s\". Cannot map the IPFIX type in IPFIX messages to the column names. If you think VERMONT should support type \"%s\", please contact the developers at vermont-dev@berlios.de", col->c_str(), col->c_str());
+				}
+			} else {
+				ipfixId = identifier->id;
+				enterpriseId = identifier->pen;
+				dataType = getDBDataType(identifier->length);
+			}
 		}
+		Column c;
+		c.cname = columnName;
+		c.ipfixId = ipfixId;
+		c.enterprise = enterpriseId;
+		c.dataType = dataType;
+		c.defaultValue = 0;
+
+		tableColumns.push_back(c);
+		// update tableColumnsString
+		if(!first)
+			tableColumnsString.append(",");
+		tableColumnsString.append(c.cname);
+		// update tableColumnsCreateString
+		if(!first)
+			tableColumnsCreateString.append(", ");
+		tableColumnsCreateString.append(c.cname);
+		tableColumnsCreateString.append(" ");
+		tableColumnsCreateString.append(c.dataType);
+		first = false;
 	}
 	msg(MSG_INFO, "IpfixDbWriter: columns are %s", tableColumnsString.c_str());
 
@@ -621,3 +644,6 @@ IpfixDbWriterSQL::~IpfixDbWriterSQL()
 {
 	delete[] insertBuffer.sql;
 }
+
+#endif
+
