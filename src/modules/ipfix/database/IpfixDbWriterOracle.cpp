@@ -264,19 +264,22 @@ bool IpfixDbWriterOracle::writeToDb()
 			con->terminateStatement(stmt);
 			return 0;					
 		}
+
 		stmt->closeResultSet(rs);
 		con->terminateStatement(stmt);
 
-		insertBuffer.curRows = 0;
-		insertBuffer.appendPtr = insertBuffer.bodyPtr;
-		*insertBuffer.appendPtr = 0;
-
-		msg(MSG_DEBUG,"IpfixDbWriterOracle: Write to database is complete");
-		return 0;
 	}
 	insertBuffer.curRows = 0;
 	insertBuffer.appendPtr = insertBuffer.bodyPtr;
 	*insertBuffer.appendPtr = 0;
+
+	// commit transaction
+	try {
+		con->commit();
+	} catch (oracle::occi::SQLException& ex) {
+		msg(MSG_FATAL, "IpfixDbWriterOracle: Received exception during commit: \"%s\"", ex.getMessage().c_str());
+	}
+
 	return 1;
 }
 

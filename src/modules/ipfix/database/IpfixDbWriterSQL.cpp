@@ -280,8 +280,6 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 	bool first = true;
 	ostringstream rowStream;
 
-	rowStream << insertRowPrefix();
-
 	rowStream << "(";
 
 	/**loop over the columname and loop over the IPFIX_TYPEID of the record
@@ -521,6 +519,16 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		}
 	}
 
+	//  add prefix that needs to be applied before the actual values for
+	// the insert string
+	std::string prefix= insertRowPrefix();
+	if (prefix.size() > 0) {
+		strcat(insertBuffer.appendPtr, prefix.c_str());
+		insertBuffer.appendPtr += prefix.size();
+	}
+	
+
+	// add the rowStream buffer
 	strcat(insertBuffer.appendPtr, rowStream.str().c_str());
 	insertBuffer.appendPtr += rowStream.str().size();
 	insertBuffer.curRows++;
