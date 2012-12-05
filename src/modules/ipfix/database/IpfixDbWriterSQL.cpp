@@ -257,6 +257,13 @@ void IpfixDbWriterSQL::extractNtp64(uint64_t& intdata, uint32_t& micros)
 	micros = t.tv_usec%1000;
 }
 
+std::string IpfixDbWriterSQL::insertRowPrefix()
+{
+	if (insertBuffer.curRows > 0) {
+		return ",";
+	}
+	return "";
+}
 
 /**
  *	loop over the TemplateInfo (fieldinfo,datainfo) to get the IPFIX values to store in database
@@ -273,9 +280,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 	bool first = true;
 	ostringstream rowStream;
 
-	if (insertBuffer.curRows > 0) {
-		rowStream << ",";
-	}
+	rowStream << insertRowPrefix();
 
 	rowStream << "(";
 

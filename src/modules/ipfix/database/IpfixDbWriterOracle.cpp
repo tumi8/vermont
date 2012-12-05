@@ -65,6 +65,18 @@ void IpfixDbWriterOracle::connectToDB()
 	
 }
 
+std::string IpfixDbWriterOracle::insertRowPrefix()
+{
+	ostringstream sql;
+	sql  << "INTO " << curTable.name << " (";
+	for (uint32_t i = 0; i < numberOfColumns; ++i) {
+		sql << tableColumns[i].cname;
+		if (i < numberOfColumns - 1) sql << ",";
+	}
+	sql << ") VALUES ";
+	return sql.str();
+}
+
 int IpfixDbWriterOracle::createExporterTable()
 {
 	// check if table exists
@@ -217,12 +229,22 @@ bool IpfixDbWriterOracle::writeToDb()
 		return 1;
 	}
 
+	
+	// this is an insert operation. Oracle is a professional datatbase and therefore wants to have
+	// some special handling of multi row inserts. Inserts should look like 
+	// INSERT ALL
+	//	INTO <tablename> (<column-spec>) VALUES (<values>)
+	//	INTO <tablenaem> (<column-spec>) VALUES (<values>)
+	//	...
+	// SELECT * FROM dual;
+	// we therefore need to append the dual select
+	std::string sql_string = std::string(insertBuffer.sql) + " SELECT * FROM dual";
 
 	oracle::occi::Statement *stmt = NULL;
 	oracle::occi::ResultSet *rs = NULL;
 	try
 	{
-		stmt = con->createStatement(insertBuffer.sql);
+		stmt = con->createStatement(sql_string.c_str());
 	}
 	catch (oracle::occi::SQLException& ex)
 	{
@@ -350,6 +372,12 @@ bool IpfixDbWriterOracle::createDBTable(const char* partitionname, uint64_t star
 	}
 	msg(MSG_DEBUG, "IpfixDbWriterOracle: Table %s created ", partitionname);
 	return 0;
+}
+
+string IpfixDbWriterOracle::getInsertString(string tableName)
+{
+	// oracle multi-row insert statement differs from mysql/postgres multirow insert
+	return "INSERT ALL ";
 }
 
 

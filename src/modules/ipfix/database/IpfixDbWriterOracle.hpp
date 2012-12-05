@@ -60,6 +60,8 @@ class IpfixDbWriterOracle
 		virtual int createExporterTable();
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID);
 		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime);
+		virtual string getInsertString(string tableName);
+		virtual string insertRowPrefix();
 
 	private:
 		oracle::occi::Environment *env;

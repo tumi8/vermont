@@ -141,6 +141,7 @@ class IpfixDbWriterSQL
 		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime) = 0;
 		virtual string getInsertString(string tableName);
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID) = 0;
+		virtual string insertRowPrefix();
 		std::string getDBDataType(uint16_t ipfixTypeLength);
 		Column* legacyNamesMap;
 	private:
