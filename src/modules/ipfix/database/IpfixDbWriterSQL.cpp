@@ -116,13 +116,13 @@ std::string IpfixDbWriterSQL::getDBDataType(uint16_t ipfixTypeLength)
 		// TODO: someone should think about proper type lengths ...
 		switch (ipfixTypeLength) {
 		case 1:
-			return "NUMBER(10)";
+			return "NUMBER(2)";
 		case 2:
 			return "NUMBER(10)";
 		case 4:
-			return "NUMBER(10)";
+			return "NUMBER(11)";
 		case 8:
-			return "NUMBER(10)";
+			return "NUMBER(20)";
 		case 65535:
 			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
 			return "VARCHAR(100)";
