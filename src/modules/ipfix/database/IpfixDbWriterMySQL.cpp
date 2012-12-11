@@ -178,9 +178,6 @@ bool IpfixDbWriterMySQL::writeToDb()
 {
 	if (insertBuffer.curRows == 0) return true;
 
-	// delete last comma from sql string, as it is always inserted by fillRowColumns
-	insertBuffer.appendPtr[-1] = 0;
-
 	DPRINTF("SQL Query: %s", insertBuffer.sql);
 
 	if(mysql_query(conn, insertBuffer.sql) != 0) {

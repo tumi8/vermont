@@ -202,9 +202,6 @@ bool IpfixDbWriterPg::writeToDb()
 {
 	if (insertBuffer.curRows==0) return true;
 
-	// delete last comma from sql string, as it is always inserted by fillRowColumns
-	insertBuffer.appendPtr[-1] = 0;
-
 	// Write rows to database
 	msg(MSG_FATAL, "%s", insertBuffer.sql);
 	PGresult* res = PQexec(conn, insertBuffer.sql);
