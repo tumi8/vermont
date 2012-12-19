@@ -88,6 +88,7 @@ int IpfixDbWriterPg::createExporterTable()
 		msg(MSG_FATAL, "IpfixDbWriterPg: Failed to check if table 'exporter' exists. Error: %s",
 				PQerrorMessage(conn));
 		PQclear(res);
+		dbError = true;
 		return 1;
 	}
 	if (atoi(PQgetvalue(res, 0, 0))!=1) {
@@ -99,6 +100,7 @@ int IpfixDbWriterPg::createExporterTable()
 			msg(MSG_FATAL, "IpfixDbWriterPg: Creation of table Exporter failed.  Error: %s",
 					PQerrorMessage(conn));
 			PQclear(res);
+			dbError = true;
 			return 1;
 		} else {
 			PQclear(res);
@@ -221,7 +223,7 @@ bool IpfixDbWriterPg::writeToDb()
     return true;
 
 dbwriteerror:
-    dbError = true;
+	dbError = true;
 	return false;
 }
 
@@ -261,6 +263,7 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
 		msg(MSG_ERROR,"IpfixDbWriterPg: Select on exporter table failed. Error: %s",
 				PQerrorMessage(conn));
+		dbError = true;
 		return 0;// If a failure occurs, return exporterID = 0
 	}
 
@@ -282,6 +285,7 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 		if(PQresultStatus(res) != PGRES_TUPLES_OK) {
 			msg(MSG_ERROR,"IpfixDbWriterPg: Insert in exporter table failed. Error: %s",
 					PQerrorMessage(conn));
+			dbError = true;
 			return 0;
 		}
 
@@ -315,6 +319,7 @@ bool IpfixDbWriterPg::checkRelationExists(const char* relname)
 	        msg(MSG_FATAL, "IpfixDbWriterPg: Failed to check if relation '%s' exists. Error: %s",
                         relname, PQerrorMessage(conn));
 	        PQclear(res);
+		dbError = true;
 		return false;
 	}
 	

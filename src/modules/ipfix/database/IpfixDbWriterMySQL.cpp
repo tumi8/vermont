@@ -234,6 +234,7 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 	if(mysql_query(conn, statementStr) != 0) {
 		msg(MSG_ERROR,"IpfixDbWriterMySQL: Select on exporter table failed. Error: %s",
 				mysql_error(conn));
+		dbError = true;
 		return 0;// If a failure occurs, return 0
 	}
 
@@ -253,6 +254,7 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 
 		if(mysql_query(conn, statementStr) != 0) {
 			msg(MSG_ERROR,"IpfixDbWriterMySQL: Insert in exporter table failed. Error: %s", conn);
+			dbError = true;
 			return 0;
 		}
 
