@@ -1,6 +1,6 @@
 /*
  * Vermont Configuration Subsystem
- * Copyright (C) 2009 Vermont Project
+ * Copyright (C) 2009-2013 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -20,19 +20,19 @@
 
 #ifdef DB_SUPPORT_ENABLED
 
-#include "IpfixDbReaderMySQLCfg.h"
+#include "IpfixDbReaderCfg.h"
 
 
-IpfixDbReaderMySQLCfg* IpfixDbReaderMySQLCfg::create(XMLElement* e)
+IpfixDbReaderCfg* IpfixDbReaderCfg::create(XMLElement* e)
 {
     assert(e);
     assert(e->getName() == getName());
-    return new IpfixDbReaderMySQLCfg(e);
+    return new IpfixDbReaderCfg(e);
 }
 
 
-IpfixDbReaderMySQLCfg::IpfixDbReaderMySQLCfg(XMLElement* elem)
-    : CfgHelper<IpfixDbReaderMySQL, IpfixDbReaderMySQLCfg>(elem, "ipfixDbReaderMySQL"),
+IpfixDbReaderCfg::IpfixDbReaderCfg(XMLElement* elem)
+    : CfgHelper<IpfixDbReaderMySQL, IpfixDbReaderCfg>(elem, "ipfixDbReader"),
       port(0), timeshift(false), fullspeed(false), observationDomainId(0)
 {
     if (!elem) return;
@@ -65,27 +65,27 @@ IpfixDbReaderMySQLCfg::IpfixDbReaderMySQLCfg(XMLElement* elem)
 			continue;
 		}
 	}
-	if (hostname=="") THROWEXCEPTION("IpfixDbReaderMySQLCfg: host not set in configuration!");
-	if (port==0) THROWEXCEPTION("IpfixDbReaderMySQLCfg: port not set in configuration!");
-	if (dbname=="") THROWEXCEPTION("IpfixDbReaderMySQLCfg: dbname not set in configuration!");
-	if (user=="") THROWEXCEPTION("IpfixDbReaderMySQLCfg: username not set in configuration!");
-	if (password=="") THROWEXCEPTION("IpfixDbReaderMySQLCfg: password not set in configuration!");
+	if (hostname=="") THROWEXCEPTION("IpfixDbReaderCfg: host not set in configuration!");
+	if (port==0) THROWEXCEPTION("IpfixDbReaderCfg: port not set in configuration!");
+	if (dbname=="") THROWEXCEPTION("IpfixDbReaderCfg: dbname not set in configuration!");
+	if (user=="") THROWEXCEPTION("IpfixDbReaderCfg: username not set in configuration!");
+	if (password=="") THROWEXCEPTION("IpfixDbReaderCfg: password not set in configuration!");
 }
 
 
-IpfixDbReaderMySQLCfg::~IpfixDbReaderMySQLCfg()
+IpfixDbReaderCfg::~IpfixDbReaderCfg()
 {
 }
 
 
-IpfixDbReaderMySQL* IpfixDbReaderMySQLCfg::createInstance()
+IpfixDbReaderMySQL* IpfixDbReaderCfg::createInstance()
 {
     instance = new IpfixDbReaderMySQL(hostname, dbname, user, password, port, observationDomainId, timeshift, fullspeed);
     return instance;
 }
 
 
-bool IpfixDbReaderMySQLCfg::deriveFrom(IpfixDbReaderMySQLCfg* old)
+bool IpfixDbReaderCfg::deriveFrom(IpfixDbReaderCfg* old)
 {
     return false;
 }

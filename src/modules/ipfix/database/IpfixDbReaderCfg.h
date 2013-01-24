@@ -1,6 +1,6 @@
 /*
  * Vermont Configuration Subsystem
- * Copyright (C) 2009 Vermont Project
+ * Copyright (C) 2009-2013 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -30,33 +30,32 @@
 
 #include <string>
 
-using namespace std;
 
-
-class IpfixDbReaderMySQLCfg
-	: public CfgHelper<IpfixDbReaderMySQL, IpfixDbReaderMySQLCfg>
+class IpfixDbReaderCfg
+	: public CfgHelper<IpfixDbReaderMySQL, IpfixDbReaderCfg>
 {
 public:
 	friend class ConfigManager;
 	
-	virtual IpfixDbReaderMySQLCfg* create(XMLElement* e);
-	virtual ~IpfixDbReaderMySQLCfg();
+	virtual IpfixDbReaderCfg* create(XMLElement* e);
+	virtual ~IpfixDbReaderCfg();
 	
 	virtual IpfixDbReaderMySQL* createInstance();
-	virtual bool deriveFrom(IpfixDbReaderMySQLCfg* old);
+	virtual bool deriveFrom(IpfixDbReaderCfg* old);
 	
 protected:
 	
-	string hostname; /**< hostname of database host */
+	std::string hostname; /**< hostname of database host */
 	uint16_t port;	/**< port of database */
-	string dbname; /**< database name */
-	string user;	/**< user name for login to database */
-	string password;	/**< password for login to database */
+	std::string dbname; /**< database name */
+	std::string user;	/**< user name for login to database */
+	std::string password;	/**< password for login to database */
+	std::string type; 	/**< type of database backend (mysql, oracle, psql) */
 	bool timeshift; /**< shift time stamps */
 	bool fullspeed;  /**< reading in full speed */
 	uint32_t observationDomainId;	/**< observation domain id */
 	
-	IpfixDbReaderMySQLCfg(XMLElement*);
+	IpfixDbReaderCfg(XMLElement*);
 };
 
 
