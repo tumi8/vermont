@@ -47,7 +47,6 @@
 #include "modules/ipfix/aggregator/PacketAggregatorCfg.h"
 #include "modules/ipfix/database/IpfixDbReaderCfg.h"
 #include "modules/ipfix/database/IpfixDbWriterCfg.h"
-#include "modules/ipfix/database/IpfixDbReaderOracleCfg.h"
 #include "modules/ipfix/database/IpfixDbWriterMongoCfg.h"
 #include "modules/ipfix/database/IpfixFlowInspectorExporterCfg.h"
 #include "modules/SensorManagerCfg.h"
@@ -102,9 +101,6 @@ Cfg* ConfigManager::configModules[] = {
 #if defined(DB_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED)
 	new IpfixDbWriterCfg(NULL),
 	new IpfixDbReaderCfg(NULL),
-#endif
-#ifdef ORACLE_SUPPORT_ENABLED
-	new IpfixDbReaderOracleCfg(NULL),
 #endif
 #ifdef MONGO_SUPPORT_ENABLED
 	new IpfixDbWriterMongoCfg(NULL),

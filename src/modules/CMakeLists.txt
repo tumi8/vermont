@@ -113,11 +113,10 @@ ADD_LIBRARY(modules
     ipfix/database/IpfixDbWriterMongoCfg.cpp
     ipfix/database/IpfixDbWriterOracle.cpp
     ipfix/database/IpfixDbReaderCfg.cpp
-    ipfix/database/IpfixDbReaderMySQL.cpp
+    ipfix/database/IpfixDbReader.cpp
     ipfix/database/IpfixDbWriterMySQL.cpp
     ipfix/database/IpfixDbWriterPg.cpp
     ipfix/database/IpfixDbReaderOracle.cpp
-    ipfix/database/IpfixDbReaderOracleCfg.cpp
     ipfix/database/IpfixFlowInspectorExporterCfg.cpp
     ipfix/database/IpfixFlowInspectorExporter.cpp
 )
