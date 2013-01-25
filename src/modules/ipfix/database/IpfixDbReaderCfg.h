@@ -21,18 +21,18 @@
 #ifndef IPFIXDBREADERCFG_H_
 #define IPFIXDBREADERCFG_H_
 
-#ifdef DB_SUPPORT_ENABLED
+#if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
 
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "IpfixDbReaderMySQL.hpp"
+#include "IpfixDbReader.hpp"
 
 #include <string>
 
 
 class IpfixDbReaderCfg
-	: public CfgHelper<IpfixDbReaderMySQL, IpfixDbReaderCfg>
+	: public CfgHelper<IpfixDbReader, IpfixDbReaderCfg>
 {
 public:
 	friend class ConfigManager;
@@ -40,19 +40,17 @@ public:
 	virtual IpfixDbReaderCfg* create(XMLElement* e);
 	virtual ~IpfixDbReaderCfg();
 	
-	virtual IpfixDbReaderMySQL* createInstance();
+	virtual IpfixDbReader* createInstance();
 	virtual bool deriveFrom(IpfixDbReaderCfg* old);
 	
 protected:
-	
+	std::string databaseType; /**< Type of database (mysql, psgl, oracle, ...) */	
 	std::string hostname; /**< hostname of database host */
 	uint16_t port;	/**< port of database */
 	std::string dbname; /**< database name */
 	std::string user;	/**< user name for login to database */
 	std::string password;	/**< password for login to database */
 	std::string type; 	/**< type of database backend (mysql, oracle, psql) */
-	bool timeshift; /**< shift time stamps */
-	bool fullspeed;  /**< reading in full speed */
 	uint32_t observationDomainId;	/**< observation domain id */
 	
 	IpfixDbReaderCfg(XMLElement*);

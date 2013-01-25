@@ -18,7 +18,7 @@
  *
  */
 
-#ifdef DB_SUPPORT_ENABLED
+#if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
 
 #include "IpfixDbReaderCfg.h"
 
@@ -32,8 +32,8 @@ IpfixDbReaderCfg* IpfixDbReaderCfg::create(XMLElement* e)
 
 
 IpfixDbReaderCfg::IpfixDbReaderCfg(XMLElement* elem)
-    : CfgHelper<IpfixDbReaderMySQL, IpfixDbReaderCfg>(elem, "ipfixDbReader"),
-      port(0), timeshift(false), fullspeed(false), observationDomainId(0)
+    : CfgHelper<IpfixDbReader, IpfixDbReaderCfg>(elem, "ipfixDbReader"),
+      port(0), observationDomainId(0)
 {
     if (!elem) return;
 
@@ -43,7 +43,9 @@ IpfixDbReaderCfg::IpfixDbReaderCfg(XMLElement* elem)
 	     it++) {
 		XMLElement* e = *it;
 
-		if (e->matches("host")) {
+		if (e->matches("dbType")) {
+			databaseType = e->getFirstText();
+		} else if (e->matches("host")) {
 			hostname = e->getFirstText();
 		} else if (e->matches("port")) {
 			port = getInt("port");
@@ -53,10 +55,6 @@ IpfixDbReaderCfg::IpfixDbReaderCfg(XMLElement* elem)
 			user = e->getFirstText();
 		} else if (e->matches("password")) {
 			password = e->getFirstText();
-		} else if (e->matches("timeshift")) {
-			timeshift = getBool("timeshift", timeshift);
-		} else if (e->matches("fullspeed")) {
-			fullspeed = getBool("fullspeed", fullspeed);
 		} else if (e->matches("observationDomainId")) {
 			observationDomainId = getInt("observationDomainId");
 		} else if (e->matches("next")) { // ignore next
@@ -65,6 +63,7 @@ IpfixDbReaderCfg::IpfixDbReaderCfg(XMLElement* elem)
 			continue;
 		}
 	}
+	if (databaseType != "mysql" && databaseType != "postgres" && databaseType != "oracle") THROWEXCEPTION("IpfixDbReaderCfg: Incorrect value for dbType: \"%s\"", databaseType.c_str());
 	if (hostname=="") THROWEXCEPTION("IpfixDbReaderCfg: host not set in configuration!");
 	if (port==0) THROWEXCEPTION("IpfixDbReaderCfg: port not set in configuration!");
 	if (dbname=="") THROWEXCEPTION("IpfixDbReaderCfg: dbname not set in configuration!");
@@ -78,9 +77,36 @@ IpfixDbReaderCfg::~IpfixDbReaderCfg()
 }
 
 
-IpfixDbReaderMySQL* IpfixDbReaderCfg::createInstance()
+IpfixDbReader* IpfixDbReaderCfg::createInstance()
 {
-    instance = new IpfixDbReaderMySQL(hostname, dbname, user, password, port, observationDomainId, timeshift, fullspeed);
+	if (databaseType == "mysql") {
+#if defined(DB_SUPPORT_ENABLED)
+		instance = new IpfixDbReader(databaseType, hostname, dbname, user, password, port, observationDomainId);
+#else
+		goto except;
+#endif
+	} else if  (databaseType == "postgres") {
+
+#if defined(PG_SUPPORT_ENABLED)
+		goto except;
+#else
+		goto except;
+#endif
+	} else if (databaseType == "oracle") {
+#if defined(ORACLE_SUPPORT_ENABLED)
+		instance = new IpfixDbWriterOracle(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames);
+		goto except;
+#else
+		goto except;
+#endif
+	} else {
+		goto except;
+	}
+	return instance;
+except:
+	THROWEXCEPTION("IpfixDbWriterCfg: Database type \"%s\" not yet implemented or support in vermont is not compiled in ...", databaseType.c_str());
+	// this is only to surpress compiler warnings. we should never get here ...
+	return 0;
     return instance;
 }
 
