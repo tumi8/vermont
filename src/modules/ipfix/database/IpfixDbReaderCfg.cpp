@@ -22,6 +22,7 @@
 
 #include "IpfixDbReaderCfg.h"
 
+#include "IpfixDbReaderMySQL.hpp"
 
 IpfixDbReaderCfg* IpfixDbReaderCfg::create(XMLElement* e)
 {
@@ -81,7 +82,7 @@ IpfixDbReader* IpfixDbReaderCfg::createInstance()
 {
 	if (databaseType == "mysql") {
 #if defined(DB_SUPPORT_ENABLED)
-		instance = new IpfixDbReader(databaseType, hostname, dbname, user, password, port, observationDomainId);
+		instance = new IpfixDbReaderMySQL(databaseType, hostname, dbname, user, password, port, observationDomainId);
 #else
 		goto except;
 #endif

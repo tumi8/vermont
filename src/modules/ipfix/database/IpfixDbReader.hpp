@@ -35,8 +35,6 @@
 #include <pthread.h>
 #include <boost/smart_ptr.hpp>
 
-#include <mysql.h>
-
 /**
  *      IpfixDbReader powered the communication to the database server
  *      also between the other structs
@@ -46,7 +44,7 @@ class IpfixDbReader : public Module, public Source<IpfixRecord*>, public Destina
 	public:
 		IpfixDbReader(const string& dbType, const string& hostname, const string& dbname,
 				const string& username, const string& password,
-				unsigned port, uint16_t observationDomainId);
+				uint16_t port, uint16_t observationDomainId);
 		~IpfixDbReader();
 
 		virtual void performStart();
@@ -55,26 +53,34 @@ class IpfixDbReader : public Module, public Source<IpfixRecord*>, public Destina
 		boost::shared_ptr<IpfixRecord::SourceID> srcId;
 
 	protected:
+		void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, InformationElement::IeInfo type);
 		vector<string> tables;
 		vector<struct ipfix_identifier> columns;
 		string columnNames; 
 		string orderBy; 
 		unsigned recordLength;
 
-		MYSQL* conn;             /** pointer to connection handle */    
+		std::string hostname;
+		std::string dbname;
+		std::string username;
+		std::string password;
+		uint16_t port;
+		uint16_t observationDomainId;
+
 		Thread thread;
 		
 		static InstanceManager<IpfixTemplateRecord> templateRecordIM;
 		static InstanceManager<IpfixDataRecord> dataRecordIM;
 		static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
 
-		int getTables();
-		int getColumns(const string& tableName);
 		static void* readFromDB(void* ipfixDbReader_);
 		int dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
-		int dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
 		int dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templateInfo);
-		int connectToDb( const string& hostName, const string& dbName, const string& userName, const string& password, unsigned int port);
+
+		virtual int connectToDb() = 0;
+		virtual int dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName) = 0;
+		virtual int getColumns(const string& tableName) = 0 ;
+		virtual int getTables() = 0;
 };
 
         
