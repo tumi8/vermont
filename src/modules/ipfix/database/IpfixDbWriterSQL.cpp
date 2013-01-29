@@ -116,11 +116,11 @@ std::string IpfixDbWriterSQL::getDBDataType(uint16_t ipfixTypeLength)
 		// TODO: someone should think about proper type lengths ...
 		switch (ipfixTypeLength) {
 		case 1:
-			return "NUMBER(2)";
+			return "NUMBER(3)";
 		case 2:
-			return "NUMBER(10)";
+			return "NUMBER(6)";
 		case 4:
-			return "NUMBER(11)";
+			return "NUMBER(10)";
 		case 8:
 			return "NUMBER(20)";
 		case 65535:
