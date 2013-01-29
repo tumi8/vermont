@@ -23,6 +23,7 @@
 #include "IpfixDbReaderCfg.h"
 
 #include "IpfixDbReaderMySQL.hpp"
+#include "IpfixDbReaderOracle.hpp"
 
 IpfixDbReaderCfg* IpfixDbReaderCfg::create(XMLElement* e)
 {
@@ -95,7 +96,7 @@ IpfixDbReader* IpfixDbReaderCfg::createInstance()
 #endif
 	} else if (databaseType == "oracle") {
 #if defined(ORACLE_SUPPORT_ENABLED)
-		instance = new IpfixDbWriterOracle(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames);
+		instance = new IpfixDbReaderOracle(databaseType, hostname, dbname, user, password, port, observationDomainId);
 		goto except;
 #else
 		goto except;

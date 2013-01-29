@@ -1,7 +1,7 @@
 /*
  * IPFIX Database Reader/Writer for Oracle DBs
  * Copyright (C) 2006 Jürgen Abberger
- * Copyright (C) 2006-2012 Lothar Braun <braun@net.in.tum.de>
+ * Copyright (C) 2006-2013 Lothar Braun <braun@net.in.tum.de>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -29,6 +29,7 @@
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "core/Module.h"
+#include "IpfixDbReader.hpp"
 
 #include <netinet/in.h>
 #include <time.h>
@@ -41,53 +42,24 @@
  *      IpfixDbReader powered the communication to the database server
  *      also between the other structs
  */
-class IpfixDbReaderOracle : public Module, public Source<IpfixRecord*>, public Destination<NullEmitable*> 
+class IpfixDbReaderOracle : IpfixDbReader
 {
 public:
 	IpfixDbReaderOracle(const string& hostname, const string& dbname,
 			    const string& username, const string& password,
-			    unsigned port, uint16_t observationDomainId, 
-			    bool timeshift, bool fullspeed, uint32_t firstFlow, uint32_t lastFlow);
+			    unsigned port, uint16_t observationDomainId)
 	~IpfixDbReaderOracle();
 	
-	virtual void performStart();
-	virtual void performShutdown();
-	
-	boost::shared_ptr<IpfixRecord::SourceID> srcId;
-	
 protected:
-	typedef struct {
-		uint16_t ipfixId;  /**IPFIX_TYPEID*/
-		uint8_t length;    /**IPFIX length*/
-	} columnDB;
-	
-	vector<string> tables;
-	vector<columnDB> columns;
-	string columnNames; 
-	string orderBy; 
-	string whereClause;
-	unsigned recordLength;
-	bool timeshift, fullspeed;
-	uint32_t firstFlowTime, lastFlowTime;
-	
 	bool dbError; // error flag 
 	oracle::occi::Environment *env;
 	oracle::occi::Connection *con;
-	
-	Thread thread;
-	
-	static InstanceManager<IpfixTemplateRecord> templateRecordIM;
-	static InstanceManager<IpfixDataRecord> dataRecordIM;
-	static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
-	
-	int getTables();
-	int getColumns(const string& tableName);
-	static void* readFromDB(void* ipfixDbReader_);
-	int dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
-	int dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
-	int dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templateInfo);
-	int connectToDb( const string& hostName, const string& dbName, const string& userName, const string& password, unsigned int port);
-	bool isTableBetweenTimestamps(const string& tablename, uint32_t start, uint32_t end);
+
+	virtual int connectToDb();
+	virtual int dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
+	virtual int getColumns(const string& tableName);
+	virtual int getTables();
+
 };
 
 #endif
