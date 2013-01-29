@@ -97,7 +97,6 @@ IpfixDbReader* IpfixDbReaderCfg::createInstance()
 	} else if (databaseType == "oracle") {
 #if defined(ORACLE_SUPPORT_ENABLED)
 		instance = new IpfixDbReaderOracle(databaseType, hostname, dbname, user, password, port, observationDomainId);
-		goto except;
 #else
 		goto except;
 #endif

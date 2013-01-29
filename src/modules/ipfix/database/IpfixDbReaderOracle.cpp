@@ -41,6 +41,7 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 
 	uint64_t tmp;
 	bool first = true; 
+	unsigned offset = 0;
 	unsigned j = 0;
 
 	msg(MSG_VDEBUG, "IpfixDbReaderOracle: Sending table %s", tableName.c_str());
@@ -77,7 +78,8 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 		offset = 0;
 		j = 0;
 		for(vector<struct ipfix_identifier>::iterator i = columns.begin(); i != columns.end(); ++i) {
-			tmp = atoll(rs->getString(j).c_str());
+			// do not forget: Oracle starts counting at 1
+			tmp = atoll(rs->getString(j + 1).c_str());
 			copyUintNetByteOrder(data.get() + templateInfo->fieldInfo[j].offset,
 					     (char*)&tmp,
 					     templateInfo->fieldInfo[j].type);
@@ -92,13 +94,12 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 		ipfixRecord->message = data;
 		ipfixRecord->data = data.get();
 		send(ipfixRecord);
-		msg(MSG_VDEBUG,"IpfixDbReaderOracle: Record sent");
 	}
 	stmt->closeResultSet(rs);
 	con->terminateStatement(stmt);
 	
 	} catch (oracle::occi::SQLException& ex) {
-		msg(MSG_ERROR, "Caught generic SQL exception");
+                msg(MSG_ERROR, "Caught SQL exception while getting flows from table: %s", ex.getMessage().c_str());
 		return 1;
 	}
 
@@ -153,7 +154,7 @@ int IpfixDbReaderOracle::getTables()
         con->terminateStatement(stmt);
 
         } catch (oracle::occi::SQLException& ex) {
-                msg(MSG_ERROR, "Caught generic SQL exception");
+                msg(MSG_ERROR, "Caught SQL exception: %s", ex.getMessage().c_str());
                 return 1;
         }
 	
@@ -207,16 +208,16 @@ int IpfixDbReaderOracle::getColumns(const string& tableName)
 			msg(MSG_VDEBUG, "IpfixDbReaderMySQL: column %s (%d)", rs->getString(1).c_str(), columns.back().id);
 		}
 		if(found)
-			msg(MSG_VDEBUG, "IpfixDbReaderOracle: column %s (%d)", rs->getString(1).c_str(), columns.back().ipfixId);
+			msg(MSG_VDEBUG, "IpfixDbReaderOracle: column %s (%d)", rs->getString(1).c_str(), columns.back().id);
 	}
 	
 	if(columnNames != "")
-		columnNames.erase(0,2);
+		columnNames.erase(0,1);
 
         stmt->closeResultSet(rs);
         con->terminateStatement(stmt);
         } catch (oracle::occi::SQLException& ex) {
-                msg(MSG_ERROR, "Caught generic SQL exception");
+                msg(MSG_ERROR, "Caught SQL exception: %s", ex.getMessage().c_str());
                 return 1;
         }
 
@@ -261,24 +262,6 @@ int IpfixDbReaderOracle::connectToDb()
 /***** Exported Functions ****************************************************/
 
 /**
- * Starts or resumes database
- * @param ipfixDbReaderOracle handle obtained by calling @c createipfixDbReader()
- */
-void IpfixDbReaderOracle::performStart() 
-{
-	thread.run(this);
-}
-
-/**
- * Temporarily pauses database
- * @param ipfixDbReader handle obtained by calling @c createipfixDbReader()
- */
-void IpfixDbReaderOracle::performShutdown() 
-{
-	thread.join();
-}
-
-/**
  * Frees memory used by an ipfixDbReader
  * @param ipfixDbWriter handle obtained by calling @c createipfixDbReader()
  */
@@ -291,39 +274,6 @@ IpfixDbReaderOracle::~IpfixDbReaderOracle() {
  * Creates a new ipfixDbReader. Do not forget to call @c startipfixDbReader() to begin reading from Database
  * @return handle to use when calling @c destroyipfixDbRreader()
  */
-IpfixDbReaderOracle::IpfixDbReaderOracle(const string& hostname, const string& dbname,
-				const string& username, const string& password,
-				unsigned port, uint16_t observationDomainId, 
-					 bool timeshift, bool fullspeed, uint32_t startTime, uint32_t endTime)
-	: timeshift(timeshift), fullspeed(fullspeed), firstFlowTime(startTime), lastFlowTime(endTime), thread(readFromDB)
-{
-	srcId.reset(new IpfixRecord::SourceID);
-	srcId->observationDomainId = observationDomainId;
-	srcId->exporterAddress.len = 0;
-	srcId->exporterPort = 0;
-	srcId->receiverPort = 0;
-	srcId->protocol = 0;
-	srcId->fileDescriptor = 0;
-
-	if (fullspeed) {
-		msg(MSG_DEBUG, "IpfixDbReaderOracle: found fullspeed in configuration. Pushing flows as fast as possible.");
-	}
-
-	if (connectToDb(hostname, dbname, username, password, port)) {
-		THROWEXCEPTION("IpfixDbReaderOracle creation failed");
-	}
-	
-	/** get tables of the database*/
-	if(getTables() != 0) {
-		msg(MSG_ERROR,"IpfixDbReaderOracle: Error in function getTables");
-		THROWEXCEPTION("IpfixDbReaderOracle creation failed");
-	}
-
-	if(fullspeed && timeshift) 
-		msg(MSG_DIALOG, "IpfixDbReaderOracle: timeshift configured, but disabled in fullspeed mode");
-}
-
-
 IpfixDbReaderOracle::IpfixDbReaderOracle(const string& dbType, const string& Hostname, const string& Dbname,
 				const string& Username, const string& Password,
 				uint16_t Port, uint16_t ObservationDomainId)

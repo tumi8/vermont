@@ -42,12 +42,12 @@
  *      IpfixDbReader powered the communication to the database server
  *      also between the other structs
  */
-class IpfixDbReaderOracle : IpfixDbReader
+class IpfixDbReaderOracle : public IpfixDbReader
 {
 public:
-	IpfixDbReaderOracle(const string& hostname, const string& dbname,
-			    const string& username, const string& password,
-			    unsigned port, uint16_t observationDomainId)
+	IpfixDbReaderOracle(const string& dbType, const string& hostname, const string& dbname,
+			const string& username, const string& password,
+			uint16_t port, uint16_t observationDomainId);
 	~IpfixDbReaderOracle();
 	
 protected:
