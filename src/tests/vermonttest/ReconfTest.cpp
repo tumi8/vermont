@@ -43,7 +43,7 @@ void ReconfTest::sendPacketsTo(Destination<Packet*>* dest, size_t numpackets)
 
 	for (size_t i = 0; i < numpackets; i++) {
 		Packet* packet = packetManager.getNewInstance();
-		packet->init((char*)packetdata, packetdatalen, curtime, 0, packetdatalen);
+		packet->init((char*)packetdata, packetdatalen, curtime, 0, packetdatalen, 14);
 		dest->receive(packet);
 	}
 }

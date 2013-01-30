@@ -24,6 +24,7 @@
 #include <cstring>
 #include <stdint.h>
 #include <netinet/in.h>
+#include <net/ethernet.h>
 #include <sys/time.h>
 
 #include "common/msg.h"
@@ -31,6 +32,8 @@
 #include "common/Mutex.h"
 #include "common/ManagedInstance.h"
 #include "common/ipfixlolib/encoding.h"
+
+#include <pcap.h>
 
 #include "core/Emitable.h"
 
@@ -78,13 +81,6 @@
 class Packet :  public ManagedInstance<Packet>, public Emitable
 {
 public:
-	/*
-	 the raw offset at which the IP header starts in the packet
-	 for Ethernet, this is 14 bytes (MAC header size).
-	 This constant is set via the configure script. It defaults to 14
-	 */
-	static const int IPHeaderOffset=IP_HEADER_OFFSET;
-
 	// Transport header classifications (used in Packet::ipProtocolType)
 	// Note: ALL is reserved and enables bitoperations using the enums
 	enum IPProtocolType { NONE=0x00, TCP=0x01, UDP=0x02, ICMP=0x04, IGMP=0x08, ALL=0xFF };
@@ -137,55 +133,19 @@ public:
 
 	Packet(InstanceManager<Packet>* im)
 		: ManagedInstance<Packet>(im),
-		  zeroBytes(0),
-		  netHeader(data + IPHeaderOffset), // netHeader must not be changed afterwards
-		  netHeaderOffset(IPHeaderOffset)
+		  zeroBytes(0)
 	{
 	}
 
 	Packet()
-		: ManagedInstance<Packet>(0),
-		  netHeader(data + IPHeaderOffset),
-		  netHeaderOffset(IPHeaderOffset)
+		: ManagedInstance<Packet>(0)
 	{
 	}
-
-/*
-	void copyPacket(Packet* other)
-	{
-		observationDomainID = other->observationDomainID;
-		memcpy(&data, &other->data, PCAP_MAX_CAPTURE_LENGTH);
-		netHeader = other->netHeader;
-		transportHeader = other->transportHeader;
-		payload = other->payload;
-
-		zeroBytes = other->zeroBytes;
-
-		netHeaderOffset = other->netHeaderOffset;
-		transportHeaderOffset = other->transportHeaderOffset;
-		payloadOffset = other->payloadOffset;
-
-		classification = other->classification;
-		ipProtocolType = other->ipProtocolType;
-
-		data_length = other->data_length;
-
-		pcapPacketLength = other->pcapPacketLength;
-
-		timestamp = other->timestamp;
-		time_sec_nbo = other->time_sec_nbo;
-		time_usec_nbo = other->time_usec_nbo;
-		time_msec_nbo = other->time_msec_nbo;
-
-		memcpy(&varlength, &other->varlength, sizeof(varlength));
-		varlength_index = other->varlength_index;
-	}
-*/
 
 	/**
 	 * @param origplen original packet length
 	 */
-	inline void init(char* packetData, int len, struct timeval time, uint32_t obsdomainid, uint32_t origplen)
+	inline void init(char* packetData, int len, struct timeval time, uint32_t obsdomainid, uint32_t origplen, int dataLinkType)
 	{
 		transportHeader = NULL;
 		payload = NULL;
@@ -217,10 +177,10 @@ public:
 
 		totalPacketsReceived++;
 
-		classify();
+		classify(dataLinkType);
 	};
 
-	inline void init(char** datasegments, uint32_t* segmentlens, struct timeval time, uint32_t obsdomainid, uint32_t origplen)
+	inline void init(char** datasegments, uint32_t* segmentlens, struct timeval time, uint32_t obsdomainid, uint32_t origplen, int dataLinkType)
 	{
 		transportHeader = NULL;
 		payload = NULL;
@@ -232,8 +192,6 @@ public:
 		ipProtocolType = NONE;
 		observationDomainID = obsdomainid;
 		pcapPacketLength = origplen;
-
-
 
 		data_length = 0;
 		for (uint32_t i=0; datasegments[i]!=0; i++) {
@@ -256,7 +214,7 @@ public:
 
 		totalPacketsReceived++;
 
-		classify();
+		classify(dataLinkType);
 	};
 
 	// Delete the packet and free all data associated with it.
@@ -265,9 +223,34 @@ public:
 	}
 
 	// classify the packet headers
-	void classify()
+	void classify(int dataLinkType)
 	{
 		unsigned char protocol = 0;
+
+		// get netheader 
+		switch (dataLinkType) {
+			case DLT_EN10MB: {
+				// 14 oder 18
+				// check if we have a vlan on the data link layer.
+				uint16_t et = ntohs(((struct ether_header*)data)->ether_type);
+				netHeaderOffset = 14 + ((et == ETHERTYPE_VLAN)?4:0);
+				break;
+			}
+			case DLT_LOOP:
+			case DLT_NULL: {
+				netHeaderOffset = 4;
+				break;
+			}
+			case DLT_LINUX_SLL:{
+				netHeaderOffset = 16;
+				break;
+			}
+			default:
+				msg(MSG_ERROR, "Received packet on not supported link layer \"%u\". Assuming that no layer 2 header exists. This will probably fail!", dataLinkType);
+				netHeaderOffset = 0;
+		}
+		netHeader = data + netHeaderOffset;
+
 
 		// first check for IPv4 header which needs to be at least 20 bytes long
 		if ( (netHeader + 20 <= data + data_length) && ((*netHeader >> 4) == 4) )
