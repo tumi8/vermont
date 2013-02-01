@@ -38,8 +38,8 @@
  * Creates a new IPFIXFileWriter. Do not forget to call @c startIpfixFileWriter() to begin sending
  */
 IpfixFileWriter::IpfixFileWriter(uint16_t observationDomainId, std::string filenamePrefix, 
-	std::string destinationPath, uint32_t maximumFilesize)
-			: IpfixSender(observationDomainId, MAX_RECORD_RATE)
+	std::string destinationPath, uint32_t maxFilesize)
+			: IpfixSender(observationDomainId, MAX_RECORD_RATE), maximumFilesize(maxFilesize)
 {
 	if (filenamePrefix != "") {
 		if(addCollector(observationDomainId, filenamePrefix, destinationPath, maximumFilesize) != 0) {
@@ -66,7 +66,7 @@ int IpfixFileWriter::addCollector(uint16_t observationDomainId, std::string file
 	if(destinationPath.at(destinationPath.length()-1) != '/') 
 		destinationPath += "/";
 	std::string my_filename = destinationPath + filenamePrefix; 
-	if (maximumFilesize < 0) maximumFilesize = DEFAULTFILESIZE;
+	if (maximumFilesize == 0) maximumFilesize = DEFAULTFILESIZE;
 	if(maximumFilesize < 64)
 		 msg(MSG_ERROR, 
 		   "maximum filsize < maximum message length - this could lead to serious problems");
