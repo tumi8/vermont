@@ -133,12 +133,17 @@ public:
 
 	Packet(InstanceManager<Packet>* im)
 		: ManagedInstance<Packet>(im),
-		  zeroBytes(0)
+		  zeroBytes(0),
+		  netHeader(data),
+		  netHeaderOffset(0)
 	{
 	}
 
 	Packet()
-		: ManagedInstance<Packet>(0)
+		: ManagedInstance<Packet>(0),
+		  zeroBytes(0),
+		  netHeader(data),
+		  netHeaderOffset(0)
 	{
 	}
 
@@ -159,12 +164,14 @@ public:
 		observationDomainID = obsdomainid;
 		pcapPacketLength = origplen;
 
-		if (len > PCAP_MAX_CAPTURE_LENGTH) {
-			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d), "
-					"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH to compensate!", len, PCAP_MAX_CAPTURE_LENGTH);
+		static int offset = getLayer2HeaderLen(packetData, dataLinkType);
+		if (len > PCAP_MAX_CAPTURE_LENGTH || len < offset) {
+			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d) or smaller than layer 2 len (%d), "
+					"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH to compensate!", len, PCAP_MAX_CAPTURE_LENGTH, offset);
 		}
-
-		memcpy(data, packetData, len);
+		
+		// copy all content starting from the IP header
+		memcpy(data , packetData + offset, len - offset);
 
 		// timestamps in network byte order (needed for export or concentrator)
 		time_sec_nbo = htonl(timestamp.tv_sec);
@@ -194,13 +201,21 @@ public:
 		pcapPacketLength = origplen;
 
 		data_length = 0;
+		static int offset = getLayer2HeaderLen(datasegments[0], dataLinkType);
 		for (uint32_t i=0; datasegments[i]!=0; i++) {
 			if (data_length+segmentlens[i] > PCAP_MAX_CAPTURE_LENGTH) {
 				THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d), "
 					"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH to compensate!", data_length+segmentlens[i], PCAP_MAX_CAPTURE_LENGTH);
 			}
-			memcpy(data+data_length, datasegments[i], segmentlens[i]);
-			data_length += segmentlens[i];
+			if (i == 0) {
+				// first segment contains the layer 2 header
+				// we want to skip it
+				memcpy(data+data_length, datasegments[i] + offset, segmentlens[i] - offset);
+				data_length += segmentlens[i] - offset;
+			} else {
+				memcpy(data+data_length, datasegments[i], segmentlens[i]);
+				data_length += segmentlens[i];
+			}
 		}
 
 		// timestamps in network byte order (needed for export or concentrator)
@@ -222,35 +237,37 @@ public:
 	{
 	}
 
-	// classify the packet headers
-	void classify(int dataLinkType)
+	int getLayer2HeaderLen(const char* packetData, int dataLinkType)
 	{
-		unsigned char protocol = 0;
-
 		// get netheader 
 		switch (dataLinkType) {
 			case DLT_EN10MB: {
 				// 14 oder 18
 				// check if we have a vlan on the data link layer.
-				uint16_t et = ntohs(((struct ether_header*)data)->ether_type);
-				netHeaderOffset = 14 + ((et == ETHERTYPE_VLAN)?4:0);
+				uint16_t et = ntohs(((struct ether_header*)packetData)->ether_type);
+				return 14 + ((et == ETHERTYPE_VLAN)?4:0);
 				break;
 			}
 			case DLT_LOOP:
 			case DLT_NULL: {
-				netHeaderOffset = 4;
+				return 4;
 				break;
 			}
 			case DLT_LINUX_SLL:{
-				netHeaderOffset = 16;
+				return 16;
 				break;
 			}
 			default:
 				msg(MSG_ERROR, "Received packet on not supported link layer \"%u\". Assuming that no layer 2 header exists. This will probably fail!", dataLinkType);
-				netHeaderOffset = 0;
+				return 0;
 		}
-		netHeader = data + netHeaderOffset;
+		return 0;
+	}
 
+	// classify the packet headers
+	void classify(int dataLinkType)
+	{
+		unsigned char protocol = 0;
 
 		// first check for IPv4 header which needs to be at least 20 bytes long
 		if ( (netHeader + 20 <= data + data_length) && ((*netHeader >> 4) == 4) )
