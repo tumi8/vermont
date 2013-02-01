@@ -93,7 +93,7 @@ std::string FlowLenAnalyzer::getStatistics()
 	return "";
 }
 
-std::string FlowLenAnalyzer::getStatisticsXML()
+std::string FlowLenAnalyzer::getStatisticsXML(double interval)
 {
 	return "";
 }

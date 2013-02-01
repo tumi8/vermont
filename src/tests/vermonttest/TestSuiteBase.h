@@ -31,6 +31,7 @@ public:
 		PASSED
 	} TestResult;
 	virtual TestResult execTest() = 0;
+	virtual ~Test() {}
 };
 
 class TestSuite {
