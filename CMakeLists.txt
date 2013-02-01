@@ -218,7 +218,7 @@ IF (DEBUG)
 		### with 8-STABLE and 7-STABLE (as of June 21th 2010). Some exceptions will not be 
 		### caugth if -pg is given at compile time.  We therefore disable profiling for FreeBSD
 		MESSAGE(STATUS "Detected a FreeBSD system. Not including profiling support in DEBUG mode")
-		ADD_DEFINITIONS(-O0 -g -Wall -DDEBUG)
+		ADD_DEFINITIONS(-O0 -g -Wall -Werror -DDEBUG)
 		SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "-g")
 	ELSE (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
 		ADD_DEFINITIONS(-O0 -g -pg -Wall -DDEBUG)
