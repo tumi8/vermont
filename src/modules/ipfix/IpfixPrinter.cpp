@@ -53,7 +53,7 @@ void PrintHelpers::printIPv4(InformationElement::IeInfo type, IpfixRecord::Data*
 		return;
 	}
 
-	if ((type.length == 5) /*&& (imask != 0)*/) {
+	if (type.length == 5 /*&& imask != 0*/) {
 		fprintf(fh, "%u.%u.%u.%u/%u", octet1, octet2, octet3, octet4, 32-imask);
 	} else {
 		fprintf(fh, "%u.%u.%u.%u", octet1, octet2, octet3, octet4);
@@ -496,7 +496,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		gettimeofday(&tv, 0);
 		tm = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
 		strftime(buf, ARRAY_SIZE(buf), "%F %T", tm);
-		snprintf(buf2, ARRAY_SIZE(buf2), "%s.%03ld", buf, tv.tv_usec/1000);
+		snprintf(buf2, ARRAY_SIZE(buf2), "%s.%03ld", buf, (long)(tv.tv_usec/1000));
 		fprintf(fh, "%22s ", buf2);
 
 		uint32_t timetype = 0;
@@ -595,7 +595,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		if (fi != NULL && fi->type.length==2) {
 			srcport = ntohs(*reinterpret_cast<uint16_t*>(record->data+fi->offset));
 		}
-		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (srcip>>0)&0xFF, (srcip>>8)&0xFF, (srcip>>16)&0xFF, (srcip>>24)&0xFF, srcport);
+		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (uint8_t)((srcip>>0)&0xFF), (uint8_t)((srcip>>8)&0xFF), (uint8_t)((srcip>>16)&0xFF), (uint8_t)((srcip>>24)&0xFF), srcport);
 		fprintf(fh, "%21s ", buf);
 
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
@@ -608,7 +608,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		if (fi != NULL && fi->type.length==2) {
 			dstport = ntohs(*reinterpret_cast<uint16_t*>(record->data+fi->offset));
 		}
-		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (dstip>>0)&0xFF, (dstip>>8)&0xFF, (dstip>>16)&0xFF, (dstip>>24)&0xFF, dstport);
+		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (uint8_t)((dstip>>0)&0xFF), (uint8_t)((dstip>>8)&0xFF), (uint8_t)((dstip>>16)&0xFF), (uint8_t)((dstip>>24)&0xFF), dstport);
 		fprintf(fh, "%21s ", buf);
 
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_packetDeltaCount, 0);
