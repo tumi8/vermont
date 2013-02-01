@@ -25,7 +25,7 @@ public:
 	std::string getName () const;
 
 	/** Get the content of this node. */
-	virtual std::string getContent () const;
+	virtual const std::string getContent () const;
 
 	/** compares the node name with the supplied string */
 	inline bool matches(const char* str) const
@@ -104,7 +104,7 @@ public:
 	virtual ~XMLTextNode();
 
 	/** Get the value of this node. */
-	const std::string getContent();
+	virtual const std::string getContent() const;
 
 	/** checks if the node consists of only whitespace */
 	bool isBlank() const;

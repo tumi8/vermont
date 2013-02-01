@@ -20,7 +20,7 @@ std::string XMLNode::getName() const
 	return  std::string((const char*)xmlNode->name);
 }
 
-std::string XMLNode::getContent() const
+const std::string XMLNode::getContent() const
 {
 	return std::string((const char*)xmlNodeGetContent(xmlNode));
 }
