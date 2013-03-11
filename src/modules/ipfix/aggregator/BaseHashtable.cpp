@@ -353,9 +353,11 @@ int BaseHashtable::isToBeAggregated(InformationElement::IeInfo& type)
 				case IPFIX_TYPEID_flowEndMilliSeconds:
 				case IPFIX_TYPEID_flowEndMicroSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_postOctetDeltaCount:
 				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_packetTotalCount:
 				case IPFIX_TYPEID_postPacketDeltaCount:
 				case IPFIX_TYPEID_droppedOctetDeltaCount:
 				case IPFIX_TYPEID_droppedPacketDeltaCount:
@@ -373,7 +375,9 @@ int BaseHashtable::isToBeAggregated(InformationElement::IeInfo& type)
 				case IPFIX_TYPEID_flowEndMilliSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
 				case IPFIX_TYPEID_octetDeltaCount:
+				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_packetTotalCount:
 				case IPFIX_TYPEID_tcpControlBits:
 					return 1;
 			}
@@ -502,6 +506,8 @@ void BaseHashtable::genBiflowStructs()
 	int32_t dstIPIdx = -1;
 	int32_t srcPortIdx = -1;
 	int32_t dstPortIdx = -1;
+	int32_t srcAsIdx = -1;
+	int32_t dstAsIdx = -1;
 	uint32_t maxFieldSize = 0;
 
 
@@ -535,6 +541,14 @@ void BaseHashtable::genBiflowStructs()
 					case IPFIX_TYPEID_destinationTransportPort:
 						dstPortIdx = i;
 						mapReverseElement(fi->type);
+						break;
+					case IPFIX_TYPEID_bgpSourceAsNumber:
+						srcAsIdx = i;
+						mapReverseElement(InformationElement::IeInfo(IPFIX_TYPEID_bgpSourceAsNumber, 0));
+						break;
+					case IPFIX_TYPEID_bgpDestinationAsNumber:
+						dstAsIdx = i;
+						mapReverseElement(InformationElement::IeInfo(IPFIX_TYPEID_bgpDestinationAsNumber, 0));
 						break;
 					default:
 						defaultassign = true;
@@ -598,6 +612,12 @@ void BaseHashtable::genBiflowStructs()
 				break;
 			case IPFIX_TYPEID_destinationTransportPort:
 				revKeyMapper[i] = srcPortIdx;
+				break;
+			case IPFIX_TYPEID_bgpSourceAsNumber:
+				revKeyMapper[i] = srcAsIdx;
+				break;
+			case IPFIX_TYPEID_bgpDestinationAsNumber:
+				revKeyMapper[i] = dstAsIdx;
 				break;
 			default:
 				revKeyMapper[i] = i;

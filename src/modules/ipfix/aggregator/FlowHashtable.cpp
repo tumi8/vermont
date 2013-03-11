@@ -100,8 +100,10 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 					*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
 					return 0;
 
+				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_postOctetDeltaCount:
+				case IPFIX_TYPEID_packetTotalCount:
 				case IPFIX_TYPEID_packetDeltaCount:
 				case IPFIX_TYPEID_postPacketDeltaCount:
 				case IPFIX_TYPEID_droppedOctetDeltaCount:
@@ -165,7 +167,9 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 					*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
 					return 0;
 
+				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
+				case IPFIX_TYPEID_packetTotalCount:
 				case IPFIX_TYPEID_packetDeltaCount:
 					*(uint64_t*)baseData = addUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
 					return 0;
