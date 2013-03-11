@@ -116,7 +116,8 @@ void FpaPacketGenerator::onDataRecord(IpfixDataRecord* record)
 			tv.tv_sec = c.srcTimeEnd/1000;
 			tv.tv_usec = (c.srcTimeEnd%1000)*1000;
 			Packet* p = packetManager.getNewInstance();
-			p->init(tcpDataSegments, tcpSegmentLengths,	tv, 0, totlen);
+			// tcpheader contains a standard 14 bytes ethernet header (see FpaPacketGenerator.h)
+			p->init(tcpDataSegments, tcpSegmentLengths,	tv, 0, totlen, 14);
 			send(p);
 		}
 		totlen = sizeof(tcpHeader)+c.dstPayloadLen;
@@ -133,7 +134,8 @@ void FpaPacketGenerator::onDataRecord(IpfixDataRecord* record)
 			tv.tv_sec = c.dstTimeEnd/1000;
 			tv.tv_usec = (c.dstTimeEnd%1000)*1000;
 			Packet* p = packetManager.getNewInstance();
-			p->init(tcpDataSegments, tcpSegmentLengths,	tv, 0, totlen);
+			// tcpheader contains a standard 14 bytes ethernet header (see FpaPacketGenerator.h)
+			p->init(tcpDataSegments, tcpSegmentLengths,	tv, 0, totlen, 14);
 			send(p);
 		}
 	} else if (c.protocol==17) {
@@ -152,7 +154,8 @@ void FpaPacketGenerator::onDataRecord(IpfixDataRecord* record)
 			tv.tv_sec = c.srcTimeEnd/1000;
 			tv.tv_usec = (c.srcTimeEnd%1000)*1000;
 			Packet* p = packetManager.getNewInstance();
-			p->init(udpDataSegments, udpSegmentLengths,	tv, 0, totlen);
+			// udpheader contains a standard 14 bytes ethernet header (see FpaPacketGenerator.h)
+			p->init(udpDataSegments, udpSegmentLengths,	tv, 0, totlen, 14);
 			send(p);
 		}
 		totlen = sizeof(udpHeader)+c.dstPayloadLen;
@@ -170,7 +173,8 @@ void FpaPacketGenerator::onDataRecord(IpfixDataRecord* record)
 			tv.tv_sec = c.dstTimeEnd/1000;
 			tv.tv_usec = (c.dstTimeEnd%1000)*1000;
 			Packet* p = packetManager.getNewInstance();
-			p->init(udpDataSegments, udpSegmentLengths,	tv, 0, totlen);
+			// udpheader contains a standard 14 bytes ethernet header (see FpaPacketGenerator.h)
+			p->init(udpDataSegments, udpSegmentLengths,	tv, 0, totlen, 14);
 			send(p);
 
 		}

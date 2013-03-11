@@ -153,9 +153,7 @@ void *Observer::observerThread(void *arg)
 	struct pcap_pkthdr packetHeader;
 	bool have_send = false;
 	obs->registerCurrentThread();
-    bool file_eof = false;
-
-
+	bool file_eof = false;
 
 	msg(MSG_INFO, "Observer started with following parameters:");
 	msg(MSG_INFO, "  - readFromFile=%d", obs->readFromFile);
@@ -164,6 +162,7 @@ void *Observer::observerThread(void *arg)
 	msg(MSG_INFO, "  - filterString='%s'", (obs->filter_exp ? obs->filter_exp : "none"));
 	msg(MSG_INFO, "  - maxPackets=%u", obs->maxPackets);
 	msg(MSG_INFO, "  - capturelen=%d", obs->capturelen);
+	msg(MSG_INFO, " - dataLinkType=%d", obs->dataLinkType);
 	if (obs->readFromFile) {
 		msg(MSG_INFO, "  - autoExit=%d", obs->autoExit);
 		msg(MSG_INFO, "  - stretchTime=%f", obs->stretchTime);
@@ -216,7 +215,7 @@ void *Observer::observerThread(void *arg)
 
 			// initialize packet structure (init copies packet data)
 			p = packetManager.getNewInstance();
-			p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, obs->observationDomainID, packetHeader.len);
+			p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, obs->observationDomainID, packetHeader.len, obs->dataLinkType);
 
 			DPRINTF("received packet at %u.%04u, len=%d",
 					(unsigned)p->timestamp.tv_sec,
@@ -312,7 +311,7 @@ void *Observer::observerThread(void *arg)
 				// in contrast to live capturing, the data length is not limited
 				// to any snap length when reading from a pcap file
 				(packetHeader.caplen < obs->capturelen) ? packetHeader.caplen : obs->capturelen,
-				packetHeader.ts, obs->observationDomainID, packetHeader.len);
+				packetHeader.ts, obs->observationDomainID, packetHeader.len, obs->dataLinkType);
 
 
 			DPRINTF("received packet at %u.%03u, len=%d",
@@ -393,31 +392,6 @@ bool Observer::prepare(const std::string& filter)
 			goto out2;
 		}
 
-		// IP_HEADER_OFFSET is set by the configure script
-		switch (getDataLinkType()) {
-		case DLT_EN10MB:
-			if (IP_HEADER_OFFSET != 14 && IP_HEADER_OFFSET != 18) {
-				msg(MSG_FATAL, "IP_HEADER_OFFSET on an ethernet device has to be 14 or 18 Bytes. Please adjust that value via configure --with-ipheader-offset");
-				goto out2;
-			}
-			break;
-		case DLT_LOOP:
-		case DLT_NULL:
-			if (IP_HEADER_OFFSET != 4) {
-				msg(MSG_FATAL, "IP_HEADER_OFFSET on BSD loop back device has to be 4 Bytes. Please adjust that value via configure --with-ipheader-offset");
-				goto out2;
-			}
-			break;
-		case DLT_LINUX_SLL:
-			if (IP_HEADER_OFFSET != 16) {
-				msg(MSG_FATAL, "IP_HEADER_OFFSET on linux cooked devices has to be 16 Bytes. Please adjust that value via configure --with-ipheader-offset");
-				goto out2;
-			}
-		default:
-			msg(MSG_ERROR, "You are using an unkown IP_HEADER_OFFSET and data link combination. This can make problems. Please check if you use the correct IP_HEADER_OFFSET for your data link, if you see strange IPFIX/PSAMP packets.");
-		}
-
-
 		/* we need the netmask for the pcap_compile */
 		if(pcap_lookupnet(captureInterface, &network, &netmask, errorBuffer) == -1) {
 			msg(MSG_ERROR, "unable to determine netmask/network: %s", errorBuffer);
@@ -439,6 +413,7 @@ bool Observer::prepare(const std::string& filter)
 		netmask=0;
 	}
 
+	dataLinkType = pcap_datalink(captureDevice);
 
 	if (filter_exp) {
 		msg(MSG_DEBUG, "compiling pcap filter code from: %s", filter_exp);
@@ -531,11 +506,6 @@ bool Observer::setCaptureLen(int x)
 int Observer::getCaptureLen()
 {
 	return capturelen;
-}
-
-int Observer::getDataLinkType()
-{
-	return pcap_datalink(captureDevice);
 }
 
 void Observer::replaceOfflineTimestamps()
