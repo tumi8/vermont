@@ -60,13 +60,13 @@ bool StateConnectionFilter::processPacket(Packet* p, bool connFilterResult)
 
 	QuintupleKey key(p);
 
-	if (*((uint8_t*)p->data + flagsOffset) & SYN) {
+	if (*((uint8_t*)p->data.netHeader + flagsOffset) & SYN) {
 		DPRINTF("StateConnectionFilter: Got SYN packet");
 		if (exportList.find(key) == exportList.end()) {
 			exportList[key] = 0;
 		}
 		return exportControlPackets;
-	} else if (*((uint8_t*)p->data + flagsOffset) & RST || *((uint8_t*)p->data + flagsOffset) & FIN) {
+	} else if (*((uint8_t*)p->data.netHeader + flagsOffset) & RST || *((uint8_t*)p->data.netHeader + flagsOffset) & FIN) {
 		DPRINTF("StateConnectionFilter: Got %s packet", *((uint8_t*)p->data + flagsOffset) & RST?"RST":"FIN");
 		if (exportList.find(key) != exportList.end()) {
 			exportList.erase(exportList.find(key));

@@ -77,13 +77,13 @@ bool IPHeaderFilter::processPacket(Packet *p)
 
         switch(m_header) {
         case 1:
-                start=p->netHeader;
+                start=p->data.netHeader;
                 break;
         case 2:
                 start=p->transportHeader;
                 break;
         default:
-                start=p->netHeader;
+                start=p->data.netHeader;
         }
 
 	if(start == NULL)

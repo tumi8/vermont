@@ -53,7 +53,7 @@ void PrintHelpers::printIPv4(InformationElement::IeInfo type, IpfixRecord::Data*
 		return;
 	}
 
-	if ((type.length == 5) /*&& (imask != 0)*/) {
+	if (type.length == 5 /*&& (imask != 0)*/) {
 		fprintf(fh, "%u.%u.%u.%u/%u", octet1, octet2, octet3, octet4, 32-imask);
 	} else {
 		fprintf(fh, "%u.%u.%u.%u", octet1, octet2, octet3, octet4);

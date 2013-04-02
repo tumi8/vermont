@@ -39,7 +39,7 @@ public:
 			uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits);
 	virtual ~PacketHashtable();
 
-	void aggregatePacket(const Packet* p);
+	void aggregatePacket(Packet* p);
 
 	static uint8_t getRawPacketFieldLength(const InformationElement::IeInfo& type);
 	static uint16_t getRawPacketFieldOffset(const InformationElement::IeInfo& type, const Packet* p);
@@ -157,14 +157,14 @@ private:
 	void fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index);
 	uint32_t calculateHash(const IpfixRecord::Data* data);
 	uint32_t calculateHashRev(const IpfixRecord::Data* data);
-	boost::shared_array<IpfixRecord::Data> buildBucketData(const Packet* p);
+	boost::shared_array<IpfixRecord::Data> buildBucketData(Packet* p);
 	void aggregateField(const ExpFieldData* efd, HashtableBucket* hbucket,
 					    const IpfixRecord::Data* deltaData, IpfixRecord::Data* data);
 	void aggregateFlow(HashtableBucket* bucket, const Packet* p, bool reverse);
 	bool equalFlow(IpfixRecord::Data* bucket, const Packet* p);
 	bool equalFlowRev(IpfixRecord::Data* bucket, const Packet* p);
 	void createMaskedField(IpfixRecord::Data* address, uint8_t imask);
-	void createMaskedFields(const Packet* p);
+	void createMaskedFields( Packet* p);
 	void updatePointers(const Packet* p);
 	bool typeAvailable(const InformationElement::IeInfo& type);
 	bool isRawPacketPtrVariable(const InformationElement::IeInfo& type);
