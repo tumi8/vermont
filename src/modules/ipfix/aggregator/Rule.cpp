@@ -302,7 +302,7 @@ bool Rule::ExptemplateDataMatches(const Packet* p)
 	// check all fields containing patterns
 	for (int i = 0; i<patternFieldsLen; i++) {
 		Rule::Field* ruleField = patternFields[i];
-		const IpfixRecord::Data* field_data = p->netHeader + PacketHashtable::getRawPacketFieldOffset(ruleField->type, p);
+		const IpfixRecord::Data* field_data = p->data.netHeader + PacketHashtable::getRawPacketFieldOffset(ruleField->type, p);
 
 		switch (ruleField->type.id) {
 			case IPFIX_TYPEID_sourceIPv4Address:

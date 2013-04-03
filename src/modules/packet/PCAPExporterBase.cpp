@@ -47,7 +47,7 @@ void PCAPExporterBase::writePCAP(Packet* packet)
 	packetHeader.ts = packet->timestamp;
 	packetHeader.caplen = packet->data_length;
 	packetHeader.len = packet->pcapPacketLength;
-	pcap_dump((unsigned char*)dumper, &packetHeader, packet->data);
+	pcap_dump((unsigned char*)dumper, &packetHeader, packet->layer2Start);
 	packet->removeReference();
 }
 
