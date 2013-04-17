@@ -134,7 +134,7 @@
  * defines in packets per seconds, how many udp records are to be sent over
  * the wire by IpfixNetflowExporter
  */
-#define INE_DEFAULT_MAXRECORDRATE 5000
+#define INE_DEFAULT_MAXRECORDRATE 0
 
 
 /**
