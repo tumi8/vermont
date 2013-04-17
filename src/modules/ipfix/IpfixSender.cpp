@@ -536,16 +536,19 @@ void IpfixSender::send() {
 	// determine if we need to wait (we don't want to exceed the defined packet rate per second)
 	// check in 100ms steps if maximum packet rate is reached - if yes, wait until the 100ms step
 	// is over
-	struct timeval tv;
-	gettimeofday(&tv, 0);
-	if ((tv.tv_sec==curTimeStep.tv_sec) && (tv.tv_usec/100000==curTimeStep.tv_usec/100000)) {
-		if (recordsSentStep>maxRecordRate/10) {
-			// wait until current timestep is over
-			usleep(100000-(tv.tv_usec%100000));
+	// do only perform limiting of the maxRecordRate is > 0
+	if (maxRecordRate > 0) {
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		if ((tv.tv_sec==curTimeStep.tv_sec) && (tv.tv_usec/100000==curTimeStep.tv_usec/100000)) {
+			if (recordsSentStep>maxRecordRate/10) {
+				// wait until current timestep is over
+				usleep(100000-(tv.tv_usec%100000));
+			}
+		} else {
+			curTimeStep = tv;
+			recordsSentStep = 0;
 		}
-	} else {
-		curTimeStep = tv;
-		recordsSentStep = 0;
 	}
 
 	if (ipfix_send(ipfixExporter) != 0) {
