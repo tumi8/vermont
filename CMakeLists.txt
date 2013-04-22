@@ -73,13 +73,8 @@ INSTALL(FILES README LICENSE
 	DESTINATION share/doc/vermont
 )
 
-INSTALL(FILES ipfix-config-schema.xsd
-	DESTINATION share/vermont
-)
-
 INSTALL(DIRECTORY configs/
 	DESTINATION share/vermont/configs
-	PATTERN ".svn" EXCLUDE
 )
 
 
