@@ -347,9 +347,11 @@ public:
 		if (!dest) { // dest wasn't set yet
 			dest = dynamic_cast<Destination< typename InstanceType::src_value_type>* >
 					(other->getInstance());
-			if (!dest)
+			if (!dest) {
+				msg(MSG_FATAL, "Trying to connect incompatible types: %s -> %s! Check your configuration for incompabible connections!", this->getName().c_str(), other->getName().c_str());
 				THROWEXCEPTION("Unexpected error: can't cast %s to matching Destination<>",
 						other->getName().c_str());
+			}
 		}
 
 		// call postReconfiguration(), e.g. to tell the module to resend its template
