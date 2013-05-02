@@ -29,35 +29,6 @@
 #include "common/msg.h"
 #include  <hiredis/hiredis.h>
 
-const IpfixFlowInspectorExporter::Column IpfixFlowInspectorExporter::identify [] = {
-        {CN_dstIP,              "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_destinationIPv4Address, 0},
-        {CN_srcIP,              "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_sourceIPv4Address, 0},
-        {CN_srcPort,            "SMALLINT(5) UNSIGNED",         0, IPFIX_TYPEID_sourceTransportPort, 0},
-        {CN_dstPort,            "SMALLINT(5) UNSIGNED",         0, IPFIX_TYPEID_destinationTransportPort, 0},
-        {CN_proto,              "TINYINT(3) UNSIGNED",          0, IPFIX_TYPEID_protocolIdentifier, 0 },
-        {CN_dstTos,             "TINYINT(3) UNSIGNED",          0, IPFIX_TYPEID_classOfServiceIPv4, 0},
-        {CN_bytes,              "BIGINT(20) UNSIGNED",          0, IPFIX_TYPEID_octetDeltaCount, 0},
-        {CN_pkts,               "BIGINT(20) UNSIGNED",          0, IPFIX_TYPEID_packetDeltaCount, 0},
-        {CN_firstSwitched,      "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowStartSeconds, 0}, // default value is invalid/not used for this ent
-        {CN_lastSwitched,       "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowEndSeconds, 0}, // default value is invalid/not used for this entry
-        {CN_firstSwitchedMillis, "SMALLINT(5) UNSIGNED",        0, IPFIX_TYPEID_flowStartMilliSeconds, 0},
-        {CN_lastSwitchedMillis, "SMALLINT(5) UNSIGNED",         0, IPFIX_TYPEID_flowEndMilliSeconds, 0},
-        {CN_tcpControlBits,     "SMALLINT(5) UNSIGNED",         0, IPFIX_TYPEID_tcpControlBits, 0},
-        //TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
-        {CN_revbytes,           "BIGINT(20) UNSIGNED",          0, IPFIX_TYPEID_octetDeltaCount, IPFIX_PEN_reverse},
-        {CN_revpkts,            "BIGINT(20) UNSIGNED",          0, IPFIX_TYPEID_packetDeltaCount, IPFIX_PEN_reverse},
-        {CN_revFirstSwitched,   "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
-        {CN_revLastSwitched,    "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse}, // default value is invalid/not used for this entry
-        {CN_revFirstSwitchedMillis, "SMALLINT(5) UNSIGNED",     0, IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse},
-        {CN_revLastSwitchedMillis, "SMALLINT(5) UNSIGNED",      0, IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse},
-        {CN_revTcpControlBits,  "SMALLINT(5) UNSIGNED",         0, IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse},
-        {CN_maxPacketGap,       "BIGINT(20) UNSIGNED",          0, IPFIX_ETYPEID_maxPacketGap, IPFIX_PEN_vermont|IPFIX_PEN_reverse},
-        {CN_exporterID,         "SMALLINT(5) UNSIGNED",         0, EXPORTERID, 0},
-        {CN_flowStartSysUpTime, "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowStartSysUpTime, 0},
-        {CN_flowEndSysUpTime,   "INTEGER(10) UNSIGNED",         0, IPFIX_TYPEID_flowEndSysUpTime, 0},
-        {0} // last entry must be 0
-};
-
 
 /**
  * (re)connect to database
@@ -127,27 +98,12 @@ std::string IpfixFlowInspectorExporter::getInsertObj(TemplateInfo& dataTemplateI
 			if (k != 0) {
 				sstream << ",";
 			}
-			
-			// try to use the old legacy names
-			bool foundLegacyName = false;
-			int i = 0;
-			while (identify[i].columnName != 0) {
-				if (identify[i].ipfixId == dataTemplateInfo.fieldInfo[k].type.id && identify[i].enterprise == dataTemplateInfo.fieldInfo[k].type.enterprise) {
-					sstream << "\"" << identify[i].columnName << "\" : ";
-					foundLegacyName = true;
-					break;
-				}
-				++i;
-			}
-
-			if (!foundLegacyName) {	
-				identifier = ipfix_id_lookup(dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.enterprise);
-				if (identifier) {
-					// push regular IPFIX name into queue 
-					sstream << "\"" << identifier->name << "\" : ";
-				} else {
-					sstream << dataTemplateInfo.fieldInfo[k].type.id;
-				}
+			identifier = ipfix_id_lookup(dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.enterprise);
+			if (identifier) {
+				// push regular IPFIX name into queue 
+				sstream << "\"" << identifier->name << "\" : ";
+			} else {
+				sstream << dataTemplateInfo.fieldInfo[k].type.id;
 			}
 
 			sstream << static_cast<long long int>(intdata);
@@ -161,27 +117,12 @@ std::string IpfixFlowInspectorExporter::getInsertObj(TemplateInfo& dataTemplateI
 			if (k != 0) {
 				sstream << ",";
 			}
-			
-			// try to use the old legacy names
-			bool foundLegacyName = false;
-			int i = 0;
-			while (identify[i].columnName != 0) {
-				if (identify[i].ipfixId == dataTemplateInfo.dataInfo[k].type.id && identify[i].enterprise == dataTemplateInfo.dataInfo[k].type.enterprise) {
-					sstream << "\"" << identify[i].columnName << "\" : ";
-					foundLegacyName = true;
-					break;
-				}
-				++i;
-			}
-
-			if (!foundLegacyName) {	
-				identifier = ipfix_id_lookup(dataTemplateInfo.dataInfo[k].type.id, dataTemplateInfo.dataInfo[k].type.enterprise);
-				if (identifier) {
-					// push regular IPFIX name into queue 
-					sstream << "\"" << identifier->name << "\" : ";
-				} else {
-					sstream << dataTemplateInfo.dataInfo[k].type.id;
-				}
+			identifier = ipfix_id_lookup(dataTemplateInfo.dataInfo[k].type.id, dataTemplateInfo.dataInfo[k].type.enterprise);
+			if (identifier) {
+				// push regular IPFIX name into queue 
+				sstream << "\"" << identifier->name << "\" : ";
+			} else {
+				sstream << dataTemplateInfo.dataInfo[k].type.id;
 			}
 
 			sstream << static_cast<long long int>(intdata);
