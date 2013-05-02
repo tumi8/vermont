@@ -64,14 +64,14 @@ bool ConnectionFilter::processPacket(Packet* p)
 		return false;
 	}
 
-	if (*((uint8_t*)p->data + flagsOffset) & SYN) {
+	if (*((uint8_t*)p->layer2Start + flagsOffset) & SYN) {
 		DPRINTF("ConnectionFilter: Got SYN packet");
 		synFilter.set(key.data, key.len, (agetime_t)p->timestamp.tv_sec);
 		DPRINTF("ConnectionFilter: synFilter saved time %u", synFilter.get(key.data, key.len));
 		return exportControlPackets;
-	} else if (*((uint8_t*)p->data + flagsOffset) & RST || *((uint8_t*)p->data + flagsOffset) & FIN) {
+	} else if (*((uint8_t*)p->layer2Start + flagsOffset) & RST || *((uint8_t*)p->layer2Start + flagsOffset) & FIN) {
 		
-		DPRINTF("ConnectionFilter: Got %s packet", *((uint8_t*)p->data + flagsOffset) & RST?"RST":"FIN");
+		DPRINTF("ConnectionFilter: Got %s packet", *((uint8_t*)p->layer2Start + flagsOffset) & RST?"RST":"FIN");
 	
 		exportFilter.set(key.data, key.len, -exportFilter.get(key.data, key.len));
 		connectionFilter.set(key.data, key.len, p->timestamp.tv_sec);
