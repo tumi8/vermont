@@ -93,19 +93,34 @@ public:
 
 	/*
 	data: the raw packet data from the wire, including physical header
-	ipHeader: start of the IP header: data + (physical dependent) IP header offset
-	transportHeader: start of the transport layer header (TCP/UDP): ip_header + variable IP header length
-	ATTENTION: this array *MUST* be allocated inside the packet structure, so that it has a constant position
+		The structure contains two fields:
+			layer2Field - field containing an layer2 fields of unknown size (unknown at compile time)
+			netHeader: start of the IP header. This position is always fixed and does not adopt with varying layer 2 header sizes 
+							   (when monitoring a link that contains both tagged and untagged ethernet packets)
+							   (This position *MUST* be fixed as it is used as a reference point in the express
+							   aggregator). All offsets (e.g. transportLayerOffset, payloadOffset ...) are relative to the
+							   start of the network header. ATTENTION: in previous versions of VERMONT, these offsets where
+							   relative to the start of the packet header. 
+	transportHeader: start of the transport layer header (TCP/UDP): data.netHeader + variable IP header length
+	ATTENTION: the data arrays *MUST* be allocated inside the packet structure, so that it has a constant position
 	relative to other members of Packet. This is needed for optimization purposes inside the express aggregator
 	*/
-	unsigned char data[PCAP_MAX_CAPTURE_LENGTH];
+	unsigned char *layer2Start; // variable pointer that points to the actual start of the layer 2 header
+	unsigned int layer2HeaderLen;
+	const static unsigned char  maxLayer2HeaderLength = 30;
+	struct FullPacketData {
+		unsigned char layer2Field[maxLayer2HeaderLength];       // this field contains space for the layer 2 header. Since we might not know 
+									// the length of the layer 2 header apriory (ethernet vlans, ...), we reserve
+									// a maximum of maxLeayer2HeaderLengthBytes for this field. The real start of the
+									// layer 2 header will be recorded in the pointer layer2Start
+		unsigned char netHeader[PCAP_MAX_CAPTURE_LENGTH];	// start of the network header
+	} DISABLE_ALGINMENT;
+	FullPacketData data;
 	uint64_t zeroBytes;		/**< needed for reference in fields which are not available in PacketHashtable */
-	unsigned char *netHeader;
 	unsigned char *transportHeader;
 	unsigned char *payload;
 
-	// The offsets of the different headers with respect to *data
-	unsigned int netHeaderOffset;
+	// The offsets of the different headers with respect to *fullPacket->netHeader
 	unsigned int transportHeaderOffset;
 	unsigned int payloadOffset;
 
@@ -133,17 +148,13 @@ public:
 
 	Packet(InstanceManager<Packet>* im)
 		: ManagedInstance<Packet>(im),
-		  zeroBytes(0),
-		  netHeader(data),
-		  netHeaderOffset(0)
+		  zeroBytes(0)
 	{
 	}
 
 	Packet()
 		: ManagedInstance<Packet>(0),
-		  zeroBytes(0),
-		  netHeader(data),
-		  netHeaderOffset(0)
+		  zeroBytes(0)
 	{
 	}
 
@@ -164,14 +175,15 @@ public:
 		observationDomainID = obsdomainid;
 		pcapPacketLength = origplen;
 
-		static int offset = getLayer2HeaderLen(packetData, dataLinkType);
-		if (len > PCAP_MAX_CAPTURE_LENGTH || len < offset) {
+		layer2HeaderLen = getLayer2HeaderLen(packetData, dataLinkType);
+		if (len > PCAP_MAX_CAPTURE_LENGTH || len < layer2HeaderLen) {
 			THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d) or smaller than layer 2 len (%d), "
-					"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH to compensate!", len, PCAP_MAX_CAPTURE_LENGTH, offset);
+					"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH to compensate!", len, PCAP_MAX_CAPTURE_LENGTH, layer2HeaderLen);
 		}
 		
 		// copy all content starting from the IP header
-		memcpy(data , packetData + offset, len - offset);
+		layer2Start = data.netHeader - layer2HeaderLen;
+		memcpy(data.netHeader - layer2HeaderLen , packetData, len);
 
 		// timestamps in network byte order (needed for export or concentrator)
 		time_sec_nbo = htonl(timestamp.tv_sec);
@@ -201,21 +213,15 @@ public:
 		pcapPacketLength = origplen;
 
 		data_length = 0;
-		static int offset = getLayer2HeaderLen(datasegments[0], dataLinkType);
+		layer2HeaderLen = getLayer2HeaderLen(datasegments[0], dataLinkType);
+		layer2Start = (data.netHeader - layer2HeaderLen);
 		for (uint32_t i=0; datasegments[i]!=0; i++) {
 			if (data_length+segmentlens[i] > PCAP_MAX_CAPTURE_LENGTH) {
 				THROWEXCEPTION("received packet of size %d is bigger than maximum length (%d), "
 					"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH to compensate!", data_length+segmentlens[i], PCAP_MAX_CAPTURE_LENGTH);
 			}
-			if (i == 0) {
-				// first segment contains the layer 2 header
-				// we want to skip it
-				memcpy(data+data_length, datasegments[i] + offset, segmentlens[i] - offset);
-				data_length += segmentlens[i] - offset;
-			} else {
-				memcpy(data+data_length, datasegments[i], segmentlens[i]);
-				data_length += segmentlens[i];
-			}
+			memcpy((data.netHeader - layer2HeaderLen)+data_length, datasegments[i], segmentlens[i]);
+			data_length += segmentlens[i];
 		}
 
 		// timestamps in network byte order (needed for export or concentrator)
@@ -237,7 +243,7 @@ public:
 	{
 	}
 
-	int getLayer2HeaderLen(const char* packetData, int dataLinkType)
+	unsigned char  getLayer2HeaderLen(const char* packetData, int dataLinkType)
 	{
 		// get netheader 
 		switch (dataLinkType) {
@@ -258,7 +264,7 @@ public:
 				break;
 			}
 			default:
-				msg(MSG_ERROR, "Received packet on not supported link layer \"%u\". Assuming that no layer 2 header exists. This will probably fail!", dataLinkType);
+				THROWEXCEPTION("Received packet on not supported link layer \"%u\".", dataLinkType);
 				return 0;
 		}
 		return 0;
@@ -270,14 +276,14 @@ public:
 		unsigned char protocol = 0;
 
 		// first check for IPv4 header which needs to be at least 20 bytes long
-		if ( (netHeader + 20 <= data + data_length) && ((*netHeader >> 4) == 4) )
+		if ( (data.netHeader + 20 <= layer2Start + data_length) && ((*data.netHeader >> 4) == 4) )
 		{
-			protocol = *(netHeader + 9);
+			protocol = *(data.netHeader + 9);
 			classification |= PCLASS_NET_IP4;
-			transportHeaderOffset = netHeaderOffset + (( *netHeader & 0x0f ) << 2);
+			transportHeaderOffset = (( *data.netHeader & 0x0f ) << 2);
 
 			// crop layer 2 padding
-			unsigned int endOfIpOffset = netHeaderOffset + ntohs(*((uint16_t*) (netHeader + 2)));
+			unsigned int endOfIpOffset = layer2HeaderLen +  ntohs(*((uint16_t*) (data.netHeader + 2)));
 			if(data_length > endOfIpOffset)
 			{
 				DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
@@ -285,12 +291,12 @@ public:
 			}
 
 			// get fragment offset
-			uint16_t fragoffset = (*(uint16_t*)(netHeader+6))&0xFF1F;
+			uint16_t fragoffset = (*(uint16_t*)(data.netHeader+6))&0xFF1F;
 
 			// do not use transport header, if this is not the first fragment
 			// in the end, all fragments are discarded by vermont (TODO!)
 			if(transportHeaderOffset < data_length && fragoffset==0)
-				transportHeader = data + transportHeaderOffset;
+				transportHeader = data.netHeader + transportHeaderOffset;
 			else
 				transportHeaderOffset = 0;
 		}
@@ -332,10 +338,10 @@ public:
 					if (transportHeaderOffset + 12 < data_length)
 					{
 						// extract "Data Offset" field at TCP header offset 12 (upper 4 bits)
-						unsigned char tcpDataOffset = *(transportHeader + 12) >> 4;
+						unsigned char tcdataOffset = *(transportHeader + 12) >> 4;
 
 						// calculate payload offset
-						payloadOffset = transportHeaderOffset + (tcpDataOffset << 2);
+						payloadOffset = transportHeaderOffset + (tcdataOffset << 2);
 
 						// check if the complete TCP header is inside the received packet data
 						if (payloadOffset <= data_length) {
@@ -374,20 +380,20 @@ public:
 			if ((payloadOffset > 0) && (payloadOffset < data_length))
 			{
 				classification |= PCLASS_PAYLOAD;
-				payload = data + payloadOffset;
+				payload = data.netHeader + payloadOffset;
 			}
 			else
 				// there is no payload
 				payloadOffset = 0;
 		}
 
-		DPRINTFL(MSG_VDEBUG, "Packet::classify: class %08lx, proto %d, data %p, net %p, trn %p, payload %p\n", classification, protocol, data, netHeader, transportHeader, payload);
+		DPRINTFL(MSG_VDEBUG, "Packet::classify: class %08lx, proto %d, data %p, net %p, trn %p, payload %p\n", classification, protocol, data, data.netHeader, transportHeader, payload);
 	}
 
 	// read data from the IP header
 	void copyPacketData(void *dest, int offset, int size) const
 	{
-		memcpy(dest, (char *)netHeader + offset, size);
+		memcpy(dest, (char *)data.netHeader + offset, size);
 	}
 
 
@@ -409,16 +415,16 @@ public:
 
 		// for the following types, we omit the length check
 		case HEAD_NETWORK:
-		    return netHeader + offset;
+		    return (void*)data.netHeader;
 		case HEAD_TRANSPORT:
 		    return transportHeader + offset;
 
 		// the following types may be variable length
 		// if not, we have to check that the length is not too long
 		case HEAD_RAW:
-		    return ((unsigned int)offset + fieldLength <= data_length) ? (char*)data + offset : NULL;
+		    return ((unsigned int)offset + fieldLength <= data_length) ? (char*)layer2Start + offset : NULL;
 		case HEAD_NETWORK_AND_BEYOND:
-		    return (netHeaderOffset + offset + fieldLength <= data_length) ? netHeader + offset : NULL;
+		    return (offset + fieldLength <= data_length) ? (char*)data.netHeader + offset : NULL;
 		case HEAD_TRANSPORT_AND_BEYOND:
 		    return (transportHeaderOffset + offset + fieldLength <= data_length) ? transportHeader + offset : NULL;
 		case HEAD_PAYLOAD:
@@ -450,16 +456,16 @@ public:
 	    {
 		case HEAD_RAW:
 		    len = data_length - offset;
-		    packetdata = data + offset;
+		    packetdata = layer2Start + offset;
 		    break;
 
 		case HEAD_NETWORK:
 		    // return only data inside network header
 		    if(transportHeader == NULL)
-			len = data_length - netHeaderOffset - offset;
+			len = data_length - offset;
 		    else
-			len = transportHeaderOffset - netHeaderOffset - offset;
-		    packetdata = netHeader + offset;
+			len = transportHeaderOffset - offset;
+		    packetdata = data.netHeader + offset;
 		    break;
 
 		case HEAD_TRANSPORT:
@@ -472,8 +478,8 @@ public:
 		    break;
 
 		case HEAD_NETWORK_AND_BEYOND:
-		    len = data_length - netHeaderOffset - offset;
-		    packetdata = netHeader + offset;
+		    len = data_length - offset;
+		    packetdata = data.netHeader + offset;
 		    break;
 
 		case HEAD_TRANSPORT_AND_BEYOND:

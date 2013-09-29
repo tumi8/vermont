@@ -843,6 +843,8 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
 	IpfixHeader* header = (IpfixHeader*)message.get();
 	if (ntohs(header->version) == 0x000a) {
 		if (!isWithinTimeBoundary(ntohl(header->exportTime))) {
+			uint32_t currentTime = static_cast<uint32_t>(time(NULL));  
+			msg(MSG_ERROR, "Received old message. Current time is %u. Message time is %u", currentTime, ntohl(header->exportTime));
 			pthread_mutex_unlock(&mutex);
 			return -1;
 		}
@@ -854,6 +856,8 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
 	if (ntohs(header->version) == 0x0009) {
 		NetflowV9Header* nfHeader = (NetflowV9Header*)message.get();
 		if (!isWithinTimeBoundary(ntohl(nfHeader->exportTime))) {
+			uint32_t currentTime = static_cast<uint32_t>(time(NULL));  
+			msg(MSG_ERROR, "Received old message. Current time is %u. Message time is %u", currentTime, ntohl(nfHeader->exportTime));
 			pthread_mutex_unlock(&mutex);
 			return -1;
 		}
@@ -861,11 +865,11 @@ int IpfixParser::processPacket(boost::shared_array<uint8_t> message, uint16_t le
 		pthread_mutex_unlock(&mutex);
 		return r;
 	}
-	DPRINTF("Bad message version - expected 0x009 or 0x000a, got %#06x\n", ntohs(header->version));
+	msg(MSG_ERROR, "Bad message version - expected 0x009 or 0x000a, got %#06x\n", ntohs(header->version));
 	pthread_mutex_unlock(&mutex);
 	return -1;
 #else
-	DPRINTF("Bad message version - expected 0x000a, got %#06x\n", ntohs(header->version));
+	msg(MSG_ERROR, "Bad message version - expected 0x000a, got %#06x\n", ntohs(header->version));
 	pthread_mutex_unlock(&mutex);
 	return -1;
 #endif

@@ -28,7 +28,7 @@ static Packet* getNextPacket(pcap_t* dev)
 
 	pcapData = pcap_next(dev, &packetHeader);
 	p = packetManager.getNewInstance();
-	p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, 0, packetHeader.len);
+	p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, 0, packetHeader.len, DLT_EN10MB);
 	
 	return p;
 }

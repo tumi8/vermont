@@ -57,9 +57,9 @@
 
 /**
  * defines in packets per seconds, how many udp records are to be sent over
- * the wire
+ * the wire. 0 means that there is no limitation.
  */
-#define IS_DEFAULT_MAXRECORDRATE 5000
+#define IS_DEFAULT_MAXRECORDRATE 0
 
 /**
  * defines amount of milliseconds, how long a SCTP socket tries to retransmit
@@ -134,7 +134,7 @@
  * defines in packets per seconds, how many udp records are to be sent over
  * the wire by IpfixNetflowExporter
  */
-#define INE_DEFAULT_MAXRECORDRATE 5000
+#define INE_DEFAULT_MAXRECORDRATE 0
 
 
 /**

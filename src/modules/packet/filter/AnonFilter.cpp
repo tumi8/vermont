@@ -46,7 +46,7 @@ bool AnonFilter::processPacket(Packet* p)
 
 		switch (i->second.header) {
 			case HEAD_NETWORK:
-				anonField(i->first, p->netHeader + i->second.offset);
+				anonField(i->first, p->data.netHeader + i->second.offset);
 				break;
 			case HEAD_TRANSPORT:
 				anonField(i->first, p->transportHeader + i->second.offset);

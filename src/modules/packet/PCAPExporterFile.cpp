@@ -24,8 +24,6 @@
 
 #include <sstream>
 
-using namespace std;
-
 PCAPExporterFile::PCAPExporterFile(const std::string& file)
 	: fileName(file),
 	  dummy(NULL),
@@ -63,8 +61,8 @@ void PCAPExporterFile::performShutdown()
 
 void PCAPExporterFile::receive(Packet* packet)
 {
-    writePCAP(packet);
-
+	writePCAP(packet);
+	
 	statBytesForwarded += packet->data_length;
 	statPktsForwarded++;
 }

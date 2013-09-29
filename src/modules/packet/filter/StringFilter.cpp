@@ -114,7 +114,7 @@ bool StringFilter::processPacket(Packet *p)
 
     payloadOffset = p->payloadOffset;
     if( payloadOffset == 0) return false;
-    pdata = (unsigned char*)p->data + payloadOffset;
+    pdata = (unsigned char*)p->data.netHeader + payloadOffset;
     plength = p->data_length - payloadOffset;
 
     if(pdata == NULL) return false;

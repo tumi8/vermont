@@ -96,7 +96,6 @@ std::string IpfixFlowInspectorExporter::getInsertObj(TemplateInfo& dataTemplateI
 			if (k != 0) {
 				sstream << ",";
 			}
-			
 			identifier = ipfix_id_lookup(dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.enterprise);
 			if (identifier) {
 				// push regular IPFIX name into queue 
@@ -116,7 +115,6 @@ std::string IpfixFlowInspectorExporter::getInsertObj(TemplateInfo& dataTemplateI
 			if (k != 0) {
 				sstream << ",";
 			}
-			
 			identifier = ipfix_id_lookup(dataTemplateInfo.dataInfo[k].type.id, dataTemplateInfo.dataInfo[k].type.enterprise);
 			if (identifier) {
 				// push regular IPFIX name into queue 

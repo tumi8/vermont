@@ -1,0 +1,64 @@
+<ipfixConfig>
+	<observer id="1">
+                <interface>en0</interface>
+		<pcap_filter>ip</pcap_filter>
+		<next>2</next>
+	</observer>
+	
+	<packetQueue id="2">
+		<maxSize>1000</maxSize>
+		<next>6</next>
+	</packetQueue>
+	
+	<packetAggregator id="6">
+		<rule>
+			<templateId>998</templateId>
+			<flowKey>
+				<ieName>sourceIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationIPv4Address</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>protocolIdentifier</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>sourceTransportPort</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationTransportPort</ieName>
+			</flowKey>
+			<nonFlowKey>
+				<ieName>flowStartSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>flowEndSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>octetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>packetDeltaCount</ieName>
+			</nonFlowKey>
+		</rule>
+		<expiration>
+			<inactiveTimeout unit="sec">300</inactiveTimeout>
+			<activeTimeout unit="sec">600</activeTimeout>
+		</expiration>
+		<pollInterval unit="msec">1000</pollInterval>
+		<next>7</next>
+	</packetAggregator>
+
+
+	<ipfixQueue id="7">
+		<entries>1000</entries>
+		<next>9</next>
+	</ipfixQueue>
+
+	<ipfixPrinter id="8"/>
+
+	<ipfixFlowInspectorExporter id="9">
+		<host>127.0.0.1</host>
+		<dbname>entry:queue</dbname>
+	</ipfixFlowInspectorExporter>
+</ipfixConfig>
