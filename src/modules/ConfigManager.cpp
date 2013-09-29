@@ -36,21 +36,19 @@
 #include "modules/ipfix/IpfixCollectorCfg.h"
 #include "modules/ipfix/IpfixExporterCfg.h"
 #include "modules/ipfix/IpfixPrinterCfg.h"
-#include "modules/ipfix/IpfixDbReaderCfg.h"
-#include "modules/ipfix/IpfixDbWriterCfg.h"
 #include "modules/ipfix/IpfixFileWriterCfg.hpp"
 #include "modules/ipfix/IpfixNetflowExporterCfg.h"
 #include "modules/ipfix/IpfixReceiverFileCfg.h"
-#include "modules/ipfix/IpfixDbWriterPgCfg.h"
-#include "modules/ipfix/IpfixDbWriterOracleCfg.h"
-#include "modules/ipfix/IpfixDbReaderOracleCfg.h"
-#include "modules/ipfix/IpfixDbWriterMongoCfg.h"
 #include "modules/ipfix/IpfixPayloadWriterCfg.h"
 #include "modules/ipfix/IpfixSamplerCfg.h"
 #include "modules/ipfix/IpfixCsExporterCfg.hpp"
 #include "modules/ipfix/NetflowV9ConverterCfg.hpp"
 #include "modules/ipfix/aggregator/IpfixAggregatorCfg.h"
 #include "modules/ipfix/aggregator/PacketAggregatorCfg.h"
+#include "modules/ipfix/database/IpfixDbReaderCfg.h"
+#include "modules/ipfix/database/IpfixDbWriterCfg.h"
+#include "modules/ipfix/database/IpfixDbWriterMongoCfg.h"
+#include "modules/ipfix/database/IpfixFlowInspectorExporterCfg.h"
 #include "modules/SensorManagerCfg.h"
 #include "modules/analysis/TRWPortscanDetectorCfg.h"
 #include "modules/analysis/RBSWormDetectorCfg.h"
@@ -100,19 +98,15 @@ Cfg* ConfigManager::configModules[] = {
 	new P2PDetectorCfg(NULL),
 	new HostStatisticsCfg(NULL),
 	new IpfixCsExporterCfg(NULL),
-#ifdef DB_SUPPORT_ENABLED
-	new IpfixDbReaderCfg(NULL),
+#if defined(DB_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED)
 	new IpfixDbWriterCfg(NULL),
-#endif
-#ifdef PG_SUPPORT_ENABLED
-	new IpfixDbWriterPgCfg(NULL),
-#endif
-#ifdef ORACLE_SUPPORT_ENABLED
-	new IpfixDbWriterOracleCfg(NULL),
-	new IpfixDbReaderOracleCfg(NULL),
+	new IpfixDbReaderCfg(NULL),
 #endif
 #ifdef MONGO_SUPPORT_ENABLED
 	new IpfixDbWriterMongoCfg(NULL),
+#endif
+#ifdef REDIS_SUPPORT_ENABLED
+	new IpfixFlowInspectorExporterCfg(NULL),
 #endif
 	new FlowLenAnalyzerCfg(NULL),
 };

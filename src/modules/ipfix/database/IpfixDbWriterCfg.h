@@ -1,6 +1,6 @@
 /*
  * Vermont Configuration Subsystem
- * Copyright (C) 2009 Vermont Project
+ * Copyright (C) 2009 - 2012 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,47 +18,50 @@
  *
  */
 
-#ifndef IPFIXDBREADERORACLECFG_H_
-#define IPFIXDBREADERORACLECFG_H_
+#ifndef IPFIXDBWRITERCFG_H_
+#define IPFIXDBWRITERCFG_H_
 
-#ifdef ORACLE_SUPPORT_ENABLED
+#if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
 
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "modules/ipfix/IpfixDbReaderOracle.hpp"
+#include "IpfixDbWriterSQL.hpp"
 
 #include <string>
 
-class IpfixDbReaderOracleCfg
-	: public CfgHelper<IpfixDbReaderOracle, IpfixDbReaderOracleCfg>
+using namespace std;
+
+
+class IpfixDbWriterCfg
+	: public CfgHelper<IpfixDbWriterSQL, IpfixDbWriterCfg>
 {
 public:
 	friend class ConfigManager;
 	
-	virtual IpfixDbReaderOracleCfg* create(XMLElement* e);
-	virtual ~IpfixDbReaderOracleCfg();
+	virtual IpfixDbWriterCfg* create(XMLElement* e);
+	virtual ~IpfixDbWriterCfg();
 	
-	virtual IpfixDbReaderOracle* createInstance();
-	virtual bool deriveFrom(IpfixDbReaderOracleCfg* old);
+	virtual IpfixDbWriterSQL* createInstance();
+	virtual bool deriveFrom(IpfixDbWriterCfg* old);
 	
 protected:
-	
+	string databaseType; /**< Type of database (mysql, psgl, oracle, ...) */	
 	string hostname; /**< hostname of database host */
 	uint16_t port;	/**< port of database */
 	string dbname; /**< database name */
 	string user;	/**< user name for login to database */
 	string password;	/**< password for login to database */
-	bool timeshift; /**< shift time stamps */
-	bool fullspeed;  /**< reading in full speed */
-	uint32_t observationDomainId;	/**< observation domain id */
-	uint32_t startTime; /** FirstSwitchedTime of first flow that should be read from the DB */
-	uint32_t endTime; /** FirstSwitchedTime of last flow that should be read form the DB */
-	
-	IpfixDbReaderOracleCfg(XMLElement*);
+	uint16_t bufferRecords;	/**< amount of records to buffer until they are written to database */
+	uint32_t observationDomainId;	/**< default observation domain id (overrides the one received in the records */
+	vector<string> colNames; /**< column names */
+	bool useLegacyNames;
+
+	void readColumns(XMLElement* elem);
+	IpfixDbWriterCfg(XMLElement*);
 };
 
 
-#endif /*ORACLE_SUPPORT_ENABLED*/
+#endif /*DB_SUPPORT_ENABLED*/
 
-#endif /*IPFIXDBREADERORACLECFG_H_*/
+#endif /*IPFIXDBWRITERCFG_H_*/

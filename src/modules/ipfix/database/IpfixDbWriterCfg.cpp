@@ -1,6 +1,6 @@
 /*
  * Vermont Configuration Subsystem
- * Copyright (C) 2009 Vermont Project
+ * Copyright (C) 2009 - 2012 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,9 +18,12 @@
  *
  */
 
-#ifdef DB_SUPPORT_ENABLED
+#if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
 
 #include "IpfixDbWriterCfg.h"
+#include "IpfixDbWriterMySQL.hpp"
+#include "IpfixDbWriterPg.hpp"
+#include "IpfixDbWriterOracle.hpp"
 
 
 IpfixDbWriterCfg* IpfixDbWriterCfg::create(XMLElement* e)
@@ -32,8 +35,8 @@ IpfixDbWriterCfg* IpfixDbWriterCfg::create(XMLElement* e)
 
 
 IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
-    : CfgHelper<IpfixDbWriter, IpfixDbWriterCfg>(elem, "ipfixDbWriter"),
-      port(0), bufferRecords(30), observationDomainId(0)
+    : CfgHelper<IpfixDbWriterSQL, IpfixDbWriterCfg>(elem, "ipfixDbWriter"),
+      port(0), bufferRecords(30), observationDomainId(0), useLegacyNames(false)
 {
     if (!elem) return;
 
@@ -43,7 +46,11 @@ IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
 	     it++) {
 		XMLElement* e = *it;
 
-		if (e->matches("host")) {
+		if (e->matches("dbType")) {
+			databaseType = e->getFirstText();
+		} else if (e->matches("useLegacyNames")) {
+			useLegacyNames = getBool("useLegacyNames");
+		} else if (e->matches("host")) {
 			hostname = e->getFirstText();
 		} else if (e->matches("port")) {
 			port = getInt("port");
@@ -65,6 +72,7 @@ IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
 			continue;
 		}
 	}
+	if (databaseType != "mysql" && databaseType != "postgres" && databaseType != "oracle") THROWEXCEPTION("IpfixDbWriterCfg: Incorrect value for dbType: \"%s\"", databaseType.c_str());
 	if (hostname=="") THROWEXCEPTION("IpfixDbWriterCfg: host not set in configuration!");
 	if (port==0) THROWEXCEPTION("IpfixDbWriterCfg: port not set in configuration!");
 	if (dbname=="") THROWEXCEPTION("IpfixDbWriterCfg: dbname not set in configuration!");
@@ -94,10 +102,36 @@ IpfixDbWriterCfg::~IpfixDbWriterCfg()
 }
 
 
-IpfixDbWriter* IpfixDbWriterCfg::createInstance()
+IpfixDbWriterSQL* IpfixDbWriterCfg::createInstance()
 {
-    instance = new IpfixDbWriter(hostname, dbname, user, password, port, observationDomainId, bufferRecords, colNames);
-    return instance;
+	if (databaseType == "mysql") {
+#if defined(DB_SUPPORT_ENABLED)
+	
+		instance = new IpfixDbWriterMySQL(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames);
+#else
+		goto except;
+#endif
+	} else if  (databaseType == "postgres") {
+
+#if defined(PG_SUPPORT_ENABLED)
+		instance = new IpfixDbWriterPg(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames);
+#else
+		goto except;
+#endif
+	} else if (databaseType == "oracle") {
+#if defined(ORACLE_SUPPORT_ENABLED)
+		instance = new IpfixDbWriterOracle(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames);
+#else
+		goto except;
+#endif
+	} else {
+		goto except;
+	}
+	return instance;
+except:
+	THROWEXCEPTION("IpfixDbWriterCfg: Database type \"%s\" not yet implemented or support in vermont is not compiled in ...", databaseType.c_str());
+	// this is only to surpress compiler warnings. we should never get here ...
+	return 0;
 }
 
 

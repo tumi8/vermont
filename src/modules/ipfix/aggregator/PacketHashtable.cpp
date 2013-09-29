@@ -311,8 +311,10 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 				case IPFIX_TYPEID_flowEndMilliSeconds:
 				case IPFIX_TYPEID_flowEndMicroSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_packetTotalCount:
 					if (efd->dstLength != 8) {
 						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
 					}
@@ -321,6 +323,13 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
 					if (efd->dstLength != 5) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
+
+				case IPFIX_TYPEID_bgpSourceAsNumber:
+				case IPFIX_TYPEID_bgpDestinationAsNumber:
+					if (efd->dstLength != 2) {
 						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
 					}
 					break;
@@ -410,6 +419,8 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 			}
 		} else if (efd->typeId == IeInfo(IPFIX_TYPEID_packetDeltaCount, 0)) {
 			return copyDataSetOne;
+		} else if (efd->typeId == IeInfo(IPFIX_TYPEID_packetTotalCount, 0)) {
+			return copyDataSetOne;
 		} else {
 			return copyDataGreaterLengthNoMod;
 		}
@@ -431,12 +442,14 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 			case IPFIX_TYPEID_protocolIdentifier:
 			case IPFIX_TYPEID_tcpControlBits:
 			case IPFIX_TYPEID_packetDeltaCount:
+			case IPFIX_TYPEID_packetTotalCount:
 				return 1;
 
 			case IPFIX_TYPEID_icmpTypeCodeIPv4:
 			case IPFIX_TYPEID_sourceTransportPort:
 			case IPFIX_TYPEID_destinationTransportPort:
 			case IPFIX_TYPEID_octetDeltaCount:
+			case IPFIX_TYPEID_octetTotalCount:
 				return 2;
 
 			case IPFIX_TYPEID_flowStartSeconds:
@@ -450,6 +463,10 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 			case IPFIX_TYPEID_flowStartNanoSeconds:
 			case IPFIX_TYPEID_flowEndNanoSeconds:
 				return 8;
+
+			case IPFIX_TYPEID_bgpSourceAsNumber:
+			case IPFIX_TYPEID_bgpDestinationAsNumber:
+				return 0;
 
 			default:
 				THROWEXCEPTION("PacketHashtable: unknown typeid %s, failed to determine raw packet field length", type.toString().c_str());
@@ -495,6 +512,7 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Pack
 {
 	if (type.enterprise==0 || type.enterprise==IPFIX_PEN_reverse) {
 		switch (type.id) {
+			case IPFIX_TYPEID_packetTotalCount:
 			case IPFIX_TYPEID_packetDeltaCount:
 				return 10;
 				break;
@@ -515,6 +533,7 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Pack
 				break;
 
 			case IPFIX_TYPEID_octetDeltaCount:
+			case IPFIX_TYPEID_octetTotalCount:
 				return 2;
 				break;
 
@@ -584,6 +603,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
 		case 0:
 		case IPFIX_PEN_reverse:
 			switch (type.id) {
+				case IPFIX_TYPEID_packetTotalCount:
 				case IPFIX_TYPEID_packetDeltaCount:
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
@@ -592,9 +612,12 @@ bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
 				case IPFIX_TYPEID_flowStartNanoSeconds: //  ^
 				case IPFIX_TYPEID_flowEndNanoSeconds:   //  ^
 				case IPFIX_TYPEID_octetDeltaCount:
+				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
+				case IPFIX_TYPEID_bgpSourceAsNumber:
+				case IPFIX_TYPEID_bgpDestinationAsNumber:
 					return false;
 
 				case IPFIX_TYPEID_icmpTypeCodeIPv4:
@@ -703,6 +726,7 @@ bool PacketHashtable::typeAvailable(const IeInfo& type)
 	switch (type.enterprise) {
 		case 0:
 			switch (type.id) {
+				case IPFIX_TYPEID_packetTotalCount:
 				case IPFIX_TYPEID_packetDeltaCount:
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
@@ -710,6 +734,7 @@ bool PacketHashtable::typeAvailable(const IeInfo& type)
 				case IPFIX_TYPEID_flowEndMilliSeconds:
 				case IPFIX_TYPEID_flowStartNanoSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_sourceIPv4Address:
@@ -718,6 +743,8 @@ bool PacketHashtable::typeAvailable(const IeInfo& type)
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:
 				case IPFIX_TYPEID_tcpControlBits:
+				case IPFIX_TYPEID_bgpSourceAsNumber:
+				case IPFIX_TYPEID_bgpDestinationAsNumber:
 					return true;
 			}
 			break;
@@ -1080,10 +1107,12 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 			#endif
 						break;
 
+					case IPFIX_TYPEID_octetTotalCount: // 8 byte dst, 2 byte src
 					case IPFIX_TYPEID_octetDeltaCount: // 8 byte dst, 2 byte src
 						*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData) + ntohs(*(uint16_t*)deltaData));
 						break;
 
+					case IPFIX_TYPEID_packetTotalCount: // 8 byte dst, no src
 					case IPFIX_TYPEID_packetDeltaCount: // 8 byte dst, no src
 						*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData)+1);
 						break;
@@ -1143,10 +1172,12 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 			#endif
 						break;
 
+					case IPFIX_TYPEID_octetTotalCount: // 8 byte dst, 2 byte src
 					case IPFIX_TYPEID_octetDeltaCount: // 8 byte dst, 2 byte src
 						*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData) + ntohs(*(uint16_t*)deltaData));
 						break;
 
+					case IPFIX_TYPEID_packetTotalCount: // 8 byte dst, no src
 					case IPFIX_TYPEID_packetDeltaCount: // 8 byte dst, no src
 						*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData)+1);
 						break;

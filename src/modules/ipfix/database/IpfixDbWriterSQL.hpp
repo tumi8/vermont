@@ -1,9 +1,6 @@
 /*
- * IPFIX Database Reader/Writer
- * Copyright (C) 2006 Jürgen Abberger
- * Copyright (C) 2006 Lothar Braun <braunl@informatik.uni-tuebingen.de>
- * Copyright (C) 2007 Gerhard Muenz
- * Copyright (C) 2008 Tobias Limmer
+ * IPFIX Database Base Class for SQL based databases
+ * Copyright (C) 2012 Lothar Braun
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -22,44 +19,59 @@
  */
 
 /* Some constants that are common to IpfixDbWriter and IpfixDbReader */
-#ifdef PG_SUPPORT_ENABLED
+#ifndef _IPFIX_DB_WRITER_SQL_H_
+#define _IPFIX_DB_WRITER_SQL_H_
 
-#ifndef IPFIXDBWRITERPG_H
-#define IPFIXDBWRITERPG_H
+#if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
 
 #include "IpfixDbCommon.hpp"
-#include "IpfixRecordDestination.h"
+#include "../IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfix.h"
 #include "common/ipfixlolib/ipfixlolib.h"
-#include <libpq-fe.h>
 #include <netinet/in.h>
 #include <time.h>
-
-#define EXPORTERID 0
 
 /**
  * IpfixDbWriterPg powered the communication to the database server
  * also between the other structs
  */
-class IpfixDbWriterPg
+class IpfixDbWriterSQL
 	: public IpfixRecordDestination, public Module, public Source<NullEmitable*>
 {
 	public:
-		IpfixDbWriterPg(const char* host, const char* db,
+		IpfixDbWriterSQL(const char* dbType, const char* host, const char* db,
 				const char* user, const char* pw,
 				unsigned int port, uint16_t observationDomainId, // FIXME: observationDomainId
-				int maxStatements);
-		~IpfixDbWriterPg();
+				int maxStatements, vector<string> columns, bool useLegacyNames);
+		~IpfixDbWriterSQL();
 
 		void onDataRecord(IpfixDataRecord* record);
 
 		IpfixRecord::SourceID srcId;              /**Exporter default SourceID */
 
+		/**
+		 * Identify the depency between columns names and
+		 * IPFIX_TYPEID working with a char pointer array
+		 * in this array there is also standing  the defaultvalue
+		 * of the IPFIX_TYPEID and the datatype to store in database
+		 */
+		struct Column {
+			std::string cname; /** column name */
+			uint16_t ipfixId; /** IPFIX_TYPEID */
+			std::string dataType; /** which datatype to store in database */
+			uint32_t enterprise;
+			/**
+			 *  when no IPFIX_TYPEID is stored in the record,
+			 *  use defaultvalue to store in database
+			 */
+			int defaultValue;
+		};
+
+
 	protected:
 		static const uint32_t MAX_EXP_TABLE = 10; /**< Count of buffered exporters. Increase this value if you use more exporters in parallel */
 		static const uint32_t MAX_USEDTABLES = 5; /**< Number of cached entries for used (and created tables) */
 		static const uint64_t TABLE_INTERVAL = 1000*24*3600; /**< Interval, in which new tables should be created (milliseconds).*/
-
 
 		/**
 		 * Buffer for insert statements
@@ -103,25 +115,36 @@ class IpfixDbWriterPg
 		unsigned int portNum;        /** Portnumber (use default) */
 		const char* socketName;      /** Socketname (use default) */
 		unsigned int flags;          /** Connectionflags (none) */
-		PGconn* conn;                /** pointer to connection handle */
 		int dbError;
 		Table curTable;			/** table name for currently cached entries in insertBuffer */
 		string tablePrefix;			/** prefix for all tables */
+		string dbType;
+		bool useLegacyNames;
 
-		int createExporterTable();
-		bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime);
+		vector<Column> tableColumns;			// table columns
+		string tableColumnsString;     			// table columns as string for INSERT statements
+		string tableColumnsCreateString;  		// table create string
+
 		void addColumnEntry(const char* insert, bool quoted, bool lastcolumn);
 		void addColumnEntry(const uint64_t insert, bool quoted, bool lastcolumn);
 		void fillInsertRow(IpfixRecord::SourceID* sourceID,
 				TemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data);
-		bool writeToDb();
-		int getExporterID(IpfixRecord::SourceID* sourceID);
-        bool checkCurrentTable(uint64_t flowStart);
-        bool setCurrentTable(uint64_t flowStart);
-        string getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addfraction, uint32_t microseconds = 0);
+		bool checkCurrentTable(uint64_t flowStart);
+		bool setCurrentTable(uint64_t flowStart);
+		string getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addfraction, uint32_t microseconds = 0);
 		bool checkRelationExists(const char* relname);
+		
+		virtual void connectToDB() = 0;
+		virtual bool writeToDb() = 0;
+		virtual int createExporterTable() = 0 ;
+		//virtual string createInsertStatement() = 0;
+		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime) = 0;
+		virtual string getInsertString(string tableName);
+		virtual int getExporterID(IpfixRecord::SourceID* sourceID) = 0;
+		virtual string insertRowPrefix();
+		std::string getDBDataType(uint16_t ipfixTypeLength);
+		Column* legacyNamesMap;
 	private:
-		void connectToDB();
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID,
 				TemplateInfo* dataTemplateInfo, uint16_t length,
 				IpfixRecord::Data* data);
@@ -137,29 +160,8 @@ class IpfixDbWriterPg
 		uint32_t getipv4address(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void extractNtp64(uint64_t& intdata, uint32_t& micros);
 
-
-		/**
-		 * Identify the depency between columns names and
-		 * IPFIX_TYPEID working with a char pointer array
-		 * in this array there is also standing  the defaultvalue
-		 * of the IPFIX_TYPEID and the datatype to store in database
-		 */
-		struct Column {
-			const char* cname; /** column name */
-			uint16_t ipfixId; /** IPFIX_TYPEID */
-			const char* dataType; /** which datatype to store in database */
-			uint32_t enterprise;
-			/**
-			 *  when no IPFIX_TYPEID is stored in the record,
-			 *  use defaultvalue to store in database
-			 */
-			int defaultValue;
-		};
-		const static Column identify[];
 };
 
-
 #endif
-
 
 #endif

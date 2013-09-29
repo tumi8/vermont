@@ -2,6 +2,7 @@
  * IPFIX Database Reader/Writer
  * Copyright (C) 2006 Jürgen Abberger
  * Copyright (C) 2006 Lothar Braun <braunl@informatik.uni-tuebingen.de>
+ * Copyright (C) 2006-2013 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -19,14 +20,13 @@
  *
  */
 
-/* Some constants that are common to IpfixDbWriter and IpfixDbReader */
-#ifdef DB_SUPPORT_ENABLED
+#if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
 
 #ifndef IPFIXDBREADER_H
 #define IPFIXDBREADER_H
 
-#include "IpfixRecord.hpp"
 #include "common/ipfixlolib/ipfix.h"
+#include "../IpfixRecordDestination.h"
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "core/Module.h"
 
@@ -35,8 +35,6 @@
 #include <pthread.h>
 #include <boost/smart_ptr.hpp>
 
-#include <mysql.h>
-
 /**
  *      IpfixDbReader powered the communication to the database server
  *      also between the other structs
@@ -44,10 +42,9 @@
 class IpfixDbReader : public Module, public Source<IpfixRecord*>, public Destination<NullEmitable*> 
 {
 	public:
-		IpfixDbReader(const string& hostname, const string& dbname,
+		IpfixDbReader(const string& dbType, const string& hostname, const string& dbname,
 				const string& username, const string& password,
-				unsigned port, uint16_t observationDomainId, 
-				bool timeshift, bool fullspeed);
+				uint16_t port, uint16_t observationDomainId);
 		~IpfixDbReader();
 
 		virtual void performStart();
@@ -56,32 +53,34 @@ class IpfixDbReader : public Module, public Source<IpfixRecord*>, public Destina
 		boost::shared_ptr<IpfixRecord::SourceID> srcId;
 
 	protected:
-		typedef struct {
-			uint16_t ipfixId;  /**IPFIX_TYPEID*/
-			uint8_t length;    /**IPFIX length*/
-		} columnDB;
-
+		void copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, InformationElement::IeInfo type);
 		vector<string> tables;
-		vector<columnDB> columns;
+		vector<struct ipfix_identifier> columns;
 		string columnNames; 
 		string orderBy; 
 		unsigned recordLength;
-		bool timeshift, fullspeed;
 
-		MYSQL* conn;             /** pointer to connection handle */    
+		std::string hostname;
+		std::string dbname;
+		std::string username;
+		std::string password;
+		uint16_t port;
+		uint16_t observationDomainId;
+
 		Thread thread;
 		
 		static InstanceManager<IpfixTemplateRecord> templateRecordIM;
 		static InstanceManager<IpfixDataRecord> dataRecordIM;
 		static InstanceManager<IpfixTemplateDestructionRecord> templateDestructionRecordIM;
 
-		int getTables();
-		int getColumns(const string& tableName);
 		static void* readFromDB(void* ipfixDbReader_);
 		int dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
-		int dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName);
 		int dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templateInfo);
-		int connectToDb( const string& hostName, const string& dbName, const string& userName, const string& password, unsigned int port);
+
+		virtual int connectToDb() = 0;
+		virtual int dbReaderSendTable(boost::shared_ptr<TemplateInfo> templateInfo, const string& tableName) = 0;
+		virtual int getColumns(const string& tableName) = 0 ;
+		virtual int getTables() = 0;
 };
 
         

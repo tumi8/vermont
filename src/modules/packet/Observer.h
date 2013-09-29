@@ -58,7 +58,6 @@ public:
 	bool prepare(const std::string& filter);
 	static void doLogging(void *arg);
 	virtual std::string getStatisticsXML(double interval);
-	int getDataLinkType();
 
 
 protected:
@@ -132,6 +131,8 @@ protected:
 	uint32_t statTotalRecvPackets;
 
 	static void *observerThread(void *);
+
+	int dataLinkType; // contains the datalink type of the capturing device
 };
 
 #endif

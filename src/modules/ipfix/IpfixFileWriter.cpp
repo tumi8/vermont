@@ -28,6 +28,9 @@
 #include <stdexcept>
 #include <string.h>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
 
 /* go back to SENDER_TEMPLATE_ID_LOW if _HI is reached */
 #define SENDER_TEMPLATE_ID_HI 60000
@@ -41,11 +44,18 @@ IpfixFileWriter::IpfixFileWriter(uint16_t observationDomainId, std::string filen
 	std::string destinationPath, uint32_t maximumFilesize)
 			: IpfixSender(observationDomainId, MAX_RECORD_RATE)
 {
+	// check if directory base exists
+	if (!boost::filesystem::is_directory(destinationPath)) {
+		THROWEXCEPTION("Directory %s does not exists or is not a directory!", destinationPath.c_str());
+	}
+
 	if (filenamePrefix != "") {
 		if(addCollector(observationDomainId, filenamePrefix, destinationPath, maximumFilesize) != 0) {
 			THROWEXCEPTION("IpfixFileWriter's Collector addition failed");
 			return;
 		}
+	} else {
+		THROWEXCEPTION("IpfixFileWriter: no filename prefix given. Prefix is required though!");
 	}
 	
 	msg(MSG_DEBUG, "IpfixFileWriter: running");
@@ -66,7 +76,7 @@ int IpfixFileWriter::addCollector(uint16_t observationDomainId, std::string file
 	if(destinationPath.at(destinationPath.length()-1) != '/') 
 		destinationPath += "/";
 	std::string my_filename = destinationPath + filenamePrefix; 
-	if (maximumFilesize < 0) maximumFilesize = DEFAULTFILESIZE;
+	if (maximumFilesize <= 0) maximumFilesize = DEFAULTFILESIZE;
 	if(maximumFilesize < 64)
 		 msg(MSG_ERROR, 
 		   "maximum filsize < maximum message length - this could lead to serious problems");

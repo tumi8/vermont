@@ -84,16 +84,20 @@ namespace InformationElement {
 		if (enterprise==0 || enterprise==IPFIX_PEN_reverse) {
 			switch (id) {
 				case IPFIX_TYPEID_packetDeltaCount:
+				case IPFIX_TYPEID_packetTotalCount:
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
 				case IPFIX_TYPEID_flowStartMilliSeconds:
 				case IPFIX_TYPEID_flowEndMilliSeconds:
 				case IPFIX_TYPEID_flowStartNanoSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
+				case IPFIX_TYPEID_bgpSourceAsNumber:
+				case IPFIX_TYPEID_bgpDestinationAsNumber:
 				case IPFIX_ETYPEID_maxPacketGap:
 					return Packet::IPProtocolType(Packet::TCP|Packet::UDP|Packet::ICMP);
 

@@ -1,6 +1,6 @@
 /*
  * Vermont Configuration Subsystem
- * Copyright (C) 2009 Vermont Project
+ * Copyright (C) 2012 Vermont Project
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,48 +18,40 @@
  *
  */
 
-#ifndef IPFIXDBREADERCFG_H_
-#define IPFIXDBREADERCFG_H_
+#ifndef IPFIX_FLOW_INSPECTOR_EXPORTER_CFG_H_
+#define IPFIX_FLOW_INSPECTOR_EXPORTER_CFG_H_
 
-#ifdef DB_SUPPORT_ENABLED
+#ifdef REDIS_SUPPORT_ENABLED
 
 #include <core/XMLElement.h>
 #include <core/Cfg.h>
 
-#include "modules/ipfix/IpfixDbReader.hpp"
+#include "IpfixFlowInspectorExporter.hpp"
 
 #include <string>
 
-using namespace std;
-
-
-class IpfixDbReaderCfg
-	: public CfgHelper<IpfixDbReader, IpfixDbReaderCfg>
+class IpfixFlowInspectorExporterCfg
+	: public CfgHelper<IpfixFlowInspectorExporter, IpfixFlowInspectorExporterCfg>
 {
 public:
 	friend class ConfigManager;
 	
-	virtual IpfixDbReaderCfg* create(XMLElement* e);
-	virtual ~IpfixDbReaderCfg();
+	virtual IpfixFlowInspectorExporterCfg* create(XMLElement* e);
+	virtual ~IpfixFlowInspectorExporterCfg();
 	
-	virtual IpfixDbReader* createInstance();
-	virtual bool deriveFrom(IpfixDbReaderCfg* old);
+	virtual IpfixFlowInspectorExporter* createInstance();
+	virtual bool deriveFrom(IpfixFlowInspectorExporterCfg* old);
 	
 protected:
 	
-	string hostname; /**< hostname of database host */
+	std::string hostname; /**< hostname of database host */
 	uint16_t port;	/**< port of database */
-	string dbname; /**< database name */
-	string user;	/**< user name for login to database */
-	string password;	/**< password for login to database */
-	bool timeshift; /**< shift time stamps */
-	bool fullspeed;  /**< reading in full speed */
-	uint32_t observationDomainId;	/**< observation domain id */
+	std::string database; /**< mongo database name */
 	
-	IpfixDbReaderCfg(XMLElement*);
+	IpfixFlowInspectorExporterCfg(XMLElement*);
 };
 
 
-#endif /*DB_SUPPORT_ENABLED*/
+#endif /*REDIS_SUPPORT_ENABLED*/
 
-#endif /*IPFIXDBREADERCFG_H_*/
+#endif /*IPFIX_FLOW_INSPECTOR_EXPORTER_CFG_H_*/

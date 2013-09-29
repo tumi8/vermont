@@ -34,8 +34,15 @@
 #include <string>
 #include <iostream>
 #include <pcap.h>
+
 #include <netinet/ip.h>
+
+#if defined(__FreeBSD__) || defined(__APPLE__)
+#include <osdep/freebsd/iphdrs.h>
+#else
 #include <netinet/udp.h>
+#endif
+
 #include <net/if.h>
 #include <netinet/if_ether.h>
 #include <sys/socket.h>

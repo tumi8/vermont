@@ -25,6 +25,11 @@
 #define _FREEBSD_IPHDR_
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
+
+#if defined(iphdr)
+#undef iphdr
+#endif
+
 struct iphdr
   {
 #if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -48,6 +53,10 @@ struct iphdr
     /*The options start here. */
 };
 
+#ifdef udphdr
+#undef udphdr
+#endif
+
 struct udphdr
 {
   u_int16_t source;
@@ -55,6 +64,10 @@ struct udphdr
   u_int16_t len;
   u_int16_t check;
 };
+
+#ifdef tcphdr
+#undef tcphdr
+#endif
 
 struct tcphdr
   {

@@ -21,6 +21,7 @@ else(ORACLE_INCLUDE_DIR AND ORACLE_CLIENT_LIBRARIES AND ORACLE_CONNECTION_LIBRAR
 	  /usr/lib/oracle/xe/app/oracle/product/*/client/rdbms/public
 	  /usr/include/oracle/*/client
 	  /opt/oracle/product/*/client/rdbms/public
+	  /opt/oracle/*/client/
     )
 
   find_library(ORACLE_CLIENT_LIBRARIES NAMES clntsh libclntsh
@@ -28,6 +29,7 @@ else(ORACLE_INCLUDE_DIR AND ORACLE_CLIENT_LIBRARIES AND ORACLE_CONNECTION_LIBRAR
     /usr/lib/oracle/xe/app/oracle/product/*/client/lib
     /usr/lib/oracle/*/client/lib
     /opt/oracle/product/*/client/lib
+    /opt/oracle/*/client/lib
     )
 
   find_library(ORACLE_CONNECTION_LIBRARIES NAMES occi libocci
@@ -35,6 +37,7 @@ else(ORACLE_INCLUDE_DIR AND ORACLE_CLIENT_LIBRARIES AND ORACLE_CONNECTION_LIBRAR
     /usr/lib/oracle/xe/app/oracle/product/*/client/lib
     /usr/lib/oracle/*/client/lib
     /opt/oracle/product/*/client/lib
+    /opt/oracle/*/client/lib
     )
       
   if(ORACLE_INCLUDE_DIR AND ORACLE_CLIENT_LIBRARIES AND ORACLE_CONNECTION_LIBRARIES)
