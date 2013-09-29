@@ -185,20 +185,6 @@ Use Ctrl-C to stop VERMONT. If VERMONT does not exit properly, enter Ctrl-C
 for a second time.
 
 
---------------------------------------
-TRAFFIC CAPTURING AT VLAN MIRROR PORTS
---------------------------------------
-
-VERMONT can be used to capture traffic at a mirror port of a switch. If
-the mirror port is configured for VLAN traffic, the Ethernet frames will
-usually include a VLAN tag in the Ethernet header, increasing the header 
-length from 14 to 18 bytes.
-
-In order to capture such traffic correctly, you need to set the cmake 
-option IP_HEADER_OFFSET to 18. Furthermore, make sure that the observer
-is configured with <pap_filter> parameter set to "vlan and ip".
-
-
 ----------------------------------------------------
 OPERATION AS COLLECTOR: TUNING SOCKET RECEIVE BUFFER
 ----------------------------------------------------
