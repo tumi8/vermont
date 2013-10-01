@@ -24,6 +24,7 @@
 #include <cstring>
 #include <stdint.h>
 #include <netinet/in.h>
+#include <sys/types.h>
 #include <net/ethernet.h>
 #include <sys/time.h>
 

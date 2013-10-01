@@ -35,6 +35,7 @@
 #include <iostream>
 #include <pcap.h>
 
+#include <netinet/in.h>
 #include <netinet/ip.h>
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
