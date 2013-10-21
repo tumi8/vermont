@@ -2359,35 +2359,36 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 			break;
 #endif	
 			case DATAFILE:
-				ipfix_prepend_header(exporter,
+				if (exporter->template_sendbuffer->committed_data_length > 0) {
+					ipfix_prepend_header(exporter,
 						exporter->template_sendbuffer->committed_data_length,
 						exporter->template_sendbuffer);
-
-				if(col->bytes_written>0 && (col->bytes_written +
-					ntohs(exporter->template_sendbuffer->packet_header.length)
-					> (uint64_t)(col->maxfilesize) * 1024))
-					    ipfix_new_file(col);
-
-				if (col->fh < 0) {
-					msg(MSG_ERROR, "invalid file handle for DATAFILE file (==0!)");
-					break;
-				}
-				if (exporter->template_sendbuffer->packet_header.length == 0) {
-					msg(MSG_ERROR, "packet size == 0!");
-					break;
-				}
-				if ((n = writev(col->fh, exporter->template_sendbuffer->entries,
+					
+					if(col->bytes_written>0 && (col->bytes_written +
+						ntohs(exporter->template_sendbuffer->packet_header.length)
+						> (uint64_t)(col->maxfilesize) * 1024)) {
+						    ipfix_new_file(col);
+					}
+					
+					if (col->fh < 0) {
+						msg(MSG_ERROR, "invalid file handle for DATAFILE file (==0!)");
+						break;
+					}
+					if (exporter->template_sendbuffer->packet_header.length == 0) {
+						msg(MSG_ERROR, "packet size == 0!");
+						break;
+					}
+					if ((n = writev(col->fh, exporter->template_sendbuffer->entries,
 						exporter->template_sendbuffer->current)) < 0) {
-					msg(MSG_ERROR, "could not write to DATAFILE file");
-					break;
+						    msg(MSG_ERROR, "could not write to DATAFILE file");
+						    break;
+					}
+					col->bytes_written += ntohs(exporter->template_sendbuffer->packet_header.length);
+					msg(MSG_DEBUG, "packet_header.length: %d \t bytes_written: %d \t Total: %llu",
+						ntohs(exporter->template_sendbuffer->packet_header.length), n,
+						col->bytes_written );
 				}
-				col->bytes_written += ntohs(exporter->template_sendbuffer->packet_header.length);
-				msg(MSG_DEBUG, "packet_header.length: %d \t bytes_written: %d \t Total: %llu",
-					 ntohs(exporter->template_sendbuffer->packet_header.length), n,
-					 	col->bytes_written );
-
 				break;
-
 			default:
 			    return -1; /* Should not occur since we check the transport
 					  protocol in valid_transport_protocol()*/
