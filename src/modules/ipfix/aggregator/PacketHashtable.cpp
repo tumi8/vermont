@@ -283,6 +283,7 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 			switch (efd->typeId.id) {
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_tcpControlBits:
+				case IPFIX_TYPEID_classOfServiceIPv4:
 					if (efd->dstLength != 1) {
 						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
 					}
@@ -443,6 +444,7 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 			case IPFIX_TYPEID_tcpControlBits:
 			case IPFIX_TYPEID_packetDeltaCount:
 			case IPFIX_TYPEID_packetTotalCount:
+			case IPFIX_TYPEID_classOfServiceIPv4:
 				return 1;
 
 			case IPFIX_TYPEID_icmpTypeCodeIPv4:
@@ -549,6 +551,9 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Pack
 			case IPFIX_TYPEID_destinationIPv4Address:
 				return 16;
 				break;
+			case IPFIX_TYPEID_classOfServiceIPv4:
+				return 1; 
+				break; 
 
 			case IPFIX_TYPEID_icmpTypeCodeIPv4:
 				if(p->ipProtocolType == Packet::ICMP) {
@@ -557,7 +562,6 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Pack
 					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d", type.toString().c_str(), p->ipProtocolType, Packet::ICMP);
 				}
 				break;
-
 			case IPFIX_TYPEID_sourceTransportPort:
 				if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
 					return p->transportHeader + 0 - p->data.netHeader;
@@ -581,11 +585,17 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Pack
 					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d", type.toString().c_str(), p->ipProtocolType, Packet::TCP);
 				}
 				break;
+			default:
+				THROWEXCEPTION("PacketHashtable: raw id offset into packet header for typeid %s is unkown, failed to determine raw packet offset", type.toString().c_str());
+				break;
 		}
 	} else if (type.enterprise==IPFIX_PEN_vermont || type.enterprise==(IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
 		switch (type.id) {
 			case IPFIX_ETYPEID_maxPacketGap:
 				return reinterpret_cast<const unsigned char*>(&p->time_msec_nbo) - p->data.netHeader;
+				break;
+			default:
+				THROWEXCEPTION("PacketHashtable: raw id offset into packet header for typeid %s is unkown, failed to determine raw packet offset", type.toString().c_str());
 				break;
 		}
 	}
@@ -617,6 +627,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
+				case IPFIX_TYPEID_classOfServiceIPv4:
 				case IPFIX_TYPEID_bgpSourceAsNumber:
 				case IPFIX_TYPEID_bgpDestinationAsNumber:
 					return false;
@@ -740,6 +751,7 @@ bool PacketHashtable::typeAvailable(const IeInfo& type)
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
+				case IPFIX_TYPEID_classOfServiceIPv4:
 				case IPFIX_TYPEID_icmpTypeCodeIPv4:
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:

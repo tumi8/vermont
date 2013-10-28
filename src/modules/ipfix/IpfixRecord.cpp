@@ -94,6 +94,7 @@ namespace InformationElement {
 				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_protocolIdentifier:
+				case IPFIX_TYPEID_classOfServiceIPv4:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
 				case IPFIX_TYPEID_bgpSourceAsNumber:
