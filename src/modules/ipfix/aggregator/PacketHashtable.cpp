@@ -526,7 +526,6 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Pack
 
 			case IPFIX_TYPEID_flowStartMilliSeconds:
 			case IPFIX_TYPEID_flowEndMilliSeconds:
-				msg(MSG_FATAL, "%p %p", &p->timestamp, p->data.netHeader);
 				return reinterpret_cast<const unsigned char*>(&p->time_msec_nbo) - p->data.netHeader;
 				break;
 
