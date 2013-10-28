@@ -1299,7 +1299,7 @@ bool PacketHashtable::equalFlow(IpfixRecord::Data* bucket, const Packet* p)
 	for (int i=0; i<expHelperTable.noKeyFields; i++) {
 		ExpFieldData* efd = &expHelperTable.keyFields[i];
 
-		DPRINTFL(MSG_VDEBUG, "equal for i=%u, typeid=%s, length=%u, srcpointer=%X", i, efd->typeId.toString().c_str(), efd->srcLength, p->netHeader+efd->srcIndex);
+		DPRINTFL(MSG_VDEBUG, "equal for i=%u, typeid=%s, length=%u, srcpointer=%X", i, efd->typeId.toString().c_str(), efd->srcLength, p->data.netHeader+efd->srcIndex);
 		// just compare srcLength bytes, as we still have our original packet data
 		if (memcmp(bucket+efd->dstIndex, p->data.netHeader+efd->srcIndex, efd->srcLength)!=0)
 			return false;
@@ -1318,7 +1318,7 @@ bool PacketHashtable::equalFlowRev(IpfixRecord::Data* bucket, const Packet* p)
 		ExpFieldData* efdsrc = &expHelperTable.keyFields[i];
 		ExpFieldData* efddst = expHelperTable.revKeyFieldMapper[i];
 
-		DPRINTFL(MSG_VDEBUG, "equalrev for i=%u, typeid=%s, length=%u, srcpointer=%X", i, efdsrc->typeId.toString().c_str(), efdsrc->srcLength, p->netHeader+efdsrc->srcIndex);
+		DPRINTFL(MSG_VDEBUG, "equalrev for i=%u, typeid=%s, length=%u, srcpointer=%X", i, efdsrc->typeId.toString().c_str(), efdsrc->srcLength, p->data.netHeader+efdsrc->srcIndex);
 		// just compare srcLength bytes, as we still have our original packet data
 		if (memcmp(bucket+efddst->dstIndex, p->data.netHeader+efdsrc->srcIndex, efdsrc->srcLength)!=0)
 			return false;

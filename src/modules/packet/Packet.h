@@ -162,7 +162,7 @@ public:
 	/**
 	 * @param origplen original packet length
 	 */
-	inline void init(char* packetData, int len, struct timeval time, uint32_t obsdomainid, uint32_t origplen, int dataLinkType)
+	inline void init(char* packetData, unsigned int len, struct timeval time, uint32_t obsdomainid, uint32_t origplen, int dataLinkType)
 	{
 		transportHeader = NULL;
 		payload = NULL;

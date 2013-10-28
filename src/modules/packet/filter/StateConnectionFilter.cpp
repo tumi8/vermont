@@ -67,7 +67,7 @@ bool StateConnectionFilter::processPacket(Packet* p, bool connFilterResult)
 		}
 		return exportControlPackets;
 	} else if (*((uint8_t*)p->data.netHeader + flagsOffset) & RST || *((uint8_t*)p->data.netHeader + flagsOffset) & FIN) {
-		DPRINTF("StateConnectionFilter: Got %s packet", *((uint8_t*)p->data + flagsOffset) & RST?"RST":"FIN");
+		DPRINTF("StateConnectionFilter: Got %s packet", *((uint8_t*)p->data.netHeader + flagsOffset) & RST?"RST":"FIN");
 		if (exportList.find(key) != exportList.end()) {
 			exportList.erase(exportList.find(key));
 		}
