@@ -110,7 +110,6 @@ int IpfixDbReaderMySQL::getTables()
 	} else {
 		while((dbRow = mysql_fetch_row(dbResult))) {
 			tables.push_back(string(dbRow[0]));
-			msg(MSG_FATAL, "%s", dbRow[0]);
 			msg(MSG_VDEBUG, "IpfixDbReaderMySQL: table %s", tables.back().c_str());
 		}
 	}
@@ -156,7 +155,7 @@ int IpfixDbReaderMySQL::getColumns(const string& tableName)
 		} else {
 			columnNames = columnNames + "," + dbRow[0];
 			columns.push_back(*id);
-			msg(MSG_VDEBUG, "IpfixDbReaderMySQL: column %s (%d)", dbRow[0], columns.back().id);
+			msg(MSG_VDEBUG, "IpfixDbReaderMySQL: column %s (ID: %d, PEN: %u)", dbRow[0], columns.back().id, columns.back().pen);
 		}
 	}
 	

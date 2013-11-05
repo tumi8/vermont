@@ -99,7 +99,7 @@ int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templ
 		TemplateInfo::FieldInfo* fi = &templateInfo->fieldInfo[templateInfo->fieldCount - 1];	
 		fi->type.id = i->id;
 		fi->type.length = i->length;
-		fi->type.enterprise = 0;
+		fi->type.enterprise = i->pen;
 		fi->offset = recordLength;
 		recordLength = recordLength + fi->type.length; 
 	}
