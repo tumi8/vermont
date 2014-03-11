@@ -25,7 +25,7 @@ bool PayloadFilter::processPacket(Packet* p)
 {
 	if (p->classification & PCLASS_PAYLOAD) {
 		// "drop" payload
-		p->data_length = p->payload - p->data.netHeader;
+		p->data_length = p->payload - p->layer2Start;
 		p->classification ^= PCLASS_PAYLOAD;
 	}
 	return true;
