@@ -48,6 +48,7 @@ void usage(const char *argv0)
 	fprintf(stderr,"Usage: %s\n",argv0);
 	fprintf(stderr," --port,-p       Port number to use\n");
 	fprintf(stderr," --protocol      Either udp, sctp or dtls_over_udp\n");
+	fprintf(stderr," --mode,-m	 Printing mode to use: \"line\" or \"tree\". Default: line\n");
 	fprintf(stderr," --cert          The certificate to use\n");
 	fprintf(stderr," --key           The private key to use\n");
 	fprintf(stderr," --CAfile        A file containing trusted "
@@ -74,6 +75,7 @@ int main(int argc, char *argv[]) {
 	int lport = DEFAULT_LISTEN_PORT;
 	std::string proto = "udp";
 	std::string certificateChainFile, privateKeyFile, caFile, caPath, peername;
+	IpfixPrinter::OutputType outputType = IpfixPrinter::LINE;
 
 	msg_init();
 	msg_setlevel(MSG_DEBUG);
@@ -87,6 +89,7 @@ int main(int argc, char *argv[]) {
 			{"help", no_argument, 0, 'h'},
 			{"port", required_argument, 0, 'p'},
 			{"protocol", required_argument, 0, 'o'},
+			{"mode", required_argument, 0, 'm'},
 			{"cert", required_argument, 0, 'c'},
 			{"key", required_argument, 0, 'k'},
 			{"CAfile", required_argument, 0, 'a'},
@@ -97,7 +100,7 @@ int main(int argc, char *argv[]) {
 
 		int option_index = 0;
 
-		c = getopt_long(argc, argv, "hp:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hp:m:", long_options, &option_index);
 
 		if (c==-1) break;
 		switch(c) {
@@ -113,6 +116,16 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'o':
 				proto = optarg;
+				break;
+			case 'm':
+				if (strcmp(optarg, "line") == 0) {
+					outputType = IpfixPrinter::LINE;
+				} else if (strcmp(optarg, "tree") == 0) {
+					outputType = IpfixPrinter::TREE;
+				} else {
+					fprintf(stderr, "ERROR: unknown parameter to option --mode\n");
+					abort();
+				}
 				break;
 			case 'c':
 				certificateChainFile = optarg;
@@ -167,7 +180,7 @@ int main(int argc, char *argv[]) {
 
 	IpfixCollector collector(ipfixReceiver);
 	ConnectionQueue<IpfixRecord*> queue(100);
-	IpfixPrinter printer;
+	IpfixPrinter printer(outputType);
 
 	collector.connectTo(&queue);
 	queue.connectTo(&printer);
