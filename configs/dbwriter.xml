@@ -76,7 +76,8 @@
 		<next>5</next>
 	</ipfixAggregator>
 	
-	<ipfixDbWriterMySQL id="4">
+	<ipfixDbWriter id="4">
+		<dbType>mysql</dbType>
 		<host>127.0.0.1</host>
 		<port>3306</port>
 		<dbname>flows_vermont</dbname>
@@ -98,7 +99,7 @@
 			<name>lastSwitchedMillis</name>
 			<name>exporterID</name>
 		</columns>
-	</ipfixDbWriterMySQL>
+	</ipfixDbWriter>
 			
 	<ipfixPrinter id="5">
 	</ipfixPrinter>
