@@ -50,7 +50,6 @@ extern "C" {
 
 
 // both assumes little-endianness.
-// inline uint64_t htonll(uint64_t number);
 uint64_t htonll(uint64_t number)
 {
 	return ( htonl( (number >> 32) & 0xFFFFFFFF) |
