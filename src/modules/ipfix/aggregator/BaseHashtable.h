@@ -126,6 +126,8 @@ protected:
 	uint32_t htableBits;
 	uint32_t htableSize;
 
+	uint32_t now; /**< Current time stamp that is used for flow timeouts */
+
 	uint16_t minBufferTime; /**< If for a buffered flow no new aggregatable flows arrive for this many seconds, export it */
 	uint16_t maxBufferTime; /**< If a buffered flow was kept buffered for this many seconds, export it */
 
@@ -154,7 +156,7 @@ protected:
 
 	int isToBeAggregated(InformationElement::IeInfo& type);
 	HashtableBucket* createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid,
-		HashtableBucket* next, HashtableBucket* prev, uint32_t hash);
+		HashtableBucket* next, HashtableBucket* prev, uint32_t hash, uint32_t flowStartTime);
 	void exportBucket(HashtableBucket* bucket);
 	void destroyBucket(HashtableBucket* bucket);
 	void createDataTemplate(Rule* rule);
