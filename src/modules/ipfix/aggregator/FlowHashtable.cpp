@@ -296,13 +296,12 @@ int FlowHashtable::aggregateFlow(IpfixRecord::Data* baseFlow, IpfixRecord::Data*
 		if(!isToBeAggregated(fi->type)) {
 			continue;
 		}
-		if (reverse) {
+		if (reverse && fi->type.enterprise == 0) {
 			int secequality = -2;
 			int msequality = -2;
 			int nsequality = -2;
 			// look if current field is to be reverted, if yes, map fields
 			// additionally check, if flow should be reversed
-			map<uint32_t, uint32_t>::iterator iter;
 			switch (fi->type.id) {
 				case IPFIX_TYPEID_flowStartSeconds:
 					secequality = compare4ByteField(baseFlow, fi, flow, fi);
@@ -430,34 +429,65 @@ HashtableBucket* FlowHashtable::lookupBucket(uint32_t hash, IpfixRecord::Data* d
 /**
  * Inserts a data block into the hashtable
  */
-void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
+void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data, uint32_t flowStartTimeSeconds, uint32_t flowEndTimeSeconds)
 {
 	statRecordsReceived++;
 
+	// adapt the current time based on the flowStartTimeSeconds
+	// we are conservative and use the flowStartTimeSeconds in order
+	// to not make the aggregation thread remove flows prematurely
+	if (flowStartTimeSeconds > now) {
+		now = flowStartTimeSeconds;
+	}
 	uint32_t nhash = getHash(data.get(), false);
 	DPRINTFL(MSG_VDEBUG, "nhash=%u", nhash);
 	HashtableBucket* prevbucket;
 	HashtableBucket* bucket = lookupBucket(nhash, data.get(), false, &prevbucket);
 
+	bool flowfound = false;
+	bool expiryforced = false;
+
 	if (bucket != NULL) {
 		DPRINTFL(MSG_VDEBUG, "aggregating flow");
-		aggregateFlow(bucket->data.get(), data.get(), false);
-		bucket->expireTime = time(0) + minBufferTime;
-		if (bucket->forceExpireTime>bucket->expireTime) {
-			exportList.remove(bucket->listNode);
-			exportList.push(bucket->listNode);
+		// check if we need to expire the flow. we use a simple 
+		// distribution scheme to distribute flow counters among 
+		// flows that overlap with the active timeouts: 
+		// assign all counters to the first flow. Hence we do 
+		// not need to check whether the flow overlaps (i.e
+		// flowStartTimeSeconds < bucket->expireTime and flowEndSeconds > bucket->expireTime)
+		if (flowStartTimeSeconds > bucket->expireTime || flowStartTimeSeconds > bucket->forceExpireTime){
+			expiryforced = true;
+			bucket->forceExpiry = true;
+			removeBucket(bucket);
+		} else {
+			flowfound = true;
+			aggregateFlow(bucket->data.get(), data.get(), false);
+			bucket->expireTime = flowEndTimeSeconds + minBufferTime;
+			if (bucket->forceExpireTime>bucket->expireTime) {
+				exportList.remove(bucket->listNode);
+				exportList.push(bucket->listNode);
+				removeBucket(bucket);
+			}
 		}
-	} else {
-		if (biflowAggregation) {
-			// try reverse flow
-			uint32_t rhash = getHash(data.get(), true);
-			DPRINTFL(MSG_VDEBUG, "rhash=%u", rhash);
-			bucket = lookupBucket(rhash, data.get(), true, &prevbucket);
-			if (bucket != NULL) {
+	}
+	if (biflowAggregation && !flowfound && !expiryforced) {
+		// try reverse flow
+		uint32_t rhash = getHash(data.get(), true);
+		DPRINTFL(MSG_VDEBUG, "rhash=%u", rhash);
+		bucket = lookupBucket(rhash, data.get(), true, &prevbucket);
+		if (bucket != NULL) {
+			if (flowStartTimeSeconds > bucket->expireTime || flowStartTimeSeconds > bucket->forceExpireTime) {
+				bucket->forceExpiry = true;
+				expiryforced = true;
+				removeBucket(bucket);
+			} else {
+				flowfound = true;
 				DPRINTFL(MSG_VDEBUG, "aggregating reverse flow");
-				if (aggregateFlow(bucket->data.get(), data.get(), true)==1) {
+				int must_reverse = aggregateFlow(bucket->data.get(), data.get(), true);
+				if (must_reverse == 1) {
 					DPRINTFL(MSG_VDEBUG, "reversing whole flow");
 					// reverse flow
+					//msg(MSG_ERROR, "Reversing flow");
 					reverseFlowBucket(bucket);
 					// delete reference from hash table
 					if (prevbucket==NULL)
@@ -475,30 +505,29 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 					buckets[nhash] = bucket;
 					bucket->prev = 0;
 					if (bucket->next != NULL) bucket->next->prev = bucket;
-					bucket->expireTime = time(0) + minBufferTime;
+					bucket->expireTime = flowEndTimeSeconds + minBufferTime;
 					if (bucket->forceExpireTime>bucket->expireTime) {
 						exportList.remove(bucket->listNode);
 						exportList.push(bucket->listNode);
+						removeBucket(bucket);
 					}
 				}
 			}
 		}
-		if (bucket == NULL) {
-			DPRINTFL(MSG_VDEBUG, "creating new bucket");
-			HashtableBucket* n = buckets[nhash];
-			buckets[nhash] = createBucket(data, 0, n, 0, nhash); // FIXME: insert observationDomainID!
-			buckets[nhash]->inTable = true;
-			if (n != NULL) n->prev = buckets[nhash];
-			BucketListElement* node = hbucketIM.getNewInstance();
-			node->reset();
-			buckets[nhash]->listNode = node;
-			node->bucket = buckets[nhash];
-			exportList.push(node);
-		}
 	}
-
+	if (!flowfound || expiryforced) {
+		DPRINTFL(MSG_VDEBUG, "creating new bucket");
+		HashtableBucket* n = buckets[nhash];
+		buckets[nhash] = createBucket(data, 0, n, 0, nhash, flowStartTimeSeconds); // FIXME: insert observationDomainID!
+		buckets[nhash]->inTable = true;
+		if (n != NULL) n->prev = buckets[nhash];
+		BucketListElement* node = hbucketIM.getNewInstance();
+		node->reset();
+		buckets[nhash]->listNode = node;
+		node->bucket = buckets[nhash];
+		exportList.push(node);
+	}
 	atomic_release(&aggInProgress);
-
 }
 
 /**
@@ -636,6 +665,8 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 	}
 
 	int i;
+	uint32_t startSec = 0;
+	uint32_t endSec = 0;
 
 	/* Create data block to be inserted into buffer... */
 	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength+privDataLength]);
@@ -654,6 +685,63 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 			// this path is normal for normal flow data records!
 			fieldFilled = true;
 			copyData(hfi, htdata.get(), tfi, data, fieldModifier[i]);
+
+			// obtain the start time of the flow in seconds
+			switch(tfi->type.id) {
+				case IPFIX_TYPEID_flowStartSeconds:
+					if(hfi->type.length != 4) {
+						DPRINTF("Cannot process flowStartSeconds with invalid length %d", hfi->type.length);
+					}
+					startSec = htonl(*(uint32_t*)(data + tfi->offset));
+					break;
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+					if(hfi->type.length != 8) {
+						DPRINTF("Cannot process flowStartMilliSeconds with invalid length %d", hfi->type.length);
+					}
+					startSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000;
+					break;
+				case IPFIX_TYPEID_flowStartMicroSeconds:
+					if(hfi->type.length != 8) {
+						DPRINTF("Cannot process flowStartMicroSeconds with invalid length %d", hfi->type.length);
+					}
+					startSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000;
+					break;
+				case IPFIX_TYPEID_flowStartNanoSeconds:
+					if(hfi->type.length != 8) {
+						DPRINTF("Cannot process flowStartNanoSeconds with invalid length %d", hfi->type.length);
+					}
+					startSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000000;
+					break;
+				case IPFIX_TYPEID_flowEndSeconds:
+					if(hfi->type.length != 4) {
+						DPRINTF("Cannot process flowEndSeconds with invalid length %d", hfi->type.length);
+					}
+					endSec = htonl(*(uint32_t*)(data + tfi->offset));
+					break;
+				case IPFIX_TYPEID_flowEndMilliSeconds:
+					if(hfi->type.length != 8) {
+						DPRINTF("Cannot process flowEndMilliSeconds with invalid length %d", hfi->type.length);
+					}
+					endSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000;
+					break;
+				case IPFIX_TYPEID_flowEndMicroSeconds:
+					if(hfi->type.length != 8) {
+						DPRINTF("Cannot process flowEndMicroSeconds with invalid length %d", hfi->type.length);
+					}
+					endSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000;
+					break;
+				case IPFIX_TYPEID_flowEndNanoSeconds:
+					if(hfi->type.length != 8) {
+						DPRINTF("Cannot process flowEndNanoSeconds with invalid length %d", hfi->type.length);
+					}
+					endSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000000;
+					break;
+
+
+				default:
+					break;
+
+			}
 
 			/* copy associated mask, should there be one */
 			switch (hfi->type.id) {
@@ -691,7 +779,6 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 				default:
 					break;
 			}
-
 			continue;
 		}
 
@@ -753,7 +840,7 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 	}
 
 	/* ...then buffer it */
-	bufferDataBlock(htdata);
+	bufferDataBlock(htdata, startSec, endSec);
 
 	atomic_release(&aggInProgress);
 }

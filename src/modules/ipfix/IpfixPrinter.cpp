@@ -276,6 +276,13 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 
 		case IPFIX_PEN_reverse:
 			switch (type.id) {
+				case IPFIX_TYPEID_flowStartSeconds:
+				case IPFIX_TYPEID_flowEndSeconds:
+				case IPFIX_TYPEID_flowStartMilliSeconds:
+				case IPFIX_TYPEID_flowEndMilliSeconds:
+				case PSAMP_TYPEID_observationTimeSeconds:
+					printLocaltime(type, pattern);
+					return;
 				case IPFIX_TYPEID_flowStartNanoSeconds:
 				case IPFIX_TYPEID_flowEndNanoSeconds:
 					hbnum = ntohll(*(uint64_t*)pattern);

@@ -225,11 +225,11 @@ BaseHashtable::~BaseHashtable()
  * Initializes memory for a new bucket in @c ht containing @c data
  */
 HashtableBucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Data> data,
-		uint32_t obsdomainid, HashtableBucket* next, HashtableBucket* prev, uint32_t hash)
+		uint32_t obsdomainid, HashtableBucket* next, HashtableBucket* prev, uint32_t hash, uint32_t flowStartTime)
 {
 	HashtableBucket* bucket = new HashtableBucket();
-	bucket->expireTime = time(0) + minBufferTime;
-	bucket->forceExpireTime = time(0) + maxBufferTime;
+	bucket->expireTime = flowStartTime + minBufferTime;
+	bucket->forceExpireTime = flowStartTime + maxBufferTime;
 	bucket->data = data;
 	bucket->next = next;
 	bucket->prev = prev;
@@ -303,7 +303,6 @@ void BaseHashtable::expireFlows(bool all)
 		nanosleep(&req, &req);
 	}
 
-	uint32_t now = time(0);
 	HashtableBucket* bucket = 0;
 	BucketListElement* node = 0;
 
@@ -313,6 +312,7 @@ void BaseHashtable::expireFlows(bool all)
 			bucket = node->bucket;
 			// TODO: change this one list to two lists: one for active, one for passive timeout
 			// problem here: flows with active timeout may be exported passive timeout seconds too late
+			// now must be updated by the child classes
 			if ((bucket->expireTime < now) || (bucket->forceExpireTime < now) || all) {
 				if (now > bucket->forceExpireTime)
 					DPRINTF("expireFlows: forced expiry");
@@ -638,6 +638,12 @@ void BaseHashtable::reverseFlowBucket(HashtableBucket* bucket)
 
 		if (fi != fi2) {
 			//msg(MSG_ERROR, "mapping idx %d to idx %d", i, flowReverseMapper[i]);
+			//msg(MSG_ERROR, "mapping IE %s to IE %s", fi->type.toString().c_str(), fi2->type.toString().c_str());
+			//if (fi->type.id == 152) {
+			//	uint64_t oldStart = ntohll(*((uint64_t*)(bucket->data.get() + fi->offset)));
+			//	uint64_t newStart = ntohll(*((uint64_t*)(bucket->data.get() + fi2->offset)));
+			//	msg(MSG_ERROR, "old: %lu / new: %lu compare: %d", oldStart, newStart, oldStart < newStart);
+			//}
 			IpfixRecord::Data* src = bucket->data.get()+fi->offset;
 			IpfixRecord::Data* dst = bucket->data.get()+fi2->offset;
 			uint32_t len = fi->type.length;
