@@ -15,6 +15,7 @@ of other Linux distributions):
  - libboost-filesystem-dev
  - libboost-regex-dev
  - libboost-test-dev
+ - libboost-thread-dev
  - libxml2-dev 
  - libpcap-dev 
  - libsctp-dev (if not available, disable cmake option SUPPORT_SCTP)
