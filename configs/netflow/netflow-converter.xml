@@ -10,7 +10,6 @@
 
 	<netflowV9Converter id="2">
 		<keepFlowSysUpTime>true</keepFlowSysUpTime>
-		<copyMode>true</copyMode>
 		<next>3</next>
 	</netflowV9Converter>
 

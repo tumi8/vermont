@@ -36,7 +36,7 @@ const uint32_t PacketHashtable::ExpHelperTable::UNUSED = 0xFFFFFFFF;
 PacketHashtable::PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
 	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits),
-	snapshotWritten(false), startTime(time(0))
+	snapshotWritten(false)
 {
 	buildExpHelperTable();
 }
@@ -1277,10 +1277,8 @@ void PacketHashtable::aggregateFlow(HashtableBucket* bucket, const Packet* p, bo
 			aggregateField(efd, bucket, p->data.netHeader+efd->srcIndex, data);
 		}
 	}
-	// TODO: tobi_optimize
-	// replace call of time() with access to a static variable which is updated regularly (such as every 100ms)
 	if (!bucket->forceExpiry) {
-		bucket->expireTime = time(0) + minBufferTime;
+		bucket->expireTime = now + minBufferTime;
 
 		if (bucket->forceExpireTime>bucket->expireTime) {
 			exportList.remove(bucket->listNode);
@@ -1431,6 +1429,18 @@ void PacketHashtable::updateBucketData(HashtableBucket* bucket)
 }
 
 /**
+ * This method checks whether the flow in @c bucket must be expired before 
+ * the content of Packet *p is aggregated onto this flow.
+ */
+bool PacketHashtable::mustExpireBucket(const HashtableBucket* bucket, const Packet* p)
+{
+	if (p->timestamp.tv_sec > bucket->expireTime || p->timestamp.tv_sec > bucket->forceExpireTime) {
+		return true;
+	}
+	return false;
+}
+
+/**
  * inserts the given raw packet into the hashtable
  * ATTENTION:
  *  - this function expects not to be called in parallel, as it uses internal buffers which are
@@ -1447,6 +1457,7 @@ void PacketHashtable::aggregatePacket(Packet* p)
 		nanosleep(&req, &req);
 	}
 
+	now = p->timestamp.tv_sec;
 
 	DPRINTF("PacketHashtable::aggregatePacket()");
 	updatePointers(p);
@@ -1465,17 +1476,25 @@ void PacketHashtable::aggregatePacket(Packet* p)
 		// This slot is already used, search spill chain for equal flow
 		while (1) {
 			if (equalFlow(bucket->data.get(), p)) {
-				DPRINTF("aggregate flow in normal direction");
-				aggregateFlow(bucket, p, 0);
-				if (!bucket->forceExpiry) {
-					flowfound = true;
-				} else {
-					DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
-					removeBucket(bucket);
+				if (mustExpireBucket(bucket, p)) {
+					// this packet expires the bucket
+					// we therefore need to create a new flow
+					bucket->forceExpiry = true;
 					expiryforced = true;
-					if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
-						oldflowcount = reinterpret_cast<uint32_t*>(bucket->data.get()+expHelperTable.dpaFlowCountOffset);
-					bucket = NULL;
+					removeBucket(bucket);
+				} else {
+					DPRINTF("aggregate flow in normal direction");
+					aggregateFlow(bucket, p, 0);
+					if (!bucket->forceExpiry) {
+						flowfound = true;
+					} else {
+						DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
+						removeBucket(bucket);
+						expiryforced = true;
+						if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
+							oldflowcount = reinterpret_cast<uint32_t*>(bucket->data.get()+expHelperTable.dpaFlowCountOffset);
+						bucket = NULL;
+					}
 				}
 				break;
 			}
@@ -1495,17 +1514,25 @@ void PacketHashtable::aggregatePacket(Packet* p)
 
 		while (bucket!=0) {
 			if (equalFlowRev(bucket->data.get(), p)) {
-				DPRINTF("aggregate flow in reverse direction");
-				aggregateFlow(bucket, p, 1);
-				if (!bucket->forceExpiry) {
-					flowfound = true;
-				} else {
-					DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
-					removeBucket(bucket);
+				if (mustExpireBucket(bucket, p)) {
+					// this packet expires the bucket
+					// we therefore need to create a new flow
+					bucket->forceExpiry = true;
 					expiryforced = true;
-					if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
-						oldflowcount = reinterpret_cast<uint32_t*>(bucket->data.get()+expHelperTable.dpaFlowCountOffset);
-					bucket = NULL;
+					removeBucket(bucket);
+				} else {
+					DPRINTF("aggregate flow in reverse direction");
+					aggregateFlow(bucket, p, 1);
+					if (!bucket->forceExpiry) {
+						flowfound = true;
+					} else {
+						DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
+						removeBucket(bucket);
+						expiryforced = true;
+						if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
+							oldflowcount = reinterpret_cast<uint32_t*>(bucket->data.get()+expHelperTable.dpaFlowCountOffset);
+						bucket = NULL;
+					}
 				}
 				break;
 			}
@@ -1517,7 +1544,7 @@ void PacketHashtable::aggregatePacket(Packet* p)
 		// create new flow
 		DPRINTF("creating new bucket");
 		HashtableBucket* firstbucket = buckets[hash];
-		buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID, firstbucket, 0, hash);
+		buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID, firstbucket, 0, hash, p->timestamp.tv_sec);
 		if (firstbucket) {
 			firstbucket->prev = buckets[hash];
 			statMultiEntries++;

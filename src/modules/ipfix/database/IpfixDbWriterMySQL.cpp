@@ -249,11 +249,11 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 		// insert new exporter table entry
 
 		/**ExporterID is not in exporter table - insert expID and expIp and return the exporterID*/
-		sprintf(statementStr, "INSERT INTO exporter (sourceID, srcIP) VALUES ('%u','%s')",
+		sprintf(statementStr, "INSERT INTO exporter (sourceID, srcIP) VALUES ('%u',INET_ATON('%s'))",
 				sourceID->observationDomainId, IPToString(expIp).c_str());
 
 		if(mysql_query(conn, statementStr) != 0) {
-			msg(MSG_ERROR,"IpfixDbWriterMySQL: Insert in exporter table failed. Error: %s", conn);
+			msg(MSG_ERROR,"IpfixDbWriterMySQL: Insert in exporter table failed. Error: %s", mysql_error(conn));
 			dbError = true;
 			return 0;
 		}
