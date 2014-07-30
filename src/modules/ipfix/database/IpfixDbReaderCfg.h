@@ -44,7 +44,7 @@ public:
 	virtual bool deriveFrom(IpfixDbReaderCfg* old);
 	
 protected:
-	std::string databaseType; /**< Type of database (mysql, psgl, oracle, ...) */	
+	std::string databaseType; /**< Type of database (mysql, postgres, oracle, ...) */	
 	std::string hostname; /**< hostname of database host */
 	uint16_t port;	/**< port of database */
 	std::string dbname; /**< database name */
