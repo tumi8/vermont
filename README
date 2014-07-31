@@ -22,8 +22,8 @@ of other Linux distributions):
 
 The following packages are optional:
  - cmake-curses-gui (ccmake, interactive user interface of cmake)
- - libpq-dev (for PostGreSQL support)
-    ==> cmake option SUPPORT_PGSQL
+ - libpq-dev (for PostgreSQL support)
+    ==> cmake option SUPPORT_POSTGRESQL
  - libmysqlclient-dev (for MySQL support)
     ==> cmake option SUPPORT_MYSQL
  - libgsl-dev (for connection-based sampling with Bloom filters)
