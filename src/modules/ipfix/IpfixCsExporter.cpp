@@ -1,6 +1,7 @@
 /*
  * IPFIX Carmentis Exporter Module
  * Copyright (C) 2010 Vermont Project
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -186,18 +187,18 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 		csRecord->tcp_control_bits = *(uint8_t*)(record->data + fi->offset);
 	}
 
-	uint64_t timestart = retrieveTime(record, IPFIX_TYPEID_flowStartNanoSeconds, IPFIX_TYPEID_flowStartMilliSeconds,
+	uint64_t timestart = retrieveTime(record, IPFIX_TYPEID_flowStartNanoseconds, IPFIX_TYPEID_flowStartMilliseconds,
 			IPFIX_TYPEID_flowStartSeconds, 0);
-	uint64_t revtimestart = retrieveTime(record, IPFIX_TYPEID_flowStartNanoSeconds, IPFIX_TYPEID_flowStartMilliSeconds,
+	uint64_t revtimestart = retrieveTime(record, IPFIX_TYPEID_flowStartNanoseconds, IPFIX_TYPEID_flowStartMilliseconds,
 			IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse);
 	if (revtimestart>0 && revtimestart<timestart)
 		csRecord->flow_start_milliseconds = htonll(revtimestart);
 	else
 		csRecord->flow_start_milliseconds = htonll(timestart);
 
-	uint64_t timeend = retrieveTime(record, IPFIX_TYPEID_flowEndNanoSeconds, IPFIX_TYPEID_flowEndMilliSeconds,
+	uint64_t timeend = retrieveTime(record, IPFIX_TYPEID_flowEndNanoseconds, IPFIX_TYPEID_flowEndMilliseconds,
 			IPFIX_TYPEID_flowEndSeconds, 0);
-	uint64_t revtimeend = retrieveTime(record, IPFIX_TYPEID_flowEndNanoSeconds, IPFIX_TYPEID_flowEndMilliSeconds,
+	uint64_t revtimeend = retrieveTime(record, IPFIX_TYPEID_flowEndNanoseconds, IPFIX_TYPEID_flowEndMilliseconds,
 			IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse);
 	if (revtimeend>0 && revtimeend>timeend)
 		csRecord->flow_end_milliseconds = htonll(revtimeend);

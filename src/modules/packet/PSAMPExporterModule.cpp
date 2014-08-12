@@ -1,5 +1,6 @@
 /*
  * PSAMP Reference Implementation
+ * Copyright (C) 2014 Oliver Gasser
  *
  * ExporterSink.cpp
  *
@@ -106,9 +107,9 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 		templ->getFieldInfo(i, &ie, &offset, &header);
 		if (ie.enterprise == 0 && (ie.id == IPFIX_TYPEID_flowStartSeconds || ie.id == PSAMP_TYPEID_observationTimeSeconds)) {
 			ipfix_put_data_field(exporter, &(pck->time_sec_nbo), ie.length);
-		} else if (ie.enterprise == 0 && (ie.id == IPFIX_TYPEID_flowStartMilliSeconds || ie.id == PSAMP_TYPEID_observationTimeMilliSeconds)) {
+		} else if (ie.enterprise == 0 && (ie.id == IPFIX_TYPEID_flowStartMilliseconds || ie.id == PSAMP_TYPEID_observationTimeMilliseconds)) {
 			ipfix_put_data_field(exporter, &(pck->time_msec_nbo), ie.length);
-		} else if (ie.enterprise == 0 && (ie.id == IPFIX_TYPEID_flowStartMicroSeconds || ie.id == PSAMP_TYPEID_observationTimeMicroSeconds)) {
+		} else if (ie.enterprise == 0 && (ie.id == IPFIX_TYPEID_flowStartMicroseconds || ie.id == PSAMP_TYPEID_observationTimeMicroseconds)) {
 			ipfix_put_data_field(exporter, &(pck->time_usec_nbo), ie.length);
 		} else if (ie.length == 65535) {
 			// variable length field

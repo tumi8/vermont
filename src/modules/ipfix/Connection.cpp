@@ -1,6 +1,7 @@
 /*
  * VERMONT
  * Copyright (C) 2007 Tobias Limmer <tobias.limmer@informatik.uni-erlangen.de>
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -80,11 +81,11 @@ Connection::Connection(IpfixDataRecord* record)
 		protocol = 0;
 	}
 
-	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoseconds, 0);
 	if (fi != 0) {
 		convertNtp64(*(uint64_t*)(record->data + fi->offset), srcTimeStart);
 	} else {
-		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0);
+		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliseconds, 0);
 		if (fi != 0) {
 			srcTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
 		} else {
@@ -97,11 +98,11 @@ Connection::Connection(IpfixDataRecord* record)
 			}
 		}
 	}
-	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoSeconds, 0);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoseconds, 0);
 	if (fi != 0) {
 		convertNtp64(*(uint64_t*)(record->data + fi->offset), srcTimeEnd);
 	} else {
-		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
+		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliseconds, 0);
 		if (fi != 0) {
 			srcTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
 		} else {
@@ -114,11 +115,11 @@ Connection::Connection(IpfixDataRecord* record)
 			}
 		}
 	}
-	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoSeconds, IPFIX_PEN_reverse);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartNanoseconds, IPFIX_PEN_reverse);
 	if (fi != 0) {
 		convertNtp64(*(uint64_t*)(record->data + fi->offset), dstTimeStart);
 	} else {
-		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse);
+		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliseconds, IPFIX_PEN_reverse);
 		if (fi != 0) {
 			dstTimeStart = ntohll(*(uint64_t*)(record->data + fi->offset));
 		} else {
@@ -131,11 +132,11 @@ Connection::Connection(IpfixDataRecord* record)
 			}
 		}
 	}
-	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoSeconds, IPFIX_PEN_reverse);
+	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoseconds, IPFIX_PEN_reverse);
 	if (fi != 0) {
 		convertNtp64(*(uint64_t*)(record->data + fi->offset), dstTimeEnd);
 	} else {
-		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse);
+		fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliseconds, IPFIX_PEN_reverse);
 		if (fi != 0) {
 			dstTimeEnd = ntohll(*(uint64_t*)(record->data + fi->offset));
 		} else {

@@ -1,6 +1,7 @@
 /*
  * IPFIX Concentrator Module Library
  * Copyright (C) 2004 Christoph Sommer <http://www.deltadevelopment.de/users/christoph/ipfix/>
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -256,13 +257,13 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 					return;
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
-				case IPFIX_TYPEID_flowStartMilliSeconds:
-				case IPFIX_TYPEID_flowEndMilliSeconds:
+				case IPFIX_TYPEID_flowStartMilliseconds:
+				case IPFIX_TYPEID_flowEndMilliseconds:
 				case PSAMP_TYPEID_observationTimeSeconds:
 					printLocaltime(type, pattern);
 					return;
-				case IPFIX_TYPEID_flowStartNanoSeconds:
-				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_flowStartNanoseconds:
+				case IPFIX_TYPEID_flowEndNanoseconds:
 					hbnum = ntohll(*(uint64_t*)pattern);
 					if (hbnum>0) {
 						t = timentp64(*((ntp64*)(&hbnum)));
@@ -278,13 +279,13 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 			switch (type.id) {
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
-				case IPFIX_TYPEID_flowStartMilliSeconds:
-				case IPFIX_TYPEID_flowEndMilliSeconds:
+				case IPFIX_TYPEID_flowStartMilliseconds:
+				case IPFIX_TYPEID_flowEndMilliseconds:
 				case PSAMP_TYPEID_observationTimeSeconds:
 					printLocaltime(type, pattern);
 					return;
-				case IPFIX_TYPEID_flowStartNanoSeconds:
-				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_flowStartNanoseconds:
+				case IPFIX_TYPEID_flowEndNanoseconds:
 					hbnum = ntohll(*(uint64_t*)pattern);
 					if (hbnum>0) {
 						t = timentp64(*((ntp64*)(&hbnum)));
@@ -516,9 +517,9 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 			tm = localtime(&t);
 			strftime(buf, 50, "%F %T", tm);
 		} else {
-			fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0);
+			fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartMilliseconds, 0);
 			if (fi != NULL) {
-				timetype = IPFIX_TYPEID_flowStartMilliSeconds;
+				timetype = IPFIX_TYPEID_flowStartMilliseconds;
 				uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
 				time_t t = t2/1000;
 				starttime = t;
@@ -533,7 +534,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 				} else {
 					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowStartSeconds, 0);
 					if (fi != NULL) {
-						timetype = IPFIX_TYPEID_flowStartNanoSeconds;
+						timetype = IPFIX_TYPEID_flowStartNanoseconds;
 						uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
 						timeval t = timentp64(*((ntp64*)(&t2)));
 						tm = localtime(&t.tv_sec);
@@ -555,8 +556,8 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 						dur *= 1000;
 					}
 					break;
-				case IPFIX_TYPEID_flowStartMilliSeconds:
-					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliSeconds, 0);
+				case IPFIX_TYPEID_flowStartMilliseconds:
+					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndMilliseconds, 0);
 					if (fi != NULL) {
 						dur = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset)) - starttime;
 						dur *= 1000;
@@ -569,8 +570,8 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 						dur *= 1000;
 					}
 					break;
-				case IPFIX_TYPEID_flowStartNanoSeconds:
-					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoSeconds, 0);
+				case IPFIX_TYPEID_flowStartNanoseconds:
+					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoseconds, 0);
 					if (fi != NULL) {
 						uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
 						timeval t = timentp64(*((ntp64*)(&t2)));

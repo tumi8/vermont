@@ -1,6 +1,7 @@
 /*
  * Vermont Aggregator Subsystem
  * Copyright (C) 2009 Vermont Project
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -283,7 +284,7 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 			switch (efd->typeId.id) {
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_tcpControlBits:
-				case IPFIX_TYPEID_classOfServiceIPv4:
+				case IPFIX_TYPEID_ipClassOfService:
 					if (efd->dstLength != 1) {
 						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
 					}
@@ -306,12 +307,12 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 					}
 					break;
 
-				case IPFIX_TYPEID_flowStartMilliSeconds:
-				case IPFIX_TYPEID_flowStartMicroSeconds:
-				case IPFIX_TYPEID_flowStartNanoSeconds:
-				case IPFIX_TYPEID_flowEndMilliSeconds:
-				case IPFIX_TYPEID_flowEndMicroSeconds:
-				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_flowStartMilliseconds:
+				case IPFIX_TYPEID_flowStartMicroseconds:
+				case IPFIX_TYPEID_flowStartNanoseconds:
+				case IPFIX_TYPEID_flowEndMilliseconds:
+				case IPFIX_TYPEID_flowEndMicroseconds:
+				case IPFIX_TYPEID_flowEndNanoseconds:
 				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_packetDeltaCount:
@@ -399,8 +400,8 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 			   efd->typeId == IeInfo(IPFIX_ETYPEID_dpaReverseStart, IPFIX_PEN_vermont) ||
 			   efd->typeId == IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont)) {
 		return copyDataDummy;
-	} else if (efd->typeId == IeInfo(IPFIX_TYPEID_flowStartNanoSeconds, 0) ||
-			efd->typeId == IeInfo(IPFIX_TYPEID_flowEndNanoSeconds, 0)) {
+	} else if (efd->typeId == IeInfo(IPFIX_TYPEID_flowStartNanoseconds, 0) ||
+			efd->typeId == IeInfo(IPFIX_TYPEID_flowEndNanoseconds, 0)) {
 		return copyDataNanoseconds;
 	} else if (efd->typeId.enterprise & IPFIX_PEN_reverse) {
 		// ATTENTION: we treat all reverse elements the same: we set them to zero
@@ -444,7 +445,7 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 			case IPFIX_TYPEID_tcpControlBits:
 			case IPFIX_TYPEID_packetDeltaCount:
 			case IPFIX_TYPEID_packetTotalCount:
-			case IPFIX_TYPEID_classOfServiceIPv4:
+			case IPFIX_TYPEID_ipClassOfService:
 				return 1;
 
 			case IPFIX_TYPEID_icmpTypeCodeIPv4:
@@ -460,10 +461,10 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 			case IPFIX_TYPEID_destinationIPv4Address:
 				return 4;
 
-			case IPFIX_TYPEID_flowStartMilliSeconds:
-			case IPFIX_TYPEID_flowEndMilliSeconds:
-			case IPFIX_TYPEID_flowStartNanoSeconds:
-			case IPFIX_TYPEID_flowEndNanoSeconds:
+			case IPFIX_TYPEID_flowStartMilliseconds:
+			case IPFIX_TYPEID_flowEndMilliseconds:
+			case IPFIX_TYPEID_flowStartNanoseconds:
+			case IPFIX_TYPEID_flowEndNanoseconds:
 				return 8;
 
 			case IPFIX_TYPEID_bgpSourceAsNumber:
@@ -524,13 +525,13 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Pack
 				return reinterpret_cast<const unsigned char*>(&p->time_sec_nbo) - p->data.netHeader;
 				break;
 
-			case IPFIX_TYPEID_flowStartMilliSeconds:
-			case IPFIX_TYPEID_flowEndMilliSeconds:
+			case IPFIX_TYPEID_flowStartMilliseconds:
+			case IPFIX_TYPEID_flowEndMilliseconds:
 				return reinterpret_cast<const unsigned char*>(&p->time_msec_nbo) - p->data.netHeader;
 				break;
 
-			case IPFIX_TYPEID_flowStartNanoSeconds:
-			case IPFIX_TYPEID_flowEndNanoSeconds:
+			case IPFIX_TYPEID_flowStartNanoseconds:
+			case IPFIX_TYPEID_flowEndNanoseconds:
 				return reinterpret_cast<const unsigned char*>(&p->timestamp) - p->data.netHeader;
 				break;
 
@@ -550,7 +551,7 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Pack
 			case IPFIX_TYPEID_destinationIPv4Address:
 				return 16;
 				break;
-			case IPFIX_TYPEID_classOfServiceIPv4:
+			case IPFIX_TYPEID_ipClassOfService:
 				return 1; 
 				break; 
 
@@ -617,16 +618,16 @@ bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
 				case IPFIX_TYPEID_packetDeltaCount:
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
-				case IPFIX_TYPEID_flowStartMilliSeconds: // those elements are inside the Packet structure, not in the raw packet.
-				case IPFIX_TYPEID_flowEndMilliSeconds:   // nevertheless, we may access it relative to the start of the packet data
-				case IPFIX_TYPEID_flowStartNanoSeconds: //  ^
-				case IPFIX_TYPEID_flowEndNanoSeconds:   //  ^
+				case IPFIX_TYPEID_flowStartMilliseconds: // those elements are inside the Packet structure, not in the raw packet.
+				case IPFIX_TYPEID_flowEndMilliseconds:   // nevertheless, we may access it relative to the start of the packet data
+				case IPFIX_TYPEID_flowStartNanoseconds: //  ^
+				case IPFIX_TYPEID_flowEndNanoseconds:   //  ^
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
-				case IPFIX_TYPEID_classOfServiceIPv4:
+				case IPFIX_TYPEID_ipClassOfService:
 				case IPFIX_TYPEID_bgpSourceAsNumber:
 				case IPFIX_TYPEID_bgpDestinationAsNumber:
 					return false;
@@ -741,16 +742,16 @@ bool PacketHashtable::typeAvailable(const IeInfo& type)
 				case IPFIX_TYPEID_packetDeltaCount:
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
-				case IPFIX_TYPEID_flowStartMilliSeconds:
-				case IPFIX_TYPEID_flowEndMilliSeconds:
-				case IPFIX_TYPEID_flowStartNanoSeconds:
-				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_flowStartMilliseconds:
+				case IPFIX_TYPEID_flowEndMilliseconds:
+				case IPFIX_TYPEID_flowStartNanoseconds:
+				case IPFIX_TYPEID_flowEndNanoseconds:
 				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
-				case IPFIX_TYPEID_classOfServiceIPv4:
+				case IPFIX_TYPEID_ipClassOfService:
 				case IPFIX_TYPEID_icmpTypeCodeIPv4:
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:
@@ -1083,11 +1084,11 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 						break;
 
-					case IPFIX_TYPEID_flowStartMilliSeconds:
+					case IPFIX_TYPEID_flowStartMilliseconds:
 						*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
 						break;
 
-					case IPFIX_TYPEID_flowStartNanoSeconds:
+					case IPFIX_TYPEID_flowStartNanoseconds:
 						ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
 						ntp2 = htonll(ntptime);
 						DPRINTFL(MSG_VDEBUG, "base: %lu s, delta: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U, ntohll(ntp2));
@@ -1105,11 +1106,11 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 						break;
 
-					case IPFIX_TYPEID_flowEndMilliSeconds:
+					case IPFIX_TYPEID_flowEndMilliseconds:
 						*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
 						break;
 
-					case IPFIX_TYPEID_flowEndNanoSeconds:
+					case IPFIX_TYPEID_flowEndNanoseconds:
 						ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
 						ntp2 = htonll(ntptime);
 						*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, ntp2);
@@ -1149,14 +1150,14 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 							*(uint32_t*)baseData = lesserUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 						break;
 
-					case IPFIX_TYPEID_flowStartMilliSeconds:
+					case IPFIX_TYPEID_flowStartMilliseconds:
 						if (*(uint64_t*)baseData==0)
 							*(uint64_t*)baseData = *(uint64_t*)deltaData;
 						else
 							*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
 						break;
 
-					case IPFIX_TYPEID_flowStartNanoSeconds:
+					case IPFIX_TYPEID_flowStartNanoseconds:
 						if (*(uint64_t*)baseData==0)
 							*(uint64_t*)baseData = *(uint64_t*)deltaData;
 						else {
@@ -1170,11 +1171,11 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);
 						break;
 
-					case IPFIX_TYPEID_flowEndMilliSeconds:
+					case IPFIX_TYPEID_flowEndMilliseconds:
 						*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
 						break;
 
-					case IPFIX_TYPEID_flowEndNanoSeconds:
+					case IPFIX_TYPEID_flowEndNanoseconds:
 						ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
 						ntp2 = htonll(ntptime);
 						*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, ntp2);
