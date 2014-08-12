@@ -1,6 +1,7 @@
 /*
  * IPFIX Database Base Class for SQL based databases
  * Copyright (C) 2012 Lothar Braun
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -142,7 +143,7 @@ class IpfixDbWriterSQL
 		virtual string getInsertString(string tableName);
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID) = 0;
 		virtual string insertRowPrefix();
-		std::string getDBDataType(uint16_t ipfixTypeLength);
+		std::string getDBDataType(const uint16_t ipfixType);
 		Column* legacyNamesMap;
 	private:
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID,

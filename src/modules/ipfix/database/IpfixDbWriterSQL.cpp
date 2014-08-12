@@ -76,11 +76,13 @@ const uint16_t MAX_COL_LENGTH = 22;
 
 
 /****** Methods **************************************************************/
-
-std::string IpfixDbWriterSQL::getDBDataType(uint16_t ipfixTypeLength)
+// NOTE: This function can not be made virtual and moved to a sub-class since
+// it is called in the IpfixDbWriterSQL constructor
+std::string IpfixDbWriterSQL::getDBDataType(const uint16_t ipfixType)
 {
-	if  (dbType == "mysql") {
-		switch (ipfixTypeLength) {
+	if	(dbType == "mysql") {
+		// TODO FIXME Adapt to new IPFIX type macros
+		switch (ipfixType) {
 		case 1:
 			return "TINYINT UNSIGNED";
 		case 2:
@@ -93,29 +95,63 @@ std::string IpfixDbWriterSQL::getDBDataType(uint16_t ipfixTypeLength)
 			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
 			return "VARCHAR(100)";
 		default:
-			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixTypeLength);
+			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixType);
 		}
 	} else if (dbType == "postgres") {
 		// TODO: postgres does not do unsigned types. we therefore use the bigger field. this wastes 
 		/// disk space. Optimize! (except bigints ...)
-		switch (ipfixTypeLength) {
-		case 1:
+		switch (ipfixType) {
+
+		case IPFIX_TYPE_octetArray:
+		case IPFIX_TYPE_basicList:
+		case IPFIX_TYPE_subTemplateList:
+		case IPFIX_TYPE_subTemplateMultiList:
+			return "bytea";
+
+		case IPFIX_TYPE_unsigned8:
+		case IPFIX_TYPE_signed8:
+		case IPFIX_TYPE_signed16:
 			return "smallint";
-		case 2:
+
+		case IPFIX_TYPE_unsigned16:
+		case IPFIX_TYPE_signed32:
+		case IPFIX_TYPE_dateTimeSeconds:
 			return "integer";
-		case 4:
+
+		case IPFIX_TYPE_unsigned32:
+		case IPFIX_TYPE_unsigned64:
+		case IPFIX_TYPE_signed64:
+		case IPFIX_TYPE_dateTimeMilliseconds:
+		case IPFIX_TYPE_dateTimeMicroseconds:
+		case IPFIX_TYPE_dateTimeNanoseconds:
 			return "bigint";
-		case 8:
-			return "bigint";
-		case 65535:
-			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
-			return "VARCHAR(100)";
+
+		case IPFIX_TYPE_float32:
+			return "real";
+
+		case IPFIX_TYPE_float64:
+			return "double precision";
+
+		case IPFIX_TYPE_boolean:
+			return "boolean";
+
+		case IPFIX_TYPE_macAddress:
+			return "macaddr";
+
+		case IPFIX_TYPE_string:
+			return "text";
+
+		case IPFIX_TYPE_ipv4Address:
+		case IPFIX_TYPE_ipv6Address:
+			return "inet";
+
 		default:
-			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixTypeLength);
+			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixType);
 		}	
 	} else if (dbType == "oracle") {
+		// TODO FIXME Adapt to new IPFIX type macros
 		// TODO: someone should think about proper type lengths ...
-		switch (ipfixTypeLength) {
+		switch (ipfixType) {
 		case 1:
 			return "NUMBER(3)";
 		case 2:
@@ -128,7 +164,7 @@ std::string IpfixDbWriterSQL::getDBDataType(uint16_t ipfixTypeLength)
 			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
 			return "VARCHAR(100)";
 		default:
-			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixTypeLength);
+			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixType);
 		}	
 	}
 
@@ -676,12 +712,12 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 					const struct ipfix_identifier* identifier = ipfix_id_lookup(ipfixId, enterpriseId);
 					// special handling for ht exporter field
 					if (ipfixId == 0) {
-						dataType = getDBDataType(2);
+						dataType = getDBDataType(IPFIX_TYPE_unsigned16);
 					} else {
 						if (NULL == identifier) {
 							THROWEXCEPTION("Programming error: Legacy Type name \"%s (id: %u)\" does not have a entry in ipfixlolib!", columnName.c_str(), ipfixId);
 						}
-						dataType = getDBDataType(identifier->length);
+						dataType = getDBDataType(identifier->type);
 					}
 				}
 				i++;
@@ -697,14 +733,14 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 				if (col->compare(CN_exporterID) == 0) {
 					ipfixId = EXPORTERID;
 					enterpriseId = 0;
-					dataType = getDBDataType(2);
+					dataType = getDBDataType(IPFIX_TYPE_unsigned16);
 				} else {
 					THROWEXCEPTION("IpfixDbWriter: Could not find a matching IPFIX type for \"%s\". Cannot map the IPFIX type in IPFIX messages to the column names. If you think VERMONT should support type \"%s\", please contact the developers at vermont-dev@berlios.de", col->c_str(), col->c_str());
 				}
 			} else {
 				ipfixId = identifier->id;
 				enterpriseId = identifier->pen;
-				dataType = getDBDataType(identifier->length);
+				dataType = getDBDataType(identifier->type);
 			}
 		}
 		Column c;
