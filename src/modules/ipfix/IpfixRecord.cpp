@@ -1,6 +1,7 @@
 /*
  * IPFIX Concentrator Module Library
  * Copyright (C) 2004 Christoph Sommer <http://www.deltadevelopment.de/users/christoph/ipfix/>
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -87,14 +88,14 @@ namespace InformationElement {
 				case IPFIX_TYPEID_packetTotalCount:
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
-				case IPFIX_TYPEID_flowStartMilliSeconds:
-				case IPFIX_TYPEID_flowEndMilliSeconds:
-				case IPFIX_TYPEID_flowStartNanoSeconds:
-				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_flowStartMilliseconds:
+				case IPFIX_TYPEID_flowEndMilliseconds:
+				case IPFIX_TYPEID_flowStartNanoseconds:
+				case IPFIX_TYPEID_flowEndNanoseconds:
 				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_protocolIdentifier:
-				case IPFIX_TYPEID_classOfServiceIPv4:
+				case IPFIX_TYPEID_ipClassOfService:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
 				case IPFIX_TYPEID_bgpSourceAsNumber:

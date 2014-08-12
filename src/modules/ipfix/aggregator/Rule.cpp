@@ -1,6 +1,7 @@
 /*
  * IPFIX Concentrator Module Library
  * Copyright (C) 2004 Christoph Sommer <http://www.deltadevelopment.de/users/christoph/ipfix/>
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -403,9 +404,9 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 				if (!matchesPattern(&recordField->type, (recordData + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
 				if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
 					if (ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) {
-						if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0), recordData, ruleField)) return 0;
+						if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), recordData, ruleField)) return 0;
 					} else if (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) {
-						if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0), recordData, ruleField)) return 0;
+						if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4PrefixLength, 0), recordData, ruleField)) return 0;
 					}
 				}
 				continue;
@@ -422,9 +423,9 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 						if (!matchesPattern(&recordField->type, (recordData + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
 						if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
 							if (oppDirIeId == IPFIX_TYPEID_sourceIPv4Address) {
-								if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Mask, 0), recordData, ruleField)) return 0;
+								if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), recordData, ruleField)) return 0;
 							} else if (oppDirIeId == IPFIX_TYPEID_destinationIPv4Address) {
-								if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Mask, 0), recordData, ruleField)) return 0;
+								if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4PrefixLength, 0), recordData, ruleField)) return 0;
 							}
 						}
 						continue;
@@ -443,9 +444,9 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 					if (!matchesPattern(&recordField->type, (dataTemplateInfo->data + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
 					if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
 						if (ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) {
-							if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_sourceIPv4Mask, 0), dataTemplateInfo->data, ruleField)) return 0;
+							if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), dataTemplateInfo->data, ruleField)) return 0;
 						} else if (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) {
-							if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_destinationIPv4Mask, 0), dataTemplateInfo->data, ruleField)) return 0;
+							if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_destinationIPv4PrefixLength, 0), dataTemplateInfo->data, ruleField)) return 0;
 						}
 					}
 					continue;
@@ -461,9 +462,9 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 							if (!matchesPattern(&recordField->type, (dataTemplateInfo->data + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
 							if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
 								if (oppDirIeId == IPFIX_TYPEID_sourceIPv4Address) {
-									if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_sourceIPv4Mask, 0), dataTemplateInfo->data, ruleField)) return 0;
+									if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), dataTemplateInfo->data, ruleField)) return 0;
 								} else if (oppDirIeId == IPFIX_TYPEID_destinationIPv4Address) {
-									if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_destinationIPv4Mask, 0), dataTemplateInfo->data, ruleField)) return 0;
+									if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_destinationIPv4PrefixLength, 0), dataTemplateInfo->data, ruleField)) return 0;
 								}
 							}
 							continue;

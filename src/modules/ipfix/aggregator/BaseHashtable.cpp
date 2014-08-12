@@ -1,6 +1,7 @@
 /*
  * Vermont Aggregator Subsystem
  * Copyright (C) 2009 Vermont Project
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -345,14 +346,14 @@ int BaseHashtable::isToBeAggregated(InformationElement::IeInfo& type)
 			switch (type.id) {
 				case IPFIX_TYPEID_flowStartSysUpTime:
 				case IPFIX_TYPEID_flowStartSeconds:
-				case IPFIX_TYPEID_flowStartMilliSeconds:
-				case IPFIX_TYPEID_flowStartMicroSeconds:
-				case IPFIX_TYPEID_flowStartNanoSeconds:
+				case IPFIX_TYPEID_flowStartMilliseconds:
+				case IPFIX_TYPEID_flowStartMicroseconds:
+				case IPFIX_TYPEID_flowStartNanoseconds:
 				case IPFIX_TYPEID_flowEndSysUpTime:
 				case IPFIX_TYPEID_flowEndSeconds:
-				case IPFIX_TYPEID_flowEndMilliSeconds:
-				case IPFIX_TYPEID_flowEndMicroSeconds:
-				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_flowEndMilliseconds:
+				case IPFIX_TYPEID_flowEndMicroseconds:
+				case IPFIX_TYPEID_flowEndNanoseconds:
 				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_postOctetDeltaCount:
@@ -369,11 +370,11 @@ int BaseHashtable::isToBeAggregated(InformationElement::IeInfo& type)
 		case IPFIX_PEN_reverse:
 			switch (type.id) {
 				case IPFIX_TYPEID_flowStartSeconds:
-				case IPFIX_TYPEID_flowStartMilliSeconds:
-				case IPFIX_TYPEID_flowStartNanoSeconds:
+				case IPFIX_TYPEID_flowStartMilliseconds:
+				case IPFIX_TYPEID_flowStartNanoseconds:
 				case IPFIX_TYPEID_flowEndSeconds:
-				case IPFIX_TYPEID_flowEndMilliSeconds:
-				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_flowEndMilliseconds:
+				case IPFIX_TYPEID_flowEndNanoseconds:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_packetDeltaCount:

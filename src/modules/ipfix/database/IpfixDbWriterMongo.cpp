@@ -1,6 +1,7 @@
 /*
  * IPFIX Database Writer MongoDB Connector
  * Copyright (C) 2011 Philipp Fehre <philipp.fehre@googlemail.com>
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -34,13 +35,13 @@ const IpfixDbWriterMongo::Property IpfixDbWriterMongo::identify [] = {
 	{CN_srcPort, 0, IPFIX_TYPEID_sourceTransportPort, 0},
 	{CN_dstPort, 0, IPFIX_TYPEID_destinationTransportPort, 0},
 	{CN_proto, 0, IPFIX_TYPEID_protocolIdentifier, 0 },
-	{CN_dstTos, 0, IPFIX_TYPEID_classOfServiceIPv4, 0},
+	{CN_dstTos, 0, IPFIX_TYPEID_ipClassOfService, 0},
 	{CN_bytes, 0, IPFIX_TYPEID_octetDeltaCount, 0},
 	{CN_pkts, 0, IPFIX_TYPEID_packetDeltaCount, 0},
 	{CN_firstSwitched, 0, IPFIX_TYPEID_flowStartSeconds, 0}, // default value is invalid/not used for this ent
 	{CN_lastSwitched, 0, IPFIX_TYPEID_flowEndSeconds, 0}, // default value is invalid/not used for this entry
-	{CN_firstSwitchedMillis, 0, IPFIX_TYPEID_flowStartMilliSeconds, 0},
-	{CN_lastSwitchedMillis, 0, IPFIX_TYPEID_flowEndMilliSeconds, 0},
+	{CN_firstSwitchedMillis, 0, IPFIX_TYPEID_flowStartMilliseconds, 0},
+	{CN_lastSwitchedMillis, 0, IPFIX_TYPEID_flowEndMilliseconds, 0},
 	{CN_tcpControlBits, 0, IPFIX_TYPEID_tcpControlBits, 0},
 	//TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
 	{CN_revbytes, 0, IPFIX_TYPEID_octetDeltaCount, IPFIX_PEN_reverse},
@@ -49,8 +50,8 @@ const IpfixDbWriterMongo::Property IpfixDbWriterMongo::identify [] = {
 	// default value is invalid/not used for this entry
 	{CN_revLastSwitched, 0, IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse}, 
 	// default value is invalid/not used for this entry
-	{CN_revFirstSwitchedMillis, 0, IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse},
-	{CN_revLastSwitchedMillis, 0, IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse},
+	{CN_revFirstSwitchedMillis, 0, IPFIX_TYPEID_flowStartMilliseconds, IPFIX_PEN_reverse},
+	{CN_revLastSwitchedMillis, 0, IPFIX_TYPEID_flowEndMilliseconds, IPFIX_PEN_reverse},
 	{CN_revTcpControlBits, 0, IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse},
 	{CN_maxPacketGap, 0, IPFIX_ETYPEID_maxPacketGap, IPFIX_PEN_vermont|IPFIX_PEN_reverse},
 	{CN_exporterID, 0, EXPORTERID, 0},
@@ -220,8 +221,8 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 							case IPFIX_TYPEID_flowStartSeconds:
 								if(dataTemplateInfo.fieldCount > 0) {
 									for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-										// look for alternative (flowStartMilliSeconds/1000)
-										if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowStartMilliSeconds) {
+										// look for alternative (flowStartMilliseconds/1000)
+										if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowStartMilliseconds) {
 											intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
 											notfound = false;
 											break;
@@ -242,8 +243,8 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 							case IPFIX_TYPEID_flowEndSeconds:
 								if(dataTemplateInfo.fieldCount > 0) {
 									for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-										// look for alternative (flowEndMilliSeconds/1000)
-										if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowEndMilliSeconds) {
+										// look for alternative (flowEndMilliseconds/1000)
+										if(dataTemplateInfo.fieldInfo[k].type.id == IPFIX_TYPEID_flowEndMilliseconds) {
 											intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
 											notfound = false;
 											break;
@@ -265,10 +266,10 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 					} else if (prop->enterprise==IPFIX_PEN_reverse) {
 						switch (prop->ipfixId) {
 							case IPFIX_TYPEID_flowStartSeconds:
-								// look for alternative (revFlowStartMilliSeconds/1000)
+								// look for alternative (revFlowStartMilliseconds/1000)
 								if(dataTemplateInfo.fieldCount > 0) {
 									for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-										if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse)) {
+										if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartMilliseconds, IPFIX_PEN_reverse)) {
 											intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
 											notfound = false;
 											break;
@@ -277,10 +278,10 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 								}
 								break;
 							case IPFIX_TYPEID_flowEndSeconds:
-								// look for alternative (revFlowEndMilliSeconds/1000)
+								// look for alternative (revFlowEndMilliseconds/1000)
 								if(dataTemplateInfo.fieldCount > 0) {
 									for(k=0; k < dataTemplateInfo.fieldCount; k++) {
-										if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse)) {
+										if(dataTemplateInfo.fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndMilliseconds, IPFIX_PEN_reverse)) {
 											intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset)) / 1000;
 											notfound = false;
 											break;
@@ -307,22 +308,22 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 						case IPFIX_TYPEID_flowEndSeconds:
 							break;
 
-						case IPFIX_TYPEID_flowStartMilliSeconds:
-							// if flowStartSeconds is not stored in one of the columns, but flowStartMilliSeconds is,
-							// then we use flowStartMilliSeconds for table access
+						case IPFIX_TYPEID_flowStartMilliseconds:
+							// if flowStartSeconds is not stored in one of the columns, but flowStartMilliseconds is,
+							// then we use flowStartMilliseconds for table access
 							// This is realized by storing this value only if flowStartSeconds has not yet been seen.
 							// A later appearing flowStartSeconds will override this value.
 							if (flowstartsec==0)
 								flowstartsec = intdata/1000;
-						case IPFIX_TYPEID_flowEndMilliSeconds:
+						case IPFIX_TYPEID_flowEndMilliseconds:
 							// in the database the millisecond entry is counted from last second
 							intdata %= 1000;
 							break;
 					}
 				} else if (prop->enterprise==IPFIX_PEN_reverse)
 					switch (prop->ipfixId) {
-						case IPFIX_TYPEID_flowStartMilliSeconds:
-						case IPFIX_TYPEID_flowEndMilliSeconds:
+						case IPFIX_TYPEID_flowStartMilliseconds:
+						case IPFIX_TYPEID_flowEndMilliseconds:
 							// in the database the millisecond entry is counted from last second
 							intdata %= 1000;
 							break;

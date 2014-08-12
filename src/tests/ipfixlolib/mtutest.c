@@ -1,3 +1,23 @@
+/*
+ * Vermont's MTU Test
+ * Copyright (C) 2014 Oliver Gasser
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
+
 #include <stdio.h>
 #include "common/ipfixlolib/ipfixlolib.h"
 #include "common/ipfixlolib/ipfix.h"
@@ -12,7 +32,7 @@
 
 void define_template(ipfix_exporter *exporter) {
 	ipfix_start_template(exporter, TEMPLATE_ID, 1); // field_count == 1
-	ipfix_put_template_field(exporter, TEMPLATE_ID, IPFIX_TYPEID_sourceIPv4Mask, 1, 0); // length == 1, enterprise_id == 0
+	ipfix_put_template_field(exporter, TEMPLATE_ID, IPFIX_TYPEID_sourceIPv4PrefixLength, 1, 0); // length == 1, enterprise_id == 0
 	ipfix_end_template(exporter, TEMPLATE_ID );
 }
 void put_data(ipfix_exporter *exporter) {
