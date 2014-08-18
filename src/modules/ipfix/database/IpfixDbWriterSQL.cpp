@@ -323,29 +323,25 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 	 to get the corresponding data to store and make insert statement*/
 	for(vector<Column>::iterator col = tableColumns.begin(); col != tableColumns.end(); col++) {
 		if (col->ipfixId == EXPORTERID) {
-			intdata = (uint64_t)getExporterID(sourceID);
+			asprintf(&chardata, "%d", getExporterID(sourceID));
 		} else {
 			notfound = true;
 			// try to gather data required for the field
-			if(dataTemplateInfo->fieldCount > 0) {
-				// look inside the ipfix record
-				for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-					if(dataTemplateInfo->fieldInfo[k].type.enterprise ==  col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
-						notfound = false;
-						intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-						DPRINTF("IpfixDbWriter::getdata: really saw ipfix id %d (%s) in packet with intdata %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, intdata, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
-						break;
-					}
+			// look inside the ipfix record
+			for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+				if(dataTemplateInfo->fieldInfo[k].type.enterprise ==  col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
+					notfound = false;
+					chardata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
+					DPRINTF("IpfixDbWriter::getdata: really saw ipfix id %d (%s) in packet with chardata %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, chardata, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
+					break;
 				}
 			}
-			if( dataTemplateInfo->dataCount > 0 && notfound) {
 				// look in static data fields of template for data
-				for(k=0; k < dataTemplateInfo->dataCount; k++) {
-					if(dataTemplateInfo->dataInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->dataInfo[k].type.id == col->ipfixId) {
-						notfound = false;
-						intdata = getdata(dataTemplateInfo->dataInfo[k].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[k].offset));
-						break;
-					}
+			for(k=0; k < dataTemplateInfo->dataCount; k++) {
+				if(dataTemplateInfo->dataInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->dataInfo[k].type.id == col->ipfixId) {
+					notfound = false;
+					chardata = getdata(dataTemplateInfo->dataInfo[k].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[k].offset));
+					break;
 				}
 			}
 			if(notfound) {
