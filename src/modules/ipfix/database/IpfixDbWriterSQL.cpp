@@ -341,7 +341,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			if( dataTemplateInfo->dataCount > 0 && notfound) {
 				// look in static data fields of template for data
 				for(k=0; k < dataTemplateInfo->dataCount; k++) {
-					if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->dataInfo[k].type.id == col->ipfixId) {
+					if(dataTemplateInfo->dataInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->dataInfo[k].type.id == col->ipfixId) {
 						notfound = false;
 						intdata = getdata(dataTemplateInfo->dataInfo[k].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[k].offset));
 						break;
