@@ -3,6 +3,7 @@
  * Copyright (C) 2006 Jürgen Abberger
  * Copyright (C) 2006 Lothar Braun <braunl@informatik.uni-tuebingen.de>
  * Copyright (C) 2007, 2008 Gerhard Muenz
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -154,7 +155,7 @@ bool IpfixDbWriterMySQL::createDBTable(const char* partitionname, uint64_t start
 	ostringstream cisql;
 	cisql << "CREATE INDEX " << indexname <<" ON " << partitionname;
 	cisql << "(firstswitched)";
-	if(mysql_query(conn, ctsql.str().c_str()) != 0) {
+	if(mysql_query(conn, cisql.str().c_str()) != 0) {
 		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of index failed. Error: %s",
 			mysql_error(conn));
 		dbError = true;
