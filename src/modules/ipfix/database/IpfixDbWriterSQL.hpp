@@ -159,7 +159,6 @@ class IpfixDbWriterSQL
 		uint32_t getdefaultIPFIXdata(int ipfixtype);
 
 		uint32_t getipv4address(InformationElement::IeInfo type, IpfixRecord::Data* data);
-		void extractNtp64(uint64_t& intdata, uint32_t& micros);
 
 };
 
