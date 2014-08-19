@@ -4,6 +4,7 @@
  * Copyright (C) 2006 Lothar Braun <braunl@informatik.uni-tuebingen.de>
  * Copyright (C) 2007 Gerhard Muenz
  * Copyright (C) 2008 Tobias Limmer
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -204,8 +205,9 @@ bool IpfixDbWriterPg::writeToDb()
 {
 	if (insertBuffer.curRows==0) return true;
 
+	DPRINTF("SQL Query: %s", insertBuffer.sql);
+
 	// Write rows to database
-	msg(MSG_FATAL, "%s", insertBuffer.sql);
 	PGresult* res = PQexec(conn, insertBuffer.sql);
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 		msg(MSG_ERROR,"IpfixDbWriterPg: Insert of records failed. Error: %s",

@@ -138,7 +138,7 @@ bool IpfixDbWriterMySQL::createDBTable(const char* partitionname, uint64_t start
 	}
 	ctsql << ")";
 
-	msg(MSG_FATAL, "SQL Query: %s", ctsql.str().c_str());
+	msg(MSG_INFO, "SQL Query: %s", ctsql.str().c_str());
 
 	if(mysql_query(conn, ctsql.str().c_str()) != 0) {
 		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of flow table failed. Error: %s",
