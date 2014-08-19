@@ -28,6 +28,7 @@
 #include <string.h>
 #include <iomanip>
 #include <stdlib.h>
+#include <boost/format.hpp>
 #include "IpfixDbWriterMySQL.hpp"
 #include "common/msg.h"
 
@@ -278,6 +279,26 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 	return exporterID;
 }
 
+/**
+ * In MySQL IPv4 addresses are stored as INT UNSIGNED types and thus converted to uint32_t.
+ */
+void IpfixDbWriterMySQL::parseIpfixIpv4Address(IpfixRecord::Data* data, string* parsedData) {
+	*parsedData = boost::str(boost::format("%u") % ntohl(*(uint32_t*) data));
+}
+
+/**
+ * In MySQL IPv6 addresses are stored as BINARY(16) types and thus converted to hex representation.
+ */
+void IpfixDbWriterMySQL::parseIpfixIpv6Address(IpfixRecord::Data* data, string* parsedData) {
+	*parsedData = boost::str(boost::format("0x%04x%04x%04x%04x%04x%04x%04x%04x") % htons((uint16_t) data[0]) % htons((uint16_t) data[2]) % htons((uint16_t) data[4]) % htons((uint16_t) data[6]) % htons((uint16_t) data[8]) % htons((uint16_t) data[10]) % htons((uint16_t) data[12]) % htons((uint16_t) data[14]));
+}
+
+/**
+ * In MySQL MAC addresses are stored as BIGINT UNSIGNED types and thus converted to hex representation.
+ */
+void IpfixDbWriterMySQL::parseIpfixMacAddress(IpfixRecord::Data* data, string* parsedData) {
+	*parsedData = boost::str(boost::format("0x%02x%02x%02x%02x%02x%02x") % (int) data[0] % (int) data[1] % (int) data[2] % (int) data[3] % (int) data[4] % (int) data[5]);
+}
 
 /***** Public Methods ****************************************************/
 
