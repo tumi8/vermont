@@ -158,11 +158,8 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 		// create partition
 		ostringstream cpsql;
 
-		cpsql << "CREATE TABLE " << partitionname << " (CHECK (firstswitched>='";
-		//cpsql << getTimeAsString(starttime, "%Y-%m-%d %H:%M:%S", true);
-		cpsql << starttime;
-		cpsql << "' AND firstswitched<'" << endtime; //getTimeAsString(endtime, "%Y-%m-%d %H:%M:%S", true);
-		cpsql << "')) INHERITS (" << tablePrefix << ")";
+		cpsql << "CREATE TABLE " << partitionname;
+		cpsql << " () INHERITS (" << tablePrefix << ")";
 
 		PGresult* res = PQexec(conn, cpsql.str().c_str());
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
@@ -176,23 +173,6 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 			msg(MSG_INFO, "Partition %s created ", partitionname);
 			usedPartitions.push_back(partitionname);
 			if (usedPartitions.size()>MAX_USEDTABLES) usedPartitions.pop_front();
-		}
-	}
-	string indexname = string(partitionname) + "_firstswitched";
-	if (!checkRelationExists(indexname.c_str())) {
-		ostringstream cisql;
-		cisql << "CREATE INDEX " << indexname <<" ON " << partitionname;
-		cisql << "(firstswitched)";
-		PGresult* res = PQexec(conn, cisql.str().c_str());
-		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-			msg(MSG_FATAL,"IpfixDbWriterPg: Creation of index failed. Error: %s",
-					PQerrorMessage(conn));
-			dbError = true;
-			PQclear(res);
-			return false;
-		} else {
-			PQclear(res);
-			msg(MSG_INFO, "Index %s_firstswitched created ", partitionname);
 		}
 	}
 	return true;
