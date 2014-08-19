@@ -152,25 +152,13 @@ bool IpfixDbWriterMySQL::createDBTable(const char* partitionname, uint64_t start
 	usedPartitions.push_back(partitionname);
 	if (usedPartitions.size()>MAX_USEDTABLES) usedPartitions.pop_front();
 
-	string indexname = string(partitionname) + "_firstswitched";
-	ostringstream cisql;
-	cisql << "CREATE INDEX " << indexname <<" ON " << partitionname;
-	cisql << "(firstswitched)";
-	if(mysql_query(conn, cisql.str().c_str()) != 0) {
-		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of index failed. Error: %s",
-			mysql_error(conn));
-		dbError = true;
-		return true;
-	}
-	msg(MSG_INFO, "Index %s_firstswitched created ", partitionname);
-
 	return true;
 }
 
 
 /**
  *	loop over table columns and template to get the IPFIX values in correct order to store in database
- *	The result is written into row, the firstSwitched time is returned in flowstartsec
+ *	The result is written into row
  */
 
 /*
