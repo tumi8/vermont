@@ -281,19 +281,6 @@ bool IpfixDbWriterSQL::setCurrentTable(uint64_t flowStart)
 	return true;
 }
 
-
-// extract seconds, ms and ys from ntp time
-void IpfixDbWriterSQL::extractNtp64(uint64_t& intdata, uint32_t& micros)
-{
-	if (intdata==0) {
-		micros = 0;
-		return;
-	}
-	timeval t = timentp64(*((ntp64*)(&intdata)));
-	intdata = (uint64_t)t.tv_sec*1000+t.tv_usec/1000;
-	micros = t.tv_usec%1000;
-}
-
 std::string IpfixDbWriterSQL::insertRowPrefix()
 {
 	if (insertBuffer.curRows > 0) {
