@@ -83,24 +83,64 @@ const uint16_t MAX_COL_LENGTH = 22;
 std::string IpfixDbWriterSQL::getDBDataType(const uint16_t ipfixType)
 {
 	if	(dbType == "mysql") {
-		// TODO FIXME Adapt to new IPFIX type macros
 		switch (ipfixType) {
-		case 1:
+
+		case IPFIX_TYPE_octetArray:
+		case IPFIX_TYPE_basicList:
+		case IPFIX_TYPE_subTemplateList:
+		case IPFIX_TYPE_subTemplateMultiList:
+			return "BLOB";		// max is 65,535 bytes
+
+		case IPFIX_TYPE_unsigned8:
 			return "TINYINT UNSIGNED";
-		case 2:
+
+		case IPFIX_TYPE_signed8:
+			return "TINYINT";
+
+		case IPFIX_TYPE_unsigned16:
 			return "SMALLINT UNSIGNED";
-		case 4:
+
+		case IPFIX_TYPE_signed16:
+			return "SMALLINT";
+
+		case IPFIX_TYPE_unsigned32:
+		case IPFIX_TYPE_dateTimeSeconds:
+		case IPFIX_TYPE_ipv4Address:
 			return "INT UNSIGNED";
-		case 8:
+
+		case IPFIX_TYPE_signed32:
+			return "INT";
+
+		case IPFIX_TYPE_unsigned64:
+		case IPFIX_TYPE_dateTimeMilliseconds:
+		case IPFIX_TYPE_dateTimeMicroseconds:
+		case IPFIX_TYPE_dateTimeNanoseconds:
+		case IPFIX_TYPE_macAddress:
 			return "BIGINT UNSIGNED";
-		case 65535:
-			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
-			return "VARCHAR(100)";
+
+		case IPFIX_TYPE_signed64:
+			return "BIGINT";
+
+		case IPFIX_TYPE_float32:
+			return "FLOAT";
+
+		case IPFIX_TYPE_float64:
+			return "DOUBLE";
+
+		case IPFIX_TYPE_boolean:
+			return "BOOLEAN";
+
+		case IPFIX_TYPE_string:
+			return "TEXT";		// max is 65,535 characters
+
+		case IPFIX_TYPE_ipv6Address:
+			return "BINARY(16)";
+
 		default:
 			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixType);
 		}
 	} else if (dbType == "postgres") {
-		// TODO: postgres does not do unsigned types. we therefore use the bigger field. this wastes 
+		// postgres does not do unsigned types. we therefore use the bigger field. this wastes 
 		/// disk space. Optimize! (except bigints ...)
 		switch (ipfixType) {
 
@@ -151,26 +191,63 @@ std::string IpfixDbWriterSQL::getDBDataType(const uint16_t ipfixType)
 			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixType);
 		}	
 	} else if (dbType == "oracle") {
-		// TODO FIXME Adapt to new IPFIX type macros
-		// TODO: someone should think about proper type lengths ...
 		switch (ipfixType) {
-		case 1:
+
+		case IPFIX_TYPE_octetArray:
+		case IPFIX_TYPE_basicList:
+		case IPFIX_TYPE_subTemplateList:
+		case IPFIX_TYPE_subTemplateMultiList:
+			return "BLOB";
+
+		case IPFIX_TYPE_unsigned8:
 			return "NUMBER(3)";
-		case 2:
-			return "NUMBER(6)";
-		case 4:
+
+		case IPFIX_TYPE_signed8:
+			return "NUMBER(4)";		// one digit for sign
+
+		case IPFIX_TYPE_unsigned16:
+			return "NUMBER(5)";
+
+		case IPFIX_TYPE_signed16:
+			return "NUMBER(6)";		// one digit for sign
+
+		case IPFIX_TYPE_unsigned32:
+		case IPFIX_TYPE_dateTimeSeconds:
+		case IPFIX_TYPE_ipv4Address:
 			return "NUMBER(10)";
-		case 8:
+
+		case IPFIX_TYPE_signed32:
+			return "NUMBER(11)";	// one digit for sign
+
+		case IPFIX_TYPE_unsigned64:
+		case IPFIX_TYPE_signed64:
+		case IPFIX_TYPE_dateTimeMilliseconds:
+		case IPFIX_TYPE_dateTimeMicroseconds:
+		case IPFIX_TYPE_dateTimeNanoseconds:
 			return "NUMBER(20)";
-		case 65535:
-			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
-			return "VARCHAR(100)";
+
+		case IPFIX_TYPE_float32:
+			return "BINARY_FLOAT";
+
+		case IPFIX_TYPE_float64:
+			return "BINARY_DOUBLE";
+
+		case IPFIX_TYPE_boolean:
+			return "NUMBER(1)";
+
+		case IPFIX_TYPE_macAddress:
+			return "NUMBER(15)";
+
+		case IPFIX_TYPE_string:
+			return "CLOB";
+
+		case IPFIX_TYPE_ipv6Address:
+			return "NUMBER(38)";
+
 		default:
 			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixType);
 		}	
 	}
-
- 
 
 	THROWEXCEPTION("IpfixDbWriter: Found unsupported database backend \"%s\". This is a programming error! Please contact vermont-dev@berlios.de!", dbType.c_str()); 
 	// make compiler happy. we should never get here
