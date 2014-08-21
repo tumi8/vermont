@@ -64,7 +64,7 @@ bool Template::getFieldOffsetAndHeader(const IeInfo& ie, uint16_t *offset, uint1
 {
 	if (ie.enterprise==0) {
 		switch(ie.id) {
-			// IPv4 *header fields:
+			// IPv4/6 *header fields:
 			case IPFIX_TYPEID_sourceIPv4Address:
 				*offset=12;
 				*header=HEAD_NETWORK;
@@ -75,36 +75,31 @@ bool Template::getFieldOffsetAndHeader(const IeInfo& ie, uint16_t *offset, uint1
 				*header=HEAD_NETWORK;
 				*validPacketClass = PCLASS_NET_IP4;
 				break;
-			// TODO: Also in IPv6
 			case IPFIX_TYPEID_protocolIdentifier:
 				*offset=9;
 				*header=HEAD_NETWORK;
-				*validPacketClass = PCLASS_NET_IP4;
+				*validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
 				break;
-			// TODO: Also in IPv6
             case IPFIX_TYPEID_ipClassOfService:
 				*offset=1;
 				*header=HEAD_NETWORK;
-				*validPacketClass = PCLASS_NET_IP4;
+				*validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
 				break;
-			// TODO: Also in IPv6
 			case IPFIX_TYPEID_fragmentIdentification:
 				*offset=4;
 				*header=HEAD_NETWORK;
-				*validPacketClass = PCLASS_NET_IP4;
+				*validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
 				break;
-			// TODO: Also in IPv6
 			case IPFIX_TYPEID_fragmentOffset:
 				// note: no masking, you also get DF and MF flags
 				*offset=6;
 				*header=HEAD_NETWORK;
-				*validPacketClass = PCLASS_NET_IP4;
+				*validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
 				break;
-			// TODO: Also in IPv6
 			case IPFIX_TYPEID_ipTTL:
 				*offset=8;
 				*header=HEAD_NETWORK;
-				*validPacketClass = PCLASS_NET_IP4;
+				*validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
 				break;
 			case IPFIX_TYPEID_totalLengthIPv4:
 				*offset=2;
