@@ -178,3 +178,22 @@ void IpfixReceiver::setVModule(Module* m)
 {
 	vmodule = m;
 }
+
+
+/**
+ * Set receiver buffer size in kernel
+ * @param buffer buffer size in bytes
+ * @return NULL
+ */
+void IpfixReceiver::setBufferSize(const int sockfd, const uint32_t buffer)
+{
+    if (buffer != 0) {
+        if (setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &buffer, sizeof(uint32_t)) == -1) {
+            msg(MSG_ERROR, "Error setting socket buffer size: %s", strerror(errno));
+        }
+		uint32_t temp;
+		socklen_t len = sizeof(temp);
+		getsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &temp, &len);
+		msg(MSG_INFO, "Socket buffer size set to %lu bytes", temp);
+    }
+}

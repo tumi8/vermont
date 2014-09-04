@@ -61,6 +61,7 @@ class IpfixReceiver
 		Mutex mutex;
 		uint16_t receiverPort;
 		Module* vmodule;
+		void setBufferSize(const int sockfd, const uint32_t buffer);
 
 	private:
 		std::vector<in_addr> authHosts; /**< List of authorized hosts. Only packets from hosts in this list, will be forwarded to the PacketProcessors */

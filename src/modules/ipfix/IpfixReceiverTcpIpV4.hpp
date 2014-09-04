@@ -34,7 +34,7 @@
 
 class IpfixReceiverTcpIpV4 : public IpfixReceiver, Sensor {
 	public:
-		IpfixReceiverTcpIpV4(int port, std::string ipAddr = "");
+		IpfixReceiverTcpIpV4(int port, std::string ipAddr = "", const uint32_t buffer = 0);
 		virtual ~IpfixReceiverTcpIpV4();
 
 		virtual void run();

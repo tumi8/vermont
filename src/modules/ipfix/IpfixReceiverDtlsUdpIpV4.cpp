@@ -56,7 +56,7 @@ using namespace std;
 IpfixReceiverDtlsUdpIpV4::IpfixReceiverDtlsUdpIpV4(int port, const std::string ipAddr,
 	const std::string &certificateChainFile, const std::string &privateKeyFile,
 	const std::string &caFile, const std::string &caPath,
-	const std::set<string> &peerFqdnsParam)
+	const std::set<string> &peerFqdnsParam, const uint32_t buffer)
     : IpfixReceiver(port),listen_socket(-1),
 	ssl_ctx(certificateChainFile,privateKeyFile,caFile,caPath, ! peerFqdnsParam.empty()),
 	peerFqdns(peerFqdnsParam),
@@ -72,6 +72,8 @@ IpfixReceiverDtlsUdpIpV4::IpfixReceiverDtlsUdpIpV4(int port, const std::string i
 	    msg(MSG_FATAL, "Could not create socket: %s", strerror(errno));
 	    THROWEXCEPTION("Cannot create IpfixReceiverDtlsUdpIpV4, socket creation failed");
 	}
+
+	setBufferSize(listen_socket, buffer);
 	
 	// if ipAddr set: Bind a specific IP address to our socket.
 	// else: use wildcard address

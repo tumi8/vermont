@@ -91,6 +91,8 @@ public:
 				transform(strdnsname.begin(),strdnsname.end(),strdnsname.begin(),
 						::tolower);
 				peerFqdns.insert(strdnsname);
+			} else if (e->matches("buffer")) {
+				buffer = (uint32_t)atoi(e->getContent().c_str());
 			} else {
 				msg(MSG_FATAL, "Unknown collector config statement %s", e->getName().c_str());
 				continue;
@@ -106,19 +108,19 @@ public:
 			const std::string &caPath) {
 		IpfixReceiver* ipfixReceiver;
 		if (protocol == SCTP)
-			ipfixReceiver = new IpfixReceiverSctpIpV4(port, ipAddress);	
+			ipfixReceiver = new IpfixReceiverSctpIpV4(port, ipAddress, buffer);
 		else if (protocol == DTLS_OVER_UDP)
 			ipfixReceiver = new IpfixReceiverDtlsUdpIpV4(port,
 				ipAddress, certificateChainFile,
-				privateKeyFile, caFile, caPath, peerFqdns);
+				privateKeyFile, caFile, caPath, peerFqdns, buffer);
 		else if (protocol == DTLS_OVER_SCTP)
 			ipfixReceiver = new IpfixReceiverDtlsSctpIpV4(port,
 				ipAddress, certificateChainFile,
-				privateKeyFile, caFile, caPath, peerFqdns);
+				privateKeyFile, caFile, caPath, peerFqdns, buffer);
 		else if (protocol == TCP)
-			ipfixReceiver = new IpfixReceiverTcpIpV4(port, ipAddress);
+			ipfixReceiver = new IpfixReceiverTcpIpV4(port, ipAddress, buffer);
 		else
-			ipfixReceiver = new IpfixReceiverUdpIpV4(port, ipAddress);	
+			ipfixReceiver = new IpfixReceiverUdpIpV4(port, ipAddress, buffer);
 
 		if (!ipfixReceiver) {
 			THROWEXCEPTION("Could not create IpfixReceiver");
@@ -139,6 +141,7 @@ public:
 			(port == other->port) &&
 			(mtu == other->mtu) &&
 			(peerFqdns == other->peerFqdns) &&
+			(buffer == other->buffer) &&
 			(authorizedHosts.size() == other->authorizedHosts.size())) {
 			for (uint16_t i = 0; i < authorizedHosts.size(); i++)
 				if (authorizedHosts[i] != other->authorizedHosts[i])
@@ -162,6 +165,7 @@ private:
 	ipfix_transport_protocol protocol;
 	uint16_t port;
 	uint16_t mtu;
+	uint32_t buffer;
 	std::set<std::string> peerFqdns;
 };
 

@@ -43,7 +43,7 @@ using namespace std;
  * @param port Port to listen on
  * @param ipAddr interface to use, if equals "", all interfaces will be used
  */
-IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
+IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr, const uint32_t buffer)
 	: statReceivedPackets(0)
 {
 	receiverPort = port;
@@ -57,6 +57,8 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr)
 		/* ASK: Why not throw? printf format */
 		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4, socket creation failed");
 	}
+
+	setBufferSize(listen_socket, buffer);
 	
 	// if ipAddr set: listen on a specific interface 
 	// else: listen on all interfaces

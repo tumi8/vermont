@@ -41,7 +41,7 @@
  * Does TCP/IPv4 specific initialization.
  * @param port Port to listen on
  */
-IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr)
+IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr, const uint32_t buffer)
 	: statReceivedMessages(0) 
 {
 	receiverPort = port;
@@ -53,6 +53,8 @@ IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr)
 		perror("Could not create TCP socket");
 		THROWEXCEPTION("Cannot create IpfixReceiverTcpIpV4");
 	}
+
+	setBufferSize(listen_socket, buffer);
 	
 	// if ipAddr set: listen on a specific interface 
 	// else: listen on all interfaces

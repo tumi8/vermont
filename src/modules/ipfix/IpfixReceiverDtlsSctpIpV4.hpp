@@ -63,7 +63,7 @@ class IpfixReceiverDtlsSctpIpV4 : public IpfixReceiver, Sensor {
 	IpfixReceiverDtlsSctpIpV4(int port, const std::string ipAddr = "",
 	    const std::string &certificateChainFile = "", const std::string &privateKeyFile = "",
 	    const std::string &caFile = "", const std::string &caPath = "",
-	    const std::set<string> &peerFqdns = std::set<string>() );
+	    const std::set<string> &peerFqdns = std::set<string>(), const uint32_t buffer);
 	virtual ~IpfixReceiverDtlsSctpIpV4();
 
 	virtual void run();
@@ -130,7 +130,7 @@ class IpfixReceiverDtlsSctpIpV4 : public IpfixReceiver, Sensor {
 	IpfixReceiverDtlsSctpIpV4(int port, const std::string ipAddr = "",
 	    const std::string &certificateChainFile = "", const std::string &privateKeyFile = "",
 	    const std::string &caFile = "", const std::string &caPath = "",
-	    const std::set<string> &peerFqdns = std::set<string>() ) {
+	    const std::set<string> &peerFqdns = std::set<string>(), const uint32_t buffer = 0) {
 	    THROWEXCEPTION("DTLS over SCTP not supported!");
 	}
 

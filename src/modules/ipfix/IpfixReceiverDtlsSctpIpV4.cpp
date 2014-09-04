@@ -46,7 +46,7 @@
 IpfixReceiverDtlsSctpIpV4::IpfixReceiverDtlsSctpIpV4(int port, const std::string ipAddr,
 	const std::string &certificateChainFile, const std::string &privateKeyFile,
 	const std::string &caFile, const std::string &caPath,
-	const std::set<string> &peerFqdnsParam)
+	const std::set<string> &peerFqdnsParam, const uint32_t buffer)
     : IpfixReceiver(port),ssl_ctx(certificateChainFile,privateKeyFile,caFile,caPath,
 	! peerFqdnsParam.empty()),listen_socket(-1),maxfd(0),
 	peerFqdns(peerFqdnsParam), statReceivedPackets(0)
@@ -71,6 +71,8 @@ IpfixReceiverDtlsSctpIpV4::IpfixReceiverDtlsSctpIpV4(int port, const std::string
 	if (fcntl(listen_socket,F_SETFL,flags)<0) {
 	    THROWEXCEPTION("IPFIX: Failed to set socket to non-blocking i/o");
 	}
+
+	setBufferSize(listen_socket, buffer);
 	
 	// if ipAddr set: Bind a specific IP address to our socket.
 	// else: use wildcard address

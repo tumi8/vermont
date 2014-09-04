@@ -206,6 +206,9 @@ In order to configure a new value X (in bytes), call:
 $ sysctl -w net/core/rmem_default=X
 $ sysctl -w net/core/rmem_max=X
 
+If you want Vermont to use a different buffer size than the default one,
+you can specify it using the <buffer> directive in the <listener> section.
+
 
 ------------------------------------
 OPTIMIZED PACKET CAPTURING WITH PCAP

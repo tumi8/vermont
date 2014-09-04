@@ -41,7 +41,7 @@
  * Does SCTP/IPv4 specific initialization.
  * @param port Port to listen on
  */
-IpfixReceiverSctpIpV4::IpfixReceiverSctpIpV4(int port, std::string ipAddr) 
+IpfixReceiverSctpIpV4::IpfixReceiverSctpIpV4(int port, std::string ipAddr, uint32_t buffer) 
 	: statReceivedPackets(0)
 {
 	receiverPort = port;
@@ -53,6 +53,8 @@ IpfixReceiverSctpIpV4::IpfixReceiverSctpIpV4(int port, std::string ipAddr)
 		perror("Could not create socket");
 		THROWEXCEPTION("Cannot create IpfixReceiverSctpIpV4");
 	}
+
+	setBufferSize(listen_socket, buffer);
 	
 	// if ipAddr set: listen on a specific interface 
 	// else: listen on all interfaces
