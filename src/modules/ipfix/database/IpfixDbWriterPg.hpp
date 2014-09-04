@@ -49,7 +49,7 @@ class IpfixDbWriterPg
 		IpfixDbWriterPg(const char* dbType, const char* host, const char* db,
 				const char* user, const char* pw,
 				unsigned int port, uint16_t observationDomainId, // FIXME: observationDomainId
-				int maxStatements, vector<string> columns, bool legacyNames);
+				int maxStatements, vector<string> columns, bool legacyNames, const char* prefix);
 		~IpfixDbWriterPg();
 
 		virtual void connectToDB();

@@ -625,7 +625,7 @@ string IpfixDbWriterSQL::getInsertString(string tableName)
 IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const char* db,
 		const char* user, const char* pw,
 		unsigned int port, uint16_t observationDomainId,
-		int maxStatements, vector<string> columns, bool legacyNames)
+		int maxStatements, vector<string> columns, bool legacyNames, const char* prefix)
 {
 	/**Initialize structure members IpfixDbWriterSQL*/
 	hostName = host;
@@ -649,7 +649,7 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 	curTable.timeStart = 0;
 	curTable.timeEnd = 0;
 	curTable.name = "";
-	tablePrefix = "f"; // TODO: make this in config file configurable!
+	tablePrefix = prefix;
 	
 	legacyNamesMap = (Column*)::legacyNames;
 

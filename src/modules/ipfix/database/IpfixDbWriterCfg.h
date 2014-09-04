@@ -54,6 +54,7 @@ protected:
 	string password;	/**< password for login to database */
 	uint16_t bufferRecords;	/**< amount of records to buffer until they are written to database */
 	uint32_t observationDomainId;	/**< default observation domain id (overrides the one received in the records */
+	string tablePrefix; /**< prefix for database table names */
 	vector<string> colNames; /**< column names */
 	bool useLegacyNames;
 

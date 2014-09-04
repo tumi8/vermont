@@ -283,8 +283,8 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 IpfixDbWriterMySQL::IpfixDbWriterMySQL(const char* dbType, const char* host, const char* db,
 		const char* user, const char* pw,
 		unsigned int port, uint16_t observationDomainId,
-		int maxStatements, vector<string> columns, bool legacyNames)
-	: IpfixDbWriterSQL(dbType, host, db, user, pw, port, observationDomainId, maxStatements, columns, legacyNames), conn(0)
+		int maxStatements, vector<string> columns, bool legacyNames, const char* prefix)
+	: IpfixDbWriterSQL(dbType, host, db, user, pw, port, observationDomainId, maxStatements, columns, legacyNames, prefix), conn(0)
 {
 	connectToDB();
 }

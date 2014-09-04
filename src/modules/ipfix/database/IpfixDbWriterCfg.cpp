@@ -36,7 +36,7 @@ IpfixDbWriterCfg* IpfixDbWriterCfg::create(XMLElement* e)
 
 IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
     : CfgHelper<IpfixDbWriterSQL, IpfixDbWriterCfg>(elem, "ipfixDbWriter"),
-      port(0), bufferRecords(30), observationDomainId(0), useLegacyNames(false)
+      port(0), bufferRecords(30), observationDomainId(0), useLegacyNames(false), tablePrefix("f")
 {
     if (!elem) return;
 
@@ -66,6 +66,8 @@ IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
 			readColumns(e);
 		} else if (e->matches("observationDomainId")) {
 			observationDomainId = getInt("observationDomainId");
+		} else if (e->matches("tablePrefix")) {
+			tablePrefix = e->getFirstText();
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
@@ -107,20 +109,20 @@ IpfixDbWriterSQL* IpfixDbWriterCfg::createInstance()
 	if (databaseType == "mysql") {
 #if defined(DB_SUPPORT_ENABLED)
 	
-		instance = new IpfixDbWriterMySQL(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames);
+		instance = new IpfixDbWriterMySQL(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames, tablePrefix.c_str());
 #else
 		goto except;
 #endif
 	} else if  (databaseType == "postgres") {
 
 #if defined(PG_SUPPORT_ENABLED)
-		instance = new IpfixDbWriterPg(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames);
+		instance = new IpfixDbWriterPg(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames, tablePrefix.c_str());
 #else
 		goto except;
 #endif
 	} else if (databaseType == "oracle") {
 #if defined(ORACLE_SUPPORT_ENABLED)
-		instance = new IpfixDbWriterOracle(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames);
+		instance = new IpfixDbWriterOracle(databaseType.c_str(), hostname.c_str(), dbname.c_str(), user.c_str(), password.c_str(), port, observationDomainId, bufferRecords, colNames, useLegacyNames, tablePrefix.c_str());
 #else
 		goto except;
 #endif

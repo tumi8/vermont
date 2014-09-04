@@ -42,7 +42,7 @@ class IpfixDbWriterSQL
 		IpfixDbWriterSQL(const char* dbType, const char* host, const char* db,
 				const char* user, const char* pw,
 				unsigned int port, uint16_t observationDomainId, // FIXME: observationDomainId
-				int maxStatements, vector<string> columns, bool useLegacyNames);
+				int maxStatements, vector<string> columns, bool useLegacyNames, const char* prefix);
 		~IpfixDbWriterSQL();
 
 		void onDataRecord(IpfixDataRecord* record);

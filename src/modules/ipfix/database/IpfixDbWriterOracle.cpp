@@ -556,8 +556,8 @@ int IpfixDbWriterOracle::getExporterID(IpfixRecord::SourceID* sourceID)
 IpfixDbWriterOracle::IpfixDbWriterOracle(const char* dbType, const char* host, const char* db,
                 const char* user, const char* pw,
                 unsigned int port, uint16_t observationDomainId,
-                int maxStatements, vector<string> columns, bool legacyNames)
-        : IpfixDbWriterSQL(dbType, host, db, user, pw, port, observationDomainId, maxStatements, columns, legacyNames), con(0), env(0)
+                int maxStatements, vector<string> columns, bool legacyNames, const char* prefix)
+        : IpfixDbWriterSQL(dbType, host, db, user, pw, port, observationDomainId, maxStatements, columns, legacyNames, prefix), con(0), env(0)
 {
         connectToDB();
 }
