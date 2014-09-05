@@ -96,8 +96,14 @@ namespace InformationElement {
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_protocolIdentifier:
 				case IPFIX_TYPEID_ipClassOfService:
+				case IPFIX_TYPEID_ipVersion:
+				case IPFIX_TYPEID_ipv6ExtensionHeaders:
+				case IPFIX_TYPEID_nextHeaderIPv6:
+				case IPFIX_TYPEID_flowLabelIPv6:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
+				case IPFIX_TYPEID_sourceIPv6Address:
+				case IPFIX_TYPEID_destinationIPv6Address:
 				case IPFIX_TYPEID_bgpSourceAsNumber:
 				case IPFIX_TYPEID_bgpDestinationAsNumber:
 				case IPFIX_ETYPEID_maxPacketGap:
@@ -108,7 +114,17 @@ namespace InformationElement {
 
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:
+				case IPFIX_TYPEID_ingressPhysicalInterface:
+				case IPFIX_TYPEID_egressPhysicalInterface:
+				case IPFIX_TYPEID_dot1qVlanId:
+				case IPFIX_TYPEID_dot1qCustomerVlanId:
+				case IPFIX_TYPEID_postDot1qVlanId:
+				case IPFIX_TYPEID_postDot1qCustomerVlanId:
 					return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
+
+				case IPFIX_TYPEID_sourceMacAddress:
+				case IPFIX_TYPEID_destinationMacAddress:
+					return Packet::ALL;
 
 				case IPFIX_TYPEID_tcpControlBits:
 					return Packet::TCP;
