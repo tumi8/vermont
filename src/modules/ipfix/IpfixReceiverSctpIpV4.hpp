@@ -52,7 +52,7 @@ class IpfixReceiverSctpIpV4 : public IpfixReceiver, Sensor {
 		uint32_t statReceivedPackets;  /**< number of received packets */ 
 #else
 	public:
-		IpfixReceiverSctpIpV4(int port, std::string ipAddr) {
+		IpfixReceiverSctpIpV4(int port, std::string ipAddr, uint32_t buffer = 0) {
 			THROWEXCEPTION("SCTP not supported!");
 		}
 		
