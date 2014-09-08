@@ -44,17 +44,17 @@ void PrintHelpers::printIPv4(InformationElement::IeInfo type, IpfixRecord::Data*
 	int octet3 = 0;
 	int octet4 = 0;
 	int imask = 0;
-	if (type.length >= 1) octet1 = data[0];
-	if (type.length >= 2) octet2 = data[1];
-	if (type.length >= 3) octet3 = data[2];
-	if (type.length >= 4) octet4 = data[3];
-	if (type.length >= 5) imask = data[4];
-	if (type.length > 5) {
-		DPRINTF("IPv4 Address with length %u unparseable\n", type.length);
+	if (type.getLength() >= 1) octet1 = data[0];
+	if (type.getLength() >= 2) octet2 = data[1];
+	if (type.getLength() >= 3) octet3 = data[2];
+	if (type.getLength() >= 4) octet4 = data[3];
+	if (type.getLength() >= 5) imask = data[4];
+	if (type.getLength() > 5) {
+		DPRINTF("IPv4 Address with length %u unparseable\n", type.getLength());
 		return;
 	}
 
-	if (type.length == 5 /*&& (imask != 0)*/) {
+	if (type.getLength() == 5 /*&& (imask != 0)*/) {
 		fprintf(fh, "%u.%u.%u.%u/%u", octet1, octet2, octet3, octet4, 32-imask);
 	} else {
 		fprintf(fh, "%u.%u.%u.%u", octet1, octet2, octet3, octet4);
@@ -62,18 +62,18 @@ void PrintHelpers::printIPv4(InformationElement::IeInfo type, IpfixRecord::Data*
 }
 
 void PrintHelpers::printPort(InformationElement::IeInfo type, IpfixRecord::Data* data) {
-	if (type.length == 0) {
+	if (type.getLength() == 0) {
 		fprintf(fh, "zero-length Port");
 		return;
 	}
-	if (type.length == 2) {
+	if (type.getLength() == 2) {
 		int port = ((uint16_t)data[0] << 8)+data[1];
 		fprintf(fh, "%u", port);
 		return;
 	}
-	if ((type.length >= 4) && ((type.length % 4) == 0)) {
+	if ((type.getLength() >= 4) && ((type.getLength() % 4) == 0)) {
 		int i;
-		for (i = 0; i < type.length; i+=4) {
+		for (i = 0; i < type.getLength(); i+=4) {
 			int starti = ((uint16_t)data[i+0] << 8)+data[i+1];
 			int endi = ((uint16_t)data[i+2] << 8)+data[i+3];
 			if (i > 0) fprintf(fh, ",");
@@ -86,7 +86,7 @@ void PrintHelpers::printPort(InformationElement::IeInfo type, IpfixRecord::Data*
 		return;
 	}
 
-	fprintf(fh, "Port with length %u unparseable", type.length);
+	fprintf(fh, "Port with length %u unparseable", type.getLength());
 }
 
 void PrintHelpers::printProtocol(uint8_t data) {
@@ -114,8 +114,8 @@ void PrintHelpers::printProtocol(uint8_t data) {
 
 
 void PrintHelpers::printProtocol(InformationElement::IeInfo type, IpfixRecord::Data* data) {
-	if (type.length != 1) {
-		fprintf(fh, "Protocol with length %u unparseable", type.length);
+	if (type.getLength() != 1) {
+		fprintf(fh, "Protocol with length %u unparseable", type.getLength());
 		return;
 	}
 	switch (data[0]) {
@@ -141,7 +141,7 @@ void PrintHelpers::printProtocol(InformationElement::IeInfo type, IpfixRecord::D
 }
 
 void PrintHelpers::printUint(InformationElement::IeInfo type, IpfixRecord::Data* data) {
-	switch (type.length) {
+	switch (type.getLength()) {
 	case 1:
 		fprintf(fh, "%hhu",*(uint8_t*)data);
 		return;
@@ -155,11 +155,11 @@ void PrintHelpers::printUint(InformationElement::IeInfo type, IpfixRecord::Data*
 		fprintf(fh, "%Lu",(long long unsigned)ntohll(*(uint64_t*)data));
 		return;
 	default:
-		for(uint16_t i = 0; i < type.length; i++) {
+		for(uint16_t i = 0; i < type.getLength(); i++) {
 		    fprintf(fh, "%02hhX",*(uint8_t*)(data+i));
 		}
-		fprintf(fh, " (%u bytes)", type.length);
-		//msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
+		fprintf(fh, " (%u bytes)", type.getLength());
+		//msg(MSG_ERROR, "Uint with length %u unparseable", type.getLength());
 		return;
 	}
 }
@@ -168,7 +168,7 @@ void PrintHelpers::printUint(InformationElement::IeInfo type, IpfixRecord::Data*
 void PrintHelpers::printLocaltime(InformationElement::IeInfo type, IpfixRecord::Data* data) {
 	time_t tmp;
 	char str[26]; // our own buffer to be thread-proof
-	switch (type.length) {
+	switch (type.getLength()) {
 	case 1:
 		fprintf(fh, "%hhu",*(uint8_t*)data);
 		return;
@@ -191,18 +191,18 @@ void PrintHelpers::printLocaltime(InformationElement::IeInfo type, IpfixRecord::
 		fprintf(fh, "%Lu (%s)", (long long unsigned)ntohll(*(uint64_t*)data), str);
 		return;
 	default:
-		for(uint16_t i = 0; i < type.length; i++) {
+		for(uint16_t i = 0; i < type.getLength(); i++) {
 		    fprintf(fh, "%02hhX",*(uint8_t*)(data+i));
 		}
-		fprintf(fh, " (%u bytes)", type.length);
-		//msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
+		fprintf(fh, " (%u bytes)", type.getLength());
+		//msg(MSG_ERROR, "Uint with length %u unparseable", type.getLength());
 		return;
 	}
 }
 
 
 void PrintHelpers::printUint(char* buf, InformationElement::IeInfo type, IpfixRecord::Data* data) {
-	switch (type.length) {
+	switch (type.getLength()) {
 	case 1:
 		sprintf(buf, "%hhu",*(uint8_t*)data);
 		return;
@@ -216,7 +216,7 @@ void PrintHelpers::printUint(char* buf, InformationElement::IeInfo type, IpfixRe
 		sprintf(buf, "%llu",(long long unsigned)ntohll(*(uint64_t*)data));
 		return;
 	default:
-		msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
+		msg(MSG_ERROR, "Uint with length %u unparseable", type.getLength());
 		return;
 	}
 }
@@ -314,7 +314,7 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 void PrintHelpers::printFrontPayload(InformationElement::IeInfo type, IpfixRecord::Data* data)
 {
 	fprintf(fh, "'");
-	for (uint32_t i=0; i<type.length; i++) {
+	for (uint32_t i=0; i<type.getLength(); i++) {
 		char c = data[i];
 		if (isprint(c)) fprintf(fh, "%c", c);
 		else fprintf(fh, ".");
@@ -586,7 +586,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		}
 
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_protocolIdentifier, 0);
-		if (fi != NULL && fi->type.length==1) {
+		if (fi != NULL && fi->type.getLength()==1) {
 			snprintf(buf, ARRAY_SIZE(buf), "%hhu", *reinterpret_cast<uint8_t*>(record->data+fi->offset));
 		} else {
 			snprintf(buf, ARRAY_SIZE(buf), "---");
@@ -595,12 +595,12 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
 		uint32_t srcip = 0;
-		if (fi != NULL && fi->type.length>=4) {
+		if (fi != NULL && fi->type.getLength()>=4) {
 			srcip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
 		}
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
 		uint16_t srcport = 0;
-		if (fi != NULL && fi->type.length==2) {
+		if (fi != NULL && fi->type.getLength()==2) {
 			srcport = ntohs(*reinterpret_cast<uint16_t*>(record->data+fi->offset));
 		}
 		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (srcip>>0)&0xFF, (srcip>>8)&0xFF, (srcip>>16)&0xFF, (srcip>>24)&0xFF, srcport);
@@ -608,12 +608,12 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
 		uint32_t dstip = 0;
-		if (fi != NULL && fi->type.length>=4) {
+		if (fi != NULL && fi->type.getLength()>=4) {
 			dstip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
 		}
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
 		uint16_t dstport = 0;
-		if (fi != NULL && fi->type.length==2) {
+		if (fi != NULL && fi->type.getLength()==2) {
 			dstport = ntohs(*reinterpret_cast<uint16_t*>(record->data+fi->offset));
 		}
 		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (dstip>>0)&0xFF, (dstip>>8)&0xFF, (dstip>>16)&0xFF, (dstip>>24)&0xFF, dstport);

@@ -437,7 +437,7 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 /**
  * @returns field length in bytes of corresponding entry in raw packet
  **/
-uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
+uint8_t PacketHashtable::getRawPacketFieldLength(IeInfo& type)
 {
 	if (type.enterprise == 0 || type.enterprise == IPFIX_PEN_reverse) {
 		switch (type.id) {
@@ -491,7 +491,7 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 				return 8;
 
 			case IPFIX_ETYPEID_frontPayload:
-				return type.length;				// length is variable and is set in configuration
+				return type.getLength();				// length is variable and is set in configuration
 
 			default:
 				THROWEXCEPTION("PacketHashtable: unknown typeid %s, failed to determine raw packet field length", type.toString().c_str());
@@ -672,7 +672,7 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 	DPRINTFL(MSG_VDEBUG, "called for type id %s", hfi->type.toString().c_str());
 	efd->typeId = hfi->type;
 	efd->dstIndex = hfi->offset;
-	efd->dstLength = hfi->type.length;
+	efd->dstLength = hfi->type.getLength();
 	efd->srcLength = getRawPacketFieldLength(hfi->type);
 	efd->modifier = fieldModifier;
 	efd->varSrcIdx = isRawPacketPtrVariable(hfi->type);

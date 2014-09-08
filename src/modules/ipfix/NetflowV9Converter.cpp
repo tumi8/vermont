@@ -67,7 +67,7 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 			if (fi->type.enterprise == 0) {
 				if (fi->type.id == IPFIX_TYPEID_flowStartSysUpTime) {
 					// length should be 4 octets
-					if(fi->type.length == 4) {
+					if(fi->type.getLength() == 4) {
 						if (keepFlowSysUpTime) {
 							// create new field which should contain flowStartSeconds
 							TemplateInfo::FieldInfo newField;
@@ -85,10 +85,10 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 						// Save field index for future reference
 						myConvInfo.fieldIndexes.push_back(i);
 					} else
-						msg(MSG_ERROR, "NetflowV9Converter: flowStartSysUpTime has expected length 4, got %u", fi->type.length);
+						msg(MSG_ERROR, "NetflowV9Converter: flowStartSysUpTime has expected length 4, got %u", fi->type.getLength());
 				} else if (fi->type.id == IPFIX_TYPEID_flowEndSysUpTime) {
 					// length should be 4 octets
-					if(fi->type.length == 4) {
+					if(fi->type.getLength() == 4) {
 						if (keepFlowSysUpTime) {
 							// create new field which should contain flowStartSeconds
 							TemplateInfo::FieldInfo newField;
@@ -106,10 +106,10 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 						// Save field index
 						myConvInfo.fieldIndexes.push_back(i);
 					} else
-						msg(MSG_ERROR, "NetflowV9Converter: flowStartSysUpTime has expected length 4, got %u", fi->type.length);
+						msg(MSG_ERROR, "NetflowV9Converter: flowStartSysUpTime has expected length 4, got %u", fi->type.getLength());
 				}
 			} else {
-				msg(MSG_ERROR, "NetflowV9Converter: Got enterprise specific IE (id=%u, enterprise=%lu, length=%u) in Netflow Template, which should not happen", fi->type.id, fi->type.enterprise, fi->type.length);
+				msg(MSG_ERROR, "NetflowV9Converter: Got enterprise specific IE (id=%u, enterprise=%lu, length=%u) in Netflow Template, which should not happen", fi->type.id, fi->type.enterprise, fi->type.getLength());
 			}
 		}
 

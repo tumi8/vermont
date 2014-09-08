@@ -98,10 +98,10 @@ int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templ
 						      sizeof(TemplateInfo::FieldInfo)*templateInfo->fieldCount);
 		TemplateInfo::FieldInfo* fi = &templateInfo->fieldInfo[templateInfo->fieldCount - 1];	
 		fi->type.id = i->id;
-		fi->type.length = i->length;
+		fi->type.setLength(i->length);
 		fi->type.enterprise = i->pen;
 		fi->offset = recordLength;
-		recordLength = recordLength + fi->type.length; 
+		recordLength = recordLength + fi->type.getLength(); 
 	}
 
 	/* Pass Data Template to flowSinks */
@@ -115,7 +115,7 @@ int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templ
 
 
 void IpfixDbReader::copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, InformationElement::IeInfo type) {
-        switch (type.length) {
+        switch (type.getLength()) {
         case 1:
 		*(uint8_t*)dest = *(uint8_t*)src;
                 return;
@@ -129,7 +129,7 @@ void IpfixDbReader::copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, Inf
 		*(uint64_t*)dest = htonll(*(uint64_t*)src);
                 return;
         default:
-                msg(MSG_ERROR, "IpfixDbReader: Uint with length %d unparseable", type.length);
+                msg(MSG_ERROR, "IpfixDbReader: Uint with length %d unparseable", type.getLength());
                 return;
         }
 }

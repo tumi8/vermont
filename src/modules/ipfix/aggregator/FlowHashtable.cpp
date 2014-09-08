@@ -62,8 +62,8 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 				case IPFIX_TYPEID_flowStartSysUpTime:
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowStartMicroseconds:
-					if (type->length != 4) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					if (type->getLength() != 4) {
+						DPRINTF("unsupported length %d for type %d", type->getLength(), type->id);
 						return 1;
 					}
 
@@ -72,8 +72,8 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 
 				case IPFIX_TYPEID_flowStartMilliseconds:
 				case IPFIX_TYPEID_flowStartNanoseconds:
-					if (type->length != 8) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					if (type->getLength() != 8) {
+						DPRINTF("unsupported length %d for type %d", type->getLength(), type->id);
 						return 1;
 					}
 
@@ -83,8 +83,8 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 				case IPFIX_TYPEID_flowEndSysUpTime:
 				case IPFIX_TYPEID_flowEndSeconds:
 				case IPFIX_TYPEID_flowEndMicroseconds:
-					if (type->length != 4) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					if (type->getLength() != 4) {
+						DPRINTF("unsupported length %d for type %d", type->getLength(), type->id);
 						return 1;
 					}
 
@@ -93,8 +93,8 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 
 				case IPFIX_TYPEID_flowEndMilliseconds:
 				case IPFIX_TYPEID_flowEndNanoseconds:
-					if (type->length != 8) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					if (type->getLength() != 8) {
+						DPRINTF("unsupported length %d for type %d", type->getLength(), type->id);
 						return 1;
 					}
 
@@ -109,15 +109,15 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 				case IPFIX_TYPEID_postPacketDeltaCount:
 				case IPFIX_TYPEID_droppedOctetDeltaCount:
 				case IPFIX_TYPEID_droppedPacketDeltaCount:
-					if (type->length != 8) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					if (type->getLength() != 8) {
+						DPRINTF("unsupported length %d for type %d", type->getLength(), type->id);
 						return 1;
 					}
 					*(uint64_t*)baseData = addUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
 					return 0;
 
 				case IPFIX_TYPEID_tcpControlBits:
-					ASSERT(type->length==1, "unsupported length for type");
+					ASSERT(type->getLength()==1, "unsupported length for type");
 					*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
 					return 0;
 			}
@@ -126,8 +126,8 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 		case IPFIX_PEN_reverse:
 			switch (type->id) {
 				case IPFIX_TYPEID_flowStartSeconds:
-					if (type->length != 4) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					if (type->getLength() != 4) {
+						DPRINTF("unsupported length %d for type %d", type->getLength(), type->id);
 						return 1;
 					}
 					if (*(uint32_t*)baseData == 0)
@@ -138,8 +138,8 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 
 				case IPFIX_TYPEID_flowStartMilliseconds:
 				case IPFIX_TYPEID_flowStartNanoseconds:
-					if (type->length != 8) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					if (type->getLength() != 8) {
+						DPRINTF("unsupported length %d for type %d", type->getLength(), type->id);
 						return 1;
 					}
 
@@ -150,8 +150,8 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 					return 0;
 
 				case IPFIX_TYPEID_flowEndSeconds:
-					if (type->length != 4) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					if (type->getLength() != 4) {
+						DPRINTF("unsupported length %d for type %d", type->getLength(), type->id);
 						return 1;
 					}
 
@@ -160,8 +160,8 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 
 				case IPFIX_TYPEID_flowEndMilliseconds:
 				case IPFIX_TYPEID_flowEndNanoseconds:
-					if (type->length != 8) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+					if (type->getLength() != 8) {
+						DPRINTF("unsupported length %d for type %d", type->getLength(), type->id);
 						return 1;
 					}
 
@@ -176,7 +176,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 					return 0;
 
 				case IPFIX_TYPEID_tcpControlBits:
-					ASSERT(type->length==1, "unsupported length for type");
+					ASSERT(type->getLength()==1, "unsupported length for type");
 					*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
 					return 0;
 
@@ -189,7 +189,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 					plen = reinterpret_cast<uint32_t*>(base+basefi->privDataOffset+4);
 					// only copy payload if it was not inserted into the field yet
 					if (*plen == 0) {
-						memcpy(baseData, deltaData, type->length);
+						memcpy(baseData, deltaData, type->getLength());
 						*plen = *reinterpret_cast<uint32_t*>(delta+deltafi->privDataOffset+4);
 					}
 					return 0;
@@ -220,7 +220,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 					plen = reinterpret_cast<uint32_t*>(base+basefi->privDataOffset+4);
 					// only copy payload if it was not inserted into the field yet
 					if (*plen == 0) {
-						memcpy(baseData, deltaData, type->length);
+						memcpy(baseData, deltaData, type->getLength());
 						*plen = *reinterpret_cast<uint32_t*>(delta+deltafi->privDataOffset+4);
 					}
 					return 0;
@@ -342,7 +342,7 @@ uint32_t FlowHashtable::getHash(IpfixRecord::Data* data, bool reverse) {
 		}
 		uint32_t idx = (reverse ? revKeyMapper[i] : i);
 		hash = crc32(hash,
-				dataTemplate->fieldInfo[idx].type.length,
+				dataTemplate->fieldInfo[idx].type.getLength(),
 				(char*)data + dataTemplate->fieldInfo[idx].offset);
 	}
 
@@ -358,10 +358,10 @@ int FlowHashtable::equalRaw(InformationElement::IeInfo* data1Type, IpfixRecord::
 	int i;
 
 	if(data1Type->id != data2Type->id) return 0;
-	if(data1Type->length != data2Type->length) return 0;
+	if(data1Type->getLength() != data2Type->getLength()) return 0;
 	if(data1Type->enterprise != data2Type->enterprise) return 0;
 
-	for(i = 0; i < data1Type->length; i++) {
+	for(i = 0; i < data1Type->getLength(); i++) {
 		if(data1[i] != data2[i]) {
 			return 0;
 		}
@@ -548,41 +548,41 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
 
 	/* Copy data, care for length differences */
 	uint32_t copylen = 0;
-	if(dstType->length == srcType->length) {
-		copylen = srcType->length;
+	if(dstType->getLength() == srcType->getLength()) {
+		copylen = srcType->getLength();
 		memcpy(dstData, srcData, copylen);
 
-	} else if(dstType->length > srcType->length) {
-		copylen = srcType->length;
+	} else if(dstType->getLength() > srcType->getLength()) {
+		copylen = srcType->getLength();
 		/* TODO: We simply pad with zeroes - will this always be correct? */
 		if (dstType->enterprise==0) {
 			switch (dstType->id) {
 				/* Fields of type IPv4Address-type and payload are padded on the right */
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
-					bzero(dstData+copylen, dstType->length-copylen);
+					bzero(dstData+copylen, dstType->getLength()-copylen);
 					memcpy(dstData, srcData, copylen);
 					break;
 
 				default:
-					bzero(dstData, dstType->length-srcType->length);
-					memcpy(dstData + dstType->length - srcType->length, srcData, copylen);
+					bzero(dstData, dstType->getLength()-srcType->getLength());
+					memcpy(dstData + dstType->getLength() - srcType->getLength(), srcData, copylen);
 					break;
 			}
 		} else if ((dstType->enterprise&IPFIX_PEN_vermont) && dstType->id==IPFIX_ETYPEID_frontPayload) {
-			bzero(dstData+copylen, dstType->length-copylen);
+			bzero(dstData+copylen, dstType->getLength()-copylen);
 			memcpy(dstData, srcData, copylen);
 		} else {
-			bzero(dstData, dstType->length-srcType->length);
-			memcpy(dstData + dstType->length - srcType->length, srcData, copylen);
+			bzero(dstData, dstType->getLength()-srcType->getLength());
+			memcpy(dstData + dstType->getLength() - srcType->getLength(), srcData, copylen);
 		}
 
 	} else {
 		if ((dstType->enterprise&IPFIX_PEN_vermont) && dstType->id == IPFIX_ETYPEID_frontPayload) {
-			copylen = dstType->length;
+			copylen = dstType->getLength();
 			memcpy(dstData, srcData, copylen);
 		} else {
-			DPRINTF("Target buffer too small. Buffer expected %s of length %d, got one with length %dn", srcType->toString().c_str(), srcType->length, dstType->length);
+			DPRINTF("Target buffer too small. Buffer expected %s of length %d, got one with length %dn", srcType->toString().c_str(), srcType->getLength(), dstType->getLength());
 			return;
 		}
 	}
@@ -605,7 +605,7 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
 			return;
 		}
 
-		if (dstType->length != 5) {
+		if (dstType->getLength() != 5) {
 			DPRINTF("Destination data to short - no room to store mask\n");
 			return;
 		}
@@ -690,50 +690,50 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 			// obtain the start time of the flow in seconds
 			switch(tfi->type.id) {
 				case IPFIX_TYPEID_flowStartSeconds:
-					if(hfi->type.length != 4) {
-						DPRINTF("Cannot process flowStartSeconds with invalid length %d", hfi->type.length);
+					if(hfi->type.getLength() != 4) {
+						DPRINTF("Cannot process flowStartSeconds with invalid length %d", hfi->type.getLength());
 					}
 					startSec = htonl(*(uint32_t*)(data + tfi->offset));
 					break;
 				case IPFIX_TYPEID_flowStartMilliseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowStartMilliseconds with invalid length %d", hfi->type.length);
+					if(hfi->type.getLength() != 8) {
+						DPRINTF("Cannot process flowStartMilliseconds with invalid length %d", hfi->type.getLength());
 					}
 					startSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000;
 					break;
 				case IPFIX_TYPEID_flowStartMicroseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowStartMicroseconds with invalid length %d", hfi->type.length);
+					if(hfi->type.getLength() != 8) {
+						DPRINTF("Cannot process flowStartMicroseconds with invalid length %d", hfi->type.getLength());
 					}
 					startSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000;
 					break;
 				case IPFIX_TYPEID_flowStartNanoseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowStartNanoseconds with invalid length %d", hfi->type.length);
+					if(hfi->type.getLength() != 8) {
+						DPRINTF("Cannot process flowStartNanoseconds with invalid length %d", hfi->type.getLength());
 					}
 					startSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000000;
 					break;
 				case IPFIX_TYPEID_flowEndSeconds:
-					if(hfi->type.length != 4) {
-						DPRINTF("Cannot process flowEndSeconds with invalid length %d", hfi->type.length);
+					if(hfi->type.getLength() != 4) {
+						DPRINTF("Cannot process flowEndSeconds with invalid length %d", hfi->type.getLength());
 					}
 					endSec = htonl(*(uint32_t*)(data + tfi->offset));
 					break;
 				case IPFIX_TYPEID_flowEndMilliseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowEndMilliseconds with invalid length %d", hfi->type.length);
+					if(hfi->type.getLength() != 8) {
+						DPRINTF("Cannot process flowEndMilliseconds with invalid length %d", hfi->type.getLength());
 					}
 					endSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000;
 					break;
 				case IPFIX_TYPEID_flowEndMicroseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowEndMicroseconds with invalid length %d", hfi->type.length);
+					if(hfi->type.getLength() != 8) {
+						DPRINTF("Cannot process flowEndMicroseconds with invalid length %d", hfi->type.getLength());
 					}
 					endSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000;
 					break;
 				case IPFIX_TYPEID_flowEndNanoseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowEndNanoseconds with invalid length %d", hfi->type.length);
+					if(hfi->type.getLength() != 8) {
+						DPRINTF("Cannot process flowEndNanoseconds with invalid length %d", hfi->type.getLength());
 					}
 					endSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000000;
 					break;
@@ -750,13 +750,13 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 				case IPFIX_TYPEID_sourceIPv4Address:
 					tfi = ti->getFieldInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0);
 					if(tfi) {
-						if(hfi->type.length != 5) {
-							DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
+						if(hfi->type.getLength() != 5) {
+							DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.getLength());
 						} else {
-							if(tfi->type.length == 1) {
+							if(tfi->type.getLength() == 1) {
 								*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
 							} else {
-								DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+								DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.getLength());
 							}
 						}
 					}
@@ -765,13 +765,13 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 				case IPFIX_TYPEID_destinationIPv4Address:
 					tfi = ti->getFieldInfo(IPFIX_TYPEID_destinationIPv4PrefixLength, 0);
 					if(tfi) {
-						if(hfi->type.length != 5) {
-							DPRINTF("Tried to set mask of length %d IP address", hfi->type.length);
+						if(hfi->type.getLength() != 5) {
+							DPRINTF("Tried to set mask of length %d IP address", hfi->type.getLength());
 						} else {
-							if(tfi->type.length == 1) {
+							if(tfi->type.getLength() == 1) {
 								*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
 							} else {
-								DPRINTF("Cannot process associated mask with invalid length %d", tfi->type.length);
+								DPRINTF("Cannot process associated mask with invalid length %d", tfi->type.getLength());
 							}
 						}
 					}
@@ -797,13 +797,13 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 					case IPFIX_TYPEID_sourceIPv4Address:
 						tfi = ti->getDataInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0);
 						if(tfi) {
-							if(hfi->type.length != 5) {
-								DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
+							if(hfi->type.getLength() != 5) {
+								DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.getLength());
 							} else {
-								if(tfi->type.length == 1) {
+								if(tfi->type.getLength() == 1) {
 									*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
 								} else {
-									DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+									DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.getLength());
 								}
 							}
 						}
@@ -812,13 +812,13 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 					case IPFIX_TYPEID_destinationIPv4Address:
 						tfi = ti->getDataInfo(IPFIX_TYPEID_destinationIPv4PrefixLength, 0);
 						if(tfi) {
-							if(hfi->type.length != 5) {
-								DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
+							if(hfi->type.getLength() != 5) {
+								DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.getLength());
 							} else {
-								if (tfi->type.length == 1) {
+								if (tfi->type.getLength() == 1) {
 									*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(ti->data + tfi->offset);
 								} else {
-									DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+									DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.getLength());
 								}
 							}
 						}
@@ -834,7 +834,7 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 		if (!fieldFilled) {
 			DPRINTF("Flow to be buffered did not contain %s field\n", hfi->type.toString().c_str());
 			// if field was not copied, fill it with 0
-			memset(htdata.get() + hfi->offset, 0, hfi->type.length);
+			memset(htdata.get() + hfi->offset, 0, hfi->type.getLength());
 		}
 
 		continue;

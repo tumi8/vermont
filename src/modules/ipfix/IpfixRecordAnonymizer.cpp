@@ -72,7 +72,7 @@ void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 
 		for (int i = 0; i != myRecord->templateInfo->dataCount; ++i) {
 			TemplateInfo::FieldInfo* field = myRecord->templateInfo->dataInfo + i;
-			anonField(field->type.id, myRecord->templateInfo->data + field->offset, field->type.length);
+			anonField(field->type.id, myRecord->templateInfo->data + field->offset, field->type.getLength());
 		}
 		myRecord->templateInfo->anonymized = true;
 	}
@@ -88,7 +88,7 @@ void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 				&& field->type==InformationElement::IeInfo(IPFIX_ETYPEID_anonymisationType, IPFIX_PEN_vermont)) {
 			// only if the preceding information element was really anonymised, we set this IE to 1
 			*(uint8_t*)(myRecord->data+field->offset) = 1;
-		} else if (anonField(field->type, myRecord->data + field->offset, field->type.length)) {
+		} else if (anonField(field->type, myRecord->data + field->offset, field->type.getLength())) {
 			lastanonid = i;
 		}
 	}
@@ -98,7 +98,7 @@ void IpfixRecordAnonymizer::onDataRecord(IpfixDataRecord* record)
 			|| (record->templateInfo->setId == TemplateInfo::NetflowOptionsTemplate))) {
 		for (int i = 0; i != templateInfo->scopeCount; ++i) {
 			TemplateInfo::FieldInfo* field = templateInfo->scopeInfo + i;
-			anonField(field->type, myRecord->data + field->offset, field->type.length);
+			anonField(field->type, myRecord->data + field->offset, field->type.getLength());
 		}
 	}
 

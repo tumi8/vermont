@@ -162,22 +162,22 @@ Connection::Connection(IpfixDataRecord* record)
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse);
 	if (fi != 0) dstTcpControlBits = *(uint8_t*)(record->data + fi->offset);
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont);
-	if (fi != 0 && fi->type.length) {
+	if (fi != 0 && fi->type.getLength()) {
 		TemplateInfo::FieldInfo* filen = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadLen, IPFIX_PEN_vermont);
 		if (filen != 0)
 			srcPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
 		else
-			srcPayloadLen = fi->type.length;
+			srcPayloadLen = fi->type.getLength();
 		srcPayload = new char[srcPayloadLen];
 		memcpy(srcPayload, record->data + fi->offset, srcPayloadLen);
 	}
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse);
-	if (fi != 0 && fi->type.length) {
+	if (fi != 0 && fi->type.getLength()) {
 		TemplateInfo::FieldInfo* filen = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadLen, IPFIX_PEN_vermont|IPFIX_PEN_reverse);
 		if (filen != 0)
 			dstPayloadLen = ntohl(*(uint32_t*)(record->data + filen->offset));
 		else
-			dstPayloadLen = fi->type.length;
+			dstPayloadLen = fi->type.getLength();
 		dstPayload = new char[dstPayloadLen];
 		memcpy(dstPayload, record->data + fi->offset, dstPayloadLen);
 	}

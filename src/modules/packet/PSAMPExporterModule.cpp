@@ -49,7 +49,7 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 
     for(i = 0; i < templ->getFieldCount(); i++) {
 		templ->getFieldInfo(i, &ie, &offset, &header);
-		ipfix_put_template_field(exporter, tmplid, ie.id, ie.length, ie.enterprise);
+		ipfix_put_template_field(exporter, tmplid, ie.id, ie.getLength(), ie.enterprise);
     }
 
     ipfix_end_template(exporter, tmplid);
@@ -106,12 +106,12 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 	for (int i = 0; i < templ->getFieldCount(); i++) {
 		templ->getFieldInfo(i, &ie, &offset, &header);
 		if (ie.enterprise == 0 && (ie.id == IPFIX_TYPEID_flowStartSeconds || ie.id == PSAMP_TYPEID_observationTimeSeconds)) {
-			ipfix_put_data_field(exporter, &(pck->time_sec_nbo), ie.length);
+			ipfix_put_data_field(exporter, &(pck->time_sec_nbo), ie.getLength());
 		} else if (ie.enterprise == 0 && (ie.id == IPFIX_TYPEID_flowStartMilliseconds || ie.id == PSAMP_TYPEID_observationTimeMilliseconds)) {
-			ipfix_put_data_field(exporter, &(pck->time_msec_nbo), ie.length);
+			ipfix_put_data_field(exporter, &(pck->time_msec_nbo), ie.getLength());
 		} else if (ie.enterprise == 0 && (ie.id == IPFIX_TYPEID_flowStartMicroseconds || ie.id == PSAMP_TYPEID_observationTimeMicroseconds)) {
-			ipfix_put_data_field(exporter, &(pck->time_usec_nbo), ie.length);
-		} else if (ie.length == 65535) {
+			ipfix_put_data_field(exporter, &(pck->time_usec_nbo), ie.getLength());
+		} else if (ie.getLength() == 65535) {
 			// variable length field
 			data = pck->getVariableLengthPacketData(&length, &enc_value, &enc_length, offset, header);
 			if(data == NULL) {
@@ -125,12 +125,12 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 			// check if getPacketData actually returns data
 			// Note: getPacketData checks if data of size ie.length is available.
 			//       if not, it returns NULL
-			data = pck->getPacketData(offset, header, ie.length);
+			data = pck->getPacketData(offset, header, ie.getLength());
 			if(data == NULL) {
 				msg(MSG_ERROR, "ExporterSink: getPacketData returned NULL! packet length or pcap capture length is too small.");
 				goto error1;
 			}
-			ipfix_put_data_field(exporter, data, ie.length);
+			ipfix_put_data_field(exporter, data, ie.getLength());
 		}
 	}
 

@@ -310,26 +310,28 @@ Rules::Rules(char* fname) {
 		}
 		ruleField->type = InformationElement::IeInfo(ipfixid->id, ipfixid->pen);
 
-		if (ruleField->type.length == 0) {
+		if (ruleField->type.getLength() == 0) {
 			msg(MSG_ERROR, "Bad field type \"%s\" in %s, l.%d", field, fname, lineNo);
 			continue;
 		}
 		if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
-			ruleField->type.length++; // for additional mask field
+			ruleField->type.setLength(ruleField->type.getLength()+1); // for additional mask field
 		}
 
 		ruleField->pattern = NULL;
-		if (pattern)
+		if (pattern) {
+			uint16_t len = ruleField->type.getLength();
+
 			switch (ruleField->type.id) {
 			case IPFIX_TYPEID_protocolIdentifier:
-				if (parseProtoPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
+				if (parseProtoPattern(pattern, &ruleField->pattern, &len) != 0) {
 					msg(MSG_ERROR, "Bad protocol pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
 					continue;
 				}
 				break;
 			case IPFIX_TYPEID_sourceIPv4Address:
 			case IPFIX_TYPEID_destinationIPv4Address:
-				if (parseIPv4Pattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
+				if (parseIPv4Pattern(pattern, &ruleField->pattern, &len) != 0) {
 					msg(MSG_ERROR, "Bad IPv4 pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
 					continue;
 				}
@@ -340,13 +342,13 @@ Rules::Rules(char* fname) {
 			case IPFIX_TYPEID_destinationTransportPort:
 			case IPFIX_TYPEID_udpDestinationPort:
 			case IPFIX_TYPEID_tcpDestinationPort:
-				if (parsePortPattern(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
+				if (parsePortPattern(pattern, &ruleField->pattern, &len) != 0) {
 					msg(MSG_ERROR, "Bad PortRanges pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
 					continue;
 				}
 				break;
 			case IPFIX_TYPEID_tcpControlBits:
-				if (parseTcpFlags(pattern, &ruleField->pattern, &ruleField->type.length) != 0) {
+				if (parseTcpFlags(pattern, &ruleField->pattern, &len) != 0) {
 					msg(MSG_ERROR, "Bad TCP flags pattern \"%s\" in %s, l.%d", pattern, fname, lineNo);
 					continue;
 				}
@@ -356,7 +358,7 @@ Rules::Rules(char* fname) {
 				msg(MSG_ERROR, "Fields of type \"%s\" cannot be matched against a pattern %s, l.%d", field, fname, lineNo);
 				continue;
 				break;
-
+			}
 		}
 
 		currentRule->field[currentRule->fieldCount++] = ruleField;

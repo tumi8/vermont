@@ -59,19 +59,20 @@ Template* PacketReportingCfg::getTemplate()
 	InformationElement::IeInfo ie; 
 
         for (size_t i = 0; i != exportedFields.size(); ++i) {
-                ie.id = exportedFields[i]->getIeId();
-                ie.enterprise = exportedFields[i]->getEnterpriseNumber();
-                ie.length = exportedFields[i]->getIeLength();
+				ie = InformationElement::IeInfo(
+						exportedFields[i]->getIeId(),
+                		exportedFields[i]->getEnterpriseNumber(),
+						exportedFields[i]->getIeLength());
 
                 if (!exportedFields[i]->isKnownIE()) {
                         msg(MSG_DIALOG, "IE %s will be ignored by PSAMP exporter.", ie.toString().c_str());
                         continue;
                 }
 
-                if (ie.length == 65535)
+                if (ie.getLength() == 65535)
                 	recordVLFields++;
                 else
-                	recordLength += ie.length;
+                	recordLength += ie.getLength();
 
                 msg(MSG_INFO, "Template: Add field %s", ie.toString().c_str());
 

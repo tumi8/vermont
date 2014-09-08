@@ -59,11 +59,11 @@ Rule::Field* AggregationPerfTest::createRuleField(const std::string& typeId)
 	const ipfix_identifier* ipfixid = ipfix_name_lookup(typeId.c_str());
 	ruleField->type.id = ipfixid->id;
 	REQUIRE(ruleField->type.id != 0);
-	ruleField->type.length = ipfixid->length;
-	REQUIRE(ruleField->type.length != 0);
+	ruleField->type.setLength(ipfixid->length);
+	REQUIRE(ruleField->type.getLength() != 0);
 	if ((ruleField->type.id==IPFIX_TYPEID_sourceIPv4Address)
 			|| (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
-		ruleField->type.length++;
+		ruleField->type.setLength(ruleField->type.getLength()+1);
 	}
 
 	return ruleField;

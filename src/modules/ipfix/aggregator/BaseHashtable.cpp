@@ -129,16 +129,16 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			fi->type = rf->type;
 			fi->offset = dataLength;
 			fi->privDataOffset = 0;
-			dataLength += fi->type.length;
+			dataLength += fi->type.getLength();
 			dataTemplate->dataLength = dataLength;
 			dataTemplate->data = (IpfixRecord::Data*)realloc(dataTemplate->data, dataLength);
-			memcpy(dataTemplate->data + fi->offset, rf->pattern, fi->type.length);
+			memcpy(dataTemplate->data + fi->offset, rf->pattern, fi->type.getLength());
 		}
 		/* gerhard: If we have a pattern (and fixed value field), the variable value field is implicitely discarded.
-		 * Note: This is necessary because of the double meaning/usage of Rule::Field.type.length:
+		 * Note: This is necessary because of the double meaning/usage of Rule::Field.type.getLength():
 		 * If a pattern is present, this variable holds the length of the pattern (or fixed length field)
 		 * and not the length of the normal field holding a single value. As a consequence, we cannot use
-		 * Rule.Field.type.length as length of the variable value field.
+		 * Rule.Field.type.getLength() as length of the variable value field.
 		 * If someone really wants to enable the export of both, pattern and variable value field of the same
 		 * type, then he has to remove the double meaning/usage (or set the variable field length to the
 		 * default value for the specific type).
@@ -152,7 +152,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			fi->type = rf->type;
 			fi->offset = fieldLength;
 			fi->privDataOffset = 0;
-			fieldLength += fi->type.length;
+			fieldLength += fi->type.getLength();
 			fieldModifier[dataTemplate->fieldCount - 1] = rf->modifier;
 		}
 	}
@@ -518,7 +518,7 @@ void BaseHashtable::genBiflowStructs()
 	for (int32_t i=0; i<dataTemplate->fieldCount; i++) {
 		DPRINTF("fieldCount=%d", i);
 		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
-		if (fi->type.length>maxFieldSize) maxFieldSize = fi->type.length;
+		if (fi->type.getLength()>maxFieldSize) maxFieldSize = fi->type.getLength();
 		bool defaultassign = false;
 		switch (fi->type.enterprise) {
 			case 0:
@@ -647,7 +647,7 @@ void BaseHashtable::reverseFlowBucket(HashtableBucket* bucket)
 			//}
 			IpfixRecord::Data* src = bucket->data.get()+fi->offset;
 			IpfixRecord::Data* dst = bucket->data.get()+fi2->offset;
-			uint32_t len = fi->type.length;
+			uint32_t len = fi->type.getLength();
 			memcpy(switchArray, src, len);
 			memcpy(src, dst, len);
 			memcpy(dst, switchArray, len);

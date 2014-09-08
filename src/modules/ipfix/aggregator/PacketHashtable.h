@@ -41,7 +41,7 @@ public:
 
 	void aggregatePacket(Packet* p);
 
-	static uint8_t getRawPacketFieldLength(const InformationElement::IeInfo& type);
+	static uint8_t getRawPacketFieldLength(InformationElement::IeInfo& type);
 	static uint16_t getRawPacketFieldOffset(const InformationElement::IeInfo& type, const Packet* p);
 
 private:

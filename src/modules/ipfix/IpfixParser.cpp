@@ -102,11 +102,11 @@ uint32_t IpfixParser::processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID
 				return numberOfRecords;
 			}
 			ti->fieldInfo[fieldNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
-			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
-			ti->fieldInfo[fieldNo].isVariableLength = (ti->fieldInfo[fieldNo].type.length == 65535);
+			ti->fieldInfo[fieldNo].type.setLength(ntohs(*(uint16_t*)((uint8_t*)record+2)));
+			ti->fieldInfo[fieldNo].isVariableLength = (ti->fieldInfo[fieldNo].type.getLength() == 65535);
 			ti->fieldInfo[fieldNo].offset = bt->recordLength; 
-			bt->recordLength+=ti->fieldInfo[fieldNo].type.length;
-			if (ti->fieldInfo[fieldNo].type.length == 65535) {
+			bt->recordLength+=ti->fieldInfo[fieldNo].type.getLength();
+			if (ti->fieldInfo[fieldNo].type.getLength() == 65535) {
 				isLengthVarying=1;
 			}
 			// IPFIX only: If highest bit of field id is set (0x8000), we must look for an enterprise number.
@@ -215,11 +215,11 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 				return numberOfRecords;
 			}
 			ti->scopeInfo[scopeNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
-			ti->scopeInfo[scopeNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
-			ti->scopeInfo[scopeNo].isVariableLength = (ti->scopeInfo[scopeNo].type.length == 65535);
+			ti->scopeInfo[scopeNo].type.setLength(ntohs(*(uint16_t*)((uint8_t*)record+2)));
+			ti->scopeInfo[scopeNo].isVariableLength = (ti->scopeInfo[scopeNo].type.getLength() == 65535);
 			ti->scopeInfo[scopeNo].offset = bt->recordLength; 
-			bt->recordLength+=ti->scopeInfo[scopeNo].type.length;
-			if (ti->scopeInfo[scopeNo].type.length == 65535) {
+			bt->recordLength+=ti->scopeInfo[scopeNo].type.getLength();
+			if (ti->scopeInfo[scopeNo].type.getLength() == 65535) {
 				isLengthVarying=1;
 			}
 			// IPFIX only: If highest bit of field id is set (0x8000), we must look for an enterprise number.
@@ -249,11 +249,11 @@ uint32_t IpfixParser::processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::S
 				return numberOfRecords;
 			}
 			ti->fieldInfo[fieldNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
-			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
-			ti->fieldInfo[fieldNo].isVariableLength = (ti->fieldInfo[fieldNo].type.length == 65535);
+			ti->fieldInfo[fieldNo].type.setLength(ntohs(*(uint16_t*)((uint8_t*)record+2)));
+			ti->fieldInfo[fieldNo].isVariableLength = (ti->fieldInfo[fieldNo].type.getLength() == 65535);
 			ti->fieldInfo[fieldNo].offset = bt->recordLength; 
-			bt->recordLength+=ti->fieldInfo[fieldNo].type.length;
-			if (ti->fieldInfo[fieldNo].type.length == 65535) {
+			bt->recordLength+=ti->fieldInfo[fieldNo].type.getLength();
+			if (ti->fieldInfo[fieldNo].type.getLength() == 65535) {
 				isLengthVarying=1;
 			}
 			// IPFIX only: If highest bit of field id is set (0x8000), we must look for an enterprise number.
@@ -355,11 +355,11 @@ uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::Sour
 				return numberOfRecords;
 			}
 			ti->fieldInfo[fieldNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
-			ti->fieldInfo[fieldNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
-			ti->fieldInfo[fieldNo].isVariableLength = (ti->fieldInfo[fieldNo].type.length == 65535);
+			ti->fieldInfo[fieldNo].type.setLength(ntohs(*(uint16_t*)((uint8_t*)record+2)));
+			ti->fieldInfo[fieldNo].isVariableLength = (ti->fieldInfo[fieldNo].type.getLength() == 65535);
 			ti->fieldInfo[fieldNo].offset = bt->recordLength; 
-			bt->recordLength+=ti->fieldInfo[fieldNo].type.length;
-			if (ti->fieldInfo[fieldNo].type.length == 65535) {
+			bt->recordLength+=ti->fieldInfo[fieldNo].type.getLength();
+			if (ti->fieldInfo[fieldNo].type.getLength() == 65535) {
 				isLengthVarying=1;
 			}
 			if (ti->fieldInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) {
@@ -394,7 +394,7 @@ uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::Sour
 				return numberOfRecords;
 			}
 			ti->dataInfo[fieldNo].type.id = ntohs(*(uint16_t*)((uint8_t*)record+0));
-			ti->dataInfo[fieldNo].type.length = ntohs(*(uint16_t*)((uint8_t*)record+2));
+			ti->dataInfo[fieldNo].type.setLength(ntohs(*(uint16_t*)((uint8_t*)record+2)));
 			if (ti->dataInfo[fieldNo].type.id & IPFIX_ENTERPRISE_TYPE) {
 				/* check if there are 8 bytes for this field */
 				if (record+8 >= endOfSet) {
@@ -414,7 +414,7 @@ uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::Sour
 
 		int dataLength = 0;
 		for (fieldNo = 0; fieldNo < ti->dataCount; fieldNo++) {
-			if (ti->dataInfo[fieldNo].type.length == 65535) {
+			if (ti->dataInfo[fieldNo].type.getLength() == 65535) {
 				/* check if there is 1 byte for the length */
 				if (record + dataLength + 1 > endOfSet) {
 					msg(MSG_ERROR, "IpfixParser: Template record exceeds set boundary!");
@@ -422,9 +422,9 @@ uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::Sour
 					return numberOfRecords;
 				}
 				/* This is a variable-length field, get length from first byte and advance offset */
-				ti->dataInfo[fieldNo].type.length = *(uint8_t*)(record + dataLength);
+				ti->dataInfo[fieldNo].type.setLength(*(uint8_t*)(record + dataLength));
 				dataLength += 1;
-				if (ti->dataInfo[fieldNo].type.length == 255) {
+				if (ti->dataInfo[fieldNo].type.getLength() == 255) {
 					/* check if there are 2 bytes for the length */
 					if (record + dataLength + 2 > endOfSet) {
 						msg(MSG_ERROR, "IpfixParser: Template record exceeds set boundary!");
@@ -432,12 +432,12 @@ uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::Sour
 						return numberOfRecords;
 					}
 					/* First byte did not suffice, length is stored in next two bytes. Advance offset */
-					ti->dataInfo[fieldNo].type.length = *(uint16_t*)(record + dataLength);
+					ti->dataInfo[fieldNo].type.setLength(*(uint16_t*)(record + dataLength));
 					dataLength += 2;
 				}
 			}
 			ti->dataInfo[fieldNo].offset = dataLength;
-			dataLength += ti->dataInfo[fieldNo].type.length;
+			dataLength += ti->dataInfo[fieldNo].type.getLength();
 		}
 
 		/* final check if entire fixed data block is within set boundary */
@@ -542,7 +542,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				/* Go through scope fields first */
 				for (i = 0; i < ti->scopeCount; i++) {
 					if (!ti->scopeInfo[i].isVariableLength) {
-						fieldLength = ti->scopeInfo[i].type.length;
+						fieldLength = ti->scopeInfo[i].type.getLength();
 					} else {
 						/* check if 1 byte for the length lies within set boundary */
 						if (record + recordLength + 1 > endOfSet) {
@@ -561,9 +561,9 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 							recordLength += 2;
 						}
 					}
-					DPRINTF("Scope field: original length %u, offset %u", ti->fieldInfo[i].type.length, ti->fieldInfo[i].offset);
+					DPRINTF("Scope field: original length %u, offset %u", ti->fieldInfo[i].type.getLength(), ti->fieldInfo[i].offset);
 					ti->scopeInfo[i].offset = recordLength;
-					ti->scopeInfo[i].type.length = fieldLength;
+					ti->scopeInfo[i].type.setLength(fieldLength);
 					recordLength += fieldLength;
 				}
 
@@ -576,7 +576,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 				/* Now, go through non-scope fields */
 				for (i = 0; i < ti->fieldCount; i++) {
 					if (!ti->fieldInfo[i].isVariableLength) {
-						fieldLength = ti->fieldInfo[i].type.length;
+						fieldLength = ti->fieldInfo[i].type.getLength();
 					} else {
 						/* check if 1 byte for the length lies within set boundary */
 						if (record + recordLength + 1 > endOfSet) {
@@ -595,9 +595,9 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 							recordLength += 2;
 						}
 					}
-					DPRINTF("Non-scope field: original length %u, offset %u", ti->fieldInfo[i].type.length, ti->fieldInfo[i].offset);
+					DPRINTF("Non-scope field: original length %u, offset %u", ti->fieldInfo[i].type.getLength(), ti->fieldInfo[i].offset);
 					ti->fieldInfo[i].offset = recordLength;
-					ti->fieldInfo[i].type.length = fieldLength;
+					ti->fieldInfo[i].type.setLength(fieldLength);
 					recordLength += fieldLength;
 				}
 

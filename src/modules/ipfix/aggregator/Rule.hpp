@@ -44,9 +44,7 @@ class Rule : private PrintHelpers {
 		class Field {
 			public:
 				Field() {
-					type.id = 0;
-					type.length = 0;
-					type.enterprise = 0;
+					type = InformationElement::IeInfo(0, 0, 0);
 					pattern = NULL;
 					modifier = Rule::Field::DISCARD;
 				}

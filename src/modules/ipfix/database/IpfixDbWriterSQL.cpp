@@ -397,7 +397,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			for(k=0; k < dataTemplateInfo->fieldCount; k++) {
 				if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
 					parseIpfixData(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset), &parsedData);
-					DPRINTF("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
+					DPRINTF("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.getLength(), dataTemplateInfo->fieldInfo[k].offset);
 					break;
 				}
 			}
@@ -626,7 +626,7 @@ void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixReco
 		case IPFIX_TYPE_dateTimeMilliseconds:
         case IPFIX_TYPE_dateTimeMicroseconds: // Note: Must be interpreted as 64 bit double, with floating point after 32 bit, epoch starts at 1900
 		case IPFIX_TYPE_dateTimeNanoseconds:  // see also http://www.ntp.org/ntpfaq/NTP-s-algo.htm#AEN1895
-			parseIpfixUint(data, type.length, parsedData);
+			parseIpfixUint(data, type.getLength(), parsedData);
 			break;
 
 		// Handle reduced size encoding
@@ -634,13 +634,13 @@ void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixReco
 		case IPFIX_TYPE_signed16:
 		case IPFIX_TYPE_signed32:
 		case IPFIX_TYPE_signed64:
-			parseIpfixInt(data, type.length, parsedData);
+			parseIpfixInt(data, type.getLength(), parsedData);
 			break;
 
 		// Handle reduced size encoding
 		case IPFIX_TYPE_float32:
 		case IPFIX_TYPE_float64:
-			parseIpfixFloat(data, type.length, parsedData);
+			parseIpfixFloat(data, type.getLength(), parsedData);
             break;
 
 		// MAC addresses are handled differnetly in different databases
@@ -660,7 +660,7 @@ void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixReco
 
 		case IPFIX_TYPE_string:
 			// Truncate string to length announced in record
-			*parsedData = boost::str(boost::format("'%." + boost::lexical_cast<std::string>(type.length)  +  "s'") );
+			*parsedData = boost::str(boost::format("'%." + boost::lexical_cast<std::string>(type.getLength())  +  "s'") );
             break;
 
 		case IPFIX_TYPE_octetArray:

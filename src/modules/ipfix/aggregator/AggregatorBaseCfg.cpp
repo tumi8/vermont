@@ -122,16 +122,16 @@ Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 	ruleField->modifier = Rule::Field::AGGREGATE;
 	ruleField->type.id = ie.getIeId();
 	ruleField->type.enterprise = ie.getEnterpriseNumber();
-	ruleField->type.length = ie.getIeLength();
+	ruleField->type.setLength(ie.getIeLength());
 
 	if ((ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0)) ||
 			(ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0))) {
-		ruleField->type.length++; // for additional mask field
+		ruleField->type.setLength(ruleField->type.getLength()+1); // for additional mask field
 	}
 
 	if (ruleField->type == InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont) ||
 			ruleField->type == InformationElement::IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont|IPFIX_PEN_reverse)) {
-		if (ruleField->type.length<5)
+		if (ruleField->type.getLength()<5)
 			THROWEXCEPTION("type %s must have at least size 5!", ipfix_id_lookup(ruleField->type.id, ruleField->type.enterprise)->name);
 	}
 
@@ -159,10 +159,10 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 
 		ruleField->type.id = ie.getIeId();
 		ruleField->type.enterprise = ie.getEnterpriseNumber();
-		ruleField->type.length = ie.getIeLength();
+		ruleField->type.setLength(ie.getIeLength());
 
 		if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
-			ruleField->type.length++; // for additional mask field
+			ruleField->type.setLength(ruleField->type.getLength()+1); // for additional mask field
 		}
 
 		if (!ie.getMatch().empty()) {
@@ -172,9 +172,11 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 			strcpy(tmp, ie.getMatch().c_str());
 			ruleField->pattern = NULL;
 
+			uint16_t len = ruleField->type.getLength();
 			switch (ruleField->type.id) {
 			case IPFIX_TYPEID_protocolIdentifier:
-				if (parseProtoPattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
+				
+				if (parseProtoPattern(tmp, &ruleField->pattern, &len) != 0) {
 					msg(MSG_ERROR, "Bad protocol pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();
@@ -182,7 +184,7 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 				break;
 			case IPFIX_TYPEID_sourceIPv4Address:
 			case IPFIX_TYPEID_destinationIPv4Address:
-				if (parseIPv4Pattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
+				if (parseIPv4Pattern(tmp, &ruleField->pattern, &len) != 0) {
 					msg(MSG_ERROR, "Bad IPv4 pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();
@@ -194,14 +196,14 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 			case IPFIX_TYPEID_destinationTransportPort:
 			case IPFIX_TYPEID_udpDestinationPort:
 			case IPFIX_TYPEID_tcpDestinationPort:
-				if (parsePortPattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
+				if (parsePortPattern(tmp, &ruleField->pattern, &len) != 0) {
 					msg(MSG_ERROR, "Bad PortRanges pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();
 				}
 				break;
 			case IPFIX_TYPEID_tcpControlBits:
-				if (parseTcpFlags(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
+				if (parseTcpFlags(tmp, &ruleField->pattern, &len) != 0) {
 					msg(MSG_ERROR, "Bad TCP flags pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();

@@ -39,29 +39,22 @@ namespace InformationElement {
 	typedef uint16_t IeId;
 	typedef uint16_t IeLength;
 	typedef uint32_t IeEnterpriseNumber;
+	typedef uint16_t IeDataType;
 
 	/* Field in a Data Record */
 	class IeInfo {
 	public:
 		IeInfo(IeId id, IeEnterpriseNumber enterprise, IeLength length = 0)
-			: id(id), enterprise(enterprise), length(length)
+			: id(id), enterprise(enterprise), length(length), dataType(-1)
 		{
-			if (length==0) {
-				const ipfix_identifier* ipfixid = ipfix_id_lookup(id, enterprise);
-				if (ipfixid)
-					length = ipfixid->length;
-				else {
-					msg(MSG_INFO, "WARNING: received unknown IE type id: %s", toString().c_str());
-				}
-			}
 		}
 
 		IeInfo()
-			: id(0), enterprise(0), length(0)
+			: id(0), enterprise(0), length(0), dataType(-1)
 		{}
 
 		IeInfo(const ipfix_identifier* ipfixid)
-			: id(ipfixid->id), enterprise(ipfixid->pen), length(ipfixid->length)
+			: id(ipfixid->id), enterprise(ipfixid->pen), length(ipfixid->length), dataType(ipfixid->type)
 		{
 		}
 
@@ -78,18 +71,22 @@ namespace InformationElement {
 
 		IeId id; 			/**< Information Element Id */
 		IeEnterpriseNumber enterprise;/**< Enterprise Number for enterprise-specific IEs (i.e., id >= 0x8000) */
-		IeLength length; 		/**< Field length in bytes (65535 in the case of variable lengh field) */
 
 		bool isReverseField() const;
 		IeInfo getReverseDirection();
 		const Packet::IPProtocolType getValidProtocols();
 		string toString() const;
 		bool existsReverseDirection();
+		IeLength getLength();
+		void setLength(IeLength length);
+		IeDataType getDataType();
+
+	private:
+		IeLength length; 		/**< Field length in bytes (65535 in the case of variable lengh field) */
+		int dataType;			/**< IPFIX data type (-1 in case of uninitialized value) */
+
+		void initLengthDataType();
 	};
-
-
-
-
 }
 
 

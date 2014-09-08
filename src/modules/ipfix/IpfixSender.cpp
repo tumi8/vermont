@@ -307,10 +307,10 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	int splitFields = 0;
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
 		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
-		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
+		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.getLength() == 5)) {
 			splitFields++;
 		}
-		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
+		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.getLength() == 5)) {
 			splitFields++;
 		}
 	}
@@ -319,10 +319,10 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	int splitFixedfields = 0;
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
 		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
-		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
+		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.getLength() == 5)) {
 			splitFixedfields++;
 		}
-		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
+		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.getLength() == 5)) {
 			splitFixedfields++;
 		}
 	}
@@ -335,16 +335,16 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
 
 		/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
-		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
+		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.getLength() == 5)) {
 			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_sourceIPv4Address, 4, 0);
 			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_sourceIPv4PrefixLength, 1, 0);
 		}
-		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
+		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.getLength() == 5)) {
 			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4Address, 4, 0);
 			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4PrefixLength, 1, 0);
 		}
 		else {
-			ipfix_put_template_field(ipfixExporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
+			ipfix_put_template_field(ipfixExporter, my_template_id, fi->type.id, fi->type.getLength(), fi->type.enterprise);
 		}
 	}
 
@@ -354,19 +354,19 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
 		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
 
-		dataLength += fi->type.length;
+		dataLength += fi->type.getLength();
 
 		/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
-		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
+		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.getLength() == 5)) {
 			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_sourceIPv4Address, 4, 0);
 			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_sourceIPv4PrefixLength, 1, 0);
 		}
-		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
+		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.getLength() == 5)) {
 			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4Address, 4, 0);
 			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4PrefixLength, 1, 0);
 		}
 		else {
-			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
+			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, fi->type.id, fi->type.getLength(), fi->type.enterprise);
 		}
 	}
 
@@ -379,11 +379,11 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
 
 		/* Invert imask of IPv4 fields with length 5, i.e. fields with network mask attached */
-		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
+		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.getLength() == 5)) {
 			uint8_t* mask = (uint8_t*)(data + fi->offset + 4);
 			*mask = 32 - *mask;
 		}
-		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
+		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.getLength() == 5)) {
 			uint8_t* mask = (uint8_t*)(data + fi->offset + 4);
 			*mask = 32 - *mask;
 		}
@@ -620,25 +620,25 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
 
 		/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
-		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
+		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.getLength() == 5)) {
 			uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
 			*mask = 32 - *(uint8_t*)(data + fi->offset + 4);
 			ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
 			ipfix_put_data_field(ipfixExporter, mask, 1);
 		}
-		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
+		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.getLength() == 5)) {
 			uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
 			*mask = 32 - *(uint8_t*)(data + fi->offset + 4);
 			ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
 			ipfix_put_data_field(ipfixExporter, mask, 1);
 		}
 		else {
-			if (fi->type.id == IPFIX_TYPEID_packetDeltaCount && fi->type.length<=8) {
+			if (fi->type.id == IPFIX_TYPEID_packetDeltaCount && fi->type.getLength()<=8) {
 				uint64_t p = 0;
-				memcpy(&p, data+fi->offset, fi->type.length);
+				memcpy(&p, data+fi->offset, fi->type.getLength());
 				statPacketsInFlows += ntohll(p);
 			}
-			ipfix_put_data_field(ipfixExporter, data + fi->offset, fi->type.length);
+			ipfix_put_data_field(ipfixExporter, data + fi->offset, fi->type.getLength());
 		}
 	}
 	remainingSpace -= record->dataLength;

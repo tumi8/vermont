@@ -133,28 +133,28 @@ void Rule::print() {
  * @returns amount of bits used for host identification part of ip address
  * (in contrast to subnet identification part)
  */
-uint8_t getIPv4IMask(const InformationElement::IeInfo* type, const IpfixRecord::Data* data)
+uint8_t getIPv4IMask(InformationElement::IeInfo* type, const IpfixRecord::Data* data)
 {
 	// sometimes there is a fifth byte after the ip address inside the ipfix flow which specifies
 	// the amout of bits used for host identification part of ip address
-	if (type->length > 4) return data[4];
+	if (type->getLength() > 4) return data[4];
 
-	if (type->length == 4) return 0;
-	if (type->length == 3) return 8;
-	if (type->length == 2) return 16;
-	if (type->length == 1) return 24;
-	if (type->length == 0) return 32;
+	if (type->getLength() == 4) return 0;
+	if (type->getLength() == 3) return 8;
+	if (type->getLength() == 2) return 16;
+	if (type->getLength() == 1) return 24;
+	if (type->getLength() == 0) return 32;
 
-	msg(MSG_FATAL, "Invalid IPv4 address length: %d", type->length);
+	msg(MSG_FATAL, "Invalid IPv4 address length: %d", type->getLength());
 	return 0;
 }
 
-uint32_t getIPv4Address(const InformationElement::IeInfo* type, const IpfixRecord::Data* data) {
+uint32_t getIPv4Address(InformationElement::IeInfo* type, const IpfixRecord::Data* data) {
 	uint32_t addr = 0;
-	if (type->length >= 1) addr |= data[0] << 24;
-	if (type->length >= 2) addr |= data[1] << 16;
-	if (type->length >= 3) addr |= data[2] << 8;
-	if (type->length >= 4) addr |= data[3] << 0;
+	if (type->getLength() >= 1) addr |= data[0] << 24;
+	if (type->getLength() >= 2) addr |= data[1] << 16;
+	if (type->getLength() >= 3) addr |= data[2] << 8;
+	if (type->getLength() >= 4) addr |= data[3] << 0;
 	return addr;
 }
 
@@ -162,17 +162,17 @@ uint32_t getIPv4Address(const InformationElement::IeInfo* type, const IpfixRecor
  * Checks if a given "PortRanges" Field matches a "PortRanges" Pattern
  * @c return 1 if field matches
  */
-int matchesPortPattern(const InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, const InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
+int matchesPortPattern(InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
 	int i;
 	int j;
 
-	if ((dataType->length == 2) && (patternType->length == 2)) {
+	if ((dataType->getLength() == 2) && (patternType->getLength() == 2)) {
 		return ((data[0] == pattern[0]) && (data[1] == pattern[1]));
 	}
-	if ((dataType->length == 2) && ((patternType->length % 4) == 0)) {
+	if ((dataType->getLength() == 2) && ((patternType->getLength() % 4) == 0)) {
 		int dport = (data[0] << 8) + data[1];
 		int foundMatch = 0;
-		for (j = 0; j < patternType->length; j+=4) {
+		for (j = 0; j < patternType->getLength(); j+=4) {
 			int pports = (pattern[j+0] << 8) + pattern[j+1];
 			int pporte = (pattern[j+2] << 8) + pattern[j+3];
 			if ((dport >= pports) && (dport <= pporte)) {
@@ -182,8 +182,8 @@ int matchesPortPattern(const InformationElement::IeInfo* dataType, const IpfixRe
 		}
 		return foundMatch;
 	}
-	if (((dataType->length % 4) == 0) && (patternType->length == 2)) {
-		for (i = 0; i < dataType->length; i+=4) {
+	if (((dataType->getLength() % 4) == 0) && (patternType->getLength() == 2)) {
+		for (i = 0; i < dataType->getLength(); i+=4) {
 			int dports = (data[i+0] << 8) + data[i+1];
 			int dporte = (data[i+2] << 8) + data[i+3];
 			int pport = (pattern[0] << 8) + pattern[1];
@@ -191,12 +191,12 @@ int matchesPortPattern(const InformationElement::IeInfo* dataType, const IpfixRe
 		}
 		return 1;
 	}
-	if (((dataType->length % 4) == 0) && ((patternType->length % 4) == 0)) {
-		for (i = 0; i < dataType->length; i+=4) {
+	if (((dataType->getLength() % 4) == 0) && ((patternType->getLength() % 4) == 0)) {
+		for (i = 0; i < dataType->getLength(); i+=4) {
 			int dports = (data[i+0] << 8) + data[i+1];
 			int dporte = (data[i+2] << 8) + data[i+3];
 			int foundMatch = 0;
-			for (j = 0; j < patternType->length; j+=4) {
+			for (j = 0; j < patternType->getLength(); j+=4) {
 				int pports = (pattern[j+0] << 8) + pattern[j+1];
 				int pporte = (pattern[j+2] << 8) + pattern[j+3];
 				if ((dports >= pports) && (dporte <= pporte)) {
@@ -210,7 +210,7 @@ int matchesPortPattern(const InformationElement::IeInfo* dataType, const IpfixRe
 	}
 
 	msg(MSG_FATAL, "matching port of length %d with pattern of length %d not supported",
-	    dataType->length, patternType->length);
+	    dataType->getLength(), patternType->getLength());
 	return 0;
 }
 
@@ -218,7 +218,7 @@ int matchesPortPattern(const InformationElement::IeInfo* dataType, const IpfixRe
  * Checks if a given IPv4 Field matches a IPv4 Pattern
  * @c return 1 if field matches
  */
-int matchesIPv4Pattern(const InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, const InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
+int matchesIPv4Pattern(InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
 	/* Get (inverse!) Network Masks */
 	int dmaski = getIPv4IMask(dataType, data);
 	int pmaski = getIPv4IMask(patternType, pattern);
@@ -236,16 +236,16 @@ int matchesIPv4Pattern(const InformationElement::IeInfo* dataType, const IpfixRe
  * Checks if a given Field matches a Pattern when compared byte for byte
  * @c return 1 if field matches
  */
-int matchesRawPattern(const InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, const InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
+int matchesRawPattern(InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
 	//int i;
 
 	/* Byte-wise comparison, so lengths must be equal */
-	if (dataType->length != patternType->length) return 0;
+	if (dataType->getLength() != patternType->getLength()) return 0;
 
-	//for (i = 0; i < dataType->length; i++) if (data[i] != pattern[i]) return 0;
+	//for (i = 0; i < dataType->getLength(); i++) if (data[i] != pattern[i]) return 0;
 	//return 1;
 
-	return (memcmp(data, pattern, dataType->length) == 0);
+	return (memcmp(data, pattern, dataType->getLength()) == 0);
 
 }
 
@@ -264,7 +264,7 @@ bool checkMask(TemplateInfo::FieldInfo* prefixInfo, IpfixRecord::Data* prefixDat
  * Checks if a data block matches a given pattern
  * @return 1 if pattern is matched
  */
-int matchesPattern(const InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, const InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
+int matchesPattern(InformationElement::IeInfo* dataType, const IpfixRecord::Data* data, InformationElement::IeInfo* patternType, const IpfixRecord::Data* pattern) {
 	/* an inexistent pattern is always matched */
 	if (pattern == NULL) return 1;
 
@@ -310,7 +310,7 @@ bool Rule::ExptemplateDataMatches(const Packet* p)
 				{
 					TemplateInfo::FieldInfo fi;
 					fi.type.id = IPFIX_TYPEID_sourceIPv4Address;
-					fi.type.length = 4;
+					fi.type.setLength(4);
 					fi.offset = 12;
 
 					uint8_t dmaski = 0; // no host identification part in IP adress
@@ -329,7 +329,7 @@ bool Rule::ExptemplateDataMatches(const Packet* p)
 				{
 					TemplateInfo::FieldInfo fi;
 					fi.type.id = IPFIX_TYPEID_destinationIPv4Address;
-					fi.type.length = 4;
+					fi.type.setLength(4);
 					fi.offset = 16;
 
 					int dmaski = getIPv4IMask(&fi.type, field_data);
@@ -349,7 +349,7 @@ bool Rule::ExptemplateDataMatches(const Packet* p)
 				{
 					TemplateInfo::FieldInfo fi;
 					fi.type.id = IPFIX_TYPEID_sourceTransportPort;
-					fi.type.length = 2;
+					fi.type.setLength(2);
 					fi.offset = 0;
 					if (!matchesPortPattern(&fi.type, field_data, &ruleField->type, ruleField->pattern))
 						return false;
@@ -359,7 +359,7 @@ bool Rule::ExptemplateDataMatches(const Packet* p)
 				{
 					TemplateInfo::FieldInfo fi;
 					fi.type.id = IPFIX_TYPEID_destinationTransportPort;
-					fi.type.length = 2;
+					fi.type.setLength(2);
 					fi.offset = 2;
 					if (!matchesPortPattern(&fi.type, field_data, &ruleField->type, ruleField->pattern))
 						return false;
@@ -402,7 +402,7 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 			if (recordField) {
 				/* corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched */
 				if (!matchesPattern(&recordField->type, (recordData + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
-				if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
+				if ((ruleField->type.enterprise == 0) && (ruleField->type.getLength() == 5)) {
 					if (ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) {
 						if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), recordData, ruleField)) return 0;
 					} else if (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) {
@@ -421,7 +421,7 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 					if (recordField) {
 						// corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched
 						if (!matchesPattern(&recordField->type, (recordData + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
-						if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
+						if ((ruleField->type.enterprise == 0) && (ruleField->type.getLength() == 5)) {
 							if (oppDirIeId == IPFIX_TYPEID_sourceIPv4Address) {
 								if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), recordData, ruleField)) return 0;
 							} else if (oppDirIeId == IPFIX_TYPEID_destinationIPv4Address) {
@@ -442,7 +442,7 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 				if (recordField) {
 					/* corresponding fixed data field found, check if it matches. If it doesn't the whole rule cannot be matched */
 					if (!matchesPattern(&recordField->type, (dataTemplateInfo->data + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
-					if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
+					if ((ruleField->type.enterprise == 0) && (ruleField->type.getLength() == 5)) {
 						if (ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) {
 							if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), dataTemplateInfo->data, ruleField)) return 0;
 						} else if (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) {
@@ -460,7 +460,7 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 						if (recordField) {
 							// corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched
 							if (!matchesPattern(&recordField->type, (dataTemplateInfo->data + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
-							if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
+							if ((ruleField->type.enterprise == 0) && (ruleField->type.getLength() == 5)) {
 								if (oppDirIeId == IPFIX_TYPEID_sourceIPv4Address) {
 									if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), dataTemplateInfo->data, ruleField)) return 0;
 								} else if (oppDirIeId == IPFIX_TYPEID_destinationIPv4Address) {

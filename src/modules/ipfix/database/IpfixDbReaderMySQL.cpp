@@ -72,7 +72,7 @@ int IpfixDbReaderMySQL::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templa
 			copyUintNetByteOrder(data.get() + templateInfo->fieldInfo[j].offset,
 					     (char*)&tmp,
 					     templateInfo->fieldInfo[j].type);
-			offset += templateInfo->fieldInfo[j].type.length;
+			offset += templateInfo->fieldInfo[j].type.getLength();
 			j++;
 		}
 

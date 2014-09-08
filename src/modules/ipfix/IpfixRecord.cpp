@@ -174,6 +174,38 @@ namespace InformationElement {
 		return buffer;
 	}
 
+	IeLength IeInfo::getLength()
+	{
+		if (length == 0) {
+			initLengthDataType();
+		}
+		return length;
+	}
+
+	void IeInfo::setLength(IeLength newLength)
+	{
+		length = newLength;
+	}
+
+	IeDataType IeInfo::getDataType()
+	{
+		if (dataType == -1) {
+			initLengthDataType();
+		}
+		return (IeDataType) dataType;
+	}
+
+	void IeInfo::initLengthDataType()
+	{
+		const ipfix_identifier* ipfixid = ipfix_id_lookup(id, enterprise);
+		if (ipfixid) {
+			length = ipfixid->length;
+			dataType = ipfixid->type;
+		} else {
+			msg(MSG_INFO, "WARNING: received unknown IE type id: %s", toString().c_str());
+		}
+	}
+
 }
 
 
