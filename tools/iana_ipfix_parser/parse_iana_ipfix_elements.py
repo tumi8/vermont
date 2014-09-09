@@ -13,6 +13,28 @@ import urllib.request
 
 IANA_IE_URL = "http://www.iana.org/assignments/ipfix/ipfix-information-elements.csv"
 IANA_DATA_TYPES_URL = "http://www.iana.org/assignments/ipfix/ipfix-information-element-data-types.csv"
+COPYRIGHT = '''\
+/*
+ * IPFIX Information Elements registered by IANA
+ * Copyright (C) 2014 Oliver Gasser
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ *
+ */
+
+'''
 
 class IanaDialect(csv.Dialect):
     # ElementID,Name,Data Type,Data Type Semantics,Status,Description,Units,Range,References,Requester,Revision,Date^M
@@ -30,9 +52,10 @@ def parse_iana_csv_ie(fh, out, struct_out):
     types = ""
     lengths = ""
     struct = "struct ipfix_identifier ipfixids_iana[] = {\n/* IANA registry */\n"
+    successfullyInserted = -1
     for row in reader:
         if row[4] == 'current':
-            ids, types, lengths, struct = append_output(row, ids, types, lengths, struct)
+            ids, types, lengths, struct, successfullyInserted = append_output(row, ids, types, lengths, struct, successfullyInserted)
 
     struct += "};\n\n"
 
@@ -63,17 +86,23 @@ def parse_iana_csv_data_types(fh, out):
     out.write("\n")
 
 
-def append_output(row, ids, types, lengths, struct):
+def append_output(row, ids, types, lengths, struct, successfullyInserted):
     elementId = row[0]
     name = row[1]
     dataType = row[2]
+
+    # Insert NULL lines in struct for missing entries
+    successfullyInserted += 1
+    while successfullyInserted < int(elementId):
+        struct += '  {{ {0:53}, {1:32}, {2:5}, {3:40}, {4:56} }},\n'.format(successfullyInserted, 0, 0, 'NULL', 0)
+        successfullyInserted += 1
 
     ids += "#define IPFIX_TYPEID_{0:40} {1}\n".format(name, elementId)
     types += "#define IPFIX_DATA_TYPE_{0:40} IPFIX_TYPE_{1}\n".format(name, dataType)
     lengths += "#define IPFIX_LENGTH_{0:40} IPFIX_BYTES_{1}\n".format(name, dataType)
     struct += '  {{ IPFIX_TYPEID_{0:40}, IPFIX_BYTES_{1:20}, {2:5}, {3:40}, IPFIX_DATA_TYPE_{4:40} }},\n'.format(name, dataType, 0, '"' + name + '"', name)
 
-    return ids, types, lengths, struct
+    return ids, types, lengths, struct, successfullyInserted
 
 
 def type_to_length(data_type):
@@ -97,7 +126,9 @@ def type_to_length(data_type):
 
 def generate_ipfix_output(ie_fh, types_fh, out, struct_out):
     # Header
+    out.write(COPYRIGHT)
     out.write('#ifndef IPFIX_IANA_H\n#define IPFIX_IANA_H\n\n#include "ipfix_names.h"\n\n')
+    struct_out.write(COPYRIGHT)
     struct_out.write('#include "ipfix_iana.h"\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
 
     parse_iana_csv_data_types(types_fh, out)
