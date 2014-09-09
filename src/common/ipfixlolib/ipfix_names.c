@@ -62,14 +62,12 @@ struct ipfix_identifier ipfixids[] = {
 /* lookup a certain ipfix ID into its name */
 const struct ipfix_identifier * ipfix_id_lookup(uint16_t id, uint32_t pen)
 {
+	// Search IANA IPFIX IDs
+	if (pen == 0 && ipfixids_iana[id].id == id && ipfixids_iana[id].name) {
+		return &ipfixids_iana[id];
+	}
+	// Search other IPFIX IDs
 	uint32_t i;
-    // Search IANA IPFIX IDs
-    for (i=0; i<sizeof(ipfixids_iana)/sizeof(struct ipfix_identifier); i++) {
-        if (ipfixids_iana[i].id==id && ipfixids_iana[i].pen==pen) {
-            return &ipfixids_iana[i];
-        }
-    }
-    // Search other IPFIX IDs
 	for (i=0; i<sizeof(ipfixids)/sizeof(struct ipfix_identifier); i++) {
 		if (ipfixids[i].id==id && ipfixids[i].pen==pen) {
 			return &ipfixids[i];
@@ -86,13 +84,13 @@ const struct ipfix_identifier* ipfix_name_lookup(const char *name)
 {
 	uint32_t i;
 
-    // Search IANA IPFIX IDs
-    for (i=0; i<sizeof(ipfixids_iana)/sizeof(struct ipfix_identifier); i++) {
-        if (strcasecmp(name, ipfixids_iana[i].name)==0) {
-            return &ipfixids_iana[i];
-        }
-     }
-    // Search other IPFIX IDs
+	// Search IANA IPFIX IDs
+	for (i=0; i<sizeof(ipfixids_iana)/sizeof(struct ipfix_identifier); i++) {
+		if (ipfixids_iana[i].name && strcasecmp(name, ipfixids_iana[i].name)==0) {
+			return &ipfixids_iana[i];
+		}
+	}
+	// Search other IPFIX IDs
 	for (i=0; i<sizeof(ipfixids)/sizeof(struct ipfix_identifier); i++) {
 		if (strcasecmp(name, ipfixids[i].name)==0) {
 			return &ipfixids[i];
