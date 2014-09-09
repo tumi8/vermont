@@ -614,7 +614,7 @@ void IpfixDbWriterSQL::parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, Ipfi
  */
 void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixRecord::Data* data, string* parsedData)
 {
-    switch (ipfix_id_lookup(type.id, type.enterprise)->type) {
+    switch (type.getDataType()) {
 
 		// Handle reduced size encoding
 		case IPFIX_TYPE_boolean:
@@ -668,7 +668,7 @@ void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixReco
 		case IPFIX_TYPE_subTemplateList:
 		case IPFIX_TYPE_subTemplateMultiList:
 		default:
-			msg(MSG_ERROR, "failed to parse record data of type %hu", ipfix_id_lookup(type.id, type.enterprise)->type);
+			msg(MSG_ERROR, "failed to parse record data of type %hu", type.getDataType());
     }
 }
 
