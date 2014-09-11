@@ -30,7 +30,8 @@ static void init_Linux_version(void) {
     
     if (uname(&uts) == -1)	/* failure implies impending death */
 	exit(1);
-    if (sscanf(uts.release, "%d.%d.%d", &x, &y, &z) < 3)
+    // Linux 3.x has no patch level anymore, thus only check if two digits could be read
+    if (sscanf(uts.release, "%d.%d.%d", &x, &y, &z) < 2)
 	fprintf(stderr,		/* *very* unlikely to happen by accident */
 		"Non-standard uts for running kernel:\n"
 		"release %s=%d.%d.%d gives version code %d\n",

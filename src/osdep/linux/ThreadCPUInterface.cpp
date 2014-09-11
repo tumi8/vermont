@@ -146,6 +146,12 @@ ThreadCPUInterface::SystemInfo ThreadCPUInterface::getSystemInfo()
 	if (fscanf(f, "MemFree: %u kB\n", &mem) != 1)
 		THROWEXCEPTION("failed to parse file '%s' 2", procfile.c_str());
 	si.freeMemory = mem;
+	if (fscanf(f, "Buffers: %u kB\n", &mem) != 1) {
+		// Linux 3.14 introduces an additional line in the /proc/meminfo output
+		fscanf(f, "MemAvailable: %*u kB\n");
+		if (fscanf(f, "Buffers: %u kB\n", &mem) != 1)
+			THROWEXCEPTION("failed to parse file '%s' 3", procfile.c_str());
+	}
 	if (fscanf(f, "Buffers: %u kB\n", &mem) != 1)
 		THROWEXCEPTION("failed to parse file '%s' 3", procfile.c_str());
 	si.freeMemory += mem;
