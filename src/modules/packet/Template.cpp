@@ -1,5 +1,6 @@
 /*
  * PSAMP Reference Implementation
+ * Copyright (C) 2014 Oliver Gasser
  *
  * Template.cpp
  *
@@ -33,14 +34,14 @@ bool Template::addField(const InformationElement::IeInfo& ie)
 
 	/* time stamps are not in the captured packet bytes, but in separate member variables of the Packet class */
 	if ((ie == IeInfo(IPFIX_TYPEID_flowStartSeconds, 0, IPFIX_LENGTH_flowStartSeconds)) // length of timeval.tv_sec
-			|| (ie == IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, 0, IPFIX_LENGTH_flowStartMilliSeconds))
-			|| (ie == IeInfo(IPFIX_TYPEID_flowStartMicroSeconds, 0, IPFIX_LENGTH_flowStartMicroSeconds))
+			|| (ie == IeInfo(IPFIX_TYPEID_flowStartMilliseconds, 0, IPFIX_LENGTH_flowStartMilliseconds))
+			|| (ie == IeInfo(IPFIX_TYPEID_flowStartMicroseconds, 0, IPFIX_LENGTH_flowStartMicroseconds))
 			|| (ie == IeInfo(PSAMP_TYPEID_observationTimeSeconds, 0, PSAMP_LENGTH_observationTimeSeconds))
-			|| (ie == IeInfo(PSAMP_TYPEID_observationTimeMilliSeconds, 0, PSAMP_LENGTH_observationTimeMilliSeconds))
-			|| (ie == IeInfo(PSAMP_TYPEID_observationTimeMicroSeconds, 0, PSAMP_LENGTH_observationTimeMicroSeconds)))
+			|| (ie == IeInfo(PSAMP_TYPEID_observationTimeMilliseconds, 0, PSAMP_LENGTH_observationTimeMilliseconds))
+			|| (ie == IeInfo(PSAMP_TYPEID_observationTimeMicroseconds, 0, PSAMP_LENGTH_observationTimeMicroseconds)))
 	{
 		addFieldWithoutOffset(ie);
-		if ((ie == IeInfo(IPFIX_TYPEID_flowStartMicroSeconds, 0)) || (ie == IeInfo(PSAMP_TYPEID_observationTimeMicroSeconds, 0)))
+		if ((ie == IeInfo(IPFIX_TYPEID_flowStartMicroseconds, 0)) || (ie == IeInfo(PSAMP_TYPEID_observationTimeMicroseconds, 0)))
 			msg(MSG_DIALOG, "Warning! %s encoded as complement for flowStartSeconds/observationTimeSeconds (deviating from IPFIX info model).", ie.toString().c_str());
 	}
 	else
@@ -63,7 +64,7 @@ bool Template::getFieldOffsetAndHeader(const IeInfo& ie, uint16_t *offset, uint1
 {
 	if (ie.enterprise==0) {
 		switch(ie.id) {
-			// IPv4 *header fields:
+			// IPv4/6 *header fields:
 			case IPFIX_TYPEID_sourceIPv4Address:
 				*offset=12;
 				*header=HEAD_NETWORK;
@@ -77,28 +78,28 @@ bool Template::getFieldOffsetAndHeader(const IeInfo& ie, uint16_t *offset, uint1
 			case IPFIX_TYPEID_protocolIdentifier:
 				*offset=9;
 				*header=HEAD_NETWORK;
-				*validPacketClass = PCLASS_NET_IP4;
+				*validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
 				break;
-			case IPFIX_TYPEID_classOfServiceIPv4:
+            case IPFIX_TYPEID_ipClassOfService:
 				*offset=1;
 				*header=HEAD_NETWORK;
-				*validPacketClass = PCLASS_NET_IP4;
+				*validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
 				break;
-			case IPFIX_TYPEID_identificationV4:
+			case IPFIX_TYPEID_fragmentIdentification:
 				*offset=4;
 				*header=HEAD_NETWORK;
-				*validPacketClass = PCLASS_NET_IP4;
+				*validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
 				break;
-			case IPFIX_TYPEID_fragmentOffsetIPv4:
+			case IPFIX_TYPEID_fragmentOffset:
 				// note: no masking, you also get DF and MF flags
 				*offset=6;
 				*header=HEAD_NETWORK;
-				*validPacketClass = PCLASS_NET_IP4;
+				*validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
 				break;
-			case IPFIX_TYPEID_ipTimeToLive:
+			case IPFIX_TYPEID_ipTTL:
 				*offset=8;
 				*header=HEAD_NETWORK;
-				*validPacketClass = PCLASS_NET_IP4;
+				*validPacketClass = PCLASS_NET_IP4 | PCLASS_NET_IP6;
 				break;
 			case IPFIX_TYPEID_totalLengthIPv4:
 				*offset=2;
@@ -194,8 +195,7 @@ bool Template::getFieldOffsetAndHeader(const IeInfo& ie, uint16_t *offset, uint1
 				// currently, only IPv4 is supported, fill in the following lines if needed
 			case IPFIX_TYPEID_sourceIPv6Address:
 			case IPFIX_TYPEID_destinationIPv6Address:
-			case IPFIX_TYPEID_classOfServiceV6:
-			case IPFIX_TYPEID_flowLabelV6:
+			case IPFIX_TYPEID_flowLabelIPv6:
 			default:
 				return false;
 		}

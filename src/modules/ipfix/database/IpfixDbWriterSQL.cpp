@@ -1,6 +1,7 @@
 /*
  * IPFIX Database Writer Base for SQL-based Databases
  * Copyright (C) 2012 Lothar Braun
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -32,6 +33,8 @@
 #include <stdlib.h>
 #include <sstream>
 #include <algorithm>
+#include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
 
 using namespace std;
 
@@ -46,17 +49,17 @@ const static IpfixDbWriterSQL::Column legacyNames [] = {
 	{	CN_srcPort, 		IPFIX_TYPEID_sourceTransportPort,	"", 0, 0},
 	{	CN_dstPort, 		IPFIX_TYPEID_destinationTransportPort,	"", 0, 0},
 	{	CN_proto, 		IPFIX_TYPEID_protocolIdentifier,	"", 0, 0 },
-	{	CN_dstTos, 		IPFIX_TYPEID_classOfServiceIPv4,	"", 0, 0},
+	{	CN_dstTos, 		IPFIX_TYPEID_ipClassOfService,	"", 0, 0},
 	{	CN_bytes, 		IPFIX_TYPEID_octetDeltaCount,		"", 0, 0},
 	{	CN_pkts, 		IPFIX_TYPEID_packetDeltaCount,		"", 0, 0},
-	{	CN_firstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"", 0, 0}, // default value is invalid/not used for this ent
-	{	CN_lastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"", 0, 0}, // default value is invalid/not used for this entry
+	{	CN_firstSwitched, 	IPFIX_TYPEID_flowStartMilliseconds,	"", 0, 0}, // default value is invalid/not used for this ent
+	{	CN_lastSwitched, 	IPFIX_TYPEID_flowEndMilliseconds,	"", 0, 0}, // default value is invalid/not used for this entry
 	{	CN_tcpControlBits,  	IPFIX_TYPEID_tcpControlBits,		"", 0, 0},
 	//TODO: use enterprise number for the following extended types (Gerhard, 12/2009)
 	{	CN_revbytes, 		IPFIX_TYPEID_octetDeltaCount,		"", IPFIX_PEN_reverse, 0},
 	{	CN_revpkts, 		IPFIX_TYPEID_packetDeltaCount,		"", IPFIX_PEN_reverse, 0},
-	{	CN_revFirstSwitched, 	IPFIX_TYPEID_flowStartMilliSeconds,	"", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
-	{	CN_revLastSwitched, 	IPFIX_TYPEID_flowEndMilliSeconds,	"", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revFirstSwitched, 	IPFIX_TYPEID_flowStartMilliseconds,	"", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
+	{	CN_revLastSwitched, 	IPFIX_TYPEID_flowEndMilliseconds,	"", IPFIX_PEN_reverse, 0}, // default value is invalid/not used for this entry
 	{	CN_revTcpControlBits,  IPFIX_TYPEID_tcpControlBits,		"", IPFIX_PEN_reverse, 0},
 	{	CN_maxPacketGap,	IPFIX_ETYPEID_maxPacketGap,		"", IPFIX_PEN_vermont|IPFIX_PEN_reverse, 0},
 	{	CN_exporterID, 		EXPORTERID,				"", 0, 0},
@@ -75,63 +78,176 @@ const uint16_t MAX_COL_LENGTH = 22;
 
 
 /****** Methods **************************************************************/
-
-std::string IpfixDbWriterSQL::getDBDataType(uint16_t ipfixTypeLength)
+// NOTE: This function can not be made virtual and moved to a sub-class since
+// it is called in the IpfixDbWriterSQL constructor
+std::string IpfixDbWriterSQL::getDBDataType(const uint16_t ipfixType)
 {
-	if  (dbType == "mysql") {
-		switch (ipfixTypeLength) {
-		case 1:
+	if	(dbType == "mysql") {
+		switch (ipfixType) {
+
+		case IPFIX_TYPE_octetArray:
+		case IPFIX_TYPE_basicList:
+		case IPFIX_TYPE_subTemplateList:
+		case IPFIX_TYPE_subTemplateMultiList:
+			return "BLOB";		// max is 65,535 bytes
+
+		case IPFIX_TYPE_unsigned8:
 			return "TINYINT UNSIGNED";
-		case 2:
+
+		case IPFIX_TYPE_signed8:
+			return "TINYINT";
+
+		case IPFIX_TYPE_unsigned16:
 			return "SMALLINT UNSIGNED";
-		case 4:
+
+		case IPFIX_TYPE_signed16:
+			return "SMALLINT";
+
+		case IPFIX_TYPE_unsigned32:
+		case IPFIX_TYPE_dateTimeSeconds:
+		case IPFIX_TYPE_ipv4Address:
 			return "INT UNSIGNED";
-		case 8:
+
+		case IPFIX_TYPE_signed32:
+			return "INT";
+
+		case IPFIX_TYPE_unsigned64:
+		case IPFIX_TYPE_dateTimeMilliseconds:
+		case IPFIX_TYPE_dateTimeMicroseconds:
+		case IPFIX_TYPE_dateTimeNanoseconds:
+		case IPFIX_TYPE_macAddress:
 			return "BIGINT UNSIGNED";
-		case 65535:
-			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
-			return "VARCHAR(100)";
+
+		case IPFIX_TYPE_signed64:
+			return "BIGINT";
+
+		case IPFIX_TYPE_float32:
+			return "FLOAT";
+
+		case IPFIX_TYPE_float64:
+			return "DOUBLE";
+
+		case IPFIX_TYPE_boolean:
+			return "BOOLEAN";
+
+		case IPFIX_TYPE_string:
+			return "TEXT";		// max is 65,535 characters
+
+		case IPFIX_TYPE_ipv6Address:
+			return "BINARY(16)";
+
 		default:
-			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixTypeLength);
+			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixType);
 		}
 	} else if (dbType == "postgres") {
-		// TODO: postgres does not do unsigned types. we therefore use the bigger field. this wastes 
+		// postgres does not do unsigned types. we therefore use the bigger field. this wastes 
 		/// disk space. Optimize! (except bigints ...)
-		switch (ipfixTypeLength) {
-		case 1:
+		switch (ipfixType) {
+
+		case IPFIX_TYPE_octetArray:
+		case IPFIX_TYPE_basicList:
+		case IPFIX_TYPE_subTemplateList:
+		case IPFIX_TYPE_subTemplateMultiList:
+			return "bytea";
+
+		case IPFIX_TYPE_unsigned8:
+		case IPFIX_TYPE_signed8:
+		case IPFIX_TYPE_signed16:
 			return "smallint";
-		case 2:
+
+		case IPFIX_TYPE_unsigned16:
+		case IPFIX_TYPE_signed32:
+		case IPFIX_TYPE_dateTimeSeconds:
 			return "integer";
-		case 4:
+
+		case IPFIX_TYPE_unsigned32:
+		case IPFIX_TYPE_unsigned64:
+		case IPFIX_TYPE_signed64:
+		case IPFIX_TYPE_dateTimeMilliseconds:
+		case IPFIX_TYPE_dateTimeMicroseconds:
+		case IPFIX_TYPE_dateTimeNanoseconds:
 			return "bigint";
-		case 8:
-			return "bigint";
-		case 65535:
-			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
-			return "VARCHAR(100)";
+
+		case IPFIX_TYPE_float32:
+			return "real";
+
+		case IPFIX_TYPE_float64:
+			return "double precision";
+
+		case IPFIX_TYPE_boolean:
+			return "boolean";
+
+		case IPFIX_TYPE_macAddress:
+			return "macaddr";
+
+		case IPFIX_TYPE_string:
+			return "text";
+
+		case IPFIX_TYPE_ipv4Address:
+		case IPFIX_TYPE_ipv6Address:
+			return "inet";
+
 		default:
-			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixTypeLength);
+			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixType);
 		}	
 	} else if (dbType == "oracle") {
-		// TODO: someone should think about proper type lengths ...
-		switch (ipfixTypeLength) {
-		case 1:
+		switch (ipfixType) {
+
+		case IPFIX_TYPE_octetArray:
+		case IPFIX_TYPE_basicList:
+		case IPFIX_TYPE_subTemplateList:
+		case IPFIX_TYPE_subTemplateMultiList:
+			return "BLOB";
+
+		case IPFIX_TYPE_unsigned8:
 			return "NUMBER(3)";
-		case 2:
-			return "NUMBER(6)";
-		case 4:
+
+		case IPFIX_TYPE_signed8:
+			return "NUMBER(4)";		// one digit for sign
+
+		case IPFIX_TYPE_unsigned16:
+			return "NUMBER(5)";
+
+		case IPFIX_TYPE_signed16:
+			return "NUMBER(6)";		// one digit for sign
+
+		case IPFIX_TYPE_unsigned32:
+		case IPFIX_TYPE_dateTimeSeconds:
+		case IPFIX_TYPE_ipv4Address:
 			return "NUMBER(10)";
-		case 8:
+
+		case IPFIX_TYPE_signed32:
+			return "NUMBER(11)";	// one digit for sign
+
+		case IPFIX_TYPE_unsigned64:
+		case IPFIX_TYPE_signed64:
+		case IPFIX_TYPE_dateTimeMilliseconds:
+		case IPFIX_TYPE_dateTimeMicroseconds:
+		case IPFIX_TYPE_dateTimeNanoseconds:
 			return "NUMBER(20)";
-		case 65535:
-			// variable length, we only support fields up to 100 bytes (be careful, this may waste a lot of diskspace ...")
-			return "VARCHAR(100)";
+
+		case IPFIX_TYPE_float32:
+			return "BINARY_FLOAT";
+
+		case IPFIX_TYPE_float64:
+			return "BINARY_DOUBLE";
+
+		case IPFIX_TYPE_boolean:
+			return "NUMBER(1)";
+
+		case IPFIX_TYPE_macAddress:
+			return "NUMBER(15)";
+
+		case IPFIX_TYPE_string:
+			return "CLOB";
+
+		case IPFIX_TYPE_ipv6Address:
+			return "NUMBER(38)";
+
 		default:
-			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixTypeLength);
+			THROWEXCEPTION("IpfixDbWriter: Type with non matching length %d ", ipfixType);
 		}	
 	}
-
- 
 
 	THROWEXCEPTION("IpfixDbWriter: Found unsupported database backend \"%s\". This is a programming error! Please contact vermont-dev@berlios.de!", dbType.c_str()); 
 	// make compiler happy. we should never get here
@@ -244,19 +360,6 @@ bool IpfixDbWriterSQL::setCurrentTable(uint64_t flowStart)
 	return true;
 }
 
-
-// extract seconds, ms and ys from ntp time
-void IpfixDbWriterSQL::extractNtp64(uint64_t& intdata, uint32_t& micros)
-{
-	if (intdata==0) {
-		micros = 0;
-		return;
-	}
-	timeval t = timentp64(*((ntp64*)(&intdata)));
-	intdata = (uint64_t)t.tv_sec*1000+t.tv_usec/1000;
-	micros = t.tv_usec%1000;
-}
-
 std::string IpfixDbWriterSQL::insertRowPrefix()
 {
 	if (insertBuffer.curRows > 0) {
@@ -272,11 +375,8 @@ std::string IpfixDbWriterSQL::insertRowPrefix()
 void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		TemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data)
 {
-	uint64_t intdata = 0;
 	uint64_t flowstart = 0;
-	uint64_t intdata2 = 0;
 	uint32_t k;
-	bool notfound, notfound2;
 	bool first = true;
 	ostringstream rowStream;
 
@@ -285,222 +385,76 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 	/**loop over the columname and loop over the IPFIX_TYPEID of the record
 	 to get the corresponding data to store and make insert statement*/
 	for(vector<Column>::iterator col = tableColumns.begin(); col != tableColumns.end(); col++) {
+		// Reset parsedData after each iteration
+		string parsedData = "";
+
 		if (col->ipfixId == EXPORTERID) {
-			intdata = (uint64_t)getExporterID(sourceID);
+			parsedData = boost::str(boost::format("%d") % getExporterID(sourceID));
+			break;
 		} else {
-			notfound = true;
 			// try to gather data required for the field
-			if(dataTemplateInfo->fieldCount > 0) {
-				// look inside the ipfix record
-				for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-					if(dataTemplateInfo->fieldInfo[k].type.enterprise ==  col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
-						notfound = false;
-						intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-						DPRINTF("IpfixDbWriter::getdata: really saw ipfix id %d (%s) in packet with intdata %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, intdata, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
-						break;
-					}
+			// look inside the ipfix record
+			for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+				if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
+					parseIpfixData(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset), &parsedData);
+					DPRINTF("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
+					break;
 				}
 			}
-			if( dataTemplateInfo->dataCount > 0 && notfound) {
-				// look in static data fields of template for data
+			// look in static data fields of template for data
+			if (parsedData.empty()) {
 				for(k=0; k < dataTemplateInfo->dataCount; k++) {
-					if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->dataInfo[k].type.id == col->ipfixId) {
-						notfound = false;
-						intdata = getdata(dataTemplateInfo->dataInfo[k].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[k].offset));
+					if(dataTemplateInfo->dataInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->dataInfo[k].type.id == col->ipfixId) {
+						parseIpfixData(dataTemplateInfo->dataInfo[k].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[k].offset), &parsedData);
 						break;
 					}
 				}
 			}
-			if(notfound) {
-				notfound2 = true;
-				// for some Ids, we have an alternative
-				if(col->enterprise == 0) {
-					switch (col->ipfixId) {
-						case IPFIX_TYPEID_flowStartSeconds:
-							if(dataTemplateInfo->fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									// look for alternative (flowStartMilliSeconds/1000)
-									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartMilliSeconds) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-									// if no flow start time is available, maybe this is is from a netflow from Cisco
-									// then - as a last alternative - use flowStartSysUpTime as flow start time
-									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSysUpTime) {
-										intdata2 = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-										notfound2 = false;
-									}
-								}
-								if(notfound && !notfound2) {
-									intdata = intdata2;
-									notfound = false;
-								}
-							}
-							break;
-						case IPFIX_TYPEID_flowStartMilliSeconds:
-							if(dataTemplateInfo->fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									// look for alternative (flowStartSeconds*1000)
-									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSeconds) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-										notfound = false;
-										break;
-									}
-									// if no flow start time is available, maybe this is is from a netflow from Cisco
-									// then - as a last alternative - use flowStartSysUpTime as flow start time
-									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSysUpTime) {
-										intdata2 = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-										notfound2 = false;
-									}
-								}
-								if(notfound && !notfound2) {
-									intdata = intdata2;
-									notfound = false;
-								}
-							}
-							break;
-						case IPFIX_TYPEID_flowEndSeconds:
-							if(dataTemplateInfo->fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									// look for alternative (flowEndMilliSeconds/1000)
-									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndMilliSeconds) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-									// if no flow end time is available, maybe this is is from a netflow from Cisco
-									// then use flowEndSysUpTime as flow start time
-									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSysUpTime) {
-										intdata2 = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset));
-										notfound2 = false;
-									}
-								}
-								if(notfound && !notfound2) {
-									intdata = intdata2;
-									notfound = false;
-								}
-							}
-							break;
-						case IPFIX_TYPEID_flowEndMilliSeconds:
-							if(dataTemplateInfo->fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									// look for alternative (flowEndSeconds*1000)
-									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSeconds) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-										notfound = false;
-										break;
-									}
-									// if no flow end time is available, maybe this is is from a netflow from Cisco
-									// then use flowEndSysUpTime as flow start time
-									if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSysUpTime) {
-										intdata2 = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-										notfound2 = false;
-									}
-								}
-								if(notfound && !notfound2) {
-									intdata = intdata2;
-									notfound = false;
-								}
-							}
-							break;
-					}
-				} else if (col->enterprise==IPFIX_PEN_reverse) {
-					switch (col->ipfixId) {
-						case IPFIX_TYPEID_flowStartSeconds:
-							// look for alternative (revFlowStartMilliSeconds/1000)
-							if(dataTemplateInfo->fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartMilliSeconds, IPFIX_PEN_reverse)) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-								}
-							}
-							break;
-						case IPFIX_TYPEID_flowStartMilliSeconds:
-							// look for alternative (revFlowStartSeconds*1000)
-							if(dataTemplateInfo->fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse)) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-										notfound = false;
-										break;
-									}
-								}
-							}
-							break;
-						case IPFIX_TYPEID_flowEndSeconds:
-							// look for alternative (revFlowEndMilliSeconds/1000)
-							if(dataTemplateInfo->fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndMilliSeconds, IPFIX_PEN_reverse)) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) / 1000;
-										notfound = false;
-										break;
-									}
-								}
-							}
-							break;
-						case IPFIX_TYPEID_flowEndMilliSeconds:
-							// look for alternative (revFlowEndSeconds/1000)
-							if(dataTemplateInfo->fieldCount > 0) {
-								for(k=0; k < dataTemplateInfo->fieldCount; k++) {
-									if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse)) {
-										intdata = getdata(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset)) * 1000;
-										notfound = false;
-										break;
-									}
-								}
-							}
-
-					}
-				}
-				// if still not found, get default value
-				if(notfound)
-					intdata = col->defaultValue;
+			// check for time-related alternative fields in the database
+			if (parsedData.empty()) {
+				checkTimeAlternatives(&(*col), dataTemplateInfo, data, &parsedData);
 			}
 
-			// we need extra treatment for timing related fields
+			// get default value if nothing found until now
+			if (parsedData.empty()) {
+					parsedData = boost::lexical_cast<int>(col->defaultValue);
+			}
+
+			// we need to extract the flow start time for determining the correct DB table
 			if(col->enterprise == 0 ) {
 				switch (col->ipfixId) {
 					case IPFIX_TYPEID_flowStartSeconds:
 						// save time for table access
-						if (flowstart==0) flowstart = intdata * 1000;
+						flowstart = boost::lexical_cast<uint64_t>(parsedData) * 1000;
 						break;
 
-					case IPFIX_TYPEID_flowEndSeconds:
-						break;
-
-					case IPFIX_TYPEID_flowStartMilliSeconds:
-						// if flowStartSeconds is not stored in one of the columns, but flowStartMilliSeconds is,
-						// then we use flowStartMilliSeconds for table access
+					case IPFIX_TYPEID_flowStartMilliseconds:
+						// if flowStartSeconds is not stored in one of the columns, but flowStartMilliseconds is,
+						// then we use flowStartMilliseconds for table access
 						// This is realized by storing this value only if flowStartSeconds has not yet been seen.
 						// A later appearing flowStartSeconds will override this value.
-						if (flowstart==0)
-							flowstart = intdata;
-					case IPFIX_TYPEID_flowEndMilliSeconds:
-						// in the database the millisecond entry is counted from last second
-						//intdata %= 1000;
-						break;
+						if (flowstart == 0) {
+							flowstart = boost::lexical_cast<uint64_t>(parsedData);
+						}
 				}
-			} else if (col->enterprise==IPFIX_PEN_reverse)
+			} else if (col->enterprise == IPFIX_PEN_reverse)
 				switch (col->ipfixId) {
-					case IPFIX_TYPEID_flowStartMilliSeconds:
-					case IPFIX_TYPEID_flowEndMilliSeconds:
-						// in the database the millisecond entry is counted from last second
-						//intdata %= 1000;
+					case IPFIX_TYPEID_flowStartMilliseconds:
+					case IPFIX_TYPEID_flowEndMilliseconds:
+						if (flowstart == 0) {
+							flowstart = boost::lexical_cast<uint64_t>(parsedData);
+						}
 						break;
 				}
 		}
 
-		DPRINTF("saw ipfix id %d in packet with intdata %llX", col->ipfixId, intdata);
+		DPRINTF("saw ipfix id %d in packet with parsedData %llX", col->ipfixId, parsedData);
 
-		if(first)
-			rowStream << intdata;
-		else
-			rowStream << "," << intdata;
+		if(first) {
+			rowStream << parsedData;
+		} else {
+			rowStream << "," << parsedData;
+		}
 		first = false;
 	}
 
@@ -534,58 +488,230 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 	insertBuffer.curRows++;
 }
 
+/**
+ * Check alternatives if no exact was found for time-related IPFIX IEs.
+ */
+void IpfixDbWriterSQL::checkTimeAlternatives(Column* col, TemplateInfo* dataTemplateInfo, IpfixRecord::Data* data, string* parsedData) {
+
+	int k;
+
+	// for some Ids, we have an alternative
+	if(col->enterprise == 0) {
+		switch (col->ipfixId) {
+			case IPFIX_TYPEID_flowStartSeconds:
+				for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+					// look for alternative (flowStartMilliseconds/1000)
+					if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartMilliseconds) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, .001, parsedData);
+						break;
+					}
+					// if no flow start time is available, maybe this is is from a netflow from Cisco
+					// then - as a last alternative - use flowStartSysUpTime as flow start time
+					if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSysUpTime) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, 1., parsedData);
+					}
+				}
+				break;
+			case IPFIX_TYPEID_flowStartMilliseconds:
+				for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+					// look for alternative (flowStartSeconds*1000)
+					if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSeconds) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, 1000., parsedData);
+						break;
+					}
+					// if no flow start time is available, maybe this is is from a netflow from Cisco
+					// then - as a last alternative - use flowStartSysUpTime as flow start time
+					if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowStartSysUpTime) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, 1000., parsedData);
+					}
+				}
+				break;
+			case IPFIX_TYPEID_flowEndSeconds:
+				for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+					// look for alternative (flowEndMilliseconds/1000)
+					if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndMilliseconds) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, .001, parsedData);
+						break;
+					}
+					// if no flow end time is available, maybe this is is from a netflow from Cisco
+					// then use flowEndSysUpTime as flow start time
+					if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSysUpTime) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, 1., parsedData);
+					}
+				}
+				break;
+			case IPFIX_TYPEID_flowEndMilliseconds:
+				for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+					// look for alternative (flowEndSeconds*1000)
+					if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSeconds) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, 1000., parsedData);
+						break;
+					}
+					// if no flow end time is available, maybe this is is from a netflow from Cisco
+					// then use flowEndSysUpTime as flow start time
+					if(dataTemplateInfo->fieldInfo[k].type.id == IPFIX_TYPEID_flowEndSysUpTime) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, 1000., parsedData);
+					}
+				}
+				break;
+		}
+	} else if (col->enterprise == IPFIX_PEN_reverse) {
+		switch (col->ipfixId) {
+			case IPFIX_TYPEID_flowStartSeconds:
+				// look for alternative (revFlowStartMilliseconds/1000)
+				for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+					if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartMilliseconds, IPFIX_PEN_reverse)) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, .001, parsedData);
+						break;
+					}
+				}
+			break;
+			case IPFIX_TYPEID_flowStartMilliseconds:
+				// look for alternative (revFlowStartSeconds*1000)
+				for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+					if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowStartSeconds, IPFIX_PEN_reverse)) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, 1000., parsedData);
+						break;
+					}
+				}
+				break;
+			case IPFIX_TYPEID_flowEndSeconds:
+				// look for alternative (revFlowEndMilliseconds/1000)
+				for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+					if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndMilliseconds, IPFIX_PEN_reverse)) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, .001, parsedData);
+						break;
+					}
+				}
+				break;
+			case IPFIX_TYPEID_flowEndMilliseconds:
+				// look for alternative (revFlowEndSeconds*1000)
+				for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+					if(dataTemplateInfo->fieldInfo[k].type == InformationElement::IeInfo(IPFIX_TYPEID_flowEndSeconds, IPFIX_PEN_reverse)) {
+						parseUintAndScale(dataTemplateInfo->fieldInfo[k], data, 1000., parsedData);
+						break;
+					}
+				}
+		}
+	}
+}
+
+
+/**
+ * Parses a unsigned integer and scales it by factor, useful for checkTimeAlternatives().
+ */
+void IpfixDbWriterSQL::parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, IpfixRecord::Data* data, double factor, string* parsedData) {
+
+	parseIpfixData(fieldInfo.type, (data+fieldInfo.offset), parsedData);
+	if (factor != 1) {
+		*parsedData = boost::lexical_cast<string>(boost::lexical_cast<uint64_t>(*parsedData) * factor);
+	}
+}
+
 
 /**
  *	Get data of the record is given by the IPFIX_TYPEID
  */
-uint64_t IpfixDbWriterSQL::getdata(InformationElement::IeInfo type, IpfixRecord::Data* data)
+void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixRecord::Data* data, string* parsedData)
 {
-	if(type.id == IPFIX_TYPEID_sourceIPv4Address || type.id == IPFIX_TYPEID_destinationIPv4Address) {
-		return getipv4address(type, data);
-	} else {
-		return getIPFIXValue(type, data);
-	}
-}
-/**
- *	determine the ipv4address of the data record
- */
-uint32_t IpfixDbWriterSQL::getipv4address( InformationElement::IeInfo type, IpfixRecord::Data* data)
-{
+    switch (ipfix_id_lookup(type.id, type.enterprise)->type) {
 
-	if (type.length > 5) {
-		DPRINTF("IPv4 Address with length %d unparseable\n", type.length);
-		return 0;
-	}
+		// Handle reduced size encoding
+		case IPFIX_TYPE_boolean:
+		case IPFIX_TYPE_unsigned8:
+		case IPFIX_TYPE_unsigned16:
+		case IPFIX_TYPE_unsigned32:
+		case IPFIX_TYPE_unsigned64:
+		case IPFIX_TYPE_dateTimeSeconds:
+		case IPFIX_TYPE_dateTimeMilliseconds:
+        case IPFIX_TYPE_dateTimeMicroseconds: // Note: Must be interpreted as 64 bit double, with floating point after 32 bit, epoch starts at 1900
+		case IPFIX_TYPE_dateTimeNanoseconds:  // see also http://www.ntp.org/ntpfaq/NTP-s-algo.htm#AEN1895
+			parseIpfixUint(data, type.length, parsedData);
+			break;
 
-	if ((type.length == 5) && ( type.id == IPFIX_TYPEID_sourceIPv4Address || IPFIX_TYPEID_destinationIPv4Address )) /*&& (imask != 0)*/{
-		DPRINTF("imask drop from ipaddress\n");
-		type.length = 4;
-	}
+		// Handle reduced size encoding
+		case IPFIX_TYPE_signed8:
+		case IPFIX_TYPE_signed16:
+		case IPFIX_TYPE_signed32:
+		case IPFIX_TYPE_signed64:
+			parseIpfixInt(data, type.length, parsedData);
+			break;
 
-	if ((type.length < 5) &&( type.id == IPFIX_TYPEID_sourceIPv4Address || type.id == IPFIX_TYPEID_destinationIPv4Address)) /*&& (imask == 0)*/{
-		return getIPFIXValue(type, data);
-	}
+		// Handle reduced size encoding
+		case IPFIX_TYPE_float32:
+		case IPFIX_TYPE_float64:
+			parseIpfixFloat(data, type.length, parsedData);
+            break;
 
-	return 0;
-}
+		// MAC addresses are handled differnetly in different databases
+		case IPFIX_TYPE_macAddress:
+			parseIpfixMacAddress(data, parsedData);
+			break;
 
-/**
- *	get the IPFIX value
- */
-uint64_t IpfixDbWriterSQL::getIPFIXValue(InformationElement::IeInfo type, IpfixRecord::Data* data)
-{
-	switch (type.length) {
-		case 1:
-			return (*(uint8_t*)data);
-		case 2:
-			return ntohs(*(uint16_t*)data);
-		case 4:
-			return ntohl(*(uint32_t*)data);
-		case 8:
-			return ntohll(*(uint64_t*)data);
+		// IPv4 addresses are handled differently in different databases
+		case IPFIX_TYPE_ipv4Address:
+			parseIpfixIpv4Address(data, parsedData);
+			break;
+
+		// IPv6 addresses are handled differently in different databases
+		case IPFIX_TYPE_ipv6Address:
+			parseIpfixIpv6Address(data, parsedData);
+			break;
+
+		case IPFIX_TYPE_string:
+			// Truncate string to length announced in record
+			*parsedData = boost::str(boost::format("'%." + boost::lexical_cast<std::string>(type.length)  +  "s'") );
+            break;
+
+		case IPFIX_TYPE_octetArray:
+		case IPFIX_TYPE_basicList:
+		case IPFIX_TYPE_subTemplateList:
+		case IPFIX_TYPE_subTemplateMultiList:
 		default:
-			printf("Uint with length %d unparseable\n", type.length);
-			return 0;
+			msg(MSG_ERROR, "failed to parse record data of type %hu", ipfix_id_lookup(type.id, type.enterprise)->type);
+    }
+}
+
+/**
+ * Writes IPFIX unsigned integer into string, useful for handling reduced size encoding.
+ */
+void IpfixDbWriterSQL::parseIpfixUint(IpfixRecord::Data* data, uint16_t length, string* parsedData) {
+	uint64_t acc = 0;
+
+	for (int i = 0; i < length; i++) {
+		acc = (acc << 8) + (uint8_t) data[i];
+	}
+
+	*parsedData = boost::lexical_cast<std::string>(acc);
+}
+
+/**
+ * Writes IPFIX signed integer into string, useful for handling reduced size encoding.
+ */
+void IpfixDbWriterSQL::parseIpfixInt(IpfixRecord::Data* data, uint16_t length, string* parsedData) {
+	// First byte is parsed as signed int8_t to preserve the sign
+	int64_t acc = (int8_t) data[0];
+
+	for (int i = 1; i < length; i++) {
+		acc = (acc << 8) + (uint8_t) data[i];
+	}
+
+	*parsedData = boost::lexical_cast<std::string>(acc);
+}
+
+/**
+ * Writes IPFIX 32 and 64 bit floats into string, useful for handling reduced size encoding.
+ */
+void IpfixDbWriterSQL::parseIpfixFloat(IpfixRecord::Data* data, uint16_t length, string* parsedData) {
+	switch(length) {
+		case 4:
+			*parsedData = boost::lexical_cast<std::string>(*(float*) data);
+			break;
+		case 8:
+			*parsedData = boost::lexical_cast<std::string>(*(double*) data);
+			break;
+		default:
+			msg(MSG_ERROR, "failed to parse float of length %hu", length);
 	}
 }
 
@@ -675,12 +801,12 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 					const struct ipfix_identifier* identifier = ipfix_id_lookup(ipfixId, enterpriseId);
 					// special handling for ht exporter field
 					if (ipfixId == 0) {
-						dataType = getDBDataType(2);
+						dataType = getDBDataType(IPFIX_TYPE_unsigned16);
 					} else {
 						if (NULL == identifier) {
 							THROWEXCEPTION("Programming error: Legacy Type name \"%s (id: %u)\" does not have a entry in ipfixlolib!", columnName.c_str(), ipfixId);
 						}
-						dataType = getDBDataType(identifier->length);
+						dataType = getDBDataType(identifier->type);
 					}
 				}
 				i++;
@@ -696,14 +822,14 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 				if (col->compare(CN_exporterID) == 0) {
 					ipfixId = EXPORTERID;
 					enterpriseId = 0;
-					dataType = getDBDataType(2);
+					dataType = getDBDataType(IPFIX_TYPE_unsigned16);
 				} else {
 					THROWEXCEPTION("IpfixDbWriter: Could not find a matching IPFIX type for \"%s\". Cannot map the IPFIX type in IPFIX messages to the column names. If you think VERMONT should support type \"%s\", please contact the developers at vermont-dev@berlios.de", col->c_str(), col->c_str());
 				}
 			} else {
 				ipfixId = identifier->id;
 				enterpriseId = identifier->pen;
-				dataType = getDBDataType(identifier->length);
+				dataType = getDBDataType(identifier->type);
 			}
 		}
 		Column c;

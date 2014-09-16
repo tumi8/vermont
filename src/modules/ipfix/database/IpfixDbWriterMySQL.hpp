@@ -3,6 +3,7 @@
  * Copyright (C) 2006 Jürgen Abberger
  * Copyright (C) 2006 Lothar Braun <braunl@informatik.uni-tuebingen.de>
  * Copyright (C) 2007, 2008 Gerhard Muenz
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -57,6 +58,9 @@ class IpfixDbWriterMySQL
 		virtual int createExporterTable();
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID);
 		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime);
+		virtual void parseIpfixIpv4Address(IpfixRecord::Data* data, string* parsedData);
+		virtual void parseIpfixIpv6Address(IpfixRecord::Data* data, string* parsedData);
+		virtual void parseIpfixMacAddress(IpfixRecord::Data* data, string* parsedData);
 
 	private:
 		MYSQL* conn;

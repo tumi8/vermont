@@ -4,6 +4,7 @@
  * Copyright (C) 2006 Lothar Braun <braunl@informatik.uni-tuebingen.de>
  * Copyright (C) 2007 Gerhard Muenz
  * Copyright (C) 2008 Tobias Limmer
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -34,6 +35,7 @@
 #include <stdlib.h>
 #include <sstream>
 #include <algorithm>
+#include <boost/format.hpp>
 
 using namespace std;
 
@@ -156,11 +158,8 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 		// create partition
 		ostringstream cpsql;
 
-		cpsql << "CREATE TABLE " << partitionname << " (CHECK (firstswitched>='";
-		//cpsql << getTimeAsString(starttime, "%Y-%m-%d %H:%M:%S", true);
-		cpsql << starttime;
-		cpsql << "' AND firstswitched<'" << endtime; //getTimeAsString(endtime, "%Y-%m-%d %H:%M:%S", true);
-		cpsql << "')) INHERITS (" << tablePrefix << ")";
+		cpsql << "CREATE TABLE " << partitionname;
+		cpsql << " () INHERITS (" << tablePrefix << ")";
 
 		PGresult* res = PQexec(conn, cpsql.str().c_str());
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
@@ -176,23 +175,6 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 			if (usedPartitions.size()>MAX_USEDTABLES) usedPartitions.pop_front();
 		}
 	}
-	string indexname = string(partitionname) + "_firstswitched";
-	if (!checkRelationExists(indexname.c_str())) {
-		ostringstream cisql;
-		cisql << "CREATE INDEX " << indexname <<" ON " << partitionname;
-		cisql << "(firstswitched)";
-		PGresult* res = PQexec(conn, cisql.str().c_str());
-		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-			msg(MSG_FATAL,"IpfixDbWriterPg: Creation of index failed. Error: %s",
-					PQerrorMessage(conn));
-			dbError = true;
-			PQclear(res);
-			return false;
-		} else {
-			PQclear(res);
-			msg(MSG_INFO, "Index %s_firstswitched created ", partitionname);
-		}
-	}
 	return true;
 }
 
@@ -204,8 +186,9 @@ bool IpfixDbWriterPg::writeToDb()
 {
 	if (insertBuffer.curRows==0) return true;
 
+	DPRINTF("SQL Query: %s", insertBuffer.sql);
+
 	// Write rows to database
-	msg(MSG_FATAL, "%s", insertBuffer.sql);
 	PGresult* res = PQexec(conn, insertBuffer.sql);
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 		msg(MSG_ERROR,"IpfixDbWriterPg: Insert of records failed. Error: %s",
@@ -329,6 +312,27 @@ bool IpfixDbWriterPg::checkRelationExists(const char* relname)
 	}
 	PQclear(res);
 	return false;
+}
+
+/**
+ * In Postgres IPv4 addresses are stored as inet types and thus converted to dotted decimal notation.
+ */
+void IpfixDbWriterPg::parseIpfixIpv4Address(IpfixRecord::Data* data, string* parsedData) {
+    *parsedData = boost::str(boost::format("'%u.%u.%u.%u'") % (int) data[0] % (int) data[1] % (int) data[2] % (int) data[3]);
+}
+
+/**
+ * In Postgres IPv6 addresses are stored as inet types and thus converted to double colon hex notation.
+ */
+void IpfixDbWriterPg::parseIpfixIpv6Address(IpfixRecord::Data* data, string* parsedData) {
+	*parsedData = boost::str(boost::format("'%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x'") % htons((uint16_t) data[0]) % htons((uint16_t) data[2]) % htons((uint16_t) data[4]) % htons((uint16_t) data[6]) % htons((uint16_t) data[8]) % htons((uint16_t) data[10]) % htons((uint16_t) data[12]) % htons((uint16_t) data[14]));
+}
+
+/**
+ * In Postgres MAC addresses are stored as macaddr types and thus converted to colon hex notation.
+ */
+void IpfixDbWriterPg::parseIpfixMacAddress(IpfixRecord::Data* data, string* parsedData) {
+    *parsedData = boost::str(boost::format("'%02x:%02x:%02x:%02x:%02x:%02x'") % (int) data[0] % (int) data[1] % (int) data[2] % (int) data[3] % (int) data[4] % (int) data[5]);
 }
 
 /***** Exported Functions ****************************************************/

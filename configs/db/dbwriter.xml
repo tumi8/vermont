@@ -93,10 +93,6 @@
 			<name>dstTos</name>
 			<name>bytes</name>
 			<name>pkts</name>
-			<name>firstSwitched</name>
-			<name>lastSwitched</name>
-			<name>firstSwitchedMillis</name>
-			<name>lastSwitchedMillis</name>
 			<name>exporterID</name>
 		</columns>
 	</ipfixDbWriter>

@@ -275,6 +275,7 @@ public:
 	void classify(int dataLinkType)
 	{
 		unsigned char protocol = 0;
+		uint16_t fragoffset;
 
 		// first check for IPv4 header which needs to be at least 20 bytes long
 		if ( (data.netHeader + 20 <= layer2Start + data_length) && ((*data.netHeader >> 4) == 4) )
@@ -292,7 +293,7 @@ public:
 			}
 
 			// get fragment offset
-			uint16_t fragoffset = (*(uint16_t*)(data.netHeader+6))&0xFF1F;
+			fragoffset = (*(uint16_t*)(data.netHeader+6))&0xFF1F;
 
 			// do not use transport header, if this is not the first fragment
 			// in the end, all fragments are discarded by vermont (TODO!)
@@ -301,7 +302,62 @@ public:
 			else
 				transportHeaderOffset = 0;
 		}
-		// TODO: Add checks for IPv6 or similar here
+
+		// check for IPv6 header, fixed header is 40 bytes long
+		else if ( (data.netHeader + 40 <= layer2Start + data_length) && ((*data.netHeader >> 4) == 6) )
+		{
+			protocol = *(data.netHeader + 7);
+			classification |= PCLASS_NET_IP6;
+			transportHeaderOffset = 40;
+
+			bool extHeaderPresent = true;
+			while (extHeaderPresent) {
+				switch (protocol) {
+					case 0:		// Hop-by-Hop Options
+					case 60:	// Destination Options
+					case 43:	// Routing
+					case 135:	// Mobility
+						protocol = *(data.netHeader + transportHeaderOffset);
+						// length of header is multiple of 8 octets, not considering the first eight octets
+						transportHeaderOffset += ((*(data.netHeader + transportHeaderOffset + 1)) << 3) + 8;
+						break;
+
+					case 44:	// Fragment
+						// Only use transport header if this is the first fragment
+						fragoffset = ((*((uint16_t*) (data.netHeader + transportHeaderOffset + 2)))) & 0xF8FF;
+						if (fragoffset == 0) {
+							protocol = *(data.netHeader + transportHeaderOffset);
+							transportHeaderOffset += 8;
+						} else {
+							transportHeaderOffset = 0;
+							extHeaderPresent = false;
+						}
+						break;
+
+					case 51:	// Authentication Header
+						protocol = *(data.netHeader + transportHeaderOffset);
+						// length of header is stored as multiple of 4 octets minus 2 octets
+						transportHeaderOffset += ((*(data.netHeader + transportHeaderOffset + 1) + 2) << 2);
+						break;
+
+					case 50:	// Encapsulating Security Payload, length and next header are encrypted
+					default:	// No (more) extension header present
+						extHeaderPresent = false;
+				}
+
+			}
+
+			// crop layer 2 padding
+			unsigned int endOfIpOffset = layer2HeaderLen +  ntohs(*((uint16_t*) (data.netHeader + 2)));
+			if(data_length > endOfIpOffset)
+			{
+				DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
+				data_length = endOfIpOffset;
+			}
+
+			// Set transport header
+			transportHeader = data.netHeader + transportHeaderOffset;
+		}
 
 		// if we found a transport header, continue classifying
 		if (transportHeader && protocol)

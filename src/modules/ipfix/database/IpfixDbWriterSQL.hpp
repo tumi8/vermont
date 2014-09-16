@@ -1,6 +1,7 @@
 /*
  * IPFIX Database Base Class for SQL based databases
  * Copyright (C) 2012 Lothar Braun
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -133,7 +134,7 @@ class IpfixDbWriterSQL
 		bool setCurrentTable(uint64_t flowStart);
 		string getTimeAsString(uint64_t milliseconds, const char* formatstring, bool addfraction, uint32_t microseconds = 0);
 		bool checkRelationExists(const char* relname);
-		
+
 		virtual void connectToDB() = 0;
 		virtual bool writeToDb() = 0;
 		virtual int createExporterTable() = 0 ;
@@ -142,8 +143,12 @@ class IpfixDbWriterSQL
 		virtual string getInsertString(string tableName);
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID) = 0;
 		virtual string insertRowPrefix();
-		std::string getDBDataType(uint16_t ipfixTypeLength);
+		virtual void parseIpfixIpv4Address(IpfixRecord::Data* data, string* parsedData) = 0;
+		virtual void parseIpfixIpv6Address(IpfixRecord::Data* data, string* parsedData) = 0;
+		virtual void parseIpfixMacAddress(IpfixRecord::Data* data, string* parsedData) = 0;
+		std::string getDBDataType(const uint16_t ipfixType);
 		Column* legacyNamesMap;
+
 	private:
 		void processDataDataRecord(IpfixRecord::SourceID* sourceID,
 				TemplateInfo* dataTemplateInfo, uint16_t length,
@@ -153,12 +158,13 @@ class IpfixDbWriterSQL
 
 		char* getTableNamDependTime(char* tablename,uint64_t flowstartsec);
 
-		uint64_t getdata(InformationElement::IeInfo type, IpfixRecord::Data* data);
-		uint64_t getIPFIXValue(InformationElement::IeInfo type, IpfixRecord::Data* data);
+		void checkTimeAlternatives(Column* col, TemplateInfo* dataTemplateInfo, IpfixRecord::Data* data, string* parsedData);
+		void parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, IpfixRecord::Data* data, double factor, string* parsedData);
+		void parseIpfixData(InformationElement::IeInfo type, IpfixRecord::Data* data, string* ret);
+		void parseIpfixUint(IpfixRecord::Data* data, uint16_t length, string* parsedData);
+		void parseIpfixInt(IpfixRecord::Data* data, uint16_t length, string* parsedData);
+		void parseIpfixFloat(IpfixRecord::Data* data, uint16_t length, string* parsedData);
 		uint32_t getdefaultIPFIXdata(int ipfixtype);
-
-		uint32_t getipv4address(InformationElement::IeInfo type, IpfixRecord::Data* data);
-		void extractNtp64(uint64_t& intdata, uint32_t& micros);
 
 };
 

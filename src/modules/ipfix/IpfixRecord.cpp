@@ -1,6 +1,7 @@
 /*
  * IPFIX Concentrator Module Library
  * Copyright (C) 2004 Christoph Sommer <http://www.deltadevelopment.de/users/christoph/ipfix/>
+ * Copyright (C) 2014 Oliver Gasser
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -87,16 +88,22 @@ namespace InformationElement {
 				case IPFIX_TYPEID_packetTotalCount:
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowEndSeconds:
-				case IPFIX_TYPEID_flowStartMilliSeconds:
-				case IPFIX_TYPEID_flowEndMilliSeconds:
-				case IPFIX_TYPEID_flowStartNanoSeconds:
-				case IPFIX_TYPEID_flowEndNanoSeconds:
+				case IPFIX_TYPEID_flowStartMilliseconds:
+				case IPFIX_TYPEID_flowEndMilliseconds:
+				case IPFIX_TYPEID_flowStartNanoseconds:
+				case IPFIX_TYPEID_flowEndNanoseconds:
 				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_protocolIdentifier:
-				case IPFIX_TYPEID_classOfServiceIPv4:
+				case IPFIX_TYPEID_ipClassOfService:
+				case IPFIX_TYPEID_ipVersion:
+				case IPFIX_TYPEID_ipv6ExtensionHeaders:
+				case IPFIX_TYPEID_nextHeaderIPv6:
+				case IPFIX_TYPEID_flowLabelIPv6:
 				case IPFIX_TYPEID_sourceIPv4Address:
 				case IPFIX_TYPEID_destinationIPv4Address:
+				case IPFIX_TYPEID_sourceIPv6Address:
+				case IPFIX_TYPEID_destinationIPv6Address:
 				case IPFIX_TYPEID_bgpSourceAsNumber:
 				case IPFIX_TYPEID_bgpDestinationAsNumber:
 				case IPFIX_ETYPEID_maxPacketGap:
@@ -107,7 +114,17 @@ namespace InformationElement {
 
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:
+				case IPFIX_TYPEID_ingressPhysicalInterface:
+				case IPFIX_TYPEID_egressPhysicalInterface:
+				case IPFIX_TYPEID_dot1qVlanId:
+				case IPFIX_TYPEID_dot1qCustomerVlanId:
+				case IPFIX_TYPEID_postDot1qVlanId:
+				case IPFIX_TYPEID_postDot1qCustomerVlanId:
 					return Packet::IPProtocolType(Packet::UDP|Packet::TCP);
+
+				case IPFIX_TYPEID_sourceMacAddress:
+				case IPFIX_TYPEID_destinationMacAddress:
+					return Packet::ALL;
 
 				case IPFIX_TYPEID_tcpControlBits:
 					return Packet::TCP;
