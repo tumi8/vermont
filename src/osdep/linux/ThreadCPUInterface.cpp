@@ -152,8 +152,6 @@ ThreadCPUInterface::SystemInfo ThreadCPUInterface::getSystemInfo()
 		if (fscanf(f, "Buffers: %u kB\n", &mem) != 1)
 			THROWEXCEPTION("failed to parse file '%s' 3", procfile.c_str());
 	}
-	if (fscanf(f, "Buffers: %u kB\n", &mem) != 1)
-		THROWEXCEPTION("failed to parse file '%s' 3", procfile.c_str());
 	si.freeMemory += mem;
 	if (fscanf(f, "Cached: %u kB\n", &mem) != 1)
 		THROWEXCEPTION("failed to parse file '%s' 4", procfile.c_str());
