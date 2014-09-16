@@ -33,7 +33,7 @@
  */
 BaseAggregator::BaseAggregator(uint32_t pollinterval)
 	: rules(0),
-	  thread(BaseAggregator::threadWrapper),
+	  thread(BaseAggregator::threadWrapper, "BaseAggregator"),
 	  pollInterval(pollinterval)
 {
 

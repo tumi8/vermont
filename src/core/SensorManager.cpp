@@ -12,7 +12,7 @@
 
 SensorManager::SensorManager()
 	: graphIS(NULL),
-	  thread(SensorManager::threadWrapper),
+	  thread(SensorManager::threadWrapper, "SensorManager"),
 	  checkInterval(SM_DEFAULT_CHECK_INTERVAL),
 	  outputFilename(SM_DEFAULT_OUTPUT_FNAME),
 	  smExitFlag(false),

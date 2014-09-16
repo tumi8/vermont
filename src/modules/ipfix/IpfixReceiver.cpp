@@ -38,14 +38,14 @@
 IpfixReceiver::IpfixReceiver()
 	: exitFlag(true),
 	  vmodule(NULL),
-	  thread(threadWrapper)
+	  thread(threadWrapper, "IpfixReceiver")
 {
 }
 
 IpfixReceiver::IpfixReceiver(int port)
 	: exitFlag(true),
 	  receiverPort(port),
-	  thread(threadWrapper)
+	  thread(threadWrapper, "IpfixReceiver")
 	  
 {
 }

@@ -180,7 +180,7 @@ IpfixDbReader::~IpfixDbReader() {
 IpfixDbReader::IpfixDbReader(const string& dbType, const string& Hostname, const string& Dbname,
 				const string& Username, const string& Password,
 				uint16_t Port, uint16_t ObservationDomainId)
-	: thread(readFromDB), hostname(Hostname), dbname(Dbname), username(Username), password(Password), port(Port), observationDomainId(ObservationDomainId)
+	: thread(readFromDB, "IpfixDbReader"), hostname(Hostname), dbname(Dbname), username(Username), password(Password), port(Port), observationDomainId(ObservationDomainId)
 {
 	srcId.reset(new IpfixRecord::SourceID);
 	srcId->observationDomainId = observationDomainId;

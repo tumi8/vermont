@@ -13,14 +13,23 @@
 #define THREAD_H
 
 #include "msg.h"
+#include <string.h>
+
+#define THREAD_NAME_LENGTH 15
 
 typedef void* (*ThreadFunc)(void *);
 
 class Thread
 {
 	public:
-		Thread(ThreadFunc threadFunction) : exitFlag(false), thread_created(false), f(threadFunction)
+		Thread(ThreadFunc threadFunction, const char *threadName="") : exitFlag(false), thread_created(false), f(threadFunction)
 		{
+			// truncate to 15 chars + NULL byte
+			if (strlen(threadName) > THREAD_NAME_LENGTH) {
+				msg(MSG_ERROR, "truncating thread name %s to %d characters", threadName, THREAD_NAME_LENGTH);
+			}
+			memcpy(name, threadName, THREAD_NAME_LENGTH);
+			name[THREAD_NAME_LENGTH] = '\0';
 		};
 
 		void run(void *threadData)
@@ -32,6 +41,13 @@ class Thread
 			DPRINTF("creating new thread");
 			if (pthread_create(&thread, NULL, f, threadData) != 0) {
 				THROWEXCEPTION("failed to create new thread");
+			}
+
+			// Set thread name if specified
+			if (strlen(name) > 0) {
+				if (pthread_setname_np(thread, name) != 0) {
+					THROWEXCEPTION("failed to set thread name");
+				}
 			}
 		};
 
@@ -71,6 +87,7 @@ class Thread
 		pthread_t thread;
 		bool thread_created; /**< true after Thread::run() was called */
 		ThreadFunc f;
+		char name[THREAD_NAME_LENGTH+1];
 };
 
 #endif

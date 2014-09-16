@@ -79,7 +79,7 @@ using namespace std;
 
 InstanceManager<Packet> Observer::packetManager("Packet");
 
-Observer::Observer(const std::string& interface, bool offline, uint64_t maxpackets) : thread(Observer::observerThread), allDevices(NULL),
+Observer::Observer(const std::string& interface, bool offline, uint64_t maxpackets) : thread(Observer::observerThread, "Observer"), allDevices(NULL),
 	captureDevice(NULL), capturelen(PCAP_DEFAULT_CAPTURE_LENGTH), pcap_timeout(PCAP_TIMEOUT),
 	pcap_promisc(1), maxPackets(maxpackets), ready(false), filter_exp(0), observationDomainID(0), // FIXME: this must be configured!
 	receivedBytes(0), lastReceivedBytes(0), processedPackets(0),
