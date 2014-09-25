@@ -382,6 +382,8 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 
 	rowStream << "(";
 
+	uint32_t colNum = 0;
+
 	/**loop over the columname and loop over the IPFIX_TYPEID of the record
 	 to get the corresponding data to store and make insert statement*/
 	for(vector<Column>::iterator col = tableColumns.begin(); col != tableColumns.end(); col++) {
@@ -394,7 +396,8 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		} else {
 			// try to gather data required for the field
 			// look inside the ipfix record
-			for(k=0; k < dataTemplateInfo->fieldCount; k++) {
+			// Start by checking the k-th column for the k-th record (speedup if columns are the same as in the template)
+			for(k = colNum; k != colNum - 1; k = (k + 1) % dataTemplateInfo->fieldCount) {
 				if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
 					parseIpfixData(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset), &parsedData);
 					DPRINTF("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
@@ -456,6 +459,8 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			rowStream << "," << parsedData;
 		}
 		first = false;
+
+		colNum++;
 	}
 
 	rowStream << ")";
