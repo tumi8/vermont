@@ -36,6 +36,7 @@
 #include <sstream>
 #include <algorithm>
 #include <boost/format.hpp>
+#include <boost/lexical_cast.hpp>
 
 using namespace std;
 
@@ -186,21 +187,21 @@ bool IpfixDbWriterPg::writeToDb()
 {
 	if (insertBuffer.curRows==0) return true;
 
-	DPRINTF("SQL Query: %s", insertBuffer.sql);
-
-	// Write rows to database
-	PGresult* res = PQexec(conn, insertBuffer.sql);
-	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		msg(MSG_ERROR,"IpfixDbWriterPg: Insert of records failed. Error: %s",
-				PQerrorMessage(conn));
+	// Write rows to database with a prepared statement
+	for (uint32_t i = 0; i < insertBuffer.curRows; i++) {
+		PGresult *res = PQexecPrepared(conn, "", numberOfColumns, insertBuffer.bufferedRows[i], NULL, NULL, 0);
+		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+			msg(MSG_ERROR,"IpfixDbWriterPg: Insert of records failed. Error: %s",
+					PQerrorMessage(conn));
+			PQclear(res);
+			goto dbwriteerror;
+		}
 		PQclear(res);
-		goto dbwriteerror;
 	}
-	PQclear(res);
 
-	insertBuffer.curRows = 0;
-	insertBuffer.appendPtr = insertBuffer.bodyPtr;
-	*insertBuffer.appendPtr = 0;
+
+	// Reset insert buffer
+	resetInsertBuffer();
 
     msg(MSG_DEBUG,"Write to database is complete");
     return true;
@@ -317,22 +318,42 @@ bool IpfixDbWriterPg::checkRelationExists(const char* relname)
 /**
  * In Postgres IPv4 addresses are stored as inet types and thus converted to dotted decimal notation.
  */
-void IpfixDbWriterPg::parseIpfixIpv4Address(IpfixRecord::Data* data, string* parsedData) {
-    *parsedData = boost::str(boost::format("'%u.%u.%u.%u'") % (int) data[0] % (int) data[1] % (int) data[2] % (int) data[3]);
+void IpfixDbWriterPg::parseIpfixIpv4Address(IpfixRecord::Data* data, const char** parsedData) {
+    *parsedData = boost::str(boost::format("'%u.%u.%u.%u'") % (int) data[0] % (int) data[1] % (int) data[2] % (int) data[3]).c_str();
 }
 
 /**
  * In Postgres IPv6 addresses are stored as inet types and thus converted to double colon hex notation.
  */
-void IpfixDbWriterPg::parseIpfixIpv6Address(IpfixRecord::Data* data, string* parsedData) {
-	*parsedData = boost::str(boost::format("'%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x'") % htons((uint16_t) data[0]) % htons((uint16_t) data[2]) % htons((uint16_t) data[4]) % htons((uint16_t) data[6]) % htons((uint16_t) data[8]) % htons((uint16_t) data[10]) % htons((uint16_t) data[12]) % htons((uint16_t) data[14]));
+void IpfixDbWriterPg::parseIpfixIpv6Address(IpfixRecord::Data* data, const char** parsedData) {
+	*parsedData = boost::str(boost::format("'%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x'") % htons((uint16_t) data[0]) % htons((uint16_t) data[2]) % htons((uint16_t) data[4]) % htons((uint16_t) data[6]) % htons((uint16_t) data[8]) % htons((uint16_t) data[10]) % htons((uint16_t) data[12]) % htons((uint16_t) data[14])).c_str();
 }
 
 /**
  * In Postgres MAC addresses are stored as macaddr types and thus converted to colon hex notation.
  */
-void IpfixDbWriterPg::parseIpfixMacAddress(IpfixRecord::Data* data, string* parsedData) {
-    *parsedData = boost::str(boost::format("'%02x:%02x:%02x:%02x:%02x:%02x'") % (int) data[0] % (int) data[1] % (int) data[2] % (int) data[3] % (int) data[4] % (int) data[5]);
+void IpfixDbWriterPg::parseIpfixMacAddress(IpfixRecord::Data* data, const char** parsedData) {
+    *parsedData = boost::str(boost::format("'%02x:%02x:%02x:%02x:%02x:%02x'") % (int) data[0] % (int) data[1] % (int) data[2] % (int) data[3] % (int) data[4] % (int) data[5]).c_str();
+}
+
+
+/**
+ * Create or update an unnamed prepared statement.
+ */
+void IpfixDbWriterPg::createPreparedStmt(string tableName) {
+	string insertStr = "INSERT INTO " + tableName + " VALUES (";
+	for (uint32_t i = 1; i <= numberOfColumns; i++) {
+		insertStr += "$" + boost::lexical_cast<string>(i);
+		if (i != numberOfColumns) {
+			insertStr += ",";
+		}
+	}
+	insertStr += ")";
+
+	PGresult *res = PQprepare(conn, "", insertStr.c_str(), numberOfColumns, NULL);
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+		THROWEXCEPTION("Could not create prepared stmt: %s", insertStr.c_str());
+	}
 }
 
 /***** Exported Functions ****************************************************/

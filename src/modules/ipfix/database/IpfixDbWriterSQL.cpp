@@ -348,24 +348,14 @@ bool IpfixDbWriterSQL::setCurrentTable(uint64_t flowStart)
 
 	if (!createDBTable(tablename.c_str(), starttime, endtime)) return false;
 
-	string sql = getInsertString(tablename);
-
-	strcpy(insertBuffer.sql, sql.c_str());
-	insertBuffer.bodyPtr = insertBuffer.sql + sql.size();
-	insertBuffer.appendPtr = insertBuffer.bodyPtr;
+	// Create or update the prepared statement
+	createPreparedStmt(tablename);
+	insertBuffer.curRows = 0;
 
 	curTable.name = tablename;
 	curTable.timeStart = starttime;
 	curTable.timeEnd = endtime;
 	return true;
-}
-
-std::string IpfixDbWriterSQL::insertRowPrefix()
-{
-	if (insertBuffer.curRows > 0) {
-		return ",";
-	}
-	return "";
 }
 
 /**
@@ -377,21 +367,21 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 {
 	uint64_t flowstart = 0;
 	uint32_t k;
-	bool first = true;
-	ostringstream rowStream;
-
-	rowStream << "(";
 
 	uint32_t colNum = 0;
+
+	// Allocate new array for current row values
+	const char **values = (const char **) malloc(sizeof(const char *) * tableColumns.size());
+	memset(values, 0, sizeof(const char *) * tableColumns.size());
 
 	/**loop over the columname and loop over the IPFIX_TYPEID of the record
 	 to get the corresponding data to store and make insert statement*/
 	for(vector<Column>::iterator col = tableColumns.begin(); col != tableColumns.end(); col++) {
 		// Reset parsedData after each iteration
-		string parsedData = "";
+		const char **parsedData = &values[colNum];
 
 		if (col->ipfixId == EXPORTERID) {
-			parsedData = boost::str(boost::format("%d") % getExporterID(sourceID));
+			*parsedData = boost::str(boost::format("%d") % getExporterID(sourceID)).c_str();
 			break;
 		} else {
 			// try to gather data required for the field
@@ -399,28 +389,28 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			// Start by checking the k-th column for the k-th record (speedup if columns are the same as in the template)
 			for(k = colNum; k != colNum - 1; k = (k + 1) % dataTemplateInfo->fieldCount) {
 				if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
-					parseIpfixData(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset), &parsedData);
+					parseIpfixData(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset), parsedData);
 					DPRINTF("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
 					break;
 				}
 			}
 			// look in static data fields of template for data
-			if (parsedData.empty()) {
+			if (parsedData == 0) {
 				for(k=0; k < dataTemplateInfo->dataCount; k++) {
 					if(dataTemplateInfo->dataInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->dataInfo[k].type.id == col->ipfixId) {
-						parseIpfixData(dataTemplateInfo->dataInfo[k].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[k].offset), &parsedData);
+						parseIpfixData(dataTemplateInfo->dataInfo[k].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[k].offset), parsedData);
 						break;
 					}
 				}
 			}
 			// check for time-related alternative fields in the database
-			if (parsedData.empty()) {
-				checkTimeAlternatives(&(*col), dataTemplateInfo, data, &parsedData);
+			if (parsedData == 0) {
+				checkTimeAlternatives(&(*col), dataTemplateInfo, data, parsedData);
 			}
 
 			// get default value if nothing found until now
-			if (parsedData.empty()) {
-					parsedData = boost::lexical_cast<int>(col->defaultValue);
+			if (parsedData == 0) {
+					*parsedData = boost::lexical_cast<std::string>(col->defaultValue).c_str();
 			}
 
 			// we need to extract the flow start time for determining the correct DB table
@@ -428,7 +418,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 				switch (col->ipfixId) {
 					case IPFIX_TYPEID_flowStartSeconds:
 						// save time for table access
-						flowstart = boost::lexical_cast<uint64_t>(parsedData) * 1000;
+						flowstart = boost::lexical_cast<uint64_t>(*parsedData) * 1000;
 						break;
 
 					case IPFIX_TYPEID_flowStartMilliseconds:
@@ -437,7 +427,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 						// This is realized by storing this value only if flowStartSeconds has not yet been seen.
 						// A later appearing flowStartSeconds will override this value.
 						if (flowstart == 0) {
-							flowstart = boost::lexical_cast<uint64_t>(parsedData);
+							flowstart = boost::lexical_cast<uint64_t>(*parsedData);
 						}
 				}
 			} else if (col->enterprise == IPFIX_PEN_reverse)
@@ -445,7 +435,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 					case IPFIX_TYPEID_flowStartMilliseconds:
 					case IPFIX_TYPEID_flowEndMilliseconds:
 						if (flowstart == 0) {
-							flowstart = boost::lexical_cast<uint64_t>(parsedData);
+							flowstart = boost::lexical_cast<uint64_t>(*parsedData);
 						}
 						break;
 				}
@@ -453,17 +443,9 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 
 		DPRINTF("saw ipfix id %d in packet with parsedData %llX", col->ipfixId, parsedData);
 
-		if(first) {
-			rowStream << parsedData;
-		} else {
-			rowStream << "," << parsedData;
-		}
-		first = false;
-
 		colNum++;
 	}
 
-	rowStream << ")";
 
 	// if this flow belongs to a different table, flush all cached entries now
 	// and get new table
@@ -478,25 +460,15 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		}
 	}
 
-	//  add prefix that needs to be applied before the actual values for
-	// the insert string
-	std::string prefix= insertRowPrefix();
-	if (prefix.size() > 0) {
-		strcat(insertBuffer.appendPtr, prefix.c_str());
-		insertBuffer.appendPtr += prefix.size();
-	}
-	
-
-	// add the rowStream buffer
-	strcat(insertBuffer.appendPtr, rowStream.str().c_str());
-	insertBuffer.appendPtr += rowStream.str().size();
+	// Add values to buffered rows
+	insertBuffer.bufferedRows[insertBuffer.curRows] = values;
 	insertBuffer.curRows++;
 }
 
 /**
  * Check alternatives if no exact was found for time-related IPFIX IEs.
  */
-void IpfixDbWriterSQL::checkTimeAlternatives(Column* col, TemplateInfo* dataTemplateInfo, IpfixRecord::Data* data, string* parsedData) {
+void IpfixDbWriterSQL::checkTimeAlternatives(Column* col, TemplateInfo* dataTemplateInfo, IpfixRecord::Data* data, const char** parsedData) {
 
 	int k;
 
@@ -605,11 +577,11 @@ void IpfixDbWriterSQL::checkTimeAlternatives(Column* col, TemplateInfo* dataTemp
 /**
  * Parses a unsigned integer and scales it by factor, useful for checkTimeAlternatives().
  */
-void IpfixDbWriterSQL::parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, IpfixRecord::Data* data, double factor, string* parsedData) {
+void IpfixDbWriterSQL::parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, IpfixRecord::Data* data, double factor, const char** parsedData) {
 
 	parseIpfixData(fieldInfo.type, (data+fieldInfo.offset), parsedData);
 	if (factor != 1) {
-		*parsedData = boost::lexical_cast<string>(boost::lexical_cast<uint64_t>(*parsedData) * factor);
+		*parsedData = boost::lexical_cast<string>(boost::lexical_cast<uint64_t>(*parsedData) * factor).c_str();
 	}
 }
 
@@ -617,7 +589,7 @@ void IpfixDbWriterSQL::parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, Ipfi
 /**
  *	Get data of the record is given by the IPFIX_TYPEID
  */
-void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixRecord::Data* data, string* parsedData)
+void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixRecord::Data* data, const char** parsedData)
 {
     switch (ipfix_id_lookup(type.id, type.enterprise)->type) {
 
@@ -665,7 +637,7 @@ void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixReco
 
 		case IPFIX_TYPE_string:
 			// Truncate string to length announced in record
-			*parsedData = boost::str(boost::format("'%." + boost::lexical_cast<std::string>(type.length)  +  "s'") );
+			*parsedData = boost::str(boost::format("'%." + boost::lexical_cast<std::string>(type.length)  +  "s'")).c_str();
             break;
 
 		case IPFIX_TYPE_octetArray:
@@ -680,20 +652,20 @@ void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixReco
 /**
  * Writes IPFIX unsigned integer into string, useful for handling reduced size encoding.
  */
-void IpfixDbWriterSQL::parseIpfixUint(IpfixRecord::Data* data, uint16_t length, string* parsedData) {
+void IpfixDbWriterSQL::parseIpfixUint(IpfixRecord::Data* data, uint16_t length, const char** parsedData) {
 	uint64_t acc = 0;
 
 	for (int i = 0; i < length; i++) {
 		acc = (acc << 8) + (uint8_t) data[i];
 	}
 
-	*parsedData = boost::lexical_cast<std::string>(acc);
+	*parsedData = boost::lexical_cast<std::string>(acc).c_str();
 }
 
 /**
  * Writes IPFIX signed integer into string, useful for handling reduced size encoding.
  */
-void IpfixDbWriterSQL::parseIpfixInt(IpfixRecord::Data* data, uint16_t length, string* parsedData) {
+void IpfixDbWriterSQL::parseIpfixInt(IpfixRecord::Data* data, uint16_t length, const char** parsedData) {
 	// First byte is parsed as signed int8_t to preserve the sign
 	int64_t acc = (int8_t) data[0];
 
@@ -701,19 +673,19 @@ void IpfixDbWriterSQL::parseIpfixInt(IpfixRecord::Data* data, uint16_t length, s
 		acc = (acc << 8) + (uint8_t) data[i];
 	}
 
-	*parsedData = boost::lexical_cast<std::string>(acc);
+	*parsedData = boost::lexical_cast<std::string>(acc).c_str();
 }
 
 /**
  * Writes IPFIX 32 and 64 bit floats into string, useful for handling reduced size encoding.
  */
-void IpfixDbWriterSQL::parseIpfixFloat(IpfixRecord::Data* data, uint16_t length, string* parsedData) {
+void IpfixDbWriterSQL::parseIpfixFloat(IpfixRecord::Data* data, uint16_t length, const char** parsedData) {
 	switch(length) {
 		case 4:
-			*parsedData = boost::lexical_cast<std::string>(*(float*) data);
+			*parsedData = boost::lexical_cast<std::string>(*(float*) data).c_str();
 			break;
 		case 8:
-			*parsedData = boost::lexical_cast<std::string>(*(double*) data);
+			*parsedData = boost::lexical_cast<std::string>(*(double*) data).c_str();
 			break;
 		default:
 			msg(MSG_ERROR, "failed to parse float of length %hu", length);
@@ -733,18 +705,6 @@ uint32_t IpfixDbWriterSQL::getdefaultIPFIXdata(int ipfixtype_id)
 		}
 	}
 	return 0;
-}
-
-string IpfixDbWriterSQL::getInsertString(string tableName)
-{
-	ostringstream sql;
-	sql  << "INSERT INTO " << tableName << " (";
-	for (uint32_t i = 0; i < numberOfColumns; ++i) {
-		sql << tableColumns[i].cname;
-		if (i < numberOfColumns - 1) sql << ",";
-	}
-	sql << ") VALUES ";
-	return sql.str();
 }
 
 /***** Exported Functions ****************************************************/
@@ -859,15 +819,31 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 	}
 	msg(MSG_INFO, "IpfixDbWriter: columns are %s", tableColumnsString.c_str());
 
-
 	/**count columns*/
 	numberOfColumns = tableColumns.size();
 
-	/**Initialize structure members Statement*/
+	// Initialize insert buffer
+	initInsertBuffer(maxStatements);
+}
+
+void IpfixDbWriterSQL::initInsertBuffer(uint32_t maxRows) {
 	insertBuffer.curRows = 0;
-	insertBuffer.maxRows = maxStatements;
-	insertBuffer.sql = new char[(INS_WIDTH+3)*(numberOfColumns+1)*maxStatements+numberOfColumns*20+60+1];
-	*insertBuffer.sql = 0;
+	insertBuffer.maxRows = maxRows;
+	/* Allocate an array for the buffered rows. The sub-arrays for the respective values are allocated on demand. */
+	*insertBuffer.bufferedRows = (const char **) malloc(sizeof(const char **) * insertBuffer.maxRows);
+	memset(insertBuffer.bufferedRows, 0, sizeof(const char **));
+}
+
+void IpfixDbWriterSQL::resetInsertBuffer() {
+	uint32_t maxRows = insertBuffer.maxRows;
+	for (uint32_t i = 0; i < insertBuffer.curRows; i++) {
+		for (uint32_t j = 0; j < numberOfColumns; j++) {
+			free(insertBuffer.bufferedRows[i] + j);
+		}
+	}
+	free(insertBuffer.bufferedRows);
+
+	initInsertBuffer(maxRows);
 }
 
 /**
@@ -876,7 +852,8 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
  */
 IpfixDbWriterSQL::~IpfixDbWriterSQL()
 {
-	delete[] insertBuffer.sql;
+	resetInsertBuffer();
+	free(insertBuffer.bufferedRows);
 }
 
 #endif
