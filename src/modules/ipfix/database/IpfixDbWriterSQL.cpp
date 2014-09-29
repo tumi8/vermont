@@ -350,7 +350,9 @@ bool IpfixDbWriterSQL::setCurrentTable(uint64_t flowStart)
 
 	// Create or update the prepared statement
 	createPreparedStmt(tablename);
-	insertBuffer.curRows = 0;
+
+	// Reset insert buffer
+	resetInsertBuffer();
 
 	curTable.name = tablename;
 	curTable.timeStart = starttime;
