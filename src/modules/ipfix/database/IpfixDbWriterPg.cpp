@@ -318,22 +318,22 @@ bool IpfixDbWriterPg::checkRelationExists(const char* relname)
 /**
  * In Postgres IPv4 addresses are stored as inet types and thus converted to dotted decimal notation.
  */
-void IpfixDbWriterPg::parseIpfixIpv4Address(IpfixRecord::Data* data, const char** parsedData) {
-    *parsedData = boost::str(boost::format("'%u.%u.%u.%u'") % (int) data[0] % (int) data[1] % (int) data[2] % (int) data[3]).c_str();
+void IpfixDbWriterPg::parseIpfixIpv4Address(IpfixRecord::Data* data, char** parsedData) {
+    *parsedData = strdup(boost::str(boost::format("'%u.%u.%u.%u'") % (int) data[0] % (int) data[1] % (int) data[2] % (int) data[3]).c_str());
 }
 
 /**
  * In Postgres IPv6 addresses are stored as inet types and thus converted to double colon hex notation.
  */
-void IpfixDbWriterPg::parseIpfixIpv6Address(IpfixRecord::Data* data, const char** parsedData) {
-	*parsedData = boost::str(boost::format("'%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x'") % htons((uint16_t) data[0]) % htons((uint16_t) data[2]) % htons((uint16_t) data[4]) % htons((uint16_t) data[6]) % htons((uint16_t) data[8]) % htons((uint16_t) data[10]) % htons((uint16_t) data[12]) % htons((uint16_t) data[14])).c_str();
+void IpfixDbWriterPg::parseIpfixIpv6Address(IpfixRecord::Data* data, char** parsedData) {
+	*parsedData = strdup(boost::str(boost::format("'%04x:%04x:%04x:%04x:%04x:%04x:%04x:%04x'") % htons((uint16_t) data[0]) % htons((uint16_t) data[2]) % htons((uint16_t) data[4]) % htons((uint16_t) data[6]) % htons((uint16_t) data[8]) % htons((uint16_t) data[10]) % htons((uint16_t) data[12]) % htons((uint16_t) data[14])).c_str());
 }
 
 /**
  * In Postgres MAC addresses are stored as macaddr types and thus converted to colon hex notation.
  */
-void IpfixDbWriterPg::parseIpfixMacAddress(IpfixRecord::Data* data, const char** parsedData) {
-    *parsedData = boost::str(boost::format("'%02x:%02x:%02x:%02x:%02x:%02x'") % (int) data[0] % (int) data[1] % (int) data[2] % (int) data[3] % (int) data[4] % (int) data[5]).c_str();
+void IpfixDbWriterPg::parseIpfixMacAddress(IpfixRecord::Data* data, char** parsedData) {
+    *parsedData = strdup(boost::str(boost::format("'%02x:%02x:%02x:%02x:%02x:%02x'") % (int) data[0] % (int) data[1] % (int) data[2] % (int) data[3] % (int) data[4] % (int) data[5]).c_str());
 }
 
 

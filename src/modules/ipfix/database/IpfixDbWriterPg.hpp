@@ -58,9 +58,9 @@ class IpfixDbWriterPg
 		virtual int createExporterTable();
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID);
 		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime);
-		virtual void parseIpfixIpv4Address(IpfixRecord::Data* data, const char** parsedData);
-		virtual void parseIpfixIpv6Address(IpfixRecord::Data* data, const char** parsedData);
-		virtual void parseIpfixMacAddress(IpfixRecord::Data* data, const char** parsedData);
+		virtual void parseIpfixIpv4Address(IpfixRecord::Data* data, char** parsedData);
+		virtual void parseIpfixIpv6Address(IpfixRecord::Data* data, char** parsedData);
+		virtual void parseIpfixMacAddress(IpfixRecord::Data* data, char** parsedData);
 		virtual void createPreparedStmt(string tableName);
 
 	protected:

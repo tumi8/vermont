@@ -80,7 +80,7 @@ class IpfixDbWriterSQL
 		struct InsertBuffer {
 			uint32_t curRows;           /** counter of rows to be inserted */
 			uint32_t maxRows;			/** maximum number of insert rows in buffer */
-			const char** bufferedRows[];	/** pointer to array of rows pointing to array of character array values */
+			char*** bufferedRows;	/** pointer to array of rows pointing to array of character array values */
 		};
 
 		struct Table {
@@ -140,9 +140,9 @@ class IpfixDbWriterSQL
 		virtual int createExporterTable() = 0 ;
 		virtual bool createDBTable(const char* partitionname, uint64_t starttime, uint64_t endtime) = 0;
 		virtual int getExporterID(IpfixRecord::SourceID* sourceID) = 0;
-		virtual void parseIpfixIpv4Address(IpfixRecord::Data* data, const char** parsedData) = 0;
-		virtual void parseIpfixIpv6Address(IpfixRecord::Data* data, const char** parsedData) = 0;
-		virtual void parseIpfixMacAddress(IpfixRecord::Data* data, const char** parsedData) = 0;
+		virtual void parseIpfixIpv4Address(IpfixRecord::Data* data, char** parsedData) = 0;
+		virtual void parseIpfixIpv6Address(IpfixRecord::Data* data, char** parsedData) = 0;
+		virtual void parseIpfixMacAddress(IpfixRecord::Data* data, char** parsedData) = 0;
 		virtual void createPreparedStmt(string tableName) = 0;
 		std::string getDBDataType(const uint16_t ipfixType);
 		Column* legacyNamesMap;
@@ -156,12 +156,12 @@ class IpfixDbWriterSQL
 
 		char* getTableNamDependTime(char* tablename,uint64_t flowstartsec);
 
-		void checkTimeAlternatives(Column* col, TemplateInfo* dataTemplateInfo, IpfixRecord::Data* data, const char** parsedData);
-		void parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, IpfixRecord::Data* data, double factor, const char** parsedData);
-		void parseIpfixData(InformationElement::IeInfo type, IpfixRecord::Data* data, const char** parsedData);
-		void parseIpfixUint(IpfixRecord::Data* data, uint16_t length, const char** parsedData);
-		void parseIpfixInt(IpfixRecord::Data* data, uint16_t length, const char** parsedData);
-		void parseIpfixFloat(IpfixRecord::Data* data, uint16_t length, const char** parsedData);
+		void checkTimeAlternatives(Column* col, TemplateInfo* dataTemplateInfo, IpfixRecord::Data* data, char** parsedData);
+		void parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, IpfixRecord::Data* data, double factor, char** parsedData);
+		void parseIpfixData(InformationElement::IeInfo type, IpfixRecord::Data* data, char** parsedData);
+		void parseIpfixUint(IpfixRecord::Data* data, uint16_t length, char** parsedData);
+		void parseIpfixInt(IpfixRecord::Data* data, uint16_t length, char** parsedData);
+		void parseIpfixFloat(IpfixRecord::Data* data, uint16_t length, char** parsedData);
 		uint32_t getdefaultIPFIXdata(int ipfixtype);
 
 };

@@ -371,17 +371,17 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 	uint32_t colNum = 0;
 
 	// Allocate new array for current row values
-	const char **values = (const char **) malloc(sizeof(const char *) * tableColumns.size());
-	memset(values, 0, sizeof(const char *) * tableColumns.size());
+	char **values = (char **) malloc(sizeof(char **) * tableColumns.size());
+	memset(values, 0, sizeof(char *) * tableColumns.size());
 
 	/**loop over the columname and loop over the IPFIX_TYPEID of the record
 	 to get the corresponding data to store and make insert statement*/
 	for(vector<Column>::iterator col = tableColumns.begin(); col != tableColumns.end(); col++) {
 		// Reset parsedData after each iteration
-		const char **parsedData = &values[colNum];
+		char **parsedData = &values[colNum];
 
 		if (col->ipfixId == EXPORTERID) {
-			*parsedData = boost::str(boost::format("%d") % getExporterID(sourceID)).c_str();
+			*parsedData = strdup(boost::str(boost::format("%d") % getExporterID(sourceID)).c_str());
 			break;
 		} else {
 			// try to gather data required for the field
@@ -410,7 +410,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 
 			// get default value if nothing found until now
 			if (parsedData == 0) {
-					*parsedData = boost::lexical_cast<std::string>(col->defaultValue).c_str();
+					*parsedData = strdup(boost::lexical_cast<std::string>(col->defaultValue).c_str());
 			}
 
 			// we need to extract the flow start time for determining the correct DB table
@@ -468,7 +468,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 /**
  * Check alternatives if no exact was found for time-related IPFIX IEs.
  */
-void IpfixDbWriterSQL::checkTimeAlternatives(Column* col, TemplateInfo* dataTemplateInfo, IpfixRecord::Data* data, const char** parsedData) {
+void IpfixDbWriterSQL::checkTimeAlternatives(Column* col, TemplateInfo* dataTemplateInfo, IpfixRecord::Data* data, char** parsedData) {
 
 	int k;
 
@@ -577,11 +577,11 @@ void IpfixDbWriterSQL::checkTimeAlternatives(Column* col, TemplateInfo* dataTemp
 /**
  * Parses a unsigned integer and scales it by factor, useful for checkTimeAlternatives().
  */
-void IpfixDbWriterSQL::parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, IpfixRecord::Data* data, double factor, const char** parsedData) {
+void IpfixDbWriterSQL::parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, IpfixRecord::Data* data, double factor, char** parsedData) {
 
 	parseIpfixData(fieldInfo.type, (data+fieldInfo.offset), parsedData);
 	if (factor != 1) {
-		*parsedData = boost::lexical_cast<string>(boost::lexical_cast<uint64_t>(*parsedData) * factor).c_str();
+		*parsedData = strdup(boost::lexical_cast<string>(boost::lexical_cast<uint64_t>(*parsedData) * factor).c_str());
 	}
 }
 
@@ -589,7 +589,7 @@ void IpfixDbWriterSQL::parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, Ipfi
 /**
  *	Get data of the record is given by the IPFIX_TYPEID
  */
-void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixRecord::Data* data, const char** parsedData)
+void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixRecord::Data* data, char** parsedData)
 {
     switch (ipfix_id_lookup(type.id, type.enterprise)->type) {
 
@@ -637,7 +637,7 @@ void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixReco
 
 		case IPFIX_TYPE_string:
 			// Truncate string to length announced in record
-			*parsedData = boost::str(boost::format("'%." + boost::lexical_cast<std::string>(type.length)  +  "s'")).c_str();
+			*parsedData = strdup(boost::str(boost::format("'%." + boost::lexical_cast<std::string>(type.length)  +  "s'")).c_str());
             break;
 
 		case IPFIX_TYPE_octetArray:
@@ -652,20 +652,20 @@ void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixReco
 /**
  * Writes IPFIX unsigned integer into string, useful for handling reduced size encoding.
  */
-void IpfixDbWriterSQL::parseIpfixUint(IpfixRecord::Data* data, uint16_t length, const char** parsedData) {
+void IpfixDbWriterSQL::parseIpfixUint(IpfixRecord::Data* data, uint16_t length, char** parsedData) {
 	uint64_t acc = 0;
 
 	for (int i = 0; i < length; i++) {
 		acc = (acc << 8) + (uint8_t) data[i];
 	}
 
-	*parsedData = boost::lexical_cast<std::string>(acc).c_str();
+	*parsedData = strdup(boost::lexical_cast<std::string>(acc).c_str());
 }
 
 /**
  * Writes IPFIX signed integer into string, useful for handling reduced size encoding.
  */
-void IpfixDbWriterSQL::parseIpfixInt(IpfixRecord::Data* data, uint16_t length, const char** parsedData) {
+void IpfixDbWriterSQL::parseIpfixInt(IpfixRecord::Data* data, uint16_t length, char** parsedData) {
 	// First byte is parsed as signed int8_t to preserve the sign
 	int64_t acc = (int8_t) data[0];
 
@@ -673,19 +673,19 @@ void IpfixDbWriterSQL::parseIpfixInt(IpfixRecord::Data* data, uint16_t length, c
 		acc = (acc << 8) + (uint8_t) data[i];
 	}
 
-	*parsedData = boost::lexical_cast<std::string>(acc).c_str();
+	*parsedData = strdup(boost::lexical_cast<std::string>(acc).c_str());
 }
 
 /**
  * Writes IPFIX 32 and 64 bit floats into string, useful for handling reduced size encoding.
  */
-void IpfixDbWriterSQL::parseIpfixFloat(IpfixRecord::Data* data, uint16_t length, const char** parsedData) {
+void IpfixDbWriterSQL::parseIpfixFloat(IpfixRecord::Data* data, uint16_t length, char** parsedData) {
 	switch(length) {
 		case 4:
-			*parsedData = boost::lexical_cast<std::string>(*(float*) data).c_str();
+			*parsedData = strdup(boost::lexical_cast<std::string>(*(float*) data).c_str());
 			break;
 		case 8:
-			*parsedData = boost::lexical_cast<std::string>(*(double*) data).c_str();
+			*parsedData = strdup(boost::lexical_cast<std::string>(*(double*) data).c_str());
 			break;
 		default:
 			msg(MSG_ERROR, "failed to parse float of length %hu", length);
@@ -830,20 +830,22 @@ void IpfixDbWriterSQL::initInsertBuffer(uint32_t maxRows) {
 	insertBuffer.curRows = 0;
 	insertBuffer.maxRows = maxRows;
 	/* Allocate an array for the buffered rows. The sub-arrays for the respective values are allocated on demand. */
-	*insertBuffer.bufferedRows = (const char **) malloc(sizeof(const char **) * insertBuffer.maxRows);
-	memset(insertBuffer.bufferedRows, 0, sizeof(const char **));
+	insertBuffer.bufferedRows = (char ***) malloc(sizeof(char ***) * insertBuffer.maxRows);
+	memset(insertBuffer.bufferedRows, 0, sizeof(char ***));
 }
 
 void IpfixDbWriterSQL::resetInsertBuffer() {
-	uint32_t maxRows = insertBuffer.maxRows;
 	for (uint32_t i = 0; i < insertBuffer.curRows; i++) {
+		char **values = (char **) insertBuffer.bufferedRows[i];
 		for (uint32_t j = 0; j < numberOfColumns; j++) {
-			free(insertBuffer.bufferedRows[i] + j);
+			char *parsedData = values[j];
+			free(parsedData);
 		}
+		free(values);
 	}
 	free(insertBuffer.bufferedRows);
 
-	initInsertBuffer(maxRows);
+	initInsertBuffer(insertBuffer.maxRows);
 }
 
 /**
