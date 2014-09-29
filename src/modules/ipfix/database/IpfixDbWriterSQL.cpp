@@ -721,8 +721,8 @@ void IpfixDbWriterSQL::parseIpfixFloat(IpfixRecord::Data* data, uint16_t length,
  */
 uint32_t IpfixDbWriterSQL::getdefaultIPFIXdata(int ipfixtype_id)
 {
-	int i;
-	for( i=0; i != tableColumns.size(); i++) {
+	uint32_t i;
+	for (i=0; i != tableColumns.size(); i++) {
 		if(ipfixtype_id == tableColumns[i].ipfixId) {
 			return tableColumns[i].defaultValue;
 		}

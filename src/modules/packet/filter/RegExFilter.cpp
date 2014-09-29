@@ -36,14 +36,12 @@ inline bool RegExFilter::compare(char *pdata)
 bool RegExFilter::processPacket(Packet* p)
 {
 	const unsigned char* pdata;
-	unsigned int plength;
 	unsigned int payloadOffset;
 	bool result;
 
 	payloadOffset = p->payloadOffset;
 	if( payloadOffset == 0) return false;
 	pdata = p->data.netHeader + payloadOffset;
-	plength = p->data_length - payloadOffset;
 
 	if(pdata == NULL) return false;
 

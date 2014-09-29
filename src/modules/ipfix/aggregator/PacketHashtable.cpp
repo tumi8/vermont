@@ -1469,7 +1469,6 @@ void PacketHashtable::aggregatePacket(Packet* p)
 
 	// search bucket inside hashtable
 	HashtableBucket* bucket = buckets[hash];
-	HashtableBucket* appendbucket = NULL;
 	uint32_t* oldflowcount = NULL;
 	bool flowfound = false;
 	bool expiryforced = false;
@@ -1501,7 +1500,6 @@ void PacketHashtable::aggregatePacket(Packet* p)
 			}
 
 			if (bucket->next==NULL) {
-				appendbucket = bucket;
 				break;
 			}
 			bucket = (HashtableBucket*)bucket->next;

@@ -976,31 +976,30 @@ out:
  */
 int ipfix_deinit_exporter(ipfix_exporter *exporter) {
         // cleanup processes
-        int ret;
         // close sockets etc.
         // (currently, nothing to do)
 
         // free all children
 
         // deinitialize array to hold the templates.
-        ret=ipfix_deinit_template_array(exporter);
+        ipfix_deinit_template_array(exporter);
 
         /*   free ( (**exporter).template_arr); */
         /*   (**exporter).template_arr = NULL; */
 
         // deinitialize the sendbuffers
-        ret=ipfix_deinit_sendbuffer(&(exporter->data_sendbuffer));
-        ret=ipfix_deinit_sendbuffer(&(exporter->template_sendbuffer));
-	ret=ipfix_deinit_sendbuffer(&(exporter->sctp_template_sendbuffer));
+        ipfix_deinit_sendbuffer(&(exporter->data_sendbuffer));
+        ipfix_deinit_sendbuffer(&(exporter->template_sendbuffer));
+        ipfix_deinit_sendbuffer(&(exporter->sctp_template_sendbuffer));
 
         // find the collector in the exporter
         int i=0;
-	for(i=0;i<exporter->collector_max_num;i++) {
-	    if (exporter->collector_arr[i].state != C_UNUSED)
-		remove_collector(&exporter->collector_arr[i]);
+        for(i=0;i<exporter->collector_max_num;i++) {
+	        if (exporter->collector_arr[i].state != C_UNUSED)
+                remove_collector(&exporter->collector_arr[i]);
         }
         // deinitialize the collectors
-        ret=ipfix_deinit_collector_array(&(exporter->collector_arr));
+        ipfix_deinit_collector_array(&(exporter->collector_arr));
 
 #ifdef SUPPORT_DTLS
 	deinit_openssl_ctx(exporter);
@@ -3238,7 +3237,6 @@ int ipfix_put_template_fixedfield(ipfix_exporter *exporter, uint16_t template_id
 int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void* data, uint16_t data_length) {
         int found_index;
         /* set pointers to the buffer */
-        int ret;
         char *p_pos;
         char *p_end;
 	
@@ -3277,9 +3275,9 @@ int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void
         DPRINTFL(MSG_VDEBUG, "B p_pos %p, p_end %p", p_pos, p_end);
 #endif
 
-	for(i = 0; i < data_length; i++) {
-		ret = write_octet(&p_pos, p_end, *(((uint8_t*)data)+i) );
-	}
+        for(i = 0; i < data_length; i++) {
+            write_octet(&p_pos, p_end, *(((uint8_t*)data)+i) );
+        }
 
         // add to the written length:
         templ->fields_length += data_length;

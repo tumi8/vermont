@@ -135,7 +135,6 @@ int * match_single_flow(struct Matcher * matcher, const char *flow, int length, 
 	for (i = 0; i < matcher->mapper->complete_numOfTokens; ++i) {
 		if(matches_tokenwise[i] != 0 || matches_tokenwise2[i] != 0) {
 			binary_matches_tokenwise[i] = 1.0;
-			//printf("token %d matched\n", i);
 		} else
 			binary_matches_tokenwise[i] = 0.0;
 	}
@@ -159,21 +158,12 @@ int * match_single_flow(struct Matcher * matcher, const char *flow, int length, 
 	matches_classwise = malloc(sizeof(int)*matcher->numOfClasses);
 	for (i = 0; i < matcher->numOfClasses; ++i) matches_classwise[i] = 0;
 
-	int output = 0;
 	int k;
 	for (i = 0; i < matcher->numOfClasses; ++i) {
-		//printf("class %d sum: %f\n", i, classwise_matching_sums[i]);
-		if (classwise_matching_sums[i]>0) {
-			output = 1;
-		}
 		if(classwise_matching_sums[i] >= matcher->mapper->classwise_thresholds[i]) {
-			//printf("class %d matched\n", i);
 			index_tokens = 0;
 			for (k = 0; k < matcher->numOfClasses; ++k) {
 				for (j = 0; j < matcher->mapper->classwise_numOfTokens[k]; ++j) {
-					if (k==i && binary_matches_tokenwise[index_tokens]>0) {
-						//printf(" `- token %d matched\n", j);
-					}
 					index_tokens++;
 				}
 			}

@@ -1,6 +1,10 @@
 #include "TestSuiteBase.h"
 
 
+Test::~Test()
+{
+}
+
 TestSuite::TestSuite()
 {
 

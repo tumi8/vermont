@@ -36,7 +36,7 @@ IpfixDbWriterCfg* IpfixDbWriterCfg::create(XMLElement* e)
 
 IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
     : CfgHelper<IpfixDbWriterSQL, IpfixDbWriterCfg>(elem, "ipfixDbWriter"),
-      port(0), bufferRecords(30), observationDomainId(0), useLegacyNames(false), tablePrefix("f")
+      port(0), bufferRecords(30), observationDomainId(0), tablePrefix("f"), useLegacyNames(false)
 {
     if (!elem) return;
 
