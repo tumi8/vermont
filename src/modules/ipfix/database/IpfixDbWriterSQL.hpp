@@ -80,7 +80,7 @@ class IpfixDbWriterSQL
 		struct InsertBuffer {
 			uint32_t curRows;           /** counter of rows to be inserted */
 			uint32_t maxRows;			/** maximum number of insert rows in buffer */
-			char*** bufferedRows;	/** pointer to array of rows pointing to array of character array values */
+			char*** bufferedRows;		/** pointer to array of rows pointing to array of character array values */
 		};
 
 		struct Table {
