@@ -187,18 +187,33 @@ bool IpfixDbWriterPg::writeToDb()
 {
 	if (insertBuffer.curRows==0) return true;
 
+	// Begin transaction
+	PGresult *res = PQexec(conn, "BEGIN");
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+		msg(MSG_ERROR,"IpfixDbWriterPg: Start of transaction failed. Error: %s",
+				PQerrorMessage(conn));
+		goto dbwriteerror;
+	}
+	PQclear(res);
+
 	// Write rows to database with a prepared statement
 	for (uint32_t i = 0; i < insertBuffer.curRows; i++) {
-		PGresult *res = PQexecPrepared(conn, "", numberOfColumns, insertBuffer.bufferedRows[i], NULL, NULL, 0);
+		res = PQexecPrepared(conn, "", numberOfColumns, insertBuffer.bufferedRows[i], NULL, NULL, 0);
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 			msg(MSG_ERROR,"IpfixDbWriterPg: Insert of records failed. Error: %s",
 					PQerrorMessage(conn));
-			PQclear(res);
-			goto dbwriteerror;
+			goto dbrollback;
 		}
 		PQclear(res);
 	}
 
+	// Commit transaction
+	res = PQexec(conn, "COMMIT");
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+		msg(MSG_ERROR,"IpfixDbWriterPg: Commit of transaction failed. Error: %s",
+				PQerrorMessage(conn));
+		goto dbrollback;
+	}
 
 	// Reset insert buffer
 	resetInsertBuffer();
@@ -206,7 +221,12 @@ bool IpfixDbWriterPg::writeToDb()
     msg(MSG_DEBUG,"Write to database is complete");
     return true;
 
+dbrollback:
+	PQexec(conn, "ROLLBACK");
+
 dbwriteerror:
+	resetInsertBuffer();
+	PQclear(res);
 	dbError = true;
 	return false;
 }
