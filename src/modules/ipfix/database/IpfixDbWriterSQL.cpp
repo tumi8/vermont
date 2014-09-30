@@ -373,7 +373,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 	uint32_t colNum = 0;
 
 	// Allocate new array for current row values
-	char **values = (char **) malloc(sizeof(char **) * tableColumns.size());
+	char **values = (char **) malloc(sizeof(char *) * tableColumns.size());
 	memset(values, 0, sizeof(char *) * tableColumns.size());
 
 	/**loop over the columname and loop over the IPFIX_TYPEID of the record
@@ -832,8 +832,8 @@ void IpfixDbWriterSQL::initInsertBuffer(uint32_t maxRows) {
 	insertBuffer.curRows = 0;
 	insertBuffer.maxRows = maxRows;
 	/* Allocate an array for the buffered rows. The sub-arrays for the respective values are allocated on demand. */
-	insertBuffer.bufferedRows = (char ***) malloc(sizeof(char ***) * insertBuffer.maxRows);
-	memset(insertBuffer.bufferedRows, 0, sizeof(char ***));
+	insertBuffer.bufferedRows = (char ***) malloc(sizeof(char **) * insertBuffer.maxRows);
+	memset(insertBuffer.bufferedRows, 0, sizeof(char **));
 }
 
 void IpfixDbWriterSQL::resetInsertBuffer() {
