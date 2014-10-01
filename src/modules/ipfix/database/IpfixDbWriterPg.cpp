@@ -196,6 +196,9 @@ bool IpfixDbWriterPg::writeToDb()
 	}
 	PQclear(res);
 
+	// Create or update the prepared statement
+	createPreparedStmt(curTable.name);
+
 	// Write rows to database with a prepared statement
 	for (uint32_t i = 0; i < insertBuffer.curRows; i++) {
 		res = PQexecPrepared(conn, "", numberOfColumns, insertBuffer.bufferedRows[i], NULL, NULL, 0);

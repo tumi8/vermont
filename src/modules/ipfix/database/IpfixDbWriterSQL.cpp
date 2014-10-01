@@ -348,12 +348,6 @@ bool IpfixDbWriterSQL::setCurrentTable(uint64_t flowStart)
 
 	if (!createDBTable(tablename.c_str(), starttime, endtime)) return false;
 
-	// Create or update the prepared statement
-	createPreparedStmt(tablename);
-
-	// Reset insert buffer
-	resetInsertBuffer();
-
 	curTable.name = tablename;
 	curTable.timeStart = starttime;
 	curTable.timeEnd = endtime;
