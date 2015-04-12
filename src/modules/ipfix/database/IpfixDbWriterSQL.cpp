@@ -383,7 +383,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			// try to gather data required for the field
 			// look inside the ipfix record
 			// Start by checking the k-th column for the k-th record (speedup if columns are the same as in the template)
-			for(k = colNum; k != colNum - 1; k = (k + 1) % dataTemplateInfo->fieldCount) {
+			for(k = colNum; (k + 1) % dataTemplateInfo->fieldCount != colNum; k = (k + 1) % dataTemplateInfo->fieldCount) {
 				if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
 					parseIpfixData(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset), parsedData);
 					DPRINTF("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
