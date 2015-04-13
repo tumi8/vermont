@@ -301,6 +301,9 @@ ELSE (MYSQL_FOUND AND SUPPORT_MYSQL)
 ENDIF (MYSQL_FOUND AND SUPPORT_MYSQL)
 
 ### PostgreSQL
+# Bug in Ubuntu 14.04 does not find PSQL Libs
+# https://bugs.launchpad.net/ubuntu/+source/cmake/+bug/1317135
+set(PostgreSQL_ADDITIONAL_SEARCH_PATHS "/usr/include/postgresql/9.3/server")
 
 OPTION(SUPPORT_POSTGRESQL "Enable PostgreSQL support" OFF)
 IF (SUPPORT_POSTGRESQL)
