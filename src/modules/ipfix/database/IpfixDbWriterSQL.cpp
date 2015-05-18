@@ -362,6 +362,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		TemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data)
 {
 	uint64_t flowstart = 0;
+	// Current field index, used in inner loops when going through fields in IPFIX data record or template record
 	uint32_t k;
 
 	uint32_t colNum = 0;
@@ -383,7 +384,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			// try to gather data required for the field
 			// look inside the ipfix record
 			// Start by checking the k-th column for the k-th record (speedup if columns are the same as in the template)
-			for(k = colNum; (k + 1) % dataTemplateInfo->fieldCount != colNum; k = (k + 1) % dataTemplateInfo->fieldCount) {
+			for(k = colNum % dataTemplateInfo->fieldCount; (k + 1) % dataTemplateInfo->fieldCount != colNum  % dataTemplateInfo->fieldCount; k = (k + 1) % dataTemplateInfo->fieldCount) {
 				if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
 					parseIpfixData(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset), parsedData);
 					DPRINTF("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
