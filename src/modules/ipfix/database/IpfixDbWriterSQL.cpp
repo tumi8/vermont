@@ -392,7 +392,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 				}
 			}
 			// look in static data fields of template for data
-			if (parsedData == 0) {
+			if (*parsedData == 0) {
 				for(k=0; k < dataTemplateInfo->dataCount; k++) {
 					if(dataTemplateInfo->dataInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->dataInfo[k].type.id == col->ipfixId) {
 						parseIpfixData(dataTemplateInfo->dataInfo[k].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[k].offset), parsedData);
@@ -401,12 +401,12 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 				}
 			}
 			// check for time-related alternative fields in the database
-			if (parsedData == 0) {
+			if (*parsedData == 0) {
 				checkTimeAlternatives(&(*col), dataTemplateInfo, data, parsedData);
 			}
 
 			// get default value if nothing found until now
-			if (parsedData == 0) {
+			if (*parsedData == 0) {
 					*parsedData = strdup(boost::lexical_cast<std::string>(col->defaultValue).c_str());
 			}
 
