@@ -361,6 +361,7 @@ bool IpfixDbWriterSQL::setCurrentTable(uint64_t flowStart)
 void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 		TemplateInfo* dataTemplateInfo, uint16_t length, IpfixRecord::Data* data)
 {
+	// time unit is in milliseconds
 	uint64_t flowstart = 0;
 	// Current field index, used in inner loops when going through fields in IPFIX data record or template record
 	uint32_t k;
