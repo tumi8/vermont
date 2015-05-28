@@ -512,15 +512,6 @@ IF (WITH_TOOLS)
 ELSE (WITH_TOOLS)
 ENDIF (WITH_TOOLS)
 
-
-### tests
-
-OPTION(WITH_TESTS "Build unit tests." OFF)
-IF (WITH_TESTS)
-	SUBDIRS(src/tests)
-ELSE (WITH_TESTS)
-ENDIF (WITH_TESTS)
-
 OPTION(DISABLE_MEMMANAGER "Disable custom memory manager (good for finding leaks with valgrind." OFF)
 IF (DISABLE_MEMMANAGER)
 	if (NOT DEBUG)
