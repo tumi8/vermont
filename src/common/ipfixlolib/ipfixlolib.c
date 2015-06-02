@@ -1599,7 +1599,7 @@ static void ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ip
         } else {
                 // compute it on our own:
                 // sum up all lengths in the iovecs:
-                int i;
+                unsigned int i;
 
                 // start the loop with 1, as 0 is reserved for the header!
                 for (i = 1; i< sendbuf->current;  i++) {
@@ -2332,7 +2332,9 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 							msg(MSG_VDEBUG, "%d template bytes sent to SCTP collector %s:%d",
 								bytes_sent, col->ipv4address, col->port_number);
 						}
-					} else DPRINTF("No Template to send to SCTP collector");
+					} else {
+					    DPRINTF("No Template to send to SCTP collector");
+					}
 					break;	
 				default:
 				msg(MSG_FATAL, "Unknown collector socket state");
@@ -2847,7 +2849,7 @@ int ipfix_cancel_data_set(ipfix_exporter *exporter)
 {
 	ipfix_set_manager *manager = &(exporter->data_sendbuffer->set_manager);
 	unsigned current = manager->set_counter;
-	int i;
+	unsigned int i;
 
 	// security check
 	if(exporter->data_sendbuffer->current == exporter->data_sendbuffer->committed) {

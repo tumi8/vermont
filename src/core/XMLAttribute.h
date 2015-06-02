@@ -24,7 +24,7 @@ protected:
 		return reinterpret_cast<xmlAttrPtr>(XMLNode::cobj());
 	}
 
-	inline const xmlAttrPtr cobj() const
+	inline xmlAttrPtr cobj() const
 	{
 		return reinterpret_cast<const xmlAttrPtr>(XMLNode::cobj());
 	}
