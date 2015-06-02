@@ -65,14 +65,14 @@ void vermont_exception(const int, const char*, const char*, const char*, const c
 //#endif
 
 // useful defines for logging
-#define THROWEXCEPTION(fmt, args...) vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, fmt, ##args)
+#define THROWEXCEPTION(...) vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, ##__VA_ARGS__)
 
-#define msg(lvl, fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
+#define msg(...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, ##__VA_ARGS__)
 
 #ifdef DEBUG
 
-#define DPRINTF(fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, MSG_DEBUG, fmt, ##args)
-#define DPRINTFL(lvl, fmt, args...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, fmt, ##args)
+#define DPRINTF(...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, MSG_DEBUG, ##__VA_ARGS__)
+#define DPRINTFL(...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, ##__VA_ARGS__)
 
 #define ASSERT(exp, description)                                                                        \
     {                                                                                                   \
@@ -84,8 +84,8 @@ void vermont_exception(const int, const char*, const char*, const char*, const c
 
 #else
 
-#define DPRINTF(fmt, args...)
-#define DPRINTFL(lvl, fmt, args...)
+#define DPRINTF(...)
+#define DPRINTFL(...)
 #define ASSERT(exp, description)
 
 #endif

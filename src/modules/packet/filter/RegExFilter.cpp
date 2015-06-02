@@ -31,7 +31,7 @@ inline bool RegExFilter::compare(char *pdata)
 
 	return false;
 
-};
+}
 
 bool RegExFilter::processPacket(Packet* p)
 {
@@ -49,4 +49,4 @@ bool RegExFilter::processPacket(Packet* p)
 
 	return result;
 
-};
+}

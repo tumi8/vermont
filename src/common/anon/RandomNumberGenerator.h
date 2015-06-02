@@ -33,7 +33,7 @@ namespace RandomNumberGenerator {
 	unsigned int generate();
 	unsigned int generate(unsigned int rangemin, unsigned int rangemax);
 
-};
+}
 
 #endif // __RANDOM_NUMBER_GENERATOR_H
 
