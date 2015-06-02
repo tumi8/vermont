@@ -66,7 +66,7 @@ PSAMPExporterModule::~PSAMPExporterModule()
         for (int i = 0; i < numPacketsToRelease; i++) {
 		(packetsToRelease[i])->removeReference();
 	}
-};
+}
 
 
 void PSAMPExporterModule::startNewPacketStream()

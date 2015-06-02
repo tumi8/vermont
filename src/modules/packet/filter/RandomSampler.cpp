@@ -68,7 +68,7 @@ RandomSampler::RandomSampler(int n, int N) : samplingSize(N), acceptSize(n), cur
 
                 sampleMask[pos] = true;
         }
-};
+}
 
 bool RandomSampler::processPacket(Packet *p)
 {

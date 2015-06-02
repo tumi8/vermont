@@ -97,7 +97,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 
 		struct CS_Ipfix_file_header {
 			uint8_t magic[8]; //expected: CS_IPFIX_MAGIC
-		} DISABLE_ALIGNMENT;
+		} DISABLE_ALIGNMENT
 
 		/**
 		 * class representing the start of a chunk in the CS format
@@ -106,7 +106,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 			uint16_t ipfix_type; //-> CS_IPFIX_CHUNK_TYPE -> 0x0008
 			uint32_t chunk_length; //number of bytes in chunk starting after this element, this should be flow_count*sizeof(Ipfix_basic_flow)+4
 			uint32_t flow_count; //number of Ipfix_basic_flow records to follow
-		} DISABLE_ALIGNMENT;
+		} DISABLE_ALIGNMENT
 
 		struct Ipfix_basic_flow {
 			uint16_t record_length;                 // total length of this record minus length of this element
@@ -129,7 +129,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 			uint64_t rev_octet_total_count;
 			uint64_t rev_packet_total_count;
 			uint8_t  rev_tcp_control_bits;
-		} DISABLE_ALIGNMENT;
+		} DISABLE_ALIGNMENT
 
 		list<Ipfix_basic_flow*> chunkList;
 		uint32_t chunkListSize;
