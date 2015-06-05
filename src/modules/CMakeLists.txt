@@ -74,6 +74,7 @@ ADD_LIBRARY(modules
     ipfix/IpfixSamplerCfg.cpp
     ipfix/NetflowV9ConverterCfg.cpp
     ipfix/Connection.cpp
+    ipfix/IpfixReceiverZmq.cpp
     ipfix/IpfixReceiverUdpIpV4.cpp
     ipfix/IpfixReceiverSctpIpV4.cpp
     ipfix/IpfixReceiverDtlsUdpIpV4.cpp
