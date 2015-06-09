@@ -52,7 +52,8 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 		const std::string &certificateChainFile,
 		const std::string &privateKeyFile,
 		const std::string &caFile,
-		const std::string &caPath)
+		const std::string &caPath,
+		export_protocol_version export_protocol)
 
 	: statSentDataRecords(0),
 	  statSentPackets(0),	  
@@ -62,7 +63,8 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
 	  timeoutRegistered(false),
 	  currentTemplateId(0),
-	  maxRecordRate(maxRecordRate)
+	  maxRecordRate(maxRecordRate),
+	  export_protocol(export_protocol)
 {
 	const char *certificate_chain_file = NULL;
 	const char *private_key_file = NULL;
@@ -76,7 +78,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	curTimeStep.tv_sec = 0;
 	curTimeStep.tv_usec = 0;
 
-	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
+	if(ipfix_init_exporter(export_protocol, observationDomainId, exporterP) != 0) {
 		msg(MSG_FATAL, "IpfixSender: ipfix_init_exporter failed");
 		goto out;
 	}
@@ -117,7 +119,8 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate)
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
 	  timeoutRegistered(false),
 	  currentTemplateId(0),
-	  maxRecordRate(maxRecordRate)
+	  maxRecordRate(maxRecordRate),
+	  export_protocol(IPFIX_PROTOCOL)
 {
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 
@@ -126,7 +129,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate)
 	curTimeStep.tv_sec = 0;
 	curTimeStep.tv_usec = 0;
 
-	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
+	if(ipfix_init_exporter(export_protocol, observationDomainId, exporterP) != 0) {
 		msg(MSG_FATAL, "IpfixSender: ipfix_init_exporter failed");
 		goto out;
 	}

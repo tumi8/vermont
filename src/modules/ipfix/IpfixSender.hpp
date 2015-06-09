@@ -49,7 +49,8 @@ public:
 			const std::string &certificateChainFile,
 			const std::string &privateKeyFile,
 			const std::string &caFile,
-			const std::string &caPath);
+		        const std::string &caPath,
+		        export_protocol_version export_protocol = IPFIX_PROTOCOL);
 	IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate = IS_DEFAULT_MAXRECORDRATE);
 	virtual ~IpfixSender();
 
@@ -138,6 +139,7 @@ private:
 	// mapping of uniqueId to templateId and vice versa
 	std::map<TemplateInfo::TemplateId, uint16_t> templateIdToUniqueId; /**< stores uniqueId for a give Template ID */
 	std::map<uint16_t, TemplateInfo::TemplateId> uniqueIdToTemplateId; /**< stores Template ID for a give unique ID */
+	export_protocol_version export_protocol; // Version of Flow record, V9 or IPFIX
 
 };
 

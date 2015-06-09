@@ -37,7 +37,7 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 	InformationElement::IeInfo ie;
 
 	// generate the exporter
-	ret = ipfix_init_exporter(sourceID, &exporter);
+	ret = ipfix_init_exporter(IPFIX_PROTOCOL, sourceID, &exporter);
 	if (ret) {
 		msg(MSG_FATAL, "error initializing IPFIX exporter");
 		exit(1);
