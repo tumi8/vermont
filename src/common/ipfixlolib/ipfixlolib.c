@@ -876,7 +876,7 @@ static int sctp_sendmsgv(int s, struct iovec *vector, int v_len, struct sockaddr
  * \return -1 failure. Usually due to failed memory allocation requests.
  * \sa ipfix_deinit_exporter()
  */
-int ipfix_init_exporter(uint32_t observation_domain_id, ipfix_exporter **exporter)
+int ipfix_init_exporter(export_protocol_version export_protocol, uint32_t observation_domain_id, ipfix_exporter **exporter)
 {
         ipfix_exporter *tmp;
         int ret;
@@ -884,6 +884,18 @@ int ipfix_init_exporter(uint32_t observation_domain_id, ipfix_exporter **exporte
         if(!(tmp=(ipfix_exporter *)malloc(sizeof(ipfix_exporter)))) {
                 goto out;
         }
+
+	switch(export_protocol) {
+	case NFV9_PROTOCOL:
+	    break;
+	case IPFIX_PROTOCOL:
+	    break;
+	default:
+	    msg(MSG_FATAL, "Unknown protocol");
+	    goto out;
+	    break;
+	}
+	tmp->export_protocol = export_protocol;
 
         tmp->sequence_number = 0;
         tmp->sn_increment = 0;

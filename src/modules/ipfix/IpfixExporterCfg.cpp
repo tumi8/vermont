@@ -23,7 +23,7 @@
 IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 	: CfgHelper<IpfixSender, IpfixExporterCfg>(elem, "ipfixExporter"),
 	templateRefreshTime(IS_DEFAULT_TEMPLATE_TIMEINTERVAL), /* templateRefreshRate(0), */
-	sctpDataLifetime(0), sctpReconnectInterval(0),
+	sctpDataLifetime(0), sctpReconnectInterval(0), export_protocol(IPFIX_PROTOCOL),
 	recordRateLimit(0), observationDomainId(0),
 	dtlsMaxConnectionLifetime(0)
 {
@@ -73,6 +73,15 @@ IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 				e->matches("dtlsMaxConnectionLifetime")
 				) {
 			// already done!
+		} else if (e->matches("protocolVersion")) {
+			std::string protVer = e->getContent();
+			if (protVer=="IPFIX" || protVer=="10") {
+				export_protocol = IPFIX_PROTOCOL;
+			} else if (protVer=="NFV9" || protVer=="9") {
+				export_protocol = NFV9_PROTOCOL;
+			} else {
+				THROWEXCEPTION("Invalid configuration parameter for protocolVersion (%s)", protVer.c_str());
+			}
 		} else {
 			THROWEXCEPTION("Illegal Exporter config entry \"%s\" found",
 					e->getName().c_str());
@@ -90,7 +99,7 @@ IpfixSender* IpfixExporterCfg::createInstance()
 {
 	instance = new IpfixSender(observationDomainId, recordRateLimit, sctpDataLifetime, 
 			sctpReconnectInterval, templateRefreshTime,
-			certificateChainFile, privateKeyFile, caFile, caPath);
+			certificateChainFile, privateKeyFile, caFile, caPath, export_protocol);
 
 	std::vector<CollectorCfg*>::const_iterator it;
 	for (it = collectors.begin(); it != collectors.end(); it++) {

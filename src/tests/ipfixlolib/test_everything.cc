@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 #endif
 	ipfix_exporter *my_exporter;
 
-	ret = ipfix_init_exporter(MY_SOURCE_ID, &my_exporter);
+	ret = ipfix_init_exporter(IPFIX_PROTOCOL, MY_SOURCE_ID, &my_exporter);
 	if (ret != 0) {
 		fprintf(stderr, "ipfix_init_exporter failed!\n");
 		exit(-1);
