@@ -492,7 +492,7 @@ typedef struct {
  */
 typedef struct {
 	char ipv4address[16];
-	uint32_t port_number;
+	uint16_t port_number;
 	enum ipfix_transport_protocol protocol;
 	int data_socket; // socket data and templates are sent to
 	/* data_socket is NOT used for DTLS connections */
@@ -613,8 +613,8 @@ int ipfix_beat(ipfix_exporter *exporter);
 int ipfix_init_exporter(uint32_t observation_domain_id, ipfix_exporter **exporter);
 int ipfix_deinit_exporter(ipfix_exporter *exporter);
 
-int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, int coll_port, enum ipfix_transport_protocol proto, void *aux_config);
-int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, int coll_port);
+int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, uint16_t coll_port, enum ipfix_transport_protocol proto, void *aux_config);
+int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, uint16_t coll_port);
 int ipfix_start_template(ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count);
 int ipfix_start_optionstemplate_set(ipfix_exporter *exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length);
 int ipfix_start_datatemplate(ipfix_exporter *exporter, uint16_t template_id, uint16_t preceding, uint16_t field_count, uint16_t fixedfield_count);
