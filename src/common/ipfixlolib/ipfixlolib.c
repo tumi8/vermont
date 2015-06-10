@@ -1175,7 +1175,7 @@ static int add_collector_dtls(
 
     // we need aux_config for setting up a DTLS collector
     if (!aux_config) {
-        return -1
+        return -1;
     }
 
     ipfix_aux_config_dtls *aux_config_dtls;
