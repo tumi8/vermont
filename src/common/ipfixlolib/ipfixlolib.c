@@ -2270,7 +2270,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 							    col->port_number);
 						} else {
 						    msg(MSG_ERROR,
-							    "could not send to %s:%d errno: %s  (UDP)",
+							    "could not send templates to %s:%d errno: %s  (UDP)",
 							    col->ipv4address,
 							    col->port_number,
 							    strerror(errno));
@@ -2319,7 +2319,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 							0 // context
 							)) == -1) {
 							// send failed
-							msg(MSG_ERROR, "could not send to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
+							msg(MSG_ERROR, "could not send templates to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
 							sctp_reconnect(exporter, i); //1st reconnect attempt 
 							// if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
 							// be removed on the next call of ipfix_send_templates()
@@ -2454,7 +2454,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 						exporter->data_sendbuffer->entries,
 						exporter->data_sendbuffer->committed
 							     )) == -1){
-						msg(MSG_ERROR, "could not send to %s:%d errno: %s  (UDP)",col->ipv4address, col->port_number, strerror(errno));
+						msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (UDP)",col->ipv4address, col->port_number, strerror(errno));
 						if (errno == EMSGSIZE) {
 						    msg(MSG_ERROR, "Updating MTU estimate for collector %s:%d",
 							    col->ipv4address,
@@ -2478,7 +2478,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 						exporter->data_sendbuffer->committed,
 						exporter->sctp_lifetime
 							     )) == -1){
-						msg(MSG_VDEBUG, "could not send to %s:%d (DTLS over SCTP)",col->ipv4address, col->port_number);
+						msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over SCTP)",col->ipv4address, col->port_number);
 					}else{
 
 						msg(MSG_VDEBUG, "%d data bytes sent to DTLS over SCTP collector %s:%d",
@@ -2500,7 +2500,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 						0 // context
 						)) == -1) {
 						// send failed
-						msg(MSG_ERROR, "could not send to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
+						msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
 						// drop data and call sctp_reconnect
 						sctp_reconnect(exporter, i);
 						// if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
@@ -2516,7 +2516,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 						exporter->data_sendbuffer->entries,
 						exporter->data_sendbuffer->committed
 							     )) == -1){
-						msg(MSG_VDEBUG, "could not send to %s:%d (DTLS over UDP)",col->ipv4address, col->port_number);
+						msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over UDP)",col->ipv4address, col->port_number);
 					}else{
 
 						msg(MSG_VDEBUG, "%d data bytes sent to DTLS over UDP collector %s:%d",
