@@ -84,7 +84,7 @@ static void remove_collector(ipfix_receiving_collector *collector);
 static int ipfix_deinit_collector_array(ipfix_receiving_collector **col);
 static int ipfix_init_send_socket(struct sockaddr_in serv_addr , enum ipfix_transport_protocol protocol);
 static int ipfix_init_template_array(ipfix_exporter *exporter, int template_capacity);
-static int ipfix_deinit_template(ipfix_exporter *exporter, ipfix_lo_template* templ);
+static int ipfix_deinit_template(ipfix_lo_template* templ);
 static int ipfix_deinit_template_array(ipfix_exporter *exporter);
 static int ipfix_update_template_sendbuffer(ipfix_exporter *exporter);
 static int ipfix_send_templates(ipfix_exporter* exporter);
@@ -489,7 +489,6 @@ static int create_dtls_socket(ipfix_receiving_collector *col) {
 /* returns 0 on success and -1 on failure */
 static int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *col, ipfix_dtls_connection *con) {
     BIO *bio;
-    int ret;
 /* Resources allocated in this function. Those need to be freed in case of failure:
  * - socket
  * - SSL object
@@ -566,10 +565,8 @@ static int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_colle
 #ifdef SUPPORT_DTLS_OVER_SCTP
     if (col->protocol != DTLS_OVER_SCTP)
 #endif
-    ret = BIO_ctrl(bio,BIO_CTRL_DGRAM_MTU_DISCOVER,0,0);
-    /* Does not return useful value. But we still assign it
-     * to a variable to avoid compiler warnings. */
-    ret = BIO_ctrl_set_connected(bio,1,&col->addr); /* TODO: Explain, why are we doing this? */
+    (void)BIO_ctrl(bio,BIO_CTRL_DGRAM_MTU_DISCOVER,0,0);
+    (void)BIO_ctrl_set_connected(bio,1,&col->addr); /* TODO: Explain, why are we doing this? */
     SSL_set_bio(con->ssl,bio,bio);
     // connect (non-blocking, i.e. handshake is initiated, not terminated)
     if((connect(con->socket, (struct sockaddr*)&col->addr, sizeof(col->addr) ) == -1) && (errno != EINPROGRESS)) {
@@ -590,8 +587,8 @@ static void dtls_shutdown_and_cleanup(ipfix_dtls_connection *con) {
     if (!con->ssl) return;
     DPRINTF("Shutting down SSL connection.");
     ret = SSL_shutdown(con->ssl);
-#ifdef DEBUG
     error = SSL_get_error(con->ssl,ret);
+#ifdef DEBUG
     msg_openssl_return_code(MSG_DEBUG,"SSL_shutdown()",ret,error);
 #endif
     /* TODO: loop only if ret==-1 and error==WANT_READ or WANT_WRITE */
@@ -660,7 +657,7 @@ int ipfix_beat(ipfix_exporter *exporter) {
     for (i = 0; i < exporter->collector_max_num; i++) {
 	ipfix_receiving_collector *col = &exporter->collector_arr[i];
 	// is the collector a valid target?
-	if (col->state != T_UNUSED) {
+	if (col->state != C_UNUSED) {
 	    if (col->protocol == DTLS_OVER_UDP ||
 		    col->protocol == DTLS_OVER_SCTP) {
 		if (dtls_manage_connection(exporter,col))
@@ -1358,7 +1355,7 @@ static int valid_transport_protocol(enum ipfix_transport_protocol p) {
  * \sa ipfix_remove_collector()
  */
 int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr,
-	int coll_port, enum ipfix_transport_protocol proto, void *aux_config)
+	uint16_t coll_port, enum ipfix_transport_protocol proto, void *aux_config)
 {
     // check, if exporter is valid
     if(exporter == NULL) {
@@ -1453,7 +1450,7 @@ static void remove_collector(ipfix_receiving_collector *collector) {
  */
 /*
  */
-int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, int coll_port) {
+int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, uint16_t coll_port) {
     int i;
     for(i=0;i<exporter->collector_max_num;i++) {
 	ipfix_receiving_collector *collector = &exporter->collector_arr[i];
@@ -1561,7 +1558,7 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
 	exporter->template_arr[found_index].state = T_WITHDRAWN;
 	DPRINTFL(MSG_VDEBUG, "... Withdrawn");
     } else {
-	ipfix_deinit_template(exporter, &(exporter->template_arr[found_index]) );
+	ipfix_deinit_template(&(exporter->template_arr[found_index]) );
     }
     return 0;
 }
@@ -1867,7 +1864,7 @@ static int ipfix_deinit_template_array(ipfix_exporter *exporter)
          This was our memory leak.
          JanP, 2005-21-1
          */
-        int ret, i;
+        int i;
         
         for(i=0; i< exporter->ipfix_lo_template_maxsize; i++) {
                 // if template was sent we need a withdrawal message first
@@ -1880,10 +1877,9 @@ static int ipfix_deinit_template_array(ipfix_exporter *exporter)
         
 	for(i=0; i< exporter->ipfix_lo_template_maxsize; i++) {
                 // try to free all templates:
-                ret = ipfix_deinit_template(exporter, &(exporter->template_arr[i]) );
-                // for debugging:
-                DPRINTFL(MSG_VDEBUG, "deinitialized template %i with success %i ", i, ret);
-                // end debugging
+	    if (ipfix_deinit_template(&(exporter->template_arr[i]) )) {
+                msg(MSG_ERROR, "failed to deinitialize template %i", i);
+	    }
         }
         free(exporter->template_arr);
 
@@ -1926,7 +1922,7 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
                 switch (exporter->template_arr[i].state) {
                 	case (T_TOBEDELETED):
 				// free memory and mark T_UNUSED
-				ipfix_deinit_template(exporter, &(exporter->template_arr[i]) );
+				ipfix_deinit_template(&(exporter->template_arr[i]) );
 				break;
 			case (T_COMMITED): // send to SCTP and UDP collectors and mark as T_SENT
 				if (sctp_sendbuf->current >= IPFIX_MAX_SENDBUFSIZE-2 ) {
@@ -2190,7 +2186,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 	int i;
 	int bytes_sent;
 	int expired;
-	uint32_t n = 0;
+	ssize_t nwritten = 0;
 	// determine, if we need to send the template data:
 	time_t time_now = time(NULL);
 
@@ -2379,14 +2375,14 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 						msg(MSG_ERROR, "packet size == 0!");
 						break;
 					}
-					if ((n = writev(col->fh, exporter->template_sendbuffer->entries,
+					if ((nwritten = writev(col->fh, exporter->template_sendbuffer->entries,
 						exporter->template_sendbuffer->current)) < 0) {
 						    msg(MSG_ERROR, "could not write to DATAFILE file");
 						    break;
 					}
 					col->bytes_written += ntohs(exporter->template_sendbuffer->packet_header.length);
 					msg(MSG_DEBUG, "packet_header.length: %d \t bytes_written: %d \t Total: %llu",
-						ntohs(exporter->template_sendbuffer->packet_header.length), n,
+						ntohs(exporter->template_sendbuffer->packet_header.length), nwritten,
 						col->bytes_written );
 				}
 				break;
@@ -2898,7 +2894,7 @@ int ipfix_set_data_field_marker(ipfix_exporter *exporter)
 int ipfix_delete_data_fields_upto_marker(ipfix_exporter *exporter)
 {
 	ipfix_set_manager *manager = &(exporter->data_sendbuffer->set_manager);
-	int i;
+	unsigned int i;
 
 	// security check
 	if(exporter->data_sendbuffer->current == exporter->data_sendbuffer->committed) {
@@ -3009,7 +3005,7 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
 	    case T_UNCLEAN:
 	    case T_TOBEDELETED:
 		// nothing to do, template can be deleted
-		ipfix_deinit_template(exporter, &(exporter->template_arr[found_index]));
+		ipfix_deinit_template(&(exporter->template_arr[found_index]));
 		break;
 	    default:
 		DPRINTFL(MSG_VDEBUG, "template valid flag is T_UNUSED or invalid\n");	
@@ -3312,7 +3308,7 @@ int ipfix_end_template(ipfix_exporter *exporter, uint16_t template_id)
     ipfix_lo_template *templ=(&exporter->template_arr[found_index]);
     if (templ->fields_added != templ->field_count + templ->fixedfield_count) {
 	msg(MSG_ERROR, "Number of added template fields does not match number passed to ipfix_start_template");
-	ipfix_deinit_template(exporter, templ);
+	ipfix_deinit_template(templ);
 	return -1;
     }
     // reallocate the memory , i.e. free superfluous memory, as we allocated enough memory to hold
@@ -3345,12 +3341,11 @@ int ipfix_end_template(ipfix_exporter *exporter, uint16_t template_id)
  * removes a template set from the exporter
  * Checks, if the template is in use, before trying to free it.
  * Parameters:
- *  exporter: exporting process to associate the template with
  *  template* : pointer to the template to be freed
  * Returns: 0  on success, -1 on failure
  * This is an internal function.
  */
-static int ipfix_deinit_template(ipfix_exporter *exporter, ipfix_lo_template *templ) {
+static int ipfix_deinit_template(ipfix_lo_template *templ) {
     // note: ipfix_deinit_template_array tries to free all possible templates, many of them
     // won't be initialized. So you'll get a lot of warning messages, which are just fine...
 
