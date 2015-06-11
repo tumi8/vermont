@@ -75,8 +75,8 @@ static void handle_sctp_event(BIO *bio, void *context, void *buf);
 static int init_send_udp_socket(struct sockaddr_in serv_addr);
 static int enable_pmtu_discovery(int s);
 static int ipfix_find_template(ipfix_exporter *exporter, uint16_t template_id);
-static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_sendbuffer *sendbuf);
-static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbufn);
+static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_receiving_collector *collector, ipfix_sendbuffer *sendbuf);
+static int ipfix_init_sendbuffer(export_protocol_version export_protocol, ipfix_sendbuffer **sendbufn);
 static int ipfix_reset_sendbuffer(ipfix_sendbuffer *sendbuf);
 static int ipfix_deinit_sendbuffer(ipfix_sendbuffer **sendbuf);
 static int ipfix_init_collector_array(ipfix_receiving_collector **col, int col_capacity);
@@ -193,8 +193,9 @@ static int dtls_send_templates(
     if (exporter->template_sendbuffer->committed_data_length == 0)
 	return 0;
 
-    ipfix_update_header(exporter,
+    ipfix_update_header(exporter, col,
 	exporter->template_sendbuffer);
+    col->messages_sent++;
     DPRINTF("Sending templates over DTLS.");
     return dtls_send(exporter,col,
 	exporter->template_sendbuffer->entries,
@@ -901,6 +902,8 @@ int ipfix_init_exporter(export_protocol_version export_protocol, uint32_t observ
         tmp->sn_increment = 0;
         tmp->observation_domain_id=observation_domain_id;
 
+	gettimeofday(&tmp->start_time, NULL);
+
 	tmp->max_message_size = IPFIX_MTU_CONSERVATIVE_DEFAULT;
 
         tmp->collector_max_num = 0;
@@ -913,19 +916,19 @@ int ipfix_init_exporter(export_protocol_version export_protocol, uint32_t observ
 #endif
 
         // initialize the sendbuffers
-        ret=ipfix_init_sendbuffer(&(tmp->data_sendbuffer));
+        ret=ipfix_init_sendbuffer(export_protocol, &(tmp->data_sendbuffer));
         if (ret != 0) {
                 msg(MSG_FATAL, "initializing data sendbuffer failed");
                 goto out1;
         }
 
-        ret=ipfix_init_sendbuffer(&(tmp->template_sendbuffer));
+        ret=ipfix_init_sendbuffer(export_protocol, &(tmp->template_sendbuffer));
         if (ret != 0) {
                 msg(MSG_FATAL, "initializing template sendbuffer failed");
                 goto out2;
         }
 	
-	ret=ipfix_init_sendbuffer(&(tmp->sctp_template_sendbuffer));
+	ret=ipfix_init_sendbuffer(export_protocol, &(tmp->sctp_template_sendbuffer));
         if (ret != 0) {
                 msg(MSG_FATAL, "initializing sctp template sendbuffer failed");
                 goto out5;
@@ -1156,7 +1159,7 @@ static int add_collector_rawdir(ipfix_receiving_collector *collector, const char
     collector->protocol = RAWDIR;
 
     collector->packet_directory_path = strdup(path);
-    collector->packets_written = 0;
+    collector->messages_sent = 0;
     collector->state = C_CONNECTED;
     return 0;
 }
@@ -1591,12 +1594,38 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
  *
  * Note: the first HEADER_USED_IOVEC_COUNT  iovec struct are reserved for the header! These will be overwritten!
  */
-static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_sendbuffer *sendbuf)
+static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_receiving_collector *collector, ipfix_sendbuffer *sendbuf)
 {
+    struct timeval now;
+    if (gettimeofday(&now, NULL)) {
+	now.tv_sec = 0;
+	now.tv_usec= 0;
+	msg(MSG_ERROR,"update_header, gettimeofday() failed. Set current time to 0");
+    }
 
-        time_t export_time;
-        uint16_t total_length = 0;
+    switch(p_exporter->export_protocol) {
+    case NFV9_PROTOCOL:
+	sendbuf->nfv9_message_header.version = htons(NFV9_PROTOCOL);
+        sendbuf->nfv9_message_header.source_id = htonl(p_exporter->observation_domain_id);
 
+	// Time fields
+	uint32_t millisec_uptime = ((now.tv_sec * 1000) + (now.tv_usec / 1000))
+	    - (((p_exporter->start_time).tv_sec * 1000) + ((p_exporter->start_time).tv_usec / 1000));
+        sendbuf->nfv9_message_header.unix_secs = htonl((uint32_t)now.tv_sec);
+        sendbuf->nfv9_message_header.sysUpTime = htonl(millisec_uptime);
+
+	sendbuf->nfv9_message_header.count = htons(sendbuf->record_count);
+	sendbuf->nfv9_message_header.sequence_number = htonl(collector->messages_sent);
+	break;
+
+    case IPFIX_PROTOCOL:
+	sendbuf->ipfix_message_header.version = htons(IPFIX_PROTOCOL);
+        sendbuf->ipfix_message_header.observation_domain_id = htonl(p_exporter->observation_domain_id);
+
+	// Time field
+	sendbuf->ipfix_message_header.export_time = htonl((uint32_t)now.tv_sec);
+
+	uint16_t total_length = 0;
         // Is the length already computed?
         if (sendbuf->committed_data_length != 0) {
                 total_length = sendbuf->committed_data_length + sizeof(ipfix_header);
@@ -1606,6 +1635,7 @@ static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_sendbuffer *se
                 unsigned int i;
 
                 // start the loop with 1, as 0 is reserved for the header!
+		/// @todo Include iovec 0 for the header as it should be set and contain a length
                 for (i = 1; i< sendbuf->current;  i++) {
                         total_length += sendbuf->entries[i].iov_len;
                 }
@@ -1615,22 +1645,17 @@ static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_sendbuffer *se
         }
 
         // write the length into the header
-        (sendbuf->packet_header).length = htons(total_length);
+        sendbuf->ipfix_message_header.length = htons(total_length);
 
-        // write version number and source ID and sequence number
-        (sendbuf->packet_header).version = htons(IPFIX_VERSION_NUMBER);
-        (sendbuf->packet_header).observation_domain_id = htonl(p_exporter->observation_domain_id);
-        (sendbuf->packet_header).sequence_number = htonl(p_exporter->sequence_number);
+        // write the sequence number into the header
+        sendbuf->ipfix_message_header.sequence_number = htonl(p_exporter->sequence_number);
+	break;
 
-        // get the export time:
-        export_time = time(NULL);
-        if(export_time == (time_t)-1) {
-                // survive
-                export_time=0;
-                msg(MSG_ERROR,"update_header, time() failed, using %d", export_time);
-        }
-        //  global_last_export_time = (uint32_t) export_time;
-        (sendbuf->packet_header).export_time = htonl((uint32_t)export_time);
+    default:
+	msg(MSG_ERROR, "Cannot update a header for unknown protocol");
+	break;
+    }
+
 }
 
 
@@ -1678,7 +1703,7 @@ out:
  * Create and initialize an ipfix_sendbuffer for at most maxelements
  * Parameters: ipfix_sendbuffer** sendbuf pointer to a pointer to an ipfix-sendbuffer
  */
-static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf)
+static int ipfix_init_sendbuffer(export_protocol_version export_protocol, ipfix_sendbuffer **sendbuf)
 {
         ipfix_sendbuffer *tmp;
 
@@ -1691,11 +1716,24 @@ static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf)
         tmp->committed = HEADER_USED_IOVEC_COUNT;
         tmp->marker = HEADER_USED_IOVEC_COUNT;
         tmp->committed_data_length = 0;
+        tmp->record_count = 0;
 
-        // init and link packet header
-        memset(&(tmp->packet_header), 0, sizeof(ipfix_header));
-        tmp->entries[0].iov_len = sizeof(ipfix_header);
-        tmp->entries[0].iov_base = &(tmp->packet_header);
+	// link the appropriate message header to the start of the buffer
+	switch(export_protocol) {
+	case NFV9_PROTOCOL:
+	    memset(&(tmp->nfv9_message_header), 0, sizeof(nfv9_header));
+	    tmp->entries[0].iov_len = sizeof(nfv9_header);
+	    tmp->entries[0].iov_base = &(tmp->nfv9_message_header);
+	    break;
+	case IPFIX_PROTOCOL:
+	    memset(&(tmp->ipfix_message_header), 0, sizeof(ipfix_header));
+	    tmp->entries[0].iov_len = sizeof(ipfix_header);
+	    tmp->entries[0].iov_base = &(tmp->ipfix_message_header);
+	    break;
+	default:
+	    goto out1;
+	    break;
+	}
 
         // initialize an ipfix_set_manager
 	(tmp->set_manager).set_counter = 0;
@@ -1705,7 +1743,7 @@ static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf)
         *sendbuf=tmp;
         return 0;
 
-//out1:
+out1:
         free(tmp);
 out:
         return -1;
@@ -1723,8 +1761,10 @@ static int ipfix_reset_sendbuffer(ipfix_sendbuffer *sendbuf)
         sendbuf->committed = HEADER_USED_IOVEC_COUNT;
         sendbuf->marker = HEADER_USED_IOVEC_COUNT;
         sendbuf->committed_data_length = 0;
+        sendbuf->record_count = 0;
 
-        memset(&(sendbuf->packet_header), 0, sizeof(ipfix_header));
+        memset(&(sendbuf->ipfix_message_header), 0, sizeof(ipfix_header));
+        memset(&(sendbuf->nfv9_message_header), 0, sizeof(nfv9_header));
 
         // also reset the set_manager!
 	(sendbuf->set_manager).set_counter = 0;
@@ -1773,9 +1813,9 @@ static int ipfix_init_collector_array(ipfix_receiving_collector **col, int col_c
 		c->protocol = 0;
 		c->data_socket = -1;
 		c->last_reconnect_attempt_time = 0;
+		c->messages_sent = 0;
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 		c->packet_directory_path = NULL;
-		c->packets_written = 0;
 #endif
 #ifdef SUPPORT_DTLS
 		c->dtls_main.socket = c->dtls_replacement.socket = -1;
@@ -1944,11 +1984,13 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
                         	sctp_sendbuf->entries[ sctp_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
                         	sctp_sendbuf->current++;
                         	sctp_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
+				sctp_sendbuf->record_count++;
 				
 				t_sendbuf->entries[ t_sendbuf->current ].iov_base = exporter->template_arr[i].template_fields;
 				t_sendbuf->entries[ t_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
 				t_sendbuf->current++;
 				t_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
+				t_sendbuf->record_count++;
                         	
                         	exporter->template_arr[i].state = T_SENT;
                         	break;
@@ -1961,6 +2003,7 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 				t_sendbuf->entries[ t_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
 				t_sendbuf->current++;
 				t_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
+				t_sendbuf->record_count++;
 				break;
                 	case (T_WITHDRAWN): // put the SCTP withdrawal message and mark T_TOBEDELETED
                 		if (sctp_sendbuf->current >= IPFIX_MAX_SENDBUFSIZE-2 ) {
@@ -1971,6 +2014,7 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 				sctp_sendbuf->entries[ sctp_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
 				sctp_sendbuf->current++;
 				sctp_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
+				sctp_sendbuf->record_count++;
 				
 				/* ASK: Why don't we just delete the template? */
 				exporter->template_arr[i].state = T_TOBEDELETED;
@@ -2151,7 +2195,7 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	msg(MSG_INFO, "Successfully (re)connected to SCTP collector.");
 
 	//reconnected -> resend all active templates
-	ipfix_update_header(exporter,
+	ipfix_update_header(exporter, &exporter->collector_arr[i],
 		exporter->template_sendbuffer);
 
 	if((bytes_sent = sctp_sendmsgv(exporter->collector_arr[i].data_socket,
@@ -2173,6 +2217,7 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	msg(MSG_DEBUG, "%d template bytes sent to SCTP collector",bytes_sent);
 
 	// we are done
+	exporter->collector_arr[i].messages_sent++;
 	exporter->collector_arr[i].state = C_CONNECTED;
 	return 0;
 }
@@ -2238,13 +2283,14 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 			case DTLS_OVER_SCTP:
 				if (exporter->sctp_template_sendbuffer->committed_data_length > 0) {
 					// update the sendbuffer header, as we must set the export time & sequence number!
-					ipfix_update_header(exporter,
+				        ipfix_update_header(exporter, col,
 						exporter->sctp_template_sendbuffer);
 					dtls_over_sctp_send(exporter,col,
 						exporter->sctp_template_sendbuffer->entries,
 						exporter->sctp_template_sendbuffer->current,
 						0 //packet lifetime in ms (0 = reliable, do not change for templates)
 						);
+					col->messages_sent++;
 				}
 				break;
 #endif
@@ -2254,7 +2300,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 					//Timer only used for UDP and DTLS over UDP
 					exporter->last_template_transmission_time = time_now;
 					// update the sendbuffer header, as we must set the export time & sequence number!
-					ipfix_update_header(exporter,
+					ipfix_update_header(exporter, col,
 						exporter->template_sendbuffer);
 #ifdef SUPPORT_DTLS
 					if (col->protocol == DTLS_OVER_UDP) {
@@ -2286,6 +2332,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 #ifdef SUPPORT_DTLS
 					}
 #endif
+					col->messages_sent++;
 				}
 			break;
 #ifdef SUPPORT_SCTP
@@ -2309,7 +2356,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 				case C_CONNECTED:
 					if (exporter->sctp_template_sendbuffer->committed_data_length > 0) {
 						// update the sendbuffer header, as we must set the export time & sequence number!
-						ipfix_update_header(exporter,
+					        ipfix_update_header(exporter, col,
 							exporter->sctp_template_sendbuffer);
 						if((bytes_sent = sctp_sendmsgv(col->data_socket,
 							exporter->sctp_template_sendbuffer->entries,
@@ -2334,6 +2381,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 					} else {
 					    DPRINTF("No Template to send to SCTP collector");
 					}
+					col->messages_sent++;
 					break;	
 				default:
 				msg(MSG_FATAL, "Unknown collector socket state");
@@ -2344,26 +2392,28 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 			case RAWDIR:
-				ipfix_update_header(exporter,
+			        ipfix_update_header(exporter, col,
 					    exporter->template_sendbuffer);
 				packet_directory_path = col->packet_directory_path;
 				char fnamebuf[1024];
-				sprintf(fnamebuf, "%s/%08d", packet_directory_path, col->packets_written++);
+				sprintf(fnamebuf, "%s/%08d", packet_directory_path, col->messages_sent);
 				int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
 				if(f<0)
 				    msg(MSG_ERROR, "could not open RAWDIR file %s", fnamebuf);
 				else if(writev(f, exporter->template_sendbuffer->entries, exporter->template_sendbuffer->current)<0)
 				    msg(MSG_ERROR, "could not write to RAWDIR file %s", fnamebuf);
 				close(f);
+				col->messages_sent++;
 			break;
 #endif	
 			case DATAFILE:
 				if (exporter->template_sendbuffer->committed_data_length > 0) {
-					ipfix_update_header(exporter,
+				        ipfix_update_header(exporter, col,
 						exporter->template_sendbuffer);
-					
+
+					col->messages_sent++;
 					if(col->bytes_written>0 && (col->bytes_written +
-						ntohs(exporter->template_sendbuffer->packet_header.length)
+						ntohs(exporter->template_sendbuffer->ipfix_message_header.length)
 						> (uint64_t)(col->maxfilesize) * 1024)) {
 						    ipfix_new_file(col);
 					}
@@ -2372,7 +2422,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 						msg(MSG_ERROR, "invalid file handle for DATAFILE file (==0!)");
 						break;
 					}
-					if (exporter->template_sendbuffer->packet_header.length == 0) {
+					if (exporter->template_sendbuffer->ipfix_message_header.length == 0) {
 						msg(MSG_ERROR, "packet size == 0!");
 						break;
 					}
@@ -2381,9 +2431,9 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 						    msg(MSG_ERROR, "could not write to DATAFILE file");
 						    break;
 					}
-					col->bytes_written += ntohs(exporter->template_sendbuffer->packet_header.length);
-					msg(MSG_DEBUG, "packet_header.length: %d \t bytes_written: %d \t Total: %llu",
-						ntohs(exporter->template_sendbuffer->packet_header.length), nwritten,
+					col->bytes_written += ntohs(exporter->template_sendbuffer->ipfix_message_header.length);
+					msg(MSG_DEBUG, "ipfix_message_header.length: %d \t bytes_written: %d \t Total: %llu",
+						ntohs(exporter->template_sendbuffer->ipfix_message_header.length), nwritten,
 						col->bytes_written );
 				}
 				break;
@@ -2413,12 +2463,11 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 	int bytes_sent;
         // send the current data_sendbuffer if there is data
         if (exporter->data_sendbuffer->committed_data_length > 0 ) {
-                // update the header in the sendbuffer
-                ipfix_update_header(exporter, exporter->data_sendbuffer);
-
                 // send the sendbuffer to all collectors
                 for (i = 0; i < exporter->collector_max_num; i++) {
 			ipfix_receiving_collector *col = &exporter->collector_arr[i];
+			// update the header in the sendbuffer
+			ipfix_update_header(exporter, col, exporter->data_sendbuffer);
 			if (col->state == C_CONNECTED) {
 #ifdef DEBUG
                                 DPRINTFL(MSG_VDEBUG, "Sending to exporter %s", col->ipv4address);
@@ -2525,7 +2574,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 				case RAWDIR:
 					packet_directory_path = col->packet_directory_path;
 					char fnamebuf[1024];
-					sprintf(fnamebuf, "%s/%08d", packet_directory_path, col->packets_written++);
+					sprintf(fnamebuf, "%s/%08d", packet_directory_path, col->messages_sent);
 					int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
 					if(f<0)
 					    msg(MSG_ERROR, "could not open RAWDIR file %s", fnamebuf);
@@ -2536,7 +2585,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 #endif
 				case DATAFILE:
 					if(col->bytes_written>0 && (col->bytes_written +
-						ntohs(exporter->data_sendbuffer->packet_header.length)
+						ntohs(exporter->data_sendbuffer->ipfix_message_header.length)
 						> (uint64_t)(col->maxfilesize) * 1024))
 						    ipfix_new_file(col);
 
@@ -2544,7 +2593,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 						msg(MSG_ERROR, "invalid file handle for DATAFILE file (==0!)");
 						break;
 					}
-					if (exporter->data_sendbuffer->packet_header.length == 0) {
+					if (exporter->data_sendbuffer->ipfix_message_header.length == 0) {
 						msg(MSG_ERROR, "packet size == 0!");
 						break;
 					}
@@ -2554,10 +2603,10 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 						break;
 					}
 
-					col->bytes_written += ntohs(exporter->data_sendbuffer->packet_header.length);
+					col->bytes_written += ntohs(exporter->data_sendbuffer->ipfix_message_header.length);
 
-					msg(MSG_DEBUG, "packet_header.length: %d \t bytes_written: %d \t Total: %llu",
-					 ntohs(exporter->data_sendbuffer->packet_header.length), bytes_sent,
+					msg(MSG_DEBUG, "ipfix_message_header.length: %d \t bytes_written: %d \t Total: %llu",
+					 ntohs(exporter->data_sendbuffer->ipfix_message_header.length), bytes_sent,
 					 	col->bytes_written);
 					break;
 
@@ -2566,6 +2615,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 					break; /* Should not occur since we check the transport
 						      protocol in valid_transport_protocol()*/
                         	}
+				col->messages_sent++;
                         }
                 } // end exporter loop
 		// increment sequence number
@@ -2813,6 +2863,9 @@ int ipfix_end_data_set(ipfix_exporter *exporter, uint16_t number_of_records)
         // update the sendbuffer
         exporter->data_sendbuffer->committed_data_length += record_length;
 
+	// Keep track of number of records in current message
+	exporter->data_sendbuffer->record_count += number_of_records;
+
 	// now as we are finished with this set, increase set_counter
 	manager->set_counter++;
 	
@@ -2977,6 +3030,10 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
        See draft-dressler-ipfix-aggregation-00 for more details on Data Templates.
        Data Templates are (still) a proprietary extension to IPFIX. */
     int datatemplate=(fixedfield_count || preceding) ? 1 : 0;
+    if (datatemplate && (exporter->export_protocol != IPFIX_PROTOCOL)) {
+	msg(MSG_ERROR, "Only IPFIX supports data templates");
+	return -1;
+    }
     /* Make sure that template_id is > 255 */
     if (!(template_id > 255)) {
 	msg(MSG_ERROR, "Template id has to be > 255. Start of template cancelled.");
@@ -3047,7 +3104,20 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
     // ++ Start of Set Header
     // set ID is 2 for a Template Set, 4 for a Data Template with fixed fields:
     // see RFC 5101: 3.3.2 Set Header Format
-    write_unsigned16 (&p_pos, p_end, datatemplate ? 4 : 2);
+    /// NFV9 uses 0 for Template Set ID, and does not support Data Templates
+    // see RFC 3954: 5.2 Template FlowSet Format
+    switch(exporter->export_protocol) {
+    case NFV9_PROTOCOL:
+	write_unsigned16 (&p_pos, p_end, 0);
+	break;
+    case IPFIX_PROTOCOL:
+	write_unsigned16 (&p_pos, p_end, datatemplate ? 4 : 2);
+	break;
+    default:
+	msg(MSG_ERROR, "Cannot write Template Set ID for unknown protocol");
+	break;
+    }
+
     // write 0 to the length field; this will be overwritten by end_template
     write_unsigned16 (&p_pos, p_end, 0);
     // ++ End of Set Header
@@ -3213,6 +3283,10 @@ int ipfix_start_template (ipfix_exporter *exporter, uint16_t template_id,  uint1
  * \sa ipfix_start_datatemplate()
 */
 int ipfix_put_template_fixedfield(ipfix_exporter *exporter, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id) {
+        if (exporter->export_protocol != IPFIX_PROTOCOL) {
+	    msg(MSG_ERROR, "Only IPFIX supports data templates");
+	    return -1;
+	}
         return ipfix_put_template_field(exporter, template_id, type, length, enterprise_id);
 }
 
@@ -3235,6 +3309,11 @@ int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void
         char *p_end;
 	
         int i;
+
+	if (exporter->export_protocol != IPFIX_PROTOCOL) {
+	    msg(MSG_ERROR, "Only IPFIX supports data templates");
+	    return -1;
+	}
 
         found_index = ipfix_find_template(exporter, template_id);
 
