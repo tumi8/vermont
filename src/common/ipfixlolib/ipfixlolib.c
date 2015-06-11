@@ -75,7 +75,7 @@ static void handle_sctp_event(BIO *bio, void *context, void *buf);
 static int init_send_udp_socket(struct sockaddr_in serv_addr);
 static int enable_pmtu_discovery(int s);
 static int ipfix_find_template(ipfix_exporter *exporter, uint16_t template_id);
-static void ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipfix_sendbuffer *sendbuf);
+static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_sendbuffer *sendbuf);
 static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbufn);
 static int ipfix_reset_sendbuffer(ipfix_sendbuffer *sendbuf);
 static int ipfix_deinit_sendbuffer(ipfix_sendbuffer **sendbuf);
@@ -193,8 +193,7 @@ static int dtls_send_templates(
     if (exporter->template_sendbuffer->committed_data_length == 0)
 	return 0;
 
-    ipfix_prepend_header(exporter,
-	exporter->template_sendbuffer->committed_data_length,
+    ipfix_update_header(exporter,
 	exporter->template_sendbuffer);
     DPRINTF("Sending templates over DTLS.");
     return dtls_send(exporter,col,
@@ -1570,11 +1569,7 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
 
 
 /*
- * Prepends an ipfix message header to the sendbuffer
- *
- * One could argue that this function should be called ipfix_update_header
- * as the header is already there. The data it contains is just incorrect and
- * needs to be updated. No new header is prepended.
+ * Update the ipfix message header in the sendbuffer
  *
  * The ipfix message header is set according to:
  * - the exporter ( Source ID and sequence number)
@@ -1584,15 +1579,15 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
  *
  * Note: the first HEADER_USED_IOVEC_COUNT  iovec struct are reserved for the header! These will be overwritten!
  */
-static void ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipfix_sendbuffer *sendbuf)
+static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_sendbuffer *sendbuf)
 {
 
         time_t export_time;
         uint16_t total_length = 0;
 
-        // did the user set the data_length field?
-        if (data_length != 0) {
-                total_length = data_length + sizeof(ipfix_header);
+        // Is the length already computed?
+        if (sendbuf->committed_data_length != 0) {
+                total_length = sendbuf->committed_data_length + sizeof(ipfix_header);
         } else {
                 // compute it on our own:
                 // sum up all lengths in the iovecs:
@@ -1620,7 +1615,7 @@ static void ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ip
         if(export_time == (time_t)-1) {
                 // survive
                 export_time=0;
-                msg(MSG_ERROR,"prepend_header, time() failed, using %d", export_time);
+                msg(MSG_ERROR,"update_header, time() failed, using %d", export_time);
         }
         //  global_last_export_time = (uint32_t) export_time;
         (sendbuf->packet_header).export_time = htonl((uint32_t)export_time);
@@ -2144,8 +2139,7 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	msg(MSG_INFO, "Successfully (re)connected to SCTP collector.");
 
 	//reconnected -> resend all active templates
-	ipfix_prepend_header(exporter,
-		exporter->template_sendbuffer->committed_data_length,
+	ipfix_update_header(exporter,
 		exporter->template_sendbuffer);
 
 	if((bytes_sent = sctp_sendmsgv(exporter->collector_arr[i].data_socket,
@@ -2232,8 +2226,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 			case DTLS_OVER_SCTP:
 				if (exporter->sctp_template_sendbuffer->committed_data_length > 0) {
 					// update the sendbuffer header, as we must set the export time & sequence number!
-					ipfix_prepend_header(exporter,
-						exporter->sctp_template_sendbuffer->committed_data_length,
+					ipfix_update_header(exporter,
 						exporter->sctp_template_sendbuffer);
 					dtls_over_sctp_send(exporter,col,
 						exporter->sctp_template_sendbuffer->entries,
@@ -2249,8 +2242,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 					//Timer only used for UDP and DTLS over UDP
 					exporter->last_template_transmission_time = time_now;
 					// update the sendbuffer header, as we must set the export time & sequence number!
-					ipfix_prepend_header(exporter,
-						exporter->template_sendbuffer->committed_data_length,
+					ipfix_update_header(exporter,
 						exporter->template_sendbuffer);
 #ifdef SUPPORT_DTLS
 					if (col->protocol == DTLS_OVER_UDP) {
@@ -2305,8 +2297,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 				case C_CONNECTED:
 					if (exporter->sctp_template_sendbuffer->committed_data_length > 0) {
 						// update the sendbuffer header, as we must set the export time & sequence number!
-						ipfix_prepend_header(exporter,
-							exporter->sctp_template_sendbuffer->committed_data_length,
+						ipfix_update_header(exporter,
 							exporter->sctp_template_sendbuffer);
 						if((bytes_sent = sctp_sendmsgv(col->data_socket,
 							exporter->sctp_template_sendbuffer->entries,
@@ -2341,8 +2332,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 			case RAWDIR:
-				ipfix_prepend_header(exporter,
-					    exporter->template_sendbuffer->committed_data_length,
+				ipfix_update_header(exporter,
 					    exporter->template_sendbuffer);
 				packet_directory_path = col->packet_directory_path;
 				char fnamebuf[1024];
@@ -2357,8 +2347,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 #endif	
 			case DATAFILE:
 				if (exporter->template_sendbuffer->committed_data_length > 0) {
-					ipfix_prepend_header(exporter,
-						exporter->template_sendbuffer->committed_data_length,
+					ipfix_update_header(exporter,
 						exporter->template_sendbuffer);
 					
 					if(col->bytes_written>0 && (col->bytes_written +
@@ -2410,15 +2399,10 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 {
         int i;
 	int bytes_sent;
-        // send the current data_sendbuffer:
-        int data_length=0;
-        
-        // is there data to send?
+        // send the current data_sendbuffer if there is data
         if (exporter->data_sendbuffer->committed_data_length > 0 ) {
-                data_length = exporter->data_sendbuffer->committed_data_length;
-
-                // prepend a header to the sendbuffer
-                ipfix_prepend_header(exporter, data_length, exporter->data_sendbuffer);
+                // update the header in the sendbuffer
+                ipfix_update_header(exporter, exporter->data_sendbuffer);
 
                 // send the sendbuffer to all collectors
                 for (i = 0; i < exporter->collector_max_num; i++) {
