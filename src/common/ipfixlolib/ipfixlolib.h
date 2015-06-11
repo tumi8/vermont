@@ -326,6 +326,67 @@ typedef struct {
 /*! \brief Overhead in bytes of one IPFIX Data Set. */
 #define IPFIX_OVERHEAD_PER_SET 4
 
+/* Struct containing an nfv9-header */
+/* Header Format (See RFC 3954)
+5.1.  Header Format
+
+   The Packet Header format is specified as:
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |       Version Number          |            Count              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                           sysUpTime                           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                           UNIX Secs                           |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                       Sequence Number                         |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |                        Source ID                              |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+   Packet Header Field Descriptions
+
+   Version
+         Version of Flow Record format exported in this packet.  The
+         value of this field is 9 for the current version.
+
+   Count
+         The total number of records in the Export Packet, which is the
+         sum of Options FlowSet records, Template FlowSet records, and
+         Data FlowSet records.
+
+   sysUpTime
+         Time in milliseconds since this device was first booted.
+
+   UNIX Secs
+         Time in seconds since 0000 UTC 1970, at which the Export Packet
+         leaves the Exporter.
+
+   Sequence Number
+         Incremental sequence counter of all Export Packets sent from
+         the current Observation Domain by the Exporter.  This value
+         MUST be cumulative, and SHOULD be used by the Collector to
+         identify whether any Export Packets have been missed.
+
+   Source ID
+         A 32-bit value that identifies the Exporter Observation Domain.
+         NetFlow Collectors SHOULD use the combination of the source IP
+         address and the Source ID field to separate different export
+         streams originating from the same Exporter.
+*/
+
+typedef struct {
+	uint16_t version;
+	uint16_t count;
+	uint32_t sysUpTime;
+	uint32_t unix_secs;
+	uint32_t sequence_number;
+	uint32_t source_id;
+} nfv9_header;
+
+
 /*! \brief The transport protocol used to transmit IPFIX data
  */
 enum ipfix_transport_protocol {
@@ -476,10 +537,12 @@ typedef struct {
 					 * ipfix_end_data_set has been called i.e.
 					 * it does not include data sets that are still
 					 * "open". */
-	ipfix_header packet_header; /* A misnomer in my (Daniel Mentz's)
-				       opinion. Should be message_header
-				       since it's the header of an
-				       IPFIX Message. */
+	ipfix_header ipfix_message_header;
+	nfv9_header nfv9_message_header;
+	unsigned record_count; /* Total number of records in this message */
+	                       /* For Templates this appears to equal 'current'
+				  as 'entries[]' contain one record per entry
+				  compared to Data records more granular use */
 	ipfix_set_manager set_manager; /* Only relevant when sendbuffer used
 					  for data. Not relevant if used for
 					  template sets. */
@@ -506,6 +569,7 @@ typedef struct {
 	struct sockaddr_in addr;
 	uint32_t last_reconnect_attempt_time; // applies only to SCTP and DTLS at the moment
 	enum collector_state state;
+	uint32_t messages_sent; /* number of messages that should have been sent */
 	char *basename;  /**< for protocol==DATAFILE, this variable contains the basename for the filename */
 	int fh; /**< for protocol==DATAFILE, this variable contains the file handle */
 	int filenum; /**< for protocol==DATAFILE, this variable contains the current filenumber: 'filename = basename + filenum'*/
@@ -516,7 +580,6 @@ typedef struct {
 			 Applies to UDP and DTLS over UDP only. */
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 	char* packet_directory_path; /*!< if protocol==RAWDIR: path to a directory to store packets in. Ignored otherwise. */
-	int packets_written; /*!< if protcol==RAWDIR: number of packets written to packet_directory_path. Ignored otherwise. */
 #endif
 #ifdef SUPPORT_DTLS
 	/* Time in seconds after which a DTLS connection
@@ -572,6 +635,7 @@ typedef struct {
 	uint32_t sequence_number; // total number of data records 
 	uint32_t sn_increment; // to be added to sequence number before sending data records
 	uint32_t observation_domain_id;
+	struct timeval start_time; // Time exporter system was started
 	uint16_t max_message_size; /* Maximum size of an IPFIX message.
 		       * This is the maximum size that all collectors allow.
 		       * If a new collector is added that only allows
