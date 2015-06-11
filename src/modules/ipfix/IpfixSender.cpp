@@ -395,7 +395,8 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 	}
 
-	if (0 != ipfix_put_template_data(ipfixExporter, my_template_id, data, dataLength)) {
+	// Only add Data Template data if there is any
+	if (data && ipfix_put_template_data(ipfixExporter, my_template_id, data, dataLength)) {
 		THROWEXCEPTION("IpfixSender: ipfix_put_template_data failed");
 	}
 	free(data);
