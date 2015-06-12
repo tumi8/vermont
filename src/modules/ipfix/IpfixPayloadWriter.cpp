@@ -79,7 +79,9 @@ void IpfixPayloadWriter::onDataRecord(IpfixDataRecord* record)
 
 	if (!ignoreEmptyPayload || conn->srcPayloadLen>0 || conn->dstPayloadLen>0) {
 		if (!ignoreIncompleteTCP || conn->protocol!=6 ||
-				((conn->srcTcpControlBits&2)==2 && ((conn->dstTcpControlBits&2)==2))) { // check if both directions have SYN flag set
+				((conn->srcTcpControlBits&Connection::SYN)==Connection::SYN &&
+						((conn->dstTcpControlBits&Connection::SYN)==Connection::SYN))) {
+			// check if both directions have SYN flag set
 			if (noConnections>0) {
 				// insert entry into sorted list
 				list<Connection*>::iterator iter = connections.begin();
