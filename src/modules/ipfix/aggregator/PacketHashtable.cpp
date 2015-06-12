@@ -283,7 +283,6 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 		case IPFIX_PEN_reverse:
 			switch (efd->typeId.id) {
 				case IPFIX_TYPEID_protocolIdentifier:
-				case IPFIX_TYPEID_tcpControlBits:
 				case IPFIX_TYPEID_ipClassOfService:
 					if (efd->dstLength != 1) {
 						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
@@ -332,6 +331,12 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 				case IPFIX_TYPEID_bgpSourceAsNumber:
 				case IPFIX_TYPEID_bgpDestinationAsNumber:
 					if (efd->dstLength != 2) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
+
+				case IPFIX_TYPEID_tcpControlBits:
+					if (efd->dstLength < 1 || efd->dstLength > 2) {
 						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
 					}
 					break;
@@ -442,7 +447,6 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 	if (type.enterprise == 0 || type.enterprise == IPFIX_PEN_reverse) {
 		switch (type.id) {
 			case IPFIX_TYPEID_protocolIdentifier:
-			case IPFIX_TYPEID_tcpControlBits:
 			case IPFIX_TYPEID_packetDeltaCount:
 			case IPFIX_TYPEID_packetTotalCount:
 			case IPFIX_TYPEID_ipClassOfService:
@@ -470,6 +474,16 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 			case IPFIX_TYPEID_bgpSourceAsNumber:
 			case IPFIX_TYPEID_bgpDestinationAsNumber:
 				return 0;
+
+			case IPFIX_TYPEID_tcpControlBits:
+				/*
+				 * RFC rfc7011 and rfc7012 changed the tcpControlBits size
+				 * from 1 byte to 2 bytes. Support both as the RFC mandates.
+				 */
+				if (type.length < 1 || type.length > 2) {
+					THROWEXCEPTION("unsupported length %d for type %d", type.length, type.id);
+				}
+				return type.length;
 
 			default:
 				THROWEXCEPTION("PacketHashtable: unknown typeid %s, failed to determine raw packet field length", type.toString().c_str());
@@ -580,7 +594,13 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Pack
 
 			case IPFIX_TYPEID_tcpControlBits:
 				if(p->ipProtocolType == Packet::TCP) {
-					return p->transportHeader + 13 - p->data.netHeader;
+					if (type.length == 1) {
+						return p->transportHeader + 13 - p->data.netHeader;
+					} else if (type.length == 2) {
+						return p->transportHeader + 12 - p->data.netHeader;
+					} else {
+						THROWEXCEPTION("unsupported length %d for type %d", type.length, type.id);
+					}
 				} else {
 					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d", type.toString().c_str(), p->ipProtocolType, Packet::TCP);
 				}
@@ -1130,8 +1150,18 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData)+1);
 						break;
 
-					case IPFIX_TYPEID_tcpControlBits:  // 1 byte src and dst, bitwise-or flows
-						*(uint8_t*)baseData |= *(uint8_t*)deltaData;
+					case IPFIX_TYPEID_tcpControlBits:  // 1/2 byte src and dst, bitwise-or flows
+						/*
+						 * RFC rfc7011 and rfc7012 changed the tcpControlBits size
+						 * from 1 byte to 2 bytes. Support both as the RFC mandates.
+						 */
+						ASSERT(efd->typeId.length == 1 || efd->typeId.length == 2,
+								"unsupported length for type tcpControlBits");
+						if (efd->typeId.length == 1) {
+							*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
+						} else {
+							*((uint16_t*)baseData) |= *((uint16_t*)deltaData);
+						}
 						break;
 
 						// no other types needed, as this is only for raw field input
@@ -1195,8 +1225,18 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						*(uint64_t*)baseData = htonll(ntohll(*(uint64_t*)baseData)+1);
 						break;
 
-					case IPFIX_TYPEID_tcpControlBits: // 1 byte src and dst, bitwise-or flows
-						*(uint8_t*)baseData |= *(uint8_t*)deltaData;
+					case IPFIX_TYPEID_tcpControlBits:  // 1/2 byte src and dst, bitwise-or flows
+						/*
+						 * RFC rfc7011 and rfc7012 changed the tcpControlBits size
+						 * from 1 byte to 2 bytes. Support both as the RFC mandates.
+						 */
+						ASSERT(efd->typeId.length==1 || efd->typeId.length==2,
+								"unsupported length for type tcpControlBits");
+						if (efd->typeId.length==1) {
+							*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
+						} else {
+							*((uint16_t*)baseData) |= *((uint16_t*)deltaData);
+						}
 						break;
 
 					default:

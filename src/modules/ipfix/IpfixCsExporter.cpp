@@ -183,8 +183,18 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 	}
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, 0);
-        if (fi != 0) {
-		csRecord->tcp_control_bits = *(uint8_t*)(record->data + fi->offset);
+	if (fi != 0) {
+		/*
+		 * RFC rfc7011 and rfc7012 changed the tcpControlBits size
+		 * from 1 byte to 2 bytes. Support both as the RFC mandates.
+		 */
+		if (fi->type.length == 2) {
+			csRecord->tcp_control_bits = *(uint16_t*)(record->data + fi->offset);
+		} else if (fi->type.length == 1) {
+			csRecord->tcp_control_bits = htons((uint16_t)*(uint8_t*)(record->data + fi->offset));
+		} else {
+			csRecord->tcp_control_bits = 0;
+		}
 	}
 
 	uint64_t timestart = retrieveTime(record, IPFIX_TYPEID_flowStartNanoseconds, IPFIX_TYPEID_flowStartMilliseconds,
@@ -230,7 +240,17 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse);
 	if (fi != 0) {
-		csRecord->rev_tcp_control_bits = *(uint8_t*)(record->data + fi->offset);
+		/*
+		 * RFC rfc7011 and rfc7012 changed the tcpControlBits size
+		 * from 1 byte to 2 bytes. Support both as the RFC mandates.
+		 */
+		if (fi->type.length == 2) {
+			csRecord->rev_tcp_control_bits = *(uint16_t*)(record->data + fi->offset);
+		} else if (fi->type.length == 1) {
+			csRecord->rev_tcp_control_bits = htons((uint16_t)*(uint8_t*)(record->data + fi->offset));
+		} else {
+			csRecord->rev_tcp_control_bits = 0;
+		}
 	}
 
 	//add data to linked list

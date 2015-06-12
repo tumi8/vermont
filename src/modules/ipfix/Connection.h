@@ -33,10 +33,16 @@ using namespace std;
 class Connection
 {
 	public:
-		static const uint8_t FIN = 0x01;
-		static const uint8_t SYN = 0x02;
-		static const uint8_t RST = 0x04;
-		static const uint8_t ACK = 0x10;
+		// static values in network order
+		static const uint16_t FIN = 0x0100;
+		static const uint16_t SYN = 0x0200;
+		static const uint16_t RST = 0x0400;
+		static const uint16_t PSH = 0x0800;
+		static const uint16_t ACK = 0x1000;
+		static const uint16_t URG = 0x2000;
+		static const uint16_t ECE = 0x4000;
+		static const uint16_t CWR = 0x8000;
+		static const uint16_t NS = 0x0001;
 
 		// ATTENTION: next four elements MUST be declared sequentially without another element interrupting it
 		// because hash and compare is performed by accessing the memory directly from srcIP on
@@ -58,8 +64,8 @@ class Connection
 		uint64_t dstTransOctets; /**< host-byte order! **/
 		uint64_t srcPackets; /**< network-byte order! **/
 		uint64_t dstPackets; /**< network-byte order! **/
-		uint8_t srcTcpControlBits;
-		uint8_t dstTcpControlBits;
+		uint16_t srcTcpControlBits; /**< network-byte order! **/
+		uint16_t dstTcpControlBits; /**< network-byte order! **/
 		uint8_t protocol;
 		char* srcPayload;
 		uint32_t srcPayloadLen; /**< host-byte order! **/
@@ -80,7 +86,7 @@ class Connection
 		virtual ~Connection();
 		void addFlow(Connection* c);
 		string toString();
-		string printTcpControlBits(uint8_t bits);
+		string printTcpControlBits(uint16_t bits);
 		bool compareTo(Connection* c, bool to);
 		uint32_t getHash(bool to, uint32_t maxval);
 		void aggregate(Connection* c, uint32_t expireTime, bool to);

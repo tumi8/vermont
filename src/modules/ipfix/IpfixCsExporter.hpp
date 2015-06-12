@@ -120,7 +120,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 			uint16_t destination_transport_port;    // encode udp/tcp ports here
 			uint8_t  icmp_type_ipv4;
 			uint8_t  icmp_code_ipv4;
-			uint8_t  tcp_control_bits;
+			uint16_t  tcp_control_bits;
 			uint64_t flow_start_milliseconds;       // encode flowStart(Micro|Nano|)Seconds here
 			uint64_t flow_end_milliseconds;         // encode flowEnd(Micro|Nano|)Seconds here
 			uint64_t octet_total_count;
@@ -128,7 +128,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 			uint8_t  biflow_direction;
 			uint64_t rev_octet_total_count;
 			uint64_t rev_packet_total_count;
-			uint8_t  rev_tcp_control_bits;
+			uint16_t  rev_tcp_control_bits;
 		} DISABLE_ALIGNMENT;
 
 		list<Ipfix_basic_flow*> chunkList;
