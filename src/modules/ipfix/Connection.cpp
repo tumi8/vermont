@@ -158,9 +158,33 @@ Connection::Connection(IpfixDataRecord* record)
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_packetDeltaCount, IPFIX_PEN_reverse);
 	if (fi != 0) dstPackets = *(uint64_t*)(record->data + fi->offset);
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, 0);
-	if (fi != 0) srcTcpControlBits = *(uint8_t*)(record->data + fi->offset);
+	if (fi != 0) {
+		/*
+		 * RFC rfc7011 and rfc7012 changed the tcpControlBits size
+		 * from 1 byte to 2 bytes. Support both as the RFC mandates.
+		 */
+		if (fi->type.length == 2) {
+			srcTcpControlBits = *(uint16_t*)(record->data + fi->offset) & Connection::MASK;
+		} else if (fi->type.length == 1) {
+			srcTcpControlBits = htons((uint16_t)*(uint8_t*)(record->data + fi->offset));
+		} else {
+			srcTcpControlBits = 0;
+		}
+	}
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_tcpControlBits, IPFIX_PEN_reverse);
-	if (fi != 0) dstTcpControlBits = *(uint8_t*)(record->data + fi->offset);
+	if (fi != 0) {
+		/*
+		 * RFC rfc7011 and rfc7012 changed the tcpControlBits size
+		 * from 1 byte to 2 bytes. Support both as the RFC mandates.
+		 */
+		if (fi->type.length == 2) {
+			dstTcpControlBits = *(uint16_t*)(record->data + fi->offset) & Connection::MASK;
+		} else if (fi->type.length == 1) {
+			dstTcpControlBits = htons((uint16_t)*(uint8_t*)(record->data + fi->offset));
+		} else {
+			dstTcpControlBits = 0;
+		}
+	}
 	fi = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont);
 	if (fi != 0 && fi->type.length) {
 		TemplateInfo::FieldInfo* filen = record->templateInfo->getFieldInfo(IPFIX_ETYPEID_frontPayloadLen, IPFIX_PEN_vermont);
@@ -233,12 +257,13 @@ bool Connection::swapIfNeeded()
 	return false;
 }
 
-string Connection::printTcpControlBits(uint8_t bits)
+string Connection::printTcpControlBits(uint16_t bits)
 {
 	ostringstream oss;
-	const string strbits[] = { "", "", "URG", "ACK", "PSH", "RST", "SYN", "FIN" };
-	for (int i=0; i<8; i++) {
-		if ((bits&0x80)>0) oss << strbits[i];
+	const string strbits[] = { "", "", "", "", "", "", "", "NS",
+			"CWR", "ECE", "URG", "ACK", "PSH", "RST", "SYN", "FIN" };
+	for (int i=0; i<16; i++) {
+		if ((bits&0x100)>0) oss << strbits[i];
 		bits <<= 1;
 	}
 	return oss.str();
