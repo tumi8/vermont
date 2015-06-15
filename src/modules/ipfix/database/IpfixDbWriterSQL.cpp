@@ -23,6 +23,8 @@
 
 #if defined(DB_SUPPORT_ENABLED) || defined(MONGO_SUPPORT_ENABLED) || defined(PG_SUPPORT_ENABLED) || defined(ORACLE_SUPPORT_ENABLED) || defined(REDIS_SUPPORT_ENABLED)
 
+#include <boost/multiprecision/cpp_dec_float.hpp>
+
 #include "IpfixDbWriterSQL.hpp"
 #include "common/msg.h"
 #include "common/Misc.h"
@@ -579,7 +581,25 @@ void IpfixDbWriterSQL::parseUintAndScale(TemplateInfo::FieldInfo fieldInfo, Ipfi
 
 	parseIpfixData(fieldInfo.type, (data+fieldInfo.offset), parsedData);
 	if (factor != 1) {
-		*parsedData = strdup(boost::lexical_cast<string>(boost::lexical_cast<uint64_t>(*parsedData) * factor).c_str());
+		// Creates dataype with 50 decimal digits and int64_t as exponent.
+		typedef boost::multiprecision::number<boost::multiprecision::cpp_dec_float<50, int64_t> > cpp_dec_int64;
+
+		cpp_dec_int64 tmpDecInt64 = boost::lexical_cast<cpp_dec_int64>(*parsedData) * factor;
+
+		// Converts cpp_dec_float into a string without scientific notation
+		string tmpData = tmpDecInt64.str(ios_base::fixed);
+
+		// Checks if value contains decimals
+		size_t pos = tmpData.find_first_of(".");
+
+		// Remove decimals, if any
+		if(pos != string::npos){
+			tmpData.erase(pos);
+		}
+
+		free(*parsedData);
+
+		*parsedData = strdup(tmpData.c_str());
 	}
 }
 
