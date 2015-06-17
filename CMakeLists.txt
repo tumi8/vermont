@@ -23,8 +23,8 @@ PROJECT(VERMONT)
 ### CMake configuration
 
 # allow building with old CMake. Use some bundled modules as a fallback
-CMAKE_MINIMUM_REQUIRED(VERSION 2.3.5)
-SET(CMAKE_MODULE_PATH ${CMAKE_ROOT}/Modules ${CMAKE_SOURCE_DIR}/cmake/modules)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 # move some config clutter to the advanced section
 MARK_AS_ADVANCED(
@@ -508,19 +508,9 @@ ENDIF (SUPPORT_DTLS_OVER_SCTP)
 
 OPTION(WITH_TOOLS "Build misc tools." ON)
 IF (WITH_TOOLS)
-	SUBDIRS(tools)
-	SUBDIR_DEPENDS(tools src)
+	ADD_SUBDIRECTORY(tools)
 ELSE (WITH_TOOLS)
 ENDIF (WITH_TOOLS)
-
-
-### tests
-
-OPTION(WITH_TESTS "Build unit tests." OFF)
-IF (WITH_TESTS)
-	SUBDIRS(src/tests)
-ELSE (WITH_TESTS)
-ENDIF (WITH_TESTS)
 
 OPTION(DISABLE_MEMMANAGER "Disable custom memory manager (good for finding leaks with valgrind." OFF)
 IF (DISABLE_MEMMANAGER)
