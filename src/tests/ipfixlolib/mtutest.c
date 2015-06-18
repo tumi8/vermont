@@ -38,7 +38,7 @@ void define_template(ipfix_exporter *exporter) {
 void put_data(ipfix_exporter *exporter) {
 	uint8_t data[256];
 	uint8_t i = 0;
-	int j;
+	unsigned int j;
 	int s;
 	for (j=0;j<sizeof(data);j++) {
 		data[j] = j;

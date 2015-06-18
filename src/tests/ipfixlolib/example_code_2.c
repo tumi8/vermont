@@ -59,7 +59,7 @@ typedef struct {
 } meter_data;
 
 meter_data my_meter_data[10000];
-int my_meter_data_next_free = 0;
+unsigned int my_meter_data_next_free = 0;
 
 
 int parse_command_line_arguments(int argc, char **argv);
