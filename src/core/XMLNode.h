@@ -84,7 +84,7 @@ protected:
 		return xmlNode;
 	}
 
-	inline const xmlNodePtr cobj() const {
+	inline xmlNodePtr cobj() const {
 		return xmlNode;
 	}
 

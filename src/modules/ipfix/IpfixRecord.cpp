@@ -80,7 +80,7 @@ namespace InformationElement {
 	/**
 	 * @returns valid protocols for given field, binary ORed if multiple protocols are possible
 	 */
-	const Packet::IPProtocolType IeInfo::getValidProtocols()
+	Packet::IPProtocolType IeInfo::getValidProtocols()
 	{
 		if (enterprise==0 || enterprise==IPFIX_PEN_reverse) {
 			switch (id) {

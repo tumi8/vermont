@@ -82,7 +82,7 @@ namespace InformationElement {
 
 		bool isReverseField() const;
 		IeInfo getReverseDirection();
-		const Packet::IPProtocolType getValidProtocols();
+		Packet::IPProtocolType getValidProtocols();
 		string toString() const;
 		bool existsReverseDirection();
 	};
