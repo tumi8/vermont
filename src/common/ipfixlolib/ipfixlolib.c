@@ -2433,7 +2433,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
                                 DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u bytes (Set headers + records)",  exporter->data_sendbuffer->committed_data_length );
                                 DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u fields (IPFIX Message header + set headers + records)",  exporter->data_sendbuffer->committed );
                                 int tested_length = 0;
-                                int j;
+                                unsigned int j;
                                 /*int k;*/
                                 for (j =0; j <  exporter->data_sendbuffer->committed; j++) {
                                         if(exporter->data_sendbuffer->entries[j].iov_len > 0 ) {
@@ -2982,7 +2982,7 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
        Data Templates are (still) a proprietary extension to IPFIX. */
     int datatemplate=(fixedfield_count || preceding) ? 1 : 0;
     /* Make sure that template_id is > 255 */
-    if ( ! template_id > 255 ) {
+    if (!(template_id > 255)) {
 	msg(MSG_ERROR, "Template id has to be > 255. Start of template cancelled.");
 	return -1;
     }
