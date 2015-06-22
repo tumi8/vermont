@@ -99,6 +99,12 @@ public:
 			}
 		}
 		if (port==0) port = defaultPort;
+
+		/*
+		 * Sort the lists here, so that in equalTo() we can return True even if
+		 * the order does not match, since what we care about is the content
+		 */
+		std::sort(authorizedHosts.begin(), authorizedHosts.end());
 	}
 
 	IpfixReceiver* createIpfixReceiver(
@@ -142,10 +148,7 @@ public:
 			(mtu == other->mtu) &&
 			(peerFqdns == other->peerFqdns) &&
 			(buffer == other->buffer) &&
-			(authorizedHosts.size() == other->authorizedHosts.size())) {
-			for (uint16_t i = 0; i < authorizedHosts.size(); i++)
-				if (authorizedHosts[i] != other->authorizedHosts[i])
-					return false;	
+			(authorizedHosts == other->authorizedHosts)) {
 			return true;
 		}
 
