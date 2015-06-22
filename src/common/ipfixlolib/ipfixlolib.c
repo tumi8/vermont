@@ -2290,15 +2290,9 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 #endif
 #ifdef SUPPORT_DTLS
 	case DTLS_OVER_UDP:
-	    if (expired && (exporter->template_sendbuffer->committed_data_length > 0)){
+	    if (expired) {
 		exporter->last_template_transmission_time = time_now;
-		// update the sendbuffer header, as we must set the export time & sequence number!
-		ipfix_update_header(exporter, col,
-				    exporter->template_sendbuffer);
-		dtls_send(exporter,col,
-			      exporter->template_sendbuffer->entries,
-			      exporter->template_sendbuffer->current);
-		col->messages_sent++;
+		dtls_send_templates(exporter, col);
 	    }
 	    break;
 #endif
