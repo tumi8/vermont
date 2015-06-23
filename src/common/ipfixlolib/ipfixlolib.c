@@ -2447,6 +2447,25 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
     return 1;
 }
 
+#ifdef DEBUG
+static void ipfix_sendbuffer_debug(ipfix_sendbuffer *sendbuffer)
+{
+    // debugging output of data buffer:
+    DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u bytes (Set headers + records)",  sendbuffer->committed_data_length );
+    DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u fields (IPFIX Message header + set headers + records)", sendbuffer->committed );
+    int tested_length = 0;
+    for (unsigned int j =0; j <  sendbuffer->committed; j++) {
+	if(sendbuffer->entries[j].iov_len > 0 ) {
+	    tested_length += sendbuffer->entries[j].iov_len;
+	}
+    }
+    /* Keep in mind that the IPFIX message header (16 bytes) is not included
+       in committed_data_length. So there should be a difference of 16 bytes
+       between tested_length and committed_data_length */
+    DPRINTFL(MSG_VDEBUG, "Total length of sendbuffer: %u bytes (IPFIX Message header + set headers + records)", tested_length );
+}
+#endif
+
 /*
  Send data to collectors
  Sends all data committed via ipfix_put_data_field to this exporter.
@@ -2474,24 +2493,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 	    }
 #ifdef DEBUG
 	    DPRINTFL(MSG_VDEBUG, "Sending to exporter %s", col->ipv4address);
-
-	    // debugging output of data buffer:
-	    /* Keep in mind that the IPFIX message header (16 bytes) is not included
-	       in committed_data_length */
-	    DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u bytes (Set headers + records)",  exporter->data_sendbuffer->committed_data_length );
-	    DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u fields (IPFIX Message header + set headers + records)",  exporter->data_sendbuffer->committed );
-	    int tested_length = 0;
-	    unsigned int j;
-	    /*int k;*/
-	    for (j =0; j <  exporter->data_sendbuffer->committed; j++) {
-		if(exporter->data_sendbuffer->entries[j].iov_len > 0 ) {
-		    tested_length += exporter->data_sendbuffer->entries[j].iov_len;
-		}
-	    }
-	    /* Keep in mind that the IPFIX message header (16 bytes) is not included
-	       in committed_data_length. So there should be a difference of 16 bytes
-	       between tested_length and committed_data_length */
-	    DPRINTFL(MSG_VDEBUG, "Total length of sendbuffer: %u bytes (IPFIX Message header + set headers + records)", tested_length );
+	    ipfix_sendbuffer_debug(exporter->data_sendbuffer);
 #endif
 	    switch(col->protocol){
 	    case UDP:
