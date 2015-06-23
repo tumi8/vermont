@@ -2459,139 +2459,139 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
  */
 static int ipfix_send_data(ipfix_exporter* exporter)
 {
-        int i;
-	int bytes_sent;
-        // send the current data_sendbuffer if there is data
-        if (exporter->data_sendbuffer->committed_data_length > 0 ) {
-                // send the sendbuffer to all collectors
-                for (i = 0; i < exporter->collector_max_num; i++) {
-			ipfix_receiving_collector *col = &exporter->collector_arr[i];
-			// update the header in the sendbuffer
-			ipfix_update_header(exporter, col, exporter->data_sendbuffer);
-			if (col->state == C_CONNECTED) {
+    int i;
+    int bytes_sent;
+    // send the current data_sendbuffer if there is data
+    if (exporter->data_sendbuffer->committed_data_length > 0 ) {
+	// send the sendbuffer to all collectors
+	for (i = 0; i < exporter->collector_max_num; i++) {
+	    ipfix_receiving_collector *col = &exporter->collector_arr[i];
+	    // update the header in the sendbuffer
+	    ipfix_update_header(exporter, col, exporter->data_sendbuffer);
+	    // is the collector a valid target?
+	    if (col->state != C_CONNECTED) {
+		continue; // No. Continue to next loop iteration.
+	    }
 #ifdef DEBUG
-                                DPRINTFL(MSG_VDEBUG, "Sending to exporter %s", col->ipv4address);
+	    DPRINTFL(MSG_VDEBUG, "Sending to exporter %s", col->ipv4address);
 
-                                // debugging output of data buffer:
-				/* Keep in mind that the IPFIX message header (16 bytes) is not included
-				   in committed_data_length */
-                                DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u bytes (Set headers + records)",  exporter->data_sendbuffer->committed_data_length );
-                                DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u fields (IPFIX Message header + set headers + records)",  exporter->data_sendbuffer->committed );
-                                int tested_length = 0;
-                                unsigned int j;
-                                /*int k;*/
-                                for (j =0; j <  exporter->data_sendbuffer->committed; j++) {
-                                        if(exporter->data_sendbuffer->entries[j].iov_len > 0 ) {
-                                                tested_length += exporter->data_sendbuffer->entries[j].iov_len;
-                                        }
-                                }
-				/* Keep in mind that the IPFIX message header (16 bytes) is not included
-				   in committed_data_length. So there should be a difference of 16 bytes
-				   between tested_length and committed_data_length */
-                                DPRINTFL(MSG_VDEBUG, "Total length of sendbuffer: %u bytes (IPFIX Message header + set headers + records)", tested_length );
+	    // debugging output of data buffer:
+	    /* Keep in mind that the IPFIX message header (16 bytes) is not included
+	       in committed_data_length */
+	    DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u bytes (Set headers + records)",  exporter->data_sendbuffer->committed_data_length );
+	    DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u fields (IPFIX Message header + set headers + records)",  exporter->data_sendbuffer->committed );
+	    int tested_length = 0;
+	    unsigned int j;
+	    /*int k;*/
+	    for (j =0; j <  exporter->data_sendbuffer->committed; j++) {
+		if(exporter->data_sendbuffer->entries[j].iov_len > 0 ) {
+		    tested_length += exporter->data_sendbuffer->entries[j].iov_len;
+		}
+	    }
+	    /* Keep in mind that the IPFIX message header (16 bytes) is not included
+	       in committed_data_length. So there should be a difference of 16 bytes
+	       between tested_length and committed_data_length */
+	    DPRINTFL(MSG_VDEBUG, "Total length of sendbuffer: %u bytes (IPFIX Message header + set headers + records)", tested_length );
 #endif
-				switch(col->protocol){
-				case UDP:
-					if((bytes_sent=writev( col->data_socket,
-						exporter->data_sendbuffer->entries,
-						exporter->data_sendbuffer->committed
-							     )) == -1){
-						msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (UDP)",col->ipv4address, col->port_number, strerror(errno));
-						if (errno == EMSGSIZE) {
-						    msg(MSG_ERROR, "Updating MTU estimate for collector %s:%d",
-							    col->ipv4address,
-							    col->port_number);
-						    /* If update_collector_mtu fails, it calls
-						       remove_collector(). So keep in mind that
-						       the collector might be gone (set to C_UNUSED)
-						       after calling this function. */
-						    update_collector_mtu(exporter, col);
-						}
-					}else{
+	    switch(col->protocol){
+	    case UDP:
+		if((bytes_sent=writev( col->data_socket,
+				       exporter->data_sendbuffer->entries,
+				       exporter->data_sendbuffer->committed
+			)) == -1){
+		    msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (UDP)",col->ipv4address, col->port_number, strerror(errno));
+		    if (errno == EMSGSIZE) {
+			msg(MSG_ERROR, "Updating MTU estimate for collector %s:%d",
+			    col->ipv4address,
+			    col->port_number);
+			/* If update_collector_mtu fails, it calls
+			   remove_collector(). So keep in mind that
+			   the collector might be gone (set to C_UNUSED)
+			   after calling this function. */
+			update_collector_mtu(exporter, col);
+		    }
+		}else{
 
-						msg(MSG_VDEBUG, "%d data bytes sent to UDP collector %s:%d",
-								bytes_sent, col->ipv4address, col->port_number);
-					}
-					break;
+		    msg(MSG_VDEBUG, "%d data bytes sent to UDP collector %s:%d",
+			bytes_sent, col->ipv4address, col->port_number);
+		}
+		break;
 #ifdef SUPPORT_DTLS_OVER_SCTP
-				case DTLS_OVER_SCTP:
-					if((bytes_sent=dtls_over_sctp_send( exporter, col,
-						exporter->data_sendbuffer->entries,
-						exporter->data_sendbuffer->committed,
-						exporter->sctp_lifetime
-							     )) == -1){
-						msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over SCTP)",col->ipv4address, col->port_number);
-					}else{
-
-						msg(MSG_VDEBUG, "%d data bytes sent to DTLS over SCTP collector %s:%d",
-								bytes_sent, col->ipv4address, col->port_number);
-					}
-					break;
+	    case DTLS_OVER_SCTP:
+		if((bytes_sent=dtls_over_sctp_send( exporter, col,
+						    exporter->data_sendbuffer->entries,
+						    exporter->data_sendbuffer->committed,
+						    exporter->sctp_lifetime
+			)) == -1){
+		    msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over SCTP)",col->ipv4address, col->port_number);
+		}else{
+		    msg(MSG_VDEBUG, "%d data bytes sent to DTLS over SCTP collector %s:%d",
+			bytes_sent, col->ipv4address, col->port_number);
+		}
+		break;
 #endif
 
-#ifdef SUPPORT_SCTP			
-				case SCTP:
-					if((bytes_sent = sctp_sendmsgv(col->data_socket,
-						exporter->data_sendbuffer->entries,
-						exporter->data_sendbuffer->committed,
-						(struct sockaddr*)&(col->addr),
-						sizeof(col->addr),
-						0,0, // payload protocol identifier, flags
-						0,//Stream Number
-						exporter->sctp_lifetime,//packet lifetime in ms(0 = reliable )
-						0 // context
-						)) == -1) {
-						// send failed
-						msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
-						// drop data and call sctp_reconnect
-						sctp_reconnect(exporter, i);
-						// if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
-						// be removed on the next call of ipfix_send_templates()
-							}
-					msg(MSG_VDEBUG, "%d data bytes sent to SCTP collector %s:%d",
-						bytes_sent, col->ipv4address, col->port_number);
-					break;
+#ifdef SUPPORT_SCTP
+	    case SCTP:
+		if((bytes_sent = sctp_sendmsgv(col->data_socket,
+					       exporter->data_sendbuffer->entries,
+					       exporter->data_sendbuffer->committed,
+					       (struct sockaddr*)&(col->addr),
+					       sizeof(col->addr),
+					       0,0, // payload protocol identifier, flags
+					       0,//Stream Number
+					       exporter->sctp_lifetime,//packet lifetime in ms(0 = reliable )
+					       0 // context
+			)) == -1) {
+		    // send failed
+		    msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
+		    // drop data and call sctp_reconnect
+		    sctp_reconnect(exporter, i);
+		    // if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
+		    // be removed on the next call of ipfix_send_templates()
+		}
+		msg(MSG_VDEBUG, "%d data bytes sent to SCTP collector %s:%d",
+		    bytes_sent, col->ipv4address, col->port_number);
+		break;
 #endif
 #ifdef SUPPORT_DTLS
-				case DTLS_OVER_UDP:
-					if((bytes_sent=dtls_send( exporter, col,
-						exporter->data_sendbuffer->entries,
-						exporter->data_sendbuffer->committed
-							     )) == -1){
-						msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over UDP)",col->ipv4address, col->port_number);
-					}else{
-
-						msg(MSG_VDEBUG, "%d data bytes sent to DTLS over UDP collector %s:%d",
-								bytes_sent, col->ipv4address, col->port_number);
-					}
-					break;
+	    case DTLS_OVER_UDP:
+		if((bytes_sent=dtls_send( exporter, col,
+					  exporter->data_sendbuffer->entries,
+					  exporter->data_sendbuffer->committed
+			)) == -1){
+		    msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over UDP)",col->ipv4address, col->port_number);
+		}else{
+		    msg(MSG_VDEBUG, "%d data bytes sent to DTLS over UDP collector %s:%d",
+			bytes_sent, col->ipv4address, col->port_number);
+		}
+		break;
 #endif
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
-				case RAWDIR:
-					ipfix_write_sendbuffer_to_rawdir(exporter->data_sendbuffer, col);
-					break;
+	    case RAWDIR:
+		ipfix_write_sendbuffer_to_rawdir(exporter->data_sendbuffer, col);
+		break;
 #endif
-				case DATAFILE:
-				        ipfix_write_sendbuffer_to_datafile(exporter->data_sendbuffer, col);
-					break;
+	    case DATAFILE:
+		ipfix_write_sendbuffer_to_datafile(exporter->data_sendbuffer, col);
+		break;
 
-				default:
-					msg(MSG_FATAL, "Transport Protocol not supported");
-					break; /* Should not occur since we check the transport
-						      protocol in valid_transport_protocol()*/
-                        	}
-				col->messages_sent++;
-                        }
-                } // end exporter loop
-		// increment sequence number
-		exporter->sequence_number += exporter->sn_increment;
-		exporter->sn_increment = 0;
-        }  // end if
+	    default:
+		msg(MSG_FATAL, "Transport Protocol not supported");
+		break; /* Should not occur since we check the transport
+			  protocol in valid_transport_protocol()*/
+	    }
+	    col->messages_sent++;
+	} // end exporter loop
+	// increment sequence number
+	exporter->sequence_number += exporter->sn_increment;
+	exporter->sn_increment = 0;
+    }  // end if
 
-        // reset the sendbuffer
-        ipfix_reset_sendbuffer(exporter->data_sendbuffer);
-        return 0;
+    // reset the sendbuffer
+    ipfix_reset_sendbuffer(exporter->data_sendbuffer);
+    return 0;
 }
 
 
