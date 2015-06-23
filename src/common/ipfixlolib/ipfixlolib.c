@@ -2033,11 +2033,10 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 #ifdef SUPPORT_SCTP
 /*
  * function used by SCTP to reconnect to a collector, if connection
- * was lost. After successful reconnection resend all active templates.
- * i: index of the collector in the exporters collector_arr
+ * was lost.
  */
-static int sctp_reconnect(ipfix_exporter *exporter , int i){
-	int bytes_sent, ret, error;
+static int sctp_reconnect(ipfix_receiving_collector *collector){
+	int ret, error;
 	socklen_t len;
 	fd_set readfds;
 	struct timeval timeout;
@@ -2049,23 +2048,23 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	struct iovec iv;
 	ssize_t r;
 
-	exporter->collector_arr[i].last_reconnect_attempt_time = time_now;
+	collector->last_reconnect_attempt_time = time_now;
 	// error occurred while being connected?
-	if(exporter->collector_arr[i].state == C_CONNECTED) {
+	if(collector->state == C_CONNECTED) {
 		// the socket has not yet been closed
-		close(exporter->collector_arr[i].data_socket);
-		exporter->collector_arr[i].data_socket = -1;
+		close(collector->data_socket);
+		collector->data_socket = -1;
 	}
 	    
 	// create new socket if not yet done
-	if(exporter->collector_arr[i].data_socket < 0) {
-		exporter->collector_arr[i].data_socket = init_send_sctp_socket( exporter->collector_arr[i].addr );
-		if( exporter->collector_arr[i].data_socket < 0) {
+	if(collector->data_socket < 0) {
+		collector->data_socket = init_send_sctp_socket( collector->addr );
+		if( collector->data_socket < 0) {
 		    msg(MSG_ERROR, "SCTP socket creation in reconnect failed, %s", strerror(errno));
-		    exporter->collector_arr[i].state = C_DISCONNECTED;
+		    collector->state = C_DISCONNECTED;
 		    return -1;
 		}
-		exporter->collector_arr[i].state = C_NEW;
+		collector->state = C_NEW;
 	}
 	/* Determine whether socket is readable.
 
@@ -2079,12 +2078,12 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	   Set timeout to 0. */
 	timeout.tv_sec = timeout.tv_usec = 0;
 	FD_ZERO(&readfds);
-	FD_SET(exporter->collector_arr[i].data_socket, &readfds);
-	ret = select(exporter->collector_arr[i].data_socket + 1,&readfds,NULL,NULL,&timeout);
+	FD_SET(collector->data_socket, &readfds);
+	ret = select(collector->data_socket + 1,&readfds,NULL,NULL,&timeout);
 	if (ret == 0) {
 	    // connection attempt not yet finished
 	    msg(MSG_DEBUG, "waiting for socket to become readable...");
-	    exporter->collector_arr[i].state = C_NEW;
+	    collector->state = C_NEW;
 	    return -1;
 	} else if (ret>0) {
 	    // connected or connection setup failed.
@@ -2092,29 +2091,29 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	} else {
 	    // error
 	    msg(MSG_ERROR, "select() failed: %s", strerror(errno));
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 
 	/* Query pending error */
 	len = sizeof error;
-	if (getsockopt(exporter->collector_arr[i].data_socket, SOL_SOCKET,
+	if (getsockopt(collector->data_socket, SOL_SOCKET,
 		    SO_ERROR, &error, &len) != 0) {
 	    msg(MSG_ERROR, "getsockopt(fd,SOL_SOCKET,SO_ERROR,...) failed: %s",
 		    strerror(errno));
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	if (error) {
 	    msg(MSG_ERROR, "SCTP connection setup failed: %s",
 		    strerror(error));
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 
@@ -2127,26 +2126,26 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	memset(&msg,0,sizeof(msg));
 	msg.msg_iov = &iv;
 	msg.msg_iovlen = 1;
-	if ((r = recvmsg(exporter->collector_arr[i].data_socket, &msg, 0))<0) {
+	if ((r = recvmsg(collector->data_socket, &msg, 0))<0) {
 	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg returned: %s",
 		    strerror(error));
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	if (r==0) {
 	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg returned 0");
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	if (!(msg.msg_flags & MSG_NOTIFICATION)) {
 	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg unexpected user data.");
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	switch (snp.sn_header.sn_type) {
@@ -2156,9 +2155,9 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 		    msg(MSG_ERROR, "SCTP connection setup failed. "
 			    "Received unexpected SCTP_ASSOC_CHANGE notification with state %d",
 			    sac->sac_state);
-		    close(exporter->collector_arr[i].data_socket);
-		    exporter->collector_arr[i].data_socket = -1;
-		    exporter->collector_arr[i].state = C_DISCONNECTED;
+		    close(collector->data_socket);
+		    collector->data_socket = -1;
+		    collector->state = C_DISCONNECTED;
 		    return -1;
 		}
 		msg(MSG_DEBUG,"Received SCTP_COMM_UP event.");
@@ -2167,59 +2166,34 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 		msg(MSG_ERROR, "SCTP connection setup failed. "
 			"Received unexpected notification of type %d",
 			snp.sn_header.sn_type);
-		close(exporter->collector_arr[i].data_socket);
-		exporter->collector_arr[i].data_socket = -1;
-		exporter->collector_arr[i].state = C_DISCONNECTED;
+		close(collector->data_socket);
+		collector->data_socket = -1;
+		collector->state = C_DISCONNECTED;
 		return -1;
 	}
 
 	/* Query SCTP status */
 	len = sizeof ss;
-	if (getsockopt(exporter->collector_arr[i].data_socket, IPPROTO_SCTP,
+	if (getsockopt(collector->data_socket, IPPROTO_SCTP,
 		    SCTP_STATUS, &ss, &len) != 0) {
 	    msg(MSG_ERROR, "getsockopt(fd,IPPROTO_SCTP,SCTP_STATUS,...) failed: %s",
 		    strerror(errno));
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	/* Make sure SCTP connection is in state ESTABLISHED */
 	if (ss.sstat_state != SCTP_ESTABLISHED) {
 	    msg(MSG_ERROR, "SCTP socket not in state ESTABLISHED");
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 
 	msg(MSG_INFO, "Successfully (re)connected to SCTP collector.");
-
-	//reconnected -> resend all active templates
-	ipfix_update_header(exporter, &exporter->collector_arr[i],
-		exporter->template_sendbuffer);
-
-	if((bytes_sent = sctp_sendmsgv(exporter->collector_arr[i].data_socket,
-		exporter->template_sendbuffer->entries,
-		exporter->template_sendbuffer->current,
-		(struct sockaddr*)&(exporter->collector_arr[i].addr),
-		sizeof(exporter->collector_arr[i].addr),
-		0,0, // payload protocol identifier, flags
-		0,//Stream Number
-			0,//packet lifetime in ms (0 = reliable, do not change for templates)
-		0 // context
-			)) == -1) {
-			msg(MSG_ERROR, "SCTP sending templates after reconnection failed, %s", strerror(errno));
-			close(exporter->collector_arr[i].data_socket);
-		exporter->collector_arr[i].data_socket = -1;
-			exporter->collector_arr[i].state = C_DISCONNECTED;
-			return -1;
-	}
-	msg(MSG_DEBUG, "%d template bytes sent to SCTP collector",bytes_sent);
-
-	// we are done
-	exporter->collector_arr[i].messages_sent++;
-	exporter->collector_arr[i].state = C_CONNECTED;
+	collector->state = C_CONNECTED;
 	return 0;
 }
 #endif /*SUPPORT_SCTP*/
@@ -2371,20 +2345,19 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 #ifdef SUPPORT_SCTP
 	case SCTP:
 	    switch (col->state){
-	    case C_NEW:	// try to connect to the new collector once per second
-			// once per second is not useful here, new collectors must be connected quickly
-			//if (time_now > col->last_reconnect_attempt_time) {
-		sctp_reconnect(exporter, i);
-		//}
-		break;
-	    case C_DISCONNECTED: //reconnect attempt if reconnection time reached
+	    case C_DISCONNECTED:
 		if(exporter->sctp_reconnect_timer == 0) { // 0 = no more reconnection attempts
 		    msg(MSG_ERROR, "reconnect failed, removing collector %s:%d (SCTP)", col->ipv4address, col->port_number);
 		    remove_collector(col);
-		} else if ((time_now - col->last_reconnect_attempt_time) >  exporter->sctp_reconnect_timer) {
-		    sctp_reconnect(exporter, i);
+		    break;
 		}
-		break;
+		if ((time_now - col->last_reconnect_attempt_time) <=  exporter->sctp_reconnect_timer) {
+		    break; // Not time to reconnect
+		}
+		// fall through
+	    case C_NEW:
+		sctp_reconnect(col);
+		// fall through
 	    case C_CONNECTED:
 		if (exporter->sctp_template_sendbuffer->committed_data_length > 0) {
 		    // update the sendbuffer header, as we must set the export time & sequence number!
@@ -2402,7 +2375,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 			    )) == -1) {
 			// send failed
 			msg(MSG_ERROR, "could not send templates to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
-			sctp_reconnect(exporter, i); //1st reconnect attempt
+			sctp_reconnect(col); //1st reconnect attempt
 			// if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will
 			// be removed on the next call of ipfix_send_templates()
 		    } else {
@@ -2548,7 +2521,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 		    // send failed
 		    msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
 		    // drop data and call sctp_reconnect
-		    sctp_reconnect(exporter, i);
+		    sctp_reconnect(col);
 		    // if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
 		    // be removed on the next call of ipfix_send_templates()
 		}
