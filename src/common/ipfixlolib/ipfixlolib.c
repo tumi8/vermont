@@ -2227,6 +2227,49 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 /*******************************************************************/
 /* Transmission                                                    */
 /*******************************************************************/
+
+static bool ipfix_write_sendbuffer_to_datafile(ipfix_sendbuffer *sendbuffer, ipfix_receiving_collector *col)
+{
+    ssize_t nwritten = 0;
+    // @todo For V9 there is no immediate access to message length, need to calculate it.
+    if(col->bytes_written>0 && (col->bytes_written +
+				ntohs(sendbuffer->ipfix_message_header.length)
+				> (uint64_t)(col->maxfilesize) * 1024)) {
+	ipfix_new_file(col);
+    }
+
+    if (col->fh < 0) {
+	msg(MSG_ERROR, "invalid file handle for DATAFILE file (==0!)");
+	return false;
+    }
+    if (sendbuffer->ipfix_message_header.length == 0) {
+	msg(MSG_ERROR, "packet size == 0!");
+	return false;
+    }
+    if ((nwritten = writev(col->fh, sendbuffer->entries, sendbuffer->current)) < 0) {
+	msg(MSG_ERROR, "could not write to DATAFILE file");
+	return false;
+    }
+    col->bytes_written += nwritten;
+    msg(MSG_DEBUG, "bytes_written: %d \t Total: %llu", nwritten, col->bytes_written);
+    return true;
+}
+
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+static void ipfix_write_sendbuffer_to_rawdir(ipfix_sendbuffer *sendbuffer, ipfix_receiving_collector *col)
+{
+    char fnamebuf[1024];
+    sprintf(fnamebuf, "%s/%08d", col->packet_directory_path, col->messages_sent);
+    int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
+    if(f<0) {
+	msg(MSG_ERROR, "could not open RAWDIR file %s", fnamebuf);
+    } else if(writev(f, sendbuffer->entries, sendbuffer->current)<0) {
+	msg(MSG_ERROR, "could not write to RAWDIR file %s", fnamebuf);
+    }
+    close(f);
+}
+#endif
+
 /*
  * If necessary, sends all associated templates
  * Parameters:
@@ -2237,7 +2280,6 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 {
     int i;
     int bytes_sent;
-    ssize_t nwritten = 0;
     // determine, if we need to send the template data:
     time_t time_now = time(NULL);
     // has the timer expired? (for UDP and DTLS over UDP)
@@ -2384,14 +2426,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 	case RAWDIR:
 	    ipfix_update_header(exporter, col,
 				exporter->template_sendbuffer);
-	    char fnamebuf[1024];
-	    sprintf(fnamebuf, "%s/%08d", col->packet_directory_path, col->messages_sent);
-	    int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
-	    if(f<0)
-		msg(MSG_ERROR, "could not open RAWDIR file %s", fnamebuf);
-	    else if(writev(f, exporter->template_sendbuffer->entries, exporter->template_sendbuffer->current)<0)
-		msg(MSG_ERROR, "could not write to RAWDIR file %s", fnamebuf);
-	    close(f);
+	    ipfix_write_sendbuffer_to_rawdir(exporter->template_sendbuffer, col);
 	    col->messages_sent++;
 	    break;
 #endif
@@ -2399,31 +2434,8 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 	    if (exporter->template_sendbuffer->committed_data_length > 0) {
 		ipfix_update_header(exporter, col,
 				    exporter->template_sendbuffer);
-
+		ipfix_write_sendbuffer_to_datafile(exporter->template_sendbuffer, col);
 		col->messages_sent++;
-		if(col->bytes_written>0 && (col->bytes_written +
-					    ntohs(exporter->template_sendbuffer->ipfix_message_header.length)
-					    > (uint64_t)(col->maxfilesize) * 1024)) {
-		    ipfix_new_file(col);
-		}
-
-		if (col->fh < 0) {
-		    msg(MSG_ERROR, "invalid file handle for DATAFILE file (==0!)");
-		    break;
-		}
-		if (exporter->template_sendbuffer->ipfix_message_header.length == 0) {
-		    msg(MSG_ERROR, "packet size == 0!");
-		    break;
-		}
-		if ((nwritten = writev(col->fh, exporter->template_sendbuffer->entries,
-				       exporter->template_sendbuffer->current)) < 0) {
-		    msg(MSG_ERROR, "could not write to DATAFILE file");
-		    break;
-		}
-		col->bytes_written += ntohs(exporter->template_sendbuffer->ipfix_message_header.length);
-		msg(MSG_DEBUG, "ipfix_message_header.length: %d \t bytes_written: %d \t Total: %llu",
-		    ntohs(exporter->template_sendbuffer->ipfix_message_header.length), nwritten,
-		    col->bytes_written );
 	    }
 	    break;
 	default:
@@ -2479,9 +2491,6 @@ static int ipfix_send_data(ipfix_exporter* exporter)
                                 DPRINTFL(MSG_VDEBUG, "Total length of sendbuffer: %u bytes (IPFIX Message header + set headers + records)", tested_length );
 #endif
 				switch(col->protocol){
-#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
-				char* packet_directory_path;
-#endif
 				case UDP:
 					if((bytes_sent=writev( col->data_socket,
 						exporter->data_sendbuffer->entries,
@@ -2560,42 +2569,11 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 				case RAWDIR:
-					packet_directory_path = col->packet_directory_path;
-					char fnamebuf[1024];
-					sprintf(fnamebuf, "%s/%08d", packet_directory_path, col->messages_sent);
-					int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
-					if(f<0)
-					    msg(MSG_ERROR, "could not open RAWDIR file %s", fnamebuf);
-					else if(writev(f, exporter->data_sendbuffer->entries, exporter->data_sendbuffer->committed)<0)
-					    msg(MSG_ERROR, "could not write to RAWDIR file %s", fnamebuf);
-					close(f);
+					ipfix_write_sendbuffer_to_rawdir(exporter->data_sendbuffer, col);
 					break;
 #endif
 				case DATAFILE:
-					if(col->bytes_written>0 && (col->bytes_written +
-						ntohs(exporter->data_sendbuffer->ipfix_message_header.length)
-						> (uint64_t)(col->maxfilesize) * 1024))
-						    ipfix_new_file(col);
-
-					if (col->fh < 0) {
-						msg(MSG_ERROR, "invalid file handle for DATAFILE file (==0!)");
-						break;
-					}
-					if (exporter->data_sendbuffer->ipfix_message_header.length == 0) {
-						msg(MSG_ERROR, "packet size == 0!");
-						break;
-					}
-					if ((bytes_sent = writev(col->fh, exporter->data_sendbuffer->entries,
-							exporter->data_sendbuffer->committed)) < 0) {
-						msg(MSG_ERROR, "could not write to DATAFILE file");
-						break;
-					}
-
-					col->bytes_written += ntohs(exporter->data_sendbuffer->ipfix_message_header.length);
-
-					msg(MSG_DEBUG, "ipfix_message_header.length: %d \t bytes_written: %d \t Total: %llu",
-					 ntohs(exporter->data_sendbuffer->ipfix_message_header.length), bytes_sent,
-					 	col->bytes_written);
+				        ipfix_write_sendbuffer_to_datafile(exporter->data_sendbuffer, col);
 					break;
 
 				default:
