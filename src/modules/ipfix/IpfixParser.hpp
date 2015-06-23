@@ -67,6 +67,11 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 			templateLifetime = time;
 		}
 
+		void setAcceptedTemplateId(uint16_t templateId)
+		{
+			acceptedTemplateId = templateId;
+		}
+
 		/**
 		 * IPFIX header helper.
 		 * Constitutes the first 16 bytes of every IPFIX Message
@@ -142,6 +147,8 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		TemplateBuffer* templateBuffer; /**< TemplateBuffer* structure */
 
 		uint16_t templateLifetime;
+
+		uint16_t acceptedTemplateId; /** Only records with this template will be processed */
 
 		pthread_mutex_t mutex; /**< Used to give only one IpfixReceiver access to the IpfixPacketProcessor */
 

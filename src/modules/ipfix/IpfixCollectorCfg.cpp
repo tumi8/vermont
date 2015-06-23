@@ -35,6 +35,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 
 	msg(MSG_INFO, "IpfixCollectorCfg: Start reading ipfixCollector section");
 	udpTemplateLifetime = getInt("udpTemplateLifetime", -1);
+	acceptedTemplateId = getInt("acceptedTemplateId", -1);
 
 	// Config for DTLS
 	certificateChainFile = getOptional("cert");
@@ -62,6 +63,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 		} else if (e->matches("cert") || e->matches("key") ||
 				e->matches("CAfile") || e->matches("CApath")) {
 			// already done!
+		} else if (e->matches("acceptedTemplateId")) { // already done
 		} else {
 			msg(MSG_FATAL, "Unkown collector config statement %s", e->getName().c_str());
 			continue;
@@ -98,6 +100,8 @@ IpfixCollector* IpfixCollectorCfg::createInstance()
 	instance = new IpfixCollector(listener->createIpfixReceiver(certificateChainFile, privateKeyFile, caFile, caPath));
 	if(udpTemplateLifetime>=0)
 		instance->setTemplateLifetime((uint16_t)udpTemplateLifetime);
+	if(acceptedTemplateId>=0)
+		instance->setAcceptedTemplateId((uint16_t)acceptedTemplateId);
 	return instance;
 }
 

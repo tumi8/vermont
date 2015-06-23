@@ -118,3 +118,13 @@ void IpfixCollector::setTemplateLifetime(uint16_t time)
 	else
 		msg(MSG_ERROR, "IpfixCollector: Cannot set template lifetime, ipfixPacketProcessor is NULL");
 }
+
+/* Set accepted templated ID of IpfixParser
+ */
+void IpfixCollector::setAcceptedTemplateId(uint16_t templateId)
+{
+	if(ipfixPacketProcessor && dynamic_cast<IpfixParser*>(ipfixPacketProcessor))
+		dynamic_cast<IpfixParser*>(ipfixPacketProcessor)->setAcceptedTemplateId(templateId);
+	else
+		msg(MSG_ERROR, "IpfixCollector: Cannot set accepted template ID, ipfixPacketProcessor is NULL");
+}

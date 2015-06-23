@@ -54,6 +54,7 @@ class IpfixCollector
 		virtual string getStatisticsXML(double interval);
 
 		void setTemplateLifetime(uint16_t time);
+		void setAcceptedTemplateId(uint16_t templateId);
 
 	private:
 		IpfixReceiver* ipfixReceiver;

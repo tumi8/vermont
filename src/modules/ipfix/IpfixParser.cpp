@@ -476,6 +476,13 @@ uint32_t IpfixParser::processDataTemplateSet(boost::shared_ptr<IpfixRecord::Sour
  * returns number of processed records
  */
 uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage) {
+	// Only process data sets with the accepted template ID,
+	// acceptedTemplateId == 0 means all records are accepted and processed (i.e. acceptedTemplateId was not configured)
+	if(acceptedTemplateId != 0 && acceptedTemplateId != set->id) {
+		msg(MSG_INFO, "processDataSet: Data set ID = %u did not match acceptedTemplateId = %u. Data set was not processed.", set->id, acceptedTemplateId);
+		return 0;
+	}
+
 	uint32_t numberOfRecords = 0;
 	TemplateBuffer::BufferedTemplate* bt = templateBuffer->getBufferedTemplate(sourceId, ntohs(set->id));
 

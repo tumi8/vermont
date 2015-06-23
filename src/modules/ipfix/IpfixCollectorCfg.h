@@ -54,6 +54,9 @@ private:
         IpfixCollector* ipfixCollector;
 
         int32_t udpTemplateLifetime;
+
+	// Only IPFIX records with this template ID will be processed
+	int32_t acceptedTemplateId;
 };
 
 #endif /*IPFIXCOLLECTORCFG_H_*/
