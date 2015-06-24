@@ -986,8 +986,9 @@ out:
  * \return 0 success
  * \sa ipfix_init_exporter()
  */
-int ipfix_deinit_exporter(ipfix_exporter *exporter) {
-        // cleanup processes
+int ipfix_deinit_exporter(ipfix_exporter **exporter_p) {
+        ipfix_exporter *exporter = *exporter_p;
+        // Cleanup processes
         // close sockets etc.
         // (currently, nothing to do)
 

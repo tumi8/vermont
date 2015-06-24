@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 #endif
 	printf("deinit exporter!\n");
 	
-	ipfix_deinit_exporter(my_exporter);
+	ipfix_deinit_exporter(&my_exporter);
 
 
 

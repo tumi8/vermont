@@ -104,6 +104,6 @@ int main(int argc, char **argv) {
 		sleep(2);
 	}
 	ipfix_remove_collector(exporter, COLLECTOR_IP_ADDRESS, 4740);
-	ipfix_deinit_exporter(exporter);
+	ipfix_deinit_exporter(&exporter);
 	return 0;
 }
