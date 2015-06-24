@@ -151,7 +151,7 @@ out:
 IpfixSender::~IpfixSender()
 {
 	this->shutdown(false);
-	ipfix_deinit_exporter(ipfixExporter);
+	ipfix_deinit_exporter(&ipfixExporter);
 }
 
 /**
