@@ -1124,12 +1124,9 @@ static int update_collector_mtu(ipfix_exporter *exporter,
 }
 
 static ipfix_receiving_collector *get_free_collector_slot(ipfix_exporter *exporter) {
-    ipfix_receiving_collector *collector;
-    int i;
-    for(i=0;i<exporter->collector_max_num;i++) {
-	collector = &exporter->collector_arr[i];
-	if(collector->state == C_UNUSED)
-	    return collector;
+    for(int i=0; i<exporter->collector_max_num; i++) {
+	if(exporter->collector_arr[i].state == C_UNUSED)
+	    return &exporter->collector_arr[i];
     }
     return NULL;
 }
@@ -2451,12 +2448,11 @@ static void ipfix_sendbuffer_debug(ipfix_sendbuffer *sendbuffer)
  */
 static int ipfix_send_data(ipfix_exporter* exporter)
 {
-    int i;
     int bytes_sent;
     // send the current data_sendbuffer if there is data
     if (exporter->data_sendbuffer->committed_data_length > 0 ) {
 	// send the sendbuffer to all collectors
-	for (i = 0; i < exporter->collector_max_num; i++) {
+	for (int i = 0; i < exporter->collector_max_num; i++) {
 	    ipfix_receiving_collector *col = &exporter->collector_arr[i];
 	    // update the header in the sendbuffer
 	    ipfix_update_header(exporter, col, exporter->data_sendbuffer);
