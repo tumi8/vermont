@@ -364,7 +364,7 @@ remark: the main task of ipfix_end_data_set is to calculate the length of the da
 
 	/* if you no longer need the exporter: free resources */
 	ret=ipfix_remove_collector(my_exporter, collector_ip, collector_port);
-	ipfix_deinit_exporter(my_exporter);
+	ipfix_deinit_exporter(&my_exporter);
 
 	printf("bravo\n");
 	exit(0);

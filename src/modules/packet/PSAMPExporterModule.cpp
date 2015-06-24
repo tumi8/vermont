@@ -60,7 +60,7 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 
 PSAMPExporterModule::~PSAMPExporterModule()
 {
-        ipfix_deinit_exporter(exporter);
+        ipfix_deinit_exporter(&exporter);
 
         // free the remaining packets
         for (int i = 0; i < numPacketsToRelease; i++) {
