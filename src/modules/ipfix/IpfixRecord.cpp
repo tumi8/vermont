@@ -151,7 +151,7 @@ namespace InformationElement {
 				}
 			}
 		}
-		THROWEXCEPTION("received unknown field type %s", toString().c_str());
+		DPRINTF("received unknown field type %s", toString().c_str());
 		return Packet::NONE;
 	}
 

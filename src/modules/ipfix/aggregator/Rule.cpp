@@ -65,18 +65,18 @@ Rule::~Rule() {
 void Rule::initialize()
 {
 	// determine which protocols are valid for this template
-	validProtocols = Packet::ALL;
-	bool protocolid = false;
+	validProtocols = Packet::NONE;
 	for (int i=0; i<fieldCount; i++) {
 		Rule::Field* f = field[i];
-		if (f->type.enterprise == 0 && f->type.id == IPFIX_TYPEID_protocolIdentifier)
-			protocolid = true;
-		validProtocols = Packet::IPProtocolType(validProtocols & f->type.getValidProtocols());
+		if (f->type.enterprise == 0 && f->type.id == IPFIX_TYPEID_protocolIdentifier) {
+			// small exception: if protocol id is inside the template, we assume that all types of protocols are valid
+			validProtocols = Packet::ALL;
+			msg(MSG_INFO, "IPFIX IE protocolIdentifier is contained in template %hu, accepting all protocol types for this template", id);
+		}
+		validProtocols = Packet::IPProtocolType(validProtocols | f->type.getValidProtocols());
 	}
-	// small exception: if protocol id is inside the template, we assume that all types of protocols are valid
-	if (protocolid) {
-		validProtocols = Packet::ALL;
-		msg(MSG_INFO, "IPFIX IE protocolIdentifier is contained in template %hu, accepting all protocol types for this template", id);
+	if (validProtocols == Packet::NONE) {
+		THROWEXCEPTION("received unknown field type, no valid protocol match");
 	}
 
 	DPRINTF("valid protocols for this template: %02X", validProtocols);
