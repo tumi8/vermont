@@ -36,6 +36,8 @@ ADD_LIBRARY(common
 	openssl/SSLCTXWrapper.cpp
 )
 
+add_cppcheck(common STYLE POSSIBLE_ERROR)
+
 SUBDIRS(
 	anon
 	ipfixlolib	
