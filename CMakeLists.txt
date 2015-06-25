@@ -23,7 +23,7 @@ PROJECT(VERMONT)
 ### CMake configuration
 
 # allow building with old CMake. Use some bundled modules as a fallback
-CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 # TODO: Once all warnings are fixed add -Werror to both of these
@@ -55,6 +55,8 @@ MARK_AS_ADVANCED(
 	EXECUTABLE_OUTPUT_PATH
 	LIBRARY_OUTPUT_PATH
 )
+
+include(CppcheckTargets)
 
 ### basic modules
 
@@ -98,6 +100,7 @@ INSTALL(DIRECTORY configs/
 	DESTINATION share/vermont/configs
 )
 
+add_cppcheck(vermont STYLE POSSIBLE_ERROR)
 
 ### doxygen
 
