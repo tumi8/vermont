@@ -122,4 +122,4 @@ ADD_LIBRARY(modules
     ipfix/database/IpfixFlowInspectorExporter.cpp
 )
 
-
+add_cppcheck(modules STYLE POSSIBLE_ERROR)

@@ -15,3 +15,4 @@ ADD_LIBRARY(core
 	XMLTextNode.cpp
 )
 
+add_cppcheck(core STYLE POSSIBLE_ERROR)
