@@ -48,7 +48,7 @@ public:
 	std::string getName() { return "collector"; }
 
 	CollectorCfg(XMLElement* elem)
-		: protocol(UDP), port(0), mtu(0), zmqHighWaterMark(0),
+		: protocol(UDP), port(0), mtu(0), buffer(0), zmqHighWaterMark(0),
 		  zmqPollTimeout(ZMQ_POLL_TIMEOUT_DEFAULT)
 	{
 		uint16_t defaultPort = 4739;
