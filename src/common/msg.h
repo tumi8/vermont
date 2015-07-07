@@ -9,6 +9,13 @@
 #define MSG_H
 
 #include <stdio.h>
+#include <stdbool.h>
+#include <syslog.h>
+#ifdef JOURNALD_SUPPORT_ENABLED
+#include <systemd/sd-journal.h>
+#else
+#define sd_journal_print(lvl, ...)
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,13 +41,14 @@ typedef void (*LOGFUNCTION)(void *);
 #endif
 
 /* defines for the message system */
-#define MSG_BLANK 256
-#define MSG_VDEBUG 5   // mostly for ipfix byte-level messages
-#define MSG_DEBUG 4    // debugging messages, for example used by DPRINTF
-#define MSG_INFO 3     // informational messages, shown without debug-mode but only with verbose logging enabled
-#define MSG_ERROR 2    // error or warning messages which are shown during default execution
-#define MSG_DIALOG 1   // messages which are shown during default execution
-#define MSG_FATAL 0    // fatal messages which are shown every time
+#define MSG_VDEBUG LOG_DEBUG   // mostly for ipfix byte-level messages
+#define MSG_DEBUG LOG_INFO    // debugging messages, for example used by DPRINTF
+#define MSG_INFO LOG_NOTICE     // informational messages, shown without debug-mode but only with verbose logging enabled
+#define MSG_ERROR LOG_WARNING    // error or warning messages which are shown during default execution
+#define MSG_DIALOG LOG_ERR   // messages which are shown during default execution
+#define MSG_FATAL LOG_CRIT    // fatal messages which are shown every time
+#define MSG_ALERT LOG_ALERT    // not used
+#define MSG_EMERG LOG_EMERG    // not used
 //#define MSG_DEFAULT MSG_ERROR
 
 
@@ -48,6 +56,13 @@ void msg_init(void);
 void msg_shutdown(void);
 void msg2(const int, const char*, const char*, const char*, const int, const char *, ...);
 void msg_setlevel(int);
+int msg_getlevel();
+void msg_setquiet(bool);
+bool msg_getquiet();
+void msg_set_journald(bool);
+bool msg_get_journald();
+void msg_set_syslog(bool);
+bool msg_get_syslog();
 int msg_stat(const char *fmt, ...);
 int msg_stat_setup(int mode, FILE *f);
 void vermont_assert(const char* expr, const char* description, int line, const char* filename, const char* prettyfuncname, const char* funcname);
@@ -65,21 +80,56 @@ void vermont_exception(const int, const char*, const char*, const char*, const c
 //#endif
 
 // useful defines for logging
-#define THROWEXCEPTION(...) vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, ##__VA_ARGS__)
+#define THROWEXCEPTION(...) \
+	__extension__ \
+	({ \
+		if (msg_getlevel() & LOG_MASK(MSG_FATAL)) { \
+			if (msg_get_syslog()) { \
+				syslog(MSG_FATAL, ##__VA_ARGS__); \
+			} \
+			if (msg_get_journald()) { \
+				sd_journal_print(MSG_FATAL, ##__VA_ARGS__); \
+			} \
+		} \
+		vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, ##__VA_ARGS__); \
+	})
 
-#define msg(...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, ##__VA_ARGS__)
+#define msg(lvl, ...) \
+	__extension__ \
+	({ \
+		if (msg_getlevel() & LOG_MASK(lvl)) { \
+			if (msg_get_syslog()) { \
+				syslog(lvl, ##__VA_ARGS__); \
+			} \
+			if (msg_get_journald()) { \
+				sd_journal_print(lvl, ##__VA_ARGS__); \
+			} \
+			if (!msg_getquiet()) { \
+				msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, ##__VA_ARGS__); \
+			} \
+		} \
+	})
 
 #ifdef DEBUG
 
-#define DPRINTF(...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, MSG_DEBUG, ##__VA_ARGS__)
-#define DPRINTFL(...) msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, ##__VA_ARGS__)
+#define DPRINTF(...) msg(MSG_DEBUG, ##__VA_ARGS__)
+#define DPRINTFL(lvl, ...) msg(lvl, ##__VA_ARGS__)
 
 #define ASSERT(exp, description)                                                                        \
-    {                                                                                                   \
+    __extension__                                                                                       \
+    ({                                                                                                  \
         if (!(exp)) {                                                                                   \
+            if (msg_getlevel() & LOG_MASK(MSG_ERROR)) {                                                 \
+                if (msg_get_syslog()) {                                                                 \
+                    syslog(MSG_ERROR, description);                                                     \
+                }                                                                                       \
+                if (msg_get_journald()) {                                                               \
+                    sd_journal_print(MSG_ERROR, description);                                           \
+                }                                                                                       \
+            }                                                                                           \
 	    vermont_assert(#exp, (description), __LINE__, __FILE__, __PRETTY_FUNCTION__, __func__);     	\
         }                                                                                               \
-    }
+    })
 
 
 #else
