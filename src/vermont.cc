@@ -51,7 +51,8 @@ struct parameters {
 	const char *pid_file;
 	uid_t uid;
 	gid_t gid;
-	int log_level;
+	int log_mask;
+	bool quiet;
 	bool daemon_mode;
 };
 
@@ -129,6 +130,26 @@ daemonise (const char *pid_file, uid_t uid, gid_t gid)
 	}
 }
 
+static int
+parse_log_level (const char *arg, int mask)
+{
+	if (!strcmp("debug", arg)) {
+		mask |= LOG_MASK(LOG_DEBUG);
+	} else if (!strcmp("info", arg)) {
+		mask |= LOG_MASK(LOG_INFO);
+	} else if (!strcmp("notice", arg)) {
+		mask |= LOG_MASK(LOG_NOTICE);
+	} else if (!strcmp("warning", arg)) {
+		mask |= LOG_MASK(LOG_WARNING);
+	} else if (!strcmp("error", arg)) {
+		mask |= LOG_MASK(LOG_ERR);
+	} else if (!strcmp("critical", arg)) {
+		mask |= LOG_MASK(LOG_CRIT);
+	}
+
+	return mask;
+}
+
 static void
 usage (int status)
 {
@@ -139,10 +160,25 @@ usage (int status)
 			" -h, --help                 Display this help and exit\n"
 			" -d, --debug                Log verbosity: -d NOTICE, -dd INFO,\n"
 			"                                -ddd DEBUG\n"
+			" -l, --log-level LEVEL      Log level. Can be specified multiple\n"
+			"                                times and mix-matched. \n"
+			"                                In increasing order:\n\n"
+			"                                    debug\n"
+			"                                    info\n"
+			"                                    notice\n"
+			"                                    warning\n"
+			"                                    error\n"
+			"                                    critical\n\n"
+			"                                Default: critical, warning, error\n"
+			" -q, --quiet                Do not write output to console\n"
 			" -b, --daemon               Run in daemon mode (implies -q)\n"
 			" -p, --pid-file FILE        Set process id filename (use with -d)\n"
 			" -u, --user USER            Change user to USER (use with -d)\n"
 			" -g, --group GROUP          Change group to GROUP (use with -d)\n"
+			" -s, --syslog               Log to syslog\n"
+#ifdef JOURNALD_SUPPORT_ENABLED
+			" -j, --journald             Log to journald\n"
+#endif
 	);
 
 	exit(status);
@@ -151,7 +187,7 @@ usage (int status)
 static int
 parse_args (int argc, char **argv, struct parameters *params)
 {
-	int opt, ret, option_index;
+	int opt, ret, option_index, level = 0;
 	struct passwd *pw;
 	struct group *gr;
 
@@ -162,15 +198,22 @@ parse_args (int argc, char **argv, struct parameters *params)
 			{ "pid-file",     required_argument, NULL, 'p' },
 			{ "user",         required_argument, NULL, 'u' },
 			{ "group",        required_argument, NULL, 'g' },
+			{ "quiet",        no_argument,       NULL, 'q' },
 			{ "debug",        no_argument,       NULL, 'd' },
+			{ "log-level",    required_argument, NULL, 'l' },
+#ifdef JOURNALD_SUPPORT_ENABLED
+			{ "journald",     no_argument,       NULL, 'j' },
+#endif
+			{ "syslog",       no_argument,       NULL, 's' },
 			{ NULL, 0, NULL, 0}
 	};
 
-	while ((opt = getopt_long(argc, argv, "hbp:u:g:df:", long_opts,
+	while ((opt = getopt_long(argc, argv, "hbp:u:g:df:ql:js", long_opts,
 			&option_index)) != EOF) {
 		switch (opt) {
 		case 'b':
 			params->daemon_mode = true;
+			params->quiet = true;
 			break;
 
 		case 'f':
@@ -206,7 +249,32 @@ parse_args (int argc, char **argv, struct parameters *params)
 			break;
 
 		case 'd':
-			params->log_level++;
+			/*
+			 * Default log_level is LOG_WARNING (1 << 4). For each -d,
+			 * bump log_level up to LOG_DEBUG (1 << 7).
+			 */
+			if (!(params->log_mask & LOG_MASK(LOG_DEBUG))) {
+				params->log_mask |= params->log_mask << 1;
+			}
+			break;
+
+		case 'l':
+			level = parse_log_level(optarg, level);
+			params->log_mask = level;
+			break;
+
+		case 'q':
+			params->quiet = true;
+			break;
+
+#ifdef JOURNALD_SUPPORT_ENABLED
+		case 'j':
+			msg_set_journald(true);
+			break;
+#endif
+
+		case 's':
+			msg_set_syslog(true);
 			break;
 
 		default:
@@ -244,7 +312,7 @@ int main(int ac, char **dc)
 	struct parameters parameters;
 
 	memset(&parameters, 0, sizeof(struct parameters));
-	parameters.log_level = MSG_ERROR;
+	parameters.log_mask = LOG_UPTO(LOG_WARNING);
 
 	/* parse command line */
 	if (parse_args (ac, dc, &parameters) < 0) {
@@ -260,6 +328,15 @@ int main(int ac, char **dc)
 		daemonise(parameters.pid_file, parameters.uid, parameters.gid);
 	}
 
+	if (parameters.quiet) {
+		msg_setquiet(true);
+	}
+
+	if (msg_get_syslog()) {
+		setlogmask(parameters.log_mask);
+		openlog("vermont", LOG_PID, LOG_DAEMON);
+	}
+
 	msg_init();
 	/**< Wrapper for the main thread's signal handlers*/
 	MainSignalHandler main_signal_handler;
@@ -273,8 +350,8 @@ int main(int ac, char **dc)
 	}
 
 	/* setup verboseness */
-	msg(MSG_DIALOG, "message debug level is %d", parameters.log_level);
-	msg_setlevel(parameters.log_level);
+	msg(MSG_DIALOG, "message debug level is %d", parameters.log_mask);
+	msg_setlevel(parameters.log_mask);
 
 
 	manager.parseConfig(string(parameters.config_file));
@@ -301,6 +378,10 @@ int main(int ac, char **dc)
 	}
 	msg(MSG_FATAL, "got signal - exiting");
 	manager.shutdown();
+
+	if (msg_get_syslog()) {
+		closelog();
+	}
 }
 
 //static void __cplusplus_really_sucks_andPeopleUsingVeryStrangeNamingConventionsWithLongLongExplicitBlaBlaAndfUnNycasE()
