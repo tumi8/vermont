@@ -516,3 +516,38 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 	/* all rule fields were matched */
 	return 1;
 }
+
+bool operator==(const Rule &rhs, const Rule &lhs) {
+	if (rhs.id != lhs.id) return false;
+	if (rhs.preceding != lhs.preceding) return false;
+	if (rhs.fieldCount != lhs.fieldCount) return false;
+	if (rhs.biflowAggregation != lhs.biflowAggregation) return false;
+	if (rhs.patternFieldsLen != lhs.patternFieldsLen) return false;
+
+	for (int i = 0; i < rhs.fieldCount; i++) {
+		if (*rhs.field[i] != *lhs.field[i]) return false;
+	}
+
+	for (uint16_t i = 0; i< rhs.patternFieldsLen; i++) {
+		if (*rhs.patternFields[i] != *lhs.patternFields[i]) return false;
+	}
+
+	return true;
+}
+
+bool operator!=(const Rule &rhs, const Rule &lhs) {
+	return !(lhs == rhs);
+}
+
+bool operator==(const Rule::Field &rhs, const Rule::Field &lhs) {
+	if (rhs.modifier != lhs.modifier) return false;
+	if (rhs.type != lhs.type) return false;
+	if (rhs.pattern == NULL && lhs.pattern == NULL) return true;
+	if (rhs.pattern == NULL || lhs.pattern == NULL) return false;
+	if (rhs.type.length != lhs.type.length) return false;
+	return (!memcmp(rhs.pattern, lhs.pattern, rhs.type.length));
+}
+
+bool operator!=(const Rule::Field &rhs, const Rule::Field &lhs) {
+	return !(lhs == rhs);
+}
