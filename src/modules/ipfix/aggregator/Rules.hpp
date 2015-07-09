@@ -38,6 +38,8 @@ class Rules {
 		Rules();
 		Rules(char* fname);
 		~Rules();
+		friend bool operator==(const Rules &rhs, const Rules &lhs);
+		friend bool operator!=(const Rules &rhs, const Rules &lhs);
 
 		size_t count;
 		Rule* rule[MAX_RULES];
