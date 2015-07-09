@@ -174,6 +174,20 @@ namespace InformationElement {
 		return buffer;
 	}
 
+	bool operator==(const IeInfo &rhs, const IeInfo &lhs) {
+		return (rhs.id==lhs.id) && (rhs.enterprise==lhs.enterprise);
+	}
+
+	bool operator!=(const IeInfo &rhs, const IeInfo &lhs) {
+		return !(rhs == lhs);
+	}
+
+	bool operator<(const IeInfo &rhs, const IeInfo &lhs) {
+		if (rhs.enterprise < lhs.enterprise) return true;
+		if (rhs.id < lhs.id) return true;
+		return false;
+	}
+
 }
 
 
