@@ -374,3 +374,16 @@ Rules::Rules(char* fname) {
 	delete currentRule;
 }
 
+bool operator==(const Rules &rhs, const Rules &lhs) {
+	if (rhs.count != lhs.count) return false;
+
+	for (size_t i = 0; i < rhs.count; i++) {
+		if (*rhs.rule[i] != *lhs.rule[i]) return false;
+	}
+
+	return true;
+}
+
+bool operator!=(const Rules &rhs, const Rules &lhs) {
+	return !(lhs == rhs);
+}
