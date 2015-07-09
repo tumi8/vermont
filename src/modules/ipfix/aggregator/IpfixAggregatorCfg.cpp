@@ -51,6 +51,6 @@ IpfixAggregator* IpfixAggregatorCfg::createInstance()
 
 bool IpfixAggregatorCfg::deriveFrom(IpfixAggregatorCfg* old)
 {
-	return false;  // FIXME: implement it, to gain performance increase in reconnect
+	return equalTo(old);
 }
 
