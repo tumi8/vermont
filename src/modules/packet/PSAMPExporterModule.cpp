@@ -220,4 +220,5 @@ void PSAMPExporterModule::performStart()
 void PSAMPExporterModule::performShutdown()
 {
 	// we could destroy the template here
+	timer->removeTimeout((void *)timerFlag);
 }
