@@ -412,4 +412,6 @@ void IpfixCsExporter::performShutdown()
 		writeChunkList();
 		closeFile();
 	}
+
+	timer->removeTimeout(NULL);
 }
