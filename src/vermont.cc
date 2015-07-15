@@ -375,6 +375,13 @@ int main(int ac, char **dc)
 			manager.parseConfig(string(parameters.config_file));
 			reload_config = false;
 		}
+
+		if (reset_syslog_mask) {
+			if (msg_get_syslog()) {
+				setlogmask(msg_getlevel());
+			}
+			reset_syslog_mask = false;
+		}
 	}
 	msg(MSG_FATAL, "got signal - exiting");
 	manager.shutdown();
