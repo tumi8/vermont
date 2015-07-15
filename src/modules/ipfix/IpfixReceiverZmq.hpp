@@ -31,14 +31,16 @@
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
 
-#define ZMQ_POLL_TIMEOUT_MS 1000
+// default poll timeout, 1 second
+#define ZMQ_POLL_TIMEOUT_DEFAULT 1000
 
 class IpfixReceiverZmq : public IpfixReceiver, Sensor
 {
 public:
 	IpfixReceiverZmq(std::vector<std::string> endpoints = std::vector<std::string>(),
 			std::vector<std::string> channels = std::vector<std::string>(),
-			int zmq_high_watermark = 0);
+			int zmq_high_watermark = 0,
+			int zmq_poll_timeout = ZMQ_POLL_TIMEOUT_DEFAULT);
 	virtual ~IpfixReceiverZmq();
 
 	virtual void run();
@@ -48,6 +50,7 @@ protected:
 	std::vector<std::string> endpoints;
 	std::vector<std::string> channels;
 	int zmq_high_watermark;
+	int zmq_poll_timeout;
 
 private:
 	std::vector<zsock_t *> zmq_sockets;

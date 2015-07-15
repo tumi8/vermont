@@ -36,13 +36,14 @@
 using namespace std;
 
 IpfixReceiverZmq::IpfixReceiverZmq(std::vector<std::string> endpoints,
-		std::vector<std::string> channels, const int zmq_high_watermark)
+		std::vector<std::string> channels, const int zmq_high_watermark,
+		const int zmq_poll_timeout)
 	: endpoints(endpoints), channels(channels),
 	  zmq_high_watermark(zmq_high_watermark),
+	  zmq_poll_timeout(zmq_poll_timeout),
 	  statReceivedPackets(0)
 {
 	if (endpoints.empty()) {
-		msg(MSG_ERROR, "No ZMQ channels configured");
 		THROWEXCEPTION("No ZMQ channels configured, cannot start ZMQ Receiver");
 	}
 
@@ -51,7 +52,6 @@ IpfixReceiverZmq::IpfixReceiverZmq(std::vector<std::string> endpoints,
 
 	zpoller = zpoller_new(NULL);
 	if (!zpoller) {
-		msg(MSG_ERROR, "Could not create ZMQ poller");
 		THROWEXCEPTION("Could not create ZMQ poller, cannot start ZMQ Receiver");
 	}
 
@@ -60,7 +60,6 @@ IpfixReceiverZmq::IpfixReceiverZmq(std::vector<std::string> endpoints,
 		// If no channel is passed down, listen on everything (empty string)
 		zsock_t *sock = zsock_new_sub((*i).c_str(), channels.empty() ? "" : NULL);
 		if (!sock) {
-			msg(MSG_ERROR, "Could not create and connect ZMQ socket");
 			THROWEXCEPTION("Could not connect ZMQ socket, cannot start ZMQ"
 					"Receiver");
 		}
@@ -74,8 +73,6 @@ IpfixReceiverZmq::IpfixReceiverZmq(std::vector<std::string> endpoints,
 		}
 
 		if (0 != zpoller_add(zpoller, sock)) {
-			msg(MSG_ERROR, "Could not add %s ZMQ socket to ZMQ poller",
-					(*i).c_str());
 			THROWEXCEPTION("Could not add %s ZMQ socket to ZMQ poller",
 					(*i).c_str());
 		}
@@ -119,7 +116,7 @@ void IpfixReceiverZmq::run()
 	sourceID->fileDescriptor = 0;
 
 	while (!zsys_interrupted && !exitFlag) {
-		void *sock = zpoller_wait(zpoller, ZMQ_POLL_TIMEOUT_MS);
+		void *sock = zpoller_wait(zpoller, zmq_poll_timeout);
 		if (!sock) {
 			if (zpoller_terminated(zpoller)) {
 				msg(MSG_DEBUG, "ZMQ termination signal received");

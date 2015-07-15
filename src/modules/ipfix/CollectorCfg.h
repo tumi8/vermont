@@ -48,7 +48,8 @@ public:
 	std::string getName() { return "collector"; }
 
 	CollectorCfg(XMLElement* elem)
-		: protocol(UDP), port(0), mtu(0), zmqHighWaterMark(0)
+		: protocol(UDP), port(0), mtu(0), zmqHighWaterMark(0),
+		  zmqPollTimeout(ZMQ_POLL_TIMEOUT_DEFAULT)
 	{
 		uint16_t defaultPort = 4739;
 		if (!elem)
@@ -102,6 +103,8 @@ public:
 				zmqPubSubChannel.push_back(e->getContent());
 			} else if (e->matches("zmqHighWaterMark")) {
 				zmqHighWaterMark = atoi(e->getContent().c_str());
+			} else if (e->matches("zmqPollTimeout")) {
+				zmqPollTimeout = atoi(e->getContent().c_str());
 			} else {
 				msg(MSG_FATAL, "Unknown collector config statement %s", e->getName().c_str());
 				continue;
@@ -165,6 +168,7 @@ public:
 			(buffer == other->buffer) &&
 			(authorizedHosts == other->authorizedHosts) &&
 			(zmqHighWaterMark == other->zmqHighWaterMark) &&
+			(zmqPollTimeout == other->zmqPollTimeout) &&
 			(zmqEndpoints == other->zmqEndpoints) &&
 			(zmqPubSubChannel == other->zmqPubSubChannel)) {
 			return true;
@@ -191,6 +195,7 @@ private:
 	std::vector<std::string> zmqEndpoints;
 	std::vector<std::string> zmqPubSubChannel;
 	int zmqHighWaterMark;
+	int zmqPollTimeout;
 };
 
 #endif /*COLLECTORCFG_H_*/
