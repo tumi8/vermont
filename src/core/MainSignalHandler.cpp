@@ -23,18 +23,58 @@
 MainSignalHandler::MainSignalHandler()
 {
 	SignalHandler::getInstance().registerSignalHandler(SIGINT, this);
+	SignalHandler::getInstance().registerSignalHandler(SIGTERM, this);
 	SignalHandler::getInstance().registerSignalHandler(SIGUSR1, this);
+	SignalHandler::getInstance().registerSignalHandler(SIGUSR2, this);
+	SignalHandler::getInstance().registerSignalHandler(SIGHUP, this);
 }
 
 
 /* WARNING: don't use any of the msg/DPRINTF/etc functions in the SIGNAL handlers;
  *          they use an internal mutex to lock the display output so you get a deadlock
  */
+
 void MainSignalHandler::handleSigUsr1(int x)
 {
 	int errno_save = errno;
 
-	DPRINTF("SIGUSR called");
+	int log_mask = msg_getlevel();
+
+	if (!(log_mask & LOG_MASK(LOG_DEBUG))) {
+		if (log_mask == 0) {
+			log_mask = LOG_MASK(LOG_EMERG);
+		} else {
+			log_mask |= log_mask << 1;
+		}
+		msg_setlevel(log_mask);
+		reset_syslog_mask = true;
+
+		wakeupMainThread();
+	}
+
+	errno = errno_save;
+}
+
+void MainSignalHandler::handleSigUsr2(int x)
+{
+	int errno_save = errno;
+	int log_mask = msg_getlevel();
+
+	if (log_mask != 0) {
+		log_mask &= log_mask >> 1;
+		msg_setlevel(log_mask);
+		reset_syslog_mask = true;
+
+		wakeupMainThread();
+	}
+
+	errno = errno_save;
+}
+
+void MainSignalHandler::handleSigHup(int x)
+{
+	int errno_save = errno;
+
 	reload_config = true;
 
 	errno = errno_save;
@@ -55,9 +95,24 @@ void MainSignalHandler::handleSigInt(int x)
 
 	shutdownInitiated = true;
 
-	msg(MSG_FATAL, "got signal %d - exiting", x);
-
 	initiateShutdown();
 	errno = errno_save;
 }
 
+/* just shallow right now */
+void MainSignalHandler::handleSigTerm(int x)
+{
+	int errno_save = errno;
+
+	static bool shutdownInitiated = false;
+
+	if (shutdownInitiated) {
+		printf("second signal received, shutting down the hard way!");
+		exit(2);
+	}
+
+	shutdownInitiated = true;
+
+	initiateShutdown();
+	errno = errno_save;
+}
