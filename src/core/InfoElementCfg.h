@@ -21,6 +21,8 @@ public:
 		ieName	         = getOptional("ieName");
 		modifier         = getOptional("modifier");
 		match            = getOptional("match");
+		autoAddV4PrefixLength = getBool("autoAddV4PrefixLength", true);
+
 
 		if (ieId>0) {
 			// check if ieID is known to Vermont
@@ -82,6 +84,19 @@ public:
 
 	bool isKnownIE() { return knownIE; }
 
+	bool getAutoAddV4PrefixLength() { return autoAddV4PrefixLength; }
+
+	bool operator==(const InfoElementCfg &other) const {
+		if (other.ieLength != ieLength) return false;
+		if (other.ieId != ieId) return true;
+		if (other.enterpriseNumber != enterpriseNumber) return false;
+		if (other.ieName != ieName) return false;
+		if (other.modifier != modifier) return false;
+		if (other.match != match) return false;
+		if (other.autoAddV4PrefixLength != autoAddV4PrefixLength) return false;
+		return true;
+	}
+
 private:
 	std::string ieName;
 	uint16_t ieLength;
@@ -92,6 +107,7 @@ private:
 	std::string modifier;
 
 	bool knownIE;
+	bool autoAddV4PrefixLength;
 };
 
 #endif /*INFOELEMENTCFG_H_*/

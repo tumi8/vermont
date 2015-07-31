@@ -124,8 +124,9 @@ Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 	ruleField->type.enterprise = ie.getEnterpriseNumber();
 	ruleField->type.length = ie.getIeLength();
 
-	if ((ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0)) ||
-			(ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0))) {
+	if (ie.getAutoAddV4PrefixLength() &&
+			(ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0) ||
+			ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0))) {
 		ruleField->type.length++; // for additional mask field
 	}
 
@@ -161,7 +162,8 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 		ruleField->type.enterprise = ie.getEnterpriseNumber();
 		ruleField->type.length = ie.getIeLength();
 
-		if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
+		if (ie.getAutoAddV4PrefixLength() &&
+				(ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address || ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
 			ruleField->type.length++; // for additional mask field
 		}
 
