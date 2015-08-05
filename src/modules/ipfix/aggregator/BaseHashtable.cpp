@@ -489,6 +489,7 @@ std::string BaseHashtable::getStatisticsXML(double interval)
 	uint32_t diff = statExportedBuckets - statLastExpBuckets;
 	statLastExpBuckets += diff;
 	oss << "<exportedEntries>" << (uint32_t) ((double) diff / interval) << "</exportedEntries>";
+	oss << "<totalExportedEntries>" << statExportedBuckets << "</totalExportedEntries>";
 	return oss.str();
 }
 
