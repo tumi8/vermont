@@ -47,9 +47,9 @@ class CollectorCfg
 public:
 	std::string getName() { return "collector"; }
 
-	CollectorCfg(XMLElement* elem)
-		: protocol(UDP), port(0), mtu(0), buffer(0), zmqHighWaterMark(0),
-		  zmqPollTimeout(ZMQ_POLL_TIMEOUT_DEFAULT)
+	CollectorCfg(XMLElement* elem, unsigned int moduleId)
+		: protocol(UDP), port(0), mtu(0), buffer(0), moduleId(moduleId),
+		  zmqHighWaterMark(0), zmqPollTimeout(ZMQ_POLL_TIMEOUT_DEFAULT)
 	{
 		uint16_t defaultPort = 4739;
 		if (!elem)
@@ -143,7 +143,8 @@ public:
 			ipfixReceiver = new IpfixReceiverUdpIpV4(port, ipAddress, buffer);
 #ifdef ZMQ_SUPPORT_ENABLED
 		else if (protocol == ZMQ)
-			ipfixReceiver = new IpfixReceiverZmq(zmqEndpoints, zmqPubSubChannel);
+			ipfixReceiver = new IpfixReceiverZmq(zmqEndpoints, zmqPubSubChannel,
+					zmqHighWaterMark, zmqPollTimeout, moduleId);
 #endif
 
 		if (!ipfixReceiver) {
@@ -183,6 +184,7 @@ public:
 	ipfix_transport_protocol getProtocol() { return protocol; }
 	uint16_t getPort() { return port; }
 	uint16_t getMtu() { return mtu; }
+	unsigned int getModuleId() {return moduleId; }
 
 private:
 	std::string ipAddress;
@@ -194,6 +196,7 @@ private:
 	std::set<std::string> peerFqdns;
 	std::vector<std::string> zmqEndpoints;
 	std::vector<std::string> zmqPubSubChannel;
+	unsigned int moduleId;
 	int zmqHighWaterMark;
 	int zmqPollTimeout;
 };

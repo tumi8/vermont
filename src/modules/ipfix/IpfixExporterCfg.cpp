@@ -54,7 +54,7 @@ IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 		XMLElement* e = *it;
 
 		if (e->matches("collector")) {
-			CollectorCfg *c = new CollectorCfg(e);
+			CollectorCfg *c = new CollectorCfg(e, this->getID());
 			if (c->getPeerFqdns().size() > 1) {
 				delete c;
 				THROWEXCEPTION("You specified more than one peerFqdn for an exporter.");

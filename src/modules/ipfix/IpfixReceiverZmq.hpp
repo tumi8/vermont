@@ -40,7 +40,8 @@ public:
 	IpfixReceiverZmq(std::vector<std::string> endpoints = std::vector<std::string>(),
 			std::vector<std::string> channels = std::vector<std::string>(),
 			int zmq_high_watermark = 0,
-			int zmq_poll_timeout = ZMQ_POLL_TIMEOUT_DEFAULT);
+			int zmq_poll_timeout = ZMQ_POLL_TIMEOUT_DEFAULT,
+			unsigned int moduleId = 0);
 	virtual ~IpfixReceiverZmq();
 
 	virtual void run();
@@ -56,6 +57,7 @@ private:
 	std::vector<zsock_t *> zmq_sockets;
 	zpoller_t *zpoller;
 	uint32_t statReceivedPackets;  /**< number of received packets */
+	unsigned int moduleId;
 };
 
 #endif
