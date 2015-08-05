@@ -34,7 +34,8 @@
 
 class IpfixReceiverTcpIpV4 : public IpfixReceiver, Sensor {
 	public:
-		IpfixReceiverTcpIpV4(int port, std::string ipAddr = "", const uint32_t buffer = 0);
+		IpfixReceiverTcpIpV4(int port, std::string ipAddr = "",
+				const uint32_t buffer = 0, unsigned int moduleId = 0);
 		virtual ~IpfixReceiverTcpIpV4();
 
 		virtual void run();
@@ -42,6 +43,7 @@ class IpfixReceiverTcpIpV4 : public IpfixReceiver, Sensor {
 	private:
 		int listen_socket;
 		uint32_t statReceivedMessages;  /**< number of received messages */
+		unsigned int moduleId;
 };
 
 #endif

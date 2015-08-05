@@ -37,11 +37,11 @@ using namespace std;
 
 IpfixReceiverZmq::IpfixReceiverZmq(std::vector<std::string> endpoints,
 		std::vector<std::string> channels, const int zmq_high_watermark,
-		const int zmq_poll_timeout)
+		const int zmq_poll_timeout, unsigned int moduleId)
 	: endpoints(endpoints), channels(channels),
 	  zmq_high_watermark(zmq_high_watermark),
 	  zmq_poll_timeout(zmq_poll_timeout),
-	  statReceivedPackets(0)
+	  statReceivedPackets(0), moduleId(moduleId)
 {
 	if (endpoints.empty()) {
 		THROWEXCEPTION("No ZMQ channels configured, cannot start ZMQ Receiver");
@@ -82,7 +82,7 @@ IpfixReceiverZmq::IpfixReceiverZmq(std::vector<std::string> endpoints,
 		msg(MSG_INFO, "ZMQ Receiver listening on %s", (*i).c_str());
 	}
 
-	SensorManager::getInstance().addSensor(this, "IpfixReceiverZMQ", 0);
+	SensorManager::getInstance().addSensor(this, "IpfixReceiverZMQ", moduleId);
 }
 
 /**
