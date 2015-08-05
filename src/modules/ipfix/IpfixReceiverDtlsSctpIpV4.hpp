@@ -63,7 +63,8 @@ class IpfixReceiverDtlsSctpIpV4 : public IpfixReceiver, Sensor {
 	IpfixReceiverDtlsSctpIpV4(int port, const std::string ipAddr = "",
 	    const std::string &certificateChainFile = "", const std::string &privateKeyFile = "",
 	    const std::string &caFile = "", const std::string &caPath = "",
-	    const std::set<string> &peerFqdns = std::set<string>(), const uint32_t buffer);
+	    const std::set<string> &peerFqdns = std::set<string>(),
+		const uint32_t buffer, unsigned int moduleId);
 	virtual ~IpfixReceiverDtlsSctpIpV4();
 
 	virtual void run();
@@ -89,6 +90,7 @@ class IpfixReceiverDtlsSctpIpV4 : public IpfixReceiver, Sensor {
 	const std::set<string> peerFqdns;
 	friend int verify_peer_cb_sctp(void *context, const char *dnsname);
 	uint32_t statReceivedPackets;  /**< number of received packets */ 
+	unsigned int moduleId;
 
 	class DtlsConnection {
 	    public:

@@ -46,10 +46,11 @@
 IpfixReceiverDtlsSctpIpV4::IpfixReceiverDtlsSctpIpV4(int port, const std::string ipAddr,
 	const std::string &certificateChainFile, const std::string &privateKeyFile,
 	const std::string &caFile, const std::string &caPath,
-	const std::set<string> &peerFqdnsParam, const uint32_t buffer)
+	const std::set<string> &peerFqdnsParam, const uint32_t buffer,
+	unsigned int moduleId)
     : IpfixReceiver(port),ssl_ctx(certificateChainFile,privateKeyFile,caFile,caPath,
 	! peerFqdnsParam.empty()),listen_socket(-1),maxfd(0),
-	peerFqdns(peerFqdnsParam), statReceivedPackets(0)
+	peerFqdns(peerFqdnsParam), statReceivedPackets(0), moduleId(moduleId)
 	 {
 	
     struct sockaddr_in serverAddress;
@@ -117,7 +118,8 @@ IpfixReceiverDtlsSctpIpV4::IpfixReceiverDtlsSctpIpV4(int port, const std::string
 	update_maxfd();
 
 	/* TODO: Find out what this is? */
-	SensorManager::getInstance().addSensor(this, "IpfixReceiverDtlsSctpIpV4", 0);
+	SensorManager::getInstance().addSensor(this, "IpfixReceiverDtlsSctpIpV4",
+			moduleId);
 
 	msg(MSG_INFO, "DTLS over SCTP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 

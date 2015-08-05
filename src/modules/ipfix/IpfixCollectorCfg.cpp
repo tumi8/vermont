@@ -53,7 +53,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 		if (e->matches("listener")) {
 			if (listener)
 				THROWEXCEPTION("listener already set. There can only be one <listener> Element per Collector.");
-			listener = new CollectorCfg(e);
+			listener = new CollectorCfg(e, this->getID());
 			if (listener->getMtu() != 0) {
 				delete listener;
 				THROWEXCEPTION("You can not set the MTU for a listener.");
