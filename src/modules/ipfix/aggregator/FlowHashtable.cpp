@@ -536,6 +536,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data,
 	}
 	if (!flowfound || expiryforced) {
 		DPRINTFL(MSG_VDEBUG, "creating new bucket");
+		statTotalEntries++;
 		HashtableBucket* n = buckets[nhash];
 		buckets[nhash] = createBucket(data, 0, n, 0, nhash, flowStartTimeSeconds); // FIXME: insert observationDomainID!
 		buckets[nhash]->inTable = true;
