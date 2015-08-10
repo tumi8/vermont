@@ -38,6 +38,11 @@
 #define SM_DEFAULT_OUTPUT_FNAME "sensor_output.xml"
 
 /**
+ * default sensor manager's filename to check for the clear file
+ */
+#define SM_DEFAULT_CLEAR_FNAME "sensor_clear.txt"
+
+/**
  * default sensor manager's flag variable that determines, if
  * output file should be appended to or overwritten
  */
