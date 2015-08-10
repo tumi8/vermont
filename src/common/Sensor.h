@@ -15,6 +15,11 @@ public:
 	virtual ~Sensor();
 
 	/**
+	 * clears the statistics belonging to this module
+	 */
+	virtual void clearStatistics() {};
+
+	/**
 	 * @param time in seconds when this function was called last time (to be used for calculating average)
 	 * @returns a string containing statistics about the current module in XML format
 	 */

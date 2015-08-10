@@ -55,6 +55,7 @@ private:
 	// config variables
 	uint32_t checkInterval; /** sensor check interval in seconds */
 	string sensorOutput; /** filename of output file which contains sensor data */
+	string clearFilename; /** filename of sensor clear file */
 	bool append;	/** append to output file or overwrite */
 };
 
