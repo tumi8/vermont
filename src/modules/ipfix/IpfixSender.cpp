@@ -814,6 +814,13 @@ void IpfixSender::onReconfiguration1()
 {
 }
 
+void IpfixSender::clearStatistics()
+{
+	statSentDataRecords = 0;
+	statSentPackets = 0;
+	statPacketsInFlows = 0;
+}
+
 string IpfixSender::getStatisticsXML(double interval)
 {
 	char buf[200];

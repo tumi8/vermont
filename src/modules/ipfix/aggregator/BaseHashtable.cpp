@@ -480,6 +480,14 @@ void BaseHashtable::postReconfiguration()
 	sendDataTemplate();
 }
 
+void BaseHashtable::clearStatistics()
+{
+	statExportedBuckets = 0;
+	statLastExpBuckets = 0;
+	statRecordsReceived = 0;
+	statRecordsSent = 0;
+}
+
 std::string BaseHashtable::getStatisticsXML(double interval)
 {
 	ostringstream oss;

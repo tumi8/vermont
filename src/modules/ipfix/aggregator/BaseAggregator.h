@@ -43,6 +43,7 @@ public:
 	virtual void onReconfiguration1();
 	virtual void postReconfiguration();
 
+	virtual void clearStatistics();
 	virtual string getStatisticsXML(double interval);
 
 protected:
