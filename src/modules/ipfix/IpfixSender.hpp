@@ -69,7 +69,7 @@ public:
 	// inherited from Notifiable
 	virtual void onTimeout(void* dataPtr);
 
-
+	virtual void clearStatistics();
 	virtual string getStatisticsXML(double interval);
 	
 protected:

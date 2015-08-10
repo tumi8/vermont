@@ -220,6 +220,13 @@ void* BaseAggregator::threadWrapper(void* instance)
 	return 0;
 }
 
+void BaseAggregator::clearStatistics()
+{
+	for (size_t i = 0; i < rules->count; i++) {
+		rules->rule[i]->hashtable->clearStatistics();
+	}
+}
+
 string BaseAggregator::getStatisticsXML(double interval)
 {
 	ostringstream oss;

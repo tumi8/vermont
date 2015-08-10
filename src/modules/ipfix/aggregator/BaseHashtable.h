@@ -63,6 +63,7 @@ public:
 
 	virtual ~BaseHashtable();
 
+	virtual void clearStatistics();
 	virtual std::string getStatisticsXML(double interval);
 	void expireFlows(bool all = false);
 
