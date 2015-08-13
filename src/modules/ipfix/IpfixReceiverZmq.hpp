@@ -18,10 +18,13 @@
  *
  */
 
-#ifdef ZMQ_SUPPORT_ENABLED
-
 #ifndef ZMQ_RECEIVER_HPP
 #define ZMQ_RECEIVER_HPP
+
+// default poll timeout, 1 second
+#define ZMQ_POLL_TIMEOUT_DEFAULT 1000
+
+#ifdef ZMQ_SUPPORT_ENABLED
 
 #include <pthread.h>
 #include <stdint.h>
@@ -30,9 +33,6 @@
 
 #include "IpfixReceiver.hpp"
 #include "IpfixPacketProcessor.hpp"
-
-// default poll timeout, 1 second
-#define ZMQ_POLL_TIMEOUT_DEFAULT 1000
 
 class IpfixReceiverZmq : public IpfixReceiver, Sensor
 {
@@ -60,6 +60,6 @@ private:
 	unsigned int moduleId;
 };
 
-#endif
-
 #endif // ZMQ_SUPPORT_ENABLED
+
+#endif // ZMQ_RECEIVER_HPP
