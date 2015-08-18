@@ -56,12 +56,14 @@ using namespace std;
 IpfixReceiverDtlsUdpIpV4::IpfixReceiverDtlsUdpIpV4(int port, const std::string ipAddr,
 	const std::string &certificateChainFile, const std::string &privateKeyFile,
 	const std::string &caFile, const std::string &caPath,
-	const std::set<string> &peerFqdnsParam, const uint32_t buffer)
+	const std::set<string> &peerFqdnsParam, const uint32_t buffer),
+	unsigned int moduleId)
     : IpfixReceiver(port),listen_socket(-1),
 	ssl_ctx(certificateChainFile,privateKeyFile,caFile,caPath, ! peerFqdnsParam.empty()),
 	peerFqdns(peerFqdnsParam),
 	statReceivedPackets(0),
-	connections(my_CompareSourceID)
+	connections(my_CompareSourceID),
+	moduleId(moduleId)
 	 {
     struct sockaddr_in serverAddress;
 
@@ -93,7 +95,8 @@ IpfixReceiverDtlsUdpIpV4::IpfixReceiverDtlsUdpIpV4(int port, const std::string i
 	}
 
 	/* TODO: Find out what this is? */
-	SensorManager::getInstance().addSensor(this, "IpfixReceiverDtlsUdpIpV4", 0);
+	SensorManager::getInstance().addSensor(this, "IpfixReceiverDtlsUdpIpV4",
+								moduleId);
 
 	msg(MSG_INFO, "DTLS over UDP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 

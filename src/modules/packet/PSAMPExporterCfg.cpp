@@ -53,7 +53,7 @@ PSAMPExporterCfg::PSAMPExporterCfg(XMLElement* elem)
 			templateRefreshTime = getTimeInUnit("templateRefreshTimeout", SEC, IS_DEFAULT_TEMPLATE_TIMEINTERVAL, e);
 			/* templateRefreshRate = getInt("templateRefreshRate", IS_DEFAULT_TEMPLATE_RECORDINTERVAL, e); */ /* TODO */
 		} else if (e->matches("collector")) {
-			collectors.push_back(new CollectorCfg(e));
+			collectors.push_back(new CollectorCfg(e, this->getID()));
 		} else if (e->matches("packetReporting")) {
 			reporting = new PacketReportingCfg(e);
 		} else if (e->matches("captureLen") || e->matches("observationDomainId")) {

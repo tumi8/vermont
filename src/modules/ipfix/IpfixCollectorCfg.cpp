@@ -24,6 +24,7 @@
 #include <modules/ipfix/IpfixReceiverDtlsUdpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverSctpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverDtlsSctpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverZmq.hpp>
 
 IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector, IpfixCollectorCfg>(elem, "ipfixCollector"),
@@ -52,7 +53,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 		if (e->matches("listener")) {
 			if (listener)
 				THROWEXCEPTION("listener already set. There can only be one <listener> Element per Collector.");
-			listener = new CollectorCfg(e);
+			listener = new CollectorCfg(e, this->getID());
 			if (listener->getMtu() != 0) {
 				delete listener;
 				THROWEXCEPTION("You can not set the MTU for a listener.");
@@ -75,8 +76,14 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 			listener->getProtocol() != TCP && 
 			listener->getProtocol() != SCTP &&
 			listener->getProtocol() != DTLS_OVER_UDP &&
+#ifdef ZMQ_SUPPORT_ENABLED
+			listener->getProtocol() != DTLS_OVER_SCTP &&
+			listener->getProtocol() != ZMQ)
+		THROWEXCEPTION("collectingProcess can handle only UDP, TCP, SCTP or ZMQ!");
+#else
 			listener->getProtocol() != DTLS_OVER_SCTP)
 		THROWEXCEPTION("collectingProcess can handle only UDP, TCP, or SCTP!");
+#endif
 	
 	msg(MSG_INFO, "IpfixCollectorCfg: Successfully parsed collectingProcess section");
 }

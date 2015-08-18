@@ -43,8 +43,9 @@ using namespace std;
  * @param port Port to listen on
  * @param ipAddr interface to use, if equals "", all interfaces will be used
  */
-IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr, const uint32_t buffer)
-	: statReceivedPackets(0)
+IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr,
+		const uint32_t buffer, unsigned int moduleId)
+	: statReceivedPackets(0), moduleId(moduleId)
 {
 	receiverPort = port;
 
@@ -76,7 +77,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr, const u
 		THROWEXCEPTION("Cannot create IpfixReceiverUdpIpV4 %s:%d",ipAddr.c_str(), port );
 	}
 
-	SensorManager::getInstance().addSensor(this, "IpfixReceiverUdpIpV4", 0);
+	SensorManager::getInstance().addSensor(this, "IpfixReceiverUdpIpV4", moduleId);
 
 	msg(MSG_INFO, "UDP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 

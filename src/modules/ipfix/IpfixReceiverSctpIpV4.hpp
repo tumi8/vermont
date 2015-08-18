@@ -50,6 +50,7 @@ class IpfixReceiverSctpIpV4 : public IpfixReceiver, Sensor {
 	private:
 		int listen_socket;
 		uint32_t statReceivedPackets;  /**< number of received packets */ 
+		unsigned int moduleId;
 #else
 	public:
 		IpfixReceiverSctpIpV4(int port, std::string ipAddr, uint32_t buffer = 0) {

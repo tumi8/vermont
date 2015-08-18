@@ -330,7 +330,8 @@ enum ipfix_transport_protocol {
 	UDP, /*!< UDP, available on all platforms, may result in MTU issues */
 	TCP, /*!< TCP, currently unsupported by ipfixlolib */
 	DTLS_OVER_UDP, /*!< DTLS over UDP, requires OpenSSL */
-	DTLS_OVER_SCTP /*!< DTLS over SCTP, requires OpenSSL w/ SCTP patches from sctp.fh-muenster.de and recent version of FreeBSD */
+	DTLS_OVER_SCTP, /*!< DTLS over SCTP, requires OpenSSL w/ SCTP patches from sctp.fh-muenster.de and recent version of FreeBSD */
+	ZMQ /* Requires libczmq */
 };
 
 typedef struct {
