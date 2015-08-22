@@ -191,6 +191,7 @@ bool IpfixExporterCfg::equalTo(IpfixExporterCfg* other)
 	if (dtlsMaxConnectionLifetime != other->dtlsMaxConnectionLifetime) return false;
 	if (templateRefreshTime != other->templateRefreshTime) return false;
 	/* if (templateRefreshRate != other->templateRefreshRate) return false; */ /* TODO */
+	if (export_protocol != other->export_protocol) return false;
 	if (collectors.size() != other->collectors.size()) return false;
 	std::vector<CollectorCfg*>::const_iterator iter = collectors.begin();
 	while (iter != collectors.end()) {
