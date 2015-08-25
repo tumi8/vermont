@@ -688,6 +688,7 @@ static int init_send_udp_socket(struct sockaddr_in serv_addr){
                 return -1;
         }
 
+#ifndef DISABLE_UDP_CONNECT
         // connect to server
         if(connect(s, (struct sockaddr*)&serv_addr, sizeof(serv_addr) ) < 0) {
                 msg(MSG_FATAL, "connect failed, %s", strerror(errno));
@@ -695,6 +696,7 @@ static int init_send_udp_socket(struct sockaddr_in serv_addr){
                 close(s);
                 return -1;
         }
+#endif
 	if(enable_pmtu_discovery(s)) {
 	    close(s);
 	    return -1;
@@ -2263,10 +2265,15 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 							exporter->template_sendbuffer->current);
 					} else {
 #endif
-					if((bytes_sent = writev(col->data_socket,
-						exporter->template_sendbuffer->entries,
-						exporter->template_sendbuffer->current
-						))  == -1){
+					struct msghdr header;
+					header.msg_name = &col->addr;
+					header.msg_namelen = sizeof(col->addr);
+					header.msg_iov = exporter->template_sendbuffer->entries;
+					header.msg_iovlen = exporter->template_sendbuffer->current;
+					header.msg_control = 0;
+					header.msg_controllen = 0;
+
+					if((bytes_sent = sendmsg(col->data_socket, &header, 0))  == -1){
 						if (errno == EMSGSIZE) {
 						    msg(MSG_ERROR,
 							    "Unable to send templates to %s:%d b/c message is bigger than MTU. That is a severe problem.",
@@ -2424,6 +2431,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 
                 // send the sendbuffer to all collectors
                 for (i = 0; i < exporter->collector_max_num; i++) {
+			struct msghdr header;
 			ipfix_receiving_collector *col = &exporter->collector_arr[i];
 			if (col->state == C_CONNECTED) {
 #ifdef DEBUG
@@ -2452,10 +2460,14 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 				char* packet_directory_path;
 #endif
 				case UDP:
-					if((bytes_sent=writev( col->data_socket,
-						exporter->data_sendbuffer->entries,
-						exporter->data_sendbuffer->committed
-							     )) == -1){
+					header.msg_name = &col->addr;
+					header.msg_namelen = sizeof(col->addr);
+					header.msg_iov = exporter->data_sendbuffer->entries;
+					header.msg_iovlen = exporter->data_sendbuffer->current;
+					header.msg_control = 0;
+					header.msg_controllen = 0;
+
+					if((bytes_sent = sendmsg(col->data_socket, &header, 0))  == -1) {
 						msg(MSG_ERROR, "could not send to %s:%d errno: %s  (UDP)",col->ipv4address, col->port_number, strerror(errno));
 						if (errno == EMSGSIZE) {
 						    msg(MSG_ERROR, "Updating MTU estimate for collector %s:%d",
