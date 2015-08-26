@@ -8,6 +8,9 @@
 
  Header for encoding functions suitable for IPFIX
 
+ Changes by James Wheatley, 2015-08
+   Added support for export over IPv6
+
  Changes by Gerhard Münz, 2006-02-01
    Changed and debugged sendbuffer structure and Co
    Added new function for canceling data sets and deleting fields
@@ -562,12 +565,12 @@ typedef struct {
  * A collector receiving messages from this exporter
  */
 typedef struct {
-	char ipv4address[16];
+	char ipaddress[40];
 	uint16_t port_number;
 	enum ipfix_transport_protocol protocol;
 	int data_socket; // socket data and templates are sent to
 	/* data_socket is NOT used for DTLS connections */
-	struct sockaddr_in addr;
+	struct sockaddr_storage addr;
 	uint32_t last_reconnect_attempt_time; // applies only to SCTP and DTLS at the moment
 	enum collector_state state;
 	uint32_t messages_sent; /* number of messages that should have been sent */
@@ -686,8 +689,8 @@ int ipfix_beat(ipfix_exporter *exporter);
 int ipfix_init_exporter(export_protocol_version export_protocol, uint32_t observation_domain_id, ipfix_exporter **exporter);
 int ipfix_deinit_exporter(ipfix_exporter **exporter_p);
 
-int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, uint16_t coll_port, enum ipfix_transport_protocol proto, void *aux_config);
-int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, uint16_t coll_port);
+int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip_addr, uint16_t coll_port, enum ipfix_transport_protocol proto, void *aux_config);
+int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip_addr, uint16_t coll_port);
 int ipfix_start_template(ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count);
 int ipfix_start_optionstemplate_set(ipfix_exporter *exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length);
 int ipfix_start_datatemplate(ipfix_exporter *exporter, uint16_t template_id, uint16_t preceding, uint16_t field_count, uint16_t fixedfield_count);

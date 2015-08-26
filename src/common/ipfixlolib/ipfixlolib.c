@@ -5,6 +5,9 @@
 
  Header for encoding functions suitable for IPFIX
 
+ Changes by James Wheatley, 2015-08
+   Added support for export over IPv6
+
  Changes by Daniel Mentz, 2009-01
    Added support for DTLS over UDP and DTLS over SCTP
 
@@ -68,12 +71,12 @@ static void dtls_shutdown_and_cleanup(ipfix_dtls_connection *con);
 static void dtls_fail_connection(ipfix_dtls_connection *con);
 #endif
 #ifdef SUPPORT_SCTP
-static int init_send_sctp_socket(struct sockaddr_in serv_addr);
+static int init_send_sctp_socket(struct sockaddr_storage serv_addr);
 #ifdef SUPPORT_DTLS_OVER_SCTP
 static void handle_sctp_event(BIO *bio, void *context, void *buf);
 #endif
 #endif
-static int init_send_udp_socket(struct sockaddr_in serv_addr);
+static int init_send_udp_socket(struct sockaddr_storage serv_addr);
 static int enable_pmtu_discovery(int s);
 static int ipfix_find_template(ipfix_exporter *exporter, uint16_t template_id);
 static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_receiving_collector *collector, ipfix_sendbuffer *sendbuf);
@@ -83,7 +86,7 @@ static int ipfix_deinit_sendbuffer(ipfix_sendbuffer **sendbuf);
 static int ipfix_init_collector_array(ipfix_receiving_collector **col, int col_capacity);
 static void remove_collector(ipfix_receiving_collector *collector);
 static int ipfix_deinit_collector_array(ipfix_receiving_collector **col);
-static int ipfix_init_send_socket(struct sockaddr_in serv_addr , enum ipfix_transport_protocol protocol);
+static int ipfix_init_send_socket(struct sockaddr_storage serv_addr , enum ipfix_transport_protocol protocol);
 static int ipfix_init_template_array(ipfix_exporter *exporter, int template_capacity);
 static int ipfix_deinit_template(ipfix_lo_template* templ);
 static int ipfix_deinit_template_array(ipfix_exporter *exporter);
@@ -673,15 +676,15 @@ int ipfix_beat(ipfix_exporter *exporter) {
 /*
  * Initializes a UDP-socket to send data to.
  * Parameters:
- * char* serv_ip4_addr IP-Address of the recipient (e.g. "123.123.123.123")
- * serv_port the UDP port number of the server.
+ * serv_addr sockaddr_storage struct with IP address and UDP port number of the
+             recipient
  * Returns: a socket to write to. -1 on failure
  */
-static int init_send_udp_socket(struct sockaddr_in serv_addr){
+static int init_send_udp_socket(struct sockaddr_storage serv_addr){
 
         int s;
         // create socket
-        if((s = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
+        if((s = socket(serv_addr.ss_family, SOCK_DGRAM, 0)) < 0 ) {
                 msg(MSG_FATAL, "error opening socket, %s", strerror(errno));
                 return -1;
         }
@@ -745,17 +748,17 @@ static int get_mtu(const int s) {
 /*
  * Initializes a SCTP socket to send data to.
  * Parameters:
- * char* serv_ip4_addr IP-Address of the recipient (e.g. "123.123.123.123")
- * serv_port the SCTP port number of the server.
+ * serv_addr sockaddr_storage struct with IP address and SCTP port number of the
+             recipient
  * Returns: a socket to write to. -1 on failure
  */
-static int init_send_sctp_socket(struct sockaddr_in serv_addr){
+static int init_send_sctp_socket(struct sockaddr_storage serv_addr){
 
     int s;
 
     //create socket:
     DPRINTFL(MSG_VDEBUG, "Creating SCTP Socket ...");
-    if((s = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP)) < 0 ) {
+    if((s = socket(serv_addr.ss_family, SOCK_STREAM, IPPROTO_SCTP)) < 0 ) {
 	msg(MSG_FATAL, "error opening SCTP socket, %s", strerror(errno));
 	return -1;
     }
@@ -1135,7 +1138,7 @@ static ipfix_receiving_collector *get_free_collector_slot(ipfix_exporter *export
 }
 
 static int add_collector_datafile(ipfix_receiving_collector *collector, const char *basename, uint32_t maxfilesize) {
-    collector->ipv4address[0] = '\0';
+    collector->ipaddress[0] = '\0';
     collector->port_number = 0;
     collector->data_socket = -1;
     collector->protocol = DATAFILE;
@@ -1152,7 +1155,7 @@ static int add_collector_datafile(ipfix_receiving_collector *collector, const ch
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 static int add_collector_rawdir(ipfix_receiving_collector *collector, const char *path) {
-    collector->ipv4address[0] = '\0';
+    collector->ipaddress[0] = '\0';
     collector->port_number = 0;
     collector->data_socket = -1;
     memset(&(collector->addr), 0, sizeof(collector->addr));
@@ -1358,7 +1361,7 @@ static int valid_transport_protocol(enum ipfix_transport_protocol p) {
  * </table>
 
  * \param exporter pointer to previously initialized exporter struct
- * \param coll_ip4_addr IP address of receiving Collector in dotted notation (e.g. "1.2.3.4")
+ * \param coll_ip_addr IP address of receiving Collector in appropriate notation for address family (e.g. "1.2.3.4" for IPv4, "2001:db8:123::456" for IPv6)
  * \param coll_port port number of receiving Collector
  * \param proto transport protocol to use, either RAWDIR, SCTP, UDP,
  * DTLS_OVER_UDP or DTLS_OVER_SCTP. See <tt>\ref ipfix_transport_protocol</tt> for
@@ -1369,7 +1372,7 @@ static int valid_transport_protocol(enum ipfix_transport_protocol p) {
  * \return -1 failure
  * \sa ipfix_remove_collector()
  */
-int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr,
+int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip_addr,
 	uint16_t coll_port, enum ipfix_transport_protocol proto, void *aux_config)
 {
     // check, if exporter is valid
@@ -1390,26 +1393,37 @@ int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr,
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
     /* It is the duty of add_collector_rawdir to set collector->state */
-    if (proto==RAWDIR) return add_collector_rawdir(collector,coll_ip4_addr);
+    if (proto==RAWDIR) return add_collector_rawdir(collector,coll_ip_addr);
 #endif
-    if (proto==DATAFILE) return add_collector_datafile(collector, coll_ip4_addr, coll_port);
+    if (proto==DATAFILE) return add_collector_datafile(collector, coll_ip_addr, coll_port);
     /*
     FIXME: only a quick fix to make that work
     Must be copied, else pointered data must be around forever
     Better use binary/u_int32_t representation
     */
-    strncpy(collector->ipv4address, coll_ip4_addr, sizeof(collector->ipv4address));
-    /* strncpy does not null terminate the destination char array if the
-     * length of the source string is equal or greater then the maximum length
-     * (third parameter) */
-    collector->ipv4address[sizeof(collector->ipv4address)-1] = '\0';
+    memset(collector->ipaddress, 0, sizeof(collector->ipaddress));
+    strncpy(collector->ipaddress, coll_ip_addr, sizeof(collector->ipaddress) - 1);
     collector->port_number = coll_port;
     collector->protocol = proto;
 
     memset(&(collector->addr), 0, sizeof(collector->addr));
-    collector->addr.sin_family = AF_INET;
-    collector->addr.sin_port = htons(coll_port);
-    collector->addr.sin_addr.s_addr = inet_addr(coll_ip4_addr);
+    if (strchr(coll_ip_addr, ':')) {
+        struct sockaddr_in6 *sa = (struct sockaddr_in6 *)&collector->addr;
+        sa->sin6_family = AF_INET6;
+        sa->sin6_port = htons(coll_port);
+        if (inet_pton(AF_INET6, coll_ip_addr, &sa->sin6_addr) != 1) {
+            msg(MSG_FATAL, "%s was not a valid IPv6 address", coll_ip_addr);
+            return -1;
+        }
+    } else {
+        struct sockaddr_in *sa = (struct sockaddr_in *)&collector->addr;
+        sa->sin_family = AF_INET;
+        sa->sin_port =  htons(coll_port);
+        if (inet_pton(AF_INET, coll_ip_addr, &sa->sin_addr) != 1) {
+            msg(MSG_FATAL, "%s was not a valid IPv4 address", coll_ip_addr);
+            return -1;
+        }
+    }
 
 #ifdef SUPPORT_DTLS
     /* It is the duty of add_collector_dtls to set collector->state */
@@ -1457,7 +1471,7 @@ static void remove_collector(ipfix_receiving_collector *collector) {
  * includes shutting down the transport connection.
  *
  * \param exporter pointer to previously initialized exporter struct
- * \param coll_ip4_addr IP address of receiving Collector in dotted notation (e.g. "1.2.3.4")
+ * \param coll_ip_addr IP address of receiving Collector in appropriate notation for address family (e.g. "1.2.3.4" for IPv4, "2001:db8:123::456" for IPv6)
  * \param coll_port port number of receiving Collector
  * \return 0 success
  * \return -1 failure
@@ -1465,17 +1479,17 @@ static void remove_collector(ipfix_receiving_collector *collector) {
  */
 /*
  */
-int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, uint16_t coll_port) {
+int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip_addr, uint16_t coll_port) {
     int i;
     for(i=0;i<exporter->collector_max_num;i++) {
 	ipfix_receiving_collector *collector = &exporter->collector_arr[i];
-	if( ( strcmp( collector->ipv4address, coll_ip4_addr) == 0 )
+	if( ( strcmp( collector->ipaddress, coll_ip_addr) == 0 )
 		&& collector->port_number == coll_port) {
 	    remove_collector(collector);
 	    return 0;
 	}
     }
-    msg(MSG_ERROR, "remove_collector, exporter %s not found", coll_ip4_addr);
+    msg(MSG_ERROR, "remove_collector, exporter %s not found", coll_ip_addr);
     return -1;
 }
 
@@ -1809,7 +1823,7 @@ static int ipfix_init_collector_array(ipfix_receiving_collector **col, int col_c
         for (i = 0; i< col_capacity; i++) {
 		ipfix_receiving_collector *c = &tmp[i];
                 c->state = C_UNUSED;
-		c->ipv4address[0] = '\0';
+		c->ipaddress[0] = '\0';
 		c->port_number = 0;
 		c->protocol = 0;
 		c->data_socket = -1;
@@ -1850,11 +1864,11 @@ static int ipfix_deinit_collector_array(ipfix_receiving_collector **col)
 /*
  * Initializes a send socket
  * Parameters:
- * serv_ip4_addr of the recipient in dot notation
- * serv_port: port
+ * serv_addr sockaddr_storage struct with IP address and port number of the
+             recipient
  * protocol: transport protocol
  */
-static int ipfix_init_send_socket(struct sockaddr_in serv_addr, enum ipfix_transport_protocol protocol)
+static int ipfix_init_send_socket(struct sockaddr_storage serv_addr, enum ipfix_transport_protocol protocol)
 {
     int sock = -1;
 
@@ -2345,18 +2359,18 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 		    if (errno == EMSGSIZE) {
 			msg(MSG_ERROR,
 			    "Unable to send templates to %s:%d b/c message is bigger than MTU. That is a severe problem.",
-			    col->ipv4address,
+			    col->ipaddress,
 			    col->port_number);
 		    } else {
 			msg(MSG_ERROR,
 			    "could not send templates to %s:%d errno: %s  (UDP)",
-			    col->ipv4address,
+			    col->ipaddress,
 			    col->port_number,
 			    strerror(errno));
 		    }
 		} else {
 		    msg(MSG_VDEBUG, "%d Template Bytes sent to UDP collector %s:%d",
-			bytes_sent, col->ipv4address, col->port_number);
+			bytes_sent, col->ipaddress, col->port_number);
 		}
 		col->messages_sent++;
 	    }
@@ -2367,7 +2381,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 	    switch (col->state){
 	    case C_DISCONNECTED:
 		if(exporter->sctp_reconnect_timer == 0) { // 0 = no more reconnection attempts
-		    msg(MSG_ERROR, "reconnect failed, removing collector %s:%d (SCTP)", col->ipv4address, col->port_number);
+		    msg(MSG_ERROR, "reconnect failed, removing collector %s:%d (SCTP)", col->ipaddress, col->port_number);
 		    remove_collector(col);
 		    break;
 		}
@@ -2394,14 +2408,14 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 						   0 // context
 			    )) == -1) {
 			// send failed
-			msg(MSG_ERROR, "could not send templates to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
+			msg(MSG_ERROR, "could not send templates to %s:%d errno: %s  (SCTP)",col->ipaddress, col->port_number, strerror(errno));
 			sctp_reconnect(col); //1st reconnect attempt
 			// if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will
 			// be removed on the next call of ipfix_send_templates()
 		    } else {
 			// send was successful
 			msg(MSG_VDEBUG, "%d template bytes sent to SCTP collector %s:%d",
-			    bytes_sent, col->ipv4address, col->port_number);
+			    bytes_sent, col->ipaddress, col->port_number);
 		    }
 		} else {
 		    DPRINTF("No Template to send to SCTP collector");
@@ -2485,7 +2499,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 		continue; // No. Continue to next loop iteration.
 	    }
 #ifdef DEBUG
-	    DPRINTFL(MSG_VDEBUG, "Sending to exporter %s", col->ipv4address);
+	    DPRINTFL(MSG_VDEBUG, "Sending to exporter %s", col->ipaddress);
 	    ipfix_sendbuffer_debug(exporter->data_sendbuffer);
 #endif
 	    switch(col->protocol){
@@ -2498,10 +2512,10 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 		header.msg_controllen = 0;
 
 		if((bytes_sent = sendmsg(col->data_socket, &header, 0))  == -1) {
-		    msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (UDP)",col->ipv4address, col->port_number, strerror(errno));
+		    msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (UDP)",col->ipaddress, col->port_number, strerror(errno));
 		    if (errno == EMSGSIZE) {
 			msg(MSG_ERROR, "Updating MTU estimate for collector %s:%d",
-			    col->ipv4address,
+			    col->ipaddress,
 			    col->port_number);
 			/* If update_collector_mtu fails, it calls
 			   remove_collector(). So keep in mind that
@@ -2512,7 +2526,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 		}else{
 
 		    msg(MSG_VDEBUG, "%d data bytes sent to UDP collector %s:%d",
-			bytes_sent, col->ipv4address, col->port_number);
+			bytes_sent, col->ipaddress, col->port_number);
 		}
 		break;
 #ifdef SUPPORT_DTLS_OVER_SCTP
@@ -2522,10 +2536,10 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 						    exporter->data_sendbuffer->committed,
 						    exporter->sctp_lifetime
 			)) == -1){
-		    msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over SCTP)",col->ipv4address, col->port_number);
+		    msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over SCTP)",col->ipaddress, col->port_number);
 		}else{
 		    msg(MSG_VDEBUG, "%d data bytes sent to DTLS over SCTP collector %s:%d",
-			bytes_sent, col->ipv4address, col->port_number);
+			bytes_sent, col->ipaddress, col->port_number);
 		}
 		break;
 #endif
@@ -2543,14 +2557,14 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 					       0 // context
 			)) == -1) {
 		    // send failed
-		    msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
+		    msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (SCTP)",col->ipaddress, col->port_number, strerror(errno));
 		    // drop data and call sctp_reconnect
 		    sctp_reconnect(col);
 		    // if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
 		    // be removed on the next call of ipfix_send_templates()
 		}
 		msg(MSG_VDEBUG, "%d data bytes sent to SCTP collector %s:%d",
-		    bytes_sent, col->ipv4address, col->port_number);
+		    bytes_sent, col->ipaddress, col->port_number);
 		break;
 #endif
 #ifdef SUPPORT_DTLS
@@ -2559,10 +2573,10 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 					  exporter->data_sendbuffer->entries,
 					  exporter->data_sendbuffer->committed
 			)) == -1){
-		    msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over UDP)",col->ipv4address, col->port_number);
+		    msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over UDP)",col->ipaddress, col->port_number);
 		}else{
 		    msg(MSG_VDEBUG, "%d data bytes sent to DTLS over UDP collector %s:%d",
-			bytes_sent, col->ipv4address, col->port_number);
+			bytes_sent, col->ipaddress, col->port_number);
 		}
 		break;
 #endif
