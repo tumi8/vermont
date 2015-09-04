@@ -21,7 +21,7 @@ class Source
 public:
 	typedef T src_value_type;
 
-	Source() : mutex(), connected(1), disconnectInProgress(false), syncLock(1), hasSuccessor(true), dest(NULL) { }
+	Source() : mutex(), connected(1), disconnectInProgress(false), syncLock(1), dest(NULL) { }
 	virtual ~Source() { }
 
 	virtual void connectTo(Destination<T>* destination)
@@ -40,7 +40,6 @@ public:
 		mutex.lock();
 		if (dest)
 			THROWEXCEPTION("ERROR: already connected\n");
-		hasSuccessor = false;
 		dest = NULL;
 		connected.inc(1);
 		atomic_release(&syncLock);
@@ -96,7 +95,7 @@ public:
 				return false;
 			}
 		}
-		if (hasSuccessor) dest->receive(t);
+		if (isConnected()) dest->receive(t);
 		else {
 			// we don't have a succeeding module, so clean up this data element
 			t->removeReference();
@@ -140,7 +139,6 @@ protected:
 
 private:
 	alock_t syncLock; /**< is locked when an element is sent to next module or no next module is available */
-	bool hasSuccessor; /**< set to true if this module has a succeeding module */
 	Destination<T>* dest;
 };
 
