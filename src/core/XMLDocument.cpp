@@ -108,7 +108,7 @@ free:	// jump here if you need to free/delete your mess;
 	}
 
 	if (!exceptionMsg.empty())
-		THROWEXCEPTION(exceptionMsg.c_str());
+		THROWEXCEPTION("%s", exceptionMsg.c_str());
 
 	return doc;
 }
