@@ -1,6 +1,7 @@
 #ifndef INFOELEMENTCFG_H_
 #define INFOELEMENTCFG_H_
 
+#include <utility>
 #include "core/Cfg.h"
 #include "common/ipfixlolib/ipfix_names.h"
 
@@ -81,6 +82,16 @@ public:
 	std::string getModifier() { return modifier; }
 
 	bool isKnownIE() { return knownIE; }
+
+	bool operator==(const InfoElementCfg &other) const {
+		if (other.ieLength != ieLength) return false;
+		if (other.ieId != ieId) return true;
+		if (other.enterpriseNumber != enterpriseNumber) return false;
+		if (other.ieName != ieName) return false;
+		if (other.modifier != modifier) return false;
+		if (other.match != match) return false;
+		return true;
+	}
 
 private:
 	std::string ieName;

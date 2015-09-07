@@ -65,15 +65,9 @@ namespace InformationElement {
 		{
 		}
 
-		bool operator==(const IeInfo &other) const {
-			return (id==other.id) && (enterprise==other.enterprise);
-		}
-
-		bool operator<(const IeInfo &other) const {
-			if (enterprise<other.enterprise) return true;
-			if (id<other.id) return true;
-			return false;
-		}
+		friend bool operator==(const IeInfo &rhs, const IeInfo &lhs);
+		friend bool operator!=(const IeInfo &rhs, const IeInfo &lhs);
+		friend bool operator<(const IeInfo &rhs, const IeInfo &lhs);
 
 
 		IeId id; 			/**< Information Element Id */

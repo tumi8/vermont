@@ -778,6 +778,7 @@ void IpfixSender::performShutdown()
 {
 	// send remaining records first
 	sendRecords(IfNotEmpty);
+	timer->removeTimeout(&timeoutIpfixlolibBeat);
 }
 
 /**

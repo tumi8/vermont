@@ -55,6 +55,9 @@ class Rule : private PrintHelpers {
 					free(pattern);
 				}
 
+				friend bool operator==(const Field &rhs, const Field &lhs);
+				friend bool operator!=(const Field &rhs, const Field &lhs);
+
 				/*
 				 * Rule::Field Modifier can be DISCARD (throw away this field), KEEP (keep this field), AGGREGATE (create one aggregate flow per different field value) or between MASK_START and MASK_END (to determine how many bits of the IP Address to keep)
 				 */
@@ -72,6 +75,8 @@ class Rule : private PrintHelpers {
 		void print();
 		bool ExptemplateDataMatches(const Packet* p);
 		int dataRecordMatches(IpfixDataRecord* record);
+		friend bool operator==(const Rule &rhs, const Rule &lhs);
+		friend bool operator!=(const Rule &rhs, const Rule &lhs);
 
 		uint16_t id;
 		uint16_t preceding;

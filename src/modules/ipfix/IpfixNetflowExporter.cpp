@@ -108,6 +108,7 @@ void IpfixNetflowExporter::performShutdown()
 {
 	sendRecords(true);
 	close(sockfd);
+	timer->removeTimeout(NULL);
 }
 
 /**
