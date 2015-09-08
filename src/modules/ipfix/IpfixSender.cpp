@@ -385,8 +385,14 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 	DPRINTF("%u data length", dataLength);
 
-	char* data = dataLength?(char*)malloc(dataLength):0; // electric fence does not like 0-byte mallocs
-	memcpy(data, dataTemplateInfo->data, dataLength);
+	char *data = NULL; // electric fence does not like 0-byte mallocs
+	if (dataLength && dataTemplateInfo->dataCount) {
+		data = (char *)malloc(dataLength);
+		if (!data) {
+			THROWEXCEPTION("IpfixSender: could not allocate data template");
+		}
+		memcpy(data, dataTemplateInfo->data, dataLength);
+	}
 
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
 		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
