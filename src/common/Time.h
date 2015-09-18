@@ -242,9 +242,11 @@ inline uint32_t ntp32_substract (uint32_t x, uint32_t y)
 
 inline void convertNtp64(uint64_t ntptime, uint64_t& result)
 {
-        uint64_t hbnum = ntohll(*(uint64_t*)&ntptime);
+        uint64_t hbnum = ntohll(ntptime);
         if (hbnum>0) {
-                timeval t = timentp64(*((ntp64*)(&hbnum)));
+                ntp64 ntp64_time;
+                memcpy(&ntp64_time, &hbnum, sizeof(uint64_t));
+                timeval t = timentp64(ntp64_time);
                 result = (uint64_t)t.tv_sec*1000+(uint64_t)t.tv_usec/1000;
         } else {
                 result = 0;
