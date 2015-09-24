@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 	testSuite.add(new BloomFilterTestSuite());
 	testSuite.add(new ConnectionFilterTestSuite());
 #endif
-	testSuite.add(new ConfigTester());
+	//testSuite.add(new ConfigTester());
 
 	testSuite.run();
 
