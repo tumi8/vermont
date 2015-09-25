@@ -40,12 +40,12 @@ Graph* Connector::connect(Graph* g)
 				CfgNode* toNode = id2node[nexts[j]];
 
 				if (toNode == NULL)
-					THROWEXCEPTION("next statement is illegal; there is no node with id=%d", nexts[j]);
+					THROWEXCEPTION("next statement is illegal; there is no node with id=%u", nexts[j]);
 
 				if (connectNodes) // insert the connection in the graph
 					g->addEdge(fromNode, toNode);
 
-				msg(MSG_INFO,  "Connecting module %s[Id = %d] -> %s[Id = %d]",
+				msg(MSG_INFO,  "Connecting module %s[Id = %u] -> %s[Id = %u]",
 						cfg->getName().c_str(), cfg->getID(),
 						id2node[nexts[j]]->getCfg()->getName().c_str(),
 						id2node[nexts[j]]->getCfg()->getID());
