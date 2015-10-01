@@ -53,7 +53,8 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  dataTemplateRecordIM("IpfixDataTemplateRecord", 0),
 	  templateDestructionRecordIM("IpfixTemplateDestructionRecord", 0),
 	  hbucketIM("BucketListElement", 0),
-	  aggInProgress(false)
+	  aggInProgress(false),
+	  now(0)
 {
 	msg(MSG_INFO, "Hashtable initialized with following parameters:");
 	msg(MSG_INFO, "  - minBufferTime=%d", minBufferTime);
@@ -314,10 +315,10 @@ void BaseHashtable::expireFlows(bool all)
 			// TODO: change this one list to two lists: one for active, one for passive timeout
 			// problem here: flows with active timeout may be exported passive timeout seconds too late
 			// now must be updated by the child classes
-			if ((bucket->expireTime < now) || (bucket->forceExpireTime < now) || all) {
-				if (now > bucket->forceExpireTime) {
+			if ((bucket->expireTime <= now) || (bucket->forceExpireTime <= now) || all) {
+				if (now >= bucket->forceExpireTime) {
 					DPRINTF("expireFlows: forced expiry");
-				} else if (now > bucket->expireTime) {
+				} else if (now >= bucket->expireTime) {
 					DPRINTF("expireFlows: normal expiry");
 				}
 				if (bucket->inTable) removeBucket(bucket);

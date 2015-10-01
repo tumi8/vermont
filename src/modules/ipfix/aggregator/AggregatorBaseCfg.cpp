@@ -46,8 +46,6 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 			// get the time values or set them to '0' if they are not specified
 			maxBufferTime = getTimeInUnit("activeTimeout", SEC, 0, e);
 			minBufferTime = getTimeInUnit("inactiveTimeout", SEC, 0, e);
-			if (!maxBufferTime) THROWEXCEPTION("active timeout not set in configuration for aggregator");
-			if (!minBufferTime) THROWEXCEPTION("inactive timeout not set in configuration for aggregator");
 		} else if (e->matches("pollInterval")) {
 			pollInterval = getTimeInUnit("pollInterval", mSEC, AGG_DEFAULT_POLLING_TIME);
 		} else if (e->matches("hashtableBits")) {

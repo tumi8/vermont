@@ -24,6 +24,7 @@
 
 #include "common/crc.hpp"
 #include "common/Misc.h"
+#include "common/Time.h"
 #include "modules/ipfix/IpfixPrinter.hpp"
 #include "modules/ipfix/Connection.h"
 
@@ -686,8 +687,10 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 	}
 
 	int i;
-	uint32_t startSec = 0;
-	uint32_t endSec = 0;
+	timeval unix_now = unixtime();
+	// IPFIX defines dateTimeSec as uint32, so cast time_t (int64 probably)
+	uint32_t startSec = (uint32_t)unix_now.tv_sec;
+	uint32_t endSec = (uint32_t)unix_now.tv_sec;
 
 	/* Create data block to be inserted into buffer... */
 	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength+privDataLength]);
