@@ -44,8 +44,8 @@ typedef void (*LOGFUNCTION)(void *);
 #define MSG_VDEBUG LOG_DEBUG   // mostly for ipfix byte-level messages
 #define MSG_DEBUG LOG_INFO    // debugging messages, for example used by DPRINTF
 #define MSG_INFO LOG_NOTICE     // informational messages, shown without debug-mode but only with verbose logging enabled
-#define MSG_ERROR LOG_WARNING    // error or warning messages which are shown during default execution
-#define MSG_DIALOG LOG_ERR   // messages which are shown during default execution
+#define MSG_DIALOG LOG_WARNING    // error or warning messages which are shown during default execution
+#define MSG_ERROR LOG_ERR   // messages which are shown during default execution
 #define MSG_FATAL LOG_CRIT    // fatal messages which are shown every time
 #define MSG_ALERT LOG_ALERT    // not used
 #define MSG_EMERG LOG_EMERG    // not used
