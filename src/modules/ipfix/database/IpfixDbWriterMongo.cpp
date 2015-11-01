@@ -440,8 +440,8 @@ int IpfixDbWriterMongo::getExporterID(const IpfixRecord::SourceID& sourceID)
 uint64_t IpfixDbWriterMongo::getData(InformationElement::IeInfo type, IpfixRecord::Data* data)
 {
 	// TODO: workout a proper modular interpreter
-	if (type.id >= IPFIX_TYPEID_mplsLabelStackEntry1 &&
-	    type.id <= IPFIX_TYPEID_mplsLabelStackEntry10) {
+	if (type.id >= IPFIX_TYPEID_mplsTopLabelStackSection &&
+	    type.id <= IPFIX_TYPEID_mplsLabelStackSection10) {
 			// Properly decode MPLS Label, Experimental and S fields
 			// TODO: Provide all separated fields
 			uint32_t MPLSStruct = 0;
