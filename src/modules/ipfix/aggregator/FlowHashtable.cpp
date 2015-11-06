@@ -449,16 +449,10 @@ HashtableBucket* FlowHashtable::lookupBucket(uint32_t hash, IpfixRecord::Data* d
 /**
  * Inserts a data block into the hashtable
  */
-void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data, uint32_t flowStartTimeSeconds, uint32_t flowEndTimeSeconds)
+void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 {
 	statRecordsReceived++;
 
-	// adapt the current time based on the flowStartTimeSeconds
-	// we are conservative and use the flowStartTimeSeconds in order
-	// to not make the aggregation thread remove flows prematurely
-	if (flowStartTimeSeconds > now) {
-		now = flowStartTimeSeconds;
-	}
 	uint32_t nhash = getHash(data.get(), false);
 	DPRINTFL(MSG_VDEBUG, "nhash=%u", nhash);
 	HashtableBucket* prevbucket;
@@ -466,6 +460,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data,
 
 	bool flowfound = false;
 	bool expiryforced = false;
+	timeval unix_now = unixtime();
 
 	if (bucket != NULL) {
 		DPRINTFL(MSG_VDEBUG, "aggregating flow");
@@ -475,14 +470,14 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data,
 		// assign all counters to the first flow. Hence we do 
 		// not need to check whether the flow overlaps (i.e
 		// flowStartTimeSeconds < bucket->expireTime and flowEndSeconds > bucket->expireTime)
-		if (flowStartTimeSeconds > bucket->expireTime || flowStartTimeSeconds > bucket->forceExpireTime){
+		if (unix_now.tv_sec > bucket->expireTime || unix_now.tv_sec > bucket->forceExpireTime){
 			expiryforced = true;
 			bucket->forceExpiry = true;
 			removeBucket(bucket);
 		} else {
 			flowfound = true;
 			aggregateFlow(bucket->data.get(), data.get(), false);
-			bucket->expireTime = flowEndTimeSeconds + minBufferTime;
+			bucket->expireTime = unix_now.tv_sec + minBufferTime;
 			if (bucket->forceExpireTime>bucket->expireTime) {
 				exportList.remove(bucket->listNode);
 				exportList.push(bucket->listNode);
@@ -496,7 +491,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data,
 		DPRINTFL(MSG_VDEBUG, "rhash=%u", rhash);
 		bucket = lookupBucket(rhash, data.get(), true, &prevbucket);
 		if (bucket != NULL) {
-			if (flowStartTimeSeconds > bucket->expireTime || flowStartTimeSeconds > bucket->forceExpireTime) {
+			if (unix_now.tv_sec > bucket->expireTime || unix_now.tv_sec > bucket->forceExpireTime) {
 				bucket->forceExpiry = true;
 				expiryforced = true;
 				removeBucket(bucket);
@@ -525,7 +520,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data,
 					buckets[nhash] = bucket;
 					bucket->prev = 0;
 					if (bucket->next != NULL) bucket->next->prev = bucket;
-					bucket->expireTime = flowEndTimeSeconds + minBufferTime;
+					bucket->expireTime = unix_now.tv_sec + minBufferTime;
 					if (bucket->forceExpireTime>bucket->expireTime) {
 						exportList.remove(bucket->listNode);
 						exportList.push(bucket->listNode);
@@ -539,7 +534,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data,
 		DPRINTFL(MSG_VDEBUG, "creating new bucket");
 		statTotalEntries++;
 		HashtableBucket* n = buckets[nhash];
-		buckets[nhash] = createBucket(data, 0, n, 0, nhash, flowStartTimeSeconds); // FIXME: insert observationDomainID!
+		buckets[nhash] = createBucket(data, 0, n, 0, nhash, unix_now.tv_sec); // FIXME: insert observationDomainID!
 		buckets[nhash]->inTable = true;
 		if (n != NULL) n->prev = buckets[nhash];
 		BucketListElement* node = hbucketIM.getNewInstance();
@@ -686,10 +681,6 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 	}
 
 	int i;
-	timeval unix_now = unixtime();
-	// IPFIX defines dateTimeSec as uint32, so cast time_t (int64 probably)
-	uint32_t startSec = (uint32_t)unix_now.tv_sec;
-	uint32_t endSec = (uint32_t)unix_now.tv_sec;
 
 	/* Create data block to be inserted into buffer... */
 	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength+privDataLength]);
@@ -708,63 +699,6 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 			// this path is normal for normal flow data records!
 			fieldFilled = true;
 			copyData(hfi, htdata.get(), tfi, data, fieldModifier[i]);
-
-			// obtain the start time of the flow in seconds
-			switch(tfi->type.id) {
-				case IPFIX_TYPEID_flowStartSeconds:
-					if(hfi->type.length != 4) {
-						DPRINTF("Cannot process flowStartSeconds with invalid length %d", hfi->type.length);
-					}
-					startSec = htonl(*(uint32_t*)(data + tfi->offset));
-					break;
-				case IPFIX_TYPEID_flowStartMilliseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowStartMilliseconds with invalid length %d", hfi->type.length);
-					}
-					startSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000;
-					break;
-				case IPFIX_TYPEID_flowStartMicroseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowStartMicroseconds with invalid length %d", hfi->type.length);
-					}
-					startSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000;
-					break;
-				case IPFIX_TYPEID_flowStartNanoseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowStartNanoseconds with invalid length %d", hfi->type.length);
-					}
-					startSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000000;
-					break;
-				case IPFIX_TYPEID_flowEndSeconds:
-					if(hfi->type.length != 4) {
-						DPRINTF("Cannot process flowEndSeconds with invalid length %d", hfi->type.length);
-					}
-					endSec = htonl(*(uint32_t*)(data + tfi->offset));
-					break;
-				case IPFIX_TYPEID_flowEndMilliseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowEndMilliseconds with invalid length %d", hfi->type.length);
-					}
-					endSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000;
-					break;
-				case IPFIX_TYPEID_flowEndMicroseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowEndMicroseconds with invalid length %d", hfi->type.length);
-					}
-					endSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000;
-					break;
-				case IPFIX_TYPEID_flowEndNanoseconds:
-					if(hfi->type.length != 8) {
-						DPRINTF("Cannot process flowEndNanoseconds with invalid length %d", hfi->type.length);
-					}
-					endSec = htonll(*(uint64_t*)(data + tfi->offset)) / 1000000000;
-					break;
-
-
-				default:
-					break;
-
-			}
 
 			/* copy associated mask, should there be one */
 			switch (hfi->type.id) {
@@ -863,7 +797,7 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 	}
 
 	/* ...then buffer it */
-	bufferDataBlock(htdata, startSec, endSec);
+	bufferDataBlock(htdata);
 
 	atomic_release(&aggInProgress);
 }
