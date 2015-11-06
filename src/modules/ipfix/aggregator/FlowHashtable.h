@@ -44,7 +44,7 @@ private:
 	uint32_t getHash(IpfixRecord::Data* data, bool reverse);
 	int equalFlow(IpfixRecord::Data* flow1, IpfixRecord::Data* flow2, bool reverse);
 	HashtableBucket* lookupBucket(uint32_t hash, IpfixRecord::Data* data, bool reverse, HashtableBucket** prevbucket);
-	void bufferDataBlock(boost::shared_array<IpfixRecord::Data> data, uint32_t flowStartSeconds, uint32_t flowEndTimeSeconds);
+	void bufferDataBlock(boost::shared_array<IpfixRecord::Data> data);
 	int equalRaw(InformationElement::IeInfo* data1Type, IpfixRecord::Data* data1,
 			InformationElement::IeInfo* data2Type, IpfixRecord::Data* data2);
 	void copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* dst,

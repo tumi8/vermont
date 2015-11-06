@@ -1342,7 +1342,8 @@ void PacketHashtable::aggregateFlow(HashtableBucket* bucket, const Packet* p, bo
 		}
 	}
 	if (!bucket->forceExpiry) {
-		bucket->expireTime = now + minBufferTime;
+		timeval unix_now = unixtime();
+		bucket->expireTime = unix_now.tv_sec + minBufferTime;
 
 		if (bucket->forceExpireTime>bucket->expireTime) {
 			exportList.remove(bucket->listNode);
@@ -1520,8 +1521,6 @@ void PacketHashtable::aggregatePacket(Packet* p)
 		req.tv_nsec = 50000000;
 		nanosleep(&req, &req);
 	}
-
-	now = p->timestamp.tv_sec;
 
 	DPRINTF("PacketHashtable::aggregatePacket()");
 	updatePointers(p);

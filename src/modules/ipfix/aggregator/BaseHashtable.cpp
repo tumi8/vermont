@@ -20,6 +20,7 @@
  */
 
 #include "BaseHashtable.h"
+#include "common/Time.h"
 
 #include <sstream>
 #include <stdint.h>
@@ -53,8 +54,7 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  dataTemplateRecordIM("IpfixDataTemplateRecord", 0),
 	  templateDestructionRecordIM("IpfixTemplateDestructionRecord", 0),
 	  hbucketIM("BucketListElement", 0),
-	  aggInProgress(false),
-	  now(0)
+	  aggInProgress(false)
 {
 	msg(MSG_INFO, "Hashtable initialized with following parameters:");
 	msg(MSG_INFO, "  - minBufferTime=%d", minBufferTime);
@@ -227,11 +227,11 @@ BaseHashtable::~BaseHashtable()
  * Initializes memory for a new bucket in @c ht containing @c data
  */
 HashtableBucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Data> data,
-		uint32_t obsdomainid, HashtableBucket* next, HashtableBucket* prev, uint32_t hash, uint32_t flowStartTime)
+		uint32_t obsdomainid, HashtableBucket* next, HashtableBucket* prev, uint32_t hash, time_t now)
 {
 	HashtableBucket* bucket = new HashtableBucket();
-	bucket->expireTime = flowStartTime + minBufferTime;
-	bucket->forceExpireTime = flowStartTime + maxBufferTime;
+	bucket->expireTime = now + minBufferTime;
+	bucket->forceExpireTime = now + maxBufferTime;
 	bucket->data = data;
 	bucket->next = next;
 	bucket->prev = prev;
@@ -307,6 +307,7 @@ void BaseHashtable::expireFlows(bool all)
 
 	HashtableBucket* bucket = 0;
 	BucketListElement* node = 0;
+	timeval unix_now = unixtime();
 
 	if (!exportList.isEmpty) {
 		while (exportList.head) { //check the first entry in the BucketList
@@ -315,10 +316,10 @@ void BaseHashtable::expireFlows(bool all)
 			// TODO: change this one list to two lists: one for active, one for passive timeout
 			// problem here: flows with active timeout may be exported passive timeout seconds too late
 			// now must be updated by the child classes
-			if ((bucket->expireTime <= now) || (bucket->forceExpireTime <= now) || all) {
-				if (now >= bucket->forceExpireTime) {
+			if ((bucket->expireTime <= unix_now.tv_sec) || (bucket->forceExpireTime <= unix_now.tv_sec) || all) {
+				if (unix_now.tv_sec >= bucket->forceExpireTime) {
 					DPRINTF("expireFlows: forced expiry");
-				} else if (now >= bucket->expireTime) {
+				} else if (unix_now.tv_sec >= bucket->expireTime) {
 					DPRINTF("expireFlows: normal expiry");
 				}
 				if (bucket->inTable) removeBucket(bucket);
