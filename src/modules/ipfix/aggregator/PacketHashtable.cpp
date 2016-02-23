@@ -147,7 +147,6 @@ void PacketHashtable::copyDataTransportOctets(CopyFuncParameters* cfp)
 	DPRINTFL(MSG_VDEBUG, "%s=%llu, ppd->seq=%u", cfp->efd->typeId.toString().c_str(), ntohll(*reinterpret_cast<uint64_t*>(cfp->dst+cfp->efd->dstIndex)), ntohl(ppd->seq));
 }
 
-
 /**
  * aggregates payload of packets to a certain maximum amount
  * only sequence number is regarded, succeeding packets with same sequence number
@@ -329,6 +328,13 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 					}
 					break;
 
+				case IPFIX_TYPEID_sourceMacAddress:
+				case IPFIX_TYPEID_destinationMacAddress:
+					if (efd->dstLength != 6) {
+						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
+					}
+					break;
+
 				case IPFIX_TYPEID_bgpSourceAsNumber:
 				case IPFIX_TYPEID_bgpDestinationAsNumber:
 					if (efd->dstLength != 2) {
@@ -461,6 +467,10 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 			case IPFIX_TYPEID_destinationIPv4Address:
 				return 4;
 
+			case IPFIX_TYPEID_sourceMacAddress:
+			case IPFIX_TYPEID_destinationMacAddress:
+				return 6;
+
 			case IPFIX_TYPEID_flowStartMilliseconds:
 			case IPFIX_TYPEID_flowEndMilliseconds:
 			case IPFIX_TYPEID_flowStartNanoseconds:
@@ -511,7 +521,7 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
  * @param p pointer to raw packet
  * @returns offset (in bytes) at which the data for the given field is located in the raw packet
  */
-uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packet* p)
+int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packet* p)
 {
 	if (type.enterprise==0 || type.enterprise==IPFIX_PEN_reverse) {
 		switch (type.id) {
@@ -533,6 +543,14 @@ uint16_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Pack
 			case IPFIX_TYPEID_flowStartNanoseconds:
 			case IPFIX_TYPEID_flowEndNanoseconds:
 				return reinterpret_cast<const unsigned char*>(&p->timestamp) - p->data.netHeader;
+				break;
+
+			// Return negative value as MAC addresses are located _before_ the packet's netheader
+			case IPFIX_TYPEID_destinationMacAddress:
+				return p->layer2Start - p->data.netHeader;
+				break;
+			case IPFIX_TYPEID_sourceMacAddress:
+				return p->layer2Start + 6 - p->data.netHeader;
 				break;
 
 			case IPFIX_TYPEID_octetDeltaCount:
@@ -636,6 +654,8 @@ bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:
 				case IPFIX_TYPEID_tcpControlBits:
+				case IPFIX_TYPEID_sourceMacAddress:
+				case IPFIX_TYPEID_destinationMacAddress:
 					return true;
 			}
 			break;
@@ -746,6 +766,8 @@ bool PacketHashtable::typeAvailable(const IeInfo& type)
 				case IPFIX_TYPEID_flowEndMilliseconds:
 				case IPFIX_TYPEID_flowStartNanoseconds:
 				case IPFIX_TYPEID_flowEndNanoseconds:
+				case IPFIX_TYPEID_sourceMacAddress:
+				case IPFIX_TYPEID_destinationMacAddress:
 				case IPFIX_TYPEID_octetTotalCount:
 				case IPFIX_TYPEID_octetDeltaCount:
 				case IPFIX_TYPEID_protocolIdentifier:

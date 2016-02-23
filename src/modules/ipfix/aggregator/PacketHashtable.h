@@ -42,7 +42,7 @@ public:
 	void aggregatePacket(Packet* p);
 
 	static uint8_t getRawPacketFieldLength(const InformationElement::IeInfo& type);
-	static uint16_t getRawPacketFieldOffset(const InformationElement::IeInfo& type, const Packet* p);
+	static int32_t getRawPacketFieldOffset(const InformationElement::IeInfo& type, const Packet* p);
 
 private:
 	/**
@@ -66,7 +66,7 @@ private:
 
 		// following fields are used by aggregation functions for a fast lookup of needed data inside
 		// the raw packet (source) and the hashtable bucket (destination)
-		uintptr_t srcIndex; /**< index to raw packet data relative to Packet::netHeader, sometimes unique for each processed packet */
+		intptr_t srcIndex; /**< index to raw packet data relative to Packet::netHeader, sometimes unique for each processed packet */
 		uint16_t dstIndex; /**< index in ipfix data */
 		uint16_t srcLength; /**< length of source field data */
 		uint16_t dstLength; /**< length of destination field data */
