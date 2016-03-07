@@ -206,18 +206,20 @@ public:
 #else
 		retval = sem_timedwait(sem, &ts);
 #endif 
-		switch (retval) {
-			case 0:
-				return true;
-				break;
-			case EINVAL:
-				THROWEXCEPTION("semaphore is invalid");
-				return false;
-				break;
-			default:
-				// semaphore could not be aquired because of several reasons, but none are fatal
-				DPRINTFL(MSG_VDEBUG, "timedwait returned with %d", retval);
-				return false;
+		if (!retval) {
+			return true;
+		} else {
+			switch (errno) {
+				case EINVAL:
+					THROWEXCEPTION("semaphore is invalid");
+					return false;
+					break;
+				default:
+					// semaphore not acquired for non-fatal reasons
+					DPRINTFL(MSG_VDEBUG, "timedwait returned with %s",
+							strerror(errno));
+					return false;
+			}
 		}
 
 		// this statement should not be reached

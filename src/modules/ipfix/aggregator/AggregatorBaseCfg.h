@@ -34,6 +34,7 @@ class AggregatorBaseCfg
 public:
 	AggregatorBaseCfg(XMLElement* elem);
 	virtual ~AggregatorBaseCfg();
+	bool equalTo(AggregatorBaseCfg *other);
 
 protected:
 	Rule* readRule(XMLElement* elem);

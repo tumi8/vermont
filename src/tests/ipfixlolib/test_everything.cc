@@ -20,7 +20,9 @@ int print_usage(void){
 	
 	printf("How To Use Tests:\n\n");
 	printf("\t--- Just what you are reading: \th \n");
+#ifdef SUPPORT_SCTP
 	printf("\t--- Create SCTP collector: \tc \n");
+#endif
 	printf("\t--- Create UDP collector: \tu \n");
 	printf("\t--- Template creation: \t\tt \n");
 	printf("\t--- Template creation with custom ID: \tT 777 \n");
@@ -45,7 +47,7 @@ int main(int argc, char *argv[])
 #endif
 	ipfix_exporter *my_exporter;
 
-	ret = ipfix_init_exporter(MY_SOURCE_ID, &my_exporter);
+	ret = ipfix_init_exporter(IPFIX_PROTOCOL, MY_SOURCE_ID, &my_exporter);
 	if (ret != 0) {
 		fprintf(stderr, "ipfix_init_exporter failed!\n");
 		exit(-1);
@@ -134,7 +136,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'd':
 			//delete template
-			assert(scanf("%d",&delete_id)==1);
+			assert(scanf("%u",&delete_id)==1);
 			printf("Start testing Template destruction ID : %d!\n", delete_id);
 			
 			ret=ipfix_remove_template(my_exporter, delete_id);
@@ -189,6 +191,8 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "ipfix_remove_collector failed!\n");
 		exit(-1);
 	}
+*/
+#ifdef SUPPORT_SCTP
 	if(sctp_exists){
 		
 		printf("Remove  SCTP Collector!\n");
@@ -198,10 +202,10 @@ int main(int argc, char *argv[])
 			exit(-1);
 		}
 	}
-*/	
+#endif
 	printf("deinit exporter!\n");
 	
-	ipfix_deinit_exporter(my_exporter);
+	ipfix_deinit_exporter(&my_exporter);
 
 
 

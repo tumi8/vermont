@@ -52,7 +52,8 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 		const std::string &certificateChainFile,
 		const std::string &privateKeyFile,
 		const std::string &caFile,
-		const std::string &caPath)
+		const std::string &caPath,
+		export_protocol_version export_protocol)
 
 	: statSentDataRecords(0),
 	  statSentPackets(0),	  
@@ -62,7 +63,8 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
 	  timeoutRegistered(false),
 	  currentTemplateId(0),
-	  maxRecordRate(maxRecordRate)
+	  maxRecordRate(maxRecordRate),
+	  export_protocol(export_protocol)
 {
 	const char *certificate_chain_file = NULL;
 	const char *private_key_file = NULL;
@@ -76,7 +78,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	curTimeStep.tv_sec = 0;
 	curTimeStep.tv_usec = 0;
 
-	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
+	if(ipfix_init_exporter(export_protocol, observationDomainId, exporterP) != 0) {
 		msg(MSG_FATAL, "IpfixSender: ipfix_init_exporter failed");
 		goto out;
 	}
@@ -117,7 +119,8 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate)
 	  recordCacheTimeout(IS_DEFAULT_RECORDCACHETIMEOUT),
 	  timeoutRegistered(false),
 	  currentTemplateId(0),
-	  maxRecordRate(maxRecordRate)
+	  maxRecordRate(maxRecordRate),
+	  export_protocol(IPFIX_PROTOCOL)
 {
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 
@@ -126,7 +129,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate)
 	curTimeStep.tv_sec = 0;
 	curTimeStep.tv_usec = 0;
 
-	if(ipfix_init_exporter(observationDomainId, exporterP) != 0) {
+	if(ipfix_init_exporter(export_protocol, observationDomainId, exporterP) != 0) {
 		msg(MSG_FATAL, "IpfixSender: ipfix_init_exporter failed");
 		goto out;
 	}
@@ -148,7 +151,7 @@ out:
 IpfixSender::~IpfixSender()
 {
 	this->shutdown(false);
-	ipfix_deinit_exporter(ipfixExporter);
+	ipfix_deinit_exporter(&ipfixExporter);
 }
 
 /**
@@ -274,14 +277,14 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		if(templateIdToUniqueId.find(dataTemplateInfo->templateId) == templateIdToUniqueId.end()) {
 			my_template_id = dataTemplateInfo->templateId;
 		} else {
-			msg(MSG_INFO, "IpfixSender: Template ID conflict, %u is already in use.", dataTemplateInfo->templateId);
+			msg(MSG_DEBUG, "IpfixSender: Template ID conflict, %u is already in use.", dataTemplateInfo->templateId);
 		}
 	}
 
 	// generate new Template ID if necessary
 	if(my_template_id == 0) {
 		my_template_id = getUnusedTemplateId();
-		msg(MSG_INFO, "IpfixSender: Use Template ID %u instead of %u.", my_template_id, dataTemplateInfo->templateId);
+		msg(MSG_DEBUG, "IpfixSender: Use Template ID %u instead of %u.", my_template_id, dataTemplateInfo->templateId);
 	}
 
 	// Update maps
@@ -343,6 +346,11 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4Address, 4, 0);
 			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4PrefixLength, 1, 0);
 		}
+		else if ((export_protocol == NFV9_PROTOCOL) &&
+				(fi->type.id == IPFIX_TYPEID_tcpControlBits) &&
+				(fi->type.length != 1)) {
+			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_tcpControlBits, 1, 0);
+		}
 		else {
 			ipfix_put_template_field(ipfixExporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
 		}
@@ -365,6 +373,11 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4Address, 4, 0);
 			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4PrefixLength, 1, 0);
 		}
+		else if ((export_protocol == NFV9_PROTOCOL) &&
+				(fi->type.id == IPFIX_TYPEID_tcpControlBits) &&
+				(fi->type.length != 1)) {
+			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_tcpControlBits, 1, 0);
+		}
 		else {
 			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
 		}
@@ -372,8 +385,14 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 	DPRINTF("%u data length", dataLength);
 
-	char* data = dataLength?(char*)malloc(dataLength):0; // electric fence does not like 0-byte mallocs
-	memcpy(data, dataTemplateInfo->data, dataLength);
+	char *data = NULL; // electric fence does not like 0-byte mallocs
+	if (dataLength && dataTemplateInfo->dataCount) {
+		data = (char *)malloc(dataLength);
+		if (!data) {
+			THROWEXCEPTION("IpfixSender: could not allocate data template");
+		}
+		memcpy(data, dataTemplateInfo->data, dataLength);
+	}
 
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
 		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
@@ -392,7 +411,8 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 	}
 
-	if (0 != ipfix_put_template_data(ipfixExporter, my_template_id, data, dataLength)) {
+	// Only add Data Template data if there is any
+	if (data && ipfix_put_template_data(ipfixExporter, my_template_id, data, dataLength)) {
 		THROWEXCEPTION("IpfixSender: ipfix_put_template_data failed");
 	}
 	free(data);
@@ -401,7 +421,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		THROWEXCEPTION("IpfixSender: ipfix_end_template failed");
 	}
 
-	msg(MSG_INFO, "IpfixSender: created template with ID %u", my_template_id);
+	msg(MSG_DEBUG, "IpfixSender: created template with ID %u", my_template_id);
 
 	// release message lock
 	ipfixMessageLock.unlock();
@@ -469,14 +489,14 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	}
 	else
 	{
-		msg(MSG_INFO, "IpfixSender: removed template with ID %u", my_template_id);
+		msg(MSG_DEBUG, "IpfixSender: removed template with ID %u", my_template_id);
 	}
 
 	// enforce sending the withdrawal message
 	if (ipfix_send(ipfixExporter) != 0) {
 		THROWEXCEPTION("IpfixSender: ipfix_send failed");
 	}
-	msg(MSG_INFO, "IpfixSender: destroyed template with ID %u", my_template_id);
+	msg(MSG_DEBUG, "IpfixSender: destroyed template with ID %u", my_template_id);
 
 	// release message lock
 	ipfixMessageLock.unlock();
@@ -632,6 +652,12 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 			ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
 			ipfix_put_data_field(ipfixExporter, mask, 1);
 		}
+		else if ((export_protocol == NFV9_PROTOCOL) &&
+				(fi->type.id == IPFIX_TYPEID_tcpControlBits) &&
+				(fi->type.length != 1)) {
+			// data is in network order, we want just the second byte as per RFC
+			ipfix_put_data_field(ipfixExporter, data + fi->offset + 1, 1);
+		}
 		else {
 			if (fi->type.id == IPFIX_TYPEID_packetDeltaCount && fi->type.length<=8) {
 				uint64_t p = 0;
@@ -678,7 +704,7 @@ void IpfixSender::onReconfiguration2()
 		}
 		else
 		{
-			msg(MSG_INFO, "IpfixSender: removed template with ID %u", iter->first);
+			msg(MSG_DEBUG, "IpfixSender: removed template with ID %u", iter->first);
 		}
 	}
 	// clear maps
@@ -778,6 +804,7 @@ void IpfixSender::performShutdown()
 {
 	// send remaining records first
 	sendRecords(IfNotEmpty);
+	timer->removeTimeout(&timeoutIpfixlolibBeat);
 }
 
 /**
@@ -785,6 +812,13 @@ void IpfixSender::performShutdown()
  */
 void IpfixSender::onReconfiguration1()
 {
+}
+
+void IpfixSender::clearStatistics()
+{
+	statSentDataRecords = 0;
+	statSentPackets = 0;
+	statPacketsInFlows = 0;
 }
 
 string IpfixSender::getStatisticsXML(double interval)

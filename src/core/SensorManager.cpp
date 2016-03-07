@@ -6,6 +6,7 @@
 
 #include <fcntl.h>
 #include <sys/file.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 
@@ -13,8 +14,10 @@
 SensorManager::SensorManager()
 	: graphIS(NULL),
 	  thread(SensorManager::threadWrapper, "SensorManager"),
+	  lastClearTimestamp(0),
 	  checkInterval(SM_DEFAULT_CHECK_INTERVAL),
 	  outputFilename(SM_DEFAULT_OUTPUT_FNAME),
+	  clearFilename(SM_DEFAULT_CLEAR_FNAME),
 	  smExitFlag(false),
 	  append(SM_DEFAULT_APPEND)
 {
@@ -27,6 +30,7 @@ SensorManager::~SensorManager()
 
 void SensorManager::setParameters(uint32_t checkInterval = SM_DEFAULT_CHECK_INTERVAL,
 							 string outputfilename = SM_DEFAULT_OUTPUT_FNAME,
+							 string clearfilename = SM_DEFAULT_CLEAR_FNAME,
 							 bool append = SM_DEFAULT_APPEND,
 							 GraphInstanceSupplier* gis = NULL)
 {
@@ -43,10 +47,12 @@ void SensorManager::setParameters(uint32_t checkInterval = SM_DEFAULT_CHECK_INTE
 
 	msg(MSG_INFO, "SensorManager started with following parameters:");
 	msg(MSG_INFO, "  - outputfilename=%s", outputfilename.c_str());
+	msg(MSG_INFO, "  - clearfilename=%s", clearFilename.c_str());
 	msg(MSG_INFO, "  - checkInterval=%d seconds", checkInterval);
 	msg(MSG_INFO, "  - append=%d", append);
 	this->checkInterval = checkInterval;
 	this->outputFilename = outputfilename;
+	this->clearFilename = clearfilename;
 	this->append = append;
 	this->graphIS = gis;
 
@@ -139,6 +145,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 
 	string lockfile = outputFilename + ".lock";
 	bool haveGraphLock;
+	bool clearFlag;
 
 	// we must not wait for the graph lock, else there may be a race condition with
 	// the ConfigManager
@@ -149,6 +156,10 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	}
 
 	if (!ignoreshutdown && smExitFlag) return;
+
+	if ((clearFlag = checkClear())) {
+		msg(MSG_DIALOG, "Clearing sensor statistics");
+	}
 
 	const char* openflags = (append ? "a" : "w");
 	FILE* file = fopen(outputFilename.c_str(), openflags);
@@ -196,6 +207,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	while (iter != nodes.end()) {
 		Cfg* cfg = (*iter)->getCfg();
 		Sensor* s = cfg->getInstance();
+		if (clearFlag) s->clearStatistics();
 		vector<uint32_t> nextids = cfg->getNext();
 		writeSensorXML(file, s, cfg->getName().c_str(), cfg->getID(), true, curtime, lasttime, &nextids);
 
@@ -207,7 +219,9 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	list<SensorEntry>::const_iterator siter = sensors.begin();
 	while (siter != sensors.end()) {
         //DPRINTFL(MSG_ERROR, "non-module cfg->getName()=%s, s=%u", siter->name.c_str(), siter->sensor);
-		writeSensorXML(file, siter->sensor, siter->name.c_str(), siter->id, false, curtime, lasttime, NULL);
+		Sensor* s = siter->sensor;
+		if (clearFlag) s->clearStatistics();
+		writeSensorXML(file, s, siter->name.c_str(), siter->id, false, curtime, lasttime, NULL);
 		siter++;
 	}
 	mutex.unlock();
@@ -296,4 +310,26 @@ void SensorManager::removeSensor(Sensor* sensor)
 		THROWEXCEPTION("did not find specified sensor in SensorManager");
 	}
 	mutex.unlock();
+}
+
+/**
+ * Checks if the modification timestamp on the clear file has changed.
+ */
+bool SensorManager::checkClear()
+{
+	struct stat attributes;
+
+	if (!stat(clearFilename.c_str(), &attributes)) {
+		time_t mtime = attributes.st_mtime;
+		// If mtime (the modification timestamp of the clear file) is later than
+		// lastClearTimestamp (the modification timestamp of the clear file last
+		// time we checked), then the difftime call will return positive.
+		if (!lastClearTimestamp || difftime(mtime, lastClearTimestamp) > 0) {
+			// Clear file updated
+			lastClearTimestamp = mtime;
+			return true;
+		}
+	}
+
+	return false;
 }

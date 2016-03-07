@@ -23,17 +23,40 @@ PROJECT(VERMONT)
 ### CMake configuration
 
 # allow building with old CMake. Use some bundled modules as a fallback
-CMAKE_MINIMUM_REQUIRED(VERSION 2.4)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
+
+# TODO: Once all warnings are fixed add -Werror to both of these
+# TODO: Bonus: Remove -Wno-unused-parameter and fix all code as this one gernerates hundreds of warnings
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -pedantic -Wextra -Wno-unused-parameter"
+    CACHE STRING
+    "Recommended C Flags"
+    FORCE)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -pedantic -Wextra -Wno-unused-parameter"
+    CACHE STRING
+    "Recommended C++ Flags"
+    FORCE)
+
+# Add our own specifc debug flag to the defaults
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -DDEBUG" CACHE STRING "Recommend C Debug Flags" FORCE)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -DDEBUG" CACHE STRING "Recommend C++ Debug Flags" FORCE)
+
+IF(NOT CMAKE_BUILD_TYPE)
+  SET(CMAKE_BUILD_TYPE Release CACHE STRING
+      "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+      FORCE)
+ENDIF(NOT CMAKE_BUILD_TYPE)
+message("* Current build type is : ${CMAKE_BUILD_TYPE}")
 
 # move some config clutter to the advanced section
 MARK_AS_ADVANCED(
 	CMAKE_BACKWARDS_COMPATIBILITY
-	CMAKE_BUILD_TYPE
 	CMAKE_INSTALL_PREFIX
 	EXECUTABLE_OUTPUT_PATH
 	LIBRARY_OUTPUT_PATH
 )
+
+include(CppcheckTargets)
 
 ### basic modules
 
@@ -77,6 +100,9 @@ INSTALL(DIRECTORY configs/
 	DESTINATION share/vermont/configs
 )
 
+add_cppcheck(vermont STYLE POSSIBLE_ERROR)
+
+SET(PKG_CONFIG_USE_CMAKE_PREFIX_PATH 1)
 
 ### doxygen
 
@@ -89,6 +115,57 @@ FIND_PACKAGE(Threads REQUIRED)
 TARGET_LINK_LIBRARIES(vermont
 	${CMAKE_THREAD_LIBS_INIT}
 )
+
+### journald
+
+OPTION(SUPPORT_JOURNALD "Enable systemd journald support" OFF)
+IF (SUPPORT_JOURNALD)
+	SET(PKG_CONFIG_USE_CMAKE_PREFIX_PATH 1)
+	FIND_PACKAGE(PkgConfig REQUIRED)
+	PKG_CHECK_MODULES(JOURNALD libsystemd)
+	IF (NOT JOURNALD_FOUND)
+		PKG_CHECK_MODULES(JOURNALD libsystemd-journal)
+		IF (NOT JOURNALD_FOUND)
+			MESSAGE(FATAL_ERROR "Could not find journald libraries.")
+		ENDIF (NOT JOURNALD_FOUND)
+	ENDIF (NOT JOURNALD_FOUND)
+ENDIF (SUPPORT_JOURNALD)
+IF (JOURNALD_FOUND)
+	ADD_DEFINITIONS(-DJOURNALD_SUPPORT_ENABLED)
+	LINK_DIRECTORIES(${JOURNALD_LIBRARY_DIRS})
+	INCLUDE_DIRECTORIES(${JOURNALD_INCLUDE_DIRS})
+	TARGET_LINK_LIBRARIES(vermont
+		${JOURNALD_LIBRARIES}
+	)
+ELSE (JOURNALD_FOUND)
+	REMOVE_DEFINITIONS(-DJOURNALD_SUPPORT_ENABLED)
+ENDIF (JOURNALD_FOUND)
+
+### ZMQ receiver
+
+OPTION(SUPPORT_ZMQ "Enable ZMQ support" OFF)
+IF (SUPPORT_ZMQ)
+	FIND_PACKAGE(PkgConfig REQUIRED)
+	PKG_CHECK_MODULES(CZMQ libczmq)
+	IF (NOT CZMQ_FOUND)
+		MESSAGE(FATAL_ERROR "Could not find libczmq libraries.")
+	ENDIF (NOT CZMQ_FOUND)
+ENDIF (SUPPORT_ZMQ)
+IF (CZMQ_FOUND)
+	ADD_DEFINITIONS(-DZMQ_SUPPORT_ENABLED)
+	LINK_DIRECTORIES(${CZMQ_LIBRARY_DIRS})
+	INCLUDE_DIRECTORIES(${CZMQ_INCLUDE_DIRS})
+	TARGET_LINK_LIBRARIES(vermont
+		${CZMQ_LIBRARIES}
+	)
+ELSE (CZMQ_FOUND)
+	REMOVE_DEFINITIONS(-DZMQ_SUPPORT_ENABLED)
+ENDIF (CZMQ_FOUND)
+
+OPTION(DISABLE_UDP_CONNECT "Do not run connect on UDP socket" OFF)
+IF (DISABLE_UDP_CONNECT)
+	ADD_DEFINITIONS(-DDISABLE_UDP_CONNECT)
+ENDIF (DISABLE_UDP_CONNECT)
 
 ### MongoDB
 
@@ -219,31 +296,6 @@ OPTION(EXPORT_TIME_SANITY_CHECK "Enable sanity checks on arrival of flows based 
 IF(EXPORT_TIME_SANITY_CHECK)
 	ADD_DEFINITIONS(-DEXPORT_TIME_SANITY_CHECK)
 ENDIF(EXPORT_TIME_SANITY_CHECK)
-
-### debug
-
-OPTION(DEBUG "Enable debug code. Vermont will run significantly slower if enabled." OFF)
-IF (DEBUG)
-	message(STATUS "Configuring build process for debug version")
-	REMOVE_DEFINITIONS(-O3)
-	
-	if (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-		### FreeBSDs compilers have problems if profiling is enabled and exceptions are used
-		### with 8-STABLE and 7-STABLE (as of June 21th 2010). Some exceptions will not be 
-		### caugth if -pg is given at compile time.  We therefore disable profiling for FreeBSD
-		MESSAGE(STATUS "Detected a FreeBSD system. Not including profiling support in DEBUG mode")
-		ADD_DEFINITIONS(-O0 -g -Wall -DDEBUG)
-		SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "-g")
-	ELSE (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-		ADD_DEFINITIONS(-O0 -g -pg -Wall -DDEBUG)
-		SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "-g -pg")
-	ENDIF (CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-ELSE (DEBUG)
-	REMOVE_DEFINITIONS(-O0 -g -pg -Wall -Werror -DDEBUG)
-	ADD_DEFINITIONS(-O3)
-	SET_TARGET_PROPERTIES(vermont PROPERTIES LINK_FLAGS "")
-ENDIF (DEBUG)
-
 
 ### PCAP_MAX_CAPTURE_LENGTH
 

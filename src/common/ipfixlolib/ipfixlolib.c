@@ -5,6 +5,9 @@
 
  Header for encoding functions suitable for IPFIX
 
+ Changes by James Wheatley, 2015-08
+   Added support for export over IPv6
+
  Changes by Daniel Mentz, 2009-01
    Added support for DTLS over UDP and DTLS over SCTP
 
@@ -39,8 +42,10 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 #ifdef __linux__
 /* Copied from linux/in.h */
@@ -67,24 +72,24 @@ static void dtls_shutdown_and_cleanup(ipfix_dtls_connection *con);
 static void dtls_fail_connection(ipfix_dtls_connection *con);
 #endif
 #ifdef SUPPORT_SCTP
-static int init_send_sctp_socket(struct sockaddr_in serv_addr);
+static int init_send_sctp_socket(struct sockaddr_storage serv_addr);
 #ifdef SUPPORT_DTLS_OVER_SCTP
 static void handle_sctp_event(BIO *bio, void *context, void *buf);
 #endif
 #endif
-static int init_send_udp_socket(struct sockaddr_in serv_addr);
+static int init_send_udp_socket(struct sockaddr_storage serv_addr);
 static int enable_pmtu_discovery(int s);
 static int ipfix_find_template(ipfix_exporter *exporter, uint16_t template_id);
-static void ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipfix_sendbuffer *sendbuf);
-static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbufn);
+static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_receiving_collector *collector, ipfix_sendbuffer *sendbuf);
+static int ipfix_init_sendbuffer(export_protocol_version export_protocol, ipfix_sendbuffer **sendbufn);
 static int ipfix_reset_sendbuffer(ipfix_sendbuffer *sendbuf);
 static int ipfix_deinit_sendbuffer(ipfix_sendbuffer **sendbuf);
 static int ipfix_init_collector_array(ipfix_receiving_collector **col, int col_capacity);
 static void remove_collector(ipfix_receiving_collector *collector);
 static int ipfix_deinit_collector_array(ipfix_receiving_collector **col);
-static int ipfix_init_send_socket(struct sockaddr_in serv_addr , enum ipfix_transport_protocol protocol);
+static int ipfix_init_send_socket(struct sockaddr_storage serv_addr , enum ipfix_transport_protocol protocol);
 static int ipfix_init_template_array(ipfix_exporter *exporter, int template_capacity);
-static int ipfix_deinit_template(ipfix_exporter *exporter, ipfix_lo_template* templ);
+static int ipfix_deinit_template(ipfix_lo_template* templ);
 static int ipfix_deinit_template_array(ipfix_exporter *exporter);
 static int ipfix_update_template_sendbuffer(ipfix_exporter *exporter);
 static int ipfix_send_templates(ipfix_exporter* exporter);
@@ -193,9 +198,9 @@ static int dtls_send_templates(
     if (exporter->template_sendbuffer->committed_data_length == 0)
 	return 0;
 
-    ipfix_prepend_header(exporter,
-	exporter->template_sendbuffer->committed_data_length,
+    ipfix_update_header(exporter, col,
 	exporter->template_sendbuffer);
+    col->messages_sent++;
     DPRINTF("Sending templates over DTLS.");
     return dtls_send(exporter,col,
 	exporter->template_sendbuffer->entries,
@@ -489,7 +494,6 @@ static int create_dtls_socket(ipfix_receiving_collector *col) {
 /* returns 0 on success and -1 on failure */
 static int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *col, ipfix_dtls_connection *con) {
     BIO *bio;
-    int ret;
 /* Resources allocated in this function. Those need to be freed in case of failure:
  * - socket
  * - SSL object
@@ -566,10 +570,8 @@ static int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_colle
 #ifdef SUPPORT_DTLS_OVER_SCTP
     if (col->protocol != DTLS_OVER_SCTP)
 #endif
-    ret = BIO_ctrl(bio,BIO_CTRL_DGRAM_MTU_DISCOVER,0,0);
-    /* Does not return useful value. But we still assign it
-     * to a variable to avoid compiler warnings. */
-    ret = BIO_ctrl_set_connected(bio,1,&col->addr); /* TODO: Explain, why are we doing this? */
+    (void)BIO_ctrl(bio,BIO_CTRL_DGRAM_MTU_DISCOVER,0,0);
+    (void)BIO_ctrl_set_connected(bio,1,&col->addr); /* TODO: Explain, why are we doing this? */
     SSL_set_bio(con->ssl,bio,bio);
     // connect (non-blocking, i.e. handshake is initiated, not terminated)
     if((connect(con->socket, (struct sockaddr*)&col->addr, sizeof(col->addr) ) == -1) && (errno != EINPROGRESS)) {
@@ -590,8 +592,8 @@ static void dtls_shutdown_and_cleanup(ipfix_dtls_connection *con) {
     if (!con->ssl) return;
     DPRINTF("Shutting down SSL connection.");
     ret = SSL_shutdown(con->ssl);
-#ifdef DEBUG
     error = SSL_get_error(con->ssl,ret);
+#ifdef DEBUG
     msg_openssl_return_code(MSG_DEBUG,"SSL_shutdown()",ret,error);
 #endif
     /* TODO: loop only if ret==-1 and error==WANT_READ or WANT_WRITE */
@@ -660,7 +662,7 @@ int ipfix_beat(ipfix_exporter *exporter) {
     for (i = 0; i < exporter->collector_max_num; i++) {
 	ipfix_receiving_collector *col = &exporter->collector_arr[i];
 	// is the collector a valid target?
-	if (col->state != T_UNUSED) {
+	if (col->state != C_UNUSED) {
 	    if (col->protocol == DTLS_OVER_UDP ||
 		    col->protocol == DTLS_OVER_SCTP) {
 		if (dtls_manage_connection(exporter,col))
@@ -675,19 +677,20 @@ int ipfix_beat(ipfix_exporter *exporter) {
 /*
  * Initializes a UDP-socket to send data to.
  * Parameters:
- * char* serv_ip4_addr IP-Address of the recipient (e.g. "123.123.123.123")
- * serv_port the UDP port number of the server.
+ * serv_addr sockaddr_storage struct with IP address and UDP port number of the
+             recipient
  * Returns: a socket to write to. -1 on failure
  */
-static int init_send_udp_socket(struct sockaddr_in serv_addr){
+static int init_send_udp_socket(struct sockaddr_storage serv_addr){
 
         int s;
         // create socket
-        if((s = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
+        if((s = socket(serv_addr.ss_family, SOCK_DGRAM, 0)) < 0 ) {
                 msg(MSG_FATAL, "error opening socket, %s", strerror(errno));
                 return -1;
         }
 
+#ifndef DISABLE_UDP_CONNECT
         // connect to server
         if(connect(s, (struct sockaddr*)&serv_addr, sizeof(serv_addr) ) < 0) {
                 msg(MSG_FATAL, "connect failed, %s", strerror(errno));
@@ -695,6 +698,7 @@ static int init_send_udp_socket(struct sockaddr_in serv_addr){
                 close(s);
                 return -1;
         }
+#endif
 	if(enable_pmtu_discovery(s)) {
 	    close(s);
 	    return -1;
@@ -745,17 +749,17 @@ static int get_mtu(const int s) {
 /*
  * Initializes a SCTP socket to send data to.
  * Parameters:
- * char* serv_ip4_addr IP-Address of the recipient (e.g. "123.123.123.123")
- * serv_port the SCTP port number of the server.
+ * serv_addr sockaddr_storage struct with IP address and SCTP port number of the
+             recipient
  * Returns: a socket to write to. -1 on failure
  */
-static int init_send_sctp_socket(struct sockaddr_in serv_addr){
+static int init_send_sctp_socket(struct sockaddr_storage serv_addr){
 
     int s;
 
     //create socket:
     DPRINTFL(MSG_VDEBUG, "Creating SCTP Socket ...");
-    if((s = socket(PF_INET, SOCK_STREAM, IPPROTO_SCTP)) < 0 ) {
+    if((s = socket(serv_addr.ss_family, SOCK_STREAM, IPPROTO_SCTP)) < 0 ) {
 	msg(MSG_FATAL, "error opening SCTP socket, %s", strerror(errno));
 	return -1;
     }
@@ -880,7 +884,7 @@ static int sctp_sendmsgv(int s, struct iovec *vector, int v_len, struct sockaddr
  * \return -1 failure. Usually due to failed memory allocation requests.
  * \sa ipfix_deinit_exporter()
  */
-int ipfix_init_exporter(uint32_t observation_domain_id, ipfix_exporter **exporter)
+int ipfix_init_exporter(export_protocol_version export_protocol, uint32_t observation_domain_id, ipfix_exporter **exporter)
 {
         ipfix_exporter *tmp;
         int ret;
@@ -889,9 +893,23 @@ int ipfix_init_exporter(uint32_t observation_domain_id, ipfix_exporter **exporte
                 goto out;
         }
 
+	switch(export_protocol) {
+	case NFV9_PROTOCOL:
+	    break;
+	case IPFIX_PROTOCOL:
+	    break;
+	default:
+	    msg(MSG_FATAL, "Unknown protocol");
+	    goto out;
+	    break;
+	}
+	tmp->export_protocol = export_protocol;
+
         tmp->sequence_number = 0;
         tmp->sn_increment = 0;
         tmp->observation_domain_id=observation_domain_id;
+
+	gettimeofday(&tmp->start_time, NULL);
 
 	tmp->max_message_size = IPFIX_MTU_CONSERVATIVE_DEFAULT;
 
@@ -905,19 +923,19 @@ int ipfix_init_exporter(uint32_t observation_domain_id, ipfix_exporter **exporte
 #endif
 
         // initialize the sendbuffers
-        ret=ipfix_init_sendbuffer(&(tmp->data_sendbuffer));
+        ret=ipfix_init_sendbuffer(export_protocol, &(tmp->data_sendbuffer));
         if (ret != 0) {
                 msg(MSG_FATAL, "initializing data sendbuffer failed");
                 goto out1;
         }
 
-        ret=ipfix_init_sendbuffer(&(tmp->template_sendbuffer));
+        ret=ipfix_init_sendbuffer(export_protocol, &(tmp->template_sendbuffer));
         if (ret != 0) {
                 msg(MSG_FATAL, "initializing template sendbuffer failed");
                 goto out2;
         }
 	
-	ret=ipfix_init_sendbuffer(&(tmp->sctp_template_sendbuffer));
+	ret=ipfix_init_sendbuffer(export_protocol, &(tmp->sctp_template_sendbuffer));
         if (ret != 0) {
                 msg(MSG_FATAL, "initializing sctp template sendbuffer failed");
                 goto out5;
@@ -974,8 +992,9 @@ out:
  * \return 0 success
  * \sa ipfix_init_exporter()
  */
-int ipfix_deinit_exporter(ipfix_exporter *exporter) {
-        // cleanup processes
+int ipfix_deinit_exporter(ipfix_exporter **exporter_p) {
+        ipfix_exporter *exporter = *exporter_p;
+        // Cleanup processes
         // close sockets etc.
         // (currently, nothing to do)
 
@@ -1112,18 +1131,15 @@ static int update_collector_mtu(ipfix_exporter *exporter,
 }
 
 static ipfix_receiving_collector *get_free_collector_slot(ipfix_exporter *exporter) {
-    ipfix_receiving_collector *collector;
-    int i;
-    for(i=0;i<exporter->collector_max_num;i++) {
-	collector = &exporter->collector_arr[i];
-	if(collector->state == C_UNUSED)
-	    return collector;
+    for(int i=0; i<exporter->collector_max_num; i++) {
+	if(exporter->collector_arr[i].state == C_UNUSED)
+	    return &exporter->collector_arr[i];
     }
     return NULL;
 }
 
 static int add_collector_datafile(ipfix_receiving_collector *collector, const char *basename, uint32_t maxfilesize) {
-    collector->ipv4address[0] = '\0';
+    collector->ipaddress[0] = '\0';
     collector->port_number = 0;
     collector->data_socket = -1;
     collector->protocol = DATAFILE;
@@ -1140,7 +1156,7 @@ static int add_collector_datafile(ipfix_receiving_collector *collector, const ch
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 static int add_collector_rawdir(ipfix_receiving_collector *collector, const char *path) {
-    collector->ipv4address[0] = '\0';
+    collector->ipaddress[0] = '\0';
     collector->port_number = 0;
     collector->data_socket = -1;
     memset(&(collector->addr), 0, sizeof(collector->addr));
@@ -1148,7 +1164,7 @@ static int add_collector_rawdir(ipfix_receiving_collector *collector, const char
     collector->protocol = RAWDIR;
 
     collector->packet_directory_path = strdup(path);
-    collector->packets_written = 0;
+    collector->messages_sent = 0;
     collector->state = C_CONNECTED;
     return 0;
 }
@@ -1178,7 +1194,7 @@ static int add_collector_dtls(
 
     // we need aux_config for setting up a DTLS collector
     if (!aux_config) {
-        return -1
+        return -1;
     }
 
     ipfix_aux_config_dtls *aux_config_dtls;
@@ -1300,9 +1316,6 @@ static int valid_transport_protocol(enum ipfix_transport_protocol p) {
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT 
 	case RAWDIR:
 	    return 1;
-#else
-	    msg(MSG_FATAL, "Library compiled without RAWDIR support.");
-	    return 0;
 #endif 
 
 	case TCP:
@@ -1346,7 +1359,7 @@ static int valid_transport_protocol(enum ipfix_transport_protocol p) {
  * </table>
 
  * \param exporter pointer to previously initialized exporter struct
- * \param coll_ip4_addr IP address of receiving Collector in dotted notation (e.g. "1.2.3.4")
+ * \param coll_ip_addr IP address of receiving Collector in appropriate notation for address family (e.g. "1.2.3.4" for IPv4, "2001:db8:123::456" for IPv6)
  * \param coll_port port number of receiving Collector
  * \param proto transport protocol to use, either RAWDIR, SCTP, UDP,
  * DTLS_OVER_UDP or DTLS_OVER_SCTP. See <tt>\ref ipfix_transport_protocol</tt> for
@@ -1357,8 +1370,8 @@ static int valid_transport_protocol(enum ipfix_transport_protocol p) {
  * \return -1 failure
  * \sa ipfix_remove_collector()
  */
-int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr,
-	int coll_port, enum ipfix_transport_protocol proto, void *aux_config)
+int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip_addr,
+	uint16_t coll_port, enum ipfix_transport_protocol proto, void *aux_config)
 {
     // check, if exporter is valid
     if(exporter == NULL) {
@@ -1378,26 +1391,37 @@ int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip4_addr,
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
     /* It is the duty of add_collector_rawdir to set collector->state */
-    if (proto==RAWDIR) return add_collector_rawdir(collector,coll_ip4_addr);
+    if (proto==RAWDIR) return add_collector_rawdir(collector,coll_ip_addr);
 #endif
-    if (proto==DATAFILE) return add_collector_datafile(collector, coll_ip4_addr, coll_port);
+    if (proto==DATAFILE) return add_collector_datafile(collector, coll_ip_addr, coll_port);
     /*
     FIXME: only a quick fix to make that work
     Must be copied, else pointered data must be around forever
     Better use binary/u_int32_t representation
     */
-    strncpy(collector->ipv4address, coll_ip4_addr, sizeof(collector->ipv4address));
-    /* strncpy does not null terminate the destination char array if the
-     * length of the source string is equal or greater then the maximum length
-     * (third parameter) */
-    collector->ipv4address[sizeof(collector->ipv4address)-1] = '\0';
+    memset(collector->ipaddress, 0, sizeof(collector->ipaddress));
+    strncpy(collector->ipaddress, coll_ip_addr, sizeof(collector->ipaddress) - 1);
     collector->port_number = coll_port;
     collector->protocol = proto;
 
     memset(&(collector->addr), 0, sizeof(collector->addr));
-    collector->addr.sin_family = AF_INET;
-    collector->addr.sin_port = htons(coll_port);
-    collector->addr.sin_addr.s_addr = inet_addr(coll_ip4_addr);
+    if (strchr(coll_ip_addr, ':')) {
+        struct sockaddr_in6 *sa = (struct sockaddr_in6 *)&collector->addr;
+        sa->sin6_family = AF_INET6;
+        sa->sin6_port = htons(coll_port);
+        if (inet_pton(AF_INET6, coll_ip_addr, &sa->sin6_addr) != 1) {
+            msg(MSG_FATAL, "%s was not a valid IPv6 address", coll_ip_addr);
+            return -1;
+        }
+    } else {
+        struct sockaddr_in *sa = (struct sockaddr_in *)&collector->addr;
+        sa->sin_family = AF_INET;
+        sa->sin_port =  htons(coll_port);
+        if (inet_pton(AF_INET, coll_ip_addr, &sa->sin_addr) != 1) {
+            msg(MSG_FATAL, "%s was not a valid IPv4 address", coll_ip_addr);
+            return -1;
+        }
+    }
 
 #ifdef SUPPORT_DTLS
     /* It is the duty of add_collector_dtls to set collector->state */
@@ -1445,7 +1469,7 @@ static void remove_collector(ipfix_receiving_collector *collector) {
  * includes shutting down the transport connection.
  *
  * \param exporter pointer to previously initialized exporter struct
- * \param coll_ip4_addr IP address of receiving Collector in dotted notation (e.g. "1.2.3.4")
+ * \param coll_ip_addr IP address of receiving Collector in appropriate notation for address family (e.g. "1.2.3.4" for IPv4, "2001:db8:123::456" for IPv6)
  * \param coll_port port number of receiving Collector
  * \return 0 success
  * \return -1 failure
@@ -1453,17 +1477,17 @@ static void remove_collector(ipfix_receiving_collector *collector) {
  */
 /*
  */
-int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip4_addr, int coll_port) {
+int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip_addr, uint16_t coll_port) {
     int i;
     for(i=0;i<exporter->collector_max_num;i++) {
 	ipfix_receiving_collector *collector = &exporter->collector_arr[i];
-	if( ( strcmp( collector->ipv4address, coll_ip4_addr) == 0 )
+	if( ( strcmp( collector->ipaddress, coll_ip_addr) == 0 )
 		&& collector->port_number == coll_port) {
 	    remove_collector(collector);
 	    return 0;
 	}
     }
-    msg(MSG_ERROR, "remove_collector, exporter %s not found", coll_ip4_addr);
+    msg(MSG_ERROR, "remove_collector, exporter %s not found", coll_ip_addr);
     return -1;
 }
 
@@ -1561,7 +1585,7 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
 	exporter->template_arr[found_index].state = T_WITHDRAWN;
 	DPRINTFL(MSG_VDEBUG, "... Withdrawn");
     } else {
-	ipfix_deinit_template(exporter, &(exporter->template_arr[found_index]) );
+	ipfix_deinit_template(&(exporter->template_arr[found_index]) );
     }
     return 0;
 }
@@ -1573,11 +1597,7 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
 
 
 /*
- * Prepends an ipfix message header to the sendbuffer
- *
- * One could argue that this function should be called ipfix_update_header
- * as the header is already there. The data it contains is just incorrect and
- * needs to be updated. No new header is prepended.
+ * Update the ipfix message header in the sendbuffer
  *
  * The ipfix message header is set according to:
  * - the exporter ( Source ID and sequence number)
@@ -1587,21 +1607,48 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
  *
  * Note: the first HEADER_USED_IOVEC_COUNT  iovec struct are reserved for the header! These will be overwritten!
  */
-static void ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ipfix_sendbuffer *sendbuf)
+static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_receiving_collector *collector, ipfix_sendbuffer *sendbuf)
 {
+    struct timeval now;
+    if (gettimeofday(&now, NULL)) {
+	now.tv_sec = 0;
+	now.tv_usec= 0;
+	msg(MSG_ERROR,"update_header, gettimeofday() failed. Set current time to 0");
+    }
 
-        time_t export_time;
-        uint16_t total_length = 0;
+    switch(p_exporter->export_protocol) {
+    case NFV9_PROTOCOL:
+	(sendbuf->nfv9_message_header).version = htons(NFV9_VERSION_NUMBER);
+        (sendbuf->nfv9_message_header).source_id = htonl(p_exporter->observation_domain_id);
 
-        // did the user set the data_length field?
-        if (data_length != 0) {
-                total_length = data_length + sizeof(ipfix_header);
+	// Time fields
+	uint32_t millisec_uptime = ((now.tv_sec * 1000) + (now.tv_usec / 1000))
+	    - (((p_exporter->start_time).tv_sec * 1000) + ((p_exporter->start_time).tv_usec / 1000));
+        (sendbuf->nfv9_message_header).unix_secs = htonl((uint32_t)now.tv_sec);
+        (sendbuf->nfv9_message_header).sysUpTime = htonl(millisec_uptime);
+
+	(sendbuf->nfv9_message_header).count = htons(sendbuf->record_count);
+	(sendbuf->nfv9_message_header).sequence_number = htonl(collector->messages_sent);
+	break;
+
+    case IPFIX_PROTOCOL:
+	(sendbuf->ipfix_message_header).version = htons(IPFIX_VERSION_NUMBER);
+        (sendbuf->ipfix_message_header).observation_domain_id = htonl(p_exporter->observation_domain_id);
+
+	// Time field
+	(sendbuf->ipfix_message_header).export_time = htonl((uint32_t)now.tv_sec);
+
+	uint16_t total_length = 0;
+        // Is the length already computed?
+        if (sendbuf->committed_data_length != 0) {
+                total_length = sendbuf->committed_data_length + sizeof(ipfix_header);
         } else {
                 // compute it on our own:
                 // sum up all lengths in the iovecs:
-                int i;
+                unsigned int i;
 
                 // start the loop with 1, as 0 is reserved for the header!
+		/// @todo Include iovec 0 for the header as it should be set and contain a length
                 for (i = 1; i< sendbuf->current;  i++) {
                         total_length += sendbuf->entries[i].iov_len;
                 }
@@ -1611,22 +1658,17 @@ static void ipfix_prepend_header(ipfix_exporter *p_exporter, int data_length, ip
         }
 
         // write the length into the header
-        (sendbuf->packet_header).length = htons(total_length);
+        (sendbuf->ipfix_message_header).length = htons(total_length);
 
-        // write version number and source ID and sequence number
-        (sendbuf->packet_header).version = htons(IPFIX_VERSION_NUMBER);
-        (sendbuf->packet_header).observation_domain_id = htonl(p_exporter->observation_domain_id);
-        (sendbuf->packet_header).sequence_number = htonl(p_exporter->sequence_number);
+        // write the sequence number into the header
+        (sendbuf->ipfix_message_header).sequence_number = htonl(p_exporter->sequence_number);
+	break;
 
-        // get the export time:
-        export_time = time(NULL);
-        if(export_time == (time_t)-1) {
-                // survive
-                export_time=0;
-                msg(MSG_ERROR,"prepend_header, time() failed, using %d", export_time);
-        }
-        //  global_last_export_time = (uint32_t) export_time;
-        (sendbuf->packet_header).export_time = htonl((uint32_t)export_time);
+    default:
+	msg(MSG_ERROR, "Cannot update a header for unknown protocol");
+	break;
+    }
+
 }
 
 
@@ -1674,7 +1716,7 @@ out:
  * Create and initialize an ipfix_sendbuffer for at most maxelements
  * Parameters: ipfix_sendbuffer** sendbuf pointer to a pointer to an ipfix-sendbuffer
  */
-static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf)
+static int ipfix_init_sendbuffer(export_protocol_version export_protocol, ipfix_sendbuffer **sendbuf)
 {
         ipfix_sendbuffer *tmp;
 
@@ -1687,11 +1729,24 @@ static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf)
         tmp->committed = HEADER_USED_IOVEC_COUNT;
         tmp->marker = HEADER_USED_IOVEC_COUNT;
         tmp->committed_data_length = 0;
+        tmp->record_count = 0;
 
-        // init and link packet header
-        memset(&(tmp->packet_header), 0, sizeof(ipfix_header));
-        tmp->entries[0].iov_len = sizeof(ipfix_header);
-        tmp->entries[0].iov_base = &(tmp->packet_header);
+	// link the appropriate message header to the start of the buffer
+	switch(export_protocol) {
+	case NFV9_PROTOCOL:
+	    memset(&(tmp->nfv9_message_header), 0, sizeof(nfv9_header));
+	    tmp->entries[0].iov_len = sizeof(nfv9_header);
+	    tmp->entries[0].iov_base = &(tmp->nfv9_message_header);
+	    break;
+	case IPFIX_PROTOCOL:
+	    memset(&(tmp->ipfix_message_header), 0, sizeof(ipfix_header));
+	    tmp->entries[0].iov_len = sizeof(ipfix_header);
+	    tmp->entries[0].iov_base = &(tmp->ipfix_message_header);
+	    break;
+	default:
+	    goto out1;
+	    break;
+	}
 
         // initialize an ipfix_set_manager
 	(tmp->set_manager).set_counter = 0;
@@ -1701,7 +1756,7 @@ static int ipfix_init_sendbuffer(ipfix_sendbuffer **sendbuf)
         *sendbuf=tmp;
         return 0;
 
-//out1:
+out1:
         free(tmp);
 out:
         return -1;
@@ -1719,8 +1774,10 @@ static int ipfix_reset_sendbuffer(ipfix_sendbuffer *sendbuf)
         sendbuf->committed = HEADER_USED_IOVEC_COUNT;
         sendbuf->marker = HEADER_USED_IOVEC_COUNT;
         sendbuf->committed_data_length = 0;
+        sendbuf->record_count = 0;
 
-        memset(&(sendbuf->packet_header), 0, sizeof(ipfix_header));
+        memset(&(sendbuf->ipfix_message_header), 0, sizeof(ipfix_header));
+        memset(&(sendbuf->nfv9_message_header), 0, sizeof(nfv9_header));
 
         // also reset the set_manager!
 	(sendbuf->set_manager).set_counter = 0;
@@ -1764,14 +1821,14 @@ static int ipfix_init_collector_array(ipfix_receiving_collector **col, int col_c
         for (i = 0; i< col_capacity; i++) {
 		ipfix_receiving_collector *c = &tmp[i];
                 c->state = C_UNUSED;
-		c->ipv4address[0] = '\0';
+		c->ipaddress[0] = '\0';
 		c->port_number = 0;
 		c->protocol = 0;
 		c->data_socket = -1;
 		c->last_reconnect_attempt_time = 0;
+		c->messages_sent = 0;
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 		c->packet_directory_path = NULL;
-		c->packets_written = 0;
 #endif
 #ifdef SUPPORT_DTLS
 		c->dtls_main.socket = c->dtls_replacement.socket = -1;
@@ -1805,11 +1862,11 @@ static int ipfix_deinit_collector_array(ipfix_receiving_collector **col)
 /*
  * Initializes a send socket
  * Parameters:
- * serv_ip4_addr of the recipient in dot notation
- * serv_port: port
+ * serv_addr sockaddr_storage struct with IP address and port number of the
+             recipient
  * protocol: transport protocol
  */
-static int ipfix_init_send_socket(struct sockaddr_in serv_addr, enum ipfix_transport_protocol protocol)
+static int ipfix_init_send_socket(struct sockaddr_storage serv_addr, enum ipfix_transport_protocol protocol)
 {
     int sock = -1;
 
@@ -1867,7 +1924,7 @@ static int ipfix_deinit_template_array(ipfix_exporter *exporter)
          This was our memory leak.
          JanP, 2005-21-1
          */
-        int ret, i;
+        int i;
         
         for(i=0; i< exporter->ipfix_lo_template_maxsize; i++) {
                 // if template was sent we need a withdrawal message first
@@ -1880,10 +1937,9 @@ static int ipfix_deinit_template_array(ipfix_exporter *exporter)
         
 	for(i=0; i< exporter->ipfix_lo_template_maxsize; i++) {
                 // try to free all templates:
-                ret = ipfix_deinit_template(exporter, &(exporter->template_arr[i]) );
-                // for debugging:
-                DPRINTFL(MSG_VDEBUG, "deinitialized template %i with success %i ", i, ret);
-                // end debugging
+	    if (!ipfix_deinit_template(&(exporter->template_arr[i]) )) {
+                msg(MSG_DEBUG, "Deinitialized template %i", i);
+	    }
         }
         free(exporter->template_arr);
 
@@ -1926,7 +1982,7 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
                 switch (exporter->template_arr[i].state) {
                 	case (T_TOBEDELETED):
 				// free memory and mark T_UNUSED
-				ipfix_deinit_template(exporter, &(exporter->template_arr[i]) );
+				ipfix_deinit_template(&(exporter->template_arr[i]) );
 				break;
 			case (T_COMMITED): // send to SCTP and UDP collectors and mark as T_SENT
 				if (sctp_sendbuf->current >= IPFIX_MAX_SENDBUFSIZE-2 ) {
@@ -1941,11 +1997,13 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
                         	sctp_sendbuf->entries[ sctp_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
                         	sctp_sendbuf->current++;
                         	sctp_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
+				sctp_sendbuf->record_count++;
 				
 				t_sendbuf->entries[ t_sendbuf->current ].iov_base = exporter->template_arr[i].template_fields;
 				t_sendbuf->entries[ t_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
 				t_sendbuf->current++;
 				t_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
+				t_sendbuf->record_count++;
                         	
                         	exporter->template_arr[i].state = T_SENT;
                         	break;
@@ -1958,6 +2016,7 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 				t_sendbuf->entries[ t_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
 				t_sendbuf->current++;
 				t_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
+				t_sendbuf->record_count++;
 				break;
                 	case (T_WITHDRAWN): // put the SCTP withdrawal message and mark T_TOBEDELETED
                 		if (sctp_sendbuf->current >= IPFIX_MAX_SENDBUFSIZE-2 ) {
@@ -1968,6 +2027,7 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 				sctp_sendbuf->entries[ sctp_sendbuf->current ].iov_len =  exporter->template_arr[i].fields_length;
 				sctp_sendbuf->current++;
 				sctp_sendbuf->committed_data_length +=  exporter->template_arr[i].fields_length;
+				sctp_sendbuf->record_count++;
 				
 				/* ASK: Why don't we just delete the template? */
 				exporter->template_arr[i].state = T_TOBEDELETED;
@@ -1985,11 +2045,10 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 #ifdef SUPPORT_SCTP
 /*
  * function used by SCTP to reconnect to a collector, if connection
- * was lost. After successful reconnection resend all active templates.
- * i: index of the collector in the exporters collector_arr
+ * was lost.
  */
-static int sctp_reconnect(ipfix_exporter *exporter , int i){
-	int bytes_sent, ret, error;
+static int sctp_reconnect(ipfix_receiving_collector *collector){
+	int ret, error;
 	socklen_t len;
 	fd_set readfds;
 	struct timeval timeout;
@@ -2001,23 +2060,23 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	struct iovec iv;
 	ssize_t r;
 
-	exporter->collector_arr[i].last_reconnect_attempt_time = time_now;
+	collector->last_reconnect_attempt_time = time_now;
 	// error occurred while being connected?
-	if(exporter->collector_arr[i].state == C_CONNECTED) {
+	if(collector->state == C_CONNECTED) {
 		// the socket has not yet been closed
-		close(exporter->collector_arr[i].data_socket);
-		exporter->collector_arr[i].data_socket = -1;
+		close(collector->data_socket);
+		collector->data_socket = -1;
 	}
 	    
 	// create new socket if not yet done
-	if(exporter->collector_arr[i].data_socket < 0) {
-		exporter->collector_arr[i].data_socket = init_send_sctp_socket( exporter->collector_arr[i].addr );
-		if( exporter->collector_arr[i].data_socket < 0) {
+	if(collector->data_socket < 0) {
+		collector->data_socket = init_send_sctp_socket( collector->addr );
+		if( collector->data_socket < 0) {
 		    msg(MSG_ERROR, "SCTP socket creation in reconnect failed, %s", strerror(errno));
-		    exporter->collector_arr[i].state = C_DISCONNECTED;
+		    collector->state = C_DISCONNECTED;
 		    return -1;
 		}
-		exporter->collector_arr[i].state = C_NEW;
+		collector->state = C_NEW;
 	}
 	/* Determine whether socket is readable.
 
@@ -2031,12 +2090,12 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	   Set timeout to 0. */
 	timeout.tv_sec = timeout.tv_usec = 0;
 	FD_ZERO(&readfds);
-	FD_SET(exporter->collector_arr[i].data_socket, &readfds);
-	ret = select(exporter->collector_arr[i].data_socket + 1,&readfds,NULL,NULL,&timeout);
+	FD_SET(collector->data_socket, &readfds);
+	ret = select(collector->data_socket + 1,&readfds,NULL,NULL,&timeout);
 	if (ret == 0) {
 	    // connection attempt not yet finished
 	    msg(MSG_DEBUG, "waiting for socket to become readable...");
-	    exporter->collector_arr[i].state = C_NEW;
+	    collector->state = C_NEW;
 	    return -1;
 	} else if (ret>0) {
 	    // connected or connection setup failed.
@@ -2044,29 +2103,29 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	} else {
 	    // error
 	    msg(MSG_ERROR, "select() failed: %s", strerror(errno));
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 
 	/* Query pending error */
 	len = sizeof error;
-	if (getsockopt(exporter->collector_arr[i].data_socket, SOL_SOCKET,
+	if (getsockopt(collector->data_socket, SOL_SOCKET,
 		    SO_ERROR, &error, &len) != 0) {
 	    msg(MSG_ERROR, "getsockopt(fd,SOL_SOCKET,SO_ERROR,...) failed: %s",
 		    strerror(errno));
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	if (error) {
 	    msg(MSG_ERROR, "SCTP connection setup failed: %s",
 		    strerror(error));
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 
@@ -2079,26 +2138,26 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 	memset(&msg,0,sizeof(msg));
 	msg.msg_iov = &iv;
 	msg.msg_iovlen = 1;
-	if ((r = recvmsg(exporter->collector_arr[i].data_socket, &msg, 0))<0) {
+	if ((r = recvmsg(collector->data_socket, &msg, 0))<0) {
 	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg returned: %s",
 		    strerror(error));
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	if (r==0) {
 	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg returned 0");
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	if (!(msg.msg_flags & MSG_NOTIFICATION)) {
 	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg unexpected user data.");
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	switch (snp.sn_header.sn_type) {
@@ -2108,9 +2167,9 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 		    msg(MSG_ERROR, "SCTP connection setup failed. "
 			    "Received unexpected SCTP_ASSOC_CHANGE notification with state %d",
 			    sac->sac_state);
-		    close(exporter->collector_arr[i].data_socket);
-		    exporter->collector_arr[i].data_socket = -1;
-		    exporter->collector_arr[i].state = C_DISCONNECTED;
+		    close(collector->data_socket);
+		    collector->data_socket = -1;
+		    collector->state = C_DISCONNECTED;
 		    return -1;
 		}
 		msg(MSG_DEBUG,"Received SCTP_COMM_UP event.");
@@ -2119,59 +2178,34 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 		msg(MSG_ERROR, "SCTP connection setup failed. "
 			"Received unexpected notification of type %d",
 			snp.sn_header.sn_type);
-		close(exporter->collector_arr[i].data_socket);
-		exporter->collector_arr[i].data_socket = -1;
-		exporter->collector_arr[i].state = C_DISCONNECTED;
+		close(collector->data_socket);
+		collector->data_socket = -1;
+		collector->state = C_DISCONNECTED;
 		return -1;
 	}
 
 	/* Query SCTP status */
 	len = sizeof ss;
-	if (getsockopt(exporter->collector_arr[i].data_socket, IPPROTO_SCTP,
+	if (getsockopt(collector->data_socket, IPPROTO_SCTP,
 		    SCTP_STATUS, &ss, &len) != 0) {
 	    msg(MSG_ERROR, "getsockopt(fd,IPPROTO_SCTP,SCTP_STATUS,...) failed: %s",
 		    strerror(errno));
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	/* Make sure SCTP connection is in state ESTABLISHED */
 	if (ss.sstat_state != SCTP_ESTABLISHED) {
 	    msg(MSG_ERROR, "SCTP socket not in state ESTABLISHED");
-	    close(exporter->collector_arr[i].data_socket);
-	    exporter->collector_arr[i].data_socket = -1;
-	    exporter->collector_arr[i].state = C_DISCONNECTED;
+	    close(collector->data_socket);
+	    collector->data_socket = -1;
+	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 
 	msg(MSG_INFO, "Successfully (re)connected to SCTP collector.");
-
-	//reconnected -> resend all active templates
-	ipfix_prepend_header(exporter,
-		exporter->template_sendbuffer->committed_data_length,
-		exporter->template_sendbuffer);
-
-	if((bytes_sent = sctp_sendmsgv(exporter->collector_arr[i].data_socket,
-		exporter->template_sendbuffer->entries,
-		exporter->template_sendbuffer->current,
-		(struct sockaddr*)&(exporter->collector_arr[i].addr),
-		sizeof(exporter->collector_arr[i].addr),
-		0,0, // payload protocol identifier, flags
-		0,//Stream Number
-			0,//packet lifetime in ms (0 = reliable, do not change for templates)
-		0 // context
-			)) == -1) {
-			msg(MSG_ERROR, "SCTP sending templates after reconnection failed, %s", strerror(errno));
-			close(exporter->collector_arr[i].data_socket);
-		exporter->collector_arr[i].data_socket = -1;
-			exporter->collector_arr[i].state = C_DISCONNECTED;
-			return -1;
-	}
-	msg(MSG_DEBUG, "%d template bytes sent to SCTP collector",bytes_sent);
-
-	// we are done
-	exporter->collector_arr[i].state = C_CONNECTED;
+	collector->state = C_CONNECTED;
 	return 0;
 }
 #endif /*SUPPORT_SCTP*/
@@ -2179,6 +2213,63 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
 /*******************************************************************/
 /* Transmission                                                    */
 /*******************************************************************/
+
+static bool ipfix_write_sendbuffer_to_datafile(ipfix_sendbuffer *sendbuffer, ipfix_receiving_collector *col)
+{
+    ssize_t nwritten = 0;
+    // @todo For V9 there is no immediate access to message length, need to calculate it.
+    if(col->bytes_written>0 && (col->bytes_written +
+				ntohs(sendbuffer->ipfix_message_header.length)
+				> (uint64_t)(col->maxfilesize) * 1024)) {
+	ipfix_new_file(col);
+    }
+
+    if (col->fh < 0) {
+	msg(MSG_ERROR, "invalid file handle for DATAFILE file (==0!)");
+	return false;
+    }
+    if (sendbuffer->ipfix_message_header.length == 0) {
+	msg(MSG_ERROR, "packet size == 0!");
+	return false;
+    }
+    if (col->protocol == UDP) {
+	struct msghdr header;
+
+	header.msg_name = &col->addr;
+	header.msg_namelen = sizeof(col->addr);
+	header.msg_iov = sendbuffer->entries;
+	header.msg_iovlen = sendbuffer->current;
+	header.msg_control = 0;
+	header.msg_controllen = 0;
+
+	nwritten = sendmsg(col->fh, &header, 0);
+    } else {
+	nwritten = writev(col->fh, sendbuffer->entries, sendbuffer->current);
+    }
+    if (nwritten < 0) {
+	msg(MSG_ERROR, "could not write to DATAFILE file");
+	return false;
+    }
+    col->bytes_written += nwritten;
+    msg(MSG_DEBUG, "bytes_written: %d \t Total: %llu", nwritten, col->bytes_written);
+    return true;
+}
+
+#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
+static void ipfix_write_sendbuffer_to_rawdir(ipfix_sendbuffer *sendbuffer, ipfix_receiving_collector *col)
+{
+    char fnamebuf[1024];
+    sprintf(fnamebuf, "%s/%08d", col->packet_directory_path, col->messages_sent);
+    int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
+    if(f<0) {
+	msg(MSG_ERROR, "could not open RAWDIR file %s", fnamebuf);
+    } else if(writev(f, sendbuffer->entries, sendbuffer->current)<0) {
+	msg(MSG_ERROR, "could not write to RAWDIR file %s", fnamebuf);
+    }
+    close(f);
+}
+#endif
+
 /*
  * If necessary, sends all associated templates
  * Parameters:
@@ -2187,216 +2278,198 @@ static int sctp_reconnect(ipfix_exporter *exporter , int i){
  */
 static int ipfix_send_templates(ipfix_exporter* exporter)
 {
-	int i;
-	int bytes_sent;
-	int expired;
-	uint32_t n = 0;
-	// determine, if we need to send the template data:
-	time_t time_now = time(NULL);
+    int i;
+    int bytes_sent;
+    // determine, if we need to send the template data:
+    time_t time_now = time(NULL);
+    // has the timer expired? (for UDP and DTLS over UDP)
+    // Remember: This is a global timer for all collectors associated with a given exporter
+    bool expired = ( (time_now - exporter->last_template_transmission_time) >  exporter->template_transmission_timer);
 
-        // has the timer expired? (for UDP)
-	// Remember: This is a global timer for all collectors associated with a given exporter
-        expired = ( (time_now - exporter->last_template_transmission_time) >  exporter->template_transmission_timer);
-                
-        // update the sendbuffers
-	// Watch out: You undertake a commitment by calling this function
-	// See the definition of the function for more details.
-	ipfix_update_template_sendbuffer(exporter);
+    // update the sendbuffers
+    // Watch out: You undertake a commitment by calling this function
+    // See the definition of the function for more details.
+    ipfix_update_template_sendbuffer(exporter);
 
-	// send the sendbuffer to all collectors depending on their protocol
-	for (i = 0; i < exporter->collector_max_num; i++) {
-		ipfix_receiving_collector *col = &exporter->collector_arr[i];
-		// is the collector a valid target?
-		// T_UNUSED evaluates to 0 which in turn evaluates to false
-		// So basically we check if state is something *not* equal to T_UNUSED
-		if (col->state) {
+    // send the sendbuffer to all collectors depending on their protocol
+    for (i = 0; i < exporter->collector_max_num; i++) {
+	ipfix_receiving_collector *col = &exporter->collector_arr[i];
+	// is the collector a valid target?
+	if (col->state == C_UNUSED) {
+	    continue; // No. Continue to next loop iteration.
+	}
 #ifdef SUPPORT_DTLS
-			if (col->protocol == DTLS_OVER_UDP ||
-				col->protocol == DTLS_OVER_SCTP) {
-				/* ensure that we are connected i.e. DTLS handshake has been finished.
-				 * This function does no harm if we are already connected. */
-				if (dtls_manage_connection(exporter,col) < 0)
-				    /* continue if dtls_manage_connection failed */
-				    continue;
-				/* dtls_manage_connection() might return success even if we're not yet connected.
-				 * This might happen if OpenSSL is still waiting for data from the
-				 * remote end and therefore returned SSL_ERROR_WANT_READ. */
-				if ( col->state != C_CONNECTED ) {
-				    DPRINTF("We are not yet connected so we can't send templates.");
-				    break;
-				}
-			}
-
+	if (col->protocol == DTLS_OVER_UDP ||
+	    col->protocol == DTLS_OVER_SCTP) {
+	    /* ensure that we are connected i.e. DTLS handshake has been finished.
+	     * This function does no harm if we are already connected. */
+	    if (dtls_manage_connection(exporter,col) < 0)
+		/* continue if dtls_manage_connection failed */
+		continue;
+	    /* dtls_manage_connection() might return success even if we're not yet connected.
+	     * This might happen if OpenSSL is still waiting for data from the
+	     * remote end and therefore returned SSL_ERROR_WANT_READ. */
+	    if ( col->state != C_CONNECTED ) {
+		DPRINTF("We are not yet connected so we can't send templates.");
+		break;
+	    }
+	}
 #endif
-			switch(col->protocol){
-#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
-			char* packet_directory_path;
-#endif
+	switch(col->protocol){
 #ifdef SUPPORT_DTLS_OVER_SCTP
-			case DTLS_OVER_SCTP:
-				if (exporter->sctp_template_sendbuffer->committed_data_length > 0) {
-					// update the sendbuffer header, as we must set the export time & sequence number!
-					ipfix_prepend_header(exporter,
-						exporter->sctp_template_sendbuffer->committed_data_length,
-						exporter->sctp_template_sendbuffer);
-					dtls_over_sctp_send(exporter,col,
-						exporter->sctp_template_sendbuffer->entries,
-						exporter->sctp_template_sendbuffer->current,
-						0 //packet lifetime in ms (0 = reliable, do not change for templates)
-						);
-				}
-				break;
+	case DTLS_OVER_SCTP:
+	    if (exporter->sctp_template_sendbuffer->committed_data_length > 0) {
+		// update the sendbuffer header, as we must set the export time & sequence number!
+		ipfix_update_header(exporter, col,
+				    exporter->sctp_template_sendbuffer);
+		dtls_over_sctp_send(exporter,col,
+				    exporter->sctp_template_sendbuffer->entries,
+				    exporter->sctp_template_sendbuffer->current,
+				    0);//packet lifetime in ms (0 = reliable, do not change for templates)
+		col->messages_sent++;
+	    }
+	    break;
 #endif
-			case DTLS_OVER_UDP:
-			case UDP:
-				if (expired && (exporter->template_sendbuffer->committed_data_length > 0)){
-					//Timer only used for UDP and DTLS over UDP
-					exporter->last_template_transmission_time = time_now;
-					// update the sendbuffer header, as we must set the export time & sequence number!
-					ipfix_prepend_header(exporter,
-						exporter->template_sendbuffer->committed_data_length,
-						exporter->template_sendbuffer);
 #ifdef SUPPORT_DTLS
-					if (col->protocol == DTLS_OVER_UDP) {
-						dtls_send(exporter,col,
-							exporter->template_sendbuffer->entries,
-							exporter->template_sendbuffer->current);
-					} else {
+	case DTLS_OVER_UDP:
+	    if (expired) {
+		exporter->last_template_transmission_time = time_now;
+		dtls_send_templates(exporter, col);
+	    }
+	    break;
 #endif
-					if((bytes_sent = writev(col->data_socket,
-						exporter->template_sendbuffer->entries,
-						exporter->template_sendbuffer->current
-						))  == -1){
-						if (errno == EMSGSIZE) {
-						    msg(MSG_ERROR,
-							    "Unable to send templates to %s:%d b/c message is bigger than MTU. That is a severe problem.",
-							    col->ipv4address,
-							    col->port_number);
-						} else {
-						    msg(MSG_ERROR,
-							    "could not send to %s:%d errno: %s  (UDP)",
-							    col->ipv4address,
-							    col->port_number,
-							    strerror(errno));
-						}
-					} else {
-						msg(MSG_VDEBUG, "%d Template Bytes sent to UDP collector %s:%d",
-							bytes_sent, col->ipv4address, col->port_number);
-					}
-#ifdef SUPPORT_DTLS
-					}
-#endif
-				}
-			break;
+	case UDP:
+	    if (expired && (exporter->template_sendbuffer->committed_data_length > 0)){
+		exporter->last_template_transmission_time = time_now;
+		// update the sendbuffer header, as we must set the export time & sequence number!
+		ipfix_update_header(exporter, col,
+				    exporter->template_sendbuffer);
+
+		struct msghdr header;
+		header.msg_name = &col->addr;
+		header.msg_namelen = sizeof(col->addr);
+		header.msg_iov = exporter->template_sendbuffer->entries;
+		header.msg_iovlen = exporter->template_sendbuffer->current;
+		header.msg_control = 0;
+		header.msg_controllen = 0;
+
+		if((bytes_sent = sendmsg(col->data_socket, &header, 0))  == -1){
+		    if (errno == EMSGSIZE) {
+			msg(MSG_ERROR,
+			    "Unable to send templates to %s:%d b/c message is bigger than MTU. That is a severe problem.",
+			    col->ipaddress,
+			    col->port_number);
+		    } else {
+			msg(MSG_ERROR,
+			    "could not send templates to %s:%d errno: %s  (UDP)",
+			    col->ipaddress,
+			    col->port_number,
+			    strerror(errno));
+		    }
+		} else {
+		    msg(MSG_VDEBUG, "%d Template Bytes sent to UDP collector %s:%d",
+			bytes_sent, col->ipaddress, col->port_number);
+		}
+		col->messages_sent++;
+	    }
+	    break;
+
 #ifdef SUPPORT_SCTP
-			case SCTP:
-				switch (col->state){
-				
-				case C_NEW:	// try to connect to the new collector once per second
-					// once per second is not useful here, new collectors must be connected quickly
-					//if (time_now > col->last_reconnect_attempt_time) {
-						sctp_reconnect(exporter, i);
-					//}
-					break;
-				case C_DISCONNECTED: //reconnect attempt if reconnection time reached
-					if(exporter->sctp_reconnect_timer == 0) { // 0 = no more reconnection attempts
-						msg(MSG_ERROR, "reconnect failed, removing collector %s:%d (SCTP)", col->ipv4address, col->port_number);
-						remove_collector(col);
-					} else if ((time_now - col->last_reconnect_attempt_time) >  exporter->sctp_reconnect_timer) {
-						sctp_reconnect(exporter, i);
-					}
-					break;
-				case C_CONNECTED:
-					if (exporter->sctp_template_sendbuffer->committed_data_length > 0) {
-						// update the sendbuffer header, as we must set the export time & sequence number!
-						ipfix_prepend_header(exporter,
-							exporter->sctp_template_sendbuffer->committed_data_length,
-							exporter->sctp_template_sendbuffer);
-						if((bytes_sent = sctp_sendmsgv(col->data_socket,
-							exporter->sctp_template_sendbuffer->entries,
-							exporter->sctp_template_sendbuffer->current,
-							(struct sockaddr*)&(col->addr),
-							sizeof(col->addr),
-							0,0, // payload protocol identifier, flags
-							0,//Stream Number
-							0,//packet lifetime in ms (0 = reliable, do not change for templates)
-							0 // context
-							)) == -1) {
-							// send failed
-							msg(MSG_ERROR, "could not send to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
-							sctp_reconnect(exporter, i); //1st reconnect attempt 
-							// if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
-							// be removed on the next call of ipfix_send_templates()
-						} else {
-							// send was successful
-							msg(MSG_VDEBUG, "%d template bytes sent to SCTP collector %s:%d",
-								bytes_sent, col->ipv4address, col->port_number);
-						}
-					} else DPRINTF("No Template to send to SCTP collector");
-					break;	
-				default:
-				msg(MSG_FATAL, "Unknown collector socket state");
-				return -1;
-				}
-			break;
+	case SCTP:
+	    switch (col->state){
+	    case C_DISCONNECTED:
+		if(exporter->sctp_reconnect_timer == 0) { // 0 = no more reconnection attempts
+		    msg(MSG_ERROR, "reconnect failed, removing collector %s:%d (SCTP)", col->ipaddress, col->port_number);
+		    remove_collector(col);
+		    break;
+		}
+		if ((time_now - col->last_reconnect_attempt_time) <=  exporter->sctp_reconnect_timer) {
+		    break; // Not time to reconnect
+		}
+		// fall through
+	    case C_NEW:
+		sctp_reconnect(col);
+		// fall through
+	    case C_CONNECTED:
+		if (exporter->sctp_template_sendbuffer->committed_data_length > 0) {
+		    // update the sendbuffer header, as we must set the export time & sequence number!
+		    ipfix_update_header(exporter, col,
+					exporter->sctp_template_sendbuffer);
+		    if((bytes_sent = sctp_sendmsgv(col->data_socket,
+						   exporter->sctp_template_sendbuffer->entries,
+						   exporter->sctp_template_sendbuffer->current,
+						   (struct sockaddr*)&(col->addr),
+						   sizeof(col->addr),
+						   0,0, // payload protocol identifier, flags
+						   0,//Stream Number
+						   0,//packet lifetime in ms (0 = reliable, do not change for templates)
+						   0 // context
+			    )) == -1) {
+			// send failed
+			msg(MSG_ERROR, "could not send templates to %s:%d errno: %s  (SCTP)",col->ipaddress, col->port_number, strerror(errno));
+			sctp_reconnect(col); //1st reconnect attempt
+			// if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will
+			// be removed on the next call of ipfix_send_templates()
+		    } else {
+			// send was successful
+			msg(MSG_VDEBUG, "%d template bytes sent to SCTP collector %s:%d",
+			    bytes_sent, col->ipaddress, col->port_number);
+		    }
+		} else {
+		    DPRINTF("No Template to send to SCTP collector");
+		}
+		col->messages_sent++;
+		break;
+	    default:
+		msg(MSG_FATAL, "Unknown collector socket state");
+		return -1;
+	    }
+	    break;
 #endif
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
-			case RAWDIR:
-				ipfix_prepend_header(exporter,
-					    exporter->template_sendbuffer->committed_data_length,
-					    exporter->template_sendbuffer);
-				packet_directory_path = col->packet_directory_path;
-				char fnamebuf[1024];
-				sprintf(fnamebuf, "%s/%08d", packet_directory_path, col->packets_written++);
-				int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
-				if(f<0)
-				    msg(MSG_ERROR, "could not open RAWDIR file %s", fnamebuf);
-				else if(writev(f, exporter->template_sendbuffer->entries, exporter->template_sendbuffer->current)<0)
-				    msg(MSG_ERROR, "could not write to RAWDIR file %s", fnamebuf);
-				close(f);
-			break;
-#endif	
-			case DATAFILE:
-				if (exporter->template_sendbuffer->committed_data_length > 0) {
-					ipfix_prepend_header(exporter,
-						exporter->template_sendbuffer->committed_data_length,
-						exporter->template_sendbuffer);
-					
-					if(col->bytes_written>0 && (col->bytes_written +
-						ntohs(exporter->template_sendbuffer->packet_header.length)
-						> (uint64_t)(col->maxfilesize) * 1024)) {
-						    ipfix_new_file(col);
-					}
-					
-					if (col->fh < 0) {
-						msg(MSG_ERROR, "invalid file handle for DATAFILE file (==0!)");
-						break;
-					}
-					if (exporter->template_sendbuffer->packet_header.length == 0) {
-						msg(MSG_ERROR, "packet size == 0!");
-						break;
-					}
-					if ((n = writev(col->fh, exporter->template_sendbuffer->entries,
-						exporter->template_sendbuffer->current)) < 0) {
-						    msg(MSG_ERROR, "could not write to DATAFILE file");
-						    break;
-					}
-					col->bytes_written += ntohs(exporter->template_sendbuffer->packet_header.length);
-					msg(MSG_DEBUG, "packet_header.length: %d \t bytes_written: %d \t Total: %llu",
-						ntohs(exporter->template_sendbuffer->packet_header.length), n,
-						col->bytes_written );
-				}
-				break;
-			default:
-			    return -1; /* Should not occur since we check the transport
-					  protocol in valid_transport_protocol()*/
-			}
-		}
-	} // end exporter loop
+	case RAWDIR:
+	    ipfix_update_header(exporter, col,
+				exporter->template_sendbuffer);
+	    ipfix_write_sendbuffer_to_rawdir(exporter->template_sendbuffer, col);
+	    col->messages_sent++;
+	    break;
+#endif
+	case DATAFILE:
+	    if (exporter->template_sendbuffer->committed_data_length > 0) {
+		ipfix_update_header(exporter, col,
+				    exporter->template_sendbuffer);
+		ipfix_write_sendbuffer_to_datafile(exporter->template_sendbuffer, col);
+		col->messages_sent++;
+	    }
+	    break;
+	default:
+	    return -1; /* Should not occur since we check the transport
+			  protocol in valid_transport_protocol()*/
+	}
+    } // end exporter loop
 
-	return 1;
+    return 1;
 }
+
+#ifdef DEBUG
+static void ipfix_sendbuffer_debug(ipfix_sendbuffer *sendbuffer)
+{
+    // debugging output of data buffer:
+    DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u bytes (Set headers + records)",  sendbuffer->committed_data_length );
+    DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u fields (IPFIX Message header + set headers + records)", sendbuffer->committed );
+    int tested_length = 0;
+    for (unsigned int j =0; j <  sendbuffer->committed; j++) {
+	if(sendbuffer->entries[j].iov_len > 0 ) {
+	    tested_length += sendbuffer->entries[j].iov_len;
+	}
+    }
+    /* Keep in mind that the IPFIX message header (16 bytes) is not included
+       in committed_data_length. So there should be a difference of 16 bytes
+       between tested_length and committed_data_length */
+    DPRINTFL(MSG_VDEBUG, "Total length of sendbuffer: %u bytes (IPFIX Message header + set headers + records)", tested_length );
+}
+#endif
 
 /*
  Send data to collectors
@@ -2410,178 +2483,126 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
  */
 static int ipfix_send_data(ipfix_exporter* exporter)
 {
-        int i;
-	int bytes_sent;
-        // send the current data_sendbuffer:
-        int data_length=0;
-        
-        // is there data to send?
-        if (exporter->data_sendbuffer->committed_data_length > 0 ) {
-                data_length = exporter->data_sendbuffer->committed_data_length;
-
-                // prepend a header to the sendbuffer
-                ipfix_prepend_header(exporter, data_length, exporter->data_sendbuffer);
-
-                // send the sendbuffer to all collectors
-                for (i = 0; i < exporter->collector_max_num; i++) {
-			ipfix_receiving_collector *col = &exporter->collector_arr[i];
-			if (col->state == C_CONNECTED) {
+    int bytes_sent;
+    // send the current data_sendbuffer if there is data
+    if (exporter->data_sendbuffer->committed_data_length > 0 ) {
+	// send the sendbuffer to all collectors
+	for (int i = 0; i < exporter->collector_max_num; i++) {
+	    struct msghdr header;
+	    ipfix_receiving_collector *col = &exporter->collector_arr[i];
+	    // update the header in the sendbuffer
+	    ipfix_update_header(exporter, col, exporter->data_sendbuffer);
+	    // is the collector a valid target?
+	    if (col->state != C_CONNECTED) {
+		continue; // No. Continue to next loop iteration.
+	    }
 #ifdef DEBUG
-                                DPRINTFL(MSG_VDEBUG, "Sending to exporter %s", col->ipv4address);
-
-                                // debugging output of data buffer:
-				/* Keep in mind that the IPFIX message header (16 bytes) is not included
-				   in committed_data_length */
-                                DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u bytes (Set headers + records)",  exporter->data_sendbuffer->committed_data_length );
-                                DPRINTFL(MSG_VDEBUG, "Sendbuffer contains %u fields (IPFIX Message header + set headers + records)",  exporter->data_sendbuffer->committed );
-                                int tested_length = 0;
-                                int j;
-                                /*int k;*/
-                                for (j =0; j <  exporter->data_sendbuffer->committed; j++) {
-                                        if(exporter->data_sendbuffer->entries[j].iov_len > 0 ) {
-                                                tested_length += exporter->data_sendbuffer->entries[j].iov_len;
-                                        }
-                                }
-				/* Keep in mind that the IPFIX message header (16 bytes) is not included
-				   in committed_data_length. So there should be a difference of 16 bytes
-				   between tested_length and committed_data_length */
-                                DPRINTFL(MSG_VDEBUG, "Total length of sendbuffer: %u bytes (IPFIX Message header + set headers + records)", tested_length );
+	    DPRINTFL(MSG_VDEBUG, "Sending to exporter %s", col->ipaddress);
+	    ipfix_sendbuffer_debug(exporter->data_sendbuffer);
 #endif
-				switch(col->protocol){
-#ifdef IPFIXLOLIB_RAWDIR_SUPPORT
-				char* packet_directory_path;
-#endif
-				case UDP:
-					if((bytes_sent=writev( col->data_socket,
-						exporter->data_sendbuffer->entries,
-						exporter->data_sendbuffer->committed
-							     )) == -1){
-						msg(MSG_ERROR, "could not send to %s:%d errno: %s  (UDP)",col->ipv4address, col->port_number, strerror(errno));
-						if (errno == EMSGSIZE) {
-						    msg(MSG_ERROR, "Updating MTU estimate for collector %s:%d",
-							    col->ipv4address,
-							    col->port_number);
-						    /* If update_collector_mtu fails, it calls
-						       remove_collector(). So keep in mind that
-						       the collector might be gone (set to C_UNUSED)
-						       after calling this function. */
-						    update_collector_mtu(exporter, col);
-						}
-					}else{
+	    switch(col->protocol){
+	    case UDP:
+		header.msg_name = &col->addr;
+		header.msg_namelen = sizeof(col->addr);
+		header.msg_iov = exporter->data_sendbuffer->entries;
+		header.msg_iovlen = exporter->data_sendbuffer->current;
+		header.msg_control = 0;
+		header.msg_controllen = 0;
 
-						msg(MSG_VDEBUG, "%d data bytes sent to UDP collector %s:%d",
-								bytes_sent, col->ipv4address, col->port_number);
-					}
-					break;
+		if((bytes_sent = sendmsg(col->data_socket, &header, 0))  == -1) {
+		    msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (UDP)",col->ipaddress, col->port_number, strerror(errno));
+		    if (errno == EMSGSIZE) {
+			msg(MSG_ERROR, "Updating MTU estimate for collector %s:%d",
+			    col->ipaddress,
+			    col->port_number);
+			/* If update_collector_mtu fails, it calls
+			   remove_collector(). So keep in mind that
+			   the collector might be gone (set to C_UNUSED)
+			   after calling this function. */
+			update_collector_mtu(exporter, col);
+		    }
+		}else{
+
+		    msg(MSG_VDEBUG, "%d data bytes sent to UDP collector %s:%d",
+			bytes_sent, col->ipaddress, col->port_number);
+		}
+		break;
 #ifdef SUPPORT_DTLS_OVER_SCTP
-				case DTLS_OVER_SCTP:
-					if((bytes_sent=dtls_over_sctp_send( exporter, col,
-						exporter->data_sendbuffer->entries,
-						exporter->data_sendbuffer->committed,
-						exporter->sctp_lifetime
-							     )) == -1){
-						msg(MSG_VDEBUG, "could not send to %s:%d (DTLS over SCTP)",col->ipv4address, col->port_number);
-					}else{
-
-						msg(MSG_VDEBUG, "%d data bytes sent to DTLS over SCTP collector %s:%d",
-								bytes_sent, col->ipv4address, col->port_number);
-					}
-					break;
+	    case DTLS_OVER_SCTP:
+		if((bytes_sent=dtls_over_sctp_send( exporter, col,
+						    exporter->data_sendbuffer->entries,
+						    exporter->data_sendbuffer->committed,
+						    exporter->sctp_lifetime
+			)) == -1){
+		    msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over SCTP)",col->ipaddress, col->port_number);
+		}else{
+		    msg(MSG_VDEBUG, "%d data bytes sent to DTLS over SCTP collector %s:%d",
+			bytes_sent, col->ipaddress, col->port_number);
+		}
+		break;
 #endif
 
-#ifdef SUPPORT_SCTP			
-				case SCTP:
-					if((bytes_sent = sctp_sendmsgv(col->data_socket,
-						exporter->data_sendbuffer->entries,
-						exporter->data_sendbuffer->committed,
-						(struct sockaddr*)&(col->addr),
-						sizeof(col->addr),
-						0,0, // payload protocol identifier, flags
-						0,//Stream Number
-						exporter->sctp_lifetime,//packet lifetime in ms(0 = reliable )
-						0 // context
-						)) == -1) {
-						// send failed
-						msg(MSG_ERROR, "could not send to %s:%d errno: %s  (SCTP)",col->ipv4address, col->port_number, strerror(errno));
-						// drop data and call sctp_reconnect
-						sctp_reconnect(exporter, i);
-						// if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
-						// be removed on the next call of ipfix_send_templates()
-							}
-					msg(MSG_VDEBUG, "%d data bytes sent to SCTP collector %s:%d",
-						bytes_sent, col->ipv4address, col->port_number);
-					break;
+#ifdef SUPPORT_SCTP
+	    case SCTP:
+		if((bytes_sent = sctp_sendmsgv(col->data_socket,
+					       exporter->data_sendbuffer->entries,
+					       exporter->data_sendbuffer->committed,
+					       (struct sockaddr*)&(col->addr),
+					       sizeof(col->addr),
+					       0,0, // payload protocol identifier, flags
+					       0,//Stream Number
+					       exporter->sctp_lifetime,//packet lifetime in ms(0 = reliable )
+					       0 // context
+			)) == -1) {
+		    // send failed
+		    msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (SCTP)",col->ipaddress, col->port_number, strerror(errno));
+		    // drop data and call sctp_reconnect
+		    sctp_reconnect(col);
+		    // if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
+		    // be removed on the next call of ipfix_send_templates()
+		}
+		msg(MSG_VDEBUG, "%d data bytes sent to SCTP collector %s:%d",
+		    bytes_sent, col->ipaddress, col->port_number);
+		break;
 #endif
 #ifdef SUPPORT_DTLS
-				case DTLS_OVER_UDP:
-					if((bytes_sent=dtls_send( exporter, col,
-						exporter->data_sendbuffer->entries,
-						exporter->data_sendbuffer->committed
-							     )) == -1){
-						msg(MSG_VDEBUG, "could not send to %s:%d (DTLS over UDP)",col->ipv4address, col->port_number);
-					}else{
-
-						msg(MSG_VDEBUG, "%d data bytes sent to DTLS over UDP collector %s:%d",
-								bytes_sent, col->ipv4address, col->port_number);
-					}
-					break;
+	    case DTLS_OVER_UDP:
+		if((bytes_sent=dtls_send( exporter, col,
+					  exporter->data_sendbuffer->entries,
+					  exporter->data_sendbuffer->committed
+			)) == -1){
+		    msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over UDP)",col->ipaddress, col->port_number);
+		}else{
+		    msg(MSG_VDEBUG, "%d data bytes sent to DTLS over UDP collector %s:%d",
+			bytes_sent, col->ipaddress, col->port_number);
+		}
+		break;
 #endif
 
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
-				case RAWDIR:
-					packet_directory_path = col->packet_directory_path;
-					char fnamebuf[1024];
-					sprintf(fnamebuf, "%s/%08d", packet_directory_path, col->packets_written++);
-					int f = creat(fnamebuf, S_IRWXU | S_IRWXG);
-					if(f<0)
-					    msg(MSG_ERROR, "could not open RAWDIR file %s", fnamebuf);
-					else if(writev(f, exporter->data_sendbuffer->entries, exporter->data_sendbuffer->committed)<0)
-					    msg(MSG_ERROR, "could not write to RAWDIR file %s", fnamebuf);
-					close(f);
-					break;
+	    case RAWDIR:
+		ipfix_write_sendbuffer_to_rawdir(exporter->data_sendbuffer, col);
+		break;
 #endif
-				case DATAFILE:
-					if(col->bytes_written>0 && (col->bytes_written +
-						ntohs(exporter->data_sendbuffer->packet_header.length)
-						> (uint64_t)(col->maxfilesize) * 1024))
-						    ipfix_new_file(col);
+	    case DATAFILE:
+		ipfix_write_sendbuffer_to_datafile(exporter->data_sendbuffer, col);
+		break;
 
-					if (col->fh < 0) {
-						msg(MSG_ERROR, "invalid file handle for DATAFILE file (==0!)");
-						break;
-					}
-					if (exporter->data_sendbuffer->packet_header.length == 0) {
-						msg(MSG_ERROR, "packet size == 0!");
-						break;
-					}
-					if ((bytes_sent = writev(col->fh, exporter->data_sendbuffer->entries,
-							exporter->data_sendbuffer->committed)) < 0) {
-						msg(MSG_ERROR, "could not write to DATAFILE file");
-						break;
-					}
+	    default:
+		msg(MSG_FATAL, "Transport Protocol not supported");
+		break; /* Should not occur since we check the transport
+			  protocol in valid_transport_protocol()*/
+	    }
+	    col->messages_sent++;
+	} // end exporter loop
+	// increment sequence number
+	exporter->sequence_number += exporter->sn_increment;
+	exporter->sn_increment = 0;
+    }  // end if
 
-					col->bytes_written += ntohs(exporter->data_sendbuffer->packet_header.length);
-
-					msg(MSG_DEBUG, "packet_header.length: %d \t bytes_written: %d \t Total: %llu",
-					 ntohs(exporter->data_sendbuffer->packet_header.length), bytes_sent,
-					 	col->bytes_written);
-					break;
-
-				default:
-					msg(MSG_FATAL, "Transport Protocol not supported");
-					break; /* Should not occur since we check the transport
-						      protocol in valid_transport_protocol()*/
-                        	}
-                        }
-                } // end exporter loop
-		// increment sequence number
-		exporter->sequence_number += exporter->sn_increment;
-		exporter->sn_increment = 0;
-        }  // end if
-
-        // reset the sendbuffer
-        ipfix_reset_sendbuffer(exporter->data_sendbuffer);
-        return 0;
+    // reset the sendbuffer
+    ipfix_reset_sendbuffer(exporter->data_sendbuffer);
+    return 0;
 }
 
 
@@ -2819,6 +2840,9 @@ int ipfix_end_data_set(ipfix_exporter *exporter, uint16_t number_of_records)
         // update the sendbuffer
         exporter->data_sendbuffer->committed_data_length += record_length;
 
+	// Keep track of number of records in current message
+	exporter->data_sendbuffer->record_count += number_of_records;
+
 	// now as we are finished with this set, increase set_counter
 	manager->set_counter++;
 	
@@ -2847,7 +2871,7 @@ int ipfix_cancel_data_set(ipfix_exporter *exporter)
 {
 	ipfix_set_manager *manager = &(exporter->data_sendbuffer->set_manager);
 	unsigned current = manager->set_counter;
-	int i;
+	unsigned int i;
 
 	// security check
 	if(exporter->data_sendbuffer->current == exporter->data_sendbuffer->committed) {
@@ -2896,7 +2920,7 @@ int ipfix_set_data_field_marker(ipfix_exporter *exporter)
 int ipfix_delete_data_fields_upto_marker(ipfix_exporter *exporter)
 {
 	ipfix_set_manager *manager = &(exporter->data_sendbuffer->set_manager);
-	int i;
+	unsigned int i;
 
 	// security check
 	if(exporter->data_sendbuffer->current == exporter->data_sendbuffer->committed) {
@@ -2983,8 +3007,12 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
        See draft-dressler-ipfix-aggregation-00 for more details on Data Templates.
        Data Templates are (still) a proprietary extension to IPFIX. */
     int datatemplate=(fixedfield_count || preceding) ? 1 : 0;
+    if (datatemplate && (exporter->export_protocol != IPFIX_PROTOCOL)) {
+	msg(MSG_ERROR, "Only IPFIX supports data templates");
+	return -1;
+    }
     /* Make sure that template_id is > 255 */
-    if ( ! template_id > 255 ) {
+    if (!(template_id > 255)) {
 	msg(MSG_ERROR, "Template id has to be > 255. Start of template cancelled.");
 	return -1;
     }
@@ -3007,7 +3035,7 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
 	    case T_UNCLEAN:
 	    case T_TOBEDELETED:
 		// nothing to do, template can be deleted
-		ipfix_deinit_template(exporter, &(exporter->template_arr[found_index]));
+		ipfix_deinit_template(&(exporter->template_arr[found_index]));
 		break;
 	    default:
 		DPRINTFL(MSG_VDEBUG, "template valid flag is T_UNUSED or invalid\n");	
@@ -3053,7 +3081,20 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
     // ++ Start of Set Header
     // set ID is 2 for a Template Set, 4 for a Data Template with fixed fields:
     // see RFC 5101: 3.3.2 Set Header Format
-    write_unsigned16 (&p_pos, p_end, datatemplate ? 4 : 2);
+    /// NFV9 uses 0 for Template Set ID, and does not support Data Templates
+    // see RFC 3954: 5.2 Template FlowSet Format
+    switch(exporter->export_protocol) {
+    case NFV9_PROTOCOL:
+	write_unsigned16 (&p_pos, p_end, 0);
+	break;
+    case IPFIX_PROTOCOL:
+	write_unsigned16 (&p_pos, p_end, datatemplate ? 4 : 2);
+	break;
+    default:
+	msg(MSG_ERROR, "Cannot write Template Set ID for unknown protocol");
+	break;
+    }
+
     // write 0 to the length field; this will be overwritten by end_template
     write_unsigned16 (&p_pos, p_end, 0);
     // ++ End of Set Header
@@ -3219,6 +3260,10 @@ int ipfix_start_template (ipfix_exporter *exporter, uint16_t template_id,  uint1
  * \sa ipfix_start_datatemplate()
 */
 int ipfix_put_template_fixedfield(ipfix_exporter *exporter, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id) {
+        if (exporter->export_protocol != IPFIX_PROTOCOL) {
+	    msg(MSG_ERROR, "Only IPFIX supports data templates");
+	    return -1;
+	}
         return ipfix_put_template_field(exporter, template_id, type, length, enterprise_id);
 }
 
@@ -3241,6 +3286,11 @@ int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void
         char *p_end;
 	
         int i;
+
+	if (exporter->export_protocol != IPFIX_PROTOCOL) {
+	    msg(MSG_ERROR, "Only IPFIX supports data templates");
+	    return -1;
+	}
 
         found_index = ipfix_find_template(exporter, template_id);
 
@@ -3310,7 +3360,7 @@ int ipfix_end_template(ipfix_exporter *exporter, uint16_t template_id)
     ipfix_lo_template *templ=(&exporter->template_arr[found_index]);
     if (templ->fields_added != templ->field_count + templ->fixedfield_count) {
 	msg(MSG_ERROR, "Number of added template fields does not match number passed to ipfix_start_template");
-	ipfix_deinit_template(exporter, templ);
+	ipfix_deinit_template(templ);
 	return -1;
     }
     // reallocate the memory , i.e. free superfluous memory, as we allocated enough memory to hold
@@ -3343,12 +3393,11 @@ int ipfix_end_template(ipfix_exporter *exporter, uint16_t template_id)
  * removes a template set from the exporter
  * Checks, if the template is in use, before trying to free it.
  * Parameters:
- *  exporter: exporting process to associate the template with
  *  template* : pointer to the template to be freed
  * Returns: 0  on success, -1 on failure
  * This is an internal function.
  */
-static int ipfix_deinit_template(ipfix_exporter *exporter, ipfix_lo_template *templ) {
+static int ipfix_deinit_template(ipfix_lo_template *templ) {
     // note: ipfix_deinit_template_array tries to free all possible templates, many of them
     // won't be initialized. So you'll get a lot of warning messages, which are just fine...
 

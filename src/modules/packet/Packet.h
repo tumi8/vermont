@@ -285,7 +285,9 @@ public:
 			transportHeaderOffset = (( *data.netHeader & 0x0f ) << 2);
 
 			// crop layer 2 padding
-			unsigned int endOfIpOffset = layer2HeaderLen +  ntohs(*((uint16_t*) (data.netHeader + 2)));
+			uint16_t ip_total_length;
+			memcpy(&ip_total_length, (data.netHeader+2), 2);
+			unsigned int endOfIpOffset = layer2HeaderLen +  ntohs(ip_total_length);
 			if(data_length > endOfIpOffset)
 			{
 				DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
@@ -293,7 +295,8 @@ public:
 			}
 
 			// get fragment offset
-			fragoffset = (*(uint16_t*)(data.netHeader+6))&0xFF1F;
+			memcpy(&fragoffset, (data.netHeader+6), 2);
+			fragoffset = ntohs(fragoffset) & 0x1FFF;
 
 			// do not use transport header, if this is not the first fragment
 			// in the end, all fragments are discarded by vermont (TODO!)
@@ -324,7 +327,9 @@ public:
 
 					case 44:	// Fragment
 						// Only use transport header if this is the first fragment
-						fragoffset = ((*((uint16_t*) (data.netHeader + transportHeaderOffset + 2)))) & 0xF8FF;
+						memcpy(&fragoffset, (data.netHeader + transportHeaderOffset + 2), 2);
+						fragoffset = ntohs(fragoffset) & 0xFFF8;
+
 						if (fragoffset == 0) {
 							protocol = *(data.netHeader + transportHeaderOffset);
 							transportHeaderOffset += 8;
@@ -348,7 +353,9 @@ public:
 			}
 
 			// crop layer 2 padding
-			unsigned int endOfIpOffset = layer2HeaderLen +  ntohs(*((uint16_t*) (data.netHeader + 2)));
+			uint16_t ip_total_length;
+			memcpy(&ip_total_length, (data.netHeader+2), 2);
+			unsigned int endOfIpOffset = layer2HeaderLen +  ntohs(ip_total_length);
 			if(data_length > endOfIpOffset)
 			{
 				DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
@@ -574,9 +581,9 @@ public:
 	    {
 		// encode in 2 octets with preceeding 255
 		varlength[varlength_index] = 255;
-		//varlength[varlength_index + 1] = (uint8_t) (*length);
-		//varlength[varlength_index + 2] = (uint8_t) ((*length) >> 8);
-		*(uint16_t*)(varlength + varlength_index + 1) = htons((uint16_t) (*length));
+		varlength[varlength_index + 1] = (uint8_t) (*length);
+		varlength[varlength_index + 2] = (uint8_t) ((*length) >> 8);
+		//*(uint16_t*)(varlength + varlength_index + 1) = htons((uint16_t) (*length));
 		*enc_value = &(varlength[varlength_index]);
 		*enc_len = 3;
 		varlength_index = varlength_index + 3;

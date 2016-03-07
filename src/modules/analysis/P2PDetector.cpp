@@ -297,6 +297,7 @@ void P2PDetector::onTimeout(void* dataPtr)
 void P2PDetector::performShutdown()
 {
 	onTimeout(NULL);
+	timer->removeTimeout(NULL);
 }
 
 /**

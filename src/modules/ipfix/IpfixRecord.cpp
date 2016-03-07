@@ -80,7 +80,7 @@ namespace InformationElement {
 	/**
 	 * @returns valid protocols for given field, binary ORed if multiple protocols are possible
 	 */
-	const Packet::IPProtocolType IeInfo::getValidProtocols()
+	Packet::IPProtocolType IeInfo::getValidProtocols()
 	{
 		if (enterprise==0 || enterprise==IPFIX_PEN_reverse) {
 			switch (id) {
@@ -172,6 +172,20 @@ namespace InformationElement {
 			snprintf(buffer, ARRAY_SIZE(buffer), "%s (id=%hu, pen=%u, length=%hu)",
 				ipfixid ? ipfixid->name : "unknown", id, enterprise, length);
 		return buffer;
+	}
+
+	bool operator==(const IeInfo &rhs, const IeInfo &lhs) {
+		return (rhs.id==lhs.id) && (rhs.enterprise==lhs.enterprise);
+	}
+
+	bool operator!=(const IeInfo &rhs, const IeInfo &lhs) {
+		return !(rhs == lhs);
+	}
+
+	bool operator<(const IeInfo &rhs, const IeInfo &lhs) {
+		if (rhs.enterprise < lhs.enterprise) return true;
+		if (rhs.id < lhs.id) return true;
+		return false;
 	}
 
 }

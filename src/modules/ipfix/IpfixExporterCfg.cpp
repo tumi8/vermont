@@ -23,7 +23,7 @@
 IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 	: CfgHelper<IpfixSender, IpfixExporterCfg>(elem, "ipfixExporter"),
 	templateRefreshTime(IS_DEFAULT_TEMPLATE_TIMEINTERVAL), /* templateRefreshRate(0), */
-	sctpDataLifetime(0), sctpReconnectInterval(0),
+	sctpDataLifetime(0), sctpReconnectInterval(0), export_protocol(IPFIX_PROTOCOL),
 	recordRateLimit(0), observationDomainId(0),
 	dtlsMaxConnectionLifetime(0)
 {
@@ -54,7 +54,7 @@ IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 		XMLElement* e = *it;
 
 		if (e->matches("collector")) {
-			CollectorCfg *c = new CollectorCfg(e);
+			CollectorCfg *c = new CollectorCfg(e, this->getID());
 			if (c->getPeerFqdns().size() > 1) {
 				delete c;
 				THROWEXCEPTION("You specified more than one peerFqdn for an exporter.");
@@ -73,6 +73,15 @@ IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 				e->matches("dtlsMaxConnectionLifetime")
 				) {
 			// already done!
+		} else if (e->matches("protocolVersion")) {
+			std::string protVer = e->getContent();
+			if (protVer=="IPFIX" || protVer=="10") {
+				export_protocol = IPFIX_PROTOCOL;
+			} else if (protVer=="NFV9" || protVer=="9") {
+				export_protocol = NFV9_PROTOCOL;
+			} else {
+				THROWEXCEPTION("Invalid configuration parameter for protocolVersion (%s)", protVer.c_str());
+			}
 		} else {
 			THROWEXCEPTION("Illegal Exporter config entry \"%s\" found",
 					e->getName().c_str());
@@ -90,7 +99,7 @@ IpfixSender* IpfixExporterCfg::createInstance()
 {
 	instance = new IpfixSender(observationDomainId, recordRateLimit, sctpDataLifetime, 
 			sctpReconnectInterval, templateRefreshTime,
-			certificateChainFile, privateKeyFile, caFile, caPath);
+			certificateChainFile, privateKeyFile, caFile, caPath, export_protocol);
 
 	std::vector<CollectorCfg*>::const_iterator it;
 	for (it = collectors.begin(); it != collectors.end(); it++) {
@@ -171,8 +180,18 @@ bool IpfixExporterCfg::deriveFrom(IpfixExporterCfg* other)
 
 bool IpfixExporterCfg::equalTo(IpfixExporterCfg* other)
 {
+	if (sctpDataLifetime != other->sctpDataLifetime) return false;
+	if (sctpReconnectInterval != other->sctpReconnectInterval) return false;
+	if (recordRateLimit != other->recordRateLimit) return false;
+	if (observationDomainId != other->observationDomainId) return false;
+	if (certificateChainFile != other->certificateChainFile) return false;
+	if (privateKeyFile != other->privateKeyFile) return false;
+	if (caFile != other->caFile) return false;
+	if (caPath != other->caPath) return false;
+	if (dtlsMaxConnectionLifetime != other->dtlsMaxConnectionLifetime) return false;
 	if (templateRefreshTime != other->templateRefreshTime) return false;
 	/* if (templateRefreshRate != other->templateRefreshRate) return false; */ /* TODO */
+	if (export_protocol != other->export_protocol) return false;
 	if (collectors.size() != other->collectors.size()) return false;
 	std::vector<CollectorCfg*>::const_iterator iter = collectors.begin();
 	while (iter != collectors.end()) {

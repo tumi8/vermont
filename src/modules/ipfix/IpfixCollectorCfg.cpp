@@ -24,6 +24,7 @@
 #include <modules/ipfix/IpfixReceiverDtlsUdpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverSctpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverDtlsSctpIpV4.hpp>
+#include <modules/ipfix/IpfixReceiverZmq.hpp>
 
 IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector, IpfixCollectorCfg>(elem, "ipfixCollector"),
@@ -52,7 +53,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 		if (e->matches("listener")) {
 			if (listener)
 				THROWEXCEPTION("listener already set. There can only be one <listener> Element per Collector.");
-			listener = new CollectorCfg(e);
+			listener = new CollectorCfg(e, this->getID());
 			if (listener->getMtu() != 0) {
 				delete listener;
 				THROWEXCEPTION("You can not set the MTU for a listener.");
@@ -75,8 +76,14 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 			listener->getProtocol() != TCP && 
 			listener->getProtocol() != SCTP &&
 			listener->getProtocol() != DTLS_OVER_UDP &&
+#ifdef ZMQ_SUPPORT_ENABLED
+			listener->getProtocol() != DTLS_OVER_SCTP &&
+			listener->getProtocol() != ZMQ)
+		THROWEXCEPTION("collectingProcess can handle only UDP, TCP, SCTP or ZMQ!");
+#else
 			listener->getProtocol() != DTLS_OVER_SCTP)
 		THROWEXCEPTION("collectingProcess can handle only UDP, TCP, or SCTP!");
+#endif
 	
 	msg(MSG_INFO, "IpfixCollectorCfg: Successfully parsed collectingProcess section");
 }
@@ -109,5 +116,25 @@ bool IpfixCollectorCfg::deriveFrom(IpfixCollectorCfg* old)
 	 * Invalid templates must be removed in preReconfigure2() and the new templates
 	 * must be transmited on preConnect()
 	 */
-	return false;   // FIXME: implement it, to gain performance increase in reconnect
+	return equalTo(old);
+}
+
+bool IpfixCollectorCfg::equalTo(IpfixCollectorCfg* other)
+{
+	if (certificateChainFile != other->certificateChainFile ||
+			privateKeyFile != other->privateKeyFile ||
+			caFile != other->caFile ||
+			caPath != other->caPath) {
+		return false;
+	}
+
+	if (udpTemplateLifetime != other->udpTemplateLifetime) {
+		return false;
+	}
+
+	if (!listener->equalTo(other->listener)) {
+		return false;
+	}
+
+	return true;
 }

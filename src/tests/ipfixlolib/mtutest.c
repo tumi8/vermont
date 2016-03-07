@@ -38,7 +38,7 @@ void define_template(ipfix_exporter *exporter) {
 void put_data(ipfix_exporter *exporter) {
 	uint8_t data[256];
 	uint8_t i = 0;
-	int j;
+	unsigned int j;
 	int s;
 	for (j=0;j<sizeof(data);j++) {
 		data[j] = j;
@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
 
 	msg_setlevel(MSG_VDEBUG);
 
-	if (ipfix_init_exporter(OBSERVATION_DOMAIN_ID, &exporter)) {
+	if (ipfix_init_exporter(IPFIX_VERSION_NUMBER, OBSERVATION_DOMAIN_ID, &exporter)) {
 		fprintf(stderr, "ipfix_init_exporter() failed.\n");
 		exit(1);
 	};
@@ -104,6 +104,6 @@ int main(int argc, char **argv) {
 		sleep(2);
 	}
 	ipfix_remove_collector(exporter, COLLECTOR_IP_ADDRESS, 4740);
-	ipfix_deinit_exporter(exporter);
+	ipfix_deinit_exporter(&exporter);
 	return 0;
 }

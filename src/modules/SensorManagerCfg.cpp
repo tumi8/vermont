@@ -30,6 +30,7 @@ SensorManagerCfg::SensorManagerCfg(XMLElement* elem)
 	: CfgHelper<SensorManager, SensorManagerCfg>(elem, "sensorManager", false),
 	  checkInterval(SM_DEFAULT_CHECK_INTERVAL),
 	  sensorOutput(SM_DEFAULT_OUTPUT_FNAME),
+	  clearFilename(SM_DEFAULT_CLEAR_FNAME),
 	  append(SM_DEFAULT_APPEND)
 {
 	if (!elem) return; // needed because of table inside ConfigManager
@@ -49,6 +50,11 @@ SensorManagerCfg::SensorManagerCfg(XMLElement* elem)
 			sensorOutput = e->getFirstText().c_str();
 			if (sensorOutput.size() == 0) {
 				THROWEXCEPTION("invalid sensor output file specified: '%s'", e->getFirstText().c_str());
+			}
+		} else if (e->matches("clearfilename")) {
+			clearFilename = e->getFirstText().c_str();
+			if (clearFilename.size() == 0) {
+				THROWEXCEPTION("invalid sensor clear file specified: '%s'", e->getFirstText().c_str());
 			}
 		} else if (e->matches("append")) {
 			append = getInt("append")>0;
@@ -76,7 +82,8 @@ SensorManager* SensorManagerCfg::createInstance()
 		//THROWEXCEPTION("multiple instances of module SensorManager must not be created");
 	}
 	instance = &SensorManager::getInstance();
-	instance->setParameters(checkInterval, sensorOutput, append, graphIS);
+	instance->setParameters(checkInterval, sensorOutput, clearFilename, append,
+							graphIS);
 	instanceCreated = true;
 	return instance;
 }

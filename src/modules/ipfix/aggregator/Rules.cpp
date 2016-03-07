@@ -201,7 +201,7 @@ int parsePortPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeL
  * @return 0 if successful
  */
 int parseTcpFlags(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
-	uint8_t flags = 0;
+	uint16_t flags = 0;
 
 	char* p = s;
 	char* pair;
@@ -213,11 +213,14 @@ int parseTcpFlags(char* s, IpfixRecord::Data** fdata, InformationElement::IeLeng
 		else if (strcmp(pair, "PSH") == 0) flags = flags | 0x08;
 		else if (strcmp(pair, "ACK") == 0) flags = flags | 0x10;
 		else if (strcmp(pair, "URG") == 0) flags = flags | 0x20;
+		else if (strcmp(pair, "ECE") == 0) flags = flags | 0x40;
+		else if (strcmp(pair, "CWR") == 0) flags = flags | 0x80;
+		else if (strcmp(pair, "NS") == 0) flags = flags | 0x100;
 		else return -1;
 	}
 
 
-	*length = 1;
+	*length = 2;
 	IpfixRecord::Data* fd = (IpfixRecord::Data*)malloc(*length);
 	fd[0] = flags;
 	*fdata = fd;
@@ -374,3 +377,16 @@ Rules::Rules(char* fname) {
 	delete currentRule;
 }
 
+bool operator==(const Rules &rhs, const Rules &lhs) {
+	if (rhs.count != lhs.count) return false;
+
+	for (size_t i = 0; i < rhs.count; i++) {
+		if (*rhs.rule[i] != *lhs.rule[i]) return false;
+	}
+
+	return true;
+}
+
+bool operator!=(const Rules &rhs, const Rules &lhs) {
+	return !(lhs == rhs);
+}

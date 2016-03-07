@@ -7,7 +7,7 @@
 Module::Module() 
 	: exitFlag(false), running(false)
 { 
-};
+}
 
 
 Module::~Module()

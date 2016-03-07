@@ -300,13 +300,13 @@ Graph* ConfigManager::reconnect(Graph* g, Graph *old)
 		for (size_t j = 0; j < topoNew.size(); j++) {
 			Cfg* newCfg = topoNew[j]->getCfg();
 			if (oldCfg->getID() == newCfg->getID()) { // possible match
-				msg(MSG_INFO, "found a match between %s(id=%d) -> %s(id=%d)",
+				msg(MSG_INFO, "found a match between %s(id=%u) -> %s(id=%u)",
 						oldCfg->getName().c_str(), oldCfg->getID(),
 						newCfg->getName().c_str(), newCfg->getID());
 
 				// check if we could use the same module instance in the new config
 				if (newCfg->deriveFrom(oldCfg)) {
-					msg(MSG_INFO, "reusing %s(id=%d)",
+					msg(MSG_INFO, "reusing %s(id=%u)",
 							oldCfg->getName().c_str(), oldCfg->getID());
 					newCfg->transferInstance(oldCfg);
 				} else {
@@ -314,7 +314,7 @@ Graph* ConfigManager::reconnect(Graph* g, Graph *old)
                     delme.c = oldCfg;
                     delme.delete_after = time(NULL) + DELETER_DELAY; // current time + 20 seconds
                     deleter_list.push_back(delme);
-                    msg(MSG_INFO, "can't reuse %s(id=%d)",
+                    msg(MSG_INFO, "can't reuse %s(id=%u)",
 							oldCfg->getName().c_str(), oldCfg->getID());
 				}
 			}

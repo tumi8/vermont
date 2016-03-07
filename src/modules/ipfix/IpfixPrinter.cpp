@@ -152,7 +152,7 @@ void PrintHelpers::printUint(InformationElement::IeInfo type, IpfixRecord::Data*
 		fprintf(fh, "%u",ntohl(*(uint32_t*)data));
 		return;
 	case 8:
-		fprintf(fh, "%Lu",(long long unsigned)ntohll(*(uint64_t*)data));
+		fprintf(fh, "%llu",(long long unsigned)ntohll(*(uint64_t*)data));
 		return;
 	default:
 		for(uint16_t i = 0; i < type.length; i++) {
@@ -188,7 +188,7 @@ void PrintHelpers::printLocaltime(InformationElement::IeInfo type, IpfixRecord::
 		ctime_r(&tmp, str);
 		// remove new line
 		str[24] = '\0';
-		fprintf(fh, "%Lu (%s)", (long long unsigned)ntohll(*(uint64_t*)data), str);
+		fprintf(fh, "%llu (%s)", (long long unsigned)ntohll(*(uint64_t*)data), str);
 		return;
 	default:
 		for(uint16_t i = 0; i < type.length; i++) {

@@ -30,8 +30,10 @@ extern "C" {
 	/** Maximum length of exception strings */
 	const int EXCEPTION_MAXLEN = 1024;
 
-	static int msg_level=MSG_ERROR;
-	static const char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "INFO   ", "DEBUG  ", "VDEBUG ", 0};
+	static int msg_level = LOG_UPTO(MSG_ERROR);
+	static bool quiet = false;
+	static bool journald_enabled = false;
+	static bool syslog_enabled = false;
 
 	/*
 	   we need to serialize for msg_stat()
@@ -53,6 +55,30 @@ extern "C" {
 
 	// mutex for logging function
 	static pthread_mutex_t msg_mutex;
+
+	static const char *level_to_string (int level)
+	{
+		switch (level) {
+		case LOG_EMERG:
+			return "EMERGENCY";
+		case LOG_ALERT:
+			return "ALERT";
+		case LOG_CRIT:
+			return "CRITICAL";
+		case LOG_ERR:
+			return "ERROR";
+		case LOG_WARNING:
+			return "WARNING";
+		case LOG_NOTICE:
+			return "NOTICE";
+		case LOG_INFO:
+			return "INFO";
+		case LOG_DEBUG:
+			return "DEBUG";
+		default:
+			return "UNKNOWN";
+		}
+	}
 
 	/**
 	 * initializes logging system
@@ -84,67 +110,62 @@ extern "C" {
 	 * internal function which logs given string via printf and returns the logged string in
 	 * parameter logtext if it is != 0
 	 */
-	void msg_intern(char* logtext, const int level, const char* fmt, va_list* args)
+	static void msg_intern(char* logtext, const int level, const char* fmt, va_list* args)
 	{
 #if defined(DEBUG)
 		static std::map<pthread_t, int> threadids; // we want simple thread ids for logging, here is the map to do that
 		static int nothreads = 0; // how many threads access this function?
 #endif
 
-		/* nummerically higher value means lower priority */
-		if (level > msg_level) {
-			return;
+		// we must lock via mutex, else logging outputs are mixed when several
+		// threads log simultaneously
+		int retval = pthread_mutex_lock(&msg_mutex);
+		if (retval != 0) printf("!!! msg: pthread_mutex_lock returned error code %d (%s)\n", retval, strerror(retval));
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		struct tm* tform = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
+
+#if defined(DEBUG)
+		// determine thread id
+		pthread_t pt = pthread_self();
+		std::map<pthread_t, int>::iterator iter = threadids.find(pt);
+		int threadid;
+		if (iter == threadids.end()) {
+			threadid = nothreads;
+			threadids[pt] = nothreads++;
 		} else {
-			// we must lock via mutex, else logging outputs are mixed when several
-			// threads log simultaneously
-			int retval = pthread_mutex_lock(&msg_mutex);
-			if (retval != 0) printf("!!! msg: pthread_mutex_lock returned error code %d (%s)\n", retval, strerror(retval));
-			struct timeval tv;
-			gettimeofday(&tv, 0);
-			struct tm* tform = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
-
-#if defined(DEBUG)
-			// determine thread id
-			pthread_t pt = pthread_self();
-			std::map<pthread_t, int>::iterator iter = threadids.find(pt);
-			int threadid;
-			if (iter == threadids.end()) {
-				threadid = nothreads;
-				threadids[pt] = nothreads++;
-			} else {
-				threadid = iter->second;
-			}
-
-			printf("%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, MSG_TAB[level]);
-#else
-			//printf("%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, MSG_TAB[level]);
-			// Gerhard: message level is more important than Milliseconds (at least to me)
-			printf("%02d/%02d %02d:%02d:%02d %6s", tform->tm_mday, tform->tm_mon +1, tform->tm_hour, tform->tm_min, tform->tm_sec, MSG_TAB[level]);
-#endif
-			// need helper variable here because va_list parameter of vprintf is undefined after function call
-			va_list my_args;
-			va_copy(my_args, *args);
-			vprintf(fmt, my_args);
-			printf("\n");
-
-			if (logtext != NULL) {
-#if defined(DEBUG)
-				snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, MSG_TAB[level]);
-#else
-				snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, MSG_TAB[level]);
-#endif
-				vsnprintf(logtext, EXCEPTION_MAXLEN-strlen(logtext), fmt, *args);
-			}
-			retval = pthread_mutex_unlock(&msg_mutex);
-			if (retval != 0) printf("!!! msg: pthread_mutex_unlock returned error code %d\n", retval);
+			threadid = iter->second;
 		}
+
+		printf("%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, level_to_string(level));
+#else
+		//printf("%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, level_to_string(level));
+		// Gerhard: message level is more important than Milliseconds (at least to me)
+		printf("%02d/%02d %02d:%02d:%02d %6s", tform->tm_mday, tform->tm_mon +1, tform->tm_hour, tform->tm_min, tform->tm_sec, level_to_string(level));
+#endif
+		// need helper variable here because va_list parameter of vprintf is undefined after function call
+		va_list my_args;
+		va_copy(my_args, *args);
+		vprintf(fmt, my_args);
+		printf("\n");
+
+		if (logtext != NULL) {
+#if defined(DEBUG)
+			snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, level_to_string(level));
+#else
+			snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, level_to_string(level));
+#endif
+			vsnprintf(logtext, EXCEPTION_MAXLEN-strlen(logtext), fmt, *args);
+		}
+		retval = pthread_mutex_unlock(&msg_mutex);
+		if (retval != 0) printf("!!! msg: pthread_mutex_unlock returned error code %d\n", retval);
 	}
 
 	/**
 	  used for internal logging
 	  just outputs the given string without any additions like line numbers and so on
 	  */
-	void msg_normal(const int level, const char *fmt, ...)
+	static void msg_normal(const int level, const char *fmt, ...)
 	{
 		va_list args;
 		va_start(args, fmt);
@@ -156,7 +177,7 @@ extern "C" {
 	 * expands given string with variable arguments with source file name, line and function name,
 	 * if required
 	 */
-	void msg_expand(char* logtext, const int line, const char* filename, const char* funcname, const char* simplefunc, const int level, const char *fmt, va_list* args)
+	static void msg_expand(char* logtext, const int line, const char* filename, const char* funcname, const char* simplefunc, const int level, const char *fmt, va_list* args)
 	{
 		std::stringstream fmtnew;
 
@@ -195,6 +216,62 @@ extern "C" {
 	void msg_setlevel(int level)
 	{
 		msg_level=level;
+	}
+
+	/**
+	 * gets verbosity level of vermont
+	 */
+	int msg_getlevel()
+	{
+		return msg_level;
+	}
+
+	/**
+	 * check if log to file, not to stdout/err
+	 */
+	void msg_setquiet(bool set_quiet)
+	{
+		quiet = set_quiet;
+	}
+
+	/**
+	 * check if log to file, not to stdout/err
+	 */
+	bool msg_getquiet()
+	{
+		return quiet;
+	}
+
+	/**
+	 * set whether to log to journald
+	 */
+	void msg_set_journald(bool set_journald)
+	{
+		journald_enabled = set_journald;
+	}
+
+	/**
+	 * return true if logging to journald, false otherwise
+	 */
+	bool msg_get_journald()
+	{
+		return journald_enabled;
+	}
+
+	/**
+	 * set whether to log to syslog
+	 */
+	void msg_set_syslog(bool set_syslog)
+	{
+		syslog_enabled = set_syslog;
+	}
+
+	/**
+	 * return true if logging to syslog, false otherwise
+	 */
+	bool msg_get_syslog()
+	{
+		return syslog_enabled;
 	}
 
 

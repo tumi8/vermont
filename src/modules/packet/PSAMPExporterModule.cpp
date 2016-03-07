@@ -37,7 +37,7 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 	InformationElement::IeInfo ie;
 
 	// generate the exporter
-	ret = ipfix_init_exporter(sourceID, &exporter);
+	ret = ipfix_init_exporter(IPFIX_PROTOCOL, sourceID, &exporter);
 	if (ret) {
 		msg(MSG_FATAL, "error initializing IPFIX exporter");
 		exit(1);
@@ -60,13 +60,13 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 
 PSAMPExporterModule::~PSAMPExporterModule()
 {
-        ipfix_deinit_exporter(exporter);
+        ipfix_deinit_exporter(&exporter);
 
         // free the remaining packets
         for (int i = 0; i < numPacketsToRelease; i++) {
 		(packetsToRelease[i])->removeReference();
 	}
-};
+}
 
 
 void PSAMPExporterModule::startNewPacketStream()
@@ -220,4 +220,5 @@ void PSAMPExporterModule::performStart()
 void PSAMPExporterModule::performShutdown()
 {
 	// we could destroy the template here
+	timer->removeTimeout((void *)timerFlag);
 }

@@ -97,7 +97,7 @@ inline bool StringFilter::compare(unsigned char *pdata, std::string toMatch, uns
     }
     return false;
 
-};
+}
 
 /**
  * prepare the Packet for comparefucntion
@@ -128,4 +128,4 @@ bool StringFilter::processPacket(Packet *p)
 	    return false;
 
     return true;
-};
+}

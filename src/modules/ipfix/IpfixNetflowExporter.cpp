@@ -108,6 +108,7 @@ void IpfixNetflowExporter::performShutdown()
 {
 	sendRecords(true);
 	close(sockfd);
+	timer->removeTimeout(NULL);
 }
 
 /**
@@ -168,7 +169,8 @@ void IpfixNetflowExporter::sendPacket()
 			r->last = htonl(timediff.tv_sec*1000+timediff.tv_usec/1000);
 			r->srcport = c.srcPort;
 			r->dstport = c.dstPort;
-			r->tcp_flags = c.srcTcpControlBits;
+			// As per RFCs, lose NS bit and 3 "future use" bits
+			r->tcp_flags = (uint8_t)ntohs(c.srcTcpControlBits);
 			r->prot = c.protocol;
 			record->removeReference();
 			count++;

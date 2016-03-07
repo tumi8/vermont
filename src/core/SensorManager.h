@@ -21,7 +21,8 @@ public:
 	void stopSMThread();
 	void retrieveStatistics(bool ignoreshutdown = false);
 	void setGraphIS(GraphInstanceSupplier* gis);
-	void setParameters(uint32_t checkInterval, string outputfilename, bool append,
+	void setParameters(uint32_t checkInterval, string outputfilename,
+							 string clearfilename, bool append,
 							 GraphInstanceSupplier* gis);
 
 
@@ -42,10 +43,12 @@ private:
 	list<SensorEntry> sensors;
 	Mutex mutex; /** protects variable sensors */
 	ThreadCPUInterface::SystemInfo lastSystemInfo;
+	time_t lastClearTimestamp;
 
 	// config variables
 	uint32_t checkInterval; /** check interval in seconds */
 	string outputFilename;
+	string clearFilename;
 	time_t lasttime;
 	bool smExitFlag; /** own exit flag, as sensor manager thread should quit last */
 	char hostname[100];
@@ -54,6 +57,7 @@ private:
 	SensorManager();
 
 	static void* threadWrapper(void* instance);
+	bool checkClear();
 	void collectDataWorker();
 	void writeSensorXML(FILE* file, Sensor* s, const char* name, uint32_t id, bool module,
 			   			time_t curtime, time_t lasttime, vector<uint32_t>* nextids);

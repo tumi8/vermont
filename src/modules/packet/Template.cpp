@@ -151,7 +151,17 @@ bool Template::getFieldOffsetAndHeader(const IeInfo& ie, uint16_t *offset, uint1
 				*validPacketClass = PCLASS_TRN_TCP;
 				break;
 			case IPFIX_TYPEID_tcpControlBits:
-				*offset=13;
+				/*
+				 * RFC rfc7011 and rfc7012 changed the tcpControlBits size
+				 * from 1 byte to 2 bytes. Support both as the RFC mandates.
+				 */
+				if (ie.length == 1) {
+					*offset=13;
+				} else if (ie.length == 2) {
+					*offset=12;
+				} else {
+					THROWEXCEPTION("unsupported length %d for type %d", ie.length, ie.id);
+				}
 				*header=HEAD_TRANSPORT;
 				*validPacketClass = PCLASS_TRN_TCP;
 				break;

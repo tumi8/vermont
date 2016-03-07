@@ -55,6 +55,7 @@ private:
 	uint32_t sctpDataLifetime;
 	uint32_t sctpReconnectInterval;
 
+	export_protocol_version export_protocol;
 	uint32_t recordRateLimit;
 	uint32_t observationDomainId;
 	

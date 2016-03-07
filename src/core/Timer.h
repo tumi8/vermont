@@ -42,6 +42,13 @@ public:
 	 *             Notifiable may distinguish between different timeouts
 	 */
 	virtual void addTimeout(Notifiable* n, struct timespec& ts, void* dataPtr = 0) = 0;
+
+	/**
+	 * Removes a timeout using the flag to identify it.
+	 * @param flag user-defined flag which is passed to Notifiable::onTimeout, so that
+	 *             Notifiable may distinguish between different timeouts
+	 */
+	virtual void removeTimeout(void* dataPtr = 0) = 0;
 };
 
 #endif /*TIMER_H_*/

@@ -46,8 +46,6 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 			// get the time values or set them to '0' if they are not specified
 			maxBufferTime = getTimeInUnit("activeTimeout", SEC, 0, e);
 			minBufferTime = getTimeInUnit("inactiveTimeout", SEC, 0, e);
-			if (!maxBufferTime) THROWEXCEPTION("active timeout not set in configuration for aggregator");
-			if (!minBufferTime) THROWEXCEPTION("inactive timeout not set in configuration for aggregator");
 		} else if (e->matches("pollInterval")) {
 			pollInterval = getTimeInUnit("pollInterval", mSEC, AGG_DEFAULT_POLLING_TIME);
 		} else if (e->matches("hashtableBits")) {
@@ -124,8 +122,9 @@ Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 	ruleField->type.enterprise = ie.getEnterpriseNumber();
 	ruleField->type.length = ie.getIeLength();
 
-	if ((ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0)) ||
-			(ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0))) {
+	if (ie.getAutoAddV4PrefixLength() &&
+			(ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0) ||
+			ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0))) {
 		ruleField->type.length++; // for additional mask field
 	}
 
@@ -161,7 +160,8 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 		ruleField->type.enterprise = ie.getEnterpriseNumber();
 		ruleField->type.length = ie.getIeLength();
 
-		if ((ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) || (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
+		if (ie.getAutoAddV4PrefixLength() &&
+				(ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address || ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
 			ruleField->type.length++; // for additional mask field
 		}
 
@@ -223,4 +223,14 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 
 
 	return ruleField;
+}
+
+bool AggregatorBaseCfg::equalTo(AggregatorBaseCfg *other) {
+	if (maxBufferTime != other->maxBufferTime) return false;
+	if (minBufferTime != other->minBufferTime) return false;
+	if (pollInterval != other->pollInterval) return false;
+	if (htableBits != other->htableBits) return false;
+	if (*rules != *other->rules) return false;
+
+	return true;
 }
