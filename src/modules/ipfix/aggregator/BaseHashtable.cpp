@@ -315,10 +315,11 @@ void BaseHashtable::expireFlows(bool all)
 			// problem here: flows with active timeout may be exported passive timeout seconds too late
 			// now must be updated by the child classes
 			if ((bucket->expireTime < now) || (bucket->forceExpireTime < now) || all) {
-				if (now > bucket->forceExpireTime)
+				if (now > bucket->forceExpireTime) {
 					DPRINTF("expireFlows: forced expiry");
-				else if (now > bucket->expireTime)
+				} else if (now > bucket->expireTime) {
 					DPRINTF("expireFlows: normal expiry");
+				}
 				if (bucket->inTable) removeBucket(bucket);
 				statExportedBuckets++;
 				exportBucket(bucket);

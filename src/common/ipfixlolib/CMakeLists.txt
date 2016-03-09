@@ -24,3 +24,4 @@ ADD_LIBRARY(ipfixlolib
 	ipfix_names.c
 )
 
+add_cppcheck(ipfixlolib STYLE POSSIBLE_ERROR)

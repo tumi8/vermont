@@ -105,7 +105,7 @@ Observer::Observer(const std::string& interface, bool offline, uint64_t maxpacke
 				"adjust compile-time parameter PCAP_MAX_CAPTURE_LENGTH!", capturelen, PCAP_DEFAULT_CAPTURE_LENGTH);
 
 	}
-};
+}
 
 Observer::~Observer()
 {
@@ -475,7 +475,7 @@ void Observer::performStart()
 
 	msg(MSG_DEBUG, "now starting capturing thread");
 	thread.run(this);
-};
+}
 
 void Observer::performShutdown()
 {

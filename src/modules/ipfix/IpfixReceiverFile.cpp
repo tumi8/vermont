@@ -196,11 +196,13 @@ void IpfixReceiverFile::run()
 			/*reset the filepointer to the begin of the message*/
 			packetFile.seekg(-(int)(sizeof(uint32_t)), std::ios::cur); 
 
+			/** @todo uint_16 can never be > 65536
 			if (n > MAX_MSG_LEN) {
 				msg(MSG_ERROR, "IpfixReceiverFile: packet at idx=%u too big with n=%u in file \"%s\"", 
 						idx, n, packet_file_path.c_str());
 				continue;
 			}
+*/
 
 			data.reset(new uint8_t[MAX_MSG_LEN]);
 			packetFile.read(reinterpret_cast<char*>(data.get()), n);
