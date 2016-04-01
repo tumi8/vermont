@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 	 exporter: an ipfix_exporter * to be initialized
 	 */
 	ipfix_exporter *my_exporter;
-	ret=ipfix_init_exporter(MY_SOURCE_ID, &my_exporter);
+	ret=ipfix_init_exporter(IPFIX_PROTOCOL, MY_SOURCE_ID, &my_exporter);
 
 	if (ret != 0) {
 		fprintf(stderr, "ipfix_init_exporter failed!\n");
@@ -364,7 +364,7 @@ remark: the main task of ipfix_end_data_set is to calculate the length of the da
 
 	/* if you no longer need the exporter: free resources */
 	ret=ipfix_remove_collector(my_exporter, collector_ip, collector_port);
-	ipfix_deinit_exporter(my_exporter);
+	ipfix_deinit_exporter(&my_exporter);
 
 	printf("bravo\n");
 	exit(0);

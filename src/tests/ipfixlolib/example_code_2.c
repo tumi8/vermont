@@ -163,7 +163,7 @@ int main(int argc, char **argv)
      * MY_OBSERVATION_ID is the Observation ID that will be sent
      * with every IPFIX Message. */
     ipfix_exporter *my_exporter;
-    ret=ipfix_init_exporter(MY_OBSERVATION_DOMAIN_ID, &my_exporter);
+    ret=ipfix_init_exporter(IPFIX_PROTOCOL, MY_OBSERVATION_DOMAIN_ID, &my_exporter);
     if (set_config_on_exporter(my_exporter))
 	exit(EXIT_FAILURE);
 
