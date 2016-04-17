@@ -30,6 +30,7 @@
 #include <modules/ipfix/IpfixReceiverDtlsSctpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverTcpIpV4.hpp>
 #include <modules/ipfix/IpfixReceiverFile.hpp>
+#include <modules/ipfix/IpfixReceiverZmq.hpp>
 
 #include <common/ipfixlolib/ipfixlolib.h>
 
@@ -47,7 +48,8 @@ public:
 	std::string getName() { return "collector"; }
 
 	CollectorCfg(XMLElement* elem)
-		: protocol(UDP), port(0), mtu(0)
+		: protocol(UDP), port(0), mtu(0), zmqHighWaterMark(0),
+		  zmqPollTimeout(ZMQ_POLL_TIMEOUT_DEFAULT)
 	{
 		uint16_t defaultPort = 4739;
 		if (!elem)
@@ -78,6 +80,8 @@ public:
 				} else if (prot=="TCP") {
 					protocol = TCP;
 					defaultPort = 4740;
+				} else if (prot=="ZMQ") {
+					protocol = ZMQ;
 				} else
 					THROWEXCEPTION("Invalid configuration parameter for transportProtocol (%s)", prot.c_str());
 			} else if (e->matches("port")) {
@@ -93,6 +97,14 @@ public:
 				peerFqdns.insert(strdnsname);
 			} else if (e->matches("buffer")) {
 				buffer = (uint32_t)atoi(e->getContent().c_str());
+			} else if (e->matches("zmqEndpoint")) {
+				zmqEndpoints.push_back(e->getContent());
+			} else if (e->matches("zmqPubSubChannel")) {
+				zmqPubSubChannels.push_back(e->getContent());
+			} else if (e->matches("zmqHighWaterMark")) {
+				zmqHighWaterMark = atoi(e->getContent().c_str());
+			} else if (e->matches("zmqPollTimeout")) {
+				zmqPollTimeout = atoi(e->getContent().c_str());
 			} else {
 				msg(MSG_FATAL, "Unknown collector config statement %s", e->getName().c_str());
 				continue;
@@ -105,6 +117,8 @@ public:
 		 * the order does not match, since what we care about is the content
 		 */
 		std::sort(authorizedHosts.begin(), authorizedHosts.end());
+		std::sort(zmqEndpoints.begin(), zmqEndpoints.end());
+		std::sort(zmqPubSubChannels.begin(), zmqPubSubChannels.end());
 	}
 
 	IpfixReceiver* createIpfixReceiver(
@@ -112,7 +126,7 @@ public:
 			const std::string &privateKeyFile,
 			const std::string &caFile,
 			const std::string &caPath) {
-		IpfixReceiver* ipfixReceiver;
+		IpfixReceiver* ipfixReceiver = NULL;
 		if (protocol == SCTP)
 			ipfixReceiver = new IpfixReceiverSctpIpV4(port, ipAddress, buffer);
 		else if (protocol == DTLS_OVER_UDP)
@@ -125,8 +139,12 @@ public:
 				privateKeyFile, caFile, caPath, peerFqdns, buffer);
 		else if (protocol == TCP)
 			ipfixReceiver = new IpfixReceiverTcpIpV4(port, ipAddress, buffer);
-		else
+		else if (protocol == UDP)
 			ipfixReceiver = new IpfixReceiverUdpIpV4(port, ipAddress, buffer);
+#ifdef ZMQ_SUPPORT_ENABLED
+		else if (protocol == ZMQ)
+			ipfixReceiver = new IpfixReceiverZmq(zmqEndpoints, zmqPubSubChannels);
+#endif
 
 		if (!ipfixReceiver) {
 			THROWEXCEPTION("Could not create IpfixReceiver");
@@ -148,7 +166,11 @@ public:
 			(mtu == other->mtu) &&
 			(peerFqdns == other->peerFqdns) &&
 			(buffer == other->buffer) &&
-			(authorizedHosts == other->authorizedHosts)) {
+			(authorizedHosts == other->authorizedHosts) &&
+			(zmqHighWaterMark == other->zmqHighWaterMark) &&
+			(zmqPollTimeout == other->zmqPollTimeout) &&
+			(zmqEndpoints == other->zmqEndpoints) &&
+			(zmqPubSubChannels == other->zmqPubSubChannels)) {
 			return true;
 		}
 
@@ -170,6 +192,10 @@ private:
 	uint16_t mtu;
 	uint32_t buffer;
 	std::set<std::string> peerFqdns;
+	std::vector<std::string> zmqEndpoints;
+	std::vector<std::string> zmqPubSubChannels;
+	int zmqHighWaterMark;
+	int zmqPollTimeout;
 };
 
 #endif /*COLLECTORCFG_H_*/

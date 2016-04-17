@@ -28,6 +28,8 @@ The following packages are optional:
     ==> cmake option SUPPORT_MYSQL
  - libgsl-dev (for connection-based sampling with Bloom filters)
     ==> cmake option USE_GSL
+ - libczmq-dev (for receiving IPFIX reports over ZMQ)
+    ==> cmake option SUPPORT_ZMQ
 
 For DTLS support, OpenSSL 1.0.0 or higher is required. It is recommended 
 to build OpenSSL based on the latest CVS revision. See DTLS instructions below.
