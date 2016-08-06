@@ -41,6 +41,7 @@
 #include "modules/ipfix/IpfixReceiverFileCfg.h"
 #include "modules/ipfix/IpfixPayloadWriterCfg.h"
 #include "modules/ipfix/IpfixSamplerCfg.h"
+#include "modules/ipfix/IpfixSimpleTcpExporterCfg.h"
 #include "modules/ipfix/IpfixCsExporterCfg.hpp"
 #include "modules/ipfix/NetflowV9ConverterCfg.hpp"
 #include "modules/ipfix/aggregator/IpfixAggregatorCfg.h"
@@ -81,6 +82,7 @@ Cfg* ConfigManager::configModules[] = {
 	new IpfixAggregatorCfg(NULL),
 	new IpfixPrinterCfg(NULL),
 	new IpfixSamplerCfg(NULL),
+	new IpfixSimpleTcpExporterCfg(NULL),
 	new NetflowV9ConverterCfg(NULL),
 	new PacketAggregatorCfg(NULL),
 	new SensorManagerCfg(NULL),
