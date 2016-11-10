@@ -21,6 +21,8 @@ public:
 		ieName	         = getOptional("ieName");
 		modifier         = getOptional("modifier");
 		match            = getOptional("match");
+		autoAddV4PrefixLength = getBool("autoAddV4PrefixLength", true);
+
 
 		if (ieId>0) {
 			// check if ieID is known to Vermont
@@ -82,6 +84,8 @@ public:
 
 	bool isKnownIE() { return knownIE; }
 
+	bool getAutoAddV4PrefixLength() { return autoAddV4PrefixLength; }
+
 private:
 	std::string ieName;
 	uint16_t ieLength;
@@ -92,6 +96,7 @@ private:
 	std::string modifier;
 
 	bool knownIE;
+	bool autoAddV4PrefixLength;
 };
 
 #endif /*INFOELEMENTCFG_H_*/

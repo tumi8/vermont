@@ -25,6 +25,7 @@
 #include "common/crc.hpp"
 #include "common/Misc.h"
 #include "modules/ipfix/IpfixPrinter.hpp"
+#include "modules/ipfix/Connection.h"
 
 
 
@@ -117,8 +118,17 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 					return 0;
 
 				case IPFIX_TYPEID_tcpControlBits:
-					ASSERT(type->length==1, "unsupported length for type");
-					*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
+					/*
+					 * RFC rfc7011 and rfc7012 changed the tcpControlBits size
+					 * from 1 byte to 2 bytes. Support both as the RFC mandates.
+					 */
+					ASSERT(type->length==1 || type->length==2,
+							"unsupported length for type tcpControlBits");
+					if (type->length==1) {
+						*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
+					} else {
+						*((uint16_t*)baseData) |= (*((uint16_t*)deltaData) & Connection::MASK);
+					}
 					return 0;
 			}
 			break;
@@ -176,8 +186,17 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 					return 0;
 
 				case IPFIX_TYPEID_tcpControlBits:
-					ASSERT(type->length==1, "unsupported length for type");
-					*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
+					/*
+					 * RFC rfc7011 and rfc7012 changed the tcpControlBits size
+					 * from 1 byte to 2 bytes. Support both as the RFC mandates.
+					 */
+					ASSERT(type->length==1 || type->length==2,
+							"unsupported length for type tcpControlBits");
+					if (type->length==1) {
+						*((uint8_t*)baseData) |= *((uint8_t*)deltaData);
+					} else {
+						*((uint16_t*)baseData) |= (*((uint16_t*)deltaData) & Connection::MASK);
+					}
 					return 0;
 
 			}

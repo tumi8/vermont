@@ -346,6 +346,11 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4Address, 4, 0);
 			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4PrefixLength, 1, 0);
 		}
+		else if ((export_protocol == NFV9_PROTOCOL) &&
+				(fi->type.id == IPFIX_TYPEID_tcpControlBits) &&
+				(fi->type.length != 1)) {
+			ipfix_put_template_field(ipfixExporter, my_template_id, IPFIX_TYPEID_tcpControlBits, 1, 0);
+		}
 		else {
 			ipfix_put_template_field(ipfixExporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
 		}
@@ -367,6 +372,11 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
 			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4Address, 4, 0);
 			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4PrefixLength, 1, 0);
+		}
+		else if ((export_protocol == NFV9_PROTOCOL) &&
+				(fi->type.id == IPFIX_TYPEID_tcpControlBits) &&
+				(fi->type.length != 1)) {
+			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_tcpControlBits, 1, 0);
 		}
 		else {
 			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
@@ -635,6 +645,12 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 			*mask = 32 - *(uint8_t*)(data + fi->offset + 4);
 			ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
 			ipfix_put_data_field(ipfixExporter, mask, 1);
+		}
+		else if ((export_protocol == NFV9_PROTOCOL) &&
+				(fi->type.id == IPFIX_TYPEID_tcpControlBits) &&
+				(fi->type.length != 1)) {
+			// data is in network order, we want just the second byte as per RFC
+			ipfix_put_data_field(ipfixExporter, data + fi->offset + 1, 1);
 		}
 		else {
 			if (fi->type.id == IPFIX_TYPEID_packetDeltaCount && fi->type.length<=8) {

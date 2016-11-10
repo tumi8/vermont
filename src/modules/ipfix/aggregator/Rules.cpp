@@ -31,6 +31,7 @@
 #include "common/ipfixlolib/ipfix.h"
 
 #include "common/msg.h"
+#include "modules/ipfix/Connection.h"
 
 #define MAX_LINE_LEN 256
 
@@ -201,23 +202,26 @@ int parsePortPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeL
  * @return 0 if successful
  */
 int parseTcpFlags(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
-	uint8_t flags = 0;
+	uint16_t flags = 0;
 
 	char* p = s;
 	char* pair;
 
 	while ((pair = get_next_token(&p, ","))) {
-		if (strcmp(pair, "FIN") == 0) flags = flags | 0x01;
-		else if (strcmp(pair, "SYN") == 0) flags = flags | 0x02;
-		else if (strcmp(pair, "RST") == 0) flags = flags | 0x04;
-		else if (strcmp(pair, "PSH") == 0) flags = flags | 0x08;
-		else if (strcmp(pair, "ACK") == 0) flags = flags | 0x10;
-		else if (strcmp(pair, "URG") == 0) flags = flags | 0x20;
+		if (strcmp(pair, "FIN") == 0) flags = flags | Connection::FIN;
+		else if (strcmp(pair, "SYN") == 0) flags = flags | Connection::SYN;
+		else if (strcmp(pair, "RST") == 0) flags = flags | Connection::RST;
+		else if (strcmp(pair, "PSH") == 0) flags = flags | Connection::PSH;
+		else if (strcmp(pair, "ACK") == 0) flags = flags | Connection::ACK;
+		else if (strcmp(pair, "URG") == 0) flags = flags | Connection::URG;
+		else if (strcmp(pair, "ECE") == 0) flags = flags | Connection::ECE;
+		else if (strcmp(pair, "CWR") == 0) flags = flags | Connection::CWR;
+		else if (strcmp(pair, "NS") == 0) flags = flags | Connection::NS;
 		else return -1;
 	}
 
 
-	*length = 1;
+	*length = 2;
 	IpfixRecord::Data* fd = (IpfixRecord::Data*)malloc(*length);
 	fd[0] = flags;
 	*fdata = fd;
