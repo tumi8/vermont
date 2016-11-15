@@ -9,7 +9,7 @@ XMLTextNode::~XMLTextNode()
 {
 }
 
-const std::string XMLTextNode::getContent()
+const std::string XMLTextNode::getContent() const
 {
 	const char* content =  (const char*)cobj()->content;
 	if (!content)
