@@ -56,7 +56,7 @@ using namespace std;
 IpfixReceiverDtlsUdpIpV4::IpfixReceiverDtlsUdpIpV4(int port, const std::string ipAddr,
 	const std::string &certificateChainFile, const std::string &privateKeyFile,
 	const std::string &caFile, const std::string &caPath,
-	const std::set<string> &peerFqdnsParam, const uint32_t buffer),
+	const std::set<string> &peerFqdnsParam, const uint32_t buffer,
 	unsigned int moduleId)
     : IpfixReceiver(port),listen_socket(-1),
 	ssl_ctx(certificateChainFile,privateKeyFile,caFile,caPath, ! peerFqdnsParam.empty()),

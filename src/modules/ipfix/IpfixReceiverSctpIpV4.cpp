@@ -41,7 +41,8 @@
  * Does SCTP/IPv4 specific initialization.
  * @param port Port to listen on
  */
-IpfixReceiverSctpIpV4::IpfixReceiverSctpIpV4(int port, std::string ipAddr, uint32_t buffer) 
+IpfixReceiverSctpIpV4::IpfixReceiverSctpIpV4(int port, std::string ipAddr, uint32_t buffer,
+					     unsigned int moduleId)
 	: statReceivedPackets(0), moduleId(moduleId)
 {
 	receiverPort = port;

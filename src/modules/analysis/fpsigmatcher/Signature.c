@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-
+#include "common/defs.h"
 #include "Signature.h"
 #include <errno.h>
 
@@ -56,8 +56,9 @@ struct BayesSignature * new_Signature_s(const char * absolute_path, char * filen
 	int numOfLines = 0;
 
 	/** Open file */
-	char 	absolute_filename[300] = "";
-	snprintf(absolute_filename,299, "%s/%s", absolute_path, filename_sig);
+	char absolute_filename[300] = "";
+	snprintf(absolute_filename, ARRAY_SIZE(absolute_filename), "%s/%s",
+		 absolute_path, filename_sig);
 
 	if( (fp=fopen(absolute_filename, "r")) == NULL) {
 		printf("\nCannot open file \"%s\"\n", absolute_filename);
