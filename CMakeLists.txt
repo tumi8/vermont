@@ -60,6 +60,8 @@ include(CppcheckTargets)
 
 ### basic modules
 
+ENABLE_TESTING()
+
 SUBDIRS(
 	src
 )
