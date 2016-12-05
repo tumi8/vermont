@@ -21,6 +21,9 @@
 
 #include "IpfixSender.hpp"
 #include "common/ipfixlolib/ipfix.h"
+#ifdef SUPPORT_DTLS
+#include "common/ipfixlolib/ipfixlolib_dtls.h"
+#endif
 
 #include "common/msg.h"
 #include "common/Time.h"
@@ -94,14 +97,18 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 		private_key_file = privateKeyFile.c_str();
 	/* Private key will be searched for in the certificate chain file if
 	 * no private key file is set */
+#ifdef SUPPORT_DTLS
 	if (certificate_chain_file || private_key_file)
-		ipfix_set_dtls_certificate(ipfixExporter,
+		ipfix_set_dtls_certificate(&ipfixExporter->certificate,
 				certificate_chain_file, private_key_file);
+#endif
 
 	if ( ! caFile.empty() ) ca_file = caFile.c_str();
 	if ( ! caPath.empty() ) ca_path = caPath.c_str();
+#ifdef SUPPORT_DTLS
 	if (ca_file || ca_path)
-		ipfix_set_ca_locations(ipfixExporter, ca_file, ca_path);
+		ipfix_set_ca_locations(&ipfixExporter->certificate, ca_file, ca_path);
+#endif
 
 	msg(MSG_DEBUG, "IpfixSender: running");
 	return;
@@ -770,13 +777,11 @@ void IpfixSender::onSendRecordsTimeout(void) {
 		sendRecords(Always);
 	}
 }
-void IpfixSender::onBeatTimeout(void) {
-	ipfix_beat(ipfixExporter);
-}
+
 void IpfixSender::onTimeout(void* dataPtr)
 {
 	onSendRecordsTimeout();
-	onBeatTimeout();
+	ipfix_beat(ipfixExporter);
 	registerBeatTimeout();
 }
 

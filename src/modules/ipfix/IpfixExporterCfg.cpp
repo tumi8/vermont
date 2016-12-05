@@ -18,6 +18,7 @@
  *
  */
 
+#include "common/ipfixlolib/ipfixlolib_dtls.h"
 #include "IpfixExporterCfg.h"
 
 IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)

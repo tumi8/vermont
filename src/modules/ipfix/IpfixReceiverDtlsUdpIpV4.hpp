@@ -62,7 +62,8 @@ class IpfixReceiverDtlsUdpIpV4 : public IpfixReceiver, Sensor {
 	IpfixReceiverDtlsUdpIpV4(int port, const std::string ipAddr = "",
 	    const std::string &certificateChainFile = "", const std::string &privateKeyFile = "",
 	    const std::string &caFile = "", const std::string &caPath = "",
-	    const std::set<string> &peerFqdns = std::set<string>(), const uint32_t buffer = 0);
+	    const std::set<string> &peerFqdns = std::set<string>(), const uint32_t buffer = 0,
+	    unsigned int moduleId = 0);
 	virtual ~IpfixReceiverDtlsUdpIpV4();
 
 	virtual void run();

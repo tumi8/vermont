@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include "common/ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfixlolib_config.h"
 #include "common/ipfixlolib/encoding.h" // because we need htonll()
 #include "common/msg.h"
 

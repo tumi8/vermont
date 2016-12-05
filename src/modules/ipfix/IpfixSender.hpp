@@ -95,7 +95,6 @@ private:
 	void removeRecordReferences();
 	void registerTimeout();
 	void onSendRecordsTimeout(void);
-	void onBeatTimeout(void);
 	void registerBeatTimeout();
 
 	TemplateInfo::TemplateId getUnusedTemplateId();
