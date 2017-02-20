@@ -4,7 +4,6 @@
 
 bool run_program = true;
 bool reload_config = false;
-bool reset_syslog_mask = false;
 
 #ifdef __APPLE__
 semaphore_t mainSemaphore;
