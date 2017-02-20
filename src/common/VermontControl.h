@@ -11,7 +11,6 @@
 
 extern bool run_program;
 extern bool reload_config;
-extern bool reset_syslog_mask;
 
 #ifdef __APPLE__
 extern semaphore_t mainSemaphore;

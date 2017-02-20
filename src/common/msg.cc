@@ -30,7 +30,7 @@ extern "C" {
 	/** Maximum length of exception strings */
 	const int EXCEPTION_MAXLEN = 1024;
 
-	static int msg_level = LOG_UPTO(MSG_ERROR);
+	static int  syslog_mask = LOG_UPTO(LOG_WARNING);
 	static bool quiet = false;
 	static bool journald_enabled = false;
 	static bool syslog_enabled = false;
@@ -95,15 +95,26 @@ extern "C" {
 		// set stdout and stderr to non-buffered
 		setvbuf(stdout, NULL, _IONBF, 0);
 		setvbuf(stderr, NULL, _IONBF, 0);
+
+		if (msg_get_syslog()) {
+			setlogmask(syslog_mask);
+			openlog("vermont", LOG_PID, LOG_DAEMON);
+		}
 	}
 
 	/**
 	 * deinitializes logging function's mutex
-	 * vermont does not call this function
 	 */
 	void msg_shutdown()
 	{
-		pthread_mutex_destroy(&msg_mutex);
+		if (msg_get_syslog()) {
+			closelog();
+		}
+
+		int retval = pthread_mutex_destroy(&msg_mutex);
+		if (retval != 0) {
+			printf("!!! msg: pthread_mutex_destroy returned error code %d (%s)\n", retval, strerror(retval));
+		}
 	}
 
 	/**
@@ -120,7 +131,9 @@ extern "C" {
 		// we must lock via mutex, else logging outputs are mixed when several
 		// threads log simultaneously
 		int retval = pthread_mutex_lock(&msg_mutex);
-		if (retval != 0) printf("!!! msg: pthread_mutex_lock returned error code %d (%s)\n", retval, strerror(retval));
+		if (retval != 0) {
+			printf("!!! msg: pthread_mutex_lock returned error code %d (%s)\n", retval, strerror(retval));
+		}
 		struct timeval tv;
 		gettimeofday(&tv, 0);
 		struct tm* tform = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
@@ -158,7 +171,9 @@ extern "C" {
 			vsnprintf(logtext, EXCEPTION_MAXLEN-strlen(logtext), fmt, *args);
 		}
 		retval = pthread_mutex_unlock(&msg_mutex);
-		if (retval != 0) printf("!!! msg: pthread_mutex_unlock returned error code %d\n", retval);
+		if (retval != 0) {
+			printf("!!! msg: pthread_mutex_unlock returned error code %d\n", retval);
+		}
 	}
 
 	/**
@@ -215,7 +230,8 @@ extern "C" {
 	 */
 	void msg_setlevel(int level)
 	{
-		msg_level=level;
+		syslog_mask=level;
+		setlogmask(level);
 	}
 
 	/**
@@ -223,7 +239,7 @@ extern "C" {
 	 */
 	int msg_getlevel()
 	{
-		return msg_level;
+		return syslog_mask;
 	}
 
 	/**

@@ -47,9 +47,6 @@ void MainSignalHandler::handleSigUsr1(int x)
 			log_mask |= log_mask << 1;
 		}
 		msg_setlevel(log_mask);
-		reset_syslog_mask = true;
-
-		wakeupMainThread();
 	}
 
 	errno = errno_save;
@@ -63,9 +60,6 @@ void MainSignalHandler::handleSigUsr2(int x)
 	if (log_mask != 0) {
 		log_mask &= log_mask >> 1;
 		msg_setlevel(log_mask);
-		reset_syslog_mask = true;
-
-		wakeupMainThread();
 	}
 
 	errno = errno_save;

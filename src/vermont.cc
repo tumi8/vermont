@@ -34,7 +34,6 @@
 #include <getopt.h>
 #include <pwd.h>
 #include <grp.h>
-#include <syslog.h>
 
 /* own systems */
 #include "common/msg.h"
@@ -51,8 +50,6 @@ struct parameters {
 	const char *pid_file;
 	uid_t uid;
 	gid_t gid;
-	int log_mask;
-	bool quiet;
 	bool daemon_mode;
 };
 
@@ -213,7 +210,7 @@ parse_args (int argc, char **argv, struct parameters *params)
 		switch (opt) {
 		case 'b':
 			params->daemon_mode = true;
-			params->quiet = true;
+			msg_setquiet(true);
 			break;
 
 		case 'f':
@@ -253,18 +250,18 @@ parse_args (int argc, char **argv, struct parameters *params)
 			 * Default log_level is LOG_WARNING (1 << 4). For each -d,
 			 * bump log_level up to LOG_DEBUG (1 << 7).
 			 */
-			if (!(params->log_mask & LOG_MASK(LOG_DEBUG))) {
-				params->log_mask |= params->log_mask << 1;
+			if (!(msg_getlevel() & LOG_MASK(LOG_DEBUG))) {
+				msg_setlevel(msg_getlevel() | (msg_getlevel() << 1));
 			}
 			break;
 
 		case 'l':
 			level = parse_log_level(optarg, level);
-			params->log_mask = level;
+			msg_setlevel(level);
 			break;
 
 		case 'q':
-			params->quiet = true;
+			msg_setquiet(true);
 			break;
 
 #ifdef JOURNALD_SUPPORT_ENABLED
@@ -307,12 +304,12 @@ int main(int ac, char **dc)
 	 * destructors: The d'tor of ConfigManager must be executed *before*
 	 * the d'tors of the logging facility because the former makes use of
 	 * the latter. */
-	ConfigManager manager;
+	ConfigManager *manager = new ConfigManager();
 	string statFile = "stats.log";
 	struct parameters parameters;
 
 	memset(&parameters, 0, sizeof(struct parameters));
-	parameters.log_mask = LOG_UPTO(LOG_WARNING);
+	msg_init();
 
 	/* parse command line */
 	if (parse_args (ac, dc, &parameters) < 0) {
@@ -328,16 +325,6 @@ int main(int ac, char **dc)
 		daemonise(parameters.pid_file, parameters.uid, parameters.gid);
 	}
 
-	if (parameters.quiet) {
-		msg_setquiet(true);
-	}
-
-	if (msg_get_syslog()) {
-		setlogmask(parameters.log_mask);
-		openlog("vermont", LOG_PID, LOG_DAEMON);
-	}
-
-	msg_init();
 	/**< Wrapper for the main thread's signal handlers*/
 	MainSignalHandler main_signal_handler;
 
@@ -349,12 +336,9 @@ int main(int ac, char **dc)
 		THROWEXCEPTION("failed to setup semaphore");
 	}
 
-	/* setup verboseness */
-	msg(MSG_DIALOG, "message debug level is %d", parameters.log_mask);
-	msg_setlevel(parameters.log_mask);
+	msg(MSG_DIALOG, "starting up vermont config manager");
 
-
-	manager.parseConfig(string(parameters.config_file));
+	manager->parseConfig(string(parameters.config_file));
 
 	sigset_t sigmask;
 	sigemptyset(&sigmask);
@@ -367,28 +351,21 @@ int main(int ac, char **dc)
 	while (((b=timeoutsem.wait(DELETER_PERIOD)) == true) && errno == EINTR) {}// restart when interrupted by handler
 
 		if (b == false){
-			manager.onTimeout2();
+			manager->onTimeout2();
 		}
 
 		if (reload_config) {
 			msg(MSG_INFO, "reconfiguring vermont");
-			manager.parseConfig(string(parameters.config_file));
+			manager->parseConfig(string(parameters.config_file));
 			reload_config = false;
 		}
-
-		if (reset_syslog_mask) {
-			if (msg_get_syslog()) {
-				setlogmask(msg_getlevel());
-			}
-			reset_syslog_mask = false;
-		}
 	}
-	msg(MSG_FATAL, "got signal - exiting");
-	manager.shutdown();
+	msg(MSG_FATAL, "got signal - shutting down manager");
+	manager->shutdown();
+	delete manager;
+	msg(MSG_FATAL, "manager shutdown complete");
 
-	if (msg_get_syslog()) {
-		closelog();
-	}
+	msg_shutdown();
 }
 
 //static void __cplusplus_really_sucks_andPeopleUsingVeryStrangeNamingConventionsWithLongLongExplicitBlaBlaAndfUnNycasE()
