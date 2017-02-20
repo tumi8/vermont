@@ -1,6 +1,6 @@
 <ipfixConfig>
 	<observer id="1">
-		<interface>en0</interface>
+		<interface>eth1</interface>
 		<pcap_filter>ip</pcap_filter>
 		<next>2</next>
 	</observer>
@@ -49,7 +49,7 @@
 		<next>7</next>
 	</packetAggregator>
 	
-	<ipfixQueue id="9">
+	<ipfixQueue id="7">
 		<entries>1000</entries>
 		<next>8</next>
 	</ipfixQueue>
@@ -61,6 +61,7 @@
 			<port>1500</port>
 		</collector>
 	</ipfixExporter>
+
 	<ipfixPrinter id="9">
 	</ipfixPrinter>
 </ipfixConfig>
