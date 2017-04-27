@@ -46,6 +46,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <inttypes.h>
 
 #ifdef __linux__
 /* Copied from linux/in.h */
@@ -2251,7 +2252,7 @@ static bool ipfix_write_sendbuffer_to_datafile(ipfix_sendbuffer *sendbuffer, ipf
 	return false;
     }
     col->bytes_written += nwritten;
-    msg(MSG_DEBUG, "bytes_written: %d \t Total: %llu", nwritten, col->bytes_written);
+    msg(MSG_DEBUG, "bytes_written: %zd \t Total: %" PRIu64, nwritten, col->bytes_written);
     return true;
 }
 
