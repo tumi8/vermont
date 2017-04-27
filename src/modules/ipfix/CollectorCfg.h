@@ -150,6 +150,8 @@ public:
 			THROWEXCEPTION("Could not create IpfixReceiver");
 		}
 
+		msg(MSG_INFO, "Created an IpfixReceiver for protocol %d", protocol);
+
 		for (std::vector<std::string>::iterator i = authorizedHosts.begin(); i != authorizedHosts.end(); i++) {
 			if (ipfixReceiver->addAuthorizedHost((*i).c_str()) != 0) 
 				msg(MSG_ERROR, "CollectorCfg: Invalid authorized host %s", (*i).c_str());

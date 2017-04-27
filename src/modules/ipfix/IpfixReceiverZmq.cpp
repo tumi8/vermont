@@ -92,6 +92,8 @@ IpfixReceiverZmq::~IpfixReceiverZmq()
 		zsock_destroy(&(*i));
 	}
 
+	msg(MSG_INFO, "Ipfix Receiver ZMQ poller and sockets destroyed");
+
 	SensorManager::getInstance().removeSensor(this);
 }
 
