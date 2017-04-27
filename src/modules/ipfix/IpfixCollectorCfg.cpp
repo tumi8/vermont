@@ -90,7 +90,8 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 
 IpfixCollectorCfg::~IpfixCollectorCfg()
 {
-	// FIXME: Shouldn't we delete listener here?
+	msg(MSG_INFO, "Deleting collectingProcess listener");
+	delete listener;
 }
 
 IpfixCollectorCfg* IpfixCollectorCfg::create(XMLElement* elem)
