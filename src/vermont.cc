@@ -305,7 +305,6 @@ int main(int ac, char **dc)
 	 * the d'tors of the logging facility because the former makes use of
 	 * the latter. */
 	ConfigManager *manager = new ConfigManager();
-	string statFile = "stats.log";
 	struct parameters parameters;
 
 	memset(&parameters, 0, sizeof(struct parameters));
