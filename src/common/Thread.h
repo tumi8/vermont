@@ -14,6 +14,7 @@
 
 #include "msg.h"
 #include <string.h>
+#include <pthread.h>
 
 #define THREAD_NAME_LENGTH 15
 
@@ -38,7 +39,7 @@ class Thread
 			thread_created = true;
 
 			//data = threadData;
-			DPRINTF("creating new thread");
+			msg(MSG_DEBUG, "creating new thread: %s", name);
 			if (pthread_create(&thread, NULL, f, threadData) != 0) {
 				THROWEXCEPTION("failed to create new thread");
 			}
