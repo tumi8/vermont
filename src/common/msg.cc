@@ -160,6 +160,7 @@ extern "C" {
 		va_list my_args;
 		va_copy(my_args, *args);
 		vprintf(fmt, my_args);
+		va_end(my_args);
 		printf("\n");
 
 		if (logtext != NULL) {
