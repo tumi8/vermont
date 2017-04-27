@@ -24,9 +24,6 @@
 extern "C" {
 #endif
 
-	/* the maximum number of functions that will be called by the message logger thread */
-	const int MAX_LOG_FUNCTIONS = 256;
-
 	/** Maximum length of exception strings */
 	const int EXCEPTION_MAXLEN = 1024;
 
@@ -41,17 +38,6 @@ extern "C" {
 	   */
 	static pthread_mutex_t stat_lock = PTHREAD_MUTEX_INITIALIZER;
 	static FILE *stat_file;
-
-	/* the log functions which the message logger thread calls and stuff needed for them */
-	static LOGFUNCTION log_functions[MAX_LOG_FUNCTIONS];
-	static void *log_function_params[MAX_LOG_FUNCTIONS];
-	static int num_log_functions;
-
-	/* each log_timeout, the logger thread will call all registered logging functions */
-	static struct timespec log_timeout = {
-		300, 0
-	};
-	//static pthread_t log_thread;
 
 	// mutex for logging function
 	static pthread_mutex_t msg_mutex;
@@ -334,32 +320,6 @@ extern "C" {
 	}
 
 
-	int msg_thread_add_log_function(LOGFUNCTION f, void *param)
-	{
-		int ret;
-
-		pthread_mutex_lock(&stat_lock);
-		if(num_log_functions < MAX_LOG_FUNCTIONS) {
-			log_functions[num_log_functions] = f;
-			log_function_params[num_log_functions] = param;
-			num_log_functions++;
-			ret=0;
-		} else {
-			ret=1;
-		}
-		pthread_mutex_unlock(&stat_lock);
-
-		return(ret);
-	}
-
-
-	void msg_thread_set_timeout(int ms)
-	{
-		assert(ms > 0);
-		log_timeout.tv_sec = ms / 1000;
-		log_timeout.tv_nsec = ((long)ms % 1000L) * 1000000L;
-	}
-
 	void vermont_assert(const char* expr, const char* description, int line, const char* filename, const char* prettyfuncname, const char* funcname)
 	{
 		msg_normal(MSG_ERROR, "Assertion: %s", expr);
@@ -381,54 +341,6 @@ extern "C" {
 
 		throw std::runtime_error(text);
 	}
-
-
-	/* start the logger thread with the configured log functions */
-	/*int msg_thread_start(void)
-	  {
-	  return(pthread_create(&log_thread, NULL, msg_thread, NULL));
-	  }*/
-
-
-	/* this stops the logger thread. hard. */
-	/*int msg_thread_stop(void)
-	  {
-	  return(pthread_cancel(log_thread));
-	  }*/
-
-
-	/* this is the main message logging thread */
-	/*void * msg_thread(void *arg)
-	  {
-	  int i;
-
-	  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	  while (1) {
-
-	// we use nanosleep here because nanosleep
-	// unlike sleep and usleep, is a thread cancellation point
-
-	nanosleep(&log_timeout, NULL);
-
-	// now walk through all log functions and call them
-	pthread_mutex_lock(&stat_lock);
-
-	msg_stat("Vermont: Beginning statistics dump at %u", time(NULL));
-	for(i=0; i < num_log_functions; i++) {
-	if(log_functions[i]) {
-	(log_functions[i])(log_function_params[i]);
-	}
-	}
-	// append \n to get one empty line between following dumps
-	msg_stat("Vermont: Statistics dump finished at %u\n", time(NULL));
-
-	pthread_mutex_unlock(&stat_lock);
-	}
-
-	return 0;
-	}*/
 
 #ifdef __cplusplus
 }

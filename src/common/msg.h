@@ -68,13 +68,6 @@ int msg_stat_setup(int mode, FILE *f);
 void vermont_assert(const char* expr, const char* description, int line, const char* filename, const char* prettyfuncname, const char* funcname);
 void vermont_exception(const int, const char*, const char*, const char*, const char*, ...);
 
-/* msg_thread functions for the timed logger thread */
-//int msg_thread_add_log_function(LOGFUNCTION f, void *param);
-//void msg_thread_set_timeout(int ms);
-//int msg_thread_start();
-//int msg_thread_stop();
-//void * msg_thread(void *);
-
 //#if !defined(__PRETTY_FUNCTION__)
 	//#define __PRETTY_FUNCTION__ "<unknown>"
 //#endif
