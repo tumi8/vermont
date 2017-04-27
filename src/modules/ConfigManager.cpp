@@ -310,12 +310,12 @@ Graph* ConfigManager::reconnect(Graph* g, Graph *old)
 							oldCfg->getName().c_str(), oldCfg->getID());
 					newCfg->transferInstance(oldCfg);
 				} else {
-                    deleter_list_item delme;
-                    delme.c = oldCfg;
-                    delme.delete_after = time(NULL) + DELETER_DELAY; // current time + 20 seconds
-                    deleter_list.push_back(delme);
-                    msg(MSG_INFO, "can't reuse %s(id=%u)",
-							oldCfg->getName().c_str(), oldCfg->getID());
+					deleter_list_item delme;
+					delme.c = oldCfg;
+					delme.delete_after = time(NULL) + DELETER_DELAY; // current time + 20 seconds
+					deleter_list.push_back(delme);
+					msg(MSG_INFO, "can't reuse %s(id=%u)",
+					    oldCfg->getName().c_str(), oldCfg->getID());
 				}
 			}
 		}
