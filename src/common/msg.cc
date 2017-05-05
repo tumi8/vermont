@@ -109,11 +109,6 @@ extern "C" {
 	 */
 	void msg_intern(char* logtext, const int level, const char* fmt, va_list* args)
 	{
-#if defined(DEBUG)
-		static std::map<pthread_t, int> threadids; // we want simple thread ids for logging, here is the map to do that
-		static int nothreads = 0; // how many threads access this function?
-#endif
-
 		// we must lock via mutex, else logging outputs are mixed when several
 		// threads log simultaneously
 		int retval = pthread_mutex_lock(&msg_mutex);
@@ -126,6 +121,8 @@ extern "C" {
 
 #if defined(DEBUG)
 		// determine thread id
+		static std::map<pthread_t, int> threadids; // we want simple thread ids for logging, here is the map to do that
+		static int nothreads = 0; // how many threads access this function?
 		pthread_t pt = pthread_self();
 		std::map<pthread_t, int>::iterator iter = threadids.find(pt);
 		int threadid;
@@ -138,8 +135,6 @@ extern "C" {
 
 		printf("%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, level_to_string(level));
 #else
-		//printf("%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, level_to_string(level));
-		// Gerhard: message level is more important than Milliseconds (at least to me)
 		printf("%02d/%02d %02d:%02d:%02d %6s", tform->tm_mday, tform->tm_mon +1, tform->tm_hour, tform->tm_min, tform->tm_sec, level_to_string(level));
 #endif
 		// need helper variable here because va_list parameter of vprintf is undefined after function call
@@ -171,7 +166,7 @@ extern "C" {
 	{
 		va_list args;
 		va_start(args, fmt);
-		msg_intern(0, level, fmt, &args);
+		msg_intern(NULL, level, fmt, &args);
 		va_end(args);
 	}
 
@@ -208,7 +203,7 @@ extern "C" {
 	{
 		va_list args;
 		va_start(args, fmt);
-		msg_expand(0, line, filename, funcname, simplefunc, level, fmt, &args);
+		msg_expand(NULL, line, filename, funcname, simplefunc, level, fmt, &args);
 		va_end(args);
 	}
 
