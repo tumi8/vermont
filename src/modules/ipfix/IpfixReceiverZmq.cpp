@@ -121,7 +121,7 @@ void IpfixReceiverZmq::run()
 		void *sock = zpoller_wait(zpoller, zmq_poll_timeout);
 		if (!sock) {
 			if (zpoller_terminated(zpoller)) {
-				msg(MSG_DEBUG, "ZMQ termination signal received");
+				msg(MSG_DEBUG, "ZMQ Receiver: ZMQ termination signal received");
 				break;
 			} else {
 				continue;
