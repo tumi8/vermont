@@ -72,6 +72,10 @@ void vermont_exception(const int, const char*, const char*, const char*, const c
 	//#define __PRETTY_FUNCTION__ "<unknown>"
 //#endif
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+#endif
 // useful defines for logging
 #define THROWEXCEPTION(...) \
 	__extension__ \
@@ -102,6 +106,9 @@ void vermont_exception(const int, const char*, const char*, const char*, const c
 			} \
 		} \
 	})
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #ifdef DEBUG
 
