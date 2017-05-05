@@ -33,6 +33,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <inttypes.h>
 
 
 IpfixReceiver::IpfixReceiver()
@@ -194,6 +195,6 @@ void IpfixReceiver::setBufferSize(const int sockfd, const uint32_t buffer)
 		uint32_t temp;
 		socklen_t len = sizeof(temp);
 		getsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &temp, &len);
-		msg(MSG_INFO, "Socket buffer size set to %lu bytes", temp);
+		msg(MSG_INFO, "Socket buffer size set to %" PRIu32 " bytes", temp);
     }
 }
