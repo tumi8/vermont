@@ -226,3 +226,13 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 
 	return ruleField;
 }
+
+bool AggregatorBaseCfg::equalTo(AggregatorBaseCfg *other) {
+	if (maxBufferTime != other->maxBufferTime) return false;
+	if (minBufferTime != other->minBufferTime) return false;
+	if (pollInterval != other->pollInterval) return false;
+	if (htableBits != other->htableBits) return false;
+	if (*rules != *other->rules) return false;
+
+	return true;
+}

@@ -67,6 +67,9 @@ NetflowV9Converter* NetflowV9ConverterCfg::createInstance()
 
 bool NetflowV9ConverterCfg::deriveFrom(NetflowV9ConverterCfg* old)
 {
-    return false;
+    if (copyMode == old->copyMode && keepFlowSysUpTime == old->keepFlowSysUpTime)
+        return true;
+    else
+        return false;
 }
 

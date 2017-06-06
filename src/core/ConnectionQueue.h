@@ -120,6 +120,30 @@ public:
 		mutex.unlock();
 	}
 
+	/**
+	 * -> see Timer::removeTimeout for nonspecific description
+	 * ATTENTION: this function assumes, that it is usually called by this class's own
+	 * thread, as the thread in processLoop always calculates the time of next interruption
+	 * before it suspends and this function is not able to interrupt it
+	 */
+	virtual void removeTimeout(void* dataPtr = 0)
+	{
+		// check if we are running, because otherwise permant calls to this function could
+		// allocate our memory which is never freed
+		if (!Adapter<T>::running && !initPhase)
+			return;
+
+		mutex.lock();
+		list<TimeoutEntry*>::iterator iter = timeouts.begin();
+		while (iter != timeouts.end()) {
+			TimeoutEntry* te = *iter;
+			if (te->dataPtr == dataPtr)
+				iter = timeouts.erase(iter);
+			delete te;
+		}
+		mutex.unlock();
+	}
+
 
 private:
 	ConcurrentQueue<T> queue;  /**< contains all elements which were received from previous modules */

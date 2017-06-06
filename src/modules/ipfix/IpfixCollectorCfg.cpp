@@ -116,5 +116,25 @@ bool IpfixCollectorCfg::deriveFrom(IpfixCollectorCfg* old)
 	 * Invalid templates must be removed in preReconfigure2() and the new templates
 	 * must be transmited on preConnect()
 	 */
-	return false;   // FIXME: implement it, to gain performance increase in reconnect
+	return equalTo(old);
+}
+
+bool IpfixCollectorCfg::equalTo(IpfixCollectorCfg* other)
+{
+	if (certificateChainFile != other->certificateChainFile ||
+			privateKeyFile != other->privateKeyFile ||
+			caFile != other->caFile ||
+			caPath != other->caPath) {
+		return false;
+	}
+
+	if (udpTemplateLifetime != other->udpTemplateLifetime) {
+		return false;
+	}
+
+	if (!listener->equalTo(other->listener)) {
+		return false;
+	}
+
+	return true;
 }

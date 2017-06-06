@@ -39,6 +39,8 @@ public:
 	
 	bool deriveFrom(IpfixCollectorCfg* old);
 	
+	bool equalTo(IpfixCollectorCfg* other);
+
 private:
 	CollectorCfg* listener;
 

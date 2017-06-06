@@ -180,8 +180,18 @@ bool IpfixExporterCfg::deriveFrom(IpfixExporterCfg* other)
 
 bool IpfixExporterCfg::equalTo(IpfixExporterCfg* other)
 {
+	if (sctpDataLifetime != other->sctpDataLifetime) return false;
+	if (sctpReconnectInterval != other->sctpReconnectInterval) return false;
+	if (recordRateLimit != other->recordRateLimit) return false;
+	if (observationDomainId != other->observationDomainId) return false;
+	if (certificateChainFile != other->certificateChainFile) return false;
+	if (privateKeyFile != other->privateKeyFile) return false;
+	if (caFile != other->caFile) return false;
+	if (caPath != other->caPath) return false;
+	if (dtlsMaxConnectionLifetime != other->dtlsMaxConnectionLifetime) return false;
 	if (templateRefreshTime != other->templateRefreshTime) return false;
 	/* if (templateRefreshRate != other->templateRefreshRate) return false; */ /* TODO */
+	if (export_protocol != other->export_protocol) return false;
 	if (collectors.size() != other->collectors.size()) return false;
 	std::vector<CollectorCfg*>::const_iterator iter = collectors.begin();
 	while (iter != collectors.end()) {
