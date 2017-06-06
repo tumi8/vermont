@@ -15,6 +15,7 @@
 			<templateId>998</templateId>
 			<flowKey>
 				<ieName>sourceIPv4Address</ieName>
+				<autoAddV4PrefixLength>false</autoAddV4PrefixLength>
 			</flowKey>
 			<flowKey>
 				<ieName>destinationIPv4Address</ieName>
@@ -49,9 +50,9 @@
 		<next>7</next>
 	</packetAggregator>
 	
-	<ipfixQueue id="9">
+	<ipfixQueue id="7">
 		<entries>1000</entries>
-		<next>8</next>
+		<next>9</next>
 	</ipfixQueue>
 	
 	<ipfixExporter id="8">
