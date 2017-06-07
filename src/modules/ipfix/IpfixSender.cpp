@@ -277,14 +277,14 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		if(templateIdToUniqueId.find(dataTemplateInfo->templateId) == templateIdToUniqueId.end()) {
 			my_template_id = dataTemplateInfo->templateId;
 		} else {
-			msg(MSG_INFO, "IpfixSender: Template ID conflict, %u is already in use.", dataTemplateInfo->templateId);
+			msg(MSG_DEBUG, "IpfixSender: Template ID conflict, %u is already in use.", dataTemplateInfo->templateId);
 		}
 	}
 
 	// generate new Template ID if necessary
 	if(my_template_id == 0) {
 		my_template_id = getUnusedTemplateId();
-		msg(MSG_INFO, "IpfixSender: Use Template ID %u instead of %u.", my_template_id, dataTemplateInfo->templateId);
+		msg(MSG_DEBUG, "IpfixSender: Use Template ID %u instead of %u.", my_template_id, dataTemplateInfo->templateId);
 	}
 
 	// Update maps
@@ -385,8 +385,14 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 	DPRINTF("%u data length", dataLength);
 
-	char* data = dataLength?(char*)malloc(dataLength):0; // electric fence does not like 0-byte mallocs
-	memcpy(data, dataTemplateInfo->data, dataLength);
+	char *data = NULL; // electric fence does not like 0-byte mallocs
+	if (dataLength && dataTemplateInfo->dataCount) {
+		data = (char *)malloc(dataLength);
+		if (!data) {
+			THROWEXCEPTION("IpfixSender: could not allocate data template");
+		}
+		memcpy(data, dataTemplateInfo->data, dataLength);
+	}
 
 	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
 		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
@@ -415,7 +421,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		THROWEXCEPTION("IpfixSender: ipfix_end_template failed");
 	}
 
-	msg(MSG_INFO, "IpfixSender: created template with ID %u", my_template_id);
+	msg(MSG_DEBUG, "IpfixSender: created template with ID %u", my_template_id);
 
 	// release message lock
 	ipfixMessageLock.unlock();
@@ -483,14 +489,14 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	}
 	else
 	{
-		msg(MSG_INFO, "IpfixSender: removed template with ID %u", my_template_id);
+		msg(MSG_DEBUG, "IpfixSender: removed template with ID %u", my_template_id);
 	}
 
 	// enforce sending the withdrawal message
 	if (ipfix_send(ipfixExporter) != 0) {
 		THROWEXCEPTION("IpfixSender: ipfix_send failed");
 	}
-	msg(MSG_INFO, "IpfixSender: destroyed template with ID %u", my_template_id);
+	msg(MSG_DEBUG, "IpfixSender: destroyed template with ID %u", my_template_id);
 
 	// release message lock
 	ipfixMessageLock.unlock();
@@ -698,7 +704,7 @@ void IpfixSender::onReconfiguration2()
 		}
 		else
 		{
-			msg(MSG_INFO, "IpfixSender: removed template with ID %u", iter->first);
+			msg(MSG_DEBUG, "IpfixSender: removed template with ID %u", iter->first);
 		}
 	}
 	// clear maps
