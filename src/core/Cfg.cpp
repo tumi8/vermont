@@ -135,8 +135,18 @@ unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit, uint
 		time = atoi(e->getFirstText().c_str());
 
 		XMLAttribute* a = e->getAttribute("unit");
-		if (!a)
-			continue;
+		if (!a) {
+			if (unit == 1)
+				msg(MSG_ERROR, "No unit for element %s, assuming default of %s",
+						name.c_str(), "seconds");
+			else if (unit == 1000)
+				msg(MSG_ERROR, "No unit for element %s, assuming default of %s",
+						name.c_str(), "milliseconds");
+			else
+				msg(MSG_ERROR, "No unit for element %s, assuming default of %s",
+						name.c_str(), "microseconds");
+			return time;
+		}
 
 		if (a->getValue() == "sec")
 			return time*unit/SEC;
