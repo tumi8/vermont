@@ -160,7 +160,6 @@ public:
 	bool equalTo(CollectorCfg* other)
 	{
 		if ((ipAddress == other->ipAddress) &&
-			//(ipAddressType == other->ipAddressType) &&
 			(protocol == other->protocol) &&
 			(port == other->port) &&
 			(mtu == other->mtu) &&
@@ -179,7 +178,6 @@ public:
 
 	std::set<std::string> getPeerFqdns() { return peerFqdns; }
 	std::string getIpAddress() { return ipAddress; }
-	//unsigned getIpAddressType() { return ipAddressType; }
 	ipfix_transport_protocol getProtocol() { return protocol; }
 	uint16_t getPort() { return port; }
 	uint16_t getMtu() { return mtu; }
