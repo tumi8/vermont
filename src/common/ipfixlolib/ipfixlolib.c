@@ -1939,7 +1939,8 @@ static int ipfix_deinit_template_array(ipfix_exporter *exporter)
         
 	for(i=0; i< exporter->ipfix_lo_template_maxsize; i++) {
                 // try to free all templates:
-	    if (ipfix_deinit_template(&(exporter->template_arr[i]) )) {
+
+	    if (&exporter->template_arr[i] != NULL && exporter->template_arr[i].state != T_UNUSED && ipfix_deinit_template(&(exporter->template_arr[i]) )) {
                 msg(MSG_ERROR, "failed to deinitialize template %i", i);
 	    }
         }
