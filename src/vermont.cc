@@ -167,7 +167,7 @@ usage (int status)
 			"                                    error\n"
 			"                                    critical\n\n"
 			"                                Default: critical, warning, error\n"
-			" -q, --quiet                Do not write output to console\n"
+			" -q, --quiet                Do not write output to console (implied by -b)\n"
 			" -b, --daemon               Run in daemon mode (implies -q)\n"
 			" -p, --pid-file FILE        Set process id filename (use with -d)\n"
 			" -u, --user USER            Change user to USER (use with -d)\n"
