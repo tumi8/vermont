@@ -75,7 +75,7 @@ extern "C" {
 		// init the logging function's mutex
 		int retval = pthread_mutex_init(&msg_mutex, 0);
 		if (retval != 0) {
-			printf("!!! msg: pthread_mutex_init returned error code %d (%s)\n", retval, strerror(retval));
+			fprintf(stderr, "!!! msg: pthread_mutex_init returned error code %d (%s)\n", retval, strerror(retval));
 		}
 
 		// set stdout and stderr to non-buffered
@@ -99,7 +99,7 @@ extern "C" {
 
 		int retval = pthread_mutex_destroy(&msg_mutex);
 		if (retval != 0) {
-			printf("!!! msg: pthread_mutex_destroy returned error code %d (%s)\n", retval, strerror(retval));
+			fprintf(stderr, "!!! msg: pthread_mutex_destroy returned error code %d (%s)\n", retval, strerror(retval));
 		}
 	}
 
@@ -113,7 +113,7 @@ extern "C" {
 		// threads log simultaneously
 		int retval = pthread_mutex_lock(&msg_mutex);
 		if (retval != 0) {
-			printf("!!! msg: pthread_mutex_lock returned error code %d (%s)\n", retval, strerror(retval));
+			fprintf(stderr, "!!! msg: pthread_mutex_lock returned error code %d (%s)\n", retval, strerror(retval));
 		}
 		struct timeval tv;
 		gettimeofday(&tv, 0);
@@ -154,7 +154,7 @@ extern "C" {
 		}
 		retval = pthread_mutex_unlock(&msg_mutex);
 		if (retval != 0) {
-			printf("!!! msg: pthread_mutex_unlock returned error code %d\n", retval);
+			fprintf(stderr, "!!! msg: pthread_mutex_unlock returned error code %d\n", retval);
 		}
 	}
 
