@@ -59,7 +59,7 @@ record_pid (const char *pidfile)
 {
 	FILE *f = fopen(pidfile, "w");
 	if (!f) {
-		fprintf(stderr, "Could not open pid-file %s for writing", pidfile);
+		msg(MSG_FATAL, "Could not open pid-file %s for writing", pidfile);
 		exit(EXIT_FAILURE);
 	} else {
 		fprintf(f, "%d\n", getpid());
@@ -75,7 +75,7 @@ set_groups (uid_t uid, gid_t gid)
 
 	struct passwd *pw = getpwuid(uid);
 	if (!pw) {
-		fprintf(stderr, "could not getpwuid: %s", strerror(errno));
+		msg(MSG_FATAL, "could not getpwuid: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
@@ -91,12 +91,12 @@ set_groups (uid_t uid, gid_t gid)
 	groups = (gid_t *)alloca(groups_count * sizeof(gid_t));
 
 	if (getgrouplist(pw->pw_name, gid, groups, &groups_count) <= 0) {
-		fprintf(stderr, "could not getgrouplist: %s", strerror(errno));
+		msg(MSG_FATAL, "could not getgrouplist: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	if (setgroups(groups_count, groups) < 0) {
-		fprintf(stderr, "could not setgroups: %s", strerror(errno));
+		msg(MSG_FATAL, "could not setgroups: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 }
@@ -109,7 +109,7 @@ daemonise (const char *pid_file, uid_t uid, gid_t gid)
 	 * dev/null
 	 */
 	if (daemon(1, 0) < 0) {
-		fprintf(stderr, "daemon failed\n");
+		msg(MSG_FATAL, "daemon failed");
 		exit(EXIT_FAILURE);
 	}
 
@@ -122,7 +122,7 @@ daemonise (const char *pid_file, uid_t uid, gid_t gid)
 	}
 
 	if (uid && setreuid(0, uid) < 0) {
-		fprintf(stderr, "setreuid %u fail: %s", uid, strerror(errno));
+		msg(MSG_FATAL, "setreuid %u fail: %s", uid, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 }
@@ -225,7 +225,7 @@ parse_args (int argc, char **argv, struct parameters *params)
 			// Drop privileges and run as this user after initialisation.
 			pw = getpwnam(optarg);
 			if (!pw) {
-				fprintf(stderr, "unknown user '%s'\n", optarg);
+				msg(MSG_FATAL, "unknown user '%s'", optarg);
 				exit(EXIT_FAILURE);
 			}
 			params->uid = pw->pw_uid;
@@ -235,7 +235,7 @@ parse_args (int argc, char **argv, struct parameters *params)
 			// drop privileges and run as this group after initialisation.
 			gr = getgrnam(optarg);
 			if (!gr) {
-				fprintf(stderr, "unknown group '%s'\n", optarg);
+				msg(MSG_FATAL, "unknown group '%s'", optarg);
 				exit(EXIT_FAILURE);
 			}
 			params->gid = gr->gr_gid;
