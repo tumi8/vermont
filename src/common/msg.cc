@@ -24,14 +24,13 @@
 extern "C" {
 #endif
 
-	/* the maximum number of functions that will be called by the message logger thread */
-	const int MAX_LOG_FUNCTIONS = 256;
-
 	/** Maximum length of exception strings */
 	const int EXCEPTION_MAXLEN = 1024;
 
-	static int msg_level=MSG_ERROR;
-	static const char *MSG_TAB[]={ "FATAL  ", "VERMONT", "ERROR  ", "INFO   ", "DEBUG  ", "VDEBUG ", 0};
+	static int  syslog_mask = LOG_UPTO(LOG_WARNING);
+	static bool quiet = false;
+	static bool journald_enabled = false;
+	static bool syslog_enabled = false;
 
 	/*
 	   we need to serialize for msg_stat()
@@ -40,19 +39,32 @@ extern "C" {
 	static pthread_mutex_t stat_lock = PTHREAD_MUTEX_INITIALIZER;
 	static FILE *stat_file;
 
-	/* the log functions which the message logger thread calls and stuff needed for them */
-	static LOGFUNCTION log_functions[MAX_LOG_FUNCTIONS];
-	static void *log_function_params[MAX_LOG_FUNCTIONS];
-	static int num_log_functions;
-
-	/* each log_timeout, the logger thread will call all registered logging functions */
-	static struct timespec log_timeout = {
-		300, 0
-	};
-	//static pthread_t log_thread;
-
 	// mutex for logging function
 	static pthread_mutex_t msg_mutex;
+
+	static const char *level_to_string (int level)
+	{
+		switch (level) {
+		case LOG_EMERG:
+			return "EMERGENCY";
+		case LOG_ALERT:
+			return "ALERT";
+		case LOG_CRIT:
+			return "CRITICAL";
+		case LOG_ERR:
+			return "ERROR";
+		case LOG_WARNING:
+			return "WARNING";
+		case LOG_NOTICE:
+			return "NOTICE";
+		case LOG_INFO:
+			return "INFO";
+		case LOG_DEBUG:
+			return "DEBUG";
+		default:
+			return "UNKNOWN";
+		}
+	}
 
 	/**
 	 * initializes logging system
@@ -63,21 +75,32 @@ extern "C" {
 		// init the logging function's mutex
 		int retval = pthread_mutex_init(&msg_mutex, 0);
 		if (retval != 0) {
-			printf("!!! msg: pthread_mutex_init returned error code %d (%s)\n", retval, strerror(retval));
+			fprintf(stderr, "!!! msg: pthread_mutex_init returned error code %d (%s)\n", retval, strerror(retval));
 		}
 
 		// set stdout and stderr to non-buffered
 		setvbuf(stdout, NULL, _IONBF, 0);
 		setvbuf(stderr, NULL, _IONBF, 0);
+
+		if (msg_get_syslog()) {
+			setlogmask(syslog_mask);
+			openlog("vermont", LOG_PID, LOG_DAEMON);
+		}
 	}
 
 	/**
 	 * deinitializes logging function's mutex
-	 * vermont does not call this function
 	 */
 	void msg_shutdown()
 	{
-		pthread_mutex_destroy(&msg_mutex);
+		if (msg_get_syslog()) {
+			closelog();
+		}
+
+		int retval = pthread_mutex_destroy(&msg_mutex);
+		if (retval != 0) {
+			fprintf(stderr, "!!! msg: pthread_mutex_destroy returned error code %d (%s)\n", retval, strerror(retval));
+		}
 	}
 
 	/**
@@ -86,57 +109,52 @@ extern "C" {
 	 */
 	void msg_intern(char* logtext, const int level, const char* fmt, va_list* args)
 	{
+		// we must lock via mutex, else logging outputs are mixed when several
+		// threads log simultaneously
+		int retval = pthread_mutex_lock(&msg_mutex);
+		if (retval != 0) {
+			fprintf(stderr, "!!! msg: pthread_mutex_lock returned error code %d (%s)\n", retval, strerror(retval));
+		}
+		struct timeval tv;
+		gettimeofday(&tv, 0);
+		struct tm* tform = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
+
 #if defined(DEBUG)
+		// determine thread id
 		static std::map<pthread_t, int> threadids; // we want simple thread ids for logging, here is the map to do that
 		static int nothreads = 0; // how many threads access this function?
-#endif
-
-		/* nummerically higher value means lower priority */
-		if (level > msg_level) {
-			return;
+		pthread_t pt = pthread_self();
+		std::map<pthread_t, int>::iterator iter = threadids.find(pt);
+		int threadid;
+		if (iter == threadids.end()) {
+			threadid = nothreads;
+			threadids[pt] = nothreads++;
 		} else {
-			// we must lock via mutex, else logging outputs are mixed when several
-			// threads log simultaneously
-			int retval = pthread_mutex_lock(&msg_mutex);
-			if (retval != 0) printf("!!! msg: pthread_mutex_lock returned error code %d (%s)\n", retval, strerror(retval));
-			struct timeval tv;
-			gettimeofday(&tv, 0);
-			struct tm* tform = localtime(reinterpret_cast<time_t*>(&tv.tv_sec));
+			threadid = iter->second;
+		}
 
-#if defined(DEBUG)
-			// determine thread id
-			pthread_t pt = pthread_self();
-			std::map<pthread_t, int>::iterator iter = threadids.find(pt);
-			int threadid;
-			if (iter == threadids.end()) {
-				threadid = nothreads;
-				threadids[pt] = nothreads++;
-			} else {
-				threadid = iter->second;
-			}
-
-			printf("%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, MSG_TAB[level]);
+		printf("%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, level_to_string(level));
 #else
-			//printf("%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, MSG_TAB[level]);
-			// Gerhard: message level is more important than Milliseconds (at least to me)
-			printf("%02d/%02d %02d:%02d:%02d %6s", tform->tm_mday, tform->tm_mon +1, tform->tm_hour, tform->tm_min, tform->tm_sec, MSG_TAB[level]);
+		printf("%02d/%02d %02d:%02d:%02d %6s", tform->tm_mday, tform->tm_mon +1, tform->tm_hour, tform->tm_min, tform->tm_sec, level_to_string(level));
 #endif
-			// need helper variable here because va_list parameter of vprintf is undefined after function call
-			va_list my_args;
-			va_copy(my_args, *args);
-			vprintf(fmt, my_args);
-			printf("\n");
+		// need helper variable here because va_list parameter of vprintf is undefined after function call
+		va_list my_args;
+		va_copy(my_args, *args);
+		vprintf(fmt, my_args);
+		va_end(my_args);
+		printf("\n");
 
-			if (logtext != NULL) {
+		if (logtext != NULL) {
 #if defined(DEBUG)
-				snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, MSG_TAB[level]);
+			snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld[%d] %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, threadid, level_to_string(level));
 #else
-				snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, MSG_TAB[level]);
+			snprintf(logtext, EXCEPTION_MAXLEN, "%02d:%02d:%02d.%03ld %6s", tform->tm_hour, tform->tm_min, tform->tm_sec, tv.tv_usec/1000, level_to_string(level));
 #endif
-				vsnprintf(logtext, EXCEPTION_MAXLEN-strlen(logtext), fmt, *args);
-			}
-			retval = pthread_mutex_unlock(&msg_mutex);
-			if (retval != 0) printf("!!! msg: pthread_mutex_unlock returned error code %d\n", retval);
+			vsnprintf(logtext, EXCEPTION_MAXLEN-strlen(logtext), fmt, *args);
+		}
+		retval = pthread_mutex_unlock(&msg_mutex);
+		if (retval != 0) {
+			fprintf(stderr, "!!! msg: pthread_mutex_unlock returned error code %d\n", retval);
 		}
 	}
 
@@ -148,7 +166,7 @@ extern "C" {
 	{
 		va_list args;
 		va_start(args, fmt);
-		msg_intern(0, level, fmt, &args);
+		msg_intern(NULL, level, fmt, &args);
 		va_end(args);
 	}
 
@@ -185,7 +203,7 @@ extern "C" {
 	{
 		va_list args;
 		va_start(args, fmt);
-		msg_expand(0, line, filename, funcname, simplefunc, level, fmt, &args);
+		msg_expand(NULL, line, filename, funcname, simplefunc, level, fmt, &args);
 		va_end(args);
 	}
 
@@ -194,7 +212,64 @@ extern "C" {
 	 */
 	void msg_setlevel(int level)
 	{
-		msg_level=level;
+		syslog_mask=level;
+		setlogmask(level);
+	}
+
+	/**
+	 * gets verbosity level of vermont
+	 */
+	int msg_getlevel()
+	{
+		return syslog_mask;
+	}
+
+	/**
+	 * check if log to file, not to stdout/err
+	 */
+	void msg_setquiet(bool set_quiet)
+	{
+		quiet = set_quiet;
+	}
+
+	/**
+	 * check if log to file, not to stdout/err
+	 */
+	bool msg_getquiet()
+	{
+		return quiet;
+	}
+
+	/**
+	 * set whether to log to journald
+	 */
+	void msg_set_journald(bool set_journald)
+	{
+		journald_enabled = set_journald;
+	}
+
+	/**
+	 * return true if logging to journald, false otherwise
+	 */
+	bool msg_get_journald()
+	{
+		return journald_enabled;
+	}
+
+	/**
+	 * set whether to log to syslog
+	 */
+	void msg_set_syslog(bool set_syslog)
+	{
+		syslog_enabled = set_syslog;
+	}
+
+	/**
+	 * return true if logging to syslog, false otherwise
+	 */
+	bool msg_get_syslog()
+	{
+		return syslog_enabled;
 	}
 
 
@@ -240,32 +315,6 @@ extern "C" {
 	}
 
 
-	int msg_thread_add_log_function(LOGFUNCTION f, void *param)
-	{
-		int ret;
-
-		pthread_mutex_lock(&stat_lock);
-		if(num_log_functions < MAX_LOG_FUNCTIONS) {
-			log_functions[num_log_functions] = f;
-			log_function_params[num_log_functions] = param;
-			num_log_functions++;
-			ret=0;
-		} else {
-			ret=1;
-		}
-		pthread_mutex_unlock(&stat_lock);
-
-		return(ret);
-	}
-
-
-	void msg_thread_set_timeout(int ms)
-	{
-		assert(ms > 0);
-		log_timeout.tv_sec = ms / 1000;
-		log_timeout.tv_nsec = ((long)ms % 1000L) * 1000000L;
-	}
-
 	void vermont_assert(const char* expr, const char* description, int line, const char* filename, const char* prettyfuncname, const char* funcname)
 	{
 		msg_normal(MSG_ERROR, "Assertion: %s", expr);
@@ -287,54 +336,6 @@ extern "C" {
 
 		throw std::runtime_error(text);
 	}
-
-
-	/* start the logger thread with the configured log functions */
-	/*int msg_thread_start(void)
-	  {
-	  return(pthread_create(&log_thread, NULL, msg_thread, NULL));
-	  }*/
-
-
-	/* this stops the logger thread. hard. */
-	/*int msg_thread_stop(void)
-	  {
-	  return(pthread_cancel(log_thread));
-	  }*/
-
-
-	/* this is the main message logging thread */
-	/*void * msg_thread(void *arg)
-	  {
-	  int i;
-
-	  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	  while (1) {
-
-	// we use nanosleep here because nanosleep
-	// unlike sleep and usleep, is a thread cancellation point
-
-	nanosleep(&log_timeout, NULL);
-
-	// now walk through all log functions and call them
-	pthread_mutex_lock(&stat_lock);
-
-	msg_stat("Vermont: Beginning statistics dump at %u", time(NULL));
-	for(i=0; i < num_log_functions; i++) {
-	if(log_functions[i]) {
-	(log_functions[i])(log_function_params[i]);
-	}
-	}
-	// append \n to get one empty line between following dumps
-	msg_stat("Vermont: Statistics dump finished at %u\n", time(NULL));
-
-	pthread_mutex_unlock(&stat_lock);
-	}
-
-	return 0;
-	}*/
 
 #ifdef __cplusplus
 }
