@@ -169,9 +169,9 @@ usage (int status)
 			"                                Default: critical, warning, error\n"
 			" -q, --quiet                Do not write output to console (implied by -b)\n"
 			" -b, --daemon               Run in daemon mode (implies -q)\n"
-			" -p, --pid-file FILE        Set process id filename (use with -d)\n"
-			" -u, --user USER            Change user to USER (use with -d)\n"
-			" -g, --group GROUP          Change group to GROUP (use with -d)\n"
+			" -p, --pid-file FILE        Set process id filename (use with -b)\n"
+			" -u, --user USER            Change user to USER (use with -b)\n"
+			" -g, --group GROUP          Change group to GROUP (use with -b)\n"
 			" -s, --syslog               Log to syslog\n"
 #ifdef JOURNALD_SUPPORT_ENABLED
 			" -j, --journald             Log to journald\n"
