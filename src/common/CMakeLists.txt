@@ -36,6 +36,9 @@ ADD_LIBRARY(common
 	openssl/SSLCTXWrapper.cpp
 )
 
+# Copied library and just way too many abuses of this to fix
+set_source_files_properties(cryptopan/rijndael.cpp PROPERTIES COMPILE_FLAGS -Wno-strict-aliasing)
+
 add_cppcheck(common STYLE POSSIBLE_ERROR)
 
 SUBDIRS(

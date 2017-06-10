@@ -107,7 +107,7 @@ extern "C" {
 	 * internal function which logs given string via printf and returns the logged string in
 	 * parameter logtext if it is != 0
 	 */
-	void msg_intern(char* logtext, const int level, const char* fmt, va_list* args)
+	static void msg_intern(char* logtext, const int level, const char* fmt, va_list* args)
 	{
 		// we must lock via mutex, else logging outputs are mixed when several
 		// threads log simultaneously
@@ -162,7 +162,7 @@ extern "C" {
 	  used for internal logging
 	  just outputs the given string without any additions like line numbers and so on
 	  */
-	void msg_normal(const int level, const char *fmt, ...)
+	static void msg_normal(const int level, const char *fmt, ...)
 	{
 		va_list args;
 		va_start(args, fmt);
@@ -174,7 +174,7 @@ extern "C" {
 	 * expands given string with variable arguments with source file name, line and function name,
 	 * if required
 	 */
-	void msg_expand(char* logtext, const int line, const char* filename, const char* funcname, const char* simplefunc, const int level, const char *fmt, va_list* args)
+	static void msg_expand(char* logtext, const int line, const char* filename, const char* funcname, const char* simplefunc, const int level, const char *fmt, va_list* args)
 	{
 		std::stringstream fmtnew;
 

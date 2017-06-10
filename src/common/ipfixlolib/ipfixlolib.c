@@ -42,6 +42,7 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdbool.h>
@@ -1315,9 +1316,6 @@ static int valid_transport_protocol(enum ipfix_transport_protocol p) {
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT 
 	case RAWDIR:
 	    return 1;
-#else
-	    msg(MSG_FATAL, "Library compiled without RAWDIR support.");
-	    return 0;
 #endif 
 
 	case TCP:
