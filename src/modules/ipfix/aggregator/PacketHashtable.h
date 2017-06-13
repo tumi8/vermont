@@ -36,7 +36,7 @@ class PacketHashtable : public BaseHashtable
 {
 public:
 	PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
-			uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits);
+			uint16_t inactiveTimeout, uint16_t activeTimeout, uint8_t hashbits);
 	virtual ~PacketHashtable();
 
 	void aggregatePacket(Packet* p);

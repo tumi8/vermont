@@ -44,8 +44,8 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 				rules->rule[rules->count++] = r;
 		} else if (e->matches("expiration")) {
 			// get the time values or set them to '0' if they are not specified
-			maxBufferTime = getTimeInUnit("activeTimeout", SEC, 0, e);
-			minBufferTime = getTimeInUnit("inactiveTimeout", SEC, 0, e);
+			activeTimeout = getTimeInUnit("activeTimeout", SEC, 0, e);
+			inactiveTimeout = getTimeInUnit("inactiveTimeout", SEC, 0, e);
 		} else if (e->matches("pollInterval")) {
 			pollInterval = getTimeInUnit("pollInterval", mSEC, AGG_DEFAULT_POLLING_TIME);
 		} else if (e->matches("hashtableBits")) {
@@ -226,8 +226,8 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 }
 
 bool AggregatorBaseCfg::equalTo(AggregatorBaseCfg *other) {
-	if (maxBufferTime != other->maxBufferTime) return false;
-	if (minBufferTime != other->minBufferTime) return false;
+	if (activeTimeout != other->activeTimeout) return false;
+	if (inactiveTimeout != other->inactiveTimeout) return false;
 	if (pollInterval != other->pollInterval) return false;
 	if (htableBits != other->htableBits) return false;
 	if (*rules != *other->rules) return false;

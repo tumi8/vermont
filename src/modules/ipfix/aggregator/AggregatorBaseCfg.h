@@ -42,8 +42,8 @@ protected:
 	static Rule::Field* readFlowKeyRule(XMLElement* e);
 	static Rule::Field* readNonFlowKeyRule(XMLElement* e);
 
-	unsigned maxBufferTime;	
-	unsigned minBufferTime;
+	unsigned activeTimeout;	
+	unsigned inactiveTimeout;
 	unsigned pollInterval;
 	uint8_t htableBits;
 

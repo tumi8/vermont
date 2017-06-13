@@ -121,36 +121,36 @@ void BaseAggregator::postReconfiguration()
 /**
  * initializes aggregator module and creates hashtable
  * @param rulefile filename with rules to import
- * @param minBufferTime minimum buffer time for flows in hashtable
- * @param maxBufferTime maximum buffer time for flows in hashtable
+ * @param inactiveTimeout minimum buffer time for flows in hashtable
+ * @param activeTimeout maximum buffer time for flows in hashtable
  */
-void BaseAggregator::buildAggregator(char* rulefile, uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
+void BaseAggregator::buildAggregator(char* rulefile, uint16_t inactiveTimeout, uint16_t activeTimeout, uint8_t hashbits)
 {
 	Rules* rules = new Rules(rulefile);
 
 	if (!rules) {
 		THROWEXCEPTION("could not parse rules file %s", rulefile);
 	}
-	buildAggregator(rules, minBufferTime, maxBufferTime, hashbits);
+	buildAggregator(rules, inactiveTimeout, activeTimeout, hashbits);
 }
 
 
 /**
  * initializes aggregator module and creates hashtable
  * @param rules rules to use for creation of hashtables
- * @param minBufferTime minimum buffer time for flows in hashtable
- * @param maxBufferTime maximum buffer time for flows in hashtable
+ * @param inactiveTimeout minimum buffer time for flows in hashtable
+ * @param activeTimeout maximum buffer time for flows in hashtable
  */
-void BaseAggregator::buildAggregator(Rules* rules, uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
+void BaseAggregator::buildAggregator(Rules* rules, uint16_t inactiveTimeout, uint16_t activeTimeout, uint8_t hashbits)
 {
 	this->rules = rules;
 
 	for (size_t i = 0; i < rules->count; i++) {
 		rules->rule[i]->initialize();
-		rules->rule[i]->hashtable = createHashtable(rules->rule[i], minBufferTime, maxBufferTime, hashbits);
+		rules->rule[i]->hashtable = createHashtable(rules->rule[i], inactiveTimeout, activeTimeout, hashbits);
 	}
 
-	msg(MSG_INFO, "Done. Parsed %d rules; minBufferTime %d, maxBufferTime %d", rules->count, minBufferTime, maxBufferTime);
+	msg(MSG_INFO, "Done. Parsed %d rules; inactiveTimeout %d, activeTimeout %d", rules->count, inactiveTimeout, activeTimeout);
 }
 
 

@@ -42,7 +42,7 @@ PacketAggregatorCfg* PacketAggregatorCfg::create(XMLElement* elem)
 PacketAggregator* PacketAggregatorCfg::createInstance()
 {
 	instance = new PacketAggregator(pollInterval);
-	instance->buildAggregator(rules, minBufferTime, maxBufferTime, htableBits);
+	instance->buildAggregator(rules, inactiveTimeout, activeTimeout, htableBits);
 
 	return instance;
 }

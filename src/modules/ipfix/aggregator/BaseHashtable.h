@@ -58,8 +58,8 @@ class BaseHashtable : public Sensor
 {
 public:
 
-	BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, uint16_t minBufferTime,
-			uint16_t maxBufferTime, uint8_t hashbits);
+	BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, uint16_t inactiveTimeout,
+			uint16_t activeTimeout, uint8_t hashbits);
 
 	virtual ~BaseHashtable();
 
@@ -127,8 +127,8 @@ protected:
 	uint32_t htableBits;
 	uint32_t htableSize;
 
-	uint16_t minBufferTime; /**< If for a buffered flow no new aggregatable flows arrive for this many seconds, export it */
-	uint16_t maxBufferTime; /**< If a buffered flow was kept buffered for this many seconds, export it */
+	uint16_t inactiveTimeout; /**< If for a buffered flow no new aggregatable flows arrive for this many seconds, export it */
+	uint16_t activeTimeout; /**< If a buffered flow was kept buffered for this many seconds, export it */
 
 	uint32_t statRecordsReceived; /**< number of records received from other modules, used for statistics */
 	uint32_t statRecordsSent; /**< number records sent to next module, used for statistics */

@@ -338,12 +338,12 @@ uint32_t Connection::getHash(bool to, uint32_t maxval)
 
 /**
  * aggregates fields from given connection into this connection
- * @param expireTime seconds until this connection expires
+ * @param inactiveExpireTime seconds until this connection expires
  * @param to true if this connection has to be aggregated in direction src->dst or false if reverse
  */
-void Connection::aggregate(Connection* c, uint32_t expireTime, bool to)
+void Connection::aggregate(Connection* c, uint32_t inactiveExpireTime, bool to)
 {
-	timeExpire = time(0) + expireTime;
+	timeExpire = time(0) + inactiveExpireTime;
 
 	if (to) {
 		srcOctets += c->srcOctets;

@@ -31,8 +31,8 @@
 
 
 FlowHashtable::FlowHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
-		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
-	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits)
+		uint16_t inactiveTimeout, uint16_t activeTimeout, uint8_t hashbits)
+	: BaseHashtable(recordsource, rule, inactiveTimeout, activeTimeout, hashbits)
 {
 }
 
@@ -470,16 +470,16 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 		// flows that overlap with the active timeouts: 
 		// assign all counters to the first flow. Hence we do 
 		// not need to check whether the flow overlaps (i.e
-		// flowStartTimeSeconds < bucket->expireTime and flowEndSeconds > bucket->expireTime)
-		if (unix_now.tv_sec > bucket->expireTime || unix_now.tv_sec > bucket->forceExpireTime){
+		// flowStartTimeSeconds < bucket->inactiveExpireTime and flowEndSeconds > bucket->inactiveExpireTime)
+		if (unix_now.tv_sec > bucket->inactiveExpireTime || unix_now.tv_sec > bucket->activeExpireTime){
 			expiryforced = true;
 			bucket->forceExpiry = true;
 			removeBucket(bucket);
 		} else {
 			flowfound = true;
 			aggregateFlow(bucket->data.get(), data.get(), false);
-			bucket->expireTime = unix_now.tv_sec + minBufferTime;
-			if (bucket->forceExpireTime>bucket->expireTime) {
+			bucket->inactiveExpireTime = unix_now.tv_sec + inactiveTimeout;
+			if (bucket->activeExpireTime>bucket->inactiveExpireTime) {
 				exportList.remove(bucket->listNode);
 				exportList.push(bucket->listNode);
 				removeBucket(bucket);
@@ -492,7 +492,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 		DPRINTFL(MSG_VDEBUG, "rhash=%u", rhash);
 		bucket = lookupBucket(rhash, data.get(), true, &prevbucket);
 		if (bucket != NULL) {
-			if (unix_now.tv_sec > bucket->expireTime || unix_now.tv_sec > bucket->forceExpireTime) {
+			if (unix_now.tv_sec > bucket->inactiveExpireTime || unix_now.tv_sec > bucket->activeExpireTime) {
 				bucket->forceExpiry = true;
 				expiryforced = true;
 				removeBucket(bucket);
@@ -521,8 +521,8 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 					buckets[nhash] = bucket;
 					bucket->prev = 0;
 					if (bucket->next != NULL) bucket->next->prev = bucket;
-					bucket->expireTime = unix_now.tv_sec + minBufferTime;
-					if (bucket->forceExpireTime>bucket->expireTime) {
+					bucket->inactiveExpireTime = unix_now.tv_sec + inactiveTimeout;
+					if (bucket->activeExpireTime>bucket->inactiveExpireTime) {
 						exportList.remove(bucket->listNode);
 						exportList.push(bucket->listNode);
 						removeBucket(bucket);
