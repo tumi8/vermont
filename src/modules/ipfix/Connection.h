@@ -102,7 +102,7 @@ class Connection
 		string printTcpControlBits(uint16_t bits);
 		bool compareTo(Connection* c, bool to);
 		uint32_t getHash(bool to, uint32_t maxval);
-		void aggregate(Connection* c, uint32_t expireTime, bool to);
+		void aggregate(Connection* c, uint32_t inactiveExpireTime, bool to);
 		void swapDataFields();
 		bool swapIfNeeded();
 

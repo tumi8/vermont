@@ -20,6 +20,7 @@
  */
 
 #include "BaseHashtable.h"
+#include "common/Time.h"
 
 #include <sstream>
 #include <stdint.h>
@@ -31,14 +32,14 @@ using namespace std;
  * Creates and initializes a new hashtable buffer for flows matching @c rule
  */
 BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
-		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
+		uint16_t inactiveTimeout, uint16_t activeTimeout, uint8_t hashbits)
 	: biflowAggregation(rule->biflowAggregation),
 	  revKeyMapper(NULL),
 	  switchArray(NULL),
 	  htableBits(hashbits),
 	  htableSize(1<<hashbits),
-	  minBufferTime(minBufferTime),
-	  maxBufferTime(maxBufferTime),
+	  inactiveTimeout(inactiveTimeout),
+	  activeTimeout(activeTimeout),
 	  statRecordsReceived(0),
 	  statRecordsSent(0),
 	  statTotalEntries(0),
@@ -56,8 +57,8 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  aggInProgress(false)
 {
 	msg(MSG_INFO, "Hashtable initialized with following parameters:");
-	msg(MSG_INFO, "  - minBufferTime=%d", minBufferTime);
-	msg(MSG_INFO, "  - maxBufferTime=%d", maxBufferTime);
+	msg(MSG_INFO, "  - inactiveTimeout=%d", inactiveTimeout);
+	msg(MSG_INFO, "  - activeTimeout=%d", activeTimeout);
 	msg(MSG_INFO, "  - htableBits=%d", hashbits);
 
 	buckets = new HashtableBucket*[htableSize];
@@ -226,11 +227,11 @@ BaseHashtable::~BaseHashtable()
  * Initializes memory for a new bucket in @c ht containing @c data
  */
 HashtableBucket* BaseHashtable::createBucket(boost::shared_array<IpfixRecord::Data> data,
-		uint32_t obsdomainid, HashtableBucket* next, HashtableBucket* prev, uint32_t hash, uint32_t flowStartTime)
+		uint32_t obsdomainid, HashtableBucket* next, HashtableBucket* prev, uint32_t hash, time_t now)
 {
 	HashtableBucket* bucket = new HashtableBucket();
-	bucket->expireTime = flowStartTime + minBufferTime;
-	bucket->forceExpireTime = flowStartTime + maxBufferTime;
+	bucket->inactiveExpireTime = now + inactiveTimeout;
+	bucket->activeExpireTime = now + activeTimeout;
 	bucket->data = data;
 	bucket->next = next;
 	bucket->prev = prev;
@@ -306,6 +307,7 @@ void BaseHashtable::expireFlows(bool all)
 
 	HashtableBucket* bucket = 0;
 	BucketListElement* node = 0;
+	timeval unix_now = unixtime();
 
 	if (!exportList.isEmpty) {
 		while (exportList.head) { //check the first entry in the BucketList
@@ -314,10 +316,10 @@ void BaseHashtable::expireFlows(bool all)
 			// TODO: change this one list to two lists: one for active, one for passive timeout
 			// problem here: flows with active timeout may be exported passive timeout seconds too late
 			// now must be updated by the child classes
-			if ((bucket->expireTime < now) || (bucket->forceExpireTime < now) || all) {
-				if (now > bucket->forceExpireTime) {
+			if ((bucket->inactiveExpireTime <= unix_now.tv_sec) || (bucket->activeExpireTime <= unix_now.tv_sec) || all) {
+				if (unix_now.tv_sec >= bucket->activeExpireTime) {
 					DPRINTF("expireFlows: forced expiry");
-				} else if (now > bucket->expireTime) {
+				} else if (unix_now.tv_sec >= bucket->inactiveExpireTime) {
 					DPRINTF("expireFlows: normal expiry");
 				}
 				if (bucket->inTable) removeBucket(bucket);

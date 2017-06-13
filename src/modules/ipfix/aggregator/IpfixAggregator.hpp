@@ -43,8 +43,8 @@ public:
 	virtual void onDataRecord(IpfixDataRecord* record);
 
 protected:
-	BaseHashtable* createHashtable(Rule* rule, uint16_t minBufferTime, 
-			uint16_t maxBufferTime, uint8_t hashbits);
+	BaseHashtable* createHashtable(Rule* rule, uint16_t inactiveTimeout, 
+			uint16_t activeTimeout, uint8_t hashbits);
 };
 
 #endif

@@ -36,8 +36,8 @@ using namespace InformationElement;
 const uint32_t PacketHashtable::ExpHelperTable::UNUSED = 0xFFFFFFFF;
 
 PacketHashtable::PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
-		uint16_t minBufferTime, uint16_t maxBufferTime, uint8_t hashbits)
-	: BaseHashtable(recordsource, rule, minBufferTime, maxBufferTime, hashbits),
+		uint16_t inactiveTimeout, uint16_t activeTimeout, uint8_t hashbits)
+	: BaseHashtable(recordsource, rule, inactiveTimeout, activeTimeout, hashbits),
 	snapshotWritten(false)
 {
 	buildExpHelperTable();
@@ -1342,9 +1342,10 @@ void PacketHashtable::aggregateFlow(HashtableBucket* bucket, const Packet* p, bo
 		}
 	}
 	if (!bucket->forceExpiry) {
-		bucket->expireTime = now + minBufferTime;
+		timeval unix_now = unixtime();
+		bucket->inactiveExpireTime = unix_now.tv_sec + inactiveTimeout;
 
-		if (bucket->forceExpireTime>bucket->expireTime) {
+		if (bucket->activeExpireTime>bucket->inactiveExpireTime) {
 			exportList.remove(bucket->listNode);
 			exportList.push(bucket->listNode);
 		}
@@ -1498,7 +1499,7 @@ void PacketHashtable::updateBucketData(HashtableBucket* bucket)
  */
 bool PacketHashtable::mustExpireBucket(const HashtableBucket* bucket, const Packet* p)
 {
-	if (p->timestamp.tv_sec > bucket->expireTime || p->timestamp.tv_sec > bucket->forceExpireTime) {
+	if (p->timestamp.tv_sec > bucket->inactiveExpireTime || p->timestamp.tv_sec > bucket->activeExpireTime) {
 		return true;
 	}
 	return false;
@@ -1520,8 +1521,6 @@ void PacketHashtable::aggregatePacket(Packet* p)
 		req.tv_nsec = 50000000;
 		nanosleep(&req, &req);
 	}
-
-	now = p->timestamp.tv_sec;
 
 	DPRINTF("PacketHashtable::aggregatePacket()");
 	updatePointers(p);

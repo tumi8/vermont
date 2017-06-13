@@ -58,8 +58,8 @@ class BaseHashtable : public Sensor
 {
 public:
 
-	BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, uint16_t minBufferTime,
-			uint16_t maxBufferTime, uint8_t hashbits);
+	BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule, uint16_t inactiveTimeout,
+			uint16_t activeTimeout, uint8_t hashbits);
 
 	virtual ~BaseHashtable();
 
@@ -127,10 +127,8 @@ protected:
 	uint32_t htableBits;
 	uint32_t htableSize;
 
-	uint32_t now; /**< Current time stamp that is used for flow timeouts */
-
-	uint16_t minBufferTime; /**< If for a buffered flow no new aggregatable flows arrive for this many seconds, export it */
-	uint16_t maxBufferTime; /**< If a buffered flow was kept buffered for this many seconds, export it */
+	uint16_t inactiveTimeout; /**< If for a buffered flow no new aggregatable flows arrive for this many seconds, export it */
+	uint16_t activeTimeout; /**< If a buffered flow was kept buffered for this many seconds, export it */
 
 	uint32_t statRecordsReceived; /**< number of records received from other modules, used for statistics */
 	uint32_t statRecordsSent; /**< number records sent to next module, used for statistics */
@@ -157,7 +155,7 @@ protected:
 
 	int isToBeAggregated(InformationElement::IeInfo& type);
 	HashtableBucket* createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid,
-		HashtableBucket* next, HashtableBucket* prev, uint32_t hash, uint32_t flowStartTime);
+		HashtableBucket* next, HashtableBucket* prev, uint32_t hash, time_t now);
 	void exportBucket(HashtableBucket* bucket);
 	void destroyBucket(HashtableBucket* bucket);
 	void createDataTemplate(Rule* rule);
