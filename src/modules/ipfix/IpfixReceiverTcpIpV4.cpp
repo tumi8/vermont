@@ -41,8 +41,9 @@
  * Does TCP/IPv4 specific initialization.
  * @param port Port to listen on
  */
-IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr, const uint32_t buffer)
-	: statReceivedMessages(0) 
+IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr,
+		const uint32_t buffer, unsigned int moduleId)
+	: statReceivedMessages(0), moduleId(moduleId)
 {
 	receiverPort = port;
 	
@@ -75,7 +76,8 @@ IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr, const u
 		THROWEXCEPTION("Cannot create IpfixReceiverTcpIpV4");
 	}
 
-	SensorManager::getInstance().addSensor(this, "IpfixReceiverTCPIpV4", 0);
+	SensorManager::getInstance().addSensor(this, "IpfixReceiverTCPIpV4",
+			moduleId);
 
 	msg(MSG_INFO, "TCP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
