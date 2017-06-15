@@ -82,27 +82,28 @@ void vermont_exception(const int, const char*, const char*, const char*, const c
 	({ \
 		if (msg_getlevel() & LOG_MASK(MSG_FATAL)) { \
 			if (msg_get_syslog()) { \
-				syslog(MSG_FATAL, ##__VA_ARGS__); \
+				syslog(MSG_FATAL, __VA_ARGS__); \
 			} \
 			if (msg_get_journald()) { \
-				sd_journal_print(MSG_FATAL, ##__VA_ARGS__); \
+				sd_journal_print(MSG_FATAL, __VA_ARGS__); \
 			} \
 		} \
-		vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, ##__VA_ARGS__); \
+		vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, __VA_ARGS__); \
 	})
 
-#define msg(lvl, ...) \
+#define msg(...) _msg_helper(__VA_ARGS__)
+#define _msg_helper(lvl, ...) \
 	__extension__ \
 	({ \
 		if (msg_getlevel() & LOG_MASK(lvl)) { \
 			if (msg_get_syslog()) { \
-				syslog(lvl, ##__VA_ARGS__); \
+				syslog(lvl, __VA_ARGS__); \
 			} \
 			if (msg_get_journald()) { \
-				sd_journal_print(lvl, ##__VA_ARGS__); \
+				sd_journal_print(lvl, __VA_ARGS__); \
 			} \
 			if (!msg_getquiet()) { \
-				msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, ##__VA_ARGS__); \
+				msg2(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, lvl, __VA_ARGS__); \
 			} \
 		} \
 	})

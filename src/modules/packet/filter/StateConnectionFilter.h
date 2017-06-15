@@ -18,7 +18,7 @@
  *
  */
 
-#ifndef _STATE_CONNECITON_FILTER_H_
+#ifndef _STATE_CONNECTION_FILTER_H_
 #define _STATE_CONNECTION_FILTER_H_
 
 #include <modules/packet/filter//PacketProcessor.h>

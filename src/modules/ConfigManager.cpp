@@ -62,8 +62,6 @@
 
 #include <cassert>
 
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
-
 // we create a static array of all root config entrys so that we don't
 // need to hardcode the config entry name in here. Instead, we just ask the
 // module instances if they handle the specific entry.
