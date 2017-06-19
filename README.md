@@ -32,9 +32,7 @@ The following packages are optional:
  - libczmq-dev (for receiving IPFIX reports over ZMQ)
     ==> cmake option SUPPORT_ZMQ
 
-For DTLS support, OpenSSL 1.0.0 or higher is required. It is recommended 
-to build OpenSSL based on the latest CVS revision. See DTLS instructions below.
-
+For DTLS support, OpenSSL 1.0.0 is required.
 
 ## BUILDING AND INSTALLATION
 
@@ -83,63 +81,17 @@ $ make install
 
 ### BUILDING WITH DTLS-OVER-UDP SUPPORT
 
-VERMONT's DTLS support is based on OpenSSL version 1.0.0 (and maybe higher). 
+VERMONT's DTLS support is based on OpenSSL version 1.0.0. OpenSSL 1.1.0 is not currently supported.
 
-Since the DTLS implementation in OpenSSL is fairly new and not as mature as 
-the TLS/SSL implementation, you should use the latest version of OpenSSL which 
-you can get from http://openssl.org/source/.
-
-At the time of writing (July 2010), the latest version is 1.0.0a.
+In order to compile VERMONT with DTLS-over-UDP support set the following option:
 ``` shell
-$ wget http://openssl.org/source/openssl-1.0.0a.tar.gz
-$ tar xzf openssl-1.0.0a.tar.gz
-$ cd openssl-1.0.0a/
+$ cmake -DSUPPORT_DTLS=YES
 ```
 
-If you want to profit from the most recent bugfixes, you can check out the 
-sources from the OpenSSL CVS repository instead:
-``` shell
-$ cvs -z9 -d anonymous@cvs.openssl.org:/openssl-cvs co openssl
-$ cd openssl/
-
+If CMake does not find OPENSSL you can explicitly specify the include and library paths:
 ```
-
-In order to avoid incompatibilities with other packages of your distribution,
-you probably do not want the new version of OpenSSL to become the default 
-OpenSSL library on your system. Therefore, it is recommended to install the 
-new version in a local directory by using the --prefix option of the config
-script.
-
-To build OpenSSL and install it into a built/ subdirectory within the OpenSSL
-source directory, call the following commands:
-``` shell
-$ ./config -d no-dso no-shared --prefix=`pwd`/built
-$ make 
-$ make install
+cmake -DSUPPORT_DTLS=YES -DCMAKE_INCLUDE_PATH=/path/to/openssl/include -DCMAKE_LIBRARY_PATH=/path/to/openssl/lib
 ```
-
-The configure option "no-dso" turns off the use of shared-library methods which 
-avoids linking problems related to libdl on the Linux platform.
-With the option "no-shared", only static libraries are built which makes it 
-easier to link VERMONT to the correct version of OpenSSL.
-
-In order to compile VERMONT with DTLS-over-UDP support, change into the root
-of VERMONT's source directory and execute cmake with the OpenSSL include and 
-library paths (replace "/path/to/openssl" by your OpenSSL source directory):
-``` shell
-$ cmake -DSUPPORT_DTLS=YES -DCMAKE_INCLUDE_PATH=/path/to/openssl/built/include -DCMAKE_LIBRARY_PATH=/path/to/openssl/built/lib
-```
-
-On 64 bit platforms, the library path might be different (mind the "64" at the 
-very end!):
-``` shell
-$ cmake -DSUPPORT_DTLS=YES -DCMAKE_INCLUDE_PATH=/path/to/openssl/built/include -DCMAKE_LIBRARY_PATH=/path/to/openssl/built/lib64
-```
-
-If you have previously built VERMONT with OpenSSL located in another 
-directory, you might need to manually remove the file CMakeCache.txt before 
-calling cmake.
-
 
 ### BUILDING WITH DTLS-OVER-SCTP SUPPORT
 
