@@ -1,23 +1,3 @@
-/*
- * IPFIX Information Elements registered by IANA
- * Copyright (C) 2014 Oliver Gasser
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
- */
-
 #ifndef IPFIX_IANA_H
 #define IPFIX_IANA_H
 
@@ -304,7 +284,7 @@
 #define IPFIX_TYPEID_exporterCertificate                      275
 #define IPFIX_TYPEID_dataRecordsReliability                   276
 #define IPFIX_TYPEID_observationPointType                     277
-#define IPFIX_TYPEID_connectionCountNew                       278
+#define IPFIX_TYPEID_newConnectionDeltaCount                  278
 #define IPFIX_TYPEID_connectionSumDurationSeconds             279
 #define IPFIX_TYPEID_connectionTransactionId                  280
 #define IPFIX_TYPEID_postNATSourceIPv6Address                 281
@@ -458,6 +438,43 @@
 #define IPFIX_TYPEID_layer2FrameTotalCount                    431
 #define IPFIX_TYPEID_pseudoWireDestinationIPv4Address         432
 #define IPFIX_TYPEID_ignoredLayer2FrameTotalCount             433
+#define IPFIX_TYPEID_mibObjectValueInteger                    434
+#define IPFIX_TYPEID_mibObjectValueOctetString                435
+#define IPFIX_TYPEID_mibObjectValueOID                        436
+#define IPFIX_TYPEID_mibObjectValueBits                       437
+#define IPFIX_TYPEID_mibObjectValueIPAddress                  438
+#define IPFIX_TYPEID_mibObjectValueCounter                    439
+#define IPFIX_TYPEID_mibObjectValueGauge                      440
+#define IPFIX_TYPEID_mibObjectValueTimeTicks                  441
+#define IPFIX_TYPEID_mibObjectValueUnsigned                   442
+#define IPFIX_TYPEID_mibObjectValueTable                      443
+#define IPFIX_TYPEID_mibObjectValueRow                        444
+#define IPFIX_TYPEID_mibObjectIdentifier                      445
+#define IPFIX_TYPEID_mibSubIdentifier                         446
+#define IPFIX_TYPEID_mibIndexIndicator                        447
+#define IPFIX_TYPEID_mibCaptureTimeSemantics                  448
+#define IPFIX_TYPEID_mibContextEngineID                       449
+#define IPFIX_TYPEID_mibContextName                           450
+#define IPFIX_TYPEID_mibObjectName                            451
+#define IPFIX_TYPEID_mibObjectDescription                     452
+#define IPFIX_TYPEID_mibObjectSyntax                          453
+#define IPFIX_TYPEID_mibModuleName                            454
+#define IPFIX_TYPEID_mobileIMSI                               455
+#define IPFIX_TYPEID_mobileMSISDN                             456
+#define IPFIX_TYPEID_httpStatusCode                           457
+#define IPFIX_TYPEID_sourceTransportPortsLimit                458
+#define IPFIX_TYPEID_httpRequestMethod                        459
+#define IPFIX_TYPEID_httpRequestHost                          460
+#define IPFIX_TYPEID_httpRequestTarget                        461
+#define IPFIX_TYPEID_httpMessageVersion                       462
+#define IPFIX_TYPEID_natInstanceID                            463
+#define IPFIX_TYPEID_internalAddressRealm                     464
+#define IPFIX_TYPEID_externalAddressRealm                     465
+#define IPFIX_TYPEID_natQuotaExceededEvent                    466
+#define IPFIX_TYPEID_natThresholdEvent                        467
+#define IPFIX_TYPEID_httpUserAgent                            468
+#define IPFIX_TYPEID_httpContentType                          469
+#define IPFIX_TYPEID_httpReasonPhrase                         470
 
 #define IPFIX_LENGTH_octetDeltaCount                          IPFIX_BYTES_unsigned64
 #define IPFIX_LENGTH_packetDeltaCount                         IPFIX_BYTES_unsigned64
@@ -692,7 +709,7 @@
 #define IPFIX_LENGTH_exporterCertificate                      IPFIX_BYTES_octetArray
 #define IPFIX_LENGTH_dataRecordsReliability                   IPFIX_BYTES_boolean
 #define IPFIX_LENGTH_observationPointType                     IPFIX_BYTES_unsigned8
-#define IPFIX_LENGTH_connectionCountNew                       IPFIX_BYTES_unsigned32
+#define IPFIX_LENGTH_newConnectionDeltaCount                  IPFIX_BYTES_unsigned32
 #define IPFIX_LENGTH_connectionSumDurationSeconds             IPFIX_BYTES_unsigned64
 #define IPFIX_LENGTH_connectionTransactionId                  IPFIX_BYTES_unsigned64
 #define IPFIX_LENGTH_postNATSourceIPv6Address                 IPFIX_BYTES_ipv6Address
@@ -846,6 +863,43 @@
 #define IPFIX_LENGTH_layer2FrameTotalCount                    IPFIX_BYTES_unsigned64
 #define IPFIX_LENGTH_pseudoWireDestinationIPv4Address         IPFIX_BYTES_ipv4Address
 #define IPFIX_LENGTH_ignoredLayer2FrameTotalCount             IPFIX_BYTES_unsigned64
+#define IPFIX_LENGTH_mibObjectValueInteger                    IPFIX_BYTES_signed32
+#define IPFIX_LENGTH_mibObjectValueOctetString                IPFIX_BYTES_octetArray
+#define IPFIX_LENGTH_mibObjectValueOID                        IPFIX_BYTES_octetArray
+#define IPFIX_LENGTH_mibObjectValueBits                       IPFIX_BYTES_octetArray
+#define IPFIX_LENGTH_mibObjectValueIPAddress                  IPFIX_BYTES_ipv4Address
+#define IPFIX_LENGTH_mibObjectValueCounter                    IPFIX_BYTES_unsigned64
+#define IPFIX_LENGTH_mibObjectValueGauge                      IPFIX_BYTES_unsigned32
+#define IPFIX_LENGTH_mibObjectValueTimeTicks                  IPFIX_BYTES_unsigned32
+#define IPFIX_LENGTH_mibObjectValueUnsigned                   IPFIX_BYTES_unsigned32
+#define IPFIX_LENGTH_mibObjectValueTable                      IPFIX_BYTES_subTemplateList
+#define IPFIX_LENGTH_mibObjectValueRow                        IPFIX_BYTES_subTemplateList
+#define IPFIX_LENGTH_mibObjectIdentifier                      IPFIX_BYTES_octetArray
+#define IPFIX_LENGTH_mibSubIdentifier                         IPFIX_BYTES_unsigned32
+#define IPFIX_LENGTH_mibIndexIndicator                        IPFIX_BYTES_unsigned64
+#define IPFIX_LENGTH_mibCaptureTimeSemantics                  IPFIX_BYTES_unsigned8
+#define IPFIX_LENGTH_mibContextEngineID                       IPFIX_BYTES_octetArray
+#define IPFIX_LENGTH_mibContextName                           IPFIX_BYTES_string
+#define IPFIX_LENGTH_mibObjectName                            IPFIX_BYTES_string
+#define IPFIX_LENGTH_mibObjectDescription                     IPFIX_BYTES_string
+#define IPFIX_LENGTH_mibObjectSyntax                          IPFIX_BYTES_string
+#define IPFIX_LENGTH_mibModuleName                            IPFIX_BYTES_string
+#define IPFIX_LENGTH_mobileIMSI                               IPFIX_BYTES_string
+#define IPFIX_LENGTH_mobileMSISDN                             IPFIX_BYTES_string
+#define IPFIX_LENGTH_httpStatusCode                           IPFIX_BYTES_unsigned16
+#define IPFIX_LENGTH_sourceTransportPortsLimit                IPFIX_BYTES_unsigned16
+#define IPFIX_LENGTH_httpRequestMethod                        IPFIX_BYTES_string
+#define IPFIX_LENGTH_httpRequestHost                          IPFIX_BYTES_string
+#define IPFIX_LENGTH_httpRequestTarget                        IPFIX_BYTES_string
+#define IPFIX_LENGTH_httpMessageVersion                       IPFIX_BYTES_string
+#define IPFIX_LENGTH_natInstanceID                            IPFIX_BYTES_unsigned32
+#define IPFIX_LENGTH_internalAddressRealm                     IPFIX_BYTES_octetArray
+#define IPFIX_LENGTH_externalAddressRealm                     IPFIX_BYTES_octetArray
+#define IPFIX_LENGTH_natQuotaExceededEvent                    IPFIX_BYTES_unsigned32
+#define IPFIX_LENGTH_natThresholdEvent                        IPFIX_BYTES_unsigned32
+#define IPFIX_LENGTH_httpUserAgent                            IPFIX_BYTES_string
+#define IPFIX_LENGTH_httpContentType                          IPFIX_BYTES_string
+#define IPFIX_LENGTH_httpReasonPhrase                         IPFIX_BYTES_string
 
 #define IPFIX_DATA_TYPE_octetDeltaCount                          IPFIX_TYPE_unsigned64
 #define IPFIX_DATA_TYPE_packetDeltaCount                         IPFIX_TYPE_unsigned64
@@ -1080,7 +1134,7 @@
 #define IPFIX_DATA_TYPE_exporterCertificate                      IPFIX_TYPE_octetArray
 #define IPFIX_DATA_TYPE_dataRecordsReliability                   IPFIX_TYPE_boolean
 #define IPFIX_DATA_TYPE_observationPointType                     IPFIX_TYPE_unsigned8
-#define IPFIX_DATA_TYPE_connectionCountNew                       IPFIX_TYPE_unsigned32
+#define IPFIX_DATA_TYPE_newConnectionDeltaCount                  IPFIX_TYPE_unsigned32
 #define IPFIX_DATA_TYPE_connectionSumDurationSeconds             IPFIX_TYPE_unsigned64
 #define IPFIX_DATA_TYPE_connectionTransactionId                  IPFIX_TYPE_unsigned64
 #define IPFIX_DATA_TYPE_postNATSourceIPv6Address                 IPFIX_TYPE_ipv6Address
@@ -1234,6 +1288,50 @@
 #define IPFIX_DATA_TYPE_layer2FrameTotalCount                    IPFIX_TYPE_unsigned64
 #define IPFIX_DATA_TYPE_pseudoWireDestinationIPv4Address         IPFIX_TYPE_ipv4Address
 #define IPFIX_DATA_TYPE_ignoredLayer2FrameTotalCount             IPFIX_TYPE_unsigned64
+#define IPFIX_DATA_TYPE_mibObjectValueInteger                    IPFIX_TYPE_signed32
+#define IPFIX_DATA_TYPE_mibObjectValueOctetString                IPFIX_TYPE_octetArray
+#define IPFIX_DATA_TYPE_mibObjectValueOID                        IPFIX_TYPE_octetArray
+#define IPFIX_DATA_TYPE_mibObjectValueBits                       IPFIX_TYPE_octetArray
+#define IPFIX_DATA_TYPE_mibObjectValueIPAddress                  IPFIX_TYPE_ipv4Address
+#define IPFIX_DATA_TYPE_mibObjectValueCounter                    IPFIX_TYPE_unsigned64
+#define IPFIX_DATA_TYPE_mibObjectValueGauge                      IPFIX_TYPE_unsigned32
+#define IPFIX_DATA_TYPE_mibObjectValueTimeTicks                  IPFIX_TYPE_unsigned32
+#define IPFIX_DATA_TYPE_mibObjectValueUnsigned                   IPFIX_TYPE_unsigned32
+#define IPFIX_DATA_TYPE_mibObjectValueTable                      IPFIX_TYPE_subTemplateList
+#define IPFIX_DATA_TYPE_mibObjectValueRow                        IPFIX_TYPE_subTemplateList
+#define IPFIX_DATA_TYPE_mibObjectIdentifier                      IPFIX_TYPE_octetArray
+#define IPFIX_DATA_TYPE_mibSubIdentifier                         IPFIX_TYPE_unsigned32
+#define IPFIX_DATA_TYPE_mibIndexIndicator                        IPFIX_TYPE_unsigned64
+#define IPFIX_DATA_TYPE_mibCaptureTimeSemantics                  IPFIX_TYPE_unsigned8
+#define IPFIX_DATA_TYPE_mibContextEngineID                       IPFIX_TYPE_octetArray
+#define IPFIX_DATA_TYPE_mibContextName                           IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_mibObjectName                            IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_mibObjectDescription                     IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_mibObjectSyntax                          IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_mibModuleName                            IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_mobileIMSI                               IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_mobileMSISDN                             IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_httpStatusCode                           IPFIX_TYPE_unsigned16
+#define IPFIX_DATA_TYPE_sourceTransportPortsLimit                IPFIX_TYPE_unsigned16
+#define IPFIX_DATA_TYPE_httpRequestMethod                        IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_httpRequestHost                          IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_httpRequestTarget                        IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_httpMessageVersion                       IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_natInstanceID                            IPFIX_TYPE_unsigned32
+#define IPFIX_DATA_TYPE_internalAddressRealm                     IPFIX_TYPE_octetArray
+#define IPFIX_DATA_TYPE_externalAddressRealm                     IPFIX_TYPE_octetArray
+#define IPFIX_DATA_TYPE_natQuotaExceededEvent                    IPFIX_TYPE_unsigned32
+#define IPFIX_DATA_TYPE_natThresholdEvent                        IPFIX_TYPE_unsigned32
+#define IPFIX_DATA_TYPE_httpUserAgent                            IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_httpContentType                          IPFIX_TYPE_string
+#define IPFIX_DATA_TYPE_httpReasonPhrase                         IPFIX_TYPE_string
+
+#define IPFIX_STRUCTURED_TYPE_SEMANTIC_noneOf                         0x00
+#define IPFIX_STRUCTURED_TYPE_SEMANTIC_exactlyOneOf                   0x01
+#define IPFIX_STRUCTURED_TYPE_SEMANTIC_oneOrMoreOf                    0x02
+#define IPFIX_STRUCTURED_TYPE_SEMANTIC_allOf                          0x03
+#define IPFIX_STRUCTURED_TYPE_SEMANTIC_ordered                        0x04
+#define IPFIX_STRUCTURED_TYPE_SEMANTIC_undefined                      0xFF
 
 
 #endif
