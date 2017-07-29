@@ -432,6 +432,18 @@ struct ipfix_identifier ipfixids_iana[] = {
   { IPFIX_TYPEID_httpReasonPhrase                        , IPFIX_BYTES_string              ,     0, "httpReasonPhrase"                      , IPFIX_DATA_TYPE_httpReasonPhrase                         },
 };
 
+
+
+struct ipfix_semantic ipfixsemantic_iana[] = {
+/* IANA registry */
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_noneOf                        , "noneOf"   },
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_exactlyOneOf                  , "exactlyOneOf" },
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_oneOrMoreOf                   , "oneOrMoreOf" },
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_allOf                         , "allOf"    },
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_ordered                       , "ordered"  },
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_undefined                     , "undefined" },
+};
+
 #ifdef __cplusplus
 }
 #endif

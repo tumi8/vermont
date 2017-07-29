@@ -63,15 +63,19 @@ def parse_iana_csv_data_types(fh, out):
     out.write(length_macros)
     out.write("\n")
 
-def parse_iana_csv_structured_data_types(fh, out):
+def parse_iana_csv_structured_data_types(fh, out, struct_out):
 
     # Value,Name,Description,Reference
     reader = csv.reader(fh)
+    struct = "\n\nstruct ipfix_semantic ipfixsemantic_iana[] = {\n/* IANA registry */\n"
     for row in reader:
         if row[2] != "unassigned" and row[0] != "Value":
             out.write("#define IPFIX_STRUCTURED_TYPE_SEMANTIC_{0:30} {1}\n".format(row[1], row[0]))
+            struct += '  {{ IPFIX_STRUCTURED_TYPE_SEMANTIC_{0:30}, {1:10} }},\n'.format(row[1], '"' + row[1] + '"')
+    struct += "};\n\n"
 
     out.write("\n")
+    struct_out.write(struct)
 
 def append_output(row, ids, types, lengths, struct):
     elementId = row[0]
@@ -112,7 +116,7 @@ def generate_ipfix_output(ie_fh, types_fh, structured_types_fh, out, struct_out)
 
     parse_iana_csv_data_types(types_fh, out)
     parse_iana_csv_ie(ie_fh, out, struct_out)
-    parse_iana_csv_structured_data_types(structured_types_fh, out)
+    parse_iana_csv_structured_data_types(structured_types_fh, out, struct_out)
 
     # Footer
     struct_out.write('#ifdef __cplusplus\n}\n#endif\n')
