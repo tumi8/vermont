@@ -117,24 +117,6 @@ void BaseAggregator::postReconfiguration()
 	}
 }
 
-
-/**
- * initializes aggregator module and creates hashtable
- * @param rulefile filename with rules to import
- * @param inactiveTimeout minimum buffer time for flows in hashtable
- * @param activeTimeout maximum buffer time for flows in hashtable
- */
-void BaseAggregator::buildAggregator(char* rulefile, uint16_t inactiveTimeout, uint16_t activeTimeout, uint8_t hashbits)
-{
-	Rules* rules = new Rules(rulefile);
-
-	if (!rules) {
-		THROWEXCEPTION("could not parse rules file %s", rulefile);
-	}
-	buildAggregator(rules, inactiveTimeout, activeTimeout, hashbits);
-}
-
-
 /**
  * initializes aggregator module and creates hashtable
  * @param rules rules to use for creation of hashtables
