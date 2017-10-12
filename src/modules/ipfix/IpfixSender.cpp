@@ -253,7 +253,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 	// TODO: Implement Options Template handling
-	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
+	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate))
 	{
 	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();
@@ -309,16 +309,6 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	//for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) msg(MSG_FATAL, "template id %u -> unique id %u", iter->first, iter->second);
 	//for(map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.begin(); iter != uniqueIdToTemplateId.end(); iter++) msg(MSG_FATAL, "unique id %u -> template id %u", iter->first, iter->second);
 
-	uint16_t my_preceding = 0;
-	// Translate preceding template id if possible
-	if(dataTemplateInfo->preceding) {
-		map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.find(dataTemplateInfo->preceding);
-		if(iter == templateIdToUniqueId.end())
-			msg(MSG_ERROR, "IpfixSender: Preceding Template (id=%u) not available, use zero instead", dataTemplateInfo->preceding);
-		else
-			my_preceding = uniqueIdToTemplateId[iter->second];
-	}
-
 	int i;
 
 	/* Count number of IPv4 fields with length 5 */
@@ -333,20 +323,8 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		}
 	}
 
-	/* Count number of IPv4 fields with length 5 */
-	int splitFixedfields = 0;
-	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
-		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
-		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
-			splitFixedfields++;
-		}
-		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
-			splitFixedfields++;
-		}
-	}
-
-	if (0 != ipfix_start_datatemplate(ipfixExporter, my_template_id, my_preceding, dataTemplateInfo->fieldCount + splitFields, dataTemplateInfo->dataCount + splitFixedfields)) {
-		THROWEXCEPTION("IpfixSender: ipfix_start_datatemplate failed");
+	if (0 != ipfix_start_template(ipfixExporter, my_template_id, dataTemplateInfo->fieldCount + splitFields)) {
+		THROWEXCEPTION("IpfixSender: ipfix_start_template failed");
 	}
 
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
@@ -370,67 +348,6 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 			ipfix_put_template_field(ipfixExporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
 		}
 	}
-
-	DPRINTF("%u data fields", dataTemplateInfo->dataCount);
-
-	int dataLength = 0;
-	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
-		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
-
-		dataLength += fi->type.length;
-
-		/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
-		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
-			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_sourceIPv4Address, 4, 0);
-			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_sourceIPv4PrefixLength, 1, 0);
-		}
-		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
-			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4Address, 4, 0);
-			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_destinationIPv4PrefixLength, 1, 0);
-		}
-		else if ((export_protocol == NFV9_PROTOCOL) &&
-				(fi->type.id == IPFIX_TYPEID_tcpControlBits) &&
-				(fi->type.length != 1)) {
-			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, IPFIX_TYPEID_tcpControlBits, 1, 0);
-		}
-		else {
-			ipfix_put_template_fixedfield(ipfixExporter, my_template_id, fi->type.id, fi->type.length, fi->type.enterprise);
-		}
-	}
-
-	DPRINTF("%u data length", dataLength);
-
-	char *data = NULL; // electric fence does not like 0-byte mallocs
-	if (dataLength && dataTemplateInfo->dataCount) {
-		data = (char *)malloc(dataLength);
-		if (!data) {
-			THROWEXCEPTION("IpfixSender: could not allocate data template");
-		}
-		memcpy(data, dataTemplateInfo->data, dataLength);
-	}
-
-	for (i = 0; i < dataTemplateInfo->dataCount; i++) {
-		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->dataInfo[i];
-
-		/* Invert imask of IPv4 fields with length 5, i.e. fields with network mask attached */
-		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
-			uint8_t* mask = (uint8_t*)(data + fi->offset + 4);
-			*mask = 32 - *mask;
-		}
-		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
-			uint8_t* mask = (uint8_t*)(data + fi->offset + 4);
-			*mask = 32 - *mask;
-		}
-		else {
-		}
-
-	}
-
-	// Only add Data Template data if there is any
-	if (data && ipfix_put_template_data(ipfixExporter, my_template_id, data, dataLength)) {
-		THROWEXCEPTION("IpfixSender: ipfix_put_template_data failed");
-	}
-	free(data);
 
 	if (0 != ipfix_end_template(ipfixExporter, my_template_id)) {
 		THROWEXCEPTION("IpfixSender: ipfix_end_template failed");
@@ -459,7 +376,7 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 	// TODO: Implement Options Template handling
-	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
+	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate))
 	{
 		msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();
@@ -615,7 +532,7 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
 	// TODO: Implement Options Data Record handling
-	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate) && (dataTemplateInfo->setId != TemplateInfo::IpfixDataTemplate))
+	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate))
 	{
 	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();

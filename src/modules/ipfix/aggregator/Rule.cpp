@@ -41,7 +41,7 @@
 /* --- functions ------------*/
 
 Rule::Rule()
-	: id(0), preceding(0), fieldCount(0), biflowAggregation(0), hashtable(0), patternFields(0), patternFieldsLen(0)
+	: id(0), fieldCount(0), biflowAggregation(0), hashtable(0), patternFields(0), patternFieldsLen(0)
 {
 }
 
@@ -108,7 +108,7 @@ const char* modifier2string(Rule::Field::Modifier i) {
 void Rule::print() {
 	int i;
 
-	printf("Aggregate %d %d\n",id,preceding);
+	printf("Aggregate %d\n",id);
 	for (i=0; i < fieldCount; i++) {
 		printf("\t");
 		const char* modifier = modifier2string(field[i]->modifier);
@@ -434,45 +434,6 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 			}
 			*/
 
-			/*
-			  in the case of Data Template, see if we find a corresponding fixed data field
-			*/
-			if ((dataTemplateInfo->setId == TemplateInfo::IpfixDataTemplate) && (dataTemplateInfo->dataCount > 0)) {
-				recordField = dataTemplateInfo->getDataInfo(ruleField->type);
-				if (recordField) {
-					/* corresponding fixed data field found, check if it matches. If it doesn't the whole rule cannot be matched */
-					if (!matchesPattern(&recordField->type, (dataTemplateInfo->data + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
-					if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
-						if (ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address) {
-							if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), dataTemplateInfo->data, ruleField)) return 0;
-						} else if (ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address) {
-							if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_destinationIPv4PrefixLength, 0), dataTemplateInfo->data, ruleField)) return 0;
-						}
-					}
-					continue;
-				}
-				/* Probably, this does not lead to the desired result:
-				if (biflowAggregation) {
-					// check if the rule field as a corresponding type in opposite direction
-					InformationElement::IeId oppDirIeId = InformationElement::oppositeDirectionIeId(ruleField->type);
-					if(oppDirIeId) {
-						recordField = dataTemplateInfo->getDataInfo(oppDirIeId, ruleField->type.enterprise);
-						if (recordField) {
-							// corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched
-							if (!matchesPattern(&recordField->type, (dataTemplateInfo->data + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
-							if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
-								if (oppDirIeId == IPFIX_TYPEID_sourceIPv4Address) {
-									if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), dataTemplateInfo->data, ruleField)) return 0;
-								} else if (oppDirIeId == IPFIX_TYPEID_destinationIPv4Address) {
-									if(!checkMask(dataTemplateInfo->getDataInfo(IPFIX_TYPEID_destinationIPv4PrefixLength, 0), dataTemplateInfo->data, ruleField)) return 0;
-								}
-							}
-							continue;
-						}
-					}
-				} */
-			}
-
 			/* no corresponding data field or fixed data field found, this flow cannot match */
 			msg(MSG_VDEBUG, "No corresponding DataDataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
 			return 0;
@@ -487,21 +448,6 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 				InformationElement::IeInfo revie = ruleField->type.getReverseDirection();
 				recordField = dataTemplateInfo->getFieldInfo(revie);
 				if (recordField) continue;
-			}
-
-			/*
-			  in the case of Data Template, see if we find a corresponding fixed data field
-			*/
-			if ((dataTemplateInfo->setId == TemplateInfo::IpfixDataTemplate) && (dataTemplateInfo->dataCount > 0)) {
-				recordField = dataTemplateInfo->getDataInfo(ruleField->type);
-				if (recordField) continue;
-
-				/* in the case of biflow, we also check the reverse direction */
-				if (biflowAggregation && ruleField->type.existsReverseDirection()) {
-					InformationElement::IeInfo revie = ruleField->type.getReverseDirection();
-					recordField = dataTemplateInfo->getDataInfo(revie);
-					if (recordField) continue;
-				}
 			}
 
 			// anonymisationType is filled by the anonymizer, so we ignore it quietly
@@ -519,7 +465,6 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 
 bool operator==(const Rule &rhs, const Rule &lhs) {
 	if (rhs.id != lhs.id) return false;
-	if (rhs.preceding != lhs.preceding) return false;
 	if (rhs.fieldCount != lhs.fieldCount) return false;
 	if (rhs.biflowAggregation != lhs.biflowAggregation) return false;
 	if (rhs.patternFieldsLen != lhs.patternFieldsLen) return false;

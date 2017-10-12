@@ -31,15 +31,7 @@ class TestSink : public IpfixRecordDestination {
 			uint8_t inTemplateId = record->templateInfo->templateId - 256;
 			uint8_t inTypeId = record->templateInfo->fieldInfo[0].type.id;
 			uint8_t inData = record->data[0];
-			if ((record->templateInfo->setId == TemplateInfo::IpfixDataTemplate) && (record->templateInfo->dataCount > 0)) {
-				uint8_t inDataTemplateTypeId = record->templateInfo->dataInfo[0].type.id;
-				uint8_t inDataTemplate = record->templateInfo->data[0];
-				msg(MSG_DEBUG, "Received DataDataRecord: %d, %d, %d, %d, %d, %d", inSourceID, inTemplateId, inTypeId, inData, inDataTemplateTypeId, inDataTemplate);
-				if (inData != inDataTemplateTypeId) ERROR("IpfixRecord got corrupted: inData != inDataTemplateTypeId");
-				if (inData != inDataTemplate) ERROR("IpfixRecord got corrupted: inData != inDataTemplate");
-			} else {
-				msg(MSG_DEBUG, "Received DataRecord: %d, %d, %d, %d", inSourceID, inTemplateId, inTypeId, inData);
-			}
+			msg(MSG_DEBUG, "Received DataRecord: %d, %d, %d, %d", inSourceID, inTemplateId, inTypeId, inData);
 			if (checkSourceId) if (inSourceID != inTemplateId) ERROR("SourceID or TemplateInfo got corrupted: inSourceID != inTemplateId");
 			if (inTemplateId != inTypeId) ERROR("TemplateInfo got corrupted: inTemplateId != inTypeId");
 			if (inData != inTemplateId) ERROR("IpfixRecord got corrupted: inData != inTemplateId");
@@ -83,28 +75,6 @@ boost::shared_ptr<TemplateInfo> createTestTemplate(uint8_t magic_number) {
 		return testTemplate;
 }
 
-boost::shared_ptr<TemplateInfo> createTestDataTemplate(uint8_t magic_number) {
-		boost::shared_ptr<TemplateInfo> testTemplate(new TemplateInfo);
-		testTemplate->templateId = magic_number + 256;
-		testTemplate->setId = TemplateInfo::IpfixDataTemplate;
-		testTemplate->preceding = 0;
-		testTemplate->fieldCount = 1;
-		testTemplate->fieldInfo = (TemplateInfo::FieldInfo*)malloc(testTemplate->fieldCount * sizeof(TemplateInfo::FieldInfo));
-		testTemplate->dataCount = 1;
-		testTemplate->dataInfo = (TemplateInfo::FieldInfo*)malloc(testTemplate->fieldCount * sizeof(TemplateInfo::FieldInfo));
-		testTemplate->data = (uint8_t*)malloc(1); testTemplate->data[0] = magic_number;
-		testTemplate->fieldInfo[0].type.id = magic_number;
-		testTemplate->fieldInfo[0].type.length = 1;
-		testTemplate->fieldInfo[0].type.enterprise = 0;
-		testTemplate->fieldInfo[0].offset = 0;
-		testTemplate->dataInfo[0].type.id = magic_number;
-		testTemplate->dataInfo[0].type.length = 1;
-		testTemplate->dataInfo[0].type.enterprise = 0;
-		testTemplate->dataInfo[0].offset = 0;
-
-		return testTemplate;
-}
-
 boost::shared_ptr<IpfixRecord::SourceID> createTestSourceId(uint8_t magic_number) {
 		boost::shared_ptr<IpfixRecord::SourceID> testSourceId(new IpfixRecord::SourceID);
 		testSourceId->observationDomainId = 0xdeadbeef;
@@ -138,38 +108,10 @@ IpfixTemplateDestructionRecord* createTestTemplateDestructionRecord(uint8_t magi
 		return testRecord;
 }
 
-IpfixDataRecord* createTestDataDataRecord(uint8_t magic_number, boost::shared_ptr<IpfixRecord::SourceID> sourceId, boost::shared_ptr<TemplateInfo> dataTemplateInfo) {
-		static InstanceManager<IpfixDataRecord> im("IpfixDataDataRecord");
-		IpfixDataRecord* testRecord = im.getNewInstance();
-		testRecord->sourceID = sourceId;
-		testRecord->templateInfo = dataTemplateInfo;
-		testRecord->dataLength = 1;
-		testRecord->message = createTestData(magic_number);
-		testRecord->data = testRecord->message.get();
-
-		return testRecord;
-}
-
 IpfixTemplateRecord* createTestTemplateRecord(uint8_t magic_number, boost::shared_ptr<TemplateInfo> templateInfo) {
 		static InstanceManager<IpfixTemplateRecord> im("IpfixTemplateRecord");
 		IpfixTemplateRecord* testRecord = im.getNewInstance();
 		testRecord->templateInfo = templateInfo; 
-
-		return testRecord;
-}
-
-IpfixTemplateRecord* createTestDataTemplateRecord(uint8_t magic_number, boost::shared_ptr<TemplateInfo> dataTemplateInfo) {
-		static InstanceManager<IpfixTemplateRecord> im("IpfixDataTemplateRecord");
-		IpfixTemplateRecord* testRecord = im.getNewInstance();	
-		testRecord->templateInfo = dataTemplateInfo; 
-
-		return testRecord;
-}
-
-IpfixTemplateDestructionRecord* createTestDataTemplateDestructionRecord(uint8_t magic_number, boost::shared_ptr<TemplateInfo> dataTemplateInfo) {
-		static InstanceManager<IpfixTemplateDestructionRecord> im("IpfixDataTemplateDestructionRecord");
-		IpfixTemplateDestructionRecord* testRecord = im.getNewInstance();	
-		testRecord->templateInfo = dataTemplateInfo;
 
 		return testRecord;
 }
@@ -246,8 +188,8 @@ void test_ipfixlolib_rawdir() {
 		std::vector<IpfixDataRecord*> testDataRecords;
 		for (uint8_t magic_number = 0; magic_number < 16; magic_number++) {
 			boost::shared_ptr<IpfixRecord::SourceID> testSourceId = createTestSourceId(magic_number);
-			boost::shared_ptr<TemplateInfo> dataTemplateInfo = createTestDataTemplate(magic_number);
-			IpfixTemplateRecord* dtr = createTestDataTemplateRecord(magic_number, dataTemplateInfo);
+			boost::shared_ptr<TemplateInfo> dataTemplateInfo = createTestTemplate(magic_number);
+			IpfixTemplateRecord* dtr = createTestTemplateRecord(magic_number, dataTemplateInfo);
 			ipfixRawdirWriter.receive(dtr);
 			
 			testDataRecords.push_back(createTestDataRecord(magic_number, testSourceId, dataTemplateInfo));
@@ -261,7 +203,7 @@ void test_ipfixlolib_rawdir() {
 
 		// be nice
 		for (uint8_t magic_number = 0; magic_number < 16; magic_number++) {
-			ipfixRawdirWriter.receive(createTestDataTemplateDestructionRecord(magic_number, testDataRecords[magic_number]->templateInfo));
+			ipfixRawdirWriter.receive(createTestTemplateDestructionRecord(magic_number, testDataRecords[magic_number]->templateInfo));
 		}
 
 		// give modules a chance to process their queues

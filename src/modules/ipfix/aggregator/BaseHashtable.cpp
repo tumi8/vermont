@@ -100,17 +100,11 @@ uint32_t BaseHashtable::getPrivateDataLength(const InformationElement::IeInfo& t
 
 void BaseHashtable::createDataTemplate(Rule* rule)
 {
-	int dataLength = 0; /**< length in bytes of the @c data field */
-
 	dataTemplate.reset(new TemplateInfo);
 	dataTemplate->templateId = rule->id;
-	// Let's first assume that this is a normal Template
-	if(rule->preceding != 0) {
-		dataTemplate->preceding = rule->preceding;
-		dataTemplate->setId = TemplateInfo::IpfixDataTemplate;
-	} else {
-		dataTemplate->setId = TemplateInfo::IpfixTemplate;
-	}
+
+	dataTemplate->setId = TemplateInfo::IpfixTemplate;
+
 	fieldLength = 0;
 
 	fieldModifier = (Rule::Field::Modifier*) malloc(rule->fieldCount
@@ -119,32 +113,7 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 	for (int32_t i = 0; i < rule->fieldCount; i++) {
 		Rule::Field* rf = rule->field[i];
 
-		if (rf->pattern != NULL) {
-			// This is a Data Template
-			dataTemplate->setId = TemplateInfo::IpfixDataTemplate;
-			/* create new fixed-data field containing pattern */
-			dataTemplate->dataCount++;
-			dataTemplate->dataInfo = (TemplateInfo::FieldInfo*) realloc(dataTemplate->dataInfo,
-					sizeof(TemplateInfo::FieldInfo) * dataTemplate->dataCount);
-			TemplateInfo::FieldInfo* fi = &dataTemplate->dataInfo[dataTemplate->dataCount - 1];
-			fi->type = rf->type;
-			fi->offset = dataLength;
-			fi->privDataOffset = 0;
-			dataLength += fi->type.length;
-			dataTemplate->dataLength = dataLength;
-			dataTemplate->data = (IpfixRecord::Data*)realloc(dataTemplate->data, dataLength);
-			memcpy(dataTemplate->data + fi->offset, rf->pattern, fi->type.length);
-		}
-		/* gerhard: If we have a pattern (and fixed value field), the variable value field is implicitely discarded.
-		 * Note: This is necessary because of the double meaning/usage of Rule::Field.type.length:
-		 * If a pattern is present, this variable holds the length of the pattern (or fixed length field)
-		 * and not the length of the normal field holding a single value. As a consequence, we cannot use
-		 * Rule.Field.type.length as length of the variable value field.
-		 * If someone really wants to enable the export of both, pattern and variable value field of the same
-		 * type, then he has to remove the double meaning/usage (or set the variable field length to the
-		 * default value for the specific type).
-		 */
-		else if (rf->modifier != Rule::Field::DISCARD) {
+		if (rf->modifier != Rule::Field::DISCARD) {
 			/* define new data field with Rule::Field's type */
 			dataTemplate->fieldCount++;
 			dataTemplate->fieldInfo = (TemplateInfo::FieldInfo*) realloc(dataTemplate->fieldInfo,

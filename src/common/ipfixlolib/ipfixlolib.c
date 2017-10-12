@@ -987,7 +987,7 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
 	// end of the buffer since the WITHDRAWAL message for one template is always 8 byte
 	p_end = p_pos + 8;
 
-	// set ID is 2 for a template, 4 for a template with fixed fields:
+	// set ID is 2 for a template:
 	// for withdrawal messages we keep the template set ID
 	p_pos +=  2;
 	// write 8 to the length field
@@ -998,7 +998,6 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
 	write_unsigned16 (&p_pos, p_end, 0);
 	exporter->template_arr[found_index].fields_length = 8;
 	exporter->template_arr[found_index].field_count = 0;
-	exporter->template_arr[found_index].fixedfield_count = 0;
 	exporter->template_arr[found_index].fields_added = 0;
 	exporter->template_arr[found_index].state = T_WITHDRAWN;
 	DPRINTFL(MSG_VDEBUG, "... Withdrawn");
@@ -2389,67 +2388,29 @@ out:
 /*******************************************************************/
 
 /*!
- * \brief Marks the beginning of a Data Template Set and a Template Record
+ * \brief Start defining a new Template (Set).
  *
- * ipfixlolib supports only one Data Template Record per Date Template Set. So
- * this function basically starts a Data Template Set and one Data Template
- * Record.
+ * ipfixlolib supports only one Template Record per Template Set. So this
+ * function basically starts a Template Set and one Template Record.
  *
- * Data Templates are a proprietary extension to IPFIX.  See
- * <tt>draft-dressler-ipfix-aggregation-00</tt> for details.  Data Templates
- * are like standard Templates except that they may specify fields with fixed
- * values i.e. fields that share the same value for all Data Records. These
- * values are transmitted once as part of the Data Template Record instead of
- * repeatedly transmitting them with every Data Record.
+ * <em>Note:</em> It is not possible to start and define multiple Templates in parallel.
+ * ipfix_end_template() has to be called first before a new Template can be
+ * defined.
  *
- * A Data Template consists of (in this order):
- * <ul>
- * <li>Field Specifiers (like in standard Template Records)</li>
- * <li>Field Specifiers of the fixed-value fields</li>
- * <li>Data values of the fixed-value fields</li>
- * </ul>
- *
- * Use the following functions to add the Field Specifiers and Data values to
- * the template:
- * <ul>
- * <li>ipfix_put_template_field()
- * <li>ipfix_put_template_fixedfield()
- * <li>ipfix_put_template_data()
- * </ul>
- *
- * <em>Note:</em> It is not possible to start and define multiple Data
- * Templates in parallel.  ipfix_end_template() has to be called first before a
- * new Data Template can be defined.
+ * Individual fields are added to the Template by calling
+ * ipfix_put_data_field() before calling ipfix_end_template() to end the
+ * Template.
  *
  * \param exporter pointer to previously initialized exporter struct
  * \param template_id ID for this Template. Must be > 255.
- * \param preceding
- * \param field_count number of fields that will be added to this Data Template Record.
- *        It is considered an error if more or fewer fields are added.
- * \param fixedfield_count number of fixed-value fields that will be added to this Data Template Record.
+ * \param field_count number of fields that will be added to this Template Record.
  *        It is considered an error if more or fewer fields are added.
  * \return 0 success
- * \return -1 failure. Reasons include:<ul><li><tt>template_id</tt> is not
- * great than 255</li><li>maximum number of defined templates has been
- * exceeded</li></ul>
- * \sa ipfix_end_template(), ipfix_put_template_field(), ipfix_put_template_fixedfield(), ipfix_send()
- */
-
-/*
- * Allocate memory for a new template
- * end_data_template will add this template to the exporter
- */
-int ipfix_start_datatemplate (ipfix_exporter *exporter,
-	uint16_t template_id, uint16_t preceding, uint16_t field_count,
-	uint16_t fixedfield_count) {
-    /* Is this a regular Template (Set id == 2) or a Data Template (Set id == 4).
-       See draft-dressler-ipfix-aggregation-00 for more details on Data Templates.
-       Data Templates are (still) a proprietary extension to IPFIX. */
-    int datatemplate=(fixedfield_count || preceding) ? 1 : 0;
-    if (datatemplate && (exporter->export_protocol != IPFIX_PROTOCOL)) {
-	msg(MSG_ERROR, "Only IPFIX supports data templates");
-	return -1;
-    }
+ * \return -1 failure. Reasons might be that <tt>template_id</tt> is not great than 255
+ *   or that the maximum number of defined templates has been exceeded.
+ * \sa ipfix_end_template(), ipfix_put_template_field(), ipfix_send()
+**/
+int ipfix_start_template (ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count) {
     /* Make sure that template_id is > 255 */
     if (!(template_id > 255)) {
 	msg(MSG_ERROR, "Template id has to be > 255. Start of template cancelled.");
@@ -2497,17 +2458,14 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
     // field type, field length (2*2bytes)
     // and an optional Enterprise Number (4 bytes)
     // Also, reserve 4+4 bytes for the Set Header and the Template Record header
-    // In case of a Data Template, the Data Template Record header is 8 bytes long
-    // (instead of 4 bytes). The total overhead is 4+8=12 in this case.
 
-    exporter->template_arr[found_index].max_fields_length = 8 * (field_count + fixedfield_count) + (datatemplate ? 12 : 8);
+    exporter->template_arr[found_index].max_fields_length = 8 * field_count + 8;
     exporter->template_arr[found_index].template_fields = (char*)malloc(exporter->template_arr[found_index].max_fields_length );
 
     // initialize the rest:
     exporter->template_arr[found_index].state = T_UNCLEAN;
     exporter->template_arr[found_index].template_id = template_id;
     exporter->template_arr[found_index].field_count = field_count;
-    exporter->template_arr[found_index].fixedfield_count = fixedfield_count;
     exporter->template_arr[found_index].fields_added = 0;
 
     // also, write the template header fields into the buffer (except the length field);
@@ -2518,7 +2476,7 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
     p_end = p_pos + exporter->template_arr[found_index].max_fields_length;
 
     // ++ Start of Set Header
-    // set ID is 2 for a Template Set, 4 for a Data Template with fixed fields:
+    // set ID is 2 for a Template Set:
     // see RFC 5101: 3.3.2 Set Header Format
     /// NFV9 uses 0 for Template Set ID, and does not support Data Templates
     // see RFC 3954: 5.2 Template FlowSet Format
@@ -2527,7 +2485,7 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
 	write_unsigned16 (&p_pos, p_end, 0);
 	break;
     case IPFIX_PROTOCOL:
-	write_unsigned16 (&p_pos, p_end, datatemplate ? 4 : 2);
+	write_unsigned16 (&p_pos, p_end, 2);
 	break;
     default:
 	msg(MSG_ERROR, "Cannot write Template Set ID for unknown protocol");
@@ -2543,15 +2501,9 @@ int ipfix_start_datatemplate (ipfix_exporter *exporter,
     write_unsigned16 (&p_pos, p_end, template_id); 
     // write the field count:
     write_unsigned16 (&p_pos, p_end, field_count);
-    if (datatemplate) {
-	// write the fixedfield count:
-	write_unsigned16 (&p_pos, p_end, fixedfield_count);
-	// write the preceding:
-	write_unsigned16 (&p_pos, p_end, preceding);
-    }
     // ++ End of Template Record Header
 
-    exporter->template_arr[found_index].fields_length = (datatemplate ? 12 : 8);
+    exporter->template_arr[found_index].fields_length = 8;
 
     return 0;
 }
@@ -2613,8 +2565,7 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id,
 	return -1;
     }
     if (exporter->template_arr[found_index].fields_added >=
-	    exporter->template_arr[found_index].field_count +
-	    exporter->template_arr[found_index].fixedfield_count) {
+	    exporter->template_arr[found_index].field_count) {
 	msg(MSG_ERROR, "Cannot add more template fields.");
 	return -1;
     }
@@ -2656,124 +2607,6 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id,
     return 0;
 }
 
-
-/*!
- * \brief Start defining a new Template (Set).
- *
- * ipfixlolib supports only one Template Record per Template Set. So this
- * function basically starts a Template Set and one Template Record.
- *
- * <em>Note:</em> It is not possible to start and define multiple Templates in parallel.
- * ipfix_end_template() has to be called first before a new Template can be
- * defined.
- *
- * Individual fields are added to the Template by calling
- * ipfix_put_data_field() before calling ipfix_end_template() to end the
- * Template.
- *
- * \param exporter pointer to previously initialized exporter struct
- * \param template_id ID for this Template. Must be > 255.
- * \param field_count number of fields that will be added to this Template Record.
- *        It is considered an error if more or fewer fields are added.
- * \return 0 success
- * \return -1 failure. Reasons might be that <tt>template_id</tt> is not great than 255
- *   or that the maximum number of defined templates has been exceeded.
- * \sa ipfix_end_template(), ipfix_put_template_field(), ipfix_send()
-**/
-int ipfix_start_template (ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count) {
-        return ipfix_start_datatemplate(exporter, template_id, 0, field_count, 0);
-}
-
-
-/*!
- * \brief Append fixed-value data type field to the exporter's current Data
- * Template Set, see <tt>ipfix_put_template_field()</tt>.
- *
- * \param exporter pointer to previously initialized exporter struct
- * \param template_id ID of the template
- * \param type Information Element ID of the field
- * \param length length of the field (in host byte order)
- * \param enterprise_id enterprise number (in host byte order) or 0 for Information Elements registered at IANA
- * \return 0 success
- * \return -1 failure
- * \sa ipfix_start_datatemplate()
-*/
-int ipfix_put_template_fixedfield(ipfix_exporter *exporter, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id) {
-        if (exporter->export_protocol != IPFIX_PROTOCOL) {
-	    msg(MSG_ERROR, "Only IPFIX supports data templates");
-	    return -1;
-	}
-        return ipfix_put_template_field(exporter, template_id, type, length, enterprise_id);
-}
-
-
-/*!
- * \brief Append fixed-value data to the exporter's current data template set
- *
- * \param exporter pointer to previously initialized exporter struct
- * \param template_id ID of the template
- * \param data pointer to the data (data must be in network byte order)
- * \param data_length length of data to be added, in bytes
- * \return 0 success
- * \return -1 failure
- * \sa ipfix_start_datatemplate()
-*/
-int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void* data, uint16_t data_length) {
-        int found_index;
-        /* set pointers to the buffer */
-        char *p_pos;
-        char *p_end;
-	
-        int i;
-
-	if (exporter->export_protocol != IPFIX_PROTOCOL) {
-	    msg(MSG_ERROR, "Only IPFIX supports data templates");
-	    return -1;
-	}
-
-        found_index = ipfix_find_template(exporter, template_id);
-
-        /* test for a valid slot */
-        if (found_index < 0) {
-                msg(MSG_VDEBUG, "template ID %u not found", template_id);
-                return -1;
-        }
-
-        ipfix_lo_template *templ=(&(*exporter).template_arr[found_index]);
-	if (templ->fields_added != templ->field_count + templ->fixedfield_count) {
-		msg(MSG_ERROR, "All field specifiers must have been added before adding data values to Data Template Record.");
-                return -1;
-	}
-        templ->max_fields_length += data_length;
-        templ->template_fields=(char *)realloc(templ->template_fields, templ->max_fields_length);
-
-        /* beginning of the buffer */
-        p_pos =  templ->template_fields;
-        // end of the buffer
-        p_end = p_pos + templ->max_fields_length;
-#if 0
-        DPRINTFL(MSG_VDEBUG, "template found at %i", found_index);
-        DPRINTFL(MSG_VDEBUG, "A p_pos %p, p_end %p", p_pos, p_end);
-        DPRINTFL(MSG_VDEBUG, "max_fields_len %u ", (*exporter).template_arr[found_index].max_fields_length);
-        DPRINTFL(MSG_VDEBUG, "fieldss_len %u ", (*exporter).template_arr[found_index].fields_length);
-#endif
-
-        // add offset to the buffer's beginning: this is, where we will write to.
-        p_pos += templ->fields_length;
-#if 0
-        DPRINTFL(MSG_VDEBUG, "B p_pos %p, p_end %p", p_pos, p_end);
-#endif
-
-        for(i = 0; i < data_length; i++) {
-            write_octet(&p_pos, p_end, *(((uint8_t*)data)+i) );
-        }
-
-        // add to the written length:
-        templ->fields_length += data_length;
-
-        return 0;
-}
-
 /*!
  * \brief End a previously started and defined template, options template, or data template.
  *
@@ -2797,7 +2630,7 @@ int ipfix_end_template(ipfix_exporter *exporter, uint16_t template_id)
 	return -1;
     }
     ipfix_lo_template *templ=(&exporter->template_arr[found_index]);
-    if (templ->fields_added != templ->field_count + templ->fixedfield_count) {
+    if (templ->fields_added != templ->field_count) {
 	msg(MSG_ERROR, "Number of added template fields does not match number passed to ipfix_start_template");
 	ipfix_deinit_template(templ);
 	return -1;

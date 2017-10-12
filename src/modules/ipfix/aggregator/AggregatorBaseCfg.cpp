@@ -74,8 +74,6 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 
 		if (e->matches("templateId")) {
 			rule->id = getInt("templateId", 0, e);
-		} else if (e->matches("preceding")) {
-			rule->preceding = getInt("preceding", 0, e);
 		} else if (e->matches("biflowAggregation")) {
 			rule->biflowAggregation = getInt("biflowAggregation", 0, e);
 		} else if (e->matches("flowKey")) {

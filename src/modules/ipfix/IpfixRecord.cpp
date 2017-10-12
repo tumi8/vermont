@@ -208,7 +208,7 @@ namespace InformationElement {
 
 TemplateInfo::TemplateInfo() : templateId(0), setId(UnknownSetId), fieldCount(0), fieldInfo(NULL),
         freePointers(true),
-	scopeCount(0), scopeInfo(NULL), dataCount(0), dataInfo(NULL), preceding(0), dataLength(0), data(NULL),
+	scopeCount(0), scopeInfo(NULL),
 	uniqueId(0)
 {
         setUniqueId();
@@ -231,15 +231,6 @@ TemplateInfo::TemplateInfo(const TemplateInfo& t)
 	scopeInfo = (FieldInfo*)malloc(scopeCount*sizeof(FieldInfo));
 	memcpy(scopeInfo, t.scopeInfo, scopeCount*sizeof(FieldInfo));
 
-	// copy Data Template data fields and further attributes
-	dataCount = t.dataCount;
-	dataInfo = (FieldInfo*)malloc(dataCount*sizeof(FieldInfo));
-	memcpy(dataInfo, t.dataInfo, dataCount*sizeof(FieldInfo));
-	preceding = t.preceding;
-	dataLength = t.dataLength;
-	data = (IpfixRecord::Data*)malloc(dataLength*sizeof(IpfixRecord::Data));
-	memcpy(data, t.data, dataLength*sizeof(IpfixRecord::Data));
-
 	// copy uniqueId (a new uniqueId can be assigned with setUniqueId() if needed)
 	uniqueId = t.uniqueId;
 	// increase reference count in uniqueIdUseCount()
@@ -257,8 +248,6 @@ TemplateInfo::~TemplateInfo() {
 	{
 		free(fieldInfo);
 		free(scopeInfo);
-		free(dataInfo);
-		free(data);
 		freePointers = false;
 	}
 	// decrease reference count in uniqueIdUseCount()
@@ -355,31 +344,3 @@ int TemplateInfo::getFieldIndex(InformationElement::IeId fieldTypeId, Informatio
 
 	return -1;
 }
-
-/**
- * Gets data of Data Templates for a given Information Element.
- * @param type Information Element to get data for
- * @return NULL if not found
- */
-TemplateInfo::FieldInfo* TemplateInfo::getDataInfo(const InformationElement::IeInfo& type) {
-	return getDataInfo(type.id, type.enterprise);
-}
-
-/**
- * Gets data of Data Templates for a given Information Element Id and enterprise number.
- * @param fieldTypeId Information Element id to look for
- * @param fieldTypeEid enterprise number to look for
- * @return NULL if not found
- */
-TemplateInfo::FieldInfo* TemplateInfo::getDataInfo(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid) {
-	int i;
-
-	for (i = 0; i < dataCount; i++) {
-		if ((dataInfo[i].type.id == fieldTypeId) && (dataInfo[i].type.enterprise == fieldTypeEid)) {
-			return &dataInfo[i];
-		}
-	}
-
-	return NULL;
-}
-
