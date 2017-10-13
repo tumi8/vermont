@@ -5,6 +5,9 @@
 
  Header for encoding functions suitable for IPFIX
 
+ Changes by Luca Boccassi, 2017-10
+   Added support for export over a specific device (VRF)
+
  Changes by James Wheatley, 2015-08
    Added support for export over IPv6
 
@@ -43,6 +46,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/socket.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdbool.h>
@@ -73,12 +77,12 @@ static void dtls_shutdown_and_cleanup(ipfix_dtls_connection *con);
 static void dtls_fail_connection(ipfix_dtls_connection *con);
 #endif
 #ifdef SUPPORT_SCTP
-static int init_send_sctp_socket(struct sockaddr_storage serv_addr);
+static int init_send_sctp_socket(struct sockaddr_storage serv_addr, char *vrf_name);
 #ifdef SUPPORT_DTLS_OVER_SCTP
 static void handle_sctp_event(BIO *bio, void *context, void *buf);
 #endif
 #endif
-static int init_send_udp_socket(struct sockaddr_storage serv_addr);
+static int init_send_udp_socket(struct sockaddr_storage serv_addr, char *vrf_name);
 static int enable_pmtu_discovery(int s);
 static int ipfix_find_template(ipfix_exporter *exporter, uint16_t template_id);
 static void ipfix_update_header(ipfix_exporter *p_exporter, ipfix_receiving_collector *collector, ipfix_sendbuffer *sendbuf);
@@ -88,7 +92,7 @@ static int ipfix_deinit_sendbuffer(ipfix_sendbuffer **sendbuf);
 static int ipfix_init_collector_array(ipfix_receiving_collector **col, int col_capacity);
 static void remove_collector(ipfix_receiving_collector *collector);
 static int ipfix_deinit_collector_array(ipfix_receiving_collector **col);
-static int ipfix_init_send_socket(struct sockaddr_storage serv_addr , enum ipfix_transport_protocol protocol);
+static int ipfix_init_send_socket(struct sockaddr_storage serv_addr , enum ipfix_transport_protocol protocol, char *vrf_name);
 static int ipfix_init_template_array(ipfix_exporter *exporter, int template_capacity);
 static int ipfix_deinit_template(ipfix_lo_template* templ);
 static int ipfix_deinit_template_array(ipfix_exporter *exporter);
@@ -676,13 +680,49 @@ int ipfix_beat(ipfix_exporter *exporter) {
 }
 
 /*
+ * Sets socket into vrf_name, if available.
+ * Parameters:
+ * socket: a valid and open AF_INET[6] file descriptor
+ * vrf_name: name of the VRF to bind to
+ * vrf_log_buffer: allocated VRF_LOG_LEN char array to store VRF name into
+ * Returns: 0 on success, -1 on failure
+ */
+static int init_vrf(int socket, char *vrf_name, char *vrf_log_buffer) {
+        if (strlen(vrf_name) == 0)
+            return 0; // do not return an error on nothing to do, valid call
+
+#if defined(ENABLE_VRF) && defined(SO_BINDTODEVICE)
+        snprintf(vrf_log_buffer, VRF_LOG_LEN, "[%.*s] ", IFNAMSIZ, vrf_name);
+        if (setsockopt(socket, SOL_SOCKET, SO_BINDTODEVICE, vrf_name,
+                        strlen(vrf_name))) {
+                if (errno == ENOPROTOOPT) {
+                        msg(MSG_ERROR, "VRF not implemented in local kernel");
+                } else {
+                        msg(MSG_FATAL, "%ssetsockopt VRF %s failed, %s",
+                                        vrf_log_buffer, vrf_name,
+                                        strerror(errno));
+                        close(socket);
+                        return -1;
+                }
+        }
+        return 0;
+#else
+        (void)vrf_log_buffer; // unused variable warning
+        msg(MSG_FATAL, "Cannot setsockopt to VRF %s, missing kernel support", vrf_name);
+        close(socket);
+        return -1;
+#endif
+}
+
+/*
  * Initializes a UDP-socket to send data to.
  * Parameters:
  * serv_addr sockaddr_storage struct with IP address and UDP port number of the
              recipient
  * Returns: a socket to write to. -1 on failure
  */
-static int init_send_udp_socket(struct sockaddr_storage serv_addr){
+static int init_send_udp_socket(struct sockaddr_storage serv_addr,
+                char *vrf_name){
 
         int s;
         // create socket
@@ -691,10 +731,17 @@ static int init_send_udp_socket(struct sockaddr_storage serv_addr){
                 return -1;
         }
 
+        char vrf_log[VRF_LOG_LEN] = "";
+        if (init_vrf(s, vrf_name, vrf_log) < 0) {
+                close(s);
+                return -1;
+        }
+
 #ifndef DISABLE_UDP_CONNECT
         // connect to server
         if(connect(s, (struct sockaddr*)&serv_addr, sizeof(serv_addr) ) < 0) {
-                msg(MSG_FATAL, "connect failed, %s", strerror(errno));
+                msg(MSG_FATAL, "%sconnect failed, %s", vrf_log,
+                                strerror(errno));
                 /* clean up */
                 close(s);
                 return -1;
@@ -754,7 +801,8 @@ static int get_mtu(const int s) {
              recipient
  * Returns: a socket to write to. -1 on failure
  */
-static int init_send_sctp_socket(struct sockaddr_storage serv_addr){
+static int init_send_sctp_socket(struct sockaddr_storage serv_addr,
+                char *vrf_name){
 
     int s;
 
@@ -781,13 +829,20 @@ static int init_send_sctp_socket(struct sockaddr_storage serv_addr){
 	    close(s);
 	    return -1;
     }
+
+    char vrf_log[VRF_LOG_LEN] = "";
+    if (init_vrf(s, vrf_name, vrf_log) < 0) {
+        close(s);
+        return -1;
+    }
+
     // connect (non-blocking, i.e. handshake is initiated, not terminated)
     if((connect(s, (struct sockaddr*)&serv_addr, sizeof(serv_addr) ) == -1) && (errno != EINPROGRESS)) {
-	msg(MSG_ERROR, "SCTP connect failed, %s", strerror(errno));
+	msg(MSG_ERROR, "%sSCTP connect failed, %s", vrf_log, strerror(errno));
 	close(s);
 	return -1;
     }
-    DPRINTFL(MSG_DEBUG, "SCTP Socket created");
+    DPRINTFL(MSG_DEBUG, "%sSCTP Socket created", vrf_log);
 
     return s;
 }
@@ -1258,7 +1313,8 @@ static int add_collector_remaining_protocols(
     }
     // call a separate function for opening the socket.
     // This function can handle both UDP and SCTP sockets.
-    col->data_socket = ipfix_init_send_socket(col->addr, col->protocol);
+    col->data_socket = ipfix_init_send_socket(col->addr, col->protocol,
+		col->vrf_name);
     // error handling, in case we were unable to open the port:
     if(col->data_socket < 0 ) {
 	msg(MSG_ERROR, "add collector, initializing socket failed");
@@ -1367,12 +1423,14 @@ static int valid_transport_protocol(enum ipfix_transport_protocol p) {
  * more details.
  * \param aux_config auxiliary configuration data. The type of the data structure depends on the
  *	transport protocol chosen. See above.
+ * \param vrf_name local VRF name to use for outgoing packets
  * \return 0 success
  * \return -1 failure
  * \sa ipfix_remove_collector()
  */
 int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip_addr,
-	uint16_t coll_port, enum ipfix_transport_protocol proto, void *aux_config)
+	uint16_t coll_port, enum ipfix_transport_protocol proto, void *aux_config,
+	const char *vrf_name)
 {
     // check, if exporter is valid
     if(exporter == NULL) {
@@ -1404,6 +1462,8 @@ int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip_addr,
     strncpy(collector->ipaddress, coll_ip_addr, sizeof(collector->ipaddress) - 1);
     collector->port_number = coll_port;
     collector->protocol = proto;
+    memset(collector->vrf_name, 0, sizeof(collector->vrf_name));
+    strncpy(collector->vrf_name, vrf_name, sizeof(collector->vrf_name) - 1);
 
     memset(&(collector->addr), 0, sizeof(collector->addr));
     if (strchr(coll_ip_addr, ':')) {
@@ -1867,20 +1927,20 @@ static int ipfix_deinit_collector_array(ipfix_receiving_collector **col)
              recipient
  * protocol: transport protocol
  */
-static int ipfix_init_send_socket(struct sockaddr_storage serv_addr, enum ipfix_transport_protocol protocol)
+static int ipfix_init_send_socket(struct sockaddr_storage serv_addr, enum ipfix_transport_protocol protocol, char *vrf_name)
 {
     int sock = -1;
 
     switch(protocol) {
 	case UDP:
 	case DTLS_OVER_UDP:
-	    sock= init_send_udp_socket( serv_addr );
+	    sock= init_send_udp_socket( serv_addr, vrf_name );
 	    break;
 
 #ifdef SUPPORT_SCTP
 	case SCTP:
 	case DTLS_OVER_SCTP:
-	    sock= init_send_sctp_socket( serv_addr );
+	    sock= init_send_sctp_socket( serv_addr, vrf_name );
 	    break;
 #endif
 	default:
@@ -2069,12 +2129,18 @@ static int sctp_reconnect(ipfix_receiving_collector *collector){
 		close(collector->data_socket);
 		collector->data_socket = -1;
 	}
-	    
+
+	char vrf_log[VRF_LOG_LEN] = "";
+	if (strlen(collector->vrf_name) > 0) {
+		snprintf(vrf_log, VRF_LOG_LEN, "[%.*s] ", IFNAMSIZ, collector->vrf_name);
+	}
+
 	// create new socket if not yet done
 	if(collector->data_socket < 0) {
-		collector->data_socket = init_send_sctp_socket( collector->addr );
+		collector->data_socket = init_send_sctp_socket( collector->addr,
+				collector->vrf_name);
 		if( collector->data_socket < 0) {
-		    msg(MSG_ERROR, "SCTP socket creation in reconnect failed, %s", strerror(errno));
+		    msg(MSG_ERROR, "%sSCTP socket creation in reconnect failed, %s", vrf_log, strerror(errno));
 		    collector->state = C_DISCONNECTED;
 		    return -1;
 		}
@@ -2096,15 +2162,15 @@ static int sctp_reconnect(ipfix_receiving_collector *collector){
 	ret = select(collector->data_socket + 1,&readfds,NULL,NULL,&timeout);
 	if (ret == 0) {
 	    // connection attempt not yet finished
-	    msg(MSG_DEBUG, "waiting for socket to become readable...");
+	    msg(MSG_DEBUG, "%swaiting for socket to become readable...", vrf_log);
 	    collector->state = C_NEW;
 	    return -1;
 	} else if (ret>0) {
 	    // connected or connection setup failed.
-	    msg(MSG_DEBUG, "socket is readable.");
+	    msg(MSG_DEBUG, "%ssocket is readable.", vrf_log);
 	} else {
 	    // error
-	    msg(MSG_ERROR, "select() failed: %s", strerror(errno));
+	    msg(MSG_ERROR, "%sselect() failed: %s", vrf_log, strerror(errno));
 	    close(collector->data_socket);
 	    collector->data_socket = -1;
 	    collector->state = C_DISCONNECTED;
@@ -2115,15 +2181,15 @@ static int sctp_reconnect(ipfix_receiving_collector *collector){
 	len = sizeof error;
 	if (getsockopt(collector->data_socket, SOL_SOCKET,
 		    SO_ERROR, &error, &len) != 0) {
-	    msg(MSG_ERROR, "getsockopt(fd,SOL_SOCKET,SO_ERROR,...) failed: %s",
-		    strerror(errno));
+	    msg(MSG_ERROR, "%sgetsockopt(fd,SOL_SOCKET,SO_ERROR,...) failed: %s",
+		    vrf_log, strerror(errno));
 	    close(collector->data_socket);
 	    collector->data_socket = -1;
 	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	if (error) {
-	    msg(MSG_ERROR, "SCTP connection setup failed: %s",
+	    msg(MSG_ERROR, "%sSCTP connection setup failed: %s", vrf_log,
 		    strerror(error));
 	    close(collector->data_socket);
 	    collector->data_socket = -1;
@@ -2141,22 +2207,22 @@ static int sctp_reconnect(ipfix_receiving_collector *collector){
 	msg.msg_iov = &iv;
 	msg.msg_iovlen = 1;
 	if ((r = recvmsg(collector->data_socket, &msg, 0))<0) {
-	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg returned: %s",
-		    strerror(error));
+	    msg(MSG_ERROR, "%sSCTP connection setup failed. recvmsg returned: %s",
+		    vrf_log, strerror(error));
 	    close(collector->data_socket);
 	    collector->data_socket = -1;
 	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	if (r==0) {
-	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg returned 0");
+	    msg(MSG_ERROR, "%sSCTP connection setup failed. recvmsg returned 0", vrf_log);
 	    close(collector->data_socket);
 	    collector->data_socket = -1;
 	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 	if (!(msg.msg_flags & MSG_NOTIFICATION)) {
-	    msg(MSG_ERROR, "SCTP connection setup failed. recvmsg unexpected user data.");
+	    msg(MSG_ERROR, "%sSCTP connection setup failed. recvmsg unexpected user data.", vrf_log);
 	    close(collector->data_socket);
 	    collector->data_socket = -1;
 	    collector->state = C_DISCONNECTED;
@@ -2166,19 +2232,19 @@ static int sctp_reconnect(ipfix_receiving_collector *collector){
 	    case SCTP_ASSOC_CHANGE:
 		sac = &snp.sn_assoc_change;
 		if (!sac->sac_state==SCTP_COMM_UP) {
-		    msg(MSG_ERROR, "SCTP connection setup failed. "
+		    msg(MSG_ERROR, "%sSCTP connection setup failed. "
 			    "Received unexpected SCTP_ASSOC_CHANGE notification with state %d",
-			    sac->sac_state);
+			    vrf_log, sac->sac_state);
 		    close(collector->data_socket);
 		    collector->data_socket = -1;
 		    collector->state = C_DISCONNECTED;
 		    return -1;
 		}
-		msg(MSG_DEBUG,"Received SCTP_COMM_UP event.");
+		msg(MSG_DEBUG,"%sReceived SCTP_COMM_UP event.", vrf_log);
 		break;
 	    default:
-		msg(MSG_ERROR, "SCTP connection setup failed. "
-			"Received unexpected notification of type %d",
+		msg(MSG_ERROR, "%sSCTP connection setup failed. "
+			"Received unexpected notification of type %d", vrf_log,
 			snp.sn_header.sn_type);
 		close(collector->data_socket);
 		collector->data_socket = -1;
@@ -2190,8 +2256,8 @@ static int sctp_reconnect(ipfix_receiving_collector *collector){
 	len = sizeof ss;
 	if (getsockopt(collector->data_socket, IPPROTO_SCTP,
 		    SCTP_STATUS, &ss, &len) != 0) {
-	    msg(MSG_ERROR, "getsockopt(fd,IPPROTO_SCTP,SCTP_STATUS,...) failed: %s",
-		    strerror(errno));
+	    msg(MSG_ERROR, "%sgetsockopt(fd,IPPROTO_SCTP,SCTP_STATUS,...) failed: %s",
+		    vrf_log, strerror(errno));
 	    close(collector->data_socket);
 	    collector->data_socket = -1;
 	    collector->state = C_DISCONNECTED;
@@ -2199,14 +2265,14 @@ static int sctp_reconnect(ipfix_receiving_collector *collector){
 	}
 	/* Make sure SCTP connection is in state ESTABLISHED */
 	if (ss.sstat_state != SCTP_ESTABLISHED) {
-	    msg(MSG_ERROR, "SCTP socket not in state ESTABLISHED");
+	    msg(MSG_ERROR, "%sSCTP socket not in state ESTABLISHED", vrf_log);
 	    close(collector->data_socket);
 	    collector->data_socket = -1;
 	    collector->state = C_DISCONNECTED;
 	    return -1;
 	}
 
-	msg(MSG_INFO, "Successfully (re)connected to SCTP collector.");
+	msg(MSG_INFO, "%sSuccessfully (re)connected to SCTP collector.", vrf_log);
 	collector->state = C_CONNECTED;
 	return 0;
 }
@@ -2300,6 +2366,12 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 	if (col->state == C_UNUSED) {
 	    continue; // No. Continue to next loop iteration.
 	}
+
+	char vrf_log[VRF_LOG_LEN] = "";
+	if (strlen(col->vrf_name) > 0) {
+		snprintf(vrf_log, VRF_LOG_LEN, "[%.*s] ", IFNAMSIZ, col->vrf_name);
+	}
+
 #ifdef SUPPORT_DTLS
 	if (col->protocol == DTLS_OVER_UDP ||
 	    col->protocol == DTLS_OVER_SCTP) {
@@ -2312,7 +2384,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 	     * This might happen if OpenSSL is still waiting for data from the
 	     * remote end and therefore returned SSL_ERROR_WANT_READ. */
 	    if ( col->state != C_CONNECTED ) {
-		DPRINTF("We are not yet connected so we can't send templates.");
+		DPRINTF("%sWe are not yet connected so we can't send templates.", vrf_log);
 		break;
 	    }
 	}
@@ -2358,19 +2430,21 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 		if((bytes_sent = sendmsg(col->data_socket, &header, 0))  == -1){
 		    if (errno == EMSGSIZE) {
 			msg(MSG_ERROR,
-			    "Unable to send templates to %s:%d b/c message is bigger than MTU. That is a severe problem.",
+			    "%sUnable to send templates to %s:%d b/c message is bigger than MTU. That is a severe problem.",
+			    vrf_log,
 			    col->ipaddress,
 			    col->port_number);
 		    } else {
 			msg(MSG_ERROR,
-			    "could not send templates to %s:%d errno: %s  (UDP)",
+			    "%scould not send templates to %s:%d errno: %s  (UDP)",
+			    vrf_log,
 			    col->ipaddress,
 			    col->port_number,
 			    strerror(errno));
 		    }
 		} else {
-		    msg(MSG_VDEBUG, "%d Template Bytes sent to UDP collector %s:%d",
-			bytes_sent, col->ipaddress, col->port_number);
+		    msg(MSG_VDEBUG, "%s%d Template Bytes sent to UDP collector %s:%d",
+			vrf_log, bytes_sent, col->ipaddress, col->port_number);
 		}
 		col->messages_sent++;
 	    }
@@ -2381,7 +2455,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 	    switch (col->state){
 	    case C_DISCONNECTED:
 		if(exporter->sctp_reconnect_timer == 0) { // 0 = no more reconnection attempts
-		    msg(MSG_ERROR, "reconnect failed, removing collector %s:%d (SCTP)", col->ipaddress, col->port_number);
+		    msg(MSG_ERROR, "%sreconnect failed, removing collector %s:%d (SCTP)", vrf_log, col->ipaddress, col->port_number);
 		    remove_collector(col);
 		    break;
 		}
@@ -2408,22 +2482,22 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 						   0 // context
 			    )) == -1) {
 			// send failed
-			msg(MSG_ERROR, "could not send templates to %s:%d errno: %s  (SCTP)",col->ipaddress, col->port_number, strerror(errno));
+			msg(MSG_ERROR, "%scould not send templates to %s:%d errno: %s  (SCTP)", vrf_log, col->ipaddress, col->port_number, strerror(errno));
 			sctp_reconnect(col); //1st reconnect attempt
 			// if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will
 			// be removed on the next call of ipfix_send_templates()
 		    } else {
 			// send was successful
-			msg(MSG_VDEBUG, "%d template bytes sent to SCTP collector %s:%d",
-			    bytes_sent, col->ipaddress, col->port_number);
+			msg(MSG_VDEBUG, "%s%d template bytes sent to SCTP collector %s:%d",
+			    vrf_log, bytes_sent, col->ipaddress, col->port_number);
 		    }
 		} else {
-		    DPRINTF("No Template to send to SCTP collector");
+		    DPRINTF("%sNo Template to send to SCTP collector", vrf_log);
 		}
 		col->messages_sent++;
 		break;
 	    default:
-		msg(MSG_FATAL, "Unknown collector socket state");
+		msg(MSG_FATAL, "%sUnknown collector socket state", vrf_log);
 		return -1;
 	    }
 	    break;
@@ -2498,8 +2572,13 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 	    if (col->state != C_CONNECTED) {
 		continue; // No. Continue to next loop iteration.
 	    }
+
+	    char vrf_log[VRF_LOG_LEN] = "";
+	    if (strlen(col->vrf_name) > 0) {
+		snprintf(vrf_log, VRF_LOG_LEN, "[%.*s] ", IFNAMSIZ, col->vrf_name);
+	    }
 #ifdef DEBUG
-	    DPRINTFL(MSG_VDEBUG, "Sending to exporter %s", col->ipaddress);
+	    DPRINTFL(MSG_VDEBUG, "%sSending to exporter %s", vrf_log, col->ipaddress);
 	    ipfix_sendbuffer_debug(exporter->data_sendbuffer);
 #endif
 	    switch(col->protocol){
@@ -2512,9 +2591,10 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 		header.msg_controllen = 0;
 
 		if((bytes_sent = sendmsg(col->data_socket, &header, 0))  == -1) {
-		    msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (UDP)",col->ipaddress, col->port_number, strerror(errno));
+		    msg(MSG_ERROR, "%scould not send data to %s:%d errno: %s  (UDP)", vrf_log, col->ipaddress, col->port_number, strerror(errno));
 		    if (errno == EMSGSIZE) {
-			msg(MSG_ERROR, "Updating MTU estimate for collector %s:%d",
+			msg(MSG_ERROR, "%sUpdating MTU estimate for collector %s:%d",
+			    vrf_log,
 			    col->ipaddress,
 			    col->port_number);
 			/* If update_collector_mtu fails, it calls
@@ -2525,8 +2605,8 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 		    }
 		}else{
 
-		    msg(MSG_VDEBUG, "%d data bytes sent to UDP collector %s:%d",
-			bytes_sent, col->ipaddress, col->port_number);
+		    msg(MSG_VDEBUG, "%s%d data bytes sent to UDP collector %s:%d",
+			vrf_log, bytes_sent, col->ipaddress, col->port_number);
 		}
 		break;
 #ifdef SUPPORT_DTLS_OVER_SCTP
@@ -2536,10 +2616,10 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 						    exporter->data_sendbuffer->committed,
 						    exporter->sctp_lifetime
 			)) == -1){
-		    msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over SCTP)",col->ipaddress, col->port_number);
+		    msg(MSG_VDEBUG, "%scould not send data to %s:%d (DTLS over SCTP)", vrf_log, col->ipaddress, col->port_number);
 		}else{
-		    msg(MSG_VDEBUG, "%d data bytes sent to DTLS over SCTP collector %s:%d",
-			bytes_sent, col->ipaddress, col->port_number);
+		    msg(MSG_VDEBUG, "%s%d data bytes sent to DTLS over SCTP collector %s:%d",
+			vrf_log, bytes_sent, col->ipaddress, col->port_number);
 		}
 		break;
 #endif
@@ -2557,14 +2637,14 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 					       0 // context
 			)) == -1) {
 		    // send failed
-		    msg(MSG_ERROR, "could not send data to %s:%d errno: %s  (SCTP)",col->ipaddress, col->port_number, strerror(errno));
+		    msg(MSG_ERROR, "%scould not send data to %s:%d errno: %s  (SCTP)", vrf_log, col->ipaddress, col->port_number, strerror(errno));
 		    // drop data and call sctp_reconnect
 		    sctp_reconnect(col);
 		    // if result is C_DISCONNECTED and sctp_reconnect_timer == 0, collector will 
 		    // be removed on the next call of ipfix_send_templates()
 		}
-		msg(MSG_VDEBUG, "%d data bytes sent to SCTP collector %s:%d",
-		    bytes_sent, col->ipaddress, col->port_number);
+		msg(MSG_VDEBUG, "%s%d data bytes sent to SCTP collector %s:%d",
+		    vrf_log, bytes_sent, col->ipaddress, col->port_number);
 		break;
 #endif
 #ifdef SUPPORT_DTLS
@@ -2573,10 +2653,10 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 					  exporter->data_sendbuffer->entries,
 					  exporter->data_sendbuffer->committed
 			)) == -1){
-		    msg(MSG_VDEBUG, "could not send data to %s:%d (DTLS over UDP)",col->ipaddress, col->port_number);
+		    msg(MSG_VDEBUG, "%scould not send data to %s:%d (DTLS over UDP)", vrf_log, col->ipaddress, col->port_number);
 		}else{
-		    msg(MSG_VDEBUG, "%d data bytes sent to DTLS over UDP collector %s:%d",
-			bytes_sent, col->ipaddress, col->port_number);
+		    msg(MSG_VDEBUG, "%s%d data bytes sent to DTLS over UDP collector %s:%d",
+			vrf_log, bytes_sent, col->ipaddress, col->port_number);
 		}
 		break;
 #endif
@@ -2591,7 +2671,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 		break;
 
 	    default:
-		msg(MSG_FATAL, "Transport Protocol not supported");
+		msg(MSG_FATAL, "%sTransport Protocol not supported", vrf_log);
 		break; /* Should not occur since we check the transport
 			  protocol in valid_transport_protocol()*/
 	    }

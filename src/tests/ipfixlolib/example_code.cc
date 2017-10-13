@@ -100,7 +100,7 @@ int main(int argc, char **argv)
 	 */
 	ipfix_aux_config_udp aux_config;
 	aux_config.mtu = 1500;
-	ret = ipfix_add_collector(my_exporter, collector_ip, collector_port, UDP, &aux_config);
+	ret = ipfix_add_collector(my_exporter, collector_ip, collector_port, UDP, &aux_config, "");
 	printf("ipfix_add_collector returned %i\n", ret);
 
 	/*

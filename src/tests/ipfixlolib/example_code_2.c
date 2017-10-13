@@ -94,10 +94,10 @@ int add_collector(ipfix_exporter *exporter) {
     } else if (myconfig.transport_protocol == DTLS_OVER_SCTP) {
 	aux_config = &acdos;
     }
-    /* The type of the last parameter to ipfix_add_collector() depends
+    /* The type of the 5th parameter to ipfix_add_collector() depends
      * on the transport protocol that has been chose. */
     if ((ret = ipfix_add_collector(exporter, myconfig.coll_ip4_addr,
-		    myconfig.coll_port, myconfig.transport_protocol, aux_config))) {
+		    myconfig.coll_port, myconfig.transport_protocol, aux_config, ""))) {
 	fprintf(stderr, "ipfix_add_collector() failed.\n");
 	return -1;
     }

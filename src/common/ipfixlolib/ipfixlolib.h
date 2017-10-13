@@ -124,6 +124,15 @@ See ipfixlolib.h for details on how to use this library.
 #include "common/openssl/OpenSSL.h"
 #endif
 
+#ifdef LINUX_IF_H_FOUND
+#include <linux/if.h>
+#endif
+#ifndef IFNAMSIZ
+#define IFNAMSIZ 16
+#endif
+/* Add enough space for formatting: [foo] log */
+#define VRF_LOG_LEN IFNAMSIZ + 4
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -593,6 +602,7 @@ typedef struct {
 				a connection reaches a certain age.*/
 	const char *peer_fqdn;
 #endif
+	char vrf_name[IFNAMSIZ];
 } ipfix_receiving_collector;
 
 /*
@@ -683,7 +693,7 @@ int ipfix_beat(ipfix_exporter *exporter);
 int ipfix_init_exporter(export_protocol_version export_protocol, uint32_t observation_domain_id, ipfix_exporter **exporter);
 int ipfix_deinit_exporter(ipfix_exporter **exporter_p);
 
-int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip_addr, uint16_t coll_port, enum ipfix_transport_protocol proto, void *aux_config);
+int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip_addr, uint16_t coll_port, enum ipfix_transport_protocol proto, void *aux_config, const char *vrf_name);
 int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip_addr, uint16_t coll_port);
 int ipfix_start_template(ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count);
 int ipfix_start_optionstemplate_set(ipfix_exporter *exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length);

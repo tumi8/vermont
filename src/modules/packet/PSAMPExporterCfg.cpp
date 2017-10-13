@@ -113,13 +113,20 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 		msg(MSG_DIALOG, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
 	}
 	for (unsigned i = 0; i != collectors.size(); ++i) {
-		msg(MSG_DEBUG, "PsampExporter: adding collector %s://%s:%d",
+		char vrf_log[VRF_LOG_LEN] = "";
+		if (!collectors[i]->getVrfName().empty()) {
+			snprintf(vrf_log, VRF_LOG_LEN, "[%.*s] ", IFNAMSIZ, collectors[i]->getVrfName().c_str());
+		}
+		msg(MSG_DEBUG, "%sPsampExporter: adding collector %s://%s:%d on VRF %s",
+				vrf_log,
 				collectors[i]->getProtocol()==132?"SCTP":"UDP",
 				collectors[i]->getIpAddress().c_str(),
-				collectors[i]->getPort());
+				collectors[i]->getPort(),
+				collectors[i]->getVrfName().c_str());
 		instance->addCollector(collectors[i]->getIpAddress().c_str(),
 				collectors[i]->getPort(),
-				collectors[i]->getProtocol());
+				collectors[i]->getProtocol(),
+				collectors[i]->getVrfName().c_str());
 	}
 
 	return instance;

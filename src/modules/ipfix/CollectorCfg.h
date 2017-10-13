@@ -48,7 +48,8 @@ public:
 	std::string getName() { return "collector"; }
 
 	CollectorCfg(XMLElement* elem, unsigned int moduleId)
-		: protocol(UDP), port(0), mtu(0), buffer(0), moduleId(moduleId),
+		: vrfName(""),
+		  protocol(UDP), port(0), mtu(0), buffer(0), moduleId(moduleId),
 		  zmqHighWaterMark(0), zmqPollTimeout(ZMQ_POLL_TIMEOUT_DEFAULT)
 	{
 		uint16_t defaultPort = 4739;
@@ -61,6 +62,16 @@ public:
 
 			if (e->matches("ipAddress")) {
 				ipAddress = e->getContent();
+			} else if (e->matches("vrfName")) {
+#if defined(ENABLE_VRF)
+				vrfName = e->getContent();
+				if (vrfName.length() == 0)
+					THROWEXCEPTION("Invalid configuration parameter for vrfName"
+							" (empty string)");
+#else
+				THROWEXCEPTION("Invalid configuration parameter: vrfName."
+						" Build with -DENABLE_VRF=ON to enable.");
+#endif
 			} else if (e->matches("authorizedHost")) {
 				authorizedHosts.push_back(e->getContent());
 			} else if (e->matches("transportProtocol")) {
@@ -163,6 +174,7 @@ public:
 	bool equalTo(CollectorCfg* other)
 	{
 		if ((ipAddress == other->ipAddress) &&
+			(vrfName == other->vrfName) &&
 			(protocol == other->protocol) &&
 			(port == other->port) &&
 			(mtu == other->mtu) &&
@@ -181,6 +193,7 @@ public:
 
 	std::set<std::string> getPeerFqdns() { return peerFqdns; }
 	std::string getIpAddress() { return ipAddress; }
+	std::string getVrfName() { return vrfName; }
 	ipfix_transport_protocol getProtocol() { return protocol; }
 	uint16_t getPort() { return port; }
 	uint16_t getMtu() { return mtu; }
@@ -188,6 +201,7 @@ public:
 
 private:
 	std::string ipAddress;
+	std::string vrfName;
 	std::vector<std::string> authorizedHosts;
 	ipfix_transport_protocol protocol;
 	uint16_t port;

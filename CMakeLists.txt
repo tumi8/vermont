@@ -57,6 +57,8 @@ MARK_AS_ADVANCED(
 )
 
 include(CppcheckTargets)
+include(CheckSymbolExists)
+include(CheckIncludeFile)
 
 ### basic modules
 
@@ -170,6 +172,19 @@ OPTION(DISABLE_UDP_CONNECT "Do not run connect on UDP socket" OFF)
 IF (DISABLE_UDP_CONNECT)
 	ADD_DEFINITIONS(-DDISABLE_UDP_CONNECT)
 ENDIF (DISABLE_UDP_CONNECT)
+
+### SO_BINDTODEVICE (VRF) support
+
+OPTION(ENABLE_VRF "Enable support for binding sockets via SO_BINDTODEVICE (VRF). Warning: requires support in runtime kernel for SO_BINDTODEVICE and VRF !" OFF)
+IF (ENABLE_VRF)
+	CHECK_SYMBOL_EXISTS("SO_BINDTODEVICE" "sys/socket.h" SO_BINDTODEVICE_FOUND)
+	IF (SO_BINDTODEVICE_FOUND)
+		ADD_DEFINITIONS(-DENABLE_VRF)
+	ELSE (SO_BINDTODEVICE_FOUND)
+		MESSAGE(WARNING "SO_BINDTODEVICE not found in sys/socket.h, will not build with ENABLE_VRF. Check Linux Kernel's userspace headers (eg: linux-libc-dev)")
+	ENDIF (SO_BINDTODEVICE_FOUND)
+ENDIF (ENABLE_VRF)
+CHECK_INCLUDE_FILE("linux/if.h" LINUX_IF_H_FOUND)
 
 ### MongoDB
 

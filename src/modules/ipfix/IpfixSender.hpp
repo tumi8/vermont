@@ -55,7 +55,8 @@ public:
 	virtual ~IpfixSender();
 
 	void addCollector(const char *ip, uint16_t port,
-			ipfix_transport_protocol proto, void *aux_config);
+			ipfix_transport_protocol proto, void *aux_config,
+			const char *vrf_name);
 	void flushPacket();
 
 	virtual void notifyQueueRunning();
