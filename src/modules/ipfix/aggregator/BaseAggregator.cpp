@@ -150,7 +150,7 @@ void BaseAggregator::buildAggregator(Rules* rules, uint16_t inactiveTimeout, uin
 		rules->rule[i]->hashtable = createHashtable(rules->rule[i], inactiveTimeout, activeTimeout, hashbits);
 	}
 
-	msg(MSG_INFO, "Done. Parsed %d rules; inactiveTimeout %d, activeTimeout %d", rules->count, inactiveTimeout, activeTimeout);
+	msg(MSG_INFO, "Done. Parsed %zu rules; inactiveTimeout %d, activeTimeout %d", rules->count, inactiveTimeout, activeTimeout);
 }
 
 

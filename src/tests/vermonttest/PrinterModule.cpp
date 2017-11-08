@@ -8,7 +8,7 @@ PrinterModule::~PrinterModule()
 void PrinterModule::receive(Packet* p)
 {
 	if (do_print)
-		msg(MSG_FATAL, "%s: packet %d received", prefix.c_str(), p->totalPacketsReceived);
+		msg(MSG_FATAL, "%s: packet %lu received", prefix.c_str(), p->totalPacketsReceived);
 	count++;
 	
 	if (isEndPoint) {

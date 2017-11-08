@@ -160,7 +160,7 @@ void *Observer::observerThread(void *arg)
 	if (obs->fileName) msg(MSG_INFO, "  - fileName=%s", obs->fileName);
 	if (obs->captureInterface) msg(MSG_INFO, "  - captureInterface=%s", obs->captureInterface);
 	msg(MSG_INFO, "  - filterString='%s'", (obs->filter_exp ? obs->filter_exp : "none"));
-	msg(MSG_INFO, "  - maxPackets=%u", obs->maxPackets);
+	msg(MSG_INFO, "  - maxPackets=%lu", obs->maxPackets);
 	msg(MSG_INFO, "  - capturelen=%d", obs->capturelen);
 	msg(MSG_INFO, " - dataLinkType=%d", obs->dataLinkType);
 	if (obs->readFromFile) {
@@ -259,7 +259,7 @@ void *Observer::observerThread(void *arg)
 			if(!pcapData) {
 				/* no packet data was available */
 				if(feof(fh))
-				        msg(MSG_DIALOG, "Observer: reached end of file (%llu packets)", obs->processedPackets);
+				        msg(MSG_DIALOG, "Observer: reached end of file (%lu packets)", obs->processedPackets);
                         file_eof = true;
       				break;
       			}

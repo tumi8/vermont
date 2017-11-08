@@ -50,7 +50,7 @@ IpfixPayloadWriter::IpfixPayloadWriter(string path, string prefix, uint32_t noco
 	msg(MSG_INFO, "  - path=%s", path.c_str());
 	msg(MSG_INFO, "  - filenamePrefix=%s", filenamePrefix.c_str());
 	msg(MSG_INFO, "  - noConnections=%u", noConnections);
-	msg(MSG_INFO, "  - startIndex=%llu", connectionID);
+	msg(MSG_INFO, "  - startIndex=%lu", connectionID);
 	msg(MSG_INFO, "  - ignoreEmptyPayload=%u", ignoreEmptyPayload);
 	msg(MSG_INFO, "  - ignoreIncompleteTCP=%u", ignoreIncompleteTCP);
 }

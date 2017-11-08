@@ -268,7 +268,7 @@ std::vector<CfgNode*> Graph::topoSort()
 		result[nz-1-i] = nodes[postI[i]];
 	}
 	for (size_t i = 0; i < nz; i++) {
-		msg(MSG_DEBUG, "topological sort #%u: %s[%u]", i, result[i]->getCfg()->getName().c_str(), result[i]->getCfg()->getID());
+		msg(MSG_DEBUG, "topological sort #%zu: %s[%u]", i, result[i]->getCfg()->getName().c_str(), result[i]->getCfg()->getID());
 	}
 
 	return result;

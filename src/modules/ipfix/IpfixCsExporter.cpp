@@ -60,7 +60,7 @@ IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 	msg(MSG_INFO, "  - maxChunkBufferRecords = %d seconds" , maxChunkBufferRecords);
 	msg(MSG_INFO, "  - maxFileCreationInterval = %d seconds" , maxFileCreationInterval);
 	msg(MSG_INFO, "  - exportMode = %d" , exportMode);
-	msg(MSG_INFO, "  - export struct sizes = %u(Ipfix_basic_flow_sequence_chunk_header), %u(Ipfix_basic_flow)", sizeof(Ipfix_basic_flow_sequence_chunk_header), sizeof(Ipfix_basic_flow));
+	msg(MSG_INFO, "  - export struct sizes = %lu(Ipfix_basic_flow_sequence_chunk_header), %lu(Ipfix_basic_flow)", sizeof(Ipfix_basic_flow_sequence_chunk_header), sizeof(Ipfix_basic_flow));
 	msg(MSG_INFO, "IpfixCsExporter: running");
 }
 
@@ -404,11 +404,11 @@ void IpfixCsExporter::registerTimeout()
 	if (nextChunkTimeout.tv_sec <= nextFileTimeout.tv_sec){
 		// Register a chunk timeout
 		timer->addTimeout(this, nextChunkTimeout, NULL);
-		msg(MSG_DEBUG, "next timeout: %u", nextChunkTimeout.tv_sec);
+		msg(MSG_DEBUG, "next timeout: %ld", nextChunkTimeout.tv_sec);
 	} else {
 		// register a file timeout
 		timer->addTimeout(this, nextFileTimeout, NULL);
-		msg(MSG_DEBUG, "next timeout: %u", nextFileTimeout.tv_sec);
+		msg(MSG_DEBUG, "next timeout: %ld", nextFileTimeout.tv_sec);
 	}
 
 	timeoutRegistered = true;

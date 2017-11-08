@@ -681,7 +681,7 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 
 	/* check if there are trailing bytes */
 	if ((uint8_t*)(set) != endOfMessage) {
-		msg(MSG_ERROR, "IpfixParser: NetFlowV9 message contains %u trailing bytes!", endOfMessage - (uint8_t*)(set));
+		msg(MSG_ERROR, "IpfixParser: NetFlowV9 message contains %ld trailing bytes!", endOfMessage - (uint8_t*)(set));
 	}
 	/* check if we got all records */
 	if ((numberOfDataRecords + numberOfTemplateRecords) != expectedNumberOfRecords) {

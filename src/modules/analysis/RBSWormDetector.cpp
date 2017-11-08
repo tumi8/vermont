@@ -208,7 +208,7 @@ void RBSWormDetector::addConnection(Connection* conn)
 		te->timeExpire = time(0)+timeExpireWorm;
 		msg(MSG_DEBUG, "Worm detected:");
 		msg(MSG_DEBUG, "srcIP: %s", IPToString(te->srcIP).c_str());
-		msg(MSG_DEBUG, "numFanOut: %d, totalTime: %d",te->numFanouts, trace_ela);
+		msg(MSG_DEBUG, "numFanOut: %d, totalTime: %f",te->numFanouts, trace_ela);
 
 		IDMEFMessage* msg = idmefManager.getNewInstance();
 		msg->init(idmefTemplate, analyzerId);
@@ -357,7 +357,7 @@ void RBSWormDetector::adaptFrequencies ()
 	//sort list to cut off top and bottom 10 percent
 	adaptList.sort(RBSWormDetector::comp_entries);	
 
-	msg(MSG_FATAL,"meta list size %d",adaptList.size());
+	msg(MSG_FATAL,"meta list size %zu",adaptList.size());
 	uint32_t num10 = adaptList.size()/10;
 
 	list<RBSEntry*>::iterator iter = adaptList.begin();

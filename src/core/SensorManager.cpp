@@ -43,7 +43,7 @@ void SensorManager::setParameters(uint32_t checkInterval = SM_DEFAULT_CHECK_INTE
 #endif
 	if (gethostname(hostname, 100) != 0)
 		THROWEXCEPTION("failed to get hostname by gethostname()!");
-	msg(MSG_INFO, "SensorManager: hertz jiffy value=%u, hostname=%s", hertzValue, hostname);
+	msg(MSG_INFO, "SensorManager: hertz jiffy value=%lu, hostname=%s", hertzValue, hostname);
 
 	msg(MSG_INFO, "SensorManager started with following parameters:");
 	msg(MSG_INFO, "  - outputfilename=%s", outputfilename.c_str());

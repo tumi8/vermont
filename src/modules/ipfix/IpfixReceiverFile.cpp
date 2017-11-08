@@ -288,7 +288,7 @@ void IpfixReceiverFile::run()
 		}
 		packetFile.close();
 
-		msg(MSG_INFO, "IpfixReceiverFile: File %s ended after %llu bytes.", 
+		msg(MSG_INFO, "IpfixReceiverFile: File %s ended after %lu bytes.", 
 			packet_file_path.c_str(), idx);
 	}
 	msg(MSG_DEBUG, "real_start: %lu  msg_start: %lu  real_now: %lu  msg_now: %lu", 

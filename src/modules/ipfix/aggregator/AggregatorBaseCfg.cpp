@@ -115,7 +115,7 @@ Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 	InfoElementCfg ie(e);
 
 	if (!ie.isKnownIE())
-		THROWEXCEPTION("Unsupported non-key field %s (id=%u, enterprise=%lu).", (ie.getIeName()).c_str(), ie.getIeId(), ie.getEnterpriseNumber());
+		THROWEXCEPTION("Unsupported non-key field %s (id=%u, enterprise=%u).", (ie.getIeName()).c_str(), ie.getIeId(), ie.getEnterpriseNumber());
 
 	ruleField->modifier = Rule::Field::AGGREGATE;
 	ruleField->type.id = ie.getIeId();
