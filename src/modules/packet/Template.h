@@ -43,7 +43,7 @@ class Template
 
 		// the packet classes for which each field is valid. This will
 		// be checked against the packet classification before exporting
-        uint32_t  fieldValidPacketClasses[MAX_TEMPLATE_FIELDS];
+		uint32_t  fieldValidPacketClasses[MAX_TEMPLATE_FIELDS];
 
 	public:
 		Template(uint16_t id) : templateID(id), fieldCount(0)
@@ -62,53 +62,53 @@ class Template
 		// Add a template field that takes data from within the packet
 		void addFieldWithOffset(const InformationElement::IeInfo& ie, uint16_t offset, uint16_t header, uint32_t validPacketClasses)
 		{
-            // check if this template field can be accepted
-            if (fieldCount < MAX_TEMPLATE_FIELDS)
-            {
-                fieldType[fieldCount] = ie;
-                fieldPacketOffset[fieldCount] = offset;
-                fieldPacketHeader[fieldCount] = header;
-                fieldValidPacketClasses[fieldCount] = validPacketClasses;
-                fieldCount++;
-            }
-            else
-            {
-                // the maximum number of template fields has been exceeded -> abort
-                THROWEXCEPTION("exceeded maximum number of template fields (%d)", MAX_TEMPLATE_FIELDS);
-            }
+			// check if this template field can be accepted
+			if (fieldCount < MAX_TEMPLATE_FIELDS)
+			{
+				fieldType[fieldCount] = ie;
+				fieldPacketOffset[fieldCount] = offset;
+				fieldPacketHeader[fieldCount] = header;
+				fieldValidPacketClasses[fieldCount] = validPacketClasses;
+				fieldCount++;
+			}
+			else
+			{
+				// the maximum number of template fields has been exceeded -> abort
+				THROWEXCEPTION("exceeded maximum number of template fields (%d)", MAX_TEMPLATE_FIELDS);
+			}
 		};
 
 		// Add a template "meta-"field which gets its data not from the captured packet itself
 		// "length" parameter must still be correct! (i.e. 4 bytes for FT_NUMPACKETS etc.)
 		void addFieldWithoutOffset(const InformationElement::IeInfo& ie)
 		{
-            // check if this template field can be accepted
-            if (fieldCount < MAX_TEMPLATE_FIELDS)
-            {
-                fieldType[fieldCount] = ie;
-                fieldValidPacketClasses[fieldCount] = (uint32_t)(-1);
-                fieldCount++;
-            }
-            else
-            {
-                // the maximum number of template fields has been exceeded -> abort
-                THROWEXCEPTION("exceeded maximum number of template fields (%d)", MAX_TEMPLATE_FIELDS);
-            }
+			// check if this template field can be accepted
+			if (fieldCount < MAX_TEMPLATE_FIELDS)
+			{
+				fieldType[fieldCount] = ie;
+				fieldValidPacketClasses[fieldCount] = (uint32_t)(-1);
+				fieldCount++;
+			}
+			else
+			{
+				// the maximum number of template fields has been exceeded -> abort
+				THROWEXCEPTION("exceeded maximum number of template fields (%d)", MAX_TEMPLATE_FIELDS);
+			}
 		};
 
 		void getFieldInfo(int num, InformationElement::IeInfo* ie, uint16_t* offset, uint16_t* header) const
-        {
-            if (num < fieldCount)
-            {
-                *ie = fieldType[num];
-                *offset = fieldPacketOffset[num];
-                *header = fieldPacketHeader[num];
-            }
-            else
-            {
-                // template field not initialized -> abort
-                THROWEXCEPTION("template field %d is not initialized", num);
-            }
+		{
+			if (num < fieldCount)
+			{
+				*ie = fieldType[num];
+				*offset = fieldPacketOffset[num];
+				*header = fieldPacketHeader[num];
+			}
+			else
+			{
+				// template field not initialized -> abort
+				THROWEXCEPTION("template field %d is not initialized", num);
+			}
 		}
 
 		int getTemplateID() const
