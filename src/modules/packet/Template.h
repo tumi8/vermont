@@ -46,16 +46,16 @@ class Template
 	public:
 		Template(uint16_t id) : templateID(id), fieldCount(0)
 		{
-		}
+		};
 
 		~Template()
 		{
-		}
+		};
 
 		int getFieldCount() const
 		{
 			return fieldCount;
-		}
+		};
 
 		// Add a template field that takes data from within the packet
 		// Or a template "meta-"field which gets its data not from the captured packet itself

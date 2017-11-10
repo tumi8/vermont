@@ -15,9 +15,9 @@
 #include <fstream>
 #include <iostream>
 
-#include "common/ipfixlolib//ipfix.h"
-
 #include "common/msg.h"
+
+#include "common/ipfixlolib//ipfix.h"
 
 #include "Template.h"
 
