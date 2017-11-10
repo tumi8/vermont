@@ -17,6 +17,8 @@
 
 #include "common/ipfixlolib//ipfix.h"
 
+#include "common/msg.h"
+
 #include "Template.h"
 
 

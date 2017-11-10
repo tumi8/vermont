@@ -17,8 +17,6 @@
 
 #include <stdint.h>
 
-#include "common/msg.h"
-
 
 // TODO: Make this dynamic
 #define MAX_TEMPLATE_FIELDS 128
