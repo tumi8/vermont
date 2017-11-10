@@ -38,7 +38,7 @@ bool Template::addField(const InformationElement::IeInfo& ie)
 			|| (ie == IeInfo(PSAMP_TYPEID_observationTimeMilliseconds, 0, PSAMP_LENGTH_observationTimeMilliseconds))
 			|| (ie == IeInfo(PSAMP_TYPEID_observationTimeMicroseconds, 0, PSAMP_LENGTH_observationTimeMicroseconds)))
 	{
-		addFieldWithoutOffset(ie);
+		addTemplateField(ie);
 		if ((ie == IeInfo(IPFIX_TYPEID_flowStartMicroseconds, 0)) || (ie == IeInfo(PSAMP_TYPEID_observationTimeMicroseconds, 0)))
 			msg(MSG_DIALOG, "Warning! %s encoded as complement for flowStartSeconds/observationTimeSeconds (deviating from IPFIX info model).", ie.toString().c_str());
 	}
@@ -50,13 +50,45 @@ bool Template::addField(const InformationElement::IeInfo& ie)
 			return false;
 		}
 
-		addFieldWithOffset(ie, offset, header, validPacketClass);
+		addTemplateField(ie, offset, header, validPacketClass);
 	}
 
 	return true;
 }
 
+void Template::addTemplateField(const InformationElement::IeInfo& ie, uint16_t offset, uint16_t header, uint32_t validPacketClasses)
+{
+	// check if this template field can be accepted
+	if (fieldCount < MAX_TEMPLATE_FIELDS)
+	{
+		fieldType[fieldCount] = ie;
+		fieldPacketOffset[fieldCount] = offset;
+		fieldPacketHeader[fieldCount] = header;
+		fieldValidPacketClasses[fieldCount] = validPacketClasses;
+		fieldCount++;
+	}
+	else
+	{
+		// the maximum number of template fields has been exceeded -> abort
+		THROWEXCEPTION("exceeded maximum number of template fields (%d)", MAX_TEMPLATE_FIELDS);
+	}
+}
 
+void Template::getFieldInfo(int num, InformationElement::IeInfo* ie, uint16_t* offset, uint16_t* header) const
+{
+	// check if the requested template field is initialized
+	if (num < fieldCount)
+	{
+		*ie = fieldType[num];
+		*offset = fieldPacketOffset[num];
+		*header = fieldPacketHeader[num];
+	}
+	else
+	{
+		// template field not initialized -> abort
+		THROWEXCEPTION("template field %d is not initialized", num);
+	}
+}
 
 bool Template::getFieldOffsetAndHeader(const IeInfo& ie, uint16_t *offset, uint16_t *header, uint32_t *validPacketClass)
 {
