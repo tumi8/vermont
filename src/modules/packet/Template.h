@@ -58,30 +58,11 @@ class Template
 		};
 
 		// Add a template field that takes data from within the packet
-		void addFieldWithOffset(const InformationElement::IeInfo& ie, uint16_t offset, uint16_t header, uint32_t validPacketClasses)
-		{
-			fieldType[fieldCount] = ie;
-			fieldPacketOffset[fieldCount] = offset;
-			fieldPacketHeader[fieldCount] = header;
-			fieldValidPacketClasses[fieldCount] = validPacketClasses;
-			fieldCount++;
-		};
+		// Or a template "meta-"field which gets its data not from the captured packet itself
+		//		"length" parameter must still be correct! (i.e. 4 bytes for FT_NUMPACKETS etc.)
+		void addTemplateField(const InformationElement::IeInfo& ie, uint16_t offset = 0, uint16_t header = 0, uint32_t validPacketClasses = (uint32_t)(-1));
 
-		// Add a template "meta-"field which gets its data not from the captured packet itself
-		// "length" parameter must still be correct! (i.e. 4 bytes for FT_NUMPACKETS etc.)
-		void addFieldWithoutOffset(const InformationElement::IeInfo& ie)
-		{
-			fieldType[fieldCount] = ie;
-			fieldValidPacketClasses[fieldCount] = (uint32_t)(-1);
-			fieldCount++;
-		};
-
-		void getFieldInfo(int num, InformationElement::IeInfo* ie, uint16_t* offset, uint16_t* header) const
-		{
-			*ie = fieldType[num];
-			*offset = fieldPacketOffset[num];
-			*header = fieldPacketHeader[num];
-		}
+		void getFieldInfo(int num, InformationElement::IeInfo* ie, uint16_t* offset, uint16_t* header) const;
 
 		int getTemplateID() const
 		{
