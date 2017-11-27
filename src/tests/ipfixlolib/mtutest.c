@@ -67,7 +67,7 @@ void add_udp_collector(ipfix_exporter *exporter) {
 	ipfix_aux_config_udp acu = {
 		.mtu = 0
 	};
-	if (ipfix_add_collector(exporter, COLLECTOR_IP_ADDRESS, 4739, UDP, &acu)) {
+	if (ipfix_add_collector(exporter, COLLECTOR_IP_ADDRESS, 4739, UDP, &acu, "")) {
 		fprintf(stderr, "ipfix_add_collector() failed.\n");
 		exit(1);
 	}
@@ -78,7 +78,7 @@ void add_dtls_over_udp_collector(ipfix_exporter *exporter) {
 		.udp = { .mtu = MTU},
 		.dtls = { .peer_fqdn = NULL}
 	};
-	if (ipfix_add_collector(exporter, COLLECTOR_IP_ADDRESS, 4740, DTLS_OVER_UDP, &acu)) {
+	if (ipfix_add_collector(exporter, COLLECTOR_IP_ADDRESS, 4740, DTLS_OVER_UDP, &acu, "")) {
 		fprintf(stderr, "ipfix_add_collector() failed.\n");
 		exit(1);
 	}

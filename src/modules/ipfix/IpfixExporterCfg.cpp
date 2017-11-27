@@ -160,7 +160,8 @@ IpfixSender* IpfixExporterCfg::createInstance()
 		instance->addCollector(
 			p->getIpAddress().c_str(),
 			p->getPort(), p->getProtocol(),
-			aux_config);
+			aux_config,
+			p->getVrfName().c_str());
 	}
 
 	return instance;

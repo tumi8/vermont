@@ -173,10 +173,10 @@ void PSAMPExporterModule::flushPacketStream() {
 	startNewPacketStream();
 }
 
-bool PSAMPExporterModule::addCollector(const char *address, uint16_t port, ipfix_transport_protocol protocol)
+bool PSAMPExporterModule::addCollector(const char *address, uint16_t port, ipfix_transport_protocol protocol, const char *vrfName)
 {
 	DPRINTF("Adding %i://%s:%d", protocol, address, port);
-	return(ipfix_add_collector(exporter, address, port, protocol, NULL) == 0);
+	return(ipfix_add_collector(exporter, address, port, protocol, NULL, vrfName) == 0);
 }
 
 void PSAMPExporterModule::receive(Packet* p)

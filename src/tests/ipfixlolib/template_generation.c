@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 			exit(-1);
 		}
 
-		ret=ipfix_add_collector(my_exporter, "127.0.0.1", 4711, UDP);
+		ret=ipfix_add_collector(my_exporter, "127.0.0.1", 4711, UDP, NULL, "");
 		if (ret != 0) {
 			fprintf(stderr, "ipfix_add_collector failed!\n");
 			exit(-1);

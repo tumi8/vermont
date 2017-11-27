@@ -163,54 +163,62 @@ IpfixSender::~IpfixSender()
  * @param aux_config additional configuration details required for UDP,
  * 	DTLS_OVER_UDP and DTLS_OVER_SCTP. See ipfixlolib documentation for more
  * 	information.
+ * @param vrf_name local VRF name to use for outgoing packets
  * FIXME: support for other than UDP
  */
 void IpfixSender::addCollector(const char *ip, uint16_t port,
-		ipfix_transport_protocol proto, void *aux_config)
+		ipfix_transport_protocol proto, void *aux_config,
+		const char *vrf_name)
 {
 	ipfix_exporter *ex = (ipfix_exporter *)ipfixExporter;
 
+	char vrf_log[VRF_LOG_LEN] = "";
+	if (strlen(vrf_name) > 0) {
+		snprintf(vrf_log, VRF_LOG_LEN, "[%.*s] ", IFNAMSIZ, vrf_name);
+	}
+
 	switch(proto) {
 	    case UDP:
-	    	msg(MSG_INFO, "IpfixSender: adding UDP://%s:%d to exporter",
-				ip, port);
+		msg(MSG_INFO, "%sIpfixSender: adding UDP://%s:%d to exporter",
+				vrf_log, ip, port);
 	    	break;
 	    case SCTP:
-	    	msg(MSG_INFO, "IpfixSender: adding SCTP://%s:%d to exporter",
-				ip, port);
+		msg(MSG_INFO, "%sIpfixSender: adding SCTP://%s:%d to exporter",
+				vrf_log, ip, port);
 	    	break;
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 	    case RAWDIR:
-	    	msg(MSG_INFO, "IpfixSender: adding RAWDIR://%s to exporter",
-				ip);
+		msg(MSG_INFO, "%sIpfixSender: adding RAWDIR://%s to exporter",
+				vrf_log, ip);
 	    	break;
 #endif
 #ifdef SUPPORT_DTLS
 	    case DTLS_OVER_UDP:
 	    	msg(MSG_INFO,
-			"IpfixSender: adding DTLS over UDP://%s:%d to exporter",
-			ip, port);
+			"%sIpfixSender: adding DTLS over UDP://%s:%d to exporter",
+				vrf_log, ip, port);
 	    	break;
 #endif
 #ifdef SUPPORT_DTLS_OVER_SCTP
 	    case DTLS_OVER_SCTP:
 	    	msg(MSG_INFO,
-		"IpfixSender: adding DTLS over SCTP://%s:%d to exporter",
-			ip, port);
+		"%sIpfixSender: adding DTLS over SCTP://%s:%d to exporter",
+				vrf_log, ip, port);
 	    	break;
 #endif
 	    case TCP:
-	        msg(MSG_INFO, "IpfixSender: adding TCP://%s:%d to exporter",
-				ip, port);
+	        msg(MSG_INFO, "%sIpfixSender: adding TCP://%s:%d to exporter",
+				vrf_log, ip, port);
 	    default:
 	    	THROWEXCEPTION("invalid protocol (%d) given!", proto);
 	    	break;
 	}
 
-	if(ipfix_add_collector(ex, ip, port, proto, aux_config) != 0) {
+	if(ipfix_add_collector(ex, ip, port, proto, aux_config,
+			vrf_name) != 0) {
 		msg(MSG_FATAL,
-			"IpfixSender: ipfix_add_collector of %s:%d failed",
-			ip, port);
+			"%sIpfixSender: ipfix_add_collector of %s:%d to exporter",
+				vrf_log, ip, port);
 		return;
 	}
 }
