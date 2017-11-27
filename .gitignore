@@ -1,13 +1,4 @@
-# ignore macosx specific files
-.DS_Store
-# ignore compiled libs
-*.a
-# ignore cmake generated files
-CMakeCache.txt
-CMakeFiles
-cmake_install.cmake
-Makefile
-# ignore compiled binaries
+# Vermont specific binaries
 vermont
 tools/testCollector
 tools/injectUDPToCollector
@@ -16,5 +7,55 @@ src/tests/ipfixlolib/test_everything
 src/tests/ipfixlolib/mtutest
 src/tests/ipfixlolib/example_code_2
 src/tests/ipfixlolib/example_code
-# ignore vermont generated files
+# Vermont specific generated files
 sensor_output.xml
+
+# Created by https://www.gitignore.io/api/c++,cmake
+
+### C++ ###
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+### CMake ###
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+build
+
+# End of https://www.gitignore.io/api/c++,cmake
