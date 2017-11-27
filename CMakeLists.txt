@@ -184,7 +184,7 @@ IF (ENABLE_VRF)
 		MESSAGE(WARNING "SO_BINDTODEVICE not found in sys/socket.h, will not build with ENABLE_VRF. Check Linux Kernel's userspace headers (eg: linux-libc-dev)")
 	ENDIF (SO_BINDTODEVICE_FOUND)
 ENDIF (ENABLE_VRF)
-CHECK_INCLUDE_FILE("linux/if.h" LINUX_IF_H_FOUND)
+CHECK_INCLUDE_FILE("linux/if.h" LINUX_IF_H_FOUND "-include sys/socket.h")
 
 ### MongoDB
 
