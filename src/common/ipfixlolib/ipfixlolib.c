@@ -2165,7 +2165,7 @@ static int sctp_reconnect(ipfix_receiving_collector *collector){
 	switch (snp.sn_header.sn_type) {
 	    case SCTP_ASSOC_CHANGE:
 		sac = &snp.sn_assoc_change;
-		if (!sac->sac_state==SCTP_COMM_UP) {
+		if (sac->sac_state!=SCTP_COMM_UP) {
 		    msg(MSG_ERROR, "SCTP connection setup failed. "
 			    "Received unexpected SCTP_ASSOC_CHANGE notification with state %d",
 			    sac->sac_state);
