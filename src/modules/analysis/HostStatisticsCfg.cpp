@@ -48,7 +48,7 @@ HostStatisticsCfg* HostStatisticsCfg::create(XMLElement* e)
 HostStatistics* HostStatisticsCfg::createInstance()
 {
 	if (!instance) {
-		instance = new HostStatistics(ipSubnet, addrFilter, logPath, logInt);
+		instance = new HostStatistics(ipSubnet, addrFilter, logPath);
 	}
 	return instance;
 }
