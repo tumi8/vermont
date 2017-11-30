@@ -141,7 +141,7 @@ Edge* Graph::addEdge(Node* n1, Node* n2)
 
 void Graph::removeEdge(Node* n1, Node* n2)
 {
-	if (matrix[n1->getID()][n2->getID()] < 0)
+	if (matrix[n1->getID()][n2->getID()] == NULL)
 		throw std::runtime_error("No edge between the nodes");
 
 	Edge *e = matrix[n1->getID()][n2->getID()];
