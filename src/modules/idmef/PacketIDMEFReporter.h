@@ -27,7 +27,7 @@ public:
 	static const char* PAR_SNAPSHOT;
 
 
-	PacketIDMEFReporter(string idmeftemplate, string analyzerid, uint16_t snapshotoff, uint16_t snapshotlen);
+	PacketIDMEFReporter(string idmeftemplate, string analyzerid, uint16_t snapshotlen);
 	virtual ~PacketIDMEFReporter();
 
 	virtual void receive(Packet* p);
@@ -35,7 +35,6 @@ public:
 private:
 	string analyzerId;  /**< analyzer id for IDMEF messages */
 	string idmefTemplate;   /**< template file for IDMEF messages */
-	uint16_t snapshotOffset;	/**< offset from start of payload where snapshot is taken */
 	uint16_t snapshotLength;	/**< length of snapshot */
 	char snapshotBuffer[3000];	/**< buffer for holding hexdump of snapshot */
 

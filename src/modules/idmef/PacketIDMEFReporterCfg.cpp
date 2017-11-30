@@ -12,7 +12,7 @@ PacketIDMEFReporterCfg* PacketIDMEFReporterCfg::create(XMLElement* e)
 
 PacketIDMEFReporterCfg::PacketIDMEFReporterCfg(XMLElement* elem)
     : CfgHelper<PacketIDMEFReporter, PacketIDMEFReporterCfg>(elem, "packetIdmefReporter"),
-	  snapshotOffset(0), snapshotLength(0)
+	  snapshotLength(0)
 {
     if (!elem) return;
 
@@ -23,7 +23,8 @@ PacketIDMEFReporterCfg::PacketIDMEFReporterCfg(XMLElement* elem)
 		XMLElement* e = *it;
 
 		if (e->matches("snapshotoffset")) {
-			snapshotOffset = getInt("snapshotoffset");
+			// snapshotOffset is no longer used
+			// snapshotOffset = getInt("snapshotoffset");
 		} else if (e->matches("snapshotlength")) {
 			snapshotLength = getInt("snapshotlength");
 		} else if (e->matches("analyzerid")) {
@@ -46,7 +47,7 @@ PacketIDMEFReporterCfg::~PacketIDMEFReporterCfg()
 
 PacketIDMEFReporter* PacketIDMEFReporterCfg::createInstance()
 {
-    instance = new PacketIDMEFReporter(idmefTemplate, analyzerId, snapshotOffset, snapshotLength);
+	instance = new PacketIDMEFReporter(idmefTemplate, analyzerId, snapshotLength);
     return instance;
 }
 
