@@ -89,7 +89,7 @@ XMLDocument* XMLDocument::parse_file(const std::string& fileName)
 
 	if(ctx->errNo) {
 		exceptionMsg = "Can't parse the file; libxml inidicates error "
-				+  ctx->errNo;
+				+  std::to_string(ctx->errNo);
 		goto free;
 	}
 
