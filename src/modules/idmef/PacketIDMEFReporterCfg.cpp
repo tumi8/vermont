@@ -47,7 +47,7 @@ PacketIDMEFReporterCfg::~PacketIDMEFReporterCfg()
 
 PacketIDMEFReporter* PacketIDMEFReporterCfg::createInstance()
 {
-	instance = new PacketIDMEFReporter(idmefTemplate, analyzerId, snapshotLength);
+    instance = new PacketIDMEFReporter(idmefTemplate, analyzerId, snapshotLength);
     return instance;
 }
 
