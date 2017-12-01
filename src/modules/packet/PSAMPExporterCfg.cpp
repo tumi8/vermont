@@ -119,7 +119,7 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 		}
 		msg(MSG_DEBUG, "%sPsampExporter: adding collector %s://%s:%d on VRF %s",
 				vrf_log,
-				collectors[i]->getProtocol()==132?"SCTP":"UDP",
+				collectors[i]->getProtocol()==ipfix_transport_protocol::SCTP?"SCTP":"UDP",
 				collectors[i]->getIpAddress().c_str(),
 				collectors[i]->getPort(),
 				collectors[i]->getVrfName().c_str());
