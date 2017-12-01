@@ -114,7 +114,7 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 	}
 	for (unsigned i = 0; i != collectors.size(); ++i) {
 		msg(MSG_DEBUG, "PsampExporter: adding collector %s://%s:%d",
-				collectors[i]->getProtocol()==132?"SCTP":"UDP",
+				collectors[i]->getProtocol()==ipfix_transport_protocol::SCTP?"SCTP":"UDP",
 				collectors[i]->getIpAddress().c_str(),
 				collectors[i]->getPort());
 		instance->addCollector(collectors[i]->getIpAddress().c_str(),
