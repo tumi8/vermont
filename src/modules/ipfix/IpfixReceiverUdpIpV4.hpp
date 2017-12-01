@@ -43,7 +43,6 @@ class IpfixReceiverUdpIpV4 : public IpfixReceiver, Sensor {
 	private:
 		int listen_socket;
 		uint32_t statReceivedPackets;  /**< number of received packets */ 
-		unsigned int moduleId;
 };
 
 #endif
