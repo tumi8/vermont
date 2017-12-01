@@ -28,8 +28,7 @@
 
 IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector, IpfixCollectorCfg>(elem, "ipfixCollector"),
-	listener(NULL),
-	ipfixCollector(NULL)
+	listener(NULL)
 {
 	if (!elem)
 		return;
