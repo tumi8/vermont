@@ -504,7 +504,7 @@ out:
 
     /* if you no longer need the exporter: free resources */
     ret=ipfix_remove_collector(my_exporter, myconfig.coll_ip4_addr, myconfig.coll_port);
-    ipfix_deinit_exporter(my_exporter);
+    ipfix_deinit_exporter(&my_exporter);
 
     printf("Done.\n");
     exit(EXIT_SUCCESS);
