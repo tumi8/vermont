@@ -25,7 +25,7 @@ private:
 	XMLDocument(xmlDocPtr doc);
 	
 	xmlDocPtr xmlDocument;
-
+	
 	struct Initializer {
 		Initializer();
 	};
