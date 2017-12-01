@@ -43,7 +43,7 @@
  */
 IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr,
 		const uint32_t buffer, unsigned int moduleId)
-	: statReceivedMessages(0), moduleId(moduleId)
+	: statReceivedMessages(0)
 {
 	receiverPort = port;
 	
