@@ -693,7 +693,7 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 	if(sourceId->protocol == 17) {
 		std::map<IpfixRecord::SourceID, SNInfo>::iterator iter = snInfoMap.find(*sourceId.get());
 		if(iter != snInfoMap.end()) {
-			int32_t difference = sequenceNumber - iter->second.expectedSN; 
+			int64_t difference = (int64_t)sequenceNumber - (int64_t)iter->second.expectedSN;
 			if(difference > 0) {
 				msg(MSG_INFO, "IpfixParser: Loss of %d NetflowV9 messages from %s detected (SN=%u, expected=%u).",
 					difference, (sourceId->toString()).c_str(), sequenceNumber, iter->second.expectedSN);
@@ -793,7 +793,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 	if(sourceId->protocol == 17) {
 		std::map<IpfixRecord::SourceID, SNInfo>::iterator iter = snInfoMap.find(*sourceId.get());
 		if(iter != snInfoMap.end()) {
-			int32_t difference = sequenceNumber - iter->second.expectedSN; 
+			int64_t difference = (int64_t)sequenceNumber - (int64_t)iter->second.expectedSN;
 			if(difference > 0) {
 				msg(MSG_INFO, "IpfixParser: Loss of %d IPFIX Data Records from %s detected (SN=%u, expected=%u).",
 					difference, (sourceId->toString()).c_str(), sequenceNumber, iter->second.expectedSN);
