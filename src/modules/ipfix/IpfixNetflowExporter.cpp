@@ -175,7 +175,7 @@ void IpfixNetflowExporter::sendPacket()
 			record->removeReference();
 			count++;
 		}
-		msg(MSG_DEBUG, "sending Netflow.v5 packet, flow count: %hu", count);
+		msg(MSG_DEBUG, "sending Netflow.v5 packet, flow count: %u", count);
 		packet.header.count = htons(count);
 		packet.header.unixSec = htonl(tv.tv_sec);
 		packet.header.unixNanoSec = htonl(tv.tv_usec*1000);

@@ -43,18 +43,7 @@ namespace InformationElement {
 	/* Field in a Data Record */
 	class IeInfo {
 	public:
-		IeInfo(IeId id, IeEnterpriseNumber enterprise, IeLength length = 0)
-			: id(id), enterprise(enterprise), length(length)
-		{
-			if (length==0) {
-				const ipfix_identifier* ipfixid = ipfix_id_lookup(id, enterprise);
-				if (ipfixid)
-					length = ipfixid->length;
-				else {
-					msg(MSG_INFO, "WARNING: received unknown IE type id: %s", toString().c_str());
-				}
-			}
-		}
+		IeInfo(IeId id, IeEnterpriseNumber enterprise, IeLength length = 0);
 
 		IeInfo()
 			: id(0), enterprise(0), length(0)

@@ -61,7 +61,7 @@ class IpfixCsExporter : public Module, public Source<NullEmitable*>, public Ipfi
 	private:
 		//Some predefined structs
 		const static uint8_t CS_IPFIX_CHUNK_TYPE = 0x08;
-		char CS_IPFIX_MAGIC[8];
+		unsigned char CS_IPFIX_MAGIC[8];
 
 		std::string filenamePrefix; /**< prefix to each file */
 		std::string destinationPath; /**< storage path of output files */

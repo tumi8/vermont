@@ -29,6 +29,19 @@ using namespace std;
 
 namespace InformationElement {
 
+	IeInfo::IeInfo(IeId id, IeEnterpriseNumber enterprise, IeLength length)
+		: id(id), enterprise(enterprise), length(length)
+	{
+		if (length==0) {
+			const ipfix_identifier* ipfixid = ipfix_id_lookup(id, enterprise);
+			if (ipfixid)
+				length = ipfixid->length;
+			else {
+				msg(MSG_INFO, "WARNING: received unknown IE type id: %s", toString().c_str());
+			}
+		}
+	}
+
 	/**
 	 * Checks whether the given Field carries reverse flow information in a bi-flow record
 	 * @returns true if this IE carries reverse flow information
