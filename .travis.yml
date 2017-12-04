@@ -1,0 +1,19 @@
+language: cpp
+compiler: clang
+cache: ccache
+
+addons:
+  apt:
+    packages:
+    - cmake
+    - libboost-dev
+    - libboost-filesystem-dev
+    - libboost-regex-dev
+    - libboost-test-dev
+    - libboost-thread-dev
+    - libxml2-dev
+    - libpcap-dev
+    - libsystemd-journal-dev
+    - libsctp-dev
+
+script: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON . && make && make test
