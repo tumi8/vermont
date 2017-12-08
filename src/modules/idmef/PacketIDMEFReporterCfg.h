@@ -27,7 +27,6 @@ protected:
 	
 	string analyzerId;	/**< analyzer id for IDMEF messages */
 	string idmefTemplate;	/**< template file for IDMEF messages */
-	uint16_t snapshotOffset;    /**< offset from start of payload where snapshot is taken */
 	uint16_t snapshotLength;    /**< length of snapshot */
 
 	

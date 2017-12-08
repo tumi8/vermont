@@ -110,8 +110,9 @@ char ** get_filenames(const char * directory, int * num_of_files) {
 	while ( pDirEnt != NULL ) {
 		/* Skip hidden entries starting with dot */
 		if( pDirEnt->d_name[0] != '.' ) {
+			int fileNameSize = snprintf(filename, sizeof(filename), "%s/%s", directory, pDirEnt->d_name);
 			/* Skip non-regular files (e.g. directories) */ 
-			if ( (snprintf(filename, sizeof(filename), "%s/%s", directory, pDirEnt->d_name) > 0)
+			if ( ((fileNameSize < (int)sizeof(filename)) && (fileNameSize > 0))
 					&& (stat(filename, &dirEntStat) == 0) && (S_ISREG(dirEntStat.st_mode)) ) {
 				//printf( "FOUND: %s\n", pDirEnt->d_name );
 				filecounter++;
@@ -139,9 +140,10 @@ char ** get_filenames(const char * directory, int * num_of_files) {
 		//printf( "%s\n", pDirEnt->d_name );
 		/* Skip hidden entries starting with dot */
 		if( pDirEnt->d_name[0] != '.' ) {
-			/* Skip non-regular files (e.g. directories) */ 
-			if ( (snprintf(filename, sizeof(filename), "%s/%s", directory, pDirEnt->d_name) > 0)
-					&& (stat(filename, &dirEntStat) == 0) && (S_ISREG(dirEntStat.st_mode)) ) {
+			int fileNameSize = snprintf(filename, sizeof(filename), "%s/%s", directory, pDirEnt->d_name);
+			/* Skip non-regular files (e.g. directories) */
+			if ( ((fileNameSize < (int)sizeof(filename)) && (fileNameSize > 0))
+				 && (stat(filename, &dirEntStat) == 0) && (S_ISREG(dirEntStat.st_mode)) ) {
 				snprintf(filenames[i], MAX_SIZE_OF_FILENAME-1, "%s", pDirEnt->d_name);
 				//printf( "ADDED: %s\n", filenames[i] );
 				i++;

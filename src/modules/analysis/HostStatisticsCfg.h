@@ -43,13 +43,11 @@ protected:
 	std::string getSubnet() { return ipSubnet; }
 	std::string getAddrFilter() { return addrFilter; }
 	std::string getLogPath() { return logPath; }
-	uint16_t getLogIntervall() { return logInt; }
 
 private:
 	std::string ipSubnet;
 	std::string addrFilter;
 	std::string logPath;
-	uint16_t logInt;
 };
 
 #endif /* HOSTSTATISTICSCFG_H_ */

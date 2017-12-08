@@ -22,10 +22,7 @@ PacketIDMEFReporterCfg::PacketIDMEFReporterCfg(XMLElement* elem)
 	     it++) {
 		XMLElement* e = *it;
 
-		if (e->matches("snapshotoffset")) {
-			// snapshotOffset is no longer used
-			// snapshotOffset = getInt("snapshotoffset");
-		} else if (e->matches("snapshotlength")) {
+		if (e->matches("snapshotlength")) {
 			snapshotLength = getInt("snapshotlength");
 		} else if (e->matches("analyzerid")) {
 			analyzerId = e->getFirstText();
