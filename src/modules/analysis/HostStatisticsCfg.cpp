@@ -27,7 +27,6 @@ HostStatisticsCfg::HostStatisticsCfg(XMLElement* elem) : CfgHelper<HostStatistic
 		ipSubnet = get("subnet");
 		addrFilter = get("addrFilter");
 		logPath = get("logPath");
-		logInt = (uint16_t)getInt("logInterval", 10);
 	} catch(IllegalEntry ie) {
 		THROWEXCEPTION("Illegal hostStatistics entry in config file");
 	}
@@ -48,7 +47,7 @@ HostStatisticsCfg* HostStatisticsCfg::create(XMLElement* e)
 HostStatistics* HostStatisticsCfg::createInstance()
 {
 	if (!instance) {
-		instance = new HostStatistics(ipSubnet, addrFilter, logPath, logInt);
+		instance = new HostStatistics(ipSubnet, addrFilter, logPath);
 	}
 	return instance;
 }

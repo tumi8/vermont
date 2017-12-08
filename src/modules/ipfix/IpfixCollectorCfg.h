@@ -53,7 +53,6 @@ private:
 	std::string caPath;
 
 	
-        IpfixCollector* ipfixCollector;
 
         int32_t udpTemplateLifetime;
 };

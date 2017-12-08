@@ -18,9 +18,9 @@ InstanceManager<IDMEFMessage> PacketIDMEFReporter::idmefManager("ReporterIDMEFMe
 
 
 
-PacketIDMEFReporter::PacketIDMEFReporter(string idmeftemplate, string analyzerid, uint16_t snapshotoff, uint16_t snapshotlen)
+PacketIDMEFReporter::PacketIDMEFReporter(string idmeftemplate, string analyzerid, uint16_t snapshotlen)
 	: analyzerId(analyzerid), idmefTemplate(idmeftemplate),
-	  snapshotOffset(snapshotoff), snapshotLength(snapshotlen)
+	  snapshotLength(snapshotlen)
 {
 }
 

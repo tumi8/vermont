@@ -24,7 +24,6 @@
 
 IpfixReceiverFileCfg::IpfixReceiverFileCfg(XMLElement* elem)
 	: CfgHelper<IpfixCollector,IpfixReceiverFileCfg>(elem, "ipfixReceiverFile"),
-	ipfixCollector(NULL),
 		packetFileBasename("ipfix.dump"),
 		packetFileDirectory("./"),
 		c_from(0),

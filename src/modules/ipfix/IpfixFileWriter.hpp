@@ -50,8 +50,6 @@ class IpfixFileWriter :  public IpfixSender
 	private:
 		std::string filenamePrefix;
 		std::string destinationPath;
-		//maximum filesize in  KiB, i.e. maximumFilesize * 1024 == maximum filesize in bytes
-		uint32_t maximumFilesize; 
 };
 
 

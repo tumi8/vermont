@@ -41,8 +41,7 @@
 class IpfixReceiverSctpIpV4 : public IpfixReceiver, Sensor {
 #ifdef SUPPORT_SCTP
 	public:
-		IpfixReceiverSctpIpV4(int port, std::string ipAddr = "", uint32_t buffer = 0,
-				      unsigned int moduleId = 0);
+		IpfixReceiverSctpIpV4(int port, std::string ipAddr = "", uint32_t buffer = 0);
 		virtual ~IpfixReceiverSctpIpV4();
 
 		virtual void run();
@@ -51,7 +50,6 @@ class IpfixReceiverSctpIpV4 : public IpfixReceiver, Sensor {
 	private:
 		int listen_socket;
 		uint32_t statReceivedPackets;  /**< number of received packets */ 
-		unsigned int moduleId;
 #else
 	public:
 		IpfixReceiverSctpIpV4(int port, std::string ipAddr, uint32_t buffer = 0) {

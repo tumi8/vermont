@@ -27,8 +27,8 @@
 
 InstanceManager<Host> HostStatistics::hostManager("Host");
 
-HostStatistics::HostStatistics(std::string ipSubnet, std::string addrFilter, std::string logPath, uint16_t logInt)
-	: ipSubnet(ipSubnet), addrFilter(addrFilter), logPath(logPath), logInt(logInt)
+HostStatistics::HostStatistics(std::string ipSubnet, std::string addrFilter, std::string logPath)
+	: ipSubnet(ipSubnet), addrFilter(addrFilter), logPath(logPath)
 {
 	// check if srcIP or dstIP in the subnet (1.1.1.1/16)
 	// split string at the '/'

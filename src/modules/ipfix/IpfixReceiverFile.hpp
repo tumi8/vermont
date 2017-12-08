@@ -97,7 +97,6 @@ private:
 	bool ignore_timestamps;
 	float stretchTime;
 	uint16_t stretchTimeInt;
-	int fh;
 	std::ifstream packetFile;
 };
 

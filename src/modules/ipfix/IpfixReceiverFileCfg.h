@@ -39,8 +39,6 @@ public:
 	bool deriveFrom(IpfixReceiverFileCfg* old);
 	
 private:
-        IpfixCollector* ipfixCollector;
-        uint16_t observationDomainId;
 		std::string packetFileBasename;
 		std::string packetFileDirectory;
 		int c_from;

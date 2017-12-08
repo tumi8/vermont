@@ -45,7 +45,7 @@ using namespace std;
  */
 IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr,
 		const uint32_t buffer, unsigned int moduleId)
-	: statReceivedPackets(0), moduleId(moduleId)
+	: statReceivedPackets(0)
 {
 	receiverPort = port;
 

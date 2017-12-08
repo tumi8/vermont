@@ -30,7 +30,7 @@
 class HostStatistics : public IpfixRecordDestination, public Module, public Source<NullEmitable*>
 {
 public:
-	HostStatistics(std::string ipSubnet, std::string addrFilter, std::string logPath, uint16_t logInt);
+	HostStatistics(std::string ipSubnet, std::string addrFilter, std::string logPath);
 	virtual ~HostStatistics();
 	void onDataRecord(IpfixDataRecord* record);
 
@@ -44,7 +44,6 @@ private:
 	std::string ipSubnet;
 	std::string addrFilter;
 	std::string logPath;
-	uint16_t logInt;
 	uint32_t netAddr;
 	uint8_t netSize;
 	time_t logTimer;
