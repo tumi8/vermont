@@ -2,18 +2,41 @@ language: cpp
 compiler: clang
 cache: ccache
 
-addons:
-  apt:
-    packages:
-    - cmake
-    - libboost-dev
-    - libboost-filesystem-dev
-    - libboost-regex-dev
-    - libboost-test-dev
-    - libboost-thread-dev
-    - libxml2-dev
-    - libpcap-dev
-    - libsystemd-journal-dev
-    - libsctp-dev
+matrix:
+  include:
+    - os: linux
+      addons:
+        apt:
+          packages:
+            - cmake
+            - libboost-dev
+            - libboost-filesystem-dev
+            - libboost-regex-dev
+            - libboost-test-dev
+            - libboost-thread-dev
+            - libxml2-dev
+            - libpcap-dev
+            - libsystemd-journal-dev
+            - libsctp-dev
+      env: DTLS="NO"
+    - os: linux
+      addons:
+        apt:
+          packages:
+            - cmake
+            - libboost-dev
+            - libboost-filesystem-dev
+            - libboost-regex-dev
+            - libboost-test-dev
+            - libboost-thread-dev
+            - libxml2-dev
+            - libpcap-dev
+            - libsystemd-journal-dev
+            - libsctp-dev
+            - libssl-dev
+      env: DTLS="YES"
+  fast_finish: true
 
-script: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON . && make && make test
+script:
+  - if [[ "$DTLS" == "NO" ]]; then cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON . && make && make test; fi
+  - if [[ "$DTLS" == "YES" ]]; then cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS=YES . && make && make test; fi
