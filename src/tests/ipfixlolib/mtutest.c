@@ -20,6 +20,10 @@
 
 #include <stdio.h>
 #include "common/ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfixlolib_config.h"
+#ifdef SUPPORT_DTLS
+#include "common/ipfixlolib/ipfixlolib_dtls.h"
+#endif
 #include "common/ipfixlolib/ipfix.h"
 #include "common/msg.h"
 
@@ -73,6 +77,7 @@ void add_udp_collector(ipfix_exporter *exporter) {
 	}
 }
 
+#ifdef SUPPORT_DTLS
 void add_dtls_over_udp_collector(ipfix_exporter *exporter) {
 	ipfix_aux_config_dtls_over_udp acu = {
 		.udp = { .mtu = MTU},
@@ -85,6 +90,7 @@ void add_dtls_over_udp_collector(ipfix_exporter *exporter) {
 	while(ipfix_beat(exporter))
 		usleep(10000);
 }
+#endif
 
 int main(int argc, char **argv) {
 	int i;

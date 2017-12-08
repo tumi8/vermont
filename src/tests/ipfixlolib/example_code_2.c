@@ -15,6 +15,10 @@
 #include <stdio.h>
 #include <getopt.h>
 #include "common/ipfixlolib/ipfixlolib.h"
+#ifdef SUPPORT_DTLS
+#include "common/ipfixlolib/ipfixlolib_dtls.h"
+#endif
+#include "common/ipfixlolib/ipfixlolib_config.h"
 #include "common/ipfixlolib/encoding.h"
 #include "common/msg.h"
 
@@ -66,7 +70,6 @@ int parse_command_line_arguments(int argc, char **argv);
 int add_collector(ipfix_exporter *exporter);
 int get_sample_data1(meter_data *mdat);
 int get_sample_data2(meter_data *mdat);
-int set_config_on_exporter(ipfix_exporter *exporter);
 void print_usage(char *argv0);
 
 
@@ -80,6 +83,7 @@ int add_collector(ipfix_exporter *exporter) {
     ipfix_aux_config_udp acu = {
 	.mtu = myconfig.mtu
     };
+#ifdef SUPPORT_DTLS
     ipfix_aux_config_dtls_over_udp acdou = {
 	.udp = { .mtu = myconfig.mtu},
 	.dtls = { .peer_fqdn = myconfig.peer_fqdn}
@@ -87,12 +91,15 @@ int add_collector(ipfix_exporter *exporter) {
     ipfix_aux_config_dtls_over_sctp acdos = {
 	.dtls = { .peer_fqdn = myconfig.peer_fqdn}
     };
+#endif
     if (myconfig.transport_protocol == UDP) {
 	aux_config = &acu;
+#ifdef SUPPORT_DTLS
     } else if (myconfig.transport_protocol == DTLS_OVER_UDP) {
 	aux_config = &acdou;
     } else if (myconfig.transport_protocol == DTLS_OVER_SCTP) {
 	aux_config = &acdos;
+#endif
     }
     /* The type of the 5th parameter to ipfix_add_collector() depends
      * on the transport protocol that has been chose. */
@@ -150,6 +157,16 @@ int get_sample_data2(meter_data *mdat) {
     return 0;
 }
 
+int set_config_on_exporter(ipfix_exporter *exporter) {
+    int ret = 0;
+#ifdef SUPPORT_DTLS
+    ret = ipfix_set_ca_locations(&exporter->certificate, myconfig.ca_file, myconfig.ca_path);
+    if (ret) return ret;
+    if (myconfig.certificate_chain_file)
+	ret = ipfix_set_dtls_certificate(&exporter->certificate, myconfig.certificate_chain_file, myconfig.private_key_file);
+#endif
+    return ret;
+}
 
 int main(int argc, char **argv)
 {
@@ -504,7 +521,7 @@ out:
 
     /* if you no longer need the exporter: free resources */
     ret=ipfix_remove_collector(my_exporter, myconfig.coll_ip4_addr, myconfig.coll_port);
-    ipfix_deinit_exporter(my_exporter);
+    ipfix_deinit_exporter(&my_exporter);
 
     printf("Done.\n");
     exit(EXIT_SUCCESS);
@@ -603,15 +620,6 @@ int parse_command_line_arguments(int argc, char **argv) {
     msg_setlevel(debug_level);
 
     return 0;
-}
-
-int set_config_on_exporter(ipfix_exporter *exporter) {
-    int ret = 0;
-    ret = ipfix_set_ca_locations(exporter, myconfig.ca_file, myconfig.ca_path);
-    if (ret) return ret;
-    if (myconfig.certificate_chain_file)
-	ret = ipfix_set_dtls_certificate(exporter, myconfig.certificate_chain_file, myconfig.private_key_file);
-    return ret;
 }
 
 void print_usage(char *argv0) {

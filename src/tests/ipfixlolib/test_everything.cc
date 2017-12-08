@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "common/ipfixlolib/ipfixlolib.h"
+#include "common/ipfixlolib/ipfixlolib_config.h"
 #include "common/msg.h"
 
 #define MY_SOURCE_ID 70538

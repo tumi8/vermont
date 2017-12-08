@@ -18,10 +18,16 @@
 #
 
 
-ADD_LIBRARY(ipfixlolib
+set(ipfixlolib_SOURCES
 	encoding.c
 	ipfixlolib.c
 	ipfix_names.c
 )
+
+if (SUPPORT_DTLS)
+  set(ipfixlolib_SOURCES ${ipfixlolib_SOURCES} ipfixlolib_dtls.c)
+endif()
+
+ADD_LIBRARY(ipfixlolib ${ipfixlolib_SOURCES})
 
 add_cppcheck(ipfixlolib STYLE POSSIBLE_ERROR)

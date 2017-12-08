@@ -118,10 +118,7 @@ See ipfixlolib.h for details on how to use this library.
 #include <netinet/sctp.h>
 #endif
 #ifdef SUPPORT_DTLS
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/bio.h>
-#include "common/openssl/OpenSSL.h"
+#include "ipfixlolib_dtls.h"
 #endif
 
 #ifdef LINUX_IF_H_FOUND
@@ -228,10 +225,6 @@ typedef enum export_protocol_version {
 /* non-Linux, mostly FreeBSD */
 #define IPFIX_MTU_DEFAULT IPFIX_MTU_CONSERVATIVE_DEFAULT
 #define IPFIX_MTU_MODE_DEFAULT IPFIX_MTU_FIXED
-#endif
-
-#ifdef SUPPORT_DTLS
-#define IPFIX_DTLS_MAX_RECORD_LENGTH 16384
 #endif
 
 /* Struct containing an ipfix-header */
@@ -408,44 +401,6 @@ enum ipfix_transport_protocol {
 	ZMQ /* Requires libczmq */
 };
 
-typedef struct {
-    uint16_t mtu; /*!< Maximum transmission unit (MTU).
-		     If set to 0, PMTU discovery will be used.
-		     (Only available on the Linux platform)
-		     Applies to UDP and DTLS over UDP only. */
-} ipfix_aux_config_udp;
-
-typedef struct {
-    const char *peer_fqdn; /*!< The Fully Qualified Domain Name (FQDN) of the
-			     peer. If set, the peer i.e. the Collector
-			     <em>must</em> present a certificate of which
-			     either the subject's Common Name (CN) or one of
-			     the subject alternative names matches the FQDN.
-			     There is no support for wildcard matching. For the
-			     certificate verification to work, the user must
-			     also call <tt>ipfix_set_ca_locations()</tt> in
-			     advance to specify the locations of the root CA
-			     certificates.
-			   
-			     If set to NULL, anonymous cipher suites will be
-			     added to the list of permissible cipher suites.
-			     The identity of the peer will not be verified
-			     then.*/
-} ipfix_aux_config_dtls;
-
-typedef struct {
-    ipfix_aux_config_dtls dtls; /*!< DTLS specific configuration */
-    ipfix_aux_config_udp udp; /*!< UDP specific configuration */
-    unsigned max_connection_lifetime; /*!< Time in seconds after which the DTLS
-				 connection is replaced by a new one.
-				 This mechanism aims to overcome the
-				 dead peer problem.*/
-} ipfix_aux_config_dtls_over_udp;
-
-typedef struct {
-    ipfix_aux_config_dtls dtls; /*!< DTLS specific configuration */
-} ipfix_aux_config_dtls_over_sctp;
-
 /*
  * These indicate, if a field is committed (i.e. can be used)
  * unused or unclean (i.e. data is not complete yet)
@@ -555,15 +510,6 @@ typedef struct {
 					  template sets. */
 } ipfix_sendbuffer;
 
-#ifdef SUPPORT_DTLS
-typedef struct {
-	int socket;
-	// uint16_t mtu;
-	SSL *ssl;
-	time_t last_reconnect_attempt_time;
-} ipfix_dtls_connection;
-#endif
-
 /*
  * A collector receiving messages from this exporter
  */
@@ -589,18 +535,7 @@ typedef struct {
 	char* packet_directory_path; /*!< if protocol==RAWDIR: path to a directory to store packets in. Ignored otherwise. */
 #endif
 #ifdef SUPPORT_DTLS
-	/* Time in seconds after which a DTLS connection
-	 * will be replaced by a new one. */
-	unsigned dtls_max_connection_lifetime;
-	unsigned dtls_connect_timeout;
-	ipfix_dtls_connection dtls_main;
-	ipfix_dtls_connection dtls_replacement;
-	time_t connect_time; /* point in time when the connection setup
-				succeeded. We need this to calculate the
-				age of a connection. If DTLS is used,
-				a connection rollover is performed when
-				a connection reaches a certain age.*/
-	const char *peer_fqdn;
+	ipfix_collector_dtls_connection dtls_connection;
 #endif
 	char vrf_name[IFNAMSIZ];
 } ipfix_receiving_collector;
@@ -679,11 +614,7 @@ typedef struct {
 	int ipfix_lo_template_maxsize;
 	ipfix_lo_template *template_arr;
 #ifdef SUPPORT_DTLS
-	SSL_CTX *ssl_ctx;
-	const char *certificate_chain_file;
-	const char *private_key_file;
-	const char *ca_file;
-	const char *ca_path;
+	ipfix_exporter_certificate certificate;
 #endif
 } ipfix_exporter;
 
@@ -714,9 +645,6 @@ int ipfix_send(ipfix_exporter *exporter);
 int ipfix_set_template_transmission_timer(ipfix_exporter *exporter, uint32_t timer); 	 
 int ipfix_set_sctp_lifetime(ipfix_exporter *exporter, uint32_t lifetime);
 int ipfix_set_sctp_reconnect_timer(ipfix_exporter *exporter, uint32_t timer);
-
-int ipfix_set_dtls_certificate(ipfix_exporter *exporter, const char *certificate_chain_file, const char *private_key_file);
-int ipfix_set_ca_locations(ipfix_exporter *exporter, const char *ca_file, const char *ca_path);
 
 #ifdef __cplusplus
 }
