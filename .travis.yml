@@ -3,6 +3,7 @@ compiler:
   - clang
   - gcc
 cache: ccache
+sudo: false
 
 addons:
   apt:
