@@ -18,6 +18,7 @@
  */
 
 #include "HostStatisticsCfg.h"
+#include "core/Cfg.h" // for IllegalEntry
 
 HostStatisticsCfg::HostStatisticsCfg(XMLElement* elem) : CfgHelper<HostStatistics, HostStatisticsCfg>(elem, "hostStatistics")
 {
