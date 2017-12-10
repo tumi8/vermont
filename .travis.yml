@@ -7,6 +7,9 @@ sudo: false
 
 addons:
   apt:
+    sources:
+    - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+      key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
     packages:
       - cmake
       - libboost-dev
@@ -19,9 +22,10 @@ addons:
       - libsystemd-journal-dev
       - libsctp-dev
       - libssl-dev
+      - libczmq-dev
 
 env:
-  - DTLS="ON"
-  - DTLS="OFF"
+  - DTLS="ON" ZMQ="ON"
+  - DTLS="OFF" ZMQ="OFF"
 
-script: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" . && make && make test
+script: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make && make test
