@@ -34,7 +34,7 @@ public:
 
 	virtual ~Destination() { };
 	
-	virtual void receive(Emitable* e)
+	virtual void receive(NullEmitable* e)
 	{
 		THROWEXCEPTION("this module is no destination!");
 	}
