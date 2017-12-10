@@ -34,7 +34,7 @@ public:
 
 private:
 	virtual std::string getStatistics();
-	virtual std::string getStatisticsXML();
+	virtual std::string getStatisticsXML(double interval);
 
 	std::string flowFilename;
 	std::ofstream flowOutstream;
