@@ -8,7 +8,7 @@
 /**
  * internally used function
  */
-std::string CfgBase::_get(const std::string& name, XMLElement* elem) throw(IllegalEntry)
+std::string CfgBase::_get(const std::string& name, XMLElement* elem)
 {
 	if (!elem)
 		elem = _elem;
