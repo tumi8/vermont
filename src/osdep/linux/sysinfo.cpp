@@ -97,23 +97,49 @@ static void old_Hertz_hack(void){
   seconds = (up_1 + up_2) / 2;
   h = (unsigned)( (double)jiffies/seconds/smp_num_cpus );
   /* actual values used by 2.4 kernels: 32 64 100 128 1000 1024 1200 */
-  switch(h){
-  case    9 ...   11 :  Hertz =   10; break; /* S/390 (sometimes) */
-  case   18 ...   22 :  Hertz =   20; break; /* user-mode Linux */
-  case   30 ...   34 :  Hertz =   32; break; /* ia64 emulator */
-  case   48 ...   52 :  Hertz =   50; break;
-  case   58 ...   61 :  Hertz =   60; break;
-  case   62 ...   65 :  Hertz =   64; break; /* StrongARM /Shark */
-  case   95 ...  105 :  Hertz =  100; break; /* normal Linux */
-  case  124 ...  132 :  Hertz =  128; break; /* MIPS, ARM */
-  case  195 ...  204 :  Hertz =  200; break; /* normal << 1 */
-  case  253 ...  260 :  Hertz =  256; break;
-  case  393 ...  408 :  Hertz =  400; break; /* normal << 2 */
-  case  790 ...  808 :  Hertz =  800; break; /* normal << 3 */
-  case  990 ... 1010 :  Hertz = 1000; break; /* ARM */
-  case 1015 ... 1035 :  Hertz = 1024; break; /* Alpha, ia64 */
-  case 1180 ... 1220 :  Hertz = 1200; break; /* Alpha */
-  default:
+  if        ( (h >= 9   ) && (h <= 11  ) ){
+    /* S/390 (sometimes) */
+    Hertz = 10;
+  } else if ( (h >= 18  ) && (h <= 22  ) ){
+    /* user-mode Linux */
+    Hertz = 20; /* S/390 (sometimes) */
+  } else if ( (h >= 30  ) && (h <= 34  ) ){
+    /* ia64 emulator */
+    Hertz = 32;
+  } else if ( (h >= 48  ) && (h <= 52  ) ){
+    Hertz = 50;
+  } else if ( (h >= 58  ) && (h <= 61  ) ){
+    Hertz = 60;
+  } else if ( (h >= 62  ) && (h <= 65  ) ){
+    /* StrongARM /Shark */
+    Hertz = 64;
+  } else if ( (h >= 95  ) && (h <= 105 ) ){
+    /* normal Linux */
+    Hertz = 100;
+  } else if ( (h >= 124 ) && (h <= 132 ) ){
+    /* MIPS, ARM */
+    Hertz = 128;
+  } else if ( (h >= 195 ) && (h <= 204 ) ){
+    /* normal << 1 */
+    Hertz = 200;
+  } else if ( (h >= 253 ) && (h <= 260 ) ){
+    Hertz = 256;
+  } else if ( (h >= 393 ) && (h <= 408 ) ){
+    /* normal << 2 */
+    Hertz = 400;
+  } else if ( (h >= 790 ) && (h <= 808 ) ){
+    /* normal << 3 */
+    Hertz = 800;
+  } else if ( (h >= 990 ) && (h <= 1010) ){
+    /* ARM */
+    Hertz = 1000;
+  } else if ( (h >= 1015) && (h <= 1035) ){
+    /* Alpha, ia64 */
+    Hertz = 1024;
+  } else if ( (h >= 1180) && (h <= 1220) ){
+    /* Alpha */
+    Hertz = 1200;
+  } else {
 #ifdef HZ
     Hertz = (unsigned long long)HZ;    /* <asm/param.h> */
 #else

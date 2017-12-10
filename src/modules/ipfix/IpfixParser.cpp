@@ -695,7 +695,7 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 		if(iter != snInfoMap.end()) {
 			int64_t difference = (int64_t)sequenceNumber - (int64_t)iter->second.expectedSN;
 			if(difference > 0) {
-				msg(MSG_INFO, "IpfixParser: Loss of %d NetflowV9 messages from %s detected (SN=%u, expected=%u).",
+				msg(MSG_INFO, "IpfixParser: Loss of %ld NetflowV9 messages from %s detected (SN=%u, expected=%u).",
 					difference, (sourceId->toString()).c_str(), sequenceNumber, iter->second.expectedSN);
 				iter->second.lostMessages += difference;
 			} else if (difference < 0) {
@@ -795,7 +795,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 		if(iter != snInfoMap.end()) {
 			int64_t difference = (int64_t)sequenceNumber - (int64_t)iter->second.expectedSN;
 			if(difference > 0) {
-				msg(MSG_INFO, "IpfixParser: Loss of %d IPFIX Data Records from %s detected (SN=%u, expected=%u).",
+				msg(MSG_INFO, "IpfixParser: Loss of %ld IPFIX Data Records from %s detected (SN=%u, expected=%u).",
 					difference, (sourceId->toString()).c_str(), sequenceNumber, iter->second.expectedSN);
 				iter->second.lostDataRecords += difference;
 			} else if (difference < 0) {
