@@ -41,7 +41,7 @@ IpfixReceiverZmq::IpfixReceiverZmq(std::vector<std::string> endpoints,
 	: endpoints(endpoints), channels(channels),
 	  zmq_high_watermark(zmq_high_watermark),
 	  zmq_poll_timeout(zmq_poll_timeout),
-	  statReceivedPackets(0), moduleId(moduleId)
+	  statReceivedPackets(0)
 {
 	if (endpoints.empty()) {
 		THROWEXCEPTION("No ZMQ channels configured, cannot start ZMQ Receiver");
