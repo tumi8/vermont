@@ -231,7 +231,6 @@ class TemplateInfo {
 			NetflowOptionsTemplate = 1,
 			IpfixTemplate = 2,
 			IpfixOptionsTemplate = 3,
-			IpfixDataTemplate = 4
 		};
 
 		/**
@@ -257,8 +256,6 @@ class TemplateInfo {
 		FieldInfo* getFieldInfo(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid);
 		int getFieldIndex(const InformationElement::IeInfo& type);
 		int getFieldIndex(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid);
-		FieldInfo* getDataInfo(const InformationElement::IeInfo& type);
-		FieldInfo* getDataInfo(InformationElement::IeId fieldTypeId, InformationElement::IeEnterpriseNumber fieldTypeEid);
 
 		TemplateId templateId;	/**< the template id assigned to this template */
 		SetId  setId; 		/**< set Id */
@@ -270,13 +267,6 @@ class TemplateInfo {
 		// only used by Options Templates:
 		uint16_t scopeCount; 		/**< number of scope fields */
 		FieldInfo* scopeInfo; 		/**< array of FieldInfos describing each of these fields */
-
-		// only used by Data Templates:
-		uint16_t dataCount; 		/**< number of fixed-value fields */
-		FieldInfo* dataInfo; 		/**< array of FieldInfos describing each of these fields */
-		uint16_t preceding; /**< the preceding rule field as defined in the draft */
-		uint16_t dataLength;
-		IpfixRecord::Data* data; /**< data start pointer for fixed-value fields */
 
 	private:
 		/* uniqueId:

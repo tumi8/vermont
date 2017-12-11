@@ -36,7 +36,6 @@ public:
 	virtual ~BaseAggregator();
 		
 	void buildAggregator(Rules* rules, uint16_t inactiveTimeout, uint16_t activeTimeout, uint8_t hashbits);
-	void buildAggregator(char* rulefile, uint16_t inactiveTimeout, uint16_t activeTimeout, uint8_t hashbits);
 
 	// events from Module
 	virtual void preReconfiguration();

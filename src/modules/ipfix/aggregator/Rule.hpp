@@ -79,7 +79,6 @@ class Rule : private PrintHelpers {
 		friend bool operator!=(const Rule &rhs, const Rule &lhs);
 
 		uint16_t id;
-		uint16_t preceding;
 		int fieldCount;
 		uint32_t biflowAggregation;	/**< true if biflows have to be aggregated */
 		Rule::Field* field[MAX_RULE_FIELDS];

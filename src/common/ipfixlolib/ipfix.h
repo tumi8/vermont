@@ -40,7 +40,6 @@ extern "C" {
 #define NetflowV9_SetId_OptionsTemplate  			  1
 #define IPFIX_SetId_Template                          2
 #define IPFIX_SetId_OptionsTemplate                   3
-#define IPFIX_SetId_DataTemplate                      4
 #define IPFIX_SetId_Data_Start                      256
 
 // enterprise bit

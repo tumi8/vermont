@@ -59,8 +59,7 @@ void FrontPayloadSigMatcher::onDataRecord(IpfixDataRecord* record)
 {
 	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
 	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate) 
-		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate) 
-		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)) {
 		record->removeReference();
 		return;
 	}

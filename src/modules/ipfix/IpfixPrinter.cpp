@@ -394,9 +394,6 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 				case TemplateInfo::IpfixOptionsTemplate:
 					fprintf(fh, "\n-+--- Ipfix Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 					break;
-				case TemplateInfo::IpfixDataTemplate:
-					fprintf(fh, "\n-+--- Ipfix Data Template (id=%u, preceding=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->preceding, templateInfo->getUniqueId());
-					break;
 				default:
 					msg(MSG_ERROR, "IpfixPrinter: Template with unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
 
@@ -422,16 +419,6 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 				}
 			}
 
-			// print fixed data in the case of a data template
-			if(templateInfo->setId == TemplateInfo::IpfixDataTemplate) {
-				fprintf(fh, " `- fixed data\n");
-				for (int i = 0; i < templateInfo->dataCount; i++) {
-					fprintf(fh, " '   `- ");
-					printFieldData(templateInfo->dataInfo[i].type,
-							(templateInfo->data + templateInfo->dataInfo[i].offset));
-					fprintf(fh, "\n");
-				}
-			}
 			fprintf(fh, " `---\n\n");
 			break;
 
@@ -462,9 +449,6 @@ void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 			break;
 		case TemplateInfo::IpfixOptionsTemplate:
 			fprintf(fh, "\n-+--- Destroyed Ipfix Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
-			break;
-		case TemplateInfo::IpfixDataTemplate:
-			fprintf(fh, "\n-+--- Destroyed Ipfix Data Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
 		default:
 			msg(MSG_ERROR, "IpfixPrinter: Template destruction recordwith unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
@@ -657,9 +641,6 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 		case TemplateInfo::IpfixOptionsTemplate:
 			fprintf(fh, "\n-+--- Ipfix Options Data Record (id=%u) from ", record->templateInfo->templateId);
 			break;
-		case TemplateInfo::IpfixDataTemplate:
-			fprintf(fh, "\n-+--- Ipfix Data Data Record (id=%u, preceding=%u) from ", record->templateInfo->templateId, record->templateInfo->preceding);
-			break;
 		default:
 			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%u", record->templateInfo->setId);
 
@@ -674,16 +655,6 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 		fprintf(fh, ")\n");
 	} else {
 		fprintf(fh, "no sourceID given");
-	}
-
-	if(record->templateInfo->setId == TemplateInfo::IpfixDataTemplate) {
-		fprintf(fh, " `- fixed data\n");
-		for (i = 0; i < record->templateInfo->dataCount; i++) {
-			fprintf(fh, " '   `- ");
-			printFieldData(record->templateInfo->dataInfo[i].type,
-					(record->templateInfo->data + record->templateInfo->dataInfo[i].offset));
-			fprintf(fh, "\n");
-		}
 	}
 
 	if(record->templateInfo->setId == TemplateInfo::IpfixOptionsTemplate) {

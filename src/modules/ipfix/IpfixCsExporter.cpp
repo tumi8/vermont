@@ -98,8 +98,7 @@ uint64_t IpfixCsExporter::retrieveTime(IpfixDataRecord* record, InformationEleme
 void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 {
 	if ((record->templateInfo->setId != TemplateInfo::NetflowTemplate)
-			&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)
-			&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
+			&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)) {
 		record->removeReference();
 		return;
 	}

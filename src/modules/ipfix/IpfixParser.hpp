@@ -116,18 +116,6 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 		} IpfixTemplateHeader;
 
 		/**
-		 * IPFIX "DataTemplate Set" helper.
-		 * Constitutes the first bytes of every IPFIX DataTemplate
-		 */
-		typedef struct {
-			uint16_t templateId;
-			uint16_t fieldCount;
-			uint16_t dataCount;
-			uint16_t precedingRule;
-			uint8_t data;
-		} IpfixDataTemplateHeader;
-
-		/**
 		 * IPFIX "Options Template Set" helper.
 		 * Constitutes the first bytes of every IPFIX Options Template
 		 */
@@ -147,7 +135,6 @@ class IpfixParser : public IpfixPacketProcessor, public Sensor
 
 		uint32_t processDataSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		uint32_t processTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
-		uint32_t processDataTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceID, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		uint32_t processOptionsTemplateSet(boost::shared_ptr<IpfixRecord::SourceID> sourceId, TemplateInfo::SetId setId, boost::shared_array<uint8_t> message, IpfixSetHeader* set, uint8_t* endOfMessage);
 		int processNetflowV9Packet(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);
 		int processIpfixPacket(boost::shared_array<uint8_t> message, uint16_t length, boost::shared_ptr<IpfixRecord::SourceID> sourceId);

@@ -314,7 +314,7 @@ typedef struct {
 */
 /* Note that this ipfix_set_header struct is only used for data sets.
  * The header of template sets is built up in a char array.
- * (See ipfix_start_datatemplate)
+ * (See ipfix_start_template)
  */
 
 typedef struct {
@@ -548,13 +548,10 @@ typedef struct{
 	uint16_t template_id;
 	uint16_t field_count;	// the number of fields the user announced
 				// when calling ipfix_start_template
-	uint16_t fixedfield_count;
-				// the number of fixed-value fields the
-				// user announced when calling ipfix_start_datatemplate
 	uint16_t fields_added;	// make sure the user adds the exact the same number
 				// of fields he told us to add when calling
 				// ipfix_start_template()
-				// Make sure fields_added == field_count + fixedfield_count
+				// Make sure fields_added == field_count
 				// when the user calls ipfix_end_template()
 	int fields_length;	// This also includes the length of the Set Header
 				// It's basically the number of bytes written
@@ -628,9 +625,7 @@ int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip_addr, uint
 int ipfix_remove_collector(ipfix_exporter *exporter, const char *coll_ip_addr, uint16_t coll_port);
 int ipfix_start_template(ipfix_exporter *exporter, uint16_t template_id,  uint16_t field_count);
 int ipfix_start_optionstemplate_set(ipfix_exporter *exporter, uint16_t template_id, uint16_t scope_length, uint16_t option_length);
-int ipfix_start_datatemplate(ipfix_exporter *exporter, uint16_t template_id, uint16_t preceding, uint16_t field_count, uint16_t fixedfield_count);
 int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id);
-int ipfix_put_template_fixedfield(ipfix_exporter *exporter, uint16_t template_id, uint16_t type, uint16_t length, uint32_t enterprise_id);
 int ipfix_end_template(ipfix_exporter *exporter, uint16_t template_id );
 int ipfix_start_data_set(ipfix_exporter *exporter, uint16_t template_id);
 uint16_t ipfix_get_remaining_space(ipfix_exporter *exporter);
@@ -639,7 +634,6 @@ int ipfix_end_data_set(ipfix_exporter *exporter, uint16_t number_of_records);
 int ipfix_cancel_data_set(ipfix_exporter *exporter);
 int ipfix_set_data_field_marker(ipfix_exporter *exporter);
 int ipfix_delete_data_fields_upto_marker(ipfix_exporter *exporter);
-int ipfix_put_template_data(ipfix_exporter *exporter, uint16_t template_id, void* data, uint16_t data_length);
 int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id);
 int ipfix_send(ipfix_exporter *exporter);
 int ipfix_set_template_transmission_timer(ipfix_exporter *exporter, uint32_t timer); 	 
