@@ -23,7 +23,7 @@ PROJECT(VERMONT)
 ### CMake configuration
 
 # allow building with old CMake. Use some bundled modules as a fallback
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 # TODO: Once all warnings are fixed add -Werror to both of these
@@ -67,15 +67,6 @@ ENABLE_TESTING()
 SUBDIRS(
 	src
 )
-
-if(COMMAND cmake_policy)
-	cmake_policy(SET CMP0003 OLD)
-	cmake_policy(SET CMP0002 OLD)
-	if (POLICY CMP0017)
-	    cmake_policy(SET CMP0017 OLD)
-	endif(POLICY CMP0017)
-endif(COMMAND cmake_policy)
-
 
 ADD_EXECUTABLE(vermont
 	src/vermont.cc

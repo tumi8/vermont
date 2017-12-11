@@ -57,7 +57,7 @@ private:
 	std::vector<zsock_t *> zmq_sockets;
 	zpoller_t *zpoller;
 	uint32_t statReceivedPackets;  /**< number of received packets */
-	unsigned int moduleId;
+
 };
 
 #endif // ZMQ_SUPPORT_ENABLED
