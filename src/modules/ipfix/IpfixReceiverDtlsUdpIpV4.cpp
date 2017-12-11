@@ -319,8 +319,10 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::accept() {
     if (ret==1) {
 	state = CONNECTED;
 	DPRINTF("SSL_accept() succeeded.");
+#ifdef DEBUG
 	const char *str=SSL_CIPHER_get_name(SSL_get_current_cipher(ssl));
 	DPRINTF("CIPHER is %s",(str != NULL)?str:"(NONE)");
+#endif
 	if (parent.ssl_ctx.get_verify_peers()) {
 	    if (verify_peer()) {
 		DPRINTF("Peer authentication successful.");
