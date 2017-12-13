@@ -71,84 +71,12 @@ static char buf[1024];
  * unreliable, because it doesn't return an error code when it is
  * used with a kernel that doesn't support the ELF note. On some other
  * architectures there may be a system call or sysctl() that will work.
+ *
+ * A more recent update: kernels older than 2.4+ are no longer supported
+ * by vermont.
  */
 
 unsigned long long Hertz;
-
-static void old_Hertz_hack(void){
-  unsigned long long user_j, nice_j, sys_j, other_j;  /* jiffies (clock ticks) */
-  double up_1, up_2, seconds;
-  unsigned long long jiffies;
-  unsigned h;
-  char* savelocale;
-
-  savelocale = setlocale(LC_NUMERIC, NULL);
-  setlocale(LC_NUMERIC, "C");
-  do{
-    FILE_TO_BUF(UPTIME_FILE,uptime_fd);  sscanf(buf, "%lf", &up_1);
-    /* uptime(&up_1, NULL); */
-    FILE_TO_BUF(STAT_FILE,stat_fd);
-    sscanf(buf, "cpu %Lu %Lu %Lu %Lu", &user_j, &nice_j, &sys_j, &other_j);
-    FILE_TO_BUF(UPTIME_FILE,uptime_fd);  sscanf(buf, "%lf", &up_2);
-    /* uptime(&up_2, NULL); */
-  } while((long long)( (up_2-up_1)*1000.0/up_1 )); /* want under 0.1% error */
-  setlocale(LC_NUMERIC, savelocale);
-  jiffies = user_j + nice_j + sys_j + other_j;
-  seconds = (up_1 + up_2) / 2;
-  h = (unsigned)( (double)jiffies/seconds/smp_num_cpus );
-  /* actual values used by 2.4 kernels: 32 64 100 128 1000 1024 1200 */
-  if        ( (h >= 9   ) && (h <= 11  ) ){
-    /* S/390 (sometimes) */
-    Hertz = 10;
-  } else if ( (h >= 18  ) && (h <= 22  ) ){
-    /* user-mode Linux */
-    Hertz = 20; /* S/390 (sometimes) */
-  } else if ( (h >= 30  ) && (h <= 34  ) ){
-    /* ia64 emulator */
-    Hertz = 32;
-  } else if ( (h >= 48  ) && (h <= 52  ) ){
-    Hertz = 50;
-  } else if ( (h >= 58  ) && (h <= 61  ) ){
-    Hertz = 60;
-  } else if ( (h >= 62  ) && (h <= 65  ) ){
-    /* StrongARM /Shark */
-    Hertz = 64;
-  } else if ( (h >= 95  ) && (h <= 105 ) ){
-    /* normal Linux */
-    Hertz = 100;
-  } else if ( (h >= 124 ) && (h <= 132 ) ){
-    /* MIPS, ARM */
-    Hertz = 128;
-  } else if ( (h >= 195 ) && (h <= 204 ) ){
-    /* normal << 1 */
-    Hertz = 200;
-  } else if ( (h >= 253 ) && (h <= 260 ) ){
-    Hertz = 256;
-  } else if ( (h >= 393 ) && (h <= 408 ) ){
-    /* normal << 2 */
-    Hertz = 400;
-  } else if ( (h >= 790 ) && (h <= 808 ) ){
-    /* normal << 3 */
-    Hertz = 800;
-  } else if ( (h >= 990 ) && (h <= 1010) ){
-    /* ARM */
-    Hertz = 1000;
-  } else if ( (h >= 1015) && (h <= 1035) ){
-    /* Alpha, ia64 */
-    Hertz = 1024;
-  } else if ( (h >= 1180) && (h <= 1220) ){
-    /* Alpha */
-    Hertz = 1200;
-  } else {
-#ifdef HZ
-    Hertz = (unsigned long long)HZ;    /* <asm/param.h> */
-#else
-    /* If 32-bit or big-endian (not Alpha or ia64), assume HZ is 100. */
-    Hertz = (sizeof(long)==sizeof(int) || htons(999)==999) ? 100UL : 1024UL;
-#endif
-    fprintf(stderr, "Unknown HZ value! (%d) Assume %Ld.\n", h, Hertz);
-  }
-}
 
 #define NOTE_NOT_FOUND 42
 
@@ -184,7 +112,11 @@ static void init_libproc(void){
     if(Hertz!=NOTE_NOT_FOUND) return;
     fputs("2.4+ kernel w/o ELF notes? -- report this\n", stderr);
   }
-  old_Hertz_hack();
+  else{
+    fputs("Kernels older than 2.4+ are no longer supported\n", stderr);
+  }
+  // the kernel is too old or it has no ELF notes
+  exit(1);
 }
 
 

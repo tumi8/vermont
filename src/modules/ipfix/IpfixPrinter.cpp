@@ -28,6 +28,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <arpa/inet.h>
+#include <inttypes.h>
 
 /**
  * print functions which have formerly been in IpfixParser.cpp
@@ -603,7 +604,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		if (fi != NULL && fi->type.length==2) {
 			srcport = ntohs(*reinterpret_cast<uint16_t*>(record->data+fi->offset));
 		}
-		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (uint8_t)((srcip>>0)&0xFF), (uint8_t)((srcip>>8)&0xFF), (uint8_t)((srcip>>16)&0xFF), (uint8_t)((srcip>>24)&0xFF), srcport);
+		snprintf(buf, ARRAY_SIZE(buf), "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8 ":%" PRIu16, (uint8_t)((srcip>>0)&0xFF), (uint8_t)((srcip>>8)&0xFF), (uint8_t)((srcip>>16)&0xFF), (uint8_t)((srcip>>24)&0xFF), srcport);
 		fprintf(fh, "%21s ", buf);
 
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
@@ -616,7 +617,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		if (fi != NULL && fi->type.length==2) {
 			dstport = ntohs(*reinterpret_cast<uint16_t*>(record->data+fi->offset));
 		}
-		snprintf(buf, ARRAY_SIZE(buf), "%hhu.%hhu.%hhu.%hhu:%hu", (uint8_t)((dstip>>0)&0xFF), (uint8_t)((dstip>>8)&0xFF), (uint8_t)((dstip>>16)&0xFF), (uint8_t)((dstip>>24)&0xFF), dstport);
+		snprintf(buf, ARRAY_SIZE(buf), "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8 ":%" PRIu16, (uint8_t)((dstip>>0)&0xFF), (uint8_t)((dstip>>8)&0xFF), (uint8_t)((dstip>>16)&0xFF), (uint8_t)((dstip>>24)&0xFF), dstport);
 		fprintf(fh, "%21s ", buf);
 
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_packetDeltaCount, 0);
