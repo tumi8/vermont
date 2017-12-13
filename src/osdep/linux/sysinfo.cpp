@@ -16,31 +16,7 @@
 // small hack to access environ variable conforming to the GNU way
 #define environ __environ
 
-#define STAT_FILE    "/proc/stat"
-static int stat_fd = -1;
-#define UPTIME_FILE  "/proc/uptime"
-static int uptime_fd = -1;
-
 long smp_num_cpus;     /* number of CPUs */
-static char buf[1024];
-
-/* This macro opens filename only if necessary and seeks to 0 so
- * that successive calls to the functions are more efficient.
- * It also reads the current contents of the file into the global buf.
- */
-#define FILE_TO_BUF(filename, fd) do{				\
-    static int local_n;						\
-    if (fd == -1 && (fd = open(filename, O_RDONLY)) == -1) {	\
-	THROWEXCEPTION("error: /proc must be mounted!");		\
-    }								\
-    lseek(fd, 0L, SEEK_SET);					\
-    if ((local_n = read(fd, buf, sizeof buf - 1)) < 0) {	\
-	perror(filename);					\
-	fflush(NULL);						\
-	_exit(103);						\
-    }								\
-    buf[local_n] = '\0';					\
-}while(0)
 
 /***********************************************************************
  * Some values in /proc are expressed in units of 1/HZ seconds, where HZ
