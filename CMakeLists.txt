@@ -23,7 +23,7 @@ PROJECT(VERMONT)
 ### CMake configuration
 
 # allow building with old CMake. Use some bundled modules as a fallback
-CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 # TODO: Once all warnings are fixed add -Werror to both of these
