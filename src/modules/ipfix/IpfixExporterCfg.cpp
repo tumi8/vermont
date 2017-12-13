@@ -18,7 +18,10 @@
  *
  */
 
+#include "common/ipfixlolib/ipfixlolib_config.h"
+#ifdef SUPPORT_DTLS
 #include "common/ipfixlolib/ipfixlolib_dtls.h"
+#endif
 #include "IpfixExporterCfg.h"
 
 IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
@@ -125,12 +128,15 @@ IpfixSender* IpfixExporterCfg::createInstance()
 				p->getPort());
 #endif
 		void *aux_config = NULL;
-		ipfix_aux_config_dtls_over_udp acdou;
-		ipfix_aux_config_dtls_over_sctp acdos;
 		ipfix_aux_config_udp acu;
 		ipfix_aux_config_udp *pacu = NULL;
+#ifdef SUPPORT_DTLS
+		ipfix_aux_config_dtls_over_udp acdou;
+		ipfix_aux_config_dtls_over_sctp acdos;
 		ipfix_aux_config_dtls *pacd = NULL;
+#endif
 		switch (p->getProtocol()) {
+#ifdef SUPPORT_DTLS
 			case DTLS_OVER_UDP:
 				acdou.max_connection_lifetime = dtlsMaxConnectionLifetime;
 				pacd = &acdou.dtls;
@@ -141,6 +147,7 @@ IpfixSender* IpfixExporterCfg::createInstance()
 				pacd = &acdos.dtls;
 				aux_config = &acdos;
 				break;
+#endif
 			case UDP:
 				aux_config = &acu;
 				pacu = &acu;
@@ -148,6 +155,7 @@ IpfixSender* IpfixExporterCfg::createInstance()
 			default:
 				break;
 		}
+#ifdef SUPPORT_DTLS
 		if (pacd) {
 			pacd->peer_fqdn = NULL;
 			const std::set<std::string> peerFqdns = p->getPeerFqdns();
@@ -155,6 +163,7 @@ IpfixSender* IpfixExporterCfg::createInstance()
 			if (it != peerFqdns.end())
 				pacd->peer_fqdn = it->c_str();
 		}
+#endif
 		if (pacu) {
 			pacu->mtu = p->getMtu();
 		}
