@@ -1,16 +1,13 @@
 language: cpp
-compiler:
-  - clang
-  - gcc
 cache: ccache
 sudo: false
 
 addons:
   apt:
-    sources:
+    sources: &zeromq_source
     - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
       key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
-    packages:
+    packages: &required_packages
       - cmake
       - libboost-dev
       - libboost-filesystem-dev
@@ -21,11 +18,45 @@ addons:
       - libpcap-dev
       - libsystemd-journal-dev
       - libsctp-dev
+    packages: &optional_packages
       - libssl-dev
       - libczmq-dev
 
-env:
-  - DTLS="ON" ZMQ="ON"
-  - DTLS="OFF" ZMQ="OFF"
+matrix:
+  include:
+    - compiler: gcc
+      sudo: true
+      before_install:
+        - sudo apt-get remove -qq libssl-dev
+      env: DTLS="OFF" ZMQ="OFF"
+      addons:
+        apt:
+          packages:
+            - *required_packages
+    - compiler: clang
+      sudo: true
+      before_install:
+        - sudo apt-get remove -qq libssl-dev
+      env: DTLS="OFF" ZMQ="OFF"
+      addons:
+        apt:
+          packages:
+            - *required_packages
+    - compiler: gcc
+      env: DTLS="ON" ZMQ="ON"
+      addons:
+        apt:
+          sources: *zeromq_source
+          packages:
+            - *required_packages
+            - *optional_packages
+    - compiler: clang
+      env: DTLS="ON" ZMQ="ON"
+      addons:
+        apt:
+          sources: *zeromq_source
+          packages:
+            - *required_packages
+            - *optional_packages
 
 script: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make && make test
