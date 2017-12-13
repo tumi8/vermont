@@ -1,15 +1,9 @@
 language: cpp
-compiler:
-  - clang
-  - gcc
 cache: ccache
 sudo: false
 
 addons:
   apt:
-    sources:
-    - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
-      key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
     packages:
       - cmake
       - libboost-dev
@@ -21,11 +15,56 @@ addons:
       - libpcap-dev
       - libsystemd-journal-dev
       - libsctp-dev
-      - libssl-dev
-      - libczmq-dev
 
-env:
-  - DTLS="ON" ZMQ="ON"
-  - DTLS="OFF" ZMQ="OFF"
+matrix:
+  include:
+    - os: linux
+      env: DTLS="OFF" ZMQ="OFF"
+      compiler: gcc
+    - os: linux
+      env: DTLS="OFF" ZMQ="OFF"
+      compiler: clang
+    - os: linux
+      env: DTLS="ON" ZMQ="ON"
+      compiler: gcc
+      addons:
+        apt:
+          sources:
+          - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+            key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
+          packages:
+            - cmake
+            - libboost-dev
+            - libboost-filesystem-dev
+            - libboost-regex-dev
+            - libboost-test-dev
+            - libboost-thread-dev
+            - libxml2-dev
+            - libpcap-dev
+            - libsystemd-journal-dev
+            - libsctp-dev
+            - libssl-dev
+            - libczmq-dev
+    - os: linux
+      env: DTLS="ON" ZMQ="ON"
+      compiler: clang
+      addons:
+        apt:
+          sources:
+          - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+            key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
+          packages:
+            - cmake
+            - libboost-dev
+            - libboost-filesystem-dev
+            - libboost-regex-dev
+            - libboost-test-dev
+            - libboost-thread-dev
+            - libxml2-dev
+            - libpcap-dev
+            - libsystemd-journal-dev
+            - libsctp-dev
+            - libssl-dev
+            - libczmq-dev
 
 script: cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make && make test
