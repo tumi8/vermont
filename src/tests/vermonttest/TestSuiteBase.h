@@ -6,7 +6,7 @@
 #include <vector>
 
 
-#define ERROR(...) vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, ##__VA_ARGS__)
+#define ERROR(...) vermont_exception(__LINE__, __FILE__, __PRETTY_FUNCTION__, __func__, __VA_ARGS__)
 
 // redefine assert, so that ASSERT is always properly defined in unit tests
 #undef ASSERT
