@@ -228,8 +228,13 @@ void PrintHelpers::printUint(char* buf, InformationElement::IeInfo type, IpfixRe
  */
 void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern) {
 
-	timeval t;
-	uint64_t hbnum;
+	printFieldDataType(type);
+
+	printFieldDataValue(type, pattern);
+}
+
+void PrintHelpers::printFieldDataType(InformationElement::IeInfo type) {
+
 	string typeStr = type.toString();
 
 	// try to get the values aligned
@@ -237,6 +242,12 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 		fprintf(fh, "%-60s: ", type.toString().c_str());
 	else
 		fprintf(fh, "%s: ", type.toString().c_str());
+}
+
+void PrintHelpers::printFieldDataValue(InformationElement::IeInfo type, IpfixRecord::Data* pattern) {
+
+	timeval t;
+	uint64_t hbnum;
 
 	switch (type.enterprise) {
 		case 0:
@@ -669,7 +680,25 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 	fprintf(fh, " `- variable data\n");
 	for (i = 0; i < record->templateInfo->fieldCount; i++) {
 		fprintf(fh, " '   `- ");
-		printFieldData(record->templateInfo->fieldInfo[i].type, (record->data + record->templateInfo->fieldInfo[i].offset));
+		if (record->templateInfo->fieldInfo[i].type == InformationElement::IeInfo(IPFIX_TYPEID_basicList, 0)) {
+			printFieldDataType(record->templateInfo->fieldInfo[i].type);
+
+			fprintf(fh, "semantic=%hu, %s [", record->templateInfo->fieldInfo[i].basicListData.semantic, record->templateInfo->fieldInfo[i].basicListData.fieldIe->toString().c_str());
+
+			vector<void*>** listPtr = (vector<void*>**) (record->data + record->templateInfo->fieldInfo[i].offset);
+			for (vector<void*>::const_iterator iter = (*listPtr)->begin(); iter != (*listPtr)->end(); iter++) {
+
+				printFieldDataValue(*record->templateInfo->fieldInfo[i].basicListData.fieldIe, reinterpret_cast<IpfixRecord::Data*>(*iter));
+
+				// No comma for last element in the list
+				if (iter+1 != (*listPtr)->end()) {
+					fprintf(fh, ", ");
+				}
+			}
+			fprintf(fh, "]");
+		} else {
+			printFieldData(record->templateInfo->fieldInfo[i].type, (record->data + record->templateInfo->fieldInfo[i].offset));
+		}
 		fprintf(fh, "\n");
 	}
 	fprintf(fh, " `---\n\n");

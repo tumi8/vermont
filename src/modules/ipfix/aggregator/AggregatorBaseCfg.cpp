@@ -120,6 +120,9 @@ Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 	ruleField->type.enterprise = ie.getEnterpriseNumber();
 	ruleField->type.length = ie.getIeLength();
 
+	ruleField->semantic = ie.getSemantic();
+	ruleField->fieldIe = ie.getFieldIe();
+
 	if (ie.getAutoAddV4PrefixLength() &&
 			(ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0) ||
 			ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_destinationIPv4Address, 0))) {

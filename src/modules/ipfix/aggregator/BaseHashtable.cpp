@@ -122,7 +122,19 @@ void BaseHashtable::createDataTemplate(Rule* rule)
 			fi->type = rf->type;
 			fi->offset = fieldLength;
 			fi->privDataOffset = 0;
-			fieldLength += fi->type.length;
+			fi->isVariableLength = (fi->type.length == 65535);
+
+			if (!fi->isVariableLength) {
+				fieldLength += fi->type.length;
+			}
+			// Variable length fields: Extract real length information
+			else if (fi->type == InformationElement::IeInfo(IPFIX_TYPEID_basicList, 0)) {
+				fi->basicListData.semantic = rf->semantic;
+				fi->basicListData.fieldIe = new InformationElement::IeInfo(rf->fieldIe);
+
+				// Length is one pointer, as we are storing data in dynamically allocated vector (i.e. pointer to vector)
+				fieldLength += sizeof(vector<void*>*);
+			}
 			fieldModifier[dataTemplate->fieldCount - 1] = rf->modifier;
 		}
 	}
@@ -234,6 +246,9 @@ void BaseHashtable::exportBucket(HashtableBucket* bucket)
  */
 void BaseHashtable::destroyBucket(HashtableBucket* bucket)
 {
+	// NOTE: If we free basicList elements here we do get incorrect pointers in IpfixSender!
+	// Therefore we free basicList memory in IpfixDataRecord::removeReference()
+
 	delete bucket;
 }
 
@@ -335,6 +350,7 @@ int BaseHashtable::isToBeAggregated(InformationElement::IeInfo& type)
 				case IPFIX_TYPEID_droppedOctetDeltaCount:
 				case IPFIX_TYPEID_droppedPacketDeltaCount:
 				case IPFIX_TYPEID_tcpControlBits:
+				case IPFIX_TYPEID_basicList:
 					return 1;
 			}
 			break;
