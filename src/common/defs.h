@@ -153,5 +153,14 @@
  */
 #define DISABLE_ALIGNMENT __attribute__((packed));
 
+/*
+ * wrapper around GCC's fallthrough attribute, which is not supported by clang.
+ * clang also defines __GNUC__ and __GNUG__, but it also defines __clang__
+ */
+#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
+#define __FALLTHROUGH__ __attribute__((fallthrough))
+#else
+#define __FALLTHROUGH__
+#endif
 
 #endif /*DEFS_H*/
