@@ -144,7 +144,7 @@ char ** get_filenames(const char * directory, int * num_of_files) {
 			/* Skip non-regular files (e.g. directories) */
 			if ( ((fileNameSize < (int)sizeof(filename)) && (fileNameSize > 0))
 					&& (stat(filename, &dirEntStat) == 0) && (S_ISREG(dirEntStat.st_mode)) ) {
-				snprintf(filenames[i], MAX_SIZE_OF_FILENAME-1, "%s", pDirEnt->d_name);
+				snprintf(filenames[i], MAX_SIZE_OF_FILENAME, "%s", pDirEnt->d_name);
 				//printf( "ADDED: %s\n", filenames[i] );
 				i++;
 			}

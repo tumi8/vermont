@@ -158,7 +158,7 @@ void report::f_post(vector<treeRecord*>& p_treeRecords,uint32_t index,report_enu
 	list<treeNode*>::iterator iter = specNodes.begin();
 
 	uint32_t lastindex = (index - 1 + p_treeRecords.capacity()) % p_treeRecords.capacity();
-	double change_global;
+	double change_global = .0;
 	if (p_treeRecords[lastindex] != NULL) 
 	{
 		change_global = (double) (numTotal * 100) / (double) p_treeRecords[lastindex]->root->data.m_attributes[attribute]->numCount - 100.0;	
