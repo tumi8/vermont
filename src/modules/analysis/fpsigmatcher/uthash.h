@@ -338,25 +338,25 @@ do {                                                                          \
   hash += keylen;                                                             \
   switch ( k ) {                                                              \
      case 11: hash += ( (unsigned)key[10] << 24 );                            \
-		__FALLTHROUGH__;		        	   								\
+		__FALLTHROUGH__;		        	   								  \
      case 10: hash += ( (unsigned)key[9] << 16 );                             \
-		__FALLTHROUGH__;                                        \
+		__FALLTHROUGH__;                                                      \
      case 9:  hash += ( (unsigned)key[8] << 8 );                              \
-		__FALLTHROUGH__;                                        \
+		__FALLTHROUGH__;                                                      \
      case 8:  j += ( (unsigned)key[7] << 24 );                                \
-		__FALLTHROUGH__;                                        \
+		__FALLTHROUGH__;                                                      \
      case 7:  j += ( (unsigned)key[6] << 16 );                                \
-		__FALLTHROUGH__;                                        \
+		__FALLTHROUGH__;                                                      \
      case 6:  j += ( (unsigned)key[5] << 8 );                                 \
-		__FALLTHROUGH__;                                        \
+		__FALLTHROUGH__;                                                      \
      case 5:  j += key[4];                                                    \
-		__FALLTHROUGH__;                                        \
+		__FALLTHROUGH__;                                                      \
      case 4:  i += ( (unsigned)key[3] << 24 );                                \
-		__FALLTHROUGH__;                                        \
+		__FALLTHROUGH__;                                                      \
      case 3:  i += ( (unsigned)key[2] << 16 );                                \
-		__FALLTHROUGH__;                                        \
+		__FALLTHROUGH__;                                                      \
      case 2:  i += ( (unsigned)key[1] << 8 );                                 \
-		__FALLTHROUGH__;                                        \
+		__FALLTHROUGH__;                                                      \
      case 1:  i += key[0];                                                    \
   }                                                                           \
   HASH_JEN_MIX(i, j, hash);                                                   \
