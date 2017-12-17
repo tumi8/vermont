@@ -23,6 +23,7 @@
 
 
 #include "core/Module.h"
+#include "common/Time.h"
 #include "IpfixRecordDestination.h"
 
 class PrintHelpers
@@ -43,6 +44,7 @@ class PrintHelpers
 
 	protected:
 		FILE* fh;
+		ntp64 u64_to_ntp64(const uint64_t &number);
 };
 
 /**

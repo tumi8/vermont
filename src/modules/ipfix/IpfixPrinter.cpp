@@ -20,7 +20,6 @@
  */
 
 #include "IpfixPrinter.hpp"
-#include "common/Time.h"
 #include "common/Misc.h"
 #include "Connection.h"
 
@@ -267,7 +266,7 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 				case IPFIX_TYPEID_flowEndNanoseconds:
 					hbnum = ntohll(*(uint64_t*)pattern);
 					if (hbnum>0) {
-						t = timentp64(*((ntp64*)(&hbnum)));
+						t = timentp64(u64_to_ntp64(hbnum));
 						fprintf(fh, "%u.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
 					} else {
 						fprintf(fh, "no value (only zeroes in field)");
@@ -289,7 +288,7 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 				case IPFIX_TYPEID_flowEndNanoseconds:
 					hbnum = ntohll(*(uint64_t*)pattern);
 					if (hbnum>0) {
-						t = timentp64(*((ntp64*)(&hbnum)));
+						t = timentp64(u64_to_ntp64(hbnum));
 						fprintf(fh, "%u.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
 					} else {
 						fprintf(fh, "no value (only zeroes in field)");
@@ -323,6 +322,20 @@ void PrintHelpers::printFrontPayload(InformationElement::IeInfo type, IpfixRecor
 	fprintf(fh, "'");
 }
 
+/**
+ * Converts an u64 value to ntp64
+ * Attention: little endianess is assumed
+ * @param number The u64 value to be converted
+ * @return The value in ntp64 format
+ */
+ntp64 PrintHelpers::u64_to_ntp64(const uint64_t &number)
+{
+	ntp64 ntp64_number;
+	ntp64_number.lower = (uint32_t)( number & 0x00000000FFFFFFFFull );
+	ntp64_number.upper = (uint32_t)( (uint64_t)(number & 0xFFFFFFFF00000000ull) >> 32 );
+
+	return ntp64_number;
+}
 
 /**
  * Creates a new IpfixPrinter. Do not forget to call @c startIpfixPrinter() to begin printing
@@ -521,7 +534,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 					if (fi != NULL) {
 						timetype = IPFIX_TYPEID_flowStartNanoseconds;
 						uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
-						timeval t = timentp64(*((ntp64*)(&t2)));
+						timeval t = timentp64(u64_to_ntp64(t2));
 						tm = localtime(&t.tv_sec);
 						strftime(buf, 50, "%F %T", tm);
 						starttime = t.tv_sec;
@@ -559,7 +572,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoseconds, 0);
 					if (fi != NULL) {
 						uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
-						timeval t = timentp64(*((ntp64*)(&t2)));
+						timeval t = timentp64(u64_to_ntp64(t2));
 						dur = t.tv_sec*1000+t.tv_usec/1000 - starttime;
 					}
 			}
