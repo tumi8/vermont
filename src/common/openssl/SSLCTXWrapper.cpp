@@ -179,12 +179,14 @@ bool SSL_CTX_wrapper::loadCert(
     } else if (!privateKeyFile.empty())
 	    THROWEXCEPTION("It makes no sense specifying a private key file without "
 		    "specifying a file that contains the corresponding certificate.");
+#ifdef DEBUG
     if (have_cert)
 	DPRINTF("We successfully loaded our certificate.");
     else
 	DPRINTF("We do NOT have a certificate. This means that we can only use "
 		"the anonymous modes of DTLS. This also implies that we can not "
 		"authenticate the client (exporter).");
+#endif
     return have_cert;
 }
 
