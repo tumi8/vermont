@@ -76,6 +76,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	const char *ca_file = NULL;
 	const char *ca_path = NULL;
 #endif
+
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 
 	nextTimeout.tv_sec = 0;
@@ -92,6 +93,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	ipfix_set_sctp_reconnect_timer(ipfixExporter, sctpReconnectInterval);
 	ipfix_set_template_transmission_timer(ipfixExporter, templateRefreshInterval);
 
+ 
 #ifdef SUPPORT_DTLS
 	if ( ! certificateChainFile.empty())
 		certificate_chain_file = certificateChainFile.c_str();

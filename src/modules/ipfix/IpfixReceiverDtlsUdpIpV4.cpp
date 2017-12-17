@@ -318,7 +318,7 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::accept() {
 #ifdef DEBUG
        DPRINTF("Shared ciphers:%s",buf);
 #else
-    { /* do nothing */ }
+       { /* do nothing */ }
 #endif
     if (ret==1) {
 	state = CONNECTED;
