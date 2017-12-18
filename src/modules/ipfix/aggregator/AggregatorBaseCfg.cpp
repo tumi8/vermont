@@ -178,6 +178,14 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 					throw std::exception();
 				}
 				break;
+			case IPFIX_TYPEID_sourceMacAddress:
+			case IPFIX_TYPEID_destinationMacAddress:
+				if (parseMacAddressPattern(tmp, &ruleField->pattern, &ruleField->type.length) !=0) {
+					msg(MSG_ERROR, "Bad Mac Address pattern \"%s\"", tmp);
+					delete [] tmp;
+					throw std::exception();
+				}
+				break;
 			case IPFIX_TYPEID_sourceIPv4Address:
 			case IPFIX_TYPEID_destinationIPv4Address:
 				if (parseIPv4Pattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {

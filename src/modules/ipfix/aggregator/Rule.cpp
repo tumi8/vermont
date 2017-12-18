@@ -276,6 +276,11 @@ int matchesPattern(const InformationElement::IeInfo* dataType, const IpfixRecord
 		return matchesIPv4Pattern(dataType, data, patternType, pattern);
 		break;
 	}
+	case IPFIX_TYPEID_sourceMacAddress:
+	case IPFIX_TYPEID_destinationMacAddress: {
+		return matchesRawPattern(dataType, data, patternType, pattern);
+		break;
+	}
 	case IPFIX_TYPEID_sourceTransportPort:
 	case IPFIX_TYPEID_destinationTransportPort:
 		return matchesPortPattern(dataType, data, patternType, pattern);
