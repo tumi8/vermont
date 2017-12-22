@@ -153,5 +153,34 @@
  */
 #define DISABLE_ALIGNMENT __attribute__((packed));
 
+/*
+ * wrapper around GCC's fallthrough attribute, which is not supported by clang.
+ * clang defines __clang__ besides __GNUC__ / __GNUG__
+ */
+#if defined(__clang__)
+
+#if defined(__GNUG__)
+// clang++
+#define __FALLTHROUGH__ [[clang::fallthrough]]
+#elif defined(__GNUC__)
+// clang C
+#define __FALLTHROUGH__
+#endif // defined(__GNUG__)
+
+#else
+
+#if defined(__GNUG__)
+// g++
+#define __FALLTHROUGH__ [[gnu::fallthrough]]
+#elif defined(__GNUC__)
+// gcc
+#define __FALLTHROUGH__ __attribute__((fallthrough))
+#else
+// something else
+#define __FALLTHROUGH__
+#endif // defined(__GNUG__)
+
+#endif // defined(__clang__)
+
 
 #endif /*DEFS_H*/

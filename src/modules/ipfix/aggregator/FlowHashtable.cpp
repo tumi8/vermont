@@ -250,6 +250,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 					if (*((uint32_t*)baseData)==0) {
 						*((uint32_t*)baseData) = *((uint32_t*)deltaData);
 					}
+					return 0;
 
 				case IPFIX_ETYPEID_maxPacketGap:
 					*(uint32_t*)baseData = greaterUint32Nbo(*(uint32_t*)baseData, *(uint32_t*)deltaData);

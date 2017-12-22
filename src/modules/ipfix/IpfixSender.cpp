@@ -27,6 +27,7 @@
 
 #include "common/msg.h"
 #include "common/Time.h"
+#include "common/defs.h"
 #include "core/Timer.h"
 
 #include <sstream>
@@ -69,10 +70,12 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	  maxRecordRate(maxRecordRate),
 	  export_protocol(export_protocol)
 {
+#ifdef SUPPORT_DTLS
 	const char *certificate_chain_file = NULL;
 	const char *private_key_file = NULL;
 	const char *ca_file = NULL;
 	const char *ca_path = NULL;
+#endif
 
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 
@@ -91,21 +94,19 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	ipfix_set_template_transmission_timer(ipfixExporter, templateRefreshInterval);
 
  
+#ifdef SUPPORT_DTLS
 	if ( ! certificateChainFile.empty())
 		certificate_chain_file = certificateChainFile.c_str();
 	if ( ! privateKeyFile.empty())
 		private_key_file = privateKeyFile.c_str();
 	/* Private key will be searched for in the certificate chain file if
 	 * no private key file is set */
-#ifdef SUPPORT_DTLS
 	if (certificate_chain_file || private_key_file)
 		ipfix_set_dtls_certificate(&ipfixExporter->certificate,
 				certificate_chain_file, private_key_file);
-#endif
 
 	if ( ! caFile.empty() ) ca_file = caFile.c_str();
 	if ( ! caPath.empty() ) ca_path = caPath.c_str();
-#ifdef SUPPORT_DTLS
 	if (ca_file || ca_path)
 		ipfix_set_ca_locations(&ipfixExporter->certificate, ca_file, ca_path);
 #endif
@@ -216,6 +217,7 @@ void IpfixSender::addCollector(const char *ip, uint16_t port,
 	    case TCP:
 	        msg(MSG_INFO, "%sIpfixSender: adding TCP://%s:%d to exporter",
 				vrf_log, ip, port);
+			__FALLTHROUGH__;
 	    default:
 	    	THROWEXCEPTION("invalid protocol (%d) given!", proto);
 	    	break;
