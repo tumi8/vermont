@@ -67,15 +67,17 @@ void PrintHelpers::printPort(InformationElement::IeInfo type, IpfixRecord::Data*
 		return;
 	}
 	if (type.length == 2) {
-		int port = ((uint16_t)data[0] << 8)+data[1];
+		// get the first 2 bytes from data and convert them from network endianess to host endianess
+		int port = ntohs( (uint16_t)*( (uint16_t *)(&data[0]) ) );
 		fprintf(fh, "%u", port);
 		return;
 	}
 	if ((type.length >= 4) && ((type.length % 4) == 0)) {
 		int i;
 		for (i = 0; i < type.length; i+=4) {
-			int starti = ((uint16_t)data[i+0] << 8)+data[i+1];
-			int endi = ((uint16_t)data[i+2] << 8)+data[i+3];
+			// convert from network endianess to host endianess
+			int starti = ntohs( (uint16_t)*((uint16_t *)&data[i+0]) );
+			int endi = ntohs( (uint16_t)*((uint16_t *)&data[i+2]) );
 			if (i > 0) fprintf(fh, ",");
 			if (starti != endi) {
 				fprintf(fh, "%u:%u", starti, endi);
@@ -324,15 +326,14 @@ void PrintHelpers::printFrontPayload(InformationElement::IeInfo type, IpfixRecor
 
 /**
  * Converts an u64 value to ntp64
- * Attention: little endianess is assumed
- * @param number The u64 value to be converted
+ * @param number The u64 value to be converted, in host byte order
  * @return The value in ntp64 format
  */
 ntp64 PrintHelpers::u64_to_ntp64(const uint64_t &number)
 {
 	ntp64 ntp64_number;
-	ntp64_number.lower = (uint32_t)( number & 0x00000000FFFFFFFFull );
-	ntp64_number.upper = (uint32_t)( (uint64_t)(number & 0xFFFFFFFF00000000ull) >> 32 );
+	ntp64_number.lower = (uint32_t)( number & 0x00000000FFFFFFFFull ); // least significant 2 bytes, by value
+	ntp64_number.upper = (uint32_t)( (uint64_t)(number & 0xFFFFFFFF00000000ull) >> 32 ); // most significant 2 bytes, by value
 
 	return ntp64_number;
 }
@@ -594,7 +595,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
 		uint32_t srcip = 0;
 		if (fi != NULL && fi->type.length>=4) {
-			srcip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
+			srcip = ntohl( *reinterpret_cast<uint32_t*>(record->data+fi->offset) );
 		}
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
 		uint16_t srcport = 0;
@@ -607,7 +608,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
 		uint32_t dstip = 0;
 		if (fi != NULL && fi->type.length>=4) {
-			dstip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
+			dstip = ntohl( *reinterpret_cast<uint32_t*>(record->data+fi->offset) );
 		}
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
 		uint16_t dstport = 0;
