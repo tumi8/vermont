@@ -13,6 +13,8 @@
 #include "encoding.h"
 #include "common/msg.h"
 
+#include <endian.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,17 +51,16 @@ extern "C" {
  */
 
 
-// both assumes little-endianness.
 uint64_t htonll(uint64_t number)
 {
-	return ( htonl( (number >> 32) & 0xFFFFFFFF) |
-		 ((uint64_t) (htonl(number & 0xFFFFFFFF))  << 32));
+	// network endianess is big endianess
+	return htobe64(number);
 }
 
 uint64_t ntohll(uint64_t number)
 {
-	return ( htonl( (number >> 32) & 0xFFFFFFFF) |
-		 ((uint64_t) (htonl(number & 0xFFFFFFFF))  << 32));
+	// network endianess is big endianess
+	return be64toh(number);
 }
 
 
