@@ -68,7 +68,7 @@ void PrintHelpers::printPort(InformationElement::IeInfo type, IpfixRecord::Data*
 	}
 	if (type.length == 2) {
 		// get the first 2 bytes from data and convert them from network endianess to host endianess
-		int port = ntohs( (uint16_t)*( (uint16_t *)(&data[0]) ) );
+		int port = ntohs( *( (uint16_t *)(&data[0]) ) );
 		fprintf(fh, "%u", port);
 		return;
 	}
@@ -76,8 +76,8 @@ void PrintHelpers::printPort(InformationElement::IeInfo type, IpfixRecord::Data*
 		int i;
 		for (i = 0; i < type.length; i+=4) {
 			// convert from network endianess to host endianess
-			int starti = ntohs( (uint16_t)*((uint16_t *)&data[i+0]) );
-			int endi = ntohs( (uint16_t)*((uint16_t *)&data[i+2]) );
+			int starti = ntohs( *((uint16_t *)&data[i+0]) );
+			int endi = ntohs( *((uint16_t *)&data[i+2]) );
 			if (i > 0) fprintf(fh, ",");
 			if (starti != endi) {
 				fprintf(fh, "%u:%u", starti, endi);
