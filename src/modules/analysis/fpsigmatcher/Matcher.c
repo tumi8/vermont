@@ -73,7 +73,16 @@ struct Mapper * new_mapper(struct Matcher * matcher){
 
 	mapper->complete_numOfTokens = complete_numOfTokens;
 	mapper->classwise_numOfTokens = malloc(sizeof(int)*matcher->numOfClasses);
-	mapper->supports = malloc(sizeof(double)*complete_numOfTokens);
+	if (complete_numOfTokens != 0)
+	{
+	    mapper->supports = malloc(sizeof(double)*complete_numOfTokens);
+	}
+	else
+	{
+	    // allocate bytes for one double -- to be safely freed
+	    mapper->supports = malloc(sizeof(double));    
+	}
+	
 	mapper->classwise_thresholds = malloc(sizeof(double)*matcher->numOfClasses);
 
 	int j, index_token = 0;
