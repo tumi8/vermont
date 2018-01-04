@@ -25,7 +25,12 @@ std::string CfgBase::_get(const std::string& name, XMLElement* elem)
 
 std::string CfgBase::get(const std::string& name, XMLElement* elem)
 {
-	if (!elem) elem = _elem;
+	if (!elem)
+	{
+	    if (!_elem)
+	        THROWEXCEPTION("Error: accessing null XML element");
+		elem = _elem;
+	}
 
 	std::string result;
 	try {
