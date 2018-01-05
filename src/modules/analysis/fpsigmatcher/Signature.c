@@ -29,13 +29,13 @@ struct BayesSignature * new_Signature_i(int maxNumOfTokens, char * filename){
 	// Allocate memory for the pointers to the actual Tokens
 	if (maxNumOfTokens != 0)
 	{
-	    signature->tokens = (struct Token **)malloc(maxNumOfTokens*sizeof(struct Token *));
-    }
-    else
-    {
-        // allocate bytes for one Token pointer -- to be safely freed
-        signature->tokens = (struct Token **)malloc(sizeof(struct Token *));    
-    }
+		signature->tokens = (struct Token **)malloc(maxNumOfTokens*sizeof(struct Token *));
+	}
+	else
+	{
+		// allocate bytes for one Token pointer -- to be safely freed
+		signature->tokens = (struct Token **)malloc(sizeof(struct Token *));    
+	}
 	signature->id = malloc(sizeof(char)*(ID_STRING_SIZE));
 	strncpy(signature->id, filename, ID_STRING_SIZE);
 	signature->id[ID_STRING_SIZE-1] = '\0';
@@ -89,13 +89,13 @@ struct BayesSignature * new_Signature_s(const char * absolute_path, char * filen
 	char ** lines;
 	if (numOfLines != 0)
 	{
-	    lines = (char **)malloc(numOfLines * sizeof(char *));
-    }
-    else
-    {
-        // allocate bytes for one char pointer -- to be safely freed
-        lines = (char **)malloc(sizeof(char *));
-    }
+		lines = (char **)malloc(numOfLines * sizeof(char *));
+	}
+	else
+	{
+		// allocate bytes for one char pointer -- to be safely freed
+		lines = (char **)malloc(sizeof(char *));
+	}
 	/** Read file content into char** */
 	i = 0;
 	rewind(fp);
