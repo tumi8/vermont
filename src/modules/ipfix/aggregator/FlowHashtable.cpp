@@ -693,13 +693,10 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 	for (i = 0; i < dataTemplate->fieldCount; i++) {
 		TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 
-		bool fieldFilled = false;
-
 		/* Copy from matching variable field, should it exist */
 		TemplateInfo::FieldInfo* tfi = ti->getFieldInfo(hfi->type);
 		if (tfi) {
 			// this path is normal for normal flow data records!
-			fieldFilled = true;
 			copyData(hfi, htdata.get(), tfi, data, fieldModifier[i]);
 
 			/* copy associated mask, should there be one */
@@ -738,10 +735,9 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 				default:
 					break;
 			}
-			continue;
 		}
-
-		if (!fieldFilled) {
+		else {
+			// field not filled
 			DPRINTF("Flow to be buffered did not contain %s field\n", hfi->type.toString().c_str());
 			// if field was not copied, fill it with 0
 			memset(htdata.get() + hfi->offset, 0, hfi->type.length);
