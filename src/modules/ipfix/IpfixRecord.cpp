@@ -35,7 +35,7 @@ namespace InformationElement {
 		if (length==0) {
 			const ipfix_identifier* ipfixid = ipfix_id_lookup(id, enterprise);
 			if (ipfixid)
-				length = ipfixid->length;
+				this->length = ipfixid->length;
 			else {
 				msg(MSG_INFO, "WARNING: received unknown IE type id: %s", toString().c_str());
 			}
