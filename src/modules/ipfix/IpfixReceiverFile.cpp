@@ -160,7 +160,8 @@ void IpfixReceiverFile::run()
 	settimezero(&msg_delta);
 	settimezero(&msg_now);
 	settimezero(&tmp_delta);
-	
+	settimezero(&real_now);
+
 	for(int filecount=from; filecount<=to && !exitFlag; filecount++){
 		ostringstream numberformat (ostringstream::out);
 		numberformat.width(10);
