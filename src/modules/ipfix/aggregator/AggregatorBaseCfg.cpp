@@ -98,10 +98,11 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 		// exclude coexistence of patterns and biflow aggregation
 		if(rule->biflowAggregation) {
 			for(int i=0; i < rule->fieldCount; i++) {
-				if(rule->field[i]->pattern)
+				if(rule->field[i]->pattern) {
 					msg(MSG_ERROR, "AggregatorBaseCfg: Match pattern for id=%d ignored because biflow aggregation is enabled.", rule->field[i]->type.id);
 					free(rule->field[i]->pattern);
 					rule->field[i]->pattern = NULL;
+				}
 			}
 		}
 	}

@@ -45,12 +45,10 @@ double get_double(char string[]){
 
 		if (num_tokens < 1){
 			// no tokens -> cannot compose a number
-		}
-		else if (num_tokens == 1){
+		}else if (num_tokens == 1){
 			// only one token
 			ret = atoi(tokens[0]);
-		}
-		else{
+		}else{
 			//printf("STRINGS: %s  ,  %s\n", tokens[0], tokens[1]);
 
 			//sscanf(string, "%d %d", &pre_comma, &post_comma);
@@ -138,12 +136,9 @@ char ** get_filenames(const char * directory, int * num_of_files) {
 	/* Get each directory entry from pDIR and store its name
 	 * in an array */
 	char ** filenames;
-	if ( filecounter != 0)
-	{
+	if ( filecounter != 0) {
 	    filenames = (char **)malloc(sizeof(char*)*filecounter);
-	}
-	else
-	{
+	} else {
 	    // allocate bytes for 1 pointer -- to be safely freed
 	    // filenames will remain empty and will not be used
 	    filenames = (char **)malloc(sizeof(char*));

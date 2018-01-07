@@ -41,6 +41,8 @@ RandomSampler::RandomSampler(int n, int N) : samplingSize(N), acceptSize(n), cur
         if(n > N) {
                 msg(MSG_ERROR, "%d out-of %d makes no sense - exchanging values", n, N);
 
+                samplingSize = n;
+                acceptSize = N;
                 N=n;
         }
 

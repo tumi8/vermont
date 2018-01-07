@@ -27,12 +27,9 @@ struct BayesSignature * new_Signature_i(int maxNumOfTokens, char * filename){
 	struct BayesSignature * signature;
 	signature = (struct BayesSignature *)malloc(sizeof(struct BayesSignature));
 	// Allocate memory for the pointers to the actual Tokens
-	if (maxNumOfTokens != 0)
-	{
+	if (maxNumOfTokens != 0) {
 		signature->tokens = (struct Token **)malloc(maxNumOfTokens*sizeof(struct Token *));
-	}
-	else
-	{
+	} else {
 		// allocate bytes for one Token pointer -- to be safely freed
 		signature->tokens = (struct Token **)malloc(sizeof(struct Token *));    
 	}
@@ -87,12 +84,9 @@ struct BayesSignature * new_Signature_s(const char * absolute_path, char * filen
 	/** Allocate Memory for the **file and for the tokens and supports */
 	int i = 0;
 	char ** lines;
-	if (numOfLines != 0)
-	{
+	if (numOfLines != 0) {
 		lines = (char **)malloc(numOfLines * sizeof(char *));
-	}
-	else
-	{
+	} else {
 		// allocate bytes for one char pointer -- to be safely freed
 		lines = (char **)malloc(sizeof(char *));
 	}
