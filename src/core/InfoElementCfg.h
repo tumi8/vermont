@@ -91,6 +91,11 @@ public:
 					THROWEXCEPTION("InfoElementCfg: given fieldIeName \"%s\" could not be mapped to IANA-standardized IE", fieldName.c_str());
 				}
 			}
+
+			// basicList supports only the "ordered" semantic
+			if (semantic != IPFIX_STRUCTURED_TYPE_SEMANTIC_ordered) {
+				THROWEXCEPTION("InfoElementCfg: semantic \"%s\" is not yet supported", semanticName.c_str());
+			}
 		}
 	}
 
