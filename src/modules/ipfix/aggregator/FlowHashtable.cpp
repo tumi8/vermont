@@ -735,8 +735,7 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 				default:
 					break;
 			}
-		}
-		else {
+		} else {
 			// field not filled
 			DPRINTF("Flow to be buffered did not contain %s field\n", hfi->type.toString().c_str());
 			// if field was not copied, fill it with 0

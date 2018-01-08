@@ -93,8 +93,7 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 	if (rule->fieldCount == 0) {
 		delete rule;
 		rule = NULL;
-	}
-	else {
+	} else {
 		// exclude coexistence of patterns and biflow aggregation
 		if(rule->biflowAggregation) {
 			for(int i=0; i < rule->fieldCount; i++) {
