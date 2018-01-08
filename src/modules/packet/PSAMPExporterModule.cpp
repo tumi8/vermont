@@ -46,6 +46,10 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
     // generate the ipfix template
     tmplid = templ->getTemplateID();
     ret =  ipfix_start_template(exporter, tmplid, templ->getFieldCount());
+    if (ret < 0) {
+        msg(MSG_FATAL, "error starting IPFIX template");
+        exit(1);
+    }
 
     for(i = 0; i < templ->getFieldCount(); i++) {
 		templ->getFieldInfo(i, &ie, &offset, &header);

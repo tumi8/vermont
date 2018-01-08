@@ -109,6 +109,10 @@ int PCAPExporterPipe::execCmd(std::string& cmd)
 	}
 	strcpy(tmp, cmd.c_str());
 	command[0] = strtok(tmp, " \t");
+	if (NULL == command[0]) {
+	    // the given command is either empty or it contains only whitespaces
+	    THROWEXCEPTION("Command empty");
+	}
 	int i = 0;
 	//TODO:  handle arguments containg whitespaces
 	while (command[i]) {

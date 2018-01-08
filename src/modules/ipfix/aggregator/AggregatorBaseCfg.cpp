@@ -93,15 +93,16 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 	if (rule->fieldCount == 0) {
 		delete rule;
 		rule = NULL;
-	}
-
-	// exclude coexistence of patterns and biflow aggregation
-	if(rule->biflowAggregation) {
-		for(int i=0; i < rule->fieldCount; i++) {
-			if(rule->field[i]->pattern)
-				msg(MSG_ERROR, "AggregatorBaseCfg: Match pattern for id=%d ignored because biflow aggregation is enabled.", rule->field[i]->type.id);
-				free(rule->field[i]->pattern);
-				rule->field[i]->pattern = NULL;
+	} else {
+		// exclude coexistence of patterns and biflow aggregation
+		if(rule->biflowAggregation) {
+			for(int i=0; i < rule->fieldCount; i++) {
+				if(rule->field[i]->pattern) {
+					msg(MSG_ERROR, "AggregatorBaseCfg: Match pattern for id=%d ignored because biflow aggregation is enabled.", rule->field[i]->type.id);
+					free(rule->field[i]->pattern);
+					rule->field[i]->pattern = NULL;
+				}
+			}
 		}
 	}
 	return rule;
@@ -208,7 +209,7 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 
 			default:
 				msg(MSG_ERROR, "Fields of type \"%s\" cannot be matched against a pattern %s", "", tmp);
-				delete tmp;
+				delete [] tmp;
 				throw std::exception();
 				break;
 			}
