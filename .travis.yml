@@ -5,8 +5,24 @@ sudo: false
 addons:
   apt:
     sources: &zeromq_source
-    - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
-      key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key' 
+    sources: &zeromq_source_and_toolchain_gcc
+      - ubuntu-toolchain-r-test
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'     
+    sources: &zeromq_source_and_toolchain_clang_3-8
+      - llvm-toolchain-trusty-3.8
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'      
+    sources: &zeromq_source_and_toolchain_clang_4-0
+      - llvm-toolchain-trusty-4.0
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'      
+    sources: &zeromq_source_and_toolchain_clang_5-0
+      - llvm-toolchain-trusty-5.0
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'      
     packages: &required_packages
       - cmake
       - libboost-dev
@@ -28,35 +44,105 @@ matrix:
       sudo: true
       before_install:
         - sudo apt-get remove -qq libssl-dev
-      env: DTLS="OFF" ZMQ="OFF"
+      env:
+        - DTLS="OFF" ZMQ="OFF"
       addons:
         apt:
           packages:
             - *required_packages
+            
     - compiler: clang
       sudo: true
       before_install:
         - sudo apt-get remove -qq libssl-dev
-      env: DTLS="OFF" ZMQ="OFF"
+      env:
+        - DTLS="OFF" ZMQ="OFF"
       addons:
         apt:
           packages:
             - *required_packages
+ 
     - compiler: gcc
-      env: DTLS="ON" ZMQ="ON"
+      env:
+        - DTLS="ON" ZMQ="ON"
       addons:
         apt:
           sources: *zeromq_source
           packages:
             - *required_packages
             - *optional_packages
+    - compiler: gcc-5
+      env:
+        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_gcc
+          packages:
+            - *required_packages
+            - *optional_packages
+            - g++-5
+    - compiler: gcc-6
+      env:
+        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=gcc-6 CXX=g++-6"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_gcc
+          packages:
+            - *required_packages
+            - *optional_packages
+            - g++-6
+    - compiler: gcc-7
+      env:
+        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=gcc-7 CXX=g++-7"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_gcc
+          packages:
+            - *required_packages
+            - *optional_packages
+            - g++-7
+
     - compiler: clang
-      env: DTLS="ON" ZMQ="ON"
+      env:
+        - DTLS="ON" ZMQ="ON"
       addons:
         apt:
           sources: *zeromq_source
           packages:
             - *required_packages
+            - *optional_packages            
+    - compiler: clang-3.8
+      env:
+        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_3-8
+          packages:
+            - *required_packages
             - *optional_packages
+            - clang-3.8
+    - compiler: clang-4.0
+      env:
+        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_4-0
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-4.0                        
+    - compiler: clang-5.0
+      env:
+        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_5-0
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-5.0
+            
+before_install:
+  - eval "${MATRIX_EVAL}"
 
 script: cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make && make test && make install
