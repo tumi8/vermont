@@ -61,12 +61,15 @@ matrix:
             - *required_packages
             - *optional_packages
     - compiler: gcc
-      env: DTLS="ON" ZMQ="OFF" CC="gcc-5" CXX="g++-5"
+      env: DTLS="ON" ZMQ="OFF" MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
       addons:
         apt:
           sources: *toolchain
           packages:
             - *required_packages
             - g++-5
+
+before_install:
+  - eval "${MATRIX_EVAL}"
 
 script: cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make && make test && make install
