@@ -88,7 +88,9 @@ matrix:
       env: DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=gcc-7 CXX=g++-7"
       addons:
         apt:
-          sources: *toolchain
+          sources:
+          - *toolchain
+          - *zeromq_source
           packages:
             - *required_packages
             - *optional_packages
