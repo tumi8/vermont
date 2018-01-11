@@ -7,6 +7,8 @@ addons:
     sources: &zeromq_source
     - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
       key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
+    sources: &toolchain
+    - ubuntu-toolchain-r-test
     packages: &required_packages
       - cmake
       - libboost-dev
@@ -58,5 +60,13 @@ matrix:
           packages:
             - *required_packages
             - *optional_packages
+    - compiler: gcc
+      env: DTLS="ON" ZMQ="OFF" CC="gcc-5" CXX="g++-5"
+      addons:
+        apt:
+          sources: *toolchain
+          packages:
+            - *required_packages
+            - g++-5
 
 script: cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make && make test && make install
