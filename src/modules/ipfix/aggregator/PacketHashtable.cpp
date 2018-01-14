@@ -753,11 +753,11 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 
 	// set data efd field to the offset of IPFIX_ETYPEID_frontPayloadPktCount for front payload
 	if (efd->typeId==IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont)) {
-		*reinterpret_cast<uint32_t*>(efd->data) = ExpHelperTable::UNUSED;
+		memcpy(efd->data, &ExpHelperTable::UNUSED, sizeof(ExpHelperTable::UNUSED));
 		for (int i=0; i<dataTemplate->fieldCount; i++) {
 			TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 			if (hfi->type==IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont)) {
-				*reinterpret_cast<uint32_t*>(efd->data) = hfi->offset;
+				memcpy(efd->data, &hfi->offset, sizeof(hfi->offset));
 			}
 		}
 	}
@@ -1434,14 +1434,14 @@ void PacketHashtable::createMaskedFields(Packet* p)
 	if (expHelperTable.dstIpEFieldIndex > 0) {
 		ExpFieldData* efd = &expHelperTable.keyFields[expHelperTable.dstIpEFieldIndex];
 		// copy *original* ip address in *raw packet* to our temporary structure
-		*reinterpret_cast<uint32_t*>(&efd->data[0]) = *reinterpret_cast<uint32_t*>(p->data.netHeader+efd->origSrcIndex);
+		memcpy(&efd->data[0], p->data.netHeader+efd->origSrcIndex, sizeof(uint32_t));
 		// then mask it
 		createMaskedField(&efd->data[0], efd->data[4]);
 	}
 	if (expHelperTable.srcIpEFieldIndex > 0) {
 		ExpFieldData* efd = &expHelperTable.keyFields[expHelperTable.srcIpEFieldIndex];
 		// copy *original* ip address in *raw packet* to our temporary structure
-		*reinterpret_cast<uint32_t*>(&efd->data[0]) = *reinterpret_cast<uint32_t*>(p->data.netHeader+efd->origSrcIndex);
+		memcpy(&efd->data[0], p->data.netHeader+efd->origSrcIndex, sizeof(uint32_t));
 		// then mask it
 		createMaskedField(&efd->data[0], efd->data[4]);
 	}
