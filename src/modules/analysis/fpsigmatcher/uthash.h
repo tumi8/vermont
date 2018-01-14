@@ -96,10 +96,10 @@ do {                                                                          \
     (head)->hh.tbl->log2_num_buckets = HASH_INITIAL_NUM_BUCKETS_LOG2;         \
     (head)->hh.tbl->hho = (char*)(&add->hh) - (char*)(add);                   \
     (head)->hh.tbl->buckets = (UT_hash_bucket*)uthash_bkt_malloc(             \
-            HASH_INITIAL_NUM_BUCKETS*sizeof(struct UT_hash_bucket));          \
+            HASH_INITIAL_NUM_BUCKETS*sizeof(UT_hash_bucket));                 \
     if (! (head)->hh.tbl->buckets) { uthash_fatal( "out of memory"); }        \
     memset((head)->hh.tbl->buckets, 0,                                        \
-            HASH_INITIAL_NUM_BUCKETS*sizeof(struct UT_hash_bucket));          \
+            HASH_INITIAL_NUM_BUCKETS*sizeof(UT_hash_bucket));                 \
  } else {                                                                     \
     (head)->hh.tbl->tail->next = add;                                         \
     add->hh.prev = ELMT_FROM_HH((head)->hh.tbl, (head)->hh.tbl->tail);        \
@@ -247,7 +247,7 @@ do {                                                                          \
     }                                                                         \
 } while (0)
 #else
-#define HASH_FSCK(hh,head) 
+#define HASH_FSCK(hh,head) NOP
 #endif
 
 /* When compiled with -DHASH_EMIT_KEYS, length-prefixed keys are emitted to 
@@ -259,7 +259,7 @@ do {                                                                          \
     write(HASH_EMIT_KEYS, &((head)->hh.tbl->keylen), sizeof(int));            \
     write(HASH_EMIT_KEYS, keyptr, fieldlen);          
 #else 
-#define HASH_EMIT_KEY(hh,head,keyptr,fieldlen)                    
+#define HASH_EMIT_KEY(hh,head,keyptr,fieldlen) NOP
 #endif
 
 /* default to Jenkins unless specified e.g. DHASH_FUNCTION=HASH_SAX */
@@ -303,7 +303,7 @@ do {                                                                          \
   bkt = hash & (num_bkts-1);          
 
 #define HASH_JEN_MIX(a,b,c)                                                   \
-{                                                                             \
+do {                                                                          \
   a -= b; a -= c; a ^= ( c >> 13 );                                           \
   b -= c; b -= a; b ^= ( a << 8 );                                            \
   c -= a; c -= b; c ^= ( b >> 13 );                                           \
@@ -313,70 +313,71 @@ do {                                                                          \
   a -= b; a -= c; a ^= ( c >> 3 );                                            \
   b -= c; b -= a; b ^= ( a << 10 );                                           \
   c -= a; c -= b; c ^= ( b >> 15 );                                           \
-}
+} while (0)
 
 #define HASH_JEN(key,keylen,num_bkts,hash,bkt,i,j,k)                          \
-  hash = 0xfeedbeef;                                                          \
-  i = j = 0x9e3779b9;                                                         \
-  k = keylen;                                                                 \
-  while (k >= 12) {                                                           \
-    i +=    (key[0] + ( (unsigned)key[1] << 8 )                               \
-        + ( (unsigned)key[2] << 16 )                                          \
-        + ( (unsigned)key[3] << 24 ) );                                       \
-    j +=    (key[4] + ( (unsigned)key[5] << 8 )                               \
-        + ( (unsigned)key[6] << 16 )                                          \
-        + ( (unsigned)key[7] << 24 ) );                                       \
-    hash += (key[8] + ( (unsigned)key[9] << 8 )                               \
-        + ( (unsigned)key[10] << 16 )                                         \
-        + ( (unsigned)key[11] << 24 ) );                                      \
+  do {                                                                        \
+    hash = 0xfeedbeef;                                                        \
+    i = j = 0x9e3779b9;                                                       \
+    k = keylen;                                                               \
+    while (k >= 12) {                                                         \
+      i +=    (key[0] + ( (unsigned)key[1] << 8 )                             \
+          + ( (unsigned)key[2] << 16 )                                        \
+          + ( (unsigned)key[3] << 24 ) );                                     \
+      j +=    (key[4] + ( (unsigned)key[5] << 8 )                             \
+          + ( (unsigned)key[6] << 16 )                                        \
+          + ( (unsigned)key[7] << 24 ) );                                     \
+      hash += (key[8] + ( (unsigned)key[9] << 8 )                             \
+          + ( (unsigned)key[10] << 16 )                                       \
+          + ( (unsigned)key[11] << 24 ) );                                    \
                                                                               \
-     HASH_JEN_MIX(i, j, hash);                                                \
+       HASH_JEN_MIX(i, j, hash);                                              \
                                                                               \
-     key += 12;                                                               \
-     k -= 12;                                                                 \
-  }                                                                           \
-  hash += keylen;                                                             \
-  switch ( k ) {                                                              \
-     case 11: hash += ( (unsigned)key[10] << 24 );                            \
-		__FALLTHROUGH__;                                               \
-     case 10: hash += ( (unsigned)key[9] << 16 );                             \
-		__FALLTHROUGH__;                                               \
-     case 9:  hash += ( (unsigned)key[8] << 8 );                              \
-		__FALLTHROUGH__;                                               \
-     case 8:  j += ( (unsigned)key[7] << 24 );                                \
-		__FALLTHROUGH__;                                               \
-     case 7:  j += ( (unsigned)key[6] << 16 );                                \
-		__FALLTHROUGH__;                                               \
-     case 6:  j += ( (unsigned)key[5] << 8 );                                 \
-		__FALLTHROUGH__;                                               \
-     case 5:  j += key[4];                                                    \
-		__FALLTHROUGH__;                                               \
-     case 4:  i += ( (unsigned)key[3] << 24 );                                \
-		__FALLTHROUGH__;                                               \
-     case 3:  i += ( (unsigned)key[2] << 16 );                                \
-		__FALLTHROUGH__;                                               \
-     case 2:  i += ( (unsigned)key[1] << 8 );                                 \
-		__FALLTHROUGH__;                                               \
-     case 1:  i += key[0];                                                    \
-  }                                                                           \
-  HASH_JEN_MIX(i, j, hash);                                                   \
-  bkt = hash & (num_bkts-1);          
-
-
+       key += 12;                                                             \
+       k -= 12;                                                               \
+    }                                                                         \
+    hash += keylen;                                                           \
+    switch ( k ) {                                                            \
+       case 11: hash += ( (unsigned)key[10] << 24 );                          \
+      __FALLTHROUGH__;                                             \
+       case 10: hash += ( (unsigned)key[9] << 16 );                           \
+      __FALLTHROUGH__;                                             \
+       case 9:  hash += ( (unsigned)key[8] << 8 );                            \
+      __FALLTHROUGH__;                                             \
+       case 8:  j += ( (unsigned)key[7] << 24 );                              \
+      __FALLTHROUGH__;                                             \
+       case 7:  j += ( (unsigned)key[6] << 16 );                              \
+      __FALLTHROUGH__;                                             \
+       case 6:  j += ( (unsigned)key[5] << 8 );                               \
+      __FALLTHROUGH__;                                             \
+       case 5:  j += key[4];                                                  \
+      __FALLTHROUGH__;                                             \
+       case 4:  i += ( (unsigned)key[3] << 24 );                              \
+      __FALLTHROUGH__;                                             \
+       case 3:  i += ( (unsigned)key[2] << 16 );                              \
+      __FALLTHROUGH__;                                             \
+       case 2:  i += ( (unsigned)key[1] << 8 );                               \
+      __FALLTHROUGH__;                                             \
+       case 1:  i += key[0];                                                  \
+    }                                                                         \
+    HASH_JEN_MIX(i, j, hash);                                                 \
+    bkt = hash & (num_bkts-1);                                                \
+  } while(0)
 /* key comparison function; return 0 if keys equal */
 #define HASH_KEYCMP(a,b,len) memcmp(a,b,len) 
 
 /* iterate over items in a known bucket to find desired item */
 #define HASH_FIND_IN_BKT(tbl,hh,head,keyptr,keylen_in,out)                    \
-out = TYPEOF(out)((head.hh_head) ? ELMT_FROM_HH(tbl,head.hh_head) : NULL);    \
-while (out) {                                                                 \
-    if (out->hh.keylen == keylen_in) {                                        \
-        if ((HASH_KEYCMP(out->hh.key,keyptr,keylen_in)) == 0) break;          \
-    }                                                                         \
-    out= TYPEOF(out)((out->hh.hh_next) ?                                      \
-                     ELMT_FROM_HH(tbl,out->hh.hh_next) : NULL);               \
-}
-
+do {                                                                          \
+  out = TYPEOF(out)((head.hh_head) ? ELMT_FROM_HH(tbl,head.hh_head) : NULL);  \
+  while (out) {                                                               \
+      if (out->hh.keylen == keylen_in) {                                      \
+          if ((HASH_KEYCMP(out->hh.key,keyptr,keylen_in)) == 0) break;        \
+      }                                                                       \
+      out= TYPEOF(out)((out->hh.hh_next) ?                                    \
+                       ELMT_FROM_HH(tbl,out->hh.hh_next) : NULL);             \
+  }                                                                           \
+} while (0)
 /* add an item to a bucket  */
 #define HASH_ADD_TO_BKT(hh,head,add)                                          \
  head.count++;                                                                \
@@ -435,10 +436,10 @@ while (out) {                                                                 \
  */
 #define HASH_EXPAND_BUCKETS(tbl)                                              \
     tbl->new_buckets = (UT_hash_bucket*)uthash_bkt_malloc(                    \
-             2 * tbl->num_buckets * sizeof(struct UT_hash_bucket));           \
+             2 * tbl->num_buckets * sizeof(UT_hash_bucket));                  \
     if (!tbl->new_buckets) { uthash_fatal( "out of memory"); }                \
     memset(tbl->new_buckets, 0,                                               \
-            2 * tbl->num_buckets * sizeof(struct UT_hash_bucket));            \
+            2 * tbl->num_buckets * sizeof(UT_hash_bucket));                   \
     tbl->ideal_chain_maxlen =                                                 \
        (tbl->num_items >> (tbl->log2_num_buckets+1)) +                        \
        ((tbl->num_items & ((tbl->num_buckets*2)-1)) ? 1 : 0);                 \
