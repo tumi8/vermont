@@ -33,6 +33,7 @@ class PrintHelpers
 
 		void printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern);
 		void printIPv4(uint32_t data);
+		void printIPv4(uint8_t *data);
 		void printIPv4(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void printPort(InformationElement::IeInfo type, IpfixRecord::Data* data);
 		void printProtocol(uint8_t data);

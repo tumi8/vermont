@@ -37,6 +37,16 @@ void PrintHelpers::printIPv4(uint32_t data) {
 	fprintf(fh, "%s", IPToString(data).c_str());
 }
 
+void PrintHelpers::printIPv4(uint8_t *data) {
+  uint32_t int_data = data[0];
+  int_data <<= 8;
+  int_data |= (uint32_t)data[1];
+  int_data <<= 8;
+  int_data |= (uint32_t)data[2];
+  int_data <<= 8;
+  int_data |= (uint32_t)data[3];
+  printIPv4(int_data);
+}
 
 void PrintHelpers::printIPv4(InformationElement::IeInfo type, IpfixRecord::Data* data) {
 	int octet1 = 0;
@@ -415,7 +425,7 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 			}
 			if (record->sourceID) {
 				if (record->sourceID->exporterAddress.len == 4)
-					printIPv4(*(uint32_t*)(&record->sourceID->exporterAddress.ip[0]));
+					printIPv4(record->sourceID->exporterAddress.ip);
 				else
 					fprintf(fh, "non-IPv4 address");
 				fprintf(fh, ":%u (", record->sourceID->exporterPort);
@@ -471,7 +481,7 @@ void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	}
 	if (record->sourceID) {
 		if (record->sourceID->exporterAddress.len == 4)
-			printIPv4(*(uint32_t*)(&record->sourceID->exporterAddress.ip[0]));
+			printIPv4(record->sourceID->exporterAddress.ip);
 		else
 			fprintf(fh, "non-IPv4 address");
 		fprintf(fh, ":%u (", record->sourceID->exporterPort);
@@ -662,7 +672,7 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 	}
 	if (record->sourceID) {
 		if (record->sourceID->exporterAddress.len == 4)
-			printIPv4(*(uint32_t*)(&record->sourceID->exporterAddress.ip[0]));
+			printIPv4(record->sourceID->exporterAddress.ip);
 		else
 			fprintf(fh, "non-IPv4 address");
 		fprintf(fh, ":%u (", record->sourceID->exporterPort);
