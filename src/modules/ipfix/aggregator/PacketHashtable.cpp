@@ -138,7 +138,9 @@ void PacketHashtable::copyDataTransportOctets(CopyFuncParameters* cfp)
 	switch (cfp->packet->ipProtocolType) {
 		case Packet::TCP:
 			ppd = reinterpret_cast<PayloadPrivateData*>(cfp->dst+cfp->efd->privDataOffset);
-			ppd->seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data.netHeader+p->transportHeaderOffset+4))+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
+			uint32_t hu32_data;
+			memcpy(&hu32_data, p->data.netHeader+p->transportHeaderOffset+4, sizeof(uint32_t));
+			ppd->seq = hu32_data+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
 			ppd->initialized = true;
 			break;
 
@@ -200,8 +202,11 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, Hashtable
 
 	IpfixRecord::Data* dst = bucket+efd->dstIndex;
 	uint32_t seq = 0;
-	if (src->ipProtocolType==Packet::TCP)
-		seq = ntohl(*reinterpret_cast<const uint32_t*>(src->data.netHeader+src->transportHeaderOffset+4));
+	if (src->ipProtocolType==Packet::TCP) {
+		uint32_t hu32_data;
+		memcpy(&hu32_data, src->data.netHeader+src->transportHeaderOffset+4, sizeof(uint32_t));
+		seq = hu32_data;
+	}
 	DPRINTFL(MSG_VDEBUG, "seq:%u, len:%u, udp:%u", seq, ppd->byteCount, src->ipProtocolType==Packet::UDP);
 
 	if (firstpacket || !ppd->initialized) {
@@ -1089,10 +1094,14 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 			switch (p->ipProtocolType) {
 				case Packet::TCP:
 					ppd = reinterpret_cast<PayloadPrivateData*>(data+efd->privDataOffset);
-					seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data.netHeader+p->transportHeaderOffset+4));
+					uint32_t hu32_data;
+					memcpy(&hu32_data, p->data.netHeader+p->transportHeaderOffset+4, sizeof(uint32_t));
+					seq = hu32_data;
 
 					if (!ppd->initialized) {
-						ppd->seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data.netHeader+p->transportHeaderOffset+4))+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
+						uint32_t hu32_data;
+						memcpy(&hu32_data, p->data.netHeader+p->transportHeaderOffset+4, sizeof(uint32_t));
+						ppd->seq = hu32_data+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
 
 						*reinterpret_cast<uint64_t*>(baseData) = htonll(plen);
 						ppd->initialized = true;
