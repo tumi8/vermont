@@ -154,6 +154,11 @@
 #define DISABLE_ALIGNMENT __attribute__((packed));
 
 /*
+ * NOP - used to silent compiler warnings
+ */
+#define NOP ((void)0)
+
+/*
  * wrapper around GCC's fallthrough attribute, which is not supported by clang.
  * clang defines __clang__ besides __GNUC__ / __GNUG__
  */
@@ -164,20 +169,35 @@
 #define __FALLTHROUGH__ [[clang::fallthrough]]
 #elif defined(__GNUC__)
 // clang C
-#define __FALLTHROUGH__
+#define __FALLTHROUGH__ NOP
 #endif // defined(__GNUG__)
 
-#else
+#else // defined(__clang__)
 
 #if defined(__GNUG__)
 // g++
+
+#if (__GNUC__ >= 7)
+// only since GNU 7
 #define __FALLTHROUGH__ [[gnu::fallthrough]]
+#else
+// older GNU
+#define __FALLTHROUGH__ NOP
+#endif // (__GNUC__ >= 7)
+
 #elif defined(__GNUC__)
 // gcc
+
+#if (__GNUC__ >= 7)
+// only since GNU 7
 #define __FALLTHROUGH__ __attribute__((fallthrough))
 #else
+#define __FALLTHROUGH__ NOP
+#endif // (__GNUC__ >= 7)
+
+#else // defined(__GNUC__)
 // something else
-#define __FALLTHROUGH__
+#define __FALLTHROUGH__ NOP
 #endif // defined(__GNUG__)
 
 #endif // defined(__clang__)

@@ -138,7 +138,9 @@ void PacketHashtable::copyDataTransportOctets(CopyFuncParameters* cfp)
 	switch (cfp->packet->ipProtocolType) {
 		case Packet::TCP:
 			ppd = reinterpret_cast<PayloadPrivateData*>(cfp->dst+cfp->efd->privDataOffset);
-			ppd->seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data.netHeader+p->transportHeaderOffset+4))+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
+			uint32_t hu32_data;
+			memcpy(&hu32_data, p->data.netHeader+p->transportHeaderOffset+4, sizeof(hu32_data));
+			ppd->seq = hu32_data+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
 			ppd->initialized = true;
 			break;
 
@@ -200,8 +202,9 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, Hashtable
 
 	IpfixRecord::Data* dst = bucket+efd->dstIndex;
 	uint32_t seq = 0;
-	if (src->ipProtocolType==Packet::TCP)
-		seq = ntohl(*reinterpret_cast<const uint32_t*>(src->data.netHeader+src->transportHeaderOffset+4));
+	if (src->ipProtocolType==Packet::TCP) {
+		memcpy(&seq, src->data.netHeader+src->transportHeaderOffset+4, sizeof(uint32_t));
+	}
 	DPRINTFL(MSG_VDEBUG, "seq:%u, len:%u, udp:%u", seq, ppd->byteCount, src->ipProtocolType==Packet::UDP);
 
 	if (firstpacket || !ppd->initialized) {
@@ -753,11 +756,11 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 
 	// set data efd field to the offset of IPFIX_ETYPEID_frontPayloadPktCount for front payload
 	if (efd->typeId==IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont)) {
-		*reinterpret_cast<uint32_t*>(efd->data) = ExpHelperTable::UNUSED;
+		memcpy(efd->data, &ExpHelperTable::UNUSED, sizeof(ExpHelperTable::UNUSED));
 		for (int i=0; i<dataTemplate->fieldCount; i++) {
 			TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 			if (hfi->type==IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont)) {
-				*reinterpret_cast<uint32_t*>(efd->data) = hfi->offset;
+				memcpy(efd->data, &hfi->offset, sizeof(hfi->offset));
 			}
 		}
 	}
@@ -1089,10 +1092,12 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 			switch (p->ipProtocolType) {
 				case Packet::TCP:
 					ppd = reinterpret_cast<PayloadPrivateData*>(data+efd->privDataOffset);
-					seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data.netHeader+p->transportHeaderOffset+4));
+					memcpy(&seq, p->data.netHeader+p->transportHeaderOffset+4, sizeof(uint32_t));
 
 					if (!ppd->initialized) {
-						ppd->seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data.netHeader+p->transportHeaderOffset+4))+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
+						uint32_t hu32_data;
+						memcpy(&hu32_data, p->data.netHeader+p->transportHeaderOffset+4, sizeof(hu32_data));
+						ppd->seq = hu32_data+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
 
 						*reinterpret_cast<uint64_t*>(baseData) = htonll(plen);
 						ppd->initialized = true;
@@ -1434,14 +1439,14 @@ void PacketHashtable::createMaskedFields(Packet* p)
 	if (expHelperTable.dstIpEFieldIndex > 0) {
 		ExpFieldData* efd = &expHelperTable.keyFields[expHelperTable.dstIpEFieldIndex];
 		// copy *original* ip address in *raw packet* to our temporary structure
-		*reinterpret_cast<uint32_t*>(&efd->data[0]) = *reinterpret_cast<uint32_t*>(p->data.netHeader+efd->origSrcIndex);
+		memcpy(&efd->data[0], p->data.netHeader+efd->origSrcIndex, sizeof(uint32_t));
 		// then mask it
 		createMaskedField(&efd->data[0], efd->data[4]);
 	}
 	if (expHelperTable.srcIpEFieldIndex > 0) {
 		ExpFieldData* efd = &expHelperTable.keyFields[expHelperTable.srcIpEFieldIndex];
 		// copy *original* ip address in *raw packet* to our temporary structure
-		*reinterpret_cast<uint32_t*>(&efd->data[0]) = *reinterpret_cast<uint32_t*>(p->data.netHeader+efd->origSrcIndex);
+		memcpy(&efd->data[0], p->data.netHeader+efd->origSrcIndex, sizeof(uint32_t));
 		// then mask it
 		createMaskedField(&efd->data[0], efd->data[4]);
 	}

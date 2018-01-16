@@ -40,10 +40,12 @@ bool HostFilter::processPacket(Packet *p)
 		return false;
 	}
 	// srcIP
-	uint32_t srcIp = *reinterpret_cast<uint32_t*>(p->data.netHeader+IPV4_SRC_IP_OFFSET);
+	uint32_t srcIp;
+	memcpy(&srcIp, p->data.netHeader+IPV4_SRC_IP_OFFSET, sizeof(srcIp));
 	msg(MSG_DIALOG, "srcip: %X, %s", srcIp, IPToString(srcIp).c_str());
 	// dstIP
-	uint32_t dstIp = *reinterpret_cast<uint32_t*>(p->data.netHeader+IPV4_DST_IP_OFFSET);
+	uint32_t dstIp;
+	memcpy(&dstIp, p->data.netHeader+IPV4_DST_IP_OFFSET, sizeof(dstIp));
 
 	if (addrFilter == "src") {
 		return (ipList.find(srcIp) != ipList.end());

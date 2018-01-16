@@ -104,8 +104,8 @@ class QuintupleKey
 			uint32_t ip1, ip2;
 			uint16_t port1, port2;
 			if (p->ipProtocolType == Packet::TCP) {
-				ip1 = *((uint32_t*)(p->data.netHeader + 12));
-				ip2 = *((uint32_t*)(p->data.netHeader + 16));
+				memcpy(&ip1, p->data.netHeader + 12, sizeof(ip1));
+				memcpy(&ip2, p->data.netHeader + 16, sizeof(ip2));
 				port1 = *((uint16_t*)(p->transportHeader));
 				port2 = *((uint16_t*)(p->transportHeader + 2));
 
