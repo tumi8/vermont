@@ -26,13 +26,12 @@ PROJECT(VERMONT)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
-# TODO: Once all warnings are fixed add -Werror to both of these
 # TODO: Bonus: Remove -Wno-unused-parameter and fix all code as this one gernerates hundreds of warnings
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -pedantic -Wextra -Wno-unused-parameter"
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Werror -Wall -pedantic -Wextra -Wno-unused-parameter"
     CACHE STRING
     "Recommended C Flags"
     FORCE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -pedantic -Wextra -Wno-unused-parameter"
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Werror -Wall -pedantic -Wextra -Wno-unused-parameter"
     CACHE STRING
     "Recommended C++ Flags"
     FORCE)
