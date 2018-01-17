@@ -683,7 +683,7 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 		if (record->templateInfo->fieldInfo[i].type == InformationElement::IeInfo(IPFIX_TYPEID_basicList, 0)) {
 			printFieldDataType(record->templateInfo->fieldInfo[i].type);
 
-			fprintf(fh, "semantic=%hu, %s [", record->templateInfo->fieldInfo[i].basicListData.semantic, record->templateInfo->fieldInfo[i].basicListData.fieldIe->toString().c_str());
+			fprintf(fh, "semantic=%hhu, %s [", record->templateInfo->fieldInfo[i].basicListData.semantic, record->templateInfo->fieldInfo[i].basicListData.fieldIe->toString().c_str());
 
 			vector<void*>** listPtr = (vector<void*>**) (record->data + record->templateInfo->fieldInfo[i].offset);
 			for (vector<void*>::const_iterator iter = (*listPtr)->begin(); iter != (*listPtr)->end(); iter++) {

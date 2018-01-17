@@ -597,7 +597,7 @@ void IpfixSender::addDataRecordValue(TemplateInfo::FieldInfo* fi, IpfixRecord::D
 void IpfixSender::sendDataFromVarLenDataBuff(IpfixDataRecord* record, void* data, size_t len)
 {
 	if (record->variableLenDataCurrBytes + len > record->variableLenDataTotalBytes) {
-		THROWEXCEPTION("Not enough bytes allocated: %zu allocated, %zu needed", record->variableLenDataTotalBytes, record->variableLenDataCurrBytes + len);
+		THROWEXCEPTION("Not enough bytes allocated: %u allocated, %u needed", record->variableLenDataTotalBytes, record->variableLenDataCurrBytes + (unsigned int) len);
 	}
 
 	memcpy(&(record->variableLenData[record->variableLenDataCurrBytes]), data, len);
