@@ -1,5 +1,6 @@
 #include <fcntl.h>
 
+#include "common/defs.h" /* __FALLTHROUGH__ */
 #include "common/msg.h"
 #include "common/openssl/OpenSSL.h"
 #include "ipfixlolib_private.h"
@@ -540,7 +541,7 @@ static int dtls_send_helper( ipfix_dtls_connection *con,
 	    if (errno == EMSGSIZE) {
 		return -3;
 	    }
-	    /* fall through */
+	    __FALLTHROUGH__;
 	default:
 	    msg_openssl_return_code(MSG_ERROR,"SSL_write()",len,error);
 	    dtls_fail_connection(con);

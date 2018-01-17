@@ -42,6 +42,7 @@
 #include "ipfixlolib.h"
 #include "ipfixlolib_private.h"
 #include "encoding.h"
+#include "common/defs.h" /* __FALLTHROUGH__ */
 #include "common/msg.h"
 #include <netinet/in.h>
 #include <sys/types.h>
@@ -1818,10 +1819,10 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 		if ((time_now - col->last_reconnect_attempt_time) <=  exporter->sctp_reconnect_timer) {
 		    break; // Not time to reconnect
 		}
-		// fall through
+		__FALLTHROUGH__;
 	    case C_NEW:
 		sctp_reconnect(col);
-		// fall through
+		__FALLTHROUGH__;
 	    case C_CONNECTED:
 		if (exporter->sctp_template_sendbuffer->committed_data_length > 0) {
 		    // update the sendbuffer header, as we must set the export time & sequence number!
@@ -2426,11 +2427,11 @@ int ipfix_start_template (ipfix_exporter *exporter, uint16_t template_id,  uint1
 	    case T_SENT:
 		// create a withdrawal message first
 		ipfix_remove_template(exporter, exporter->template_arr[found_index].template_id);
-		/* fall through */
+		__FALLTHROUGH__;
 	    case T_WITHDRAWN:
 		// send withdrawal messages
 		ipfix_send_templates(exporter);
-		/* fall through */
+		__FALLTHROUGH__;
 	    case T_COMMITED:
 	    case T_UNCLEAN:
 	    case T_TOBEDELETED:
