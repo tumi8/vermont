@@ -79,7 +79,11 @@ Rules* AggregationPerfTest::createRules()
 								  "flowstartseconds", "flowendseconds", "protocolidentifier", 0 };
 
 	for (int i=0; rulefields[i] != 0; i++) {
-		rule->field[rule->fieldCount++] = createRuleField(rulefields[i]);
+		if (rule->fieldCount < MAX_RULE_FIELDS) {
+			rule->field[rule->fieldCount++] = createRuleField(rulefields[i]);
+		} else {
+			THROWEXCEPTION("Too many rule fields (%d)", MAX_RULE_FIELDS);
+		}
 	}
 
 	Rules* rules = new Rules();

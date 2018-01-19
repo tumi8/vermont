@@ -2268,7 +2268,11 @@ int ipfix_end_data_set(ipfix_exporter *exporter, uint16_t number_of_records)
                 msg(MSG_ERROR, "ipfix_end_data_set called but there is no started set to end.");
                 return -1;
         }
-
+	if((current + 1) >= IPFIX_MAX_SETS_PER_PACKET ) {
+		msg(MSG_ERROR, "ipfix_end_data_set set_header_store too small to handle more than %i entries", current + 1);
+		return -1;
+	}
+	
 	// add number of data records to sequence number increment
 	exporter->sn_increment += number_of_records;
 
@@ -2317,7 +2321,11 @@ int ipfix_cancel_data_set(ipfix_exporter *exporter)
                 msg(MSG_ERROR, "cancel_data_set called but there is no set to cancel.");
                 return -1;
         }
-    
+	if((current + 1) >= IPFIX_MAX_SETS_PER_PACKET ) {
+		msg(MSG_ERROR, "ipfix_cancel_data_set set_header_store too small to handle more than %i entries", current + 1);
+		return -1;
+	}
+	
         // clean set id and length:
 	manager->set_header_store[current].set_id = 0;
         manager->data_length = 0;
@@ -2366,7 +2374,6 @@ int ipfix_delete_data_fields_upto_marker(ipfix_exporter *exporter)
                 msg(MSG_ERROR, "delete_data_fields_upto_marker called but there is no set.");
                 goto out;
         }
-
 	// if marker is before current, clean the entries and set current back 
 	if(exporter->data_sendbuffer->marker < exporter->data_sendbuffer->current) {
 	    for(i=exporter->data_sendbuffer->marker; i<exporter->data_sendbuffer->current; i++) {
