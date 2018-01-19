@@ -25,12 +25,14 @@ class Thread
 	public:
 		Thread(ThreadFunc threadFunction, const char *threadName="") : exitFlag(false), thread_created(false), f(threadFunction)
 		{
+			size_t threadName_len = strlen(threadName);
 			// truncate to 15 chars + NULL byte
-			if (strlen(threadName) > THREAD_NAME_LENGTH) {
+			if (threadName_len > THREAD_NAME_LENGTH) {
 				msg(MSG_ERROR, "truncating thread name %s to %d characters", threadName, THREAD_NAME_LENGTH);
+				threadName_len = THREAD_NAME_LENGTH;
 			}
-			memcpy(name, threadName, THREAD_NAME_LENGTH);
-			name[THREAD_NAME_LENGTH] = '\0';
+			memcpy(name, threadName, threadName_len);
+			name[threadName_len] = '\0';
 		};
 
 		void run(void *threadData)
