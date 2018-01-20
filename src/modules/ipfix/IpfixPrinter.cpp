@@ -389,7 +389,7 @@ IpfixPrinter::~IpfixPrinter()
 	if (filename != "") {
 		int ret = fclose(fh);
 		if (ret)
-			THROWEXCEPTION("IpfixPrinter: error closing file '%s': %s (%u)", filename.c_str(), strerror(errno), errno);
+			msg(MSG_ERROR, "IpfixPrinter: error closing file '%s': %s (%u)", filename.c_str(), strerror(errno), errno);
 	}
 }
 
