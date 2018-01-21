@@ -2374,6 +2374,7 @@ int ipfix_delete_data_fields_upto_marker(ipfix_exporter *exporter)
                 msg(MSG_ERROR, "delete_data_fields_upto_marker called but there is no set.");
                 goto out;
         }
+
 	// if marker is before current, clean the entries and set current back 
 	if(exporter->data_sendbuffer->marker < exporter->data_sendbuffer->current) {
 	    for(i=exporter->data_sendbuffer->marker; i<exporter->data_sendbuffer->current; i++) {
