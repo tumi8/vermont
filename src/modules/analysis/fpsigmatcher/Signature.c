@@ -235,8 +235,12 @@ void destruct_token(struct Token * token){
 }
 
 void add_Token(struct BayesSignature * signature, struct Token * token){
-	signature->tokens[signature->numOfTokens] = token;
-	signature->numOfTokens++;
+	if (signature->numOfTokens < signature->maxNumOfTokens) {
+		signature->tokens[signature->numOfTokens] = token;
+		signature->numOfTokens++;
+	} else {
+		fprintf(stderr, "add_Token: maximum number of tokens (%d) exceeded -> token ignored!", signature->maxNumOfTokens);
+	}
 }
 
 void add_threshold(struct BayesSignature * signature, double threshold){

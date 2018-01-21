@@ -40,8 +40,14 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 		XMLElement* e = *it;
 		if (e->matches("rule")) {
 			Rule* r = readRule(e);
-			if (r)
-				rules->rule[rules->count++] = r;
+			if (r) {
+				if (rules->count < MAX_RULES) {
+					rules->rule[rules->count++] = r;
+				} else {
+					msg(MSG_FATAL, "Too many rules: %ul\n", MAX_RULES);
+				}
+				
+			}
 		} else if (e->matches("expiration")) {
 			// get the time values or set them to '0' if they are not specified
 			activeTimeout = getTimeInUnit("activeTimeout", SEC, 0, e);
@@ -78,12 +84,22 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 			rule->biflowAggregation = getInt("biflowAggregation", 0, e);
 		} else if (e->matches("flowKey")) {
 			Rule::Field* ruleField = readFlowKeyRule(e);
-			if (ruleField)
-				rule->field[rule->fieldCount++] = ruleField;
+			if (ruleField) {
+				if (rule->fieldCount < MAX_RULE_FIELDS) {
+					rule->field[rule->fieldCount++] = ruleField;
+				} else {
+					THROWEXCEPTION("Too many rule fields (%d)", MAX_RULE_FIELDS);
+				}
+			}
 		} else if (e->matches("nonFlowKey")) {
 			Rule::Field* ruleField = readNonFlowKeyRule(e);
-			if (ruleField)
-				rule->field[rule->fieldCount++] = ruleField;
+			if (ruleField) {
+				if (rule->fieldCount < MAX_RULE_FIELDS) {
+					rule->field[rule->fieldCount++] = ruleField;
+				} else {
+					THROWEXCEPTION("Too many rule fields (%d)", MAX_RULE_FIELDS);
+				}
+			}
 		} else {
 			THROWEXCEPTION("Unknown rule %s in Aggregator found", e->getName().c_str());
 		}
