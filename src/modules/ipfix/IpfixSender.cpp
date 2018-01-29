@@ -612,12 +612,12 @@ void IpfixSender::initVarLenData(IpfixDataRecord* record, IpfixRecord::Data* dat
 	for (int i = 0; i < record->templateInfo->fieldCount; i++) {
 		TemplateInfo::FieldInfo* fi = &(record->templateInfo->fieldInfo[i]);
 		if (fi->type.id == IPFIX_TYPEID_basicList) {
-			vector<void*>** listPtr = (vector<void*>**) (data + fi->offset);
+			vector<void*>** listPtrPtr = (vector<void*>**) (data + fi->offset);
 			// Variable length IE length field (2B) + Semantic (1B) + Field ID (2B) + Element Length (2B) + (optional: Enterprise Number (3B)) + basicList Content (variable)
 			// NOTE: Even though some of these fields are not copied to the variableLenData, we include them in the varLenDataTotalSize estimation
 			varLenDataTotalSize += 2 + 1 + 2 + 2;
 			varLenDataTotalSize += (fi->basicListData.fieldIe->enterprise == 0) ? 0 : 3;
-			varLenDataTotalSize += ((*listPtr)->size()) * fi->basicListData.fieldIe->length;
+			varLenDataTotalSize += ((*listPtrPtr)->size()) * fi->basicListData.fieldIe->length;
 		}
 	}
 
@@ -656,7 +656,7 @@ void IpfixSender::addDataRecordValue(TemplateInfo::FieldInfo* fi, IpfixRecord::D
 		ipfix_put_data_field(ipfixExporter, data + fi->offset + 1, 1);
 	}
 	else if (fi->type.id == IPFIX_TYPEID_basicList) {
-		vector<void*>** listPtr = (vector<void*>**) (data + fi->offset);
+		vector<void*>** listPtrPtr = (vector<void*>**) (data + fi->offset);
 
 		// Always use three-byte length encoding as RECOMMENDED in RFC 6313
 		ipfix_put_data_field(ipfixExporter, &record->threeByteIndicator, 1);
@@ -670,7 +670,7 @@ void IpfixSender::addDataRecordValue(TemplateInfo::FieldInfo* fi, IpfixRecord::D
 		// Semantic (1B) + Field ID (2B) + Element Length (2B) + (optional: Enterprise Number (3B)) + basicList Content (variable)
 		uint16_t varLen = 1 + 2 + 2;
 		varLen += (fi->basicListData.fieldIe->enterprise == 0) ? 0 : 3;
-		varLen += ((*listPtr)->size()) * fi->basicListData.fieldIe->length;
+		varLen += ((*listPtrPtr)->size()) * fi->basicListData.fieldIe->length;
 		varLen = htons(varLen);
 
 		sendDataFromVarLenDataBuff(record, &varLen, sizeof(varLen));
@@ -690,7 +690,7 @@ void IpfixSender::addDataRecordValue(TemplateInfo::FieldInfo* fi, IpfixRecord::D
 		sendDataFromVarLenDataBuff(record, &fieldLen, sizeof(fieldLen));
 
 		// Add basicList content
-		for (vector<void*>::const_iterator iter = (*listPtr)->begin(); iter != (*listPtr)->end(); iter++) {
+		for (vector<void*>::const_iterator iter = (*listPtrPtr)->begin(); iter != (*listPtrPtr)->end(); iter++) {
 			IpfixRecord::Data* elem = reinterpret_cast<IpfixRecord::Data*>(*iter);
 			sendDataFromVarLenDataBuff(record, elem, ntohs(fieldLen));
 		}

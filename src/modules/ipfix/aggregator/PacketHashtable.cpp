@@ -130,12 +130,12 @@ void PacketHashtable::copyDataBasicList(CopyFuncParameters* cfp)
 {
 	ExpFieldData* efd = cfp->efd;
 	IpfixRecord::Data* dst = cfp->dst+efd->dstIndex;
-	vector<void*>** listPtr = (vector<void*>**) dst;
+	vector<void*>** listPtrPtr = (vector<void*>**) dst;
 	size_t len = efd->typeSpecData.basicList->fieldIe->length;
 
 	// Initialize vector
-	if (*listPtr == NULL) {
-		*listPtr = new vector<void*>;
+	if (*listPtrPtr == NULL) {
+		*listPtrPtr = new vector<void*>;
 	} else {
 		THROWEXCEPTION("basicList vector was initially not NULL.");
 	}
@@ -144,7 +144,7 @@ void PacketHashtable::copyDataBasicList(CopyFuncParameters* cfp)
 	void* toInsert = malloc(len);
 	memcpy(toInsert, cfp->src, len);
 
-	(*listPtr)->push_back((void*) toInsert);
+	(*listPtrPtr)->push_back((void*) toInsert);
 }
 void PacketHashtable::copyDataTransportOctets(CopyFuncParameters* cfp)
 {
@@ -1241,14 +1241,14 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						// Is called to insert all but first elements
 						size_t len;
 						void* toInsert;
-						vector<void*>** listPtr;
+						vector<void*>** listPtrPtr;
 
 						len = efd->typeSpecData.basicList->fieldIe->length;
 						toInsert = malloc(len);
-						listPtr = (vector<void*>**) baseData;
+						listPtrPtr = (vector<void*>**) baseData;
 
 						memcpy(toInsert, deltaData, len);
-						(*listPtr)->push_back((void*) toInsert);
+						(*listPtrPtr)->push_back((void*) toInsert);
 
 						break;
 

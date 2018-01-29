@@ -685,13 +685,13 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 
 			fprintf(fh, "semantic=%hhu, %s [", record->templateInfo->fieldInfo[i].basicListData.semantic, record->templateInfo->fieldInfo[i].basicListData.fieldIe->toString().c_str());
 
-			vector<void*>** listPtr = (vector<void*>**) (record->data + record->templateInfo->fieldInfo[i].offset);
-			for (vector<void*>::const_iterator iter = (*listPtr)->begin(); iter != (*listPtr)->end(); iter++) {
+			vector<void*>** listPtrPtr = (vector<void*>**) (record->data + record->templateInfo->fieldInfo[i].offset);
+			for (vector<void*>::const_iterator iter = (*listPtrPtr)->begin(); iter != (*listPtrPtr)->end(); iter++) {
 
 				printFieldDataValue(*record->templateInfo->fieldInfo[i].basicListData.fieldIe, reinterpret_cast<IpfixRecord::Data*>(*iter));
 
 				// No comma for last element in the list
-				if (iter+1 != (*listPtr)->end()) {
+				if (iter+1 != (*listPtrPtr)->end()) {
 					fprintf(fh, ", ");
 				}
 			}

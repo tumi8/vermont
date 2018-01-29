@@ -352,14 +352,14 @@ class IpfixDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataReco
 				// Free basicList memory
 				if (templateInfo->fieldInfo[i].type == InformationElement::IeInfo(IPFIX_TYPEID_basicList, 0)) {
 					IpfixRecord::Data* dst = (data + templateInfo->fieldInfo[i].offset);
-					vector<void*>** listPtr = (vector<void*>**) dst;
+					vector<void*>** listPtrPtr = (vector<void*>**) dst;
 
-					if (*listPtr != NULL) {
-						for (vector<void*>::const_iterator iter = (*listPtr)->begin(); iter != (*listPtr)->end(); iter++) {
+					if (*listPtrPtr != NULL) {
+						for (vector<void*>::const_iterator iter = (*listPtrPtr)->begin(); iter != (*listPtrPtr)->end(); iter++) {
 							free(reinterpret_cast<IpfixRecord::Data*>(*iter));
 						}
 
-						delete *listPtr;
+						delete *listPtrPtr;
 					}
 				}
 			}
