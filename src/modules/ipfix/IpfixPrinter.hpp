@@ -32,6 +32,8 @@ class PrintHelpers
 		PrintHelpers() : fh(stdout) {}
 
 		void printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern);
+		void printFieldDataType(InformationElement::IeInfo type);
+		void printFieldDataValue(InformationElement::IeInfo type, IpfixRecord::Data* pattern);
 		void printIPv4(uint32_t data);
 		void printIPv4(uint8_t *data);
 		void printIPv4(InformationElement::IeInfo type, IpfixRecord::Data* data);

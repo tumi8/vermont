@@ -13,6 +13,7 @@ import urllib.request
 
 IANA_IE_URL = "http://www.iana.org/assignments/ipfix/ipfix-information-elements.csv"
 IANA_DATA_TYPES_URL = "http://www.iana.org/assignments/ipfix/ipfix-information-element-data-types.csv"
+IANA_STRUCTURED_DATA_TYPES_URL = "https://www.iana.org/assignments/ipfix/ipfix-structured-data-types-semantics.csv"
 
 class IanaDialect(csv.Dialect):
     # ElementID,Name,Data Type,Data Type Semantics,Status,Description,Units,Range,References,Requester,Revision,Date^M
@@ -62,6 +63,19 @@ def parse_iana_csv_data_types(fh, out):
     out.write(length_macros)
     out.write("\n")
 
+def parse_iana_csv_structured_data_types(fh, out, struct_out):
+
+    # Value,Name,Description,Reference
+    reader = csv.reader(fh)
+    struct = "\n\nstruct ipfix_semantic ipfixsemantic_iana[] = {\n/* IANA registry */\n"
+    for row in reader:
+        if row[2] != "unassigned" and row[0] != "Value":
+            out.write("#define IPFIX_STRUCTURED_TYPE_SEMANTIC_{0:30} {1}\n".format(row[1], row[0]))
+            struct += '  {{ IPFIX_STRUCTURED_TYPE_SEMANTIC_{0:30}, {1:10} }},\n'.format(row[1], '"' + row[1] + '"')
+    struct += "};\n\n"
+
+    out.write("\n")
+    struct_out.write(struct)
 
 def append_output(row, ids, types, lengths, struct):
     elementId = row[0]
@@ -95,13 +109,14 @@ def type_to_length(data_type):
     raise Exception("Could not convert data type " + data_type)
 
 
-def generate_ipfix_output(ie_fh, types_fh, out, struct_out):
+def generate_ipfix_output(ie_fh, types_fh, structured_types_fh, out, struct_out):
     # Header
     out.write('#ifndef IPFIX_IANA_H\n#define IPFIX_IANA_H\n\n#include "ipfix_names.h"\n\n')
     struct_out.write('#include "ipfix_iana.h"\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n\n')
 
     parse_iana_csv_data_types(types_fh, out)
     parse_iana_csv_ie(ie_fh, out, struct_out)
+    parse_iana_csv_structured_data_types(structured_types_fh, out, struct_out)
 
     # Footer
     struct_out.write('#ifdef __cplusplus\n}\n#endif\n')
@@ -113,7 +128,7 @@ def generate_ipfix_output(ie_fh, types_fh, out, struct_out):
 
 
 def download_csvs():
-    for url in (IANA_IE_URL, IANA_DATA_TYPES_URL):
+    for url in (IANA_IE_URL, IANA_DATA_TYPES_URL, IANA_STRUCTURED_DATA_TYPES_URL):
         response = urllib.request.urlopen(url)
         data = response.read().decode('utf-8')
         fh = tempfile.TemporaryFile(mode='w+t')
@@ -126,6 +141,7 @@ def main():
     parser = argparse.ArgumentParser(description='Create C output for IPFIX Information Elements to be used in Vermont.')
     parser.add_argument('-i', '--ie-file', metavar='IE_CSV', type=argparse.FileType('r'), help="CSV file containing IPFIX Information Elements specified by IANA.")
     parser.add_argument('-t', '--type-file', metavar='DATA_TYPES_CSV', type=argparse.FileType('r'), help="CSV file containing IPFIX Data Types specified by IANA.")
+    parser.add_argument('-s', '--structured-type-file', metavar='STRUCTURED_DATA_TYPES_CSV', type=argparse.FileType('r'), help="CSV file containing IPFIX Structured Data Type Semantics specified by IANA.")
     parser.add_argument('-u', '--update', action='store_true', help="Update specified IPFIX Information Elements from IANA website.")
     parser.add_argument('-d', '--directory', metavar='DIR',  help="Write to files in DIR instead of STDOUT.")
 
@@ -140,7 +156,7 @@ def main():
 
     # Update CSVs from IANA website
     if args.update:
-        args.ie_file, args.type_file = download_csvs()
+        args.ie_file, args.type_file, args.structured_type_file = download_csvs()
 
     # Default output is standard out
     out = sys.stdout
@@ -151,7 +167,7 @@ def main():
         out = open(os.path.join(args.directory, 'ipfix_iana.h'), 'w')
         struct_out = open(os.path.join(args.directory, 'ipfix_iana.c'), 'w')
 
-    generate_ipfix_output(args.ie_file, args.type_file, out, struct_out)
+    generate_ipfix_output(args.ie_file, args.type_file, args.structured_type_file, out, struct_out)
 
 
 if __name__ == '__main__':

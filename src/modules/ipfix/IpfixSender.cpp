@@ -569,37 +569,13 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 
 	setTemplateId(my_template_id, record->dataLength);
 
+	// Set variable length data based on template estimation to avoid realloc
+	initVarLenData(record, data);
+
 	int i;
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
-		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
-
-		/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
-		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
-			uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
-			*mask = 32 - *(uint8_t*)(data + fi->offset + 4);
-			ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
-			ipfix_put_data_field(ipfixExporter, mask, 1);
-		}
-		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
-			uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
-			*mask = 32 - *(uint8_t*)(data + fi->offset + 4);
-			ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
-			ipfix_put_data_field(ipfixExporter, mask, 1);
-		}
-		else if ((export_protocol == NFV9_PROTOCOL) &&
-				(fi->type.id == IPFIX_TYPEID_tcpControlBits) &&
-				(fi->type.length != 1)) {
-			// data is in network order, we want just the second byte as per RFC
-			ipfix_put_data_field(ipfixExporter, data + fi->offset + 1, 1);
-		}
-		else {
-			if (fi->type.id == IPFIX_TYPEID_packetDeltaCount && fi->type.length<=8) {
-				uint64_t p = 0;
-				memcpy(&p, data+fi->offset, fi->type.length);
-				statPacketsInFlows += ntohll(p);
-			}
-			ipfix_put_data_field(ipfixExporter, data + fi->offset, fi->type.length);
-		}
+		TemplateInfo::FieldInfo* fi = &(dataTemplateInfo->fieldInfo[i]);
+		addDataRecordValue(fi, data, record);
 	}
 	remainingSpace -= record->dataLength;
 	statSentDataRecords++;
@@ -613,6 +589,122 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 
 	// release the message lock
 	ipfixMessageLock.unlock();
+}
+
+void IpfixSender::addDataRecordValue(TemplateInfo::FieldInfo* fi, IpfixRecord::Data* data)
+{
+	addDataRecordValue(fi, data, NULL);
+}
+
+void IpfixSender::sendDataFromVarLenDataBuff(IpfixDataRecord* record, void* data, size_t len)
+{
+	if (record->variableLenDataCurrBytes + len > record->variableLenDataTotalBytes) {
+		THROWEXCEPTION("Not enough bytes allocated: %u allocated, %u needed", record->variableLenDataTotalBytes, record->variableLenDataCurrBytes + (unsigned int) len);
+	}
+
+	memcpy(&(record->variableLenData[record->variableLenDataCurrBytes]), data, len);
+	ipfix_put_data_field(ipfixExporter, &record->variableLenData[record->variableLenDataCurrBytes], len);
+	record->variableLenDataCurrBytes += len;
+}
+
+void IpfixSender::initVarLenData(IpfixDataRecord* record, IpfixRecord::Data* data)
+{
+	size_t varLenDataTotalSize = 0;
+
+	for (int i = 0; i < record->templateInfo->fieldCount; i++) {
+		TemplateInfo::FieldInfo* fi = &(record->templateInfo->fieldInfo[i]);
+		if (fi->type.id == IPFIX_TYPEID_basicList) {
+			vector<void*>** listPtrPtr = (vector<void*>**) (data + fi->offset);
+			// Variable length IE length field (2B) + Semantic (1B) + Field ID (2B) + Element Length (2B) + (optional: Enterprise Number (3B)) + basicList Content (variable)
+			// NOTE: Even though some of these fields are not copied to the variableLenData, we include them in the varLenDataTotalSize estimation
+			varLenDataTotalSize += 2 + 1 + 2 + 2;
+			varLenDataTotalSize += (fi->basicListData.fieldIe->enterprise == 0) ? 0 : 3;
+			varLenDataTotalSize += ((*listPtrPtr)->size()) * fi->basicListData.fieldIe->length;
+		}
+	}
+
+	// Allocate memory if variable length is present
+	if (varLenDataTotalSize > 0) {
+		if (record->variableLenData != NULL) {
+			free(record->variableLenData);
+			record->variableLenData = NULL;
+			record->variableLenDataCurrBytes = 0;
+		}
+		record->variableLenDataTotalBytes = varLenDataTotalSize;
+		record->variableLenData = (IpfixRecord::Data*) malloc(record->variableLenDataTotalBytes);
+	}
+}
+
+void IpfixSender::addDataRecordValue(TemplateInfo::FieldInfo* fi, IpfixRecord::Data* data, IpfixDataRecord* record)
+{
+
+	/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
+	if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
+		uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
+		*mask = 32 - *(uint8_t*)(data + fi->offset + 4);
+		ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
+		ipfix_put_data_field(ipfixExporter, mask, 1);
+	}
+	else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
+		uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
+		*mask = 32 - *(uint8_t*)(data + fi->offset + 4); // TODO FIXME Valgrind complains due to uninitialized memory!!!
+		ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
+		ipfix_put_data_field(ipfixExporter, mask, 1);
+	}
+	else if ((export_protocol == NFV9_PROTOCOL) &&
+			(fi->type.id == IPFIX_TYPEID_tcpControlBits) &&
+			(fi->type.length != 1)) {
+		// data is in network order, we want just the second byte as per RFC
+		ipfix_put_data_field(ipfixExporter, data + fi->offset + 1, 1);
+	}
+	else if (fi->type.id == IPFIX_TYPEID_basicList) {
+		vector<void*>** listPtrPtr = (vector<void*>**) (data + fi->offset);
+
+		// Always use three-byte length encoding as RECOMMENDED in RFC 6313
+		ipfix_put_data_field(ipfixExporter, &record->threeByteIndicator, 1);
+
+		// Need to allocate memory to store length etc. as they are not immediately sent over the wire
+		// Is deallocated in IpfixRecord destructor
+		if (record->variableLenData == NULL) {
+			msg(MSG_ERROR, "Variable length data present but variableLenData not allocated.");
+		}
+
+		// Semantic (1B) + Field ID (2B) + Element Length (2B) + (optional: Enterprise Number (3B)) + basicList Content (variable)
+		uint16_t varLen = 1 + 2 + 2;
+		varLen += (fi->basicListData.fieldIe->enterprise == 0) ? 0 : 3;
+		varLen += ((*listPtrPtr)->size()) * fi->basicListData.fieldIe->length;
+		varLen = htons(varLen);
+
+		sendDataFromVarLenDataBuff(record, &varLen, sizeof(varLen));
+
+
+		// Var length field
+		// Semantic
+		ipfix_put_data_field(ipfixExporter, (void *) &fi->basicListData.semantic, 1);
+
+		// Field ID
+		// TODO: Distinguish between enterprise=0
+		uint16_t fieldId = htons(fi->basicListData.fieldIe->id);
+		sendDataFromVarLenDataBuff(record, &fieldId, sizeof(fieldId));
+
+		// Field length
+		uint16_t fieldLen = htons(fi->basicListData.fieldIe->length);
+		sendDataFromVarLenDataBuff(record, &fieldLen, sizeof(fieldLen));
+
+		// Add basicList content
+		for (vector<void*>::const_iterator iter = (*listPtrPtr)->begin(); iter != (*listPtrPtr)->end(); iter++) {
+			IpfixRecord::Data* elem = reinterpret_cast<IpfixRecord::Data*>(*iter);
+			sendDataFromVarLenDataBuff(record, elem, ntohs(fieldLen));
+		}
+	}
+	else {
+		if (fi->type.id == IPFIX_TYPEID_packetDeltaCount && fi->type.length<=8) {
+			uint64_t p = 0;
+			memcpy(&p, data+fi->offset, fi->type.length);
+			statPacketsInFlows += ntohll(p);
+		}
+		ipfix_put_data_field(ipfixExporter, data + fi->offset, fi->type.length);
+	}
 }
 
 /**

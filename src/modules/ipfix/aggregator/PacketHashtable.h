@@ -34,15 +34,7 @@
 
 class PacketHashtable : public BaseHashtable
 {
-public:
-	PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
-			uint16_t inactiveTimeout, uint16_t activeTimeout, uint8_t hashbits);
-	virtual ~PacketHashtable();
 
-	void aggregatePacket(Packet* p);
-
-	static uint8_t getRawPacketFieldLength(const InformationElement::IeInfo& type);
-	static int32_t getRawPacketFieldOffset(const InformationElement::IeInfo& type, const Packet* p);
 
 private:
 	/**
@@ -104,6 +96,7 @@ private:
 				uint32_t fpaLenOffset; /**< offset from start of record data to IPFIX_ETYPE_FRONTPAYLOADLEN, 0xFFFFFFFF if not used */
 				bool dpa; /**< set to true, if DPA was activated */
 			} frontPayload;
+			TemplateInfo::BasicListData *basicList;
 		} typeSpecData;
 
 	};
@@ -147,6 +140,7 @@ private:
 	static void copyDataSetZero(CopyFuncParameters* cfp);
 	static void copyDataMaxPacketGap(CopyFuncParameters* cfp);
 	static void copyDataNanoseconds(CopyFuncParameters* cfp);
+	static void copyDataBasicList(CopyFuncParameters* cfp);
 	static void copyDataDummy(CopyFuncParameters* cfp);
 	static void copyDataTransportOctets(CopyFuncParameters* cfp);
 	static void aggregateFrontPayload(IpfixRecord::Data* bucket, HashtableBucket* hbucket, const Packet* src,
@@ -169,6 +163,18 @@ private:
 	void updateBucketData(HashtableBucket* bucket);
 	uint32_t getDstOffset(const InformationElement::IeInfo& ietype);
 	bool mustExpireBucket(const HashtableBucket* bucket, const Packet* p);
+	void destroyExpFieldData(ExpFieldData* efd, int numFields); // TODO: Do we need this?
+
+public:
+	PacketHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
+			uint16_t inactiveTimeout, uint16_t activeTimeout, uint8_t hashbits);
+	virtual ~PacketHashtable();
+
+	void aggregatePacket(Packet* p);
+
+	static uint8_t getRawPacketFieldLength(const InformationElement::IeInfo& type);
+	static int32_t getRawPacketFieldOffset(const InformationElement::IeInfo& type, const Packet* p);
+	static int32_t getRawPacketFieldOffset(const InformationElement::IeInfo& type, const Packet* p, const ExpFieldData::TypeSpecificData* typeSpecData);
 
 };
 

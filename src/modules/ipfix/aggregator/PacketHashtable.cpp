@@ -126,6 +126,26 @@ void PacketHashtable::copyDataNanoseconds(CopyFuncParameters* cfp)
 	}
 #endif
 }
+void PacketHashtable::copyDataBasicList(CopyFuncParameters* cfp)
+{
+	ExpFieldData* efd = cfp->efd;
+	IpfixRecord::Data* dst = cfp->dst+efd->dstIndex;
+	vector<void*>** listPtrPtr = (vector<void*>**) dst;
+	size_t len = efd->typeSpecData.basicList->fieldIe->length;
+
+	// Initialize vector
+	if (*listPtrPtr == NULL) {
+		*listPtrPtr = new vector<void*>;
+	} else {
+		THROWEXCEPTION("basicList vector was initially not NULL.");
+	}
+
+	// Is called to insert first element
+	void* toInsert = malloc(len);
+	memcpy(toInsert, cfp->src, len);
+
+	(*listPtrPtr)->push_back((void*) toInsert);
+}
 void PacketHashtable::copyDataTransportOctets(CopyFuncParameters* cfp)
 {
 	const Packet* p = cfp->packet;
@@ -295,6 +315,7 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:
 				case IPFIX_TYPEID_icmpTypeCodeIPv4:
+				case IPFIX_TYPEID_totalLengthIPv4:
 					if (efd->dstLength != 2) {
 						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
 					}
@@ -349,6 +370,9 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 					if (efd->dstLength < 1 || efd->dstLength > 2) {
 						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
 					}
+					break;
+
+				case IPFIX_TYPEID_basicList:
 					break;
 
 				default:
@@ -418,6 +442,8 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 	} else if (efd->typeId == IeInfo(IPFIX_TYPEID_flowStartNanoseconds, 0) ||
 			efd->typeId == IeInfo(IPFIX_TYPEID_flowEndNanoseconds, 0)) {
 		return copyDataNanoseconds;
+	} else if (efd->typeId == IeInfo(IPFIX_TYPEID_basicList, 0)) {
+		return copyDataBasicList;
 	} else if (efd->typeId.enterprise & IPFIX_PEN_reverse) {
 		// ATTENTION: we treat all reverse elements the same: we set them to zero
 		return copyDataSetZero;
@@ -442,7 +468,7 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 			return copyDataGreaterLengthNoMod;
 		}
 	} else {
-		THROWEXCEPTION("target buffer too small. Expected buffer %s of length %d", efd->typeId.toString().c_str(), efd->srcLength);
+		THROWEXCEPTION("target buffer too small. Expected buffer %s of length %d, but got %d", efd->typeId.toString().c_str(), efd->srcLength, efd->dstLength);
 	}
 
 	THROWEXCEPTION("this line should never be reached");
@@ -467,6 +493,7 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 			case IPFIX_TYPEID_destinationTransportPort:
 			case IPFIX_TYPEID_octetDeltaCount:
 			case IPFIX_TYPEID_octetTotalCount:
+			case IPFIX_TYPEID_totalLengthIPv4:
 				return 2;
 
 			case IPFIX_TYPEID_flowStartSeconds:
@@ -539,7 +566,12 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
  * @param p pointer to raw packet
  * @returns offset (in bytes) at which the data for the given field is located in the raw packet
  */
-int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packet* p)
+ int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packet* p)
+ {
+	 return getRawPacketFieldOffset(type, p, NULL);
+ }
+
+int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packet* p, const ExpFieldData::TypeSpecificData* typeSpecData)
 {
 	if (type.enterprise==0 || type.enterprise==IPFIX_PEN_reverse) {
 		switch (type.id) {
@@ -573,6 +605,7 @@ int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packe
 
 			case IPFIX_TYPEID_octetDeltaCount:
 			case IPFIX_TYPEID_octetTotalCount:
+			case IPFIX_TYPEID_totalLengthIPv4:
 				return 2;
 				break;
 
@@ -627,6 +660,12 @@ int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packe
 					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d", type.toString().c_str(), p->ipProtocolType, Packet::TCP);
 				}
 				break;
+
+			case IPFIX_TYPEID_basicList:
+				// Find offset for field inside basicList
+				return getRawPacketFieldOffset(*typeSpecData->basicList->fieldIe, p);
+				break;
+
 			default:
 				THROWEXCEPTION("PacketHashtable: raw id offset into packet header for typeid %s is unkown, failed to determine raw packet offset", type.toString().c_str());
 				break;
@@ -672,6 +711,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
 				case IPFIX_TYPEID_ipClassOfService:
 				case IPFIX_TYPEID_bgpSourceAsNumber:
 				case IPFIX_TYPEID_bgpDestinationAsNumber:
+				case IPFIX_TYPEID_totalLengthIPv4:
 					return false;
 
 				case IPFIX_TYPEID_icmpTypeCodeIPv4:
@@ -680,6 +720,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
 				case IPFIX_TYPEID_tcpControlBits:
 				case IPFIX_TYPEID_sourceMacAddress:
 				case IPFIX_TYPEID_destinationMacAddress:
+				case IPFIX_TYPEID_basicList:
 					return true;
 			}
 			break;
@@ -716,16 +757,23 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 	DPRINTFL(MSG_VDEBUG, "called for type id %s", hfi->type.toString().c_str());
 	efd->typeId = hfi->type;
 	efd->dstIndex = hfi->offset;
-	efd->dstLength = hfi->type.length;
-	efd->srcLength = getRawPacketFieldLength(hfi->type);
 	efd->modifier = fieldModifier;
-	efd->varSrcIdx = isRawPacketPtrVariable(hfi->type);
+
+	IeInfo ie = hfi->type;
+	if (hfi->type == IeInfo(IPFIX_TYPEID_basicList, 0)) {
+		efd->typeSpecData.basicList = &hfi->basicListData;
+		ie = *efd->typeSpecData.basicList->fieldIe;
+	}
+
+	efd->dstLength = ie.length;
+	efd->srcLength = getRawPacketFieldLength(ie);
+	efd->varSrcIdx = isRawPacketPtrVariable(ie);
 	efd->privDataOffset = hfi->privDataOffset;
 
 	// initialize static source index, if current field does not have a variable pointer
 	if (!efd->varSrcIdx) {
 		Packet p; // not good: create temporary packet just for initializing our optimization structure
-		efd->srcIndex = getRawPacketFieldOffset(hfi->type, &p);
+		efd->srcIndex = getRawPacketFieldOffset(ie, &p, &efd->typeSpecData);
 	}
 
 	// special case for masked IPs: those contain variable pointers, if they are masked
@@ -804,6 +852,8 @@ bool PacketHashtable::typeAvailable(const IeInfo& type)
 				case IPFIX_TYPEID_tcpControlBits:
 				case IPFIX_TYPEID_bgpSourceAsNumber:
 				case IPFIX_TYPEID_bgpDestinationAsNumber:
+				case IPFIX_TYPEID_totalLengthIPv4:
+				case IPFIX_TYPEID_basicList:
 					return true;
 			}
 			break;
@@ -1192,6 +1242,21 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						}
 						break;
 
+					case IPFIX_TYPEID_basicList:
+						// Is called to insert all but first elements
+						size_t len;
+						void* toInsert;
+						vector<void*>** listPtrPtr;
+
+						len = efd->typeSpecData.basicList->fieldIe->length;
+						toInsert = malloc(len);
+						listPtrPtr = (vector<void*>**) baseData;
+
+						memcpy(toInsert, deltaData, len);
+						(*listPtrPtr)->push_back((void*) toInsert);
+
+						break;
+
 						// no other types needed, as this is only for raw field input
 					default:
 						DPRINTF("non-aggregatable type: %s", efd->typeId.toString().c_str());
@@ -1483,7 +1548,7 @@ void PacketHashtable::updatePointers(const Packet* p)
 		}
 		if (dodefault) {
 			// standard procedure for transport header fields
-			efd->srcIndex = getRawPacketFieldOffset(efd->typeId, p);
+			efd->srcIndex = getRawPacketFieldOffset(efd->typeId, p, &efd->typeSpecData);
 		}
 	}
 }
