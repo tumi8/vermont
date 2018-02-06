@@ -1,0 +1,8 @@
+Install Vagrant and Ansible each with version >= 2.0
+Then, in this folder
+$ vagrant up
+...wait...
+$ vagrant ssh
+# cd /vermont
+
+Here you find the vermont executable and the necessary config files under configs/
