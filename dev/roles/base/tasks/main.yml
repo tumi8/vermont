@@ -10,8 +10,8 @@
     state: present
     filename: 'mq'
 
-- name: Add toolchain
-  apt_repository: repo='ppa:ubuntu-toolchain-r/test'
+    #- name: Add toolchain
+    #  apt_repository: repo='ppa:ubuntu-toolchain-r/test'
 
 - name: install dependencies
   apt: name={{item}} state=present install_recommends=no update_cache=yes
@@ -29,17 +29,22 @@
     - libsctp-dev
     - libssl-dev
     - libczmq-dev
-    - g++-7
+    - g++
+
+- name: create build directory
+  command: mkdir -p build-vagrant
+  args:
+    chdir: /vermont
 
 - name: cmake vermont
   command: "{{item}}"
   with_items:
-    - cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS=ON -DSUPPORT_ZMQ=ON .
+    - cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS=ON -DSUPPORT_ZMQ=ON ..
     - make -k
     - make test
     - make install
   environment:
-    CXX: g++-7
-    CC: gcc-7
+    CXX: g++
+    CC: gcc
   args:
-    chdir: /vermont
+    chdir: /vermont/build-vagrant
