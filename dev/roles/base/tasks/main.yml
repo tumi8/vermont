@@ -16,6 +16,7 @@
 - name: install dependencies
   apt: name={{item}} state=present install_recommends=no update_cache=yes
   with_items:
+    - ntp
     - cmake
     - pkg-config
     - libboost-dev
@@ -31,10 +32,11 @@
     - libczmq-dev
     - g++
 
+- name: remove build directory
+  file: path='/vermont/build-vagrant/' state=absent
+
 - name: create build directory
-  command: mkdir -p build-vagrant
-  args:
-    chdir: /vermont
+  file: path='/vermont/build-vagrant' state=directory
 
 - name: cmake vermont
   command: "{{item}}"
@@ -47,4 +49,4 @@
     CXX: g++
     CC: gcc
   args:
-    chdir: /vermont/build-vagrant
+    chdir: /vermont/build-vagrant/
