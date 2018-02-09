@@ -269,7 +269,7 @@ static int init_send_sctp_socket(struct sockaddr_storage serv_addr,
 	close(s);
 	return -1;
     }
-    DPRINTFL(LOG_INFO, "%sSCTP Socket created", vrf_log);
+    DPRINTF("%sSCTP Socket created", vrf_log);
 
     return s;
 }
@@ -953,7 +953,7 @@ static int ipfix_get_free_template_slot(ipfix_exporter *exporter) {
 	    return i;
 	}
     }
-    DPRINTFL(LOG_INFO, "ipfix_get_free_template_slot failed.");
+    DPRINTF("ipfix_get_free_template_slot failed.");
     return -1;
 }
 

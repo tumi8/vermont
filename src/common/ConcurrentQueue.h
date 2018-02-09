@@ -52,7 +52,7 @@ class ConcurrentQueue
 			bool waiting = false;
 			if (pushSemaphore.getCount() == 0) {
 				waiting = true;
-				DPRINTFL(LOG_INFO, "(%s) queue is full with %d elements, waiting ...", ownerName.c_str(), count);
+				DPRINTF("(%s) queue is full with %d elements, waiting ...", ownerName.c_str(), count);
 			}
 #endif
 			if (!pushSemaphore.wait()) {

@@ -202,21 +202,21 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, Hashtable
 			if (efd->typeSpecData.frontPayload.dpaRevStartOffset != ExpHelperTable::UNUSED)
 				*reinterpret_cast<uint8_t*>(bucket+efd->typeSpecData.frontPayload.dpaRevStartOffset) = revdir;
 			dpd->datarecv = true;
-			DPRINTFL(LOG_INFO, "1. revstart=%hhu\n", revdir);
+			DPRINTF("1. revstart=%hhu\n", revdir);
 		} else if ((revdir && !dpd->revstart) || (!revdir && dpd->revstart)) {
 			// we are now in other direction
 			dpd->revdata = true;
-			DPRINTFL(LOG_INFO, "2. revdata=%hhu\n", dpd->revdata);
+			DPRINTF("2. revdata=%hhu\n", dpd->revdata);
 		} else if (dpd->revdata && ((dpd->revstart && revdir) || (!dpd->revstart && !revdir))) {
 			// this flow *must* be exported!
-			DPRINTFL(LOG_INFO, "3. export");
+			DPRINTF("3. export");
 			if (efd->typeSpecData.frontPayload.dpaForcedExportOffset != ExpHelperTable::UNUSED)
 				*reinterpret_cast<uint8_t*>(bucket+efd->typeSpecData.frontPayload.dpaForcedExportOffset) = 1;
 			assert(hbucket!=NULL);
 			hbucket->forceExpiry = true;
 			return;
 		} else {
-			DPRINTFL(LOG_INFO, "4. okdata");
+			DPRINTF("4. okdata");
 		}
 	}
 
