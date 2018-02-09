@@ -128,20 +128,22 @@ daemonise (const char *pid_file, uid_t uid, gid_t gid)
 }
 
 static int
-parse_log_level (const char *arg, int mask)
+parse_log_level (const char *arg)
 {
+	int mask = msg_getlevel();
+
 	if (!strcmp("debug", arg)) {
-		mask |= LOG_MASK(LOG_DEBUG);
+		mask = LOG_UPTO(LOG_DEBUG);
 	} else if (!strcmp("info", arg)) {
-		mask |= LOG_MASK(LOG_INFO);
+		mask = LOG_UPTO(LOG_INFO);
 	} else if (!strcmp("notice", arg)) {
-		mask |= LOG_MASK(LOG_NOTICE);
+		mask = LOG_UPTO(LOG_NOTICE);
 	} else if (!strcmp("warning", arg)) {
-		mask |= LOG_MASK(LOG_WARNING);
+		mask = LOG_UPTO(LOG_WARNING);
 	} else if (!strcmp("error", arg)) {
-		mask |= LOG_MASK(LOG_ERR);
+		mask = LOG_UPTO(LOG_ERR);
 	} else if (!strcmp("critical", arg)) {
-		mask |= LOG_MASK(LOG_CRIT);
+		mask = LOG_UPTO(LOG_CRIT);
 	}
 
 	return mask;
@@ -155,10 +157,11 @@ usage (int status)
 			" -f, --config-file FILE     Use configuration file\n"
 			"\n OTHER OPTIONS:\n"
 			" -h, --help                 Display this help and exit\n"
-			" -d, --debug                Log verbosity: -d NOTICE, -dd INFO,\n"
+			" -d, --debug                Log verbosity:\n\n"
+			"                                -d NOTICE\n"
+			"                                -dd INFO\n"
 			"                                -ddd DEBUG\n"
-			" -l, --log-level LEVEL      Log level. Can be specified multiple\n"
-			"                                times and mix-matched. \n"
+			" -l, --log-level LEVEL      Log level.\n"
 			"                                In increasing order:\n\n"
 			"                                    debug\n"
 			"                                    info\n"
@@ -166,7 +169,7 @@ usage (int status)
 			"                                    warning\n"
 			"                                    error\n"
 			"                                    critical\n\n"
-			"                                Default: critical, warning, error\n"
+			"                                Default: warning\n"
 			" -q, --quiet                Do not write output to console (implied by -b)\n"
 			" -b, --daemon               Run in daemon mode (implies -q)\n"
 			" -p, --pid-file FILE        Set process id filename (use with -b)\n"
@@ -184,7 +187,7 @@ usage (int status)
 static int
 parse_args (int argc, char **argv, struct parameters *params)
 {
-	int opt, ret, option_index, level = 0;
+	int opt, ret, option_index;
 	struct passwd *pw;
 	struct group *gr;
 
@@ -256,8 +259,7 @@ parse_args (int argc, char **argv, struct parameters *params)
 			break;
 
 		case 'l':
-			level = parse_log_level(optarg, level);
-			msg_setlevel(level);
+			msg_setlevel(parse_log_level(optarg));
 			break;
 
 		case 'q':
