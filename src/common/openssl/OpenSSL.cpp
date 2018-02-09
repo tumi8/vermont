@@ -42,7 +42,7 @@ void ensure_openssl_init(void) {
 
 #if 0
 	if (SSL_COMP_add_compression_method(0, COMP_zlib())) {
-	    msg(MSG_ERROR, "OpenSSL: SSL_COMP_add_compression_method() failed.");
+	    msg(LOG_ERR, "OpenSSL: SSL_COMP_add_compression_method() failed.");
 	    msg_openssl_errors();
 	};
 #endif
@@ -63,7 +63,7 @@ void msg_openssl_errors(void) {
 	ERR_error_string_n(e,errbuf,sizeof errbuf);
 	snprintf(buf, sizeof buf, "%s:%s:%d:%s", errbuf,
                         file, line, (flags & ERR_TXT_STRING) ? data : "");
-	msg(MSG_ERROR, "OpenSSL: %s",buf);
+	msg(LOG_ERR, "OpenSSL: %s",buf);
     }
 }
 
@@ -141,13 +141,13 @@ int verify_ssl_peer(SSL *ssl, int (*cb)(void *context, const char *dnsname), voi
     verify_result = SSL_get_verify_result(ssl);
     DPRINTF("SSL_get_verify_result() returned: %s",X509_verify_cert_error_string(verify_result));
     if(verify_result!=X509_V_OK) {
-	msg(MSG_ERROR,"Certificate doesn't verify: %s", X509_verify_cert_error_string(verify_result));
+	msg(LOG_ERR,"Certificate doesn't verify: %s", X509_verify_cert_error_string(verify_result));
 	return 0;
     }
 
     X509 *peer = SSL_get_peer_certificate(ssl);
     if (! peer) {
-	msg(MSG_ERROR,"No peer certificate");
+	msg(LOG_ERR,"No peer certificate");
 	return 0;
     }
     int ret = check_x509_cert(peer, cb, context);
@@ -163,12 +163,12 @@ int verify_peer_cert_callback(int preverify_ok, X509_STORE_CTX *ctx) {
     int depth = X509_STORE_CTX_get_error_depth(ctx);
     int err = X509_STORE_CTX_get_error(ctx);
     if(!preverify_ok) {
-	msg(MSG_ERROR,"Error with certificate at depth: %i",depth);
+	msg(LOG_ERR,"Error with certificate at depth: %i",depth);
 	X509_NAME_oneline(X509_get_issuer_name(cert),buf,sizeof(buf));
-	msg(MSG_ERROR," issuer = %s",buf);
+	msg(LOG_ERR," issuer = %s",buf);
 	X509_NAME_oneline(X509_get_subject_name(cert),buf,sizeof(buf));
-	msg(MSG_ERROR," subject = %s",buf);
-	msg(MSG_ERROR," err %i:%s", err, X509_verify_cert_error_string(err));
+	msg(LOG_ERR," subject = %s",buf);
+	msg(LOG_ERR," err %i:%s", err, X509_verify_cert_error_string(err));
     }
     if (depth == 0) {
 	ssl = (SSL*) X509_STORE_CTX_get_ex_data(ctx, SSL_get_ex_data_X509_STORE_CTX_idx());
@@ -207,7 +207,7 @@ int check_x509_cert(X509 *peer, int (*cb)(void *context, const char *dnsname), v
 	if (gn->type != GEN_DNS)
 	    continue;
 	if (ASN1_STRING_type(gn->d.ia5) != V_ASN1_IA5STRING) {
-	    msg(MSG_ERROR, "malformed X509 cert: Type of ASN.1 string not IA5");
+	    msg(LOG_ERR, "malformed X509 cert: Type of ASN.1 string not IA5");
 	    return 0;
 	}
 
@@ -217,7 +217,7 @@ int check_x509_cert(X509 *peer, int (*cb)(void *context, const char *dnsname), v
 	while(len>0 && dnsname[len-1] == 0) --len;
 
 	if (len != strlen(dnsname)) {
-	    msg(MSG_ERROR, "malformed X509 cert");
+	    msg(LOG_ERR, "malformed X509 cert");
 	    return 0;
 	}
 	DPRINTF("Subject Alternative Name: DNS:%s",dnsname);
@@ -234,7 +234,7 @@ int check_x509_cert(X509 *peer, int (*cb)(void *context, const char *dnsname), v
 	DPRINTF("CN not part of certificate");
     } else {
 	if (len != strlen(buf)) {
-	    msg(MSG_ERROR,"malformed X509 cert: CN invalid");
+	    msg(LOG_ERR,"malformed X509 cert: CN invalid");
 		    return 0;
 	}
 	DPRINTF("most specific (1st) Common Name: %s",buf);
@@ -244,7 +244,7 @@ int check_x509_cert(X509 *peer, int (*cb)(void *context, const char *dnsname), v
 	    return 1;
 	}
     }
-    msg(MSG_ERROR,"Neither any of the Subject Alternative Names nor the Common Name "
+    msg(LOG_ERR,"Neither any of the Subject Alternative Names nor the Common Name "
 	    "matched one of the permitted FQDNs");
     return 0;
 }

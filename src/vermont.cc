@@ -59,7 +59,7 @@ record_pid (const char *pidfile)
 {
 	FILE *f = fopen(pidfile, "w");
 	if (!f) {
-		msg(MSG_FATAL, "Could not open pid-file %s for writing", pidfile);
+		msg(LOG_CRIT, "Could not open pid-file %s for writing", pidfile);
 		exit(EXIT_FAILURE);
 	} else {
 		fprintf(f, "%d\n", getpid());
@@ -75,7 +75,7 @@ set_groups (uid_t uid, gid_t gid)
 
 	struct passwd *pw = getpwuid(uid);
 	if (!pw) {
-		msg(MSG_FATAL, "could not getpwuid: %s", strerror(errno));
+		msg(LOG_CRIT, "could not getpwuid: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
@@ -91,12 +91,12 @@ set_groups (uid_t uid, gid_t gid)
 	groups = (gid_t *)alloca(groups_count * sizeof(gid_t));
 
 	if (getgrouplist(pw->pw_name, gid, groups, &groups_count) <= 0) {
-		msg(MSG_FATAL, "could not getgrouplist: %s", strerror(errno));
+		msg(LOG_CRIT, "could not getgrouplist: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 
 	if (setgroups(groups_count, groups) < 0) {
-		msg(MSG_FATAL, "could not setgroups: %s", strerror(errno));
+		msg(LOG_CRIT, "could not setgroups: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 }
@@ -109,7 +109,7 @@ daemonise (const char *pid_file, uid_t uid, gid_t gid)
 	 * dev/null
 	 */
 	if (daemon(1, 0) < 0) {
-		msg(MSG_FATAL, "daemon failed");
+		msg(LOG_CRIT, "daemon failed");
 		exit(EXIT_FAILURE);
 	}
 
@@ -122,7 +122,7 @@ daemonise (const char *pid_file, uid_t uid, gid_t gid)
 	}
 
 	if (uid && setreuid(0, uid) < 0) {
-		msg(MSG_FATAL, "setreuid %u fail: %s", uid, strerror(errno));
+		msg(LOG_CRIT, "setreuid %u fail: %s", uid, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 }
@@ -228,7 +228,7 @@ parse_args (int argc, char **argv, struct parameters *params)
 			// Drop privileges and run as this user after initialisation.
 			pw = getpwnam(optarg);
 			if (!pw) {
-				msg(MSG_FATAL, "unknown user '%s'", optarg);
+				msg(LOG_CRIT, "unknown user '%s'", optarg);
 				exit(EXIT_FAILURE);
 			}
 			params->uid = pw->pw_uid;
@@ -238,7 +238,7 @@ parse_args (int argc, char **argv, struct parameters *params)
 			// drop privileges and run as this group after initialisation.
 			gr = getgrnam(optarg);
 			if (!gr) {
-				msg(MSG_FATAL, "unknown group '%s'", optarg);
+				msg(LOG_CRIT, "unknown group '%s'", optarg);
 				exit(EXIT_FAILURE);
 			}
 			params->gid = gr->gr_gid;
@@ -318,7 +318,7 @@ int main(int ac, char **dc)
 	}
 
 	if (parameters.config_file == NULL) {
-		msg(MSG_FATAL, "no config file given, but mandatory");
+		msg(LOG_CRIT, "no config file given, but mandatory");
 		usage(EXIT_FAILURE);
 	}
 
@@ -337,14 +337,14 @@ int main(int ac, char **dc)
 		THROWEXCEPTION("failed to setup semaphore");
 	}
 
-	msg(MSG_DIALOG, "starting up vermont config manager");
+	msg(LOG_WARNING, "starting up vermont config manager");
 
 	manager->parseConfig(string(parameters.config_file));
 
 	sigset_t sigmask;
 	sigemptyset(&sigmask);
 
-	msg(MSG_DIALOG, "vermont is up and running");
+	msg(LOG_WARNING, "vermont is up and running");
 
 	while (run_program) {
 		// sleep until we get a signal
@@ -356,15 +356,15 @@ int main(int ac, char **dc)
 		}
 
 		if (reload_config) {
-			msg(MSG_INFO, "reconfiguring vermont");
+			msg(LOG_NOTICE, "reconfiguring vermont");
 			manager->parseConfig(string(parameters.config_file));
 			reload_config = false;
 		}
 	}
-	msg(MSG_FATAL, "got signal - shutting down manager");
+	msg(LOG_CRIT, "got signal - shutting down manager");
 	manager->shutdown();
 	delete manager;
-	msg(MSG_FATAL, "manager shutdown complete");
+	msg(LOG_CRIT, "manager shutdown complete");
 
 	msg_shutdown();
 }

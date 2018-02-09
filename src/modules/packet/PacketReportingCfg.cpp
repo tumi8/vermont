@@ -51,7 +51,7 @@ PacketReportingCfg::~PacketReportingCfg()
 
 Template* PacketReportingCfg::getTemplate()
 {
-        msg(MSG_DEBUG, "Creating template");
+        msg(LOG_INFO, "Creating template");
         if (t)
         	return t;
         t = new Template(templateId);
@@ -64,7 +64,7 @@ Template* PacketReportingCfg::getTemplate()
                 ie.length = exportedFields[i]->getIeLength();
 
                 if (!exportedFields[i]->isKnownIE()) {
-                        msg(MSG_DIALOG, "IE %s will be ignored by PSAMP exporter.", ie.toString().c_str());
+                        msg(LOG_WARNING, "IE %s will be ignored by PSAMP exporter.", ie.toString().c_str());
                         continue;
                 }
 
@@ -73,11 +73,11 @@ Template* PacketReportingCfg::getTemplate()
                 else
                 	recordLength += ie.length;
 
-                msg(MSG_INFO, "Template: Add field %s", ie.toString().c_str());
+                msg(LOG_NOTICE, "Template: Add field %s", ie.toString().c_str());
 
                 t->addField(ie);
         }
-        msg(MSG_DEBUG, "Template: got %d fields, record length is %u +%u * capture_len",
+        msg(LOG_INFO, "Template: got %d fields, record length is %u +%u * capture_len",
         		t->getFieldCount(), recordLength,recordVLFields);
 
         return t;

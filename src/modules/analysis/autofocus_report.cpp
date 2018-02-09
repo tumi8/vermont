@@ -162,16 +162,16 @@ void report::f_post(vector<treeRecord*>& p_treeRecords,uint32_t index,report_enu
 	if (p_treeRecords[lastindex] != NULL) 
 	{
 		change_global = (double) (numTotal * 100) / (double) p_treeRecords[lastindex]->root->data.m_attributes[attribute]->numCount - 100.0;	
-	//	msg(MSG_FATAL,"Total %s %03llu CHANGE: %01.2f%%",global.c_str(),numTotal,change_global);
+	//	msg(LOG_CRIT,"Total %s %03llu CHANGE: %01.2f%%",global.c_str(),numTotal,change_global);
 	}
 	else {
-	//	msg(MSG_FATAL,"Total %s %d",global.c_str(),numTotal);
+	//	msg(LOG_CRIT,"Total %s %d",global.c_str(),numTotal);
 	}
 
 	while (iter != specNodes.end()) 
 	{
 
-		//msg(MSG_FATAL,"SUBNET: %s/%d\t\t %s\t",IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits, global.c_str());
+		//msg(LOG_CRIT,"SUBNET: %s/%d\t\t %s\t",IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits, global.c_str());
 
 		if ((*iter)->data.subnetBits < minSubbits)
 		{ 
@@ -195,12 +195,12 @@ void report::f_post(vector<treeRecord*>& p_treeRecords,uint32_t index,report_enu
 			}
 
 			(*iter)->prio += abs((int)change);
-		//msg(MSG_FATAL,"prio SUBNET: %s/%d\t\t %s\t %d",IPToString(before->data.subnetIP).c_str(),before->data.subnetBits,local.c_str(),abs((int)change));
-//		msg(MSG_FATAL,"SUBNET: %s/%d\t\t %s\t %03llu (%03llu)\t\t %01.2f%% (%01.2f%%)\t",IPToString(before->data.subnetIP).c_str(),before->data.subnetBits,local.c_str(),data,before->data.m_attributes[attribute]->numCount,percentage,change);
+		//msg(LOG_CRIT,"prio SUBNET: %s/%d\t\t %s\t %d",IPToString(before->data.subnetIP).c_str(),before->data.subnetBits,local.c_str(),abs((int)change));
+//		msg(LOG_CRIT,"SUBNET: %s/%d\t\t %s\t %03llu (%03llu)\t\t %01.2f%% (%01.2f%%)\t",IPToString(before->data.subnetIP).c_str(),before->data.subnetBits,local.c_str(),data,before->data.m_attributes[attribute]->numCount,percentage,change);
 		}
 		else 
 		{
-//			msg(MSG_FATAL,"SUBNET: %s/%d\t	%s: %03llu (%01.2f%%)\t",			IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,				local.c_str(),data,percentage);
+//			msg(LOG_CRIT,"SUBNET: %s/%d\t	%s: %03llu (%01.2f%%)\t",			IPToString((*iter)->data.subnetIP).c_str(),(*iter)->data.subnetBits,				local.c_str(),data,percentage);
 		}
 		iter++;
 	}
@@ -227,7 +227,7 @@ treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeR
 		treeNode* current = m_treeRecords[lastindex]->root;
 		treeNode* before = current;
 
-		//		msg(MSG_FATAL,"Searching predecessor of %s/%d",IPToString(ntohl(sip)).c_str(),sbits);
+		//		msg(LOG_CRIT,"Searching predecessor of %s/%d",IPToString(ntohl(sip)).c_str(),sbits);
 		while (current != NULL)
 		{
 
@@ -238,11 +238,11 @@ treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeR
 
 			//check if our subnet is included in one of the child subnets 
 
-			//		msg(MSG_FATAL,"Checking left node %s/%d",IPToString(current->left->data.subnetIP).c_str(),current->left->data.subnetBits);
+			//		msg(LOG_CRIT,"Checking left node %s/%d",IPToString(current->left->data.subnetIP).c_str(),current->left->data.subnetBits);
 
 			if (current->left->data.subnetBits <= 32- (uint32_t) (round(log(a)/log(2)+0.5)) && current->left->data.subnetBits <= sbits) 
 			{
-				//	msg(MSG_FATAL,"Subnet is included in left");
+				//	msg(LOG_CRIT,"Subnet is included in left");
 				current = current->left;
 				continue;
 
@@ -250,18 +250,18 @@ treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeR
 
 			uint32_t b = distance(match,current->right); 
 
-			//		msg(MSG_FATAL,"Checking right node %s/%d",IPToString(current->right->data.subnetIP).c_str(),current->right->data.subnetBits);
+			//		msg(LOG_CRIT,"Checking right node %s/%d",IPToString(current->right->data.subnetIP).c_str(),current->right->data.subnetBits);
 
 			if (current->right->data.subnetBits <= 32- (uint32_t) (round(log(b)/log(2)+0.5)) && current->right->data.subnetBits <= sbits) 
 			{
 
-				//	msg(MSG_FATAL,"Subnet is included in right");
+				//	msg(LOG_CRIT,"Subnet is included in right");
 				current = current->right;
 				continue;
 			}
 
 			//our subnet is not included in one of the child subnets, so there are 3 possible matches, left,right and current
-			//		msg(MSG_FATAL,"its not included in any node");
+			//		msg(LOG_CRIT,"its not included in any node");
 
 			//now check if one of the child subnets is included in ours
 
@@ -270,12 +270,12 @@ treeNode* report::getComparismValue(treeNode* match,vector<treeRecord*>& m_treeR
 			if ( sbits <= 32- (uint32_t) (round(log(a)/log(2)+0.5)) && sbits <= current->left->data.subnetBits )
 			{
 				left = true;
-				//			msg(MSG_FATAL,"left subnet is included");
+				//			msg(LOG_CRIT,"left subnet is included");
 			}
 
 			if ( sbits <= 32- (uint32_t) (round(log(b)/log(2)+0.5)) && sbits <= current->right->data.subnetBits )
 			{
-				//			msg(MSG_FATAL,"right subnet is included");
+				//			msg(LOG_CRIT,"right subnet is included");
 				right = true;
 			}
 

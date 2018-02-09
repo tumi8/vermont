@@ -59,7 +59,7 @@ SensorManagerCfg::SensorManagerCfg(XMLElement* elem)
 		} else if (e->matches("append")) {
 			append = getInt("append")>0;
 		} else {
-			msg(MSG_FATAL, "Unknown sensor manager config statement: %s", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown sensor manager config statement: %s", e->getName().c_str());
 		}
 	}
 }

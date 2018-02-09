@@ -56,10 +56,10 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  hbucketIM("BucketListElement", 0),
 	  aggInProgress(false)
 {
-	msg(MSG_INFO, "Hashtable initialized with following parameters:");
-	msg(MSG_INFO, "  - inactiveTimeout=%d", inactiveTimeout);
-	msg(MSG_INFO, "  - activeTimeout=%d", activeTimeout);
-	msg(MSG_INFO, "  - htableBits=%d", hashbits);
+	msg(LOG_NOTICE, "Hashtable initialized with following parameters:");
+	msg(LOG_NOTICE, "  - inactiveTimeout=%d", inactiveTimeout);
+	msg(LOG_NOTICE, "  - activeTimeout=%d", activeTimeout);
+	msg(LOG_NOTICE, "  - htableBits=%d", hashbits);
 
 	buckets = new HashtableBucket*[htableSize];
 	for (uint32_t i = 0; i < htableSize; i++)
@@ -444,7 +444,7 @@ void BaseHashtable::performShutdown()
 
 void BaseHashtable::preReconfiguration()
 {
-	msg(MSG_INFO, "BaseHashtable: Forcing export for flows, then destroy Template.");
+	msg(LOG_NOTICE, "BaseHashtable: Forcing export for flows, then destroy Template.");
 	expireFlows(true);
 	// we do not need to destroy the template since every module should delete stored templates during reconfiguration
 	// sendTemplateDestructionRecord();
@@ -635,12 +635,12 @@ void BaseHashtable::reverseFlowBucket(HashtableBucket* bucket)
 		TemplateInfo::FieldInfo* fi2 = &dataTemplate->fieldInfo[flowReverseMapper[i]];
 
 		if (fi != fi2) {
-			//msg(MSG_ERROR, "mapping idx %d to idx %d", i, flowReverseMapper[i]);
-			//msg(MSG_ERROR, "mapping IE %s to IE %s", fi->type.toString().c_str(), fi2->type.toString().c_str());
+			//msg(LOG_ERR, "mapping idx %d to idx %d", i, flowReverseMapper[i]);
+			//msg(LOG_ERR, "mapping IE %s to IE %s", fi->type.toString().c_str(), fi2->type.toString().c_str());
 			//if (fi->type.id == 152) {
 			//	uint64_t oldStart = ntohll(*((uint64_t*)(bucket->data.get() + fi->offset)));
 			//	uint64_t newStart = ntohll(*((uint64_t*)(bucket->data.get() + fi2->offset)));
-			//	msg(MSG_ERROR, "old: %lu / new: %lu compare: %d", oldStart, newStart, oldStart < newStart);
+			//	msg(LOG_ERR, "old: %lu / new: %lu compare: %d", oldStart, newStart, oldStart < newStart);
 			//}
 			IpfixRecord::Data* src = bucket->data.get()+fi->offset;
 			IpfixRecord::Data* dst = bucket->data.get()+fi2->offset;

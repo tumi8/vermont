@@ -40,7 +40,7 @@ TRWPortscanDetectorCfg::TRWPortscanDetectorCfg(XMLElement* elem)
 			idmefTemplate = e->getFirstText();
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown TRWPortscanDetector config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown TRWPortscanDetector config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}

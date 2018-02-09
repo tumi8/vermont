@@ -127,7 +127,7 @@ int IpfixReceiver::addAuthorizedHost(const char* host)
 	struct in_addr inaddr;
 
 	if (inet_aton(host, &inaddr) == 0) {
-		msg(MSG_ERROR, "Invalid host address: %s", host);
+		msg(LOG_ERR, "Invalid host address: %s", host);
 		return -1;
 	}
 
@@ -190,11 +190,11 @@ void IpfixReceiver::setBufferSize(const int sockfd, const uint32_t buffer)
 {
     if (buffer != 0) {
         if (setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &buffer, sizeof(uint32_t)) == -1) {
-            msg(MSG_ERROR, "Error setting socket buffer size: %s", strerror(errno));
+            msg(LOG_ERR, "Error setting socket buffer size: %s", strerror(errno));
         }
 		uint32_t temp;
 		socklen_t len = sizeof(temp);
 		getsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &temp, &len);
-		msg(MSG_INFO, "Socket buffer size set to %" PRIu32 " bytes", temp);
+		msg(LOG_NOTICE, "Socket buffer size set to %" PRIu32 " bytes", temp);
     }
 }

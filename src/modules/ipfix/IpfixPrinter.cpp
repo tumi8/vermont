@@ -171,7 +171,7 @@ void PrintHelpers::printUint(InformationElement::IeInfo type, IpfixRecord::Data*
 		    fprintf(fh, "%02hhX",*(uint8_t*)(data+i));
 		}
 		fprintf(fh, " (%u bytes)", type.length);
-		//msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
+		//msg(LOG_ERR, "Uint with length %u unparseable", type.length);
 		return;
 	}
 }
@@ -207,7 +207,7 @@ void PrintHelpers::printLocaltime(InformationElement::IeInfo type, IpfixRecord::
 		    fprintf(fh, "%02hhX",*(uint8_t*)(data+i));
 		}
 		fprintf(fh, " (%u bytes)", type.length);
-		//msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
+		//msg(LOG_ERR, "Uint with length %u unparseable", type.length);
 		return;
 	}
 }
@@ -228,7 +228,7 @@ void PrintHelpers::printUint(char* buf, InformationElement::IeInfo type, IpfixRe
 		sprintf(buf, "%llu",(long long unsigned)ntohll(*(uint64_t*)data));
 		return;
 	default:
-		msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
+		msg(LOG_ERR, "Uint with length %u unparseable", type.length);
 		return;
 	}
 }
@@ -368,7 +368,7 @@ IpfixPrinter::IpfixPrinter(OutputType outputtype, string filename)
 {
 	lastTemplate = 0;
 
-	msg(MSG_INFO, "IpfixPrinter started with following parameters:");
+	msg(LOG_NOTICE, "IpfixPrinter started with following parameters:");
 	string type;
 	switch (outputtype) {
 		case TREE: type = "tree"; break;
@@ -376,10 +376,10 @@ IpfixPrinter::IpfixPrinter(OutputType outputtype, string filename)
 		case TABLE: type = "table"; break;
 		case NONE: type = "no output"; break;
 	}
-	msg(MSG_INFO, "  - outputType=%s", type.c_str());
+	msg(LOG_NOTICE, "  - outputType=%s", type.c_str());
 	string file = "standard output";
 	if (filename!="") file = "in file '" + filename + "'";
-	msg(MSG_INFO, "  - output=%s", file.c_str());
+	msg(LOG_NOTICE, "  - output=%s", file.c_str());
 
 	fh = stdout;
 	if (filename != "") {
@@ -400,7 +400,7 @@ IpfixPrinter::~IpfixPrinter()
 	if (filename != "") {
 		int ret = fclose(fh);
 		if (ret)
-			msg(MSG_ERROR, "IpfixPrinter: error closing file '%s': %s (%u)", filename.c_str(), strerror(errno), errno);
+			msg(LOG_ERR, "IpfixPrinter: error closing file '%s': %s (%u)", filename.c_str(), strerror(errno), errno);
 	}
 }
 
@@ -431,7 +431,7 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 					fprintf(fh, "\n-+--- Ipfix Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 					break;
 				default:
-					msg(MSG_ERROR, "IpfixPrinter: Template with unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
+					msg(LOG_ERR, "IpfixPrinter: Template with unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
 
 			}
 			if (record->sourceID) {
@@ -487,7 +487,7 @@ void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 			fprintf(fh, "\n-+--- Destroyed Ipfix Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
 		default:
-			msg(MSG_ERROR, "IpfixPrinter: Template destruction recordwith unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
+			msg(LOG_ERR, "IpfixPrinter: Template destruction recordwith unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
 
 	}
 	if (record->sourceID) {
@@ -678,7 +678,7 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 			fprintf(fh, "\n-+--- Ipfix Options Data Record (id=%u) from ", record->templateInfo->templateId);
 			break;
 		default:
-			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%u", record->templateInfo->setId);
+			msg(LOG_ERR, "IpfixPrinter: Template with unknown setid=%u", record->templateInfo->setId);
 
 	}
 	if (record->sourceID) {

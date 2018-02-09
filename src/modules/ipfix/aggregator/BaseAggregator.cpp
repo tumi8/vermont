@@ -132,7 +132,7 @@ void BaseAggregator::buildAggregator(Rules* rules, uint16_t inactiveTimeout, uin
 		rules->rule[i]->hashtable = createHashtable(rules->rule[i], inactiveTimeout, activeTimeout, hashbits);
 	}
 
-	msg(MSG_INFO, "Done. Parsed %zu rules; inactiveTimeout %d, activeTimeout %d", rules->count, inactiveTimeout, activeTimeout);
+	msg(LOG_NOTICE, "Done. Parsed %zu rules; inactiveTimeout %d, activeTimeout %d", rules->count, inactiveTimeout, activeTimeout);
 }
 
 
@@ -154,7 +154,7 @@ void BaseAggregator::exporterThread()
 
 	registerCurrentThread();
 
-	msg(MSG_INFO, "Polling aggregator each %u msec", pollInterval);
+	msg(LOG_NOTICE, "Polling aggregator each %u msec", pollInterval);
 	while (!exitFlag) {
 		addToCurTime(&inttimer, pollInterval);
 
@@ -171,7 +171,7 @@ void BaseAggregator::exporterThread()
 		}
 
 		gettimeofday(&curtime, 0);
-		DPRINTFL(MSG_VDEBUG,"Aggregator: starting Export");
+		DPRINTFL(LOG_DEBUG,"Aggregator: starting Export");
 		for (size_t i = 0; i < rules->count; i++) {
 			rules->rule[i]->hashtable->expireFlows();
 		}
@@ -179,7 +179,7 @@ void BaseAggregator::exporterThread()
 		gettimeofday(&endtime, 0);
 		timeval_subtract(&difftime, &endtime, &curtime);
 
-		DPRINTFL(MSG_VDEBUG,"Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000000+difftime.tv_sec);
+		DPRINTFL(LOG_DEBUG,"Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000000+difftime.tv_sec);
 	}
 
 	if (getShutdownProperly()) {

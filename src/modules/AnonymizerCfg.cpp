@@ -134,7 +134,7 @@ void AnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet
                     }
 
                 } else {
-					msg(MSG_ERROR, "Unknown field in anonField");
+					msg(LOG_ERR, "Unknown field in anonField");
 					continue;
 				}
 			}
@@ -147,12 +147,12 @@ void AnonymizerCfg::initInstance(CfgBase* c, AnonModule* module, XMLNode::XMLSet
 			if (cfg->getIeLength()==0) THROWEXCEPTION("Information element specified in anonField, but length==0");
 			module->addAnonymization(InformationElement::IeInfo(cfg->getIeId(), cfg->getEnterpriseNumber()), cfg->getIeLength(), AnonMethod::stringToMethod(method), mapping, method_parameter);
 			const ipfix_identifier* id = ipfix_id_lookup(cfg->getIeId(), cfg->getEnterpriseNumber());
-			msg(MSG_INFO, "Added anonymization %s for field %i (%s) with length %i", method.c_str(), cfg->getIeId(), id->name, cfg->getIeLength());
+			msg(LOG_NOTICE, "Added anonymization %s for field %i (%s) with length %i", method.c_str(), cfg->getIeId(), id->name, cfg->getIeLength());
 			delete cfg;
 		} else if (e->matches("next") || e->matches("copyMode")) {
 			// ignore next and copyMode (see createInstance)
 		} else {
-			msg(MSG_FATAL, "Unkown anonymization field %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unkown anonymization field %s\n", e->getName().c_str());
 			continue;
 		}
 	}

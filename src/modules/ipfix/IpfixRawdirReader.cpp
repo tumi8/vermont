@@ -66,7 +66,7 @@ void IpfixRawdirReader::run() {
 	while(!exitFlag) {
 
 		if (dir_iterator == end_iterator) {
-			msg(MSG_DEBUG, "No more packets in packet directory path, terminating listener thread");
+			msg(LOG_INFO, "No more packets in packet directory path, terminating listener thread");
 			break;
 		}
 
@@ -78,14 +78,14 @@ void IpfixRawdirReader::run() {
 		std::string fname = packet_directory_path+"/"+dir_iterator->path().filename();
 #endif
 		if (boost::filesystem::is_directory(*dir_iterator)) {
-			msg(MSG_DEBUG, "Skipping directory \"%s\"", fname.c_str());
+			msg(LOG_INFO, "Skipping directory \"%s\"", fname.c_str());
 			dir_iterator++;
 			continue;
 		}
 
 		dir_iterator++;
 
-		msg(MSG_DEBUG, "Trying to read packet from file \"%s\"", fname.c_str());
+		msg(LOG_INFO, "Trying to read packet from file \"%s\"", fname.c_str());
 		std::ifstream packetFile(fname.c_str(), std::ios::in | std::ios::binary);
 
 		packetFile.seekg(0, std::ios::end);
@@ -93,7 +93,7 @@ void IpfixRawdirReader::run() {
 		packetFile.seekg(0, std::ios::beg);
 
 		if (n > MAX_MSG_LEN) {
-			msg(MSG_DEBUG, "File too big \"%s\"", fname.c_str());
+			msg(LOG_INFO, "File too big \"%s\"", fname.c_str());
 			continue;
 		}
 
@@ -101,7 +101,7 @@ void IpfixRawdirReader::run() {
 		packetFile.read(reinterpret_cast<char*>(data.get()), n);
 
 		if (packetFile.bad())  {
-			msg(MSG_DEBUG, "could not read from packet file, terminating listener thread");
+			msg(LOG_INFO, "could not read from packet file, terminating listener thread");
 			break;
 		}
 
@@ -112,7 +112,7 @@ void IpfixRawdirReader::run() {
 		sourceID->exporterAddress.len = 4;
 
 		for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); ++i) { 
-		msg(MSG_DEBUG, "Data block starts with: %x %x %x %x", data[0], data[1], data[2], data[3]);
+		msg(LOG_INFO, "Data block starts with: %x %x %x %x", data[0], data[1], data[2], data[3]);
 			(*i)->processPacket(data, n, sourceID);
 		}
 

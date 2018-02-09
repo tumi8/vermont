@@ -39,7 +39,7 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 	// generate the exporter
 	ret = ipfix_init_exporter(IPFIX_PROTOCOL, sourceID, &exporter);
 	if (ret) {
-		msg(MSG_FATAL, "error initializing IPFIX exporter");
+		msg(LOG_CRIT, "error initializing IPFIX exporter");
 		exit(1);
 	}
 
@@ -47,7 +47,7 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
     tmplid = templ->getTemplateID();
     ret =  ipfix_start_template(exporter, tmplid, templ->getFieldCount());
     if (ret < 0) {
-        msg(MSG_FATAL, "error starting IPFIX template");
+        msg(LOG_CRIT, "error starting IPFIX template");
         exit(1);
     }
 
@@ -92,7 +92,7 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 
 	// first check, if we can buffer this packet
 	if (!(numPacketsToRelease < MAX_PACKETS)) {
-		msg(MSG_ERROR, "packet buffer too small, packet dropped.");
+		msg(LOG_ERR, "packet buffer too small, packet dropped.");
 		DPRINTF("dropping packet");
 		pck->removeReference();
 		return false;
@@ -119,7 +119,7 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 			// variable length field
 			data = pck->getVariableLengthPacketData(&length, &enc_value, &enc_length, offset, header);
 			if(data == NULL) {
-				msg(MSG_ERROR, "ExporterSink: getVariableLengthPacketData returned NULL! This should never happen!");
+				msg(LOG_ERR, "ExporterSink: getVariableLengthPacketData returned NULL! This should never happen!");
 				goto error1;
 			}
 			// put the length information first
@@ -131,7 +131,7 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 			//       if not, it returns NULL
 			data = pck->getPacketData(offset, header, ie.length);
 			if(data == NULL) {
-				msg(MSG_ERROR, "ExporterSink: getPacketData returned NULL! packet length or pcap capture length is too small.");
+				msg(LOG_ERR, "ExporterSink: getPacketData returned NULL! packet length or pcap capture length is too small.");
 				goto error1;
 			}
 			ipfix_put_data_field(exporter, data, ie.length);

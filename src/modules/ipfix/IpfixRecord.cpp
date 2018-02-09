@@ -37,7 +37,7 @@ namespace InformationElement {
 			if (ipfixid) {
 				this->length = ipfixid->length;
 			} else {
-				msg(MSG_INFO, "WARNING: received unknown IE type id: %s", toString().c_str());
+				msg(LOG_NOTICE, "WARNING: received unknown IE type id: %s", toString().c_str());
 			}
 		}
 	}

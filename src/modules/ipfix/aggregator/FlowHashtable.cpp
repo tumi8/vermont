@@ -456,7 +456,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 	statRecordsReceived++;
 
 	uint32_t nhash = getHash(data.get(), false);
-	DPRINTFL(MSG_VDEBUG, "nhash=%u", nhash);
+	DPRINTFL(LOG_DEBUG, "nhash=%u", nhash);
 	HashtableBucket* prevbucket;
 	HashtableBucket* bucket = lookupBucket(nhash, data.get(), false, &prevbucket);
 
@@ -465,7 +465,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 	timeval unix_now = unixtime();
 
 	if (bucket != NULL) {
-		DPRINTFL(MSG_VDEBUG, "aggregating flow");
+		DPRINTFL(LOG_DEBUG, "aggregating flow");
 		// check if we need to expire the flow. we use a simple 
 		// distribution scheme to distribute flow counters among 
 		// flows that overlap with the active timeouts: 
@@ -490,7 +490,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 	if (biflowAggregation && !flowfound && !expiryforced) {
 		// try reverse flow
 		uint32_t rhash = getHash(data.get(), true);
-		DPRINTFL(MSG_VDEBUG, "rhash=%u", rhash);
+		DPRINTFL(LOG_DEBUG, "rhash=%u", rhash);
 		bucket = lookupBucket(rhash, data.get(), true, &prevbucket);
 		if (bucket != NULL) {
 			if (unix_now.tv_sec > bucket->inactiveExpireTime || unix_now.tv_sec > bucket->activeExpireTime) {
@@ -499,12 +499,12 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 				removeBucket(bucket);
 			} else {
 				flowfound = true;
-				DPRINTFL(MSG_VDEBUG, "aggregating reverse flow");
+				DPRINTFL(LOG_DEBUG, "aggregating reverse flow");
 				int must_reverse = aggregateFlow(bucket->data.get(), data.get(), true);
 				if (must_reverse == 1) {
-					DPRINTFL(MSG_VDEBUG, "reversing whole flow");
+					DPRINTFL(LOG_DEBUG, "reversing whole flow");
 					// reverse flow
-					//msg(MSG_ERROR, "Reversing flow");
+					//msg(LOG_ERR, "Reversing flow");
 					reverseFlowBucket(bucket);
 					// delete reference from hash table
 					if (prevbucket==NULL)
@@ -516,7 +516,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 						bucket->next->prev = prevbucket;
 					// insert into hash table again
 					nhash = getHash(bucket->data.get(), false);
-					DPRINTFL(MSG_VDEBUG, "nhash=%u", nhash);
+					DPRINTFL(LOG_DEBUG, "nhash=%u", nhash);
 					bucket->next = buckets[nhash];
 					bucket->hash = nhash;
 					buckets[nhash] = bucket;
@@ -533,7 +533,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 		}
 	}
 	if (!flowfound || expiryforced) {
-		DPRINTFL(MSG_VDEBUG, "creating new bucket");
+		DPRINTFL(LOG_DEBUG, "creating new bucket");
 		statTotalEntries++;
 		HashtableBucket* n = buckets[nhash];
 		buckets[nhash] = createBucket(data, 0, n, 0, nhash, unix_now.tv_sec); // FIXME: insert observationDomainID!

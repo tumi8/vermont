@@ -55,14 +55,14 @@ FlowLenAnalyzerCfg::FlowLenAnalyzerCfg(XMLElement* elem)
 					ss.ignore();
 				}
 			}
-			msg(MSG_INFO, "FlowLenAnalyzer: Using bins: ");
+			msg(LOG_NOTICE, "FlowLenAnalyzer: Using bins: ");
 			for (std::vector<uint64_t>::const_iterator j = bins.begin(); j != bins.end(); ++j) {
-				msg(MSG_INFO, "%lu", *j);
+				msg(LOG_NOTICE, "%lu", *j);
 			}
 		} else if (e->matches("next")) { 
 			// ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown FlowLenAnalyzer config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown FlowLenAnalyzer config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}

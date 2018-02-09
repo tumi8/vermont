@@ -71,7 +71,7 @@ IpfixReceiverDtlsUdpIpV4::IpfixReceiverDtlsUdpIpV4(int port, const std::string i
 	listen_socket = socket(AF_INET, SOCK_DGRAM, 0);
 	if(listen_socket < 0) {
 	    /* FIXME: should we use strerror_r? */
-	    msg(MSG_FATAL, "Could not create socket: %s", strerror(errno));
+	    msg(LOG_CRIT, "Could not create socket: %s", strerror(errno));
 	    THROWEXCEPTION("Cannot create IpfixReceiverDtlsUdpIpV4, socket creation failed");
 	}
 
@@ -90,7 +90,7 @@ IpfixReceiverDtlsUdpIpV4::IpfixReceiverDtlsUdpIpV4(int port, const std::string i
 	serverAddress.sin_port = htons(port);
 	if(bind(listen_socket, (struct sockaddr*)&serverAddress, 
 	    sizeof(struct sockaddr_in)) < 0) {
-	    msg(MSG_FATAL, "Could not bind socket: %s", strerror(errno));
+	    msg(LOG_CRIT, "Could not bind socket: %s", strerror(errno));
 	    THROWEXCEPTION("Cannot create IpfixReceiverDtlsUdpIpV4 %s:%d",ipAddr.c_str(), port );
 	}
 
@@ -98,7 +98,7 @@ IpfixReceiverDtlsUdpIpV4::IpfixReceiverDtlsUdpIpV4(int port, const std::string i
 	SensorManager::getInstance().addSensor(this, "IpfixReceiverDtlsUdpIpV4",
 								moduleId);
 
-	msg(MSG_INFO, "DTLS over UDP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
+	msg(LOG_NOTICE, "DTLS over UDP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
 								listen_socket);
     } catch(...) {
@@ -196,7 +196,7 @@ void IpfixReceiverDtlsUdpIpV4::run() {
 	    continue;
 	}
 	if (ret < 0) {
-	    msg(MSG_ERROR ,"select() returned with an error");
+	    msg(LOG_ERR ,"select() returned with an error");
 	    THROWEXCEPTION("IpfixReceiverDtlsUdpIpV4: terminating listener thread");
 	    break;
 	}
@@ -208,11 +208,11 @@ void IpfixReceiverDtlsUdpIpV4::run() {
 	ret = recvfrom(listen_socket, secured_data.get(), MAX_MSG_LEN,
 		     0, (struct sockaddr*)&clientAddress, &clientAddressLen);
 	if (ret < 0) {
-	    msg(MSG_FATAL, "recvfrom returned without data, terminating listener thread");
+	    msg(LOG_CRIT, "recvfrom returned without data, terminating listener thread");
 	    break;
 	}
 	if ( ! isHostAuthorized(&clientAddress.sin_addr, sizeof(clientAddress.sin_addr))) {
-	    msg(MSG_FATAL, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
+	    msg(LOG_CRIT, "packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
 	    continue;
 	}
 #ifdef DEBUG
@@ -234,7 +234,7 @@ void IpfixReceiverDtlsUdpIpV4::run() {
 	    /* create a new connection if we did not find any. */
 	    DPRINTF("New connection");
 	    if (connections.size() >= DTLS_MAX_CONCURRENT_CONNECTIONS) {
-		msg(MSG_ERROR,"Maximum number (%d) of concurrent "
+		msg(LOG_ERR,"Maximum number (%d) of concurrent "
 			"connections reached. Ignoring new connection "
 			"attempt.",DTLS_MAX_CONCURRENT_CONNECTIONS);
 		continue;
@@ -251,7 +251,7 @@ void IpfixReceiverDtlsUdpIpV4::run() {
 	dumpConnections();
 	    
     }
-    msg(MSG_DEBUG, "IpfixReceiverDtlsUdpIpV4: Exiting");
+    msg(LOG_INFO, "IpfixReceiverDtlsUdpIpV4: Exiting");
 }
 
 /**
@@ -331,7 +331,7 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::accept() {
 	    if (verify_peer()) {
 		DPRINTF("Peer authentication successful.");
 	    } else {
-		msg(MSG_ERROR,"Peer authentication failed. Shutting down connection.");
+		msg(LOG_ERR,"Peer authentication failed. Shutting down connection.");
 		shutdown();
 		return -1;
 	    }
@@ -344,10 +344,10 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::accept() {
 	DPRINTF("SSL_accept() returned SSL_ERROR_WANT_READ");
 	return 0;
     }
-    msg(MSG_ERROR,"SSL_accept() failed.");
+    msg(LOG_ERR,"SSL_accept() failed.");
     long verify_result = SSL_get_verify_result(ssl);
     if(SSL_get_verify_result(ssl)!=X509_V_OK) {
-	msg(MSG_ERROR,"Last verification error: %s", X509_verify_cert_error_string(verify_result));
+	msg(LOG_ERR,"Last verification error: %s", X509_verify_cert_error_string(verify_result));
     }
     state = SHUTDOWN;
     msg_openssl_errors();
@@ -390,7 +390,7 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::consumeDatagram(
     }
 #ifdef DEBUG
     if ( ! BIO_eof(ssl->rbio)) {
-	msg(MSG_ERROR,"EOF *not* reached on BIO. This should not happen.");
+	msg(LOG_ERR,"EOF *not* reached on BIO. This should not happen.");
     }
 #endif
     BIO_free(ssl->rbio);
@@ -402,7 +402,7 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::consumeDatagram(
 	if (ret == -1) return 0;
 #ifdef DEBUG
 	if ( ! BIO_eof(ssl->rbio)) {
-	    msg(MSG_ERROR,"EOF *not* reached on BIO. This should not happen.");
+	    msg(LOG_ERR,"EOF *not* reached on BIO. This should not happen.");
 	}
 #endif
 	if (BIO_eof(ssl->rbio)) return 1; /* This should always be the case */
@@ -414,7 +414,7 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::consumeDatagram(
     if (ret<0) {
 	if (error == SSL_ERROR_WANT_READ)
 	    return 1;
-	msg(MSG_ERROR,"SSL_read() failed. SSL_get_error() returned: %d",error);
+	msg(LOG_ERR,"SSL_read() failed. SSL_get_error() returned: %d",error);
 	msg_openssl_errors();
 	shutdown();
 	return 0;
@@ -423,7 +423,7 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::consumeDatagram(
 	    // remote side closed connection
 	    DPRINTF("remote side closed connection.");
 	} else {
-	    msg(MSG_ERROR,"SSL_read() returned 0. SSL_get_error() returned: %d",error);
+	    msg(LOG_ERR,"SSL_read() returned 0. SSL_get_error() returned: %d",error);
 	    msg_openssl_errors();
 	}
 	shutdown();

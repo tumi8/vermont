@@ -49,20 +49,20 @@ void IpfixDbWriterMySQL::connectToDB()
 	/** get the mysl init handle*/
 	conn = mysql_init(0);
 	if(conn == 0) {
-		msg(MSG_FATAL,"IpfixDbWriterMySQL: Get MySQL connect handle failed. Error: %s",
+		msg(LOG_CRIT,"IpfixDbWriterMySQL: Get MySQL connect handle failed. Error: %s",
 				mysql_error(conn));
 		return;
 	}
-	msg(MSG_DEBUG,"IpfixDbWriterMySQL: mysql init successful");
+	msg(LOG_INFO,"IpfixDbWriterMySQL: mysql init successful");
 
 	/**Connect to Database*/
 	if (!mysql_real_connect(conn, hostName, userName, password,
 				0, portNum, 0, 0)) {
-		msg(MSG_FATAL,"IpfixDbWriterMySQL: Connection to database failed. Error: %s",
+		msg(LOG_CRIT,"IpfixDbWriterMySQL: Connection to database failed. Error: %s",
 				mysql_error(conn));
 		return;
 	}
-	msg(MSG_DEBUG,"IpfixDbWriterMySQL: succesfully connected to database");
+	msg(LOG_INFO,"IpfixDbWriterMySQL: succesfully connected to database");
 
 	/** make query string to create database**/
 	statement << "CREATE DATABASE IF NOT EXISTS " << dbName;
@@ -70,19 +70,19 @@ void IpfixDbWriterMySQL::connectToDB()
 
 	/**create database*/
 	if(mysql_query(conn, statement.str().c_str()) != 0 ) {
-		msg(MSG_FATAL, "IpfixDbWriterMySQL: Creation of database %s failed. Error: %s",
+		msg(LOG_CRIT, "IpfixDbWriterMySQL: Creation of database %s failed. Error: %s",
 				dbName, mysql_error(conn));
 		return;
 	}
-	msg(MSG_INFO,"IpfixDbWriterMySQL: Database %s created", dbName);
+	msg(LOG_NOTICE,"IpfixDbWriterMySQL: Database %s created", dbName);
 
 	/** use database with dbName**/
 	if(mysql_select_db(conn, dbName) !=0) {
-		msg(MSG_FATAL, "IpfixDbWriterMySQL: Database %s not selectable. Error: %s",
+		msg(LOG_CRIT, "IpfixDbWriterMySQL: Database %s not selectable. Error: %s",
 				dbName, mysql_error(conn));
 		return ;
 	}
-	msg(MSG_DEBUG,"IpfixDbWriterMySQL: Database %s selected", dbName);
+	msg(LOG_INFO,"IpfixDbWriterMySQL: Database %s selected", dbName);
 	if (createExporterTable() != 0) return;
 
 	dbError = false;
@@ -102,11 +102,11 @@ int IpfixDbWriterMySQL::createExporterTable()
 	statement << "CREATE TABLE IF NOT EXISTS exporter (id SMALLINT(5) NOT NULL AUTO_INCREMENT, sourceID INTEGER(10) UNSIGNED DEFAULT NULL, srcIP INTEGER(10) UNSIGNED DEFAULT NULL, PRIMARY KEY(id))";
 	DPRINTF("SQL Query: %s", statement.str().c_str());
 	if(mysql_query(conn, statement.str().c_str()) != 0) {
-		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of exporter table failed. Error: %s",
+		msg(LOG_CRIT,"IpfixDbWriterMySQL: Creation of exporter table failed. Error: %s",
 				mysql_error(conn));
 		return 1;
 	}
-	msg(MSG_INFO,"IpfixDbWriterMySQL: Exporter table created");
+	msg(LOG_NOTICE,"IpfixDbWriterMySQL: Exporter table created");
 
 	dbError = false;
 
@@ -139,16 +139,16 @@ bool IpfixDbWriterMySQL::createDBTable(const char* partitionname, uint64_t start
 	}
 	ctsql << ")";
 
-	msg(MSG_INFO, "SQL Query: %s", ctsql.str().c_str());
+	msg(LOG_NOTICE, "SQL Query: %s", ctsql.str().c_str());
 
 	if(mysql_query(conn, ctsql.str().c_str()) != 0) {
-		msg(MSG_FATAL,"IpfixDbWriterMySQL: Creation of flow table failed. Error: %s",
+		msg(LOG_CRIT,"IpfixDbWriterMySQL: Creation of flow table failed. Error: %s",
 				mysql_error(conn));
 		dbError = true;
 		return 1;
 	}
 
-	msg(MSG_INFO, "Partition %s created ", partitionname);
+	msg(LOG_NOTICE, "Partition %s created ", partitionname);
 	usedPartitions.push_back(partitionname);
 	if (usedPartitions.size()>MAX_USEDTABLES) usedPartitions.pop_front();
 
@@ -171,7 +171,7 @@ bool IpfixDbWriterMySQL::writeToDb()
 	DPRINTF("SQL Query: %s", insertBuffer.sql);
 
 	if(mysql_query(conn, insertBuffer.sql) != 0) {
-		msg(MSG_ERROR,"IpfixDbWriterMySQL: Insert of records failed. Error: %s", mysql_error(conn));
+		msg(LOG_ERR,"IpfixDbWriterMySQL: Insert of records failed. Error: %s", mysql_error(conn));
 		goto dbwriteerror;
 	}
 
@@ -179,7 +179,7 @@ bool IpfixDbWriterMySQL::writeToDb()
 	insertBuffer.appendPtr = insertBuffer.bodyPtr;
 	*insertBuffer.appendPtr = 0;
 
-	msg(MSG_DEBUG,"IpfixDbWriterMySQL: Write to database is complete");
+	msg(LOG_INFO,"IpfixDbWriterMySQL: Write to database is complete");
 	return true;
 
 dbwriteerror:
@@ -222,7 +222,7 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 	sprintf(statementStr, "SELECT id FROM exporter WHERE sourceID=%u AND srcIp='%s'", sourceID->observationDomainId, IPToString(expIp).c_str());
 
 	if(mysql_query(conn, statementStr) != 0) {
-		msg(MSG_ERROR,"IpfixDbWriterMySQL: Select on exporter table failed. Error: %s",
+		msg(LOG_ERR,"IpfixDbWriterMySQL: Select on exporter table failed. Error: %s",
 				mysql_error(conn));
 		dbError = true;
 		return 0;// If a failure occurs, return 0
@@ -243,19 +243,19 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 				sourceID->observationDomainId, IPToString(expIp).c_str());
 
 		if(mysql_query(conn, statementStr) != 0) {
-			msg(MSG_ERROR,"IpfixDbWriterMySQL: Insert in exporter table failed. Error: %s", mysql_error(conn));
+			msg(LOG_ERR,"IpfixDbWriterMySQL: Insert in exporter table failed. Error: %s", mysql_error(conn));
 			dbError = true;
 			return 0;
 		}
 
 		exporterID = mysql_insert_id(conn);
-		msg(MSG_INFO,"IpfixDbWriterMySQL: new exporter (ODID=%d, id=%d) inserted in exporter table", sourceID->observationDomainId, exporterID);
+		msg(LOG_NOTICE,"IpfixDbWriterMySQL: new exporter (ODID=%d, id=%d) inserted in exporter table", sourceID->observationDomainId, exporterID);
 	}
 
 	if (curExporterEntries==MAX_EXP_TABLE-1) {
 		// maybe here we should check how often this happens and display a severe warning if too
 		// many parallel streams are received at once
-		msg(MSG_INFO, "IpfixDbWriterPg: turnover for exporter cache occurred.");
+		msg(LOG_NOTICE, "IpfixDbWriterPg: turnover for exporter cache occurred.");
 		curExporterEntries = 0;
 	}
 

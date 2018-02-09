@@ -49,35 +49,35 @@ Connection::Connection(IpfixDataRecord* record)
 	if (fi != 0) {
 		srcIP = *(uint32_t*)(record->data + fi->offset);
 	} else {
-		msg(MSG_INFO, "failed to determine source ip for record, assuming 0.0.0.0");
+		msg(LOG_NOTICE, "failed to determine source ip for record, assuming 0.0.0.0");
 		srcIP = 0;
 	}
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
 	if (fi != 0) {
 		dstIP = *(uint32_t*)(record->data + fi->offset);
 	} else {
-		msg(MSG_INFO, "failed to determine destination ip for record, assuming 0.0.0.0");
+		msg(LOG_NOTICE, "failed to determine destination ip for record, assuming 0.0.0.0");
 		dstIP = 0;
 	}
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
 	if (fi != 0) {
 		srcPort = *(uint16_t*)(record->data + fi->offset);
 	} else {
-		msg(MSG_INFO, "failed to determine source port for record, assuming 0");
+		msg(LOG_NOTICE, "failed to determine source port for record, assuming 0");
 		srcPort = 0;
 	}
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
 	if (fi != 0) {
 		dstPort = *(uint16_t*)(record->data + fi->offset);
 	} else {
-		msg(MSG_INFO, "failed to determine destination port for record, assuming 0");
+		msg(LOG_NOTICE, "failed to determine destination port for record, assuming 0");
 		srcPort = 0;
 	}
 	fi = record->templateInfo->getFieldInfo(IPFIX_TYPEID_protocolIdentifier, 0);
 	if (fi != 0) {
 		protocol = *(uint8_t*)(record->data + fi->offset);
 	} else {
-		msg(MSG_INFO, "failed to determine protocol for record, using 0");
+		msg(LOG_NOTICE, "failed to determine protocol for record, using 0");
 		protocol = 0;
 	}
 

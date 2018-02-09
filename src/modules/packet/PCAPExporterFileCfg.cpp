@@ -41,7 +41,7 @@ PCAPExporterFileCfg::PCAPExporterFileCfg(XMLElement* elem)
 		} else if (e->matches("linkType")) {
 			int tmp =  pcap_datalink_name_to_val(e->getFirstText().c_str());
 			if (tmp == -1) {
-				msg(MSG_ERROR, "Found illegal link type");
+				msg(LOG_ERR, "Found illegal link type");
 			} else {
 				link_type = tmp;
 			}

@@ -35,14 +35,14 @@ void CountArray::set(size_t index, ValueType value)
 {
 	if(index < array_size) {
 		array[index] += value;
-		//msg(MSG_DEBUG, "array[%u] == %u", index, array[index]);
+		//msg(LOG_INFO, "array[%u] == %u", index, array[index]);
 	}
 }
 
 CountArray::ValueType CountArray::get(size_t index) const
 {
 	if(index < array_size) {
-		//msg(MSG_DEBUG, "get: array[%u] == %u", index, array[index]);
+		//msg(LOG_INFO, "get: array[%u] == %u", index, array[index]);
 		return array[index];
 	} else {
 		return 0;

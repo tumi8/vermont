@@ -317,10 +317,10 @@ extern "C" {
 
 	void vermont_assert(const char* expr, const char* description, int line, const char* filename, const char* prettyfuncname, const char* funcname)
 	{
-		msg_normal(MSG_ERROR, "Assertion: %s", expr);
-		msg_normal(MSG_ERROR, "Message: %s", description);
-		msg_normal(MSG_ERROR, "---------------------------------------------------------------");
-		msg_normal(MSG_ERROR, "filename: %s:%d, function: %s (%s)", filename, line, funcname, prettyfuncname);
+		msg_normal(LOG_ERR, "Assertion: %s", expr);
+		msg_normal(LOG_ERR, "Message: %s", description);
+		msg_normal(LOG_ERR, "---------------------------------------------------------------");
+		msg_normal(LOG_ERR, "filename: %s:%d, function: %s (%s)", filename, line, funcname, prettyfuncname);
 		exit(1);
 	}
 
@@ -331,7 +331,7 @@ extern "C" {
 
 		va_list args;
 		va_start(args, fmt);
-		msg_expand(text, line, filename, funcname, simplefunc, MSG_FATAL, fmt, &args);
+		msg_expand(text, line, filename, funcname, simplefunc, LOG_CRIT, fmt, &args);
 		va_end(args);
 
 		throw std::runtime_error(text);

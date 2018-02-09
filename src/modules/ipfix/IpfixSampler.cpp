@@ -31,9 +31,9 @@ IpfixSampler::IpfixSampler(double flowrate)
 {
 	modulo = (uint64_t)round(1.0/flowRate);
 
-	msg(MSG_INFO, "IpfixSampler started with following parameters:");
-	msg(MSG_INFO, "  - flowRate=%f", flowRate);
-	msg(MSG_INFO, "  - resulting modulo: %lu", modulo);
+	msg(LOG_NOTICE, "IpfixSampler started with following parameters:");
+	msg(LOG_NOTICE, "  - flowRate=%f", flowRate);
+	msg(LOG_NOTICE, "  - resulting modulo: %lu", modulo);
 }
 
 IpfixSampler::~IpfixSampler()

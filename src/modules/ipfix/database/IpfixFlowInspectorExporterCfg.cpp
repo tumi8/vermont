@@ -49,7 +49,7 @@ IpfixFlowInspectorExporterCfg::IpfixFlowInspectorExporterCfg(XMLElement* elem)
 			database = e->getFirstText();
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixFlowInspectorExporter config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown IpfixFlowInspectorExporter config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
@@ -65,7 +65,7 @@ IpfixFlowInspectorExporterCfg::~IpfixFlowInspectorExporterCfg()
 IpfixFlowInspectorExporter* IpfixFlowInspectorExporterCfg::createInstance()
 {
 	instance = new IpfixFlowInspectorExporter(hostname, database, port);
-	msg(MSG_DEBUG, "IpfixFlowInspectorExporter configuration host %s queue %s port %i\n", hostname.c_str(), database.c_str(), port);
+	msg(LOG_INFO, "IpfixFlowInspectorExporter configuration host %s queue %s port %i\n", hostname.c_str(), database.c_str(), port);
 	return instance;
 }
 

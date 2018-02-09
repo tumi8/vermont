@@ -42,13 +42,13 @@ int IpfixFlowInspectorExporter::connectToDB()
 	std::string err;
 	context = redisConnect(dbHost.c_str(), dbPort);
 	if (context->err) {
-		msg(MSG_FATAL,"IpfixFlowInspectorExporter: Redis connect failed. Error: %s", context->errstr);
+		msg(LOG_CRIT,"IpfixFlowInspectorExporter: Redis connect failed. Error: %s", context->errstr);
 		redisFree(context);
 		context = NULL;
 		return 1;
 	}
 
-	msg(MSG_DEBUG,"IpfixFlowInspectorExporter: Connection to Redis successful");
+	msg(LOG_INFO,"IpfixFlowInspectorExporter: Connection to Redis successful");
 	dbError = false;
 	return 0;
 }
@@ -61,10 +61,10 @@ void IpfixFlowInspectorExporter::processDataDataRecord(const IpfixRecord::Source
 		IpfixRecord::Data* data)
 {
 	std::string json_string;
-	msg(MSG_DEBUG, "IpfixFlowInspectorExporter: Processing data record");
+	msg(LOG_INFO, "IpfixFlowInspectorExporter: Processing data record");
 
 	if (dbError) {
-		msg(MSG_DEBUG, "IpfixFlowInspectorExporter: reconnecting to DB");
+		msg(LOG_INFO, "IpfixFlowInspectorExporter: reconnecting to DB");
 		connectToDB();
 		if (dbError) return;
 	}
@@ -142,7 +142,7 @@ int IpfixFlowInspectorExporter::writeToDb()
 		redisReply *reply;
 		reply = (redisReply*)redisCommand(context, "RPUSH %s %s", dbName.c_str(), elem.c_str());
 		if (!reply) {
-			msg(MSG_ERROR, "IpfixFlowInspectorExporter: Error while writing to redis queue: %s", reply->str);
+			msg(LOG_ERR, "IpfixFlowInspectorExporter: Error while writing to redis queue: %s", reply->str);
 			freeReplyObject(reply);
 		}
 		bufferedObjects.pop_front();
@@ -202,7 +202,7 @@ void IpfixFlowInspectorExporter::onDataRecord(IpfixDataRecord* record)
 		return;
 	}
 
-	msg(MSG_DEBUG, "IpfixFlowInspectorExporter: Data record received will be passed for processing");
+	msg(LOG_INFO, "IpfixFlowInspectorExporter: Data record received will be passed for processing");
 	processDataDataRecord(*record->sourceID.get(), *record->templateInfo.get(),
 			record->dataLength, record->data);
 

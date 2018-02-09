@@ -35,7 +35,7 @@ void SensorManager::setParameters(uint32_t checkInterval = SM_DEFAULT_CHECK_INTE
 							 GraphInstanceSupplier* gis = NULL)
 {
 #if !defined(__linux__)
-	msg(MSG_DIALOG, "WARNING: this instance of vermont is *not* compiled for linux, support for CPU sensors is disabled");
+	msg(LOG_WARNING, "WARNING: this instance of vermont is *not* compiled for linux, support for CPU sensors is disabled");
 	hertzValue = 0;
 #else
 	hertzValue = ThreadCPUInterface::getHertzValue();
@@ -43,13 +43,13 @@ void SensorManager::setParameters(uint32_t checkInterval = SM_DEFAULT_CHECK_INTE
 #endif
 	if (gethostname(hostname, 100) != 0)
 		THROWEXCEPTION("failed to get hostname by gethostname()!");
-	msg(MSG_INFO, "SensorManager: hertz jiffy value=%lu, hostname=%s", hertzValue, hostname);
+	msg(LOG_NOTICE, "SensorManager: hertz jiffy value=%lu, hostname=%s", hertzValue, hostname);
 
-	msg(MSG_INFO, "SensorManager started with following parameters:");
-	msg(MSG_INFO, "  - outputfilename=%s", outputfilename.c_str());
-	msg(MSG_INFO, "  - clearfilename=%s", clearFilename.c_str());
-	msg(MSG_INFO, "  - checkInterval=%d seconds", checkInterval);
-	msg(MSG_INFO, "  - append=%d", append);
+	msg(LOG_NOTICE, "SensorManager started with following parameters:");
+	msg(LOG_NOTICE, "  - outputfilename=%s", outputfilename.c_str());
+	msg(LOG_NOTICE, "  - clearfilename=%s", clearFilename.c_str());
+	msg(LOG_NOTICE, "  - checkInterval=%d seconds", checkInterval);
+	msg(LOG_NOTICE, "  - append=%d", append);
 	this->checkInterval = checkInterval;
 	this->outputFilename = outputfilename;
 	this->clearFilename = clearfilename;
@@ -65,7 +65,7 @@ void SensorManager::setGraphIS(GraphInstanceSupplier* gis)
 
 void SensorManager::performStart()
 {
-	msg(MSG_DIALOG, "starting sensor check thread");
+	msg(LOG_WARNING, "starting sensor check thread");
 
 	thread.run(this);
 }
@@ -158,7 +158,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	if (!ignoreshutdown && smExitFlag) return;
 
 	if ((clearFlag = checkClear())) {
-		msg(MSG_DIALOG, "Clearing sensor statistics");
+		msg(LOG_WARNING, "Clearing sensor statistics");
 	}
 
 	const char* openflags = (append ? "a" : "w");
@@ -218,7 +218,7 @@ void SensorManager::retrieveStatistics(bool ignoreshutdown)
 	mutex.lock();
 	list<SensorEntry>::const_iterator siter = sensors.begin();
 	while (siter != sensors.end()) {
-        //DPRINTFL(MSG_ERROR, "non-module cfg->getName()=%s, s=%u", siter->name.c_str(), siter->sensor);
+        //DPRINTFL(LOG_ERR, "non-module cfg->getName()=%s, s=%u", siter->name.c_str(), siter->sensor);
 		Sensor* s = siter->sensor;
 		if (clearFlag) s->clearStatistics();
 		writeSensorXML(file, s, siter->name.c_str(), siter->id, false, curtime, lasttime, NULL);
@@ -242,7 +242,7 @@ void SensorManager::collectDataWorker()
 
 	registerCurrentThread();
 
-	msg(MSG_DIALOG, "SensorManager: checking sensor values every %u seconds", checkInterval);
+	msg(LOG_WARNING, "SensorManager: checking sensor values every %u seconds", checkInterval);
 	while (!smExitFlag) {
 		uint32_t sleepcount = checkInterval*2;
 		uint32_t i = 0;

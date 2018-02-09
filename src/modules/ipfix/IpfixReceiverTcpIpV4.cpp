@@ -72,14 +72,14 @@ IpfixReceiverTcpIpV4::IpfixReceiverTcpIpV4(int port, std::string ipAddr,
 		THROWEXCEPTION("Cannot create IpfixReceiverTcpIpV4 %s:%d",ipAddr.c_str(), port );
 	}
 	if(listen(listen_socket, TCP_MAX_BACKLOG) < 0 ) {
-		msg(MSG_ERROR ,"Could not listen on TCP socket %i", listen_socket);
+		msg(LOG_ERR ,"Could not listen on TCP socket %i", listen_socket);
 		THROWEXCEPTION("Cannot create IpfixReceiverTcpIpV4");
 	}
 
 	SensorManager::getInstance().addSensor(this, "IpfixReceiverTCPIpV4",
 			moduleId);
 
-	msg(MSG_INFO, "TCP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
+	msg(LOG_NOTICE, "TCP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
 								listen_socket);
 	return;
@@ -131,7 +131,7 @@ void IpfixReceiverTcpIpV4::run() {
 			continue;
     		}
     		if (ret < 0) {
-    			msg(MSG_ERROR ,"select() returned with an error");
+    			msg(LOG_ERR ,"select() returned with an error");
 			THROWEXCEPTION("IpfixReceiverTcpIpV4: terminating listener thread");
 			break;
 		}
@@ -142,16 +142,16 @@ void IpfixReceiverTcpIpV4::run() {
 			if (rfd >= 0){
 				if (isHostAuthorized(&clientAddress.sin_addr, sizeof(clientAddress.sin_addr))) {
 					FD_SET(rfd, &fd_array); // add new client to fd_array
-					msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
+					msg(LOG_INFO, "IpfixReceiverTcpIpV4: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
 					if (rfd > maxfd){
 						maxfd = rfd;
 					}
 				} else {
-					msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Connection from unwanted client %s:%d, FD=%d rejected.", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
+					msg(LOG_INFO, "IpfixReceiverTcpIpV4: Connection from unwanted client %s:%d, FD=%d rejected.", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
 					close(rfd);
 				}
 			}else{
-				msg(MSG_ERROR ,"accept() in IpfixReceiverTcpIpV4 failed");
+				msg(LOG_ERR ,"accept() in IpfixReceiverTcpIpV4 failed");
 				THROWEXCEPTION("IpfixReceiverTcpIpV4: unable to accept new connection");
 			}
 		}
@@ -165,24 +165,24 @@ void IpfixReceiverTcpIpV4::run() {
 				while (read_so_far < expected_read && ret > 0) {
 	      				ret = recvfrom(rfd, data.get() + read_so_far, expected_read - read_so_far, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
 					if (ret < 0) { // error
-						msg(MSG_ERROR, "IpfixReceiverTcpIpV4: Client error (%s), close connection.", inet_ntoa(clientAddress.sin_addr));
+						msg(LOG_ERR, "IpfixReceiverTcpIpV4: Client error (%s), close connection.", inet_ntoa(clientAddress.sin_addr));
 						close(rfd);
 						// we treat an error like a shut down, so overwrite return value to zero
 						ret = 0;
 					} else if (ret == 0) {
-						msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client closed connection");
+						msg(LOG_INFO, "IpfixReceiverTcpIpV4: Client closed connection");
 					}
 					read_so_far += ret;
 					
 				}
 				if (expected_read != read_so_far && ret > 0) {
-					msg(MSG_ERROR, "IpfixReceiverTcpIpV4: Damn it. TCP didn't read enough. And we did not handle that in the code!");
+					msg(LOG_ERR, "IpfixReceiverTcpIpV4: Damn it. TCP didn't read enough. And we did not handle that in the code!");
 					close(rfd);
 					ret = 0;
 				}
 				IpfixParser::IpfixHeader* header = (IpfixParser::IpfixHeader*)data.get();
 				if (ret > 0 && ntohs(header->version) != 0x000a)  {
-					msg(MSG_ERROR, "IpfixReceiverTcpIpV4: We do not support anything but IPFIX in TCPReceiver");
+					msg(LOG_ERR, "IpfixReceiverTcpIpV4: We do not support anything but IPFIX in TCPReceiver");
 					close(rfd);
 					ret = 0;
 				}
@@ -191,17 +191,17 @@ void IpfixReceiverTcpIpV4::run() {
 				while (ret > 0 && read_so_far < expected_read) {
 					ret = recvfrom(rfd, data.get() + read_so_far, expected_read - read_so_far, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
 					if (ret + read_so_far > expected_read) {
-						msg(MSG_ERROR,"IpfixReceiverTcpIpV4: This is way to much content!");
+						msg(LOG_ERR,"IpfixReceiverTcpIpV4: This is way to much content!");
 						close(rfd);
 						ret = 0;
 					} else if (ret == 0) {
-						msg(MSG_ERROR, "IpfixReceiverTcpIpV4: Client closed connection after sending the IPFIX message header!");
+						msg(LOG_ERR, "IpfixReceiverTcpIpV4: Client closed connection after sending the IPFIX message header!");
 					}
  
 					read_so_far += ret;
 				}
 				if (ret > 0 && read_so_far != expected_read) {
-					msg(MSG_ERROR, "IpfixReceiverTcpIpV4: This is weird. We have read more than we excpected!");
+					msg(LOG_ERR, "IpfixReceiverTcpIpV4: This is weird. We have read more than we excpected!");
 					close(rfd);
 					ret = 0;
 				}
@@ -226,12 +226,12 @@ void IpfixReceiverTcpIpV4::run() {
 				}
 				if (ret == 0) { // this was a shut down (or error)
 					FD_CLR(rfd, &fd_array); // delete dead client
-					msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Client %s disconnected", inet_ntoa(clientAddress.sin_addr));
+					msg(LOG_INFO, "IpfixReceiverTcpIpV4: Client %s disconnected", inet_ntoa(clientAddress.sin_addr));
 				}
       			}
       		}
 	}
-	msg(MSG_DEBUG, "IpfixReceiverTcpIpV4: Exiting");
+	msg(LOG_INFO, "IpfixReceiverTcpIpV4: Exiting");
 }
 
 /**

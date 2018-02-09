@@ -61,7 +61,7 @@ string IDMEFExporter::getFilename()
 	uint32_t counter = 0;
 	while (stat(filename.c_str(), &s) == 0) {
 		if (!filewarningIssued) {
-			msg(MSG_ERROR, "files in IDMEF destination directory are already present, either two processes are writing there simultaneously (VERY BAD, may result in lost or corrupt events), or files from previous run have not been processed yet (ALSO BAD)");
+			msg(LOG_ERR, "files in IDMEF destination directory are already present, either two processes are writing there simultaneously (VERY BAD, may result in lost or corrupt events), or files from previous run have not been processed yet (ALSO BAD)");
 			filewarningIssued = true;
 		}
 		if (counter == 0xFFFFFFFF) {

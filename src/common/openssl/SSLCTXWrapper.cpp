@@ -106,7 +106,7 @@ SSL_CTX_wrapper::SSL_CTX_wrapper(
 		"the peerFqdn option is NOT set.");
     } else {
 	if ( ! (have_CAs && have_cert) ) {
-	    msg(MSG_ERROR,"Can not verify certificates of exporters because prerequesites not met. "
+	    msg(LOG_ERR,"Can not verify certificates of exporters because prerequesites not met. "
 		    "Prerequesites are: 1. CApath or CAfile or both set, "
 		    "2. We have a certificate including the private key");
 	    THROWEXCEPTION("Cannot verify DTLS peers.");
@@ -143,7 +143,7 @@ bool SSL_CTX_wrapper::loadVerifyLocations(
 	if ( SSL_CTX_load_verify_locations(ctx,CAfile,CApath) ) {
 	    return true;
 	} else {
-	    msg(MSG_ERROR,"SSL_CTX_load_verify_locations() failed.");
+	    msg(LOG_ERR,"SSL_CTX_load_verify_locations() failed.");
 	    msg_openssl_errors();
 	    THROWEXCEPTION("Failed to open CA file / CA directory.");
 	}

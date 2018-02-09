@@ -168,9 +168,9 @@ inline ntp64 ntp64time(timeval tv)
 {
         ntp64 n;
         n.upper = (uint32_t)tv.tv_sec + GETTIMEOFDAY_TO_NTP_OFFSET;
-        //msg(MSG_ERROR, "upper: %u", n.upper);
+        //msg(LOG_ERR, "upper: %u", n.upper);
         n.lower = usec2ntp((uint32_t)tv.tv_usec);
-        //msg(MSG_ERROR, "lower: %u", n.lower);
+        //msg(LOG_ERR, "lower: %u", n.lower);
         return (n);
 }
 
@@ -180,9 +180,9 @@ inline uint64_t ntp64timegcc(timeval tv)
 {
         uint64_t n;
         n = ((uint64_t)tv.tv_sec + GETTIMEOFDAY_TO_NTP_OFFSET) << 32;
-        //msg(MSG_ERROR, "upper: %u", n.upper);
+        //msg(LOG_ERR, "upper: %u", n.upper);
         n |= usec2ntp((uint32_t)tv.tv_usec);
-        //msg(MSG_ERROR, "lower: %u", n.lower);
+        //msg(LOG_ERR, "lower: %u", n.lower);
         return (n);
 }
 
@@ -193,7 +193,7 @@ inline timeval timentp64(ntp64 n)
 	timeval tv;
 	tv.tv_sec = n.upper-GETTIMEOFDAY_TO_NTP_OFFSET;
 	tv.tv_usec = n.lower/4294;
-	//msg(MSG_ERROR, "sec: %u, usec: %u", tv.tv_sec, tv.tv_usec);
+	//msg(LOG_ERR, "sec: %u, usec: %u", tv.tv_sec, tv.tv_usec);
     return tv;
 }
 

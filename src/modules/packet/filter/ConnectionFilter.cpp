@@ -26,23 +26,23 @@ ConnectionFilter::ConnectionFilter(unsigned Timeout, unsigned bytes, unsigned ha
 	:  hashParams(hashFunctions), synFilter(&hashParams, filterSize, false), exportFilter(&hashParams, filterSize, false),
 	  connectionFilter(&hashParams, filterSize, false), timeout(Timeout), exportBytes(bytes), exportControlPackets(true)
 {
-	msg(MSG_INFO, "Created connectionFilter with parameters:");
-	msg(MSG_INFO, "\t - %i seconds timeout", timeout);
-	msg(MSG_INFO, "\t - %i bytes filter size", filterSize);
-	msg(MSG_INFO, "\t - %i hash functions", hashFunctions);
-	msg(MSG_INFO, "\t - %i bytes to export", bytes);
+	msg(LOG_NOTICE, "Created connectionFilter with parameters:");
+	msg(LOG_NOTICE, "\t - %i seconds timeout", timeout);
+	msg(LOG_NOTICE, "\t - %i bytes filter size", filterSize);
+	msg(LOG_NOTICE, "\t - %i hash functions", hashFunctions);
+	msg(LOG_NOTICE, "\t - %i bytes to export", bytes);
 }
 
 ConnectionFilter::ConnectionFilter(unsigned Timeout, unsigned bytes, unsigned hashFunctions, unsigned filterSize, unsigned seed)
 	: hashParams(hashFunctions, seed), synFilter(&hashParams, filterSize, false), exportFilter(&hashParams, filterSize, false),
 	connectionFilter(&hashParams, filterSize, false), timeout(Timeout), exportBytes(bytes), exportControlPackets(true)
 {
-	msg(MSG_INFO, "Created connectionFilter with parameters:");
-	msg(MSG_INFO, "\t - %i seed", seed);
-	msg(MSG_INFO, "\t - %i seconds timeout", timeout);
-	msg(MSG_INFO, "\t - %i bytes filter size", filterSize);
-	msg(MSG_INFO, "\t - %i hash functions", hashFunctions);
-	msg(MSG_INFO, "\t - %i bytes to export", bytes);
+	msg(LOG_NOTICE, "Created connectionFilter with parameters:");
+	msg(LOG_NOTICE, "\t - %i seed", seed);
+	msg(LOG_NOTICE, "\t - %i seconds timeout", timeout);
+	msg(LOG_NOTICE, "\t - %i bytes filter size", filterSize);
+	msg(LOG_NOTICE, "\t - %i hash functions", hashFunctions);
+	msg(LOG_NOTICE, "\t - %i bytes to export", bytes);
 }
 
 bool ConnectionFilter::processPacket(Packet* p)
@@ -118,7 +118,7 @@ bool ConnectionFilter::processPacket(Packet* p)
 		}
 	}
 
-	msg(MSG_FATAL, "ConnectionFilter: SOMTHING IS SCRWED UP, YOU SHOULD NEVER SEE THIS MESSAGE!");
+	msg(LOG_CRIT, "ConnectionFilter: SOMTHING IS SCRWED UP, YOU SHOULD NEVER SEE THIS MESSAGE!");
 	return false; // make compiler happy
 }
 

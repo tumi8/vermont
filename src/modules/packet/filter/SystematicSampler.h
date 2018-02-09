@@ -33,7 +33,7 @@ public:
                 samplingType(type), samplingOnTime(spacing), samplingOffTime(interval-spacing), interval(interval), packetCount(0)
         {
                 gettimeofday(&startTime, 0);
-                msg(MSG_INFO, "creating systematic sampler with interval=%lu and spacing=%lu", interval, spacing);
+                msg(LOG_NOTICE, "creating systematic sampler with interval=%lu and spacing=%lu", interval, spacing);
         }
 
         virtual ~SystematicSampler()

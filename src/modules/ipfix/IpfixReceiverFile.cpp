@@ -67,7 +67,7 @@ IpfixReceiverFile::IpfixReceiverFile(std::string packetFileBasename,
 			if((1-stretchTimeInt*m) > 0.1)
 				stretchTimeInt = 0; //use float
 			else
-				msg(MSG_INFO, "IpfixReceiverFile: speed multiplier set to %f "
+				msg(LOG_NOTICE, "IpfixReceiverFile: speed multiplier set to %f "
 					"in order to allow integer multiplication", 1.0/stretchTimeInt);
 		}
 		else 
@@ -125,13 +125,13 @@ IpfixReceiverFile::IpfixReceiverFile(std::string packetFileBasename,
 		}
 		to = maxnum;
 	}
-	msg(MSG_INFO, "IpfixReceiverFile initialized with the following parameters:");
-	msg(MSG_INFO, "  - packet_file_directory = %s", packet_file_directory.c_str());
-	msg(MSG_INFO, "  - packet_file_basename = %s", packet_file_basename.c_str());
-	msg(MSG_INFO, "  - Start (from) = %d" , from);
-	msg(MSG_INFO, "  - End (to) = %d" , to);
-	msg(MSG_INFO, "  - ignoreTimestamps = %s" , (ignore_timestamps) ? "true" : "false");
-	if(! ignore_timestamps) msg(MSG_INFO, "  - stretchTime = %f", stretchTime);
+	msg(LOG_NOTICE, "IpfixReceiverFile initialized with the following parameters:");
+	msg(LOG_NOTICE, "  - packet_file_directory = %s", packet_file_directory.c_str());
+	msg(LOG_NOTICE, "  - packet_file_basename = %s", packet_file_basename.c_str());
+	msg(LOG_NOTICE, "  - Start (from) = %d" , from);
+	msg(LOG_NOTICE, "  - End (to) = %d" , to);
+	msg(LOG_NOTICE, "  - ignoreTimestamps = %s" , (ignore_timestamps) ? "true" : "false");
+	if(! ignore_timestamps) msg(LOG_NOTICE, "  - stretchTime = %f", stretchTime);
 }
 
 
@@ -170,14 +170,14 @@ void IpfixReceiverFile::run()
 		std::string packet_file_path = packet_file_directory + packet_file_basename
 										 + numberformat.str();
 
-		msg(MSG_DEBUG, "IpfixReceiverFile: Trying to read message from file \"%s\"", 
+		msg(LOG_INFO, "IpfixReceiverFile: Trying to read message from file \"%s\"", 
 			packet_file_path.c_str());
 
 		packetFile.open(packet_file_path.c_str(), std::ios::in | std::ios::binary);
 		if (packetFile.fail()){
-			msg(MSG_FATAL, "Couldn't open inputfile %s", packet_file_path.c_str());
+			msg(LOG_CRIT, "Couldn't open inputfile %s", packet_file_path.c_str());
 			if (++missing > MAXMISSINGFILES){
-				msg(MSG_FATAL, "Couldn't open %d files in a row...terminating", MAXMISSINGFILES);
+				msg(LOG_CRIT, "Couldn't open %d files in a row...terminating", MAXMISSINGFILES);
 				break;
 			}
 			continue;
@@ -199,7 +199,7 @@ void IpfixReceiverFile::run()
 
 			/** @todo uint_16 can never be > 65536
 			if (n > MAX_MSG_LEN) {
-				msg(MSG_ERROR, "IpfixReceiverFile: packet at idx=%u too big with n=%u in file \"%s\"", 
+				msg(LOG_ERR, "IpfixReceiverFile: packet at idx=%u too big with n=%u in file \"%s\"", 
 						idx, n, packet_file_path.c_str());
 				continue;
 			}
@@ -210,7 +210,7 @@ void IpfixReceiverFile::run()
 			idx += n;
 
 			if (packetFile.bad())  {
-				msg(MSG_ERROR, "IpfixReceiverFile: bad packet_file: %s", packet_file_path.c_str());
+				msg(LOG_ERR, "IpfixReceiverFile: bad packet_file: %s", packet_file_path.c_str());
 				continue;
 			}
 
@@ -225,8 +225,8 @@ void IpfixReceiverFile::run()
 						(uint32_t)(0xff & data[6])<<8 | (uint32_t)(0xff & data[7]));
 
 				if(gettimeofday(&real_now, NULL) != 0){
-					msg(MSG_FATAL, "Error gettimeofday: %s", strerror(errno));
-					msg(MSG_FATAL, "Ignoring timestamps!");
+					msg(LOG_CRIT, "Error gettimeofday: %s", strerror(errno));
+					msg(LOG_CRIT, "Ignoring timestamps!");
 					ignore_timestamps = true;
 					first = true; 
 				}
@@ -238,7 +238,7 @@ void IpfixReceiverFile::run()
 				}
 				else{
 					msg_now.tv_sec = (time_t)exporttime;
-					msg(MSG_DEBUG, "Exporttime: %u", exporttime);
+					msg(LOG_INFO, "Exporttime: %u", exporttime);
 					//msg_delta.tv_sec = msg_now.tv_sec - msg_first.tv_sec;
 					timersub(&msg_now, &msg_first, &msg_delta);
 					//real_delta.tv_sec = real_now.tv_sec - real_start.tv_sec;
@@ -260,7 +260,7 @@ void IpfixReceiverFile::run()
 						//sleep_time.tv_sec = msg_delta.tv_sec - real_delta.tv_sec;
 						timersub(&tmp_delta, &real_delta, &sleep_time);
 
-						msg(MSG_DEBUG, "msg_delta: %06us %06uus | tmp_delta: %06us %06uus | "
+						msg(LOG_INFO, "msg_delta: %06us %06uus | tmp_delta: %06us %06uus | "
 						"real_delta: %06us %06uus | sleep_time: %06us %06uus",
 						  	(uint32_t) msg_delta.tv_sec, (uint32_t) msg_delta.tv_usec,
 						  	(uint32_t) tmp_delta.tv_sec, (uint32_t) tmp_delta.tv_usec,
@@ -269,14 +269,14 @@ void IpfixReceiverFile::run()
 
 						wait_spec.tv_sec = sleep_time.tv_sec;
 						wait_spec.tv_nsec = sleep_time.tv_usec*1000;
-						msg(MSG_DEBUG, "sleeping for: %06us %06uus",
+						msg(LOG_INFO, "sleeping for: %06us %06uus",
 							 (uint32_t)sleep_time.tv_sec, (uint32_t)sleep_time.tv_usec);
 						if(nanosleep(&wait_spec, NULL)){
-							msg(MSG_ERROR, "nanosleep returned non-zero value: %s", strerror(errno));
+							msg(LOG_ERR, "nanosleep returned non-zero value: %s", strerror(errno));
 						}
 					}
 					else{
-						msg(MSG_DEBUG, "Not sleeping");
+						msg(LOG_INFO, "Not sleeping");
 					}
 				}
 			}
@@ -289,15 +289,15 @@ void IpfixReceiverFile::run()
 		}
 		packetFile.close();
 
-		msg(MSG_INFO, "IpfixReceiverFile: File %s ended after %lu bytes.", 
+		msg(LOG_NOTICE, "IpfixReceiverFile: File %s ended after %lu bytes.", 
 			packet_file_path.c_str(), idx);
 	}
-	msg(MSG_DEBUG, "real_start: %lu  msg_start: %lu  real_now: %lu  msg_now: %lu", 
+	msg(LOG_INFO, "real_start: %lu  msg_start: %lu  real_now: %lu  msg_now: %lu", 
 		real_start.tv_sec, msg_first.tv_sec, real_now.tv_sec, msg_now.tv_sec);
 	if (vmodule) {
 		vmodule->shutdownVermont();
 	} else {
-		msg(MSG_ERROR, "IpfixReceiverFile: failed to shut down Vermont, internal error!");
+		msg(LOG_ERR, "IpfixReceiverFile: failed to shut down Vermont, internal error!");
 	}
 }
 

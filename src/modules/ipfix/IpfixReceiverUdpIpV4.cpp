@@ -79,7 +79,7 @@ IpfixReceiverUdpIpV4::IpfixReceiverUdpIpV4(int port, std::string ipAddr,
 
 	SensorManager::getInstance().addSensor(this, "IpfixReceiverUdpIpV4", moduleId);
 
-	msg(MSG_INFO, "UDP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
+	msg(LOG_NOTICE, "UDP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
 								listen_socket);
 }
@@ -127,7 +127,7 @@ void IpfixReceiverUdpIpV4::run() {
 			continue;
     		}
     		if (ret < 0) {
-    			msg(MSG_ERROR ,"select() returned with an error");
+    			msg(LOG_ERR ,"select() returned with an error");
 			THROWEXCEPTION("IpfixReceiverUdpIpV4: terminating listener thread");
 			break;
 		}
@@ -137,7 +137,7 @@ void IpfixReceiverUdpIpV4::run() {
 		ret = recvfrom(listen_socket, data.get(), MAX_MSG_LEN,
 			     0, (struct sockaddr*)&clientAddress, &clientAddressLen);
 		if (ret < 0) {
-			msg(MSG_FATAL, "recvfrom returned without data, terminating listener thread");
+			msg(LOG_CRIT, "recvfrom returned without data, terminating listener thread");
 			break;
 		}
 		
@@ -157,10 +157,10 @@ void IpfixReceiverUdpIpV4::run() {
 			}
 			mutex.unlock();
 		} else {
-			msg(MSG_VDEBUG, "IpfixReceiverUdpIpv4: packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
+			msg(LOG_DEBUG, "IpfixReceiverUdpIpv4: packet from unauthorized host %s discarded", inet_ntoa(clientAddress.sin_addr));
 		}
 	}
-	msg(MSG_DEBUG, "IpfixReceiverUdpIpV4: Exiting");
+	msg(LOG_INFO, "IpfixReceiverUdpIpV4: Exiting");
 }
 
 /**

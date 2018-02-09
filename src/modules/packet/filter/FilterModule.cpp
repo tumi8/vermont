@@ -49,7 +49,7 @@ void FilterModule::receive(Packet* p)
 	// even if the processors-iterator below is NULL
 	bool keepPacket=true;
 
-	DPRINTFL(MSG_VDEBUG, "FilterModule: got packet");
+	DPRINTFL(LOG_DEBUG, "FilterModule: got packet");
 
 	// run packet through all packetProcessors
 	for (it = processors.begin();

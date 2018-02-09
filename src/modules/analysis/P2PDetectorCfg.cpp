@@ -61,7 +61,7 @@ P2PDetectorCfg::P2PDetectorCfg(XMLElement* elem)
 			tcpFailedVarianceThreshold = getDouble("tcpFailedVarianceThreshold");
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown P2PDetector config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown P2PDetector config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}

@@ -119,7 +119,7 @@ AnonPrimitive* AnonModule::createPrimitive(AnonMethod::Method m, const std::stri
         ret = new AnonCryptoPanPrefix(buffer, mapping);
         break;
 	default:
-		msg(MSG_FATAL, "AnonPrimitive number %i is unknown", m);
+		msg(LOG_CRIT, "AnonPrimitive number %i is unknown", m);
 		THROWEXCEPTION("AnonPrimitive number %i is unknown", m);
 	}
 
@@ -136,7 +136,7 @@ void AnonModule::addAnonymization(InformationElement::IeInfo id, int len, AnonMe
 		AnonIE ie;
 		if (len == -1) {
 			if (!(ident = ipfix_id_lookup(id.id, id.enterprise))) {
-				msg(MSG_ERROR, "Unknown or unsupported id %s detected.", id.toString().c_str());
+				msg(LOG_ERR, "Unknown or unsupported id %s detected.", id.toString().c_str());
 				return;
 			}
 			len = ident->length;

@@ -529,7 +529,7 @@ out:
 
 int parse_command_line_arguments(int argc, char **argv) {
     int transport = UDP;
-    int debug_level = MSG_ERROR;
+    int debug_level = LOG_ERR;
     enum opts { mtu=1, peer_fqdn,cert,key,CAfile,CApath,collector,port };
     struct option long_options[] = {
 	{"udp", no_argument, &transport, UDP},

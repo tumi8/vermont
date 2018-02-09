@@ -27,9 +27,9 @@ StateConnectionFilter::StateConnectionFilter(unsigned timeout, unsigned bytes)
 {
 	this->timeout = timeout;
 	this->exportBytes = bytes;
-	msg(MSG_INFO, "Created stateConnectionFilter with parameters:");
-	msg(MSG_INFO, "\t - %i seconds timeout", timeout);
-	msg(MSG_INFO, "\t - %i bytes to export", bytes);
+	msg(LOG_NOTICE, "Created stateConnectionFilter with parameters:");
+	msg(LOG_NOTICE, "\t - %i seconds timeout", timeout);
+	msg(LOG_NOTICE, "\t - %i bytes to export", bytes);
 }
 
 StateConnectionFilter::~StateConnectionFilter()
@@ -98,7 +98,7 @@ bool StateConnectionFilter::processPacket(Packet* p, bool connFilterResult)
 		}
 	}
 
-	msg(MSG_FATAL, "StateConnectionFilter: SOMTHING IS SCRWED UP, YOU SHOULD NEVER SEE THIS MESSAGE!");
+	msg(LOG_CRIT, "StateConnectionFilter: SOMTHING IS SCRWED UP, YOU SHOULD NEVER SEE THIS MESSAGE!");
 	return false; // make compiler happy
 }
 

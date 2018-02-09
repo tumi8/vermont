@@ -85,7 +85,7 @@ RBSWormDetector::RBSWormDetector(uint32_t hashbits, uint32_t texppend,
 	statCurBenign = 0;
 
 	rbsEntries = new list<RBSEntry*>[hashSize];
-	msg(MSG_INFO,"RBSWormDetector started");
+	msg(LOG_NOTICE,"RBSWormDetector started");
 }
 /*
  * Destructor frees memory
@@ -205,9 +205,9 @@ void RBSWormDetector::addConnection(Connection* conn)
 		te->decision = WORM;
 		statNumWorms++;
 		te->timeExpire = time(0)+timeExpireWorm;
-		msg(MSG_DEBUG, "Worm detected:");
-		msg(MSG_DEBUG, "srcIP: %s", IPToString(te->srcIP).c_str());
-		msg(MSG_DEBUG, "numFanOut: %d, totalTime: %f",te->numFanouts, trace_ela);
+		msg(LOG_INFO, "Worm detected:");
+		msg(LOG_INFO, "srcIP: %s", IPToString(te->srcIP).c_str());
+		msg(LOG_INFO, "numFanOut: %d, totalTime: %f",te->numFanouts, trace_ela);
 
 		IDMEFMessage* msg = idmefManager.getNewInstance();
 		msg->init(idmefTemplate, analyzerId);
@@ -356,7 +356,7 @@ void RBSWormDetector::adaptFrequencies ()
 	//sort list to cut off top and bottom 10 percent
 	adaptList.sort(RBSWormDetector::comp_entries);	
 
-	msg(MSG_FATAL,"meta list size %zu",adaptList.size());
+	msg(LOG_CRIT,"meta list size %zu",adaptList.size());
 	uint32_t num10 = adaptList.size()/10;
 
 	list<RBSEntry*>::iterator iter = adaptList.begin();
@@ -396,11 +396,11 @@ void RBSWormDetector::adaptFrequencies ()
 	slope_0b = logeta_0/temp_n;
 	slope_1a = temp_z/temp_n;
 	slope_1b = logeta_1/temp_n;
-	msg(MSG_FATAL,"Adapted Frequencies, lambda_0=%f with hosts=%d",lambda_0,valid++);
+	msg(LOG_CRIT,"Adapted Frequencies, lambda_0=%f with hosts=%d",lambda_0,valid++);
 		}
 	else
 		{
-	msg(MSG_ERROR,"Too little traffic for adaption");
+	msg(LOG_ERR,"Too little traffic for adaption");
 		}
 	
 	if (!first) return;

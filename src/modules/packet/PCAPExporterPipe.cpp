@@ -222,21 +222,21 @@ void PCAPExporterPipe::performStart()
 		THROWEXCEPTION("Could not open dummy device: %s", pcap_geterr(dummy));
 	}
 
-	msg(MSG_INFO, "Started PCAPExporterPipe with the following parameters:");
+	msg(LOG_NOTICE, "Started PCAPExporterPipe with the following parameters:");
 	if (fifoReaderCmd != ""){
-		msg(MSG_INFO, "  - fifoReaderCmd = %s", fifoReaderCmd.c_str());
-		msg(MSG_INFO, "  - fifoReaderPid = %d", fifoReaderPid);
+		msg(LOG_NOTICE, "  - fifoReaderCmd = %s", fifoReaderCmd.c_str());
+		msg(LOG_NOTICE, "  - fifoReaderPid = %d", fifoReaderPid);
 	} else {
 		THROWEXCEPTION("No fifoReaderCmd specified!");
 	}
 	if (logFileName != ""){
-		msg(MSG_INFO, "  - logfileBaseName = %s", logFileName.c_str());
-		msg(MSG_INFO, "  - appenddate = %s", appenddate ? "true" : "false");
+		msg(LOG_NOTICE, "  - logfileBaseName = %s", logFileName.c_str());
+		msg(LOG_NOTICE, "  - appenddate = %s", appenddate ? "true" : "false");
 	}
 	else
-		msg(MSG_ERROR, "No Logfile specified - dumping to stdout!");
-	msg(MSG_INFO, "  - sigKillTimeout = %d" , sigKillTimeout);
-	msg(MSG_INFO, "  - restartInterval = %u seconds" , restartInterval);
+		msg(LOG_ERR, "No Logfile specified - dumping to stdout!");
+	msg(LOG_NOTICE, "  - sigKillTimeout = %d" , sigKillTimeout);
+	msg(LOG_NOTICE, "  - restartInterval = %u seconds" , restartInterval);
 
 	startProcess();
 }
@@ -270,7 +270,7 @@ void PCAPExporterPipe::startProcess()
 	}
 
 	fifoReaderPid = execCmd(fifoReaderCmd);
-	msg(MSG_INFO, "Started process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
+	msg(LOG_NOTICE, "Started process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
 						fifoReaderCmd.c_str(), fifoReaderPid);
 
 	pcapFile = fdopen(fd[1], "w");
@@ -288,11 +288,11 @@ void PCAPExporterPipe::stopProcess()
 	if (!dumper) return;
 
 	if (-1 == pcap_dump_flush(dumper)) {
-		msg(MSG_ERROR, "PCAPExporterPipe: Could not flush dump file");
+		msg(LOG_ERR, "PCAPExporterPipe: Could not flush dump file");
 	}
 
 	/*if (fclose(pcapFile)) {
-		msg(MSG_ERROR, "PCAPExporterPipe: failed to close pipe handle, error %d (%s)", errno, strerror(errno));
+		msg(LOG_ERR, "PCAPExporterPipe: failed to close pipe handle, error %d (%s)", errno, strerror(errno));
 	}*/
 
 	pcap_dump_close(dumper);
@@ -301,7 +301,7 @@ void PCAPExporterPipe::stopProcess()
 		kill_all(fifoReaderPid);
 	}
 
-	msg(MSG_INFO, "Stopped process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
+	msg(LOG_NOTICE, "Stopped process with fifoReaderCmd \'%s\' and fifoReaderPid = %d",
 						fifoReaderCmd.c_str(), fifoReaderPid);
 }
 
@@ -310,31 +310,31 @@ void PCAPExporterPipe::stopProcess()
  */
 void PCAPExporterPipe::receive(Packet* packet)
 {
-	DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive() called");
+	DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive() called");
 	if (onRestart){
 		 DPRINTF("Dropping incoming packet, as attached process is not ready");
-		 DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive() ended");
+		 DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive() ended");
 		 return;
 	}
 	if (fifoReaderPid == 0){
-		 msg(MSG_VDEBUG, "fifoReaderPid = 0...this might happen during reconfiguration");
-		 DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive() ended");
+		 msg(LOG_DEBUG, "fifoReaderPid = 0...this might happen during reconfiguration");
+		 DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive() ended");
 		 return;
 	}
 	if (restartInterval) {
 		if (nextRestart.tv_sec==0) {
-			DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive(): updating nextRestart");
+			DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive(): updating nextRestart");
 			nextRestart = packet->timestamp;
 			nextRestart.tv_sec += restartInterval;
 		} else if (compareTime(nextRestart, packet->timestamp)<0) {
-			DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive(): restarting process");
+			DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive(): restarting process");
 
 			// we need to unregister our signal handlers, as we get race conditions with the signal handler for restarting the process
 			unregisterSignalHandlers();
 			stopProcess();
 			startProcess();
 			registerSignalHandlers();
-			DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive(): updating nextRestart");
+			DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive(): updating nextRestart");
 			nextRestart.tv_sec += ((packet->timestamp.tv_sec-nextRestart.tv_sec)/restartInterval+1)*restartInterval;
 		}
 	}
@@ -343,7 +343,7 @@ void PCAPExporterPipe::receive(Packet* packet)
 
 	statBytesForwarded += packet->data_length;
 	statPktsForwarded++;
-	DPRINTFL(MSG_VDEBUG, "PCAPExporterPipe::receive() ended");
+	DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive() ended");
 }
 
 void PCAPExporterPipe::handleSigPipe(int sig)
@@ -374,7 +374,7 @@ void PCAPExporterPipe::handleSigChld(int sig)
 
 	if(!isRunning(fifoReaderPid)){
 		//waitpid(fifoReaderPid, NULL, 0);
-		msg(MSG_ERROR, "Process of fifoReaderCmd \'%s\' with fifoReaderPid %d is not running!",
+		msg(LOG_ERR, "Process of fifoReaderCmd \'%s\' with fifoReaderPid %d is not running!",
 				fifoReaderCmd.c_str(), fifoReaderPid);
 		startProcess();
 	}
@@ -407,18 +407,18 @@ void PCAPExporterPipe::kill_pid(int pid)
 {
 	int i = sigKillTimeout;
 	std::string path = "/proc/" + boost::lexical_cast<std::string>(pid);
-	/*msg(MSG_DEBUG, "Sending SIGTERM to pid %u", pid);
+	/*msg(LOG_INFO, "Sending SIGTERM to pid %u", pid);
 	if (kill(pid, SIGTERM)) {
-		msg(MSG_ERROR, "Failed to call kill(%u, SIGTERM), error code %u (%s)", pid, errno, strerror(errno));
+		msg(LOG_ERR, "Failed to call kill(%u, SIGTERM), error code %u (%s)", pid, errno, strerror(errno));
 	}*/
 	while(i--){
-		msg(MSG_INFO, "waiting for pid %d, but no longer than %d seconds...", pid, i+1);
+		msg(LOG_NOTICE, "waiting for pid %d, but no longer than %d seconds...", pid, i+1);
 		if (!isRunning(fifoReaderPid)) return;
 		sleep(1);
 	}
-	msg(MSG_DEBUG, "Sending SIGKILL to pid %u", pid);
+	msg(LOG_INFO, "Sending SIGKILL to pid %u", pid);
 	if (kill(pid, SIGKILL)) {
-		msg(MSG_ERROR, "Failed to call kill(%u, SIGKILL), error code %u (%s)", pid, errno, strerror(errno));
+		msg(LOG_ERR, "Failed to call kill(%u, SIGKILL), error code %u (%s)", pid, errno, strerror(errno));
 	}
 	waitpid(fifoReaderPid, NULL, 0);
 }
@@ -488,15 +488,15 @@ void PCAPExporterPipe::kill_all(int ppid)
 						for (std::vector<int>::iterator it = my_ppids.begin(); it != my_ppids.end(); it++) {
 							if (atoi(token) == *it) {
 #if BOOST_FILESYSTEM_VERSION == 3
-								msg(MSG_DEBUG, "Pid %s is a child of %d", dir_iterator->path().filename().string().c_str(), *it );
+								msg(LOG_INFO, "Pid %s is a child of %d", dir_iterator->path().filename().string().c_str(), *it );
 								my_pids.push_back(boost::lexical_cast<int>(dir_iterator->path().filename()));
 								my_ppids.push_back(boost::lexical_cast<int>(dir_iterator->path().filename()));
 #elif BOOST_FILE_SYSTEM_VERSION == 2
-								msg(MSG_DEBUG, "Pid %s is a child of %d", dir_iterator->leaf().c_str(), *it );
+								msg(LOG_INFO, "Pid %s is a child of %d", dir_iterator->leaf().c_str(), *it );
 								my_pids.push_back(boost::lexical_cast<int>(dir_iterator->leaf()));
 								my_ppids.push_back(boost::lexical_cast<int>(dir_iterator->leaf()));
 #else
-								msg(MSG_DEBUG, "Pid %s is a child of %d", dir_iterator->path().filename().c_str(), *it );
+								msg(LOG_INFO, "Pid %s is a child of %d", dir_iterator->path().filename().c_str(), *it );
 								my_pids.push_back(boost::lexical_cast<int>(dir_iterator->path().filename()));
 								my_ppids.push_back(boost::lexical_cast<int>(dir_iterator->path().filename()));
 								

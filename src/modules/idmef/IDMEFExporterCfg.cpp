@@ -26,7 +26,7 @@ IDMEFExporterCfg::IDMEFExporterCfg(XMLElement* elem)
 		} else if (e->matches("sendurl")) {
 			sendURL = e->getFirstText();
 		} else {
-			msg(MSG_FATAL, "Unknown IDMEFExporter config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown IDMEFExporter config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}

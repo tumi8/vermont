@@ -63,7 +63,7 @@ IpfixPayloadWriterCfg::IpfixPayloadWriterCfg(XMLElement* elem)
 			startIdx = getInt64("startIndex");
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixPayloadWriter config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown IpfixPayloadWriter config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
