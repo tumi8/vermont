@@ -32,7 +32,7 @@ void AnonFilter::setIEHeaderOffsets()
 			msg(LOG_ERR, "Unkown or unsupported type id %s detected.", i->first.toString().c_str());
 			continue;
 		}
-		DPRINTF("Save the following packet field for anonymization: setIEHeaderOffset id=%s, offset=%u, header=%u, packetClass=%u",
+		DPRINTF_INFO("Save the following packet field for anonymization: setIEHeaderOffset id=%s, offset=%u, header=%u, packetClass=%u",
 				i->first.toString().c_str(), i->second.offset, i->second.header, i->second.packetClass);
 	}
 }

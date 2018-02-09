@@ -101,8 +101,8 @@ void vermont_exception(const int, const char*, const char*, const char*, const c
 
 #ifdef DEBUG
 
-#define DPRINTF(...) msg(LOG_INFO, ##__VA_ARGS__)
-#define DPRINTFL(lvl, ...) msg(lvl, ##__VA_ARGS__)
+#define DPRINTF_INFO(...) msg(LOG_INFO, ##__VA_ARGS__)
+#define DPRINTF_DEBUG(...) msg(LOG_DEBUG, ##__VA_ARGS__)
 
 #define ASSERT(exp, description)                                                                        \
     __extension__                                                                                       \
@@ -123,8 +123,8 @@ void vermont_exception(const int, const char*, const char*, const char*, const c
 
 #else
 
-#define DPRINTF(...)
-#define DPRINTFL(...)
+#define DPRINTF_INFO(...)
+#define DPRINTF_DEBUG(...)
 #define ASSERT(exp, description)
 
 #endif

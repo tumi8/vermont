@@ -87,7 +87,7 @@ string IDMEFExporter::getFilename()
  */
 void IDMEFExporter::exportMessage(const string idmefmsg)
 {
-	DPRINTF("sending IDMEF message");
+	DPRINTF_INFO("sending IDMEF message");
 
 	string filename = getFilename();
 

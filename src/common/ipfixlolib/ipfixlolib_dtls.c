@@ -117,9 +117,9 @@ static int ensure_exporter_set_up_for_dtls(ipfix_exporter_certificate *c) {
 	    msg_openssl_errors();
 	    return -1;
 	}
-	DPRINTF("We successfully loaded our certificate.");
+	DPRINTF_INFO("We successfully loaded our certificate.");
     } else {
-	DPRINTF("We do NOT have a certificate.");
+	DPRINTF_INFO("We do NOT have a certificate.");
     }
     /* We leave the certificate_authorities list of the Certificate Request
      * empty. See RFC 4346 7.4.4. Certificate request. */
@@ -204,7 +204,7 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
     if ((con->socket = create_dtls_socket(col)) < 0) {
 	return -1;
     }
-    DPRINTF("Created socket %d",con->socket);
+    DPRINTF_INFO("Created socket %d",con->socket);
 
     /* ensure an SSL_CTX object is set up */
     if (ensure_exporter_set_up_for_dtls(&exporter->certificate)) {
@@ -221,7 +221,7 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
     /* Set verification parameters and cipherlist */
     if (!col->dtls_connection.peer_fqdn) {
 	SSL_set_cipher_list(con->ssl,"ALL"); // This includes anonymous ciphers
-	DPRINTF("We are NOT going to verify the certificates of the collectors b/c "
+	DPRINTF_INFO("We are NOT going to verify the certificates of the collectors b/c "
 		"the peerFqdn option is NOT set.");
     } else {
 	if ( ! ((exporter->certificate.ca_file || exporter->certificate.ca_path) &&
@@ -236,7 +236,7 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
 	    SSL_set_cipher_list(con->ssl,"DEFAULT");
 	    SSL_set_verify(con->ssl,SSL_VERIFY_PEER |
 		    SSL_VERIFY_FAIL_IF_NO_PEER_CERT,0);
-	    DPRINTF("We are going to request certificates from the collectors "
+	    DPRINTF_INFO("We are going to request certificates from the collectors "
 		    "and we are going to verify these b/c "
 		    "the peerFqdn option is set");
 	}
@@ -271,7 +271,7 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
 	    close(con->socket);con->socket = -1;
 	    return -1;
     }
-    DPRINTF("Set up SSL object.");
+    DPRINTF_INFO("Set up SSL object.");
 
     con->last_reconnect_attempt_time = time(NULL);
 
@@ -285,7 +285,7 @@ static int dtls_verify_peer_cb(void *context, const char* dnsname) {
 }
 
 static void dtls_fail_connection(ipfix_dtls_connection *con) {
-    DPRINTF("Failing DTLS connection.");
+    DPRINTF_INFO("Failing DTLS connection.");
     dtls_shutdown_and_cleanup(con);
 }
 
@@ -303,10 +303,10 @@ static int dtls_connect(ipfix_receiving_collector *col, ipfix_dtls_connection *c
 	msg_openssl_return_code(LOG_INFO,"SSL_connect()",ret,error);
 	msg(LOG_NOTICE, "Successfully (re)connected to %s-over-DTLS collector.", col->protocol == DTLS_OVER_SCTP ? "SCTP" : "UDP");
 	msg(LOG_NOTICE,"TLS Cipher: %s",SSL_get_cipher_name(con->ssl));
-	DPRINTF("DTLS handshake succeeded. We are now connected.");
+	DPRINTF_INFO("DTLS handshake succeeded. We are now connected.");
 	if (col->dtls_connection.peer_fqdn) { /* We need to verify the identity of our peer */
 	    if (verify_ssl_peer(con->ssl,&dtls_verify_peer_cb,col)) {
-		DPRINTF("Peer authentication successful.");
+		DPRINTF_INFO("Peer authentication successful.");
 	    } else {
 		msg(LOG_ERR,"Peer authentication failed. Shutting down connection.");
 		dtls_fail_connection(con);
@@ -331,14 +331,14 @@ static int dtls_get_replacement_connection_ready(
     if (!col->dtls_connection.dtls_replacement.ssl) {
 	/* No SSL object has been created yet. Let's open a socket and
 	 * setup a new SSL object. */
-	DPRINTF("Setting up replacement connection.");
+	DPRINTF_INFO("Setting up replacement connection.");
 	if (setup_dtls_connection(exporter,col,&col->dtls_connection.dtls_replacement)) {
 	    return -1;
 	}
     }
     ret = dtls_connect(col,&col->dtls_connection.dtls_replacement);
     if (ret == 1) {
-	DPRINTF("Replacement connection setup successful.");
+	DPRINTF_INFO("Replacement connection setup successful.");
 	return 1; /* SUCCESS */
     }
     if (ret == 0) {
@@ -348,7 +348,7 @@ static int dtls_get_replacement_connection_ready(
 	    msg(LOG_ERR,"DTLS replacement connection setup taking too long.");
 	    dtls_fail_connection(&col->dtls_connection.dtls_replacement);
 	} else {
-	    DPRINTF("Replacement connection setup still ongoing.");
+	    DPRINTF_INFO("Replacement connection setup still ongoing.");
 	    return 0;
 	}
     }
@@ -365,7 +365,7 @@ static void dtls_swap_connections(ipfix_dtls_connection *a, ipfix_dtls_connectio
 void dtls_shutdown_and_cleanup(ipfix_dtls_connection *con) {
     int ret,error;
     if (!con->ssl) return;
-    DPRINTF("Shutting down SSL connection.");
+    DPRINTF_INFO("Shutting down SSL connection.");
     ret = SSL_shutdown(con->ssl);
     error = SSL_get_error(con->ssl,ret);
 #ifdef DEBUG
@@ -383,8 +383,8 @@ void dtls_shutdown_and_cleanup(ipfix_dtls_connection *con) {
 	FD_ZERO(&readfds);
 	FD_SET(con->socket, &readfds);
 	ret = select(con->socket + 1,&readfds,NULL,NULL,&timeout);
-	DPRINTF("select returned: %d",ret);
-	DPRINTF("Calling SSL_shutdown()");
+	DPRINTF_INFO("select returned: %d",ret);
+	DPRINTF_INFO("Calling SSL_shutdown()");
 	ret = SSL_shutdown(con->ssl);
 	error = SSL_get_error(con->ssl,ret);
 	msg_openssl_return_code(LOG_INFO,"SSL_shutdown()",ret,error);
@@ -399,9 +399,9 @@ void dtls_shutdown_and_cleanup(ipfix_dtls_connection *con) {
     con->last_reconnect_attempt_time = 0;
     /* Close socket */
     if ( con->socket != -1) {
-	DPRINTF("Closing socket");
+	DPRINTF_INFO("Closing socket");
 	ret = close(con->socket);
-	DPRINTF("close returned %d",ret);
+	DPRINTF_INFO("close returned %d",ret);
 	con->socket = -1;
     }
 }
@@ -435,9 +435,9 @@ int dtls_manage_connection(ipfix_exporter *exporter, ipfix_receiving_collector *
 	rc = 1;
 	if (ret == 1) { /* Connection setup completed */
 	    rc = 0;
-	    DPRINTF("Swapping connections.");
+	    DPRINTF_INFO("Swapping connections.");
 	    dtls_swap_connections(&col->dtls_connection.dtls_main, &col->dtls_connection.dtls_replacement);
-	    DPRINTF("Shutting down old DTLS connection.");
+	    DPRINTF_INFO("Shutting down old DTLS connection.");
 	    dtls_shutdown_and_cleanup(&col->dtls_connection.dtls_replacement);
 	    col->dtls_connection.connect_time = time(NULL);
 	    ret = dtls_send_templates(exporter, col);
@@ -583,7 +583,7 @@ int dtls_send_templates(ipfix_exporter *exporter, ipfix_receiving_collector *col
     ipfix_update_header(exporter, col,
 	exporter->template_sendbuffer);
     col->messages_sent++;
-    DPRINTF("Sending templates over DTLS.");
+    DPRINTF_INFO("Sending templates over DTLS.");
     return dtls_send(exporter,col,
 	exporter->template_sendbuffer->entries,
 	exporter->template_sendbuffer->current);

@@ -51,7 +51,7 @@ Graph* Connector::connect(Graph* g)
 						id2node[nexts[j]]->getCfg()->getID());
 
 				if (connectModules) {// connect the modules
-					DPRINTF("connecting instances");
+					DPRINTF_INFO("connecting instances");
 					cfg->connectInstances(toNode->getCfg());
 				}
 			}

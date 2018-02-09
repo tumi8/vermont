@@ -40,31 +40,31 @@ TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::sha
 	TemplateBuffer::BufferedTemplate* bt = head;
 
 #ifdef DEBUG
-	DPRINTF("ALL TEMPLATES ---------------------------");
+	DPRINTF_INFO("ALL TEMPLATES ---------------------------");
 	while (bt != 0) {
-		DPRINTF("bt->sourceID odid %lu exporter port %u collector port %u exporter ip %u.%u.%u.%u len %u prot %u ptr: %lu size: %lu expires in %d sec", bt->sourceID.get()->observationDomainId, bt->sourceID.get()->exporterPort, bt->sourceID.get()->receiverPort, bt->sourceID.get()->exporterAddress.ip[0], bt->sourceID.get()->exporterAddress.ip[1], bt->sourceID.get()->exporterAddress.ip[2], bt->sourceID.get()->exporterAddress.ip[3], bt->sourceID.get()->exporterAddress.len, bt->sourceID.get()->protocol, bt->sourceID.get(), sizeof(IpfixRecord::SourceID), bt->expires - time(NULL));
+		DPRINTF_INFO("bt->sourceID odid %lu exporter port %u collector port %u exporter ip %u.%u.%u.%u len %u prot %u ptr: %lu size: %lu expires in %d sec", bt->sourceID.get()->observationDomainId, bt->sourceID.get()->exporterPort, bt->sourceID.get()->receiverPort, bt->sourceID.get()->exporterAddress.ip[0], bt->sourceID.get()->exporterAddress.ip[1], bt->sourceID.get()->exporterAddress.ip[2], bt->sourceID.get()->exporterAddress.ip[3], bt->sourceID.get()->exporterAddress.len, bt->sourceID.get()->protocol, bt->sourceID.get(), sizeof(IpfixRecord::SourceID), bt->expires - time(NULL));
 		
 		bt = bt->next;
 	}
-	DPRINTF("END ALL TEMPLATES --------------------------");
+	DPRINTF_INFO("END ALL TEMPLATES --------------------------");
 	
 	bt = head;
-	DPRINTF("Searching for : sourceID %lu %u %u %u.%u.%u.%u  %u %u", sourceId.get()->observationDomainId, sourceId.get()->exporterPort, sourceId.get()->receiverPort, sourceId.get()->exporterAddress.ip[0], sourceId.get()->exporterAddress.ip[1], sourceId.get()->exporterAddress.ip[2], sourceId.get()->exporterAddress.ip[3], sourceId.get()->exporterAddress.len, sourceId.get()->protocol);
+	DPRINTF_INFO("Searching for : sourceID %lu %u %u %u.%u.%u.%u  %u %u", sourceId.get()->observationDomainId, sourceId.get()->exporterPort, sourceId.get()->receiverPort, sourceId.get()->exporterAddress.ip[0], sourceId.get()->exporterAddress.ip[1], sourceId.get()->exporterAddress.ip[2], sourceId.get()->exporterAddress.ip[3], sourceId.get()->exporterAddress.len, sourceId.get()->protocol);
 #endif
 	
 	while (bt != 0) {
 		if ((*(bt->sourceID.get()) == *(sourceId.get())) && (bt->templateInfo->templateId == templateId)){
 			if (bt->isExpired()) {
-				DPRINTF("Template found but expired.");
+				DPRINTF_INFO("Template found but expired.");
 				cleanUpExpiredTemplates();
 				return 0;
 			}
-			DPRINTF("Template found.");
+			DPRINTF_INFO("Template found.");
 			return bt;
 		}
 		bt = bt->next;
 	}
-	DPRINTF("getBufferedTemplate not found!!!");
+	DPRINTF_INFO("getBufferedTemplate not found!!!");
 	return 0;
 }
 
@@ -87,7 +87,7 @@ void TemplateBuffer::cleanUpExpiredTemplates() {
 	TemplateBuffer::BufferedTemplate* bt = head;
 	while (bt != 0) {
 		if (bt->isExpired()) {
-			DPRINTF("Cleaning up expired template with id %d",bt->templateInfo->templateId);
+			DPRINTF_INFO("Cleaning up expired template with id %d",bt->templateInfo->templateId);
 			bt->onPreDestroy(ipfixParser);
 			if (predecessor)
 				predecessor->next = bt->next;
@@ -118,7 +118,7 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 		if (((*(bt->sourceID.get()) == *(sourceId.get())) && ((bt->templateInfo->templateId == templateId) || (bt->templateInfo->setId == templateId)))
 				|| (all && sourceId->equalIgnoringODID(*(bt->sourceID.get())))) {
 			found = true;
-			DPRINTF("Destroying template with id %u", bt->templateInfo->templateId);
+			DPRINTF_INFO("Destroying template with id %u", bt->templateInfo->templateId);
 			if (predecessor != 0) {
 				predecessor->next = bt->next;
 			} else {
@@ -135,7 +135,7 @@ void TemplateBuffer::destroyBufferedTemplate(boost::shared_ptr<IpfixRecord::Sour
 		}
 	}
 	if (!found && !all) {
-		DPRINTF("Destroy template - no matching template found (id=%u)", templateId);
+		DPRINTF_INFO("Destroy template - no matching template found (id=%u)", templateId);
 	}
 		
 }

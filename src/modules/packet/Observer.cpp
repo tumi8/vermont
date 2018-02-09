@@ -200,12 +200,12 @@ void *Observer::observerThread(void *arg)
 			 that can act as a via LD_PRELOAD used overlay function.
 			 unfortunately I don't have an URL ready -Freek
 			 */
-			DPRINTFL(LOG_DEBUG, "trying to get packet from pcap");
+			DPRINTF_DEBUG( "trying to get packet from pcap");
 			pcapData = pcap_next(obs->captureDevice, &packetHeader);
 			if(!pcapData)
 			/* no packet data was available */
 			continue;
-			DPRINTFL(LOG_DEBUG, "got new packet!");
+			DPRINTF_DEBUG( "got new packet!");
 
 			// show current packet as c-structure on stdout
 			//for (unsigned int i=0; i<packetHeader.caplen; i++) {
@@ -217,7 +217,7 @@ void *Observer::observerThread(void *arg)
 			p = packetManager.getNewInstance();
 			p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, obs->observationDomainID, packetHeader.len, obs->dataLinkType);
 
-			DPRINTF("received packet at %u.%04u, len=%d",
+			DPRINTF_INFO("received packet at %u.%04u, len=%d",
 					(unsigned)p->timestamp.tv_sec,
 					(unsigned)p->timestamp.tv_usec / 1000,
 					packetHeader.caplen
@@ -228,9 +228,9 @@ void *Observer::observerThread(void *arg)
 			obs->processedPackets++;
 
 			while (!obs->exitFlag) {
-				DPRINTFL(LOG_DEBUG, "trying to push packet to queue");
+				DPRINTF_DEBUG( "trying to push packet to queue");
 				if ((have_send = obs->send(p))) {
-					DPRINTFL(LOG_DEBUG, "packet pushed");
+					DPRINTF_DEBUG( "packet pushed");
 					break;
 				}
 			}
@@ -254,7 +254,7 @@ void *Observer::observerThread(void *arg)
 		// read-from-file loop
 		while(!obs->exitFlag && (obs->maxPackets==0 || obs->processedPackets<obs->maxPackets)) {
 
-			DPRINTFL(LOG_DEBUG, "trying to get packet from pcap file");
+			DPRINTF_DEBUG( "trying to get packet from pcap file");
 			pcapData=pcap_next(obs->captureDevice, &packetHeader);
 			if(!pcapData) {
 				/* no packet data was available */
@@ -263,7 +263,7 @@ void *Observer::observerThread(void *arg)
                         file_eof = true;
       				break;
       			}
-			DPRINTFL(LOG_DEBUG, "got new packet!");
+			DPRINTF_DEBUG( "got new packet!");
 			if (obs->stretchTime > 0) {
 				if (gettimeofday(&now, NULL) < 0) {
 					msg(LOG_CRIT, "Error gettimeofday: %s", strerror(errno));
@@ -285,7 +285,7 @@ void *Observer::observerThread(void *arg)
 					}
 					else
 						delta_to_be = delta_file;
-					DPRINTF("delta_now %d.%d delta_to_be %d.%d", delta_now.tv_sec, delta_now.tv_usec,  delta_to_be.tv_sec, delta_to_be.tv_usec);
+					DPRINTF_INFO("delta_now %d.%d delta_to_be %d.%d", delta_now.tv_sec, delta_now.tv_usec,  delta_to_be.tv_sec, delta_to_be.tv_usec);
 					if(timercmp(&delta_now, &delta_to_be, <))
 					{
 						timersub(&delta_to_be, &delta_now, &wait_val);
@@ -314,7 +314,7 @@ void *Observer::observerThread(void *arg)
 				packetHeader.ts, obs->observationDomainID, packetHeader.len, obs->dataLinkType);
 
 
-			DPRINTF("received packet at %u.%03u, len=%d",
+			DPRINTF_INFO("received packet at %u.%03u, len=%d",
 				(unsigned)p->timestamp.tv_sec,
 				(unsigned)p->timestamp.tv_usec / 1000,
 				packetHeader.caplen
@@ -325,9 +325,9 @@ void *Observer::observerThread(void *arg)
 			obs->processedPackets++;
 
 			while (!obs->exitFlag) {
-				DPRINTFL(LOG_DEBUG, "trying to push packet to queue");
+				DPRINTF_DEBUG( "trying to push packet to queue");
 				if ((have_send = obs->send(p))) {
-					DPRINTFL(LOG_DEBUG, "packet pushed");
+					DPRINTF_DEBUG( "packet pushed");
 					break;
 				}
 			}
@@ -336,7 +336,7 @@ void *Observer::observerThread(void *arg)
 
 	if (obs->autoExit && (file_eof || (obs->maxPackets && obs->processedPackets>=obs->maxPackets)) ) {
 		// notify Vermont to shut down
-		DPRINTF("notifying Vermont to shut down, as all PCAP file data was read, or maximum packet count was reached");
+		DPRINTF_INFO("notifying Vermont to shut down, as all PCAP file data was read, or maximum packet count was reached");
 		obs->shutdownVermont();
 	}
 

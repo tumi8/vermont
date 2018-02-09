@@ -46,7 +46,7 @@ void ensure_openssl_init(void) {
 	    msg_openssl_errors();
 	};
 #endif
-	DPRINTF("Initialized OpenSSL");
+	DPRINTF_INFO("Initialized OpenSSL");
     }
     m.unlock();
 }
@@ -99,7 +99,7 @@ void msg_openssl_return_code(const char *fn, int ret, int error) {
 
 	return oss.str();
     if (ret > 0) {
-	DPRINTF("%s returned: %d",fn,ret);
+	DPRINTF_INFO("%s returned: %d",fn,ret);
     } else {
 	char buf[16];
 	char *s = 0;
@@ -114,9 +114,9 @@ void msg_openssl_return_code(const char *fn, int ret, int error) {
 	    snprintf(buf,sizeof(buf),"%d",error);
 	    s = buf;
 	}
-	DPRINTF("%s returned: %d, error: %s",
+	DPRINTF_INFO("%s returned: %d, error: %s",
 
-    DPRINTF("SSL_read() returned: %d, error: %d, strerror: %s",ret,error,strerror(errno));
+    DPRINTF_INFO("SSL_read() returned: %d, error: %d, strerror: %s",ret,error,strerror(errno));
 }
 #endif
 
@@ -139,7 +139,7 @@ int verify_ssl_peer(SSL *ssl, int (*cb)(void *context, const char *dnsname), voi
     long verify_result;
 
     verify_result = SSL_get_verify_result(ssl);
-    DPRINTF("SSL_get_verify_result() returned: %s",X509_verify_cert_error_string(verify_result));
+    DPRINTF_INFO("SSL_get_verify_result() returned: %s",X509_verify_cert_error_string(verify_result));
     if(verify_result!=X509_V_OK) {
 	msg(LOG_ERR,"Certificate doesn't verify: %s", X509_verify_cert_error_string(verify_result));
 	return 0;
@@ -190,7 +190,7 @@ int check_x509_cert(X509 *peer, int (*cb)(void *context, const char *dnsname), v
     char buf[512];
 #if DEBUG
     X509_NAME_oneline(X509_get_subject_name(peer),buf,sizeof buf);
-    DPRINTF("peer certificate subject: %s",buf);
+    DPRINTF_INFO("peer certificate subject: %s",buf);
 #endif
     const STACK_OF(GENERAL_NAME) * gens;
     const GENERAL_NAME *gn;
@@ -220,9 +220,9 @@ int check_x509_cert(X509 *peer, int (*cb)(void *context, const char *dnsname), v
 	    msg(LOG_ERR, "malformed X509 cert");
 	    return 0;
 	}
-	DPRINTF("Subject Alternative Name: DNS:%s",dnsname);
+	DPRINTF_INFO("Subject Alternative Name: DNS:%s",dnsname);
 	if ( (*cb)(context, dnsname) ) {
-	    DPRINTF("Subject Alternative Name matched one of the "
+	    DPRINTF_INFO("Subject Alternative Name matched one of the "
 		    "permitted FQDNs");
 	    return 1;
 	}
@@ -231,15 +231,15 @@ int check_x509_cert(X509 *peer, int (*cb)(void *context, const char *dnsname), v
     if ((len = X509_NAME_get_text_by_NID
 	    (X509_get_subject_name(peer),
 	     NID_commonName, buf, sizeof buf)) <=0 ) {
-	DPRINTF("CN not part of certificate");
+	DPRINTF_INFO("CN not part of certificate");
     } else {
 	if (len != strlen(buf)) {
 	    msg(LOG_ERR,"malformed X509 cert: CN invalid");
 		    return 0;
 	}
-	DPRINTF("most specific (1st) Common Name: %s",buf);
+	DPRINTF_INFO("most specific (1st) Common Name: %s",buf);
 	if ( (*cb)(context, buf) ) {
-	    DPRINTF("Common Name (CN) matched one of the "
+	    DPRINTF_INFO("Common Name (CN) matched one of the "
 		    "permitted FQDNs");
 	    return 1;
 	}

@@ -180,7 +180,7 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 			if (prop->ipfixId == EXPORTERID) {
 				// if this is the same source ID as last time, we get the exporter id from currentExporter
 				if ((currentExporter != NULL) && equalExporter(sourceID, currentExporter->sourceID)) {
-					DPRINTF("Exporter is same as last time (ODID=%d, id=%d)", sourceID.observationDomainId, currentExporter->id);
+					DPRINTF_INFO("Exporter is same as last time (ODID=%d, id=%d)", sourceID.observationDomainId, currentExporter->id);
 					intdata = (uint64_t)currentExporter->id;
 				} else {
 				// lookup exporter buffer to get exporterID from sourcID and expIp
@@ -196,7 +196,7 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 							dataTemplateInfo.fieldInfo[k].type.id == prop->ipfixId) {
 							notfound = false;
 							intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-							DPRINTF("IpfixDbWriterMongo::getData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X",
+							DPRINTF_INFO("IpfixDbWriterMongo::getData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X",
 							  prop->ipfixId, intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length,
 							  dataTemplateInfo.fieldInfo[k].offset);
 							break;
@@ -346,7 +346,7 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 				// look in ipfix records
 				for(int k=0; k < dataTemplateInfo.fieldCount; k++) {
 						intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-						DPRINTF("IpfixDbWriterMongo::getData: dumping from packet intdata %llX, type %d, length %d and offset %X",
+						DPRINTF_INFO("IpfixDbWriterMongo::getData: dumping from packet intdata %llX, type %d, length %d and offset %X",
 						  intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length,
 						  dataTemplateInfo.fieldInfo[k].offset);
 						obj << boost::lexical_cast<std::string>(dataTemplateInfo.fieldInfo[k].type.id).c_str() << static_cast<long long int>(intdata);
@@ -391,7 +391,7 @@ int IpfixDbWriterMongo::getExporterID(const IpfixRecord::SourceID& sourceID)
 	while(iter != exporterCache.end()) {
 		if (equalExporter(iter->sourceID, sourceID)) {
 			// found exporter in exporterCache
-			DPRINTF("Exporter (ODID=%d, id=%d) found in exporter cache", sourceID.observationDomainId, iter->id);
+			DPRINTF_INFO("Exporter (ODID=%d, id=%d) found in exporter cache", sourceID.observationDomainId, iter->id);
 			exporterCache.push_front(*iter);
 			exporterCache.erase(iter);
 			// update current exporter

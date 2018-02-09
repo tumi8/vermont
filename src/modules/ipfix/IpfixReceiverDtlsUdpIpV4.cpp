@@ -122,9 +122,9 @@ IpfixReceiverDtlsUdpIpV4::~IpfixReceiverDtlsUdpIpV4() {
 void IpfixReceiverDtlsUdpIpV4::dumpConnections() {
     struct in_addr addr;
     char ipaddr[INET_ADDRSTRLEN];
-    DPRINTF("Dumping DTLS connections:");
+    DPRINTF_INFO("Dumping DTLS connections:");
     if (connections.empty()) {
-	DPRINTF("  (none)");
+	DPRINTF_INFO("  (none)");
 	return;
     }
     connections_map::const_iterator it = connections.begin();
@@ -132,7 +132,7 @@ void IpfixReceiverDtlsUdpIpV4::dumpConnections() {
 	const IpfixRecord::SourceID &sourceID = it->first;
 	memcpy(&addr.s_addr,sourceID.exporterAddress.ip, sourceID.exporterAddress.len);
 	inet_ntop(AF_INET,&addr,ipaddr,sizeof(ipaddr));
-	DPRINTF("  %s",it->second->inspect().c_str());
+	DPRINTF_INFO("  %s",it->second->inspect().c_str());
     }
 }
 #endif
@@ -218,7 +218,7 @@ void IpfixReceiverDtlsUdpIpV4::run() {
 #ifdef DEBUG
 	char ipaddr[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET,&clientAddress.sin_addr,ipaddr,sizeof(ipaddr));
-	DPRINTF("Received packet of size %d from %s:%d",ret,ipaddr,ntohs(clientAddress.sin_port));
+	DPRINTF_INFO("Received packet of size %d from %s:%d",ret,ipaddr,ntohs(clientAddress.sin_port));
 #endif
 	/* Set up sourceID */
 	memcpy(sourceID->exporterAddress.ip, &clientAddress.sin_addr.s_addr, 4);
@@ -232,7 +232,7 @@ void IpfixReceiverDtlsUdpIpV4::run() {
 	DtlsConnectionPtr conn;
 	if (it == connections.end()) {
 	    /* create a new connection if we did not find any. */
-	    DPRINTF("New connection");
+	    DPRINTF_INFO("New connection");
 	    if (connections.size() >= DTLS_MAX_CONCURRENT_CONNECTIONS) {
 		msg(LOG_ERR,"Maximum number (%d) of concurrent "
 			"connections reached. Ignoring new connection "
@@ -244,7 +244,7 @@ void IpfixReceiverDtlsUdpIpV4::run() {
 	    it = connections.insert(make_pair(*sourceID,conn)).first;
 	} else {
 	    /* Use existing connection */
-	    DPRINTF("Found existing connection.");
+	    DPRINTF_INFO("Found existing connection.");
 	    conn = it->second;
 	}
 	conn->consumeDatagram(sourceID, secured_data,ret);
@@ -316,20 +316,20 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::accept() {
     ret = SSL_accept(ssl);
     if (SSL_get_shared_ciphers(ssl,buf,sizeof buf) != NULL)
 #ifdef DEBUG
-       DPRINTF("Shared ciphers:%s",buf);
+       DPRINTF_INFO("Shared ciphers:%s",buf);
 #else
        { /* do nothing */ }
 #endif
     if (ret==1) {
 	state = CONNECTED;
-	DPRINTF("SSL_accept() succeeded.");
+	DPRINTF_INFO("SSL_accept() succeeded.");
 #ifdef DEBUG
 	const char *str=SSL_CIPHER_get_name(SSL_get_current_cipher(ssl));
-	DPRINTF("CIPHER is %s",(str != NULL)?str:"(NONE)");
+	DPRINTF_INFO("CIPHER is %s",(str != NULL)?str:"(NONE)");
 #endif
 	if (parent.ssl_ctx.get_verify_peers()) {
 	    if (verify_peer()) {
-		DPRINTF("Peer authentication successful.");
+		DPRINTF_INFO("Peer authentication successful.");
 	    } else {
 		msg(LOG_ERR,"Peer authentication failed. Shutting down connection.");
 		shutdown();
@@ -339,9 +339,9 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::accept() {
 	return 1;
     }
     error = SSL_get_error(ssl,ret);
-    DPRINTF("SSL_accept() returned: %d, error: %d, strerror: %s",ret,error,strerror(errno));
+    DPRINTF_INFO("SSL_accept() returned: %d, error: %d, strerror: %s",ret,error,strerror(errno));
     if (ret==-1 && error == SSL_ERROR_WANT_READ) {
-	DPRINTF("SSL_accept() returned SSL_ERROR_WANT_READ");
+	DPRINTF_INFO("SSL_accept() returned SSL_ERROR_WANT_READ");
 	return 0;
     }
     msg(LOG_ERR,"SSL_accept() failed.");
@@ -361,12 +361,12 @@ void IpfixReceiverDtlsUdpIpV4::DtlsConnection::shutdown() {
 #endif
     ret = SSL_shutdown(ssl);
     if (ret == 0) {
-	DPRINTF("Calling SSL_shutdown a second time.");
+	DPRINTF_INFO("Calling SSL_shutdown a second time.");
 	ret = SSL_shutdown(ssl);
     }
 #ifdef DEBUG    
     error = SSL_get_error(ssl,ret);
-    DPRINTF("SSL_shutdown() returned: %d, error: %d, strerror: %s",ret,error,strerror(errno));
+    DPRINTF_INFO("SSL_shutdown() returned: %d, error: %d, strerror: %s",ret,error,strerror(errno));
 #endif
     state = SHUTDOWN;
 }
@@ -385,7 +385,7 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::consumeDatagram(
     last_used = time(NULL);
 
     if (state == SHUTDOWN) {
-	DPRINTF("state == SHUTDOWN. Ignoring datagram");
+	DPRINTF_INFO("state == SHUTDOWN. Ignoring datagram");
 	return 1;
     }
 #ifdef DEBUG
@@ -410,7 +410,7 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::consumeDatagram(
     boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
     ret = SSL_read(ssl,data.get(),MAX_MSG_LEN);
     error = SSL_get_error(ssl,ret);
-    DPRINTF("SSL_read() returned: %d, error: %d, strerror: %s",ret,error,strerror(errno));
+    DPRINTF_INFO("SSL_read() returned: %d, error: %d, strerror: %s",ret,error,strerror(errno));
     if (ret<0) {
 	if (error == SSL_ERROR_WANT_READ)
 	    return 1;
@@ -421,7 +421,7 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::consumeDatagram(
     } else if (ret==0) {
 	if (error == SSL_ERROR_ZERO_RETURN) {
 	    // remote side closed connection
-	    DPRINTF("remote side closed connection.");
+	    DPRINTF_INFO("remote side closed connection.");
 	} else {
 	    msg(LOG_ERR,"SSL_read() returned 0. SSL_get_error() returned: %d",error);
 	    msg_openssl_errors();
@@ -429,7 +429,7 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::consumeDatagram(
 	shutdown();
 	return 0;
     } else {
-	DPRINTF("SSL_read() returned %d bytes.",ret);
+	DPRINTF_INFO("SSL_read() returned %d bytes.",ret);
     }
     parent.statReceivedPackets++;
     parent.mutex.lock();
@@ -450,7 +450,7 @@ void IpfixReceiverDtlsUdpIpV4::idle_processing() {
     while(it!=connections.end()) {
 	tmp = it++;
 	if (tmp->second->isInactive()) {
-	    DPRINTF("Removing connection %s",tmp->second->inspect(false).c_str());
+	    DPRINTF_INFO("Removing connection %s",tmp->second->inspect(false).c_str());
 	    connections.erase(tmp);
 	    changed = true;
 	}
@@ -473,21 +473,21 @@ bool IpfixReceiverDtlsUdpIpV4::DtlsConnection::isInactive() {
     switch (state) {
 	case ACCEPTING:
 	    if (diff > DTLS_ACCEPT_TIMEOUT) {
-		DPRINTF("accept timed out on %s",inspect(false).c_str());
+		DPRINTF_INFO("accept timed out on %s",inspect(false).c_str());
 		shutdown();
 		return true;
 	    }
 	    break;
 	case CONNECTED:
 	    if (diff > DTLS_IDLE_TIMEOUT) {
-		DPRINTF("idle timeout on %s",inspect(false).c_str());
+		DPRINTF_INFO("idle timeout on %s",inspect(false).c_str());
 		shutdown();
 		return true;
 	    }
 	    break;
 	case SHUTDOWN:
 	    if (diff > DTLS_SHUTDOWN_TIMEOUT) {
-		DPRINTF("shutdown timeout on %s",inspect(false).c_str());
+		DPRINTF_INFO("shutdown timeout on %s",inspect(false).c_str());
 		return true;
 	    }
 	    break;

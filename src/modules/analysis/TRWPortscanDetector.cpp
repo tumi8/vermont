@@ -207,7 +207,7 @@ void TRWPortscanDetector::addConnection(Connection* conn)
 		}
 	}
 
-	DPRINTF("IP: %s, S_N: %f", IPToString(te->srcIP).c_str(), te->S_N);
+	DPRINTF_INFO("IP: %s, S_N: %f", IPToString(te->srcIP).c_str(), te->S_N);
 	
 	// look if information is adequate for deciding on host
 	if (te->S_N<logeta_0) {

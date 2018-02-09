@@ -302,9 +302,9 @@ void BaseHashtable::expireFlows(bool all)
 			// now must be updated by the child classes
 			if ((bucket->inactiveExpireTime <= unix_now.tv_sec) || (bucket->activeExpireTime <= unix_now.tv_sec) || all) {
 				if (unix_now.tv_sec >= bucket->activeExpireTime) {
-					DPRINTF("expireFlows: forced expiry");
+					DPRINTF_INFO("expireFlows: forced expiry");
 				} else if (unix_now.tv_sec >= bucket->inactiveExpireTime) {
-					DPRINTF("expireFlows: normal expiry");
+					DPRINTF_INFO("expireFlows: normal expiry");
 				}
 				if (bucket->inTable) removeBucket(bucket);
 				statExportedBuckets++;
@@ -511,9 +511,9 @@ void BaseHashtable::genBiflowStructs()
 
 	// search for offsets in dataTemplate
 	revKeyMapper = new uint32_t[dataTemplate->fieldCount];
-	DPRINTF("fieldCount=%d", dataTemplate->fieldCount);
+	DPRINTF_INFO("fieldCount=%d", dataTemplate->fieldCount);
 	for (int32_t i=0; i<dataTemplate->fieldCount; i++) {
-		DPRINTF("fieldCount=%d", i);
+		DPRINTF_INFO("fieldCount=%d", i);
 		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 		if (fi->type.length>maxFieldSize) maxFieldSize = fi->type.length;
 		bool defaultassign = false;
@@ -576,15 +576,15 @@ void BaseHashtable::genBiflowStructs()
 		if (defaultassign) {
 			// this call is dangerous, as calculated type ids may not exist at all
 			// but mapReverseElement will detect those and throw an exception
-			DPRINTF("field %s", fi->type.toString().c_str());
+			DPRINTF_INFO("field %s", fi->type.toString().c_str());
 			if ((fi->type.enterprise&IPFIX_PEN_reverse)==0) {
 				InformationElement::IeInfo rev = fi->type.getReverseDirection();
 				mapReverseElement(rev);
-				DPRINTF("mapping field %s to field %s", fi->type.toString().c_str(), rev.toString().c_str());
+				DPRINTF_INFO("mapping field %s to field %s", fi->type.toString().c_str(), rev.toString().c_str());
 			} else {
 				// do not reverse element
 				mapReverseElement(fi->type);
-				DPRINTF("not mapping field %s to its reverse element", fi->type.toString().c_str());
+				DPRINTF_INFO("not mapping field %s to its reverse element", fi->type.toString().c_str());
 			}
 		}
 	}

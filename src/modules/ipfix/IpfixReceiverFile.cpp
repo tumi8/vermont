@@ -283,7 +283,7 @@ void IpfixReceiverFile::run()
 
 			for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); 
 					i != packetProcessors.end(); ++i) {
-				DPRINTF("Data block starts with: %x %x %x %x", data[0], data[1], data[2], data[3]);
+				DPRINTF_INFO("Data block starts with: %x %x %x %x", data[0], data[1], data[2], data[3]);
 				(*i)->processPacket(data, n, sourceID);
 			}
 		}

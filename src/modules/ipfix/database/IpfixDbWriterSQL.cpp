@@ -262,7 +262,7 @@ void IpfixDbWriterSQL::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 		TemplateInfo* dataTemplateInfo, uint16_t length,
 		IpfixRecord::Data* data)
 {
-	DPRINTF("Processing data record");
+	DPRINTF_INFO("Processing data record");
 
 
 	if (dbError) {
@@ -397,7 +397,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			for(k=0; k < dataTemplateInfo->fieldCount; k++) {
 				if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
 					parseIpfixData(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset), &parsedData);
-					DPRINTF("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
+					DPRINTF_INFO("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
 					break;
 				}
 			}
@@ -448,7 +448,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 				}
 		}
 
-		DPRINTF("saw ipfix id %d in packet with parsedData %llX", col->ipfixId, parsedData);
+		DPRINTF_INFO("saw ipfix id %d in packet with parsedData %llX", col->ipfixId, parsedData);
 
 		if(first) {
 			rowStream << parsedData;

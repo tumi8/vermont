@@ -301,7 +301,7 @@ bool IpfixDbWriterOracle::createDBTable(const char* partitionname, uint64_t star
 
         if (find(usedPartitions.begin(), usedPartitions.end(), partitionname)!=usedPartitions.end()) {
                 // found cached entry!
-                DPRINTF("Partition '%s' already created.", partitionname);
+                DPRINTF_INFO("Partition '%s' already created.", partitionname);
                 return true;
         }
 
@@ -415,7 +415,7 @@ int IpfixDbWriterOracle::getExporterID(IpfixRecord::SourceID* sourceID)
 	for(i = 0; i < curExporterEntries; i++) {
 		if(exporterEntries[i].observationDomainId == sourceID->observationDomainId &&
 			exporterEntries[i].ip==expIp) {
-			DPRINTF("Exporter sourceID/IP with ID %d is in the exporterBuffer\n",
+			DPRINTF_INFO("Exporter sourceID/IP with ID %d is in the exporterBuffer\n",
 				exporterEntries[i].Id);
 			return exporterEntries[i].Id;
 		}
@@ -516,7 +516,7 @@ int IpfixDbWriterOracle::getExporterID(IpfixRecord::SourceID* sourceID)
 					while(rs->next())
 					{
 						exporterID = rs->getInt(1);
-						DPRINTF("ExporterID %d is in exporter table", exporterID);
+						DPRINTF_INFO("ExporterID %d is in exporter table", exporterID);
 					}
 					stmt->closeResultSet(rs);
 				}

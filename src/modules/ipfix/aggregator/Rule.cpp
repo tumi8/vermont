@@ -79,7 +79,7 @@ void Rule::initialize()
 		THROWEXCEPTION("received unknown field type, no valid protocol match");
 	}
 
-	DPRINTF("valid protocols for this template: %02X", validProtocols);
+	DPRINTF_INFO("valid protocols for this template: %02X", validProtocols);
 
 	// write all rules containing a pattern to be matched for in array
 	patternFields = new Rule::Field*[fieldCount];

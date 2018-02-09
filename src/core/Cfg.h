@@ -192,7 +192,7 @@ public:
 
 	virtual ~CfgHelper()
 	{
-		DPRINTF("~CfgHelper [%s]\n", this->getName().c_str());
+		DPRINTF_INFO("~CfgHelper [%s]\n", this->getName().c_str());
 		shutdown(false);
 		freeTimeoutAdapter();
 		freeInstance();

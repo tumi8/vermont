@@ -76,7 +76,7 @@ PSAMPExporterModule::~PSAMPExporterModule()
 void PSAMPExporterModule::startNewPacketStream()
 {
     unsigned short net_tmplid = htons(templ->getTemplateID());
-    DPRINTF("Starting new PSAMP packet");
+    DPRINTF_INFO("Starting new PSAMP packet");
     ipfix_start_data_set(exporter, net_tmplid);
 }
 
@@ -93,14 +93,14 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 	// first check, if we can buffer this packet
 	if (!(numPacketsToRelease < MAX_PACKETS)) {
 		msg(LOG_ERR, "packet buffer too small, packet dropped.");
-		DPRINTF("dropping packet");
+		DPRINTF_INFO("dropping packet");
 		pck->removeReference();
 		return false;
 	}
 
 	// now, check if packet matches template requirements, i.e. if all fields are available
 	if (!templ->checkPacketConformity(pck->classification)) {
-		DPRINTF("Packet does not contain all fields required by the template! Skip this packet.");
+		DPRINTF_INFO("Packet does not contain all fields required by the template! Skip this packet.");
 		goto error2;
 	}
 
@@ -139,7 +139,7 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 	}
 
 	// if we will export the packet, we keep and and release it later, after we have sent the data
-	DPRINTF("Adding packet to buffer");
+	DPRINTF_INFO("Adding packet to buffer");
 	packetsToRelease[numPacketsToRelease++] = pck;
 	return true;
 
@@ -149,7 +149,7 @@ error1:
 
 error2:
 	// we do no export this packet, i.e. we can release it right now.
-	DPRINTF("dropping packet");
+	DPRINTF_INFO("dropping packet");
 	pck->removeReference();
 	return false;
 }
@@ -165,7 +165,7 @@ void PSAMPExporterModule::flushPacketStream() {
 	ipfix_end_data_set(exporter, numPacketsToRelease);
 	ipfix_send(exporter);
 
-	DPRINTF("dropping %d packets", numPacketsToRelease);
+	DPRINTF_INFO("dropping %d packets", numPacketsToRelease);
 	for (int i = 0; i < numPacketsToRelease; i++) {
 		(packetsToRelease[i])->removeReference();
 	}
@@ -179,7 +179,7 @@ void PSAMPExporterModule::flushPacketStream() {
 
 bool PSAMPExporterModule::addCollector(const char *address, uint16_t port, ipfix_transport_protocol protocol, const char *vrfName)
 {
-	DPRINTF("Adding %i://%s:%d", protocol, address, port);
+	DPRINTF_INFO("Adding %i://%s:%d", protocol, address, port);
 	return(ipfix_add_collector(exporter, address, port, protocol, NULL, vrfName) == 0);
 }
 

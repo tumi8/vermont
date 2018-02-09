@@ -33,7 +33,7 @@ Graph::Graph() : reserved(30)
 
 Graph::~Graph()
 {
-	DPRINTF("~Graph()");
+	DPRINTF_INFO("~Graph()");
 	std::vector<CfgNode*> ts = topoSort();
 
 	for (size_t i = 0; i < reserved; i++) {
@@ -54,7 +54,7 @@ Graph::~Graph()
 	for (size_t i = 0; i < ts.size(); i++) {
 		delete ts[i];
 	}
-	DPRINTF("~Graph() done");
+	DPRINTF_INFO("~Graph() done");
 }
 
 CfgNode* Graph::addNode(Cfg* cfg)
@@ -225,14 +225,14 @@ std::vector<CfgNode*> Graph::getSources(Node* n) {
 
 void Graph::depthSearch(Node* v)
 {
-	DPRINTFL(LOG_DEBUG, "called (%u)", v->getID());
+	DPRINTF_DEBUG( "called (%u)", v->getID());
 	preOrder[v->getID()] = cnt++;
 
 	std::vector<CfgNode*> outNodes = getDestinations(v);
 	for (std::vector<CfgNode*>::const_iterator it = outNodes.begin();
 	     it != outNodes.end();
 	     it++) {
-		DPRINTFL(LOG_DEBUG, "module %u -> module %u", v->getID(), (*it)->getID());
+		DPRINTF_DEBUG( "module %u -> module %u", v->getID(), (*it)->getID());
 		Node* other = *it;
 		if (preOrder[other->getID()] == -1)
 			depthSearch(other);
@@ -257,7 +257,7 @@ std::vector<CfgNode*> Graph::topoSort()
 	}
 
 	for (size_t i = 0; i < nodes.size(); i++) {
-		DPRINTFL(LOG_DEBUG, "NodeID=%u, Modulename=%s", nodes[i]->getID(), nodes[i]->getCfg()->getName().c_str());
+		DPRINTF_DEBUG( "NodeID=%u, Modulename=%s", nodes[i]->getID(), nodes[i]->getCfg()->getName().c_str());
 		if (preOrder[i] == -1)
 			depthSearch(nodes[i]);
 	}

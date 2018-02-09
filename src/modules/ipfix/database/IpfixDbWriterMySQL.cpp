@@ -66,7 +66,7 @@ void IpfixDbWriterMySQL::connectToDB()
 
 	/** make query string to create database**/
 	statement << "CREATE DATABASE IF NOT EXISTS " << dbName;
-	DPRINTF("SQL Query: %s", statement.str().c_str());
+	DPRINTF_INFO("SQL Query: %s", statement.str().c_str());
 
 	/**create database*/
 	if(mysql_query(conn, statement.str().c_str()) != 0 ) {
@@ -100,7 +100,7 @@ int IpfixDbWriterMySQL::createExporterTable()
 	statement.str("");
 	statement.clear();
 	statement << "CREATE TABLE IF NOT EXISTS exporter (id SMALLINT(5) NOT NULL AUTO_INCREMENT, sourceID INTEGER(10) UNSIGNED DEFAULT NULL, srcIP INTEGER(10) UNSIGNED DEFAULT NULL, PRIMARY KEY(id))";
-	DPRINTF("SQL Query: %s", statement.str().c_str());
+	DPRINTF_INFO("SQL Query: %s", statement.str().c_str());
 	if(mysql_query(conn, statement.str().c_str()) != 0) {
 		msg(LOG_CRIT,"IpfixDbWriterMySQL: Creation of exporter table failed. Error: %s",
 				mysql_error(conn));
@@ -122,7 +122,7 @@ bool IpfixDbWriterMySQL::createDBTable(const char* partitionname, uint64_t start
 
 	if (find(usedPartitions.begin(), usedPartitions.end(), partitionname)!=usedPartitions.end()) {
 		// found cached entry!
-		DPRINTF("Partition '%s' already created.", partitionname);
+		DPRINTF_INFO("Partition '%s' already created.", partitionname);
 		return true;
 	}
 
@@ -168,7 +168,7 @@ bool IpfixDbWriterMySQL::writeToDb()
 {
 	if (insertBuffer.curRows == 0) return true;
 
-	DPRINTF("SQL Query: %s", insertBuffer.sql);
+	DPRINTF_INFO("SQL Query: %s", insertBuffer.sql);
 
 	if(mysql_query(conn, insertBuffer.sql) != 0) {
 		msg(LOG_ERR,"IpfixDbWriterMySQL: Insert of records failed. Error: %s", mysql_error(conn));
@@ -211,7 +211,7 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 	for(i = 0; i < curExporterEntries; i++) {
 		if(exporterEntries[i].observationDomainId == sourceID->observationDomainId &&
 				exporterEntries[i].ip==expIp) {
-			DPRINTF("Exporter sourceID/IP with ID %d is in the exporterBuffer\n",
+			DPRINTF_INFO("Exporter sourceID/IP with ID %d is in the exporterBuffer\n",
 					exporterEntries[i].Id);
 			return exporterEntries[i].Id;
 		}
@@ -233,7 +233,7 @@ int IpfixDbWriterMySQL::getExporterID(IpfixRecord::SourceID* sourceID)
 		// found in table
 		exporterID = atoi(dbRow[0]);
 		mysql_free_result(dbResult);
-		DPRINTF("ExporterID %d is in exporter table", exporterID);
+		DPRINTF_INFO("ExporterID %d is in exporter table", exporterID);
 	} else {
 		mysql_free_result(dbResult);
 		// insert new exporter table entry

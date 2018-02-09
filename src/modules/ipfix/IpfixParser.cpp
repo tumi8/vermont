@@ -315,7 +315,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		} else {
 			msg(LOG_NOTICE, "Template %d from non-IPv4 unknown to collecting process", ntohs(set->id));
 		}
-		DPRINTF("Protocol: %u  Remote Port: %u", sourceId->protocol, sourceId->exporterPort);
+		DPRINTF_INFO("Protocol: %u  Remote Port: %u", sourceId->protocol, sourceId->exporterPort);
 		return 0;
 	}
         
@@ -389,7 +389,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 							recordLength += 2;
 						}
 					}
-					DPRINTF("Scope field: original length %u, offset %u", ti->fieldInfo[i].type.length, ti->fieldInfo[i].offset);
+					DPRINTF_INFO("Scope field: original length %u, offset %u", ti->fieldInfo[i].type.length, ti->fieldInfo[i].offset);
 					ti->scopeInfo[i].offset = recordLength;
 					ti->scopeInfo[i].type.length = fieldLength;
 					recordLength += fieldLength;
@@ -397,7 +397,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 
 				/* final check if entire record is within set boundary */
 				if (incomplete || (record + recordLength > endOfSet)) {
-					DPRINTF("Incomplete variable length record");
+					DPRINTF_INFO("Incomplete variable length record");
 					break;
 				} 
 
@@ -423,7 +423,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 							recordLength += 2;
 						}
 					}
-					DPRINTF("Non-scope field: original length %u, offset %u", ti->fieldInfo[i].type.length, ti->fieldInfo[i].offset);
+					DPRINTF_INFO("Non-scope field: original length %u, offset %u", ti->fieldInfo[i].type.length, ti->fieldInfo[i].offset);
 					ti->fieldInfo[i].offset = recordLength;
 					ti->fieldInfo[i].type.length = fieldLength;
 					recordLength += fieldLength;
@@ -431,7 +431,7 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 
 				/* final check if entire record is within set boundary */
 				if (incomplete || (record + recordLength > endOfSet)) {
-					DPRINTF("Incomplete variable length record");
+					DPRINTF_INFO("Incomplete variable length record");
 					break;
 				} 
 

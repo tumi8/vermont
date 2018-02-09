@@ -89,7 +89,7 @@ std::string IpfixFlowInspectorExporter::getInsertObj(TemplateInfo& dataTemplateI
 		// look in ipfix records
 		for(int k=0; k < dataTemplateInfo.fieldCount; k++) {
 			intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-			DPRINTF("IpfixFlowInspectorExporter::getData: dumping from packet intdata %llX, type %d, length %d and offset %X",
+			DPRINTF_INFO("IpfixFlowInspectorExporter::getData: dumping from packet intdata %llX, type %d, length %d and offset %X",
 				intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length,
 				dataTemplateInfo.fieldInfo[k].offset);
 

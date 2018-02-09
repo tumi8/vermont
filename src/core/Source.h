@@ -91,7 +91,7 @@ public:
 	{
 		while (atomic_lock(&syncLock)) {
 			if (!sleepUntilConnected()) {
-				DPRINTF("Can't wait for connection, perhaps the program is shutting down?");
+				DPRINTF_INFO("Can't wait for connection, perhaps the program is shutting down?");
 				return false;
 			}
 		}

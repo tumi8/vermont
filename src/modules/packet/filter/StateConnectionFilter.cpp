@@ -54,34 +54,34 @@ bool StateConnectionFilter::processPacket(Packet* p, bool connFilterResult)
 		payloadLen = 0;
 
 	if (p->ipProtocolType != Packet::TCP) {
-		DPRINTF("Got a non-TCP packet. Protocol-type is %i", p->ipProtocolType);
+		DPRINTF_INFO("Got a non-TCP packet. Protocol-type is %i", p->ipProtocolType);
 		return false;
 	}
 
 	QuintupleKey key(p);
 
 	if (*((uint8_t*)p->data.netHeader + flagsOffset) & SYN) {
-		DPRINTF("StateConnectionFilter: Got SYN packet");
+		DPRINTF_INFO("StateConnectionFilter: Got SYN packet");
 		if (exportList.find(key) == exportList.end()) {
 			exportList[key] = 0;
 		}
 		return exportControlPackets;
 	} else if (*((uint8_t*)p->data.netHeader + flagsOffset) & RST || *((uint8_t*)p->data.netHeader + flagsOffset) & FIN) {
-		DPRINTF("StateConnectionFilter: Got %s packet", *((uint8_t*)p->data.netHeader + flagsOffset) & RST?"RST":"FIN");
+		DPRINTF_INFO("StateConnectionFilter: Got %s packet", *((uint8_t*)p->data.netHeader + flagsOffset) & RST?"RST":"FIN");
 		if (exportList.find(key) != exportList.end()) {
 			exportList.erase(exportList.find(key));
 		}
 		return exportControlPackets;
 	} else {
-		DPRINTF("StateConnectionFilter: Got a normal packet");
+		DPRINTF_INFO("StateConnectionFilter: Got a normal packet");
 		if (exportList.find(key) == exportList.end()) {
 			// unknown connection
 			return false;
 		} else if (exportList[key] > 0) {
 			bool ret = exportList[key]>static_cast<int>(payloadLen)?true:false;
-			DPRINTF("StateConnectionFilter: Connection known, exporting packet");
+			DPRINTF_INFO("StateConnectionFilter: Connection known, exporting packet");
 			exportList[key] -= payloadLen;
-			DPRINTF("StateConnectionFilter: We have to export %i bytes after exporting this packet", exportList[key]>0?exportList[key]:0);
+			DPRINTF_INFO("StateConnectionFilter: We have to export %i bytes after exporting this packet", exportList[key]>0?exportList[key]:0);
 			if (exportList[key] <= 0) {
 				exportList.erase(exportList.find(key));
 			}

@@ -62,7 +62,7 @@ BaseAggregator::~BaseAggregator()
  */
 void BaseAggregator::performStart()
 {
-	DPRINTF("called");
+	DPRINTF_INFO("called");
 	ASSERT(rules != 0, "aggregator must be initialized using function buildAggregator first!");
 
 	// notify all hashtables that start is in progress
@@ -171,7 +171,7 @@ void BaseAggregator::exporterThread()
 		}
 
 		gettimeofday(&curtime, 0);
-		DPRINTFL(LOG_DEBUG,"Aggregator: starting Export");
+		DPRINTF_DEBUG("Aggregator: starting Export");
 		for (size_t i = 0; i < rules->count; i++) {
 			rules->rule[i]->hashtable->expireFlows();
 		}
@@ -179,7 +179,7 @@ void BaseAggregator::exporterThread()
 		gettimeofday(&endtime, 0);
 		timeval_subtract(&difftime, &endtime, &curtime);
 
-		DPRINTFL(LOG_DEBUG,"Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000000+difftime.tv_sec);
+		DPRINTF_DEBUG("Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000000+difftime.tv_sec);
 	}
 
 	if (getShutdownProperly()) {

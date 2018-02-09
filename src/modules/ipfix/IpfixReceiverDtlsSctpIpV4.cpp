@@ -179,7 +179,7 @@ void IpfixReceiverDtlsSctpIpV4::run() {
 	    continue;
 	}
 	if ((ret == -1) && (errno == EINTR)) {
-	    DPRINTF("select() returned due to signal");
+	    DPRINTF_INFO("select() returned due to signal");
 	    /* There was a signal... ignore */
 	    continue;
 	}
@@ -188,7 +188,7 @@ void IpfixReceiverDtlsSctpIpV4::run() {
 	    THROWEXCEPTION("IpfixReceiverDtlsSctpIpV4: terminating listener thread");
 	    break;
 	}
-	DPRINTF("select() returned %d",ret);
+	DPRINTF_INFO("select() returned %d",ret);
 	// looking for a new client to connect at listen_socket
 	if (FD_ISSET(listen_socket, &tmpreadfds)){
 	    rfd = accept(listen_socket, (struct sockaddr*)&clientAddress, &clientAddressLen);
@@ -214,8 +214,8 @@ void IpfixReceiverDtlsSctpIpV4::run() {
 	for (rfd = 0; rfd <= maxfd; ++rfd) {
 	    if (rfd == listen_socket) continue;
 	    if (FD_ISSET(rfd, &readfds) || FD_ISSET(rfd, &writefds)) {
-		if (FD_ISSET(rfd, &readfds)) DPRINTF("descriptor %d is ready for reading",rfd);
-		if (FD_ISSET(rfd, &writefds)) DPRINTF("descriptor %d is ready for writing",rfd);
+		if (FD_ISSET(rfd, &readfds)) DPRINTF_INFO("descriptor %d is ready for reading",rfd);
+		if (FD_ISSET(rfd, &writefds)) DPRINTF_INFO("descriptor %d is ready for writing",rfd);
 		connections_map::iterator it = connections.find(rfd);
 		if (it == connections.end()) {
 		    /* This should not happend. */
@@ -226,7 +226,7 @@ void IpfixReceiverDtlsSctpIpV4::run() {
 		}
 		ret = it->second->fdready();
 		if (ret == 0) {
-		    DPRINTF("fdready() returned 0. Deleting connection.");
+		    DPRINTF_INFO("fdready() returned 0. Deleting connection.");
 		    remove_connection(rfd);
 		    update_maxfd();
 		}
@@ -288,7 +288,7 @@ IpfixReceiverDtlsSctpIpV4::DtlsConnection::DtlsConnection(IpfixReceiverDtlsSctpI
 }
 
 IpfixReceiverDtlsSctpIpV4::DtlsConnection::~DtlsConnection() {
-    DPRINTF("~DtlsConnection()");
+    DPRINTF_INFO("~DtlsConnection()");
     shutdown();
 }
 
@@ -304,8 +304,8 @@ int IpfixReceiverDtlsSctpIpV4::DtlsConnection::fdready() {
     error = SSL_get_error(ssl,ret);
 #ifdef DEBUG
     msg_openssl_return_code(LOG_INFO,"SSL_read()",ret,error);
-    DPRINTF("Error: %s",strerror(errno));
-    DPRINTF("Received shutdown: %s",SSL_get_shutdown(ssl) & SSL_RECEIVED_SHUTDOWN ? "yes":"no");
+    DPRINTF_INFO("Error: %s",strerror(errno));
+    DPRINTF_INFO("Received shutdown: %s",SSL_get_shutdown(ssl) & SSL_RECEIVED_SHUTDOWN ? "yes":"no");
 #endif
     if (ret<0) {
 	if (error == SSL_ERROR_WANT_READ) {
@@ -324,7 +324,7 @@ int IpfixReceiverDtlsSctpIpV4::DtlsConnection::fdready() {
     } else if (ret==0) {
 	if (error == SSL_ERROR_ZERO_RETURN) {
 	    // remote side closed connection
-	    DPRINTF("remote side closed connection.");
+	    DPRINTF_INFO("remote side closed connection.");
 	} else {
 	    msg_openssl_return_code(LOG_ERR,"SSL_read()",ret,error);
 	    msg_openssl_errors();
@@ -332,7 +332,7 @@ int IpfixReceiverDtlsSctpIpV4::DtlsConnection::fdready() {
 	shutdown();
 	return 0;
     } else {
-	DPRINTF("SSL_read() returned %d bytes.",ret);
+	DPRINTF_INFO("SSL_read() returned %d bytes.",ret);
     }
     parent.statReceivedPackets++;
     parent.mutex.lock();
@@ -358,14 +358,14 @@ void IpfixReceiverDtlsSctpIpV4::DtlsConnection::shutdown() {
     if (!ssl) return;
     ret = SSL_shutdown(ssl);
     if (ret == 0) {
-	DPRINTF("Calling SSL_shutdown a second time.");
+	DPRINTF_INFO("Calling SSL_shutdown a second time.");
 	ret = SSL_shutdown(ssl);
     }
     error = SSL_get_error(ssl,ret);
 #if DEBUG
     msg_openssl_return_code(LOG_INFO,"SSL_shutdown()",ret,error);
 #endif
-    DPRINTF("SSL_free(ssl)");
+    DPRINTF_INFO("SSL_free(ssl)");
     parent.ssl_ctx.SSL_free(ssl);
     ssl = NULL;
     FD_CLR(socket,&parent.readfds);

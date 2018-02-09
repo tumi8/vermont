@@ -310,31 +310,31 @@ void PCAPExporterPipe::stopProcess()
  */
 void PCAPExporterPipe::receive(Packet* packet)
 {
-	DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive() called");
+	DPRINTF_DEBUG( "PCAPExporterPipe::receive() called");
 	if (onRestart){
-		 DPRINTF("Dropping incoming packet, as attached process is not ready");
-		 DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive() ended");
+		 DPRINTF_INFO("Dropping incoming packet, as attached process is not ready");
+		 DPRINTF_DEBUG( "PCAPExporterPipe::receive() ended");
 		 return;
 	}
 	if (fifoReaderPid == 0){
 		 msg(LOG_DEBUG, "fifoReaderPid = 0...this might happen during reconfiguration");
-		 DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive() ended");
+		 DPRINTF_DEBUG( "PCAPExporterPipe::receive() ended");
 		 return;
 	}
 	if (restartInterval) {
 		if (nextRestart.tv_sec==0) {
-			DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive(): updating nextRestart");
+			DPRINTF_DEBUG( "PCAPExporterPipe::receive(): updating nextRestart");
 			nextRestart = packet->timestamp;
 			nextRestart.tv_sec += restartInterval;
 		} else if (compareTime(nextRestart, packet->timestamp)<0) {
-			DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive(): restarting process");
+			DPRINTF_DEBUG( "PCAPExporterPipe::receive(): restarting process");
 
 			// we need to unregister our signal handlers, as we get race conditions with the signal handler for restarting the process
 			unregisterSignalHandlers();
 			stopProcess();
 			startProcess();
 			registerSignalHandlers();
-			DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive(): updating nextRestart");
+			DPRINTF_DEBUG( "PCAPExporterPipe::receive(): updating nextRestart");
 			nextRestart.tv_sec += ((packet->timestamp.tv_sec-nextRestart.tv_sec)/restartInterval+1)*restartInterval;
 		}
 	}
@@ -343,7 +343,7 @@ void PCAPExporterPipe::receive(Packet* packet)
 
 	statBytesForwarded += packet->data_length;
 	statPktsForwarded++;
-	DPRINTFL(LOG_DEBUG, "PCAPExporterPipe::receive() ended");
+	DPRINTF_DEBUG( "PCAPExporterPipe::receive() ended");
 }
 
 void PCAPExporterPipe::handleSigPipe(int sig)

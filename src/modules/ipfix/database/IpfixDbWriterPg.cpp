@@ -65,7 +65,7 @@ void IpfixDbWriterPg::connectToDB()
     conninfo << "host='" << hostName << "' port='" << portNum << "' ";
     conninfo << "dbname='" << dbName << "' user='" << userName<< "' ";
     conninfo << "password='" << password << "'";// sslmode=require";
-    DPRINTF("using connection string '%s'", conninfo.str().c_str());
+    DPRINTF_INFO("using connection string '%s'", conninfo.str().c_str());
     conn = PQconnectdb(conninfo.str().c_str());
     if (PQstatus(conn) != CONNECTION_OK) {
     	msg(LOG_CRIT, "IpfixDbWriterPg: Connection to database failed, error: %s", PQerrorMessage(conn));
@@ -85,7 +85,7 @@ int IpfixDbWriterPg::createExporterTable()
 	ostringstream oss;
 	oss << "SELECT COUNT(*) FROM pg_class where relname='exporter'";
 	PGresult* res = PQexec(conn, oss.str().c_str());
-	DPRINTF("PQntuples: %d", PQntuples(res));
+	DPRINTF_INFO("PQntuples: %d", PQntuples(res));
 	if((PQresultStatus(res) != PGRES_TUPLES_OK) || (PQntuples(res)==0)) {
 		msg(LOG_CRIT, "IpfixDbWriterPg: Failed to check if table 'exporter' exists. Error: %s",
 				PQerrorMessage(conn));
@@ -122,7 +122,7 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 
 	if (find(usedPartitions.begin(), usedPartitions.end(), partitionname)!=usedPartitions.end()) {
 		// found cached entry!
-		DPRINTF("Partition '%s' already created.", partitionname);
+		DPRINTF_INFO("Partition '%s' already created.", partitionname);
 		return true;
 	}
 
@@ -186,7 +186,7 @@ bool IpfixDbWriterPg::writeToDb()
 {
 	if (insertBuffer.curRows==0) return true;
 
-	DPRINTF("SQL Query: %s", insertBuffer.sql);
+	DPRINTF_INFO("SQL Query: %s", insertBuffer.sql);
 
 	// Write rows to database
 	PGresult* res = PQexec(conn, insertBuffer.sql);
@@ -232,7 +232,7 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 	for(i = 0; i < curExporterEntries; i++) {
 		if(exporterEntries[i].observationDomainId == sourceID->observationDomainId &&
 				exporterEntries[i].ip==expIp) {
-			DPRINTF("Exporter sourceID/IP with ID %d is in the exporterBuffer\n",
+			DPRINTF_INFO("Exporter sourceID/IP with ID %d is in the exporterBuffer\n",
 					exporterEntries[i].Id);
 			return exporterEntries[i].Id;
 		}
@@ -253,7 +253,7 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 	/** is the exporterID in the exporter table ?*/
 	if (PQntuples(res)) {
 		exporterID = atoi(PQgetvalue(res, 0, 0));
-		DPRINTF("ExporterID %d is in exporter table\n",exporterID);
+		DPRINTF_INFO("ExporterID %d is in exporter table\n",exporterID);
 
 	}
 	else

@@ -102,7 +102,7 @@ SSL_CTX_wrapper::SSL_CTX_wrapper(
      * This implies that we are not going to call SSL_CTX_set_client_CA_list()
      */
     if ( ! requirePeerAuthentication) {
-	DPRINTF("We are NOT going to verify the certificates of the exporters b/c "
+	DPRINTF_INFO("We are NOT going to verify the certificates of the exporters b/c "
 		"the peerFqdn option is NOT set.");
     } else {
 	if ( ! (have_CAs && have_cert) ) {
@@ -114,7 +114,7 @@ SSL_CTX_wrapper::SSL_CTX_wrapper(
 	    verify_peers = true;
 	    SSL_CTX_set_verify(ctx,SSL_VERIFY_PEER |
 		    SSL_VERIFY_FAIL_IF_NO_PEER_CERT,&verify_peer_cert_callback);
-	    DPRINTF("We are going to request certificates from the exporters "
+	    DPRINTF_INFO("We are going to request certificates from the exporters "
 		    "and we are going to verify those b/c "
 		    "the peerFqdn option is set");
 	}
@@ -181,9 +181,9 @@ bool SSL_CTX_wrapper::loadCert(
 		    "specifying a file that contains the corresponding certificate.");
 #ifdef DEBUG
     if (have_cert)
-	DPRINTF("We successfully loaded our certificate.");
+	DPRINTF_INFO("We successfully loaded our certificate.");
     else
-	DPRINTF("We do NOT have a certificate. This means that we can only use "
+	DPRINTF_INFO("We do NOT have a certificate. This means that we can only use "
 		"the anonymous modes of DTLS. This also implies that we can not "
 		"authenticate the client (exporter).");
 #endif
@@ -199,7 +199,7 @@ void SSL_CTX_wrapper::setCipherList() {
 }
 
 SSL_CTX_wrapper::~SSL_CTX_wrapper() {
-    DPRINTF("SSL_CTX_free(ctx)");
+    DPRINTF_INFO("SSL_CTX_free(ctx)");
     if (ctx) SSL_CTX_free(ctx);
 }
 

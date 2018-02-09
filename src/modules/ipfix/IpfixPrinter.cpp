@@ -60,7 +60,7 @@ void PrintHelpers::printIPv4(InformationElement::IeInfo type, IpfixRecord::Data*
 	if (type.length >= 4) octet4 = data[3];
 	if (type.length >= 5) imask = data[4];
 	if (type.length > 5) {
-		DPRINTF("IPv4 Address with length %u unparseable\n", type.length);
+		DPRINTF_INFO("IPv4 Address with length %u unparseable\n", type.length);
 		return;
 	}
 

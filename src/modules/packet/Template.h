@@ -77,9 +77,9 @@ class Template
 		bool checkPacketConformity(uint32_t packet_classification)
 		{
 			unsigned i;
-			DPRINTFL(LOG_DEBUG, "Packet class: %lx", packet_classification);
+			DPRINTF_DEBUG( "Packet class: %lx", packet_classification);
 			for(i=0; i<fieldCount; i++) {
-				DPRINTFL(LOG_DEBUG, "Field id: %s class: %lx", fieldType[i].toString().c_str(), fieldValidPacketClasses[i]);
+				DPRINTF_DEBUG( "Field id: %s class: %lx", fieldType[i].toString().c_str(), fieldValidPacketClasses[i]);
 				// check if packet class supports this field
 				if((packet_classification & fieldValidPacketClasses[i]) == 0)
 					return false;

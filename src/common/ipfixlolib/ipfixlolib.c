@@ -234,7 +234,7 @@ static int init_send_sctp_socket(struct sockaddr_storage serv_addr,
     int s;
 
     //create socket:
-    DPRINTFL(LOG_DEBUG, "Creating SCTP Socket ...");
+    DPRINTF_DEBUG( "Creating SCTP Socket ...");
     if((s = socket(serv_addr.ss_family, SOCK_STREAM, IPPROTO_SCTP)) < 0 ) {
 	msg(LOG_CRIT, "error opening SCTP socket, %s", strerror(errno));
 	return -1;
@@ -269,7 +269,7 @@ static int init_send_sctp_socket(struct sockaddr_storage serv_addr,
 	close(s);
 	return -1;
     }
-    DPRINTF("%sSCTP Socket created", vrf_log);
+    DPRINTF_INFO("%sSCTP Socket created", vrf_log);
 
     return s;
 }
@@ -554,7 +554,7 @@ void update_exporter_max_message_size(ipfix_exporter *exporter) {
 	}
     }
     exporter->max_message_size = max_message_size;
-    DPRINTF("New exporter max_message_size: %u",max_message_size);
+    DPRINTF_INFO("New exporter max_message_size: %u",max_message_size);
 }
 
 /* Gets MTU estimate of collector.
@@ -565,7 +565,7 @@ int update_collector_mtu(ipfix_exporter *exporter,
 	ipfix_receiving_collector *col) {
     if (col->protocol == UDP && col->mtu_mode == IPFIX_MTU_DISCOVER) {
 	int mtu = get_mtu(col->data_socket);
-	DPRINTF("get_mtu() returned %d",mtu);
+	DPRINTF_INFO("get_mtu() returned %d",mtu);
 	if (mtu<0) {
 	    remove_collector(col);
 	    return -1;
@@ -579,12 +579,12 @@ int update_collector_mtu(ipfix_exporter *exporter,
 	int mtu_bio;
 	if (col->dtls_connection.dtls_main.ssl) {
 	    mtu_ssl = col->dtls_connection.dtls_main.ssl->d1->mtu;
-	    DPRINTF("MTU got from SSL object: %d",mtu_ssl);
+	    DPRINTF_INFO("MTU got from SSL object: %d",mtu_ssl);
 	    if (mtu_ssl > 0) {
 		mtu = mtu_ssl;
 	    }
 	    mtu_bio = BIO_ctrl(SSL_get_wbio(col->dtls_connection.dtls_main.ssl),BIO_CTRL_DGRAM_QUERY_MTU,0,0);
-	    DPRINTF("MTU got from BIO object: %d",mtu_bio);
+	    DPRINTF_INFO("MTU got from BIO object: %d",mtu_bio);
 	    if (mtu_bio > 0 && (mtu == -1 || mtu_bio < mtu)) mtu = mtu_bio;
 	}
 	if (mtu>0) {
@@ -596,7 +596,7 @@ int update_collector_mtu(ipfix_exporter *exporter,
 	    col->mtu = mtu + 20 + 8;
 	    update_exporter_max_message_size(exporter);
 	} else {
-	    DPRINTF("Unable to get MTU from SSL object.");
+	    DPRINTF_INFO("Unable to get MTU from SSL object.");
 	    remove_collector(col);
 	    return -1;
 	}
@@ -851,7 +851,7 @@ int ipfix_add_collector(ipfix_exporter *exporter, const char *coll_ip_addr,
 }
 
 static void remove_collector(ipfix_receiving_collector *collector) {
-    DPRINTF("Removing collector.");
+    DPRINTF_INFO("Removing collector.");
 #ifdef SUPPORT_DTLS
     /* Shutdown DTLS connection */
     if (collector->protocol == DTLS_OVER_UDP || collector->protocol == DTLS_OVER_SCTP) {
@@ -865,7 +865,7 @@ static void remove_collector(ipfix_receiving_collector *collector) {
     if (collector->protocol != RAWDIR) {
 #endif
     if ( collector->data_socket != -1) {
-	DPRINTF("Closing data socket");
+	DPRINTF_INFO("Closing data socket");
 	close ( collector->data_socket );
     }
     collector->data_socket = -1;
@@ -928,13 +928,13 @@ static int ipfix_find_template(
 	ipfix_exporter *exporter,
 	uint16_t template_id) {
 
-    DPRINTFL(LOG_DEBUG, "ipfix_find_template with ID: %d",template_id);
+    DPRINTF_DEBUG( "ipfix_find_template with ID: %d",template_id);
 
     int i=0;
     for (;i<exporter->ipfix_lo_template_maxsize;i++) {
 	if(exporter->template_arr[i].state != T_UNUSED &&
 		exporter->template_arr[i].template_id == template_id) {
-	    DPRINTFL(LOG_DEBUG,
+	    DPRINTF_DEBUG(
 		    "ipfix_find_template with ID: %d, validity %d found at %d",
 		    template_id, exporter->template_arr[i].state, i);
 	    return i;
@@ -944,16 +944,16 @@ static int ipfix_find_template(
 }
 
 static int ipfix_get_free_template_slot(ipfix_exporter *exporter) {
-    DPRINTFL(LOG_DEBUG, "ipfix_get_free_template_slot");
+    DPRINTF_DEBUG( "ipfix_get_free_template_slot");
 
     int i=0;
     for (;i<exporter->ipfix_lo_template_maxsize;i++) {
 	if(exporter->template_arr[i].state == T_UNUSED) {
-	    DPRINTFL(LOG_DEBUG, "ipfix_get_free_template_slot found at %d",i);
+	    DPRINTF_DEBUG( "ipfix_get_free_template_slot found at %d",i);
 	    return i;
 	}
     }
-    DPRINTF("ipfix_get_free_template_slot failed.");
+    DPRINTF_INFO("ipfix_get_free_template_slot failed.");
     return -1;
 }
 
@@ -976,7 +976,7 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
 	return -1;
     }
     if(exporter->template_arr[found_index].state == T_SENT){
-	DPRINTFL(LOG_DEBUG,
+	DPRINTF_DEBUG(
 		"creating withdrawal msg for ID: %d, validity %d",
 		template_id, exporter->template_arr[found_index].state);
 	char *p_pos;
@@ -1001,7 +1001,7 @@ int ipfix_remove_template(ipfix_exporter *exporter, uint16_t template_id) {
 	exporter->template_arr[found_index].field_count = 0;
 	exporter->template_arr[found_index].fields_added = 0;
 	exporter->template_arr[found_index].state = T_WITHDRAWN;
-	DPRINTFL(LOG_DEBUG, "... Withdrawn");
+	DPRINTF_DEBUG( "... Withdrawn");
     } else {
 	ipfix_deinit_template(&(exporter->template_arr[found_index]) );
     }
@@ -1450,7 +1450,7 @@ static int ipfix_update_template_sendbuffer (ipfix_exporter *exporter)
 				
 				/* ASK: Why don't we just delete the template? */
 				exporter->template_arr[i].state = T_TOBEDELETED;
-				DPRINTFL(LOG_DEBUG, "Withdrawal for template ID: %d added to sctp_sendbuffer", exporter->template_arr[i].template_id);
+				DPRINTF_DEBUG( "Withdrawal for template ID: %d added to sctp_sendbuffer", exporter->template_arr[i].template_id);
 				break;
 			default : // Do nothing : T_UNUSED or T_UNCLEAN
 				break;
@@ -1741,7 +1741,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 	     * This might happen if OpenSSL is still waiting for data from the
 	     * remote end and therefore returned SSL_ERROR_WANT_READ. */
 	    if ( col->state != C_CONNECTED ) {
-		DPRINTF("%sWe are not yet connected so we can't send templates.", vrf_log);
+		DPRINTF_INFO("%sWe are not yet connected so we can't send templates.", vrf_log);
 		break;
 	    }
 	}
@@ -1849,7 +1849,7 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 			    vrf_log, bytes_sent, col->ipaddress, col->port_number);
 		    }
 		} else {
-		    DPRINTF("%sNo Template to send to SCTP collector", vrf_log);
+		    DPRINTF_INFO("%sNo Template to send to SCTP collector", vrf_log);
 		}
 		col->messages_sent++;
 		break;
@@ -1889,8 +1889,8 @@ static int ipfix_send_templates(ipfix_exporter* exporter)
 static void ipfix_sendbuffer_debug(ipfix_sendbuffer *sendbuffer)
 {
     // debugging output of data buffer:
-    DPRINTFL(LOG_DEBUG, "Sendbuffer contains %u bytes (Set headers + records)",  sendbuffer->committed_data_length );
-    DPRINTFL(LOG_DEBUG, "Sendbuffer contains %u fields (IPFIX Message header + set headers + records)", sendbuffer->committed );
+    DPRINTF_DEBUG( "Sendbuffer contains %u bytes (Set headers + records)",  sendbuffer->committed_data_length );
+    DPRINTF_DEBUG( "Sendbuffer contains %u fields (IPFIX Message header + set headers + records)", sendbuffer->committed );
     int tested_length = 0;
     for (unsigned int j =0; j <  sendbuffer->committed; j++) {
 	if(sendbuffer->entries[j].iov_len > 0 ) {
@@ -1900,7 +1900,7 @@ static void ipfix_sendbuffer_debug(ipfix_sendbuffer *sendbuffer)
     /* Keep in mind that the IPFIX message header (16 bytes) is not included
        in committed_data_length. So there should be a difference of 16 bytes
        between tested_length and committed_data_length */
-    DPRINTFL(LOG_DEBUG, "Total length of sendbuffer: %u bytes (IPFIX Message header + set headers + records)", tested_length );
+    DPRINTF_DEBUG( "Total length of sendbuffer: %u bytes (IPFIX Message header + set headers + records)", tested_length );
 }
 #endif
 
@@ -1935,7 +1935,7 @@ static int ipfix_send_data(ipfix_exporter* exporter)
 		snprintf(vrf_log, VRF_LOG_LEN, "[%.*s] ", IFNAMSIZ, col->vrf_name);
 	    }
 #ifdef DEBUG
-	    DPRINTFL(LOG_DEBUG, "%sSending to exporter %s", vrf_log, col->ipaddress);
+	    DPRINTF_DEBUG( "%sSending to exporter %s", vrf_log, col->ipaddress);
 	    ipfix_sendbuffer_debug(exporter->data_sendbuffer);
 #endif
 	    switch(col->protocol){
@@ -2447,7 +2447,7 @@ int ipfix_start_template (ipfix_exporter *exporter, uint16_t template_id,  uint1
 		ipfix_deinit_template(&(exporter->template_arr[found_index]));
 		break;
 	    default:
-		DPRINTFL(LOG_DEBUG, "template valid flag is T_UNUSED or invalid\n");	
+		DPRINTF_DEBUG( "template valid flag is T_UNUSED or invalid\n");	
 		break;
 	}
     } else {
@@ -2584,18 +2584,18 @@ int ipfix_put_template_field(ipfix_exporter *exporter, uint16_t template_id,
     // end of the buffer
     p_end = p_pos + exporter->template_arr[found_index].max_fields_length;
 
-    DPRINTFL(LOG_DEBUG, "template found at %d", found_index);
-    DPRINTFL(LOG_DEBUG, "A p_pos %p, p_end %p", p_pos, p_end);
-    DPRINTFL(LOG_DEBUG, "max_fields_length %d", exporter->template_arr[found_index].max_fields_length);
-    DPRINTFL(LOG_DEBUG, "fields_length %d", exporter->template_arr[found_index].fields_length);
+    DPRINTF_DEBUG( "template found at %d", found_index);
+    DPRINTF_DEBUG( "A p_pos %p, p_end %p", p_pos, p_end);
+    DPRINTF_DEBUG( "max_fields_length %d", exporter->template_arr[found_index].max_fields_length);
+    DPRINTF_DEBUG( "fields_length %d", exporter->template_arr[found_index].fields_length);
 
     // add offset to the buffer's beginning: this is, where we will write to.
     p_pos += exporter->template_arr[found_index].fields_length;
 
-    DPRINTFL(LOG_DEBUG, "B p_pos %p, p_end %p", p_pos, p_end);
+    DPRINTF_DEBUG( "B p_pos %p, p_end %p", p_pos, p_end);
 
     if(enterprise_specific) {
-	DPRINTFL(LOG_DEBUG, "Notice: using enterprise ID %d with data %d", template_id, enterprise_id);
+	DPRINTF_DEBUG( "Notice: using enterprise ID %d with data %d", template_id, enterprise_id);
     }
 
     // now write the field to the buffer:
@@ -2688,7 +2688,7 @@ static int ipfix_deinit_template(ipfix_lo_template *templ) {
     // first test, if we can free this template
     if (templ->state == T_UNUSED)
 	return -1;
-    DPRINTFL(LOG_DEBUG, "deleting Template ID: %d validity: %d", templ->template_id, templ->state);
+    DPRINTF_DEBUG( "deleting Template ID: %d validity: %d", templ->template_id, templ->state);
     templ->state = T_UNUSED;
     free(templ->template_fields);
     templ->template_fields = 0;
