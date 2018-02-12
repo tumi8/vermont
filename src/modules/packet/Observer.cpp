@@ -285,7 +285,7 @@ void *Observer::observerThread(void *arg)
 					}
 					else
 						delta_to_be = delta_file;
-					DPRINTF_INFO("delta_now %d.%d delta_to_be %d.%d", delta_now.tv_sec, delta_now.tv_usec,  delta_to_be.tv_sec, delta_to_be.tv_usec);
+					DPRINTF_INFO("delta_now %ld.%ld delta_to_be %ld.%ld", delta_now.tv_sec, delta_now.tv_usec,  delta_to_be.tv_sec, delta_to_be.tv_usec);
 					if(timercmp(&delta_now, &delta_to_be, <))
 					{
 						timersub(&delta_to_be, &delta_now, &wait_val);

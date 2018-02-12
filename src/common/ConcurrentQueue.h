@@ -70,7 +70,7 @@ class ConcurrentQueue
 			lock.unlock();
 
 			popSemaphore.post();
-			DPRINTF_DEBUG( "(%s) element pushed (%d elements in queue)", ownerName.c_str(), maxEntries-pushSemaphore.getCount(), pushSemaphore.getCount(), maxEntries);
+			DPRINTF_DEBUG( "(%s) element pushed (%d elements in queue)", ownerName.c_str(), maxEntries-pushSemaphore.getCount());
 		};
 
 		inline bool pop(T* res)

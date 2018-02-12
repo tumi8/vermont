@@ -192,8 +192,8 @@ public:
 
 		// calculate time since 1970 in milliseconds according to IPFIX standard
 		time_msec_nbo = htonll(((uint64_t)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
-		DPRINTF_DEBUG( "timestamp.tv_sec is %d, timestamp.tv_usec is %d, Human readable: %s", timestamp.tv_sec, timestamp.tv_usec, ctime(&timestamp.tv_sec));
-		DPRINTF_DEBUG( "time_msec_ipfix is %llu", time_msec_nbo);
+		DPRINTF_DEBUG( "timestamp.tv_sec is %ld, timestamp.tv_usec is %ld, Human readable: %s", timestamp.tv_sec, timestamp.tv_usec, ctime(&timestamp.tv_sec));
+		DPRINTF_DEBUG( "time_msec_ipfix is %" PRIu64 "", time_msec_nbo);
 
 		totalPacketsReceived++;
 
@@ -231,8 +231,8 @@ public:
 
 		// calculate time since 1970 in milliseconds according to IPFIX standard
 		time_msec_nbo = htonll(((uint64_t)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
-		DPRINTF_DEBUG( "timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
-		DPRINTF_DEBUG( "time_msec_ipfix is %lld", time_msec_nbo);
+		DPRINTF_DEBUG( "timestamp.tv_sec is %ld, timestamp.tv_usec is %ld", timestamp.tv_sec, timestamp.tv_usec);
+		DPRINTF_DEBUG( "time_msec_ipfix is %" PRIu64 "", time_msec_nbo);
 
 		totalPacketsReceived++;
 
@@ -452,7 +452,7 @@ public:
 				payloadOffset = 0;
 		}
 
-		DPRINTF_DEBUG( "Packet::classify: class %08lx, proto %d, data %p, net %p, trn %p, payload %p\n", classification, protocol, data, data.netHeader, transportHeader, payload);
+		DPRINTF_DEBUG( "Packet::classify: class %08lx, proto %d, data %p, net %p, trn %p, payload %p\n", classification, protocol, &data, data.netHeader, transportHeader, payload);
 	}
 
 	// read data from the IP header

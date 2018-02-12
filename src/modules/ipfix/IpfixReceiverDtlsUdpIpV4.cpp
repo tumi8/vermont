@@ -62,8 +62,7 @@ IpfixReceiverDtlsUdpIpV4::IpfixReceiverDtlsUdpIpV4(int port, const std::string i
 	ssl_ctx(certificateChainFile,privateKeyFile,caFile,caPath, ! peerFqdnsParam.empty()),
 	peerFqdns(peerFqdnsParam),
 	statReceivedPackets(0),
-	connections(my_CompareSourceID),
-	moduleId(moduleId)
+	connections(my_CompareSourceID)
 	 {
     struct sockaddr_in serverAddress;
 
