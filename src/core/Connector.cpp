@@ -45,13 +45,13 @@ Graph* Connector::connect(Graph* g)
 				if (connectNodes) // insert the connection in the graph
 					g->addEdge(fromNode, toNode);
 
-				msg(MSG_INFO,  "Connecting module %s[Id = %u] -> %s[Id = %u]",
+				msg(LOG_NOTICE,  "Connecting module %s[Id = %u] -> %s[Id = %u]",
 						cfg->getName().c_str(), cfg->getID(),
 						id2node[nexts[j]]->getCfg()->getName().c_str(),
 						id2node[nexts[j]]->getCfg()->getID());
 
 				if (connectModules) {// connect the modules
-					DPRINTF("connecting instances");
+					DPRINTF_INFO("connecting instances");
 					cfg->connectInstances(toNode->getCfg());
 				}
 			}

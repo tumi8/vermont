@@ -66,7 +66,7 @@ class InstanceManager : public Sensor
             SensorManager::getInstance().removeSensor(this);
 #if defined(DEBUG)
 			if (!usedInstances.empty()) {
-				DPRINTF("freeing instance manager, although there are still %d used instances", usedInstances.size());
+				DPRINTF_INFO("freeing instance manager, although there are still %d used instances", usedInstances.size());
 			}
 #endif
 			while (!freeInstances.empty()) {
@@ -100,7 +100,7 @@ class InstanceManager : public Sensor
 			}
 
 #if defined(DEBUG)
-			DPRINTF("adding used instance 0x%08X", (void*)instance);
+			DPRINTF_INFO("adding used instance 0x%08X", (void*)instance);
 			usedInstances.push_back(instance);
 #endif
 
@@ -148,12 +148,12 @@ class InstanceManager : public Sensor
 				if (iter == usedInstances.end()) {
 					THROWEXCEPTION("instance (0x%08X) is not managed by InstanceManager", (void*)instance);
 				}
-				DPRINTF("removing used instance 0x%08X", (void*)instance);
+				DPRINTF_INFO("removing used instance 0x%08X", (void*)instance);
 				usedInstances.erase(iter);
 #endif
 				mutex.unlock();
 #else // IM_DISABLE
-				DPRINTF("removing used instance 0x%08X", (void*)instance);
+				DPRINTF_INFO("removing used instance 0x%08X", (void*)instance);
 				instance->deletedByManager = true;
 				delete instance;
 #endif // IM_DISABLE

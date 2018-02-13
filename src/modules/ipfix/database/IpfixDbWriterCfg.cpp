@@ -70,7 +70,7 @@ IpfixDbWriterCfg::IpfixDbWriterCfg(XMLElement* elem)
 			tablePrefix = e->getFirstText();
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
@@ -92,7 +92,7 @@ void IpfixDbWriterCfg::readColumns(XMLElement* elem) {
 		if (e->matches("name")) {
 			colNames.push_back(e->getFirstText());
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown IpfixDbWriter config statement %s\n", e->getName().c_str());
 			continue;
 		}		
 	}

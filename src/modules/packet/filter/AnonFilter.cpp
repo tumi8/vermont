@@ -29,10 +29,10 @@ void AnonFilter::setIEHeaderOffsets()
 	for (MethodMap::iterator i = methods.begin(); i != methods.end(); ++i) {
 		const InformationElement::IeInfo type = i->first;
 		if (!Template::getFieldOffsetAndHeader(type, &(i->second.offset), &(i->second.header), &(i->second.packetClass))) {
-			msg(MSG_ERROR, "Unkown or unsupported type id %s detected.", i->first.toString().c_str());
+			msg(LOG_ERR, "Unkown or unsupported type id %s detected.", i->first.toString().c_str());
 			continue;
 		}
-		DPRINTF("Save the following packet field for anonymization: setIEHeaderOffset id=%s, offset=%u, header=%u, packetClass=%u",
+		DPRINTF_INFO("Save the following packet field for anonymization: setIEHeaderOffset id=%s, offset=%u, header=%u, packetClass=%u",
 				i->first.toString().c_str(), i->second.offset, i->second.header, i->second.packetClass);
 	}
 }
@@ -52,7 +52,7 @@ bool AnonFilter::processPacket(Packet* p)
 				anonField(i->first, p->transportHeader + i->second.offset);
 				break;
 			default:
-				msg(MSG_ERROR, "Cannot deal with header type %i", i->second.header);
+				msg(LOG_ERR, "Cannot deal with header type %i", i->second.header);
 		}
 	}
 	return true;

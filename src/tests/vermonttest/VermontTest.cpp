@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
 
 	if (argc>1 && strcmp(argv[1], "-perf")==0) perftest = true;
 
-	//msg_setlevel(MSG_DEBUG);
+	//msg_setlevel(LOG_INFO);
 	
 	TestSuite testSuite;
 

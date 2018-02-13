@@ -71,10 +71,10 @@ IpfixReceiverSctpIpV4::IpfixReceiverSctpIpV4(int port, std::string ipAddr, uint3
 		THROWEXCEPTION("Cannot create IpfixReceiverSctpIpV4 %s:%d",ipAddr.c_str(), port );
 	}
 	if(listen(listen_socket, SCTP_MAX_BACKLOG) < 0 ) {
-		msg(MSG_ERROR ,"Could not listen on SCTP socket %i", listen_socket);
+		msg(LOG_ERR ,"Could not listen on SCTP socket %i", listen_socket);
 		THROWEXCEPTION("Cannot create IpfixReceiverSctpIpV4");
 	}
-	msg(MSG_INFO, "SCTP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
+	msg(LOG_NOTICE, "SCTP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
 								listen_socket);
 	return;
@@ -126,7 +126,7 @@ void IpfixReceiverSctpIpV4::run() {
 			continue;
     		}
     		if (ret < 0) {
-    			msg(MSG_ERROR ,"select() returned with an error");
+    			msg(LOG_ERR ,"select() returned with an error");
 			THROWEXCEPTION("IpfixReceiverSctpIpV4: terminating listener thread");
 			break;
 		}
@@ -137,16 +137,16 @@ void IpfixReceiverSctpIpV4::run() {
 			if (rfd >= 0){
 				if (isHostAuthorized(&clientAddress.sin_addr, sizeof(clientAddress.sin_addr))) {
 					FD_SET(rfd, &fd_array); // add new client to fd_array
-					msg(MSG_DEBUG, "IpfixReceiverSctpIpV4: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
+					msg(LOG_INFO, "IpfixReceiverSctpIpV4: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
 					if (rfd > maxfd){
 						maxfd = rfd;
 					}
 				} else {
-					msg(MSG_DEBUG, "IpfixReceiverSctpIpV4: Connection from unwanted client %s:%d, FD=%d rejected.", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
+					msg(LOG_INFO, "IpfixReceiverSctpIpV4: Connection from unwanted client %s:%d, FD=%d rejected.", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
 					close(rfd);
 				}
 			}else{
-				msg(MSG_ERROR ,"accept() in ipfixReceiver failed");
+				msg(LOG_ERR ,"accept() in ipfixReceiver failed");
 				THROWEXCEPTION("IpfixReceiverSctpIpV4: unable to accept new connection");
 			}
 		}
@@ -156,7 +156,7 @@ void IpfixReceiverSctpIpV4::run() {
 				boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
       				ret = recvfrom(rfd, data.get(), MAX_MSG_LEN, 0, (struct sockaddr*)&clientAddress, &clientAddressLen);
 				if (ret < 0) { // error
-					msg(MSG_ERROR, "IpfixReceiverSctpIpV4: Client error (%s), close connection.", inet_ntoa(clientAddress.sin_addr));
+					msg(LOG_ERR, "IpfixReceiverSctpIpV4: Client error (%s), close connection.", inet_ntoa(clientAddress.sin_addr));
 					close(rfd);
 					// we treat an error like a shut down, so overwrite return value to zero
 					ret = 0;
@@ -177,12 +177,12 @@ void IpfixReceiverSctpIpV4::run() {
 				mutex.unlock();
 				if (ret == 0) { // this was a shut down (or error)
 					FD_CLR(rfd, &fd_array); // delete dead client
-					msg(MSG_DEBUG, "IpfixReceiverSctpIpV4: Client %s disconnected", inet_ntoa(clientAddress.sin_addr));
+					msg(LOG_INFO, "IpfixReceiverSctpIpV4: Client %s disconnected", inet_ntoa(clientAddress.sin_addr));
 				}
       			}
       		}
 	}
-	msg(MSG_DEBUG, "IpfixReceiverSctpIpV4: Exiting");
+	msg(LOG_INFO, "IpfixReceiverSctpIpV4: Exiting");
 }
 
 /**

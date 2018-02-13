@@ -117,7 +117,7 @@ public:
 			} else if (e->matches("zmqPollTimeout")) {
 				zmqPollTimeout = atoi(e->getContent().c_str());
 			} else {
-				msg(MSG_FATAL, "Unknown collector config statement %s", e->getName().c_str());
+				msg(LOG_CRIT, "Unknown collector config statement %s", e->getName().c_str());
 				continue;
 			}
 		}
@@ -162,11 +162,11 @@ public:
 			THROWEXCEPTION("Could not create IpfixReceiver");
 		}
 
-		msg(MSG_INFO, "Created an IpfixReceiver for protocol %d", protocol);
+		msg(LOG_NOTICE, "Created an IpfixReceiver for protocol %d", protocol);
 
 		for (std::vector<std::string>::iterator i = authorizedHosts.begin(); i != authorizedHosts.end(); i++) {
 			if (ipfixReceiver->addAuthorizedHost((*i).c_str()) != 0) 
-				msg(MSG_ERROR, "CollectorCfg: Invalid authorized host %s", (*i).c_str());
+				msg(LOG_ERR, "CollectorCfg: Invalid authorized host %s", (*i).c_str());
 		}
 		return ipfixReceiver;
 	}

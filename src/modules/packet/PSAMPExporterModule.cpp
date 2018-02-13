@@ -39,7 +39,7 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
 	// generate the exporter
 	ret = ipfix_init_exporter(IPFIX_PROTOCOL, sourceID, &exporter);
 	if (ret) {
-		msg(MSG_FATAL, "error initializing IPFIX exporter");
+		msg(LOG_CRIT, "error initializing IPFIX exporter");
 		exit(1);
 	}
 
@@ -47,7 +47,7 @@ PSAMPExporterModule::PSAMPExporterModule(Template *tmpl, uint32_t observationDom
     tmplid = templ->getTemplateID();
     ret =  ipfix_start_template(exporter, tmplid, templ->getFieldCount());
     if (ret < 0) {
-        msg(MSG_FATAL, "error starting IPFIX template");
+        msg(LOG_CRIT, "error starting IPFIX template");
         exit(1);
     }
 
@@ -76,7 +76,7 @@ PSAMPExporterModule::~PSAMPExporterModule()
 void PSAMPExporterModule::startNewPacketStream()
 {
     unsigned short net_tmplid = htons(templ->getTemplateID());
-    DPRINTF("Starting new PSAMP packet");
+    DPRINTF_INFO("Starting new PSAMP packet");
     ipfix_start_data_set(exporter, net_tmplid);
 }
 
@@ -92,15 +92,15 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 
 	// first check, if we can buffer this packet
 	if (!(numPacketsToRelease < MAX_PACKETS)) {
-		msg(MSG_ERROR, "packet buffer too small, packet dropped.");
-		DPRINTF("dropping packet");
+		msg(LOG_ERR, "packet buffer too small, packet dropped.");
+		DPRINTF_INFO("dropping packet");
 		pck->removeReference();
 		return false;
 	}
 
 	// now, check if packet matches template requirements, i.e. if all fields are available
 	if (!templ->checkPacketConformity(pck->classification)) {
-		DPRINTF("Packet does not contain all fields required by the template! Skip this packet.");
+		DPRINTF_INFO("Packet does not contain all fields required by the template! Skip this packet.");
 		goto error2;
 	}
 
@@ -119,7 +119,7 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 			// variable length field
 			data = pck->getVariableLengthPacketData(&length, &enc_value, &enc_length, offset, header);
 			if(data == NULL) {
-				msg(MSG_ERROR, "ExporterSink: getVariableLengthPacketData returned NULL! This should never happen!");
+				msg(LOG_ERR, "ExporterSink: getVariableLengthPacketData returned NULL! This should never happen!");
 				goto error1;
 			}
 			// put the length information first
@@ -131,7 +131,7 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 			//       if not, it returns NULL
 			data = pck->getPacketData(offset, header, ie.length);
 			if(data == NULL) {
-				msg(MSG_ERROR, "ExporterSink: getPacketData returned NULL! packet length or pcap capture length is too small.");
+				msg(LOG_ERR, "ExporterSink: getPacketData returned NULL! packet length or pcap capture length is too small.");
 				goto error1;
 			}
 			ipfix_put_data_field(exporter, data, ie.length);
@@ -139,7 +139,7 @@ bool PSAMPExporterModule::addPacket(Packet *pck)
 	}
 
 	// if we will export the packet, we keep and and release it later, after we have sent the data
-	DPRINTF("Adding packet to buffer");
+	DPRINTF_INFO("Adding packet to buffer");
 	packetsToRelease[numPacketsToRelease++] = pck;
 	return true;
 
@@ -149,7 +149,7 @@ error1:
 
 error2:
 	// we do no export this packet, i.e. we can release it right now.
-	DPRINTF("dropping packet");
+	DPRINTF_INFO("dropping packet");
 	pck->removeReference();
 	return false;
 }
@@ -165,7 +165,7 @@ void PSAMPExporterModule::flushPacketStream() {
 	ipfix_end_data_set(exporter, numPacketsToRelease);
 	ipfix_send(exporter);
 
-	DPRINTF("dropping %d packets", numPacketsToRelease);
+	DPRINTF_INFO("dropping %d packets", numPacketsToRelease);
 	for (int i = 0; i < numPacketsToRelease; i++) {
 		(packetsToRelease[i])->removeReference();
 	}
@@ -179,7 +179,7 @@ void PSAMPExporterModule::flushPacketStream() {
 
 bool PSAMPExporterModule::addCollector(const char *address, uint16_t port, ipfix_transport_protocol protocol, const char *vrfName)
 {
-	DPRINTF("Adding %i://%s:%d", protocol, address, port);
+	DPRINTF_INFO("Adding %i://%s:%d", protocol, address, port);
 	return(ipfix_add_collector(exporter, address, port, protocol, NULL, vrfName) == 0);
 }
 

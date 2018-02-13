@@ -30,7 +30,7 @@ PacketIDMEFReporterCfg::PacketIDMEFReporterCfg(XMLElement* elem)
 			idmefTemplate = e->getFirstText();
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown PacketIDMEFReporter config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown PacketIDMEFReporter config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}

@@ -48,7 +48,7 @@ IpfixRawdirWriter::IpfixRawdirWriter(uint32_t observationDomainId, std::string p
 		}
 	}
 
-	msg(MSG_DEBUG, "IpfixRawdirWriter: running");
+	msg(LOG_INFO, "IpfixRawdirWriter: running");
 }
 
 IpfixRawdirWriter::~IpfixRawdirWriter() {
@@ -63,11 +63,11 @@ int IpfixRawdirWriter::addCollector(std::string packetDirectoryName) {
 	ipfix_exporter *ex = (ipfix_exporter *)ipfixExporter;
 
 	if(ipfix_add_collector(ex, packetDirectoryName.c_str(), 0, RAWDIR, NULL) != 0) {
-		msg(MSG_FATAL, "IpfixRawdirWriter: ipfix_add_collector of %s failed", packetDirectoryName.c_str());
+		msg(LOG_CRIT, "IpfixRawdirWriter: ipfix_add_collector of %s failed", packetDirectoryName.c_str());
 		return -1;
 	}
 	
-	msg(MSG_INFO, "IpfixRawdirWriter: adding %s to exporter", packetDirectoryName.c_str());
+	msg(LOG_NOTICE, "IpfixRawdirWriter: adding %s to exporter", packetDirectoryName.c_str());
 
 	return 0;
 }

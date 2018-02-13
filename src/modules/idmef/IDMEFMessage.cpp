@@ -51,7 +51,7 @@ void IDMEFMessage::init(const string tmplfilename, string analyzerid)
 
 		this->hostname = string(hostname) + "." + string(domainname);
 		ipAddress = inet_ntoa(*((struct in_addr *)he->h_addr));
-		msg(MSG_DIALOG, "using hostname %s and ip address %s", this->hostname.c_str(), ipAddress.c_str());
+		msg(LOG_WARNING, "using hostname %s and ip address %s", this->hostname.c_str(), ipAddress.c_str());
 	}
 
 	readTemplate(tmplfilename);

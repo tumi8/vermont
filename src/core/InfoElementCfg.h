@@ -42,7 +42,7 @@ public:
 				}
 				knownIE = true;
 			} else {
-				msg(MSG_INFO, "InfoElementCfg: unknown information element id %u, try to continue anyway.", ieId);
+				msg(LOG_NOTICE, "InfoElementCfg: unknown information element id %u, try to continue anyway.", ieId);
 			}
 		} else if (ieName.size()>0) {
 			// get ieId and enterpriseNumber from ieName
@@ -52,7 +52,7 @@ public:
 				if (enterpriseNumber == 0 && ipfixid->pen != 0) {
 					// enterprise number is missing in configuration
 					enterpriseNumber = ipfixid->pen; 
-					msg(MSG_DIALOG, "InfoElementCfg: %s configured without enterprise number, continue with enterprise number %u.", ieName.c_str(), enterpriseNumber);
+					msg(LOG_WARNING, "InfoElementCfg: %s configured without enterprise number, continue with enterprise number %u.", ieName.c_str(), enterpriseNumber);
 				} else if (enterpriseNumber != ipfixid->pen) {
 					// enterprise numbers do not match
 					THROWEXCEPTION("InfoElementCfg: %s is configured with enterprise number %u, but %u is expected.", ieName.c_str(), enterpriseNumber, ipfixid->pen);

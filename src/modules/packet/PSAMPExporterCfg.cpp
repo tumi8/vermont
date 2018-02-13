@@ -102,22 +102,22 @@ PSAMPExporterModule* PSAMPExporterCfg::createInstance()
 				recordsPerPacket = 1;
 		}
 
-		msg(MSG_INFO, "Set maximum records per packet to %d", recordsPerPacket);
+		msg(LOG_NOTICE, "Set maximum records per packet to %d", recordsPerPacket);
 		instance->setMaxRecords(recordsPerPacket);
 	}
 	if (exportDelay) {
-		msg(MSG_INFO, "Set maximum export timeout to %d", exportDelay);
+		msg(LOG_NOTICE, "Set maximum export timeout to %d", exportDelay);
 		instance->setExportTimeout(exportDelay);
 	}
 	if (templateRefreshTime /* || templateRefreshRate */) {
-		msg(MSG_DIALOG, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
+		msg(LOG_WARNING, "Exporter: Configuration of templateRefreshRate/Time not yet supported.");
 	}
 	for (unsigned i = 0; i != collectors.size(); ++i) {
 		char vrf_log[VRF_LOG_LEN] = "";
 		if (!collectors[i]->getVrfName().empty()) {
 			snprintf(vrf_log, VRF_LOG_LEN, "[%.*s] ", IFNAMSIZ, collectors[i]->getVrfName().c_str());
 		}
-		msg(MSG_DEBUG, "%sPsampExporter: adding collector %s://%s:%d on VRF %s",
+		msg(LOG_INFO, "%sPsampExporter: adding collector %s://%s:%d on VRF %s",
 				vrf_log,
 				collectors[i]->getProtocol()==ipfix_transport_protocol::SCTP?"SCTP":"UDP",
 				collectors[i]->getIpAddress().c_str(),

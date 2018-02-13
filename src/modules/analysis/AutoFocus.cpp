@@ -54,7 +54,7 @@
 
 	listIPRecords = new list<IPRecord*>[hashSize];
 	initiateRecord(m_treeCount % numTrees);
-	msg(MSG_INFO,"AutoFocus started");
+	msg(LOG_NOTICE,"AutoFocus started");
 }
 
 
@@ -90,7 +90,7 @@ AutoFocus::~AutoFocus()
 			deleteRecord(i);
 
 	}
-	msg(MSG_FATAL,"Autofocus is done");
+	msg(LOG_CRIT,"Autofocus is done");
 }
 
 void AutoFocus::onDataRecord(IpfixDataRecord* record)
@@ -274,7 +274,7 @@ void AutoFocus::metalist()
 	// First tree, we need at least two trees to compare data
 	if (m_treeCount-1 < 1) 
 	{
-		msg(MSG_INFO,"meta list skipped, waiting for valuable data");
+		msg(LOG_NOTICE,"meta list skipped, waiting for valuable data");
 		return;
 
 	}

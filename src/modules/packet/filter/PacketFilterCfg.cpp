@@ -54,38 +54,38 @@ PacketFilterCfg::PacketFilterCfg(XMLElement* elem)
 		XMLElement* e = *it;
 
 		if (e->matches("countBased")) {
-			msg(MSG_INFO, "Filter: Creating count based sampler");
+			msg(LOG_NOTICE, "Filter: Creating count based sampler");
 			c = new PacketCountFilterCfg(e);
 		} else if (e->matches("hostBased")) {
-			msg(MSG_INFO, "Filter: Creating host based sampler");
+			msg(LOG_NOTICE, "Filter: Creating host based sampler");
 			c = new HostFilterCfg(e);
 		} else if (e->matches("stringBased")) {
-			msg(MSG_INFO, "Filter: Creating string based sampler");
+			msg(LOG_NOTICE, "Filter: Creating string based sampler");
 			c = new PacketStringFilterCfg(e);
 		} else if (e->matches("regexBased")) {
-			msg(MSG_INFO, "Filter: Creating regex based sampler");
+			msg(LOG_NOTICE, "Filter: Creating regex based sampler");
 			c = new PacketRegexFilterCfg(e);
 		} else if (e->matches("timeBased")) {
-			msg(MSG_INFO, "Filter: Creating time based sampler");
+			msg(LOG_NOTICE, "Filter: Creating time based sampler");
 			c = new PacketTimeFilterCfg(e);
 		} else if (e->matches("stateConnectionBased")) {
-			msg(MSG_INFO, "Filter: Creating state connection based sampler");
+			msg(LOG_NOTICE, "Filter: Creating state connection based sampler");
 			c = new PacketStateConnectionFilterCfg(e);
 #ifdef HAVE_CONNECTION_FILTER
 		} else if (e->matches("connectionBased")) {
-			msg(MSG_INFO, "Filter: Creating connection based sampler");
+			msg(LOG_NOTICE, "Filter: Creating connection based sampler");
 			c = new PacketConnectionFilterCfg(e);
 #endif
 		} else if (e->matches("anonFilter")) {
-			msg(MSG_INFO, "Filter: Creating anonymization filter");
+			msg(LOG_NOTICE, "Filter: Creating anonymization filter");
 			c = new PacketAnonFilterCfg(e);
 		} else if (e->matches("payloadFilter")) {
-			msg(MSG_INFO, "Filter: Creating payload filter");
+			msg(LOG_NOTICE, "Filter: Creating payload filter");
 			c = new PacketPayloadFilterCfg(e);
 		} else if (e->matches("next")) { // ignore next
 			continue;
 		} else {
-			msg(MSG_FATAL, "Unkown packet filter %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unkown packet filter %s\n", e->getName().c_str());
 			THROWEXCEPTION("Unkown packet filter %s\n", e->getName().c_str());
 			continue;
 		}
@@ -158,7 +158,7 @@ HostFilterCfg::HostFilterCfg(XMLElement *e)
 			in_addr_t addr = inet_addr(ip_str.c_str());
 			ipList.insert(addr);
 		} else {
-			msg(MSG_FATAL, "Unknown observer config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown observer config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
@@ -254,7 +254,7 @@ Module* PacketStringFilterCfg::getInstance()
 		} else if (e->matches("isnot")) {
 			instance->addnotFilter(getRealValue(e));
 		} else {
-			msg(MSG_FATAL, "Unkown string packet filter config %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unkown string packet filter config %s\n", e->getName().c_str());
 			continue;
 		}
 	}

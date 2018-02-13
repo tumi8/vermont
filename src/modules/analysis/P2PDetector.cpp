@@ -245,8 +245,8 @@ void P2PDetector::onTimeout(void* dataPtr)
 		//host is a p2p client
 		if(points > 6){
 			//send Message
-			msg(MSG_INFO, "P2P client detected:");
-			msg(MSG_INFO, "IP: %s, dstSubnet: %s, dstSubMask: %s", IPToString(iter->first).c_str(),
+			msg(LOG_NOTICE, "P2P client detected:");
+			msg(LOG_NOTICE, "IP: %s, dstSubnet: %s, dstSubMask: %s", IPToString(iter->first).c_str(),
 				IPToString(subnet).c_str(), IPToString(subnetmask).c_str());
 
 			IDMEFMessage* msg = idmefManager.getNewInstance();

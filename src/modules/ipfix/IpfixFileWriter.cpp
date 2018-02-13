@@ -58,7 +58,7 @@ IpfixFileWriter::IpfixFileWriter(uint16_t observationDomainId, std::string filen
 		THROWEXCEPTION("IpfixFileWriter: no filename prefix given. Prefix is required though!");
 	}
 	
-	msg(MSG_DEBUG, "IpfixFileWriter: running");
+	msg(LOG_INFO, "IpfixFileWriter: running");
 }
 
 IpfixFileWriter::~IpfixFileWriter() {
@@ -78,18 +78,18 @@ int IpfixFileWriter::addCollector(uint16_t observationDomainId, std::string file
 	std::string my_filename = destinationPath + filenamePrefix; 
 	if (maximumFilesize <= 0) maximumFilesize = DEFAULTFILESIZE;
 	if(maximumFilesize < 64)
-		 msg(MSG_ERROR, 
+		 msg(LOG_ERR, 
 		   "maximum filsize < maximum message length - this could lead to serious problems");
 
 	if(ipfix_add_collector(ex, my_filename.c_str(), maximumFilesize, DATAFILE, NULL, "") != 0) {
-		msg(MSG_FATAL, "IpfixFileWriter: ipfix_add_collector of %s failed", my_filename.c_str());
+		msg(LOG_CRIT, "IpfixFileWriter: ipfix_add_collector of %s failed", my_filename.c_str());
 		return -1;
 	}
 
-	msg(MSG_INFO, "IpfixFileWriter: adding %s to exporter", my_filename.c_str());
-	msg(MSG_INFO, "IpfixFileWriter initialized with the following parameters");
-	msg(MSG_INFO, "  - Basename = %s", my_filename.c_str());
-	msg(MSG_INFO, "  - maximumFilesize = %d KiB" , maximumFilesize);
+	msg(LOG_NOTICE, "IpfixFileWriter: adding %s to exporter", my_filename.c_str());
+	msg(LOG_NOTICE, "IpfixFileWriter initialized with the following parameters");
+	msg(LOG_NOTICE, "  - Basename = %s", my_filename.c_str());
+	msg(LOG_NOTICE, "  - maximumFilesize = %d KiB" , maximumFilesize);
 
 	return 0;
 }

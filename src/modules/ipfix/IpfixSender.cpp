@@ -85,7 +85,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	curTimeStep.tv_usec = 0;
 
 	if(ipfix_init_exporter(export_protocol, observationDomainId, exporterP) != 0) {
-		msg(MSG_FATAL, "IpfixSender: ipfix_init_exporter failed");
+		msg(LOG_CRIT, "IpfixSender: ipfix_init_exporter failed");
 		goto out;
 	}
 
@@ -111,7 +111,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 		ipfix_set_ca_locations(&ipfixExporter->certificate, ca_file, ca_path);
 #endif
 
-	msg(MSG_DEBUG, "IpfixSender: running");
+	msg(LOG_INFO, "IpfixSender: running");
 	return;
 
 out:
@@ -138,14 +138,14 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate)
 	curTimeStep.tv_usec = 0;
 
 	if(ipfix_init_exporter(export_protocol, observationDomainId, exporterP) != 0) {
-		msg(MSG_FATAL, "IpfixSender: ipfix_init_exporter failed");
+		msg(LOG_CRIT, "IpfixSender: ipfix_init_exporter failed");
 		goto out;
 	}
 
 	ipfix_set_template_transmission_timer(ipfixExporter, IS_DEFAULT_TEMPLATE_TIMEINTERVAL);
 
 
-	msg(MSG_DEBUG, "IpfixSender: running");
+	msg(LOG_INFO, "IpfixSender: running");
 	return;
 
 out:
@@ -187,35 +187,35 @@ void IpfixSender::addCollector(const char *ip, uint16_t port,
 
 	switch(proto) {
 	    case UDP:
-		msg(MSG_INFO, "%sIpfixSender: adding UDP://%s:%d to exporter",
+		msg(LOG_NOTICE, "%sIpfixSender: adding UDP://%s:%d to exporter",
 				vrf_log, ip, port);
 	    	break;
 	    case SCTP:
-		msg(MSG_INFO, "%sIpfixSender: adding SCTP://%s:%d to exporter",
+		msg(LOG_NOTICE, "%sIpfixSender: adding SCTP://%s:%d to exporter",
 				vrf_log, ip, port);
 	    	break;
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 	    case RAWDIR:
-		msg(MSG_INFO, "%sIpfixSender: adding RAWDIR://%s to exporter",
+		msg(LOG_NOTICE, "%sIpfixSender: adding RAWDIR://%s to exporter",
 				vrf_log, ip);
 	    	break;
 #endif
 #ifdef SUPPORT_DTLS
 	    case DTLS_OVER_UDP:
-	    	msg(MSG_INFO,
+	    	msg(LOG_NOTICE,
 			"%sIpfixSender: adding DTLS over UDP://%s:%d to exporter",
 				vrf_log, ip, port);
 	    	break;
 #endif
 #ifdef SUPPORT_DTLS_OVER_SCTP
 	    case DTLS_OVER_SCTP:
-	    	msg(MSG_INFO,
+	    	msg(LOG_NOTICE,
 		"%sIpfixSender: adding DTLS over SCTP://%s:%d to exporter",
 				vrf_log, ip, port);
 	    	break;
 #endif
 	    case TCP:
-	        msg(MSG_INFO, "%sIpfixSender: adding TCP://%s:%d to exporter",
+	        msg(LOG_NOTICE, "%sIpfixSender: adding TCP://%s:%d to exporter",
 				vrf_log, ip, port);
 			__FALLTHROUGH__;
 	    default:
@@ -225,7 +225,7 @@ void IpfixSender::addCollector(const char *ip, uint16_t port,
 
 	if(ipfix_add_collector(ex, ip, port, proto, aux_config,
 			vrf_name) != 0) {
-		msg(MSG_FATAL,
+		msg(LOG_CRIT,
 			"%sIpfixSender: ipfix_add_collector of %s:%d to exporter",
 				vrf_log, ip, port);
 		return;
@@ -257,7 +257,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	// TODO: Implement Options Template handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate))
 	{
-	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
+	    	msg(LOG_ERR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();
 		return;
 	}
@@ -266,7 +266,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		THROWEXCEPTION("IpfixSender: Exporter not set");
 	}
 
-	msg(MSG_DEBUG, "IpfixSender: Template received (setid=%u, id=%u)", (uint16_t)(dataTemplateInfo->setId), dataTemplateInfo->templateId);
+	msg(LOG_INFO, "IpfixSender: Template received (setid=%u, id=%u)", (uint16_t)(dataTemplateInfo->setId), dataTemplateInfo->templateId);
 
 	// get message lock
 	ipfixMessageLock.lock();
@@ -280,7 +280,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 	// check if this is a known template
 	if(uniqueIdToTemplateId.find(dataTemplateInfo->getUniqueId()) != uniqueIdToTemplateId.end()) {
-		msg(MSG_ERROR, "IpfixSender: Received known Template (id=%u) again, which should not happen.", dataTemplateInfo->templateId);
+		msg(LOG_ERR, "IpfixSender: Received known Template (id=%u) again, which should not happen.", dataTemplateInfo->templateId);
 		record->removeReference();
 		ipfixMessageLock.unlock();
 		return;
@@ -294,22 +294,22 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		if(templateIdToUniqueId.find(dataTemplateInfo->templateId) == templateIdToUniqueId.end()) {
 			my_template_id = dataTemplateInfo->templateId;
 		} else {
-			msg(MSG_DEBUG, "IpfixSender: Template ID conflict, %u is already in use.", dataTemplateInfo->templateId);
+			msg(LOG_INFO, "IpfixSender: Template ID conflict, %u is already in use.", dataTemplateInfo->templateId);
 		}
 	}
 
 	// generate new Template ID if necessary
 	if(my_template_id == 0) {
 		my_template_id = getUnusedTemplateId();
-		msg(MSG_DEBUG, "IpfixSender: Use Template ID %u instead of %u.", my_template_id, dataTemplateInfo->templateId);
+		msg(LOG_INFO, "IpfixSender: Use Template ID %u instead of %u.", my_template_id, dataTemplateInfo->templateId);
 	}
 
 	// Update maps
 	templateIdToUniqueId[my_template_id] = dataTemplateInfo->getUniqueId(); 
 	uniqueIdToTemplateId[dataTemplateInfo->getUniqueId()] = my_template_id;
 
-	//for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) msg(MSG_FATAL, "template id %u -> unique id %u", iter->first, iter->second);
-	//for(map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.begin(); iter != uniqueIdToTemplateId.end(); iter++) msg(MSG_FATAL, "unique id %u -> template id %u", iter->first, iter->second);
+	//for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) msg(LOG_CRIT, "template id %u -> unique id %u", iter->first, iter->second);
+	//for(map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.begin(); iter != uniqueIdToTemplateId.end(); iter++) msg(LOG_CRIT, "unique id %u -> template id %u", iter->first, iter->second);
 
 	int i;
 
@@ -355,7 +355,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		THROWEXCEPTION("IpfixSender: ipfix_end_template failed");
 	}
 
-	msg(MSG_DEBUG, "IpfixSender: created template with ID %u", my_template_id);
+	msg(LOG_INFO, "IpfixSender: created template with ID %u", my_template_id);
 
 	// release message lock
 	ipfixMessageLock.unlock();
@@ -380,7 +380,7 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	// TODO: Implement Options Template handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate))
 	{
-		msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
+		msg(LOG_ERR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();
 		return;
 	}
@@ -392,7 +392,7 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	// send remaining records first
 	sendRecords(IfNotEmpty);
 
-	msg(MSG_DEBUG, "IpfixSender: Template destruction received (setid=%u, id=%u)", (uint16_t)(dataTemplateInfo->setId), dataTemplateInfo->templateId);
+	msg(LOG_INFO, "IpfixSender: Template destruction received (setid=%u, id=%u)", (uint16_t)(dataTemplateInfo->setId), dataTemplateInfo->templateId);
 
 	// get message lock
 	ipfixMessageLock.lock();
@@ -405,7 +405,7 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 
 	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->getUniqueId());
 	if(iter == uniqueIdToTemplateId.end()) {
-		msg(MSG_ERROR, "IpfixSender: Template (id=%u) to be destroyed does not exist.", dataTemplateInfo->templateId);
+		msg(LOG_ERR, "IpfixSender: Template (id=%u) to be destroyed does not exist.", dataTemplateInfo->templateId);
 		record->removeReference();
 		ipfixMessageLock.unlock();
 		return;
@@ -419,18 +419,18 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 
 	/* Remove template from ipfixlolib */
 	if (0 != ipfix_remove_template(ipfixExporter, my_template_id)) {
-		msg(MSG_FATAL, "IpfixSender: ipfix_remove_template failed");
+		msg(LOG_CRIT, "IpfixSender: ipfix_remove_template failed");
 	}
 	else
 	{
-		msg(MSG_DEBUG, "IpfixSender: removed template with ID %u", my_template_id);
+		msg(LOG_INFO, "IpfixSender: removed template with ID %u", my_template_id);
 	}
 
 	// enforce sending the withdrawal message
 	if (ipfix_send(ipfixExporter) != 0) {
 		THROWEXCEPTION("IpfixSender: ipfix_send failed");
 	}
-	msg(MSG_DEBUG, "IpfixSender: destroyed template with ID %u", my_template_id);
+	msg(LOG_INFO, "IpfixSender: destroyed template with ID %u", my_template_id);
 
 	// release message lock
 	ipfixMessageLock.unlock();
@@ -536,7 +536,7 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 	// TODO: Implement Options Data Record handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate))
 	{
-	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
+	    	msg(LOG_ERR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();
 		return;
 	}
@@ -551,7 +551,7 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 	// check if we know the Template
 	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->getUniqueId());
 	if(iter == uniqueIdToTemplateId.end()) {
-		msg(MSG_ERROR, "IpfixSender: Discard Data Record because Template (id=%u) does not exist (this may happen during reconfiguration).", dataTemplateInfo->templateId);
+		msg(LOG_ERR, "IpfixSender: Discard Data Record because Template (id=%u) does not exist (this may happen during reconfiguration).", dataTemplateInfo->templateId);
 		record->removeReference();
 		ipfixMessageLock.unlock();
 		return;
@@ -666,7 +666,7 @@ void IpfixSender::addDataRecordValue(TemplateInfo::FieldInfo* fi, IpfixRecord::D
 		// Need to allocate memory to store length etc. as they are not immediately sent over the wire
 		// Is deallocated in IpfixRecord destructor
 		if (record->variableLenData == NULL) {
-			msg(MSG_ERROR, "Variable length data present but variableLenData not allocated.");
+			msg(LOG_ERR, "Variable length data present but variableLenData not allocated.");
 		}
 
 		// Semantic (1B) + Field ID (2B) + Element Length (2B) + (optional: Enterprise Number (3B)) + basicList Content (variable)
@@ -726,11 +726,11 @@ void IpfixSender::onReconfiguration2()
 	for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) {
 		/* Remove template from ipfixlolib */
 		if (0 != ipfix_remove_template(ipfixExporter, iter->first)) {
-			msg(MSG_FATAL, "IpfixSender: ipfix_remove_template failed");
+			msg(LOG_CRIT, "IpfixSender: ipfix_remove_template failed");
 		}
 		else
 		{
-			msg(MSG_DEBUG, "IpfixSender: removed template with ID %u", iter->first);
+			msg(LOG_INFO, "IpfixSender: removed template with ID %u", iter->first);
 		}
 	}
 	// clear maps
@@ -784,7 +784,7 @@ void IpfixSender::onSendRecordsTimeout(void) {
 	timeval tv;
 	gettimeofday(&tv, 0);
 	if (nextTimeout.tv_sec<tv.tv_sec || (nextTimeout.tv_sec==tv.tv_sec && nextTimeout.tv_nsec<tv.tv_usec*1000)) {
-		DPRINTF("Sending Records due to timeout.");
+		DPRINTF_INFO("Sending Records due to timeout.");
 		sendRecords(Always);
 	}
 }

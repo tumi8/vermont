@@ -56,10 +56,10 @@ BaseHashtable::BaseHashtable(Source<IpfixRecord*>* recordsource, Rule* rule,
 	  hbucketIM("BucketListElement", 0),
 	  aggInProgress(false)
 {
-	msg(MSG_INFO, "Hashtable initialized with following parameters:");
-	msg(MSG_INFO, "  - inactiveTimeout=%d", inactiveTimeout);
-	msg(MSG_INFO, "  - activeTimeout=%d", activeTimeout);
-	msg(MSG_INFO, "  - htableBits=%d", hashbits);
+	msg(LOG_NOTICE, "Hashtable initialized with following parameters:");
+	msg(LOG_NOTICE, "  - inactiveTimeout=%d", inactiveTimeout);
+	msg(LOG_NOTICE, "  - activeTimeout=%d", activeTimeout);
+	msg(LOG_NOTICE, "  - htableBits=%d", hashbits);
 
 	buckets = new HashtableBucket*[htableSize];
 	for (uint32_t i = 0; i < htableSize; i++)
@@ -302,9 +302,9 @@ void BaseHashtable::expireFlows(bool all)
 			// now must be updated by the child classes
 			if ((bucket->inactiveExpireTime <= unix_now.tv_sec) || (bucket->activeExpireTime <= unix_now.tv_sec) || all) {
 				if (unix_now.tv_sec >= bucket->activeExpireTime) {
-					DPRINTF("expireFlows: forced expiry");
+					DPRINTF_INFO("expireFlows: forced expiry");
 				} else if (unix_now.tv_sec >= bucket->inactiveExpireTime) {
-					DPRINTF("expireFlows: normal expiry");
+					DPRINTF_INFO("expireFlows: normal expiry");
 				}
 				if (bucket->inTable) removeBucket(bucket);
 				statExportedBuckets++;
@@ -444,7 +444,7 @@ void BaseHashtable::performShutdown()
 
 void BaseHashtable::preReconfiguration()
 {
-	msg(MSG_INFO, "BaseHashtable: Forcing export for flows, then destroy Template.");
+	msg(LOG_NOTICE, "BaseHashtable: Forcing export for flows, then destroy Template.");
 	expireFlows(true);
 	// we do not need to destroy the template since every module should delete stored templates during reconfiguration
 	// sendTemplateDestructionRecord();
@@ -511,9 +511,9 @@ void BaseHashtable::genBiflowStructs()
 
 	// search for offsets in dataTemplate
 	revKeyMapper = new uint32_t[dataTemplate->fieldCount];
-	DPRINTF("fieldCount=%d", dataTemplate->fieldCount);
+	DPRINTF_INFO("fieldCount=%d", dataTemplate->fieldCount);
 	for (int32_t i=0; i<dataTemplate->fieldCount; i++) {
-		DPRINTF("fieldCount=%d", i);
+		DPRINTF_INFO("fieldCount=%d", i);
 		TemplateInfo::FieldInfo* fi = &dataTemplate->fieldInfo[i];
 		if (fi->type.length>maxFieldSize) maxFieldSize = fi->type.length;
 		bool defaultassign = false;
@@ -576,15 +576,15 @@ void BaseHashtable::genBiflowStructs()
 		if (defaultassign) {
 			// this call is dangerous, as calculated type ids may not exist at all
 			// but mapReverseElement will detect those and throw an exception
-			DPRINTF("field %s", fi->type.toString().c_str());
+			DPRINTF_INFO("field %s", fi->type.toString().c_str());
 			if ((fi->type.enterprise&IPFIX_PEN_reverse)==0) {
 				InformationElement::IeInfo rev = fi->type.getReverseDirection();
 				mapReverseElement(rev);
-				DPRINTF("mapping field %s to field %s", fi->type.toString().c_str(), rev.toString().c_str());
+				DPRINTF_INFO("mapping field %s to field %s", fi->type.toString().c_str(), rev.toString().c_str());
 			} else {
 				// do not reverse element
 				mapReverseElement(fi->type);
-				DPRINTF("not mapping field %s to its reverse element", fi->type.toString().c_str());
+				DPRINTF_INFO("not mapping field %s to its reverse element", fi->type.toString().c_str());
 			}
 		}
 	}
@@ -635,12 +635,12 @@ void BaseHashtable::reverseFlowBucket(HashtableBucket* bucket)
 		TemplateInfo::FieldInfo* fi2 = &dataTemplate->fieldInfo[flowReverseMapper[i]];
 
 		if (fi != fi2) {
-			//msg(MSG_ERROR, "mapping idx %d to idx %d", i, flowReverseMapper[i]);
-			//msg(MSG_ERROR, "mapping IE %s to IE %s", fi->type.toString().c_str(), fi2->type.toString().c_str());
+			//msg(LOG_ERR, "mapping idx %d to idx %d", i, flowReverseMapper[i]);
+			//msg(LOG_ERR, "mapping IE %s to IE %s", fi->type.toString().c_str(), fi2->type.toString().c_str());
 			//if (fi->type.id == 152) {
 			//	uint64_t oldStart = ntohll(*((uint64_t*)(bucket->data.get() + fi->offset)));
 			//	uint64_t newStart = ntohll(*((uint64_t*)(bucket->data.get() + fi2->offset)));
-			//	msg(MSG_ERROR, "old: %lu / new: %lu compare: %d", oldStart, newStart, oldStart < newStart);
+			//	msg(LOG_ERR, "old: %lu / new: %lu compare: %d", oldStart, newStart, oldStart < newStart);
 			//}
 			IpfixRecord::Data* src = bucket->data.get()+fi->offset;
 			IpfixRecord::Data* dst = bucket->data.get()+fi2->offset;

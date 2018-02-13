@@ -75,7 +75,7 @@ IpfixReceiverZmq::IpfixReceiverZmq(std::vector<std::string> endpoints,
 
 		zmq_sockets.push_back(sock);
 
-		msg(MSG_INFO, "ZMQ Receiver listening on %s", (*i).c_str());
+		msg(LOG_NOTICE, "ZMQ Receiver listening on %s", (*i).c_str());
 	}
 
 	SensorManager::getInstance().addSensor(this, "IpfixReceiverZMQ", moduleId);
@@ -92,7 +92,7 @@ IpfixReceiverZmq::~IpfixReceiverZmq()
 		zsock_destroy(&(*i));
 	}
 
-	msg(MSG_INFO, "Ipfix Receiver ZMQ poller and sockets destroyed");
+	msg(LOG_NOTICE, "Ipfix Receiver ZMQ poller and sockets destroyed");
 
 	SensorManager::getInstance().removeSensor(this);
 }
@@ -115,7 +115,7 @@ void IpfixReceiverZmq::run()
 		void *sock = zpoller_wait(zpoller, zmq_poll_timeout);
 		if (!sock) {
 			if (zpoller_terminated(zpoller)) {
-				msg(MSG_DEBUG, "ZMQ Receiver: ZMQ termination signal received");
+				msg(LOG_INFO, "ZMQ Receiver: ZMQ termination signal received");
 				break;
 			} else {
 				continue;
@@ -124,7 +124,7 @@ void IpfixReceiverZmq::run()
 
 		zmsg_t *msg = zmsg_recv(sock);
 		if (msg == NULL) {
-			msg(MSG_ERROR, "Empty ZMQ message");
+			msg(LOG_ERR, "Empty ZMQ message");
 			continue;
 		}
 

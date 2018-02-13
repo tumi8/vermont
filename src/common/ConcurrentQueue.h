@@ -36,7 +36,7 @@ class ConcurrentQueue
 		~ConcurrentQueue()
 		{
 			if(count != 0) {
-				msg(MSG_DEBUG, "WARNING: freeing non-empty queue - got count: %d", count);
+				msg(LOG_INFO, "WARNING: freeing non-empty queue - got count: %d", count);
 			}
 		};
 
@@ -47,20 +47,20 @@ class ConcurrentQueue
 
 		inline void push(T t)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to push element (%d elements in queue)", ownerName.c_str(), count);
+			DPRINTF_DEBUG( "(%s) trying to push element (%d elements in queue)", ownerName.c_str(), count);
 #if defined(DEBUG)
 			bool waiting = false;
 			if (pushSemaphore.getCount() == 0) {
 				waiting = true;
-				DPRINTFL(MSG_DEBUG, "(%s) queue is full with %d elements, waiting ...", ownerName.c_str(), count);
+				DPRINTF_INFO("(%s) queue is full with %d elements, waiting ...", ownerName.c_str(), count);
 			}
 #endif
 			if (!pushSemaphore.wait()) {
-				DPRINTF("(%s) failed to push element, program is being shut down?", ownerName.c_str());
+				DPRINTF_INFO("(%s) failed to push element, program is being shut down?", ownerName.c_str());
 				return;
 			}
 #if defined(DEBUG)
-			if (waiting) DPRINTF("(%s) pushing element now", ownerName.c_str());
+			if (waiting) DPRINTF_INFO("(%s) pushing element now", ownerName.c_str());
 #endif
 
 			lock.lock();
@@ -70,16 +70,16 @@ class ConcurrentQueue
 			lock.unlock();
 
 			popSemaphore.post();
-			DPRINTFL(MSG_VDEBUG, "(%s) element pushed (%d elements in queue)", ownerName.c_str(), maxEntries-pushSemaphore.getCount(), pushSemaphore.getCount(), maxEntries);
+			DPRINTF_DEBUG( "(%s) element pushed (%d elements in queue)", ownerName.c_str(), maxEntries-pushSemaphore.getCount(), pushSemaphore.getCount(), maxEntries);
 		};
 
 		inline bool pop(T* res)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)",
+			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)",
 					(ownerName.empty() ? "<owner not set>" : ownerName.c_str()),
 					maxEntries-pushSemaphore.getCount());
 			if (!popSemaphore.wait()) {
-				DPRINTF("(%s) failed to pop element, program is being shut down?", ownerName.c_str());
+				DPRINTF_INFO("(%s) failed to pop element, program is being shut down?", ownerName.c_str());
 				return false;
 			}
 
@@ -92,7 +92,7 @@ class ConcurrentQueue
 
 			pushSemaphore.post();
 
-			DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
+			DPRINTF_DEBUG( "(%s) element popped", ownerName.c_str());
 
 			return true;
 		};
@@ -102,11 +102,11 @@ class ConcurrentQueue
 		// of the timeout has been reached, res will be set to NULL and false will be returned
 		inline bool pop(long timeout_ms, T *res)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
+			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
 			// try to get an item from the queue
 			if(!popSemaphore.wait(timeout_ms)) {
 				// timeout occured
-				DPRINTFL(MSG_VDEBUG, "(%s) timeout", ownerName.c_str());
+				DPRINTF_DEBUG( "(%s) timeout", ownerName.c_str());
 				return false;
 			}
 
@@ -120,7 +120,7 @@ class ConcurrentQueue
 
 			pushSemaphore.post();
 
-			DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
+			DPRINTF_DEBUG( "(%s) element popped", ownerName.c_str());
 
 			return true;
 		}
@@ -129,7 +129,7 @@ class ConcurrentQueue
 		// use this instead of the above, makes things easier!
 		inline bool popAbs(const struct timeval &timeout, T *res)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
+			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
 			
 			if (popSemaphore.waitAbs(timeout)) {
 				// popSemaphore.wait() succeeded, now pop the frontmost element
@@ -142,12 +142,12 @@ class ConcurrentQueue
 
 				pushSemaphore.post();
 
-				DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
+				DPRINTF_DEBUG( "(%s) element popped", ownerName.c_str());
 
 				return true;
 			} else {
 				// timeout occured
-				DPRINTFL(MSG_VDEBUG, "(%s) timeout or program shutdown", ownerName.c_str());
+				DPRINTF_DEBUG( "(%s) timeout or program shutdown", ownerName.c_str());
 				*res = 0;
 
 				return false;
@@ -158,7 +158,7 @@ class ConcurrentQueue
 		// use this instead of the above, makes things easier!
 		inline bool popAbs(const struct timespec& timeout, T *res)
 		{
-			DPRINTFL(MSG_VDEBUG, "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
+			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
 		
 			if (popSemaphore.waitAbs(timeout)) {
 				// popSemaphore.wait() succeeded, now pop the frontmost element
@@ -171,13 +171,13 @@ class ConcurrentQueue
 		
 				pushSemaphore.post();
 		
-				DPRINTFL(MSG_VDEBUG, "(%s) element popped", ownerName.c_str());
+				DPRINTF_DEBUG( "(%s) element popped", ownerName.c_str());
 		
 				return true;
 			}
 			else {
 				// timeout occured
-				DPRINTFL(MSG_VDEBUG, "(%s) timeout or program shutdown", ownerName.c_str());
+				DPRINTF_DEBUG( "(%s) timeout or program shutdown", ownerName.c_str());
 				*res = 0;
 		
 				return false;

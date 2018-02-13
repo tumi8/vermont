@@ -49,7 +49,7 @@ void FilterModule::receive(Packet* p)
 	// even if the processors-iterator below is NULL
 	bool keepPacket=true;
 
-	DPRINTFL(MSG_VDEBUG, "FilterModule: got packet");
+	DPRINTF_DEBUG( "FilterModule: got packet");
 
 	// run packet through all packetProcessors
 	for (it = processors.begin();
@@ -61,13 +61,13 @@ void FilterModule::receive(Packet* p)
 	// check if we passed all filters
 	if (keepPacket) {
 		// push packet to the receiver
-		DPRINTF("FilterModule: pushing packet %d", p);
+		DPRINTF_INFO("FilterModule: pushing packet %d", p);
 		while (!exitFlag && !send(p));
 		return;
 	}
 
 	// immediately drop the packet
-	DPRINTF("FilterModule: releasing packet");
+	DPRINTF_INFO("FilterModule: releasing packet");
 	p->removeReference();
 }
 

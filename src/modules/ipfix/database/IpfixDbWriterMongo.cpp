@@ -81,10 +81,10 @@ int IpfixDbWriterMongo::connectToDB()
   string err;
   mongo::HostAndPort dbLogon;
   dbLogon = mongo::HostAndPort(dbHost, dbPort);
-  msg(MSG_INFO,"IpfixDbWriterMongo: Connection details: %s", dbLogon.toString().c_str());
+  msg(LOG_NOTICE,"IpfixDbWriterMongo: Connection details: %s", dbLogon.toString().c_str());
   if(!con.connect(dbLogon, err))
 	{
-		msg(MSG_FATAL,"IpfixDbWriterMongo: Mongo connect failed. Error: %s", err.c_str());
+		msg(LOG_CRIT,"IpfixDbWriterMongo: Mongo connect failed. Error: %s", err.c_str());
 		return 1;
 	}
     
@@ -93,7 +93,7 @@ int IpfixDbWriterMongo::connectToDB()
     // we need to authenticate
     if(!con.auth(dbName, dbUser, dbPassword, err))
 	  {
-		  msg(MSG_FATAL,"IpfixDbWriterMongo: Mongo authentication failed. Error: %s", err.c_str());
+		  msg(LOG_CRIT,"IpfixDbWriterMongo: Mongo authentication failed. Error: %s", err.c_str());
 		  return 1;
 	  }
   }
@@ -107,7 +107,7 @@ int IpfixDbWriterMongo::connectToDB()
     con.insert(dbCollectionCounters, obj);
   }
 
-	msg(MSG_DEBUG,"IpfixDbWriterMongo: Mongo connection successful");
+	msg(LOG_INFO,"IpfixDbWriterMongo: Mongo connection successful");
 	dbError = false;
 	return 0;
 }
@@ -120,10 +120,10 @@ void IpfixDbWriterMongo::processDataDataRecord(const IpfixRecord::SourceID& sour
 		IpfixRecord::Data* data)
 {
   mongo::BSONObj obj;
-	msg(MSG_DEBUG, "IpfixDbWriter: Processing data record");
+	msg(LOG_INFO, "IpfixDbWriter: Processing data record");
 
 	if (dbError) {
-		msg(MSG_DEBUG, "IpfixDbWriter: reconnecting to DB");
+		msg(LOG_INFO, "IpfixDbWriter: reconnecting to DB");
 		connectToDB();
 		if (dbError) return;
 	}
@@ -151,7 +151,7 @@ void IpfixDbWriterMongo::processDataDataRecord(const IpfixRecord::SourceID& sour
 
 	// write to db if maxInserts is reached
 	if(numberOfInserts == maxInserts) {
-		msg(MSG_DEBUG, "IpfixDbWriter: Writing buffered records to database");
+		msg(LOG_INFO, "IpfixDbWriter: Writing buffered records to database");
 		writeToDb();
 		numberOfInserts = 0;
 	}
@@ -180,7 +180,7 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 			if (prop->ipfixId == EXPORTERID) {
 				// if this is the same source ID as last time, we get the exporter id from currentExporter
 				if ((currentExporter != NULL) && equalExporter(sourceID, currentExporter->sourceID)) {
-					DPRINTF("Exporter is same as last time (ODID=%d, id=%d)", sourceID.observationDomainId, currentExporter->id);
+					DPRINTF_INFO("Exporter is same as last time (ODID=%d, id=%d)", sourceID.observationDomainId, currentExporter->id);
 					intdata = (uint64_t)currentExporter->id;
 				} else {
 				// lookup exporter buffer to get exporterID from sourcID and expIp
@@ -196,7 +196,7 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 							dataTemplateInfo.fieldInfo[k].type.id == prop->ipfixId) {
 							notfound = false;
 							intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-							DPRINTF("IpfixDbWriterMongo::getData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X",
+							DPRINTF_INFO("IpfixDbWriterMongo::getData: really saw ipfix id %d in packet with intdata %llX, type %d, length %d and offset %X",
 							  prop->ipfixId, intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length,
 							  dataTemplateInfo.fieldInfo[k].offset);
 							break;
@@ -329,7 +329,7 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 							break;
 					}
 			}
-		msg(MSG_DEBUG, "saw ipfix id %s (element ID %d) in packet with intdata %llX", prop->propertyName,
+		msg(LOG_INFO, "saw ipfix id %s (element ID %d) in packet with intdata %llX", prop->propertyName,
 							prop->ipfixId, static_cast<int64_t>(intdata));
 					if (beautyProp)
 						obj << prop->propertyName << static_cast<long long int>(intdata);
@@ -337,7 +337,7 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 						obj << boost::lexical_cast<std::string>(prop->ipfixId).c_str() << static_cast<long long int>(intdata);
 						
 					if (flowstartsec == 0) {
-						msg(MSG_ERROR, "IpfixDbWriterMongo: Failed to get timing data from record. Will be saved in default table.");
+						msg(LOG_ERR, "IpfixDbWriterMongo: Failed to get timing data from record. Will be saved in default table.");
 					}
 			}
 		} else {
@@ -346,7 +346,7 @@ mongo::BSONObj IpfixDbWriterMongo::getInsertObj(const IpfixRecord::SourceID& sou
 				// look in ipfix records
 				for(int k=0; k < dataTemplateInfo.fieldCount; k++) {
 						intdata = getData(dataTemplateInfo.fieldInfo[k].type,(data+dataTemplateInfo.fieldInfo[k].offset));
-						DPRINTF("IpfixDbWriterMongo::getData: dumping from packet intdata %llX, type %d, length %d and offset %X",
+						DPRINTF_INFO("IpfixDbWriterMongo::getData: dumping from packet intdata %llX, type %d, length %d and offset %X",
 						  intdata, dataTemplateInfo.fieldInfo[k].type.id, dataTemplateInfo.fieldInfo[k].type.length,
 						  dataTemplateInfo.fieldInfo[k].offset);
 						obj << boost::lexical_cast<std::string>(dataTemplateInfo.fieldInfo[k].type.id).c_str() << static_cast<long long int>(intdata);
@@ -372,7 +372,7 @@ int IpfixDbWriterMongo::writeToDb()
 {
   con.insert(dbCollectionFlows, bufferedObjects);
   if(con.getLastError() != ""){
-		msg(MSG_FATAL, "IpfixDbWriterMongo: Failed to write to DB.");
+		msg(LOG_CRIT, "IpfixDbWriterMongo: Failed to write to DB.");
     return 1;
   }
 	return 0; 
@@ -391,7 +391,7 @@ int IpfixDbWriterMongo::getExporterID(const IpfixRecord::SourceID& sourceID)
 	while(iter != exporterCache.end()) {
 		if (equalExporter(iter->sourceID, sourceID)) {
 			// found exporter in exporterCache
-			DPRINTF("Exporter (ODID=%d, id=%d) found in exporter cache", sourceID.observationDomainId, iter->id);
+			DPRINTF_INFO("Exporter (ODID=%d, id=%d) found in exporter cache", sourceID.observationDomainId, iter->id);
 			exporterCache.push_front(*iter);
 			exporterCache.erase(iter);
 			// update current exporter
@@ -409,7 +409,7 @@ int IpfixDbWriterMongo::getExporterID(const IpfixRecord::SourceID& sourceID)
     mongo::BSONObj exporterCounter;
     mongo::BSONObj cmd;
     cmd = BSON( "findAndModify" << "counters" << "query" << BSON("_id" << "exporterCounter") << "update" << BSON("$inc" << BSON("c" << 1)));
-    msg(MSG_DEBUG, "FIND AND MODIFY: %s", cmd.toString().c_str());
+    msg(LOG_INFO, "FIND AND MODIFY: %s", cmd.toString().c_str());
     con.runCommand(dbName, cmd, exporterCounter);
     mongo::BSONObjBuilder b;
     id = exporterCounter.getObjectField("value").getIntField("c");
@@ -486,7 +486,7 @@ void IpfixDbWriterMongo::onDataRecord(IpfixDataRecord* record)
 		return;
 	}
 
-	msg(MSG_DEBUG, "IpfixDbWriterMongo: Data record received will be passed for processing");
+	msg(LOG_INFO, "IpfixDbWriterMongo: Data record received will be passed for processing");
 	processDataDataRecord(*record->sourceID.get(), *record->templateInfo.get(),
 			record->dataLength, record->data);
 

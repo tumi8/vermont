@@ -38,7 +38,7 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 	//if (true) {
 		// This should be a new Template for us
 		if(uniqueIdToConvInfo.find(templateInfo->getUniqueId()) != uniqueIdToConvInfo.end()) {
-			msg(MSG_ERROR, "NetflowV9Converter: Received known Template (id=%u) again, which should not happen.", templateInfo->templateId);
+			msg(LOG_ERR, "NetflowV9Converter: Received known Template (id=%u) again, which should not happen.", templateInfo->templateId);
 			record->removeReference();
 			return;
 		}
@@ -85,7 +85,7 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 						// Save field index for future reference
 						myConvInfo.fieldIndexes.push_back(i);
 					} else
-						msg(MSG_ERROR, "NetflowV9Converter: flowStartSysUpTime has expected length 4, got %u", fi->type.length);
+						msg(LOG_ERR, "NetflowV9Converter: flowStartSysUpTime has expected length 4, got %u", fi->type.length);
 				} else if (fi->type.id == IPFIX_TYPEID_flowEndSysUpTime) {
 					// length should be 4 octets
 					if(fi->type.length == 4) {
@@ -106,10 +106,10 @@ void NetflowV9Converter::onTemplate(IpfixTemplateRecord* record)
 						// Save field index
 						myConvInfo.fieldIndexes.push_back(i);
 					} else
-						msg(MSG_ERROR, "NetflowV9Converter: flowStartSysUpTime has expected length 4, got %u", fi->type.length);
+						msg(LOG_ERR, "NetflowV9Converter: flowStartSysUpTime has expected length 4, got %u", fi->type.length);
 				}
 			} else {
-				msg(MSG_ERROR, "NetflowV9Converter: Got enterprise specific IE (id=%u, enterprise=%u, length=%u) in Netflow Template, which should not happen", fi->type.id, fi->type.enterprise, fi->type.length);
+				msg(LOG_ERR, "NetflowV9Converter: Got enterprise specific IE (id=%u, enterprise=%u, length=%u) in Netflow Template, which should not happen", fi->type.id, fi->type.enterprise, fi->type.length);
 			}
 		}
 
@@ -153,7 +153,7 @@ void NetflowV9Converter::onTemplateDestruction(IpfixTemplateDestructionRecord* r
 		// This should be a known Template for us
 		map<uint16_t, ConvInfo>::iterator iter = uniqueIdToConvInfo.find(templateInfo->getUniqueId());
 		if(iter == uniqueIdToConvInfo.end()) {
-			msg(MSG_ERROR, "NetflowV9Converter: Received unknown Template (id=%u), which should not happen.", templateInfo->templateId);
+			msg(LOG_ERR, "NetflowV9Converter: Received unknown Template (id=%u), which should not happen.", templateInfo->templateId);
 			record->removeReference();
 			return;
 		}
@@ -182,7 +182,7 @@ void NetflowV9Converter::onDataRecord(IpfixDataRecord* record)
 		// This should be a known Template for us
 		map<uint16_t, ConvInfo>::iterator iter = uniqueIdToConvInfo.find(templateInfo->getUniqueId());
 		if(iter == uniqueIdToConvInfo.end()) {
-			msg(MSG_ERROR, "NetflowV9Converter: Received Data Record associated to unknown Template (id=%u), which should not happen.", templateInfo->templateId);
+			msg(LOG_ERR, "NetflowV9Converter: Received Data Record associated to unknown Template (id=%u), which should not happen.", templateInfo->templateId);
 			record->removeReference();
 			return;
 		}

@@ -192,8 +192,8 @@ public:
 
 		// calculate time since 1970 in milliseconds according to IPFIX standard
 		time_msec_nbo = htonll(((uint64_t)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
-		DPRINTFL(MSG_VDEBUG, "timestamp.tv_sec is %d, timestamp.tv_usec is %d, Human readable: %s", timestamp.tv_sec, timestamp.tv_usec, ctime(&timestamp.tv_sec));
-		DPRINTFL(MSG_VDEBUG, "time_msec_ipfix is %llu", time_msec_nbo);
+		DPRINTF_DEBUG( "timestamp.tv_sec is %d, timestamp.tv_usec is %d, Human readable: %s", timestamp.tv_sec, timestamp.tv_usec, ctime(&timestamp.tv_sec));
+		DPRINTF_DEBUG( "time_msec_ipfix is %llu", time_msec_nbo);
 
 		totalPacketsReceived++;
 
@@ -231,8 +231,8 @@ public:
 
 		// calculate time since 1970 in milliseconds according to IPFIX standard
 		time_msec_nbo = htonll(((uint64_t)timestamp.tv_sec * 1000) + (timestamp.tv_usec/1000));
-		DPRINTFL(MSG_VDEBUG, "timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
-		DPRINTFL(MSG_VDEBUG, "time_msec_ipfix is %lld", time_msec_nbo);
+		DPRINTF_DEBUG( "timestamp.tv_sec is %d, timestamp.tv_usec is %d", timestamp.tv_sec, timestamp.tv_usec);
+		DPRINTF_DEBUG( "time_msec_ipfix is %lld", time_msec_nbo);
 
 		totalPacketsReceived++;
 
@@ -290,7 +290,7 @@ public:
 			unsigned int endOfIpOffset = layer2HeaderLen +  ntohs(ip_total_length);
 			if(data_length > endOfIpOffset)
 			{
-				DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
+				DPRINTF_INFO("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
 				data_length = endOfIpOffset;
 			}
 
@@ -359,7 +359,7 @@ public:
 			unsigned int endOfIpOffset = layer2HeaderLen +  ntohs(ip_total_length);
 			if(data_length > endOfIpOffset)
 			{
-				DPRINTF("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
+				DPRINTF_INFO("crop layer 2 padding: old: %u  new: %u\n", data_length, endOfIpOffset);
 				data_length = endOfIpOffset;
 			}
 
@@ -452,7 +452,7 @@ public:
 				payloadOffset = 0;
 		}
 
-		DPRINTFL(MSG_VDEBUG, "Packet::classify: class %08lx, proto %d, data %p, net %p, trn %p, payload %p\n", classification, protocol, data, data.netHeader, transportHeader, payload);
+		DPRINTF_DEBUG( "Packet::classify: class %08lx, proto %d, data %p, net %p, trn %p, payload %p\n", classification, protocol, data, data.netHeader, transportHeader, payload);
 	}
 
 	// read data from the IP header
@@ -474,7 +474,7 @@ public:
 	// If enough data for the network/transport header has been captured, is checked by classify().
 	void * getPacketData(uint16_t offset, uint16_t header, uint16_t fieldLength) const
 	{
-	    DPRINTF("offset: %d header: %d fieldlen: %d available: %d\n", offset, header, fieldLength, data_length);
+	    DPRINTF_INFO("offset: %d header: %d fieldlen: %d available: %d\n", offset, header, fieldLength, data_length);
 	    switch(header)
 	    {
 
@@ -513,7 +513,7 @@ public:
 	    // check if we have enough space to buffer at least one octet
 	    if(!(varlength_index < sizeof(varlength)))
 	    {
-		msg(MSG_ERROR, "getVariableLengthPacketData: varlength[] is too small");
+		msg(LOG_ERR, "getVariableLengthPacketData: varlength[] is too small");
 		return NULL;
 	    }
 
@@ -591,11 +591,11 @@ public:
 	    }
 	    else
 	    {
-		msg(MSG_ERROR, "getVariableLengthPacketData: varlength[] is too small");
+		msg(LOG_ERR, "getVariableLengthPacketData: varlength[] is too small");
 		return NULL;
 	    }
 
-	    //msg(MSG_INFO, "offset: %d header: %d fieldlen: %d available: %d, encoded: %d-%d-%d, %d", offset, header, len, data_length, (uint8_t)(**enc_value), (uint8_t)(*(*enc_value+1)), (uint8_t)(*(*enc_value+2)), *enc_len);
+	    //msg(LOG_NOTICE, "offset: %d header: %d fieldlen: %d available: %d, encoded: %d-%d-%d, %d", offset, header, len, data_length, (uint8_t)(**enc_value), (uint8_t)(*(*enc_value+1)), (uint8_t)(*(*enc_value+2)), *enc_len);
 
 	    return packetdata;
 	}

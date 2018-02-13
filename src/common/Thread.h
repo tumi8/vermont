@@ -28,7 +28,7 @@ class Thread
 			size_t threadNameLen = strlen(threadName);
 			// truncate to 15 chars + NULL byte
 			if (threadNameLen > MAX_THREAD_NAME_LEN) {
-				msg(MSG_ERROR, "truncating thread name %s to %d characters", threadName, MAX_THREAD_NAME_LEN);
+				msg(LOG_ERR, "truncating thread name %s to %d characters", threadName, MAX_THREAD_NAME_LEN);
 				threadNameLen = MAX_THREAD_NAME_LEN;
 			}
 			memcpy(name, threadName, threadNameLen);
@@ -41,7 +41,7 @@ class Thread
 			thread_created = true;
 
 			//data = threadData;
-			msg(MSG_DEBUG, "creating new thread: %s", name);
+			msg(LOG_INFO, "creating new thread: %s", name);
 			if (pthread_create(&thread, NULL, f, threadData) != 0) {
 				THROWEXCEPTION("failed to create new thread");
 			}
@@ -61,7 +61,7 @@ class Thread
 
 			void *result=NULL;
 			if(!thread || pthread_join(thread, &result)) {
-				msg(MSG_ERROR, "joining failed");
+				msg(LOG_ERR, "joining failed");
 			}
 			thread_created = false;
 

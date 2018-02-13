@@ -44,7 +44,7 @@ IpfixSamplerCfg::IpfixSamplerCfg(XMLElement* elem)
 			flowRate = getDouble("flowrate");
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixSampler config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown IpfixSampler config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}

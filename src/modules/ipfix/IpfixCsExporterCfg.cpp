@@ -68,11 +68,11 @@ IpfixCsExporterCfg::IpfixCsExporterCfg(XMLElement* elem)
 		} else if (e->matches("exportMode")){
 			exportMode = atoi(e->getFirstText().c_str());
 			if(exportMode != 0 && exportMode != 1 && exportMode != 2) {
-				msg(MSG_FATAL, "Unknown ipfixCsExporter-exportMode config value %i\n",exportMode);
+				msg(LOG_CRIT, "Unknown ipfixCsExporter-exportMode config value %i\n",exportMode);
 	                        continue;
 			}
 		} else {
-			msg(MSG_FATAL, "Unknown ipfixCsExporter config statement %s\n",
+			msg(LOG_CRIT, "Unknown ipfixCsExporter config statement %s\n",
 				 e->getName().c_str());
 			continue;
 		}

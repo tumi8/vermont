@@ -44,7 +44,7 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 				if (rules->count < MAX_RULES) {
 					rules->rule[rules->count++] = r;
 				} else {
-					msg(MSG_FATAL, "Too many rules: %ul\n", MAX_RULES);
+					msg(LOG_CRIT, "Too many rules: %ul\n", MAX_RULES);
 				}
 				
 			}
@@ -58,7 +58,7 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 			htableBits = getInt("hashtableBits", HT_DEFAULT_BITSIZE);
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unkown Aggregator config entry %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unkown Aggregator config entry %s\n", e->getName().c_str());
 		}
 	}
 }
@@ -114,7 +114,7 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 		if(rule->biflowAggregation) {
 			for(int i=0; i < rule->fieldCount; i++) {
 				if(rule->field[i]->pattern) {
-					msg(MSG_ERROR, "AggregatorBaseCfg: Match pattern for id=%d ignored because biflow aggregation is enabled.", rule->field[i]->type.id);
+					msg(LOG_ERR, "AggregatorBaseCfg: Match pattern for id=%d ignored because biflow aggregation is enabled.", rule->field[i]->type.id);
 					free(rule->field[i]->pattern);
 					rule->field[i]->pattern = NULL;
 				}
@@ -193,7 +193,7 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 			switch (ruleField->type.id) {
 			case IPFIX_TYPEID_protocolIdentifier:
 				if (parseProtoPattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-					msg(MSG_ERROR, "Bad protocol pattern \"%s\"", tmp);
+					msg(LOG_ERR, "Bad protocol pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();
 				}
@@ -201,7 +201,7 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 			case IPFIX_TYPEID_sourceIPv4Address:
 			case IPFIX_TYPEID_destinationIPv4Address:
 				if (parseIPv4Pattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-					msg(MSG_ERROR, "Bad IPv4 pattern \"%s\"", tmp);
+					msg(LOG_ERR, "Bad IPv4 pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();
 				}
@@ -213,21 +213,21 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 			case IPFIX_TYPEID_udpDestinationPort:
 			case IPFIX_TYPEID_tcpDestinationPort:
 				if (parsePortPattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-					msg(MSG_ERROR, "Bad PortRanges pattern \"%s\"", tmp);
+					msg(LOG_ERR, "Bad PortRanges pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();
 				}
 				break;
 			case IPFIX_TYPEID_tcpControlBits:
 				if (parseTcpFlags(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-					msg(MSG_ERROR, "Bad TCP flags pattern \"%s\"", tmp);
+					msg(LOG_ERR, "Bad TCP flags pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();
 				}
 				break;
 
 			default:
-				msg(MSG_ERROR, "Fields of type \"%s\" cannot be matched against a pattern %s", "", tmp);
+				msg(LOG_ERR, "Fields of type \"%s\" cannot be matched against a pattern %s", "", tmp);
 				delete [] tmp;
 				throw std::exception();
 				break;

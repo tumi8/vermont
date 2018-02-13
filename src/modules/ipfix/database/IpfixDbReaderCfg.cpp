@@ -61,7 +61,7 @@ IpfixDbReaderCfg::IpfixDbReaderCfg(XMLElement* elem)
 			observationDomainId = getInt("observationDomainId");
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixDbReader config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown IpfixDbReader config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}

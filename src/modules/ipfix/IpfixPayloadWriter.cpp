@@ -46,13 +46,13 @@ IpfixPayloadWriter::IpfixPayloadWriter(string path, string prefix, uint32_t noco
 	  statEmptyPayloadDropped(0),
 	  statIncompleteTCPDropped(0)
 {
-	msg(MSG_INFO, "IpfixPayloadWriter started with following parameters:");
-	msg(MSG_INFO, "  - path=%s", path.c_str());
-	msg(MSG_INFO, "  - filenamePrefix=%s", filenamePrefix.c_str());
-	msg(MSG_INFO, "  - noConnections=%u", noConnections);
-	msg(MSG_INFO, "  - startIndex=%lu", connectionID);
-	msg(MSG_INFO, "  - ignoreEmptyPayload=%u", ignoreEmptyPayload);
-	msg(MSG_INFO, "  - ignoreIncompleteTCP=%u", ignoreIncompleteTCP);
+	msg(LOG_NOTICE, "IpfixPayloadWriter started with following parameters:");
+	msg(LOG_NOTICE, "  - path=%s", path.c_str());
+	msg(LOG_NOTICE, "  - filenamePrefix=%s", filenamePrefix.c_str());
+	msg(LOG_NOTICE, "  - noConnections=%u", noConnections);
+	msg(LOG_NOTICE, "  - startIndex=%lu", connectionID);
+	msg(LOG_NOTICE, "  - ignoreEmptyPayload=%u", ignoreEmptyPayload);
+	msg(LOG_NOTICE, "  - ignoreIncompleteTCP=%u", ignoreIncompleteTCP);
 }
 
 
@@ -143,10 +143,10 @@ void IpfixPayloadWriter::dumpEntry(Connection* conn)
 	string filepayload[2] = { mkpath + string(filename[0]) + ".payload", mkpath + string(filename[1]) + ".payload" };
 	string fileinfo = mkpath + string(filename[0]) + ".info";
 
-	msg(MSG_VDEBUG, "writing files for connection %s", filename[0]);
+	msg(LOG_DEBUG, "writing files for connection %s", filename[0]);
 
 	if (stat(filepayload[0].c_str(), &s) == 0 && !filewarningIssued) {
-		msg(MSG_DIALOG, "files in IpfixPayloadWriter destination directory already present, overwriting ...");
+		msg(LOG_WARNING, "files in IpfixPayloadWriter destination directory already present, overwriting ...");
 		filewarningIssued = true;
 	}
 	// save payload in two files

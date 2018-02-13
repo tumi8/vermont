@@ -27,7 +27,7 @@ IpfixPrinterCfg::IpfixPrinterCfg(XMLElement* elem)
 	if (!elem)
 		return;
 
-	msg(MSG_INFO, "ParserCfg: Start reading ipfixPrinter section");
+	msg(LOG_NOTICE, "ParserCfg: Start reading ipfixPrinter section");
 	XMLNode::XMLSet<XMLElement*> set = _elem->getElementChildren();
 	for (XMLNode::XMLSet<XMLElement*>::iterator it = set.begin(); it != set.end(); it++) {
 		XMLElement* e = *it;
@@ -48,7 +48,7 @@ IpfixPrinterCfg::IpfixPrinterCfg(XMLElement* elem)
 		} else if (e->matches("filename")) {
 			filename = e->getFirstText();
 		} else {
-			msg(MSG_FATAL, "Unknown IpfixPrinter config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown IpfixPrinter config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}

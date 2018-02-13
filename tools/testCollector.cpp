@@ -63,7 +63,7 @@ void sigint(int) {
     static bool shutdownInitiated = false;
 
     if (shutdownInitiated) {
-        msg(MSG_DIALOG, "second signal received, shutting down the hard way!");
+        msg(LOG_WARNING, "second signal received, shutting down the hard way!");
         exit(2);
     }
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 	IpfixPrinter::OutputType outputType = IpfixPrinter::LINE;
 
 	msg_init();
-	msg_setlevel(MSG_DEBUG);
+	msg_setlevel(LOG_INFO);
 	
 	signal(SIGINT, sigint);
 
@@ -156,25 +156,25 @@ int main(int argc, char *argv[]) {
 
 	IpfixReceiver* ipfixReceiver = 0;
 	if (proto == "udp") {
-		msg(MSG_INFO, "Creating UDP listener on port %i", lport);
+		msg(LOG_NOTICE, "Creating UDP listener on port %i", lport);
 		ipfixReceiver = new IpfixReceiverUdpIpV4(lport);
 	} else if (proto == "dtls_over_udp") {
 #ifdef SUPPORT_DTLS
-		msg(MSG_INFO, "Creating DTLS over UDP listener on port %i", lport);
+		msg(LOG_NOTICE, "Creating DTLS over UDP listener on port %i", lport);
 		ipfixReceiver = new IpfixReceiverDtlsUdpIpV4(lport,"",certificateChainFile,privateKeyFile,caFile,caPath);
 #else
-		msg(MSG_FATAL, "testcollector has been compiled without dtls/openssl support");
+		msg(LOG_CRIT, "testcollector has been compiled without dtls/openssl support");
 		return -1;
 #endif
 	} else if (proto == "sctp") {
 #ifdef SUPPORT_SCTP
 		ipfixReceiver = new IpfixReceiverSctpIpV4(lport, "127.0.0.1");
 #else
-		msg(MSG_FATAL, "testcollector has been compiled without sctp support");
+		msg(LOG_CRIT, "testcollector has been compiled without sctp support");
 		return -1;
 #endif
 	} else {
-		msg(MSG_FATAL, "Protocol %s is not supported as a transport protocol for IPFIX data", proto.c_str()); 
+		msg(LOG_CRIT, "Protocol %s is not supported as a transport protocol for IPFIX data", proto.c_str()); 
 		return -1;
 	}
 
@@ -189,11 +189,11 @@ int main(int argc, char *argv[]) {
 	queue.start();
 	collector.start();
 
-	msg(MSG_DIALOG, "Hit Ctrl+C to quit");
+	msg(LOG_WARNING, "Hit Ctrl+C to quit");
 	pause();
-	msg(MSG_DIALOG, "Stopping threads and tidying up.\n");
+	msg(LOG_WARNING, "Stopping threads and tidying up.\n");
 
-	msg(MSG_DIALOG, "Stopping collector\n");
+	msg(LOG_WARNING, "Stopping collector\n");
 	collector.shutdown();
 	queue.shutdown();
 	printer.shutdown();

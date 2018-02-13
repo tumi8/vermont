@@ -54,12 +54,12 @@ class MinBloomFilter : public BloomFilterBase<T>
 				if (current < ret)
 					ret = current;
 			}
-			//msg(MSG_DEBUG, "MinBloomFilter.get(): %i", ret);
+			//msg(LOG_INFO, "MinBloomFilter.get(): %i", ret);
 			return ret;
 		}
 
 		virtual void set(const uint8_t* input, size_t len, typename T::ValueType v) {
-			//msg(MSG_DEBUG, "MinBloomFilter.set(): %i", v);
+			//msg(LOG_INFO, "MinBloomFilter.set(): %i", v);
 			for(unsigned i=0; i != BloomFilterBase<T>::hfList->len; i++) {
 				if (BloomFilterBase<T>::CMS_) {
 					BloomFilterBase<T>::filter_[0].set(BloomFilterBase<T>::hashU(input, len,

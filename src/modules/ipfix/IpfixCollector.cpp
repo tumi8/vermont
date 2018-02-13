@@ -116,5 +116,5 @@ void IpfixCollector::setTemplateLifetime(uint16_t time)
 	if(ipfixPacketProcessor && dynamic_cast<IpfixParser*>(ipfixPacketProcessor))
 		dynamic_cast<IpfixParser*>(ipfixPacketProcessor)->setTemplateLifetime(time);
 	else
-		msg(MSG_ERROR, "IpfixCollector: Cannot set template lifetime, ipfixPacketProcessor is NULL");
+		msg(LOG_ERR, "IpfixCollector: Cannot set template lifetime, ipfixPacketProcessor is NULL");
 }

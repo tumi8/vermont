@@ -63,7 +63,7 @@ IpfixReceiverDtlsSctpIpV4::IpfixReceiverDtlsSctpIpV4(int port, const std::string
 	listen_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
 	if(listen_socket < 0) {
 	    /* FIXME: should we use strerror_r? */
-	    msg(MSG_FATAL, "socket creation failed: %s", strerror(errno));
+	    msg(LOG_CRIT, "socket creation failed: %s", strerror(errno));
 	    THROWEXCEPTION("Cannot create IpfixReceiverDtlsSctpIpV4, socket creation failed: %s", strerror(errno));
 	}
 	/* set socket to non-blocking i/o */
@@ -88,21 +88,21 @@ IpfixReceiverDtlsSctpIpV4::IpfixReceiverDtlsSctpIpV4(int port, const std::string
 	serverAddress.sin_port = htons(port);
 	if(bind(listen_socket, (struct sockaddr*)&serverAddress, 
 	    sizeof(struct sockaddr_in)) < 0) {
-	    msg(MSG_FATAL, "Cannot bind socket: %s", strerror(errno));
+	    msg(LOG_CRIT, "Cannot bind socket: %s", strerror(errno));
 	    THROWEXCEPTION("Cannot create IpfixReceiverDtlsSctpIpV4 %s:%d",ipAddr.c_str(), port );
 	}
 	if(listen(listen_socket, SCTP_MAX_BACKLOG) < 0 ) {
-	    msg(MSG_FATAL, "Can not listen socket: %s", strerror(errno));
+	    msg(LOG_CRIT, "Can not listen socket: %s", strerror(errno));
 	    THROWEXCEPTION("Cannot create IpfixReceiverDtlsSctpIpV4 %s:%d",ipAddr.c_str(), port );
 	}
-	msg(MSG_INFO, "SCTP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
+	msg(LOG_NOTICE, "SCTP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
 								listen_socket);
 
 	memset(&ses, 0, sizeof(ses));
 	ses.sctp_data_io_event = 1;
 	if ( setsockopt(listen_socket, IPPROTO_SCTP, SCTP_EVENTS, &ses, sizeof(ses))) {
-	    msg(MSG_FATAL, "setsockopt() failed: %s", strerror(errno));
+	    msg(LOG_CRIT, "setsockopt() failed: %s", strerror(errno));
 	    THROWEXCEPTION("Cannot create IpfixReceiverDtlsSctpIpV4 %s:%d",ipAddr.c_str(), port );
 	}
 
@@ -121,7 +121,7 @@ IpfixReceiverDtlsSctpIpV4::IpfixReceiverDtlsSctpIpV4(int port, const std::string
 	SensorManager::getInstance().addSensor(this, "IpfixReceiverDtlsSctpIpV4",
 			moduleId);
 
-	msg(MSG_INFO, "DTLS over SCTP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
+	msg(LOG_NOTICE, "DTLS over SCTP Receiver listening on %s:%d, FD=%d", (ipAddr == "")?std::string("ALL").c_str() : ipAddr.c_str(), 
 								port, 
 								listen_socket);
     } catch(...) {
@@ -179,16 +179,16 @@ void IpfixReceiverDtlsSctpIpV4::run() {
 	    continue;
 	}
 	if ((ret == -1) && (errno == EINTR)) {
-	    DPRINTF("select() returned due to signal");
+	    DPRINTF_INFO("select() returned due to signal");
 	    /* There was a signal... ignore */
 	    continue;
 	}
 	if (ret < 0) {
-	    msg(MSG_ERROR ,"select() returned with an error: %s",strerror(errno));
+	    msg(LOG_ERR ,"select() returned with an error: %s",strerror(errno));
 	    THROWEXCEPTION("IpfixReceiverDtlsSctpIpV4: terminating listener thread");
 	    break;
 	}
-	DPRINTF("select() returned %d",ret);
+	DPRINTF_INFO("select() returned %d",ret);
 	// looking for a new client to connect at listen_socket
 	if (FD_ISSET(listen_socket, &tmpreadfds)){
 	    rfd = accept(listen_socket, (struct sockaddr*)&clientAddress, &clientAddressLen);
@@ -199,13 +199,13 @@ void IpfixReceiverDtlsSctpIpV4::run() {
 		    /* Do not accept connections from unauthorized hosts. */
 		    close(rfd);
 		} else {
-		    msg(MSG_DEBUG, "IpfixReceiverDtlsSctpIpV4: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
+		    msg(LOG_INFO, "IpfixReceiverDtlsSctpIpV4: Client connected from %s:%d, FD=%d", inet_ntoa(clientAddress.sin_addr), ntohs(clientAddress.sin_port), rfd);
 		    DtlsConnectionPtr conn = DtlsConnectionPtr( new DtlsConnection(*this,&clientAddress,rfd));
 		    connections.insert(make_pair(rfd,conn));
 		    update_maxfd();
 		}
 	    }else{
-		msg(MSG_ERROR ,"accept() in ipfixReceiver failed");
+		msg(LOG_ERR ,"accept() in ipfixReceiver failed");
 		/* TODO: Don't throw an exception here. */
 		THROWEXCEPTION("IpfixReceiverDtlsSctpIpV4: unable to accept new connection");
 	    }
@@ -214,26 +214,26 @@ void IpfixReceiverDtlsSctpIpV4::run() {
 	for (rfd = 0; rfd <= maxfd; ++rfd) {
 	    if (rfd == listen_socket) continue;
 	    if (FD_ISSET(rfd, &readfds) || FD_ISSET(rfd, &writefds)) {
-		if (FD_ISSET(rfd, &readfds)) DPRINTF("descriptor %d is ready for reading",rfd);
-		if (FD_ISSET(rfd, &writefds)) DPRINTF("descriptor %d is ready for writing",rfd);
+		if (FD_ISSET(rfd, &readfds)) DPRINTF_INFO("descriptor %d is ready for reading",rfd);
+		if (FD_ISSET(rfd, &writefds)) DPRINTF_INFO("descriptor %d is ready for writing",rfd);
 		connections_map::iterator it = connections.find(rfd);
 		if (it == connections.end()) {
 		    /* This should not happend. */
-		    msg(MSG_ERROR,"Can't find connection for file descriptor.");
+		    msg(LOG_ERR,"Can't find connection for file descriptor.");
 		    FD_CLR(rfd,&readfds);
 		    FD_CLR(rfd,&writefds);
 		    continue;
 		}
 		ret = it->second->fdready();
 		if (ret == 0) {
-		    DPRINTF("fdready() returned 0. Deleting connection.");
+		    DPRINTF_INFO("fdready() returned 0. Deleting connection.");
 		    remove_connection(rfd);
 		    update_maxfd();
 		}
 	    }
 	}
     }
-    msg(MSG_DEBUG, "IpfixReceiverDtlsSctpIpV4: Exiting");
+    msg(LOG_INFO, "IpfixReceiverDtlsSctpIpV4: Exiting");
 }
 
 /**
@@ -288,7 +288,7 @@ IpfixReceiverDtlsSctpIpV4::DtlsConnection::DtlsConnection(IpfixReceiverDtlsSctpI
 }
 
 IpfixReceiverDtlsSctpIpV4::DtlsConnection::~DtlsConnection() {
-    DPRINTF("~DtlsConnection()");
+    DPRINTF_INFO("~DtlsConnection()");
     shutdown();
 }
 
@@ -303,9 +303,9 @@ int IpfixReceiverDtlsSctpIpV4::DtlsConnection::fdready() {
     ret = SSL_read(ssl,data.get(),MAX_MSG_LEN);
     error = SSL_get_error(ssl,ret);
 #ifdef DEBUG
-    msg_openssl_return_code(MSG_DEBUG,"SSL_read()",ret,error);
-    DPRINTF("Error: %s",strerror(errno));
-    DPRINTF("Received shutdown: %s",SSL_get_shutdown(ssl) & SSL_RECEIVED_SHUTDOWN ? "yes":"no");
+    msg_openssl_return_code(LOG_INFO,"SSL_read()",ret,error);
+    DPRINTF_INFO("Error: %s",strerror(errno));
+    DPRINTF_INFO("Received shutdown: %s",SSL_get_shutdown(ssl) & SSL_RECEIVED_SHUTDOWN ? "yes":"no");
 #endif
     if (ret<0) {
 	if (error == SSL_ERROR_WANT_READ) {
@@ -317,22 +317,22 @@ int IpfixReceiverDtlsSctpIpV4::DtlsConnection::fdready() {
 	    FD_CLR(socket,&parent.readfds);
 	    return 1;
 	}
-	msg_openssl_return_code(MSG_ERROR,"SSL_read()",ret,error);
+	msg_openssl_return_code(LOG_ERR,"SSL_read()",ret,error);
 	msg_openssl_errors();
 	shutdown();
 	return 0;
     } else if (ret==0) {
 	if (error == SSL_ERROR_ZERO_RETURN) {
 	    // remote side closed connection
-	    DPRINTF("remote side closed connection.");
+	    DPRINTF_INFO("remote side closed connection.");
 	} else {
-	    msg_openssl_return_code(MSG_ERROR,"SSL_read()",ret,error);
+	    msg_openssl_return_code(LOG_ERR,"SSL_read()",ret,error);
 	    msg_openssl_errors();
 	}
 	shutdown();
 	return 0;
     } else {
-	DPRINTF("SSL_read() returned %d bytes.",ret);
+	DPRINTF_INFO("SSL_read() returned %d bytes.",ret);
     }
     parent.statReceivedPackets++;
     parent.mutex.lock();
@@ -358,14 +358,14 @@ void IpfixReceiverDtlsSctpIpV4::DtlsConnection::shutdown() {
     if (!ssl) return;
     ret = SSL_shutdown(ssl);
     if (ret == 0) {
-	DPRINTF("Calling SSL_shutdown a second time.");
+	DPRINTF_INFO("Calling SSL_shutdown a second time.");
 	ret = SSL_shutdown(ssl);
     }
     error = SSL_get_error(ssl,ret);
 #if DEBUG
-    msg_openssl_return_code(MSG_DEBUG,"SSL_shutdown()",ret,error);
+    msg_openssl_return_code(LOG_INFO,"SSL_shutdown()",ret,error);
 #endif
-    DPRINTF("SSL_free(ssl)");
+    DPRINTF_INFO("SSL_free(ssl)");
     parent.ssl_ctx.SSL_free(ssl);
     ssl = NULL;
     FD_CLR(socket,&parent.readfds);

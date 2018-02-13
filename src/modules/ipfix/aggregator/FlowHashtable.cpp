@@ -65,7 +65,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 				case IPFIX_TYPEID_flowStartSeconds:
 				case IPFIX_TYPEID_flowStartMicroseconds:
 					if (type->length != 4) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+						DPRINTF_INFO("unsupported length %d for type %d", type->length, type->id);
 						return 1;
 					}
 
@@ -75,7 +75,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 				case IPFIX_TYPEID_flowStartMilliseconds:
 				case IPFIX_TYPEID_flowStartNanoseconds:
 					if (type->length != 8) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+						DPRINTF_INFO("unsupported length %d for type %d", type->length, type->id);
 						return 1;
 					}
 
@@ -86,7 +86,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 				case IPFIX_TYPEID_flowEndSeconds:
 				case IPFIX_TYPEID_flowEndMicroseconds:
 					if (type->length != 4) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+						DPRINTF_INFO("unsupported length %d for type %d", type->length, type->id);
 						return 1;
 					}
 
@@ -96,7 +96,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 				case IPFIX_TYPEID_flowEndMilliseconds:
 				case IPFIX_TYPEID_flowEndNanoseconds:
 					if (type->length != 8) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+						DPRINTF_INFO("unsupported length %d for type %d", type->length, type->id);
 						return 1;
 					}
 
@@ -112,7 +112,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 				case IPFIX_TYPEID_droppedOctetDeltaCount:
 				case IPFIX_TYPEID_droppedPacketDeltaCount:
 					if (type->length != 8) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+						DPRINTF_INFO("unsupported length %d for type %d", type->length, type->id);
 						return 1;
 					}
 					*(uint64_t*)baseData = addUint64Nbo(*(uint64_t*)baseData, *(uint64_t*)deltaData);
@@ -138,7 +138,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 			switch (type->id) {
 				case IPFIX_TYPEID_flowStartSeconds:
 					if (type->length != 4) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+						DPRINTF_INFO("unsupported length %d for type %d", type->length, type->id);
 						return 1;
 					}
 					if (*(uint32_t*)baseData == 0)
@@ -150,7 +150,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 				case IPFIX_TYPEID_flowStartMilliseconds:
 				case IPFIX_TYPEID_flowStartNanoseconds:
 					if (type->length != 8) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+						DPRINTF_INFO("unsupported length %d for type %d", type->length, type->id);
 						return 1;
 					}
 
@@ -162,7 +162,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 
 				case IPFIX_TYPEID_flowEndSeconds:
 					if (type->length != 4) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+						DPRINTF_INFO("unsupported length %d for type %d", type->length, type->id);
 						return 1;
 					}
 
@@ -172,7 +172,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 				case IPFIX_TYPEID_flowEndMilliseconds:
 				case IPFIX_TYPEID_flowEndNanoseconds:
 					if (type->length != 8) {
-						DPRINTF("unsupported length %d for type %d", type->length, type->id);
+						DPRINTF_INFO("unsupported length %d for type %d", type->length, type->id);
 						return 1;
 					}
 
@@ -261,7 +261,7 @@ int FlowHashtable::aggregateField(TemplateInfo::FieldInfo* basefi, TemplateInfo:
 			}
 			break;
 	}
-	DPRINTF("non-aggregatable type: %s", type->toString().c_str());
+	DPRINTF_INFO("non-aggregatable type: %s", type->toString().c_str());
 	return 1;
 }
 
@@ -456,7 +456,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 	statRecordsReceived++;
 
 	uint32_t nhash = getHash(data.get(), false);
-	DPRINTFL(MSG_VDEBUG, "nhash=%u", nhash);
+	DPRINTF_DEBUG( "nhash=%u", nhash);
 	HashtableBucket* prevbucket;
 	HashtableBucket* bucket = lookupBucket(nhash, data.get(), false, &prevbucket);
 
@@ -465,7 +465,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 	timeval unix_now = unixtime();
 
 	if (bucket != NULL) {
-		DPRINTFL(MSG_VDEBUG, "aggregating flow");
+		DPRINTF_DEBUG( "aggregating flow");
 		// check if we need to expire the flow. we use a simple 
 		// distribution scheme to distribute flow counters among 
 		// flows that overlap with the active timeouts: 
@@ -490,7 +490,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 	if (biflowAggregation && !flowfound && !expiryforced) {
 		// try reverse flow
 		uint32_t rhash = getHash(data.get(), true);
-		DPRINTFL(MSG_VDEBUG, "rhash=%u", rhash);
+		DPRINTF_DEBUG( "rhash=%u", rhash);
 		bucket = lookupBucket(rhash, data.get(), true, &prevbucket);
 		if (bucket != NULL) {
 			if (unix_now.tv_sec > bucket->inactiveExpireTime || unix_now.tv_sec > bucket->activeExpireTime) {
@@ -499,12 +499,12 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 				removeBucket(bucket);
 			} else {
 				flowfound = true;
-				DPRINTFL(MSG_VDEBUG, "aggregating reverse flow");
+				DPRINTF_DEBUG( "aggregating reverse flow");
 				int must_reverse = aggregateFlow(bucket->data.get(), data.get(), true);
 				if (must_reverse == 1) {
-					DPRINTFL(MSG_VDEBUG, "reversing whole flow");
+					DPRINTF_DEBUG( "reversing whole flow");
 					// reverse flow
-					//msg(MSG_ERROR, "Reversing flow");
+					//msg(LOG_ERR, "Reversing flow");
 					reverseFlowBucket(bucket);
 					// delete reference from hash table
 					if (prevbucket==NULL)
@@ -516,7 +516,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 						bucket->next->prev = prevbucket;
 					// insert into hash table again
 					nhash = getHash(bucket->data.get(), false);
-					DPRINTFL(MSG_VDEBUG, "nhash=%u", nhash);
+					DPRINTF_DEBUG( "nhash=%u", nhash);
 					bucket->next = buckets[nhash];
 					bucket->hash = nhash;
 					buckets[nhash] = bucket;
@@ -533,7 +533,7 @@ void FlowHashtable::bufferDataBlock(boost::shared_array<IpfixRecord::Data> data)
 		}
 	}
 	if (!flowfound || expiryforced) {
-		DPRINTFL(MSG_VDEBUG, "creating new bucket");
+		DPRINTF_DEBUG( "creating new bucket");
 		statTotalEntries++;
 		HashtableBucket* n = buckets[nhash];
 		buckets[nhash] = createBucket(data, 0, n, 0, nhash, unix_now.tv_sec); // FIXME: insert observationDomainID!
@@ -559,7 +559,7 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
 	IpfixRecord::Data* dstData = dst+dstFI->offset;
 	IpfixRecord::Data* srcData = src+srcFI->offset;
 	if((dstType->id != srcType->id) || (dstType->enterprise != srcType->enterprise)) {
-		DPRINTF("copyData: Tried to copy field to destination of different type\n");
+		DPRINTF_INFO("copyData: Tried to copy field to destination of different type\n");
 		return;
 	}
 
@@ -599,7 +599,7 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
 			copylen = dstType->length;
 			memcpy(dstData, srcData, copylen);
 		} else {
-			DPRINTF("Target buffer too small. Buffer expected %s of length %d, got one with length %dn", srcType->toString().c_str(), srcType->length, dstType->length);
+			DPRINTF_INFO("Target buffer too small. Buffer expected %s of length %d, got one with length %dn", srcType->toString().c_str(), srcType->length, dstType->length);
 			return;
 		}
 	}
@@ -611,19 +611,19 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
 
 	/* Apply modifier */
 	if(modifier == Rule::Field::DISCARD) {
-		DPRINTF("Tried to copy data w/ having field modifier set to discard\n");
+		DPRINTF_INFO("Tried to copy data w/ having field modifier set to discard\n");
 		return;
 	} else if((modifier == Rule::Field::KEEP) || (modifier == Rule::Field::AGGREGATE)) {
 
 	} else if((modifier >= Rule::Field::MASK_START) && (modifier <= Rule::Field::MASK_END)) {
 
 		if((dstType->id != IPFIX_TYPEID_sourceIPv4Address) && (dstType->id != IPFIX_TYPEID_destinationIPv4Address)) {
-			DPRINTF("Tried to apply mask to %s field\n", dstType->toString().c_str());
+			DPRINTF_INFO("Tried to apply mask to %s field\n", dstType->toString().c_str());
 			return;
 		}
 
 		if (dstType->length != 5) {
-			DPRINTF("Destination data to short - no room to store mask\n");
+			DPRINTF_INFO("Destination data to short - no room to store mask\n");
 			return;
 		}
 
@@ -657,7 +657,7 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
 		}
 
 	} else {
-		DPRINTF("Unhandled field modifier: %d\n", modifier);
+		DPRINTF_INFO("Unhandled field modifier: %d\n", modifier);
 		return;
 	}
 }
@@ -669,7 +669,7 @@ void FlowHashtable::copyData(TemplateInfo::FieldInfo* dstFI, IpfixRecord::Data* 
  */
 void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 {
-	DPRINTF("called");
+	DPRINTF_INFO("called");
 
 	boost::shared_ptr<TemplateInfo> ti = record->templateInfo;
 	IpfixRecord::Data* data = record->data;
@@ -706,12 +706,12 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 					tfi = ti->getFieldInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0);
 					if(tfi) {
 						if(hfi->type.length != 5) {
-							DPRINTF("Tried to set mask of length %d IP address\n", hfi->type.length);
+							DPRINTF_INFO("Tried to set mask of length %d IP address\n", hfi->type.length);
 						} else {
 							if(tfi->type.length == 1) {
 								*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
 							} else {
-								DPRINTF("Cannot process associated mask with invalid length %d\n", tfi->type.length);
+								DPRINTF_INFO("Cannot process associated mask with invalid length %d\n", tfi->type.length);
 							}
 						}
 					}
@@ -721,12 +721,12 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 					tfi = ti->getFieldInfo(IPFIX_TYPEID_destinationIPv4PrefixLength, 0);
 					if(tfi) {
 						if(hfi->type.length != 5) {
-							DPRINTF("Tried to set mask of length %d IP address", hfi->type.length);
+							DPRINTF_INFO("Tried to set mask of length %d IP address", hfi->type.length);
 						} else {
 							if(tfi->type.length == 1) {
 								*(uint8_t*)(htdata.get() + hfi->offset + 4) = *(uint8_t*)(data + tfi->offset);
 							} else {
-								DPRINTF("Cannot process associated mask with invalid length %d", tfi->type.length);
+								DPRINTF_INFO("Cannot process associated mask with invalid length %d", tfi->type.length);
 							}
 						}
 					}
@@ -737,7 +737,7 @@ void FlowHashtable::aggregateDataRecord(IpfixDataRecord* record)
 			}
 		} else {
 			// field not filled
-			DPRINTF("Flow to be buffered did not contain %s field\n", hfi->type.toString().c_str());
+			DPRINTF_INFO("Flow to be buffered did not contain %s field\n", hfi->type.toString().c_str());
 			// if field was not copied, fill it with 0
 			memset(htdata.get() + hfi->offset, 0, hfi->type.length);
 		}
