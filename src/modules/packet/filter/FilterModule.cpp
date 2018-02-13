@@ -61,7 +61,7 @@ void FilterModule::receive(Packet* p)
 	// check if we passed all filters
 	if (keepPacket) {
 		// push packet to the receiver
-		DPRINTF_INFO("FilterModule: pushing packet %d", p);
+		DPRINTF_INFO("FilterModule: pushing packet %p", p);
 		while (!exitFlag && !send(p));
 		return;
 	}

@@ -45,7 +45,7 @@ matrix:
       before_install:
         - sudo apt-get remove -qq libssl-dev
       env:
-        - DTLS="OFF" ZMQ="OFF"
+        - DTLS="OFF" ZMQ="OFF" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
           packages:
@@ -56,7 +56,7 @@ matrix:
       before_install:
         - sudo apt-get remove -qq libssl-dev
       env:
-        - DTLS="OFF" ZMQ="OFF"
+        - DTLS="OFF" ZMQ="OFF" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
           packages:
@@ -64,7 +64,16 @@ matrix:
  
     - compiler: gcc
       env:
-        - DTLS="ON" ZMQ="ON"
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo"
+      addons:
+        apt:
+          sources: *zeromq_source
+          packages:
+            - *required_packages
+            - *optional_packages
+    - compiler: gcc
+      env:
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="Debug"
       addons:
         apt:
           sources: *zeromq_source
@@ -73,7 +82,7 @@ matrix:
             - *optional_packages
     - compiler: gcc-5
       env:
-        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_gcc
@@ -83,7 +92,7 @@ matrix:
             - g++-5
     - compiler: gcc-6
       env:
-        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=gcc-6 CXX=g++-6"
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-6 CXX=g++-6"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_gcc
@@ -93,7 +102,7 @@ matrix:
             - g++-6
     - compiler: gcc-7
       env:
-        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=gcc-7 CXX=g++-7"
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-7 CXX=g++-7"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_gcc
@@ -104,16 +113,25 @@ matrix:
 
     - compiler: clang
       env:
-        - DTLS="ON" ZMQ="ON"
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
           sources: *zeromq_source
           packages:
             - *required_packages
-            - *optional_packages            
+            - *optional_packages
+    - compiler: clang
+      env:
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="Debug"
+      addons:
+        apt:
+          sources: *zeromq_source
+          packages:
+            - *required_packages
+            - *optional_packages
     - compiler: clang-3.8
       env:
-        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_clang_3-8
@@ -123,7 +141,7 @@ matrix:
             - clang-3.8
     - compiler: clang-4.0
       env:
-        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_clang_4-0
@@ -133,7 +151,7 @@ matrix:
             - clang-4.0                        
     - compiler: clang-5.0
       env:
-        - DTLS="ON" ZMQ="ON" MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_clang_5-0
@@ -145,4 +163,4 @@ matrix:
 before_install:
   - eval "${MATRIX_EVAL}"
 
-script: cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make -k && make test && make install
+script: cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make -k && make test && make install

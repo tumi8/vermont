@@ -42,14 +42,14 @@ TemplateBuffer::BufferedTemplate* TemplateBuffer::getBufferedTemplate(boost::sha
 #ifdef DEBUG
 	DPRINTF_INFO("ALL TEMPLATES ---------------------------");
 	while (bt != 0) {
-		DPRINTF_INFO("bt->sourceID odid %lu exporter port %u collector port %u exporter ip %u.%u.%u.%u len %u prot %u ptr: %lu size: %lu expires in %d sec", bt->sourceID.get()->observationDomainId, bt->sourceID.get()->exporterPort, bt->sourceID.get()->receiverPort, bt->sourceID.get()->exporterAddress.ip[0], bt->sourceID.get()->exporterAddress.ip[1], bt->sourceID.get()->exporterAddress.ip[2], bt->sourceID.get()->exporterAddress.ip[3], bt->sourceID.get()->exporterAddress.len, bt->sourceID.get()->protocol, bt->sourceID.get(), sizeof(IpfixRecord::SourceID), bt->expires - time(NULL));
+		DPRINTF_INFO("bt->sourceID odid %" PRIu32 " exporter port %u collector port %u exporter ip %u.%u.%u.%u len %u prot %u ptr: %p size: %zu expires in %ld sec", bt->sourceID.get()->observationDomainId, bt->sourceID.get()->exporterPort, bt->sourceID.get()->receiverPort, bt->sourceID.get()->exporterAddress.ip[0], bt->sourceID.get()->exporterAddress.ip[1], bt->sourceID.get()->exporterAddress.ip[2], bt->sourceID.get()->exporterAddress.ip[3], bt->sourceID.get()->exporterAddress.len, bt->sourceID.get()->protocol, (void*)bt->sourceID.get(), sizeof(IpfixRecord::SourceID), bt->expires - time(NULL));
 		
 		bt = bt->next;
 	}
 	DPRINTF_INFO("END ALL TEMPLATES --------------------------");
 	
 	bt = head;
-	DPRINTF_INFO("Searching for : sourceID %lu %u %u %u.%u.%u.%u  %u %u", sourceId.get()->observationDomainId, sourceId.get()->exporterPort, sourceId.get()->receiverPort, sourceId.get()->exporterAddress.ip[0], sourceId.get()->exporterAddress.ip[1], sourceId.get()->exporterAddress.ip[2], sourceId.get()->exporterAddress.ip[3], sourceId.get()->exporterAddress.len, sourceId.get()->protocol);
+	DPRINTF_INFO("Searching for : sourceID %" PRIu32 " %u %u %u.%u.%u.%u  %u %u", sourceId.get()->observationDomainId, sourceId.get()->exporterPort, sourceId.get()->receiverPort, sourceId.get()->exporterAddress.ip[0], sourceId.get()->exporterAddress.ip[1], sourceId.get()->exporterAddress.ip[2], sourceId.get()->exporterAddress.ip[3], sourceId.get()->exporterAddress.len, sourceId.get()->protocol);
 #endif
 	
 	while (bt != 0) {

@@ -155,7 +155,7 @@ public:
 	
 				// if program was shutdown, exit without success
 				if (exitFlag) {
-					DPRINTF_DEBUG( "exitFlag is set", errno);
+					DPRINTF_DEBUG( "exitFlag is set %d", errno);
 					return false;
 				}
 		    } while (retval != 0);
