@@ -239,12 +239,10 @@ private:
 			struct timespec nexttimeout;
 			if (!processTimeouts(nexttimeout)) {
 				if (!queue.pop(&element)) {
-					DPRINTF_INFO("queue.pop failed - timeout?");
 					continue;
 				}
 			} else {
 				if (!queue.popAbs(nexttimeout, &element)) {
-					DPRINTF_INFO("queue.pop failed - timeout?");
 					continue;
 				}
 			}

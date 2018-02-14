@@ -106,8 +106,6 @@ public:
 						return false;
 						break;
 					default:
-						// semaphore could not be aquired because of several reasons, but none are fatal
-						DPRINTF_DEBUG( "timedwait (<0) returned with %d (%s)", errno, strerror(errno));
 						return false;
 				}
 			}
@@ -120,7 +118,6 @@ public:
 				retval = sem_timedwait(sem, &timeout);
 #endif
 				if (retval != 0 && errno != ETIMEDOUT) {
-					DPRINTF_DEBUG( "timedwait (>=0) returned with %d: %s", errno, strerror(errno));
 					switch (errno) {
 						case EINVAL:
 						/*
@@ -141,8 +138,7 @@ public:
 						return false;
 						break;
 						default:
-						// semaphore could not be aquired because of several reasons, but none are fatal
-						DPRINTF_DEBUG( "timedwait (>=0) returned with %d", errno);
+						break;
 					}
 				}
 				if (errno == ETIMEDOUT) {
@@ -201,9 +197,6 @@ public:
 					return false;
 					break;
 				default:
-					// semaphore not acquired for non-fatal reasons
-					DPRINTF_DEBUG( "timedwait returned with %s",
-							strerror(errno));
 					return false;
 			}
 		}

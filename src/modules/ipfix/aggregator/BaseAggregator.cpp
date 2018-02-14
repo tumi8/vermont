@@ -171,15 +171,12 @@ void BaseAggregator::exporterThread()
 		}
 
 		gettimeofday(&curtime, 0);
-		DPRINTF_DEBUG("Aggregator: starting Export");
 		for (size_t i = 0; i < rules->count; i++) {
 			rules->rule[i]->hashtable->expireFlows();
 		}
 		struct timeval endtime;
 		gettimeofday(&endtime, 0);
 		timeval_subtract(&difftime, &endtime, &curtime);
-
-		DPRINTF_DEBUG("Aggregator: export took %.03f secs", (float)difftime.tv_usec/1000000+difftime.tv_sec);
 	}
 
 	if (getShutdownProperly()) {

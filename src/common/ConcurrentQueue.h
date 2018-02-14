@@ -79,7 +79,6 @@ class ConcurrentQueue
 					(ownerName.empty() ? "<owner not set>" : ownerName.c_str()),
 					maxEntries-pushSemaphore.getCount());
 			if (!popSemaphore.wait()) {
-				DPRINTF_INFO("(%s) failed to pop element, program is being shut down?", ownerName.c_str());
 				return false;
 			}
 
@@ -102,11 +101,9 @@ class ConcurrentQueue
 		// of the timeout has been reached, res will be set to NULL and false will be returned
 		inline bool pop(long timeout_ms, T *res)
 		{
-			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
 			// try to get an item from the queue
 			if(!popSemaphore.wait(timeout_ms)) {
 				// timeout occured
-				DPRINTF_DEBUG( "(%s) timeout", ownerName.c_str());
 				return false;
 			}
 
@@ -129,8 +126,6 @@ class ConcurrentQueue
 		// use this instead of the above, makes things easier!
 		inline bool popAbs(const struct timespec& timeout, T *res)
 		{
-			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
-		
 			if (popSemaphore.waitAbs(timeout)) {
 				// popSemaphore.wait() succeeded, now pop the frontmost element
 				lock.lock();
@@ -148,7 +143,6 @@ class ConcurrentQueue
 			}
 			else {
 				// timeout occured
-				DPRINTF_DEBUG( "(%s) timeout or program shutdown", ownerName.c_str());
 				*res = 0;
 		
 				return false;
