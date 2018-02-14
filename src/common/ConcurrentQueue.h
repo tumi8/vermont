@@ -127,35 +127,6 @@ class ConcurrentQueue
 
 		// like pop above, but with absolute time instead of delta.
 		// use this instead of the above, makes things easier!
-		inline bool popAbs(const struct timeval &timeout, T *res)
-		{
-			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
-			
-			if (popSemaphore.waitAbs(timeout)) {
-				// popSemaphore.wait() succeeded, now pop the frontmost element
-				lock.lock();
-				*res = queue.front();
-				queue.pop();
-				poppedCount++;
-				count--;
-				lock.unlock();
-
-				pushSemaphore.post();
-
-				DPRINTF_DEBUG( "(%s) element popped", ownerName.c_str());
-
-				return true;
-			} else {
-				// timeout occured
-				DPRINTF_DEBUG( "(%s) timeout or program shutdown", ownerName.c_str());
-				*res = 0;
-
-				return false;
-			}
-		}
-		
-		// like pop above, but with absolute time instead of delta.
-		// use this instead of the above, makes things easier!
 		inline bool popAbs(const struct timespec& timeout, T *res)
 		{
 			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
