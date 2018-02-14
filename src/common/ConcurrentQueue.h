@@ -21,6 +21,24 @@
 template<class T>
 class ConcurrentQueue
 {
+	private:
+
+	inline bool do_pop(T* res)
+	{
+		lock.lock();
+		*res = queue.front();
+		queue.pop();
+		poppedCount++;
+		count--;
+		lock.unlock();
+
+		pushSemaphore.post();
+
+		DPRINTF_DEBUG( "(%s) element popped", ownerName.c_str());
+
+		return true;
+	}
+
 	public:
 		/**
 		 * default queue size
@@ -75,26 +93,10 @@ class ConcurrentQueue
 
 		inline bool pop(T* res)
 		{
-			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)",
-					(ownerName.empty() ? "<owner not set>" : ownerName.c_str()),
-					maxEntries-pushSemaphore.getCount());
 			if (!popSemaphore.wait()) {
-				DPRINTF_INFO("(%s) failed to pop element, program is being shut down?", ownerName.c_str());
 				return false;
 			}
-
-			lock.lock();
-			*res = queue.front();
-			queue.pop();
-			poppedCount++;
-			count--;
-			lock.unlock();
-
-			pushSemaphore.post();
-
-			DPRINTF_DEBUG( "(%s) element popped", ownerName.c_str());
-
-			return true;
+			return do_pop(res);
 		};
 
 		// try to pop an entry from the queue before timeout occurs
@@ -102,84 +104,22 @@ class ConcurrentQueue
 		// of the timeout has been reached, res will be set to NULL and false will be returned
 		inline bool pop(long timeout_ms, T *res)
 		{
-			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
-			// try to get an item from the queue
 			if(!popSemaphore.wait(timeout_ms)) {
-				// timeout occured
-				DPRINTF_DEBUG( "(%s) timeout", ownerName.c_str());
 				return false;
 			}
-
-			// popSemaphore.wait() succeeded, now pop the frontmost element
-			lock.lock();
-			*res = queue.front();
-			queue.pop();
-			poppedCount++;
-			count--;
-			lock.unlock();
-
-			pushSemaphore.post();
-
-			DPRINTF_DEBUG( "(%s) element popped", ownerName.c_str());
-
-			return true;
+			return do_pop(res);
 		}
 
-		// like pop above, but with absolute time instead of delta.
-		// use this instead of the above, makes things easier!
-		inline bool popAbs(const struct timeval &timeout, T *res)
-		{
-			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
-			
-			if (popSemaphore.waitAbs(timeout)) {
-				// popSemaphore.wait() succeeded, now pop the frontmost element
-				lock.lock();
-				*res = queue.front();
-				queue.pop();
-				poppedCount++;
-				count--;
-				lock.unlock();
-
-				pushSemaphore.post();
-
-				DPRINTF_DEBUG( "(%s) element popped", ownerName.c_str());
-
-				return true;
-			} else {
-				// timeout occured
-				DPRINTF_DEBUG( "(%s) timeout or program shutdown", ownerName.c_str());
-				*res = 0;
-
-				return false;
-			}
-		}
-		
 		// like pop above, but with absolute time instead of delta.
 		// use this instead of the above, makes things easier!
 		inline bool popAbs(const struct timespec& timeout, T *res)
 		{
-			DPRINTF_DEBUG( "(%s) trying to pop element (%d elements in queue)", ownerName.c_str(), count);
-		
 			if (popSemaphore.waitAbs(timeout)) {
-				// popSemaphore.wait() succeeded, now pop the frontmost element
-				lock.lock();
-				*res = queue.front();
-				queue.pop();
-				poppedCount++;
-				count--;
-				lock.unlock();
-		
-				pushSemaphore.post();
-		
-				DPRINTF_DEBUG( "(%s) element popped", ownerName.c_str());
-		
-				return true;
+				return do_pop(res);
 			}
 			else {
 				// timeout occured
-				DPRINTF_DEBUG( "(%s) timeout or program shutdown", ownerName.c_str());
 				*res = 0;
-		
 				return false;
 			}
 		}
