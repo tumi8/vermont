@@ -1,12 +1,12 @@
 
 - name: Add ZMQ key
   apt_key:
-    url: http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key
+    url: http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/Debian_8.0/Release.key
     state: present
 
 - name: Add ZMQ ppa
   apt_repository:
-    repo: deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./
+    repo: deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/Debian_8.0/ ./
     state: present
     filename: 'mq'
 
