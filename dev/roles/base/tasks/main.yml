@@ -1,0 +1,52 @@
+
+- name: Add ZMQ key
+  apt_key:
+    url: http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/Debian_8.0/Release.key
+    state: present
+
+- name: Add ZMQ ppa
+  apt_repository:
+    repo: deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/Debian_8.0/ ./
+    state: present
+    filename: 'mq'
+
+    #- name: Add toolchain
+    #  apt_repository: repo='ppa:ubuntu-toolchain-r/test'
+
+- name: install dependencies
+  apt: name={{item}} state=present install_recommends=no update_cache=yes
+  with_items:
+    - ntp
+    - cmake
+    - pkg-config
+    - libboost-dev
+    - libboost-filesystem-dev
+    - libboost-regex-dev
+    - libboost-test-dev
+    - libboost-thread-dev
+    - libxml2-dev
+    - libpcap-dev
+    - libsystemd-journal-dev
+    - libsctp-dev
+    - libssl-dev
+    - libczmq-dev
+    - g++
+
+- name: remove build directory
+  file: path='/vermont/build-vagrant/' state=absent
+
+- name: create build directory
+  file: path='/vermont/build-vagrant' state=directory
+
+- name: cmake vermont
+  command: "{{item}}"
+  with_items:
+    - cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS=ON -DSUPPORT_ZMQ=ON ..
+    - make -k
+    - make test
+    - make install
+  environment:
+    CXX: g++
+    CC: gcc
+  args:
+    chdir: /vermont/build-vagrant/
