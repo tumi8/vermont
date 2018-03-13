@@ -43,11 +43,7 @@ int IpfixDbReaderMySQL::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templa
 	MYSQL_RES* dbResult = NULL;
 	MYSQL_ROW dbRow = NULL;
 	unsigned offset = 0;
-	uint64_t delta = 0;		// 64 bit to avoid castings in the case of flowStartMilliseconds
-	uint32_t flowTime = 0;		// in seconds, so 32 bit are sufficient
-	uint32_t lastFlowTime = 0;
 	uint64_t tmp;
-	bool first = true; 
 	unsigned j = 0;
 	
 	string query = "SELECT " + columnNames + " FROM " + tableName;
@@ -148,7 +144,6 @@ int IpfixDbReaderMySQL::getColumns(const string& tableName)
 	columnNames = "";
 	orderBy = ""; 
 	while((dbRow = mysql_fetch_row(dbResult))) {
-		bool found = true;
 		const struct ipfix_identifier* id = ipfix_name_lookup(dbRow[0]);
 		if (id == NULL) {
 			msg(LOG_NOTICE, "IpfixDbReaderMySQL: Unsupported column: %s", dbRow[0]);
