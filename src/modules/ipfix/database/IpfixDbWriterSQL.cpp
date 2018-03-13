@@ -303,8 +303,7 @@ void IpfixDbWriterSQL::onDataRecord(IpfixDataRecord* record)
 {
 	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
 	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate)
-		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)
-		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)) {
 		record->removeReference();
 		return;
 	}
@@ -397,17 +396,8 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			for(k=0; k < dataTemplateInfo->fieldCount; k++) {
 				if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
 					parseIpfixData(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset), &parsedData);
-					DPRINTF_INFO("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
+					DPRINTF_INFO("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %p, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
 					break;
-				}
-			}
-			// look in static data fields of template for data
-			if (parsedData.empty()) {
-				for(k=0; k < dataTemplateInfo->dataCount; k++) {
-					if(dataTemplateInfo->dataInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->dataInfo[k].type.id == col->ipfixId) {
-						parseIpfixData(dataTemplateInfo->dataInfo[k].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[k].offset), &parsedData);
-						break;
-					}
 				}
 			}
 			// check for time-related alternative fields in the database
@@ -448,7 +438,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 				}
 		}
 
-		DPRINTF_INFO("saw ipfix id %d in packet with parsedData %llX", col->ipfixId, parsedData);
+		DPRINTF_INFO("saw ipfix id %d in packet with parsedData %p", col->ipfixId, parsedData);
 
 		if(first) {
 			rowStream << parsedData;
