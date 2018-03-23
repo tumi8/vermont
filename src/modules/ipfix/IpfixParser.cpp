@@ -339,19 +339,19 @@ uint32_t IpfixParser::processDataSet(boost::shared_ptr<IpfixRecord::SourceID> so
 		if (bt->recordLength < 65535) {
 			if (record + bt->recordLength > endOfSet) {
 				msg(LOG_ERR, "IpfixParser: Got a Data Set that contained not a single full record");
-			}
-			else
-			/* We stop processing when no full record is left */
-			while (record + bt->recordLength <= endOfSet) {
-				IpfixDataRecord* ipfixRecord = dataRecordIM.getNewInstance();
-				ipfixRecord->sourceID = sourceId;
-				ipfixRecord->templateInfo = ti;
-				ipfixRecord->dataLength = bt->recordLength;
-				ipfixRecord->message = message;
-				ipfixRecord->data = record;
-				push(ipfixRecord);
-				record = record + bt->recordLength;
-				numberOfRecords++;
+			} else {
+				/* We stop processing when no full record is left */
+				while (record + bt->recordLength <= endOfSet) {
+					IpfixDataRecord* ipfixRecord = dataRecordIM.getNewInstance();
+					ipfixRecord->sourceID = sourceId;
+					ipfixRecord->templateInfo = ti;
+					ipfixRecord->dataLength = bt->recordLength;
+					ipfixRecord->message = message;
+					ipfixRecord->data = record;
+					push(ipfixRecord);
+					record = record + bt->recordLength;
+					numberOfRecords++;
+				}
 			}
 		} else {
 			/* Variable-length record */
@@ -484,7 +484,7 @@ int IpfixParser::processNetflowV9Packet(boost::shared_array<uint8_t> message, ui
 	while (((numberOfDataRecords + numberOfTemplateRecords) <= expectedNumberOfRecords) && (((uint8_t*)(set) + 4) <= endOfMessage)) {
 		/* check set length */
 		if (ntohs(set->length) < 3) {
-			msg(LOG_ERR, "IpfixParser: Invalid set length %u, must be >= 4", ntohs(set->length));
+			msg(LOG_ERR, "IpfixParser: Invalid V9 set length %u, must be >= 4", ntohs(set->length));
 			return -1;
 		}
 
@@ -590,7 +590,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 	while((uint8_t*)(set) + 4 <= endOfMessage) {
 		/* check set length */
 		if (ntohs(set->length) < 3) {
-			msg(LOG_ERR, "IpfixParser: Invalid set length %u, must be >= 4", ntohs(set->length));
+			msg(LOG_ERR, "IpfixParser: Invalid IPFIX set length %u, must be >= 4", ntohs(set->length));
 			return -1;
 		}
 
