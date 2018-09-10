@@ -56,17 +56,25 @@ IpfixReceiverZmq::IpfixReceiverZmq(std::vector<std::string> endpoints,
 	}
 
 	for (std::vector<std::string>::iterator i = endpoints.begin(); i != endpoints.end(); i++) {
-		// If no channel is passed down, listen on everything (empty string)
-		zsock_t *sock = zsock_new_sub((*i).c_str(), channels.empty() ? "" : NULL);
+		zsock_t *sock = zsock_new(ZMQ_SUB);
 		if (!sock) {
-			THROWEXCEPTION("Could not connect ZMQ socket, cannot start ZMQ Receiver");
+			THROWEXCEPTION("Could not create ZMQ socket");
 		}
 
 		zsock_set_sndhwm(sock, zmq_high_watermark);
 		zsock_set_rcvhwm(sock, zmq_high_watermark);
 
-		for (std::vector<std::string>::iterator j = channels.begin(); j != channels.end(); j++) {
-			zsock_set_subscribe(sock, (*j).c_str());
+		if (zsock_connect(sock, "%s", (*i).c_str())) {
+	                THROWEXCEPTION("Could not connect ZMQ socket");
+	        }
+
+		// If no channel is passed down, listen on everything (empty string)
+		if (channels.empty()) {
+			zsock_set_subscribe(sock, "");
+		} else {
+			for (std::vector<std::string>::iterator j = channels.begin(); j != channels.end(); j++) {
+				zsock_set_subscribe(sock, (*j).c_str());
+			}
 		}
 
 		if (zpoller_add(zpoller, sock)) {
