@@ -197,7 +197,7 @@ class IpfixRecord
 						oss << " (SCTP)";
 						break;
 					default:
-						oss << " (" << protocol <<")";
+						oss << " (" << std::to_string(protocol) <<")";
 						break;
 				}
 				oss << " ODID=" << observationDomainId;
@@ -390,4 +390,3 @@ class IpfixTemplateDestructionRecord : public IpfixRecord, public ManagedInstanc
 
 
 #endif
-
