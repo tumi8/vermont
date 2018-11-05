@@ -120,6 +120,9 @@ ConfigManager::~ConfigManager()
 	if (graph) {
 		delete graph;
 	}
+	if (document) {
+		delete document;
+	}
 }
 
 /**
@@ -330,4 +333,3 @@ Graph* ConfigManager::reconnect(Graph* g, Graph *old)
 
 	return newGraph;
 }
-
