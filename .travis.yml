@@ -199,6 +199,18 @@ matrix:
             - *required_packages
             - *optional_packages
             - clang-7
+    # - stage: Static Analysis
+    #   env:
+    #     - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+    #   addons:
+    #     apt:
+    #       sources: *zeromq_source_and_toolchain_clang_7
+    #       packages:
+    #         - *required_packages
+    #         - *optional_packages
+    #         - clang-7
+    #         - clang-tools-7
+    #   script: scan-build --status-bugs cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && scan-build --status-bugs make -k
 
 before_install:
   - eval "${MATRIX_EVAL}"
