@@ -23,6 +23,16 @@ addons:
       - llvm-toolchain-trusty-5.0
       - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
         key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'      
+    sources: &zeromq_source_and_toolchain_clang_6-0
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-6.0
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
+    sources: &zeromq_source_and_toolchain_clang_7
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-7
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
     packages: &required_packages
       - cmake
       - libboost-dev
@@ -159,7 +169,27 @@ matrix:
             - *required_packages
             - *optional_packages
             - clang-5.0
-            
+    - compiler: clang-6.0
+      env:
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_6-0
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-6.0
+    - compiler: clang-7
+      env:
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_7
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-7
+
 before_install:
   - eval "${MATRIX_EVAL}"
 
