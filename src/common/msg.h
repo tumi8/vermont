@@ -53,8 +53,20 @@ void msg_set_syslog(bool);
 bool msg_get_syslog();
 int msg_stat(const char *fmt, ...);
 int msg_stat_setup(int mode, FILE *f);
-void vermont_assert(const char* expr, const char* description, int line, const char* filename, const char* prettyfuncname, const char* funcname);
-void vermont_exception(const int, const char*, const char*, const char*, const char*, ...);
+
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+#ifndef CLANG_ANALYZER_NORETURN
+#if __has_feature(attribute_analyzer_noreturn)
+#define CLANG_ANALYZER_NORETURN __attribute__((analyzer_noreturn))
+#else
+#define CLANG_ANALYZER_NORETURN
+#endif
+#endif
+
+void vermont_assert(const char* expr, const char* description, int line, const char* filename, const char* prettyfuncname, const char* funcname) __attribute__((__noreturn__));
+void vermont_exception(const int, const char*, const char*, const char*, const char*, ...) CLANG_ANALYZER_NORETURN;
 
 //#if !defined(__PRETTY_FUNCTION__)
 	//#define __PRETTY_FUNCTION__ "<unknown>"
