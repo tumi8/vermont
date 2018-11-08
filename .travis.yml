@@ -23,6 +23,16 @@ addons:
       - llvm-toolchain-trusty-5.0
       - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
         key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'      
+    sources: &zeromq_source_and_toolchain_clang_6-0
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-6.0
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
+    sources: &zeromq_source_and_toolchain_clang_7
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-7
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
     packages: &required_packages
       - cmake
       - libboost-dev
@@ -110,6 +120,16 @@ matrix:
             - *required_packages
             - *optional_packages
             - g++-7
+    # - compiler: gcc-8
+    #   env:
+    #     - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-8 CXX=g++-8"
+    #   addons:
+    #     apt:
+    #       sources: *zeromq_source_and_toolchain_gcc
+    #       packages:
+    #         - *required_packages
+    #         - *optional_packages
+    #         - g++-8
 
     - compiler: clang
       env:
@@ -159,7 +179,39 @@ matrix:
             - *required_packages
             - *optional_packages
             - clang-5.0
-            
+    - compiler: clang-6.0
+      env:
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_6-0
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-6.0
+    - compiler: clang-7
+      env:
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_7
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-7
+    # - stage: Static Analysis
+    #   env:
+    #     - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+    #   addons:
+    #     apt:
+    #       sources: *zeromq_source_and_toolchain_clang_7
+    #       packages:
+    #         - *required_packages
+    #         - *optional_packages
+    #         - clang-7
+    #         - clang-tools-7
+    #   script: scan-build --status-bugs cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && scan-build --status-bugs make -k
+
 before_install:
   - eval "${MATRIX_EVAL}"
 
