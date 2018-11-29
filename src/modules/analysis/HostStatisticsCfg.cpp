@@ -28,7 +28,7 @@ HostStatisticsCfg::HostStatisticsCfg(XMLElement* elem) : CfgHelper<HostStatistic
 		ipSubnet = get("subnet");
 		addrFilter = get("addrFilter");
 		logPath = get("logPath");
-	} catch(IllegalEntry ie) {
+	} catch(IllegalEntry& ie) {
 		THROWEXCEPTION("Illegal hostStatistics entry in config file");
 	}
 }

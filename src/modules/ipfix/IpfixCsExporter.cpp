@@ -317,7 +317,7 @@ void IpfixCsExporter::writeFileHeader()
 
 	struct stat sta;
 
-	char prefix[512];
+	char prefix[500];
 	snprintf(prefix, ARRAY_SIZE(prefix), "%s%s%02d%02d%02d-%02d%02d",
 			destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year+1900,st->tm_mon+1,st->tm_mday,st->tm_hour,st->tm_min);
 	uint32_t i = 1;

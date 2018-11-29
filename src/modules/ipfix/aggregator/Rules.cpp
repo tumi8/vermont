@@ -178,7 +178,7 @@ int parsePortPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeL
 	char* pair;
 
 	while ((pair = get_next_token(&p, ","))) {
-		strncpy(buf, pair, sizeof(buf));
+		strncpy(buf, pair, sizeof(buf)-1);
 		char* p2 = buf;
 		char* start = get_next_token(&p2, ":");
 		char* end = get_next_token(&p2, ",");
