@@ -36,7 +36,7 @@ std::string CfgBase::get(const std::string& name, XMLElement* elem)
 	std::string result;
 	try {
 		result = _get(name, elem);
-	} catch (IllegalEntry ie) {
+	} catch (IllegalEntry& ie) {
 
 		THROWEXCEPTION("Error: Element '%s' not found in node '%s' in configuration", name.c_str(), elem->getName().c_str());
 	}
@@ -49,7 +49,7 @@ std::string CfgBase::getOptional(const std::string& name, XMLElement* elem)
 	std::string result;
 	try {
 		result = _get(name, elem);
-	} catch (IllegalEntry ie) { }
+	} catch (IllegalEntry& ie) { }
 
 	return result;
 }
@@ -60,7 +60,7 @@ double CfgBase::getDouble(const std::string& name, double def, XMLElement* elem)
 	try {
 		str = _get(name, elem);
 		return atof(str.c_str());
-	} catch (IllegalEntry ie) { }
+	} catch (IllegalEntry& ie) { }
 
 	// return default value
 	return def;
@@ -76,7 +76,7 @@ int CfgBase::getInt(const std::string& name, int def, XMLElement* elem)
 			THROWEXCEPTION("failed to read integer %s in element %s in configuration (is it too large? or invalid?)", str.c_str(), name.c_str());
 		}
 		return res;
-	} catch (IllegalEntry ie) { }
+	} catch (IllegalEntry& ie) { }
 
 	// return default value
 	return def;
@@ -88,7 +88,7 @@ uint32_t CfgBase::getUInt32(const std::string& name, uint32_t def, XMLElement* e
 	try {
 		str = _get(name, elem);
 		return strtoul(str.c_str(), NULL, 10);
-	} catch (IllegalEntry ie) { }
+	} catch (IllegalEntry& ie) { }
 
 	// return default value
 	return def;
@@ -100,7 +100,7 @@ int64_t CfgBase::getInt64(const std::string& name, int64_t def, XMLElement* elem
 	try {
 		str = _get(name, elem);
 		return atoll(str.c_str());
-	} catch (IllegalEntry ie) { }
+	} catch (IllegalEntry& ie) { }
 
 	// return default value
 	return def;
@@ -114,7 +114,7 @@ bool CfgBase::getBool(const std::string& name, bool def, XMLElement* elem)
 		// make lower case
 		std::transform(str.begin(), str.end(), str.begin(), ::tolower);
 		return ((str == "true") || (str == "1"));
-	} catch (IllegalEntry ie) { }
+	} catch (IllegalEntry& ie) { }
 
 	// return default value
 	return def;
@@ -134,7 +134,7 @@ unsigned int CfgBase::getTimeInUnit(const std::string& name, timeUnit unit, uint
 		try {
 			if (e->getName() != name)
 				continue;
-		} catch (IllegalEntry ie) {
+		} catch (IllegalEntry& ie) {
 
 		}
 

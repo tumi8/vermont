@@ -512,7 +512,7 @@ void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
-		char buf[100], buf2[100];
+		char buf[100], buf2[120];
 
 		if (linesPrinted==0 || linesPrinted>50) {
 			fprintf(fh, "%22s %20s %8s %5s %21s %21s %5s %5s\n", "Flow recvd.", "Flow start", "Duratn", "Prot", "Src IP:Port", "Dst IP:Port", "Pckts", "Bytes");

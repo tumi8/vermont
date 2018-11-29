@@ -243,7 +243,7 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 			}
 			delete [] tmp;
 		}
-	} catch (std::exception e) {
+	} catch (std::exception& e) {
 		delete ruleField;
 		ruleField = NULL;
 	}
