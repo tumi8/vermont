@@ -54,44 +54,10 @@
 		<pollInterval unit="msec">1000</pollInterval>
 		<next>4</next>
 	</packetAggregator>
-	
+
 	<ipfixAggregator id="4">
 		<rule>
-			<templateId>888</templateId>
-			<flowKey>
-				<ieName>sourceIPv4Address</ieName>
-				<match>131.159.20.0/24</match>
-			</flowKey>
-			<flowKey>
-				<ieName>destinationIPv4Address</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>protocolIdentifier</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>sourceTransportPort</ieName>
-			</flowKey>
-			<flowKey>
-				<ieName>destinationTransportPort</ieName>
-			</flowKey>
-			<nonFlowKey>
-				<ieName>flowStartMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>flowEndMilliSeconds</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>octetDeltaCount</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>packetDeltaCount</ieName>
-			</nonFlowKey>
-			<nonFlowKey>
-				<ieName>tcpControlBits</ieName>
-			</nonFlowKey>
-		</rule>
-		<rule>
-			<templateId>0</templateId>
+			<templateId>567</templateId>
 			<flowKey>
 				<ieName>sourceIPv4Address</ieName>
 			</flowKey>
@@ -135,30 +101,10 @@
     </ipfixPrinter>
 
 	<ipfixExporter id="7">
-		<!--
-		<ipfixPacketRestrictions>
-			<maxPacketSize>1500</maxPacketSize>
-			<maxExportDelay unit="msec">500</maxExportDelay>
-		</ipfixPacketRestrictions>
-		<udpTemplateManagement>
-			<templateRefreshTimeout>10</templateRefreshTimeout>
-		</udpTemplateManagement>
-		-->
 		<collector>
 			<ipAddress>127.0.0.1</ipAddress>
 			<transportProtocol>17</transportProtocol>
 			<port>1500</port>
 		</collector>
 	</ipfixExporter>
-
-	<trwPortscanDetector id="8">
-		<analyzerid>trwportscandetector</analyzerid>
-		<idmeftemplate>idmef/templates/trwportscan_template.xml</idmeftemplate>
-		<next>9</next>
-	</trwPortscanDetector>
-
-	<idmefExporter id="9">
-		<sendurl>http://localhost</sendurl>
-	</idmefExporter>
-	
 </ipfixConfig>
