@@ -162,6 +162,11 @@ void IpfixReceiverZmq::run()
 	}
 }
 
+void IpfixReceiverZmq::clearStatistics()
+{
+    statReceivedPackets = 0;
+}
+
 /**
  * statistics function called by StatisticsManager
  */

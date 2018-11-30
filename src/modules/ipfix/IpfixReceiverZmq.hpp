@@ -45,6 +45,7 @@ public:
 	virtual ~IpfixReceiverZmq();
 
 	virtual void run();
+	virtual void clearStatistics();
 	virtual std::string getStatisticsXML(double interval);
 
 protected:

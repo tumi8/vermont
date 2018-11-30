@@ -102,6 +102,11 @@ bool IpfixCollector::send(IpfixRecord* ipfixRecord)
 	return Source<IpfixRecord*>::send(ipfixRecord);	
 }
 
+void IpfixCollector::clearStatistics()
+{
+	statSentRecords = 0;
+}
+
 string IpfixCollector::getStatisticsXML(double interval)
 {
 	char buf[50];
