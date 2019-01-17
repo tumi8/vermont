@@ -120,12 +120,14 @@ void IpfixReceiverZmq::run()
 	sourceID->fileDescriptor = 0;
 
 	while (!zsys_interrupted && !exitFlag) {
+		DPRINTF_DEBUG("ZMQ Receiver: Waiting on Poller");
 		void *sock = zpoller_wait(zpoller, zmq_poll_timeout);
 		if (!sock) {
 			if (zpoller_terminated(zpoller)) {
 				msg(LOG_INFO, "ZMQ Receiver: ZMQ termination signal received");
 				break;
 			} else {
+				DPRINTF_DEBUG("ZMQ Receiver: Poller Timeout");
 				continue;
 			}
 		}
