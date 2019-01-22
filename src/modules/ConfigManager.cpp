@@ -18,7 +18,7 @@
  *
  */
 
-#include "modules/ConfigManager.h"
+#include "ConfigManager.hpp"
 #include "core/Connector.h"
 #include "core/CfgNode.h"
 #include "common/defs.h"
@@ -156,13 +156,11 @@ void ConfigManager::parseConfig(std::string fileName)
 	 * attached to the node) to the graph
 	 */
 	XMLNode::XMLSet<XMLElement*> rootElements = root->getElementChildren();
-	for (XMLNode::XMLSet<XMLElement*>::const_iterator it = rootElements.begin();
-	     it != rootElements.end();
-	     it++) {
+	for (const auto& element : rootElements) {
 		bool found = false;
-		for (unsigned int i = 0; i < ARRAY_SIZE(configModules); i++) {
-			if ((*it)->getName() == configModules[i]->getName()) {
-				Cfg* cfg = configModules[i]->create(*it);
+		for (auto& module : configModules) {
+			if (element->getName() == module->getName()) {
+				Cfg* cfg = module->create(element);
 
 				// handle special modules
 				SensorManagerCfg* smcfg = dynamic_cast<SensorManagerCfg*>(cfg);
@@ -179,7 +177,7 @@ void ConfigManager::parseConfig(std::string fileName)
 		}
 
 		if (!found) {
-			msg(LOG_ERR, "Unknown cfg entry %s found", (*it)->getName().c_str());
+			msg(LOG_ERR, "Unknown cfg entry %s found", element->getName().c_str());
 		}
 	}
 

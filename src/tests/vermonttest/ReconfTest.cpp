@@ -4,7 +4,7 @@
 #include "modules/packet/filter//SystematicSampler.h"
 #include "common/msg.h"
 #include "CounterDestination.h"
-#include "modules/ConfigManager.h"
+#include "modules/ConfigManager.hpp"
 #include "core/ConnectionSplitter.h"
 #include "PrinterModule.h"
 
