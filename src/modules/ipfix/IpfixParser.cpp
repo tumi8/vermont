@@ -642,7 +642,7 @@ int IpfixParser::processIpfixPacket(boost::shared_array<uint8_t> message, uint16
 		}
 	}
 
-	msg(LOG_DEBUG, "IPFIX message from %s contained %u Data Records and %u Template Records. Sequence number was %lu.", 
+	DPRINTF_DEBUG("IPFIX message from %s contained %u Data Records and %u Template Records. Sequence number was %lu.",
 		(sourceId->toString()).c_str(), numberOfDataRecords, numberOfTemplateRecords, (unsigned long) sequenceNumber);
 
 	// Update statistics
@@ -834,4 +834,3 @@ void IpfixParser::withdrawBufferedTemplates()
 		bt = bt->next;
 	}
 }
-
