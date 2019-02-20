@@ -435,7 +435,7 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 			*/
 
 			/* no corresponding data field or fixed data field found, this flow cannot match */
-			msg(LOG_DEBUG, "No corresponding DataDataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
+			DPRINTF_INFO("No corresponding DataDataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
 			return 0;
 		}
 		/* if a non-discarding rule field specifies no pattern, check at least if the data field exists */
@@ -454,7 +454,7 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 			if (ruleField->type==InformationElement::IeInfo(IPFIX_ETYPEID_anonymisationType, IPFIX_PEN_vermont))
 				continue;
 
-			msg(LOG_NOTICE, "No corresponding DataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
+			DPRINTF_INFO("No corresponding DataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
 			return 0;
 		}
 	}
