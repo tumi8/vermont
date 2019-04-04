@@ -41,7 +41,7 @@
 #include "common/defs.h"
 #include "core/MainSignalHandler.h"
 
-#include "modules/ConfigManager.h"
+#include "modules/ConfigManager.hpp"
 
 using namespace std;
 

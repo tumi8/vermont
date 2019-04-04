@@ -5,7 +5,7 @@
 #include "common/SignalHandler.h"
 
 #include "common/VermontControl.h"
-#include "modules/ConfigManager.h"
+#include "modules/ConfigManager.hpp"
 
 class MainSignalHandler : public SignalInterface 
 {

@@ -412,30 +412,8 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 				continue;
 			}
 
-			/* Probably, this does not lead to the desired result:
-			if (biflowAggregation) {
-				// check if the rule field as a corresponding type in opposite direction
-				InformationElement::IeId oppDirIeId = InformationElement::oppositeDirectionIeId(ruleField->type);
-				if(oppDirIeId) {
-					recordField = dataTemplateInfo->getFieldInfo(oppDirIeId, ruleField->type.enterprise);
-					if (recordField) {
-						// corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched
-						if (!matchesPattern(&recordField->type, (recordData + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
-						if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
-							if (oppDirIeId == IPFIX_TYPEID_sourceIPv4Address) {
-								if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), recordData, ruleField)) return 0;
-							} else if (oppDirIeId == IPFIX_TYPEID_destinationIPv4Address) {
-								if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4PrefixLength, 0), recordData, ruleField)) return 0;
-							}
-						}
-						continue;
-					}
-				}
-			}
-			*/
-
 			/* no corresponding data field or fixed data field found, this flow cannot match */
-			msg(LOG_DEBUG, "No corresponding DataDataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
+			DPRINTF_INFO("No corresponding DataDataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
 			return 0;
 		}
 		/* if a non-discarding rule field specifies no pattern, check at least if the data field exists */
@@ -454,7 +432,7 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 			if (ruleField->type==InformationElement::IeInfo(IPFIX_ETYPEID_anonymisationType, IPFIX_PEN_vermont))
 				continue;
 
-			msg(LOG_NOTICE, "No corresponding DataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
+			DPRINTF_INFO("No corresponding DataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
 			return 0;
 		}
 	}
