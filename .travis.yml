@@ -33,6 +33,11 @@ addons:
       - llvm-toolchain-trusty-7
       - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
         key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
+    sources: &zeromq_source_and_toolchain_clang_8
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-trusty-8
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
     packages: &required_packages
       - cmake
       - libboost-dev
@@ -199,6 +204,16 @@ matrix:
             - *required_packages
             - *optional_packages
             - clang-7
+    - compiler: clang-8
+      env:
+        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_8
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-8
     # - stage: Static Analysis
     #   env:
     #     - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
