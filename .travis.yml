@@ -4,30 +4,32 @@ sudo: false
 
 addons:
   apt:
-    sources: &zeromq_source
+    sources: &boost_source
+      - sourceline: 'ppa:mhier/libboost-latest'
+    sources: &boost_source_and_zeromq_source
+      - sourceline: 'ppa:mhier/libboost-latest'
       - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/ ./'
         key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/Release.key' 
-    sources: &zeromq_source_and_toolchain_gcc
+    sources: &boost_source_and_zeromq_source_and_toolchain_gcc
       - ubuntu-toolchain-r-test
+      - sourceline: 'ppa:mhier/libboost-latest'
       - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/ ./'
         key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/Release.key'     
-    sources: &zeromq_source_and_toolchain_clang_7
+    sources: &boost_source_and_zeromq_source_and_toolchain_clang_7
       - ubuntu-toolchain-r-test
       - llvm-toolchain-xenial-7
+      - sourceline: 'ppa:mhier/libboost-latest'
       - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/ ./'
         key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/Release.key'
-    sources: &zeromq_source_and_toolchain_clang_8
+    sources: &boost_source_and_zeromq_source_and_toolchain_clang_8
       - ubuntu-toolchain-r-test
       - llvm-toolchain-xenial-8
+      - sourceline: 'ppa:mhier/libboost-latest'
       - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/ ./'
         key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/Release.key'
     packages: &required_packages
       - cmake
-      - libboost-dev
-      - libboost-filesystem-dev
-      - libboost-regex-dev
-      - libboost-test-dev
-      - libboost-thread-dev
+      - libboost1.70-dev
       - libxml2-dev
       - libpcap-dev
       - libsystemd-dev
@@ -46,6 +48,7 @@ matrix:
         - DTLS="OFF" ZMQ="OFF" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
+          sources: *boost_source
           packages:
             - *required_packages
             
@@ -57,6 +60,7 @@ matrix:
         - DTLS="OFF" ZMQ="OFF" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
+          sources: *boost_source
           packages:
             - *required_packages
  
@@ -65,7 +69,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
-          sources: *zeromq_source
+          sources: *boost_source_and_zeromq_source
           packages:
             - *required_packages
             - *optional_packages
@@ -74,7 +78,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="Debug"
       addons:
         apt:
-          sources: *zeromq_source
+          sources: *boost_source_and_zeromq_source
           packages:
             - *required_packages
             - *optional_packages
@@ -83,7 +87,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-6 CXX=g++-6"
       addons:
         apt:
-          sources: *zeromq_source_and_toolchain_gcc
+          sources: *boost_source_and_zeromq_source_and_toolchain_gcc
           packages:
             - *required_packages
             - *optional_packages
@@ -93,7 +97,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-7 CXX=g++-7"
       addons:
         apt:
-          sources: *zeromq_source_and_toolchain_gcc
+          sources: *boost_source_and_zeromq_source_and_toolchain_gcc
           packages:
             - *required_packages
             - *optional_packages
@@ -103,7 +107,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-8 CXX=g++-8"
       addons:
         apt:
-          sources: *zeromq_source_and_toolchain_gcc
+          sources: *boost_source_and_zeromq_source_and_toolchain_gcc
           packages:
             - *required_packages
             - *optional_packages
@@ -114,7 +118,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
-          sources: *zeromq_source
+          sources: *boost_source_and_zeromq_source
           packages:
             - *required_packages
             - *optional_packages
@@ -123,7 +127,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="Debug"
       addons:
         apt:
-          sources: *zeromq_source
+          sources: *boost_source_and_zeromq_source
           packages:
             - *required_packages
             - *optional_packages
@@ -132,7 +136,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
       addons:
         apt:
-          sources: *zeromq_source
+          sources: *boost_source_and_zeromq_source
           packages:
             - *required_packages
             - *optional_packages
@@ -142,7 +146,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
       addons:
         apt:
-          sources: *zeromq_source
+          sources: *boost_source_and_zeromq_source
           packages:
             - *required_packages
             - *optional_packages
@@ -152,7 +156,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
       addons:
         apt:
-          sources: *zeromq_source
+          sources: *boost_source_and_zeromq_source
           packages:
             - *required_packages
             - *optional_packages
@@ -162,7 +166,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
       addons:
         apt:
-          sources: *zeromq_source_and_toolchain_clang_7
+          sources: *boost_source_and_zeromq_source_and_toolchain_clang_7
           packages:
             - *required_packages
             - *optional_packages
@@ -172,7 +176,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
       addons:
         apt:
-          sources: *zeromq_source_and_toolchain_clang_8
+          sources: *boost_source_and_zeromq_source_and_toolchain_clang_8
           packages:
             - *required_packages
             - *optional_packages
@@ -182,7 +186,9 @@ matrix:
     #     - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
     #   addons:
     #     apt:
-    #       sources: *zeromq_source_and_toolchain_clang_7
+    #       sources:
+    #         - *boost_source_and_zeromq_source_and_toolchain_clang_7
+    #         - *boost_source
     #       packages:
     #         - *required_packages
     #         - *optional_packages
