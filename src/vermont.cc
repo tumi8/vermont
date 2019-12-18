@@ -127,28 +127,6 @@ daemonise (const char *pid_file, uid_t uid, gid_t gid)
 	}
 }
 
-static int
-parse_log_level (const char *arg)
-{
-	int mask = msg_getlevel();
-
-	if (!strcmp("debug", arg)) {
-		mask = LOG_UPTO(LOG_DEBUG);
-	} else if (!strcmp("info", arg)) {
-		mask = LOG_UPTO(LOG_INFO);
-	} else if (!strcmp("notice", arg)) {
-		mask = LOG_UPTO(LOG_NOTICE);
-	} else if (!strcmp("warning", arg)) {
-		mask = LOG_UPTO(LOG_WARNING);
-	} else if (!strcmp("error", arg)) {
-		mask = LOG_UPTO(LOG_ERR);
-	} else if (!strcmp("critical", arg)) {
-		mask = LOG_UPTO(LOG_CRIT);
-	}
-
-	return mask;
-}
-
 static void
 usage (int status)
 {
@@ -161,6 +139,8 @@ usage (int status)
 			"                                -d NOTICE\n"
 			"                                -dd INFO\n"
 			"                                -ddd DEBUG\n"
+			"                            'logging' attribute in the configuration\n"
+			"                            file takes precedence\n"
 			" -l, --log-level LEVEL      Log level.\n"
 			"                                In increasing order:\n\n"
 			"                                    debug\n"
@@ -170,6 +150,8 @@ usage (int status)
 			"                                    error\n"
 			"                                    critical\n\n"
 			"                                Default: warning\n"
+			"                            'logging' attribute in the configuration\n"
+			"                            file takes precedence\n"
 			" -q, --quiet                Do not write output to console (implied by -b)\n"
 			" -b, --daemon               Run in daemon mode (implies -q)\n"
 			" -p, --pid-file FILE        Set process id filename (use with -b)\n"
@@ -187,7 +169,7 @@ usage (int status)
 static int
 parse_args (int argc, char **argv, struct parameters *params)
 {
-	int opt, ret, option_index;
+	int opt, ret, option_index, log_bitask;
 	struct passwd *pw;
 	struct group *gr;
 
@@ -259,7 +241,12 @@ parse_args (int argc, char **argv, struct parameters *params)
 			break;
 
 		case 'l':
-			msg_setlevel(parse_log_level(optarg));
+			log_bitask = parse_log_level(optarg);
+			if (log_bitask == -1) {
+				msg(LOG_CRIT, "ignoring unknown log level '%s'", optarg);
+			} else {
+				msg_setlevel(log_bitask);
+			}
 			break;
 
 		case 'q':

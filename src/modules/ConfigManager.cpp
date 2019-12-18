@@ -152,6 +152,19 @@ void ConfigManager::parseConfig(std::string fileName)
 			       " This is not a valid configuration file!");
 	}
 
+	XMLAttribute* logging_attribute = root->getAttribute("logging");
+	if (logging_attribute) {
+		int log_bitask = parse_log_level(logging_attribute->getValue().c_str());
+		if (log_bitask == -1) {
+			msg(LOG_CRIT, "ignoring unknown log level '%s'",
+			    logging_attribute->getValue().c_str());
+		} else {
+			msg(LOG_NOTICE, "setting log level '%s'",
+			    logging_attribute->getValue().c_str());
+			msg_setlevel(log_bitask);
+		}
+	}
+
 	/* process each root element node and add a new node (with its config
 	 * attached to the node) to the graph
 	 */

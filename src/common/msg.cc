@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <pthread.h>
+#include <sys/syslog.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -64,6 +65,36 @@ extern "C" {
 		default:
 			return "UNKNOWN";
 		}
+	}
+
+	/**
+	 * @brief parse a string and return a logging bitmask
+	 *
+	 * @param arg string represent logging level
+	 * @return bitmask of logging levels up to arg
+	 * @return -1 if logging level is not recognised
+	 */
+	int
+	parse_log_level (const char *arg)
+	{
+		if (!strcmp("debug", arg)) {
+			return LOG_UPTO(LOG_DEBUG);
+		} else if (!strcmp("info", arg)) {
+			return LOG_UPTO(LOG_INFO);
+		} else if (!strcmp("notice", arg)) {
+			return LOG_UPTO(LOG_NOTICE);
+		} else if (!strcmp("warning", arg)) {
+			return LOG_UPTO(LOG_WARNING);
+		} else if (!strcmp("err", arg)) {
+			return LOG_UPTO(LOG_ERR);
+		} else if (!strcmp("crit", arg)) {
+			return LOG_UPTO(LOG_CRIT);
+		} else if (!strcmp("alert", arg)) {
+			return LOG_UPTO(LOG_ALERT);
+		} else if (!strcmp("emerg", arg)) {
+			return LOG_UPTO(LOG_EMERG);
+		}
+		return -1;
 	}
 
 	/**
