@@ -5,39 +5,22 @@ sudo: false
 addons:
   apt:
     sources: &zeromq_source
-      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
-        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key' 
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/Release.key' 
     sources: &zeromq_source_and_toolchain_gcc
       - ubuntu-toolchain-r-test
-      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
-        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'     
-    sources: &zeromq_source_and_toolchain_clang_3-8
-      - llvm-toolchain-trusty-3.8
-      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
-        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'      
-    sources: &zeromq_source_and_toolchain_clang_4-0
-      - llvm-toolchain-trusty-4.0
-      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
-        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'      
-    sources: &zeromq_source_and_toolchain_clang_5-0
-      - llvm-toolchain-trusty-5.0
-      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
-        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'      
-    sources: &zeromq_source_and_toolchain_clang_6-0
-      - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty-6.0
-      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
-        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/Release.key'     
     sources: &zeromq_source_and_toolchain_clang_7
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty-7
-      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
-        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
+      - llvm-toolchain-xenial-7
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/Release.key'
     sources: &zeromq_source_and_toolchain_clang_8
       - ubuntu-toolchain-r-test
-      - llvm-toolchain-trusty-8
-      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
-        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
+      - llvm-toolchain-xenial-8
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_16.04/Release.key'
     packages: &required_packages
       - cmake
       - libboost-dev
@@ -47,7 +30,7 @@ addons:
       - libboost-thread-dev
       - libxml2-dev
       - libpcap-dev
-      - libsystemd-journal-dev
+      - libsystemd-dev
       - libsctp-dev
     packages: &optional_packages
       - libssl-dev
@@ -95,16 +78,6 @@ matrix:
           packages:
             - *required_packages
             - *optional_packages
-    - compiler: gcc-5
-      env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
-      addons:
-        apt:
-          sources: *zeromq_source_and_toolchain_gcc
-          packages:
-            - *required_packages
-            - *optional_packages
-            - g++-5
     - compiler: gcc-6
       env:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-6 CXX=g++-6"
@@ -154,22 +127,12 @@ matrix:
           packages:
             - *required_packages
             - *optional_packages
-    - compiler: clang-3.8
-      env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
-      addons:
-        apt:
-          sources: *zeromq_source_and_toolchain_clang_3-8
-          packages:
-            - *required_packages
-            - *optional_packages
-            - clang-3.8
     - compiler: clang-4.0
       env:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
       addons:
         apt:
-          sources: *zeromq_source_and_toolchain_clang_4-0
+          sources: *zeromq_source
           packages:
             - *required_packages
             - *optional_packages
@@ -179,7 +142,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
       addons:
         apt:
-          sources: *zeromq_source_and_toolchain_clang_5-0
+          sources: *zeromq_source
           packages:
             - *required_packages
             - *optional_packages
@@ -189,7 +152,7 @@ matrix:
         - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
       addons:
         apt:
-          sources: *zeromq_source_and_toolchain_clang_6-0
+          sources: *zeromq_source
           packages:
             - *required_packages
             - *optional_packages
