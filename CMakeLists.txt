@@ -234,46 +234,24 @@ ENDIF (HIREDIS_FOUND)
 
 ### boost
 
-FIND_PACKAGE(Boost REQUIRED)
-MARK_AS_ADVANCED(
-	Boost_INCLUDE_DIR
-	Boost_REGEX_LIBRARY
-  Boost_THREAD_LIBRARY
-	Boost_FILESYSTEM_LIBRARY
-	Boost_UNIT_TEST_FRAMEWORK_LIBRARY
-)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS
+                regex
+                thread
+                filesystem
+                unit_test_framework
+                system)
+
 IF (Boost_FOUND)
 	MESSAGE(STATUS "Found boost libraries")
 	ADD_DEFINITIONS(-DHAVE_BOOST_FILESYSTEM)
 	INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-	FIND_LIBRARY(Boost_REGEX_LIBRARY NAMES boost_regex-mt boost_regex PATHS ${Boost_LIBRARY_DIRS})
-	IF (NOT Boost_REGEX_LIBRARY)
-		MESSAGE(FATAL_ERROR "Could not find boost regex library")
-	ENDIF(NOT Boost_REGEX_LIBRARY)
-  FIND_LIBRARY(Boost_THREAD_LIBRARY NAMES boost_thread-mt boost_thread PATHS ${Boost_LIBRARY_DIRS})
-  IF (NOT Boost_THREAD_LIBRARY)
-		MESSAGE(FATAL_ERROR "Could not find boost thread library")
-  ENDIF(NOT Boost_THREAD_LIBRARY)
-  FIND_LIBRARY(Boost_FILESYSTEM_LIBRARY NAMES boost_filesystem-mt boost_filesystem PATHS ${Boost_LIBRARY_DIRS})
-	IF (NOT Boost_FILESYSTEM_LIBRARY)
-		MESSAGE(FATAL_ERROR "Could not find boost filesystem library")
-	ENDIF(NOT Boost_FILESYSTEM_LIBRARY)
-	FIND_LIBRARY(Boost_UNIT_TEST_FRAMEWORK_LIBRARY NAMES boost_unit_test_framework-mt boost_unit_test_framework PATHS ${Boost_LIBRARY_DIRS})
-	IF (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY)
-		MESSAGE(FATAL_ERROR "Could not find boost unit test framework")
-	ENDIF (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY)
-	FIND_LIBRARY(Boost_SYSTEM_LIBRARY NAMES boost_system-mt boost_system PATHS ${Boost_LIBRARY_DIRS})
-	IF (NOT Boost_SYSTEM_LIBRARY)
-		MESSAGE(FATAL_ERROR "Could not find boost system library")
-	ENDIF (NOT Boost_SYSTEM_LIBRARY)
 	TARGET_LINK_LIBRARIES(vermont
-		${Boost_REGEX_LIBRARY}
-		${Boost_FILESYSTEM_LIBRARY}
-		${Boost_SYSTEM_LIBRARY}
+		Boost::regex
+		Boost::filesystem
+		Boost::system
 	)
   IF (SUPPORT_MONGO) 
-	  TARGET_LINK_LIBRARIES(vermont
-		  ${Boost_THREAD_LIBRARY}
+	  TARGET_LINK_LIBRARIES(vermont Boost::thread
     )
   ENDIF (SUPPORT_MONGO)
 
