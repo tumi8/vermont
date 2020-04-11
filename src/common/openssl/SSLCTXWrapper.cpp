@@ -53,12 +53,17 @@ DH *SSL_CTX_wrapper::get_dh2048() {
 	    };
     static unsigned char dh2048_g[]={0x02};
     DH *dh;
+    BIGNUM *p, *g;
 
     if ((dh=DH_new()) == NULL) return(NULL);
-    dh->p=BN_bin2bn(dh2048_p,sizeof(dh2048_p),NULL);
-    dh->g=BN_bin2bn(dh2048_g,sizeof(dh2048_g),NULL);
-    if ((dh->p == NULL) || (dh->g == NULL))
-	    { DH_free(dh); return(NULL); }
+    p=BN_bin2bn(dh2048_p,sizeof(dh2048_p),NULL);
+    g=BN_bin2bn(dh2048_g,sizeof(dh2048_g),NULL);
+    if ((p == NULL) || (g == NULL) || !DH_set0_pqg(dh, p, NULL, g)) {
+        DH_free(dh);
+        BN_free(p);
+        BN_free(g);
+        return(NULL);
+    }
     return(dh);
 }
 
@@ -88,7 +93,7 @@ SSL_CTX_wrapper::SSL_CTX_wrapper(
     bool have_CAs = false;
     bool have_cert = false;
     ensure_openssl_init();
-    ctx = SSL_CTX_new(DTLSv1_server_method());
+    ctx = SSL_CTX_new(DTLS_server_method());
     if( ! ctx) {
 	THROWEXCEPTION("Failed to create SSL_CTX");
     }

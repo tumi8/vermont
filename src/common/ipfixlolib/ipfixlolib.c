@@ -578,7 +578,7 @@ int update_collector_mtu(ipfix_exporter *exporter,
 	int mtu_ssl;
 	int mtu_bio;
 	if (col->dtls_connection.dtls_main.ssl) {
-	    mtu_ssl = col->dtls_connection.dtls_main.ssl->d1->mtu;
+	    mtu_ssl = DTLS_get_data_mtu(col->dtls_connection.dtls_main.ssl);
 	    DPRINTF_INFO("MTU got from SSL object: %d",mtu_ssl);
 	    if (mtu_ssl > 0) {
 		mtu = mtu_ssl;
