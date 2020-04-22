@@ -122,7 +122,7 @@ int parseProtoPattern(char* s, IpfixRecord::Data** fdata, InformationElement::Ie
 	if (proto == -1)
 	{
 		proto = atoi(s);
-		if((proto < 0) && (proto > 255)) return -1;
+		if((proto < 0) || (proto > 255)) return -1;
 	}
 
 	*length = 1;
