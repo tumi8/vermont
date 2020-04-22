@@ -12,6 +12,19 @@ extern "C" {
 
 #define IPFIX_DTLS_MAX_RECORD_LENGTH 16384
 
+/* DTLS record header:
+ *   ContentType: 1 byte
+ *   ProtocolVersion: 2 bytes
+ *   epoch: 2 bytes
+ *   seqno: 6 bytes
+ *   length: 2 bytes
+ *   (assuming GenericBlockCipher, AES_256_CBC and SHA256)
+ *   IV: 16 bytes
+ *   MAC: 32 bytes
+ *   padding: 15 bytes (worst case)
+ *   padding_length: 1 byte */
+#define IPFIX_DTLS_OVERHEAD_ESTIMATE 77
+
 typedef struct {
 	int socket;
 	// uint16_t mtu;
