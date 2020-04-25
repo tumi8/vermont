@@ -528,18 +528,11 @@ void update_exporter_max_message_size(ipfix_exporter *exporter) {
 		    break;
 #ifdef SUPPORT_DTLS
 		case DTLS_OVER_UDP:
-		    /* DTLS record header:
-		     *   ContentType: 1 byte
-		     *   ProtocolVersion: 2 bytes
-		     *   epoch: 2 bytes
-		     *   seqno: 6 bytes
-		     *   length: 2 bytes
-		     *   (assuming GenericBlockCipher, AES_256_CBC and SHA256)
-		     *   IV: 16 bytes
-		     *   MAC: 32 bytes
-		     *   padding: 15 bytes (worst case)
-		     *   padding_length: 1 byte */
-		    maxsize = col->mtu - 77 - (20 + 8);
+		    /* IP header: 20 bytes
+		     * UDP header: 8 bytes 
+		     * IPFIX_DTLS_OVERHEAD_ESTIMATE 77
+		     */
+		    maxsize = col->mtu - IPFIX_DTLS_OVERHEAD_ESTIMATE - (20 + 8);
 		    /* TODO: Find out maximum size of payload */
 		    if (maxsize > IPFIX_DTLS_MAX_RECORD_LENGTH)
 			maxsize = IPFIX_DTLS_MAX_RECORD_LENGTH;
@@ -578,10 +571,24 @@ int update_collector_mtu(ipfix_exporter *exporter,
 	int mtu_ssl;
 	int mtu_bio;
 	if (col->dtls_connection.dtls_main.ssl) {
-	    mtu_ssl = col->dtls_connection.dtls_main.ssl->d1->mtu;
+	    // DTLS_get_data_mtu gets the OpenSSL library estimate of the MTU
+	    // it accounts for DTLS header overheads and is the best estimate
+	    // that we can have. DTLS_get_data_mtu only exists in V1.1.1. 
+	    // We use other estimates with prior versions of OpenSSL or if 
+	    // this function does not provide a good MTU (e.g. before a first
+	    // handshake has been performed)
+#ifdef HAVE_DTLS_get_data_mtu
+	    mtu_ssl = DTLS_get_data_mtu(col->dtls_connection.dtls_main.ssl);
 	    DPRINTF_INFO("MTU got from SSL object: %d",mtu_ssl);
+#else
+	    mtu_ssl = -1;
+	    DPRINTF_INFO("Cannot get MTU from SSL object. OpenSSL version too old.");
+#endif
 	    if (mtu_ssl > 0) {
-		mtu = mtu_ssl;
+		// We add IPFIX_DTLS_OVERHEAD_ESTIMATE as it will be substracted
+		// from the mtu in update_exporter_max_message_size() for all
+		// cases that did not call DTLS_get_data_mtu
+		mtu = mtu_ssl + IPFIX_DTLS_OVERHEAD_ESTIMATE;
 	    }
 	    mtu_bio = BIO_ctrl(SSL_get_wbio(col->dtls_connection.dtls_main.ssl),BIO_CTRL_DGRAM_QUERY_MTU,0,0);
 	    DPRINTF_INFO("MTU got from BIO object: %d",mtu_bio);

@@ -8,6 +8,8 @@
 #ifndef MSG_H
 #define MSG_H
 
+#define __STDC_FORMAT_MACROS 1
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <syslog.h>

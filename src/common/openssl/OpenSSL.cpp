@@ -8,6 +8,7 @@
 #include <openssl/x509v3.h>
 #include <openssl/err.h>
 #include <sstream>
+#include <cstring>
 
 namespace { /* unnamed namespace */
     Mutex m;
@@ -211,7 +212,7 @@ int check_x509_cert(X509 *peer, int (*cb)(void *context, const char *dnsname), v
 	    return 0;
 	}
 
-	dnsname = (char *) ASN1_STRING_data(gn->d.ia5);
+	dnsname = (char *) ASN1_STRING_get0_data(gn->d.ia5);
 	len = ASN1_STRING_length(gn->d.ia5);
 
 	while(len>0 && dnsname[len-1] == 0) --len;

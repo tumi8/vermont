@@ -158,7 +158,7 @@ IpfixSender* IpfixExporterCfg::createInstance()
 #ifdef SUPPORT_DTLS
 		if (pacd) {
 			pacd->peer_fqdn = NULL;
-			const std::set<std::string> peerFqdns = p->getPeerFqdns();
+			static const std::set<std::string> peerFqdns = p->getPeerFqdns();
 			std::set<std::string>::const_iterator it = peerFqdns.begin();
 			if (it != peerFqdns.end())
 				pacd->peer_fqdn = it->c_str();

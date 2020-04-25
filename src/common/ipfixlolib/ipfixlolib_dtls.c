@@ -87,7 +87,7 @@ static int ensure_exporter_set_up_for_dtls(ipfix_exporter_certificate *c) {
     if (c->ssl_ctx) return 0;
 
     /* This SSL_CTX object will be freed in deinit_openssl_ctx() */
-    if ( ! (c->ssl_ctx=SSL_CTX_new(DTLSv1_client_method())) ) {
+    if ( ! (c->ssl_ctx=SSL_CTX_new(DTLS_client_method())) ) {
 	msg(LOG_CRIT, "Failed to create SSL context");
 	msg_openssl_errors();
 	return -1;
@@ -262,7 +262,7 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
     if (col->protocol != DTLS_OVER_SCTP)
 #endif
     (void)BIO_ctrl(bio,BIO_CTRL_DGRAM_MTU_DISCOVER,0,0);
-    (void)BIO_ctrl_set_connected(bio,1,&col->addr); /* TODO: Explain, why are we doing this? */
+    (void)BIO_ctrl_set_connected(bio,&col->addr); /* TODO: Explain, why are we doing this? */
     SSL_set_bio(con->ssl,bio,bio);
     // connect (non-blocking, i.e. handshake is initiated, not terminated)
     if((connect(con->socket, (struct sockaddr*)&col->addr, sizeof(col->addr) ) == -1) && (errno != EINPROGRESS)) {

@@ -272,18 +272,18 @@ IpfixReceiverDtlsUdpIpV4::DtlsConnection::DtlsConnection(IpfixReceiverDtlsUdpIpV
 
     memcpy(&clientAddress, pclientAddress, sizeof clientAddress);
 
-    BIO *sbio, *rbio;
+    BIO *wbio, *rbio;
     /* create output abstraction for SSL object */
-    sbio = BIO_new_dgram(parent.listen_socket,BIO_NOCLOSE);
+    wbio = BIO_new_dgram(parent.listen_socket,BIO_NOCLOSE);
 
     /* create a dummy BIO that always returns EOF */
     rbio = BIO_new(BIO_s_mem());
     /* -1 means EOF */
     BIO_set_mem_eof_return(rbio,-1);
-    SSL_set_bio(ssl,rbio,sbio);
+    SSL_set_bio(ssl,rbio,wbio);
     SSL_set_accept_state(ssl);
 
-    BIO_ctrl(ssl->wbio,BIO_CTRL_DGRAM_SET_PEER,0,&clientAddress);
+    BIO_ctrl(SSL_get_wbio(ssl),BIO_CTRL_DGRAM_SET_PEER,0,&clientAddress);
 
 }
 
@@ -388,23 +388,23 @@ int IpfixReceiverDtlsUdpIpV4::DtlsConnection::consumeDatagram(
 	return 1;
     }
 #ifdef DEBUG
-    if ( ! BIO_eof(ssl->rbio)) {
+    if ( ! BIO_eof(SSL_get_rbio(ssl))) {
 	msg(LOG_ERR,"EOF *not* reached on BIO. This should not happen.");
     }
 #endif
-    BIO_free(ssl->rbio);
-    ssl->rbio = BIO_new_mem_buf(secured_data.get(),len);
-    BIO_set_mem_eof_return(ssl->rbio,-1);
+    BIO_free(SSL_get_rbio(ssl));
+    SSL_set_bio(ssl, BIO_new_mem_buf(secured_data.get(),len), SSL_get_wbio(ssl));
+    BIO_set_mem_eof_return(SSL_get_rbio(ssl),-1);
     if (state == ACCEPTING) {
 	ret = accept();
 	if (ret == 0) return 1;
 	if (ret == -1) return 0;
 #ifdef DEBUG
-	if ( ! BIO_eof(ssl->rbio)) {
+	if ( ! BIO_eof(SSL_get_rbio(ssl))) {
 	    msg(LOG_ERR,"EOF *not* reached on BIO. This should not happen.");
 	}
 #endif
-	if (BIO_eof(ssl->rbio)) return 1; /* This should always be the case */
+	if (BIO_eof(SSL_get_rbio(ssl))) return 1; /* This should always be the case */
     }
     boost::shared_array<uint8_t> data(new uint8_t[MAX_MSG_LEN]);
     ret = SSL_read(ssl,data.get(),MAX_MSG_LEN);

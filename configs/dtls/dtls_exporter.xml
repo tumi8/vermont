@@ -3,7 +3,7 @@
 		<checkinterval>2</checkinterval>
 	</sensorManager>
 	<observer id="1">
-		<filename>../sample_data/sample1.cap</filename>
+		<interface>eth0</interface>
 		<pcap_filter>ip</pcap_filter>
 		<!-- offlineSpeed>-1</offlineSpeed -->
 		<next>2</next>
@@ -69,9 +69,9 @@
 		<dtlsMaxConnectionLifetime unit="sec">3600</dtlsMaxConnectionLifetime>
 		<collector>
 			<ipAddress>127.0.0.1</ipAddress>
-			<transportProtocol>DTLS_OVER_SCTP</transportProtocol>
+			<transportProtocol>DTLS_OVER_UDP</transportProtocol>
 			<peerFqdn>collector.example.com</peerFqdn>
-			<mtu>60000</mtu>
+			<mtu>0</mtu>
 		</collector>
 	</ipfixExporter>
 </ipfixConfig>
