@@ -334,7 +334,11 @@ extern "C" {
 		msg_expand(text, line, filename, funcname, simplefunc, LOG_CRIT, fmt, &args);
 		va_end(args);
 
+#ifdef EXIT_ON_EXCEPTION
+		exit(0);
+#else
 		throw std::runtime_error(text);
+#endif
 	}
 
 #ifdef __cplusplus
