@@ -56,3 +56,4 @@ IF (JOURNALD_FOUND)
 ENDIF (JOURNALD_FOUND)
 
 ADD_TEST(example_2 example_code_2)
+ADD_TEST(mtutest mtutest)
