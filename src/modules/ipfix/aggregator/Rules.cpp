@@ -111,7 +111,7 @@ int parseModifier(const char* s, Rule::Field::Modifier* modifier) {
  * parses the given string
  * @return 0 if successful
  */
-int parseProtoPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
+int parseProtoPattern(const char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
 	int proto = -1;
 	if (strcmp(s, "ICMP") == 0) proto = IPFIX_protocolIdentifier_ICMP;
 	if (strcmp(s, "TCP") == 0) proto = IPFIX_protocolIdentifier_TCP;
@@ -121,8 +121,10 @@ int parseProtoPattern(char* s, IpfixRecord::Data** fdata, InformationElement::Ie
 
 	if (proto == -1)
 	{
-		proto = atoi(s);
-		if((proto < 0) && (proto > 255)) return -1;
+		char* end;
+		errno = 0;
+		proto = strtol(s, &end, 10);
+		if(end == s || *end != 0 || errno != 0 || (proto < 0) || (proto > 255)) return -1;
 	}
 
 	*length = 1;

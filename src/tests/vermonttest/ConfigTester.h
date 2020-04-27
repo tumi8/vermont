@@ -14,6 +14,7 @@ public:
 	virtual TestResult execTest();
 
 private:
+	void test_Rules_parseProtoPattern();
 	void testConfig(const std::string& configFile);
 	std::vector<std::string> configFiles;
 };
