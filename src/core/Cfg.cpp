@@ -174,6 +174,8 @@ std::vector<unsigned int> Cfg::getNext()
 unsigned int Cfg::getID()
 {
 	XMLAttribute* attr = _elem->getAttribute("id");
-	assert(attr != NULL);
+	if (attr == NULL) {
+		THROWEXCEPTION("Error: Configuration Element '%s' does not have an 'id' field. 'id' is required!", _elem->getName().c_str());
+	}
 	return atoi(attr->getValue().c_str());
 }
