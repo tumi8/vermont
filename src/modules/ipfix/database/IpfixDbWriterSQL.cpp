@@ -777,8 +777,8 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 	for(vector<string>::const_iterator col = columns.begin(); col != columns.end(); col++) {
 		std::string columnName = *col;
 		std::string dataType = "";
-		uint16_t ipfixId;
-		uint32_t enterpriseId;
+		uint16_t ipfixId = 0;
+		uint32_t enterpriseId = 0;
 		if (useLegacyNames) {
 			bool found = false;
 			int i = 0;
