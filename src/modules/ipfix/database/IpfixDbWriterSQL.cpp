@@ -69,14 +69,6 @@ const static IpfixDbWriterSQL::Column legacyNames [] = {
 };
 
 
-/***** Global Variables ******************************************************/
-
-/**
- * maximum length of one item in a SQL statement
- */
-const uint16_t MAX_COL_LENGTH = 22;
-
-
 /****** Methods **************************************************************/
 // NOTE: This function can not be made virtual and moved to a sub-class since
 // it is called in the IpfixDbWriterSQL constructor
