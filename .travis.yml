@@ -51,6 +51,9 @@ addons:
       - libpcap-dev
       - libsystemd-dev
       - libsctp-dev
+      - libpq-dev
+      - postgresql-server-dev-10
+      - libmysqlclient-dev
     packages: &optional_packages
       - libssl-dev
       - libczmq-dev
@@ -222,4 +225,4 @@ matrix:
 before_install:
   - eval "${MATRIX_EVAL}"
 
-script: cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make -k && make test && make install
+script: cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DSUPPORT_MYSQL=ON -DSUPPORT_POSTGRESQL=ON -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make -k && make test && make install
