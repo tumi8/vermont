@@ -63,7 +63,11 @@ TRWPortscanDetector::TRWPortscanDetector(uint32_t hashbits, uint32_t texppend,
 	msg(LOG_NOTICE, "TRW variables: logeta_0: %f, logeta_1: %f, X_0: %f, X_1: %f", logeta_0, logeta_1, X_0, X_1);
 	lastCleanup = time(0);
 	
-	trwEntries = new list<TRWEntry*>[hashSize];
+	try {
+		trwEntries = new list<TRWEntry*>[hashSize];
+	} catch(std::bad_alloc& ba) {
+		THROWEXCEPTION("Error allocating TRWEntries in TRWPortscanDetector. Try reducing the number of hashbits: %s", ba.what());
+	}
 }
 
 TRWPortscanDetector::~TRWPortscanDetector()
