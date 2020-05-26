@@ -51,6 +51,9 @@ addons:
       - libpcap-dev
       - libsystemd-dev
       - libsctp-dev
+      - libpq-dev
+      - postgresql-server-dev-10
+      - libmysqlclient-dev
     packages: &optional_packages
       - libssl-dev
       - libczmq-dev
@@ -62,7 +65,7 @@ matrix:
       before_install:
         - sudo apt-get remove -qq libssl-dev
       env:
-        - DTLS="OFF" ZMQ="OFF" BUILD_TYPE="RelWithDebInfo"
+        - DTLS="OFF" MYSQL="OFF" ZMQ="OFF" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
           packages:
@@ -73,7 +76,7 @@ matrix:
       before_install:
         - sudo apt-get remove -qq libssl-dev
       env:
-        - DTLS="OFF" ZMQ="OFF" BUILD_TYPE="RelWithDebInfo"
+        - DTLS="OFF" MYSQL="OFF"  ZMQ="OFF" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
           packages:
@@ -81,7 +84,7 @@ matrix:
  
     - compiler: gcc
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
           sources: *zeromq_source
@@ -90,7 +93,7 @@ matrix:
             - *optional_packages
     - compiler: gcc
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="Debug"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="Debug"
       addons:
         apt:
           sources: *zeromq_source
@@ -99,7 +102,7 @@ matrix:
             - *optional_packages
     - compiler: gcc-6
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-6 CXX=g++-6"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-6 CXX=g++-6"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_gcc
@@ -109,7 +112,7 @@ matrix:
             - g++-6
     - compiler: gcc-7
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-7 CXX=g++-7"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-7 CXX=g++-7"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_gcc
@@ -119,7 +122,7 @@ matrix:
             - g++-7
     - compiler: gcc-8
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-8 CXX=g++-8"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-8 CXX=g++-8"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_gcc
@@ -130,7 +133,7 @@ matrix:
 
     - compiler: clang
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
           sources: *zeromq_source
@@ -139,7 +142,7 @@ matrix:
             - *optional_packages
     - compiler: clang
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="Debug"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="Debug"
       addons:
         apt:
           sources: *zeromq_source
@@ -148,7 +151,7 @@ matrix:
             - *optional_packages
     - compiler: clang-4.0
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_clang_4-0
@@ -158,7 +161,7 @@ matrix:
             - clang-4.0                        
     - compiler: clang-5.0
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_clang_5-0
@@ -168,7 +171,7 @@ matrix:
             - clang-5.0
     - compiler: clang-6.0
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_clang_6-0
@@ -178,7 +181,7 @@ matrix:
             - clang-6.0
     - compiler: clang-7
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON"  BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_clang_7
@@ -188,7 +191,7 @@ matrix:
             - clang-7
     - compiler: clang-8
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_clang_8
@@ -198,7 +201,7 @@ matrix:
             - clang-8
     - compiler: clang-9
       env:
-        - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
       addons:
         apt:
           sources: *zeromq_source_and_toolchain_clang_9
@@ -222,4 +225,4 @@ matrix:
 before_install:
   - eval "${MATRIX_EVAL}"
 
-script: cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make -k && make test && make install
+script: cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DSUPPORT_MYSQL="$MYSQL" -DSUPPORT_POSTGRESQL=ON -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make -k && make test && make install
