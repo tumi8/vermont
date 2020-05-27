@@ -201,7 +201,7 @@ void add_classid_to_signatureclass(struct SignatureClass * class, char * new_mem
 	// I think that a class id is not added to a signature, but a signature id to a class.
 	class->member_IDs = realloc(class->member_IDs, sizeof(char *) * (class->numOfMembers + 1));
 	class->member_IDs[class->numOfMembers] = malloc(sizeof(char) * ID_STRING_SIZE);
-	strncpy(class->member_IDs[class->numOfMembers], new_memberID, ID_STRING_SIZE);
+	strncpy(class->member_IDs[class->numOfMembers], new_memberID, ID_STRING_SIZE-1);
 	class->member_IDs[class->numOfMembers][ID_STRING_SIZE-1] = '\0';
 	class->numOfMembers++;
 }
