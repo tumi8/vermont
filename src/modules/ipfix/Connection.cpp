@@ -37,6 +37,7 @@
  */
 Connection::Connection(IpfixDataRecord* record)
 	: srcOctets(0), dstOctets(0),
+	  srcTransOctets(0), dstTransOctets(0),
 	  srcPackets(0), dstPackets(0),
 	  srcTcpControlBits(0), dstTcpControlBits(0),
 	  srcPayload(0), srcPayloadLen(0),
