@@ -1,4 +1,4 @@
-<ipfixConfig>
+<ipfixConfig logging="info">
 	<observer id="1">
 		<interface>en0</interface>
 		<pcap_filter>ip</pcap_filter>
