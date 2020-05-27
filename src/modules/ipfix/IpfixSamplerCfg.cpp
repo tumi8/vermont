@@ -42,6 +42,9 @@ IpfixSamplerCfg::IpfixSamplerCfg(XMLElement* elem)
 
 		if (e->matches("flowrate")) {
 			flowRate = getDouble("flowrate");
+			if (flowRate <= 0 || flowRate > 1){
+				THROWEXCEPTION("Illegal value for flowRate. Must be greater 0 and smaller or equal to 1, received %lf", flowRate);
+			}
 		} else if (e->matches("next")) { // ignore next
 		} else {
 			msg(LOG_CRIT, "Unknown IpfixSampler config statement %s\n", e->getName().c_str());
