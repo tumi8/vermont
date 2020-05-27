@@ -225,4 +225,4 @@ matrix:
 before_install:
   - eval "${MATRIX_EVAL}"
 
-script: cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DSUPPORT_MYSQL="$MYSQL" -DSUPPORT_POSTGRESQL=ON -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make -k && make test && make install
+script: mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DSUPPORT_MYSQL="$MYSQL" -DSUPPORT_POSTGRESQL=ON -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" .. && make -k && make test && make install
