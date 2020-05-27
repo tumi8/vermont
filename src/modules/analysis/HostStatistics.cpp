@@ -33,9 +33,23 @@ HostStatistics::HostStatistics(std::string ipSubnet, std::string addrFilter, std
 	// check if srcIP or dstIP in the subnet (1.1.1.1/16)
 	// split string at the '/'
 	size_t found = ipSubnet.find_first_of("/");
+	if (found == string::npos){
+		THROWEXCEPTION("HostStatistics: Received invalid subnet: '%s'", ipSubnet.c_str());
+	}
 	std::string ip_str = ipSubnet.substr(0, found);
-	netSize = atoi(ipSubnet.substr(found + 1).c_str());
-	netAddr = *(uint32_t *)gethostbyname(ip_str.c_str())->h_addr;
+	std::string netmask = ipSubnet.substr(found + 1);
+	try {
+		netSize = std::stoi(netmask);
+		if (netSize > 32)
+			throw std::runtime_error("Invalid subnet masksize");
+	} catch (...) {
+		THROWEXCEPTION("HostStatistics: Invalid subnet mask in subnet: '%s'", netmask.c_str());
+	}
+	struct hostent* host = gethostbyname(ip_str.c_str());
+	if (host == NULL) {
+		THROWEXCEPTION("HostStatistics: Invalid IP address in subnet: '%s'", ip_str.c_str());
+	}
+	netAddr = *(uint32_t *)host->h_addr;
 	logTimer = time(NULL);
 }
 
