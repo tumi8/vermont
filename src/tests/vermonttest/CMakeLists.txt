@@ -62,5 +62,5 @@ IF (JOURNALD_FOUND)
 ENDIF (JOURNALD_FOUND)
 
 ADD_TEST(vermonttest_build "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target vermonttest --config $<CONFIG>)
-ADD_TEST(vermont vermonttest)
+ADD_TEST(vermont vermonttest -c "${CMAKE_CURRENT_SOURCE_DIR}/test_configs/")
 SET_TESTS_PROPERTIES(vermont PROPERTIES DEPENDS vermonttest_build)

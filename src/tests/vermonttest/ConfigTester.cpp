@@ -7,11 +7,12 @@
 #include <map>
 #include "modules/ipfix/aggregator/Rules.hpp"
 
-ConfigTester::ConfigTester()
+ConfigTester::ConfigTester(std::string config_dir)
+	: config_dir{config_dir}
 {
-	DIR* dir = opendir("test_configs/");
+	DIR* dir = opendir(config_dir.c_str());
 	if (!dir) {
-		ERROR("Could not open config dir");
+		ERROR("Could not open config dir %s", config_dir.c_str());
 	}
 
 	struct dirent* d;
@@ -43,7 +44,7 @@ Test::TestResult ConfigTester::execTest()
 
 void ConfigTester::testConfig(const std::string& configFile)
 {
-	std::string vermontCommand = "../../../vermont -ddddd -f test_configs/" + configFile;
+	std::string vermontCommand = "../../../vermont -ddddd -f " + config_dir + "/" + configFile;
 
 	std::string generatedOutput = "gen_output/" + configFile;
 	std::string expectedOutput = "exp_output/" + configFile;
