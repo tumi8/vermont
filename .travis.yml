@@ -130,6 +130,26 @@ matrix:
             - *required_packages
             - *optional_packages
             - g++-8
+    - compiler: gcc-9
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-9 CXX=g++-9"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_gcc
+          packages:
+            - *required_packages
+            - *optional_packages
+            - g++-9
+    - compiler: gcc-10
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-10 CXX=g++-10"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_gcc
+          packages:
+            - *required_packages
+            - *optional_packages
+            - g++-10
 
     - compiler: clang
       env:
