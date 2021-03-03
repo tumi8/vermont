@@ -56,4 +56,6 @@ IF (JOURNALD_FOUND)
 ENDIF (JOURNALD_FOUND)
 
 ADD_TEST(example_2 example_code_2)
-ADD_TEST(mtutest mtutest)
+IF (NOT DISABLE_UDP_CONNECT)
+	ADD_TEST(mtutest mtutest)
+ENDIF (NOT DISABLE_UDP_CONNECT)
