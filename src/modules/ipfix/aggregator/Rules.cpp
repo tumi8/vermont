@@ -139,6 +139,26 @@ int parseProtoPattern(const char* s, IpfixRecord::Data** fdata, InformationEleme
  * parses the given string
  * @return 0 if successful
  */
+int parseMacAddressPattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
+	unsigned char a[6];
+	int last = -1;
+	int rc = sscanf(s, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx%n",
+                  a + 0, a + 1, a + 2, a + 3, a + 4, a + 5,
+                  &last);
+	if(rc != 6)
+		return -1;
+
+	*length = 6;
+	IpfixRecord::Data* fd = (IpfixRecord::Data*)malloc(*length);
+	memcpy(fd, a, *length * sizeof(char));
+	*fdata = fd;
+	return 0;
+}
+
+/**
+ * parses the given string
+ * @return 0 if successful
+ */
 int parseIPv4Pattern(char* s, IpfixRecord::Data** fdata, InformationElement::IeLength* length) {
 	char* p = s;
 	char* octet1 = get_next_token(&p, ".");
