@@ -54,17 +54,17 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
 
 	/** get tables of the database*/
 	if(ipfixDbReader->getTables() != 0) {
-		msg(MSG_ERROR,"IpfixDbReader: Error in function getTables");
+		msg(LOG_ERR,"IpfixDbReader: Error in function getTables");
 		THROWEXCEPTION("IpfixDbReader creation failed");
 	}
 
-	msg(MSG_DIALOG, "IpfixDbReader: Start sending tables");
+	msg(LOG_WARNING, "IpfixDbReader: Start sending tables");
 	for(vector<string>::iterator i = ipfixDbReader->tables.begin(); i != ipfixDbReader->tables.end() && !ipfixDbReader->exitFlag; i++) {
 		boost::shared_ptr<TemplateInfo> templateInfo(new TemplateInfo);
 		templateInfo->setId = TemplateInfo::IpfixTemplate;
 		if(ipfixDbReader->dbReaderSendNewTemplate(templateInfo, *i) != 0)
 		{
-		    msg(MSG_ERROR, "IpfixDbReader: Template error, skip table");
+		    msg(LOG_ERR, "IpfixDbReader: Template error, skip table");
 		    continue;
 		}
 		ipfixDbReader->dbReaderSendTable(templateInfo, *i);
@@ -74,7 +74,7 @@ void* IpfixDbReader::readFromDB(void* ipfixDbReader_)
 
 	ipfixDbReader->unregisterCurrentThread();
 	
-	msg(MSG_DIALOG,"IpfixDbReader: Sending from database is done");
+	msg(LOG_WARNING,"IpfixDbReader: Sending from database is done");
 	return 0;
 }
 /**
@@ -88,7 +88,7 @@ int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templ
 
 	/**get columnsname of the table*/
 	if(getColumns(tableName) != 0) {
-		msg(MSG_ERROR,"IpfixDbReader: Could not get columns for template");
+		msg(LOG_ERR,"IpfixDbReader: Could not get columns for template");
 		return 1;
 	}
 
@@ -109,7 +109,7 @@ int IpfixDbReader::dbReaderSendNewTemplate(boost::shared_ptr<TemplateInfo> templ
 	ipfixRecord->sourceID = srcId;
 	ipfixRecord->templateInfo = templateInfo;
 	send(ipfixRecord);
-	msg(MSG_DEBUG,"IpfixDbReader: sent template for table %s", tableName.c_str());
+	msg(LOG_INFO,"IpfixDbReader: sent template for table %s", tableName.c_str());
 	return 0;
 }
 
@@ -129,7 +129,7 @@ void IpfixDbReader::copyUintNetByteOrder(IpfixRecord::Data* dest, char* src, Inf
 		*(uint64_t*)dest = htonll(*(uint64_t*)src);
                 return;
         default:
-                msg(MSG_ERROR, "IpfixDbReader: Uint with length %d unparseable", type.length);
+                msg(LOG_ERR, "IpfixDbReader: Uint with length %d unparseable", type.length);
                 return;
         }
 }
@@ -141,7 +141,7 @@ int IpfixDbReader::dbReaderDestroyTemplate(boost::shared_ptr<TemplateInfo> templ
 	ipfixRecord->sourceID = srcId;
 	ipfixRecord->templateInfo = templateInfo;
 	send(ipfixRecord);
-	msg(MSG_DEBUG,"IpfixDbReader: Template destroyed");
+	msg(LOG_INFO,"IpfixDbReader: Template destroyed");
 
 	return 0;
 }

@@ -63,12 +63,12 @@ IpfixReceiverFileCfg::IpfixReceiverFileCfg(XMLElement* elem)
 			//ignore <next>
 		}	
 		else {
-			msg(MSG_FATAL, "Unkown ReceiverFile config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unkown ReceiverFile config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
 
-	msg(MSG_INFO, "CollectorConfiguration: Successfully parsed collectingProcess section");
+	msg(LOG_NOTICE, "CollectorConfiguration: Successfully parsed collectingProcess section");
 }
 
 IpfixReceiverFileCfg::~IpfixReceiverFileCfg()

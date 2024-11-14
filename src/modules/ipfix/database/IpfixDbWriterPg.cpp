@@ -39,16 +39,6 @@
 
 using namespace std;
 
-
-/***** Global Variables ******************************************************/
-
-/**
- * maximum length of one item in a SQL statement
- */
-const uint16_t MAX_COL_LENGTH = 22;
-
-
-
 /**
  * (re)connect to database
  */
@@ -65,10 +55,10 @@ void IpfixDbWriterPg::connectToDB()
     conninfo << "host='" << hostName << "' port='" << portNum << "' ";
     conninfo << "dbname='" << dbName << "' user='" << userName<< "' ";
     conninfo << "password='" << password << "'";// sslmode=require";
-    DPRINTF("using connection string '%s'", conninfo.str().c_str());
+    DPRINTF_INFO("using connection string '%s'", conninfo.str().c_str());
     conn = PQconnectdb(conninfo.str().c_str());
     if (PQstatus(conn) != CONNECTION_OK) {
-    	msg(MSG_FATAL, "IpfixDbWriterPg: Connection to database failed, error: %s", PQerrorMessage(conn));
+    	msg(LOG_CRIT, "IpfixDbWriterPg: Connection to database failed, error: %s", PQerrorMessage(conn));
     	return;
     }
     /**create table exporter*/
@@ -85,9 +75,9 @@ int IpfixDbWriterPg::createExporterTable()
 	ostringstream oss;
 	oss << "SELECT COUNT(*) FROM pg_class where relname='exporter'";
 	PGresult* res = PQexec(conn, oss.str().c_str());
-	DPRINTF("PQntuples: %d", PQntuples(res));
+	DPRINTF_INFO("PQntuples: %d", PQntuples(res));
 	if((PQresultStatus(res) != PGRES_TUPLES_OK) || (PQntuples(res)==0)) {
-		msg(MSG_FATAL, "IpfixDbWriterPg: Failed to check if table 'exporter' exists. Error: %s",
+		msg(LOG_CRIT, "IpfixDbWriterPg: Failed to check if table 'exporter' exists. Error: %s",
 				PQerrorMessage(conn));
 		PQclear(res);
 		dbError = true;
@@ -99,14 +89,14 @@ int IpfixDbWriterPg::createExporterTable()
 																 "srcIP inet)";
 		res = PQexec(conn, ctexporter.c_str());
 		if(PQresultStatus(res) != PGRES_COMMAND_OK) {
-			msg(MSG_FATAL, "IpfixDbWriterPg: Creation of table Exporter failed.  Error: %s",
+			msg(LOG_CRIT, "IpfixDbWriterPg: Creation of table Exporter failed.  Error: %s",
 					PQerrorMessage(conn));
 			PQclear(res);
 			dbError = true;
 			return 1;
 		} else {
 			PQclear(res);
-			msg(MSG_DEBUG, "Exporter table created");
+			msg(LOG_INFO, "Exporter table created");
 		}
 	}
 
@@ -122,7 +112,7 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 
 	if (find(usedPartitions.begin(), usedPartitions.end(), partitionname)!=usedPartitions.end()) {
 		// found cached entry!
-		DPRINTF("Partition '%s' already created.", partitionname);
+		DPRINTF_INFO("Partition '%s' already created.", partitionname);
 		return true;
 	}
 
@@ -144,14 +134,14 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 		/** create table*/
 		PGresult* res = PQexec(conn, ctsql.str().c_str());
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-			msg(MSG_FATAL,"IpfixDbWriterPg: Creation of table failed. Error: %s",
+			msg(LOG_CRIT,"IpfixDbWriterPg: Creation of table failed. Error: %s",
 					PQerrorMessage(conn));
 			dbError = true;
 			PQclear(res);
 			return false;
 		} else {
 			PQclear(res);
-			msg(MSG_INFO, "Table %s created ", tablePrefix.c_str());
+			msg(LOG_NOTICE, "Table %s created ", tablePrefix.c_str());
 		}
 	}
 	if (!checkRelationExists(partitionname)) {
@@ -163,14 +153,14 @@ bool IpfixDbWriterPg::createDBTable(const char* partitionname, uint64_t starttim
 
 		PGresult* res = PQexec(conn, cpsql.str().c_str());
 		if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-			msg(MSG_FATAL,"IpfixDbWriterPg: Creation of partition failed. Error: %s",
+			msg(LOG_CRIT,"IpfixDbWriterPg: Creation of partition failed. Error: %s",
 					PQerrorMessage(conn));
 			dbError = true;
 			PQclear(res);
 			return false;
 		} else {
 			PQclear(res);
-			msg(MSG_INFO, "Partition %s created ", partitionname);
+			msg(LOG_NOTICE, "Partition %s created ", partitionname);
 			usedPartitions.push_back(partitionname);
 			if (usedPartitions.size()>MAX_USEDTABLES) usedPartitions.pop_front();
 		}
@@ -186,12 +176,12 @@ bool IpfixDbWriterPg::writeToDb()
 {
 	if (insertBuffer.curRows==0) return true;
 
-	DPRINTF("SQL Query: %s", insertBuffer.sql);
+	DPRINTF_INFO("SQL Query: %s", insertBuffer.sql);
 
 	// Write rows to database
 	PGresult* res = PQexec(conn, insertBuffer.sql);
 	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		msg(MSG_ERROR,"IpfixDbWriterPg: Insert of records failed. Error: %s",
+		msg(LOG_ERR,"IpfixDbWriterPg: Insert of records failed. Error: %s",
 				PQerrorMessage(conn));
 		PQclear(res);
 		goto dbwriteerror;
@@ -202,7 +192,7 @@ bool IpfixDbWriterPg::writeToDb()
 	insertBuffer.appendPtr = insertBuffer.bodyPtr;
 	*insertBuffer.appendPtr = 0;
 
-    msg(MSG_DEBUG,"Write to database is complete");
+    msg(LOG_INFO,"Write to database is complete");
     return true;
 
 dbwriteerror:
@@ -232,7 +222,7 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 	for(i = 0; i < curExporterEntries; i++) {
 		if(exporterEntries[i].observationDomainId == sourceID->observationDomainId &&
 				exporterEntries[i].ip==expIp) {
-			DPRINTF("Exporter sourceID/IP with ID %d is in the exporterBuffer\n",
+			DPRINTF_INFO("Exporter sourceID/IP with ID %d is in the exporterBuffer\n",
 					exporterEntries[i].Id);
 			return exporterEntries[i].Id;
 		}
@@ -244,7 +234,7 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 
 	PGresult* res = PQexec(conn, statementStr);
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-		msg(MSG_ERROR,"IpfixDbWriterPg: Select on exporter table failed. Error: %s",
+		msg(LOG_ERR,"IpfixDbWriterPg: Select on exporter table failed. Error: %s",
 				PQerrorMessage(conn));
 		dbError = true;
 		return 0;// If a failure occurs, return exporterID = 0
@@ -253,7 +243,7 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 	/** is the exporterID in the exporter table ?*/
 	if (PQntuples(res)) {
 		exporterID = atoi(PQgetvalue(res, 0, 0));
-		DPRINTF("ExporterID %d is in exporter table\n",exporterID);
+		DPRINTF_INFO("ExporterID %d is in exporter table\n",exporterID);
 
 	}
 	else
@@ -266,21 +256,21 @@ int IpfixDbWriterPg::getExporterID(IpfixRecord::SourceID* sourceID)
 
 		res = PQexec(conn, statementStr);
 		if(PQresultStatus(res) != PGRES_TUPLES_OK) {
-			msg(MSG_ERROR,"IpfixDbWriterPg: Insert in exporter table failed. Error: %s",
+			msg(LOG_ERR,"IpfixDbWriterPg: Insert in exporter table failed. Error: %s",
 					PQerrorMessage(conn));
 			dbError = true;
 			return 0;
 		}
 
 		exporterID = atoi(PQgetvalue(res, 0, 0));
-		msg(MSG_INFO,"ExporterID %d inserted in exporter table", exporterID);
+		msg(LOG_NOTICE,"ExporterID %d inserted in exporter table", exporterID);
 	}
 	PQclear(res);
 
 	if (curExporterEntries==MAX_EXP_TABLE-1) {
 		// maybe here we should check how often this happens and display a severe warning if too
 		// many parallel streams are received at once
-		msg(MSG_INFO, "IpfixDbWriterPg: turnover for exporter cache occurred.");
+		msg(LOG_NOTICE, "IpfixDbWriterPg: turnover for exporter cache occurred.");
 		curExporterEntries = 0;
 	}
 
@@ -299,7 +289,7 @@ bool IpfixDbWriterPg::checkRelationExists(const char* relname)
 	oss << "SELECT COUNT(*) FROM pg_class where relname='" << relname << "'";
 	PGresult* res = PQexec(conn, oss.str().c_str());
 	if((PQresultStatus(res) != PGRES_TUPLES_OK) || (PQntuples(res)==0)) {
-	        msg(MSG_FATAL, "IpfixDbWriterPg: Failed to check if relation '%s' exists. Error: %s",
+	        msg(LOG_CRIT, "IpfixDbWriterPg: Failed to check if relation '%s' exists. Error: %s",
                         relname, PQerrorMessage(conn));
 	        PQclear(res);
 		dbError = true;

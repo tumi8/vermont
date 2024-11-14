@@ -76,7 +76,7 @@ private:
 	inline void process(T packet)
 	{
 		if (!Source<T>::sleepUntilConnected()) {
-			DPRINTF("Can't wait for connection, perhaps the program is shutting down?");
+			DPRINTF_INFO("Can't wait for connection, perhaps the program is shutting down?");
 			return;
 		}
 		

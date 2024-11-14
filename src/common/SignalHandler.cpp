@@ -108,7 +108,7 @@ void SignalHandler::handleSignal(int sig)
 				(*jt)->handleSigUsr2(sig);
 				break;
 			default:
-				msg(MSG_ERROR, "No signal handler available for signal with number %d", sig);
+				msg(LOG_ERR, "No signal handler available for signal with number %d", sig);
 				break;
 		}
 	}

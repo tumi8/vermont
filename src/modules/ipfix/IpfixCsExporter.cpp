@@ -52,16 +52,16 @@ IpfixCsExporter::IpfixCsExporter(std::string filenamePrefix,
 	CS_IPFIX_MAGIC[0] = 0xCA;
 	memcpy(&CS_IPFIX_MAGIC[1], "CSIPFIX", 7);
 
-	msg(MSG_INFO, "IpfixCsExporter initialized with the following parameters");
-	msg(MSG_INFO, "  - filenamePrefix = %s" , filenamePrefix.c_str());
-	msg(MSG_INFO, "  - destinationPath = %s", destinationPath.c_str());
-	msg(MSG_INFO, "  - maxFileSize = %d KiB" , maxFileSize);
-	msg(MSG_INFO, "  - maxChunkBufferTime = %d seconds" , maxChunkBufferTime);
-	msg(MSG_INFO, "  - maxChunkBufferRecords = %d seconds" , maxChunkBufferRecords);
-	msg(MSG_INFO, "  - maxFileCreationInterval = %d seconds" , maxFileCreationInterval);
-	msg(MSG_INFO, "  - exportMode = %d" , exportMode);
-	msg(MSG_INFO, "  - export struct sizes = %lu(Ipfix_basic_flow_sequence_chunk_header), %lu(Ipfix_basic_flow)", sizeof(Ipfix_basic_flow_sequence_chunk_header), sizeof(Ipfix_basic_flow));
-	msg(MSG_INFO, "IpfixCsExporter: running");
+	msg(LOG_NOTICE, "IpfixCsExporter initialized with the following parameters");
+	msg(LOG_NOTICE, "  - filenamePrefix = %s" , filenamePrefix.c_str());
+	msg(LOG_NOTICE, "  - destinationPath = %s", destinationPath.c_str());
+	msg(LOG_NOTICE, "  - maxFileSize = %d KiB" , maxFileSize);
+	msg(LOG_NOTICE, "  - maxChunkBufferTime = %d seconds" , maxChunkBufferTime);
+	msg(LOG_NOTICE, "  - maxChunkBufferRecords = %d seconds" , maxChunkBufferRecords);
+	msg(LOG_NOTICE, "  - maxFileCreationInterval = %d seconds" , maxFileCreationInterval);
+	msg(LOG_NOTICE, "  - exportMode = %d" , exportMode);
+	msg(LOG_NOTICE, "  - export struct sizes = %lu(Ipfix_basic_flow_sequence_chunk_header), %lu(Ipfix_basic_flow)", sizeof(Ipfix_basic_flow_sequence_chunk_header), sizeof(Ipfix_basic_flow));
+	msg(LOG_NOTICE, "IpfixCsExporter: running");
 }
 
 IpfixCsExporter::~IpfixCsExporter()
@@ -126,7 +126,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 			}
 		}
 	} else {
-		msg(MSG_DEBUG, "failed to determine source ip for record, assuming 0.0.0.0");
+		msg(LOG_INFO, "failed to determine source ip for record, assuming 0.0.0.0");
 		csRecord->source_ipv4_address		= 0;
 	}
 
@@ -143,7 +143,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 			}
 		}
 	} else {
-		msg(MSG_DEBUG, "failed to determine destination ip for record, assuming 0.0.0.0");
+		msg(LOG_INFO, "failed to determine destination ip for record, assuming 0.0.0.0");
 		csRecord->destination_ipv4_address	= 0;
 	}
 
@@ -151,7 +151,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 	if (fi != 0) {
 		csRecord->protocol_identifier 		= *(uint8_t*)(record->data + fi->offset);
 	} else {
-		msg(MSG_DEBUG, "failed to determine protocol for record, using 0");
+		msg(LOG_INFO, "failed to determine protocol for record, using 0");
 		csRecord->protocol_identifier		= 0;
 	}
 
@@ -159,7 +159,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
         if (fi != 0) {
 		csRecord->source_transport_port		= *(uint16_t*)(record->data + fi->offset);/* encode udp/tcp ports here */
 	} else {
-		msg(MSG_DEBUG, "failed to determine source port for record, assuming 0");
+		msg(LOG_INFO, "failed to determine source port for record, assuming 0");
 		csRecord->source_transport_port		= 0;
 	}
 
@@ -167,7 +167,7 @@ void IpfixCsExporter::onDataRecord(IpfixDataRecord* record)
 	if (fi != 0) {
 		csRecord->destination_transport_port	= *(uint16_t*)(record->data + fi->offset);/* encode udp/tcp ports here */
 	} else {
-		msg(MSG_DEBUG, "failed to determine destination port for record, assuming 0");
+		msg(LOG_INFO, "failed to determine destination port for record, assuming 0");
 		csRecord->destination_transport_port	= 0;
 	}
 
@@ -317,7 +317,7 @@ void IpfixCsExporter::writeFileHeader()
 
 	struct stat sta;
 
-	char prefix[512];
+	char prefix[500];
 	snprintf(prefix, ARRAY_SIZE(prefix), "%s%s%02d%02d%02d-%02d%02d",
 			destinationPath.c_str(), filenamePrefix.c_str(), st->tm_year+1900,st->tm_mon+1,st->tm_mday,st->tm_hour,st->tm_min);
 	uint32_t i = 1;
@@ -327,7 +327,7 @@ void IpfixCsExporter::writeFileHeader()
 		if (stat(currentFilename,&sta) != 0) {
 			if (errno != 2) {
 				//check error code
-				msg(MSG_ERROR, "IpfixCsExporter: stat() on filename %s returned with error %i (%s)", currentFilename, errno, strerror(errno));
+				msg(LOG_ERR, "IpfixCsExporter: stat() on filename %s returned with error %i (%s)", currentFilename, errno, strerror(errno));
 			} else {
 				// errno==2 means there is no file present
 				break;
@@ -374,7 +374,7 @@ void IpfixCsExporter::writeChunkList()
 		THROWEXCEPTION("Could not chunk header. Check disk space.");
 	}
 
-	msg(MSG_DEBUG, "IpfixCsExporter: writing %u records to disk", chunkListSize);
+	msg(LOG_INFO, "IpfixCsExporter: writing %u records to disk", chunkListSize);
 
 	while (!chunkList.empty()){
 		Ipfix_basic_flow* flow = chunkList.front();
@@ -403,11 +403,11 @@ void IpfixCsExporter::registerTimeout()
 	if (nextChunkTimeout.tv_sec <= nextFileTimeout.tv_sec){
 		// Register a chunk timeout
 		timer->addTimeout(this, nextChunkTimeout, NULL);
-		msg(MSG_DEBUG, "next timeout: %ld", nextChunkTimeout.tv_sec);
+		msg(LOG_INFO, "next timeout: %ld", nextChunkTimeout.tv_sec);
 	} else {
 		// register a file timeout
 		timer->addTimeout(this, nextFileTimeout, NULL);
-		msg(MSG_DEBUG, "next timeout: %ld", nextFileTimeout.tv_sec);
+		msg(LOG_INFO, "next timeout: %ld", nextFileTimeout.tv_sec);
 	}
 
 	timeoutRegistered = true;

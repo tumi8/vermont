@@ -74,7 +74,7 @@ ObserverCfg::ObserverCfg(XMLElement* elem)
 			maxPackets = getInt("maxPackets");
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown observer config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown observer config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}
@@ -94,13 +94,13 @@ Observer* ObserverCfg::createInstance()
 
 	if (capture_len) {
 		if(!instance->setCaptureLen(capture_len)) {
-			msg(MSG_FATAL, "Observer: wrong snaplen specified - using %d",
+			msg(LOG_CRIT, "Observer: wrong snaplen specified - using %d",
 					instance->getCaptureLen());
 		}
 	}
 
 	if (!instance->prepare(pcap_filter.c_str())) {
-		msg(MSG_FATAL, "Observer: preparing failed");
+		msg(LOG_CRIT, "Observer: preparing failed");
 		THROWEXCEPTION("Observer setup failed!");
 	}
 

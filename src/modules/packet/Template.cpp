@@ -42,13 +42,13 @@ bool Template::addField(const InformationElement::IeInfo& ie)
 	{
 		addTemplateField(ie);
 		if ((ie == IeInfo(IPFIX_TYPEID_flowStartMicroseconds, 0)) || (ie == IeInfo(PSAMP_TYPEID_observationTimeMicroseconds, 0)))
-			msg(MSG_DIALOG, "Warning! %s encoded as complement for flowStartSeconds/observationTimeSeconds (deviating from IPFIX info model).", ie.toString().c_str());
+			msg(LOG_WARNING, "Warning! %s encoded as complement for flowStartSeconds/observationTimeSeconds (deviating from IPFIX info model).", ie.toString().c_str());
 	}
 	else
 	{
 		if(getFieldOffsetAndHeader(ie, &offset, &header, &validPacketClass) == false)
 		{
-			msg(MSG_DIALOG, "Unsupported %s will be ignored by PSAMP exporter.", ie.toString().c_str());
+			msg(LOG_WARNING, "Unsupported %s will be ignored by PSAMP exporter.", ie.toString().c_str());
 			return false;
 		}
 

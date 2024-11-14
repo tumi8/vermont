@@ -102,6 +102,11 @@ bool IpfixCollector::send(IpfixRecord* ipfixRecord)
 	return Source<IpfixRecord*>::send(ipfixRecord);	
 }
 
+void IpfixCollector::clearStatistics()
+{
+	statSentRecords = 0;
+}
+
 string IpfixCollector::getStatisticsXML(double interval)
 {
 	char buf[50];
@@ -116,5 +121,5 @@ void IpfixCollector::setTemplateLifetime(uint16_t time)
 	if(ipfixPacketProcessor && dynamic_cast<IpfixParser*>(ipfixPacketProcessor))
 		dynamic_cast<IpfixParser*>(ipfixPacketProcessor)->setTemplateLifetime(time);
 	else
-		msg(MSG_ERROR, "IpfixCollector: Cannot set template lifetime, ipfixPacketProcessor is NULL");
+		msg(LOG_ERR, "IpfixCollector: Cannot set template lifetime, ipfixPacketProcessor is NULL");
 }

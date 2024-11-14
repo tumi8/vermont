@@ -51,6 +51,7 @@ class IpfixCollector
 
 		bool send(IpfixRecord* ipfixRecord);
 		
+		virtual void clearStatistics();
 		virtual string getStatisticsXML(double interval);
 
 		void setTemplateLifetime(uint16_t time);

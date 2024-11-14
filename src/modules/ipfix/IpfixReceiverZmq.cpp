@@ -55,27 +55,35 @@ IpfixReceiverZmq::IpfixReceiverZmq(std::vector<std::string> endpoints,
 		THROWEXCEPTION("Could not create ZMQ poller, cannot start ZMQ Receiver");
 	}
 
-	for (std::vector<std::string>::iterator i = endpoints.begin(); i != endpoints.end(); i++) {
-		// If no channel is passed down, listen on everything (empty string)
-		zsock_t *sock = zsock_new_sub((*i).c_str(), channels.empty() ? "" : NULL);
+	for (const auto& endpoint : endpoints) {
+		zsock_t *sock = zsock_new(ZMQ_SUB);
 		if (!sock) {
-			THROWEXCEPTION("Could not connect ZMQ socket, cannot start ZMQ Receiver");
+			THROWEXCEPTION("Could not create ZMQ socket");
 		}
 
 		zsock_set_sndhwm(sock, zmq_high_watermark);
 		zsock_set_rcvhwm(sock, zmq_high_watermark);
 
-		for (std::vector<std::string>::iterator j = channels.begin(); j != channels.end(); j++) {
-			zsock_set_subscribe(sock, (*j).c_str());
+		if (zsock_connect(sock, "%s", (endpoint).c_str())) {
+	                THROWEXCEPTION("Could not connect ZMQ socket");
+	        }
+
+		// If no channel is passed down, listen on everything (empty string)
+		if (channels.empty()) {
+			zsock_set_subscribe(sock, "");
+		} else {
+			for (const auto& channel : channels) {
+				zsock_set_subscribe(sock, (channel).c_str());
+			}
 		}
 
 		if (zpoller_add(zpoller, sock)) {
-			THROWEXCEPTION("Could not add %s ZMQ socket to ZMQ poller", (*i).c_str());
+			THROWEXCEPTION("Could not add %s ZMQ socket to ZMQ poller", (endpoint).c_str());
 		}
 
 		zmq_sockets.push_back(sock);
 
-		msg(MSG_INFO, "ZMQ Receiver listening on %s", (*i).c_str());
+		msg(LOG_NOTICE, "ZMQ Receiver listening on %s", (endpoint).c_str());
 	}
 
 	SensorManager::getInstance().addSensor(this, "IpfixReceiverZMQ", moduleId);
@@ -88,11 +96,11 @@ IpfixReceiverZmq::~IpfixReceiverZmq()
 {
 	zpoller_destroy(&zpoller);
 
-	for (std::vector<zsock_t *>::iterator i = zmq_sockets.begin(); i != zmq_sockets.end(); i++) {
-		zsock_destroy(&(*i));
+	for (auto& zmq_socket : zmq_sockets) {
+		zsock_destroy(&zmq_socket);
 	}
 
-	msg(MSG_INFO, "Ipfix Receiver ZMQ poller and sockets destroyed");
+	msg(LOG_NOTICE, "Ipfix Receiver ZMQ poller and sockets destroyed");
 
 	SensorManager::getInstance().removeSensor(this);
 }
@@ -112,19 +120,21 @@ void IpfixReceiverZmq::run()
 	sourceID->fileDescriptor = 0;
 
 	while (!zsys_interrupted && !exitFlag) {
+		DPRINTF_DEBUG("ZMQ Receiver: Waiting on Poller");
 		void *sock = zpoller_wait(zpoller, zmq_poll_timeout);
 		if (!sock) {
 			if (zpoller_terminated(zpoller)) {
-				msg(MSG_DEBUG, "ZMQ Receiver: ZMQ termination signal received");
+				msg(LOG_INFO, "ZMQ Receiver: ZMQ termination signal received");
 				break;
 			} else {
+				DPRINTF_DEBUG("ZMQ Receiver: Poller Timeout");
 				continue;
 			}
 		}
 
 		zmsg_t *msg = zmsg_recv(sock);
 		if (msg == NULL) {
-			msg(MSG_ERROR, "Empty ZMQ message");
+			msg(LOG_ERR, "Empty ZMQ message");
 			continue;
 		}
 
@@ -143,8 +153,8 @@ void IpfixReceiverZmq::run()
 
 			// send packet to all packet processors
 			mutex.lock();
-			for (std::list<IpfixPacketProcessor*>::iterator i = packetProcessors.begin(); i != packetProcessors.end(); i++) {
-				(*i)->processPacket(data, zframe_size(current_frame), sourceID);
+			for (auto& packetProcessor : packetProcessors) {
+				(packetProcessor)->processPacket(data, zframe_size(current_frame), sourceID);
 			}
 			mutex.unlock();
 
@@ -152,6 +162,11 @@ void IpfixReceiverZmq::run()
 		}
 		zmsg_destroy(&msg);
 	}
+}
+
+void IpfixReceiverZmq::clearStatistics()
+{
+    statReceivedPackets = 0;
 }
 
 /**

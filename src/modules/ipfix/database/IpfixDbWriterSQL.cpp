@@ -69,14 +69,6 @@ const static IpfixDbWriterSQL::Column legacyNames [] = {
 };
 
 
-/***** Global Variables ******************************************************/
-
-/**
- * maximum length of one item in a SQL statement
- */
-const uint16_t MAX_COL_LENGTH = 22;
-
-
 /****** Methods **************************************************************/
 // NOTE: This function can not be made virtual and moved to a sub-class since
 // it is called in the IpfixDbWriterSQL constructor
@@ -262,7 +254,7 @@ void IpfixDbWriterSQL::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 		TemplateInfo* dataTemplateInfo, uint16_t length,
 		IpfixRecord::Data* data)
 {
-	DPRINTF("Processing data record");
+	DPRINTF_INFO("Processing data record");
 
 
 	if (dbError) {
@@ -272,9 +264,9 @@ void IpfixDbWriterSQL::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 
 	/** check if statement buffer is not full*/
 	if(insertBuffer.curRows==insertBuffer.maxRows) {
-		msg(MSG_ERROR, "failed to write data to database, trying again ...");
+		msg(LOG_ERR, "failed to write data to database, trying again ...");
 		if (!writeToDb()) {
-			msg(MSG_ERROR, "dropping record");
+			msg(LOG_ERR, "dropping record");
 			return;
 		}
 	}
@@ -290,7 +282,7 @@ void IpfixDbWriterSQL::processDataDataRecord(IpfixRecord::SourceID* sourceID,
 
 	// statemBuffer is filled ->  insert in table
 	if(insertBuffer.curRows==insertBuffer.maxRows) {
-		msg(MSG_INFO, "Writing buffered records to database");
+		msg(LOG_NOTICE, "Writing buffered records to database");
 		writeToDb();
 	}
 }
@@ -303,8 +295,7 @@ void IpfixDbWriterSQL::onDataRecord(IpfixDataRecord* record)
 {
 	// only treat non-Options Data Records (although we cannot be sure that there is a Flow inside)
 	if((record->templateInfo->setId != TemplateInfo::NetflowTemplate)
-		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)
-		&& (record->templateInfo->setId != TemplateInfo::IpfixDataTemplate)) {
+		&& (record->templateInfo->setId != TemplateInfo::IpfixTemplate)) {
 		record->removeReference();
 		return;
 	}
@@ -397,17 +388,8 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 			for(k=0; k < dataTemplateInfo->fieldCount; k++) {
 				if(dataTemplateInfo->fieldInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->fieldInfo[k].type.id == col->ipfixId) {
 					parseIpfixData(dataTemplateInfo->fieldInfo[k].type,(data+dataTemplateInfo->fieldInfo[k].offset), &parsedData);
-					DPRINTF("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %llX, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData, dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
+					DPRINTF_INFO("IpfixDbWriter::parseIpfixData: really saw ipfix id %d (%s) in packet with parsedData %s, type %d, length %d and offset %X", col->ipfixId, ipfix_id_lookup(col->ipfixId, col->enterprise)->name, parsedData.c_str(), dataTemplateInfo->fieldInfo[k].type.id, dataTemplateInfo->fieldInfo[k].type.length, dataTemplateInfo->fieldInfo[k].offset);
 					break;
-				}
-			}
-			// look in static data fields of template for data
-			if (parsedData.empty()) {
-				for(k=0; k < dataTemplateInfo->dataCount; k++) {
-					if(dataTemplateInfo->dataInfo[k].type.enterprise == col->enterprise && dataTemplateInfo->dataInfo[k].type.id == col->ipfixId) {
-						parseIpfixData(dataTemplateInfo->dataInfo[k].type,(dataTemplateInfo->data+dataTemplateInfo->dataInfo[k].offset), &parsedData);
-						break;
-					}
 				}
 			}
 			// check for time-related alternative fields in the database
@@ -448,7 +430,7 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 				}
 		}
 
-		DPRINTF("saw ipfix id %d in packet with parsedData %llX", col->ipfixId, parsedData);
+		DPRINTF_INFO("saw ipfix id %d in packet with parsedData %s", col->ipfixId, parsedData.c_str());
 
 		if(first) {
 			rowStream << parsedData;
@@ -464,11 +446,11 @@ void IpfixDbWriterSQL::fillInsertRow(IpfixRecord::SourceID* sourceID,
 	// and get new table
 	if (!checkCurrentTable(flowstart)) {
 		if (insertBuffer.curRows != 0 && !writeToDb()) {
-			msg(MSG_ERROR, "failed to flush table, dropping record");
+			msg(LOG_ERR, "failed to flush table, dropping record");
 			return;
 		}
 		if (!setCurrentTable(flowstart)) {
-			msg(MSG_ERROR, "failed to change table, dropping record");
+			msg(LOG_ERR, "failed to change table, dropping record");
 			return;
 		}
 	}
@@ -668,7 +650,7 @@ void IpfixDbWriterSQL::parseIpfixData(InformationElement::IeInfo type, IpfixReco
 		case IPFIX_TYPE_subTemplateList:
 		case IPFIX_TYPE_subTemplateMultiList:
 		default:
-			msg(MSG_ERROR, "failed to parse record data of type %hu", ipfix_id_lookup(type.id, type.enterprise)->type);
+			msg(LOG_ERR, "failed to parse record data of type %hu", ipfix_id_lookup(type.id, type.enterprise)->type);
     }
 }
 
@@ -711,7 +693,7 @@ void IpfixDbWriterSQL::parseIpfixFloat(IpfixRecord::Data* data, uint16_t length,
 			*parsedData = boost::lexical_cast<std::string>(*(double*) data);
 			break;
 		default:
-			msg(MSG_ERROR, "failed to parse float of length %hu", length);
+			msg(LOG_ERR, "failed to parse float of length %hu", length);
 	}
 }
 
@@ -787,8 +769,8 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 	for(vector<string>::const_iterator col = columns.begin(); col != columns.end(); col++) {
 		std::string columnName = *col;
 		std::string dataType = "";
-		uint16_t ipfixId;
-		uint32_t enterpriseId;
+		uint16_t ipfixId = 0;
+		uint32_t enterpriseId = 0;
 		if (useLegacyNames) {
 			bool found = false;
 			int i = 0;
@@ -852,7 +834,7 @@ IpfixDbWriterSQL::IpfixDbWriterSQL(const char* dbtype, const char* host, const c
 		tableColumnsCreateString.append(c.dataType);
 		first = false;
 	}
-	msg(MSG_INFO, "IpfixDbWriter: columns are %s", tableColumnsString.c_str());
+	msg(LOG_NOTICE, "IpfixDbWriter: columns are %s", tableColumnsString.c_str());
 
 
 	/**count columns*/

@@ -49,7 +49,7 @@ FlowLenAnalyzer::FlowLenAnalyzer(std::string& fFile, std::string& bFile, std::ve
 FlowLenAnalyzer::~FlowLenAnalyzer()
 {
 	flowOutstream.close();
-	msg(MSG_INFO, "Writing bins information");
+	msg(LOG_NOTICE, "Writing bins information");
 	for (std::map<uint64_t, uint64_t>::const_iterator i = binStats.begin(); i != binStats.end(); ++i) {
 		binsOutstream << i->first << " " << i->second << std::endl;
 	}

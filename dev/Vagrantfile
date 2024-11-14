@@ -1,0 +1,16 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.hostname = "vermont"
+  config.vm.box = "debian/contrib-jessie64"
+  config.vm.box_url = "https://app.vagrantup.com/debian/boxes/contrib-jessie64"
+  config.vm.network "public_network"
+  config.vm.synced_folder  "../",  "/vermont"
+
+  config.vm.provision "shell", inline: "apt-get -y install python3"   # For ansible to function
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "playbook.yml"
+    ansible.extra_vars = {  ansible_python_interpreter: "/usr/bin/python3" }
+  end
+end

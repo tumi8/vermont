@@ -31,7 +31,7 @@ class TestSink : public IpfixRecordDestination {
 			uint8_t inTemplateId = record->templateInfo->templateId - 256;
 			uint8_t inTypeId = record->templateInfo->fieldInfo[0].type.id;
 			uint8_t inData = record->data[0];
-			msg(MSG_DEBUG, "Received DataRecord: %d, %d, %d, %d", inSourceID, inTemplateId, inTypeId, inData);
+			msg(LOG_INFO, "Received DataRecord: %d, %d, %d, %d", inSourceID, inTemplateId, inTypeId, inData);
 			if (checkSourceId) if (inSourceID != inTemplateId) ERROR("SourceID or TemplateInfo got corrupted: inSourceID != inTemplateId");
 			if (inTemplateId != inTypeId) ERROR("TemplateInfo got corrupted: inTemplateId != inTypeId");
 			if (inData != inTemplateId) ERROR("IpfixRecord got corrupted: inData != inTemplateId");

@@ -192,7 +192,7 @@ public:
 
 	virtual ~CfgHelper()
 	{
-		DPRINTF("~CfgHelper [%s]\n", this->getName().c_str());
+		DPRINTF_INFO("~CfgHelper [%s]\n", this->getName().c_str());
 		shutdown(false);
 		freeTimeoutAdapter();
 		freeInstance();
@@ -262,7 +262,7 @@ public:
 	ConnectionQueue<typename InstanceType::dst_value_type>* getQueueInstance()
 	{
 		if (!queue) {
-			msg(MSG_DIALOG, "queue is required by module id=%u but is not configured. Inserting a default queue with max size 1 (attention: this is inefficient!)", getID());
+			msg(LOG_WARNING, "queue is required by module id=%u but is not configured. Inserting a default queue with max size 1 (attention: this is inefficient!)", getID());
 			queue = new ConnectionQueue<typename InstanceType::dst_value_type>(1);
 		}
 
@@ -308,7 +308,7 @@ public:
 	virtual void setupWithoutSuccessors()
 	{
 		if (typeid(typename InstanceType::src_value_type)!=typeid(NullEmitable*)) {
-			msg(MSG_INFO, "module %s (id=%u) is source for data elements, but has no successor", getName().c_str(), getID());
+			msg(LOG_NOTICE, "module %s (id=%u) is source for data elements, but has no successor", getName().c_str(), getID());
 			getInstance()->connectToNothing();
 		}
 	}
@@ -348,7 +348,7 @@ public:
 			dest = dynamic_cast<Destination< typename InstanceType::src_value_type>* >
 					(other->getInstance());
 			if (!dest) {
-				msg(MSG_FATAL, "Trying to connect incompatible types: %s -> %s! Check your configuration for incompabible connections!", this->getName().c_str(), other->getName().c_str());
+				msg(LOG_CRIT, "Trying to connect incompatible types: %s -> %s! Check your configuration for incompabible connections!", this->getName().c_str(), other->getName().c_str());
 				THROWEXCEPTION("Unexpected error: can't cast %s to matching Destination<>",
 						other->getName().c_str());
 			}

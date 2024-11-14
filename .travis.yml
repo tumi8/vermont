@@ -1,3 +1,4 @@
+dist: bionic
 language: cpp
 cache: ccache
 sudo: false
@@ -5,8 +6,40 @@ sudo: false
 addons:
   apt:
     sources: &zeromq_source
-    - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/ ./'
-      key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_14.04/Release.key'
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/Release.key' 
+    sources: &zeromq_source_and_toolchain_gcc
+      - ubuntu-toolchain-r-test
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/Release.key'     
+    sources: &zeromq_source_and_toolchain_clang_4-0
+      - llvm-toolchain-4.0
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/Release.key'      
+    sources: &zeromq_source_and_toolchain_clang_5-0
+      - llvm-toolchain-5.0
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/Release.key'      
+    sources: &zeromq_source_and_toolchain_clang_6-0
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-6.0
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/Release.key'
+    sources: &zeromq_source_and_toolchain_clang_7
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-7
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/Release.key'
+    sources: &zeromq_source_and_toolchain_clang_8
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-8
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/Release.key'
+    sources: &zeromq_source_and_toolchain_clang_9
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-9
+      - sourceline: 'deb http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/ ./'
+        key_url: 'http://download.opensuse.org/repositories/network:/messaging:/zeromq:/release-stable/xUbuntu_18.04/Release.key'
     packages: &required_packages
       - cmake
       - libboost-dev
@@ -16,8 +49,11 @@ addons:
       - libboost-thread-dev
       - libxml2-dev
       - libpcap-dev
-      - libsystemd-journal-dev
+      - libsystemd-dev
       - libsctp-dev
+      - libpq-dev
+      - postgresql-server-dev-10
+      - libmysqlclient-dev
     packages: &optional_packages
       - libssl-dev
       - libczmq-dev
@@ -28,22 +64,96 @@ matrix:
       sudo: true
       before_install:
         - sudo apt-get remove -qq libssl-dev
-      env: DTLS="OFF" ZMQ="OFF"
+      env:
+        - DTLS="OFF" MYSQL="OFF" ZMQ="OFF" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
           packages:
             - *required_packages
+            
     - compiler: clang
       sudo: true
       before_install:
         - sudo apt-get remove -qq libssl-dev
-      env: DTLS="OFF" ZMQ="OFF"
+      env:
+        - DTLS="OFF" MYSQL="OFF"  ZMQ="OFF" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
           packages:
             - *required_packages
+ 
     - compiler: gcc
-      env: DTLS="ON" ZMQ="ON"
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo"
+      addons:
+        apt:
+          sources: *zeromq_source
+          packages:
+            - *required_packages
+            - *optional_packages
+    - compiler: gcc
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="Debug"
+      addons:
+        apt:
+          sources: *zeromq_source
+          packages:
+            - *required_packages
+            - *optional_packages
+    - compiler: gcc-6
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-6 CXX=g++-6"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_gcc
+          packages:
+            - *required_packages
+            - *optional_packages
+            - g++-6
+    - compiler: gcc-7
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-7 CXX=g++-7"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_gcc
+          packages:
+            - *required_packages
+            - *optional_packages
+            - g++-7
+    - compiler: gcc-8
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-8 CXX=g++-8"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_gcc
+          packages:
+            - *required_packages
+            - *optional_packages
+            - g++-8
+    - compiler: gcc-9
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-9 CXX=g++-9"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_gcc
+          packages:
+            - *required_packages
+            - *optional_packages
+            - g++-9
+    - compiler: gcc-10
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=gcc-10 CXX=g++-10"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_gcc
+          packages:
+            - *required_packages
+            - *optional_packages
+            - g++-10
+
+    - compiler: clang
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo"
       addons:
         apt:
           sources: *zeromq_source
@@ -51,12 +161,88 @@ matrix:
             - *required_packages
             - *optional_packages
     - compiler: clang
-      env: DTLS="ON" ZMQ="ON"
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="Debug"
       addons:
         apt:
           sources: *zeromq_source
           packages:
             - *required_packages
             - *optional_packages
+    - compiler: clang-4.0
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_4-0
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-4.0                        
+    - compiler: clang-5.0
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_5-0
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-5.0
+    - compiler: clang-6.0
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_6-0
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-6.0
+    - compiler: clang-7
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON"  BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_7
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-7
+    - compiler: clang-8
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_8
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-8
+    - compiler: clang-9
+      env:
+        - DTLS="ON" ZMQ="ON" MYSQL="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-9 && CXX=clang++-9"
+      addons:
+        apt:
+          sources: *zeromq_source_and_toolchain_clang_9
+          packages:
+            - *required_packages
+            - *optional_packages
+            - clang-9
+    # - stage: Static Analysis
+    #   env:
+    #     - DTLS="ON" ZMQ="ON" BUILD_TYPE="RelWithDebInfo" MATRIX_EVAL="CC=clang-7 && CXX=clang++-7"
+    #   addons:
+    #     apt:
+    #       sources: *zeromq_source_and_toolchain_clang_7
+    #       packages:
+    #         - *required_packages
+    #         - *optional_packages
+    #         - clang-7
+    #         - clang-tools-7
+    #   script: scan-build --status-bugs cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && scan-build --status-bugs make -k
 
-script: cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" . && make && make test && make install
+before_install:
+  - eval "${MATRIX_EVAL}"
+
+script: mkdir build && cd build && cmake -DCMAKE_INSTALL_PREFIX=/tmp -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DSUPPORT_MYSQL="$MYSQL" -DSUPPORT_POSTGRESQL=ON -DSUPPORT_JOURNALD=ON -DSUPPORT_DTLS="$DTLS" -DSUPPORT_ZMQ="$ZMQ" .. && make -k && make test && make install

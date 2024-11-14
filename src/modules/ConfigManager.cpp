@@ -18,7 +18,7 @@
  *
  */
 
-#include "modules/ConfigManager.h"
+#include "ConfigManager.hpp"
 #include "core/Connector.h"
 #include "core/CfgNode.h"
 #include "common/defs.h"
@@ -120,6 +120,9 @@ ConfigManager::~ConfigManager()
 	if (graph) {
 		delete graph;
 	}
+	if (document) {
+		delete document;
+	}
 }
 
 /**
@@ -149,17 +152,28 @@ void ConfigManager::parseConfig(std::string fileName)
 			       " This is not a valid configuration file!");
 	}
 
+	XMLAttribute* logging_attribute = root->getAttribute("logging");
+	if (logging_attribute) {
+		int log_bitask = parse_log_level(logging_attribute->getValue().c_str());
+		if (log_bitask == -1) {
+			msg(LOG_CRIT, "ignoring unknown log level '%s'",
+			    logging_attribute->getValue().c_str());
+		} else {
+			msg(LOG_NOTICE, "setting log level '%s'",
+			    logging_attribute->getValue().c_str());
+			msg_setlevel(log_bitask);
+		}
+	}
+
 	/* process each root element node and add a new node (with its config
 	 * attached to the node) to the graph
 	 */
 	XMLNode::XMLSet<XMLElement*> rootElements = root->getElementChildren();
-	for (XMLNode::XMLSet<XMLElement*>::const_iterator it = rootElements.begin();
-	     it != rootElements.end();
-	     it++) {
+	for (const auto& element : rootElements) {
 		bool found = false;
-		for (unsigned int i = 0; i < ARRAY_SIZE(configModules); i++) {
-			if ((*it)->getName() == configModules[i]->getName()) {
-				Cfg* cfg = configModules[i]->create(*it);
+		for (auto& module : configModules) {
+			if (element->getName() == module->getName()) {
+				Cfg* cfg = module->create(element);
 
 				// handle special modules
 				SensorManagerCfg* smcfg = dynamic_cast<SensorManagerCfg*>(cfg);
@@ -176,7 +190,7 @@ void ConfigManager::parseConfig(std::string fileName)
 		}
 
 		if (!found) {
-			msg(MSG_ERROR, "Unknown cfg entry %s found", (*it)->getName().c_str());
+			msg(LOG_ERR, "Unknown cfg entry %s found", element->getName().c_str());
 		}
 	}
 
@@ -196,7 +210,7 @@ void ConfigManager::parseConfig(std::string fileName)
 
 	for (size_t i = 0; i < topoNodes.size(); i++) {
 		Cfg* cfg = topoNodes[topoNodes.size() -1 -i]->getCfg();
-		msg(MSG_INFO, "Starting module %s", cfg->getName().c_str());
+		msg(LOG_NOTICE, "Starting module %s", cfg->getName().c_str());
 		cfg->start(false);
 	}
 
@@ -215,7 +229,7 @@ void ConfigManager::shutdown()
 	// shutdown modules
 	for (size_t i = 0; i < topoNodes.size(); i++) {
 		Cfg* cfg = topoNodes[i]->getCfg();
-		msg(MSG_INFO, "shutting down module %s (id=%u)", cfg->getName().c_str(), cfg->getID());
+		msg(LOG_NOTICE, "shutting down module %s (id=%u)", cfg->getName().c_str(), cfg->getID());
 		cfg->shutdown(true, true);
 	}
 
@@ -231,7 +245,7 @@ void ConfigManager::shutdown()
 
 		// disconnect the module from its sources ..
 		vector<CfgNode*> sources = graph->getSources(n);
-		msg(MSG_INFO, "disconnecting module %s (id=%u)", cfg->getName().c_str(), cfg->getID());
+		msg(LOG_NOTICE, "disconnecting module %s (id=%u)", cfg->getName().c_str(), cfg->getID());
 		for (size_t k = 0; k < sources.size(); k++) {
 			sources[k]->getCfg()->disconnectInstances();
 		}
@@ -247,18 +261,18 @@ Graph* ConfigManager::getGraph()
 
 void ConfigManager::onTimeout2()
 {
-	//msg(MSG_VDEBUG, "Called deleter");
+	//msg(LOG_DEBUG, "Called deleter");
 
 	for (std::list<deleter_list_item>::iterator it = deleter_list.begin(); it != deleter_list.end(); it++) {
 		if (time(NULL) > it->delete_after) {
-			msg(MSG_DEBUG, "Removing node: %s", (it->c)->getName().c_str());
+			msg(LOG_INFO, "Removing node: %s", (it->c)->getName().c_str());
 			(it->c)->shutdown(true, true);
 			it->c->disconnectInstances();
 			delete ((it->c));
 			it = deleter_list.erase(it);
 			it--;
 		} else {
-			msg(MSG_DEBUG, "Timeout for node %s not yet reached.", (it->c)->getName().c_str());
+			msg(LOG_INFO, "Timeout for node %s not yet reached.", (it->c)->getName().c_str());
 		}
 	}
 }
@@ -277,7 +291,7 @@ Graph* ConfigManager::reconnect(Graph* g, Graph *old)
 	for (size_t i = 0; i < topoOld.size(); i++) {
 		topoOld[i]->getCfg()->getInstance()->preReconfiguration();
 		topoOld[i]->getCfg()->disconnectInstances();
-        msg(MSG_INFO, "Disconnecting instance: %s", topoOld[i]->getCfg()->getName().c_str());
+        msg(LOG_NOTICE, "Disconnecting instance: %s", topoOld[i]->getCfg()->getName().c_str());
 	}
 
 	/* call onReconfiguration1 on all modules */
@@ -298,13 +312,13 @@ Graph* ConfigManager::reconnect(Graph* g, Graph *old)
 		for (size_t j = 0; j < topoNew.size(); j++) {
 			Cfg* newCfg = topoNew[j]->getCfg();
 			if (oldCfg->getID() == newCfg->getID()) { // possible match
-				msg(MSG_INFO, "found a match between %s(id=%u) -> %s(id=%u)",
+				msg(LOG_NOTICE, "found a match between %s(id=%u) -> %s(id=%u)",
 						oldCfg->getName().c_str(), oldCfg->getID(),
 						newCfg->getName().c_str(), newCfg->getID());
 
 				// check if we could use the same module instance in the new config
 				if (newCfg->deriveFrom(oldCfg)) {
-					msg(MSG_INFO, "reusing %s(id=%u)",
+					msg(LOG_NOTICE, "reusing %s(id=%u)",
 							oldCfg->getName().c_str(), oldCfg->getID());
 					newCfg->transferInstance(oldCfg);
 				} else {
@@ -312,7 +326,7 @@ Graph* ConfigManager::reconnect(Graph* g, Graph *old)
 					delme.c = oldCfg;
 					delme.delete_after = time(NULL) + DELETER_DELAY; // current time + 20 seconds
 					deleter_list.push_back(delme);
-					msg(MSG_INFO, "can't reuse %s(id=%u)",
+					msg(LOG_NOTICE, "can't reuse %s(id=%u)",
 						oldCfg->getName().c_str(), oldCfg->getID());
 				}
 			}
@@ -330,4 +344,3 @@ Graph* ConfigManager::reconnect(Graph* g, Graph *old)
 
 	return newGraph;
 }
-

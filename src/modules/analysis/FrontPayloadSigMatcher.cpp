@@ -28,12 +28,12 @@ FrontPayloadSigMatcher::FrontPayloadSigMatcher(string sigdir)
 	: signatureDir(sigdir),
 	  sigmatcher(NULL)
 {
-	msg(MSG_INFO, "FrontPayloadSigMatcher started with following parameters:");
-	msg(MSG_INFO, "  - signature directory=%s", sigdir.c_str());
+	msg(LOG_NOTICE, "FrontPayloadSigMatcher started with following parameters:");
+	msg(LOG_NOTICE, "  - signature directory=%s", sigdir.c_str());
 
 	sigmatcher = new_matcher(sigdir.c_str());
 
-	msg(MSG_INFO, "Loaded %d signature classes", sigmatcher->numOfClasses);
+	msg(LOG_NOTICE, "Loaded %d signature classes", sigmatcher->numOfClasses);
 }
 
 FrontPayloadSigMatcher::~FrontPayloadSigMatcher()
@@ -47,8 +47,8 @@ void FrontPayloadSigMatcher::matchConnection(Connection* conn)
 
 	for (int32_t j=0; j<sigmatcher->numOfClasses; j++) {
 		if (results[j]==1) {
-			msg(MSG_DIALOG, "SIGMATCHER: front payload matches signature '%s'", sigmatcher->signatures[j]->id);
-			msg(MSG_DIALOG, "%s", conn->toString().c_str());
+			msg(LOG_WARNING, "SIGMATCHER: front payload matches signature '%s'", sigmatcher->signatures[j]->id);
+			msg(LOG_WARNING, "%s", conn->toString().c_str());
 		}
 	}
 

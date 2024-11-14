@@ -39,13 +39,11 @@ RandomSampler::RandomSampler(int n, int N) : samplingSize(N), acceptSize(n), cur
         int pos;
 
         if(n > N) {
-                int tmp;
+                msg(LOG_ERR, "%d out-of %d makes no sense - exchanging values", n, N);
 
-                msg(MSG_ERROR, "%d out-of %d makes no sense - exchanging values", n, N);
-
-                tmp=n;
-                n=N;
-                N=tmp;
+                samplingSize = n;
+                acceptSize = N;
+                N=n;
         }
 
         sampleMask.clear();

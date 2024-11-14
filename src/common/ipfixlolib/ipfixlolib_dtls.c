@@ -1,5 +1,6 @@
 #include <fcntl.h>
 
+#include "common/defs.h" /* __FALLTHROUGH__ */
 #include "common/msg.h"
 #include "common/openssl/OpenSSL.h"
 #include "ipfixlolib_private.h"
@@ -30,13 +31,13 @@ static void
        switch (snp->sn_header.sn_type) {
        case SCTP_ASSOC_CHANGE:
              sac = &snp->sn_assoc_change;
-             msg(MSG_DEBUG,"SCTP Event: assoc_change: state=%hu, error=%hu, instr=%hu "
+             msg(LOG_INFO,"SCTP Event: assoc_change: state=%hu, error=%hu, instr=%hu "
                  "outstr=%hu\n", sac->sac_state, sac->sac_error,
                  sac->sac_inbound_streams, sac->sac_outbound_streams);
              break;
        case SCTP_SEND_FAILED:
              ssf = &snp->sn_send_failed;
-             msg(MSG_DEBUG,"SCTP Event: sendfailed: len=%hu err=%d\n", ssf->ssf_length,
+             msg(LOG_INFO,"SCTP Event: sendfailed: len=%hu err=%d\n", ssf->ssf_length,
                  ssf->ssf_error);
              break;
 
@@ -51,26 +52,26 @@ static void
                ap = inet_ntop(AF_INET6, &sin6->sin6_addr,
                               addrbuf, INET6_ADDRSTRLEN);
              }
-             msg(MSG_DEBUG,"SCTP Event: intf_change: %s state=%d, error=%d\n", ap,
+             msg(LOG_INFO,"SCTP Event: intf_change: %s state=%d, error=%d\n", ap,
                     spc->spc_state, spc->spc_error);
              break;
        case SCTP_REMOTE_ERROR:
              sre = &snp->sn_remote_error;
-             msg(MSG_DEBUG,"SCTP Event: remote_error: err=%hu len=%hu\n",
+             msg(LOG_INFO,"SCTP Event: remote_error: err=%hu len=%hu\n",
                  ntohs(sre->sre_error), ntohs(sre->sre_length));
              break;
        case SCTP_SHUTDOWN_EVENT:
-             msg(MSG_DEBUG,"SCTP Event: shutdown event\n");
+             msg(LOG_INFO,"SCTP Event: shutdown event\n");
              break;
        case SCTP_SENDER_DRY_EVENT:
 	     ssde = &snp->sn_sender_dry_event;
-             msg(MSG_DEBUG,"SCTP Event: sender dry event\n");
+             msg(LOG_INFO,"SCTP Event: sender dry event\n");
              break;
        case SCTP_AUTHENTICATION_EVENT:
-             msg(MSG_DEBUG,"SCTP Event: authentication event\n");
+             msg(LOG_INFO,"SCTP Event: authentication event\n");
              break;
        default:
-             msg(MSG_DEBUG,"SCTP Event: unknown type: %hu\n", snp->sn_header.sn_type);
+             msg(LOG_INFO,"SCTP Event: unknown type: %hu\n", snp->sn_header.sn_type);
              break;
        };
    }
@@ -86,8 +87,8 @@ static int ensure_exporter_set_up_for_dtls(ipfix_exporter_certificate *c) {
     if (c->ssl_ctx) return 0;
 
     /* This SSL_CTX object will be freed in deinit_openssl_ctx() */
-    if ( ! (c->ssl_ctx=SSL_CTX_new(DTLSv1_client_method())) ) {
-	msg(MSG_FATAL, "Failed to create SSL context");
+    if ( ! (c->ssl_ctx=SSL_CTX_new(DTLS_client_method())) ) {
+	msg(LOG_CRIT, "Failed to create SSL context");
 	msg_openssl_errors();
 	return -1;
     }
@@ -95,30 +96,30 @@ static int ensure_exporter_set_up_for_dtls(ipfix_exporter_certificate *c) {
 
     if ( (c->ca_file || c->ca_path) &&
 	! SSL_CTX_load_verify_locations(c->ssl_ctx,c->ca_file,c->ca_path) ) {
-	msg(MSG_FATAL,"SSL_CTX_load_verify_locations() failed.");
+	msg(LOG_CRIT,"SSL_CTX_load_verify_locations() failed.");
 	msg_openssl_errors();
 	return -1;
     }
     /* Load our own certificate */
     if (c->certificate_chain_file) {
 	if (!SSL_CTX_use_certificate_chain_file(c->ssl_ctx, c->certificate_chain_file)) {
-	    msg(MSG_FATAL,"Unable to load certificate chain file %s",c->certificate_chain_file);
+	    msg(LOG_CRIT,"Unable to load certificate chain file %s",c->certificate_chain_file);
 	    msg_openssl_errors();
 	    return -1;
 	}
 	if (!SSL_CTX_use_PrivateKey_file(c->ssl_ctx, c->private_key_file, SSL_FILETYPE_PEM)) {
-	    msg(MSG_FATAL,"Unable to load private key file %s",c->private_key_file);
+	    msg(LOG_CRIT,"Unable to load private key file %s",c->private_key_file);
 	    msg_openssl_errors();
 	    return -1;
 	}
 	if (!SSL_CTX_check_private_key(c->ssl_ctx)) {
-	    msg(MSG_FATAL,"Private key and certificate do not match");
+	    msg(LOG_CRIT,"Private key and certificate do not match");
 	    msg_openssl_errors();
 	    return -1;
 	}
-	DPRINTF("We successfully loaded our certificate.");
+	DPRINTF_INFO("We successfully loaded our certificate.");
     } else {
-	DPRINTF("We do NOT have a certificate.");
+	DPRINTF_INFO("We do NOT have a certificate.");
     }
     /* We leave the certificate_authorities list of the Certificate Request
      * empty. See RFC 4346 7.4.4. Certificate request. */
@@ -146,7 +147,7 @@ static int create_dtls_socket(ipfix_receiving_collector *col) {
 	    protocol = 0;
 	}
         if((s = socket(PF_INET, type, protocol)) < 0 ) {
-                msg(MSG_FATAL, "error opening socket, %s", strerror(errno));
+                msg(LOG_CRIT, "error opening socket, %s", strerror(errno));
                 return -1;
         }
 
@@ -162,7 +163,7 @@ static int create_dtls_socket(ipfix_receiving_collector *col) {
 	flags = fcntl(s, F_GETFL);
 	flags |= O_NONBLOCK;
 	if(fcntl(s, F_SETFL, flags) == -1) {
-                msg(MSG_FATAL, "could not set socket non-blocking");
+                msg(LOG_CRIT, "could not set socket non-blocking");
 		close(s);
                 return -1;
 	}
@@ -172,7 +173,7 @@ static int create_dtls_socket(ipfix_receiving_collector *col) {
 	memset(&event, 0, sizeof(event));
 	event.sctp_data_io_event = 1;
 	if (setsockopt(s, IPPROTO_SCTP, SCTP_EVENTS, &event, sizeof(event)) != 0) {
-		msg(MSG_ERROR, "SCTP: setsockopt() failed to enable sctp_data_io_event, %s", strerror(errno));
+		msg(LOG_ERR, "SCTP: setsockopt() failed to enable sctp_data_io_event, %s", strerror(errno));
 		close(s);
                 return -1;
 	}
@@ -192,7 +193,7 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
 
 #ifdef DEBUG
     if (con->socket!=-1) {
-	msg(MSG_FATAL,"socket != -1");
+	msg(LOG_CRIT,"socket != -1");
 	close(con->socket);
 	con->socket = -1;
     }
@@ -203,7 +204,7 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
     if ((con->socket = create_dtls_socket(col)) < 0) {
 	return -1;
     }
-    DPRINTF("Created socket %d",con->socket);
+    DPRINTF_INFO("Created socket %d",con->socket);
 
     /* ensure an SSL_CTX object is set up */
     if (ensure_exporter_set_up_for_dtls(&exporter->certificate)) {
@@ -212,7 +213,7 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
     }
     /* create SSL object */
     if ( ! (con->ssl = SSL_new(exporter->certificate.ssl_ctx))) {
-	msg(MSG_FATAL, "Failed to create SSL object.");
+	msg(LOG_CRIT, "Failed to create SSL object.");
 	msg_openssl_errors();
 	close(con->socket);con->socket = -1;
 	return -1;
@@ -220,12 +221,12 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
     /* Set verification parameters and cipherlist */
     if (!col->dtls_connection.peer_fqdn) {
 	SSL_set_cipher_list(con->ssl,"ALL"); // This includes anonymous ciphers
-	DPRINTF("We are NOT going to verify the certificates of the collectors b/c "
+	DPRINTF_INFO("We are NOT going to verify the certificates of the collectors b/c "
 		"the peerFqdn option is NOT set.");
     } else {
 	if ( ! ((exporter->certificate.ca_file || exporter->certificate.ca_path) &&
 		    exporter->certificate.certificate_chain_file) ) {
-	    msg(MSG_ERROR,"Cannot verify certificates of collectors because prerequisites not met. "
+	    msg(LOG_ERR,"Cannot verify certificates of collectors because prerequisites not met. "
 		    "Prerequisites are: 1. CApath or CAfile or both set, "
 		    "2. We have a certificate including the private key");
 	    SSL_free(con->ssl);con->ssl = NULL;
@@ -235,7 +236,7 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
 	    SSL_set_cipher_list(con->ssl,"DEFAULT");
 	    SSL_set_verify(con->ssl,SSL_VERIFY_PEER |
 		    SSL_VERIFY_FAIL_IF_NO_PEER_CERT,0);
-	    DPRINTF("We are going to request certificates from the collectors "
+	    DPRINTF_INFO("We are going to request certificates from the collectors "
 		    "and we are going to verify these b/c "
 		    "the peerFqdn option is set");
 	}
@@ -251,7 +252,7 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
 	bio = BIO_new_dgram(con->socket,BIO_NOCLOSE);
 
     if ( ! bio) {
-	msg(MSG_FATAL,"Failed to create datagram BIO.");
+	msg(LOG_CRIT,"Failed to create datagram BIO.");
 	msg_openssl_errors();
 	SSL_free(con->ssl);con->ssl = NULL;
 	close(con->socket);con->socket = -1;
@@ -261,16 +262,16 @@ int setup_dtls_connection(ipfix_exporter *exporter, ipfix_receiving_collector *c
     if (col->protocol != DTLS_OVER_SCTP)
 #endif
     (void)BIO_ctrl(bio,BIO_CTRL_DGRAM_MTU_DISCOVER,0,0);
-    (void)BIO_ctrl_set_connected(bio,1,&col->addr); /* TODO: Explain, why are we doing this? */
+    (void)BIO_ctrl_set_connected(bio,&col->addr); /* TODO: Explain, why are we doing this? */
     SSL_set_bio(con->ssl,bio,bio);
     // connect (non-blocking, i.e. handshake is initiated, not terminated)
     if((connect(con->socket, (struct sockaddr*)&col->addr, sizeof(col->addr) ) == -1) && (errno != EINPROGRESS)) {
-	    msg(MSG_FATAL, "connect failed, %s", strerror(errno));
+	    msg(LOG_CRIT, "connect failed, %s", strerror(errno));
 	    SSL_free(con->ssl);con->ssl = NULL;
 	    close(con->socket);con->socket = -1;
 	    return -1;
     }
-    DPRINTF("Set up SSL object.");
+    DPRINTF_INFO("Set up SSL object.");
 
     con->last_reconnect_attempt_time = time(NULL);
 
@@ -284,7 +285,7 @@ static int dtls_verify_peer_cb(void *context, const char* dnsname) {
 }
 
 static void dtls_fail_connection(ipfix_dtls_connection *con) {
-    DPRINTF("Failing DTLS connection.");
+    DPRINTF_INFO("Failing DTLS connection.");
     dtls_shutdown_and_cleanup(con);
 }
 
@@ -299,25 +300,25 @@ static int dtls_connect(ipfix_receiving_collector *col, ipfix_dtls_connection *c
     ret = SSL_connect(con->ssl);
     error = SSL_get_error(con->ssl,ret);
     if (error == SSL_ERROR_NONE) {
-	msg_openssl_return_code(MSG_DEBUG,"SSL_connect()",ret,error);
-	msg(MSG_INFO, "Successfully (re)connected to %s-over-DTLS collector.", col->protocol == DTLS_OVER_SCTP ? "SCTP" : "UDP");
-	msg(MSG_INFO,"TLS Cipher: %s",SSL_get_cipher_name(con->ssl));
-	DPRINTF("DTLS handshake succeeded. We are now connected.");
+	msg_openssl_return_code(LOG_INFO,"SSL_connect()",ret,error);
+	msg(LOG_NOTICE, "Successfully (re)connected to %s-over-DTLS collector.", col->protocol == DTLS_OVER_SCTP ? "SCTP" : "UDP");
+	msg(LOG_NOTICE,"TLS Cipher: %s",SSL_get_cipher_name(con->ssl));
+	DPRINTF_INFO("DTLS handshake succeeded. We are now connected.");
 	if (col->dtls_connection.peer_fqdn) { /* We need to verify the identity of our peer */
 	    if (verify_ssl_peer(con->ssl,&dtls_verify_peer_cb,col)) {
-		DPRINTF("Peer authentication successful.");
+		DPRINTF_INFO("Peer authentication successful.");
 	    } else {
-		msg(MSG_ERROR,"Peer authentication failed. Shutting down connection.");
+		msg(LOG_ERR,"Peer authentication failed. Shutting down connection.");
 		dtls_fail_connection(con);
 		return -1;
 	    }
 	}
 	return 1;
     } else if (error == SSL_ERROR_WANT_READ) {
-	msg_openssl_return_code(MSG_DEBUG,"SSL_connect()",ret,error);
+	msg_openssl_return_code(LOG_INFO,"SSL_connect()",ret,error);
 	return 0;
     } else {
-	msg_openssl_return_code(MSG_ERROR,"SSL_connect()",ret,error);
+	msg_openssl_return_code(LOG_ERR,"SSL_connect()",ret,error);
 	dtls_fail_connection(con);
 	return -1;
     }
@@ -330,24 +331,24 @@ static int dtls_get_replacement_connection_ready(
     if (!col->dtls_connection.dtls_replacement.ssl) {
 	/* No SSL object has been created yet. Let's open a socket and
 	 * setup a new SSL object. */
-	DPRINTF("Setting up replacement connection.");
+	DPRINTF_INFO("Setting up replacement connection.");
 	if (setup_dtls_connection(exporter,col,&col->dtls_connection.dtls_replacement)) {
 	    return -1;
 	}
     }
     ret = dtls_connect(col,&col->dtls_connection.dtls_replacement);
     if (ret == 1) {
-	DPRINTF("Replacement connection setup successful.");
+	DPRINTF_INFO("Replacement connection setup successful.");
 	return 1; /* SUCCESS */
     }
     if (ret == 0) {
 	if (col->dtls_connection.dtls_connect_timeout && 
 		(time(NULL) - col->dtls_connection.dtls_replacement.last_reconnect_attempt_time >
 		 col->dtls_connection.dtls_connect_timeout)) {
-	    msg(MSG_ERROR,"DTLS replacement connection setup taking too long.");
+	    msg(LOG_ERR,"DTLS replacement connection setup taking too long.");
 	    dtls_fail_connection(&col->dtls_connection.dtls_replacement);
 	} else {
-	    DPRINTF("Replacement connection setup still ongoing.");
+	    DPRINTF_INFO("Replacement connection setup still ongoing.");
 	    return 0;
 	}
     }
@@ -364,11 +365,11 @@ static void dtls_swap_connections(ipfix_dtls_connection *a, ipfix_dtls_connectio
 void dtls_shutdown_and_cleanup(ipfix_dtls_connection *con) {
     int ret,error;
     if (!con->ssl) return;
-    DPRINTF("Shutting down SSL connection.");
+    DPRINTF_INFO("Shutting down SSL connection.");
     ret = SSL_shutdown(con->ssl);
     error = SSL_get_error(con->ssl,ret);
 #ifdef DEBUG
-    msg_openssl_return_code(MSG_DEBUG,"SSL_shutdown()",ret,error);
+    msg_openssl_return_code(LOG_INFO,"SSL_shutdown()",ret,error);
 #endif
     /* TODO: loop only if ret==-1 and error==WANT_READ or WANT_WRITE */
     int i = 0;
@@ -382,13 +383,13 @@ void dtls_shutdown_and_cleanup(ipfix_dtls_connection *con) {
 	FD_ZERO(&readfds);
 	FD_SET(con->socket, &readfds);
 	ret = select(con->socket + 1,&readfds,NULL,NULL,&timeout);
-	DPRINTF("select returned: %d",ret);
-	DPRINTF("Calling SSL_shutdown()");
+	DPRINTF_INFO("select returned: %d",ret);
+	DPRINTF_INFO("Calling SSL_shutdown()");
 	ret = SSL_shutdown(con->ssl);
 	error = SSL_get_error(con->ssl,ret);
-	msg_openssl_return_code(MSG_DEBUG,"SSL_shutdown()",ret,error);
+	msg_openssl_return_code(LOG_INFO,"SSL_shutdown()",ret,error);
 	if (i++ == 3) {
-	    msg(MSG_ERROR,"Too many calls to select(). Breaking out.");
+	    msg(LOG_ERR,"Too many calls to select(). Breaking out.");
 	    break;
 	}
     }
@@ -398,9 +399,9 @@ void dtls_shutdown_and_cleanup(ipfix_dtls_connection *con) {
     con->last_reconnect_attempt_time = 0;
     /* Close socket */
     if ( con->socket != -1) {
-	DPRINTF("Closing socket");
+	DPRINTF_INFO("Closing socket");
 	ret = close(con->socket);
-	DPRINTF("close returned %d",ret);
+	DPRINTF_INFO("close returned %d",ret);
 	con->socket = -1;
     }
 }
@@ -434,9 +435,9 @@ int dtls_manage_connection(ipfix_exporter *exporter, ipfix_receiving_collector *
 	rc = 1;
 	if (ret == 1) { /* Connection setup completed */
 	    rc = 0;
-	    DPRINTF("Swapping connections.");
+	    DPRINTF_INFO("Swapping connections.");
 	    dtls_swap_connections(&col->dtls_connection.dtls_main, &col->dtls_connection.dtls_replacement);
-	    DPRINTF("Shutting down old DTLS connection.");
+	    DPRINTF_INFO("Shutting down old DTLS connection.");
 	    dtls_shutdown_and_cleanup(&col->dtls_connection.dtls_replacement);
 	    col->dtls_connection.connect_time = time(NULL);
 	    ret = dtls_send_templates(exporter, col);
@@ -513,7 +514,7 @@ static int dtls_send_helper( ipfix_dtls_connection *con,
     /* Collect data form iovecs */
     for (i=0;i<iovcnt;i++) {
 	if (sendbufcur + iov[i].iov_len > sendbuf + maxsendbuflen) {
-	    msg(MSG_FATAL, "sendbuffer for dtls_send too small.");
+	    msg(LOG_CRIT, "sendbuffer for dtls_send too small.");
 	    return -1;
 	}
 	memcpy(sendbufcur,iov[i].iov_base,iov[i].iov_len);
@@ -525,12 +526,12 @@ static int dtls_send_helper( ipfix_dtls_connection *con,
 #ifdef DEBUG
     char buf[32];
     snprintf(buf,sizeof(buf),"SSL_write(%d bytes of data)",(int) (sendbufcur - sendbuf) );
-    msg_openssl_return_code(MSG_DEBUG,buf,len,error);
+    msg_openssl_return_code(LOG_INFO,buf,len,error);
 #endif
     switch (error) {
 	case SSL_ERROR_NONE:
 	    if (len!=sendbufcur - sendbuf) {
-		msg(MSG_FATAL, "len!=sendbuflen when calling SSL_write()");
+		msg(LOG_CRIT, "len!=sendbuflen when calling SSL_write()");
 		return -1;
 	    }
 	    return sendbufcur - sendbuf; /* SUCCESS */
@@ -540,9 +541,9 @@ static int dtls_send_helper( ipfix_dtls_connection *con,
 	    if (errno == EMSGSIZE) {
 		return -3;
 	    }
-	    /* fall through */
+	    __FALLTHROUGH__;
 	default:
-	    msg_openssl_return_code(MSG_ERROR,"SSL_write()",len,error);
+	    msg_openssl_return_code(LOG_ERR,"SSL_write()",len,error);
 	    dtls_fail_connection(con);
 	    return -2;
     }
@@ -582,7 +583,7 @@ int dtls_send_templates(ipfix_exporter *exporter, ipfix_receiving_collector *col
     ipfix_update_header(exporter, col,
 	exporter->template_sendbuffer);
     col->messages_sent++;
-    DPRINTF("Sending templates over DTLS.");
+    DPRINTF_INFO("Sending templates over DTLS.");
     return dtls_send(exporter,col,
 	exporter->template_sendbuffer->entries,
 	exporter->template_sendbuffer->current);
@@ -690,15 +691,15 @@ void ipfix_clear_dtls_certificate(ipfix_exporter_certificate *certificate) {
 int ipfix_set_dtls_certificate(ipfix_exporter_certificate *certificate,
 	const char *certificate_chain_file, const char *private_key_file) {
     if (certificate->ssl_ctx) {
-	msg(MSG_ERROR, "Too late to set certificate. SSL context already created.");
+	msg(LOG_ERR, "Too late to set certificate. SSL context already created.");
 	return -1;
     }
     if (certificate->certificate_chain_file) {
-	msg(MSG_ERROR, "Certificate can not be reset.");
+	msg(LOG_ERR, "Certificate can not be reset.");
 	return -1;
     }
     if ( ! certificate_chain_file) {
-	msg(MSG_ERROR, "ipfix_set_dtls_certificate called with bad parameters.");
+	msg(LOG_ERR, "ipfix_set_dtls_certificate called with bad parameters.");
 	return -1;
     }
     certificate->certificate_chain_file = strdup(certificate_chain_file);
@@ -728,11 +729,11 @@ int ipfix_set_dtls_certificate(ipfix_exporter_certificate *certificate,
  */
 int ipfix_set_ca_locations(ipfix_exporter_certificate *certificate, const char *ca_file, const char *ca_path) {
     if (certificate->ssl_ctx) {
-	msg(MSG_ERROR, "Too late to set CA locations. SSL context already created.");
+	msg(LOG_ERR, "Too late to set CA locations. SSL context already created.");
 	return -1;
     }
     if (certificate->ca_file || certificate->ca_path) {
-	msg(MSG_ERROR, "CA locations can not be reset.");
+	msg(LOG_ERR, "CA locations can not be reset.");
 	return -1;
     }
     if (ca_file) certificate->ca_file = strdup(ca_file);

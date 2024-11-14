@@ -109,7 +109,7 @@ Observer::Observer(const std::string& interface, bool offline, uint64_t maxpacke
 
 Observer::~Observer()
 {
-	msg(MSG_DEBUG, "Observer: destructor called");
+	msg(LOG_INFO, "Observer: destructor called");
 
 	// to make sure that exitFlag is set and performShutdown() is called
 	shutdown(false);
@@ -117,12 +117,12 @@ Observer::~Observer()
 	/* collect and output statistics */
 	pcap_stat pstats;
 	if (captureDevice && pcap_stats(captureDevice, &pstats)==0) {
-		msg(MSG_DIALOG, "PCAP statistics (INFO: if statistics were activated, this information does not contain correct data!):");
-		msg(MSG_DIALOG, "Number of packets received on interface: %u", pstats.ps_recv);
-		msg(MSG_DIALOG, "Number of packets dropped by PCAP: %u", pstats.ps_drop);
+		msg(LOG_WARNING, "PCAP statistics (INFO: if statistics were activated, this information does not contain correct data!):");
+		msg(LOG_WARNING, "Number of packets received on interface: %u", pstats.ps_recv);
+		msg(LOG_WARNING, "Number of packets dropped by PCAP: %u", pstats.ps_drop);
 	}
 
-	msg(MSG_DEBUG, "freeing pcap/devices");
+	msg(LOG_INFO, "freeing pcap/devices");
 	if(captureDevice) {
 		pcap_close(captureDevice);
 	}
@@ -136,7 +136,7 @@ Observer::~Observer()
 	free(captureInterface);
 	delete[] filter_exp;
 	if (fileName) { free(fileName); fileName = NULL; }
-	msg(MSG_DEBUG, "successful shutdown");
+	msg(LOG_INFO, "successful shutdown");
 }
 /*
  This is the main observer loop. It graps packets from libpcap and
@@ -155,22 +155,22 @@ void *Observer::observerThread(void *arg)
 	obs->registerCurrentThread();
 	bool file_eof = false;
 
-	msg(MSG_INFO, "Observer started with following parameters:");
-	msg(MSG_INFO, "  - readFromFile=%d", obs->readFromFile);
-	if (obs->fileName) msg(MSG_INFO, "  - fileName=%s", obs->fileName);
-	if (obs->captureInterface) msg(MSG_INFO, "  - captureInterface=%s", obs->captureInterface);
-	msg(MSG_INFO, "  - filterString='%s'", (obs->filter_exp ? obs->filter_exp : "none"));
-	msg(MSG_INFO, "  - maxPackets=%lu", obs->maxPackets);
-	msg(MSG_INFO, "  - capturelen=%d", obs->capturelen);
-	msg(MSG_INFO, " - dataLinkType=%d", obs->dataLinkType);
+	msg(LOG_NOTICE, "Observer started with following parameters:");
+	msg(LOG_NOTICE, "  - readFromFile=%d", obs->readFromFile);
+	if (obs->fileName) msg(LOG_NOTICE, "  - fileName=%s", obs->fileName);
+	if (obs->captureInterface) msg(LOG_NOTICE, "  - captureInterface=%s", obs->captureInterface);
+	msg(LOG_NOTICE, "  - filterString='%s'", (obs->filter_exp ? obs->filter_exp : "none"));
+	msg(LOG_NOTICE, "  - maxPackets=%lu", obs->maxPackets);
+	msg(LOG_NOTICE, "  - capturelen=%d", obs->capturelen);
+	msg(LOG_NOTICE, " - dataLinkType=%d", obs->dataLinkType);
 	if (obs->readFromFile) {
-		msg(MSG_INFO, "  - autoExit=%d", obs->autoExit);
-		msg(MSG_INFO, "  - stretchTime=%f", obs->stretchTime);
-		msg(MSG_INFO, "  - replaceTimestampsFromFile=%s", obs->replaceTimestampsFromFile==true?"true":"false");
+		msg(LOG_NOTICE, "  - autoExit=%d", obs->autoExit);
+		msg(LOG_NOTICE, "  - stretchTime=%f", obs->stretchTime);
+		msg(LOG_NOTICE, "  - replaceTimestampsFromFile=%s", obs->replaceTimestampsFromFile==true?"true":"false");
 	}
 
 	// start capturing packets
-	msg(MSG_INFO, "now running capturing thread for device %s", obs->captureInterface);
+	msg(LOG_NOTICE, "now running capturing thread for device %s", obs->captureInterface);
 
 
 	if(!obs->readFromFile) {
@@ -185,8 +185,8 @@ void *Observer::observerThread(void *arg)
 			int result = select(FD_SETSIZE, &fd_wait, NULL, NULL, &st);
 			if (result == -1) {
 				if (errno==EINTR) continue; // just continue on interrupted system call
-				msg(MSG_FATAL, "select() on pcap file descriptor returned -1, error: %s", strerror(errno));
-				msg(MSG_FATAL, "shutting down observer");
+				msg(LOG_CRIT, "select() on pcap file descriptor returned -1, error: %s", strerror(errno));
+				msg(LOG_CRIT, "shutting down observer");
 				break;
 			}
 			if (result == 0) {
@@ -200,12 +200,12 @@ void *Observer::observerThread(void *arg)
 			 that can act as a via LD_PRELOAD used overlay function.
 			 unfortunately I don't have an URL ready -Freek
 			 */
-			DPRINTFL(MSG_VDEBUG, "trying to get packet from pcap");
+			DPRINTF_DEBUG( "trying to get packet from pcap");
 			pcapData = pcap_next(obs->captureDevice, &packetHeader);
 			if(!pcapData)
 			/* no packet data was available */
 			continue;
-			DPRINTFL(MSG_VDEBUG, "got new packet!");
+			DPRINTF_DEBUG( "got new packet!");
 
 			// show current packet as c-structure on stdout
 			//for (unsigned int i=0; i<packetHeader.caplen; i++) {
@@ -217,7 +217,7 @@ void *Observer::observerThread(void *arg)
 			p = packetManager.getNewInstance();
 			p->init((char*)pcapData, packetHeader.caplen, packetHeader.ts, obs->observationDomainID, packetHeader.len, obs->dataLinkType);
 
-			DPRINTF("received packet at %u.%04u, len=%d",
+			DPRINTF_INFO("received packet at %u.%04u, len=%d",
 					(unsigned)p->timestamp.tv_sec,
 					(unsigned)p->timestamp.tv_usec / 1000,
 					packetHeader.caplen
@@ -228,9 +228,9 @@ void *Observer::observerThread(void *arg)
 			obs->processedPackets++;
 
 			while (!obs->exitFlag) {
-				DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
+				DPRINTF_DEBUG( "trying to push packet to queue");
 				if ((have_send = obs->send(p))) {
-					DPRINTFL(MSG_VDEBUG, "packet pushed");
+					DPRINTF_DEBUG( "packet pushed");
 					break;
 				}
 			}
@@ -254,19 +254,19 @@ void *Observer::observerThread(void *arg)
 		// read-from-file loop
 		while(!obs->exitFlag && (obs->maxPackets==0 || obs->processedPackets<obs->maxPackets)) {
 
-			DPRINTFL(MSG_VDEBUG, "trying to get packet from pcap file");
+			DPRINTF_DEBUG( "trying to get packet from pcap file");
 			pcapData=pcap_next(obs->captureDevice, &packetHeader);
 			if(!pcapData) {
 				/* no packet data was available */
 				if(feof(fh))
-				        msg(MSG_DIALOG, "Observer: reached end of file (%lu packets)", obs->processedPackets);
+				        msg(LOG_WARNING, "Observer: reached end of file (%lu packets)", obs->processedPackets);
                         file_eof = true;
       				break;
       			}
-			DPRINTFL(MSG_VDEBUG, "got new packet!");
+			DPRINTF_DEBUG( "got new packet!");
 			if (obs->stretchTime > 0) {
 				if (gettimeofday(&now, NULL) < 0) {
-					msg(MSG_FATAL, "Error gettimeofday: %s", strerror(errno));
+					msg(LOG_CRIT, "Error gettimeofday: %s", strerror(errno));
 					break;
 				}
 				if(firstPacket)
@@ -285,19 +285,19 @@ void *Observer::observerThread(void *arg)
 					}
 					else
 						delta_to_be = delta_file;
-					DPRINTF("delta_now %d.%d delta_to_be %d.%d", delta_now.tv_sec, delta_now.tv_usec,  delta_to_be.tv_sec, delta_to_be.tv_usec);
+					DPRINTF_INFO("delta_now %ld.%ld delta_to_be %ld.%ld", delta_now.tv_sec, delta_now.tv_usec,  delta_to_be.tv_sec, delta_to_be.tv_usec);
 					if(timercmp(&delta_now, &delta_to_be, <))
 					{
 						timersub(&delta_to_be, &delta_now, &wait_val);
 						wait_spec.tv_sec = wait_val.tv_sec;
 						wait_spec.tv_nsec = wait_val.tv_usec * 1000;
 						if(nanosleep(&wait_spec, NULL) != 0)
-							msg(MSG_INFO, "Observer: nanosleep returned nonzero value, errno=%u (%s)", errno, strerror(errno));
+							msg(LOG_NOTICE, "Observer: nanosleep returned nonzero value, errno=%u (%s)", errno, strerror(errno));
 					}
 					else if (delta_now.tv_sec > (delta_to_be.tv_sec + 1) && obs->stretchTime!=INFINITY)
 					    if (!obs->slowMessageShown) {
 					    	obs->slowMessageShown = true;
-					    	msg(MSG_ERROR, "Observer: reading from file is more than 1 second behind schedule!");
+					    	msg(LOG_ERR, "Observer: reading from file is more than 1 second behind schedule!");
 					    }
 				}
 			}
@@ -314,7 +314,7 @@ void *Observer::observerThread(void *arg)
 				packetHeader.ts, obs->observationDomainID, packetHeader.len, obs->dataLinkType);
 
 
-			DPRINTF("received packet at %u.%03u, len=%d",
+			DPRINTF_INFO("received packet at %u.%03u, len=%d",
 				(unsigned)p->timestamp.tv_sec,
 				(unsigned)p->timestamp.tv_usec / 1000,
 				packetHeader.caplen
@@ -325,9 +325,9 @@ void *Observer::observerThread(void *arg)
 			obs->processedPackets++;
 
 			while (!obs->exitFlag) {
-				DPRINTFL(MSG_VDEBUG, "trying to push packet to queue");
+				DPRINTF_DEBUG( "trying to push packet to queue");
 				if ((have_send = obs->send(p))) {
-					DPRINTFL(MSG_VDEBUG, "packet pushed");
+					DPRINTF_DEBUG( "packet pushed");
 					break;
 				}
 			}
@@ -336,11 +336,11 @@ void *Observer::observerThread(void *arg)
 
 	if (obs->autoExit && (file_eof || (obs->maxPackets && obs->processedPackets>=obs->maxPackets)) ) {
 		// notify Vermont to shut down
-		DPRINTF("notifying Vermont to shut down, as all PCAP file data was read, or maximum packet count was reached");
+		DPRINTF_INFO("notifying Vermont to shut down, as all PCAP file data was read, or maximum packet count was reached");
 		obs->shutdownVermont();
 	}
 
-	msg(MSG_DEBUG, "exiting observer thread");
+	msg(LOG_INFO, "exiting observer thread");
 	obs->unregisterCurrentThread();
 	pthread_exit((void *)1);
 }
@@ -365,48 +365,48 @@ bool Observer::prepare(const std::string& filter)
 
 	if (!readFromFile) {
 		// query all available capture devices
-		msg(MSG_INFO, "Finding devices");
+		msg(LOG_NOTICE, "Finding devices");
 		if(pcap_findalldevs(&allDevices, errorBuffer) == -1) {
-			msg(MSG_FATAL, "error getting list of interfaces: %s", errorBuffer);
+			msg(LOG_CRIT, "error getting list of interfaces: %s", errorBuffer);
 			goto out;
 		}
 
 		for(pcap_if_t *dev = allDevices; dev != NULL; dev=dev->next) {
-			msg(MSG_DEBUG, "PCAP: name=%s, desc=%s", dev->name, dev->description);
+			msg(LOG_INFO, "PCAP: name=%s, desc=%s", dev->name, dev->description);
 		}
 
-		msg(MSG_INFO,
+		msg(LOG_NOTICE,
 		    "pcap opening interface=%s, promisc=%d, snaplen=%d, timeout=%d",
 		    captureInterface, pcap_promisc, capturelen, pcap_timeout
 		   );
 		captureDevice=pcap_open_live(captureInterface, capturelen, pcap_promisc, pcap_timeout, errorBuffer);
 		// check for errors
 		if(!captureDevice) {
-			msg(MSG_FATAL, "Error initializing pcap interface: %s", errorBuffer);
+			msg(LOG_CRIT, "Error initializing pcap interface: %s", errorBuffer);
 			goto out1;
 		}
 
 		// make reads non-blocking
 		if(pcap_setnonblock(captureDevice, 1, errorBuffer) == -1) {
-			msg(MSG_FATAL, "Error setting pcap interface to non-blocking: %s", errorBuffer);
+			msg(LOG_CRIT, "Error setting pcap interface to non-blocking: %s", errorBuffer);
 			goto out2;
 		}
 
 		/* we need the netmask for the pcap_compile */
 		if(pcap_lookupnet(captureInterface, &network, &netmask, errorBuffer) == -1) {
-			msg(MSG_ERROR, "unable to determine netmask/network: %s", errorBuffer);
+			msg(LOG_ERR, "unable to determine netmask/network: %s", errorBuffer);
 			network=0;
 			netmask=0;
 		}
 		i_network.s_addr=network;
 		i_netmask.s_addr=netmask;
-		msg(MSG_DEBUG, "pcap seems to run on network %s", inet_ntoa(i_network));
-		msg(MSG_INFO, "pcap seems to run on netmask %s", inet_ntoa(i_netmask));
+		msg(LOG_INFO, "pcap seems to run on network %s", inet_ntoa(i_network));
+		msg(LOG_NOTICE, "pcap seems to run on netmask %s", inet_ntoa(i_netmask));
 	} else {
 		captureDevice=pcap_open_offline(fileName, errorBuffer);
 		// check for errors
 		if(!captureDevice) {
-			msg(MSG_FATAL, "Error opening pcap file %s: %s", fileName, errorBuffer);
+			msg(LOG_CRIT, "Error opening pcap file %s: %s", fileName, errorBuffer);
 			goto out1;
 		}
 
@@ -416,20 +416,20 @@ bool Observer::prepare(const std::string& filter)
 	dataLinkType = pcap_datalink(captureDevice);
 
 	if (filter_exp) {
-		msg(MSG_DEBUG, "compiling pcap filter code from: %s", filter_exp);
+		msg(LOG_INFO, "compiling pcap filter code from: %s", filter_exp);
 		if(pcap_compile(captureDevice, &pcap_filter, filter_exp, 1, netmask) == -1) {
-			msg(MSG_FATAL, "unable to validate+compile pcap filter");
+			msg(LOG_CRIT, "unable to validate+compile pcap filter");
 			goto out2;
 		}
 
 		if(pcap_setfilter(captureDevice, &pcap_filter) == -1) {
-			msg(MSG_FATAL, "unable to attach filter to pcap: %s", pcap_geterr(captureDevice));
+			msg(LOG_CRIT, "unable to attach filter to pcap: %s", pcap_geterr(captureDevice));
 			goto out3;
 		}
 		/* you may free an attached code, see man-page */
 		pcap_freecode(&pcap_filter);
 	} else {
-		msg(MSG_DEBUG, "using no pcap filter");
+		msg(LOG_INFO, "using no pcap filter");
 	}
 
 	ready=true;
@@ -473,24 +473,24 @@ void Observer::performStart()
 	if(!ready)
 		THROWEXCEPTION("Can't start capturing, observer is not ready");
 
-	msg(MSG_DEBUG, "now starting capturing thread");
+	msg(LOG_INFO, "now starting capturing thread");
 	thread.run(this);
 }
 
 void Observer::performShutdown()
 {
 	/* be sure the thread is ending */
-	msg(MSG_DEBUG, "joining the ObserverThread, may take a while (until next pcap data is received)");
+	msg(LOG_INFO, "joining the ObserverThread, may take a while (until next pcap data is received)");
 	connected.shutdown();
 	thread.join();
-	msg(MSG_DEBUG, "ObserverThread joined");
+	msg(LOG_INFO, "ObserverThread joined");
 }
 
 
 /* you cannot change the caplen of an already running observer */
 bool Observer::setCaptureLen(int x)
 {
-	msg(MSG_DEBUG, "Observer: setting capture length to %d bytes", x);
+	msg(LOG_INFO, "Observer: setting capture length to %d bytes", x);
 	/* we cant change pcap caplen if alredy pcap_open() called */
 	if(ready) {
 		THROWEXCEPTION("changing capture len on-the-fly is not supported by pcap");
@@ -527,7 +527,7 @@ void Observer::setOfflineSpeed(float m)
 		if((1 - stretchTimeInt * m) > 0.1)
 			stretchTimeInt = 0; // use float
 		else
-		    msg(MSG_INFO, "Observer: speed multiplier set to %f in order to allow integer multiplication.", 1.0/stretchTimeInt);
+		    msg(LOG_NOTICE, "Observer: speed multiplier set to %f in order to allow integer multiplication.", 1.0/stretchTimeInt);
 	}
 	else
 		stretchTimeInt = 0;
@@ -542,7 +542,7 @@ void Observer::setOfflineAutoExit(bool autoexit)
 bool Observer::setPacketTimeout(int ms)
 {
 	if(ready) {
-		msg(MSG_ERROR, "changing read timeout on-the-fly is not supported by pcap");
+		msg(LOG_ERR, "changing read timeout on-the-fly is not supported by pcap");
 		return false;
 	}
 	pcap_timeout=ms;

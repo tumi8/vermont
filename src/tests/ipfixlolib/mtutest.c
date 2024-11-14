@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 	int i;
 	ipfix_exporter *exporter;
 
-	msg_setlevel(MSG_VDEBUG);
+	msg_setlevel(LOG_DEBUG);
 
 	if (ipfix_init_exporter(IPFIX_PROTOCOL, OBSERVATION_DOMAIN_ID, &exporter)) {
 		fprintf(stderr, "ipfix_init_exporter() failed.\n");

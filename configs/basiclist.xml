@@ -1,0 +1,83 @@
+<ipfixConfig>
+	<observer id="1">
+                <interface>enp0s25</interface>
+                <pcap_filter>ip</pcap_filter>
+		<next>2</next>
+	</observer>
+
+	<packetQueue id="2">
+		<maxSize>10</maxSize>
+		<next>6</next>
+	</packetQueue>
+
+	<packetAggregator id="6">
+		<rule>
+			<templateId>998</templateId>
+			<flowKey>
+				<ieName>sourceIPv4Address</ieName>
+				<autoAddV4PrefixLength>false</autoAddV4PrefixLength>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationIPv4Address</ieName>
+				<autoAddV4PrefixLength>false</autoAddV4PrefixLength>
+			</flowKey>
+			<flowKey>
+				<ieName>protocolIdentifier</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>sourceTransportPort</ieName>
+			</flowKey>
+			<flowKey>
+				<ieName>destinationTransportPort</ieName>
+			</flowKey>
+
+			<nonFlowKey>
+				<ieName>flowStartMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>flowEndMilliSeconds</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>octetDeltaCount</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>packetDeltaCount</ieName>
+			</nonFlowKey>
+            <nonFlowKey>
+                <ieName>basicList</ieName>
+                <semantic>ordered</semantic>
+                <fieldIeName>totalLengthIPv4</fieldIeName>
+            </nonFlowKey>
+			<nonFlowKey>
+				<ieName>tcpControlBits</ieName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>basicList</ieName>
+				<semantic>ordered</semantic>
+				<fieldIeName>tcpControlBits</fieldIeName>
+			</nonFlowKey>
+			<nonFlowKey>
+				<ieName>basicList</ieName>
+				<semantic>ordered</semantic>
+				<fieldIeName>destinationIPv4Address</fieldIeName>
+			</nonFlowKey>
+		</rule>
+		<expiration>
+			<inactiveTimeout unit="sec">5</inactiveTimeout>
+			<activeTimeout unit="sec">5</activeTimeout>
+		</expiration>
+		<pollInterval unit="msec">1000</pollInterval>
+        <next>9</next>
+	</packetAggregator>
+
+	<ipfixExporter id="8">
+		<collector>
+			<ipAddress>127.0.0.1</ipAddress>
+			<transportProtocol>17</transportProtocol>
+			<port>1500</port>
+		</collector>
+	</ipfixExporter>
+
+    <ipfixPrinter id="9">
+	</ipfixPrinter>
+</ipfixConfig>

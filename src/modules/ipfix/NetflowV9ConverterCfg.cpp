@@ -46,7 +46,7 @@ NetflowV9ConverterCfg::NetflowV9ConverterCfg(XMLElement* elem)
 			keepFlowSysUpTime = getBool("keepFlowSysUpTime");
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown NetflowV9Converter config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown NetflowV9Converter config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}

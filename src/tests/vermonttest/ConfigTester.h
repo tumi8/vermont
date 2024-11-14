@@ -9,12 +9,14 @@
 class ConfigTester : public Test
 {
 public:
-	ConfigTester();
+	ConfigTester(std::string config_dir);
 	~ConfigTester();
 	virtual TestResult execTest();
 
 private:
+	void test_Rules_parseProtoPattern();
 	void testConfig(const std::string& configFile);
+	std::string config_dir;
 	std::vector<std::string> configFiles;
 };
 

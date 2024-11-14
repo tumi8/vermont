@@ -71,7 +71,7 @@ void Rule::initialize()
 		if (f->type.enterprise == 0 && f->type.id == IPFIX_TYPEID_protocolIdentifier) {
 			// small exception: if protocol id is inside the template, we assume that all types of protocols are valid
 			validProtocols = Packet::ALL;
-			msg(MSG_INFO, "IPFIX IE protocolIdentifier is contained in template %hu, accepting all protocol types for this template", id);
+			msg(LOG_NOTICE, "IPFIX IE protocolIdentifier is contained in template %hu, accepting all protocol types for this template", id);
 		}
 		validProtocols = Packet::IPProtocolType(validProtocols | f->type.getValidProtocols());
 	}
@@ -79,7 +79,7 @@ void Rule::initialize()
 		THROWEXCEPTION("received unknown field type, no valid protocol match");
 	}
 
-	DPRINTF("valid protocols for this template: %02X", validProtocols);
+	DPRINTF_INFO("valid protocols for this template: %02X", validProtocols);
 
 	// write all rules containing a pattern to be matched for in array
 	patternFields = new Rule::Field*[fieldCount];
@@ -145,7 +145,7 @@ uint8_t getIPv4IMask(const InformationElement::IeInfo* type, const IpfixRecord::
 	if (type->length == 1) return 24;
 	if (type->length == 0) return 32;
 
-	msg(MSG_FATAL, "Invalid IPv4 address length: %d", type->length);
+	msg(LOG_CRIT, "Invalid IPv4 address length: %d", type->length);
 	return 0;
 }
 
@@ -209,7 +209,7 @@ int matchesPortPattern(const InformationElement::IeInfo* dataType, const IpfixRe
 		return 1;
 	}
 
-	msg(MSG_FATAL, "matching port of length %d with pattern of length %d not supported",
+	msg(LOG_CRIT, "matching port of length %d with pattern of length %d not supported",
 	    dataType->length, patternType->length);
 	return 0;
 }
@@ -417,30 +417,8 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 				continue;
 			}
 
-			/* Probably, this does not lead to the desired result:
-			if (biflowAggregation) {
-				// check if the rule field as a corresponding type in opposite direction
-				InformationElement::IeId oppDirIeId = InformationElement::oppositeDirectionIeId(ruleField->type);
-				if(oppDirIeId) {
-					recordField = dataTemplateInfo->getFieldInfo(oppDirIeId, ruleField->type.enterprise);
-					if (recordField) {
-						// corresponding data field found, check if it matches. If it doesn't the whole rule cannot be matched
-						if (!matchesPattern(&recordField->type, (recordData + recordField->offset), &ruleField->type, ruleField->pattern)) return 0;
-						if ((ruleField->type.enterprise == 0) && (ruleField->type.length == 5)) {
-							if (oppDirIeId == IPFIX_TYPEID_sourceIPv4Address) {
-								if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4PrefixLength, 0), recordData, ruleField)) return 0;
-							} else if (oppDirIeId == IPFIX_TYPEID_destinationIPv4Address) {
-								if(!checkMask(dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4PrefixLength, 0), recordData, ruleField)) return 0;
-							}
-						}
-						continue;
-					}
-				}
-			}
-			*/
-
 			/* no corresponding data field or fixed data field found, this flow cannot match */
-			msg(MSG_VDEBUG, "No corresponding DataDataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
+			DPRINTF_INFO("No corresponding DataDataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
 			return 0;
 		}
 		/* if a non-discarding rule field specifies no pattern, check at least if the data field exists */
@@ -459,7 +437,7 @@ int Rule::dataRecordMatches(IpfixDataRecord* record) {
 			if (ruleField->type==InformationElement::IeInfo(IPFIX_ETYPEID_anonymisationType, IPFIX_PEN_vermont))
 				continue;
 
-			msg(MSG_INFO, "No corresponding DataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
+			DPRINTF_INFO("No corresponding DataRecord field for RuleField of type %s", ruleField->type.toString().c_str());
 			return 0;
 		}
 	}

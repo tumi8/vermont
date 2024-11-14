@@ -117,14 +117,34 @@ void PacketHashtable::copyDataNanoseconds(CopyFuncParameters* cfp)
 	uint64_t ntptime;
 	ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(cfp->src));
 	uint64_t ntp2 = htonll(ntptime);
-	DPRINTFL(MSG_VDEBUG, "ntp2: %llu, ntptime/ntp2 %llX/%llX", ntp2, ntptime, ntp2);
+	DPRINTF_DEBUG( "ntp2: %" PRIu64 ", ntptime/ntp2 %" PRIu64 "/%" PRIu64, ntp2, ntptime, ntp2);
 	memcpy(cfp->dst+efd->dstIndex, &ntp2, sizeof(ntp2));
 #ifdef DEBUG
 	if (ntohll(*(uint64_t*)(cfp->dst+efd->dstIndex))<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)(cfp->dst+efd->dstIndex))>(1300000000ULL+(2208988800ULL<<32))) {
-		DPRINTFL(MSG_VDEBUG, "time before: %ds", reinterpret_cast<const struct timeval*>(cfp->src)->tv_sec);
-		DPRINTFL(MSG_VDEBUG, "copy invalid end nano seconds: %lld s (%llX)", (ntohll(*(uint64_t*)(cfp->dst+efd->dstIndex))>>32)-2208988800U, *(uint64_t*)(cfp->dst+efd->dstIndex));
+		DPRINTF_DEBUG( "time before: %lds", reinterpret_cast<const struct timeval*>(cfp->src)->tv_sec);
+		DPRINTF_DEBUG( "copy invalid end nano seconds: %" PRIu64 " s (%" PRIu64 ")", (ntohll(*(uint64_t*)(cfp->dst+efd->dstIndex))>>32)-2208988800U, *(uint64_t*)(cfp->dst+efd->dstIndex));
 	}
 #endif
+}
+void PacketHashtable::copyDataBasicList(CopyFuncParameters* cfp)
+{
+	ExpFieldData* efd = cfp->efd;
+	IpfixRecord::Data* dst = cfp->dst+efd->dstIndex;
+	vector<void*>** listPtrPtr = (vector<void*>**) dst;
+	size_t len = efd->typeSpecData.basicList->fieldIe->length;
+
+	// Initialize vector
+	if (*listPtrPtr == NULL) {
+		*listPtrPtr = new vector<void*>;
+	} else {
+		THROWEXCEPTION("basicList vector was initially not NULL.");
+	}
+
+	// Is called to insert first element
+	void* toInsert = malloc(len);
+	memcpy(toInsert, cfp->src, len);
+
+	(*listPtrPtr)->push_back((void*) toInsert);
 }
 void PacketHashtable::copyDataTransportOctets(CopyFuncParameters* cfp)
 {
@@ -138,14 +158,16 @@ void PacketHashtable::copyDataTransportOctets(CopyFuncParameters* cfp)
 	switch (cfp->packet->ipProtocolType) {
 		case Packet::TCP:
 			ppd = reinterpret_cast<PayloadPrivateData*>(cfp->dst+cfp->efd->privDataOffset);
-			ppd->seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data.netHeader+p->transportHeaderOffset+4))+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
+			uint32_t hu32_data;
+			memcpy(&hu32_data, p->data.netHeader+p->transportHeaderOffset+4, sizeof(hu32_data));
+			ppd->seq = hu32_data+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
 			ppd->initialized = true;
 			break;
 
 		default:
 			break;
 	}
-	DPRINTFL(MSG_VDEBUG, "%s=%llu, ppd->seq=%u", cfp->efd->typeId.toString().c_str(), ntohll(*reinterpret_cast<uint64_t*>(cfp->dst+cfp->efd->dstIndex)), ntohl(ppd->seq));
+	DPRINTF_DEBUG( "%s=%" PRIu64 ", ppd->seq=%" PRIu32, cfp->efd->typeId.toString().c_str(), ntohll(*reinterpret_cast<uint64_t*>(cfp->dst+cfp->efd->dstIndex)), ntohl(ppd->seq));
 }
 
 /**
@@ -157,7 +179,7 @@ void PacketHashtable::copyDataTransportOctets(CopyFuncParameters* cfp)
 void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, HashtableBucket* hbucket, const Packet* src,
 		const ExpFieldData* efd, bool firstpacket, bool onlyinit)
 {
-	DPRINTFL(MSG_VDEBUG, "called (%s, %hhu, %hhu)", efd->typeId.toString().c_str(), firstpacket, onlyinit);
+	DPRINTF_DEBUG( "called (%s, %d, %d)", efd->typeId.toString().c_str(), firstpacket, onlyinit);
 	PayloadPrivateData* ppd = reinterpret_cast<PayloadPrivateData*>(bucket+efd->privDataOffset);
 
 	if (onlyinit) {
@@ -173,36 +195,37 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, Hashtable
 	if (efd->typeSpecData.frontPayload.dpa && plen>0) {
 		DpaPrivateData* dpd = reinterpret_cast<DpaPrivateData*>(bucket+efd->typeSpecData.frontPayload.dpaPrivDataOffset);
 		bool revdir = efd->typeId.isReverseField();
-		DPRINTFL(MSG_VDEBUG, "pkt revdir=%hhu, plen=%u, datarecv=%hhu, dpd=%u, buckdata=%X, dparevstartoffset=%u\n", revdir, plen, dpd->datarecv, dpd, bucket, efd->typeSpecData.frontPayload.dpaRevStartOffset);
+		DPRINTF_DEBUG( "pkt revdir=%d, plen=%u, datarecv=%d, dpd=%p, buckdata=%p, dparevstartoffset=%" PRIu32 "\n", revdir, plen, dpd->datarecv, dpd, bucket, efd->typeSpecData.frontPayload.dpaRevStartOffset);
 		if (!dpd->datarecv) {
 			// first time we receive data!
 			dpd->revstart = revdir;
 			if (efd->typeSpecData.frontPayload.dpaRevStartOffset != ExpHelperTable::UNUSED)
 				*reinterpret_cast<uint8_t*>(bucket+efd->typeSpecData.frontPayload.dpaRevStartOffset) = revdir;
 			dpd->datarecv = true;
-			DPRINTFL(MSG_DEBUG, "1. revstart=%hhu\n", revdir);
+			DPRINTF_INFO("1. revstart=%d\n", revdir);
 		} else if ((revdir && !dpd->revstart) || (!revdir && dpd->revstart)) {
 			// we are now in other direction
 			dpd->revdata = true;
-			DPRINTFL(MSG_DEBUG, "2. revdata=%hhu\n", dpd->revdata);
+			DPRINTF_INFO("2. revdata=%d\n", dpd->revdata);
 		} else if (dpd->revdata && ((dpd->revstart && revdir) || (!dpd->revstart && !revdir))) {
 			// this flow *must* be exported!
-			DPRINTFL(MSG_DEBUG, "3. export");
+			DPRINTF_INFO("3. export");
 			if (efd->typeSpecData.frontPayload.dpaForcedExportOffset != ExpHelperTable::UNUSED)
 				*reinterpret_cast<uint8_t*>(bucket+efd->typeSpecData.frontPayload.dpaForcedExportOffset) = 1;
 			assert(hbucket!=NULL);
 			hbucket->forceExpiry = true;
 			return;
 		} else {
-			DPRINTFL(MSG_DEBUG, "4. okdata");
+			DPRINTF_INFO("4. okdata");
 		}
 	}
 
 	IpfixRecord::Data* dst = bucket+efd->dstIndex;
 	uint32_t seq = 0;
-	if (src->ipProtocolType==Packet::TCP)
-		seq = ntohl(*reinterpret_cast<const uint32_t*>(src->data.netHeader+src->transportHeaderOffset+4));
-	DPRINTFL(MSG_VDEBUG, "seq:%u, len:%u, udp:%u", seq, ppd->byteCount, src->ipProtocolType==Packet::UDP);
+	if (src->ipProtocolType==Packet::TCP) {
+		memcpy(&seq, src->data.netHeader+src->transportHeaderOffset+4, sizeof(uint32_t));
+	}
+	DPRINTF_DEBUG( "seq:%u, len:%u, udp:%u", seq, ppd->byteCount, src->ipProtocolType==Packet::UDP);
 
 	if (firstpacket || !ppd->initialized) {
 		if (src->ipProtocolType==Packet::TCP && src->data.netHeader[src->transportHeaderOffset+13] & 0x02) {
@@ -223,13 +246,13 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, Hashtable
 			uint32_t fseq = ppd->seq;
 			uint32_t fpos = ppd->byteCount;
 
-			DPRINTFL(MSG_VDEBUG, "plen:%u, fseq:%u, seq:%u, dstleng:%u", plen, fseq, seq, efd->dstLength);
+			DPRINTF_DEBUG( "plen:%u, fseq:%u, seq:%u, dstleng:%u", plen, fseq, seq, efd->dstLength);
 
 			if (seq-fseq<efd->dstLength) {
 				uint32_t pos = (seq!=0 ? seq-fseq : fpos);
 				uint32_t len = efd->dstLength-pos;
 				if (plen<len) len = plen;
-				DPRINTFL(MSG_VDEBUG, "inserting payload data at %u with length %u", pos, len);
+				DPRINTF_DEBUG( "inserting payload data at %u with length %u", pos, len);
 				memcpy(dst+pos, src->data.netHeader+src->payloadOffset, len);
 				uint32_t maxpos = pos+len;
 				if (*pfplen<maxpos) *pfplen = maxpos;
@@ -246,7 +269,7 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, Hashtable
 			if (*pfplen<efd->dstLength) {
 				uint32_t len = efd->dstLength-*pfplen;
 				if (plen<len) len = plen;
-				DPRINTFL(MSG_VDEBUG, "inserting payload data at %u with length %u", *pfplen, len);
+				DPRINTF_DEBUG( "inserting payload data at %u with length %u", *pfplen, len);
 				memcpy(dst+(*pfplen), src->data.netHeader+src->payloadOffset, len);
 				*pfplen += len;
 
@@ -260,7 +283,7 @@ void PacketHashtable::aggregateFrontPayload(IpfixRecord::Data* bucket, Hashtable
 		}
 	}
 
-	DPRINTFL(MSG_VDEBUG, "new fplength: %u", *reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4));
+	DPRINTF_DEBUG( "new fplength: %u", *reinterpret_cast<uint32_t*>(bucket+efd->privDataOffset+4));
 }
 
 
@@ -292,6 +315,7 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 				case IPFIX_TYPEID_sourceTransportPort:
 				case IPFIX_TYPEID_destinationTransportPort:
 				case IPFIX_TYPEID_icmpTypeCodeIPv4:
+				case IPFIX_TYPEID_totalLengthIPv4:
 					if (efd->dstLength != 2) {
 						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
 					}
@@ -346,6 +370,9 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 					if (efd->dstLength < 1 || efd->dstLength > 2) {
 						THROWEXCEPTION("unsupported length %d for type %s", efd->dstLength, efd->typeId.toString().c_str());
 					}
+					break;
+
+				case IPFIX_TYPEID_basicList:
 					break;
 
 				default:
@@ -415,6 +442,8 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 	} else if (efd->typeId == IeInfo(IPFIX_TYPEID_flowStartNanoseconds, 0) ||
 			efd->typeId == IeInfo(IPFIX_TYPEID_flowEndNanoseconds, 0)) {
 		return copyDataNanoseconds;
+	} else if (efd->typeId == IeInfo(IPFIX_TYPEID_basicList, 0)) {
+		return copyDataBasicList;
 	} else if (efd->typeId.enterprise & IPFIX_PEN_reverse) {
 		// ATTENTION: we treat all reverse elements the same: we set them to zero
 		return copyDataSetZero;
@@ -439,7 +468,7 @@ void (*PacketHashtable::getCopyDataFunction(const ExpFieldData* efd))(CopyFuncPa
 			return copyDataGreaterLengthNoMod;
 		}
 	} else {
-		THROWEXCEPTION("target buffer too small. Expected buffer %s of length %d", efd->typeId.toString().c_str(), efd->srcLength);
+		THROWEXCEPTION("target buffer too small. Expected buffer %s of length %d, but got %d", efd->typeId.toString().c_str(), efd->srcLength, efd->dstLength);
 	}
 
 	THROWEXCEPTION("this line should never be reached");
@@ -464,6 +493,7 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
 			case IPFIX_TYPEID_destinationTransportPort:
 			case IPFIX_TYPEID_octetDeltaCount:
 			case IPFIX_TYPEID_octetTotalCount:
+			case IPFIX_TYPEID_totalLengthIPv4:
 				return 2;
 
 			case IPFIX_TYPEID_flowStartSeconds:
@@ -536,7 +566,12 @@ uint8_t PacketHashtable::getRawPacketFieldLength(const IeInfo& type)
  * @param p pointer to raw packet
  * @returns offset (in bytes) at which the data for the given field is located in the raw packet
  */
-int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packet* p)
+ int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packet* p)
+ {
+	 return getRawPacketFieldOffset(type, p, NULL);
+ }
+
+int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packet* p, const ExpFieldData::TypeSpecificData* typeSpecData)
 {
 	if (type.enterprise==0 || type.enterprise==IPFIX_PEN_reverse) {
 		switch (type.id) {
@@ -570,6 +605,7 @@ int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packe
 
 			case IPFIX_TYPEID_octetDeltaCount:
 			case IPFIX_TYPEID_octetTotalCount:
+			case IPFIX_TYPEID_totalLengthIPv4:
 				return 2;
 				break;
 
@@ -592,14 +628,14 @@ int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packe
 				if(p->ipProtocolType == Packet::ICMP) {
 					return p->transportHeader + 0 - p->data.netHeader;
 				} else {
-					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d", type.toString().c_str(), p->ipProtocolType, Packet::ICMP);
+					DPRINTF_DEBUG( "given id is %s, protocol is %d, but expected was %d", type.toString().c_str(), p->ipProtocolType, Packet::ICMP);
 				}
 				break;
 			case IPFIX_TYPEID_sourceTransportPort:
 				if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
 					return p->transportHeader + 0 - p->data.netHeader;
 				} else {
-					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d or %d", type.toString().c_str(), p->ipProtocolType, Packet::UDP, Packet::TCP);
+					DPRINTF_DEBUG( "given id is %s, protocol is %d, but expected was %d or %d", type.toString().c_str(), p->ipProtocolType, Packet::UDP, Packet::TCP);
 				}
 				break;
 
@@ -607,7 +643,7 @@ int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packe
 				if((p->ipProtocolType == Packet::TCP) || (p->ipProtocolType == Packet::UDP)) {
 					return p->transportHeader + 2 - p->data.netHeader;
 				} else {
-					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d or %d", type.toString().c_str(), p->ipProtocolType, Packet::UDP, Packet::TCP);
+					DPRINTF_DEBUG( "given id is %s, protocol is %d, but expected was %d or %d", type.toString().c_str(), p->ipProtocolType, Packet::UDP, Packet::TCP);
 				}
 				break;
 
@@ -621,9 +657,15 @@ int32_t PacketHashtable::getRawPacketFieldOffset(const IeInfo& type, const Packe
 						THROWEXCEPTION("unsupported length %d for type %d", type.length, type.id);
 					}
 				} else {
-					DPRINTFL(MSG_VDEBUG, "given id is %s, protocol is %d, but expected was %d", type.toString().c_str(), p->ipProtocolType, Packet::TCP);
+					DPRINTF_DEBUG( "given id is %s, protocol is %d, but expected was %d", type.toString().c_str(), p->ipProtocolType, Packet::TCP);
 				}
 				break;
+
+			case IPFIX_TYPEID_basicList:
+				// Find offset for field inside basicList
+				return getRawPacketFieldOffset(*typeSpecData->basicList->fieldIe, p);
+				break;
+
 			default:
 				THROWEXCEPTION("PacketHashtable: raw id offset into packet header for typeid %s is unkown, failed to determine raw packet offset", type.toString().c_str());
 				break;
@@ -669,6 +711,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
 				case IPFIX_TYPEID_ipClassOfService:
 				case IPFIX_TYPEID_bgpSourceAsNumber:
 				case IPFIX_TYPEID_bgpDestinationAsNumber:
+				case IPFIX_TYPEID_totalLengthIPv4:
 					return false;
 
 				case IPFIX_TYPEID_icmpTypeCodeIPv4:
@@ -677,6 +720,7 @@ bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
 				case IPFIX_TYPEID_tcpControlBits:
 				case IPFIX_TYPEID_sourceMacAddress:
 				case IPFIX_TYPEID_destinationMacAddress:
+				case IPFIX_TYPEID_basicList:
 					return true;
 			}
 			break;
@@ -710,19 +754,26 @@ bool PacketHashtable::isRawPacketPtrVariable(const IeInfo& type)
  */
 void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInfo* hfi, Rule::Field::Modifier fieldModifier, uint16_t index)
 {
-	DPRINTFL(MSG_VDEBUG, "called for type id %s", hfi->type.toString().c_str());
+	DPRINTF_DEBUG( "called for type id %s", hfi->type.toString().c_str());
 	efd->typeId = hfi->type;
 	efd->dstIndex = hfi->offset;
-	efd->dstLength = hfi->type.length;
-	efd->srcLength = getRawPacketFieldLength(hfi->type);
 	efd->modifier = fieldModifier;
-	efd->varSrcIdx = isRawPacketPtrVariable(hfi->type);
+
+	IeInfo ie = hfi->type;
+	if (hfi->type == IeInfo(IPFIX_TYPEID_basicList, 0)) {
+		efd->typeSpecData.basicList = &hfi->basicListData;
+		ie = *efd->typeSpecData.basicList->fieldIe;
+	}
+
+	efd->dstLength = ie.length;
+	efd->srcLength = getRawPacketFieldLength(ie);
+	efd->varSrcIdx = isRawPacketPtrVariable(ie);
 	efd->privDataOffset = hfi->privDataOffset;
 
 	// initialize static source index, if current field does not have a variable pointer
 	if (!efd->varSrcIdx) {
 		Packet p; // not good: create temporary packet just for initializing our optimization structure
-		efd->srcIndex = getRawPacketFieldOffset(hfi->type, &p);
+		efd->srcIndex = getRawPacketFieldOffset(ie, &p, &efd->typeSpecData);
 	}
 
 	// special case for masked IPs: those contain variable pointers, if they are masked
@@ -753,18 +804,18 @@ void PacketHashtable::fillExpFieldData(ExpFieldData* efd, TemplateInfo::FieldInf
 
 	// set data efd field to the offset of IPFIX_ETYPEID_frontPayloadPktCount for front payload
 	if (efd->typeId==IeInfo(IPFIX_ETYPEID_frontPayload, IPFIX_PEN_vermont)) {
-		*reinterpret_cast<uint32_t*>(efd->data) = ExpHelperTable::UNUSED;
+		memcpy(efd->data, &ExpHelperTable::UNUSED, sizeof(ExpHelperTable::UNUSED));
 		for (int i=0; i<dataTemplate->fieldCount; i++) {
 			TemplateInfo::FieldInfo* hfi = &dataTemplate->fieldInfo[i];
 			if (hfi->type==IeInfo(IPFIX_ETYPEID_frontPayloadPktCount, IPFIX_PEN_vermont)) {
-				*reinterpret_cast<uint32_t*>(efd->data) = hfi->offset;
+				memcpy(efd->data, &hfi->offset, sizeof(hfi->offset));
 			}
 		}
 	}
 
 	// mark field as variable, if needed
 	if (efd->varSrcIdx)	{
-		DPRINTF("marking type id %s as variable source pointer", efd->typeId.toString().c_str());
+		DPRINTF_INFO("marking type id %s as variable source pointer", efd->typeId.toString().c_str());
 		expHelperTable.varSrcPtrFields[expHelperTable.noVarSrcPtrFields++] = efd;
 	}
 
@@ -801,6 +852,8 @@ bool PacketHashtable::typeAvailable(const IeInfo& type)
 				case IPFIX_TYPEID_tcpControlBits:
 				case IPFIX_TYPEID_bgpSourceAsNumber:
 				case IPFIX_TYPEID_bgpDestinationAsNumber:
+				case IPFIX_TYPEID_totalLengthIPv4:
+				case IPFIX_TYPEID_basicList:
 					return true;
 			}
 			break;
@@ -891,15 +944,15 @@ void PacketHashtable::buildExpHelperTable()
 			THROWEXCEPTION("Type %s is not contained in raw packet. Please remove it from PacketAggregator rule.", hfi->type.toString().c_str());
 		}
 		if (!isToBeAggregated(hfi->type)) continue;
-		DPRINTF("including type %s.", hfi->type.toString().c_str());
+		DPRINTF_INFO("including type %s.", hfi->type.toString().c_str());
 		ExpFieldData* efd = &expHelperTable.aggFields[expHelperTable.noAggFields++];
 		fillExpFieldData(efd, hfi, fieldModifier[i], expHelperTable.noAggFields-1);
 		if (hfi->type==IeInfo(IPFIX_ETYPEID_dpaForcedExport, IPFIX_PEN_vermont)) {
-			msg(MSG_INFO, "activated dialog-based payload aggregation");
+			msg(LOG_NOTICE, "activated dialog-based payload aggregation");
 			expHelperTable.useDPA = true;
 		}
 	}
-	DPRINTF("got %u aggregated fields", expHelperTable.noAggFields);
+	DPRINTF_INFO("got %u aggregated fields", expHelperTable.noAggFields);
 
 	// now the key fields
 	expHelperTable.noKeyFields = 0;
@@ -910,7 +963,7 @@ void PacketHashtable::buildExpHelperTable()
 		fillExpFieldData(efd, hfi, fieldModifier[i], expHelperTable.noKeyFields-1);
 		expkey2field.push_back(i);
 	}
-	DPRINTF("got %u key fields", expHelperTable.noKeyFields);
+	DPRINTF_INFO("got %u key fields", expHelperTable.noKeyFields);
 
 	// reversed aggregatable fields
 
@@ -937,7 +990,7 @@ void PacketHashtable::buildExpHelperTable()
 		fillExpFieldData(efd, &dataTemplate->fieldInfo[i], fieldModifier[i], expHelperTable.noRevAggFields-1);
 		hfi.type.enterprise |= IPFIX_PEN_reverse;
 	}
-	DPRINTF("got %u reverse aggregated fields", expHelperTable.noRevAggFields);
+	DPRINTF_INFO("got %u reverse aggregated fields", expHelperTable.noRevAggFields);
 
 	// build helper structure for mapping key fields to their reversed elements
 	if (biflowAggregation) {
@@ -946,10 +999,10 @@ void PacketHashtable::buildExpHelperTable()
 			vector<uint16_t>::iterator fit = find(expkey2field.begin(), expkey2field.end(), fid);
 			if (fit==expkey2field.end()) THROWEXCEPTION("Error when calculating biflow table. This should not happen. (DOH!)");
 			expHelperTable.revKeyFieldMapper[i] = &expHelperTable.keyFields[fit-expkey2field.begin()];
-			DPRINTF("mapping key exph id %hu to id %hu", fit-expkey2field.begin(), i);
+			DPRINTF_INFO("mapping key exph id %zu to id %" PRIu32, fit-expkey2field.begin(), i);
 		}
 	}
-	DPRINTF("got %u fields with variable source pointers", expHelperTable.noVarSrcPtrFields);
+	DPRINTF_INFO("got %u fields with variable source pointers", expHelperTable.noVarSrcPtrFields);
 
 	// insert all fields in one array for fast processing
 	for (uint32_t i=0; i<expHelperTable.noAggFields; i++) {
@@ -1016,7 +1069,7 @@ uint32_t PacketHashtable::calculateHash(const IpfixRecord::Data* data)
 	uint32_t hash = 0xAAAAAAAA;
 	for (int i=0; i<expHelperTable.noKeyFields; i++) {
 		ExpFieldData* efd = &expHelperTable.keyFields[i];
-		DPRINTFL(MSG_VDEBUG, "hash for i=%u, typeid=%s, srcpointer=%X", i, efd->typeId.toString().c_str(),
+		DPRINTF_DEBUG( "hash for i=%u, typeid=%s, length=%u srcpointer=%p", i, efd->typeId.toString().c_str(),
 				efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 		hash = crc32(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 	}
@@ -1031,7 +1084,7 @@ uint32_t PacketHashtable::calculateHashRev(const IpfixRecord::Data* data)
 	uint32_t hash = 0xAAAAAAAA;
 	for (int i=0; i<expHelperTable.noKeyFields; i++) {
 		ExpFieldData* efd = expHelperTable.revKeyFieldMapper[i];
-		DPRINTFL(MSG_VDEBUG, "hashrev for i=%u, typeid=%s, length=%u, srcpointer=%X", i,
+		DPRINTF_DEBUG( "hashrev for i=%u, typeid=%s, length=%u, srcpointer=%p", i,
 				efd->typeId.toString().c_str(), efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 		hash = crc32(hash, efd->srcLength, reinterpret_cast<const char*>(data)+efd->srcIndex);
 	}
@@ -1047,7 +1100,7 @@ boost::shared_array<IpfixRecord::Data> PacketHashtable::buildBucketData(Packet* 
 	// new field for insertion into hashtable
 	boost::shared_array<IpfixRecord::Data> htdata(new IpfixRecord::Data[fieldLength+privDataLength]);
 	IpfixRecord::Data* data = htdata.get();
-	//msg(MSG_INFO, "fieldLength=%u, privDataLength=%u, bucketdata=%X\n", fieldLength, privDataLength, data);
+	//msg(LOG_NOTICE, "fieldLength=%u, privDataLength=%u, bucketdata=%X\n", fieldLength, privDataLength, data);
 	bzero(data, fieldLength+privDataLength);
 	CopyFuncParameters cfp;
 
@@ -1089,10 +1142,12 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 			switch (p->ipProtocolType) {
 				case Packet::TCP:
 					ppd = reinterpret_cast<PayloadPrivateData*>(data+efd->privDataOffset);
-					seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data.netHeader+p->transportHeaderOffset+4));
+					memcpy(&seq, p->data.netHeader+p->transportHeaderOffset+4, sizeof(uint32_t));
 
 					if (!ppd->initialized) {
-						ppd->seq = ntohl(*reinterpret_cast<const uint32_t*>(p->data.netHeader+p->transportHeaderOffset+4))+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
+						uint32_t hu32_data;
+						memcpy(&hu32_data, p->data.netHeader+p->transportHeaderOffset+4, sizeof(hu32_data));
+						ppd->seq = hu32_data+plen+(p->data.netHeader[p->transportHeaderOffset+13] & 0x02 ? 1 : 0);
 
 						*reinterpret_cast<uint64_t*>(baseData) = htonll(plen);
 						ppd->initialized = true;
@@ -1106,16 +1161,16 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						*reinterpret_cast<uint64_t*>(baseData) = htonll(0x100000000LL+seq-ppd->seq+plen+ntohll(*reinterpret_cast<uint64_t*>(baseData)));
 						 ppd->seq = seq+plen;
 					}
-					DPRINTFL(MSG_VDEBUG, "%s=%llu, ppd->seq=%u", efd->typeId.toString().c_str(), ntohll(*reinterpret_cast<uint64_t*>(baseData)), ntohl(ppd->seq));
+					DPRINTF_DEBUG( "%s=%" PRIu64 ", ppd->seq=%u", efd->typeId.toString().c_str(), ntohll(*reinterpret_cast<uint64_t*>(baseData)), ntohl(ppd->seq));
 					break;
 
 				case Packet::UDP:
-					DPRINTF("blub udp");
+					DPRINTF_INFO("blub udp");
 					*reinterpret_cast<uint64_t*>(baseData) = htonll(plen+ntohll(*reinterpret_cast<uint64_t*>(baseData)));
 					break;
 
 				default:
-					DPRINTF("blub default");
+					DPRINTF_INFO("blub default");
 					break;
 			}
 		}
@@ -1134,13 +1189,13 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 					case IPFIX_TYPEID_flowStartNanoseconds:
 						ntptime = ntp64timegcc(*reinterpret_cast<const struct timeval*>(deltaData));
 						ntp2 = htonll(ntptime);
-						DPRINTFL(MSG_VDEBUG, "base: %lu s, delta: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U, ntohll(ntp2));
-						DPRINTFL(MSG_VDEBUG, "base: %llX , delta: %llX", ntohll(*(uint64_t*)baseData), ntohll(ntp2));
+						DPRINTF_DEBUG( "base: %lu s, delta: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U, ntohll(ntp2));
+						DPRINTF_DEBUG( "base: %" PRIX64 " , delta: %" PRIX64, ntohll(*(uint64_t*)baseData), ntohll(ntp2));
 						*(uint64_t*)baseData = lesserUint64Nbo(*(uint64_t*)baseData, ntp2);
 			#ifdef DEBUG
 						if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32))) {
-							DPRINTFL(MSG_VDEBUG, "invalid start nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
-							DPRINTFL(MSG_VDEBUG, "base: %llX , delta: %llX", *(uint64_t*)baseData, *(uint64_t*)deltaData);
+							DPRINTF_DEBUG( "invalid start nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
+							DPRINTF_DEBUG( "base: %" PRIX64 " , delta: %" PRIX64, *(uint64_t*)baseData, *(uint64_t*)deltaData);
 						}
 			#endif
 						break;
@@ -1159,7 +1214,7 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, ntp2);
 			#ifdef DEBUG
 						if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32)))
-							DPRINTFL(MSG_VDEBUG, "invalid end nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
+							DPRINTF_DEBUG( "invalid end nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
 			#endif
 						break;
 
@@ -1187,9 +1242,24 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						}
 						break;
 
+					case IPFIX_TYPEID_basicList:
+						// Is called to insert all but first elements
+						size_t len;
+						void* toInsert;
+						vector<void*>** listPtrPtr;
+
+						len = efd->typeSpecData.basicList->fieldIe->length;
+						toInsert = malloc(len);
+						listPtrPtr = (vector<void*>**) baseData;
+
+						memcpy(toInsert, deltaData, len);
+						(*listPtrPtr)->push_back((void*) toInsert);
+
+						break;
+
 						// no other types needed, as this is only for raw field input
 					default:
-						DPRINTF("non-aggregatable type: %s", efd->typeId.toString().c_str());
+						DPRINTF_INFO("non-aggregatable type: %s", efd->typeId.toString().c_str());
 						break;
 				}
 				break;
@@ -1234,7 +1304,7 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						*(uint64_t*)baseData = greaterUint64Nbo(*(uint64_t*)baseData, ntp2);
 			#ifdef DEBUG
 						if (ntohll(*(uint64_t*)baseData)<(1000000000ULL+(2208988800ULL<<32)) || ntohll(*(uint64_t*)baseData)>(1300000000ULL+(2208988800ULL<<32)))
-							DPRINTFL(MSG_VDEBUG, "invalid end nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
+							DPRINTF_DEBUG( "invalid end nano seconds: %lu s", (ntohll(*(uint64_t*)baseData)>>32)-2208988800U);
 			#endif
 						break;
 
@@ -1263,7 +1333,7 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						break;
 
 					default:
-						DPRINTF("non-aggregatable type: %s", efd->typeId.toString().c_str());
+						DPRINTF_INFO("non-aggregatable type: %s", efd->typeId.toString().c_str());
 						break;
 				}
 				break;
@@ -1277,7 +1347,7 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 					case IPFIX_ETYPEID_maxPacketGap:
 						gap = (int64_t)ntohll(*(int64_t*)deltaData)-(int64_t)ntohll(*reinterpret_cast<const uint64_t*>(data+efd->privDataOffset));
 						if (gap<0) gap = -gap;
-						DPRINTFL(MSG_VDEBUG, "gap: %u, oldgap: %u", gap, ntohl(*(uint32_t*)baseData));
+						DPRINTF_DEBUG( "gap: %" PRIu64 ", oldgap: %" PRIu32, gap, ntohl(*(uint32_t*)baseData));
 
 						if ((uint32_t)gap > ntohl(*(uint32_t*)baseData)) *(uint32_t*)baseData = htonl(gap);
 						*reinterpret_cast<uint64_t*>(data+efd->privDataOffset) = *(uint64_t*)deltaData;
@@ -1288,7 +1358,7 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						break;
 
 					default:
-						DPRINTF("non-aggregatable type: %s", efd->typeId.toString().c_str());
+						DPRINTF_INFO("non-aggregatable type: %s", efd->typeId.toString().c_str());
 						break;
 				}
 				break;
@@ -1302,7 +1372,7 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 					case IPFIX_ETYPEID_maxPacketGap:
 						gap = (int64_t)ntohll(*(int64_t*)deltaData)-(int64_t)ntohll(*reinterpret_cast<const uint64_t*>(data+efd->privDataOffset));
 						if (gap<0) gap = -gap;
-						DPRINTFL(MSG_VDEBUG, "gap: %u, oldgap: %u", gap, ntohl(*(uint32_t*)baseData));
+						DPRINTF_DEBUG( "gap: %" PRIu64 ", oldgap: %" PRIu32, gap, ntohl(*(uint32_t*)baseData));
 
 						if ((uint32_t)gap > ntohl(*(uint32_t*)baseData)) *(uint32_t*)baseData = htonl(gap);
 						*reinterpret_cast<uint64_t*>(data+efd->privDataOffset) = *(uint64_t*)deltaData;
@@ -1313,12 +1383,12 @@ void PacketHashtable::aggregateField(const ExpFieldData* efd, HashtableBucket* h
 						break;
 
 					default:
-						DPRINTF("non-aggregatable type: %s", efd->typeId.toString().c_str());
+						DPRINTF_INFO("non-aggregatable type: %s", efd->typeId.toString().c_str());
 						break;
 				}
 				break;
 			default:
-				DPRINTF("non-aggregatable type: %s", efd->typeId.toString().c_str());
+				DPRINTF_INFO("non-aggregatable type: %s", efd->typeId.toString().c_str());
 				break;
 		}
 	}
@@ -1361,7 +1431,7 @@ bool PacketHashtable::equalFlow(IpfixRecord::Data* bucket, const Packet* p)
 	for (int i=0; i<expHelperTable.noKeyFields; i++) {
 		ExpFieldData* efd = &expHelperTable.keyFields[i];
 
-		DPRINTFL(MSG_VDEBUG, "equal for i=%u, typeid=%s, length=%u, srcpointer=%X", i, efd->typeId.toString().c_str(), efd->srcLength, p->data.netHeader+efd->srcIndex);
+		DPRINTF_DEBUG( "equal for i=%u, typeid=%s, length=%u, srcpointer=%p", i, efd->typeId.toString().c_str(), efd->srcLength, p->data.netHeader+efd->srcIndex);
 		// just compare srcLength bytes, as we still have our original packet data
 		if (memcmp(bucket+efd->dstIndex, p->data.netHeader+efd->srcIndex, efd->srcLength)!=0)
 			return false;
@@ -1380,7 +1450,7 @@ bool PacketHashtable::equalFlowRev(IpfixRecord::Data* bucket, const Packet* p)
 		ExpFieldData* efdsrc = &expHelperTable.keyFields[i];
 		ExpFieldData* efddst = expHelperTable.revKeyFieldMapper[i];
 
-		DPRINTFL(MSG_VDEBUG, "equalrev for i=%u, typeid=%s, length=%u, srcpointer=%X", i, efdsrc->typeId.toString().c_str(), efdsrc->srcLength, p->data.netHeader+efdsrc->srcIndex);
+		DPRINTF_DEBUG( "equalrev for i=%u, typeid=%s, length=%u, srcpointer=%p", i, efdsrc->typeId.toString().c_str(), efdsrc->srcLength, p->data.netHeader+efdsrc->srcIndex);
 		// just compare srcLength bytes, as we still have our original packet data
 		if (memcmp(bucket+efddst->dstIndex, p->data.netHeader+efdsrc->srcIndex, efdsrc->srcLength)!=0)
 			return false;
@@ -1395,7 +1465,7 @@ bool PacketHashtable::equalFlowRev(IpfixRecord::Data* bucket, const Packet* p)
  */
 void PacketHashtable::createMaskedField(IpfixRecord::Data* address, uint8_t imask)
 {
-	DPRINTF("unmasked address: %08X", *reinterpret_cast<uint32_t*>(address));
+	DPRINTF_INFO("unmasked address: %08X", *reinterpret_cast<uint32_t*>(address));
 	if (imask > 0) {
 		if (imask == 8) {
 			address[3] = 0x00;
@@ -1421,7 +1491,7 @@ void PacketHashtable::createMaskedField(IpfixRecord::Data* address, uint8_t imas
 			*(uint32_t*)address = htonl(ntohl(*(uint32_t*)(address)) & ~pattern);
 		}
 	}
-	DPRINTF("masked address: %08X", *reinterpret_cast<uint32_t*>(address));
+	DPRINTF_INFO("masked address: %08X", *reinterpret_cast<uint32_t*>(address));
 }
 
 
@@ -1434,14 +1504,14 @@ void PacketHashtable::createMaskedFields(Packet* p)
 	if (expHelperTable.dstIpEFieldIndex > 0) {
 		ExpFieldData* efd = &expHelperTable.keyFields[expHelperTable.dstIpEFieldIndex];
 		// copy *original* ip address in *raw packet* to our temporary structure
-		*reinterpret_cast<uint32_t*>(&efd->data[0]) = *reinterpret_cast<uint32_t*>(p->data.netHeader+efd->origSrcIndex);
+		memcpy(&efd->data[0], p->data.netHeader+efd->origSrcIndex, sizeof(uint32_t));
 		// then mask it
 		createMaskedField(&efd->data[0], efd->data[4]);
 	}
 	if (expHelperTable.srcIpEFieldIndex > 0) {
 		ExpFieldData* efd = &expHelperTable.keyFields[expHelperTable.srcIpEFieldIndex];
 		// copy *original* ip address in *raw packet* to our temporary structure
-		*reinterpret_cast<uint32_t*>(&efd->data[0]) = *reinterpret_cast<uint32_t*>(p->data.netHeader+efd->origSrcIndex);
+		memcpy(&efd->data[0], p->data.netHeader+efd->origSrcIndex, sizeof(uint32_t));
 		// then mask it
 		createMaskedField(&efd->data[0], efd->data[4]);
 	}
@@ -1478,7 +1548,7 @@ void PacketHashtable::updatePointers(const Packet* p)
 		}
 		if (dodefault) {
 			// standard procedure for transport header fields
-			efd->srcIndex = getRawPacketFieldOffset(efd->typeId, p);
+			efd->srcIndex = getRawPacketFieldOffset(efd->typeId, p, &efd->typeSpecData);
 		}
 	}
 }
@@ -1522,12 +1592,12 @@ void PacketHashtable::aggregatePacket(Packet* p)
 		nanosleep(&req, &req);
 	}
 
-	DPRINTF("PacketHashtable::aggregatePacket()");
+	DPRINTF_INFO("PacketHashtable::aggregatePacket()");
 	updatePointers(p);
 	createMaskedFields(p);
 
 	uint32_t hash = calculateHash(p->data.netHeader);
-	DPRINTFL(MSG_VDEBUG, "packet hash=%u", hash);
+	DPRINTF_DEBUG( "packet hash=%u", hash);
 
 	// search bucket inside hashtable
 	HashtableBucket* bucket = buckets[hash];
@@ -1545,12 +1615,12 @@ void PacketHashtable::aggregatePacket(Packet* p)
 					expiryforced = true;
 					removeBucket(bucket);
 				} else {
-					DPRINTF("aggregate flow in normal direction");
+					DPRINTF_INFO("aggregate flow in normal direction");
 					aggregateFlow(bucket, p, 0);
 					if (!bucket->forceExpiry) {
 						flowfound = true;
 					} else {
-						DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
+						DPRINTF_DEBUG( "forced expiry of bucket");
 						removeBucket(bucket);
 						expiryforced = true;
 						if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
@@ -1570,7 +1640,7 @@ void PacketHashtable::aggregatePacket(Packet* p)
 	if (biflowAggregation && !flowfound && !expiryforced) {
 		// search for reverse direction
 		uint32_t rhash = calculateHashRev(p->data.netHeader);
-		DPRINTFL(MSG_VDEBUG, "rev packet hash=%u", rhash);
+		DPRINTF_DEBUG( "rev packet hash=%u", rhash);
 		HashtableBucket* bucket = buckets[rhash];
 
 		while (bucket!=0) {
@@ -1582,12 +1652,12 @@ void PacketHashtable::aggregatePacket(Packet* p)
 					expiryforced = true;
 					removeBucket(bucket);
 				} else {
-					DPRINTF("aggregate flow in reverse direction");
+					DPRINTF_INFO("aggregate flow in reverse direction");
 					aggregateFlow(bucket, p, 1);
 					if (!bucket->forceExpiry) {
 						flowfound = true;
 					} else {
-						DPRINTFL(MSG_VDEBUG, "forced expiry of bucket");
+						DPRINTF_DEBUG( "forced expiry of bucket");
 						removeBucket(bucket);
 						expiryforced = true;
 						if (expHelperTable.dpaFlowCountOffset != ExpHelperTable::UNUSED)
@@ -1603,7 +1673,7 @@ void PacketHashtable::aggregatePacket(Packet* p)
 
 	if (!flowfound || expiryforced) {
 		// create new flow
-		DPRINTF("creating new bucket");
+		DPRINTF_INFO("creating new bucket");
 		HashtableBucket* firstbucket = buckets[hash];
 		buckets[hash] = createBucket(buildBucketData(p), p->observationDomainID, firstbucket, 0, hash, p->timestamp.tv_sec);
 		if (firstbucket) {
@@ -1615,7 +1685,7 @@ void PacketHashtable::aggregatePacket(Packet* p)
 		buckets[hash]->inTable = true;
 
 		if (oldflowcount) {
-			DPRINTFL(MSG_VDEBUG, "oldflowcount: %u", ntohl(*oldflowcount));
+			DPRINTF_DEBUG( "oldflowcount: %u", ntohl(*oldflowcount));
 			*reinterpret_cast<uint32_t*>(buckets[hash]->data.get()+expHelperTable.dpaFlowCountOffset) = htonl(ntohl(*oldflowcount)+1);
 		}
 		updateBucketData(buckets[hash]);
@@ -1650,7 +1720,7 @@ void PacketHashtable::snapshotHashtable()
 		snapshotWritten = true;
 	}
 	else {
-	DPRINTF("unable to open file to write Hashtable\n");
+	DPRINTF_INFO("unable to open file to write Hashtable\n");
 	}
 }
 

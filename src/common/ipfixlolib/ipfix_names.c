@@ -103,6 +103,24 @@ const struct ipfix_identifier* ipfix_name_lookup(const char *name)
 	return NULL;
 }
 
+/*
+ * lookup an ipfix semantic by name
+ */
+const uint8_t* ipfix_semantic_lookup(const char *name)
+{
+	uint32_t i;
+
+    // Search IANA semantic IDs
+    for (i = 0; i<sizeof(ipfixsemantic_iana)/sizeof(struct ipfix_semantic); i++) {
+        if (strcasecmp(name, ipfixsemantic_iana[i].name)==0) {
+            return &(ipfixsemantic_iana[i].id);
+        }
+     }
+
+	/* not found */
+	return NULL;
+}
+
 #ifdef __cplusplus
 }
 #endif

@@ -36,9 +36,15 @@ struct ipfix_identifier {
 	uint16_t type; // IPFIX data type
 };
 
+struct ipfix_semantic {
+	uint8_t id;
+	char *name;
+};
+
 int ipfix_id_rangecheck(int id);
 const struct ipfix_identifier* ipfix_id_lookup(uint16_t id, uint32_t pen);
 const struct ipfix_identifier* ipfix_name_lookup(const char *name);
+const uint8_t* ipfix_semantic_lookup(const char *name);
 
 
 #ifdef __cplusplus

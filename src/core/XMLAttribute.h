@@ -26,7 +26,7 @@ protected:
 
 	inline xmlAttrPtr cobj() const
 	{
-		return reinterpret_cast<const xmlAttrPtr>(XMLNode::cobj());
+		return reinterpret_cast<xmlAttrPtr>(XMLNode::cobj());
 	}
 };
 

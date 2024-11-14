@@ -92,6 +92,8 @@ public:
 	 */
 	void postReconfiguration();
 
+	static int isToBeAggregated(InformationElement::IeInfo& type);
+
 protected:
 	/**
 	 * contains needed data elements when FPA or DPA is performed for PacketHashtable
@@ -153,7 +155,6 @@ protected:
 
 	alock_t aggInProgress; /** indicates if currently an element is aggregated in the hashtable, used for atomic lock for preReconfiguration */
 
-	int isToBeAggregated(InformationElement::IeInfo& type);
 	HashtableBucket* createBucket(boost::shared_array<IpfixRecord::Data> data, uint32_t obsdomainid,
 		HashtableBucket* next, HashtableBucket* prev, uint32_t hash, time_t now);
 	void exportBucket(HashtableBucket* bucket);

@@ -20,7 +20,6 @@
  */
 
 #include "IpfixPrinter.hpp"
-#include "common/Time.h"
 #include "common/Misc.h"
 #include "Connection.h"
 
@@ -38,6 +37,16 @@ void PrintHelpers::printIPv4(uint32_t data) {
 	fprintf(fh, "%s", IPToString(data).c_str());
 }
 
+void PrintHelpers::printIPv4(uint8_t *data) {
+  uint32_t int_data = data[0];
+  int_data <<= 8;
+  int_data |= (uint32_t)data[1];
+  int_data <<= 8;
+  int_data |= (uint32_t)data[2];
+  int_data <<= 8;
+  int_data |= (uint32_t)data[3];
+  printIPv4(int_data);
+}
 
 void PrintHelpers::printIPv4(InformationElement::IeInfo type, IpfixRecord::Data* data) {
 	int octet1 = 0;
@@ -51,7 +60,7 @@ void PrintHelpers::printIPv4(InformationElement::IeInfo type, IpfixRecord::Data*
 	if (type.length >= 4) octet4 = data[3];
 	if (type.length >= 5) imask = data[4];
 	if (type.length > 5) {
-		DPRINTF("IPv4 Address with length %u unparseable\n", type.length);
+		DPRINTF_INFO("IPv4 Address with length %u unparseable\n", type.length);
 		return;
 	}
 
@@ -68,15 +77,17 @@ void PrintHelpers::printPort(InformationElement::IeInfo type, IpfixRecord::Data*
 		return;
 	}
 	if (type.length == 2) {
-		int port = ((uint16_t)data[0] << 8)+data[1];
+		// get the first 2 bytes from data and convert them from network endianess to host endianess
+		int port = ntohs( *( (uint16_t *)(&data[0]) ) );
 		fprintf(fh, "%u", port);
 		return;
 	}
 	if ((type.length >= 4) && ((type.length % 4) == 0)) {
 		int i;
 		for (i = 0; i < type.length; i+=4) {
-			int starti = ((uint16_t)data[i+0] << 8)+data[i+1];
-			int endi = ((uint16_t)data[i+2] << 8)+data[i+3];
+			// convert from network endianess to host endianess
+			int starti = ntohs( *((uint16_t *)&data[i+0]) );
+			int endi = ntohs( *((uint16_t *)&data[i+2]) );
 			if (i > 0) fprintf(fh, ",");
 			if (starti != endi) {
 				fprintf(fh, "%u:%u", starti, endi);
@@ -160,7 +171,7 @@ void PrintHelpers::printUint(InformationElement::IeInfo type, IpfixRecord::Data*
 		    fprintf(fh, "%02hhX",*(uint8_t*)(data+i));
 		}
 		fprintf(fh, " (%u bytes)", type.length);
-		//msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
+		//msg(LOG_ERR, "Uint with length %u unparseable", type.length);
 		return;
 	}
 }
@@ -196,7 +207,7 @@ void PrintHelpers::printLocaltime(InformationElement::IeInfo type, IpfixRecord::
 		    fprintf(fh, "%02hhX",*(uint8_t*)(data+i));
 		}
 		fprintf(fh, " (%u bytes)", type.length);
-		//msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
+		//msg(LOG_ERR, "Uint with length %u unparseable", type.length);
 		return;
 	}
 }
@@ -217,7 +228,7 @@ void PrintHelpers::printUint(char* buf, InformationElement::IeInfo type, IpfixRe
 		sprintf(buf, "%llu",(long long unsigned)ntohll(*(uint64_t*)data));
 		return;
 	default:
-		msg(MSG_ERROR, "Uint with length %u unparseable", type.length);
+		msg(LOG_ERR, "Uint with length %u unparseable", type.length);
 		return;
 	}
 }
@@ -228,8 +239,13 @@ void PrintHelpers::printUint(char* buf, InformationElement::IeInfo type, IpfixRe
  */
 void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::Data* pattern) {
 
-	timeval t;
-	uint64_t hbnum;
+	printFieldDataType(type);
+
+	printFieldDataValue(type, pattern);
+}
+
+void PrintHelpers::printFieldDataType(InformationElement::IeInfo type) {
+
 	string typeStr = type.toString();
 
 	// try to get the values aligned
@@ -237,6 +253,12 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 		fprintf(fh, "%-60s: ", type.toString().c_str());
 	else
 		fprintf(fh, "%s: ", type.toString().c_str());
+}
+
+void PrintHelpers::printFieldDataValue(InformationElement::IeInfo type, IpfixRecord::Data* pattern) {
+
+	timeval t;
+	uint64_t hbnum;
 
 	switch (type.enterprise) {
 		case 0:
@@ -267,7 +289,7 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 				case IPFIX_TYPEID_flowEndNanoseconds:
 					hbnum = ntohll(*(uint64_t*)pattern);
 					if (hbnum>0) {
-						t = timentp64(*((ntp64*)(&hbnum)));
+						t = timentp64(u64_to_ntp64(hbnum));
 						fprintf(fh, "%u.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
 					} else {
 						fprintf(fh, "no value (only zeroes in field)");
@@ -289,7 +311,7 @@ void PrintHelpers::printFieldData(InformationElement::IeInfo type, IpfixRecord::
 				case IPFIX_TYPEID_flowEndNanoseconds:
 					hbnum = ntohll(*(uint64_t*)pattern);
 					if (hbnum>0) {
-						t = timentp64(*((ntp64*)(&hbnum)));
+						t = timentp64(u64_to_ntp64(hbnum));
 						fprintf(fh, "%u.%06d seconds", (int32_t)t.tv_sec, (int32_t)t.tv_usec);
 					} else {
 						fprintf(fh, "no value (only zeroes in field)");
@@ -323,6 +345,19 @@ void PrintHelpers::printFrontPayload(InformationElement::IeInfo type, IpfixRecor
 	fprintf(fh, "'");
 }
 
+/**
+ * Converts an u64 value to ntp64
+ * @param number The u64 value to be converted, in host byte order
+ * @return The value in ntp64 format
+ */
+ntp64 PrintHelpers::u64_to_ntp64(const uint64_t &number)
+{
+	ntp64 ntp64_number;
+	ntp64_number.lower = (uint32_t)( number & 0x00000000FFFFFFFFull ); // least significant 2 bytes, by value
+	ntp64_number.upper = (uint32_t)( (uint64_t)(number & 0xFFFFFFFF00000000ull) >> 32 ); // most significant 2 bytes, by value
+
+	return ntp64_number;
+}
 
 /**
  * Creates a new IpfixPrinter. Do not forget to call @c startIpfixPrinter() to begin printing
@@ -333,7 +368,7 @@ IpfixPrinter::IpfixPrinter(OutputType outputtype, string filename)
 {
 	lastTemplate = 0;
 
-	msg(MSG_INFO, "IpfixPrinter started with following parameters:");
+	msg(LOG_NOTICE, "IpfixPrinter started with following parameters:");
 	string type;
 	switch (outputtype) {
 		case TREE: type = "tree"; break;
@@ -341,10 +376,10 @@ IpfixPrinter::IpfixPrinter(OutputType outputtype, string filename)
 		case TABLE: type = "table"; break;
 		case NONE: type = "no output"; break;
 	}
-	msg(MSG_INFO, "  - outputType=%s", type.c_str());
+	msg(LOG_NOTICE, "  - outputType=%s", type.c_str());
 	string file = "standard output";
 	if (filename!="") file = "in file '" + filename + "'";
-	msg(MSG_INFO, "  - output=%s", file.c_str());
+	msg(LOG_NOTICE, "  - output=%s", file.c_str());
 
 	fh = stdout;
 	if (filename != "") {
@@ -365,7 +400,7 @@ IpfixPrinter::~IpfixPrinter()
 	if (filename != "") {
 		int ret = fclose(fh);
 		if (ret)
-			THROWEXCEPTION("IpfixPrinter: error closing file '%s': %s (%u)", filename.c_str(), strerror(errno), errno);
+			msg(LOG_ERR, "IpfixPrinter: error closing file '%s': %s (%u)", filename.c_str(), strerror(errno), errno);
 	}
 }
 
@@ -396,12 +431,12 @@ void IpfixPrinter::onTemplate(IpfixTemplateRecord* record)
 					fprintf(fh, "\n-+--- Ipfix Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 					break;
 				default:
-					msg(MSG_ERROR, "IpfixPrinter: Template with unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
+					msg(LOG_ERR, "IpfixPrinter: Template with unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
 
 			}
 			if (record->sourceID) {
 				if (record->sourceID->exporterAddress.len == 4)
-					printIPv4(*(uint32_t*)(&record->sourceID->exporterAddress.ip[0]));
+					printIPv4(record->sourceID->exporterAddress.ip);
 				else
 					fprintf(fh, "non-IPv4 address");
 				fprintf(fh, ":%u (", record->sourceID->exporterPort);
@@ -452,12 +487,12 @@ void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 			fprintf(fh, "\n-+--- Destroyed Ipfix Options Template (id=%u, uniqueId=%u) from ", templateInfo->templateId, templateInfo->getUniqueId());
 			break;
 		default:
-			msg(MSG_ERROR, "IpfixPrinter: Template destruction recordwith unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
+			msg(LOG_ERR, "IpfixPrinter: Template destruction recordwith unknown setId=%u, uniqueId=%u", templateInfo->setId, templateInfo->getUniqueId());
 
 	}
 	if (record->sourceID) {
 		if (record->sourceID->exporterAddress.len == 4)
-			printIPv4(*(uint32_t*)(&record->sourceID->exporterAddress.ip[0]));
+			printIPv4(record->sourceID->exporterAddress.ip);
 		else
 			fprintf(fh, "non-IPv4 address");
 		fprintf(fh, ":%u (", record->sourceID->exporterPort);
@@ -477,7 +512,7 @@ void IpfixPrinter::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 {
 	boost::shared_ptr<TemplateInfo> dataTemplateInfo = record->templateInfo;
-		char buf[100], buf2[100];
+		char buf[100], buf2[120];
 
 		if (linesPrinted==0 || linesPrinted>50) {
 			fprintf(fh, "%22s %20s %8s %5s %21s %21s %5s %5s\n", "Flow recvd.", "Flow start", "Duratn", "Prot", "Src IP:Port", "Dst IP:Port", "Pckts", "Bytes");
@@ -521,7 +556,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 					if (fi != NULL) {
 						timetype = IPFIX_TYPEID_flowStartNanoseconds;
 						uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
-						timeval t = timentp64(*((ntp64*)(&t2)));
+						timeval t = timentp64(u64_to_ntp64(t2));
 						tm = localtime(&t.tv_sec);
 						strftime(buf, 50, "%F %T", tm);
 						starttime = t.tv_sec;
@@ -559,7 +594,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 					fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_flowEndNanoseconds, 0);
 					if (fi != NULL) {
 						uint64_t t2 = ntohll(*reinterpret_cast<uint64_t*>(record->data+fi->offset));
-						timeval t = timentp64(*((ntp64*)(&t2)));
+						timeval t = timentp64(u64_to_ntp64(t2));
 						dur = t.tv_sec*1000+t.tv_usec/1000 - starttime;
 					}
 			}
@@ -581,7 +616,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceIPv4Address, 0);
 		uint32_t srcip = 0;
 		if (fi != NULL && fi->type.length>=4) {
-			srcip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
+			srcip = ntohl( *reinterpret_cast<uint32_t*>(record->data+fi->offset) );
 		}
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_sourceTransportPort, 0);
 		uint16_t srcport = 0;
@@ -594,7 +629,7 @@ void IpfixPrinter::printOneLineRecord(IpfixDataRecord* record)
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationIPv4Address, 0);
 		uint32_t dstip = 0;
 		if (fi != NULL && fi->type.length>=4) {
-			dstip = *reinterpret_cast<uint32_t*>(record->data+fi->offset);
+			dstip = ntohl( *reinterpret_cast<uint32_t*>(record->data+fi->offset) );
 		}
 		fi = dataTemplateInfo->getFieldInfo(IPFIX_TYPEID_destinationTransportPort, 0);
 		uint16_t dstport = 0;
@@ -643,12 +678,12 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 			fprintf(fh, "\n-+--- Ipfix Options Data Record (id=%u) from ", record->templateInfo->templateId);
 			break;
 		default:
-			msg(MSG_ERROR, "IpfixPrinter: Template with unknown setid=%u", record->templateInfo->setId);
+			msg(LOG_ERR, "IpfixPrinter: Template with unknown setid=%u", record->templateInfo->setId);
 
 	}
 	if (record->sourceID) {
 		if (record->sourceID->exporterAddress.len == 4)
-			printIPv4(*(uint32_t*)(&record->sourceID->exporterAddress.ip[0]));
+			printIPv4(record->sourceID->exporterAddress.ip);
 		else
 			fprintf(fh, "non-IPv4 address");
 		fprintf(fh, ":%u (", record->sourceID->exporterPort);
@@ -669,7 +704,25 @@ void IpfixPrinter::printTreeRecord(IpfixDataRecord* record)
 	fprintf(fh, " `- variable data\n");
 	for (i = 0; i < record->templateInfo->fieldCount; i++) {
 		fprintf(fh, " '   `- ");
-		printFieldData(record->templateInfo->fieldInfo[i].type, (record->data + record->templateInfo->fieldInfo[i].offset));
+		if (record->templateInfo->fieldInfo[i].type == InformationElement::IeInfo(IPFIX_TYPEID_basicList, 0)) {
+			printFieldDataType(record->templateInfo->fieldInfo[i].type);
+
+			fprintf(fh, "semantic=%hhu, %s [", record->templateInfo->fieldInfo[i].basicListData.semantic, record->templateInfo->fieldInfo[i].basicListData.fieldIe->toString().c_str());
+
+			vector<void*>** listPtrPtr = (vector<void*>**) (record->data + record->templateInfo->fieldInfo[i].offset);
+			for (vector<void*>::const_iterator iter = (*listPtrPtr)->begin(); iter != (*listPtrPtr)->end(); iter++) {
+
+				printFieldDataValue(*record->templateInfo->fieldInfo[i].basicListData.fieldIe, reinterpret_cast<IpfixRecord::Data*>(*iter));
+
+				// No comma for last element in the list
+				if (iter+1 != (*listPtrPtr)->end()) {
+					fprintf(fh, ", ");
+				}
+			}
+			fprintf(fh, "]");
+		} else {
+			printFieldData(record->templateInfo->fieldInfo[i].type, (record->data + record->templateInfo->fieldInfo[i].offset));
+		}
 		fprintf(fh, "\n");
 	}
 	fprintf(fh, " `---\n\n");

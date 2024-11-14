@@ -1,0 +1,6 @@
+---
+- hosts: all
+  become_user: root
+  become: true
+  roles:
+    - base

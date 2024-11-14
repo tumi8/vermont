@@ -197,7 +197,7 @@ class IpfixRecord
 						oss << " (SCTP)";
 						break;
 					default:
-						oss << " (" << protocol <<")";
+						oss << " (" << std::to_string(protocol) <<")";
 						break;
 				}
 				oss << " ODID=" << observationDomainId;
@@ -208,13 +208,26 @@ class IpfixRecord
 		boost::shared_ptr<IpfixRecord::SourceID> sourceID;
 
 		IpfixRecord() {}
-		virtual ~IpfixRecord() {}
+
+		virtual ~IpfixRecord() {
+			if (variableLenData != NULL) {
+				free(variableLenData);
+				variableLenData = NULL;
+			}
+		}
 
 		/**
 		 * all subclasses *MUST* inherit ManagedInstance, which implements these methods
 		 */
 		virtual void removeReference() = 0;
 		virtual void addReference(int count = 1) = 0;
+
+		// We can not use local variables on the stack for variable length IEs as the record memory is copied only later in the sending process
+		// We therefore need malloc'ed memory for encoding variable length IEs such as basicList
+		uint8_t threeByteIndicator = 255;
+		IpfixRecord::Data* variableLenData = NULL;
+		unsigned int variableLenDataTotalBytes = 100;
+		unsigned int variableLenDataCurrBytes = 0;
 };
 
 
@@ -224,6 +237,11 @@ class IpfixRecord
 class TemplateInfo {
 	public:
 		typedef uint16_t TemplateId;
+
+		struct BasicListData {
+			uint8_t semantic;
+			InformationElement::IeInfo* fieldIe;
+		};
 
 		enum SetId {
 			UnknownSetId = -1,
@@ -241,6 +259,7 @@ class TemplateInfo {
 			int32_t offset; 	/**< offset in bytes from a data start pointer. For internal purposes 0xFFFFFFFF is defined as yet unknown */
 			int32_t privDataOffset; /**< offset in bytes from data start pointer for internal private data which is not exported via IPFIX */
 			bool isVariableLength; 	/**< true if this field's length might change from record to record, false otherwise */
+			struct BasicListData basicListData; /**< additional information for basic list IE */
 		};
 
 		TemplateInfo();
@@ -324,7 +343,36 @@ class IpfixDataRecord : public IpfixRecord, public ManagedInstance<IpfixDataReco
 		IpfixRecord::Data* data; /**< pointer to start of field data in @c message. Undefined after @c message goes out of scope. */
 
 		// redirector to reference remover of ManagedInstance
-		virtual void removeReference() { ManagedInstance<IpfixDataRecord>::removeReference(); }
+		virtual void removeReference() {
+
+			// Remove allocated vector data for basicList elements
+			// NOTE: This can not be done in BaseHashtable::destroyBucket() as this leads to corrupted memory when sending in IpfixSender
+			for (int i = 0; i < templateInfo->fieldCount; i++) {
+
+				// Free basicList memory
+				if (templateInfo->fieldInfo[i].type == InformationElement::IeInfo(IPFIX_TYPEID_basicList, 0)) {
+					IpfixRecord::Data* dst = (data + templateInfo->fieldInfo[i].offset);
+					vector<void*>** listPtrPtr = (vector<void*>**) dst;
+
+					if (*listPtrPtr != NULL) {
+						for (vector<void*>::const_iterator iter = (*listPtrPtr)->begin(); iter != (*listPtrPtr)->end(); iter++) {
+							free(reinterpret_cast<IpfixRecord::Data*>(*iter));
+						}
+
+						delete *listPtrPtr;
+					}
+				}
+			}
+
+			// Clean previously used variable length data
+			if (variableLenData != NULL) {
+				variableLenDataCurrBytes = 0;
+				free(variableLenData);
+				variableLenData = NULL;
+			}
+
+			ManagedInstance<IpfixDataRecord>::removeReference();
+		}
 		virtual void addReference(int count = 1) { ManagedInstance<IpfixDataRecord>::addReference(count); }
 };
 
@@ -342,4 +390,3 @@ class IpfixTemplateDestructionRecord : public IpfixRecord, public ManagedInstanc
 
 
 #endif
-

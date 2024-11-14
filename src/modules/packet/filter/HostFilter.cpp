@@ -36,14 +36,16 @@ bool HostFilter::processPacket(Packet *p)
 	// if no IPv4 Packet
 	if ((p->classification & PCLASS_NET_IP4)==0)
 	{
-		msg(MSG_DIALOG, "false?");
+		msg(LOG_WARNING, "false?");
 		return false;
 	}
 	// srcIP
-	uint32_t srcIp = *reinterpret_cast<uint32_t*>(p->data.netHeader+IPV4_SRC_IP_OFFSET);
-	msg(MSG_DIALOG, "srcip: %X, %s", srcIp, IPToString(srcIp).c_str());
+	uint32_t srcIp;
+	memcpy(&srcIp, p->data.netHeader+IPV4_SRC_IP_OFFSET, sizeof(srcIp));
+	msg(LOG_WARNING, "srcip: %X, %s", srcIp, IPToString(srcIp).c_str());
 	// dstIP
-	uint32_t dstIp = *reinterpret_cast<uint32_t*>(p->data.netHeader+IPV4_DST_IP_OFFSET);
+	uint32_t dstIp;
+	memcpy(&dstIp, p->data.netHeader+IPV4_DST_IP_OFFSET, sizeof(dstIp));
 
 	if (addrFilter == "src") {
 		return (ipList.find(srcIp) != ipList.end());
@@ -52,7 +54,7 @@ bool HostFilter::processPacket(Packet *p)
 	} else if (addrFilter == "both") {
 		return ((ipList.find(srcIp) != ipList.end()) || (ipList.find(dstIp) != ipList.end()));
 	} else {
-		msg(MSG_FATAL, "Unknown hostFilter config statement %s\n", addrFilter.c_str());
+		msg(LOG_CRIT, "Unknown hostFilter config statement %s\n", addrFilter.c_str());
 		return false;
 	}
 }

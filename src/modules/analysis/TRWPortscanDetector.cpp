@@ -60,10 +60,14 @@ TRWPortscanDetector::TRWPortscanDetector(uint32_t hashbits, uint32_t texppend,
 	logeta_1 = logf(eta_1);
 	X_0 = logf(theta_1/theta_0);
 	X_1 = logf((1-theta_1)/(1-theta_0));
-	msg(MSG_INFO, "TRW variables: logeta_0: %f, logeta_1: %f, X_0: %f, X_1: %f", logeta_0, logeta_1, X_0, X_1);
+	msg(LOG_NOTICE, "TRW variables: logeta_0: %f, logeta_1: %f, X_0: %f, X_1: %f", logeta_0, logeta_1, X_0, X_1);
 	lastCleanup = time(0);
 	
-	trwEntries = new list<TRWEntry*>[hashSize];
+	try {
+		trwEntries = new list<TRWEntry*>[hashSize];
+	} catch(std::bad_alloc& ba) {
+		THROWEXCEPTION("Error allocating TRWEntries in TRWPortscanDetector. Try reducing the number of hashbits: %s", ba.what());
+	}
 }
 
 TRWPortscanDetector::~TRWPortscanDetector()
@@ -207,7 +211,7 @@ void TRWPortscanDetector::addConnection(Connection* conn)
 		}
 	}
 
-	DPRINTF("IP: %s, S_N: %f", IPToString(te->srcIP).c_str(), te->S_N);
+	DPRINTF_INFO("IP: %s, S_N: %f", IPToString(te->srcIP).c_str(), te->S_N);
 	
 	// look if information is adequate for deciding on host
 	if (te->S_N<logeta_0) {
@@ -219,10 +223,10 @@ void TRWPortscanDetector::addConnection(Connection* conn)
 		te->decision = SCANNER;
 		statNumScanners++;
 		te->timeExpire = time(0)+timeExpireScanner;
-		msg(MSG_DEBUG, "portscanner detected:");
-		msg(MSG_DEBUG, "srcIP: %s, dstSubnet: %s, dstSubMask: %s", IPToString(te->srcIP).c_str(), 
+		msg(LOG_INFO, "portscanner detected:");
+		msg(LOG_INFO, "srcIP: %s, dstSubnet: %s, dstSubMask: %s", IPToString(te->srcIP).c_str(), 
 				IPToString(te->dstSubnet).c_str(), IPToString(te->dstSubnetMask).c_str());
-		msg(MSG_DEBUG, "numFailedConns: %d, numSuccConns: %d", te->numFailedConns, te->numSuccConns);
+		msg(LOG_INFO, "numFailedConns: %d, numSuccConns: %d", te->numFailedConns, te->numSuccConns);
 
 		IDMEFMessage* msg = idmefManager.getNewInstance();
 		msg->init(idmefTemplate, analyzerId);

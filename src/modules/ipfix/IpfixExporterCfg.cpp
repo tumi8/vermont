@@ -37,7 +37,7 @@ IpfixExporterCfg::IpfixExporterCfg(XMLElement* elem)
 	}
 	
 	recordRateLimit = getInt("maxRecordRate", IS_DEFAULT_MAXRECORDRATE);
-	msg(MSG_INFO, "Exporter: using maximum rate of %d records/second", recordRateLimit);
+	msg(LOG_NOTICE, "Exporter: using maximum rate of %d records/second", recordRateLimit);
 	observationDomainId = getInt("observationDomainId", 0);
 	sctpDataLifetime = getTimeInUnit("sctpDataLifetime", mSEC, IS_DEFAULT_SCTP_DATALIFETIME);
 	sctpReconnectInterval = getTimeInUnit("sctpReconnectInterval", SEC, IS_DEFAULT_SCTP_RECONNECTINTERVAL);
@@ -122,7 +122,7 @@ IpfixSender* IpfixExporterCfg::createInstance()
 			default:
 				protocol = "unknown protocol"; break;
 		}
-		msg(MSG_DEBUG, "IpfixExporter: adding collector %s://%s:%d",
+		msg(LOG_INFO, "IpfixExporter: adding collector %s://%s:%d",
 				protocol,
 				p->getIpAddress().c_str(),
 				p->getPort());
@@ -158,7 +158,7 @@ IpfixSender* IpfixExporterCfg::createInstance()
 #ifdef SUPPORT_DTLS
 		if (pacd) {
 			pacd->peer_fqdn = NULL;
-			const std::set<std::string> peerFqdns = p->getPeerFqdns();
+			static const std::set<std::string> peerFqdns = p->getPeerFqdns();
 			std::set<std::string>::const_iterator it = peerFqdns.begin();
 			if (it != peerFqdns.end())
 				pacd->peer_fqdn = it->c_str();

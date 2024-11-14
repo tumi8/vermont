@@ -33,7 +33,7 @@ public:
 
 	inline void shutdown()
 	{
-	    DPRINTF("shutting down");
+	    DPRINTF_INFO("shutting down");
 	    exitFlag = true;
 	}
 };

@@ -246,7 +246,7 @@ int find_string(struct KTree *ktree, char * string){
 		else out = 0;
 	}
 	if(out == 1)
-		if(ptr_childnode->num_of_term_keywords == 0) out = 0;
+		if( (NULL == ptr_childnode) || (ptr_childnode->num_of_term_keywords == 0) ) out = 0;
 
 	return out;
 }

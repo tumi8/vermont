@@ -175,7 +175,7 @@ void IpfixNetflowExporter::sendPacket()
 			record->removeReference();
 			count++;
 		}
-		msg(MSG_DEBUG, "sending Netflow.v5 packet, flow count: %u", count);
+		msg(LOG_INFO, "sending Netflow.v5 packet, flow count: %u", count);
 		packet.header.count = htons(count);
 		packet.header.unixSec = htonl(tv.tv_sec);
 		packet.header.unixNanoSec = htonl(tv.tv_usec*1000);
@@ -187,7 +187,7 @@ void IpfixNetflowExporter::sendPacket()
 
 		uint16_t packetsize = sizeof(NetflowV5Header)+count*sizeof(NetflowV5DataRecord);
 		if (sendto(sockfd, &packet, packetsize, 0, (struct sockaddr*)(&siDest), sizeof(siDest))==-1) {
-			msg(MSG_ERROR, "IpfixNetflowExporter: WARNING, failed to send UDP packet (%s)", strerror(errno));
+			msg(LOG_ERR, "IpfixNetflowExporter: WARNING, failed to send UDP packet (%s)", strerror(errno));
 		}
 	}
 }

@@ -34,10 +34,10 @@ namespace InformationElement {
 	{
 		if (length==0) {
 			const ipfix_identifier* ipfixid = ipfix_id_lookup(id, enterprise);
-			if (ipfixid)
-				length = ipfixid->length;
-			else {
-				msg(MSG_INFO, "WARNING: received unknown IE type id: %s", toString().c_str());
+			if (ipfixid) {
+				this->length = ipfixid->length;
+			} else {
+				msg(LOG_NOTICE, "WARNING: received unknown IE type id: %s", toString().c_str());
 			}
 		}
 	}
@@ -164,7 +164,7 @@ namespace InformationElement {
 				}
 			}
 		}
-		DPRINTF("received unknown field type %s", toString().c_str());
+		DPRINTF_INFO("received unknown field type %s", toString().c_str());
 		return Packet::NONE;
 	}
 
@@ -276,7 +276,7 @@ void TemplateInfo::setUniqueId()
 	if(uniqueId == 0) {
 		if(oldSize == 65535)
 			THROWEXCEPTION("TemplateInfo: more than 65353 uniqueIds needed");
-		DPRINTF("TemplateInfo: need to increase number of uniqueIds, oldSize=%u", oldSize);
+		DPRINTF_INFO("TemplateInfo: need to increase number of uniqueIds, oldSize=%u", oldSize);
 		uniqueIdUseCount().push_back(1);
 		uniqueId = oldSize + 1;
 	}

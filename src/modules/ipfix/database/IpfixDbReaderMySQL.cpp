@@ -43,24 +43,20 @@ int IpfixDbReaderMySQL::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templa
 	MYSQL_RES* dbResult = NULL;
 	MYSQL_ROW dbRow = NULL;
 	unsigned offset = 0;
-	uint64_t delta = 0;		// 64 bit to avoid castings in the case of flowStartMilliseconds
-	uint32_t flowTime = 0;		// in seconds, so 32 bit are sufficient
-	uint32_t lastFlowTime = 0;
 	uint64_t tmp;
-	bool first = true; 
 	unsigned j = 0;
 	
 	string query = "SELECT " + columnNames + " FROM " + tableName;
 	
-	msg(MSG_VDEBUG, "IpfixDbReaderMySQL: SQL query: %s", query.c_str());
+	msg(LOG_DEBUG, "IpfixDbReaderMySQL: SQL query: %s", query.c_str());
 	if(mysql_query(conn, query.c_str()) != 0) {
-		msg(MSG_ERROR,"IpfixDbReaderMySQL: Select on table failed. Error: %s",
+		msg(LOG_ERR,"IpfixDbReaderMySQL: Select on table failed. Error: %s",
 		    mysql_error(conn));
 		return 1;
 	}
 
 	dbResult = mysql_store_result(conn);
-	msg(MSG_INFO,"IpfixDbReaderMySQL:  Start sending records from table %s", tableName.c_str());
+	msg(LOG_NOTICE,"IpfixDbReaderMySQL:  Start sending records from table %s", tableName.c_str());
 
 	while((dbRow = mysql_fetch_row(dbResult)) && !exitFlag) {
 		// build new record
@@ -83,14 +79,14 @@ int IpfixDbReaderMySQL::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templa
 		ipfixRecord->message = data;
 		ipfixRecord->data = data.get();
 		send(ipfixRecord);
-		msg(MSG_VDEBUG,"IpfixDbReaderMySQL: Record sent");
+		msg(LOG_DEBUG,"IpfixDbReaderMySQL: Record sent");
 	}
 	mysql_free_result(dbResult);
 	
 	if(!exitFlag)
-		msg(MSG_INFO,"IpfixDbReaderMySQL: Sending from table %s done", tableName.c_str());
+		msg(LOG_NOTICE,"IpfixDbReaderMySQL: Sending from table %s done", tableName.c_str());
 	else
-		msg(MSG_INFO,"IpfixDbReaderMySQL: Sending from table %s aborted", tableName.c_str());
+		msg(LOG_NOTICE,"IpfixDbReaderMySQL: Sending from table %s aborted", tableName.c_str());
 
 	return 0;
 }
@@ -106,11 +102,11 @@ int IpfixDbReaderMySQL::getTables()
 
 	dbResult = mysql_list_tables(conn, wild);
 	if(dbResult == 0) {
-		msg(MSG_FATAL,"IpfixDbReaderMySQL: There are no flow tables in database");	
+		msg(LOG_CRIT,"IpfixDbReaderMySQL: There are no flow tables in database");	
 	} else {
 		while((dbRow = mysql_fetch_row(dbResult))) {
 			tables.push_back(string(dbRow[0]));
-			msg(MSG_VDEBUG, "IpfixDbReaderMySQL: table %s", tables.back().c_str());
+			msg(LOG_DEBUG, "IpfixDbReaderMySQL: table %s", tables.back().c_str());
 		}
 	}
 
@@ -129,9 +125,9 @@ int IpfixDbReaderMySQL::getColumns(const string& tableName)
 	MYSQL_ROW dbRow = NULL;
 	
 	string query = "SHOW COLUMNS FROM " + tableName;
-	msg(MSG_VDEBUG, "IpfixDbReaderMySQL: SQL query: %s", query.c_str());
+	msg(LOG_DEBUG, "IpfixDbReaderMySQL: SQL query: %s", query.c_str());
 	if(mysql_query(conn, query.c_str()) != 0) {	
-		msg(MSG_ERROR,"IpfixDbReaderMySQL: Show columns on table %s failed. Error: %s",
+		msg(LOG_ERR,"IpfixDbReaderMySQL: Show columns on table %s failed. Error: %s",
 			tableName.c_str(), mysql_error(conn));
 		return 1;
 	}
@@ -139,7 +135,7 @@ int IpfixDbReaderMySQL::getColumns(const string& tableName)
 	dbResult = mysql_store_result(conn);
 	
 	if(dbResult == 0) {
-		msg(MSG_FATAL,"IpfixDbReaderMySQL: There are no Columns in the table");	
+		msg(LOG_CRIT,"IpfixDbReaderMySQL: There are no Columns in the table");	
 		return 1;
 	}
 	
@@ -148,14 +144,13 @@ int IpfixDbReaderMySQL::getColumns(const string& tableName)
 	columnNames = "";
 	orderBy = ""; 
 	while((dbRow = mysql_fetch_row(dbResult))) {
-		bool found = true;
 		const struct ipfix_identifier* id = ipfix_name_lookup(dbRow[0]);
 		if (id == NULL) {
-			msg(MSG_INFO, "IpfixDbReaderMySQL: Unsupported column: %s", dbRow[0]);
+			msg(LOG_NOTICE, "IpfixDbReaderMySQL: Unsupported column: %s", dbRow[0]);
 		} else {
 			columnNames = columnNames + "," + dbRow[0];
 			columns.push_back(*id);
-			msg(MSG_VDEBUG, "IpfixDbReaderMySQL: column %s (ID: %d, PEN: %u)", dbRow[0], columns.back().id, columns.back().pen);
+			msg(LOG_DEBUG, "IpfixDbReaderMySQL: column %s (ID: %d, PEN: %u)", dbRow[0], columns.back().id, columns.back().pen);
 		}
 	}
 	
@@ -174,29 +169,29 @@ int IpfixDbReaderMySQL::connectToDb()
 	/** get the mysl init handle*/
 	conn = mysql_init(0); 
 	if(conn == 0) {
-		msg(MSG_FATAL,"IpfixDbReaderMySQL: Get  connect handle failed. Error: %s",
+		msg(LOG_CRIT,"IpfixDbReaderMySQL: Get  connect handle failed. Error: %s",
 		    mysql_error(conn));
 		return 1;
 	} else {
-		msg(MSG_DEBUG,"IpfixDbReaderMySQL: mysql init successful");
+		msg(LOG_INFO,"IpfixDbReaderMySQL: mysql init successful");
 	}
 
 	/**Connect to Database*/
 	if (!mysql_real_connect(conn, hostname.c_str(), username.c_str(),password.c_str(),
 				0, port, 0, 0)) {
-		msg(MSG_FATAL,"IpfixDbReaderMySQL: Connection to database failed. Error: %s",
+		msg(LOG_CRIT,"IpfixDbReaderMySQL: Connection to database failed. Error: %s",
 		    mysql_error(conn));
 		return 1;
 	} else {
-		msg(MSG_DEBUG,"IpfixDbReaderMySQL: successfully connected to database");
+		msg(LOG_INFO,"IpfixDbReaderMySQL: successfully connected to database");
 	}
 
 	/** use database with dbName **/	
 	if(mysql_select_db(conn, dbname.c_str()) !=0) {
-		msg(MSG_FATAL,"IpfixDbReaderMySQL: Database %s not selectable", dbname.c_str());	
+		msg(LOG_CRIT,"IpfixDbReaderMySQL: Database %s not selectable", dbname.c_str());	
 		return 1;
 	} else {
-		msg(MSG_DEBUG,"IpfixDbReaderMySQL: Database %s selected", dbname.c_str());
+		msg(LOG_INFO,"IpfixDbReaderMySQL: Database %s selected", dbname.c_str());
 	}
 
 	return 0;

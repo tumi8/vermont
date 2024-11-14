@@ -51,7 +51,7 @@ public:
 
 	virtual void receive(T packet)
 	{
-		DPRINTF("receive(Packet*)");
+		DPRINTF_INFO("receive(Packet*)");
 		statTotalReceived++;
 		queue.push(packet);
 	}
@@ -239,12 +239,10 @@ private:
 			struct timespec nexttimeout;
 			if (!processTimeouts(nexttimeout)) {
 				if (!queue.pop(&element)) {
-					DPRINTF("queue.pop failed - timeout?");
 					continue;
 				}
 			} else {
 				if (!queue.popAbs(nexttimeout, &element)) {
-					DPRINTF("queue.pop failed - timeout?");
 					continue;
 				}
 			}
@@ -261,11 +259,11 @@ private:
 	static void* threadWrapper(void *arg)
 	{
 		ConnectionQueue* self = (ConnectionQueue*)arg;
-		DPRINTF("starting thread");
+		DPRINTF_INFO("starting thread");
 
 		self->processLoop();
 
-		DPRINTF("terminating thread");
+		DPRINTF_INFO("terminating thread");
 		return NULL;
 	}
 

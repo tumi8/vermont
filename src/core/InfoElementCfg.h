@@ -3,6 +3,7 @@
 
 #include "core/Cfg.h"
 #include "common/ipfixlolib/ipfix_names.h"
+#include "common/ipfixlolib/ipfix_iana.h"
 
 
 class InfoElementCfg
@@ -22,6 +23,8 @@ public:
 		modifier         = getOptional("modifier");
 		match            = getOptional("match");
 		autoAddV4PrefixLength = getBool("autoAddV4PrefixLength", true);
+		semanticName = getOptional("semantic");
+		fieldName = getOptional("fieldIeName");
 
 
 		if (ieId>0) {
@@ -39,7 +42,7 @@ public:
 				}
 				knownIE = true;
 			} else {
-				msg(MSG_INFO, "InfoElementCfg: unknown information element id %u, try to continue anyway.", ieId);
+				msg(LOG_NOTICE, "InfoElementCfg: unknown information element id %u, try to continue anyway.", ieId);
 			}
 		} else if (ieName.size()>0) {
 			// get ieId and enterpriseNumber from ieName
@@ -49,7 +52,7 @@ public:
 				if (enterpriseNumber == 0 && ipfixid->pen != 0) {
 					// enterprise number is missing in configuration
 					enterpriseNumber = ipfixid->pen; 
-					msg(MSG_DIALOG, "InfoElementCfg: %s configured without enterprise number, continue with enterprise number %u.", ieName.c_str(), enterpriseNumber);
+					msg(LOG_WARNING, "InfoElementCfg: %s configured without enterprise number, continue with enterprise number %u.", ieName.c_str(), enterpriseNumber);
 				} else if (enterpriseNumber != ipfixid->pen) {
 					// enterprise numbers do not match
 					THROWEXCEPTION("InfoElementCfg: %s is configured with enterprise number %u, but %u is expected.", ieName.c_str(), enterpriseNumber, ipfixid->pen);
@@ -65,6 +68,34 @@ public:
 			// get default length
 			const ipfix_identifier* ipfixid = ipfix_id_lookup(ieId, enterpriseNumber);
 			if (ipfixid) ieLength = ipfixid->length;
+		}
+
+		// basicList specific
+		if (ieId == IPFIX_TYPEID_basicList && enterpriseNumber == 0) {
+
+			if (semanticName.size() == 0) {
+				semantic = IPFIX_STRUCTURED_TYPE_SEMANTIC_undefined;
+			} else {
+				const uint8_t *semanticPtr = ipfix_semantic_lookup(semanticName.c_str());
+				if (semanticPtr == NULL) {
+					THROWEXCEPTION("InfoElementCfg: semantic \"%s\" could not be mapped to IANA-standardized semantic", semanticName.c_str());
+				}
+				semantic = *semanticPtr;
+			}
+
+			if (fieldName.size() == 0) {
+				THROWEXCEPTION("InfoElementCfg: fieldIeName element is missing for basicList");
+			} else {
+				fieldIe = ipfix_name_lookup(fieldName.c_str());
+				if (fieldIe == NULL) {
+					THROWEXCEPTION("InfoElementCfg: given fieldIeName \"%s\" could not be mapped to IANA-standardized IE", fieldName.c_str());
+				}
+			}
+
+			// basicList supports only the "ordered" semantic
+			if (semantic != IPFIX_STRUCTURED_TYPE_SEMANTIC_ordered) {
+				THROWEXCEPTION("InfoElementCfg: semantic \"%s\" is not yet supported", semanticName.c_str());
+			}
 		}
 	}
 
@@ -85,6 +116,10 @@ public:
 	bool isKnownIE() { return knownIE; }
 
 	bool getAutoAddV4PrefixLength() { return autoAddV4PrefixLength; }
+
+	uint8_t getSemantic() { return semantic; }
+
+	const ipfix_identifier* getFieldIe() { return fieldIe; }
 
 	bool operator==(const InfoElementCfg &other) const {
 		if (other.ieLength != ieLength) return false;
@@ -108,6 +143,12 @@ private:
 
 	bool knownIE;
 	bool autoAddV4PrefixLength;
+
+	// basicList specific
+	std::string semanticName;
+	uint8_t semantic;
+	std::string fieldName;
+	const ipfix_identifier* fieldIe;
 };
 
 #endif /*INFOELEMENTCFG_H_*/

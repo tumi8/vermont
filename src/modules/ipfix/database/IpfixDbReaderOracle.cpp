@@ -44,7 +44,7 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 	unsigned offset = 0;
 	unsigned j = 0;
 
-	msg(MSG_VDEBUG, "IpfixDbReaderOracle: Sending table %s", tableName.c_str());
+	msg(LOG_DEBUG, "IpfixDbReaderOracle: Sending table %s", tableName.c_str());
 	
 	sql << "SELECT " << columnNames << " FROM "<< tableName;
 
@@ -52,7 +52,7 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 	try {
 		stmt = con->createStatement(sql.str());
 	} catch (oracle::occi::SQLException& ex) {
-		msg(MSG_FATAL, "IpfixDbReaderOracle: Error creating statement: %s", ex.getMessage().c_str());
+		msg(LOG_CRIT, "IpfixDbReaderOracle: Error creating statement: %s", ex.getMessage().c_str());
 		return 1;
 	}
 	
@@ -60,16 +60,16 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 		stmt->setPrefetchRowCount(1);
 		rs = stmt->executeQuery();
 	} catch (oracle::occi::SQLException& ex) {
-		msg(MSG_FATAL,"IpfixDbReaderOracle: Error executing statement: %s", ex.getMessage().c_str());
+		msg(LOG_CRIT,"IpfixDbReaderOracle: Error executing statement: %s", ex.getMessage().c_str());
 		con->terminateStatement(stmt);
 	}
 
 	if (!rs) {
-		msg(MSG_ERROR, "IpfixDbReaderOracle: Table %s was empty!", tableName.c_str());
+		msg(LOG_ERR, "IpfixDbReaderOracle: Table %s was empty!", tableName.c_str());
 		return 1;
 	}
 
-	msg(MSG_INFO,"IpfixDbReaderOracle:  Start sending records from table %s", tableName.c_str());
+	msg(LOG_NOTICE,"IpfixDbReaderOracle:  Start sending records from table %s", tableName.c_str());
 
 	try {
 	while((rs->next()) && !exitFlag) {
@@ -99,14 +99,14 @@ int IpfixDbReaderOracle::dbReaderSendTable(boost::shared_ptr<TemplateInfo> templ
 	con->terminateStatement(stmt);
 	
 	} catch (oracle::occi::SQLException& ex) {
-                msg(MSG_ERROR, "Caught SQL exception while getting flows from table: %s", ex.getMessage().c_str());
+                msg(LOG_ERR, "Caught SQL exception while getting flows from table: %s", ex.getMessage().c_str());
 		return 1;
 	}
 
 	if(!exitFlag)
-		msg(MSG_INFO,"IpfixDbReaderOracle: Sending from table %s done", tableName.c_str());
+		msg(LOG_NOTICE,"IpfixDbReaderOracle: Sending from table %s done", tableName.c_str());
 	else
-		msg(MSG_INFO,"IpfixDbReaderOracle: Sending from table %s aborted", tableName.c_str());
+		msg(LOG_NOTICE,"IpfixDbReaderOracle: Sending from table %s aborted", tableName.c_str());
 
 	return 0;
 }
@@ -126,35 +126,35 @@ int IpfixDbReaderOracle::getTables()
         try {
                 stmt = con->createStatement(sql.str());
         } catch (oracle::occi::SQLException& ex) {
-                msg(MSG_FATAL, "IpfixDbReaderOracle: Error creating statement: %s", ex.getMessage().c_str());
+                msg(LOG_CRIT, "IpfixDbReaderOracle: Error creating statement: %s", ex.getMessage().c_str());
                 return 1;
         }
 
-        //msg(MSG_VDEBUG, "IpfixDbReaderOracle: SQL query: %s", query.c_str());
+        //msg(LOG_DEBUG, "IpfixDbReaderOracle: SQL query: %s", query.c_str());
         try {
                 stmt->setPrefetchRowCount(1);
                 rs = stmt->executeQuery();
         } catch (oracle::occi::SQLException& ex) {
-                msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing statement: %s", ex.getMessage().c_str());
+                msg(LOG_CRIT,"IpfixDbWriterOracle: Error executing statement: %s", ex.getMessage().c_str());
                 con->terminateStatement(stmt);
         }
 
         if (!rs) {
-                msg(MSG_ERROR, "IpfixDbWriterOracle: Found no flow tables!");
+                msg(LOG_ERR, "IpfixDbWriterOracle: Found no flow tables!");
                 return 1;
         }
 
 	try {
         while((rs->next()) && !exitFlag) {
 		tables.push_back(rs->getString(1));
-		msg(MSG_VDEBUG, "IpfixDbReaderOracle: table %s", tables.back().c_str());
+		msg(LOG_DEBUG, "IpfixDbReaderOracle: table %s", tables.back().c_str());
 	}
 
         stmt->closeResultSet(rs);
         con->terminateStatement(stmt);
 
         } catch (oracle::occi::SQLException& ex) {
-                msg(MSG_ERROR, "Caught SQL exception: %s", ex.getMessage().c_str());
+                msg(LOG_ERR, "Caught SQL exception: %s", ex.getMessage().c_str());
                 return 1;
         }
 	
@@ -175,21 +175,21 @@ int IpfixDbReaderOracle::getColumns(const string& tableName)
         try {
                 stmt = con->createStatement(query);
         } catch (oracle::occi::SQLException& ex) {
-                msg(MSG_FATAL, "IpfixDbReaderOracle: Error creating statement: %s", ex.getMessage().c_str());
+                msg(LOG_CRIT, "IpfixDbReaderOracle: Error creating statement: %s", ex.getMessage().c_str());
                 return 1;
         }
 
-        //msg(MSG_VDEBUG, "IpfixDbReaderOracle: SQL query: %s", query.c_str());
+        //msg(LOG_DEBUG, "IpfixDbReaderOracle: SQL query: %s", query.c_str());
         try {
                 stmt->setPrefetchRowCount(1);
                 rs = stmt->executeQuery();
         } catch (oracle::occi::SQLException& ex) {
-                msg(MSG_FATAL,"IpfixDbWriterOracle: Error executing statement: %s", ex.getMessage().c_str());
+                msg(LOG_CRIT,"IpfixDbWriterOracle: Error executing statement: %s", ex.getMessage().c_str());
                 con->terminateStatement(stmt);
         }
 
         if (!rs) {
-                msg(MSG_ERROR, "IpfixDbWriterOracle: Flow tables do not have columns??");
+                msg(LOG_ERR, "IpfixDbWriterOracle: Flow tables do not have columns??");
                 return 1;
         }
 
@@ -201,14 +201,14 @@ int IpfixDbReaderOracle::getColumns(const string& tableName)
 		bool found = true;
 		const struct ipfix_identifier* id = ipfix_name_lookup(rs->getString(1).c_str());
 		if (id == NULL) {
-			msg(MSG_INFO, "IpfixDbReaderMySQL: Unsupported column: %s", rs->getString(1).c_str());
+			msg(LOG_NOTICE, "IpfixDbReaderMySQL: Unsupported column: %s", rs->getString(1).c_str());
 		} else {
 			columnNames = columnNames + "," + rs->getString(1).c_str();
 			columns.push_back(*id);
-			msg(MSG_VDEBUG, "IpfixDbReaderMySQL: column %s (%d)", rs->getString(1).c_str(), columns.back().id);
+			msg(LOG_DEBUG, "IpfixDbReaderMySQL: column %s (%d)", rs->getString(1).c_str(), columns.back().id);
 		}
 		if(found)
-			msg(MSG_VDEBUG, "IpfixDbReaderOracle: column %s (%d)", rs->getString(1).c_str(), columns.back().id);
+			msg(LOG_DEBUG, "IpfixDbReaderOracle: column %s (%d)", rs->getString(1).c_str(), columns.back().id);
 	}
 	
 	if(columnNames != "")
@@ -217,7 +217,7 @@ int IpfixDbReaderOracle::getColumns(const string& tableName)
         stmt->closeResultSet(rs);
         con->terminateStatement(stmt);
         } catch (oracle::occi::SQLException& ex) {
-                msg(MSG_ERROR, "Caught SQL exception: %s", ex.getMessage().c_str());
+                msg(LOG_ERR, "Caught SQL exception: %s", ex.getMessage().c_str());
                 return 1;
         }
 
@@ -235,15 +235,15 @@ int IpfixDbReaderOracle::connectToDb()
 		env->terminateConnection(con);
 	}	
 
-	msg(MSG_DEBUG, "IpfixDbReaderOracle: Creating environment.");
+	msg(LOG_INFO, "IpfixDbReaderOracle: Creating environment.");
 	try {
 		env = oracle::occi::Environment::createEnvironment(oracle::occi::Environment::DEFAULT);
 	} catch (oracle::occi::SQLException& ex) {
-		msg(MSG_FATAL, "IpfixDbReaderOracle: Error while creating environment: %s.", ex.getMessage().c_str());
-		msg(MSG_FATAL, "IpfixDbReaderOracle: Did you configure your Oracle environment?");
+		msg(LOG_CRIT, "IpfixDbReaderOracle: Error while creating environment: %s.", ex.getMessage().c_str());
+		msg(LOG_CRIT, "IpfixDbReaderOracle: Did you configure your Oracle environment?");
 		return -1;
 	}
-	msg(MSG_DEBUG, "IpfixDbReaderOracle: Trying to connect to database ...");
+	msg(LOG_INFO, "IpfixDbReaderOracle: Trying to connect to database ...");
 	try 
 	{
 		char dbLogon[256];
@@ -251,10 +251,10 @@ int IpfixDbReaderOracle::connectToDb()
 		con = env->createConnection(username, password, dbLogon);
 	} catch (oracle::occi::SQLException& ex) 
 	{
-		msg(MSG_FATAL,"IpfixDbReaderOracle: Oracle connect failed. Error: %s", ex.getMessage().c_str());
+		msg(LOG_CRIT,"IpfixDbReaderOracle: Oracle connect failed. Error: %s", ex.getMessage().c_str());
 		return 1;
 	}
-	msg(MSG_DEBUG,"IpfixDbReaderOracle: Successfully connected to Oracle DB");
+	msg(LOG_INFO,"IpfixDbReaderOracle: Successfully connected to Oracle DB");
 
 	return 0;
 }

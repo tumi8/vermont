@@ -53,12 +53,17 @@ DH *SSL_CTX_wrapper::get_dh2048() {
 	    };
     static unsigned char dh2048_g[]={0x02};
     DH *dh;
+    BIGNUM *p, *g;
 
     if ((dh=DH_new()) == NULL) return(NULL);
-    dh->p=BN_bin2bn(dh2048_p,sizeof(dh2048_p),NULL);
-    dh->g=BN_bin2bn(dh2048_g,sizeof(dh2048_g),NULL);
-    if ((dh->p == NULL) || (dh->g == NULL))
-	    { DH_free(dh); return(NULL); }
+    p=BN_bin2bn(dh2048_p,sizeof(dh2048_p),NULL);
+    g=BN_bin2bn(dh2048_g,sizeof(dh2048_g),NULL);
+    if ((p == NULL) || (g == NULL) || !DH_set0_pqg(dh, p, NULL, g)) {
+        DH_free(dh);
+        BN_free(p);
+        BN_free(g);
+        return(NULL);
+    }
     return(dh);
 }
 
@@ -88,7 +93,7 @@ SSL_CTX_wrapper::SSL_CTX_wrapper(
     bool have_CAs = false;
     bool have_cert = false;
     ensure_openssl_init();
-    ctx = SSL_CTX_new(DTLSv1_server_method());
+    ctx = SSL_CTX_new(DTLS_server_method());
     if( ! ctx) {
 	THROWEXCEPTION("Failed to create SSL_CTX");
     }
@@ -102,11 +107,11 @@ SSL_CTX_wrapper::SSL_CTX_wrapper(
      * This implies that we are not going to call SSL_CTX_set_client_CA_list()
      */
     if ( ! requirePeerAuthentication) {
-	DPRINTF("We are NOT going to verify the certificates of the exporters b/c "
+	DPRINTF_INFO("We are NOT going to verify the certificates of the exporters b/c "
 		"the peerFqdn option is NOT set.");
     } else {
 	if ( ! (have_CAs && have_cert) ) {
-	    msg(MSG_ERROR,"Can not verify certificates of exporters because prerequesites not met. "
+	    msg(LOG_ERR,"Can not verify certificates of exporters because prerequesites not met. "
 		    "Prerequesites are: 1. CApath or CAfile or both set, "
 		    "2. We have a certificate including the private key");
 	    THROWEXCEPTION("Cannot verify DTLS peers.");
@@ -114,7 +119,7 @@ SSL_CTX_wrapper::SSL_CTX_wrapper(
 	    verify_peers = true;
 	    SSL_CTX_set_verify(ctx,SSL_VERIFY_PEER |
 		    SSL_VERIFY_FAIL_IF_NO_PEER_CERT,&verify_peer_cert_callback);
-	    DPRINTF("We are going to request certificates from the exporters "
+	    DPRINTF_INFO("We are going to request certificates from the exporters "
 		    "and we are going to verify those b/c "
 		    "the peerFqdn option is set");
 	}
@@ -143,7 +148,7 @@ bool SSL_CTX_wrapper::loadVerifyLocations(
 	if ( SSL_CTX_load_verify_locations(ctx,CAfile,CApath) ) {
 	    return true;
 	} else {
-	    msg(MSG_ERROR,"SSL_CTX_load_verify_locations() failed.");
+	    msg(LOG_ERR,"SSL_CTX_load_verify_locations() failed.");
 	    msg_openssl_errors();
 	    THROWEXCEPTION("Failed to open CA file / CA directory.");
 	}
@@ -179,12 +184,14 @@ bool SSL_CTX_wrapper::loadCert(
     } else if (!privateKeyFile.empty())
 	    THROWEXCEPTION("It makes no sense specifying a private key file without "
 		    "specifying a file that contains the corresponding certificate.");
+#ifdef DEBUG
     if (have_cert)
-	DPRINTF("We successfully loaded our certificate.");
+	DPRINTF_INFO("We successfully loaded our certificate.");
     else
-	DPRINTF("We do NOT have a certificate. This means that we can only use "
+	DPRINTF_INFO("We do NOT have a certificate. This means that we can only use "
 		"the anonymous modes of DTLS. This also implies that we can not "
 		"authenticate the client (exporter).");
+#endif
     return have_cert;
 }
 
@@ -197,7 +204,7 @@ void SSL_CTX_wrapper::setCipherList() {
 }
 
 SSL_CTX_wrapper::~SSL_CTX_wrapper() {
-    DPRINTF("SSL_CTX_free(ctx)");
+    DPRINTF_INFO("SSL_CTX_free(ctx)");
     if (ctx) SSL_CTX_free(ctx);
 }
 

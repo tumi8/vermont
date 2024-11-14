@@ -53,7 +53,7 @@ void PCAPExporterFile::performShutdown()
 {
 	if (dumper) {
 		if (-1 == pcap_dump_flush(dumper)) {
-			msg(MSG_FATAL, "PCAPExporterFile: Could not flush dump file");
+			msg(LOG_CRIT, "PCAPExporterFile: Could not flush dump file");
 		}
 		pcap_dump_close(dumper);
 	}

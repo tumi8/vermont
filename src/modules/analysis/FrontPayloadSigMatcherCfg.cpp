@@ -42,7 +42,7 @@ FrontPayloadSigMatcherCfg::FrontPayloadSigMatcherCfg(XMLElement* elem)
 			signatureDir = e->getFirstText();
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unknown FrontPayloadSigMatcher config statement %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unknown FrontPayloadSigMatcher config statement %s\n", e->getName().c_str());
 			continue;
 		}
 	}

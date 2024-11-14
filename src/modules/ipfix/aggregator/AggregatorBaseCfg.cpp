@@ -23,6 +23,7 @@
 #include "Rules.hpp"
 #include "core/XMLElement.h"
 #include "core/InfoElementCfg.h"
+#include "BaseHashtable.h"
 
 AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 	: CfgBase(elem), pollInterval(0)
@@ -40,8 +41,14 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 		XMLElement* e = *it;
 		if (e->matches("rule")) {
 			Rule* r = readRule(e);
-			if (r)
-				rules->rule[rules->count++] = r;
+			if (r) {
+				if (rules->count < MAX_RULES) {
+					rules->rule[rules->count++] = r;
+				} else {
+					msg(LOG_CRIT, "Too many rules: %ul\n", MAX_RULES);
+				}
+				
+			}
 		} else if (e->matches("expiration")) {
 			// get the time values or set them to '0' if they are not specified
 			activeTimeout = getTimeInUnit("activeTimeout", SEC, 0, e);
@@ -52,7 +59,7 @@ AggregatorBaseCfg::AggregatorBaseCfg(XMLElement* elem)
 			htableBits = getInt("hashtableBits", HT_DEFAULT_BITSIZE);
 		} else if (e->matches("next")) { // ignore next
 		} else {
-			msg(MSG_FATAL, "Unkown Aggregator config entry %s\n", e->getName().c_str());
+			msg(LOG_CRIT, "Unkown Aggregator config entry %s\n", e->getName().c_str());
 		}
 	}
 }
@@ -78,12 +85,22 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 			rule->biflowAggregation = getInt("biflowAggregation", 0, e);
 		} else if (e->matches("flowKey")) {
 			Rule::Field* ruleField = readFlowKeyRule(e);
-			if (ruleField)
-				rule->field[rule->fieldCount++] = ruleField;
+			if (ruleField) {
+				if (rule->fieldCount < MAX_RULE_FIELDS) {
+					rule->field[rule->fieldCount++] = ruleField;
+				} else {
+					THROWEXCEPTION("Too many rule fields (%d)", MAX_RULE_FIELDS);
+				}
+			}
 		} else if (e->matches("nonFlowKey")) {
 			Rule::Field* ruleField = readNonFlowKeyRule(e);
-			if (ruleField)
-				rule->field[rule->fieldCount++] = ruleField;
+			if (ruleField) {
+				if (rule->fieldCount < MAX_RULE_FIELDS) {
+					rule->field[rule->fieldCount++] = ruleField;
+				} else {
+					THROWEXCEPTION("Too many rule fields (%d)", MAX_RULE_FIELDS);
+				}
+			}
 		} else {
 			THROWEXCEPTION("Unknown rule %s in Aggregator found", e->getName().c_str());
 		}
@@ -93,15 +110,16 @@ Rule* AggregatorBaseCfg::readRule(XMLElement* elem) {
 	if (rule->fieldCount == 0) {
 		delete rule;
 		rule = NULL;
-	}
-
-	// exclude coexistence of patterns and biflow aggregation
-	if(rule->biflowAggregation) {
-		for(int i=0; i < rule->fieldCount; i++) {
-			if(rule->field[i]->pattern)
-				msg(MSG_ERROR, "AggregatorBaseCfg: Match pattern for id=%d ignored because biflow aggregation is enabled.", rule->field[i]->type.id);
-				free(rule->field[i]->pattern);
-				rule->field[i]->pattern = NULL;
+	} else {
+		// exclude coexistence of patterns and biflow aggregation
+		if(rule->biflowAggregation) {
+			for(int i=0; i < rule->fieldCount; i++) {
+				if(rule->field[i]->pattern) {
+					msg(LOG_ERR, "AggregatorBaseCfg: Match pattern for id=%d ignored because biflow aggregation is enabled.", rule->field[i]->type.id);
+					free(rule->field[i]->pattern);
+					rule->field[i]->pattern = NULL;
+				}
+			}
 		}
 	}
 	return rule;
@@ -119,6 +137,13 @@ Rule::Field* AggregatorBaseCfg::readNonFlowKeyRule(XMLElement* e)
 	ruleField->type.id = ie.getIeId();
 	ruleField->type.enterprise = ie.getEnterpriseNumber();
 	ruleField->type.length = ie.getIeLength();
+
+	ruleField->semantic = ie.getSemantic();
+	ruleField->fieldIe = ie.getFieldIe();
+
+	if (!BaseHashtable::isToBeAggregated(ruleField->type)) {
+		msg(LOG_ERR, "Field %s configured as nonFlowKey will not be aggregated", ie.getIeName().c_str());
+	}
 
 	if (ie.getAutoAddV4PrefixLength() &&
 			(ruleField->type == InformationElement::IeInfo(IPFIX_TYPEID_sourceIPv4Address, 0) ||
@@ -158,6 +183,10 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 		ruleField->type.enterprise = ie.getEnterpriseNumber();
 		ruleField->type.length = ie.getIeLength();
 
+		if (BaseHashtable::isToBeAggregated(ruleField->type)) {
+			msg(LOG_ERR, "Field %s configured as FlowKey will be aggregated", ie.getIeName().c_str());
+		}
+
 		if (ie.getAutoAddV4PrefixLength() &&
 				(ruleField->type.id == IPFIX_TYPEID_sourceIPv4Address || ruleField->type.id == IPFIX_TYPEID_destinationIPv4Address)) {
 			ruleField->type.length++; // for additional mask field
@@ -173,7 +202,7 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 			switch (ruleField->type.id) {
 			case IPFIX_TYPEID_protocolIdentifier:
 				if (parseProtoPattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-					msg(MSG_ERROR, "Bad protocol pattern \"%s\"", tmp);
+					msg(LOG_ERR, "Bad protocol pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();
 				}
@@ -189,7 +218,7 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 			case IPFIX_TYPEID_sourceIPv4Address:
 			case IPFIX_TYPEID_destinationIPv4Address:
 				if (parseIPv4Pattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-					msg(MSG_ERROR, "Bad IPv4 pattern \"%s\"", tmp);
+					msg(LOG_ERR, "Bad IPv4 pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();
 				}
@@ -201,28 +230,28 @@ Rule::Field* AggregatorBaseCfg::readFlowKeyRule(XMLElement* e) {
 			case IPFIX_TYPEID_udpDestinationPort:
 			case IPFIX_TYPEID_tcpDestinationPort:
 				if (parsePortPattern(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-					msg(MSG_ERROR, "Bad PortRanges pattern \"%s\"", tmp);
+					msg(LOG_ERR, "Bad PortRanges pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();
 				}
 				break;
 			case IPFIX_TYPEID_tcpControlBits:
 				if (parseTcpFlags(tmp, &ruleField->pattern, &ruleField->type.length) != 0) {
-					msg(MSG_ERROR, "Bad TCP flags pattern \"%s\"", tmp);
+					msg(LOG_ERR, "Bad TCP flags pattern \"%s\"", tmp);
 					delete [] tmp;
 					throw std::exception();
 				}
 				break;
 
 			default:
-				msg(MSG_ERROR, "Fields of type \"%s\" cannot be matched against a pattern %s", "", tmp);
-				delete tmp;
+				msg(LOG_ERR, "Fields of type \"%s\" cannot be matched against a pattern %s", "", tmp);
+				delete [] tmp;
 				throw std::exception();
 				break;
 			}
 			delete [] tmp;
 		}
-	} catch (std::exception e) {
+	} catch (std::exception& e) {
 		delete ruleField;
 		ruleField = NULL;
 	}

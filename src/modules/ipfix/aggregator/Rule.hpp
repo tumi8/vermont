@@ -49,6 +49,9 @@ class Rule : private PrintHelpers {
 					type.enterprise = 0;
 					pattern = NULL;
 					modifier = Rule::Field::DISCARD;
+
+					semantic = IPFIX_STRUCTURED_TYPE_SEMANTIC_undefined;
+					fieldIe = NULL;
 				}
 
 				~Field() {
@@ -66,6 +69,10 @@ class Rule : private PrintHelpers {
 				InformationElement::IeInfo type; /**< field type this Rule::Field refers to */
 				IpfixRecord::Data* pattern; /**< pattern to match fields against to determine applicability of a rule. A pattern of NULL means no pattern needs to be matched for this field */
 				Rule::Field::Modifier modifier; /**< modifier to apply to the corresponding field if this rule is matched */
+
+				// basicList specific
+				uint8_t semantic;
+				const ipfix_identifier* fieldIe;
 		};
 
 

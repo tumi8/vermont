@@ -16,7 +16,7 @@
 #include <string.h>
 #include <pthread.h>
 
-#define THREAD_NAME_LENGTH 15
+#define MAX_THREAD_NAME_LEN 15
 
 typedef void* (*ThreadFunc)(void *);
 
@@ -25,12 +25,14 @@ class Thread
 	public:
 		Thread(ThreadFunc threadFunction, const char *threadName="") : exitFlag(false), thread_created(false), f(threadFunction)
 		{
+			size_t threadNameLen = strlen(threadName);
 			// truncate to 15 chars + NULL byte
-			if (strlen(threadName) > THREAD_NAME_LENGTH) {
-				msg(MSG_ERROR, "truncating thread name %s to %d characters", threadName, THREAD_NAME_LENGTH);
+			if (threadNameLen > MAX_THREAD_NAME_LEN) {
+				msg(LOG_ERR, "truncating thread name %s to %d characters", threadName, MAX_THREAD_NAME_LEN);
+				threadNameLen = MAX_THREAD_NAME_LEN;
 			}
-			memcpy(name, threadName, THREAD_NAME_LENGTH);
-			name[THREAD_NAME_LENGTH] = '\0';
+			memcpy(name, threadName, threadNameLen);
+			name[threadNameLen] = '\0';
 		};
 
 		void run(void *threadData)
@@ -39,7 +41,7 @@ class Thread
 			thread_created = true;
 
 			//data = threadData;
-			msg(MSG_DEBUG, "creating new thread: %s", name);
+			msg(LOG_INFO, "creating new thread: %s", name);
 			if (pthread_create(&thread, NULL, f, threadData) != 0) {
 				THROWEXCEPTION("failed to create new thread");
 			}
@@ -59,7 +61,7 @@ class Thread
 
 			void *result=NULL;
 			if(!thread || pthread_join(thread, &result)) {
-				msg(MSG_ERROR, "joining failed");
+				msg(LOG_ERR, "joining failed");
 			}
 			thread_created = false;
 
@@ -88,7 +90,7 @@ class Thread
 		pthread_t thread;
 		bool thread_created; /**< true after Thread::run() was called */
 		ThreadFunc f;
-		char name[THREAD_NAME_LENGTH+1];
+		char name[MAX_THREAD_NAME_LEN+1];
 };
 
 #endif

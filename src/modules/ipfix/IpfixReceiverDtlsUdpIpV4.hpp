@@ -112,7 +112,6 @@ class IpfixReceiverDtlsUdpIpV4 : public IpfixReceiver, Sensor {
 	}
 	typedef std::map<IpfixRecord::SourceID,DtlsConnectionPtr,CompareSourceID> connections_map;
 	connections_map connections;
-	unsigned int moduleId;
 	void idle_processing();
 
 #ifdef DEBUG

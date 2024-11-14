@@ -36,7 +36,7 @@ Host::~Host()
 void Host::addConnection(Connection* c)
 {
 	if (c->srcIP != ip && c->dstIP != ip) {
-		msg(MSG_ERROR, "Host: Received a connection that from %u to %u. However, my IP address is %u", c->srcIP, c->dstIP, ip);
+		msg(LOG_ERR, "Host: Received a connection that from %u to %u. However, my IP address is %u", c->srcIP, c->dstIP, ip);
 		return;
 	}
 

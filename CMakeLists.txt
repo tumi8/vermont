@@ -26,13 +26,12 @@ PROJECT(VERMONT)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
-# TODO: Once all warnings are fixed add -Werror to both of these
 # TODO: Bonus: Remove -Wno-unused-parameter and fix all code as this one gernerates hundreds of warnings
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Wall -pedantic -Wextra -Wno-unused-parameter"
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11 -Werror -Wall -pedantic -Wextra -Wno-unused-parameter"
     CACHE STRING
     "Recommended C Flags"
     FORCE)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall -pedantic -Wextra -Wno-unused-parameter"
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Werror -Wall -pedantic -Wextra -Wno-unused-parameter"
     CACHE STRING
     "Recommended C++ Flags"
     FORCE)
@@ -235,46 +234,24 @@ ENDIF (HIREDIS_FOUND)
 
 ### boost
 
-FIND_PACKAGE(Boost REQUIRED)
-MARK_AS_ADVANCED(
-	Boost_INCLUDE_DIR
-	Boost_REGEX_LIBRARY
-  Boost_THREAD_LIBRARY
-	Boost_FILESYSTEM_LIBRARY
-	Boost_UNIT_TEST_FRAMEWORK_LIBRARY
-)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS
+                regex
+                thread
+                filesystem
+                unit_test_framework
+                system)
+
 IF (Boost_FOUND)
 	MESSAGE(STATUS "Found boost libraries")
 	ADD_DEFINITIONS(-DHAVE_BOOST_FILESYSTEM)
 	INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-	FIND_LIBRARY(Boost_REGEX_LIBRARY NAMES boost_regex-mt boost_regex PATHS ${Boost_LIBRARY_DIRS})
-	IF (NOT Boost_REGEX_LIBRARY)
-		MESSAGE(FATAL_ERROR "Could not find boost regex library")
-	ENDIF(NOT Boost_REGEX_LIBRARY)
-  FIND_LIBRARY(Boost_THREAD_LIBRARY NAMES boost_thread-mt boost_thread PATHS ${Boost_LIBRARY_DIRS})
-  IF (NOT Boost_THREAD_LIBRARY)
-		MESSAGE(FATAL_ERROR "Could not find boost thread library")
-  ENDIF(NOT Boost_THREAD_LIBRARY)
-  FIND_LIBRARY(Boost_FILESYSTEM_LIBRARY NAMES boost_filesystem-mt boost_filesystem PATHS ${Boost_LIBRARY_DIRS})
-	IF (NOT Boost_FILESYSTEM_LIBRARY)
-		MESSAGE(FATAL_ERROR "Could not find boost filesystem library")
-	ENDIF(NOT Boost_FILESYSTEM_LIBRARY)
-	FIND_LIBRARY(Boost_UNIT_TEST_FRAMEWORK_LIBRARY NAMES boost_unit_test_framework-mt boost_unit_test_framework PATHS ${Boost_LIBRARY_DIRS})
-	IF (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY)
-		MESSAGE(FATAL_ERROR "Could not find boost unit test framework")
-	ENDIF (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY)
-	FIND_LIBRARY(Boost_SYSTEM_LIBRARY NAMES boost_system-mt boost_system PATHS ${Boost_LIBRARY_DIRS})
-	IF (NOT Boost_SYSTEM_LIBRARY)
-		MESSAGE(FATAL_ERROR "Could not find boost system library")
-	ENDIF (NOT Boost_SYSTEM_LIBRARY)
 	TARGET_LINK_LIBRARIES(vermont
-		${Boost_REGEX_LIBRARY}
-		${Boost_FILESYSTEM_LIBRARY}
-		${Boost_SYSTEM_LIBRARY}
+		Boost::regex
+		Boost::filesystem
+		Boost::system
 	)
   IF (SUPPORT_MONGO) 
-	  TARGET_LINK_LIBRARIES(vermont
-		  ${Boost_THREAD_LIBRARY}
+	  TARGET_LINK_LIBRARIES(vermont Boost::thread
     )
   ENDIF (SUPPORT_MONGO)
 
@@ -528,13 +505,16 @@ ENDIF(CONNECTION_FILTER)
 
 OPTION(SUPPORT_DTLS "Enables/Disables encryption support for IPFIX messages." OFF)
 IF (SUPPORT_DTLS)
-	FIND_PACKAGE(OpenSSL 1.0.0)
+	FIND_PACKAGE(OpenSSL)
 	IF (NOT OPENSSL_FOUND)
 		MESSAGE(FATAL_ERROR "Could not find openssl. Please install the library or turn off SUPPORT_DTLS")
 	ENDIF (NOT OPENSSL_FOUND)
-	IF (NOT (${OPENSSL_VERSION} VERSION_LESS 1.1.0))
-		MESSAGE(FATAL_ERROR "openssl version must be less than 1.1.0")
-	ENDIF (NOT (${OPENSSL_VERSION} VERSION_LESS 1.1.0))
+	IF (NOT (${OPENSSL_VERSION} VERSION_GREATER_EQUAL 1.1.0))
+		MESSAGE(FATAL_ERROR "openssl version must be 1.1.0 or higher")
+	ENDIF (NOT (${OPENSSL_VERSION} VERSION_GREATER_EQUAL 1.1.0))
+	IF (${OPENSSL_VERSION} VERSION_GREATER_EQUAL 1.1.1)
+		ADD_DEFINITIONS(-DHAVE_DTLS_get_data_mtu)
+	ENDIF (${OPENSSL_VERSION} VERSION_GREATER_EQUAL 1.1.1)
 	INCLUDE_DIRECTORIES(${OPENSSL_INCLUDE_DIR})
 	TARGET_LINK_LIBRARIES(vermont ${OPENSSL_LIBRARIES})
 	ADD_DEFINITIONS(-DSUPPORT_DTLS)
@@ -584,6 +564,12 @@ IF (DISABLE_MEMMANAGER)
 	ENDIF (NOT DEBUG)
 	ADD_DEFINITIONS(-DIM_DISABLE)
 ENDIF (DISABLE_MEMMANAGER)
+
+OPTION(EXIT_ON_EXCEPTION  "Thrown exceptions in VERMONT result in a graceful shutdown. Useful for fuzz testing only." OFF)
+MARK_AS_ADVANCED(EXIT_ON_EXCEPTION)
+IF (EXIT_ON_EXCEPTION)
+	ADD_DEFINITIONS(-DEXIT_ON_EXCEPTION)
+ENDIF(EXIT_ON_EXCEPTION)
 
 
 ### IPFIXLOLIB_RAWDIR_SUPPORT

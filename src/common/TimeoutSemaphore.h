@@ -106,8 +106,6 @@ public:
 						return false;
 						break;
 					default:
-						// semaphore could not be aquired because of several reasons, but none are fatal
-						DPRINTFL(MSG_VDEBUG, "timedwait (<0) returned with %d (%s)", errno, strerror(errno));
 						return false;
 				}
 			}
@@ -120,7 +118,6 @@ public:
 				retval = sem_timedwait(sem, &timeout);
 #endif
 				if (retval != 0 && errno != ETIMEDOUT) {
-					DPRINTFL(MSG_VDEBUG, "timedwait (>=0) returned with %d: %s", errno, strerror(errno));
 					switch (errno) {
 						case EINVAL:
 						/*
@@ -141,8 +138,7 @@ public:
 						return false;
 						break;
 						default:
-						// semaphore could not be aquired because of several reasons, but none are fatal
-						DPRINTFL(MSG_VDEBUG, "timedwait (>=0) returned with %d", errno);
+						break;
 					}
 				}
 				if (errno == ETIMEDOUT) {
@@ -155,27 +151,13 @@ public:
 	
 				// if program was shutdown, exit without success
 				if (exitFlag) {
-					DPRINTFL(MSG_VDEBUG, "exitFlag is set", errno);
+					DPRINTF_DEBUG( "exitFlag is set %d", errno);
 					return false;
 				}
 		    } while (retval != 0);
 		}
 		
 		return true;
-	}
-
-	
-	/**
-	 * see documentation for waitAbs(struct timespec)
-	 * has same functionality, just different parameter
-	 */
-	inline bool waitAbs(const struct timeval& timeout)
-	{
-		struct timespec ts;
-		
-		TIMEVAL_TO_TIMESPEC(&timeout, &ts);
-		
-		return waitAbs(ts);
 	}
 
 	// like wait() but with absolute time instead of delta. makes things easier!
@@ -215,9 +197,6 @@ public:
 					return false;
 					break;
 				default:
-					// semaphore not acquired for non-fatal reasons
-					DPRINTFL(MSG_VDEBUG, "timedwait returned with %s",
-							strerror(errno));
 					return false;
 			}
 		}
@@ -271,7 +250,7 @@ public:
 	 */
 	void notifyShutdown()
 	{
-	    DPRINTF("shutting down");
+	    DPRINTF_INFO("shutting down");
 	    exitFlag = true;
 	}
 
@@ -280,7 +259,7 @@ public:
 	 */
 	void restart()
 	{
-	    DPRINTF("restarting");
+	    DPRINTF_INFO("restarting");
 	    exitFlag = false;
 	}
 };

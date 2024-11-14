@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <pthread.h>
+#include <sys/syslog.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -64,6 +65,36 @@ extern "C" {
 		default:
 			return "UNKNOWN";
 		}
+	}
+
+	/**
+	 * @brief parse a string and return a logging bitmask
+	 *
+	 * @param arg string represent logging level
+	 * @return bitmask of logging levels up to arg
+	 * @return -1 if logging level is not recognised
+	 */
+	int
+	parse_log_level (const char *arg)
+	{
+		if (!strcmp("debug", arg)) {
+			return LOG_UPTO(LOG_DEBUG);
+		} else if (!strcmp("info", arg)) {
+			return LOG_UPTO(LOG_INFO);
+		} else if (!strcmp("notice", arg)) {
+			return LOG_UPTO(LOG_NOTICE);
+		} else if (!strcmp("warning", arg)) {
+			return LOG_UPTO(LOG_WARNING);
+		} else if (!strcmp("err", arg)) {
+			return LOG_UPTO(LOG_ERR);
+		} else if (!strcmp("crit", arg)) {
+			return LOG_UPTO(LOG_CRIT);
+		} else if (!strcmp("alert", arg)) {
+			return LOG_UPTO(LOG_ALERT);
+		} else if (!strcmp("emerg", arg)) {
+			return LOG_UPTO(LOG_EMERG);
+		}
+		return -1;
 	}
 
 	/**
@@ -317,10 +348,10 @@ extern "C" {
 
 	void vermont_assert(const char* expr, const char* description, int line, const char* filename, const char* prettyfuncname, const char* funcname)
 	{
-		msg_normal(MSG_ERROR, "Assertion: %s", expr);
-		msg_normal(MSG_ERROR, "Message: %s", description);
-		msg_normal(MSG_ERROR, "---------------------------------------------------------------");
-		msg_normal(MSG_ERROR, "filename: %s:%d, function: %s (%s)", filename, line, funcname, prettyfuncname);
+		msg_normal(LOG_ERR, "Assertion: %s", expr);
+		msg_normal(LOG_ERR, "Message: %s", description);
+		msg_normal(LOG_ERR, "---------------------------------------------------------------");
+		msg_normal(LOG_ERR, "filename: %s:%d, function: %s (%s)", filename, line, funcname, prettyfuncname);
 		exit(1);
 	}
 
@@ -331,10 +362,14 @@ extern "C" {
 
 		va_list args;
 		va_start(args, fmt);
-		msg_expand(text, line, filename, funcname, simplefunc, MSG_FATAL, fmt, &args);
+		msg_expand(text, line, filename, funcname, simplefunc, LOG_CRIT, fmt, &args);
 		va_end(args);
 
+#ifdef EXIT_ON_EXCEPTION
+		exit(0);
+#else
 		throw std::runtime_error(text);
+#endif
 	}
 
 #ifdef __cplusplus

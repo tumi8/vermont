@@ -62,7 +62,7 @@ bool Module::getShutdownProperly() const
 
 void Module::shutdownVermont()
 {
-	DPRINTF("initiating Vermont shutdown");
+	DPRINTF_INFO("initiating Vermont shutdown");
 	::initiateShutdown();
 }
 

@@ -96,6 +96,10 @@ private:
 	void registerTimeout();
 	void onSendRecordsTimeout(void);
 	void registerBeatTimeout();
+	void addDataRecordValue(TemplateInfo::FieldInfo*, IpfixRecord::Data*);
+	void addDataRecordValue(TemplateInfo::FieldInfo*, IpfixRecord::Data*, IpfixDataRecord*);
+	void sendDataFromVarLenDataBuff(IpfixDataRecord*, void*, size_t);
+	void initVarLenData(IpfixDataRecord*, IpfixRecord::Data*);
 
 	TemplateInfo::TemplateId getUnusedTemplateId();
 

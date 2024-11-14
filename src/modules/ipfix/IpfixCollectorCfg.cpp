@@ -33,7 +33,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 	if (!elem)
 		return;
 
-	msg(MSG_INFO, "IpfixCollectorCfg: Start reading ipfixCollector section");
+	msg(LOG_NOTICE, "IpfixCollectorCfg: Start reading ipfixCollector section");
 	udpTemplateLifetime = getInt("udpTemplateLifetime", -1);
 
 	// Config for DTLS
@@ -63,7 +63,7 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 				e->matches("CAfile") || e->matches("CApath")) {
 			// already done!
 		} else {
-			msg(MSG_FATAL, "Unkown collector config statement %s", e->getName().c_str());
+			msg(LOG_CRIT, "Unkown collector config statement %s", e->getName().c_str());
 			continue;
 		}
 	}
@@ -84,12 +84,12 @@ IpfixCollectorCfg::IpfixCollectorCfg(XMLElement* elem)
 		THROWEXCEPTION("collectingProcess can handle only UDP, TCP, or SCTP!");
 #endif
 	
-	msg(MSG_INFO, "IpfixCollectorCfg: Successfully parsed collectingProcess section");
+	msg(LOG_NOTICE, "IpfixCollectorCfg: Successfully parsed collectingProcess section");
 }
 
 IpfixCollectorCfg::~IpfixCollectorCfg()
 {
-	msg(MSG_INFO, "Deleting collectingProcess listener");
+	msg(LOG_NOTICE, "Deleting collectingProcess listener");
 	delete listener;
 }
 

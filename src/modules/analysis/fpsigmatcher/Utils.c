@@ -41,32 +41,41 @@ double get_double(char string[]){
 			post_comma_i = -1.0;
 		char * 	tokens[2];
 		char 	separator[] = ",. ";
-		strtoken(string, separator, tokens);
-		//printf("STRINGS: %s  ,  %s\n", tokens[0], tokens[1]);
+		int num_tokens = strtoken(string, separator, tokens);
 
-		//sscanf(string, "%d %d", &pre_comma, &post_comma);
+		if (num_tokens < 1){
+			// no tokens -> cannot compose a number
+		}else if (num_tokens == 1){
+			// only one token
+			ret = atoi(tokens[0]);
+		}else{
+			//printf("STRINGS: %s  ,  %s\n", tokens[0], tokens[1]);
 
-		pre_comma_i = atoi(tokens[0]);
-		post_comma_i = atoi(tokens[1]);
+			//sscanf(string, "%d %d", &pre_comma, &post_comma);
 
-		//printf("INTS: %i  ,  %i\n", pre_comma_i, post_comma_i);
-		int sizeOfToken1 = 0;
-		int i = 0;
-		while(tokens[1][i] != 0){
-			sizeOfToken1++;
-			i++;
+
+			pre_comma_i = atoi(tokens[0]);
+			post_comma_i = atoi(tokens[1]);
+
+			//printf("INTS: %i  ,  %i\n", pre_comma_i, post_comma_i);
+			int sizeOfToken1 = 0;
+			int i = 0;
+			while(tokens[1][i] != 0){
+				sizeOfToken1++;
+				i++;
+		    }
+
+			double 	pre_comma_d = (double)pre_comma_i,
+				post_comma_d = (double)post_comma_i;
+
+			// Check the number of deleted 0's in post_comma
+			while(sizeOfToken1 > 1){
+				post_comma_d *= 0.1;
+				sizeOfToken1--;
+			}
+
+			ret = pre_comma_d + post_comma_d;
 		}
-
-		double 	pre_comma_d = (double)pre_comma_i,
-			post_comma_d = (double)post_comma_i;
-
-		// Check the number of deleted 0's in post_comma
-		while(sizeOfToken1 > 1){
-			post_comma_d *= 0.1;
-			sizeOfToken1--;
-		}
-
-		ret = pre_comma_d + post_comma_d;
 	}
 	return ret;
 }
@@ -127,7 +136,13 @@ char ** get_filenames(const char * directory, int * num_of_files) {
 	/* Get each directory entry from pDIR and store its name
 	 * in an array */
 	char ** filenames;
-	filenames = (char **)malloc(sizeof(char*)*filecounter);
+	if ( filecounter != 0) {
+	    filenames = (char **)malloc(sizeof(char*)*filecounter);
+	} else {
+	    // allocate bytes for 1 pointer -- to be safely freed
+	    // filenames will remain empty and will not be used
+	    filenames = (char **)malloc(sizeof(char*));
+	}
 	for (i = 0; i < filecounter; ++i)
 		filenames[i] = (char*)malloc(sizeof(char)*MAX_SIZE_OF_FILENAME);
 
@@ -144,7 +159,7 @@ char ** get_filenames(const char * directory, int * num_of_files) {
 			/* Skip non-regular files (e.g. directories) */
 			if ( ((fileNameSize < (int)sizeof(filename)) && (fileNameSize > 0))
 					&& (stat(filename, &dirEntStat) == 0) && (S_ISREG(dirEntStat.st_mode)) ) {
-				snprintf(filenames[i], MAX_SIZE_OF_FILENAME-1, "%s", pDirEnt->d_name);
+				snprintf(filenames[i], MAX_SIZE_OF_FILENAME, "%s", pDirEnt->d_name);
 				//printf( "ADDED: %s\n", filenames[i] );
 				i++;
 			}

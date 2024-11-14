@@ -1,23 +1,3 @@
-/*
- * IPFIX Information Elements registered by IANA
- * Copyright (C) 2014 Oliver Gasser
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
- */
-
 #include "ipfix_iana.h"
 
 #ifdef __cplusplus
@@ -259,7 +239,7 @@ struct ipfix_identifier ipfixids_iana[] = {
   { IPFIX_TYPEID_exporterCertificate                     , IPFIX_BYTES_octetArray          ,     0, "exporterCertificate"                   , IPFIX_DATA_TYPE_exporterCertificate                      },
   { IPFIX_TYPEID_dataRecordsReliability                  , IPFIX_BYTES_boolean             ,     0, "dataRecordsReliability"                , IPFIX_DATA_TYPE_dataRecordsReliability                   },
   { IPFIX_TYPEID_observationPointType                    , IPFIX_BYTES_unsigned8           ,     0, "observationPointType"                  , IPFIX_DATA_TYPE_observationPointType                     },
-  { IPFIX_TYPEID_connectionCountNew                      , IPFIX_BYTES_unsigned32          ,     0, "connectionCountNew"                    , IPFIX_DATA_TYPE_connectionCountNew                       },
+  { IPFIX_TYPEID_newConnectionDeltaCount                 , IPFIX_BYTES_unsigned32          ,     0, "newConnectionDeltaCount"               , IPFIX_DATA_TYPE_newConnectionDeltaCount                  },
   { IPFIX_TYPEID_connectionSumDurationSeconds            , IPFIX_BYTES_unsigned64          ,     0, "connectionSumDurationSeconds"          , IPFIX_DATA_TYPE_connectionSumDurationSeconds             },
   { IPFIX_TYPEID_connectionTransactionId                 , IPFIX_BYTES_unsigned64          ,     0, "connectionTransactionId"               , IPFIX_DATA_TYPE_connectionTransactionId                  },
   { IPFIX_TYPEID_postNATSourceIPv6Address                , IPFIX_BYTES_ipv6Address         ,     0, "postNATSourceIPv6Address"              , IPFIX_DATA_TYPE_postNATSourceIPv6Address                 },
@@ -413,6 +393,55 @@ struct ipfix_identifier ipfixids_iana[] = {
   { IPFIX_TYPEID_layer2FrameTotalCount                   , IPFIX_BYTES_unsigned64          ,     0, "layer2FrameTotalCount"                 , IPFIX_DATA_TYPE_layer2FrameTotalCount                    },
   { IPFIX_TYPEID_pseudoWireDestinationIPv4Address        , IPFIX_BYTES_ipv4Address         ,     0, "pseudoWireDestinationIPv4Address"      , IPFIX_DATA_TYPE_pseudoWireDestinationIPv4Address         },
   { IPFIX_TYPEID_ignoredLayer2FrameTotalCount            , IPFIX_BYTES_unsigned64          ,     0, "ignoredLayer2FrameTotalCount"          , IPFIX_DATA_TYPE_ignoredLayer2FrameTotalCount             },
+  { IPFIX_TYPEID_mibObjectValueInteger                   , IPFIX_BYTES_signed32            ,     0, "mibObjectValueInteger"                 , IPFIX_DATA_TYPE_mibObjectValueInteger                    },
+  { IPFIX_TYPEID_mibObjectValueOctetString               , IPFIX_BYTES_octetArray          ,     0, "mibObjectValueOctetString"             , IPFIX_DATA_TYPE_mibObjectValueOctetString                },
+  { IPFIX_TYPEID_mibObjectValueOID                       , IPFIX_BYTES_octetArray          ,     0, "mibObjectValueOID"                     , IPFIX_DATA_TYPE_mibObjectValueOID                        },
+  { IPFIX_TYPEID_mibObjectValueBits                      , IPFIX_BYTES_octetArray          ,     0, "mibObjectValueBits"                    , IPFIX_DATA_TYPE_mibObjectValueBits                       },
+  { IPFIX_TYPEID_mibObjectValueIPAddress                 , IPFIX_BYTES_ipv4Address         ,     0, "mibObjectValueIPAddress"               , IPFIX_DATA_TYPE_mibObjectValueIPAddress                  },
+  { IPFIX_TYPEID_mibObjectValueCounter                   , IPFIX_BYTES_unsigned64          ,     0, "mibObjectValueCounter"                 , IPFIX_DATA_TYPE_mibObjectValueCounter                    },
+  { IPFIX_TYPEID_mibObjectValueGauge                     , IPFIX_BYTES_unsigned32          ,     0, "mibObjectValueGauge"                   , IPFIX_DATA_TYPE_mibObjectValueGauge                      },
+  { IPFIX_TYPEID_mibObjectValueTimeTicks                 , IPFIX_BYTES_unsigned32          ,     0, "mibObjectValueTimeTicks"               , IPFIX_DATA_TYPE_mibObjectValueTimeTicks                  },
+  { IPFIX_TYPEID_mibObjectValueUnsigned                  , IPFIX_BYTES_unsigned32          ,     0, "mibObjectValueUnsigned"                , IPFIX_DATA_TYPE_mibObjectValueUnsigned                   },
+  { IPFIX_TYPEID_mibObjectValueTable                     , IPFIX_BYTES_subTemplateList     ,     0, "mibObjectValueTable"                   , IPFIX_DATA_TYPE_mibObjectValueTable                      },
+  { IPFIX_TYPEID_mibObjectValueRow                       , IPFIX_BYTES_subTemplateList     ,     0, "mibObjectValueRow"                     , IPFIX_DATA_TYPE_mibObjectValueRow                        },
+  { IPFIX_TYPEID_mibObjectIdentifier                     , IPFIX_BYTES_octetArray          ,     0, "mibObjectIdentifier"                   , IPFIX_DATA_TYPE_mibObjectIdentifier                      },
+  { IPFIX_TYPEID_mibSubIdentifier                        , IPFIX_BYTES_unsigned32          ,     0, "mibSubIdentifier"                      , IPFIX_DATA_TYPE_mibSubIdentifier                         },
+  { IPFIX_TYPEID_mibIndexIndicator                       , IPFIX_BYTES_unsigned64          ,     0, "mibIndexIndicator"                     , IPFIX_DATA_TYPE_mibIndexIndicator                        },
+  { IPFIX_TYPEID_mibCaptureTimeSemantics                 , IPFIX_BYTES_unsigned8           ,     0, "mibCaptureTimeSemantics"               , IPFIX_DATA_TYPE_mibCaptureTimeSemantics                  },
+  { IPFIX_TYPEID_mibContextEngineID                      , IPFIX_BYTES_octetArray          ,     0, "mibContextEngineID"                    , IPFIX_DATA_TYPE_mibContextEngineID                       },
+  { IPFIX_TYPEID_mibContextName                          , IPFIX_BYTES_string              ,     0, "mibContextName"                        , IPFIX_DATA_TYPE_mibContextName                           },
+  { IPFIX_TYPEID_mibObjectName                           , IPFIX_BYTES_string              ,     0, "mibObjectName"                         , IPFIX_DATA_TYPE_mibObjectName                            },
+  { IPFIX_TYPEID_mibObjectDescription                    , IPFIX_BYTES_string              ,     0, "mibObjectDescription"                  , IPFIX_DATA_TYPE_mibObjectDescription                     },
+  { IPFIX_TYPEID_mibObjectSyntax                         , IPFIX_BYTES_string              ,     0, "mibObjectSyntax"                       , IPFIX_DATA_TYPE_mibObjectSyntax                          },
+  { IPFIX_TYPEID_mibModuleName                           , IPFIX_BYTES_string              ,     0, "mibModuleName"                         , IPFIX_DATA_TYPE_mibModuleName                            },
+  { IPFIX_TYPEID_mobileIMSI                              , IPFIX_BYTES_string              ,     0, "mobileIMSI"                            , IPFIX_DATA_TYPE_mobileIMSI                               },
+  { IPFIX_TYPEID_mobileMSISDN                            , IPFIX_BYTES_string              ,     0, "mobileMSISDN"                          , IPFIX_DATA_TYPE_mobileMSISDN                             },
+  { IPFIX_TYPEID_httpStatusCode                          , IPFIX_BYTES_unsigned16          ,     0, "httpStatusCode"                        , IPFIX_DATA_TYPE_httpStatusCode                           },
+  { IPFIX_TYPEID_sourceTransportPortsLimit               , IPFIX_BYTES_unsigned16          ,     0, "sourceTransportPortsLimit"             , IPFIX_DATA_TYPE_sourceTransportPortsLimit                },
+  { IPFIX_TYPEID_httpRequestMethod                       , IPFIX_BYTES_string              ,     0, "httpRequestMethod"                     , IPFIX_DATA_TYPE_httpRequestMethod                        },
+  { IPFIX_TYPEID_httpRequestHost                         , IPFIX_BYTES_string              ,     0, "httpRequestHost"                       , IPFIX_DATA_TYPE_httpRequestHost                          },
+  { IPFIX_TYPEID_httpRequestTarget                       , IPFIX_BYTES_string              ,     0, "httpRequestTarget"                     , IPFIX_DATA_TYPE_httpRequestTarget                        },
+  { IPFIX_TYPEID_httpMessageVersion                      , IPFIX_BYTES_string              ,     0, "httpMessageVersion"                    , IPFIX_DATA_TYPE_httpMessageVersion                       },
+  { IPFIX_TYPEID_natInstanceID                           , IPFIX_BYTES_unsigned32          ,     0, "natInstanceID"                         , IPFIX_DATA_TYPE_natInstanceID                            },
+  { IPFIX_TYPEID_internalAddressRealm                    , IPFIX_BYTES_octetArray          ,     0, "internalAddressRealm"                  , IPFIX_DATA_TYPE_internalAddressRealm                     },
+  { IPFIX_TYPEID_externalAddressRealm                    , IPFIX_BYTES_octetArray          ,     0, "externalAddressRealm"                  , IPFIX_DATA_TYPE_externalAddressRealm                     },
+  { IPFIX_TYPEID_natQuotaExceededEvent                   , IPFIX_BYTES_unsigned32          ,     0, "natQuotaExceededEvent"                 , IPFIX_DATA_TYPE_natQuotaExceededEvent                    },
+  { IPFIX_TYPEID_natThresholdEvent                       , IPFIX_BYTES_unsigned32          ,     0, "natThresholdEvent"                     , IPFIX_DATA_TYPE_natThresholdEvent                        },
+  { IPFIX_TYPEID_httpUserAgent                           , IPFIX_BYTES_string              ,     0, "httpUserAgent"                         , IPFIX_DATA_TYPE_httpUserAgent                            },
+  { IPFIX_TYPEID_httpContentType                         , IPFIX_BYTES_string              ,     0, "httpContentType"                       , IPFIX_DATA_TYPE_httpContentType                          },
+  { IPFIX_TYPEID_httpReasonPhrase                        , IPFIX_BYTES_string              ,     0, "httpReasonPhrase"                      , IPFIX_DATA_TYPE_httpReasonPhrase                         },
+};
+
+
+
+struct ipfix_semantic ipfixsemantic_iana[] = {
+/* IANA registry */
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_noneOf                        , "noneOf"   },
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_exactlyOneOf                  , "exactlyOneOf" },
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_oneOrMoreOf                   , "oneOrMoreOf" },
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_allOf                         , "allOf"    },
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_ordered                       , "ordered"  },
+  { IPFIX_STRUCTURED_TYPE_SEMANTIC_undefined                     , "undefined" },
 };
 
 #ifdef __cplusplus

@@ -1,3 +1,5 @@
+#include <getopt.h>
+
 #include "VermontTest.h"
 #include "AggregationPerfTest.h"
 #include "ReconfTest.h"
@@ -15,10 +17,32 @@ int main(int argc, char* argv[])
 	printf("Vermont Testsuite, testing ...\n");
 
 	bool perftest = false;
+	int opt, option_index;
+	const char *config_dir = nullptr;
 
-	if (argc>1 && strcmp(argv[1], "-perf")==0) perftest = true;
+	static const struct option long_opts[] = {
+		{ "config-dir",  required_argument, NULL, 'c' },
+		{ "perf",     required_argument, NULL, 'p' },
+		{ NULL, 0, NULL, 0}
+	};
 
-	//msg_setlevel(MSG_DEBUG);
+	while ((opt = getopt_long(argc, argv, "pc:", long_opts,
+		&option_index)) != EOF) {
+		switch (opt) {
+		case 'p':
+			perftest = true;
+			break;
+		case 'c':
+			config_dir = optarg;
+			break;
+		}
+	}
+
+	if (!config_dir) {
+		ERROR("--config-dir is required");
+	}
+
+	//msg_setlevel(LOG_INFO);
 	
 	TestSuite testSuite;
 
@@ -29,7 +53,7 @@ int main(int argc, char* argv[])
 	testSuite.add(new BloomFilterTestSuite());
 	testSuite.add(new ConnectionFilterTestSuite());
 #endif
-	//testSuite.add(new ConfigTester());
+	testSuite.add(new ConfigTester(config_dir));
 
 	testSuite.run();
 

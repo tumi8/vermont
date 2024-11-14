@@ -27,6 +27,7 @@
 
 #include "common/msg.h"
 #include "common/Time.h"
+#include "common/defs.h"
 #include "core/Timer.h"
 
 #include <sstream>
@@ -69,10 +70,12 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	  maxRecordRate(maxRecordRate),
 	  export_protocol(export_protocol)
 {
+#ifdef SUPPORT_DTLS
 	const char *certificate_chain_file = NULL;
 	const char *private_key_file = NULL;
 	const char *ca_file = NULL;
 	const char *ca_path = NULL;
+#endif
 
 	ipfix_exporter** exporterP = &this->ipfixExporter;
 
@@ -82,7 +85,7 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	curTimeStep.tv_usec = 0;
 
 	if(ipfix_init_exporter(export_protocol, observationDomainId, exporterP) != 0) {
-		msg(MSG_FATAL, "IpfixSender: ipfix_init_exporter failed");
+		msg(LOG_CRIT, "IpfixSender: ipfix_init_exporter failed");
 		goto out;
 	}
 
@@ -91,26 +94,24 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate,
 	ipfix_set_template_transmission_timer(ipfixExporter, templateRefreshInterval);
 
  
+#ifdef SUPPORT_DTLS
 	if ( ! certificateChainFile.empty())
 		certificate_chain_file = certificateChainFile.c_str();
 	if ( ! privateKeyFile.empty())
 		private_key_file = privateKeyFile.c_str();
 	/* Private key will be searched for in the certificate chain file if
 	 * no private key file is set */
-#ifdef SUPPORT_DTLS
 	if (certificate_chain_file || private_key_file)
 		ipfix_set_dtls_certificate(&ipfixExporter->certificate,
 				certificate_chain_file, private_key_file);
-#endif
 
 	if ( ! caFile.empty() ) ca_file = caFile.c_str();
 	if ( ! caPath.empty() ) ca_path = caPath.c_str();
-#ifdef SUPPORT_DTLS
 	if (ca_file || ca_path)
 		ipfix_set_ca_locations(&ipfixExporter->certificate, ca_file, ca_path);
 #endif
 
-	msg(MSG_DEBUG, "IpfixSender: running");
+	msg(LOG_INFO, "IpfixSender: running");
 	return;
 
 out:
@@ -137,14 +138,14 @@ IpfixSender::IpfixSender(uint32_t observationDomainId, uint32_t maxRecordRate)
 	curTimeStep.tv_usec = 0;
 
 	if(ipfix_init_exporter(export_protocol, observationDomainId, exporterP) != 0) {
-		msg(MSG_FATAL, "IpfixSender: ipfix_init_exporter failed");
+		msg(LOG_CRIT, "IpfixSender: ipfix_init_exporter failed");
 		goto out;
 	}
 
 	ipfix_set_template_transmission_timer(ipfixExporter, IS_DEFAULT_TEMPLATE_TIMEINTERVAL);
 
 
-	msg(MSG_DEBUG, "IpfixSender: running");
+	msg(LOG_INFO, "IpfixSender: running");
 	return;
 
 out:
@@ -186,36 +187,37 @@ void IpfixSender::addCollector(const char *ip, uint16_t port,
 
 	switch(proto) {
 	    case UDP:
-		msg(MSG_INFO, "%sIpfixSender: adding UDP://%s:%d to exporter",
+		msg(LOG_NOTICE, "%sIpfixSender: adding UDP://%s:%d to exporter",
 				vrf_log, ip, port);
 	    	break;
 	    case SCTP:
-		msg(MSG_INFO, "%sIpfixSender: adding SCTP://%s:%d to exporter",
+		msg(LOG_NOTICE, "%sIpfixSender: adding SCTP://%s:%d to exporter",
 				vrf_log, ip, port);
 	    	break;
 #ifdef IPFIXLOLIB_RAWDIR_SUPPORT
 	    case RAWDIR:
-		msg(MSG_INFO, "%sIpfixSender: adding RAWDIR://%s to exporter",
+		msg(LOG_NOTICE, "%sIpfixSender: adding RAWDIR://%s to exporter",
 				vrf_log, ip);
 	    	break;
 #endif
 #ifdef SUPPORT_DTLS
 	    case DTLS_OVER_UDP:
-	    	msg(MSG_INFO,
+	    	msg(LOG_NOTICE,
 			"%sIpfixSender: adding DTLS over UDP://%s:%d to exporter",
 				vrf_log, ip, port);
 	    	break;
 #endif
 #ifdef SUPPORT_DTLS_OVER_SCTP
 	    case DTLS_OVER_SCTP:
-	    	msg(MSG_INFO,
+	    	msg(LOG_NOTICE,
 		"%sIpfixSender: adding DTLS over SCTP://%s:%d to exporter",
 				vrf_log, ip, port);
 	    	break;
 #endif
 	    case TCP:
-	        msg(MSG_INFO, "%sIpfixSender: adding TCP://%s:%d to exporter",
+	        msg(LOG_NOTICE, "%sIpfixSender: adding TCP://%s:%d to exporter",
 				vrf_log, ip, port);
+			__FALLTHROUGH__;
 	    default:
 	    	THROWEXCEPTION("invalid protocol (%d) given!", proto);
 	    	break;
@@ -223,7 +225,7 @@ void IpfixSender::addCollector(const char *ip, uint16_t port,
 
 	if(ipfix_add_collector(ex, ip, port, proto, aux_config,
 			vrf_name) != 0) {
-		msg(MSG_FATAL,
+		msg(LOG_CRIT,
 			"%sIpfixSender: ipfix_add_collector of %s:%d to exporter",
 				vrf_log, ip, port);
 		return;
@@ -255,7 +257,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 	// TODO: Implement Options Template handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate))
 	{
-	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
+	    	msg(LOG_ERR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();
 		return;
 	}
@@ -264,7 +266,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		THROWEXCEPTION("IpfixSender: Exporter not set");
 	}
 
-	msg(MSG_DEBUG, "IpfixSender: Template received (setid=%u, id=%u)", (uint16_t)(dataTemplateInfo->setId), dataTemplateInfo->templateId);
+	msg(LOG_INFO, "IpfixSender: Template received (setid=%u, id=%u)", (uint16_t)(dataTemplateInfo->setId), dataTemplateInfo->templateId);
 
 	// get message lock
 	ipfixMessageLock.lock();
@@ -278,7 +280,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 
 	// check if this is a known template
 	if(uniqueIdToTemplateId.find(dataTemplateInfo->getUniqueId()) != uniqueIdToTemplateId.end()) {
-		msg(MSG_ERROR, "IpfixSender: Received known Template (id=%u) again, which should not happen.", dataTemplateInfo->templateId);
+		msg(LOG_ERR, "IpfixSender: Received known Template (id=%u) again, which should not happen.", dataTemplateInfo->templateId);
 		record->removeReference();
 		ipfixMessageLock.unlock();
 		return;
@@ -292,22 +294,22 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		if(templateIdToUniqueId.find(dataTemplateInfo->templateId) == templateIdToUniqueId.end()) {
 			my_template_id = dataTemplateInfo->templateId;
 		} else {
-			msg(MSG_DEBUG, "IpfixSender: Template ID conflict, %u is already in use.", dataTemplateInfo->templateId);
+			msg(LOG_INFO, "IpfixSender: Template ID conflict, %u is already in use.", dataTemplateInfo->templateId);
 		}
 	}
 
 	// generate new Template ID if necessary
 	if(my_template_id == 0) {
 		my_template_id = getUnusedTemplateId();
-		msg(MSG_DEBUG, "IpfixSender: Use Template ID %u instead of %u.", my_template_id, dataTemplateInfo->templateId);
+		msg(LOG_INFO, "IpfixSender: Use Template ID %u instead of %u.", my_template_id, dataTemplateInfo->templateId);
 	}
 
 	// Update maps
 	templateIdToUniqueId[my_template_id] = dataTemplateInfo->getUniqueId(); 
 	uniqueIdToTemplateId[dataTemplateInfo->getUniqueId()] = my_template_id;
 
-	//for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) msg(MSG_FATAL, "template id %u -> unique id %u", iter->first, iter->second);
-	//for(map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.begin(); iter != uniqueIdToTemplateId.end(); iter++) msg(MSG_FATAL, "unique id %u -> template id %u", iter->first, iter->second);
+	//for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) msg(LOG_CRIT, "template id %u -> unique id %u", iter->first, iter->second);
+	//for(map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.begin(); iter != uniqueIdToTemplateId.end(); iter++) msg(LOG_CRIT, "unique id %u -> template id %u", iter->first, iter->second);
 
 	int i;
 
@@ -353,7 +355,7 @@ void IpfixSender::onTemplate(IpfixTemplateRecord* record)
 		THROWEXCEPTION("IpfixSender: ipfix_end_template failed");
 	}
 
-	msg(MSG_DEBUG, "IpfixSender: created template with ID %u", my_template_id);
+	msg(LOG_INFO, "IpfixSender: created template with ID %u", my_template_id);
 
 	// release message lock
 	ipfixMessageLock.unlock();
@@ -378,7 +380,7 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	// TODO: Implement Options Template handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate))
 	{
-		msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
+		msg(LOG_ERR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();
 		return;
 	}
@@ -390,7 +392,7 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 	// send remaining records first
 	sendRecords(IfNotEmpty);
 
-	msg(MSG_DEBUG, "IpfixSender: Template destruction received (setid=%u, id=%u)", (uint16_t)(dataTemplateInfo->setId), dataTemplateInfo->templateId);
+	msg(LOG_INFO, "IpfixSender: Template destruction received (setid=%u, id=%u)", (uint16_t)(dataTemplateInfo->setId), dataTemplateInfo->templateId);
 
 	// get message lock
 	ipfixMessageLock.lock();
@@ -403,7 +405,7 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 
 	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->getUniqueId());
 	if(iter == uniqueIdToTemplateId.end()) {
-		msg(MSG_ERROR, "IpfixSender: Template (id=%u) to be destroyed does not exist.", dataTemplateInfo->templateId);
+		msg(LOG_ERR, "IpfixSender: Template (id=%u) to be destroyed does not exist.", dataTemplateInfo->templateId);
 		record->removeReference();
 		ipfixMessageLock.unlock();
 		return;
@@ -417,18 +419,18 @@ void IpfixSender::onTemplateDestruction(IpfixTemplateDestructionRecord* record)
 
 	/* Remove template from ipfixlolib */
 	if (0 != ipfix_remove_template(ipfixExporter, my_template_id)) {
-		msg(MSG_FATAL, "IpfixSender: ipfix_remove_template failed");
+		msg(LOG_CRIT, "IpfixSender: ipfix_remove_template failed");
 	}
 	else
 	{
-		msg(MSG_DEBUG, "IpfixSender: removed template with ID %u", my_template_id);
+		msg(LOG_INFO, "IpfixSender: removed template with ID %u", my_template_id);
 	}
 
 	// enforce sending the withdrawal message
 	if (ipfix_send(ipfixExporter) != 0) {
 		THROWEXCEPTION("IpfixSender: ipfix_send failed");
 	}
-	msg(MSG_DEBUG, "IpfixSender: destroyed template with ID %u", my_template_id);
+	msg(LOG_INFO, "IpfixSender: destroyed template with ID %u", my_template_id);
 
 	// release message lock
 	ipfixMessageLock.unlock();
@@ -534,7 +536,7 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 	// TODO: Implement Options Data Record handling
 	if ((dataTemplateInfo->setId != TemplateInfo::IpfixTemplate))
 	{
-	    	msg(MSG_ERROR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
+	    	msg(LOG_ERR, "IpfixSender: Don't know how to handle Template (setId=%u)", dataTemplateInfo->setId);
 		record->removeReference();
 		return;
 	}
@@ -549,7 +551,7 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 	// check if we know the Template
 	map<uint16_t, TemplateInfo::TemplateId>::iterator iter = uniqueIdToTemplateId.find(dataTemplateInfo->getUniqueId());
 	if(iter == uniqueIdToTemplateId.end()) {
-		msg(MSG_ERROR, "IpfixSender: Discard Data Record because Template (id=%u) does not exist (this may happen during reconfiguration).", dataTemplateInfo->templateId);
+		msg(LOG_ERR, "IpfixSender: Discard Data Record because Template (id=%u) does not exist (this may happen during reconfiguration).", dataTemplateInfo->templateId);
 		record->removeReference();
 		ipfixMessageLock.unlock();
 		return;
@@ -567,37 +569,13 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 
 	setTemplateId(my_template_id, record->dataLength);
 
+	// Set variable length data based on template estimation to avoid realloc
+	initVarLenData(record, data);
+
 	int i;
 	for (i = 0; i < dataTemplateInfo->fieldCount; i++) {
-		TemplateInfo::FieldInfo* fi = &dataTemplateInfo->fieldInfo[i];
-
-		/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
-		if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
-			uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
-			*mask = 32 - *(uint8_t*)(data + fi->offset + 4);
-			ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
-			ipfix_put_data_field(ipfixExporter, mask, 1);
-		}
-		else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
-			uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
-			*mask = 32 - *(uint8_t*)(data + fi->offset + 4);
-			ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
-			ipfix_put_data_field(ipfixExporter, mask, 1);
-		}
-		else if ((export_protocol == NFV9_PROTOCOL) &&
-				(fi->type.id == IPFIX_TYPEID_tcpControlBits) &&
-				(fi->type.length != 1)) {
-			// data is in network order, we want just the second byte as per RFC
-			ipfix_put_data_field(ipfixExporter, data + fi->offset + 1, 1);
-		}
-		else {
-			if (fi->type.id == IPFIX_TYPEID_packetDeltaCount && fi->type.length<=8) {
-				uint64_t p = 0;
-				memcpy(&p, data+fi->offset, fi->type.length);
-				statPacketsInFlows += ntohll(p);
-			}
-			ipfix_put_data_field(ipfixExporter, data + fi->offset, fi->type.length);
-		}
+		TemplateInfo::FieldInfo* fi = &(dataTemplateInfo->fieldInfo[i]);
+		addDataRecordValue(fi, data, record);
 	}
 	remainingSpace -= record->dataLength;
 	statSentDataRecords++;
@@ -611,6 +589,122 @@ void IpfixSender::onDataRecord(IpfixDataRecord* record)
 
 	// release the message lock
 	ipfixMessageLock.unlock();
+}
+
+void IpfixSender::addDataRecordValue(TemplateInfo::FieldInfo* fi, IpfixRecord::Data* data)
+{
+	addDataRecordValue(fi, data, NULL);
+}
+
+void IpfixSender::sendDataFromVarLenDataBuff(IpfixDataRecord* record, void* data, size_t len)
+{
+	if (record->variableLenDataCurrBytes + len > record->variableLenDataTotalBytes) {
+		THROWEXCEPTION("Not enough bytes allocated: %u allocated, %u needed", record->variableLenDataTotalBytes, record->variableLenDataCurrBytes + (unsigned int) len);
+	}
+
+	memcpy(&(record->variableLenData[record->variableLenDataCurrBytes]), data, len);
+	ipfix_put_data_field(ipfixExporter, &record->variableLenData[record->variableLenDataCurrBytes], len);
+	record->variableLenDataCurrBytes += len;
+}
+
+void IpfixSender::initVarLenData(IpfixDataRecord* record, IpfixRecord::Data* data)
+{
+	size_t varLenDataTotalSize = 0;
+
+	for (int i = 0; i < record->templateInfo->fieldCount; i++) {
+		TemplateInfo::FieldInfo* fi = &(record->templateInfo->fieldInfo[i]);
+		if (fi->type.id == IPFIX_TYPEID_basicList) {
+			vector<void*>** listPtrPtr = (vector<void*>**) (data + fi->offset);
+			// Variable length IE length field (2B) + Semantic (1B) + Field ID (2B) + Element Length (2B) + (optional: Enterprise Number (3B)) + basicList Content (variable)
+			// NOTE: Even though some of these fields are not copied to the variableLenData, we include them in the varLenDataTotalSize estimation
+			varLenDataTotalSize += 2 + 1 + 2 + 2;
+			varLenDataTotalSize += (fi->basicListData.fieldIe->enterprise == 0) ? 0 : 3;
+			varLenDataTotalSize += ((*listPtrPtr)->size()) * fi->basicListData.fieldIe->length;
+		}
+	}
+
+	// Allocate memory if variable length is present
+	if (varLenDataTotalSize > 0) {
+		if (record->variableLenData != NULL) {
+			free(record->variableLenData);
+			record->variableLenData = NULL;
+			record->variableLenDataCurrBytes = 0;
+		}
+		record->variableLenDataTotalBytes = varLenDataTotalSize;
+		record->variableLenData = (IpfixRecord::Data*) malloc(record->variableLenDataTotalBytes);
+	}
+}
+
+void IpfixSender::addDataRecordValue(TemplateInfo::FieldInfo* fi, IpfixRecord::Data* data, IpfixDataRecord* record)
+{
+
+	/* Split IPv4 fields with length 5, i.e. fields with network mask attached */
+	if ((fi->type.id == IPFIX_TYPEID_sourceIPv4Address) && (fi->type.length == 5)) {
+		uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
+		*mask = 32 - *(uint8_t*)(data + fi->offset + 4);
+		ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
+		ipfix_put_data_field(ipfixExporter, mask, 1);
+	}
+	else if ((fi->type.id == IPFIX_TYPEID_destinationIPv4Address) && (fi->type.length == 5)) {
+		uint8_t* mask = &conversionRingbuffer[ringbufferPos++];
+		*mask = 32 - *(uint8_t*)(data + fi->offset + 4); // TODO FIXME Valgrind complains due to uninitialized memory!!!
+		ipfix_put_data_field(ipfixExporter, data + fi->offset, 4);
+		ipfix_put_data_field(ipfixExporter, mask, 1);
+	}
+	else if ((export_protocol == NFV9_PROTOCOL) &&
+			(fi->type.id == IPFIX_TYPEID_tcpControlBits) &&
+			(fi->type.length != 1)) {
+		// data is in network order, we want just the second byte as per RFC
+		ipfix_put_data_field(ipfixExporter, data + fi->offset + 1, 1);
+	}
+	else if (fi->type.id == IPFIX_TYPEID_basicList) {
+		vector<void*>** listPtrPtr = (vector<void*>**) (data + fi->offset);
+
+		// Always use three-byte length encoding as RECOMMENDED in RFC 6313
+		ipfix_put_data_field(ipfixExporter, &record->threeByteIndicator, 1);
+
+		// Need to allocate memory to store length etc. as they are not immediately sent over the wire
+		// Is deallocated in IpfixRecord destructor
+		if (record->variableLenData == NULL) {
+			msg(LOG_ERR, "Variable length data present but variableLenData not allocated.");
+		}
+
+		// Semantic (1B) + Field ID (2B) + Element Length (2B) + (optional: Enterprise Number (3B)) + basicList Content (variable)
+		uint16_t varLen = 1 + 2 + 2;
+		varLen += (fi->basicListData.fieldIe->enterprise == 0) ? 0 : 3;
+		varLen += ((*listPtrPtr)->size()) * fi->basicListData.fieldIe->length;
+		varLen = htons(varLen);
+
+		sendDataFromVarLenDataBuff(record, &varLen, sizeof(varLen));
+
+
+		// Var length field
+		// Semantic
+		ipfix_put_data_field(ipfixExporter, (void *) &fi->basicListData.semantic, 1);
+
+		// Field ID
+		// TODO: Distinguish between enterprise=0
+		uint16_t fieldId = htons(fi->basicListData.fieldIe->id);
+		sendDataFromVarLenDataBuff(record, &fieldId, sizeof(fieldId));
+
+		// Field length
+		uint16_t fieldLen = htons(fi->basicListData.fieldIe->length);
+		sendDataFromVarLenDataBuff(record, &fieldLen, sizeof(fieldLen));
+
+		// Add basicList content
+		for (vector<void*>::const_iterator iter = (*listPtrPtr)->begin(); iter != (*listPtrPtr)->end(); iter++) {
+			IpfixRecord::Data* elem = reinterpret_cast<IpfixRecord::Data*>(*iter);
+			sendDataFromVarLenDataBuff(record, elem, ntohs(fieldLen));
+		}
+	}
+	else {
+		if (fi->type.id == IPFIX_TYPEID_packetDeltaCount && fi->type.length<=8) {
+			uint64_t p = 0;
+			memcpy(&p, data+fi->offset, fi->type.length);
+			statPacketsInFlows += ntohll(p);
+		}
+		ipfix_put_data_field(ipfixExporter, data + fi->offset, fi->type.length);
+	}
 }
 
 /**
@@ -632,11 +726,11 @@ void IpfixSender::onReconfiguration2()
 	for(map<TemplateInfo::TemplateId, uint16_t>::iterator iter = templateIdToUniqueId.begin(); iter != templateIdToUniqueId.end(); iter++) {
 		/* Remove template from ipfixlolib */
 		if (0 != ipfix_remove_template(ipfixExporter, iter->first)) {
-			msg(MSG_FATAL, "IpfixSender: ipfix_remove_template failed");
+			msg(LOG_CRIT, "IpfixSender: ipfix_remove_template failed");
 		}
 		else
 		{
-			msg(MSG_DEBUG, "IpfixSender: removed template with ID %u", iter->first);
+			msg(LOG_INFO, "IpfixSender: removed template with ID %u", iter->first);
 		}
 	}
 	// clear maps
@@ -690,7 +784,7 @@ void IpfixSender::onSendRecordsTimeout(void) {
 	timeval tv;
 	gettimeofday(&tv, 0);
 	if (nextTimeout.tv_sec<tv.tv_sec || (nextTimeout.tv_sec==tv.tv_sec && nextTimeout.tv_nsec<tv.tv_usec*1000)) {
-		DPRINTF("Sending Records due to timeout.");
+		DPRINTF_INFO("Sending Records due to timeout.");
 		sendRecords(Always);
 	}
 }
